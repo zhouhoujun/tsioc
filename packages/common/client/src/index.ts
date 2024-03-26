@@ -5,5 +5,5 @@ export * from './interceptors/body';
 export * from './Client';
 export * from './client.module';
 export * from './redirector';
-
+export * from './session';
 export * from './codings';

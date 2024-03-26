@@ -3,8 +3,8 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService } from '@tsdi/common';
 import { InternalServerExecption, ev } from '@tsdi/common/transport';
-import { BindServerEvent, MiddlewareEndpoint, MiddlewareLike, MiddlewareService, RequestHandler, Server, ServerTransportSessionFactory } from '@tsdi/endpoints';
-import { Subject, first, fromEvent, lastValueFrom, merge, mergeMap, take, takeUntil } from 'rxjs';
+import { BindServerEvent, MiddlewareEndpoint, MiddlewareLike, MiddlewareService, Server, ServerTransportSessionFactory } from '@tsdi/endpoints';
+import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
 import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TCP_SERV_OPTS, TcpServerOpts } from './options';
@@ -117,12 +117,12 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
 
         if (this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket) => {
-                const session = factory.create(socket, transportOpts);
+                const session = factory.create(injector, socket, transportOpts);
                 session.listen(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
             })
         } else {
             this.serv.on(ev.CONNECTION, (socket) => {
-                const session = factory.create(socket, transportOpts);
+                const session = factory.create(injector, socket, transportOpts);
                 session.listen(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
                 // session.receive().pipe(
                 //     takeUntil(this.destroy$),

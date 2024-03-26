@@ -1,4 +1,4 @@
-import { Injector, ProvdierOf, Token, refl } from '@tsdi/ioc';
+import { Injector, InvocationContext, ProvdierOf, Token, createContext, isInjector, refl } from '@tsdi/ioc';
 import { HandlerService, Backend } from '@tsdi/core';
 import { MiddlewareLike } from './middleware';
 import { MiddlewareService } from './middleware.service';
@@ -55,10 +55,10 @@ export class MiddlewareEndpoint<TInput extends RequestContext = any, TOutput = a
  * create transport endpoint.
  * 
  * 创建含中间件的传输节点实例化对象
- * @param injector 
+ * @param context 
  * @param options 
  * @returns 
  */
-export function createMiddlewareEndpoint<TCtx extends RequestContext, TOutput>(injector: Injector, options: MiddlewareEndpointOptions<TCtx>): MiddlewareEndpoint<TCtx, TOutput> {
-    return new MiddlewareEndpoint(injector, options)
+export function createMiddlewareEndpoint<TCtx extends RequestContext, TOutput>(context: Injector | InvocationContext, options: MiddlewareEndpointOptions<TCtx>): MiddlewareEndpoint<TCtx, TOutput> {
+    return new MiddlewareEndpoint(isInjector(context) ? createContext(context) : context, options)
 }

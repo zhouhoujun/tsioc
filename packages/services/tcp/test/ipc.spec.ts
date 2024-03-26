@@ -1,18 +1,18 @@
 import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { Application, ApplicationContext, Payload } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { TransportResponse, BadRequestExecption } from '@tsdi/common';
+import { TransportResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
-import { RequestBody, RequestParam, RequestPath, RouteMapping, Handle, MicroServRouterModule, EndpointsModule } from '@tsdi/endpoints';
-import { RedirectResult, Bodyparser, Content, Json, AssetTransportModule } from '@tsdi/endpoints/assets';
+import { RequestBody, RequestParam, RequestPath, RouteMapping, Handle, MicroServRouterModule, EndpointModule, ContentInterceptor, JsonInterceptor, BodyparserInterceptor, RedirectResult } from '@tsdi/endpoints';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
 import del = require('del');
 import { TCP_SERV_INTERCEPTORS, TcpClient, TcpModule } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
+import { BadRequestExecption } from '@tsdi/common/transport';
 
 
 
@@ -98,7 +98,7 @@ const ipcpath = path.join(__dirname, 'myipctmp')
     imports: [
         ServerModule,
         LoggerModule,
-        AssetTransportModule,
+        // AssetTransportModule,
         ServerEndpointModule,
         TcpModule,
         ClientModule.register({
@@ -110,7 +110,7 @@ const ipcpath = path.join(__dirname, 'myipctmp')
             }
         }),
         MicroServRouterModule.forRoot('tcp'),
-        EndpointsModule.register({
+        EndpointModule.register({
             transport: 'tcp',
             serverOpts: {
                 // timeout: 1000,
@@ -119,9 +119,9 @@ const ipcpath = path.join(__dirname, 'myipctmp')
                 },
                 interceptors: [
                     BigFileInterceptor,
-                    Content,
-                    Json,
-                    Bodyparser,
+                    ContentInterceptor,
+                    JsonInterceptor,
+                    BodyparserInterceptor,
                     { useExisting: MicroServRouterModule.getToken('tcp') }
                 ]
             },

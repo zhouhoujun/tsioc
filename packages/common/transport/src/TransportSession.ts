@@ -78,7 +78,7 @@ export abstract class ResponseEventFactory<TResponse = TransportEvent, TErrorRes
  * transport session.
  */
 @Abstract()
-export abstract class TransportSession<TInput = any, TOutput = any, TMsg = any, TSocket = any>  {
+export abstract class TransportSession<TSocket = any, TInput = any, TOutput = any, TMsg = any>  {
     /**
      * socket.
      */

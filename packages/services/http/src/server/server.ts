@@ -10,7 +10,6 @@ import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
-import { HttpServRequest, HttpServResponse } from './context';
 import { HttpServerOpts, HTTP_SERV_OPTS } from './options';
 import { HttpEndpointHandler } from './handler';
 
@@ -19,7 +18,7 @@ import { HttpEndpointHandler } from './handler';
  * http server.
  */
 @Injectable()
-export class HttpServer extends Server<HttpServRequest, HttpServResponse> implements ListenService<ListenOptions>, MiddlewareService {
+export class HttpServer extends Server implements ListenService<ListenOptions>, MiddlewareService {
 
     @InjectLog() logger!: Logger;
     private destroy$: Subject<void>;
@@ -136,7 +135,7 @@ export class HttpServer extends Server<HttpServRequest, HttpServResponse> implem
         const transportOpts = this.options.transportOpts!;
         if (!transportOpts.serverSide) transportOpts.serverSide = true;
         if (!transportOpts.transport) transportOpts.transport = 'http';
-        const session = factory.create(this._server, transportOpts);
+        const session = factory.create(injector, this._server, transportOpts);
         session.listen(this.handler, this.destroy$);
         // injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options);
 

@@ -3,9 +3,10 @@ import { MessageExecption, InternalServerExecption, TransportSession, Outgoing, 
 import { EMPTY_OBJ, Injectable, Injector, isArray, isNumber, isString, lang } from '@tsdi/ioc';
 import * as http from 'http';
 import * as http2 from 'http2';
+import { Socket } from 'net';
 import { TLSSocket } from 'tls';
 import { HttpServerOpts } from './options';
-import { RestfulRequestContext, RestfulRequestContextFactory, ServerOpts, Throwable } from '@tsdi/endpoints';
+import { RestfulRequestContext, RestfulRequestContextFactory, ServerOpts, ServerTransportSession, Throwable } from '@tsdi/endpoints';
 
 
 export type HttpServRequest = http.IncomingMessage | http2.Http2ServerRequest;
@@ -15,21 +16,21 @@ export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
 /**
  * http context for `HttpServer`.
  */
-export class HttpContext extends RestfulRequestContext<HttpServerOpts, number> implements Throwable {
+export class HttpContext extends RestfulRequestContext<TLSSocket | Socket, HttpServerOpts, number> implements Throwable {
 
 
     private _URL?: URL;
-    
+
     constructor(
         injector: Injector,
-        readonly session: TransportSession,
+        readonly session: ServerTransportSession,
         readonly request: Incoming<HttpServRequest>,
         readonly response: Outgoing<HttpServResponse>,
         readonly statusAdapter: StatusAdapter | null,
         readonly mimeAdapter: MimeAdapter | null,
         readonly streamAdapter: StreamAdapter,
         readonly fileAdapter: FileAdapter,
-        readonly serverOptions: ServerOpts = EMPTY_OBJ
+        readonly serverOptions: HttpServerOpts
     ) {
         super(injector, { ...serverOptions, args: request });
 
@@ -64,16 +65,16 @@ export class HttpContext extends RestfulRequestContext<HttpServerOpts, number> i
         return proto ? proto.split(/\s*,\s*/, 1)[0] : httpPtl;
     }
 
-    private _query?: Record<string, any>;
-    get query(): Record<string, any> {
-        if (!this._query) {
-            const qs = this._query = {} as Record<string, any>;
-            this.URL?.searchParams?.forEach((v, k) => {
-                qs[k] = v;
-            });
-        }
-        return this._query;
-    }
+    // private _query?: Record<string, any>;
+    // get query(): Record<string, any> {
+    //     if (!this._query) {
+    //         const qs = this._query = {} as Record<string, any>;
+    //         this.URL?.searchParams?.forEach((v, k) => {
+    //             qs[k] = v;
+    //         });
+    //     }
+    //     return this._query;
+    // }
 
     /**
     * Get WHATWG parsed URL.
@@ -98,7 +99,7 @@ export class HttpContext extends RestfulRequestContext<HttpServerOpts, number> i
         }
     }
 
-    
+
     parseURL(incoming: Incoming<HttpServRequest>, proxy?: boolean): URL {
         const req = incoming.message;
         const url = req.url?.trim() ?? '';
@@ -173,38 +174,38 @@ export class HttpContext extends RestfulRequestContext<HttpServerOpts, number> i
     }
 
     /**
-     * Set the search string. Same as
-     * request.querystring= but included for ubiquity.
-     *
-     * @param {String} str
-     * @api public
-     */
-    set search(str: string) {
-        this.URL.search = str;
-        this._query = null!
-    }
+    //  * Set the search string. Same as
+    //  * request.querystring= but included for ubiquity.
+    //  *
+    //  * @param {String} str
+    //  * @api public
+    //  */
+    // set search(str: string) {
+    //     this.URL.search = str;
+    //     this._query = null!
+    // }
 
-    /**
-     * Get query string.
-     *
-     * @return {String}
-     * @api public
-     */
+    // /**
+    //  * Get query string.
+    //  *
+    //  * @return {String}
+    //  * @api public
+    //  */
 
-    get querystring() {
-        return this.URL.search?.slice(1)
-    }
+    // get querystring() {
+    //     return this.URL.search?.slice(1)
+    // }
 
-    /**
-     * Set query string.
-     *
-     * @param {String} str
-     * @api public
-     */
+    // /**
+    //  * Set query string.
+    //  *
+    //  * @param {String} str
+    //  * @api public
+    //  */
 
-    set querystring(str) {
-        this.search = `?${str}`
-    }
+    // set querystring(str) {
+    //     this.search = `?${str}`
+    // }
 
 
     // get status(): number {
@@ -416,7 +417,7 @@ export class HttpContext extends RestfulRequestContext<HttpServerOpts, number> i
         }
         return new MessageExecption(status.message ?? statusMessage[(status as MessageExecption).statusCode as HttpStatusCode ?? 500], (status as MessageExecption).statusCode ?? HttpStatusCode.InternalServerError);
     }
-    
+
 
     setResponse(packet: ResponsePacket): void {
         const { headers, payload, status, statusText } = packet;
@@ -439,14 +440,14 @@ export class HttpContext extends RestfulRequestContext<HttpServerOpts, number> i
 @Injectable()
 export class HttpAssetContextFactory implements RestfulRequestContextFactory {
 
-    create(injector: Injector, session: TransportSession, incoming: Incoming, outgoing: Outgoing, options: HttpServerOpts): HttpContext {
-        return new HttpContext(injector, session, 
-            incoming, 
+    create(injector: Injector, session: ServerTransportSession, incoming: Incoming, outgoing: Outgoing, options: HttpServerOpts): HttpContext {
+        return new HttpContext(injector, session,
+            incoming,
             outgoing,
             injector.get(StatusAdapter, null),
             injector.get(MimeAdapter, null),
             injector.get(StreamAdapter),
-            injector.get(FileAdapter), 
+            injector.get(FileAdapter),
             options);
     }
 

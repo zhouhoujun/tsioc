@@ -15,7 +15,6 @@ import { CsrfOptions } from './interceptors/csrf';
  * http options.
  */
 export interface HttpOpts extends ServerOpts {
-    majorVersion?: number;
     proxy?: ProxyOpts;
     /**
      * request timeout.

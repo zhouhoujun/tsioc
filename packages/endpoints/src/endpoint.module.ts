@@ -1,22 +1,21 @@
 import {
     Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType, Token,
-    tokenId, getToken, isArray, toFactory, toProvider, lang, isString, ArgumentExecption
+    tokenId, getToken, isArray, toFactory, toProvider, lang
 } from '@tsdi/ioc';
 import { CanActivate, Filter, TransformModule, TypedRespond } from '@tsdi/core';
-import { Decoder, Encoder } from '@tsdi/common';
-import { NotImplementedExecption, Transport, TransportSessionFactory } from '@tsdi/common/transport';
+import { NotImplementedExecption, Transport } from '@tsdi/common/transport';
 import { RequestContext } from './RequestContext';
-import { ServerOpts, TRANSPORT_PACKET_STRATEGIES } from './Server';
+import { ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
 import { FinalizeFilter } from './finalize.filter';
 import { ExecptionFinalizeFilter } from './execption.filter';
 import { Session } from './Session';
-// import { DuplexTransportSessionFactory } from './impl/duplex.session';
 import { HybridRouter } from './router/router.hybrid';
-// import { TopicTransportSessionFactory } from './impl/topic.session';
 import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, SetupServices, ServiceModuleOpts, ServiceOpts } from './SetupServices';
 import { EndpointTypedRespond } from './typed.respond';
 import { LoggerInterceptor, JsonInterceptor, ContentInterceptor, BodyparserInterceptor } from './interceptors';
+import { ServerTransportSessionFactory } from './transport.session';
+import { ClientDuplexTransportSessionFactory, DuplexTransportSessionFactory } from './impl/duplex.session';
 
 
 /**
@@ -30,7 +29,8 @@ import { LoggerInterceptor, JsonInterceptor, ContentInterceptor, BodyparserInter
     ],
     providers: [
         SetupServices,
-        // DuplexTransportSessionFactory,
+        ClientDuplexTransportSessionFactory,
+        DuplexTransportSessionFactory,
         // TopicTransportSessionFactory,
 
         { provide: TypedRespond, useClass: EndpointTypedRespond, asDefault: true },
@@ -141,23 +141,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                             }
 
                             if (serverOpts.sessionFactory) {
-                                serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory))
-                            }
-
-                            if (serverOpts.strategy) {
-                                const strategy = isString(serverOpts.strategy) ? TRANSPORT_PACKET_STRATEGIES[serverOpts.strategy] : serverOpts.strategy;
-                                if (!strategy) throw new ArgumentExecption('The configured transport packet strategy is empty.')
-                                if (strategy.encoder) {
-                                    serverOpts.providers.push(toProvider(Encoder, strategy.encoder))
-                                }
-
-                                if (strategy.decoder) {
-                                    serverOpts.providers.push(toProvider(Decoder, strategy.decoder))
-                                }
-
-                                if (strategy.providers) {
-                                    serverOpts.providers.push(...strategy.providers)
-                                }
+                                serverOpts.providers.push(toProvider(ServerTransportSessionFactory, serverOpts.sessionFactory))
                             }
 
                             return serverOpts;

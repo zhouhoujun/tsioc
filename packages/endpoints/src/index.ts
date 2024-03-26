@@ -23,6 +23,8 @@ export * from './RestfulRequestContext';
 
 export * from './accepts';
 
+export * from './results';
+
 
 export * from './Publisher';
 export * from './Subscriber';
@@ -42,7 +44,7 @@ export * from './impl/route.handler';
 export * from './impl/request.context';
 
 export * from './impl/duplex.session';
-export * from './impl/topic.session';
+// export * from './impl/topic.session';
 
 export * from './SetupServices';
 export * from './endpoint.module';

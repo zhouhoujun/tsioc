@@ -1,12 +1,13 @@
 import { Abstract, EMPTY, Injector, OperationArgumentResolver, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
 import { HandlerContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { HeaderRecord } from '@tsdi/common';
+import { HeaderRecord, TransportHeaders } from '@tsdi/common';
 import {
     FileAdapter, Incoming, InternalServerExecption, MessageExecption, MimeAdapter, Outgoing, ResponsePacket,
-    StatusAdapter, StreamAdapter, TransportSession, ctype, isBuffer, xmlRegExp
+    StatusAdapter, StreamAdapter, ctype, isBuffer, xmlRegExp
 } from '@tsdi/common/transport';
 import { ServerOpts } from './Server';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
+import { ServerTransportSession } from './transport.session';
 
 /**
  * abstract request context.
@@ -14,18 +15,18 @@ import { CONTENT_DISPOSITION_TOKEN } from './content';
  * 请求上下文
  */
 @Abstract()
-export abstract class RequestContext<TSocket = any, TStatus = any> extends HandlerContext<Incoming> {
+export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts = ServerOpts, TStatus = any> extends HandlerContext<Incoming> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
         return [...primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
     }
 
-    abstract get serverOptions(): ServerOpts;
+    abstract get serverOptions(): TOptions;
 
     /**
      * transport session
      */
-    abstract get session(): TransportSession<TSocket>;
+    abstract get session(): ServerTransportSession<TSocket>;
 
     /**
      * mime adapter.
@@ -320,10 +321,15 @@ export abstract class RequestContext<TSocket = any, TStatus = any> extends Handl
      * @api public
      */
     setHeader(fields: Record<string, string | number | string[]> | HeaderRecord): void;
-    setHeader(field: string | Record<string, string | number | string[]> | HeaderRecord, val?: string | number | string[]) {
+    setHeader(headers: TransportHeaders): void;
+    setHeader(field: string | Record<string, string | number | string[]> | HeaderRecord | TransportHeaders, val?: string | number | string[]) {
         if (this.sent) return;
         if (val) {
             this.response.setHeader(field as string, val)
+        } else if (field instanceof TransportHeaders) {
+            field.forEach((name, values) => {
+                this.response.setHeader(name, values);
+            })
         } else {
             const fields = field as Record<string, string | number | string[]>;
             for (const key in fields) {
@@ -693,7 +699,7 @@ export abstract class RequestContextFactory<TSocket = any> {
      * @param response 
      * @param options 
      */
-    abstract create(injector: Injector, session: TransportSession, request: Incoming, response: Outgoing, options?: ServerOpts): RequestContext<TSocket>;
+    abstract create(injector: Injector, session: ServerTransportSession, request: Incoming, response: Outgoing, options?: ServerOpts): RequestContext<TSocket>;
 }
 
 

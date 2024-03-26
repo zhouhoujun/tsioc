@@ -50,7 +50,7 @@ export class Http extends Client<HttpRequest> {
         if (this.session) return of(this.session);
         const injector = this.handler.injector;
         if (!this.option.authority) {
-            this.session = injector.get(ClientTransportSessionFactory).create(null, this.option);
+            this.session = injector.get(ClientTransportSessionFactory).create(injector, null, this.option);
             return of(this.session);
         } else {
 
@@ -65,7 +65,7 @@ export class Http extends Client<HttpRequest> {
                 }
                 const onConnect = () => {
 
-                    this.session = injector.get(ClientTransportSessionFactory).create(conn, this.option);
+                    this.session = injector.get(ClientTransportSessionFactory).create(injector, conn, this.option);
                     observer.next(this.session);
                     observer.complete();
                 };

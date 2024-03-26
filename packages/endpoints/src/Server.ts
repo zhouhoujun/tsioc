@@ -1,40 +1,19 @@
-import { Abstract, ClassType, ProvdierOf, ProviderType, StaticProvider } from '@tsdi/ioc';
+import { Abstract, ClassType, ProvdierOf, StaticProvider } from '@tsdi/ioc';
 import { CanActivate, Interceptor, PipeTransform, Filter, Runner, Shutdown, ApplicationEvent, HandlerService } from '@tsdi/core';
-import { Decoder, Encoder } from '@tsdi/common';
-import { HybirdTransport, TransportOpts, TransportSessionFactory } from '@tsdi/common/transport';
+import { HybirdTransport, TransportOpts } from '@tsdi/common/transport';
 import { EndpointHandler, EndpointOptions } from './EndpointHandler';
 import { RequestContext } from './RequestContext';
 import { SessionOptions } from './Session';
 import { RouteOpts } from './router/router.module';
 import { ContentOptions } from './interceptors/content';
 import { RequestHandler } from './RequestHandler';
+import { ServerTransportSessionFactory } from './transport.session';
 
 
 export interface ProxyOpts {
     proxyIpHeader: string;
     maxIpsCount?: number;
 }
-
-/**
- * transport packet strategy.
- */
-export interface TransportPacketStrategy {
-    /**
-    * encoder
-    */
-    encoder: ProvdierOf<Encoder>;
-    /**
-     * decoder
-     */
-    decoder: ProvdierOf<Decoder>;
-    /**
-     * providers
-     */
-    providers?: ProviderType[]
-}
-
-
-export const TRANSPORT_PACKET_STRATEGIES: Record<string, TransportPacketStrategy> = {};
 
 
 /**
@@ -52,20 +31,16 @@ export interface ServerOpts<TSerOpts = any> extends EndpointOptions<any> {
      * transport session options.
      */
     transportOpts?: TransportOpts;
+    /**
+     * service transport session factory.
+     */
+    sessionFactory?: ProvdierOf<ServerTransportSessionFactory>;
     majorVersion?: number;
     server?: any;
-    /**
-     * transport packet strategy.
-     */
-    strategy?: 'json' | 'asset' | TransportPacketStrategy;
     /**
      * execption handlers
      */
     execptionHandlers?: ClassType<any> | ClassType[];
-    /**
-     * micro service transport session factory.
-     */
-    sessionFactory?: ProvdierOf<TransportSessionFactory>;
     /**
      * send detail error message to client or not. 
      */
@@ -88,12 +63,12 @@ export interface ServerOpts<TSerOpts = any> extends EndpointOptions<any> {
  * microservice.
  */
 @Abstract()
-export abstract class MicroService<TRequest = any, TResponse = any> {
+export abstract class MicroService {
 
     /**
      * micro service handler
      */
-    abstract get handler(): RequestHandler<RequestContext<TRequest, TResponse>>;
+    abstract get handler(): RequestHandler<RequestContext>;
 
     @Runner()
     start() {
@@ -119,19 +94,19 @@ export abstract class MicroService<TRequest = any, TResponse = any> {
  * 微服务
  */
 @Abstract()
-export abstract class Server<TRequest = any, TResponse = any> extends MicroService<TRequest, TResponse> implements HandlerService {
+export abstract class Server extends MicroService implements HandlerService {
 
     /**
      * service endpoint handler.
      */
-    abstract get handler(): EndpointHandler<RequestContext<TRequest, TResponse>, TResponse>;
+    abstract get handler(): EndpointHandler
 
-    useGuards(guards: ProvdierOf<CanActivate<RequestContext<TRequest, TResponse>>> | ProvdierOf<CanActivate<RequestContext<TRequest, TResponse>>>[], order?: number | undefined): this {
+    useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number | undefined): this {
         this.handler.useGuards(guards, order);
         return this;
     }
 
-    useFilters(filter: ProvdierOf<Filter<RequestContext<TRequest, TResponse>, TResponse>> | ProvdierOf<Filter<RequestContext<TRequest, TResponse>, TResponse>>[], order?: number | undefined): this {
+    useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
         this.handler.useFilters(filter, order);
         return this;
     }
@@ -141,7 +116,7 @@ export abstract class Server<TRequest = any, TResponse = any> extends MicroServi
         return this;
     }
 
-    useInterceptors(interceptor: ProvdierOf<Interceptor<RequestContext<TRequest, TResponse>, TResponse>> | ProvdierOf<Interceptor<RequestContext<TRequest, TResponse>, TResponse>>[], order?: number | undefined): this {
+    useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number | undefined): this {
         this.handler.useInterceptors(interceptor, order);
         return this;
     }

@@ -2,8 +2,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
 import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
-import { JsonTransportModule } from '@tsdi/endpoints/json';
+import { EndpointModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
 import { TCP_CLIENT_OPTS, TCP_SERV_INTERCEPTORS, TcpClient, TcpModule, TcpServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -55,24 +54,20 @@ export class TcpService {
     imports: [
         ServerModule,
         LoggerModule,
-        JsonTransportModule,
-        AssetTransportModule,
         ServerEndpointModule,
         TcpModule,
         ClientModule.register({
             transport: 'tcp',
             clientOpts: {
-                strategy: 'json',
                 connectOpts: {
                     port: 2000
                 }
             }
         }),
-        EndpointsModule.register({
+        EndpointModule.register({
             transport: 'tcp',
             microservice: true,
             serverOpts: {
-                strategy: 'json',
                 // timeout: 1000,
                 listenOpts: {
                     port: 2000

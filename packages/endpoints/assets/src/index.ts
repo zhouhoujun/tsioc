@@ -5,7 +5,6 @@
 
 export * from './asset.pdr';
 
-export * from './results';
 
 export * from './interceptors';
 // export * from './interceptors.module';

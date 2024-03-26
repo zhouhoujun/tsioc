@@ -3,11 +3,12 @@ import { PipeTransform } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
 import {
     FileAdapter, Incoming, MessageExecption, MimeAdapter, Outgoing, PacketLengthException,
-    ResponsePacket, StatusAdapter, StreamAdapter, TransportSession, isBuffer, toBuffer,
+    ResponsePacket, StatusAdapter, StreamAdapter, isBuffer, toBuffer,
 } from '@tsdi/common/transport';
 import { RequestContext, RequestContextFactory } from '../RequestContext';
 import { ServerOpts } from '../Server';
 import { lastValueFrom } from 'rxjs';
+import { ServerTransportSession } from '../transport.session';
 
 
 
@@ -19,7 +20,7 @@ export class RequestContextImpl<TSocket = any> extends RequestContext<TSocket> {
 
     constructor(
         injector: Injector,
-        readonly session: TransportSession,
+        readonly session: ServerTransportSession,
         readonly request: Incoming,
         readonly response: Outgoing,
         readonly statusAdapter: StatusAdapter | null,
@@ -30,7 +31,7 @@ export class RequestContextImpl<TSocket = any> extends RequestContext<TSocket> {
     ) {
         super(injector, { ...serverOptions, args: request });
 
-        this.setValue(TransportSession, session);
+        this.setValue(ServerTransportSession, session);
         if (!response.id) {
             response.id = request.id
         }
@@ -114,8 +115,7 @@ export class RequestContextImpl<TSocket = any> extends RequestContext<TSocket> {
         } else if (isBuffer(res)) {
             this.body = new TextDecoder().decode(res);
         }
-
-        await lastValueFrom(session.send(this.response));
+        await lastValueFrom(session.send(this));
     }
 
     throwExecption(execption: MessageExecption): Promise<void> {
@@ -128,7 +128,7 @@ export class RequestContextImpl<TSocket = any> extends RequestContext<TSocket> {
         };
         if (!isNil(execption.status)) this.response.status = execption.status;
         this.response.statusText = execption.message;
-        return lastValueFrom(this.session.send(this.response));
+        return lastValueFrom(this.session.send(this));
     }
 
 }
@@ -138,7 +138,7 @@ const abstl = /^\w+:\/\//i;
 
 @Injectable()
 export class RequestContextFactoryImpl implements RequestContextFactory {
-    create<TSocket = any>(injector: Injector, session: TransportSession, request: Incoming, response: Outgoing, options?: ServerOpts<any> | undefined): RequestContext<TSocket> {
+    create<TSocket = any>(injector: Injector, session: ServerTransportSession, request: Incoming, response: Outgoing, options?: ServerOpts<any> | undefined): RequestContext<TSocket> {
         return new RequestContextImpl(injector,
             session,
             request,

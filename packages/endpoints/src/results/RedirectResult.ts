@@ -1,5 +1,5 @@
 import { ResultValue } from '@tsdi/core';
-import { RestfulRequestContext } from '@tsdi/endpoints';
+import { RestfulRequestContext } from '../RestfulRequestContext';
 
 
 /**

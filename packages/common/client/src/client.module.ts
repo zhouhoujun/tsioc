@@ -10,6 +10,7 @@ import { Client } from './Client';
 import { TransportBackend } from './backend';
 import { BodyContentInterceptor } from './interceptors/body';
 import { RestfulRedirector } from './redirector';
+import { ClientTransportSessionFactory } from './session';
 
 /**
  * Client module config.
@@ -171,7 +172,16 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
                         if (opts.backend || backend) {
                             opts.providers.push(toProvider(TransportBackend, opts.backend || backend))
                         }
-
+                        if (opts.timeout) {
+                            if (opts.transportOpts) {
+                                opts.transportOpts.timeout = opts.timeout;
+                            } else {
+                                opts.transportOpts = { timeout: opts.timeout };
+                            }
+                        }
+                        if (opts.sessionFactory) {
+                            opts.providers.push(toProvider(ClientTransportSessionFactory, opts.sessionFactory))
+                        }
                         return opts;
                     }
                 }))
@@ -192,6 +202,17 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
 
                     if (opts.backend || backend) {
                         opts.providers.push(toProvider(TransportBackend, opts.backend || backend))
+                    }
+
+                    if (opts.timeout) {
+                        if (opts.transportOpts) {
+                            opts.transportOpts.timeout = opts.timeout;
+                        } else {
+                            opts.transportOpts = { timeout: opts.timeout };
+                        }
+                    }
+                    if (opts.sessionFactory) {
+                        opts.providers.push(toProvider(ClientTransportSessionFactory, opts.sessionFactory))
                     }
 
                     opts.providers.push({ provide: clientOptsToken, useExisting: token });

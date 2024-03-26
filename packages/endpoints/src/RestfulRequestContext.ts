@@ -1,7 +1,8 @@
 import { Abstract, Injector } from '@tsdi/ioc';
-import { TransportSession, Incoming, Outgoing, encodeUrl, escapeHtml, ctype } from '@tsdi/common/transport';
+import { Incoming, Outgoing, encodeUrl, escapeHtml, ctype } from '@tsdi/common/transport';
 import { RequestContext } from './RequestContext';
 import { ServerOpts } from './Server';
+import { ServerTransportSession } from './transport.session';
 
 /**
  * abstract Restful request context.
@@ -9,12 +10,9 @@ import { ServerOpts } from './Server';
  * 支持状态的请求上下文
  */
 @Abstract()
-export abstract class RestfulRequestContext<TServOpts extends ServerOpts = ServerOpts, TStatus = any> extends RequestContext<TServOpts, TStatus> {
+export abstract class RestfulRequestContext<TSocket = any, TOptions extends ServerOpts = ServerOpts, TStatus = any> extends RequestContext<TSocket, TOptions, TStatus> {
 
-    abstract get serverOptions(): TServOpts;
-
-    abstract get socket(): any;
-
+    abstract get socket(): TSocket;
 
     /**
      * Get WHATWG parsed URL.
@@ -175,5 +173,5 @@ export abstract class RestfulRequestContextFactory {
      * @param response 
      * @param options 
      */
-    abstract create(injector: Injector, session: TransportSession, request: Incoming, response: Outgoing, options: ServerOpts): RestfulRequestContext;
+    abstract create(injector: Injector, session: ServerTransportSession, request: Incoming, response: Outgoing, options: ServerOpts): RestfulRequestContext;
 }

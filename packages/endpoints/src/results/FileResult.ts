@@ -1,8 +1,8 @@
 import { isString } from '@tsdi/ioc';
 import { ApplicationContext, ResultValue } from '@tsdi/core';
 import { IStream } from '@tsdi/common/transport';
-import { RestfulRequestContext } from '@tsdi/endpoints';
 import { Buffer } from 'buffer';
+import { RestfulRequestContext } from '../RestfulRequestContext';
 
 /**
  * controller method return result type of file.

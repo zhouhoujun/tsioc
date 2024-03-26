@@ -1,43 +1,86 @@
-// import { Injectable, Injector, promisify } from '@tsdi/ioc';
-// import { Decoder, Encoder, TransportRequest } from '@tsdi/common';
-// import { IDuplexStream, Packet, StreamAdapter, TransportOpts, TransportSessionFactory } from '@tsdi/common/transport';
-// import { EventTransportSession } from '../transport.session';
+import { EMPTY, Injectable, Injector, promisify } from '@tsdi/ioc';
+import { Decoder, Encoder, TransportRequest } from '@tsdi/common';
+import { IDuplexStream, TransportOpts, ev, isBuffer } from '@tsdi/common/transport';
+import { ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { ServerTransportSession, ServerTransportSessionFactory } from '../transport.session';
+import { Observable, from, fromEvent, map, takeUntil } from 'rxjs';
+import { RequestContext } from '../RequestContext';
+
+export class ClientDuplexTransportSession extends ClientTransportSession<IDuplexStream, Buffer> {
+
+    protected msgEvent = ev.DATA;
+    constructor(
+        readonly socket: IDuplexStream,
+        readonly encodings: Encoder[],
+        readonly decodings: Decoder[],
+        readonly options: TransportOpts,
+
+    ) {
+        super()
+    }
+
+    sendMessage(data: TransportRequest<any>, msg: Buffer): Observable<Buffer> {
+        return from(promisify<Buffer, void>(this.socket.write, this.socket)(msg)).pipe(map(r => msg))
+    }
+    handMessage(): Observable<Buffer> {
+        return fromEvent(this.socket, this.msgEvent, (chunk) => isBuffer(chunk) ? chunk : Buffer.from(chunk)).pipe(takeUntil(this.destroy$));
+    }
+
+    override async destroy(): Promise<void> {
+        super.destroy();
+        this.socket.destroy?.();
+    }
+
+}
+
+
+@Injectable()
+export class ClientDuplexTransportSessionFactory implements ClientTransportSessionFactory<IDuplexStream> {
+
+    constructor() { }
+
+    create(injector: Injector, socket: IDuplexStream, options: TransportOpts): ClientDuplexTransportSession {
+        return new ClientDuplexTransportSession(socket, injector.get(options.encoding!, EMPTY), injector.get(options.decodings!, EMPTY), options);
+    }
+
+}
 
 
 
-// export class DuplexTransportSession extends EventTransportSession<IDuplexStream> {
+export class DuplexTransportSession extends ServerTransportSession<IDuplexStream, Buffer> {
 
-//     protected getTopic(msg: string | Buffer | Uint8Array): string {
-//         return '__DEFALUT_TOPIC__'
-//     }
-//     protected getPayload(msg: string | Buffer | Uint8Array): string | Buffer | Uint8Array {
-//         return msg;
-//     }
+    protected msgEvent = ev.DATA;
+    constructor(
+        readonly socket: IDuplexStream,
+        readonly encodings: Encoder[],
+        readonly decodings: Decoder[],
+        readonly options: TransportOpts,
 
-//     protected override async beforeRequest(packet: TransportRequest<any>): Promise<void> {
-//         // do nothing
-//     }
+    ) {
+        super()
+    }
 
-//     protected override write(data: Buffer, packet: Packet): Promise<void> {
-//         return promisify<Buffer, void>(this.socket.write, this.socket)(data);
-//     }
+    sendMessage(data: RequestContext<any, any>, msg: Buffer): Observable<Buffer> {
+        return from(promisify<Buffer, void>(this.socket.write, this.socket)(msg)).pipe(map(r => msg))
+    }
 
-//     override async destroy(): Promise<void> {
-//         this.socket.destroy?.();
-//     }
-// }
+    handMessage(): Observable<Buffer> {
+        return fromEvent(this.socket, this.msgEvent, (chunk) => isBuffer(chunk) ? chunk : Buffer.from(chunk)).pipe(takeUntil(this.destroy$));
+    }
 
-// @Injectable()
-// export class DuplexTransportSessionFactory implements TransportSessionFactory<IDuplexStream> {
+    override async destroy(): Promise<void> {
+        super.destroy();
+        this.socket.destroy?.();
+    }
+}
 
-//     constructor(
-//         readonly injector: Injector,
-//         private streamAdapter: StreamAdapter,
-//         private encoder: Encoder,
-//         private decoder: Decoder) { }
+@Injectable()
+export class DuplexTransportSessionFactory implements ServerTransportSessionFactory<IDuplexStream> {
 
-//     create(socket: IDuplexStream, options: TransportOpts): DuplexTransportSession {
-//         return new DuplexTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
-//     }
+    constructor() { }
 
-// }
+    create(injector: Injector, socket: IDuplexStream, options: TransportOpts): DuplexTransportSession {
+        return new DuplexTransportSession(socket, injector.get(options.encoding!, EMPTY), injector.get(options.decodings!, EMPTY), options);
+    }
+
+}

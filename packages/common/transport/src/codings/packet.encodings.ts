@@ -8,6 +8,59 @@ import { StreamAdapter, isBuffer } from '../StreamAdapter';
 import { Transport } from '../protocols';
 
 
+
+@Abstract()
+export abstract class PacketIdGenerator {
+    abstract getPacketId(): string | number;
+    abstract readId(raw: Buffer): string | number;
+    abstract get idLenght(): number;
+}
+
+@Injectable()
+export class PacketNumberIdGenerator implements PacketIdGenerator {
+
+    private allocator?: NumberAllocator;
+    private last?: number;
+
+    readonly idLenght = 2;
+
+    getPacketId(): string | number {
+        if (!this.allocator) {
+            this.allocator = new NumberAllocator(1, 65536)
+        }
+        const id = this.allocator.alloc();
+        if (!id) {
+            throw new Execption('alloc stream id failed');
+        }
+        this.last = id;
+        return id;
+    }
+
+    readId(raw: Buffer): string | number {
+        return raw.readInt16BE(0);
+    }
+
+
+}
+
+@Injectable()
+export class PacketUUIdGenerator implements PacketIdGenerator {
+
+    readonly idLenght = 36;
+    constructor(private uuid: UuidGenerator) { }
+
+    getPacketId(): string | number {
+        return this.uuid.generate();
+    }
+
+    readId(raw: Buffer): string | number {
+        return new TextDecoder().decode(raw.subarray(0, this.idLenght));
+    }
+
+}
+
+
+
 @Injectable()
 export class PacketEncodeBackend implements Backend<PacketData, Buffer, InputContext> {
 
@@ -29,6 +82,16 @@ export abstract class PacketEncodeHandler implements Handler<PacketData, Buffer,
 }
 
 export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer, InputContext>[]>('PACKET_ENCODE_INTERCEPTORS');
+
+
+@Injectable()
+export class PacketEncoder extends Encoder<PacketData, Buffer> {
+
+    constructor(readonly handler: PacketEncodeHandler) {
+        super()
+    }
+}
+
 
 @Injectable()
 export class PacketEncodeInterceptingHandler extends InterceptingHandler<any, Buffer, InputContext>  {
@@ -250,66 +313,6 @@ export class LargePayloadEncodeInterceptor implements Interceptor<PacketData, Bu
             )
     }
 
-}
-
-
-@Abstract()
-export abstract class PacketIdGenerator {
-    abstract getPacketId(): string | number;
-    abstract readId(raw: Buffer): string | number;
-    abstract get idLenght(): number;
-}
-
-@Injectable()
-export class PacketNumberIdGenerator implements PacketIdGenerator {
-
-    private allocator?: NumberAllocator;
-    private last?: number;
-
-    readonly idLenght = 2;
-
-    getPacketId(): string | number {
-        if (!this.allocator) {
-            this.allocator = new NumberAllocator(1, 65536)
-        }
-        const id = this.allocator.alloc();
-        if (!id) {
-            throw new Execption('alloc stream id failed');
-        }
-        this.last = id;
-        return id;
-    }
-
-    readId(raw: Buffer): string | number {
-        return raw.readInt16BE(0);
-    }
-
-
-}
-
-@Injectable()
-export class PacketUUIdGenerator implements PacketIdGenerator {
-
-    readonly idLenght = 36;
-    constructor(private uuid: UuidGenerator) { }
-
-    getPacketId(): string | number {
-        return this.uuid.generate();
-    }
-
-    readId(raw: Buffer): string | number {
-        return new TextDecoder().decode(raw.subarray(0, this.idLenght));
-    }
-
-}
-
-
-@Injectable()
-export class PacketEncoder extends Encoder<PacketData, Buffer> {
-
-    constructor(readonly handler: PacketEncodeHandler) {
-        super()
-    }
 }
 
 export interface PacketOptions {
