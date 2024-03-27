@@ -41,6 +41,14 @@ export class DefaultInjector extends Injector {
     protected records: Map<Token, FactoryRecord>;
     private isAlias?: (token: Token) => boolean;
 
+    private _event?: InjectorEvent | null;
+    get event(): InjectorEvent | null {
+        if (this._event === undefined) {
+            this._event = this.get(InjectorEvent, null);
+        }
+        return this._event;
+    }
+
     constructor(providers: ProviderType[] = EMPTY, readonly parent?: Injector, readonly scope?: InjectorScope) {
         super();
         this.records = new Map();
@@ -198,7 +206,7 @@ export class DefaultInjector extends Injector {
      * @param def 
      */
     protected onRegister(def: Class) {
-        this.get(InjectorEvent, null)?.emit('register', def);
+        this.event?.emit('register', def);
     }
 
     /**
@@ -206,7 +214,7 @@ export class DefaultInjector extends Injector {
      * @param def 
      */
     protected onRegistered(def: Class) {
-        this.get(InjectorEvent, null)?.emit('registered', def);
+        this.event?.emit('registered', def);
 
     }
 
@@ -216,7 +224,7 @@ export class DefaultInjector extends Injector {
      * @param token 
      */
     protected onResolved(value: any, token?: Token): void {
-        this.get(InjectorEvent, null)?.emit('resolved', value, token);
+        this.event?.emit('resolved', value, token);
     }
 
     /**
@@ -518,6 +526,7 @@ export class DefaultInjector extends Injector {
         }
         this._plat = null!;
         this.isAlias = null!;
+        if (this._event) this._event = null!;
         (this as any).parent = null!;
     }
 }
