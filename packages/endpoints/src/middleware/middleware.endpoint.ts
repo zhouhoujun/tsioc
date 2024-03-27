@@ -1,4 +1,4 @@
-import { Injector, InvocationContext, ProvdierOf, Token, createContext, isInjector, refl } from '@tsdi/ioc';
+import { Injector, InvocationContext, ProvdierOf, Token, createContext, refl } from '@tsdi/ioc';
 import { HandlerService, Backend } from '@tsdi/core';
 import { MiddlewareLike } from './middleware';
 import { MiddlewareService } from './middleware.service';
@@ -60,5 +60,5 @@ export class MiddlewareHandler<TInput extends RequestContext = any, TOptions ext
  * @returns 
  */
 export function createMiddlewareEndpoint<TInput extends RequestContext>(context: Injector | InvocationContext, options: MiddlewareHandlerOptions<TInput>): MiddlewareHandler<TInput> {
-    return new MiddlewareHandler(isInjector(context) ? createContext(context) : context, options)
+    return new MiddlewareHandler(createContext(context, options), options)
 }

@@ -1,6 +1,6 @@
 import {
     EMPTY, InjectFlags, Injector, InvokerOptions, ProvdierOf, StaticProvider,
-    Token, InvocationContext, createContext, isClassType, isInjector, ArgumentExecption, isToken, isArray, toProvider
+    Token, InvocationContext, createContext, isClassType, ArgumentExecption, isToken, isArray, toProvider
 } from '@tsdi/ioc';
 import { CanActivate, GUARDS_TOKEN, GuardsService } from '../guard';
 import { INTERCEPTORS_TOKEN, Interceptor, InterceptorService } from '../Interceptor';
@@ -287,7 +287,7 @@ export function createHandler<TInput, TOutput>(context: Injector | InvocationCon
     } else {
         options = arg as ConfigableHandlerOptions<TInput>;
     }
-    return new ConfigableHandler(isInjector(context) ? createContext(context) : context, options)
+    return new ConfigableHandler(createContext(context, options), options)
 }
 
 

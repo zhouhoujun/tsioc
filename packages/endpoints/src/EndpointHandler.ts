@@ -1,4 +1,4 @@
-import { Execption, Injector, InvocationContext, Token, createContext, isInjector } from '@tsdi/ioc';
+import { Execption, Injector, InvocationContext, Token, createContext } from '@tsdi/ioc';
 import { ConfigableHandler, HandlerService, InvocationOptions } from '@tsdi/core';
 import { ForbiddenExecption } from '@tsdi/common/transport';
 import { RequestContext } from './RequestContext';
@@ -44,6 +44,6 @@ export interface EndpointOptions<T extends RequestContext = RequestContext, TArg
  * @returns 
  */
 export function createEndpoint<TInput extends RequestContext>(context: Injector | InvocationContext, options: EndpointOptions<TInput>): EndpointHandler<TInput> {
-    return new EndpointHandler(isInjector(context) ? createContext(context, options) : context, options)
+    return new EndpointHandler(createContext(context, options), options)
 }
 

@@ -11,6 +11,7 @@ import { TransportBackend } from './backend';
 import { BodyContentInterceptor } from './interceptors/body';
 import { RestfulRedirector } from './redirector';
 import { ClientTransportSessionFactory } from './session';
+import { ClientDuplexTransportSessionFactory } from './duplex.session';
 
 /**
  * Client module config.
@@ -83,6 +84,7 @@ export interface ClientTokenOpts {
  */
 @Module({
     providers: [
+        ClientDuplexTransportSessionFactory,
         BodyContentInterceptor,
         RestfulRedirector
     ]

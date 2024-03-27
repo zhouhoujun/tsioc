@@ -15,7 +15,7 @@ import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, SetupServices, Ser
 import { EndpointTypedRespond } from './typed.respond';
 import { LoggerInterceptor, JsonInterceptor, ContentInterceptor, BodyparserInterceptor } from './interceptors';
 import { ServerTransportSessionFactory } from './transport.session';
-import { ClientDuplexTransportSessionFactory, DuplexTransportSessionFactory } from './impl/duplex.session';
+import { DuplexTransportSessionFactory } from './impl/duplex.session';
 
 
 /**
@@ -29,7 +29,6 @@ import { ClientDuplexTransportSessionFactory, DuplexTransportSessionFactory } fr
     ],
     providers: [
         SetupServices,
-        ClientDuplexTransportSessionFactory,
         DuplexTransportSessionFactory,
         // TopicTransportSessionFactory,
 
