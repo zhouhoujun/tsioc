@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
-import { CLIENT_MODULES, ClientDuplexTransportSessionFactory, ClientOpts, TransportBackend } from '@tsdi/common/client';
+import { CLIENT_MODULES, ClientDuplexTransportSessionFactory, ClientOpts } from '@tsdi/common/client';
 import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';
 import { TCP_CLIENT_DECODINGS, TCP_CLIENT_ENCODINGS, TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TCP_MICROSERVICE_CLIENT_DECODINGS, TCP_MICROSERVICE_CLIENT_ENCODINGS } from './client/options';
@@ -30,7 +30,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                 defaultOpts: {
                     interceptorsToken: TCP_CLIENT_INTERCEPTORS,
                     filtersToken: TCP_CLIENT_FILTERS,
-                    backend: TransportBackend,
                     transportOpts: {
                         delimiter: '#',
                         encodings: TCP_MICROSERVICE_CLIENT_ENCODINGS,
@@ -52,7 +51,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                 defaultOpts: {
                     interceptorsToken: TCP_CLIENT_INTERCEPTORS,
                     filtersToken: TCP_CLIENT_FILTERS,
-                    backend: TransportBackend,
                     transportOpts: {
                         delimiter: '#',
                         encodings: TCP_CLIENT_ENCODINGS,

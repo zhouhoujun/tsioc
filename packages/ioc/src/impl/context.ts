@@ -47,7 +47,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     constructor(
         injector: Injector,
         options: TargetInvokeArguments<T> = EMPTY_OBJ,
-        ) {
+    ) {
         super();
         this._refs = [];
         this.isResolve = options.isResolve == true;

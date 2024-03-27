@@ -170,10 +170,8 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
                 providers.push(toFactory(clientOptsToken, options.clientOpts!, {
                     init: (clientOpts: ClientOpts) => {
 
-                        const opts = { globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS, ...lang.deepClone(defaultOpts), ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] } as ClientOpts & { providers: ProviderType[] };
-                        if (opts.backend || backend) {
-                            opts.providers.push(toProvider(TransportBackend, opts.backend || backend))
-                        }
+                        const opts = { backend: backend?? TransportBackend, globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS, ...lang.deepClone(defaultOpts), ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] } as ClientOpts & { providers: ProviderType[] };
+                 
                         if (opts.timeout) {
                             if (opts.transportOpts) {
                                 opts.transportOpts.timeout = opts.timeout;
@@ -181,7 +179,7 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
                                 opts.transportOpts = { timeout: opts.timeout };
                             }
                         }
-                        if (opts.sessionFactory) {
+                        if (opts.sessionFactory && opts.sessionFactory !== ClientTransportSessionFactory) {
                             opts.providers.push(toProvider(ClientTransportSessionFactory, opts.sessionFactory))
                         }
                         return opts;
@@ -200,11 +198,7 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
             toFactory(token, options.clientOpts!, {
                 init: (clientOpts: ClientOpts, injector: Injector) => {
                     const { defaultOpts, backend, clientOptsToken } = injector.get(moduleOptsToken);
-                    const opts = { ...lang.deepClone(defaultOpts), ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
-
-                    if (opts.backend || backend) {
-                        opts.providers.push(toProvider(TransportBackend, opts.backend || backend))
-                    }
+                    const opts = { backend: backend ?? TransportBackend, ...lang.deepClone(defaultOpts), ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
 
                     if (opts.timeout) {
                         if (opts.transportOpts) {
@@ -213,7 +207,7 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
                             opts.transportOpts = { timeout: opts.timeout };
                         }
                     }
-                    if (opts.sessionFactory) {
+                    if (opts.sessionFactory && opts.sessionFactory !== ClientTransportSessionFactory) {
                         opts.providers.push(toProvider(ClientTransportSessionFactory, opts.sessionFactory))
                     }
 

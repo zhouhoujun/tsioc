@@ -3,6 +3,8 @@ import { InjectFlags, Token } from './tokens';
 import { Injector, OptionFlags } from './injector';
 import { isPlainObject } from './utils/obj';
 import { isArray, isBoolean, isDefined, isType } from './utils/chk';
+import { ArgumentExecption } from './execption';
+import { getClassName } from './utils/lang';
 
 /**
  * provide for {@link Injector }.
@@ -272,6 +274,7 @@ export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: bool
     };
 
     if (isType(useOf) && (isClass ? isClass(useOf) : true)) {
+        if (provide == useOf) throw new ArgumentExecption(getClassName(provide) + ': provide is equals to provider')
         return { ...options, provide, useClass: useOf as ClassType };
     } else if (isPlainObject(useOf) && (isDefined((useOf as UseClass<T>).useClass)
         || isDefined((useOf as UseValue<T>).useValue)

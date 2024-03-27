@@ -2,7 +2,7 @@ import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { Application, ApplicationContext, Payload } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { TransportResponse } from '@tsdi/common';
-import { ClientModule } from '@tsdi/common/client';
+import { ClientCodingsModule, ClientModule } from '@tsdi/common/client';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { RequestBody, RequestParam, RequestPath, RouteMapping, Handle, MicroServRouterModule, EndpointModule, ContentInterceptor, JsonInterceptor, BodyparserInterceptor, RedirectResult } from '@tsdi/endpoints';
@@ -100,6 +100,7 @@ const ipcpath = path.join(__dirname, 'myipctmp')
         LoggerModule,
         // AssetTransportModule,
         ServerEndpointModule,
+        ClientCodingsModule,
         TcpModule,
         ClientModule.register({
             transport: 'tcp',
