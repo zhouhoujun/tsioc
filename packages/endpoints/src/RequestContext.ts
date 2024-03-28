@@ -7,7 +7,7 @@ import {
 } from '@tsdi/common/transport';
 import { ServerOpts } from './Server';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
-import { ServerTransportSession } from './transport.session';
+import { TransportSession } from './transport.session';
 
 /**
  * abstract request context.
@@ -26,7 +26,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
     /**
      * transport session
      */
-    abstract get session(): ServerTransportSession<TSocket>;
+    abstract get session(): TransportSession<TSocket>;
 
     /**
      * mime adapter.
@@ -699,7 +699,7 @@ export abstract class RequestContextFactory<TSocket = any> {
      * @param response 
      * @param options 
      */
-    abstract create(injector: Injector, session: ServerTransportSession, request: Incoming, response: Outgoing, options?: ServerOpts): RequestContext<TSocket>;
+    abstract create(injector: Injector, session: TransportSession, request: Incoming, response: Outgoing, options?: ServerOpts): RequestContext<TSocket>;
 }
 
 

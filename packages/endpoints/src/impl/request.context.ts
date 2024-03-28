@@ -8,7 +8,7 @@ import {
 import { RequestContext, RequestContextFactory } from '../RequestContext';
 import { ServerOpts } from '../Server';
 import { lastValueFrom } from 'rxjs';
-import { ServerTransportSession } from '../transport.session';
+import { TransportSession } from '../transport.session';
 
 
 
@@ -20,7 +20,7 @@ export class RequestContextImpl<TSocket = any> extends RequestContext<TSocket> {
 
     constructor(
         injector: Injector,
-        readonly session: ServerTransportSession,
+        readonly session: TransportSession,
         readonly request: Incoming,
         readonly response: Outgoing,
         readonly statusAdapter: StatusAdapter | null,
@@ -31,7 +31,7 @@ export class RequestContextImpl<TSocket = any> extends RequestContext<TSocket> {
     ) {
         super(injector, { ...serverOptions, args: request });
 
-        this.setValue(ServerTransportSession, session);
+        this.setValue(TransportSession, session);
         if (!response.id) {
             response.id = request.id
         }
@@ -138,7 +138,7 @@ const abstl = /^\w+:\/\//i;
 
 @Injectable()
 export class RequestContextFactoryImpl implements RequestContextFactory {
-    create<TSocket = any>(injector: Injector, session: ServerTransportSession, request: Incoming, response: Outgoing, options?: ServerOpts<any> | undefined): RequestContext<TSocket> {
+    create<TSocket = any>(injector: Injector, session: TransportSession, request: Incoming, response: Outgoing, options?: ServerOpts<any> | undefined): RequestContext<TSocket> {
         return new RequestContextImpl(injector,
             session,
             request,

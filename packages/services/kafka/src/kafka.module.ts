@@ -10,7 +10,7 @@ import { KafkaServer } from './server/server';
 import { KAFKA_SERV_FILTERS, KAFKA_SERV_GUARDS, KAFKA_SERV_INTERCEPTORS, KAFKA_SERV_OPTS } from './server/options';
 import { KafkaEndpointHandler } from './server/handler';
 import { KafkaPatternFormatter, KafkaRouteMatcher } from './pattern';
-import { KafkaTransportSessionFactory } from './kafka.session';
+import { KafkaTransportSessionFactory } from './server/kafka.session';
 
 
 const defaultMaxSize = 5242880; //1024 * 1024 * 5;

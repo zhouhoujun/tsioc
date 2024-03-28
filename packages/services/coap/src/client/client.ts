@@ -1,6 +1,6 @@
-import { TransportRequest, TransportSession, TransportSessionFactory } from '@tsdi/common';
+import { TransportEvent, TransportRequest } from '@tsdi/common';
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
-import { Client } from '@tsdi/common/client';
+import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { COAP_CLIENT_OPTS, CoapClientOpts } from './options';
 import { CoapHandler } from './handler';
@@ -11,9 +11,9 @@ import { defaultMaxSize } from '../trans';
  * COAP Client.
  */
 @Injectable()
-export class CoapClient extends Client<TransportRequest, string> {
+export class CoapClient extends Client<TransportRequest, TransportEvent<any, string>> {
     private socket?: Socket | null;
-    private session?: TransportSession | null;
+    private session?: ClientTransportSession | null;
 
     constructor(
         readonly handler: CoapHandler,
@@ -33,7 +33,8 @@ export class CoapClient extends Client<TransportRequest, string> {
             if (!transportOpts.host) {
                 transportOpts.host = new URL(this.options.url!).host;
             }
-            this.session = this.handler.injector.get(TransportSessionFactory).create(this.socket, this.options.transportOpts!);
+            const injector = this.handler.injector;
+            this.session = this.handler.injector.get(ClientTransportSessionFactory).create(injector, this.socket, this.options.transportOpts!);
         }
     }
 
@@ -44,7 +45,7 @@ export class CoapClient extends Client<TransportRequest, string> {
 
     protected initContext(context: InvocationContext<any>): void {
         context.setValue(Client, this);
-        context.setValue(TransportSession, this.session)
+        context.setValue(ClientTransportSession, this.session)
     }
 
 

@@ -1,6 +1,6 @@
 import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
 import { TransportRequest, Pattern, LOCALHOST, RequestInitOpts } from '@tsdi/common';
-import { TransportSession, ev } from '@tsdi/common/transport';
+import { ev } from '@tsdi/common/transport';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
@@ -80,7 +80,7 @@ export class TcpClient extends Client<TransportRequest> {
 
     protected override initContext(context: InvocationContext): void {
         context.setValue(Client, this);
-        context.setValue(TransportSession, this._session);
+        context.setValue(ClientTransportSession, this._session);
     }
 
     protected override createRequest(pattern: Pattern, options: RequestInitOpts): TransportRequest<any> {

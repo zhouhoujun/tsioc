@@ -3,7 +3,7 @@ import {
     RequestOptions, HeadersLike, PUT, GET, DELETE, HEAD, JSONP, PATCH, POST,
     TransportParams, Pattern, patternToPath, HttpRequestMethod, RequestInitOpts
 } from '@tsdi/common';
-import { ev, TransportSession } from '@tsdi/common/transport';
+import { ev } from '@tsdi/common/transport';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpRequestInit } from '@tsdi/common/http';
 import { Observable, of } from 'rxjs';
@@ -106,7 +106,7 @@ export class Http extends Client<HttpRequest> {
 
     protected override initContext(context: InvocationContext<any>): void {
         context.setValue(Client, this);
-        context.setValue(TransportSession, this.session);
+        context.setValue(ClientTransportSession, this.session);
     }
 
     protected override createParams(params: string | readonly [string, string | number | boolean][] | Record<string, string | number | boolean | readonly (string | number | boolean)[]>): TransportParams {

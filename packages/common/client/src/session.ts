@@ -1,10 +1,13 @@
 import { Abstract, Injector } from '@tsdi/ioc';
 import { InputContext, TransportEvent, TransportRequest } from '@tsdi/common';
-import { TransportOpts, TransportSession } from '@tsdi/common/transport';
+import { TransportOpts, BaseTransportSession } from '@tsdi/common/transport';
 import { Observable, Subject, finalize, first, merge, mergeMap, takeUntil } from 'rxjs';
 
+/**
+ * transport session for client.
+ */
 @Abstract()
-export abstract class ClientTransportSession<TSocket = any, TMsg = any> extends TransportSession<TSocket, TransportRequest, TransportEvent, TMsg> {
+export abstract class ClientTransportSession<TSocket = any, TMsg = any> extends BaseTransportSession<TSocket, TransportRequest, TransportEvent, TMsg> {
 
     protected destroy$ = new Subject<void>;
 
@@ -27,7 +30,7 @@ export abstract class ClientTransportSession<TSocket = any, TMsg = any> extends 
 }
 
 /**
- * transport session factory.
+ * client transport session factory.
  */
 @Abstract()
 export abstract class ClientTransportSessionFactory<TSocket = any, TMsg = any> {

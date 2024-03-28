@@ -1,4 +1,4 @@
-import { Abstract, Injector, Token } from '@tsdi/ioc';
+import { Abstract, Token } from '@tsdi/ioc';
 import { TransportErrorResponse, TransportEvent, HeadersLike, Encoder, Decoder, InputContext } from '@tsdi/common';
 import { Observable, finalize, mergeMap, of, share } from 'rxjs';
 import { HybirdTransport, Transport } from './protocols';
@@ -72,13 +72,10 @@ export abstract class ResponseEventFactory<TResponse = TransportEvent, TErrorRes
     abstract createResponse(options: { url?: string; ok?: boolean; headers?: HeadersLike; status?: TStatus; statusText?: string; statusMessage?: string; body?: any; payload?: any; }): TResponse;
 }
 
-
-
 /**
- * transport session.
+ * base transport session.
  */
-@Abstract()
-export abstract class TransportSession<TSocket = any, TInput = any, TOutput = any, TMsg = any>  {
+export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput = any, TMsg = any> {
     /**
      * socket.
      */

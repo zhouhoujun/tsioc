@@ -7,7 +7,7 @@ import { SessionOptions } from './Session';
 import { RouteOpts } from './router/router.module';
 import { ContentOptions } from './interceptors/content';
 import { RequestHandler } from './RequestHandler';
-import { ServerTransportSessionFactory } from './transport.session';
+import { TransportSessionFactory } from './transport.session';
 
 
 export interface ProxyOpts {
@@ -34,7 +34,7 @@ export interface ServerOpts<TSerOpts = any> extends EndpointOptions<any> {
     /**
      * service transport session factory.
      */
-    sessionFactory?: ProvdierOf<ServerTransportSessionFactory>;
+    sessionFactory?: ProvdierOf<TransportSessionFactory>;
     majorVersion?: number;
     server?: any;
     /**

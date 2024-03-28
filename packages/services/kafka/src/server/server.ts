@@ -1,9 +1,9 @@
 import { Injectable, Inject, isFunction } from '@tsdi/ioc';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { PatternFormatter } from '@tsdi/common';
-import { Server, MircoServRouters, RequestHandler, ServerTransportSessionFactory, RequestContext, EndpointHandler, ServerOpts } from '@tsdi/endpoints';
+import { Server, MircoServRouters, RequestHandler, TransportSessionFactory, RequestContext, EndpointHandler, ServerOpts } from '@tsdi/endpoints';
 import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
-import { KafkaTransportSession } from '../kafka.session';
+import { KafkaTransportSession } from './kafka.session';
 import { DEFAULT_BROKERS, KafkaTransportOpts } from '../const';
 import { KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
 import { KafkaEndpointHandler } from './handler';
@@ -112,7 +112,7 @@ export class KafkaServer extends Server<RequestContext, KafkaServerOptions> {
             serverSide: true
         } as KafkaTransportOpts;
 
-        const session = this._session = injector.get(ServerTransportSessionFactory).create(injector, { consumer, producer }, transportOpts) as KafkaTransportSession;
+        const session = this._session = injector.get(TransportSessionFactory).create(injector, { consumer, producer }, transportOpts) as KafkaTransportSession;
 
         await session.bindTopics(topics);
 

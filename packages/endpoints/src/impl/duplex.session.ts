@@ -1,13 +1,13 @@
 import { EMPTY, Injectable, Injector, promisify } from '@tsdi/ioc';
 import { Decoder, Encoder } from '@tsdi/common';
 import { IDuplexStream, TransportOpts, ev, isBuffer } from '@tsdi/common/transport';
-import { ServerTransportSession, ServerTransportSessionFactory } from '../transport.session';
+import { TransportSession, TransportSessionFactory } from '../transport.session';
 import { Observable, from, fromEvent, map, takeUntil } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 
 
 
-export class DuplexTransportSession extends ServerTransportSession<IDuplexStream, Buffer> {
+export class DuplexTransportSession extends TransportSession<IDuplexStream, Buffer> {
 
     protected msgEvent = ev.DATA;
     constructor(
@@ -35,7 +35,7 @@ export class DuplexTransportSession extends ServerTransportSession<IDuplexStream
 }
 
 @Injectable()
-export class DuplexTransportSessionFactory implements ServerTransportSessionFactory<IDuplexStream> {
+export class DuplexTransportSessionFactory implements TransportSessionFactory<IDuplexStream> {
 
     constructor() { }
 

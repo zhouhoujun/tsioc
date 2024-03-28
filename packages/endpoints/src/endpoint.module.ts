@@ -14,7 +14,7 @@ import { HybridRouter } from './router/router.hybrid';
 import { REGISTER_SERVICES, SERVER_MODULES, ServerModuleOpts, SetupServices, ServiceModuleOpts, ServiceOpts } from './SetupServices';
 import { EndpointTypedRespond } from './typed.respond';
 import { LoggerInterceptor, JsonInterceptor, ContentInterceptor, BodyparserInterceptor } from './interceptors';
-import { ServerTransportSessionFactory } from './transport.session';
+import { TransportSessionFactory } from './transport.session';
 import { DuplexTransportSessionFactory } from './impl/duplex.session';
 
 
@@ -139,7 +139,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                             }
 
                             if (serverOpts.sessionFactory) {
-                                serverOpts.providers.push(toProvider(ServerTransportSessionFactory, serverOpts.sessionFactory))
+                                serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory))
                             }
 
                             return serverOpts;

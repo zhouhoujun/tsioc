@@ -6,7 +6,7 @@ import * as http2 from 'http2';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
 import { HttpServerOpts } from './options';
-import { RestfulRequestContext, RestfulRequestContextFactory, ServerOpts, ServerTransportSession, Throwable } from '@tsdi/endpoints';
+import { RestfulRequestContext, RestfulRequestContextFactory, ServerOpts, TransportSession, Throwable } from '@tsdi/endpoints';
 
 
 export type HttpServRequest = http.IncomingMessage | http2.Http2ServerRequest;
@@ -23,7 +23,7 @@ export class HttpContext extends RestfulRequestContext<TLSSocket | Socket, HttpS
 
     constructor(
         injector: Injector,
-        readonly session: ServerTransportSession,
+        readonly session: TransportSession,
         readonly request: Incoming<HttpServRequest>,
         readonly response: Outgoing<HttpServResponse>,
         readonly statusAdapter: StatusAdapter | null,
@@ -440,7 +440,7 @@ export class HttpContext extends RestfulRequestContext<TLSSocket | Socket, HttpS
 @Injectable()
 export class HttpAssetContextFactory implements RestfulRequestContextFactory {
 
-    create(injector: Injector, session: ServerTransportSession, incoming: Incoming, outgoing: Outgoing, options: HttpServerOpts): HttpContext {
+    create(injector: Injector, session: TransportSession, incoming: Incoming, outgoing: Outgoing, options: HttpServerOpts): HttpContext {
         return new HttpContext(injector, session,
             incoming,
             outgoing,

@@ -1,24 +1,25 @@
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
-import { LOCALHOST, TransportRequest, TransportSession, ev } from '@tsdi/common';
-import { Client } from '@tsdi/common/client';
+import { LOCALHOST, TransportRequest } from '@tsdi/common';
+import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import Redis from 'ioredis';
 import { RedisHandler } from './handler';
 import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
 import { RedisTransportSessionFactory, ReidsTransport } from '../redis.session';
+import { ev } from '@tsdi/common/transport';
 
 /**
  * Redis Client.
  */
 @Injectable()
-export class RedisClient extends Client<TransportRequest, number> {
+export class RedisClient extends Client<TransportRequest> {
 
     @InjectLog()
     private logger!: Logger;
 
     private subscriber: Redis | null = null;
     private publisher: Redis | null = null;
-    private _session?: TransportSession<ReidsTransport>;
+    private _session?: ClientTransportSession<ReidsTransport>;
 
     constructor(
         readonly handler: RedisHandler,
@@ -59,7 +60,7 @@ export class RedisClient extends Client<TransportRequest, number> {
             transportOpts.transport = 'redis';
         }
 
-        this._session = this.handler.injector.get(RedisTransportSessionFactory).create({
+        this._session = this.handler.injector.get(ClientTransportSessionFactory).create(this.handler.injector, {
             subscriber: this.subscriber,
             publisher: this.publisher
         }, transportOpts)
@@ -68,7 +69,7 @@ export class RedisClient extends Client<TransportRequest, number> {
 
     protected override initContext(context: InvocationContext<any>): void {
         context.setValue(Client, this);
-        context.setValue(TransportSession, this._session);
+        context.setValue(ClientTransportSession, this._session);
     }
 
     protected createRetryStrategy(options: RedisClientOpts): (times: number) => undefined | number {

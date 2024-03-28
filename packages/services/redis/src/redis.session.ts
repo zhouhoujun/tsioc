@@ -1,6 +1,6 @@
 import { Injectable, Injector, isString } from '@tsdi/ioc';
 import { BadRequestExecption, Packet, ResponsePacket, StreamAdapter, TransportOpts, ev } from '@tsdi/common/transport';
-import { RequestContext, ServerTransportSession, ServerTransportSessionFactory } from '@tsdi/endpoints';
+import { RequestContext, TransportSession, TransportSessionFactory } from '@tsdi/endpoints';
 import { Observable, filter, first, fromEvent, map, merge } from 'rxjs';
 import Redis from 'ioredis';
 import { Encoder, Decoder } from '@tsdi/common';
@@ -13,7 +13,7 @@ export interface ReidsTransport {
 
 const PATTERN_MSG_BUFFER = 'pmessageBuffer';
 
-export class RedisTransportSession extends ServerTransportSession<ReidsTransport, TopicMessage> {
+export class RedisTransportSession extends TransportSession<ReidsTransport, TopicMessage> {
     get socket(): ReidsTransport {
         throw new Error('Method not implemented.');
     }
@@ -150,7 +150,7 @@ export class RedisTransportSession extends ServerTransportSession<ReidsTransport
 }
 
 @Injectable()
-export class RedisTransportSessionFactory implements ServerTransportSessionFactory<ReidsTransport> {
+export class RedisTransportSessionFactory implements TransportSessionFactory<ReidsTransport> {
 
     constructor(
         readonly injector: Injector,

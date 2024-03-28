@@ -1,7 +1,7 @@
 import { EMPTY_OBJ, Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { PatternFormatter } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
-import { MircoServRouters, RequestContext, Server, ServerTransportSession, ServerTransportSessionFactory } from '@tsdi/endpoints';
+import { MircoServRouters, RequestContext, Server, TransportSession, TransportSessionFactory } from '@tsdi/endpoints';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Client, connect } from 'mqtt';
 import { Subscription } from 'rxjs';
@@ -21,7 +21,7 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
 
     private subscribes?: string[];
     private mqtt?: Client | null;
-    private _session?: ServerTransportSession<Client>;
+    private _session?: TransportSession<Client>;
 
     constructor(
         readonly handler: MqttEndpointHandler,
@@ -85,7 +85,7 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
         if (!transportOpts.transport) {
             transportOpts.transport = 'mqtt';
         }
-        const factory = injector.get(ServerTransportSessionFactory);
+        const factory = injector.get(TransportSessionFactory);
         const session = this._session = factory.create(injector, this.mqtt, transportOpts);
         session.listen(this.handler);
         // this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));

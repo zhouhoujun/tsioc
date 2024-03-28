@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService } from '@tsdi/common';
 import { InternalServerExecption, ev } from '@tsdi/common/transport';
-import { BindServerEvent, MiddlewareHandler, MiddlewareLike, MiddlewareService, Server, ServerTransportSessionFactory } from '@tsdi/endpoints';
+import { BindServerEvent, MiddlewareHandler, MiddlewareLike, MiddlewareService, Server, TransportSessionFactory } from '@tsdi/endpoints';
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -110,7 +110,7 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
         this.serv.on(ev.CLOSE, () => this.logger.info(this.options.transportOpts?.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
         const injector = this.handler.injector;
-        const factory = injector.get(ServerTransportSessionFactory);
+        const factory = injector.get(TransportSessionFactory);
         const transportOpts = this.options.transportOpts!;
         if (!transportOpts.serverSide) transportOpts.serverSide = true;
         if (!transportOpts.transport) transportOpts.transport = 'tcp';

@@ -1,13 +1,12 @@
 import { Inject, Injectable, InvocationContext, isFunction } from '@tsdi/ioc';
 import { patternToPath } from '@tsdi/common';
-import { TransportSession, TransportSessionFactory } from '@tsdi/common/transport';
-import { Client } from '@tsdi/common/client';
-import { MircoServRouters, StatusVaildator } from '@tsdi/endpoints';
+import { Client, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { MircoServRouters } from '@tsdi/endpoints';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, Producer, logLevel } from 'kafkajs';
 import { KafkaHandler } from './handler';
 import { KAFKA_CLIENT_OPTS, KafkaClientOpts } from './options';
-import { KafkaReplyPartitionAssigner, KafkaTransportSession } from '../kafka.session';
+import { KafkaReplyPartitionAssigner, KafkaTransportSession } from '../server/kafka.session';
 import { DEFAULT_BROKERS, KafkaTransportOpts } from '../const';
 
 
@@ -22,7 +21,7 @@ export class KafkaClient extends Client {
     private client?: Kafka | null;
     private consumer?: Consumer | null;
     private producer?: Producer | null;
-    private _session?: KafkaTransportSession;
+    private _session?: KafkaClientTransportSession;
 
     constructor(
         readonly handler: KafkaHandler,
@@ -114,13 +113,11 @@ export class KafkaClient extends Client {
 
         this.producer = this.client.producer(this.options.producer);
         await this.producer.connect();
-
-        const vaildator = this.handler.injector.get(StatusVaildator, null);
-        this._session = this.handler.injector.get(TransportSessionFactory).create({
+        const injector = this.handler.injector;
+        this._session = injector.get(ClientTransportSessionFactory).create(injector, {
             producer: this.producer,
-            vaildator,
             consumer: this.consumer!
-        }, transportOpts) as KafkaTransportSession
+        }, transportOpts) as KafkaClientTransportSession
 
         if (!this.options.producerOnlyMode) {
             const topics = this.options.topics ? this.options.topics.map(t => {
