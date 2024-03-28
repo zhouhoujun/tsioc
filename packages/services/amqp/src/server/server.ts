@@ -58,8 +58,6 @@ export class AmqpServer extends Server {
         if (!transportOpts.transport) {
             transportOpts.transport = 'amqp';
         }
-        transportOpts.serverSide = true;
-
         if (!transportOpts.noAssert) {
             await channel.assertQueue(transportOpts.queue!, transportOpts.queueOpts)
         }

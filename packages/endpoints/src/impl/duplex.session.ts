@@ -40,7 +40,7 @@ export class DuplexTransportSessionFactory implements TransportSessionFactory<ID
     constructor() { }
 
     create(injector: Injector, socket: IDuplexStream, options: TransportOpts): DuplexTransportSession {
-        return new DuplexTransportSession(socket, injector.get(options.encoding!, EMPTY), injector.get(options.decodings!, EMPTY), options);
+        return new DuplexTransportSession(socket, injector.get(options.encodings!, EMPTY), injector.get(options.decodings!, EMPTY), options);
     }
 
 }

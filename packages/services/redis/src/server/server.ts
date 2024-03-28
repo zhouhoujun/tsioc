@@ -65,9 +65,6 @@ export class RedisServer extends Server {
         const injector = this.handler.injector;
 
         const transportOpts = this.options.transportOpts!;
-        if (!transportOpts.serverSide) {
-            transportOpts.serverSide = true;
-        }
         if (!transportOpts.transport) {
             transportOpts.transport = 'redis';
         }

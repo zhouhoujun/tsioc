@@ -17,7 +17,6 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
 
     @InjectLog()
     private logger!: Logger;
-    private subs: Subscription;
 
     private subscribes?: string[];
     private mqtt?: Client | null;
@@ -28,7 +27,6 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
         @Inject(MQTT_SERV_OPTS) private options: MqttServiceOpts
     ) {
         super();
-        this.subs = new Subscription();
     }
 
     protected async connect(): Promise<any> {

@@ -30,6 +30,11 @@ export interface ClientModuleConfig {
      * custom provider with module.
      */
     providers?: ProviderType[];
+
+    /**
+     * is microservice client or not.
+     */
+    microservice?: boolean;
 }
 
 /**
@@ -152,7 +157,7 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
             return { ...defts, ...options } as ClientModuleOpts;
         },
         onRegistered: (injector) => {
-            const { clientType, backend, clientProvider, hanlderType, clientOptsToken, defaultOpts } = injector.get(moduleOptsToken);
+            const { clientType, backend, clientProvider, hanlderType, clientOptsToken, defaultOpts, microservice } = injector.get(moduleOptsToken);
 
             const providers = [];
             if (clientProvider) {
@@ -176,6 +181,9 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
 
                         const opts = { backend: backend?? TransportBackend, globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS, ...lang.deepClone(defaultOpts), ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] } as ClientOpts & { providers: ProviderType[] };
                  
+                        if (microservice) {
+                            opts.microservice = microservice;
+                        }
                         if (opts.timeout) {
                             if (opts.transportOpts) {
                                 opts.transportOpts.timeout = opts.timeout;
@@ -201,9 +209,12 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
         providers.push(
             toFactory(token, options.clientOpts!, {
                 init: (clientOpts: ClientOpts, injector: Injector) => {
-                    const { defaultOpts, backend, clientOptsToken } = injector.get(moduleOptsToken);
+                    const { defaultOpts, backend, clientOptsToken, microservice } = injector.get(moduleOptsToken);
                     const opts = { backend: backend ?? TransportBackend, ...lang.deepClone(defaultOpts), ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
 
+                    if (microservice) {
+                        opts.microservice = microservice;
+                    }
                     if (opts.timeout) {
                         if (opts.transportOpts) {
                             opts.transportOpts.timeout = opts.timeout;

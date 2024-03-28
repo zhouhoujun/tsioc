@@ -43,7 +43,6 @@ export class NatsServer extends Server {
         const conn = this.conn;
         const subs = router.matcher.getPatterns();
         const transportOpts = this.options.transportOpts!;
-        if(!transportOpts.serverSide)  transportOpts.serverSide = true;
         if(!transportOpts.transport)  transportOpts.transport = 'nats';
         
         const session = this._session = injector.get(NatsTransportSessionFactory).create(conn, transportOpts);
@@ -52,7 +51,8 @@ export class NatsServer extends Server {
             session.subscribe(sub, this.options.transportOpts?.subscriptionOpts)
         });
 
-        injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
+        
+        // injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
 
         this.logger.info(
             `Subscribed successfully! This server is currently subscribed topics.`,

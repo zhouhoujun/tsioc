@@ -1,14 +1,13 @@
 import { Injectable, Injector } from '@tsdi/ioc';
-import { UuidGenerator } from '@tsdi/core';
-import { BadRequestExecption, Context, Decoder, Encoder, HeaderPacket, OfflineExecption, OutgoingHeaders, Packet, RequestPacket, ResponsePacket, StreamAdapter, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common';
-import { PayloadTransportSession } from '@tsdi/endpoints';
+import { BadRequestExecption, HeaderPacket, OfflineExecption, Packet, ResponsePacket, StreamAdapter, TransportOpts, ev } from '@tsdi/common/transport';
+import { TransportSession, TransportSessionFactory } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
 import { Msg, MsgHdrs, NatsConnection, SubscriptionOptions, headers as createHeaders, Subscription } from 'nats';
 import { Observable, filter, fromEvent, map, of, throwError } from 'rxjs';
 import { NatsSessionOpts } from './options';
 
 
-export class NatsTransportSession extends PayloadTransportSession<NatsConnection, Msg> {
+export class NatsTransportSession extends TransportSession<NatsConnection, Msg> {
 
     private subjects: Set<string> = new Set();
     private events = new EventEmitter();
@@ -133,14 +132,15 @@ export class NatsTransportSession extends PayloadTransportSession<NatsConnection
 @Injectable()
 export class NatsTransportSessionFactory implements TransportSessionFactory<NatsConnection> {
 
-    constructor(
-        readonly injector: Injector,
-        private streamAdapter: StreamAdapter,
-        private encoder: Encoder,
-        private decoder: Decoder) { }
+    constructor(readonly injector: Injector) { }
 
-    create(socket: NatsConnection, options: TransportOpts): NatsTransportSession {
-        return new NatsTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
+
+    create(injector: Injector, socket: NatsConnection, options: TransportOpts): TransportSession<NatsConnection, any> {
+        throw new Error('Method not implemented.');
     }
+
+    // create(socket: NatsConnection, options: TransportOpts): NatsTransportSession {
+    //     return new NatsTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
+    // }
 
 }

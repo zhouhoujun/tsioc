@@ -2,6 +2,7 @@ import { tokenId } from '@tsdi/ioc';
 import { ApplicationEventContext, CanActivate, Filter, Interceptor } from '@tsdi/core';
 import { BindServerEvent, ServerOpts } from '@tsdi/endpoints';
 import { ServerOptions } from 'ws';
+import { Decoder, Encoder } from '@tsdi/common';
 
 
 
@@ -46,4 +47,16 @@ export const WS_BIND_FILTERS = tokenId<Filter<ApplicationEventContext<BindServer
  * WS bind server Guards.
  */
 export const WS_BIND_GUARDS = tokenId<CanActivate<ApplicationEventContext<BindServerEvent>>[]>('WS_BIND_GUARDS');
+
+
+
+/**
+ * ws microservice encodings.
+ */
+export const WS_MICROSERVICE_ENCODINGS = tokenId<Encoder[]>('WS_MICROSERVICE_ENCODINGS');
+
+/**
+ * ws microservice decodings.
+ */
+export const WS_MICROSERVICE_DECODINGS = tokenId<Decoder[]>('WS_MICROSERVICE_DECODINGS');
 

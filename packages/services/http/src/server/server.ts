@@ -134,7 +134,6 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
         const injector = this.handler.injector;
         const factory = injector.get(TransportSessionFactory);
         const transportOpts = this.options.transportOpts!;
-        if (!transportOpts.serverSide) transportOpts.serverSide = true;
         if (!transportOpts.transport) transportOpts.transport = 'http';
         const session = factory.create(injector, this._server, transportOpts);
         session.listen(this.handler, this.destroy$);

@@ -54,7 +54,7 @@ export class CoapServer extends Server implements BindListenning {
         if (!this._server) throw new InternalServerExecption();
 
         this._server.on(ev.CLOSE, (err?: any) => {
-            this.logger.info(`Coap ${this.options.transportOpts?.microservice ? 'microservice' : 'server'} closed!`);
+            this.logger.info(`Coap ${this.options?.microservice ? 'microservice' : 'server'} closed!`);
             if (err) this.logger.error(err);
         });
         this._server.on(ev.ERROR, (err) => this.logger.error(err));
@@ -68,7 +68,6 @@ export class CoapServer extends Server implements BindListenning {
         }
         const transportOpts = this.options.transportOpts!;
         if (!transportOpts.transport) transportOpts.transport = 'udp';
-        if (!transportOpts.serverSide) transportOpts.serverSide = true;
         const session = factory.create(injector, this._server, this.options.transportOpts!);
         session.listen(this.handler);
         // injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options);

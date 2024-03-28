@@ -22,6 +22,10 @@ export interface ClientOpts<TConnOpts = any> extends ConfigableHandlerOptions<Tr
      */
     connectOpts?: TConnOpts;
     /**
+     * is microservice client or not.
+     */
+    microservice?: boolean;
+    /**
      * timeout
      */
     timeout?: number;

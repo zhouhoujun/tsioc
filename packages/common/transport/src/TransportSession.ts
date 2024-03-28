@@ -23,14 +23,6 @@ export interface TransportOpts {
      */
     decodings?: Token<Decoder[]>;
     /**
-     * server side or not.
-     */
-    serverSide?: boolean;
-    /**
-     * is microservice or not.
-     */
-    microservice?: boolean;
-    /**
      * packet delimiter flag
      */
     delimiter?: string;
@@ -42,10 +34,6 @@ export interface TransportOpts {
      * packet max size limit.
      */
     maxSize?: number;
-    /**
-     * packet buffer encoding.
-     */
-    encoding?: BufferEncoding;
 }
 
 /**

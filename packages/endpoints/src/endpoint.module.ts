@@ -126,11 +126,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                             } as ServerOpts & { providers: ProviderType[] };
 
                             if (microservice) {
-                                if (serverOpts.transportOpts) {
-                                    serverOpts.transportOpts.microservice = microservice;
-                                } else {
-                                    serverOpts.transportOpts = { microservice };
-                                }
+                                serverOpts.microservice = microservice;
                             }
 
 

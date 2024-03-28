@@ -107,12 +107,11 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
         }
         if (!this.serv) throw new InternalServerExecption();
 
-        this.serv.on(ev.CLOSE, () => this.logger.info(this.options.transportOpts?.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
+        this.serv.on(ev.CLOSE, () => this.logger.info(this.options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
         const injector = this.handler.injector;
         const factory = injector.get(TransportSessionFactory);
         const transportOpts = this.options.transportOpts!;
-        if (!transportOpts.serverSide) transportOpts.serverSide = true;
         if (!transportOpts.transport) transportOpts.transport = 'tcp';
 
         if (this.serv instanceof tls.Server) {
@@ -131,7 +130,7 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
             })
         }
 
-        if (!this.options.transportOpts?.microservice && !bindServer) {
+        if (!this.options.microservice && !bindServer) {
             // notify hybrid service to bind http server.
             await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this.serv, 'tcp', this)));
         }

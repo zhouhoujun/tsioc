@@ -28,6 +28,10 @@ export interface ServerOpts<TSerOpts = any> extends EndpointOptions<any> {
     content?: ContentOptions;
     serverOpts?: TSerOpts;
     /**
+     * is microservice or not.
+     */
+    microservice?: boolean;
+    /**
      * transport session options.
      */
     transportOpts?: TransportOpts;
