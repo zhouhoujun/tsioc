@@ -1,7 +1,7 @@
 import { Handler, Interceptor } from '@tsdi/core';
 import { Injectable, lang } from '@tsdi/ioc';
-import { AssetContext } from '@tsdi/endpoints';
-import { ctype } from '@tsdi/endpoints/assets';
+import { ctype } from '@tsdi/common/transport';
+import { RequestContext } from '@tsdi/endpoints';
 import { Observable, from } from 'rxjs';
 import * as fs from 'fs';
 import { promisify } from 'util';
@@ -12,7 +12,7 @@ import { join } from 'path';
 
 @Injectable()
 export class BigFileInterceptor implements Interceptor {
-    intercept(input: AssetContext, next: Handler<any, any>): Observable<any> {
+    intercept(input: RequestContext, next: Handler<any, any>): Observable<any> {
 
         if (input.originalUrl == 'content/big.json') {
             return from(this.genedata(input))
@@ -20,7 +20,7 @@ export class BigFileInterceptor implements Interceptor {
         return next.handle(input);
     }
 
-    async genedata(input: AssetContext) {
+    async genedata(input: RequestContext) {
         const filename = join(__dirname, './public/big-temp.json');
         if (!fs.existsSync(filename)) {
             const defer = lang.defer();

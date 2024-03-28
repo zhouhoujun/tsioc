@@ -30,7 +30,6 @@ import { DuplexTransportSessionFactory } from './impl/duplex.session';
     providers: [
         SetupServices,
         DuplexTransportSessionFactory,
-        // TopicTransportSessionFactory,
 
         { provide: TypedRespond, useClass: EndpointTypedRespond, asDefault: true },
 

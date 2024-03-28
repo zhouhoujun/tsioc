@@ -12,6 +12,7 @@ import { BodyContentInterceptor } from './interceptors/body';
 import { RestfulRedirector } from './redirector';
 import { ClientTransportSessionFactory } from './session';
 import { ClientDuplexTransportSessionFactory } from './duplex.session';
+import { ClientCodingsModule } from './codings';
 
 /**
  * Client module config.
@@ -83,6 +84,9 @@ export interface ClientTokenOpts {
  * Client Module.
  */
 @Module({
+    imports: [
+        ClientCodingsModule
+    ],
     providers: [
         ClientDuplexTransportSessionFactory,
         BodyContentInterceptor,

@@ -2,8 +2,7 @@ import { Module, isString } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointModule, SetupServices } from '@tsdi/endpoints';
-import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor, SetupServices } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { WsClient, WsClientOpts, WsModule } from '@tsdi/ws';
@@ -26,7 +25,6 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        AssetTransportModule,
         HttpModule,
         WsModule,
         ClientModule.register([
@@ -58,9 +56,9 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
                 serverOpts: {
                     heybird: true,
                     interceptors:[
-                        Content,
-                        Json,
-                        Bodyparser
+                        ContentInterceptor,
+                        JsonInterceptor,
+                        BodyparserInterceptor
                     ]
                 }
             },

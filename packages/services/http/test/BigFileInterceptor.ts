@@ -1,13 +1,13 @@
 import { Handler, Interceptor } from '@tsdi/core';
 import { Injectable, lang } from '@tsdi/ioc';
 import { RestfulRequestContext } from '@tsdi/endpoints';
-import { ctype } from '@tsdi/endpoints/assets';
 import { Observable, from } from 'rxjs';
 import * as fs from 'fs';
 import { promisify } from 'util';
 const statify = promisify(fs.stat);
 
 import { join } from 'path';
+import { ctype } from '@tsdi/common/transport';
 
 
 @Injectable()

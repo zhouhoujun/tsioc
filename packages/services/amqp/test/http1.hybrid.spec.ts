@@ -2,9 +2,8 @@ import { Injector, Module, isArray } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule } from '@tsdi/endpoints';
+import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
 import { Http, HttpModule } from '@tsdi/http';
-import { AssetTransportModule, Bodyparser, ContentInterceptor, JsonInterceptor } from '@tsdi/endpoints/assets';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
@@ -19,7 +18,6 @@ import { DeviceController } from './controller';
     imports: [
         ServerModule,
         LoggerModule,
-        AssetTransportModule,
         ServerEndpointModule,
         AmqpModule,
         HttpModule,
@@ -31,13 +29,13 @@ import { DeviceController } from './controller';
                 transport: 'http'
             }
         ]),
-        EndpointsModule.register([
+        EndpointModule.register([
             {
                 microservice: true,
                 transport: 'amqp',
                 serverOpts: {
                     interceptors: [
-                        Bodyparser
+                        BodyparserInterceptor
                     ]
                 }
             },
@@ -47,7 +45,7 @@ import { DeviceController } from './controller';
                     interceptors: [
                         ContentInterceptor,
                         JsonInterceptor,
-                        Bodyparser
+                        BodyparserInterceptor
                     ]
                 }
             }

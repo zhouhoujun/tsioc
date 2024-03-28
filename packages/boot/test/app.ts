@@ -12,7 +12,7 @@ import { Role, User } from './models/models';
 import { UserController } from './controllers/UserController';
 import { RoleController } from './controllers/RoleController';
 import { UserRepository } from './repositories/UserRepository';
-import { EndpointsModule } from '@tsdi/endpoints';
+import { EndpointModule } from '@tsdi/endpoints';
 import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 
 
@@ -54,7 +54,7 @@ export const option = {
         HttpModule,
         HttpClientModule,
         ServerHttpClientModule,
-        EndpointsModule.register({
+        EndpointModule.register({
             transport: 'http',
             serverOpts: {
                 interceptors:[
@@ -95,7 +95,7 @@ export class MockBootTest {
         HttpModule,
         HttpClientModule,
         ServerHttpClientModule,
-        EndpointsModule.register({
+        EndpointModule.register({
             transport: 'http',
             serverOpts: {
                 interceptors:[
@@ -133,7 +133,7 @@ export class MockBootLoadTest {
         HttpModule,
         HttpClientModule,
         ServerHttpClientModule,
-        EndpointsModule.register({
+        EndpointModule.register({
             transport: 'http',
             serverOpts: {
                 interceptors:[

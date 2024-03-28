@@ -3,9 +3,8 @@ import { Injector, Module, isArray } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule } from '@tsdi/endpoints';
+import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
 import { TcpClient, TcpModule } from '@tsdi/tcp';
-import { AssetTransportModule, Bodyparser, ContentInterceptor, JsonInterceptor } from '@tsdi/endpoints/assets';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -19,7 +18,6 @@ import { BigFileInterceptor } from './BigFileInterceptor';
     imports: [
         ServerModule,
         LoggerModule,
-        AssetTransportModule,
         ServerEndpointModule,
         TcpModule,
         AmqpModule,
@@ -31,7 +29,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 transport: 'amqp'
             }
         ]),
-        EndpointsModule.register([
+        EndpointModule.register([
             {
                 transport: 'tcp',
                 serverOpts: {
@@ -39,7 +37,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                         BigFileInterceptor,
                         ContentInterceptor,
                         JsonInterceptor,
-                        Bodyparser
+                        BodyparserInterceptor
                     ]
                 }
             },
@@ -51,7 +49,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                         BigFileInterceptor,
                         ContentInterceptor,
                         JsonInterceptor,
-                        Bodyparser
+                        BodyparserInterceptor
                     ]
                 }
             }

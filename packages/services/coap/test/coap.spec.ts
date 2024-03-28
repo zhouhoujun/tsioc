@@ -3,8 +3,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule, MicroServRouterModule } from '@tsdi/endpoints';
-import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor, MicroServRouterModule } from '@tsdi/endpoints';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -19,20 +18,19 @@ import { BigFileInterceptor } from './BigFileInterceptor';
     imports: [
         ServerModule,
         LoggerModule,
-        AssetTransportModule,
         ServerEndpointModule,
         CoapModule,
         ClientModule.register({
             transport: 'coap'
         }),
         MicroServRouterModule.forRoot('coap'),
-        EndpointsModule.register({
+        EndpointModule.register({
             transport: 'coap',
             serverOpts: {
                 interceptors: [
-                    Content,
-                    Json,
-                    Bodyparser,
+                    ContentInterceptor,
+                    JsonInterceptor,
+                    BodyparserInterceptor,
                     { useExisting: MicroServRouterModule.getToken('coap') }
                 ]
             }

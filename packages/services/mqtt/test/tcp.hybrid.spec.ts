@@ -4,8 +4,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { TcpClient, TcpModule } from '@tsdi/tcp';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule } from '@tsdi/endpoints';
-import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -19,7 +18,6 @@ import { BigFileInterceptor } from './BigFileInterceptor';
     imports: [
         ServerModule,
         LoggerModule,
-        AssetTransportModule,
         ServerEndpointModule,
         TcpModule,
         MqttModule,
@@ -31,16 +29,16 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 transport: 'mqtt'
             }
         ]),
-        EndpointsModule.register([
+        EndpointModule.register([
             {
                 microservice: true,
                 transport: 'mqtt',
                 serverOpts: {
                     interceptors: [
                         BigFileInterceptor,
-                        Content,
-                        Json,
-                        Bodyparser
+                        ContentInterceptor,
+                        JsonInterceptor,
+                        BodyparserInterceptor
                     ]
                 }
             },
@@ -49,9 +47,9 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 serverOpts: {
                     interceptors: [
                         BigFileInterceptor,
-                        Content,
-                        Json,
-                        Bodyparser
+                        ContentInterceptor,
+                        JsonInterceptor,
+                        BodyparserInterceptor
                     ]
                 }
             }

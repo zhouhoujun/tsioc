@@ -124,7 +124,7 @@ export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
 @Injectable()
 export class SetupServices {
 
-    context!: ApplicationContext;
+    private context!: ApplicationContext;
 
     private services: ReflectiveRef[] = [];
     private unboots = new Set<Type>();

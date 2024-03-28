@@ -1,10 +1,10 @@
 import { Module } from '@tsdi/ioc';
 import { ServerModule } from '@tsdi/platform-server';
 import { HttpModule } from '@tsdi/http';
+import { ClientModule } from '@tsdi/common/client';
 import { HttpClientModule } from '@tsdi/common/http';
 import { ServerHttpClientModule } from '@tsdi/platform-server/http';
-import { EndpointsModule } from '@tsdi/endpoints';
-import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { TransactionModule } from '@tsdi/repository';
 import { LoggerModule } from '@tsdi/logger';
@@ -15,7 +15,6 @@ import { TypeormModule, TypeormOptions } from '../src';
 import { Role, User } from './models/models';
 import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
-import { ClientModule } from '@tsdi/common/client';
 // import { UserRepository } from './repositories/UserRepository';
 
 
@@ -56,16 +55,15 @@ export const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhos
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        AssetTransportModule,
         HttpModule,
-        EndpointsModule.register({
+        EndpointModule.register({
             transport: 'http',
             serverOpts: {
                 majorVersion: 1,
                 interceptors: [
-                    Content,
-                    Json,
-                    Bodyparser,
+                    ContentInterceptor,
+                    JsonInterceptor,
+                    BodyparserInterceptor,
                 ]
             }
         }),
@@ -98,16 +96,15 @@ export class MockBootTest {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        AssetTransportModule,
         HttpModule,
-        EndpointsModule.register({
+        EndpointModule.register({
             transport: 'http',
             serverOpts: {
                 majorVersion: 1,
                 interceptors: [
-                    Content,
-                    Json,
-                    Bodyparser,
+                    ContentInterceptor,
+                    JsonInterceptor,
+                    BodyparserInterceptor,
                 ]
             }
         }),
@@ -137,16 +134,15 @@ export class MockBootLoadTest {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        AssetTransportModule,
         HttpModule,
-        EndpointsModule.register({
+        EndpointModule.register({
             transport: 'http',
             serverOpts: {
                 majorVersion: 1,
                 interceptors: [
-                    Content,
-                    Json,
-                    Bodyparser,
+                    ContentInterceptor,
+                    JsonInterceptor,
+                    BodyparserInterceptor,
                 ]
             }
         }),
@@ -174,7 +170,6 @@ export class MockTransBootTest {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        AssetTransportModule,
         HttpModule,
         ClientModule.register({
             transport: 'http',
@@ -185,7 +180,7 @@ export class MockTransBootTest {
                 }
             }
         }),
-        EndpointsModule.register({
+        EndpointModule.register({
             transport: 'http',
             serverOpts: {
                 majorVersion: 2,
@@ -194,9 +189,9 @@ export class MockTransBootTest {
                     cert
                 },
                 interceptors: [
-                    Content,
-                    Json,
-                    Bodyparser,
+                    ContentInterceptor,
+                    JsonInterceptor,
+                    BodyparserInterceptor,
                 ]
             }
         }),

@@ -2,8 +2,7 @@ import { Injector, Module, isArray } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule } from '@tsdi/endpoints';
-import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
 import { TcpClient, TcpModule, TcpServer } from '@tsdi/tcp';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -20,7 +19,6 @@ import { BigFileInterceptor } from './BigFileInterceptor';
     imports: [
         ServerModule,
         LoggerModule,
-        AssetTransportModule,
         ServerEndpointModule,
         TcpModule,
         UdpModule,
@@ -37,7 +35,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 }
             }
         ]),
-        EndpointsModule.register([
+        EndpointModule.register([
             {
                 transport: 'tcp',
                 serverOpts: {
@@ -46,9 +44,9 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                     },
                     interceptors: [
                         BigFileInterceptor,
-                        Content,
-                        Json,
-                        Bodyparser
+                        ContentInterceptor,
+                        JsonInterceptor,
+                        BodyparserInterceptor
                     ]
                 }
             },
@@ -58,9 +56,9 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 serverOpts: {
                     interceptors: [
                         BigFileInterceptor,
-                        Content,
-                        Json,
-                        Bodyparser
+                        ContentInterceptor,
+                        JsonInterceptor,
+                        BodyparserInterceptor
                     ]
                 }
             }

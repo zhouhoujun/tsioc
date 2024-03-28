@@ -2,8 +2,7 @@ import { Application, ApplicationContext, Payload } from '@tsdi/core';
 import { Injectable, Injector, Module, isString, tokenId } from '@tsdi/ioc';
 import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule, Handle, RequestPath, Subscribe } from '@tsdi/endpoints';
-import { JsonTransportModule } from '@tsdi/endpoints/json';
+import { EndpointModule, Handle, RequestPath, Subscribe } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { LoggerModule } from '@tsdi/logger';
@@ -62,13 +61,12 @@ export class AmqpService {
     imports: [
         ServerModule,
         LoggerModule,
-        JsonTransportModule,
         ServerEndpointModule,
         AmqpModule,
         ClientModule.register({
             transport: 'amqp'
         }),
-        EndpointsModule.register({
+        EndpointModule.register({
             microservice: true,
             transport: 'amqp'
         })

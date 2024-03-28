@@ -3,8 +3,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
-import { JsonTransportModule } from '@tsdi/endpoints/json';
+import { EndpointModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
 import { UDP_SERV_INTERCEPTORS, UdpClient, UdpModule, UdpServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -62,7 +61,6 @@ export class UdpService {
     imports: [
         ServerModule,
         LoggerModule,
-        JsonTransportModule,
         ServerEndpointModule,
         UdpModule,
         ClientModule.register({
@@ -74,7 +72,7 @@ export class UdpService {
                 // timeout: 200
             }
         }),
-        EndpointsModule.register({
+        EndpointModule.register({
             microservice: true,
             transport: 'udp'
         })

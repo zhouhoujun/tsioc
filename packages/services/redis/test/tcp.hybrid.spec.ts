@@ -3,7 +3,7 @@ import { Injector, Module, isArray } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule } from '@tsdi/endpoints';
+import { EndpointModule } from '@tsdi/endpoints';
 import { TcpClient, TcpModule } from '@tsdi/tcp';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -32,7 +32,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 transport: 'tcp'
             }
         ]),
-        EndpointsModule.register([
+        EndpointModule.register([
             {
                 transport: 'tcp',
                 serverOpts: {

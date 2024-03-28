@@ -8,10 +8,8 @@ import { Http, HttpModule } from '@tsdi/http';
 import { MqttClient, MqttModule, MqttServer } from '../src';
 import { DeviceController } from './controller';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule } from '@tsdi/endpoints';
-import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
-import { JsonTransportModule } from '@tsdi/endpoints/json';
 
 
 
@@ -21,30 +19,26 @@ import { JsonTransportModule } from '@tsdi/endpoints/json';
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        JsonTransportModule,
-        AssetTransportModule,
         MqttModule,
         HttpModule,
         ClientModule.register([
-            { transport: 'mqtt', clientOpts: { strategy: 'json' } },
-            { transport: 'http', clientOpts: { strategy: 'asset' } }
+            { transport: 'mqtt', clientOpts: {  } },
+            { transport: 'http', clientOpts: {  } }
         ]),
-        EndpointsModule.register([
+        EndpointModule.register([
             {
                 microservice: true,
                 transport: 'mqtt',
                 serverOpts: {
-                    strategy: 'json'
                 }
             },
             {
                 transport: 'http',
                 serverOpts: {
-                    strategy: 'asset',
                     interceptors: [
-                        Content,
-                        Json,
-                        Bodyparser
+                        ContentInterceptor,
+                        JsonInterceptor,
+                        BodyparserInterceptor
                     ]
                 }
             }

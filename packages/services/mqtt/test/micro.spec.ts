@@ -2,7 +2,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
 import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
+import { EndpointModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
 import { JsonTransportModule } from '@tsdi/endpoints/json';
 import { MQTT_SERV_INTERCEPTORS, MqttClient, MqttModule, MqttServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
@@ -74,7 +74,7 @@ export class MqttService {
                 timeout: 100
             }
         }),
-        EndpointsModule.register({
+        EndpointModule.register({
             microservice: true,
             transport: 'mqtt'
         })

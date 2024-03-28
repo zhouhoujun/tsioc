@@ -1,12 +1,11 @@
 import { Injectable, Module, lang, tokenId } from '@tsdi/ioc';
 import { of } from 'rxjs'; 
-import { BadRequestExecption } from '@tsdi/common';
+import { BadRequestExecption } from '@tsdi/common/transport';
 
 import {
-    RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
-    Middleware, TransportContext, compose, NEXT, Get, Payload, Subscribe
+    RouteMapping, Handle, RequestBody, RequestParam, RequestPath, RedirectResult,
+    Middleware, compose, NEXT, Get, Payload, Subscribe, RequestContext
 } from '@tsdi/endpoints';
-import { RedirectResult } from '@tsdi/endpoints/assets';
 import { WsClient } from '@tsdi/ws';
 import { HttpContext } from '../src/server/context';
 
@@ -190,9 +189,9 @@ export class DeviceQueue implements Middleware {
 @Injectable()
 export class DeviceStartupHandle implements Middleware {
 
-    invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
+    invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
 
-        console.log('DeviceStartupHandle.', 'resp:', ctx.args.type, 'req:', ctx.args.type)
+        console.log('DeviceStartupHandle.', 'resp:', ctx.response.type, 'req:', ctx.request.body.type)
         if (ctx.args.body.type === 'startup') {
             // todo sth.
             const ret = ctx.injector.get(MyService).dosth();
@@ -205,8 +204,8 @@ export class DeviceStartupHandle implements Middleware {
 @Injectable()
 export class DeviceAStartupHandle implements Middleware {
 
-    invoke(ctx: TransportContext, next: () => Promise<void>): Promise<void> {
-        console.log('DeviceAStartupHandle.', 'resp:', ctx.args.type, 'req:', ctx.args.body.type)
+    invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
+        console.log('DeviceAStartupHandle.', 'resp:', ctx.response.type, 'req:', ctx.request.body.type)
         if (ctx.args.body.type === 'startup') {
             // todo sth.
             const ret = ctx.get(MyService).dosth();

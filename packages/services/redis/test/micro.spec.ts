@@ -2,8 +2,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
 import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
-import { JsonTransportModule } from '@tsdi/endpoints/json';
+import { EndpointModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { LoggerModule } from '@tsdi/logger';
@@ -62,7 +61,6 @@ export class RedisService {
     imports: [
         ServerModule,
         LoggerModule,
-        JsonTransportModule,
         ServerEndpointModule,
         RedisModule,
         ClientModule.register({
@@ -74,7 +72,7 @@ export class RedisService {
                 timeout: 200
             }
         }),
-        EndpointsModule.register({
+        EndpointModule.register({
             microservice: true,
             transport: 'redis'
             

@@ -3,7 +3,6 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointModule } from '@tsdi/endpoints';
-import { JsonTransportModule } from '@tsdi/endpoints/json';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { WsModule } from '@tsdi/ws';
@@ -24,7 +23,6 @@ import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModu
     imports: [
         ServerModule,
         LoggerModule,
-        JsonTransportModule,
         ServerEndpointModule,
         HttpModule,
         WsModule,

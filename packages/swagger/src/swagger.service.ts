@@ -3,13 +3,13 @@ import { Execption, InjectFlags, Injectable, Type, getClassName, isFunction, isN
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, joinPath } from '@tsdi/common';
 import { DBPropertyMetadata, MissingModelFieldExecption } from '@tsdi/repository';
-import { AssetContext, ControllerRoute, HybridRouter, RouteMappingMetadata, Router } from '@tsdi/endpoints';
+import { RequestContext, ControllerRoute, HybridRouter, RouteMappingMetadata, Router, ContentInterceptor } from '@tsdi/endpoints';
 import { HttpServer } from '@tsdi/http'
 import { of } from 'rxjs';
 import { getAbsoluteFSPath } from 'swagger-ui-dist';
 import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT, OpenAPIObject, SwaggerOptions, SwaggerUiOptions, SwaggerSetupOptions } from './swagger.config';
 import { ApiModelPropertyMetadata, ApiParamMetadata } from './metadata';
-import { Content, ctype } from '@tsdi/endpoints/assets';
+import { ctype } from '@tsdi/common/transport';
 
 
 
@@ -59,15 +59,15 @@ export class SwaggerService {
         const prefix = opts.prefix ?? 'api-doc';
         router.use(prefix, async (ctx, next) => {
             const html = this.generateHTML(doc, opts.opts, opts.options, opts.customCss, opts.customfavIcon, opts.swaggerUrl, opts.customSiteTitle);
-            (ctx as AssetContext).contentType = ctype.TEXT_HTML;
-            (ctx as AssetContext).body = html;
+            ctx.contentType = ctype.TEXT_HTML;
+            ctx.body = html;
         });
 
         const httpRefs = ctx.runners.getRefs(HttpServer);
         const fspath = getAbsoluteFSPath();
         httpRefs.forEach(httpRef => {
             const http = httpRef.getInstance();
-            http.useInterceptors(Content.create({
+            http.useInterceptors(ContentInterceptor.create({
                 root: fspath,
                 baseUrl: false,
                 index: false
@@ -76,7 +76,7 @@ export class SwaggerService {
             http.useInterceptors({
                 intercept: (input, next) => {
                     if (input.url.endsWith('swagger-ui-init.js')) {
-                        (input as AssetContext).contentType = ctype.APPL_JAVASCRIPT;
+                        input.contentType = ctype.APPL_JAVASCRIPT;
                         input.body = this.swaggerInit;
                         return of(input.response);
                     } else {

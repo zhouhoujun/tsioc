@@ -12,7 +12,6 @@ import expect = require('expect');
 import path = require('path');
 import del = require('del');
 import { BigFileInterceptor } from './BigFileInterceptor';
-import { AssetTransportModule } from '@tsdi/endpoints/assets';
 
 
 const SENSORS = tokenId<string[]>('SENSORS');

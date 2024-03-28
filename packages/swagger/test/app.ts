@@ -9,8 +9,7 @@ import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { ConnectionOptions } from '@tsdi/repository';
 import { HttpClientModule } from '@tsdi/common/http';
-import { EndpointsModule } from '@tsdi/endpoints';
-import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
 
 
 export const option = <ConnectionOptions>{
@@ -44,18 +43,17 @@ export const option = <ConnectionOptions>{
     baseURL: __dirname,
     imports: [
         ServerModule,
-        AssetTransportModule,
         ServerEndpointModule,
         HttpModule,
         HttpClientModule,
-        EndpointsModule.register({
+        EndpointModule.register({
             transport: 'http',
             serverOpts: {
                 majorVersion: 2,
                 interceptors: [
-                    Content,
-                    Json,
-                    Bodyparser
+                    ContentInterceptor,
+                    JsonInterceptor,
+                    BodyparserInterceptor
                 ]
             }
         }),

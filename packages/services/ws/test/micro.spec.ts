@@ -3,8 +3,7 @@ import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/
 import { LoggerModule } from '@tsdi/logger';
 import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
-import { Handle, EndpointsModule, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
-import { JsonTransportModule } from '@tsdi/endpoints/json';
+import { Handle, EndpointModule, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -61,7 +60,6 @@ export class WsService {
     imports: [
         ServerModule,
         LoggerModule,
-        JsonTransportModule,
         ServerEndpointModule,
         WsModule,
         ClientModule.register([
@@ -82,7 +80,7 @@ export class WsService {
                 }
             }
         ]),
-        EndpointsModule.register({
+        EndpointModule.register({
             transport: 'ws',
             microservice: true
         })

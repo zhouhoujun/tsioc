@@ -1,5 +1,5 @@
 import { lang } from '@tsdi/ioc';
-import { BadRequestExecption } from '@tsdi/common';
+import { BadRequestExecption } from '@tsdi/common/transport';
 import { Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/endpoints';
 import {  of } from 'rxjs';
 import { UdpClient } from '../src';

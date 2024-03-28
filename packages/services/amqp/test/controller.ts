@@ -1,7 +1,6 @@
 import { lang } from '@tsdi/ioc';
-import { BadRequestExecption } from '@tsdi/common';
-import { Handle, Payload, RequestBody, RequestParam, RequestPath, RouteMapping, Subscribe } from '@tsdi/endpoints';
-import { RedirectResult } from '@tsdi/endpoints/assets';
+import { BadRequestExecption } from '@tsdi/common/transport';
+import { Handle, Payload, RedirectResult, RequestBody, RequestParam, RequestPath, RouteMapping, Subscribe } from '@tsdi/endpoints';
 import { of } from 'rxjs';
 import { AmqpClient } from '../src';
 

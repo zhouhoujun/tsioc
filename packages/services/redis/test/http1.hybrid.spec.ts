@@ -3,15 +3,13 @@ import { Injector, Module, isArray } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointsModule } from '@tsdi/endpoints';
+import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
 import { Http, HttpModule } from '@tsdi/http';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { RedisModule, RedisClient, RedisServer } from '../src';
 import { DeviceController } from './controller';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
-import { JsonTransportModule } from '@tsdi/endpoints/json';
-import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
 
 
 
@@ -21,30 +19,26 @@ import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        JsonTransportModule,
-        AssetTransportModule,
         HttpModule,
         RedisModule,
         ClientModule.register([
-            { transport: 'redis', clientOpts: { strategy: 'json' } },
-            { transport: 'http', clientOpts: { strategy: 'asset' } }
+            { transport: 'redis', clientOpts: {  } },
+            { transport: 'http', clientOpts: {  } }
         ]),
-        EndpointsModule.register([
+        EndpointModule.register([
             {
                 microservice: true,
                 transport: 'redis',
                 serverOpts: {
-                    strategy: 'json'
                 }
             },
             {
                 transport: 'http',
                 serverOpts: {
-                    strategy: 'asset',
                     interceptors: [
-                        Content,
-                        Json,
-                        Bodyparser
+                        ContentInterceptor,
+                        JsonInterceptor,
+                        BodyparserInterceptor
                     ]
                 }
             }
