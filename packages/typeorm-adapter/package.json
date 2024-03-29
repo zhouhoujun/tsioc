@@ -38,7 +38,7 @@
     "url": "git+https://github.com/zhouhoujun/tsioc.git"
   },
   "dependencies": {
-    "typeorm": "~0.2.25"
+    "typeorm": "^0.3.20"
   },
   "homepage": "https://github.com/zhouhoujun/tsioc/tree/master/packages/typeorm-adapter#readme#readme"
 }
