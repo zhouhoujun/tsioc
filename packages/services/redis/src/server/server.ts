@@ -1,11 +1,11 @@
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
 import { PatternFormatter, LOCALHOST } from '@tsdi/common';
-import { MircoServRouters, RequestHandler, Server } from '@tsdi/endpoints';
+import { MircoServRouters, RequestContext, RequestHandler, Server } from '@tsdi/endpoints';
 import { ev } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
 import Redis from 'ioredis';
 import { RedisEndpointHandler } from './handler';
-import { REDIS_SERV_OPTS, RedisServerOpts } from './options';
+import { RedisServerOpts } from './options';
 import { RedisTransportSession, RedisTransportSessionFactory } from '../redis.session';
 import { Subject, first, fromEvent, merge } from 'rxjs';
 
@@ -13,7 +13,7 @@ import { Subject, first, fromEvent, merge } from 'rxjs';
  * Redis Server.
  */
 @Injectable()
-export class RedisServer extends Server {
+export class RedisServer extends Server<RequestContext, RedisServerOpts> {
 
     @InjectLog() logger!: Logger;
 
@@ -23,18 +23,15 @@ export class RedisServer extends Server {
     private subscriber: Redis | null = null;
     private publisher: Redis | null = null;
 
-    constructor(
-        readonly handler: RedisEndpointHandler,
-        @Inject(REDIS_SERV_OPTS) private options: RedisServerOpts
-    ) {
+    constructor(readonly handler: RedisEndpointHandler) {
         super();
         this.destroy$ = new Subject();
     }
 
     protected async connect(): Promise<any> {
-        const opts = this.options;
+        const opts = this.getOptions();
         const retryStrategy = opts.serverOpts?.retryStrategy ?? this.createRetryStrategy(opts);
-        const options = this.options.serverOpts = {
+        const options = opts.serverOpts = {
             host: LOCALHOST,
             port: 6379,
             retryStrategy,
@@ -59,12 +56,14 @@ export class RedisServer extends Server {
         await this.connect();
         if (!this.subscriber || !this.publisher) throw new Execption('Subscriber and Publisher cannot be null');
 
+        const options = this.getOptions();
+
         const subscriber = this.subscriber;
         const publisher = this.publisher;
 
         const injector = this.handler.injector;
 
-        const transportOpts = this.options.transportOpts!;
+        const transportOpts = options.transportOpts!;
         if (!transportOpts.transport) {
             transportOpts.transport = 'redis';
         }
@@ -76,8 +75,8 @@ export class RedisServer extends Server {
         }, transportOpts);
 
         const router = injector.get(MircoServRouters).get('redis');
-        if (this.options.content?.prefix) {
-            const content = injector.get(PatternFormatter).format(`${this.options.content.prefix}/**`);
+        if (options.content?.prefix) {
+            const content = injector.get(PatternFormatter).format(`${options.content.prefix}/**`);
             router.matcher.register(content, true);
         }
         const routes = router.matcher.getPatterns();

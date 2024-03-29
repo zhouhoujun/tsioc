@@ -3,10 +3,10 @@ import { ExecptionHandlerFilter } from '@tsdi/core';
 import { CLIENT_MODULES, ClientOpts, TransportBackend } from '@tsdi/common/client';
 import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { UdpClient } from './client/client';
-import { UDP_CLIENT_FILTERS, UDP_CLIENT_INTERCEPTORS, UDP_CLIENT_OPTS } from './client/options';
+import { UDP_CLIENT_FILTERS, UDP_CLIENT_INTERCEPTORS } from './client/options';
 import { UdpHandler } from './client/handler';
 import { UdpServer } from './server/server';
-import { UDP_SERV_FILTERS, UDP_SERV_GUARDS, UDP_SERV_INTERCEPTORS, UDP_SERV_OPTS } from './server/options';
+import { UDP_SERV_FILTERS, UDP_SERV_GUARDS, UDP_SERV_INTERCEPTORS } from './server/options';
 import { UdpEndpointHandler } from './server/handler';
 import { defaultMaxSize } from './consts';
 import { UdpTransportSessionFactory } from './udp.session';
@@ -23,7 +23,6 @@ import { UdpTransportSessionFactory } from './udp.session';
             useValue: {
                 transport: 'udp',
                 clientType: UdpClient,
-                clientOptsToken: UDP_CLIENT_OPTS,
                 hanlderType: UdpHandler,
                 defaultOpts: {
                     url: 'udp://localhost:3000',
@@ -33,8 +32,7 @@ import { UdpTransportSessionFactory } from './udp.session';
                     },
                     interceptorsToken: UDP_CLIENT_INTERCEPTORS,
                     filtersToken: UDP_CLIENT_FILTERS,
-                    backend: TransportBackend,
-                    sessionFactory: { useExisting: UdpTransportSessionFactory },
+                    // sessionFactory: { useExisting: UdpTransportSessionFactory },
                 } as ClientOpts
             },
             multi: true
@@ -45,7 +43,6 @@ import { UdpTransportSessionFactory } from './udp.session';
                 transport: 'udp',
                 microservice: true,
                 serverType: UdpServer,
-                serverOptsToken: UDP_SERV_OPTS,
                 handlerType: UdpEndpointHandler,
                 defaultOpts: {
                     transportOpts: {
@@ -60,7 +57,7 @@ import { UdpTransportSessionFactory } from './udp.session';
                     interceptorsToken: UDP_SERV_INTERCEPTORS,
                     filtersToken: UDP_SERV_FILTERS,
                     guardsToken: UDP_SERV_GUARDS,
-                    sessionFactory: { useExisting: UdpTransportSessionFactory },
+                    // sessionFactory: { useExisting: UdpTransportSessionFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,

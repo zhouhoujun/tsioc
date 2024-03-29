@@ -16,9 +16,6 @@ export interface AmqpMicroServiceOpts extends ServerOpts<string | amqp.Options.C
     transportOpts?: AmqpSessionOpts & { maxSize?: number};
 }
 
-
-export const AMQP_SERV_OPTS = tokenId<AmqpMicroServiceOpts>('AMQP_SERV_OPTS');
-
 /**
  * Amqp server interceptors.
  */

@@ -1,10 +1,10 @@
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
-import { LOCALHOST, TransportRequest } from '@tsdi/common';
+import { LOCALHOST, TransportEvent, TransportRequest } from '@tsdi/common';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import Redis from 'ioredis';
 import { RedisHandler } from './handler';
-import { REDIS_CLIENT_OPTS, RedisClientOpts } from './options';
+import { RedisClientOpts } from './options';
 import { RedisTransportSessionFactory, ReidsTransport } from '../redis.session';
 import { ev } from '@tsdi/common/transport';
 
@@ -12,7 +12,7 @@ import { ev } from '@tsdi/common/transport';
  * Redis Client.
  */
 @Injectable()
-export class RedisClient extends Client<TransportRequest> {
+export class RedisClient extends Client<TransportRequest, TransportEvent, RedisClientOpts> {
 
     @InjectLog()
     private logger!: Logger;
@@ -21,16 +21,14 @@ export class RedisClient extends Client<TransportRequest> {
     private publisher: Redis | null = null;
     private _session?: ClientTransportSession<ReidsTransport>;
 
-    constructor(
-        readonly handler: RedisHandler,
-        @Inject(REDIS_CLIENT_OPTS) private options: RedisClientOpts) {
+    constructor(readonly handler: RedisHandler) {
         super();
     }
 
     protected async connect(): Promise<void> {
         if (this.subscriber) return;
 
-        const opts = this.options;
+        const opts = this.getOptions();
         const retryStrategy = opts.connectOpts?.retryStrategy ?? this.createRetryStrategy(opts);
         this.subscriber = new Redis({
             host: LOCALHOST,

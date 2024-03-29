@@ -3,10 +3,10 @@ import { ExecptionHandlerFilter } from '@tsdi/core';
 import { CLIENT_MODULES, ClientDuplexTransportSessionFactory, ClientOpts, TransportBackend } from '@tsdi/common/client';
 import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { WsClient } from './client/client';
-import { WS_CLIENT_DECODINGS, WS_CLIENT_ENCODINGS, WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS, WS_CLIENT_OPTS } from './client/options';
+import { WS_CLIENT_DECODINGS, WS_CLIENT_ENCODINGS, WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS } from './client/options';
 import { WsHandler } from './client/handler';
 import { WsServer } from './server/server';
-import { WS_MICROSERVICE_DECODINGS, WS_MICROSERVICE_ENCODINGS, WS_SERV_FILTERS, WS_SERV_GUARDS, WS_SERV_INTERCEPTORS, WS_SERV_OPTS } from './server/options';
+import { WS_MICROSERVICE_DECODINGS, WS_MICROSERVICE_ENCODINGS, WS_SERV_FILTERS, WS_SERV_GUARDS, WS_SERV_INTERCEPTORS } from './server/options';
 import { WsEndpointHandler } from './server/handler';
 
 
@@ -22,7 +22,6 @@ const defaultMaxSize = 1048576; //1024 * 1024;
             useValue: {
                 transport: 'ws',
                 clientType: WsClient,
-                clientOptsToken: WS_CLIENT_OPTS,
                 hanlderType: WsHandler,
                 defaultOpts: {
                     url: 'ws://localhost:3000',
@@ -45,7 +44,6 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                 transport: 'ws',
                 microservice: true,
                 serverType: WsServer,
-                serverOptsToken: WS_SERV_OPTS,
                 handlerType: WsEndpointHandler,
                 defaultOpts: {
                     transportOpts: {

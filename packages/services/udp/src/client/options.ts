@@ -22,10 +22,6 @@ export interface UdpClientOpts extends ClientOpts<SocketOptions> {
 
 
 /**
- * UDP client opptions.
- */
-export const UDP_CLIENT_OPTS = tokenId<UdpClientOpts>('UDP_CLIENT_OPTS');
-/**
  * UDP client interceptors.
  */
 export const UDP_CLIENT_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('UDP_CLIENT_INTERCEPTORS');

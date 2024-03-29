@@ -1,13 +1,13 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
-import { CLIENT_MODULES, ClientOpts, TopicTransportBackend } from '@tsdi/common/client';
-import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts, TopicTransportSessionFactory } from '@tsdi/endpoints';
+import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
+import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { MqttClient } from './client/client';
-import { MQTT_CLIENT_FILTERS, MQTT_CLIENT_INTERCEPTORS, MQTT_CLIENT_OPTS } from './client/options';
+import { MQTT_CLIENT_FILTERS, MQTT_CLIENT_INTERCEPTORS } from './client/options';
 import { MqttHandler } from './client/handler';
 import { MqttServer } from './server/server';
-import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS, MQTT_SERV_OPTS } from './server/options';
+import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS } from './server/options';
 import { MqttEndpointHandler } from './server/handler';
 
 const defaultMaxSize = 1048576; // 1024 * 1024;
@@ -22,7 +22,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
             useValue: {
                 transport: 'mqtt',
                 clientType: MqttClient,
-                clientOptsToken: MQTT_CLIENT_OPTS,
                 hanlderType: MqttHandler,
                 defaultOpts: {
                     connectOpts: {
@@ -32,12 +31,11 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     encoding: 'utf8',
                     interceptorsToken: MQTT_CLIENT_INTERCEPTORS,
                     filtersToken: MQTT_CLIENT_FILTERS,
-                    backend: TopicTransportBackend,
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
                     },
-                    sessionFactory: { useExisting: TopicTransportSessionFactory },
+                    // sessionFactory: { useExisting: TopicTransportSessionFactory },
                 } as ClientOpts
             },
             multi: true
@@ -48,8 +46,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                 transport: 'mqtt',
                 microservice: true,
                 serverType: MqttServer,
-                serverOptsToken: MQTT_SERV_OPTS,
-                endpointType: MqttEndpointHandler,
+                handlerType: MqttEndpointHandler,
                 defaultOpts: {
                     encoding: 'utf8',
                     transportOpts: {
@@ -69,7 +66,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     interceptorsToken: MQTT_SERV_INTERCEPTORS,
                     filtersToken: MQTT_SERV_FILTERS,
                     guardsToken: MQTT_SERV_GUARDS,
-                    sessionFactory: { useExisting: TopicTransportSessionFactory },
+                    // sessionFactory: { useExisting: TopicTransportSessionFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,

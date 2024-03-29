@@ -1,16 +1,16 @@
 import { Inject, Injectable, InvocationContext, lang } from '@tsdi/ioc';
-import { TransportRequest } from '@tsdi/common';
+import { TransportEvent, TransportRequest } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import {  Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import * as amqp from 'amqplib';
-import { AMQP_CLIENT_OPTS, AmqpClientOpts } from './options';
+import { AmqpClientOpts } from './options';
 import { AmqpHandler } from './handler';
 
 
 
 @Injectable()
-export class AmqpClient extends Client<TransportRequest> {
+export class AmqpClient extends Client<TransportRequest, TransportEvent, AmqpClientOpts> {
 
     @InjectLog()
     private logger!: Logger;
@@ -18,9 +18,7 @@ export class AmqpClient extends Client<TransportRequest> {
     private _channel: amqp.Channel | null = null;
     private _session?: ClientTransportSession<amqp.Channel>;
 
-    constructor(
-        readonly handler: AmqpHandler,
-        @Inject(AMQP_CLIENT_OPTS) private options: AmqpClientOpts) {
+    constructor(readonly handler: AmqpHandler) {
         super()
     }
 
@@ -31,9 +29,9 @@ export class AmqpClient extends Client<TransportRequest> {
     }
 
     protected async connecting(): Promise<void> {
-
+        const options = this.getOptions();
         if (!this._conn) {
-            this._conn = await this.createConnection(this.options.retryAttempts || 3, this.options.retryDelay ?? 3000);
+            this._conn = await this.createConnection(options.retryAttempts || 3, options.retryDelay ?? 3000);
         }
 
         const onError = (err: any) => {
@@ -59,7 +57,8 @@ export class AmqpClient extends Client<TransportRequest> {
 
     protected async setupChancel(conn: amqp.Connection) {
         this._channel = await conn.createChannel();
-        const transportOpts = this.options.transportOpts!;
+        const options = this.getOptions();
+        const transportOpts = options.transportOpts!;
         if(transportOpts.transport){
             transportOpts.transport = 'amqp';
         }
@@ -85,7 +84,7 @@ export class AmqpClient extends Client<TransportRequest> {
     protected async createConnection(retrys: number, retryDelay: number): Promise<amqp.Connection> {
         try {
             if (retrys) {
-                const conn = await amqp.connect(this.options.connectOpts!);
+                const conn = await amqp.connect(this.getOptions().connectOpts!);
                 return conn;
             }
         } catch (err) {

@@ -29,10 +29,6 @@ export interface AmqpClientOpts extends ClientOpts<string | amqp.Options.Connect
 }
 
 /**
- * AMQP client opptions.
- */
-export const AMQP_CLIENT_OPTS = tokenId<AmqpClientOpts>('AMQP_CLIENT_OPTS');
-/**
  * AMQP client interceptors.
  */
 export const AMQP_CLIENT_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('AMQP_CLIENT_INTERCEPTORS');

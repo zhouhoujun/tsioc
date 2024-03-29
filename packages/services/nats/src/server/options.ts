@@ -18,9 +18,6 @@ export interface NatsMicroServOpts extends ServerOpts<ConnectionOptions> {
     debug?: boolean;
 }
 
-
-export const NATS_SERV_OPTS = tokenId<NatsMicroServOpts>('NATS_SERV_OPTS');
-
 /**
  * Nats server interceptors.
  */

@@ -1,32 +1,30 @@
-import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
-import { TransportRequest } from '@tsdi/common';
+import { Injectable, InvocationContext } from '@tsdi/ioc';
+import { TransportEvent, TransportRequest } from '@tsdi/common';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { NatsConnection, connect } from 'nats';
 import { NatsHandler } from './handler';
-import { NATS_CLIENT_OPTS, NatsClientOpts } from './options';
+import { NatsClientOpts } from './options';
 
 
 @Injectable()
-export class NatsClient extends Client<TransportRequest> {
+export class NatsClient extends Client<TransportRequest, TransportEvent, NatsClientOpts> {
     private conn?: NatsConnection;
     private _session?: ClientTransportSession<NatsConnection>;
 
     @InjectLog()
     private logger!: Logger;
 
-    constructor(
-        readonly handler: NatsHandler,
-        @Inject(NATS_CLIENT_OPTS) private options: NatsClientOpts) {
+    constructor(readonly handler: NatsHandler) {
         super()
     }
 
 
     protected async connect(): Promise<any> {
         if (this.conn) return this.conn;
-
-        const conn = this.conn = await connect(this.options.connectOpts);
-        const transportOpts = this.options.transportOpts!;
+        const options = this.getOptions();
+        const conn = this.conn = await connect(options.connectOpts);
+        const transportOpts = options.transportOpts!;
         if(!transportOpts.transport) {
             transportOpts.transport = 'nats';
         }

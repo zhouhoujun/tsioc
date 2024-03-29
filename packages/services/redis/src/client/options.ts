@@ -19,10 +19,6 @@ export interface RedisClientOpts extends ClientOpts<RedisOptions> {
 
 
 /**
- * REDIS client opptions.
- */
-export const REDIS_CLIENT_OPTS = tokenId<RedisClientOpts>('REDIS_CLIENT_OPTS');
-/**
  * REDIS client interceptors.
  */
 export const REDIS_CLIENT_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('REDIS_CLIENT_INTERCEPTORS');

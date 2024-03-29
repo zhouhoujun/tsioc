@@ -2,16 +2,16 @@ import { Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { LOCALHOST } from '@tsdi/common';
 import { InternalServerExecption, ev } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { Server, TransportSessionFactory } from '@tsdi/endpoints';
+import { RequestContext, Server, TransportSessionFactory } from '@tsdi/endpoints';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { Subject, first, fromEvent, merge } from 'rxjs';
-import { UDP_SERV_OPTS, UdpServerOpts } from './options';
+import { UdpServerOpts } from './options';
 import { UdpEndpointHandler } from './handler';
 import { defaultMaxSize } from '../consts';
 
 
 @Injectable()
-export class UdpServer extends Server {
+export class UdpServer extends Server<RequestContext, UdpServerOpts> {
 
     private serv?: Socket | null;
 
@@ -20,18 +20,17 @@ export class UdpServer extends Server {
 
     private destroy$: Subject<void>;
 
-    constructor(
-        readonly handler: UdpEndpointHandler,
-        @Inject(UDP_SERV_OPTS) private options: UdpServerOpts) {
+    constructor(readonly handler: UdpEndpointHandler) {
         super();
         this.destroy$ = new Subject();
     }
 
     protected async onStartup(): Promise<any> {
+        const options = this.getOptions();
         const serverOpts = {
             type: 'udp4',
-            sendBufferSize: this.options.transportOpts?.maxSize ?? defaultMaxSize,
-            ...this.options.serverOpts
+            sendBufferSize: options.transportOpts?.maxSize ?? defaultMaxSize,
+            ...options.serverOpts
         } as SocketOptions;
         this.serv = createSocket(serverOpts);
     }
@@ -39,6 +38,8 @@ export class UdpServer extends Server {
     protected async onStart(): Promise<any> {
         await this.onStartup();
         if (!this.serv) throw new InternalServerExecption();
+
+        const options = this.getOptions();
 
         this.serv.on(ev.CLOSE, () => this.logger.info('UDP microservice closed!'));
         this.serv.on(ev.ERROR, (err) => {
@@ -48,17 +49,17 @@ export class UdpServer extends Server {
         const factory = injector.get(TransportSessionFactory);
 
         const isSecure = false;
-        if (!this.options.protocol) {
-            this.options.protocol = isSecure ? 'udps' : 'udp';
+        if (!options.protocol) {
+            options.protocol = isSecure ? 'udps' : 'udp';
         }
-        const transportOpts = this.options.transportOpts!;
+        const transportOpts = options.transportOpts!;
         if (!transportOpts.transport) transportOpts.transport = 'udp';
-        const session = factory.create(injector, this.serv, this.options.transportOpts!);
+        const session = factory.create(injector, this.serv, options.transportOpts!);
 
         session.listen(this.handler, merge(this.destroy$, fromEvent(this.serv, ev.CLOSE).pipe(first())));
-        // injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
+        // injector.get(RequestHandler).handle(this.endpoint, session, this.logger, options);
 
-        const bindOpts = this.options.bindOpts ?? { port: 3000, address: LOCALHOST };
+        const bindOpts = options.bindOpts ?? { port: 3000, address: LOCALHOST };
         this.serv.on(ev.LISTENING, () => {
             this.logger.info(lang.getClassName(this), 'access with url:', `udp${isSecure ? 's' : ''}://${bindOpts.address ?? LOCALHOST}:${bindOpts.port}`, '!');
         });

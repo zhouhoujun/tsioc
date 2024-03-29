@@ -135,7 +135,7 @@ export class NatsTransportSessionFactory implements TransportSessionFactory<Nats
     constructor(readonly injector: Injector) { }
 
 
-    create(injector: Injector, socket: NatsConnection, options: TransportOpts): TransportSession<NatsConnection, any> {
+    create(injector: Injector, socket: NatsConnection, options: TransportOpts): NatsTransportSession<NatsConnection, any> {
         throw new Error('Method not implemented.');
     }
 

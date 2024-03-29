@@ -10,7 +10,6 @@ export interface MqttServiceOpts extends ServerOpts<MqttConnectOpts> {
     retryDelay?: number;
 }
 
-export const MQTT_SERV_OPTS = tokenId<MqttServiceOpts>('MQTT_SERV_OPTS');
 
 /**
  * Mqtt server interceptors.

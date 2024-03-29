@@ -10,7 +10,6 @@ export interface MqttClientOpts extends ClientOpts<MqttConnectOpts> {
     timeout?: number;
 }
 
-export const MQTT_CLIENT_OPTS = tokenId<MqttClientOpts>('MQTT_CLIENT_OPTS');
 
 /**
  * Mqtt client interceptors.

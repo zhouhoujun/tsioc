@@ -1,10 +1,10 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { PatternFormatter } from '@tsdi/common';
-import { CLIENT_MODULES, ClientOpts, TopicTransportBackend } from '@tsdi/common/client';
+import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
 import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { KafkaClient } from './client/client';
-import { KAFKA_CLIENT_FILTERS, KAFKA_CLIENT_INTERCEPTORS, KAFKA_CLIENT_OPTS } from './client/options';
+import { KAFKA_CLIENT_FILTERS, KAFKA_CLIENT_INTERCEPTORS } from './client/options';
 import { KafkaHandler } from './client/handler';
 import { KafkaServer } from './server/server';
 import { KAFKA_SERV_FILTERS, KAFKA_SERV_GUARDS, KAFKA_SERV_INTERCEPTORS, KAFKA_SERV_OPTS } from './server/options';
@@ -27,18 +27,16 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
             useValue: {
                 transport: 'kafka',
                 clientType: KafkaClient,
-                clientOptsToken: KAFKA_CLIENT_OPTS,
                 hanlderType: KafkaHandler,
                 defaultOpts: {
                     encoding: 'utf8',
                     interceptorsToken: KAFKA_CLIENT_INTERCEPTORS,
                     filtersToken: KAFKA_CLIENT_FILTERS,
-                    backend: TopicTransportBackend,
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
                     },
-                    sessionFactory: { useExisting: KafkaTransportSessionFactory },
+                    // sessionFactory: { useExisting: KafkaTransportSessionFactory },
                     providers: [{ provide: PatternFormatter, useExisting: KafkaPatternFormatter }]
                 } as ClientOpts
             },
@@ -50,8 +48,7 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                 transport: 'kafka',
                 microservice: true,
                 serverType: KafkaServer,
-                serverOptsToken: KAFKA_SERV_OPTS,
-                endpointType: KafkaEndpointHandler,
+                handlerType: KafkaEndpointHandler,
                 defaultOpts: {
                     encoding: 'utf8',
                     transportOpts: {
@@ -67,7 +64,7 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                     interceptorsToken: KAFKA_SERV_INTERCEPTORS,
                     filtersToken: KAFKA_SERV_FILTERS,
                     guardsToken: KAFKA_SERV_GUARDS,
-                    sessionFactory: { useExisting: KafkaTransportSessionFactory },
+                    // sessionFactory: { useExisting: KafkaTransportSessionFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,

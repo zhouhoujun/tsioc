@@ -3,11 +3,11 @@ import { EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST } from '@tsdi/common';
 import { InternalServerExecption, ev } from '@tsdi/common/transport';
-import { BindServerEvent, Server, TransportSessionFactory } from '@tsdi/endpoints';
+import { BindServerEvent, RequestContext, Server, TransportSessionFactory } from '@tsdi/endpoints';
 import { Server as SocketServer, WebSocketServer, createWebSocketStream } from 'ws';
 import { Subscription, first, fromEvent, merge } from 'rxjs';
 import * as tls from 'tls';
-import { WS_BIND_FILTERS, WS_BIND_GUARDS, WS_BIND_INTERCEPTORS, WS_SERV_OPTS, WsServerOpts } from './options';
+import { WS_BIND_FILTERS, WS_BIND_GUARDS, WS_BIND_INTERCEPTORS, WsServerOpts } from './options';
 import { WsEndpointHandler } from './handler';
 
 
@@ -15,7 +15,7 @@ import { WsEndpointHandler } from './handler';
  * ws server.
  */
 @Injectable()
-export class WsServer extends Server {
+export class WsServer extends Server<RequestContext, WsServerOpts> {
 
     private serv?: SocketServer | null;
 
@@ -24,9 +24,7 @@ export class WsServer extends Server {
 
     private subs: Subscription;
 
-    constructor(
-        readonly handler: WsEndpointHandler,
-        @Inject(WS_SERV_OPTS) private options: WsServerOpts) {
+    constructor(readonly handler: WsEndpointHandler) {
         super();
 
         this.subs = new Subscription();
@@ -38,13 +36,14 @@ export class WsServer extends Server {
         globalGuardsToken: WS_BIND_GUARDS
     })
     async bind(event: BindServerEvent<any>) {
-        if (this.serv || (isString(this.options.heybird) && event.transport !== this.options.heybird)) return;
+        const options = this.getOptions();
+        if (this.serv || (isString(options.heybird) && event.transport !== options.heybird)) return;
         await this.onStart(event.server);
     }
 
     protected async setup(bindServer?: any): Promise<any> {
         const serverOpts = {
-            ...this.options.serverOpts
+            ...this.getOptions().serverOpts
         };
         if (bindServer) {
             serverOpts.server = bindServer;
@@ -55,7 +54,8 @@ export class WsServer extends Server {
     }
 
     protected async onStart(bindServer?: any): Promise<any> {
-        if (this.options.heybird && !bindServer) return;
+        const options = this.getOptions();
+        if (options.heybird && !bindServer) return;
         await this.setup(bindServer);
         if (!this.serv) throw new InternalServerExecption();
 
@@ -65,15 +65,15 @@ export class WsServer extends Server {
         });
         const injector = this.handler.injector;
         const factory = injector.get(TransportSessionFactory);
-        const { server, noServer, port, host } = this.options.serverOpts ?? EMPTY_OBJ;
+        const { server, noServer, port, host } = options.serverOpts ?? EMPTY_OBJ;
         const isSecure = server instanceof tls.Server;
-        if (this.options.protocol) {
-            this.options.protocol = isSecure ? 'wss' : 'ws';
+        if (options.protocol) {
+            options.protocol = isSecure ? 'wss' : 'ws';
         }
 
         this.serv.on(ev.CONNECTION, (socket) => {
             const stream = createWebSocketStream(socket);
-            const transportOpts = this.options.transportOpts!;
+            const transportOpts = options.transportOpts!;
             if (!transportOpts.transport) transportOpts.transport = 'ws';
             const session = factory.create(injector, stream, transportOpts!);            
             session.listen(this.handler, merge(fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));

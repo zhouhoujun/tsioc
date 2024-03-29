@@ -16,10 +16,7 @@ export interface UdpServerOpts extends ServerOpts<SocketOptions> {
     detailError?: boolean;
 }
 
-/**
- * Token of ws server opptions.
- */
-export const UDP_SERV_OPTS = tokenId<UdpServerOpts>('UDP_SERV_OPTS');
+
 /**
  * Token of ws server interceptors.
  */

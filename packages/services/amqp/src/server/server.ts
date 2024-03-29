@@ -1,16 +1,16 @@
 import { Execption, Inject, Injectable, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ev } from '@tsdi/common/transport';
-import { Server, TransportSessionFactory, TransportSession } from '@tsdi/endpoints';
+import { Server, TransportSessionFactory, TransportSession, RequestContext } from '@tsdi/endpoints';
 import * as amqp from 'amqplib';
-import { AMQP_SERV_OPTS, AmqpMicroServiceOpts } from './options';
+import { AmqpMicroServiceOpts } from './options';
 import { AmqpEndpointHandler } from './handler';
 
 
 
 
 @Injectable()
-export class AmqpServer extends Server {
+export class AmqpServer extends Server<RequestContext, AmqpMicroServiceOpts> {
 
     @InjectLog()
     private logger!: Logger;
@@ -20,15 +20,15 @@ export class AmqpServer extends Server {
     private _channel: amqp.Channel | null = null;
     private _session?: TransportSession<amqp.Channel>;
 
-    constructor(
-        readonly handler: AmqpEndpointHandler,
-        @Inject(AMQP_SERV_OPTS) private options: AmqpMicroServiceOpts) {
+    constructor(readonly handler: AmqpEndpointHandler) {
         super();
     }
 
     protected async connect(): Promise<any> {
 
-        const conn = this._conn = await this.createConnection(this.options.retryAttempts || 3, this.options.retryDelay ?? 3000);
+        const options = this.getOptions();
+
+        const conn = this._conn = await this.createConnection(options.retryAttempts || 3, options.retryDelay ?? 3000);
         this._connected = true;
         conn.on(ev.CONNECT, () => {
             this._connected = true;
@@ -44,7 +44,7 @@ export class AmqpServer extends Server {
             this._connected = false;
             this.logger.error('Disconnected from rmq. Try to reconnect.');
             this.logger.error(err);
-            this._conn = await this.createConnection(this.options.retryAttempts || 3, this.options.retryDelay ?? 3000);
+            this._conn = await this.createConnection(options.retryAttempts || 3, options.retryDelay ?? 3000);
             this.onStart();
         });
     }
@@ -52,9 +52,11 @@ export class AmqpServer extends Server {
         await this.connect();
         if (!this._conn) throw new Execption('Amqp Connection has not connected.');
 
+        const options = this.getOptions();
+
         const channel = this._channel = await this._conn.createChannel();
 
-        const transportOpts = this.options.transportOpts!;
+        const transportOpts = options.transportOpts!;
         if (!transportOpts.transport) {
             transportOpts.transport = 'amqp';
         }
@@ -74,14 +76,14 @@ export class AmqpServer extends Server {
         const injector = this.handler.injector;
         const session = this._session = injector.get(TransportSessionFactory).create(injector, channel, transportOpts);
         session.listen(this.handler)
-        // injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
+        // injector.get(RequestHandler).handle(this.endpoint, session, this.logger, options);
 
     }
 
     protected async createConnection(retrys: number, retryDelay: number): Promise<amqp.Connection> {
         try {
             if (retrys) {
-                const conn = await amqp.connect(this.options.serverOpts!);
+                const conn = await amqp.connect(this.getOptions().serverOpts!);
                 this._connected = true;
                 return conn;
             }

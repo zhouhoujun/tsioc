@@ -1,8 +1,8 @@
 import { tokenId } from '@tsdi/ioc';
 import { ApplicationEventContext, CanActivate, Filter, Interceptor } from '@tsdi/core';
+import { Decoder, Encoder } from '@tsdi/common';
 import { BindServerEvent, ServerOpts } from '@tsdi/endpoints';
 import { ServerOptions } from 'ws';
-import { Decoder, Encoder } from '@tsdi/common';
 
 
 
@@ -16,10 +16,6 @@ export interface WsServerOpts extends ServerOpts<ServerOptions> {
     heybird?: boolean;
 }
 
-/**
- * Token of ws server opptions.
- */
-export const WS_SERV_OPTS = tokenId<WsServerOpts>('WS_SERV_OPTS');
 /**
  * Token of ws server interceptors.
  */

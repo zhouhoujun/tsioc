@@ -15,11 +15,6 @@ export interface WsClientOpts extends ClientOpts<ClientOptions> {
     url?: string;
 }
 
-
-/**
- * WS client opptions.
- */
-export const WS_CLIENT_OPTS = tokenId<WsClientOpts>('WS_CLIENT_OPTS');
 /**
  * WS client interceptors.
  */

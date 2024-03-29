@@ -1,19 +1,19 @@
 import { EMPTY_OBJ, Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
-import { TransportRequest } from '@tsdi/common';
+import { TransportEvent, TransportRequest } from '@tsdi/common';
 import { DisconnectExecption, OfflineExecption, ev } from '@tsdi/common/transport';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import * as mqtt from 'mqtt';
 import { Observable } from 'rxjs';
 import { MqttHandler } from './handler';
-import { MQTT_CLIENT_OPTS, MqttClientOpts } from './options';
+import { MqttClientOpts } from './options';
 
 
 /**
  * mqtt client.
  */
 @Injectable()
-export class MqttClient extends Client<TransportRequest> {
+export class MqttClient extends Client<TransportRequest, TransportEvent, MqttClientOpts> {
 
     @InjectLog()
     private logger?: Logger;
@@ -21,9 +21,7 @@ export class MqttClient extends Client<TransportRequest> {
     private mqtt?: mqtt.Client | null;
     private _session?: ClientTransportSession<mqtt.Client>;
 
-    constructor(
-        readonly handler: MqttHandler,
-        @Inject(MQTT_CLIENT_OPTS) private options: MqttClientOpts) {
+    constructor(readonly handler: MqttHandler) {
         super()
     }
 
@@ -81,9 +79,10 @@ export class MqttClient extends Client<TransportRequest> {
     }
 
     protected createConnection() {
-        const opts = this.options.connectOpts ?? EMPTY_OBJ;
+        const options = this.getOptions();
+        const opts = options.connectOpts ?? EMPTY_OBJ;
         const conn = (opts.url ? mqtt.connect(opts.url, opts) : mqtt.connect(opts));
-        const transportOpts = this.options.transportOpts!;
+        const transportOpts = options.transportOpts!;
         if(!transportOpts.transport) {
             transportOpts.transport = 'mqtt';
         }

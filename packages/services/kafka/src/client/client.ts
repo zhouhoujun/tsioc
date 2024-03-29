@@ -1,18 +1,20 @@
 import { Inject, Injectable, InvocationContext, isFunction } from '@tsdi/ioc';
-import { patternToPath } from '@tsdi/common';
-import { Client, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { TransportEvent, TransportRequest, patternToPath } from '@tsdi/common';
+import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { MircoServRouters } from '@tsdi/endpoints';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, Producer, logLevel } from 'kafkajs';
 import { KafkaHandler } from './handler';
-import { KAFKA_CLIENT_OPTS, KafkaClientOpts } from './options';
-import { KafkaReplyPartitionAssigner, KafkaTransportSession } from '../server/kafka.session';
+import { KafkaClientOpts } from './options';
+import { KafkaTransportSession } from '../server/kafka.session';
 import { DEFAULT_BROKERS, KafkaTransportOpts } from '../const';
+import { KafkaReplyPartitionAssigner } from '../kafka.assigner';
+import { KafkaClientTransportSession } from './session';
 
 
 
 @Injectable()
-export class KafkaClient extends Client {
+export class KafkaClient extends Client<TransportRequest, TransportEvent, KafkaClientOpts> {
 
 
     @InjectLog()
@@ -23,9 +25,7 @@ export class KafkaClient extends Client {
     private producer?: Producer | null;
     private _session?: KafkaClientTransportSession;
 
-    constructor(
-        readonly handler: KafkaHandler,
-        @Inject(KAFKA_CLIENT_OPTS) private options: KafkaClientOpts) {
+    constructor(readonly handler: KafkaHandler) {
         super()
     }
 
@@ -64,14 +64,15 @@ export class KafkaClient extends Client {
             }
         };
 
+        const options = this.getOptions();
 
-        const postfixId = this.options.postfixId = this.options.postfixId ?? '-client';
+        const postfixId = options.postfixId = options.postfixId ?? '-client';
 
         const connectOpts = {
             brokers: DEFAULT_BROKERS,
             logCreator,
             clientId: 'boot-consumer' + postfixId,
-            ...this.options.connectOpts
+            ...options.connectOpts
         };
 
         if (isFunction(connectOpts.brokers)) {
@@ -79,9 +80,9 @@ export class KafkaClient extends Client {
         }
         this.client = new Kafka(connectOpts);
 
-        const transportOpts = { transport: 'kafka', ...this.options.transportOpts } as KafkaTransportOpts;
+        const transportOpts = { transport: 'kafka', ...options.transportOpts } as KafkaTransportOpts;
 
-        if (!this.options.producerOnlyMode) {
+        if (!options.producerOnlyMode) {
             const partitionAssigners = [
                 (config: { cluster: Cluster }) => new KafkaReplyPartitionAssigner(transportOpts, config),
             ] as PartitionAssigner[];
@@ -89,7 +90,7 @@ export class KafkaClient extends Client {
             const consumeOpts = {
                 partitionAssigners,
                 groupId: 'boot-group' + postfixId,
-                ...this.options.consumer
+                ...options.consumer
             };
 
 
@@ -111,7 +112,7 @@ export class KafkaClient extends Client {
             await this.consumer.connect();
         }
 
-        this.producer = this.client.producer(this.options.producer);
+        this.producer = this.client.producer(options.producer);
         await this.producer.connect();
         const injector = this.handler.injector;
         this._session = injector.get(ClientTransportSessionFactory).create(injector, {
@@ -119,8 +120,8 @@ export class KafkaClient extends Client {
             consumer: this.consumer!
         }, transportOpts) as KafkaClientTransportSession
 
-        if (!this.options.producerOnlyMode) {
-            const topics = this.options.topics ? this.options.topics.map(t => {
+        if (!options.producerOnlyMode) {
+            const topics = options.topics ? options.topics.map(t => {
                 if (t instanceof RegExp) return t;
                 return patternToPath(t);
             }) : this.handler.injector.get(MircoServRouters).get('kafka').matcher.getPatterns();
@@ -144,7 +145,7 @@ export class KafkaClient extends Client {
 
     protected override initContext(context: InvocationContext<any>): void {
         context.setValue(Client, this);
-        context.setValue(TransportSession, this._session)
+        context.setValue(ClientTransportSession, this._session)
     }
 
     protected async onShutdown(): Promise<void> {

@@ -1,5 +1,5 @@
 import { Interceptor, Filter } from '@tsdi/core';
-import { Token, tokenId } from '@tsdi/ioc';
+import { tokenId } from '@tsdi/ioc';
 import { TransportEvent, TransportRequest } from '@tsdi/common';
 import { ClientOpts } from '@tsdi/common/client';
 import { ConnectionOptions, SubscriptionOptions } from 'nats';
@@ -28,10 +28,6 @@ export interface NatsClientOpts extends ClientOpts<ConnectionOptions> {
 }
 
 
-/**
- * NATS client opptions.
- */
-export const NATS_CLIENT_OPTS = tokenId<NatsClientOpts>('NATS_CLIENT_OPTS');
 /**
  * NATS client interceptors.
  */

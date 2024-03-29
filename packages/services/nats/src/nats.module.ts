@@ -1,13 +1,13 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST, PatternFormatter } from '@tsdi/common';
-import { CLIENT_MODULES, ClientOpts, TopicTransportBackend } from '@tsdi/common/client';
+import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
 import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { NatsClient } from './client/client';
-import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS, NATS_CLIENT_OPTS } from './client/options';
+import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS } from './client/options';
 import { NatsHandler } from './client/handler';
 import { NatsServer } from './server/server';
-import { NATS_SERV_FILTERS, NATS_SERV_GUARDS, NATS_SERV_INTERCEPTORS, NATS_SERV_OPTS } from './server/options';
+import { NATS_SERV_FILTERS, NATS_SERV_GUARDS, NATS_SERV_INTERCEPTORS } from './server/options';
 import { NatsEndpointHandler } from './server/handler';
 import { NatsPatternFormatter } from './pattern';
 import { NatsTransportSessionFactory } from './nats.session';
@@ -28,13 +28,11 @@ const defaultMaxSize = 1048576; //1024 * 1024;
             useValue: {
                 transport: 'nats',
                 clientType: NatsClient,
-                clientOptsToken: NATS_CLIENT_OPTS,
                 hanlderType: NatsHandler,
                 defaultOpts: {
                     encoding: 'utf8',
                     interceptorsToken: NATS_CLIENT_INTERCEPTORS,
                     filtersToken: NATS_CLIENT_FILTERS,
-                    backend: TopicTransportBackend,
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
@@ -51,8 +49,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                 transport: 'nats',
                 microservice: true,
                 serverType: NatsServer,
-                serverOptsToken: NATS_SERV_OPTS,
-                endpointType: NatsEndpointHandler,
+                handlerType: NatsEndpointHandler,
                 defaultOpts: {
                     encoding: 'utf8',
                     transportOpts: {

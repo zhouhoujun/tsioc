@@ -22,11 +22,6 @@ export interface KafkaClientOpts extends ClientOpts<KafkaConfig> {
 }
 
 /**
- * Kafka client opptions.
- */
-export const KAFKA_CLIENT_OPTS = tokenId<KafkaClientOpts>('KAFKA_CLIENT_OPTS');
-
-/**
  * Kafka client interceptors.
  */
 export const KAFKA_CLIENT_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('KAFKA_CLIENT_INTERCEPTORS');

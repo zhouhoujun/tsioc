@@ -11,7 +11,6 @@ export interface RedisServerOpts extends ServerOpts<RedisOptions> {
     retryDelay?: number;
 }
 
-export const REDIS_SERV_OPTS = tokenId<RedisServerOpts>('REDIS_SERV_OPTS');
 
 /**
  * Redis server interceptors.

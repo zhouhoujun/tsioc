@@ -3,11 +3,11 @@ import { ExecptionHandlerFilter } from '@tsdi/core';
 import { CLIENT_MODULES, ClientOpts, TransportBackend } from '@tsdi/common/client';
 import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { AmqpClient } from './client/client';
-import { AMQP_CLIENT_FILTERS, AMQP_CLIENT_INTERCEPTORS, AMQP_CLIENT_OPTS } from './client/options';
+import { AMQP_CLIENT_FILTERS, AMQP_CLIENT_INTERCEPTORS } from './client/options';
 import { AmqpHandler } from './client/handler';
 import { AmqpTransportSessionFactory } from './amqp.session';
 import { AmqpServer } from './server/server';
-import { AMQP_SERV_FILTERS, AMQP_SERV_GUARDS, AMQP_SERV_INTERCEPTORS, AMQP_SERV_OPTS } from './server/options';
+import { AMQP_SERV_FILTERS, AMQP_SERV_GUARDS, AMQP_SERV_INTERCEPTORS } from './server/options';
 import { AmqpEndpointHandler } from './server/handler';
 
 
@@ -25,7 +25,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
             useValue: {
                 transport: 'amqp',
                 clientType: AmqpClient,
-                clientOptsToken: AMQP_CLIENT_OPTS,
                 hanlderType: AmqpHandler,
                 defaultOpts: {
                     interceptorsToken: AMQP_CLIENT_INTERCEPTORS,
@@ -37,10 +36,9 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                         persistent: false,
                         noAssert: false,
                         queueOpts: {},
-                        prefetchCount: 0
+                        prefetchCount: 0,
                     },
-                    backend: TransportBackend,
-                    sessionFactory: { useExisting: AmqpTransportSessionFactory }
+                    // sessionFactory: { useExisting: AmqpTransportSessionFactory }
                 } as ClientOpts
             },
             multi: true
@@ -51,7 +49,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                 transport: 'amqp',
                 microservice: true,
                 serverType: AmqpServer,
-                serverOptsToken: AMQP_SERV_OPTS,
                 handlerType: AmqpEndpointHandler,
                 defaultOpts: {
                     serverOpts: 'amqp://localhost',
@@ -74,7 +71,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     interceptorsToken: AMQP_SERV_INTERCEPTORS,
                     filtersToken: AMQP_SERV_FILTERS,
                     guardsToken: AMQP_SERV_GUARDS,
-                    sessionFactory: { useExisting: AmqpTransportSessionFactory },
+                    // sessionFactory: { useExisting: AmqpTransportSessionFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,

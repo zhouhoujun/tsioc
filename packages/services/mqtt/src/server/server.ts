@@ -4,8 +4,7 @@ import { ev } from '@tsdi/common/transport';
 import { MircoServRouters, RequestContext, Server, TransportSession, TransportSessionFactory } from '@tsdi/endpoints';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Client, connect } from 'mqtt';
-import { Subscription } from 'rxjs';
-import { MQTT_SERV_OPTS, MqttServiceOpts } from './options';
+import { MqttServiceOpts } from './options';
 import { MqttEndpointHandler } from './handler';
 
 
@@ -22,16 +21,14 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
     private mqtt?: Client | null;
     private _session?: TransportSession<Client>;
 
-    constructor(
-        readonly handler: MqttEndpointHandler,
-        @Inject(MQTT_SERV_OPTS) private options: MqttServiceOpts
+    constructor(readonly handler: MqttEndpointHandler
     ) {
         super();
     }
 
     protected async connect(): Promise<any> {
 
-        const opts = this.options.serverOpts ?? EMPTY_OBJ;
+        const opts = this.getOptions().serverOpts ?? EMPTY_OBJ;
 
         this.mqtt = opts.url ? connect(opts.url, opts) : connect(opts);
         const defer = lang.defer();
@@ -61,10 +58,11 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
         await this.connect();
         if (!this.mqtt) throw new Execption('Mqtt connection cannot be null');
 
+        const options = this.getOptions();
         const injector = this.handler.injector;
         const router = injector.get(MircoServRouters).get('mqtt');
-        if (this.options.content?.prefix) {
-            const content = injector.get(PatternFormatter).format(`${this.options.content.prefix}/#`);
+        if (options.content?.prefix) {
+            const content = injector.get(PatternFormatter).format(`${options.content.prefix}/#`);
             router.matcher.register(content, true);
         }
 
@@ -79,7 +77,7 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
             });
 
 
-        const transportOpts = this.options.transportOpts!;
+        const transportOpts = options.transportOpts!;
         if (!transportOpts.transport) {
             transportOpts.transport = 'mqtt';
         }

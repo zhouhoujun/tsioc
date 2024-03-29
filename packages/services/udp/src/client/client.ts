@@ -1,38 +1,37 @@
 import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
-import { TransportRequest } from '@tsdi/common';
+import { TransportEvent, TransportRequest } from '@tsdi/common';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { UdpHandler } from './handler';
-import { UDP_CLIENT_OPTS, UdpClientOpts } from './options';
+import { UdpClientOpts } from './options';
 import { defaultMaxSize } from '../consts';
 
 
 
 @Injectable()
-export class UdpClient extends Client<TransportRequest> {
+export class UdpClient extends Client<TransportRequest, TransportEvent, UdpClientOpts> {
     private socket?: Socket | null;
     private session?: ClientTransportSession | null;
 
-    constructor(
-        readonly handler: UdpHandler,
-        @Inject(UDP_CLIENT_OPTS) private options: UdpClientOpts) {
+    constructor(readonly handler: UdpHandler) {
         super();
     }
 
     protected async connect(): Promise<any> {
         if (!this.session) {
+            const options = this.getOptions();
             const connectOpts = {
                 type: 'udp4',
-                sendBufferSize: this.options.transportOpts?.maxSize ?? defaultMaxSize,
-                ...this.options.connectOpts
+                sendBufferSize: options.transportOpts?.maxSize ?? defaultMaxSize,
+                ...options.connectOpts
             } as SocketOptions;
             this.socket = createSocket(connectOpts);
-            const transportOpts = this.options.transportOpts!;
+            const transportOpts = options.transportOpts!;
             if (!transportOpts.host) {
-                transportOpts.host = new URL(this.options.url!).host;
+                transportOpts.host = new URL(options.url!).host;
             }
             const injector = this.handler.injector;
-            this.session = injector.get(ClientTransportSessionFactory).create(injector, this.socket, this.options.transportOpts!);
+            this.session = injector.get(ClientTransportSessionFactory).create(injector, this.socket, options.transportOpts!);
         }
     }
 

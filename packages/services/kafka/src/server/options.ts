@@ -18,7 +18,6 @@ export interface KafkaServerOptions extends ServerOpts<KafkaConfig> {
     transportOpts?: KafkaTransportOpts;
 }
 
-export const KAFKA_SERV_OPTS = tokenId<KafkaServerOptions>('KAFKA_SERV_OPTIONS');
 
 /**
  * Kafka server interceptors.

@@ -5,7 +5,7 @@ import { Server, MircoServRouters, RequestHandler, TransportSessionFactory, Requ
 import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
 import { KafkaTransportSession } from './kafka.session';
 import { DEFAULT_BROKERS, KafkaTransportOpts } from '../const';
-import { KAFKA_SERV_OPTS, KafkaServerOptions } from './options';
+import { KafkaServerOptions } from './options';
 import { KafkaEndpointHandler } from './handler';
 import { ServiceUnavailableExecption } from '@tsdi/common/transport';
 import { Subject, fromEvent, merge } from 'rxjs';
@@ -28,12 +28,14 @@ export class KafkaServer extends Server<RequestContext, KafkaServerOptions> {
 
     private destroy$: Subject<void>;
 
-    constructor(readonly handler: KafkaEndpointHandler, @Inject(KAFKA_SERV_OPTS) private options: KafkaServerOptions) {
+    constructor(readonly handler: KafkaEndpointHandler) {
         super();
         this.destroy$ = new Subject();
     }
 
     protected async connnect(): Promise<any> {
+        const options = this.getOptions();
+
         const logCreator = (level: any) =>
             ({ namespace, level, label, log }: LogEntry) => {
                 let loggerMethod: Level;
@@ -64,12 +66,12 @@ export class KafkaServer extends Server<RequestContext, KafkaServerOptions> {
             };
 
 
-        const postfixId = this.options.postfixId ?? '-server';
+        const postfixId = options.postfixId ?? '-server';
         const connectOpts = {
             brokers: DEFAULT_BROKERS,
             logCreator,
             clientId: 'boot-consumer' + postfixId,
-            ...this.options.serverOpts
+            ...options.serverOpts
         };
 
         if (isFunction(connectOpts.brokers)) {
@@ -81,12 +83,12 @@ export class KafkaServer extends Server<RequestContext, KafkaServerOptions> {
 
         const consumeOpts = {
             groupId: 'boot-group' + postfixId,
-            ...this.options.consumer,
+            ...options.consumer,
         };
 
 
         this.consumer = client.consumer(consumeOpts);
-        this.producer = client.producer(this.options.producer);
+        this.producer = client.producer(options.producer);
 
         await this.consumer.connect();
         await this.producer.connect();
@@ -99,16 +101,18 @@ export class KafkaServer extends Server<RequestContext, KafkaServerOptions> {
         const consumer = this.consumer;
         const producer = this.producer;
         const injector = this.handler.injector;
+        const options = this.getOptions();
+
         const router = injector.get(MircoServRouters).get('kafka');
-        if (this.options.content?.prefix) {
-            const content = injector.get(PatternFormatter).format(`${this.options.content.prefix}-**`);
+        if (options.content?.prefix) {
+            const content = injector.get(PatternFormatter).format(`${options.content.prefix}-**`);
             router.matcher.register(content, true);
         }
         const topics = router.matcher.getPatterns<string | RegExp>();
 
-        const transportOpts = this.options.transportOpts = {
+        const transportOpts = options.transportOpts = {
             transport: 'kafka',
-            ...this.options.transportOpts,
+            ...options.transportOpts,
             serverSide: true
         } as KafkaTransportOpts;
 
