@@ -1,13 +1,14 @@
 import { PackModule, LibPackBuilderOption } from '@tsdi/pack';
-import { Workflow, Task } from '@tsdi/activities';
+import { Workflow,  } from '@tsdi/activities';
 import { ServerActivitiesModule } from '@tsdi/platform-server/activities';
+import { Component } from '@tsdi/components';
 
-@Task({
-    deps: [
+@Component({
+    imports: [
         PackModule,
         ServerActivitiesModule
     ],
-    baseURL: __dirname,
+    // baseURL: __dirname,
     template: <LibPackBuilderOption>{
         activity: 'libs',
         outDir: '../../dist/boot',

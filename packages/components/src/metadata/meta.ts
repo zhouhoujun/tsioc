@@ -1,4 +1,4 @@
-import { InjectableMetadata, PropertyMetadata, Type } from '@tsdi/ioc';
+import { ClassType, InjectableMetadata, ModuleWithProviders, Modules, PropertyMetadata, Type } from '@tsdi/ioc';
 
 /**
  * component metadata.
@@ -15,6 +15,13 @@ export interface DirectiveMetadata extends InjectableMetadata {
      * @memberof DirectiveMetadata
      */
     selector?: string;
+    
+    /**
+     * imports dependens modules
+     *
+     * @type {Modules[]}
+     */
+    imports?: (Modules<ClassType> | ModuleWithProviders)[];
 }
 
 
