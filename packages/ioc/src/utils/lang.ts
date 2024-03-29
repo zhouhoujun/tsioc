@@ -202,13 +202,8 @@ export function getClassName(target: any): string {
  * @returns {Type}
  */
 export function getParentClass(target: Type): Type {
-    try {
     const ty = Object.getPrototypeOf(target.prototype)?.constructor ?? Object.getPrototypeOf(target);
     return ty === Object ? null : ty
-    } catch(err) {
-        console.log(target, err);
-        throw err;
-    }
 }
 
 /**
