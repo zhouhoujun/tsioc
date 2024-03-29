@@ -1,6 +1,6 @@
 import {
     Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType,
-    Type, Token, getToken, isArray, lang, toFactory, toProvider, tokenId
+    Type, Token, isArray, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
 import { HybirdTransport, NotImplementedExecption, Transport } from '@tsdi/common/transport';

@@ -95,7 +95,7 @@ export type ServiceOpts = (ServerConfig & HeybirdServiceOpts) | (ServerConfig & 
  */
 export interface ServerModuleOpts extends ServerConfig {
     /**
-     * microservice or not.
+     * is microservice or not.
      */
     microservice?: boolean;
     /**
