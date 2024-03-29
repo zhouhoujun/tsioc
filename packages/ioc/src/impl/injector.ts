@@ -13,7 +13,7 @@ import { Platform } from '../platform';
 import { get } from '../metadata/refl';
 import { ModuleDef, Class } from '../metadata/type';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
-import { ModuleWithProviders, ProviderType, StaticProvider, StaticProviders } from '../providers';
+import { ModuleWithProviders, ProviderType, DynamicProvider, StaticProvider, StaticProviders } from '../providers';
 import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
@@ -135,18 +135,23 @@ export class DefaultInjector extends Injector {
         this.assertNotDestroyed();
         if (args.length) {
             const platform = this.platform();
-            deepForEach(args, p => this.processProvider(platform, p, args), v => isPlainObject(v) && !(v as StaticProviders).provide)
+            deepForEach(args, p => this.processProvider(platform, p, args), v => isPlainObject(v) && !((v as StaticProviders).provide || (v as DynamicProvider).provider))
         }
         return this
     }
 
-    protected processProvider(platform: Platform, p: TypeOption | StaticProvider, providers?: ProviderType[]) {
+    protected processProvider(platform: Platform, p: TypeOption | StaticProvider | DynamicProvider, providers?: ProviderType[]) {
         if (isFunction(p)) {
             this.registerType(platform, p)
-        } else if (isPlainObject(p) && (p as StaticProviders).provide) {
-            this.registerProvider(platform, p as StaticProviders)
-        } else if (isPlainObject(p) && (p as TypeOption).type) {
-            this.registerType(platform, (p as TypeOption).type, p as TypeOption)
+        } else if (isPlainObject(p)) {
+            if ((p as StaticProviders).provide) {
+                this.registerProvider(platform, p as StaticProviders)
+            } else if ((p as TypeOption).type) {
+                this.registerType(platform, (p as TypeOption).type, p as TypeOption)
+            } else if ((p as DynamicProvider).provider) {
+                const pdrs = (p as DynamicProvider).provider(this);
+                isArray(pdrs) ? pdrs.forEach(pdr => this.processProvider(platform, pdr)) : this.processProvider(platform, pdrs);
+            }
         }
     }
 
@@ -557,7 +562,7 @@ INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: Inje
 
 
 export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedupStack: Type[],
-    processProvider: (provider: StaticProvider, providers?: any[]) => void,
+    processProvider: (provider: StaticProvider | DynamicProvider, providers?: any[]) => void,
     regType: (typeRef: Class, type: Type) => void, moduleRefl?: Class, imported?: boolean) {
     let type: Type;
     if (isType(typeOrDef)) {
@@ -567,7 +572,7 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
         deepForEach(
             typeOrDef.providers,
             pdr => processProvider(pdr, typeOrDef.providers),
-            v => isPlainObject(v) && !v.provide
+            v => isPlainObject(v) && !(v.provide || v.provider)
         )
     }
     const isDuplicate = dedupStack.indexOf(type) !== -1;
@@ -587,7 +592,7 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
             deepForEach(
                 annotation.providers,
                 pdr => processProvider(pdr, annotation.providers),
-                v => isPlainObject(v) && !v.provide
+                v => isPlainObject(v) && !(v.provide || v.provider)
             )
         }
 

@@ -107,6 +107,7 @@ export class DeviceController {
             {
                 transport: 'tcp',
                 client: 'micro-client',
+                microservice: true,
                 clientOpts: {
                     connectOpts: {
                         port: 3000

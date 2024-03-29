@@ -21,11 +21,7 @@ export interface ClientModuleConfig {
     /**
      * client options.
      */
-    clientOpts?: ProvdierOf<ClientOpts>;
-    /**
-     * client handler provider
-     */
-    handler?: ProvdierOf<ClientHandler>;
+    clientOpts?: ClientOpts;
     /**
      * custom provider with module.
      */
@@ -49,10 +45,6 @@ export interface ClientModuleOpts extends ClientModuleConfig {
      * client type
      */
     clientType: Type<Client>;
-    /**
-     * client options token.
-     */
-    clientOptsToken: Token<ClientOpts>;
     /**
      * client providers
      */
@@ -121,8 +113,8 @@ export class ClientModule {
         let providers: ProviderType[];
         if (isArray(options)) {
             providers = []
-            options.forEach(op => {
-                providers.push(...clientProviders(op));
+            options.forEach((op, idx) => {
+                providers.push(...clientProviders(op, idx));
             })
         } else {
             providers = clientProviders(options);
@@ -142,106 +134,54 @@ export class ClientModule {
 export const CLIENT_MODULES = tokenId<(ClientModuleOpts)[]>('CLIENT_MODULES');
 
 
-function clientProviders(options: ClientModuleConfig & ClientTokenOpts) {
-    const { client, transport } = options;
+function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: number) {
+    return [
+        ...options.providers ?? EMPTY,
+        {
+            provider: (injector) => {
+                const defts = injector.get(CLIENT_MODULES).find(r => r.transport === options.transport && r.microservice == options.microservice);
+                if (!defts) throw new NotImplementedExecption(options.transport + ' client has not implemented');
+                const opts = { ...defts, ...options } as ClientModuleOpts & ClientTokenOpts;
+                const clientOpts = { backend: opts.backend ?? TransportBackend, globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS, ...opts.defaultOpts, ...opts.clientOpts, providers: [...opts.defaultOpts?.providers || EMPTY, ...opts.clientOpts?.providers || EMPTY] } as ClientOpts & { providers: ProviderType[] };
 
-    const providers: ProviderType[] = [
-        ...options.providers ?? EMPTY
-    ];
-    const moduleOptsToken: Token<ClientModuleOpts> = getToken<any>(client ?? transport, 'client_module');
-
-    providers.push(toFactory(moduleOptsToken, options, {
-        init: (options, injector) => {
-            const defts = injector.get(CLIENT_MODULES).find(r => r.transport === transport);
-            if (!defts) throw new NotImplementedExecption(options.transport + ' client has not implemented');
-            return { ...defts, ...options } as ClientModuleOpts;
-        },
-        onRegistered: (injector) => {
-            const { clientType, backend, clientProvider, hanlderType, clientOptsToken, defaultOpts, microservice } = injector.get(moduleOptsToken);
-
-            const providers = [];
-            if (clientProvider) {
-                providers.push(toProvider(clientType, clientProvider));
-            }
-            if (options.handler) {
-                providers.push(toProvider(hanlderType, options.handler))
-            } else {
-                providers.push({
-                    provide: hanlderType,
-                    useFactory: (injector: Injector, opts: ClientOpts) => {
-                        return createHandler(injector, opts);
-                    },
-                    asDefault: true,
-                    deps: [Injector, clientOptsToken]
-                })
-            }
-            if (!client) {
-                providers.push(toFactory(clientOptsToken, options.clientOpts!, {
-                    init: (clientOpts: ClientOpts) => {
-
-                        const opts = { backend: backend?? TransportBackend, globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS, ...lang.deepClone(defaultOpts), ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] } as ClientOpts & { providers: ProviderType[] };
-                 
-                        if (microservice) {
-                            opts.microservice = microservice;
-                        }
-                        if (opts.timeout) {
-                            if (opts.transportOpts) {
-                                opts.transportOpts.timeout = opts.timeout;
-                            } else {
-                                opts.transportOpts = { timeout: opts.timeout };
-                            }
-                        }
-                        if (opts.sessionFactory && opts.sessionFactory !== ClientTransportSessionFactory) {
-                            opts.providers.push(toProvider(ClientTransportSessionFactory, opts.sessionFactory))
-                        }
-                        return opts;
-                    }
-                }))
-            }
-            injector.inject(providers);
-        }
-    }));
-
-
-
-    if (client) {
-        const token = getToken(client, 'options');
-        providers.push(
-            toFactory(token, options.clientOpts!, {
-                init: (clientOpts: ClientOpts, injector: Injector) => {
-                    const { defaultOpts, backend, clientOptsToken, microservice } = injector.get(moduleOptsToken);
-                    const opts = { backend: backend ?? TransportBackend, ...lang.deepClone(defaultOpts), ...clientOpts, providers: [...defaultOpts?.providers || EMPTY, ...clientOpts?.providers || EMPTY] };
-
-                    if (microservice) {
-                        opts.microservice = microservice;
-                    }
-                    if (opts.timeout) {
-                        if (opts.transportOpts) {
-                            opts.transportOpts.timeout = opts.timeout;
-                        } else {
-                            opts.transportOpts = { timeout: opts.timeout };
-                        }
-                    }
-                    if (opts.sessionFactory && opts.sessionFactory !== ClientTransportSessionFactory) {
-                        opts.providers.push(toProvider(ClientTransportSessionFactory, opts.sessionFactory))
-                    }
-
-                    opts.providers.push({ provide: clientOptsToken, useExisting: token });
-                    return opts as ClientOpts;
+                if (opts.microservice) {
+                    clientOpts.microservice = opts.microservice;
                 }
-            }),
-            {
-                provide: client,
-                useFactory: (injector: Injector, moduleOpts: ClientModuleOpts) => {
-                    return injector.resolve(moduleOpts.clientType, [
-                        { provide: moduleOpts.clientOptsToken, useExisting: token }
-                    ]);
-                },
-                deps: [Injector, moduleOptsToken]
+                if (clientOpts.timeout) {
+                    if (clientOpts.transportOpts) {
+                        clientOpts.transportOpts.timeout = clientOpts.timeout;
+                    } else {
+                        clientOpts.transportOpts = { timeout: clientOpts.timeout };
+                    }
+                }
+                if (clientOpts.sessionFactory && clientOpts.sessionFactory !== ClientTransportSessionFactory) {
+                    clientOpts.providers.push(toProvider(ClientTransportSessionFactory, clientOpts.sessionFactory))
+                }
+
+                const providers: ProviderType[] = [];
+
+                if (opts.clientProvider) {
+                    providers.push(toProvider(opts.clientType, opts.clientProvider));
+                }
+                providers.push({
+                    provide: opts.hanlderType,
+                    useFactory: (injector: Injector) => {
+                        return createHandler(injector, lang.deepClone(clientOpts));
+                    },
+                    deps: [Injector]
+                });
+
+                return opts.client ? [
+                    {
+                        provide: opts.client,
+                        useFactory: (injector: Injector) => {
+                            return injector.resolve(opts.clientType, providers);
+                        },
+                        deps: [Injector]
+
+                    }
+                ] : providers;
             }
-        );
-
-    }
-
-    return providers;
+        }
+    ] as ProviderType[];
 }

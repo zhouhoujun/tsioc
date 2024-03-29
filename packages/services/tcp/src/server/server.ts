@@ -3,11 +3,11 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService } from '@tsdi/common';
 import { InternalServerExecption, ev } from '@tsdi/common/transport';
-import { BindServerEvent, MiddlewareHandler, MiddlewareLike, MiddlewareService, Server, TransportSessionFactory } from '@tsdi/endpoints';
+import { BindServerEvent, MiddlewareHandler, MiddlewareLike, MiddlewareService, RequestContext, Server, TransportSessionFactory } from '@tsdi/endpoints';
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
-import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TCP_SERV_OPTS, TcpServerOpts } from './options';
+import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TcpServerOpts } from './options';
 import { TcpEndpointHandler } from './handler';
 
 
@@ -16,7 +16,7 @@ import { TcpEndpointHandler } from './handler';
  * tcp server of `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpServer extends Server implements ListenService, MiddlewareService {
+export class TcpServer extends Server<RequestContext, TcpServerOpts> implements ListenService, MiddlewareService {
 
     protected serv?: net.Server | tls.Server | null;
 
@@ -28,12 +28,11 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
 
     constructor(
         readonly handler: TcpEndpointHandler,
-        @Inject(TCP_SERV_OPTS) private options: TcpServerOpts,
     ) {
         super();
 
         this.destroy$ = new Subject();
-        this.isSecure = !!(this.options.serverOpts as tls.TlsOptions)?.cert;
+        this.isSecure = !!(this.getOptions().serverOpts as tls.TlsOptions)?.cert;
     }
 
     use(middlewares: ProvdierOf<MiddlewareLike> | ProvdierOf<MiddlewareLike>[], order?: number | undefined): this {
@@ -50,29 +49,30 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
     listen(port: number, host?: string, listeningListener?: () => void): this;
     listen(arg1: ListenOpts | number, arg2?: any, listeningListener?: () => void): this {
         if (!this.serv) throw new InternalServerExecption();
-        const isSecure = this.options.secure = this.isSecure;
-        const protocol = this.options.protocol = this.options.protocol ?? (isSecure ? 'ssl' : 'tcp');
+        const options = this.getOptions();
+        const isSecure = options.secure = this.isSecure;
+        const protocol = options.protocol = options.protocol ?? (isSecure ? 'ssl' : 'tcp');
         if (isNumber(arg1)) {
             const port = arg1;
             if (isString(arg2)) {
                 const host = arg2;
-                if (!this.options.listenOpts) {
-                    this.options.listenOpts = { host, port };
+                if (!options.listenOpts) {
+                    options.listenOpts = { host, port };
                 }
                 this.logger.info(lang.getClassName(this), 'access with url:', `${protocol}://${host}:${port}`, '!')
                 this.serv.listen(port, host, listeningListener);
             } else {
                 listeningListener = arg2;
-                if (!this.options.listenOpts) {
-                    this.options.listenOpts = { host: LOCALHOST, port };
+                if (!options.listenOpts) {
+                    options.listenOpts = { host: LOCALHOST, port };
                 }
                 this.logger.info(lang.getClassName(this), 'access with url:', `${protocol}://localhost:${port}`, '!')
                 this.serv.listen(port, listeningListener);
             }
         } else {
             const opts = arg1;
-            if (!this.options.listenOpts) {
-                this.options.listenOpts = opts;
+            if (!options.listenOpts) {
+                options.listenOpts = opts;
             }
             if (opts.host || opts.port) {
                 this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `${protocol}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
@@ -90,28 +90,30 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
         globalGuardsToken: TCP_BIND_GUARDS
     })
     async bind(event: BindServerEvent<any>) {
-        if (this.serv || (isString(this.options.heybird) && event.transport !== this.options.heybird)) return;
+        const options = this.getOptions();
+        if (this.serv || (isString(options.heybird) && event.transport !== options.heybird)) return;
         await this.onStart(event.server);
     }
 
     protected async setup(): Promise<any> {
-        const opts = this.options;
+        const opts = this.getOptions();
         this.serv = this.createServer(opts);
     }
 
     protected async onStart(bindServer?: any): Promise<any> {
-        if (this.options.heybird && !bindServer) return;
+        const options = this.getOptions();
+        if (options.heybird && !bindServer) return;
 
         if (!bindServer) {
             await this.setup();
         }
         if (!this.serv) throw new InternalServerExecption();
 
-        this.serv.on(ev.CLOSE, () => this.logger.info(this.options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
+        this.serv.on(ev.CLOSE, () => this.logger.info(options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
         const injector = this.handler.injector;
         const factory = injector.get(TransportSessionFactory);
-        const transportOpts = this.options.transportOpts!;
+        const transportOpts = options.transportOpts!;
         if (!transportOpts.transport) transportOpts.transport = 'tcp';
 
         if (this.serv instanceof tls.Server) {
@@ -130,13 +132,13 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
             })
         }
 
-        if (!this.options.microservice && !bindServer) {
+        if (!options.microservice && !bindServer) {
             // notify hybrid service to bind http server.
             await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this.serv, 'tcp', this)));
         }
 
-        if (this.options.listenOpts && !bindServer) {
-            this.listen(this.options.listenOpts)
+        if (options.listenOpts && !bindServer) {
+            this.listen(options.listenOpts)
         }
     }
 
@@ -144,7 +146,6 @@ export class TcpServer extends Server implements ListenService, MiddlewareServic
         if (!this.serv) return;
         this.destroy$.next();
         this.destroy$.complete();
-        // if (!this.micro) this.endpoint.injector.get(ModuleRef).unregister(HYBRID_HOST);
         await promisify(this.serv.close, this.serv)()
             .finally(() => {
                 this.serv?.removeAllListeners();

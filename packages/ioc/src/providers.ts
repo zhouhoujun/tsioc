@@ -197,6 +197,13 @@ export interface ExistingProvider<T = any> extends Provide<T>, UseExisting<T> { 
 export type TypeProvider<T = any> = ClassType<T>;
 
 /**
+ * dynamic provider.
+ */
+export interface DynamicProvider {
+    provider(injector: Injector): StaticProvider | StaticProvider[];
+}
+
+/**
  * use static provider of.
  */
 export type ProvdierOf<T> = UseClass<T> | UseValue<T> | UseFactory<T> | UseExisting<T> | TypeProvider<T> | TypeOf<T>;
@@ -218,7 +225,7 @@ export type StaticProvider<T = any> = TypeProvider<T> | ClassProvider<T> | Value
  * providers for {@link Injector}.
  * 
  */
-export type ProviderType = ClassType | Modules[] | StaticProvider;
+export type ProviderType = ClassType | Modules[] | StaticProvider | DynamicProvider;
 
 /**
  * type module with providers.

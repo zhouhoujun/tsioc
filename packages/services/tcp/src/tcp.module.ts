@@ -4,10 +4,10 @@ import { LOCALHOST } from '@tsdi/common';
 import { CLIENT_MODULES, ClientDuplexTransportSessionFactory, ClientOpts } from '@tsdi/common/client';
 import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';
-import { TCP_CLIENT_DECODINGS, TCP_CLIENT_ENCODINGS, TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_CLIENT_OPTS, TCP_MICROSERVICE_CLIENT_DECODINGS, TCP_MICROSERVICE_CLIENT_ENCODINGS } from './client/options';
+import { TCP_CLIENT_DECODINGS, TCP_CLIENT_ENCODINGS, TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_MICROSERVICE_CLIENT_DECODINGS, TCP_MICROSERVICE_CLIENT_ENCODINGS } from './client/options';
 import { TcpHandler } from './client/handler';
 import { TcpServer } from './server/server';
-import { TCP_MICROSERVICE_DECODINGS, TCP_MICROSERVICE_ENCODINGS, TCP_MIDDLEWARES, TCP_SERVER_DECODINGS, TCP_SERVER_ENCODINGS, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS, TCP_SERV_OPTS } from './server/options';
+import { TCP_MICROSERVICE_DECODINGS, TCP_MICROSERVICE_ENCODINGS, TCP_MIDDLEWARES, TCP_SERVER_DECODINGS, TCP_SERVER_ENCODINGS, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS } from './server/options';
 import { TcpEndpointHandler } from './server/handler';
 
 
@@ -25,7 +25,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                 transport: 'tcp',
                 clientType: TcpClient,
                 microservice: true,
-                clientOptsToken: TCP_CLIENT_OPTS,
                 hanlderType: TcpHandler,
                 defaultOpts: {
                     interceptorsToken: TCP_CLIENT_INTERCEPTORS,
@@ -46,7 +45,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
             useValue: {
                 transport: 'tcp',
                 clientType: TcpClient,
-                clientOptsToken: TCP_CLIENT_OPTS,
                 hanlderType: TcpHandler,
                 defaultOpts: {
                     interceptorsToken: TCP_CLIENT_INTERCEPTORS,
@@ -68,7 +66,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                 transport: 'tcp',
                 microservice: true,
                 serverType: TcpServer,
-                serverOptsToken: TCP_SERV_OPTS,
                 handlerType: TcpEndpointHandler,
                 defaultOpts: {
                     listenOpts: { port: 3000, host: LOCALHOST },
@@ -102,7 +99,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
             useValue: {
                 transport: 'tcp',
                 serverType: TcpServer,
-                serverOptsToken: TCP_SERV_OPTS,
                 handlerType: TcpEndpointHandler,
                 defaultOpts: {
                     listenOpts: { port: 3000, host: LOCALHOST },

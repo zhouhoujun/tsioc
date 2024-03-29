@@ -103,7 +103,11 @@ export abstract class Server<TRequest extends RequestContext = RequestContext, T
     /**
      * service endpoint handler.
      */
-    abstract get handler(): EndpointHandler<TRequest, TOptions>
+    abstract get handler(): EndpointHandler<TRequest, TOptions>;
+
+    getOptions(): TOptions {
+        return this.handler.getOptions()
+    }
 
     useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number | undefined): this {
         this.handler.useGuards(guards, order);

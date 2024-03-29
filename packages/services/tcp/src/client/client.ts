@@ -1,4 +1,4 @@
-import { Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
+import { Injectable, InvocationContext, promisify } from '@tsdi/ioc';
 import { TransportRequest, Pattern, LOCALHOST, RequestInitOpts } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
@@ -6,7 +6,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
-import { TCP_CLIENT_OPTS, TcpClientOpts } from './options';
+import { TcpClientOpts } from './options';
 import { TcpHandler } from './handler';
 
 
@@ -22,12 +22,10 @@ export class TcpClient extends Client<TransportRequest> {
     private connection!: tls.TLSSocket | net.Socket;
     private _session?: ClientTransportSession<any, tls.TLSSocket | net.Socket>;
 
-    constructor(
-        readonly handler: TcpHandler,
-        @Inject(TCP_CLIENT_OPTS) private options: TcpClientOpts) {
+    constructor(readonly handler: TcpHandler) {
         super();
-        if (!options.connectOpts) {
-            options.connectOpts = {
+        if (!this.handler.getOptions().connectOpts) {
+            this.handler.getOptions().connectOpts = {
                 port: 3000,
                 host: LOCALHOST
             }
@@ -39,7 +37,7 @@ export class TcpClient extends Client<TransportRequest> {
             const valid = this.connection && this.isValid(this.connection);
             if (!valid) {
                 if (this.connection) this.connection.removeAllListeners();
-                this.connection = this.createConnection(this.options);
+                this.connection = this.createConnection(this.getOptions());
             }
             let cleaned = false;
             const conn = this.connection;

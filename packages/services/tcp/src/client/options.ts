@@ -23,10 +23,6 @@ export interface TcpClientOpts extends ClientOpts<NetConnectOpts | ConnectionOpt
 
 
 /**
- * TCP client opptions.
- */
-export const TCP_CLIENT_OPTS = tokenId<TcpClientOpts>('TCP_CLIENT_OPTS');
-/**
  * tcp client interceptors.
  */
 export const TCP_CLIENT_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('TCP_CLIENT_INTERCEPTORS');

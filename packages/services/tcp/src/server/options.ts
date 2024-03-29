@@ -18,10 +18,6 @@ export interface TcpServerOpts extends ServerOpts<net.ServerOpts | tls.TlsOption
     heybird?: boolean;
 }
 
-/**
- * TCP server opptions.
- */
-export const TCP_SERV_OPTS = tokenId<TcpServerOpts>('TCP_SERV_OPTS');
 
 /**
  * Tcp server interceptors.

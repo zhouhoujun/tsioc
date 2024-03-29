@@ -3,7 +3,7 @@ import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/
 import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
-import { TCP_CLIENT_OPTS, TCP_SERV_INTERCEPTORS, TcpClient, TcpModule, TcpServer } from '../src';
+import { TCP_SERV_INTERCEPTORS, TcpClient, TcpModule, TcpServer } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { LoggerModule } from '@tsdi/logger';

@@ -3,6 +3,7 @@ import { Shutdown } from '@tsdi/core';
 import { TransportHeaders, TransportParams, ResponseAs, Pattern, TransportEvent, TransportResponse, TransportRequest, RequestInitOpts, RequestOptions } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
 import { ClientHandler } from './handler';
+import { ClientOpts } from './options';
 
 
 
@@ -10,12 +11,16 @@ import { ClientHandler } from './handler';
  * transport client. use to request text, stream, blob, arraybuffer and json.
  */
 @Abstract()
-export abstract class Client<TRequest extends TransportRequest = TransportRequest, TResponse extends TransportEvent = TransportEvent> {
+export abstract class Client<TRequest extends TransportRequest = TransportRequest, TResponse extends TransportEvent = TransportEvent, TOptions extends ClientOpts = ClientOpts> {
 
     /**
      * client handler
      */
-    abstract get handler(): ClientHandler<TRequest, TResponse>;
+    abstract get handler(): ClientHandler<TRequest, TResponse, TOptions>;
+
+    getOptions(): TOptions {
+        return this.handler.getOptions()
+    }
 
     /**
      * Sends an `Request` and returns a stream of `TransportEvent`s.

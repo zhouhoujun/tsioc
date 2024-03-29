@@ -1,4 +1,4 @@
-import { InjectFlags, Injector, InstanceOf, Module, ModuleWithProviders, Token, TypeOf, getToken, isFunction, isString, isType, tokenId } from '@tsdi/ioc';
+import { InjectFlags, Injector, InstanceOf, Module, ModuleWithProviders, ProviderType, Token, TypeOf, getToken, isFunction, isString, isType, tokenId } from '@tsdi/ioc';
 import { PatternFormatter, patternToPath, normalize } from '@tsdi/common';
 import { Transport } from '@tsdi/common/transport';
 import { ROUTES, Routes } from './route';
@@ -96,7 +96,7 @@ export class RouterModule {
     }
 }
 
-export function createRouteProviders(optsify: InstanceOf<RouteOpts>) {
+export function createRouteProviders(optsify: InstanceOf<RouteOpts>): ProviderType[] {
     return [
         {
             provide: HybridRouter,
@@ -192,7 +192,7 @@ export interface RouteOpts {
     routes?: Routes;
 }
 
-export function createMicroRouteProviders(transport: Transport, optsify: InstanceOf<RouteOpts>) {
+export function createMicroRouteProviders(transport: Transport, optsify: InstanceOf<RouteOpts>): ProviderType[] {
     const token = getMircServRouter(transport);
     return [
         {

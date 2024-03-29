@@ -13,10 +13,6 @@ import { RequestHandler } from './RequestHandler';
 export class EndpointHandler<TInput extends RequestContext = RequestContext, TOptions extends EndpointOptions<TInput> = EndpointOptions<TInput>>
     extends ConfigableHandler<TInput, any, TOptions> implements RequestHandler<TInput>, HandlerService {
     
-    getOptions(): TOptions {
-        return this.options;
-    }
-
     protected override forbiddenError(): Execption {
         return new ForbiddenExecption()
     }

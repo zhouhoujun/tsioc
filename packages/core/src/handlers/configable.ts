@@ -27,6 +27,10 @@ export class ConfigableHandler<
         return this.context.injector;
     }
 
+    getOptions(): TOptions {
+        return this.options;
+    }
+
     constructor(
         protected context: InvocationContext,
         options: TOptions) {
