@@ -107,7 +107,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * @param req the message response for.
      */
     receive(context?: InputContext): Observable<TOutput> {
-        return this.handMessage()
+        return this.handleMessage()
             .pipe(
                 mergeMap(msg => {
                     const ctx = context ?? new InputContext();
@@ -125,7 +125,10 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
             )
     }
 
-    abstract handMessage(): Observable<TMsg>;
+    /**
+     * handle message
+     */
+    abstract handleMessage(): Observable<TMsg>;
 
     /**
      * destroy.

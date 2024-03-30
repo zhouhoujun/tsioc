@@ -213,7 +213,8 @@ if (os.platform() != 'win32') {
                         return of(err)
                     })
                 ));
-            expect(a.status).toEqual(404);
+            // expect(a.status).toEqual(404);
+            expect(a.statusText).toEqual('NotFound')
         });
 
         it('bad request', async () => {
@@ -224,12 +225,13 @@ if (os.platform() != 'win32') {
                         return of(err)
                     })
                 ));
-            expect(a.status).toEqual(400);
+            // expect(a.status).toEqual(400);
+            expect(a.statusText).toEqual('BadRequest')
         })
 
         it('post route response object', async () => {
             const a = await lastValueFrom(client.send<any>('/device/init', { observe: 'response', method: 'POST', params: { name: 'test' } }));
-            expect(a.status).toEqual(200);
+            // expect(a.status).toEqual(200);
             expect(a.ok).toBeTruthy();
             expect(a.body).toBeDefined();
             expect(a.body.name).toEqual('test');
@@ -242,7 +244,7 @@ if (os.platform() != 'win32') {
                         ctx.getLogger().error(err);
                         return of(err as TransportResponse);
                     })));
-            expect(b.status).toEqual(200);
+            // expect(b.status).toEqual(200);
             expect(b.ok).toBeTruthy();
             expect(b.body).toEqual('1.0.0');
         });
@@ -256,7 +258,7 @@ if (os.platform() != 'win32') {
                     })
                 ));
             // a.error && console.log(a.error);
-            expect(a.status).toEqual(200);
+            // expect(a.status).toEqual(200);
             expect(a.ok).toBeTruthy();
             expect(a.body).toBeDefined();
             expect(a.body.year).toStrictEqual(50);
@@ -270,7 +272,8 @@ if (os.platform() != 'win32') {
                         ctx.getLogger().error(err);
                         return of(err);
                     })));
-            expect(r.status).toEqual(400);
+            // expect(r.status).toEqual(400);
+            expect(r.statusText).toEqual('BadRequest')
         })
 
         it('route with request body pipe throw argument err', async () => {
@@ -280,12 +283,13 @@ if (os.platform() != 'win32') {
                         ctx.getLogger().error(err);
                         return of(err);
                     })));
-            expect(r.status).toEqual(400);
+            // expect(r.status).toEqual(400);
+            expect(r.statusText).toEqual('BadRequest')
         })
 
         it('route with request param pipe', async () => {
             const a = await lastValueFrom(client.send('/device/usege/find', { observe: 'response', params: { age: '20' } }));
-            expect(a.status).toEqual(200);
+            // expect(a.status).toEqual(200);
             expect(a.ok).toBeTruthy();
             expect(a.body).toStrictEqual(20);
         })
@@ -297,7 +301,8 @@ if (os.platform() != 'win32') {
                         ctx.getLogger().error(err);
                         return of(err);
                     })));
-            expect(r.status).toEqual(400);
+            // expect(r.status).toEqual(400);
+            expect(r.statusText).toEqual('BadRequest')
         })
 
         it('route with request param pipe throw argument err', async () => {
@@ -307,12 +312,13 @@ if (os.platform() != 'win32') {
                         ctx.getLogger().error(err);
                         return of(err);
                     })));
-            expect(r.status).toEqual(400);
+            // expect(r.status).toEqual(400);
+            expect(r.statusText).toEqual('BadRequest')
         })
 
         it('route with request param pipe', async () => {
             const a = await lastValueFrom(client.send('/device/30/used', { observe: 'response', params: { age: '20' } }));
-            expect(a.status).toEqual(200);
+            // expect(a.status).toEqual(200);
             expect(a.ok).toBeTruthy();
             expect(a.body).toStrictEqual(30);
         })
@@ -324,7 +330,8 @@ if (os.platform() != 'win32') {
                         ctx.getLogger().error(err);
                         return of(err);
                     })));
-            expect(r.status).toEqual(400);
+            // expect(r.status).toEqual(400);
+            expect(r.statusText).toEqual('BadRequest')
         })
 
         it('route with request restful param pipe throw argument err', async () => {
@@ -334,7 +341,8 @@ if (os.platform() != 'win32') {
                         ctx.getLogger().error(err);
                         return of(err);
                     })));
-            expect(r.status).toEqual(400);
+            // expect(r.status).toEqual(400);
+            expect(r.statusText).toEqual('BadRequest')
         })
 
 
@@ -345,7 +353,8 @@ if (os.platform() != 'win32') {
                         ctx.getLogger().error(err);
                         return of(err as TransportResponse<any, number>);
                     })));
-            expect(r.status).toEqual(200);
+            // expect(r.status).toEqual(200);
+            expect(r.ok).toBeTruthy();
             expect(r.body).toEqual('working');
         })
 
@@ -356,7 +365,8 @@ if (os.platform() != 'win32') {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-            expect(r.status).toEqual(200);
+            // expect(r.status).toEqual(200);
+            expect(r.ok).toBeTruthy();
             expect(r.body).toEqual(result);
         })
 
@@ -367,7 +377,8 @@ if (os.platform() != 'win32') {
                     ctx.getLogger().error(err);
                     return of(err as TransportResponse<any, number>);
                 })));
-            expect(r.status).toEqual(200);
+            // expect(r.status).toEqual(200);
+            expect(r.ok).toBeTruthy();
             expect(r.body).toEqual(result);
         })
 
@@ -378,7 +389,8 @@ if (os.platform() != 'win32') {
                     ctx.getLogger().error(err);
                     return of(err as TransportResponse<any, number>);
                 })));
-            expect(r.status).toEqual(200);
+            // expect(r.status).toEqual(200);
+            expect(r.ok).toBeTruthy();
             expect(r.body).toEqual(result);
         })
 

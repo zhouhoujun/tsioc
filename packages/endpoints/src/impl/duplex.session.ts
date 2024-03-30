@@ -24,7 +24,7 @@ export class DuplexTransportSession extends TransportSession<IDuplexStream, Buff
         return from(promisify<Buffer, void>(this.socket.write, this.socket)(msg)).pipe(map(r => msg))
     }
 
-    handMessage(): Observable<Buffer> {
+    handleMessage(): Observable<Buffer> {
         return fromEvent(this.socket, this.msgEvent, (chunk) => isBuffer(chunk) ? chunk : Buffer.from(chunk)).pipe(takeUntil(this.destroy$));
     }
 
