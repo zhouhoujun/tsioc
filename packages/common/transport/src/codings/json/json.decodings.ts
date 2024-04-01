@@ -2,7 +2,7 @@ import { Abstract, Injectable, Injector, Module, isString, tokenId } from '@tsdi
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Decoder, InputContext } from '@tsdi/common';
 import { Observable, of, throwError } from 'rxjs';
-import { InvalidJsonException } from '../execptions';
+import { InvalidJsonException } from '../../execptions';
 
 
 
@@ -39,7 +39,7 @@ export const JSON_DECODE_INTERCEPTORS = tokenId<Interceptor<Buffer | string, any
 @Injectable()
 export class JsonDecodeInterceptingHandler extends InterceptingHandler<Buffer, any, InputContext>  {
     constructor(backend: JsonDecodeBackend, injector: Injector) {
-        super(backend, () => injector.get(JSON_DECODE_INTERCEPTORS))
+        super(backend, () => injector.get(JSON_DECODE_INTERCEPTORS, []))
     }
 }
 
@@ -52,14 +52,3 @@ export class JsonDecoder extends Decoder<Buffer, any> {
     }
 }
 
-
-@Module({
-    providers: [
-        { provide: JSON_DECODE_INTERCEPTORS, useClass: EmptyJsonDecodeInterceptor, multi: true },
-        { provide: JsonDecodeHandler, useClass: JsonDecodeInterceptingHandler },
-        JsonDecoder,
-    ]
-})
-export class JsonDecodingsModule {
-
-}

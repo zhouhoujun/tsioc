@@ -1,5 +1,10 @@
+export * from './encodings';
+export * from './decodings';
+export * from './codings.module';
 
-export * from './json.encodings';
-export * from './json.decodings';
+export * from './json/json.encodings';
+export * from './json/json.decodings';
+export * from './json/json.module';
+
 export * from './packet.encodings';
 export * from './packet.decodings';

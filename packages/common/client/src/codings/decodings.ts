@@ -1,30 +1,26 @@
 
-import { Decoder, HEAD, ResponseJsonParseError, TransportEvent, TransportRequest } from '@tsdi/common';
+import { Decoder, HEAD, InputContext, ResponseJsonParseError, TransportEvent, TransportRequest } from '@tsdi/common';
 import { Incoming, MimeAdapter, ResponseEventFactory, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer } from '@tsdi/common/transport';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, Injector, Module, lang, tokenId } from '@tsdi/ioc';
 import { Observable, defer, mergeMap } from 'rxjs';
 
 
-export interface ResponseContext {
-    res: Incoming;
-    req: TransportRequest;
-    eventFactory: ResponseEventFactory;
-}
-
-
 @Injectable()
-export class ResponseDecodeBackend implements Backend<ResponseContext, TransportEvent> {
+export class ResponseDecodeBackend implements Backend<Incoming, TransportEvent, InputContext> {
 
     constructor(
         private streamAdapter: StreamAdapter,
         private mimeAdapter: MimeAdapter
     ) { }
 
-    handle(input: ResponseContext): Observable<TransportEvent> {
+    handle(input: Incoming, context: InputContext): Observable<TransportEvent> {
         const streamAdapter = this.streamAdapter;
+        const res = input;
         return defer(async () => {
-            const { req, res, eventFactory } = input;
+            const req = context.first() as TransportRequest;
+            const eventFactory = req.context.get(ResponseEventFactory);
+
             let responseType = req.responseType;
             if (this.mimeAdapter) {
                 const contentType = res.getContentType();
@@ -108,14 +104,14 @@ export class ResponseDecodeBackend implements Backend<ResponseContext, Transport
 }
 
 @Abstract()
-export abstract class ResponseDecodeHandler implements Handler<ResponseContext, TransportEvent> {
-    abstract handle(input: ResponseContext): Observable<TransportEvent>
+export abstract class ResponseDecodeHandler implements Handler<Incoming, TransportEvent, InputContext> {
+    abstract handle(input: Incoming, context: InputContext): Observable<TransportEvent>
 }
 
-export const RESPONSE_DECODE_INTERCEPTORS = tokenId<Interceptor<ResponseContext, TransportEvent>[]>('RESPONSE_DECODE_INTERCEPTORS');
+export const RESPONSE_DECODE_INTERCEPTORS = tokenId<Interceptor<Incoming, TransportEvent, InputContext>[]>('RESPONSE_DECODE_INTERCEPTORS');
 
 @Injectable()
-export class ResponseDecodeInterceptingHandler extends InterceptingHandler<ResponseContext, TransportEvent>  {
+export class ResponseDecodeInterceptingHandler extends InterceptingHandler<Incoming, TransportEvent, InputContext>  {
     constructor(backend: ResponseDecodeBackend, injector: Injector) {
         super(backend, () => injector.get(RESPONSE_DECODE_INTERCEPTORS))
     }
@@ -123,15 +119,16 @@ export class ResponseDecodeInterceptingHandler extends InterceptingHandler<Respo
 
 
 @Injectable()
-export class CompressResponseDecordeInterceptor implements Interceptor<ResponseContext, TransportEvent> {
+export class CompressResponseDecordeInterceptor implements Interceptor<Incoming, TransportEvent, InputContext> {
 
     constructor(private streamAdapter: StreamAdapter) { }
 
-    intercept(ctx: ResponseContext, next: Handler<ResponseContext, TransportEvent>): Observable<TransportEvent> {
-        const response = ctx.res;
+    intercept(input: Incoming, next: Handler<Incoming, TransportEvent, InputContext>, context: InputContext): Observable<TransportEvent> {
+        const response = input;
         if (response instanceof Incoming) {
             const codings = response.getContentEncoding();
-            const { req, eventFactory } = ctx;
+            const req = context.first() as TransportRequest;
+            const eventFactory = req.context.get(ResponseEventFactory);
             const streamAdapter = this.streamAdapter;
             const rqstatus = req.context.getValueify(RequestStauts, () => new RequestStauts());
             // HTTP-network fetch step 12.1.1.4: handle content codings
@@ -198,12 +195,12 @@ export class CompressResponseDecordeInterceptor implements Interceptor<ResponseC
                     }
                 }).pipe(
                     mergeMap(() => {
-                        return next.handle(ctx);
+                        return next.handle(input, context);
                     })
                 )
             }
         }
-        return next.handle(ctx)
+        return next.handle(input, context)
     }
 }
 
@@ -232,7 +229,7 @@ export class RequestStauts {
 
 
 @Injectable()
-export class ResponseDecoder extends Decoder<ResponseContext, TransportEvent> {
+export class ResponseDecoder extends Decoder<Incoming, TransportEvent> {
 
     constructor(readonly handler: ResponseDecodeHandler) {
         super()

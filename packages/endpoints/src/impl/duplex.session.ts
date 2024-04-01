@@ -1,6 +1,6 @@
-import { EMPTY, Injectable, Injector, promisify } from '@tsdi/ioc';
+import { Injectable, Injector, promisify } from '@tsdi/ioc';
 import { Decoder, Encoder } from '@tsdi/common';
-import { IDuplexStream, TransportOpts, ev, isBuffer } from '@tsdi/common/transport';
+import { Decodings, Encodings, IDuplexStream, TransportOpts, ev, isBuffer } from '@tsdi/common/transport';
 import { TransportSession, TransportSessionFactory } from '../transport.session';
 import { Observable, from, fromEvent, map, takeUntil } from 'rxjs';
 import { RequestContext } from '../RequestContext';
@@ -12,8 +12,8 @@ export class DuplexTransportSession extends TransportSession<IDuplexStream, Buff
     protected msgEvent = ev.DATA;
     constructor(
         readonly socket: IDuplexStream,
-        readonly encodings: Encoder[],
-        readonly decodings: Decoder[],
+        readonly encodings: Encoder,
+        readonly decodings: Decoder,
         readonly options: TransportOpts,
 
     ) {
@@ -40,7 +40,7 @@ export class DuplexTransportSessionFactory implements TransportSessionFactory<ID
     constructor() { }
 
     create(injector: Injector, socket: IDuplexStream, options: TransportOpts): DuplexTransportSession {
-        return new DuplexTransportSession(socket, injector.get(options.encodings!, EMPTY), injector.get(options.decodings!, EMPTY), options);
+        return new DuplexTransportSession(socket, injector.get(options.encodings ?? Encodings), injector.get(options.decodings ?? Decodings), options);
     }
 
 }

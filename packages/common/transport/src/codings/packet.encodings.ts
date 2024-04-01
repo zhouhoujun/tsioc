@@ -344,6 +344,8 @@ export const PACKET_CODING_OPTIONS = tokenId<PacketOptions>('PACKET_CODING_OPTIO
         { provide: PACKET_ENCODE_INTERCEPTORS, useClass: SerializeHeaderEncodeInterceptor, multi: true },
         { provide: PACKET_ENCODE_INTERCEPTORS, useClass: LargePayloadEncodeInterceptor, multi: true },
         { provide: PacketEncodeHandler, useClass: PacketEncodeInterceptingHandler },
+        PacketUUIdGenerator,
+        PacketNumberIdGenerator,
         PacketEncoder,
     ]
 })

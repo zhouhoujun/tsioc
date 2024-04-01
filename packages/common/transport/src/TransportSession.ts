@@ -1,6 +1,6 @@
 import { Abstract, Token } from '@tsdi/ioc';
 import { TransportErrorResponse, TransportEvent, HeadersLike, Encoder, Decoder, InputContext } from '@tsdi/common';
-import { Observable, finalize, mergeMap, of, share } from 'rxjs';
+import { Observable, finalize, mergeMap, share } from 'rxjs';
 import { HybirdTransport, Transport } from './protocols';
 
 
@@ -17,11 +17,11 @@ export interface TransportOpts {
     /**
      * encodings.
      */
-    encodings?: Token<Encoder[]>;
+    encodings?: Token<Encoder>;
     /**
      * decodings.
      */
-    decodings?: Token<Decoder[]>;
+    decodings?: Token<Decoder>;
     /**
      * packet delimiter flag
      */
@@ -76,11 +76,11 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
     /**
      * encodings
      */
-    abstract get encodings(): Encoder[];
+    abstract get encodings(): Encoder;
     /**
      * decodings
      */
-    abstract get decodings(): Decoder[];
+    abstract get decodings(): Decoder;
 
     /**
      * send.
@@ -88,11 +88,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      */
     send(data: TInput, context?: InputContext): Observable<TMsg> {
         const ctx = context ?? new InputContext();
-        return this.encodings.reduceRight((obs$, curr) => {
-            return obs$.pipe(
-                mergeMap(input => curr.encode(input, ctx.next(input)))
-            );
-        }, of(data as any))
+        return this.encodings.encode(data, ctx)
             .pipe(
                 mergeMap(msg => this.sendMessage(data, msg as TMsg)),
                 finalize(() => !context && ctx.onDestroy()),
@@ -111,12 +107,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
             .pipe(
                 mergeMap(msg => {
                     const ctx = context ?? new InputContext();
-
-                    return this.decodings.reduceRight((obs$, curr) => {
-                        return obs$.pipe(
-                            mergeMap(input => curr.decode(input, ctx.next(input)))
-                        );
-                    }, of(msg as any))
+                    return this.decodings.decode(msg, ctx)
                         .pipe(
                             finalize(() => !context && ctx.onDestroy())
                         )

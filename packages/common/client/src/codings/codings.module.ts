@@ -11,6 +11,10 @@ import { TransportBackend } from '../backend';
     ],
     providers: [
         { provide: TransportBackend, useClass: TransportCodingsBackend },
+    ],
+    exports:[
+        RequestEncodingsModule,
+        ResponseDecodingsModule
     ]
 })
 export class ClientCodingsModule {

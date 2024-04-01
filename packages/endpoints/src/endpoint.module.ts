@@ -3,7 +3,7 @@ import {
     tokenId, isArray, toProvider, lang, ProvdierOf, Type
 } from '@tsdi/ioc';
 import { CanActivate, Filter, InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
-import { HybirdTransport, NotImplementedExecption, Transport } from '@tsdi/common/transport';
+import { CodingsModule, HybirdTransport, NotImplementedExecption, Transport } from '@tsdi/common/transport';
 import { RequestContext } from './RequestContext';
 import { Server, ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
@@ -124,6 +124,7 @@ export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
 @Module({
     imports: [
         TransformModule,
+        CodingsModule,
         MicroServRouterModule,
         RouterModule
     ],

@@ -1,13 +1,14 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
+import { JsonCodingsModule } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientDuplexTransportSessionFactory, ClientOpts } from '@tsdi/common/client';
 import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';
-import { TCP_CLIENT_DECODINGS, TCP_CLIENT_ENCODINGS, TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS, TCP_MICROSERVICE_CLIENT_DECODINGS, TCP_MICROSERVICE_CLIENT_ENCODINGS } from './client/options';
+import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS } from './client/options';
 import { TcpHandler } from './client/handler';
 import { TcpServer } from './server/server';
-import { TCP_MICROSERVICE_DECODINGS, TCP_MICROSERVICE_ENCODINGS, TCP_MIDDLEWARES, TCP_SERVER_DECODINGS, TCP_SERVER_ENCODINGS, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS } from './server/options';
+import { TCP_MIDDLEWARES, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS } from './server/options';
 import { TcpEndpointHandler } from './server/handler';
 
 
@@ -16,6 +17,9 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
 // const defaultMaxSize = 524120; // 262060; //65515 * 4;
 
 @Module({
+    imports:[
+        JsonCodingsModule
+    ],
     providers: [
         TcpClient,
         TcpServer,
@@ -31,8 +35,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     filtersToken: TCP_CLIENT_FILTERS,
                     transportOpts: {
                         delimiter: '#',
-                        encodings: TCP_MICROSERVICE_CLIENT_ENCODINGS,
-                        decodings: TCP_MICROSERVICE_CLIENT_DECODINGS,
                         maxSize: defaultMaxSize,
                     },
                     sessionFactory: { useExisting: ClientDuplexTransportSessionFactory },
@@ -51,8 +53,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     filtersToken: TCP_CLIENT_FILTERS,
                     transportOpts: {
                         delimiter: '#',
-                        encodings: TCP_CLIENT_ENCODINGS,
-                        decodings: TCP_CLIENT_DECODINGS,
                         maxSize: defaultMaxSize,
                     },
                     sessionFactory: { useExisting: ClientDuplexTransportSessionFactory },
@@ -71,8 +71,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {
                         delimiter: '#',
-                        encodings: TCP_MICROSERVICE_ENCODINGS,
-                        decodings: TCP_MICROSERVICE_DECODINGS,
                         maxSize: defaultMaxSize
                     },
                     content: {
@@ -104,8 +102,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {
                         delimiter: '#',
-                        encodings: TCP_SERVER_ENCODINGS,
-                        decodings: TCP_SERVER_DECODINGS,
                         maxSize: defaultMaxSize
                     },
                     content: {

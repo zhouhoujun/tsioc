@@ -57,6 +57,7 @@ export class TcpService {
         TcpModule,
         ClientModule.register({
             transport: 'tcp',
+            microservice: true,
             clientOpts: {
                 connectOpts: {
                     port: 2000

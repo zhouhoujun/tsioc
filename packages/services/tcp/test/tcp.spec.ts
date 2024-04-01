@@ -117,8 +117,8 @@ export class DeviceController {
         ]),
         EndpointModule.register([
             {
-                microservice: true,
                 transport: 'tcp',
+                microservice: true,
                 serverOpts: {
                     listenOpts: {
                         port: 3000

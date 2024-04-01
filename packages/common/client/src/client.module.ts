@@ -3,7 +3,7 @@ import {
     Type, Token, isArray, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
-import { HybirdTransport, NotImplementedExecption, Transport } from '@tsdi/common/transport';
+import { CodingsModule, HybirdTransport, NotImplementedExecption, Transport } from '@tsdi/common/transport';
 import { ClientOpts } from './options';
 import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
@@ -82,6 +82,7 @@ export interface ClientTokenOpts {
  */
 @Module({
     imports: [
+        CodingsModule,
         ClientCodingsModule
     ],
     providers: [

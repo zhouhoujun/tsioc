@@ -27,7 +27,7 @@ export const JSON_ENCODE_INTERCEPTORS = tokenId<Interceptor<any, Buffer, InputCo
 @Injectable()
 export class JsonEncodeInterceptingHandler extends InterceptingHandler<any, Buffer, InputContext>  {
     constructor(backend: JsonEncodeBackend, injector: Injector) {
-        super(backend, () => injector.get(JSON_ENCODE_INTERCEPTORS))
+        super(backend, () => injector.get(JSON_ENCODE_INTERCEPTORS, []))
     }
 }
 
@@ -49,13 +49,3 @@ export class JsonEncoder extends Encoder<any, Buffer> {
     }
 }
 
-@Module({
-    providers: [
-        { provide: JSON_ENCODE_INTERCEPTORS, useClass: AysncJsonEncodeInterceptor, multi: true },
-        { provide: JsonEncodeHandler, useClass: JsonEncodeInterceptingHandler },
-        JsonEncoder,
-    ]
-})
-export class JsonEncodingsModule {
-
-}

@@ -1,4 +1,3 @@
-import { Decoder, Encoder } from '@tsdi/common';
 import { Interceptor, Filter, CanActivate, ApplicationEventContext } from '@tsdi/core';
 import { BindServerEvent, MiddlewareLike, ServerOpts } from '@tsdi/endpoints';
 import { tokenId } from '@tsdi/ioc';
@@ -39,30 +38,6 @@ export const TCP_SERV_FILTERS = tokenId<Filter[]>('TCP_SERV_FILTERS');
  * TCP Guards.
  */
 export const TCP_SERV_GUARDS = tokenId<CanActivate[]>('TCP_SERV_GUARDS');
-
-
-/**
- * tcp server encodings.
- */
-export const TCP_SERVER_ENCODINGS = tokenId<Encoder[]>('TCP_SERVER_ENCODINGS');
-
-/**
- * tcp server decodings.
- */
-export const TCP_SERVER_DECODINGS = tokenId<Decoder[]>('TCP_SERVER_DECODINGS');
-
-
-
-/**
- * tcp microservice encodings.
- */
-export const TCP_MICROSERVICE_ENCODINGS = tokenId<Encoder[]>('TCP_MICROSERVICE_ENCODINGS');
-
-/**
- * tcp microservice decodings.
- */
-export const TCP_MICROSERVICE_DECODINGS = tokenId<Decoder[]>('TCP_MICROSERVICE_DECODINGS');
-
 
 
 /**

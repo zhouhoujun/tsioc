@@ -66,10 +66,10 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     }
 
     addListener(event: Type<ApplicationEvent>, handler: Handler, order = -1): this {
-        const endpoints = this.maps.get(event);
-        if (endpoints) {
-            if (endpoints.some(i => i.equals ? i.equals(handler) : i === handler)) return this;
-            order >= 0 ? endpoints.splice(order, 0, handler) : endpoints.push(handler);
+        const handlers = this.maps.get(event);
+        if (handlers) {
+            if (handlers.some(i => i.equals ? i.equals(handler) : i === handler)) return this;
+            order >= 0 ? handlers.splice(order, 0, handler) : handlers.push(handler);
         } else {
             this.maps.set(event, [handler]);
         }
@@ -77,11 +77,11 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     }
 
     removeListener(event: Type<ApplicationEvent>, handler: Handler): this {
-        const endpoints = this.maps.get(event);
-        if (endpoints) {
-            const idx = endpoints.findIndex(i => i.equals ? i.equals(handler) : i === handler);
+        const handlers = this.maps.get(event);
+        if (handlers) {
+            const idx = handlers.findIndex(i => i.equals ? i.equals(handler) : i === handler);
             if (idx >= 0) {
-                endpoints.splice(idx, 1);
+                handlers.splice(idx, 1);
             }
         }
         return this;
