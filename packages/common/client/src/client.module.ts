@@ -3,7 +3,7 @@ import {
     Type, Token, isArray, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
-import { CodingsModule, HybirdTransport, NotImplementedExecption, Transport } from '@tsdi/common/transport';
+import { CodingsModule, DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, Transport } from '@tsdi/common/transport';
 import { ClientOpts } from './options';
 import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
@@ -12,7 +12,7 @@ import { BodyContentInterceptor } from './interceptors/body';
 import { RestfulRedirector } from './redirector';
 import { ClientTransportSessionFactory } from './session';
 import { ClientDuplexTransportSessionFactory } from './duplex.session';
-import { ClientCodingsModule } from './codings';
+import { ClientCodingsModule, RequestEncoder, ResponseDecoder } from './codings';
 
 /**
  * Client module config.
@@ -82,8 +82,8 @@ export interface ClientTokenOpts {
  */
 @Module({
     imports: [
+        ClientCodingsModule,
         CodingsModule,
-        ClientCodingsModule
     ],
     providers: [
         ClientDuplexTransportSessionFactory,
@@ -158,6 +158,9 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                 if (clientOpts.sessionFactory && clientOpts.sessionFactory !== ClientTransportSessionFactory) {
                     clientOpts.providers.push(toProvider(ClientTransportSessionFactory, clientOpts.sessionFactory))
                 }
+
+                clientOpts.providers.push({ provide: ENCODINGS_INTERCEPTORS, useExisting: RequestEncoder, multi: true, multiOrder: 0 });
+                clientOpts.providers.push({ provide: DECODINGS_INTERCEPTORS, useExisting: ResponseDecoder, multi: true, multiOrder: 0 });
 
                 const providers: ProviderType[] = [];
 

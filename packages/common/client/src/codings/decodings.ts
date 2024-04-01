@@ -3,7 +3,7 @@ import { Decoder, HEAD, InputContext, ResponseJsonParseError, TransportEvent, Tr
 import { Incoming, MimeAdapter, ResponseEventFactory, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer } from '@tsdi/common/transport';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Abstract, EMPTY_OBJ, Injectable, Injector, Module, lang, tokenId } from '@tsdi/ioc';
-import { Observable, defer, mergeMap } from 'rxjs';
+import { Observable, catchError, defer, mergeMap } from 'rxjs';
 
 
 @Injectable()
@@ -113,7 +113,7 @@ export const RESPONSE_DECODE_INTERCEPTORS = tokenId<Interceptor<Incoming, Transp
 @Injectable()
 export class ResponseDecodeInterceptingHandler extends InterceptingHandler<Incoming, TransportEvent, InputContext>  {
     constructor(backend: ResponseDecodeBackend, injector: Injector) {
-        super(backend, () => injector.get(RESPONSE_DECODE_INTERCEPTORS))
+        super(backend, () => injector.get(RESPONSE_DECODE_INTERCEPTORS, []))
     }
 }
 
@@ -229,16 +229,27 @@ export class RequestStauts {
 
 
 @Injectable()
-export class ResponseDecoder extends Decoder<Incoming, TransportEvent> {
+export class ResponseDecoder extends Decoder<Incoming, TransportEvent> implements Interceptor<any, TransportEvent, InputContext> {
 
     constructor(readonly handler: ResponseDecodeHandler) {
         super()
+    }
+
+    intercept(input: any, next: Handler<any, any, InputContext>, context?: InputContext): Observable<TransportEvent> {
+        return next.handle(input, context)
+            .pipe(
+                mergeMap(res=> this.handler.handle(res, context!.next(res))),
+                // catchError(err=> {
+                //     return 
+                // })
+            );
     }
 }
 
 
 @Module({
     providers: [
+        ResponseDecodeBackend,
         { provide: RESPONSE_DECODE_INTERCEPTORS, useClass: CompressResponseDecordeInterceptor, multi: true },
         { provide: ResponseDecodeHandler, useClass: ResponseDecodeInterceptingHandler },
         ResponseDecoder
