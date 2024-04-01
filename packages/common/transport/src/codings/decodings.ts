@@ -5,6 +5,7 @@ import { Observable, mergeMap, of, throwError } from 'rxjs';
 import { NotSupportedExecption } from '../execptions';
 import { Mappings } from './mappings';
 import { JsonDecodeHandler } from './json/json.decodings';
+import { TransportOpts } from '../TransportSession';
 
 
 @Abstract()
@@ -50,16 +51,28 @@ export class DecodingsBackend implements Backend<any, any, InputContext> {
  */
 export const DECODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, InputContext>[]>('DECODINGS_INTERCEPTORS');
 
-@Injectable()
-export class DecodingsInterceptingHandler extends InterceptingHandler<Buffer, any, InputContext>  {
-    constructor(backend: DecodingsBackend, injector: Injector) {
-        super(backend, () => injector.get(DECODINGS_INTERCEPTORS, []))
+
+@Abstract()
+export abstract class DecodingInterceptorsResolver {
+
+    getToken() {
+        return DECODINGS_INTERCEPTORS
     }
+
+    abstract resove(): Interceptor[];
 }
 
 
 
 @Injectable()
+export class DecodingsInterceptingHandler extends InterceptingHandler<Buffer, any, InputContext>  {
+    constructor(backend: DecodingsBackend, resover: DecodingInterceptorsResolver) {
+        super(backend, () => resover.resove())
+    }
+}
+
+
+
 export class Decodings extends Decoder {
 
     constructor(readonly handler: DecodingsHandler) {
@@ -69,13 +82,27 @@ export class Decodings extends Decoder {
 }
 
 
+@Abstract()
+export abstract class DecodingsFactory {
+    abstract create(injector: Injector, options: TransportOpts): Decodings;
+}
+
+@Injectable()
+export class DefaultDecodingsFactory {
+    create(injector: Injector, options: TransportOpts): Decodings {
+        return new Decodings(injector.resolve(DecodingsHandler))
+    }
+}
+
+
+
 
 @Module({
     providers: [
         DecodingMappings,
         DecodingsBackend,
         { provide: DecodingsHandler, useClass: DecodingsInterceptingHandler },
-        Decodings,
+        { provide: DecodingsFactory, useClass: DefaultDecodingsFactory }
     ]
 })
 export class DecodingsModule {

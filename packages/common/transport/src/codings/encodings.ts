@@ -5,6 +5,7 @@ import { Observable, mergeMap, of, throwError } from 'rxjs';
 import { NotSupportedExecption } from '../execptions';
 import { Mappings } from './mappings';
 import { JsonEncodeHandler } from './json/json.encodings';
+import { TransportOpts } from '../TransportSession';
 
 
 @Abstract()
@@ -51,16 +52,29 @@ export class EncodingsBackend implements Backend<any, any, InputContext> {
  */
 export const ENCODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, InputContext>[]>('ENCODINGS_INTERCEPTORS');
 
+
+@Abstract()
+export abstract class EcodingInterceptorsResolver {
+
+    getToken() {
+        return ENCODINGS_INTERCEPTORS
+    }
+
+    abstract resove(): Interceptor[];
+}
+
+
+
+
 @Injectable()
 export class EncodingsInterceptingHandler extends InterceptingHandler<Buffer, any, InputContext>  {
-    constructor(backend: EncodingsBackend, injector: Injector) {
-        super(backend, () => injector.get(ENCODINGS_INTERCEPTORS, []))
+    constructor(backend: EncodingsBackend, resover: EcodingInterceptorsResolver) {
+        super(backend, () => resover.resove())
     }
 }
 
 
 
-@Injectable()
 export class Encodings extends Encoder {
 
     constructor(readonly handler: EncodingsHandler) {
@@ -69,6 +83,17 @@ export class Encodings extends Encoder {
 
 }
 
+@Abstract()
+export abstract class EncodingsFactory {
+    abstract create(injector: Injector, options: TransportOpts): Encodings;
+}
+
+@Injectable()
+export class DefaultEncodingsFactory {
+    create(injector: Injector, options: TransportOpts): Encodings {
+        return new Encodings(injector.resolve(EncodingsHandler))
+    }
+}
 
 
 @Module({
@@ -76,7 +101,7 @@ export class Encodings extends Encoder {
         EncodingMappings,
         EncodingsBackend,
         { provide: EncodingsHandler, useClass: EncodingsInterceptingHandler },
-        Encodings,
+        {provide: EncodingsFactory, useClass: DefaultEncodingsFactory }
     ]
 })
 export class EncodingsModule {

@@ -2,6 +2,7 @@ import { Abstract, Token } from '@tsdi/ioc';
 import { TransportErrorResponse, TransportEvent, HeadersLike, Encoder, Decoder, InputContext } from '@tsdi/common';
 import { Observable, finalize, mergeMap, share } from 'rxjs';
 import { HybirdTransport, Transport } from './protocols';
+import { DecodingsFactory, EncodingsFactory } from './codings';
 
 
 
@@ -17,11 +18,11 @@ export interface TransportOpts {
     /**
      * encodings.
      */
-    encodings?: Token<Encoder>;
+    encodings?: Token<EncodingsFactory>;
     /**
      * decodings.
      */
-    decodings?: Token<Decoder>;
+    decodings?: Token<DecodingsFactory>;
     /**
      * packet delimiter flag
      */
