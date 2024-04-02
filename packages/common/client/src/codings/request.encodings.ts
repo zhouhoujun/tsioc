@@ -1,32 +1,56 @@
-import { Abstract, Injectable, Injector, Module, tokenId } from '@tsdi/ioc';
+import { Abstract, Injectable, Injector, Module, getClass, getClassName, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Encoder, InputContext, TransportRequest } from '@tsdi/common';
-import { PacketData } from '@tsdi/common/transport';
-import { Observable, mergeMap, of } from 'rxjs';
+import { Mappings, NotSupportedExecption, PacketData } from '@tsdi/common/transport';
+import { Observable, mergeMap, of, throwError } from 'rxjs';
 
 
+
+
+@Abstract()
+export abstract class RequestEncodeHandler implements Handler<TransportRequest, PacketData, InputContext> {
+    abstract handle(input: TransportRequest, context: InputContext): Observable<PacketData>
+}
+
+
+@Injectable({
+    static: true,
+    providedIn: 'root'
+})
+export class RequestMappings extends Mappings {
+
+}
 
 
 @Injectable()
 export class RequestEncodeBackend implements Backend<TransportRequest, PacketData> {
 
-    handle(input: TransportRequest<any>): Observable<PacketData> {
-        const packet = {
-            pattern: input.pattern,
-            headers: input.headers,
-            payload: input.payload,
-            payloadLength: input.headers.getContentLength()
-        } as PacketData;
-        if (input.method) {
-            packet.method = input.method;
-        }
-        return of(packet)
-    }
-}
+    constructor(private mappings: RequestMappings) { }
 
-@Abstract()
-export abstract class RequestEncodeHandler implements Handler<TransportRequest, PacketData, InputContext> {
-    abstract handle(input: TransportRequest, context: InputContext): Observable<PacketData>
+    handle(input: TransportRequest<any>, context: InputContext): Observable<PacketData> {
+        const type = getClass(input);
+        const handlers = this.mappings.getHanlder(type);
+
+        if (handlers && handlers.length) {
+            return handlers.reduceRight((obs$, curr) => {
+                return obs$.pipe(
+                    mergeMap(input => curr.handle(input, context.next(input)))
+                );
+            }, of(input))
+        } else {
+            return throwError(() => new NotSupportedExecption('No encodings handler for request type:' + getClassName(type)));
+        }
+        // const packet = {
+        //     pattern: input.pattern,
+        //     headers: input.headers,
+        //     payload: input.payload,
+        //     payloadLength: input.headers.getContentLength()
+        // } as PacketData;
+        // if (input.method) {
+        //     packet.method = input.method;
+        // }
+        // return of(packet)
+    }
 }
 
 
@@ -57,6 +81,7 @@ export class RequestEncoder extends Encoder<TransportRequest, PacketData> implem
 
 @Module({
     providers: [
+        RequestMappings,
         RequestEncodeBackend,
         { provide: RequestEncodeHandler, useClass: RequestEncodeInterceptingHandler },
         RequestEncoder

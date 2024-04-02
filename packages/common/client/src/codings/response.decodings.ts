@@ -1,13 +1,116 @@
 
 import { Decoder, HEAD, InputContext, ResponseJsonParseError, TransportEvent, TransportRequest } from '@tsdi/common';
-import { Incoming, MimeAdapter, ResponseEventFactory, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer } from '@tsdi/common/transport';
+import { Incoming, Mappings, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer } from '@tsdi/common/transport';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { Abstract, EMPTY_OBJ, Injectable, Injector, Module, lang, tokenId } from '@tsdi/ioc';
-import { Observable, catchError, defer, mergeMap } from 'rxjs';
+import { Abstract, EMPTY_OBJ, Injectable, Injector, Module, getClass, getClassName, lang, tokenId } from '@tsdi/ioc';
+import { Observable, catchError, defer, mergeMap, of, throwError } from 'rxjs';
+
+
+
+@Abstract()
+export abstract class ResponseDecodeHandler implements Handler<any, TransportEvent, InputContext> {
+    abstract handle(input: any, context: InputContext): Observable<TransportEvent>
+}
+
+
+@Injectable({
+    static: true,
+    providedIn: 'root'
+})
+export class ResponseMappings extends Mappings {
+
+}
 
 
 @Injectable()
-export class ResponseDecodeBackend implements Backend<Incoming, TransportEvent, InputContext> {
+export class ResponseDecodeBackend implements Backend<any, TransportEvent, InputContext>  {
+
+    constructor(private mappings: ResponseMappings) { }
+
+    handle(input: any, context: InputContext): Observable<TransportEvent> {
+        const type = getClass(input);
+        const handlers = this.mappings.getHanlder(type);
+        
+        if (handlers && handlers.length) {
+            return handlers.reduceRight((obs$, curr) => {
+                return obs$.pipe(
+                    mergeMap(input => curr.handle(input, context.next(input)))
+                );
+            }, of(input))
+        } else {
+            return throwError(() => new NotSupportedExecption('No encodings handler for response type:' + getClassName(type)));
+        }
+    }
+
+}
+
+
+export const RESPONSE_DECODE_INTERCEPTORS = tokenId<Interceptor<any, TransportEvent, InputContext>[]>('RESPONSE_DECODE_INTERCEPTORS');
+
+@Injectable()
+export class ResponseDecodeInterceptingHandler extends InterceptingHandler<any, TransportEvent, InputContext>  {
+    constructor(backend: ResponseDecodeBackend, injector: Injector) {
+        super(backend, () => injector.get(RESPONSE_DECODE_INTERCEPTORS, []))
+    }
+}
+
+
+
+export class RequestStauts {
+    public highWaterMark: number;
+    public insecureParser: boolean;
+    public referrerPolicy: ReferrerPolicy;
+    readonly compress: boolean;
+    constructor(init: {
+        compress?: boolean;
+        follow?: number;
+        counter?: number;
+        highWaterMark?: number;
+        insecureParser?: boolean;
+        referrerPolicy?: ReferrerPolicy;
+        redirect?: 'manual' | 'error' | 'follow' | '';
+    } = EMPTY_OBJ) {
+        this.compress = init.compress ?? false;
+        this.highWaterMark = init.highWaterMark ?? 16384;
+        this.insecureParser = init.insecureParser ?? false;
+        this.referrerPolicy = init.referrerPolicy ?? '';
+    }
+}
+
+
+
+
+@Injectable()
+export class ResponseDecoder extends Decoder<any, TransportEvent> implements Interceptor<any, TransportEvent, InputContext> {
+
+    constructor(readonly handler: ResponseDecodeHandler) {
+        super()
+    }
+
+    intercept(input: any, next: Handler<any, any, InputContext>, context: InputContext): Observable<TransportEvent> {
+        return next.handle(input, context)
+            .pipe(
+                mergeMap(res=> this.handler.handle(res, context.next(res)))
+            );
+    }
+}
+
+
+@Module({
+    providers: [
+        ResponseMappings,
+        ResponseDecodeBackend,
+        { provide: ResponseDecodeHandler, useClass: ResponseDecodeInterceptingHandler },
+        ResponseDecoder
+    ]
+})
+export class ResponseDecodingsModule {
+
+}
+
+
+@Injectable()
+export class IncomingResponseHanlder implements Handler<Incoming, TransportEvent, InputContext> {
 
     constructor(
         private streamAdapter: StreamAdapter,
@@ -103,21 +206,6 @@ export class ResponseDecodeBackend implements Backend<Incoming, TransportEvent, 
 
 }
 
-@Abstract()
-export abstract class ResponseDecodeHandler implements Handler<Incoming, TransportEvent, InputContext> {
-    abstract handle(input: Incoming, context: InputContext): Observable<TransportEvent>
-}
-
-export const RESPONSE_DECODE_INTERCEPTORS = tokenId<Interceptor<Incoming, TransportEvent, InputContext>[]>('RESPONSE_DECODE_INTERCEPTORS');
-
-@Injectable()
-export class ResponseDecodeInterceptingHandler extends InterceptingHandler<Incoming, TransportEvent, InputContext>  {
-    constructor(backend: ResponseDecodeBackend, injector: Injector) {
-        super(backend, () => injector.get(RESPONSE_DECODE_INTERCEPTORS, []))
-    }
-}
-
-
 @Injectable()
 export class CompressResponseDecordeInterceptor implements Interceptor<Incoming, TransportEvent, InputContext> {
 
@@ -202,59 +290,4 @@ export class CompressResponseDecordeInterceptor implements Interceptor<Incoming,
         }
         return next.handle(input, context)
     }
-}
-
-export class RequestStauts {
-    public highWaterMark: number;
-    public insecureParser: boolean;
-    public referrerPolicy: ReferrerPolicy;
-    readonly compress: boolean;
-    constructor(init: {
-        compress?: boolean;
-        follow?: number;
-        counter?: number;
-        highWaterMark?: number;
-        insecureParser?: boolean;
-        referrerPolicy?: ReferrerPolicy;
-        redirect?: 'manual' | 'error' | 'follow' | '';
-    } = EMPTY_OBJ) {
-        this.compress = init.compress ?? false;
-        this.highWaterMark = init.highWaterMark ?? 16384;
-        this.insecureParser = init.insecureParser ?? false;
-        this.referrerPolicy = init.referrerPolicy ?? '';
-    }
-}
-
-
-
-
-@Injectable()
-export class ResponseDecoder extends Decoder<Incoming, TransportEvent> implements Interceptor<any, TransportEvent, InputContext> {
-
-    constructor(readonly handler: ResponseDecodeHandler) {
-        super()
-    }
-
-    intercept(input: any, next: Handler<any, any, InputContext>, context?: InputContext): Observable<TransportEvent> {
-        return next.handle(input, context)
-            .pipe(
-                mergeMap(res=> this.handler.handle(res, context!.next(res))),
-                // catchError(err=> {
-                //     return 
-                // })
-            );
-    }
-}
-
-
-@Module({
-    providers: [
-        ResponseDecodeBackend,
-        { provide: RESPONSE_DECODE_INTERCEPTORS, useClass: CompressResponseDecordeInterceptor, multi: true },
-        { provide: ResponseDecodeHandler, useClass: ResponseDecodeInterceptingHandler },
-        ResponseDecoder
-    ]
-})
-export class ResponseDecodingsModule {
-
 }
