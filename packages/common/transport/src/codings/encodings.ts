@@ -12,7 +12,10 @@ export abstract class EncodingsHandler implements Handler<any, any, InputContext
 }
 
 
-@Injectable({ static: true })
+@Injectable({ 
+    static: true,
+    providedIn: 'root'
+})
 export class EncodingMappings extends Mappings {
 
 }

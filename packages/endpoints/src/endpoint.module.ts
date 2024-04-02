@@ -18,6 +18,9 @@ import { TransportSessionFactory } from './transport.session';
 import { DuplexTransportSessionFactory } from './impl/duplex.session';
 import { MiddlewareOpts, createMiddlewareEndpoint } from './middleware/middleware.endpoint';
 import { EndpointHandler, createEndpoint } from './EndpointHandler';
+import { ServerCodingsModule } from './codings/server.codings.module';
+import { OutgoingEncoder } from './codings/outgoing.encodings';
+import { IncomingDecoder } from './codings/incoming.decodings';
 
 
 
@@ -124,6 +127,7 @@ export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
 @Module({
     imports: [
         TransformModule,
+        ServerCodingsModule,
         CodingsModule,
         MicroServRouterModule,
         RouterModule
@@ -224,8 +228,8 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     serverOpts.transportOpts.timeout = serverOpts.timeout;
                 }
 
-                serverOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, serverOpts.transportOpts.encodeInterceptors ?? [], true));
-                serverOpts.providers.push(...toProviders(DECODINGS_INTERCEPTORS, serverOpts.transportOpts.decodeInterceptors ?? [], true));
+                serverOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, serverOpts.transportOpts.encodeInterceptors ?? [OutgoingEncoder], true));
+                serverOpts.providers.push(...toProviders(DECODINGS_INTERCEPTORS, serverOpts.transportOpts.decodeInterceptors ?? [IncomingDecoder], true));
 
                 if (isArray(serverOpts.execptionHandlers)) {
                     serverOpts.providers.push(...serverOpts.execptionHandlers)

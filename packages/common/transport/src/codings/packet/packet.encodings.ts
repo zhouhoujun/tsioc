@@ -3,9 +3,9 @@ import { Backend, Handler, InterceptingHandler, Interceptor, UuidGenerator } fro
 import { Encoder, InputContext } from '@tsdi/common';
 import { Observable, Subscriber, from, isObservable, map, mergeMap, of, range, throwError } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
-import { PacketData, Packet } from '../packet';
-import { StreamAdapter, isBuffer } from '../StreamAdapter';
-import { Transport } from '../protocols';
+import { PacketData, Packet } from '../../packet';
+import { StreamAdapter, isBuffer } from '../../StreamAdapter';
+import { Transport } from '../../protocols';
 
 
 

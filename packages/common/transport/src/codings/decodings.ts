@@ -12,7 +12,10 @@ export abstract class DecodingsHandler implements Handler<any, any, InputContext
     abstract handle(input: Buffer, context: InputContext): Observable<any>
 }
 
-@Injectable({ static: true })
+@Injectable({ 
+    static: true,
+    providedIn: 'root'
+})
 export class DecodingMappings extends Mappings {
 
 }
