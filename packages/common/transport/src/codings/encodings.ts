@@ -1,12 +1,10 @@
-import { Abstract, Injectable, Injector, Module, Optional, Type, getClass, getClassName, lang, tokenId } from '@tsdi/ioc';
+import { Abstract, EMPTY, Injectable, Injector, Module, Optional, getClass, getClassName, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Encoder, InputContext } from '@tsdi/common';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
 import { NotSupportedExecption } from '../execptions';
-import { Mappings } from './mappings';
+import { CodingsOpts, Mappings } from './mappings';
 import { JsonEncodeHandler } from './json/json.encodings';
-import { TransportOpts } from '../TransportSession';
-
 
 @Abstract()
 export abstract class EncodingsHandler implements Handler<any, any, InputContext> {
@@ -53,23 +51,10 @@ export class EncodingsBackend implements Backend<any, any, InputContext> {
 export const ENCODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, InputContext>[]>('ENCODINGS_INTERCEPTORS');
 
 
-@Abstract()
-export abstract class EcodingInterceptorsResolver {
-
-    getToken() {
-        return ENCODINGS_INTERCEPTORS
-    }
-
-    abstract resove(): Interceptor[];
-}
-
-
-
-
-@Injectable()
+@Injectable({ static: false })
 export class EncodingsInterceptingHandler extends InterceptingHandler<Buffer, any, InputContext>  {
-    constructor(backend: EncodingsBackend, resover: EcodingInterceptorsResolver) {
-        super(backend, () => resover.resove())
+    constructor(backend: EncodingsBackend, injector: Injector) {
+        super(backend, () => injector.get(ENCODINGS_INTERCEPTORS, EMPTY))
     }
 }
 
@@ -85,13 +70,15 @@ export class Encodings extends Encoder {
 
 @Abstract()
 export abstract class EncodingsFactory {
-    abstract create(injector: Injector, options: TransportOpts): Encodings;
+    abstract create(injector: Injector, options: CodingsOpts): Encodings;
 }
 
 @Injectable()
 export class DefaultEncodingsFactory {
-    create(injector: Injector, options: TransportOpts): Encodings {
-        return new Encodings(injector.resolve(EncodingsHandler))
+    create(injector: Injector, options: CodingsOpts): Encodings {
+        return new Encodings(injector.resolve(EncodingsHandler, [
+            { provide: Injector, useValue: injector }
+        ]))
     }
 }
 
@@ -101,7 +88,7 @@ export class DefaultEncodingsFactory {
         EncodingMappings,
         EncodingsBackend,
         { provide: EncodingsHandler, useClass: EncodingsInterceptingHandler },
-        {provide: EncodingsFactory, useClass: DefaultEncodingsFactory }
+        { provide: EncodingsFactory, useClass: DefaultEncodingsFactory }
     ]
 })
 export class EncodingsModule {

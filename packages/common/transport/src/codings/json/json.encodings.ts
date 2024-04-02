@@ -24,7 +24,7 @@ export abstract class JsonEncodeHandler implements Handler<any, Buffer, InputCon
 
 export const JSON_ENCODE_INTERCEPTORS = tokenId<Interceptor<any, Buffer, InputContext>[]>('JSON_ENCODE_INTERCEPTORS');
 
-@Injectable()
+@Injectable({ static: false })
 export class JsonEncodeInterceptingHandler extends InterceptingHandler<any, Buffer, InputContext>  {
     constructor(backend: JsonEncodeBackend, injector: Injector) {
         super(backend, () => injector.get(JSON_ENCODE_INTERCEPTORS, []))

@@ -106,6 +106,17 @@ export abstract class Injector implements Destroyable, OnDestroy {
      *
      * @template T
      * @param {Token<T>} token the resolve token {@link Token}.
+     * @param {ProviderType[]} providers the providers to resolve with token. array of {@link ProviderType}.
+     * @returns {T}
+     */
+    abstract resolve<T>(token: Token<T>, providers?: ProviderType[]): T;
+    /**
+     * resolve token instance with token and param provider.
+     * 
+     * 解析标记令牌的实例。
+     *
+     * @template T
+     * @param {Token<T>} token the resolve token {@link Token}.
      * @param {option} option the option of type {@link ResolverOption}, use to resolve with token.
      * @returns {T}
      */
@@ -121,17 +132,6 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @returns {T}
      */
     abstract resolve<T>(token: Token<T>, context?: InvocationContext): T;
-    /**
-     * resolve token instance with token and param provider.
-     * 
-     * 解析标记令牌的实例。
-     *
-     * @template T
-     * @param {Token<T>} token the resolve token {@link Token}.
-     * @param {ProviderType[]} providers the providers to resolve with token. array of {@link ProviderType}.
-     * @returns {T}
-     */
-    abstract resolve<T>(token: Token<T>, providers?: ProviderType[]): T;
     /**
      * resolve token instance with token and param provider.
      * 

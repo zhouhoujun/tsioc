@@ -1,9 +1,9 @@
 import {
     Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType,
-    tokenId, isArray, toProvider, lang, ProvdierOf, Type
+    tokenId, isArray, toProvider, lang, ProvdierOf, Type, toProviders
 } from '@tsdi/ioc';
 import { CanActivate, Filter, InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
-import { CodingsModule, HybirdTransport, NotImplementedExecption, Transport } from '@tsdi/common/transport';
+import { CodingsModule, DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, Transport } from '@tsdi/common/transport';
 import { RequestContext } from './RequestContext';
 import { Server, ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
@@ -217,6 +217,15 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 if (moduleOpts.microservice) {
                     serverOpts.microservice = moduleOpts.microservice;
                 }
+                if (!serverOpts.transportOpts) {
+                    serverOpts.transportOpts = {};
+                }
+                if (serverOpts.timeout) {
+                    serverOpts.transportOpts.timeout = serverOpts.timeout;
+                }
+
+                serverOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, serverOpts.transportOpts.encodeInterceptors ?? [], true));
+                serverOpts.providers.push(...toProviders(DECODINGS_INTERCEPTORS, serverOpts.transportOpts.decodeInterceptors ?? [], true));
 
                 if (isArray(serverOpts.execptionHandlers)) {
                     serverOpts.providers.push(...serverOpts.execptionHandlers)

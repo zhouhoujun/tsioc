@@ -1,5 +1,5 @@
-import { Type } from '@tsdi/ioc';
-import { Handler } from '@tsdi/core';
+import { ProvdierOf, Type } from '@tsdi/ioc';
+import { Handler, Interceptor } from '@tsdi/core';
 
 
 export class Mappings {
@@ -39,4 +39,15 @@ export class Mappings {
         }
         return this;
     }
+}
+
+export interface CodingsOpts {
+    /**
+     * encode interceptors
+     */
+    encodeInterceptors?: ProvdierOf<Interceptor>[];
+    /**
+     * encode prefix interceptors
+     */
+    decodeInterceptors?: ProvdierOf<Interceptor>[];
 }

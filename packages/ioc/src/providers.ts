@@ -1,4 +1,4 @@
-import { Type, ClassType, Modules, TypeOf, EMPTY_OBJ } from './types';
+import { ClassType, Modules, TypeOf, EMPTY_OBJ } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Injector, OptionFlags } from './injector';
 import { isPlainObject } from './utils/obj';
@@ -291,6 +291,32 @@ export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: bool
     }
 
     return { ...options, provide, useValue: useOf as T }
+}
+
+/**
+ * parse to provider
+ * @param provide 
+ * @param useOf 
+ * @param multi 
+ * @param multiOrder 
+ * @returns 
+ */
+export function toProviders<T>(provide: Token, useOf: ProvdierOf<T>[], multi?: boolean): StaticProvider<T>[];
+export function toProviders<T>(provide: Token, useOf: ProvdierOf<T>[], options?: {
+    multi?: boolean,
+    static?: boolean,
+    multiOrder?: number,
+    isClass?: (type: Function) => boolean,
+    onRegistered?: (injector: Injector) => void
+}): StaticProvider<T>[];
+
+export function toProviders<T>(provide: Token, useOf: ProvdierOf<T>[], multi?: boolean | {
+    multi?: boolean
+    multiOrder?: number,
+    isClass?: (type: Function) => boolean,
+    onRegistered?: (injector: Injector) => void
+}): StaticProvider<T>[] {
+    return useOf.map(r => toProvider(provide, r, multi as any));
 }
 
 

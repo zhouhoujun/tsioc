@@ -1,11 +1,10 @@
-import { Abstract, Injectable, Injector, Module, Optional, Type, getClass, getClassName, tokenId } from '@tsdi/ioc';
+import { Abstract, EMPTY, Injectable, Injector, Module, Optional, getClass, getClassName, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Decoder, InputContext } from '@tsdi/common';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
 import { NotSupportedExecption } from '../execptions';
-import { Mappings } from './mappings';
+import { CodingsOpts, Mappings } from './mappings';
 import { JsonDecodeHandler } from './json/json.decodings';
-import { TransportOpts } from '../TransportSession';
 
 
 @Abstract()
@@ -52,22 +51,10 @@ export class DecodingsBackend implements Backend<any, any, InputContext> {
 export const DECODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, InputContext>[]>('DECODINGS_INTERCEPTORS');
 
 
-@Abstract()
-export abstract class DecodingInterceptorsResolver {
-
-    getToken() {
-        return DECODINGS_INTERCEPTORS
-    }
-
-    abstract resove(): Interceptor[];
-}
-
-
-
-@Injectable()
+@Injectable({ static: false })
 export class DecodingsInterceptingHandler extends InterceptingHandler<Buffer, any, InputContext>  {
-    constructor(backend: DecodingsBackend, resover: DecodingInterceptorsResolver) {
-        super(backend, () => resover.resove())
+    constructor(backend: DecodingsBackend, injector: Injector) {
+        super(backend, () => injector.get(DECODINGS_INTERCEPTORS, EMPTY))
     }
 }
 
@@ -84,13 +71,15 @@ export class Decodings extends Decoder {
 
 @Abstract()
 export abstract class DecodingsFactory {
-    abstract create(injector: Injector, options: TransportOpts): Decodings;
+    abstract create(injector: Injector, options: CodingsOpts): Decodings;
 }
 
 @Injectable()
 export class DefaultDecodingsFactory {
-    create(injector: Injector, options: TransportOpts): Decodings {
-        return new Decodings(injector.resolve(DecodingsHandler))
+    create(injector: Injector, options: CodingsOpts): Decodings {
+        return new Decodings(injector.resolve(DecodingsHandler, [
+            { provide: Injector, useValue: injector }
+        ]))
     }
 }
 

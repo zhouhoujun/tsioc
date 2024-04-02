@@ -188,7 +188,7 @@ export class TransportHeaders<T extends Header = Header> {
      * @param packet
      */
     getContentEncoding(): string {
-        let encoding = this.get(this.contentEncoding);
+        const encoding = this.get(this.contentEncoding);
         return isArray(encoding) ? encoding[0] : encoding
     }
     /**

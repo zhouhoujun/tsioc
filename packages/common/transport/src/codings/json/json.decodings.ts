@@ -36,7 +36,7 @@ export class EmptyJsonDecodeInterceptor implements Interceptor<Buffer | string, 
 
 export const JSON_DECODE_INTERCEPTORS = tokenId<Interceptor<Buffer | string, any>[]>('JSON_DECODE_INTERCEPTORS');
 
-@Injectable()
+@Injectable({ static: false })
 export class JsonDecodeInterceptingHandler extends InterceptingHandler<Buffer, any, InputContext>  {
     constructor(backend: JsonDecodeBackend, injector: Injector) {
         super(backend, () => injector.get(JSON_DECODE_INTERCEPTORS, []))

@@ -11,11 +11,16 @@ import { Observable, mergeMap, of } from 'rxjs';
 export class RequestEncodeBackend implements Backend<TransportRequest, PacketData> {
 
     handle(input: TransportRequest<any>): Observable<PacketData> {
-        return of({
+        const packet = {
+            pattern: input.pattern,
             headers: input.headers,
             payload: input.payload,
             payloadLength: input.headers.getContentLength()
-        })
+        } as PacketData;
+        if(input.method) {
+            packet.method = input.method;
+        }
+        return of(packet)
     }
 }
 
@@ -27,7 +32,7 @@ export abstract class RequestEncodeHandler implements Handler<TransportRequest, 
 
 export const REQUEST_ENCODE_INTERCEPTORS = tokenId<Interceptor<TransportRequest, PacketData>[]>('REQUEST_ENCODE_INTERCEPTORS');
 
-@Injectable()
+@Injectable({static: false})
 export class RequestEncodeInterceptingHandler extends InterceptingHandler<TransportRequest, PacketData>  {
     constructor(backend: RequestEncodeBackend, injector: Injector) {
         super(backend, () => injector.get(REQUEST_ENCODE_INTERCEPTORS, []))

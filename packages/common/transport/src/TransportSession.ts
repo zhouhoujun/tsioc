@@ -3,6 +3,7 @@ import { TransportErrorResponse, TransportEvent, HeadersLike, Encoder, Decoder, 
 import { Observable, finalize, mergeMap, share } from 'rxjs';
 import { HybirdTransport, Transport } from './protocols';
 import { DecodingsFactory, EncodingsFactory } from './codings';
+import { CodingsOpts } from './codings/mappings';
 
 
 
@@ -10,19 +11,19 @@ import { DecodingsFactory, EncodingsFactory } from './codings';
 /**
  * transport options.
  */
-export interface TransportOpts {
+export interface TransportOpts extends CodingsOpts {
     /**
      * transport type.
      */
     transport?: Transport | HybirdTransport;
     /**
-     * encodings.
+     * encodings Factory.
      */
-    encodings?: Token<EncodingsFactory>;
+    encodingsFactory?: Token<EncodingsFactory>;
     /**
-     * decodings.
+     * decodings Factory.
      */
-    decodings?: Token<DecodingsFactory>;
+    decodingsFactory?: Token<DecodingsFactory>;
     /**
      * packet delimiter flag
      */

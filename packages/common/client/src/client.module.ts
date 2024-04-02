@@ -1,6 +1,6 @@
 import {
     Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType,
-    Type, Token, isArray, lang, toProvider, tokenId
+    Type, Token, isArray, lang, toProvider, tokenId, toProviders
 } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
 import { CodingsModule, DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, Transport } from '@tsdi/common/transport';
@@ -148,19 +148,20 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                 if (opts.microservice) {
                     clientOpts.microservice = opts.microservice;
                 }
-                if (clientOpts.timeout) {
-                    if (clientOpts.transportOpts) {
-                        clientOpts.transportOpts.timeout = clientOpts.timeout;
-                    } else {
-                        clientOpts.transportOpts = { timeout: clientOpts.timeout };
-                    }
+                if (!clientOpts.transportOpts) {
+                    clientOpts.transportOpts = {};
                 }
+                if (clientOpts.timeout) {
+                    clientOpts.transportOpts.timeout = clientOpts.timeout;
+                }
+
+                clientOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, clientOpts.transportOpts.encodeInterceptors ?? [RequestEncoder], true));
+                clientOpts.providers.push(...toProviders(DECODINGS_INTERCEPTORS, clientOpts.transportOpts.decodeInterceptors ?? [ResponseDecoder], true));
+
                 if (clientOpts.sessionFactory && clientOpts.sessionFactory !== ClientTransportSessionFactory) {
                     clientOpts.providers.push(toProvider(ClientTransportSessionFactory, clientOpts.sessionFactory))
                 }
 
-                clientOpts.providers.push({ provide: ENCODINGS_INTERCEPTORS, useExisting: RequestEncoder, multi: true, multiOrder: 0 });
-                clientOpts.providers.push({ provide: DECODINGS_INTERCEPTORS, useExisting: ResponseDecoder, multi: true, multiOrder: 0 });
 
                 const providers: ProviderType[] = [];
 
