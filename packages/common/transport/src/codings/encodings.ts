@@ -23,7 +23,7 @@ export class EncodingsBackend implements Backend<any, any, InputContext> {
 
     handle(input: any, context: InputContext): Observable<any> {
         const type = getClass(input);
-        const handlers = this.mappings.getEncodings().getHanlder(type);
+        const handlers = this.mappings.getEncodings(context.options).getHanlder(type);
 
         if (handlers && handlers.length) {
             return handlers.reduceRight((obs$, curr) => {
