@@ -1,23 +1,23 @@
-import { ProvdierOf, Type } from '@tsdi/ioc';
+import { Injectable, ProvdierOf, Type } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 
 
 export class Mappings {
-    private maps: Map<Type, Handler[]>;
+    private maps: Map<Type | string, Handler[]>;
     constructor() {
         this.maps = new Map();
     }
 
-    hasHanlder(type: Type): boolean {
+    hasHanlder(type: Type | string): boolean {
         const handlers = this.maps.get(type);
         return !!handlers && handlers.length > 0;
     }
 
-    getHanlder(type: Type): Handler[] | null {
+    getHanlder(type: Type | string): Handler[] | null {
         return this.maps.get(type) ?? [];
     }
 
-    addHandler(type: Type, handler: Handler, order = -1) {
+    addHandler(type: Type | string, handler: Handler, order = -1) {
         const handlers = this.maps.get(type);
         if (handlers) {
             if (handlers.some(i => i.equals ? i.equals(handler) : i === handler)) return this;
@@ -29,7 +29,7 @@ export class Mappings {
 
     }
 
-    removeHandler(event: Type, handler: Handler): this {
+    removeHandler(event: Type | string, handler: Handler): this {
         const handlers = this.maps.get(event);
         if (handlers) {
             const idx = handlers.findIndex(i => i.equals ? i.equals(handler) : i === handler);
@@ -39,6 +39,37 @@ export class Mappings {
         }
         return this;
     }
+}
+
+@Injectable({
+    static: true,
+    providedIn: 'root'
+})
+export class CodingMappings {
+
+    maps: Map<string, Mappings>;
+    constructor() {
+        this.maps = new Map();
+    }
+
+    getEncodings(type?: 'client' | 'server'): Mappings {
+        return this.get(type ?? '', '_encodings')
+    }
+
+    getDecodings(type?: 'client' | 'server'): Mappings {
+        return this.get(type ?? '', '_decodings')
+    }
+
+    private get(type: string, subfix: string): Mappings {
+        const key = type + subfix;
+        let mappings = this.maps.get(key);
+        if (!mappings) {
+            mappings = new Mappings();
+            this.maps.set(key, mappings);
+        }
+        return mappings;
+    }
+
 }
 
 export interface CodingsOpts {

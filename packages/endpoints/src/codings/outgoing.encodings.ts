@@ -1,7 +1,7 @@
 import { Abstract, Injectable, Injector, Module, getClass, getClassName, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Encoder, InputContext } from '@tsdi/common';
-import { Mappings, NotSupportedExecption, PacketData } from '@tsdi/common/transport';
+import { CodingMappings, NotSupportedExecption, PacketData } from '@tsdi/common/transport';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 
@@ -12,23 +12,14 @@ export abstract class OutgoingEncodeHandler implements Handler<RequestContext, a
     abstract handle(input: RequestContext, context: InputContext): Observable<PacketData>
 }
 
-@Injectable({
-    static: true,
-    providedIn: 'root'
-})
-export class OutgoingMappings extends Mappings {
-
-}
-
-
 
 @Injectable()
 export class OutgoingEncodeBackend implements Backend<RequestContext, any> {
-    constructor(private mappings: OutgoingMappings) { }
+    constructor(private mappings: CodingMappings) { }
 
     handle(input: RequestContext, context: any): Observable<any> {
         const type = getClass(input.response ?? input);
-        const handlers = this.mappings.getHanlder(type);
+        const handlers = this.mappings.getEncodings('server').getHanlder(type);
 
         if (handlers && handlers.length) {
             return handlers.reduceRight((obs$, curr) => {
@@ -69,7 +60,6 @@ export class OutgoingEncoder extends Encoder<RequestContext, PacketData> impleme
 
 @Module({
     providers: [
-        OutgoingMappings,
         OutgoingEncodeBackend,
         { provide: OutgoingEncodeHandler, useClass: OutgoingEncodeInterceptingHandler },
         OutgoingEncoder

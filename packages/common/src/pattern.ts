@@ -16,6 +16,9 @@ export interface CommandPattern {
     cmd: string;
 }
 
+/**
+ * Topic pattern.
+ */
 export interface TopicPattern {
     [key: string]: undefined | string | number | ObjectPattern;
     topic: string;

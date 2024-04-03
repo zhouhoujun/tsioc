@@ -241,12 +241,12 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                 decors.forEach(decor => {
                     const { filter, order, ...options } = decor.metadata;
 
-                    const endpoint = factory.create(decor.propertyKey, options);
+                    const handler = factory.create(decor.propertyKey, options);
 
                     const event = filter ?? defaultFilter;
                     const isFILO = isFunction(event.getStrategy) && event.getStrategy() == 'FILO';
-                    multicaster.addListener(event, endpoint, isFILO ? order ?? 0 : order);
-                    factory.onDestroy(() => multicaster.removeListener(event, endpoint))
+                    multicaster.addListener(event, handler, isFILO ? order ?? 0 : order);
+                    factory.onDestroy(() => multicaster.removeListener(event, handler))
                 });
                 next()
             }
@@ -267,12 +267,12 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                 decors.forEach(decor => {
                     const { filter, order, ...options } = decor.metadata;
 
-                    const endpoint = factory.create(decor.propertyKey, { ...options, instance: ctx.instance! });
+                    const handler = factory.create(decor.propertyKey, { ...options, instance: ctx.instance! });
 
                     const event = filter ?? defaultFilter;
                     const isFILO = isFunction(event.getStrategy) && event.getStrategy() == 'FILO';
-                    multicaster.addListener(event, endpoint, isFILO ? order ?? 0 : order);
-                    factory.onDestroy(() => multicaster.removeListener(event, endpoint))
+                    multicaster.addListener(event, handler, isFILO ? order ?? 0 : order);
+                    factory.onDestroy(() => multicaster.removeListener(event, handler))
                 });
                 next()
             }
@@ -426,7 +426,7 @@ export interface FilterHandlerMetadata<TArg> extends InvocationOptions<TArg> {
  * FilterHandler decorator, for class. use to define the class as response handle register in global filter.
  *
  * @export
- * @interface EndpointHandler
+ * @interface handlerHandler
  */
 export interface FilterHandler {
     /**
@@ -439,7 +439,7 @@ export interface FilterHandler {
 }
 
 /**
- * FilterHandler decorator, for class. use to define the class as Endpoint handle register in global filter.
+ * FilterHandler decorator, for class. use to define the class as handler handle register in global filter.
  * @FilterHandler
  * 
  * @exports {@link FilterHandler}
@@ -455,9 +455,9 @@ export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
             const handlerResolver = injector.get(FilterHandlerResolver);
             decors.forEach(decor => {
                 const { filter, order, ...options } = decor.metadata;
-                const endpoint = factory.create(decor.propertyKey, options);
-                handlerResolver.addHandle(filter, endpoint, order);
-                factory.onDestroy(() => handlerResolver.removeHandle(filter, endpoint));
+                const handler = factory.create(decor.propertyKey, options);
+                handlerResolver.addHandle(filter, handler, order);
+                factory.onDestroy(() => handlerResolver.removeHandle(filter, handler));
             });
 
             next()

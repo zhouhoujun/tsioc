@@ -138,7 +138,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             const mapping = ctx.class.getAnnotation<MappingDef>();
 
             const routers = injector.get(MircoServRouters);
-            if (!routers) throw new Execption(lang.getClassName(parent) + 'has not registered!');
+            if (!routers) throw new Execption(lang.getClassName(MircoServRouters) + 'has not registered!');
 
             const prefix = joinPath(mapping.prefix, mapping.version, mapping.route);
             const factory = injector.get(RouteHandlerFactoryResolver).resolve(ctx.class, injector);

@@ -1,9 +1,9 @@
-import { Abstract, EMPTY, Injectable, Injector, Module, Optional, getClass, getClassName, tokenId } from '@tsdi/ioc';
+import { Abstract, EMPTY, Injectable, Injector, Optional, getClass, getClassName, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Decoder, InputContext } from '@tsdi/common';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
 import { NotSupportedExecption } from '../execptions';
-import { CodingsOpts, Mappings } from './mappings';
+import { CodingMappings, CodingsOpts } from './mappings';
 import { JsonDecodeHandler } from './json/json.decodings';
 
 
@@ -12,13 +12,6 @@ export abstract class DecodingsHandler implements Handler<any, any, InputContext
     abstract handle(input: Buffer, context: InputContext): Observable<any>
 }
 
-@Injectable({ 
-    static: true,
-    providedIn: 'root'
-})
-export class DecodingMappings extends Mappings {
-
-}
 
 
 @Injectable()
@@ -26,13 +19,13 @@ export class DecodingsBackend implements Backend<any, any, InputContext> {
 
 
     constructor(
-        private mappings: DecodingMappings,
+        private mappings: CodingMappings,
         @Optional() private jsonDecodeHanlder: JsonDecodeHandler
     ) { }
 
     handle(input: any, context: InputContext): Observable<any> {
         const type = getClass(input);
-        const handlers = this.mappings.getHanlder(type);
+        const handlers = this.mappings.getDecodings().getHanlder(type);
 
         if (handlers && handlers.length) {
             return handlers.reduceRight((obs$, curr) => {
@@ -86,17 +79,3 @@ export class DefaultDecodingsFactory {
     }
 }
 
-
-
-
-@Module({
-    providers: [
-        DecodingMappings,
-        DecodingsBackend,
-        { provide: DecodingsHandler, useClass: DecodingsInterceptingHandler },
-        { provide: DecodingsFactory, useClass: DefaultDecodingsFactory }
-    ]
-})
-export class DecodingsModule {
-
-}
