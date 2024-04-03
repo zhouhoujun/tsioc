@@ -5,7 +5,7 @@ import { CodingsOpts } from './mappings';
 
 
 
-export class InputContext implements OnDestroy {
+export class CodingsContext implements OnDestroy {
 
     private _inputs: any[];
     get inputs(): any[] {
@@ -47,12 +47,12 @@ export abstract class Encoder<TInput = any, TOutput = any> {
      * the method hande decode, with implemet encode interceptor.
      * 加密处理器。
      */
-    abstract get handler(): Handler<TInput, TOutput, InputContext>;
+    abstract get handler(): Handler<TInput, TOutput, CodingsContext>;
     /**
      * encode inport
      * @param input 
      */
-    encode(input: TInput, context: InputContext): Observable<TOutput> {
+    encode(input: TInput, context: CodingsContext): Observable<TOutput> {
         return this.handler.handle(input, context);
     }
 }
@@ -66,12 +66,12 @@ export abstract class Decoder<TInput = any, TOutput = any> {
      * the method hande decode, with implemet decode interceptor.
      * 解密处理器
      */
-    abstract get handler(): Handler<TInput, TOutput, InputContext>;
+    abstract get handler(): Handler<TInput, TOutput, CodingsContext>;
     /**
      * decode inport
      * @param input 
      */
-    decode(input: TInput, context: InputContext): Observable<TOutput> {
+    decode(input: TInput, context: CodingsContext): Observable<TOutput> {
         return this.handler.handle(input, context);
     }
 }

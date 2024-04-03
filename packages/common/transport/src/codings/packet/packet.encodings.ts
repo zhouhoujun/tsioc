@@ -2,7 +2,7 @@ import { Abstract, ArgumentExecption, Execption, Inject, Injectable, Injector, M
 import { Backend, Handler, InterceptingHandler, Interceptor, UuidGenerator } from '@tsdi/core';
 import { Observable, Subscriber, from, isObservable, map, mergeMap, of, range, throwError } from 'rxjs';
 import { NumberAllocator } from 'number-allocator';
-import { Encoder, InputContext } from '../codings';
+import { Encoder, CodingsContext } from '../codings';
 import { PacketData, Packet } from '../../packet';
 import { StreamAdapter, isBuffer } from '../../StreamAdapter';
 import { Transport } from '../../protocols';
@@ -62,13 +62,13 @@ export class PacketUUIdGenerator implements PacketIdGenerator {
 
 
 @Injectable()
-export class PacketEncodeBackend implements Backend<PacketData, Buffer, InputContext> {
+export class PacketEncodeBackend implements Backend<PacketData, Buffer, CodingsContext> {
 
     constructor(
         private streamAdapter: StreamAdapter,
         @Inject(PACKET_CODING_OPTIONS) private options: PacketOptions) { }
 
-    handle(input: PacketData, context: InputContext): Observable<Buffer> {
+    handle(input: PacketData, context: CodingsContext): Observable<Buffer> {
         return of(Buffer.concat([
 
         ]));
@@ -77,11 +77,11 @@ export class PacketEncodeBackend implements Backend<PacketData, Buffer, InputCon
 }
 
 @Abstract()
-export abstract class PacketEncodeHandler implements Handler<PacketData, Buffer, InputContext> {
-    abstract handle(input: any, context: InputContext): Observable<Buffer>
+export abstract class PacketEncodeHandler implements Handler<PacketData, Buffer, CodingsContext> {
+    abstract handle(input: any, context: CodingsContext): Observable<Buffer>
 }
 
-export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer, InputContext>[]>('PACKET_ENCODE_INTERCEPTORS');
+export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer, CodingsContext>[]>('PACKET_ENCODE_INTERCEPTORS');
 
 
 @Injectable()
@@ -94,7 +94,7 @@ export class PacketEncoder extends Encoder<PacketData, Buffer> {
 
 
 @Injectable()
-export class PacketEncodeInterceptingHandler extends InterceptingHandler<any, Buffer, InputContext>  {
+export class PacketEncodeInterceptingHandler extends InterceptingHandler<any, Buffer, CodingsContext>  {
     constructor(backend: PacketEncodeBackend, injector: Injector) {
         super(backend, () => injector.get(PACKET_ENCODE_INTERCEPTORS))
     }
@@ -114,11 +114,11 @@ export abstract class PayloadSerialization {
 
 
 @Injectable()
-export class SerializeHeaderEncodeInterceptor implements Interceptor<PacketData, Buffer, InputContext> {
+export class SerializeHeaderEncodeInterceptor implements Interceptor<PacketData, Buffer, CodingsContext> {
 
     constructor(@Optional() private serialization: HandlerSerialization) { }
 
-    intercept(input: PacketData, next: Handler<PacketData<any>, Buffer>, context: InputContext): Observable<Buffer> {
+    intercept(input: PacketData, next: Handler<PacketData<any>, Buffer>, context: CodingsContext): Observable<Buffer> {
         if (!input.headerBuffer) {
             if (this.serialization) {
                 input.headerBuffer = this.serialization.serialize(input);
@@ -135,14 +135,14 @@ export class SerializeHeaderEncodeInterceptor implements Interceptor<PacketData,
 }
 
 @Injectable()
-export class SerializePayloadEncodeInterceptor implements Interceptor<PacketData, Buffer, InputContext> {
+export class SerializePayloadEncodeInterceptor implements Interceptor<PacketData, Buffer, CodingsContext> {
 
     constructor(
         private streamAdapter: StreamAdapter,
         @Optional() private serialization: PayloadSerialization
     ) { }
 
-    intercept(input: PacketData, next: Handler<PacketData<any>, Buffer>, context: InputContext): Observable<Buffer> {
+    intercept(input: PacketData, next: Handler<PacketData<any>, Buffer>, context: CodingsContext): Observable<Buffer> {
         if (this.streamAdapter.isReadable(input.payload)) return next.handle(input, context);
         let payload: Buffer;
         if (this.serialization) {
@@ -165,8 +165,8 @@ export class SerializePayloadEncodeInterceptor implements Interceptor<PacketData
 
 
 @Injectable()
-export class AysncPacketEncodeInterceptor implements Interceptor<PacketData, Buffer, InputContext> {
-    intercept(input: PacketData, next: Handler<any, Buffer>, context: InputContext): Observable<Buffer> {
+export class AysncPacketEncodeInterceptor implements Interceptor<PacketData, Buffer, CodingsContext> {
+    intercept(input: PacketData, next: Handler<any, Buffer>, context: CodingsContext): Observable<Buffer> {
         if (isPromise(input.payload)) {
             return from(input.payload).pipe(mergeMap(v => {
                 input.payload = v;
@@ -184,11 +184,11 @@ export class AysncPacketEncodeInterceptor implements Interceptor<PacketData, Buf
 }
 
 @Injectable()
-export class BindPacketIdEncodeInterceptor implements Interceptor<PacketData, Buffer, InputContext> {
+export class BindPacketIdEncodeInterceptor implements Interceptor<PacketData, Buffer, CodingsContext> {
 
     constructor(private idGenerator: PacketIdGenerator) { }
 
-    intercept(input: PacketData, next: Handler<PacketData, Buffer>, context: InputContext): Observable<Buffer> {
+    intercept(input: PacketData, next: Handler<PacketData, Buffer>, context: CodingsContext): Observable<Buffer> {
         if (!input.id) {
             input.id = this.idGenerator.getPacketId();
         }
@@ -198,14 +198,14 @@ export class BindPacketIdEncodeInterceptor implements Interceptor<PacketData, Bu
 
 
 @Injectable()
-export class LargePayloadEncodeInterceptor implements Interceptor<PacketData, Buffer, InputContext> {
+export class LargePayloadEncodeInterceptor implements Interceptor<PacketData, Buffer, CodingsContext> {
 
     constructor(
         private streamAdapter: StreamAdapter,
         @Inject(PACKET_CODING_OPTIONS) private options: PacketOptions
     ) { }
 
-    intercept(input: PacketData, next: Handler<PacketData, Buffer>, context: InputContext): Observable<Buffer> {
+    intercept(input: PacketData, next: Handler<PacketData, Buffer>, context: CodingsContext): Observable<Buffer> {
         const packetSize = (input.payloadLength ?? 0) + (input.headerLength ?? 0);
         const sizeLimit = this.options.maxSize! - (this.options.delimiter ? Buffer.byteLength(this.options.delimiter) : 0)
             - ((this.options.headDelimiter) ? Buffer.byteLength(this.options.headDelimiter) : 0)

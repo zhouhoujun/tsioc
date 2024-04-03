@@ -1,15 +1,15 @@
 import { Abstract, Injectable, Injector, Module, getClass, getClassName, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { TransportRequest } from '@tsdi/common';
-import { CodingMappings,  Encoder, InputContext, NotSupportedExecption, PacketData } from '@tsdi/common/transport';
+import { CodingMappings,  Encoder, CodingsContext, NotSupportedExecption, PacketData } from '@tsdi/common/transport';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
 
 
 
 
 @Abstract()
-export abstract class RequestEncodeHandler implements Handler<TransportRequest, PacketData, InputContext> {
-    abstract handle(input: TransportRequest, context: InputContext): Observable<PacketData>
+export abstract class RequestEncodeHandler implements Handler<TransportRequest, PacketData, CodingsContext> {
+    abstract handle(input: TransportRequest, context: CodingsContext): Observable<PacketData>
 }
 
 
@@ -19,7 +19,7 @@ export class RequestEncodeBackend implements Backend<TransportRequest, PacketDat
 
     constructor(private mappings: CodingMappings) { }
 
-    handle(input: TransportRequest<any>, context: InputContext): Observable<PacketData> {
+    handle(input: TransportRequest<any>, context: CodingsContext): Observable<PacketData> {
         const type = getClass(input);
         const handlers = this.mappings.getEncodings(context.options).getHanlder(type);
 
@@ -58,13 +58,13 @@ export class RequestEncodeInterceptingHandler extends InterceptingHandler<Transp
 
 
 @Injectable()
-export class RequestEncoder extends Encoder<TransportRequest, PacketData> implements Interceptor<any, PacketData, InputContext> {
+export class RequestEncoder extends Encoder<TransportRequest, PacketData> implements Interceptor<any, PacketData, CodingsContext> {
 
     constructor(readonly handler: RequestEncodeHandler) {
         super()
     }
 
-    intercept(input: TransportRequest<any>, next: Handler<any, PacketData<any>, InputContext>, context: InputContext): Observable<PacketData<any>> {
+    intercept(input: TransportRequest<any>, next: Handler<any, PacketData<any>, CodingsContext>, context: CodingsContext): Observable<PacketData<any>> {
         return this.handler.handle(input, context).pipe(
             mergeMap(output => next.handle(output, context.next(output))));
     }

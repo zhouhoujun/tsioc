@@ -1,24 +1,24 @@
 import { Abstract, EMPTY_OBJ, Injectable, Injector, Module, getClass, getClassName, lang, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { HEAD,  ResponseJsonParseError, TransportEvent, TransportRequest } from '@tsdi/common';
-import { CodingMappings, Incoming, Decoder, InputContext, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer } from '@tsdi/common/transport';
+import { CodingMappings, Incoming, Decoder, CodingsContext, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer } from '@tsdi/common/transport';
 import { Observable, defer, mergeMap, of, throwError } from 'rxjs';
 
 
 
 @Abstract()
-export abstract class ResponseDecodeHandler implements Handler<any, TransportEvent, InputContext> {
-    abstract handle(input: any, context: InputContext): Observable<TransportEvent>
+export abstract class ResponseDecodeHandler implements Handler<any, TransportEvent, CodingsContext> {
+    abstract handle(input: any, context: CodingsContext): Observable<TransportEvent>
 }
 
 
 
 @Injectable()
-export class ResponseDecodeBackend implements Backend<any, TransportEvent, InputContext>  {
+export class ResponseDecodeBackend implements Backend<any, TransportEvent, CodingsContext>  {
 
     constructor(private mappings: CodingMappings) { }
 
-    handle(input: any, context: InputContext): Observable<TransportEvent> {
+    handle(input: any, context: CodingsContext): Observable<TransportEvent> {
         const type = getClass(input);
         const handlers = this.mappings.getDecodings(context.options).getHanlder(type);
         
@@ -36,10 +36,10 @@ export class ResponseDecodeBackend implements Backend<any, TransportEvent, Input
 }
 
 
-export const RESPONSE_DECODE_INTERCEPTORS = tokenId<Interceptor<any, TransportEvent, InputContext>[]>('RESPONSE_DECODE_INTERCEPTORS');
+export const RESPONSE_DECODE_INTERCEPTORS = tokenId<Interceptor<any, TransportEvent, CodingsContext>[]>('RESPONSE_DECODE_INTERCEPTORS');
 
 @Injectable()
-export class ResponseDecodeInterceptingHandler extends InterceptingHandler<any, TransportEvent, InputContext>  {
+export class ResponseDecodeInterceptingHandler extends InterceptingHandler<any, TransportEvent, CodingsContext>  {
     constructor(backend: ResponseDecodeBackend, injector: Injector) {
         super(backend, () => injector.get(RESPONSE_DECODE_INTERCEPTORS, []))
     }
@@ -72,13 +72,13 @@ export class RequestStauts {
 
 
 @Injectable()
-export class ResponseDecoder extends Decoder<any, TransportEvent> implements Interceptor<any, TransportEvent, InputContext> {
+export class ResponseDecoder extends Decoder<any, TransportEvent> implements Interceptor<any, TransportEvent, CodingsContext> {
 
     constructor(readonly handler: ResponseDecodeHandler) {
         super()
     }
 
-    intercept(input: any, next: Handler<any, any, InputContext>, context: InputContext): Observable<TransportEvent> {
+    intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<TransportEvent> {
         return next.handle(input, context)
             .pipe(
                 mergeMap(res=> this.handler.handle(res, context.next(res)))
@@ -100,14 +100,14 @@ export class ResponseDecodingsModule {
 
 
 @Injectable()
-export class IncomingResponseHanlder implements Handler<Incoming, TransportEvent, InputContext> {
+export class IncomingResponseHanlder implements Handler<Incoming, TransportEvent, CodingsContext> {
 
     constructor(
         private streamAdapter: StreamAdapter,
         private mimeAdapter: MimeAdapter
     ) { }
 
-    handle(input: Incoming, context: InputContext): Observable<TransportEvent> {
+    handle(input: Incoming, context: CodingsContext): Observable<TransportEvent> {
         const streamAdapter = this.streamAdapter;
         const res = input;
         return defer(async () => {
@@ -197,11 +197,11 @@ export class IncomingResponseHanlder implements Handler<Incoming, TransportEvent
 }
 
 @Injectable()
-export class CompressResponseDecordeInterceptor implements Interceptor<Incoming, TransportEvent, InputContext> {
+export class CompressResponseDecordeInterceptor implements Interceptor<Incoming, TransportEvent, CodingsContext> {
 
     constructor(private streamAdapter: StreamAdapter) { }
 
-    intercept(input: Incoming, next: Handler<Incoming, TransportEvent, InputContext>, context: InputContext): Observable<TransportEvent> {
+    intercept(input: Incoming, next: Handler<Incoming, TransportEvent, CodingsContext>, context: CodingsContext): Observable<TransportEvent> {
         const response = input;
         if (response instanceof Incoming) {
             const codings = response.getContentEncoding();

@@ -1,27 +1,27 @@
 import { Abstract, EMPTY, Injectable, Injector, Optional, getClass, getClassName, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
-import { Encoder, InputContext } from '../codings';
+import { Encoder, CodingsContext } from '../codings';
 import { NotSupportedExecption } from '../execptions';
 import { CodingMappings, CodingsOpts } from './mappings';
 import { JsonEncodeHandler } from './json/json.encodings';
 
 @Abstract()
-export abstract class EncodingsHandler implements Handler<any, any, InputContext> {
-    abstract handle(input: Buffer, context: InputContext): Observable<any>
+export abstract class EncodingsHandler implements Handler<any, any, CodingsContext> {
+    abstract handle(input: Buffer, context: CodingsContext): Observable<any>
 }
 
 
 
 @Injectable()
-export class EncodingsBackend implements Backend<any, any, InputContext> {
+export class EncodingsBackend implements Backend<any, any, CodingsContext> {
 
     constructor(
         private mappings: CodingMappings,
         @Optional() private jsonEncodeHandler: JsonEncodeHandler
     ) { }
 
-    handle(input: any, context: InputContext): Observable<any> {
+    handle(input: any, context: CodingsContext): Observable<any> {
         const type = getClass(input);
         const handlers = this.mappings.getEncodings(context.options).getHanlder(type);
 
@@ -42,11 +42,11 @@ export class EncodingsBackend implements Backend<any, any, InputContext> {
 /**
  * Encodings interceptors.
  */
-export const ENCODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, InputContext>[]>('ENCODINGS_INTERCEPTORS');
+export const ENCODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, CodingsContext>[]>('ENCODINGS_INTERCEPTORS');
 
 
 @Injectable({ static: false })
-export class EncodingsInterceptingHandler extends InterceptingHandler<Buffer, any, InputContext>  {
+export class EncodingsInterceptingHandler extends InterceptingHandler<Buffer, any, CodingsContext>  {
     constructor(backend: EncodingsBackend, injector: Injector) {
         super(backend, () => injector.get(ENCODINGS_INTERCEPTORS, EMPTY))
     }

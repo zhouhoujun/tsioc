@@ -6,7 +6,7 @@ import { HybirdTransport, Transport } from './protocols';
 import { CodingsOpts } from './codings/mappings';
 import { EncodingsFactory } from './codings/encodings';
 import { DecodingsFactory } from './codings/decodings';
-import { Decoder, Encoder, InputContext } from './codings/codings';
+import { Decoder, Encoder, CodingsContext } from './codings/codings';
 
 
 
@@ -103,8 +103,8 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * send.
      * @param data 
      */
-    send(data: TInput, context?: InputContext): Observable<TMsg> {
-        const ctx = context ?? new InputContext(this.options);
+    send(data: TInput, context?: CodingsContext): Observable<TMsg> {
+        const ctx = context ?? new CodingsContext(this.options);
         return this.encodings.encode(data, ctx)
             .pipe(
                 mergeMap(msg => this.sendMessage(data, msg as TMsg)),
@@ -119,11 +119,11 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * receive
      * @param req the message response for.
      */
-    receive(context?: InputContext): Observable<TOutput> {
+    receive(context?: CodingsContext): Observable<TOutput> {
         return this.handleMessage()
             .pipe(
                 mergeMap(msg => {
-                    const ctx = context ?? new InputContext(this.options);
+                    const ctx = context ?? new CodingsContext(this.options);
                     return this.decodings.decode(msg, ctx)
                         .pipe(
                             finalize(() => !context && ctx.onDestroy())

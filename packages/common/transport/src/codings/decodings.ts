@@ -1,21 +1,21 @@
 import { Abstract, EMPTY, Injectable, Injector, Optional, getClass, getClassName, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
-import { Decoder, InputContext } from '../codings';
+import { Decoder, CodingsContext } from '../codings';
 import { NotSupportedExecption } from '../execptions';
 import { CodingMappings, CodingsOpts } from './mappings';
 import { JsonDecodeHandler } from './json/json.decodings';
 
 
 @Abstract()
-export abstract class DecodingsHandler implements Handler<any, any, InputContext> {
-    abstract handle(input: Buffer, context: InputContext): Observable<any>
+export abstract class DecodingsHandler implements Handler<any, any, CodingsContext> {
+    abstract handle(input: Buffer, context: CodingsContext): Observable<any>
 }
 
 
 
 @Injectable()
-export class DecodingsBackend implements Backend<any, any, InputContext> {
+export class DecodingsBackend implements Backend<any, any, CodingsContext> {
 
 
     constructor(
@@ -23,7 +23,7 @@ export class DecodingsBackend implements Backend<any, any, InputContext> {
         @Optional() private jsonDecodeHanlder: JsonDecodeHandler
     ) { }
 
-    handle(input: any, context: InputContext): Observable<any> {
+    handle(input: any, context: CodingsContext): Observable<any> {
         const type = getClass(input);
         const handlers = this.mappings.getDecodings(context.options).getHanlder(type);
 
@@ -44,11 +44,11 @@ export class DecodingsBackend implements Backend<any, any, InputContext> {
 /**
  * decodings interceptors.
  */
-export const DECODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, InputContext>[]>('DECODINGS_INTERCEPTORS');
+export const DECODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, CodingsContext>[]>('DECODINGS_INTERCEPTORS');
 
 
 @Injectable({ static: false })
-export class DecodingsInterceptingHandler extends InterceptingHandler<Buffer, any, InputContext>  {
+export class DecodingsInterceptingHandler extends InterceptingHandler<Buffer, any, CodingsContext>  {
     constructor(backend: DecodingsBackend, injector: Injector) {
         super(backend, () => injector.get(DECODINGS_INTERCEPTORS, EMPTY))
     }

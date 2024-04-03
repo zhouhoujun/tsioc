@@ -1,14 +1,14 @@
 import { Abstract, Injectable, Injector, isString, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Observable, of, throwError } from 'rxjs';
-import { Decoder, InputContext } from '../codings';
+import { Decoder, CodingsContext } from '../codings';
 import { InvalidJsonException } from '../../execptions';
 
 
 
 @Injectable()
-export class JsonDecodeBackend implements Backend<Buffer | string, any, InputContext> {
-    handle(input: Buffer | string, context: InputContext): Observable<any> {
+export class JsonDecodeBackend implements Backend<Buffer | string, any, CodingsContext> {
+    handle(input: Buffer | string, context: CodingsContext): Observable<any> {
         const jsonStr = isString(input) ? input : new TextDecoder().decode(input);
         try {
             const buff = JSON.parse(jsonStr);
@@ -20,13 +20,13 @@ export class JsonDecodeBackend implements Backend<Buffer | string, any, InputCon
 }
 
 @Abstract()
-export abstract class JsonDecodeHandler implements Handler<Buffer | string, any, InputContext> {
-    abstract handle(input: Buffer, context: InputContext): Observable<any>
+export abstract class JsonDecodeHandler implements Handler<Buffer | string, any, CodingsContext> {
+    abstract handle(input: Buffer, context: CodingsContext): Observable<any>
 }
 
 @Injectable()
-export class EmptyJsonDecodeInterceptor implements Interceptor<Buffer | string, any, InputContext> {
-    intercept(input: string | Buffer, next: Handler<string | Buffer, any>, context: InputContext): Observable<any> {
+export class EmptyJsonDecodeInterceptor implements Interceptor<Buffer | string, any, CodingsContext> {
+    intercept(input: string | Buffer, next: Handler<string | Buffer, any>, context: CodingsContext): Observable<any> {
         const data = isString(input) ? input : (input.length ? new TextDecoder().decode(input) : '');
         if (!data) return of({});
         return next.handle(data);
@@ -37,7 +37,7 @@ export class EmptyJsonDecodeInterceptor implements Interceptor<Buffer | string, 
 export const JSON_DECODE_INTERCEPTORS = tokenId<Interceptor<Buffer | string, any>[]>('JSON_DECODE_INTERCEPTORS');
 
 @Injectable({ static: false })
-export class JsonDecodeInterceptingHandler extends InterceptingHandler<Buffer, any, InputContext>  {
+export class JsonDecodeInterceptingHandler extends InterceptingHandler<Buffer, any, CodingsContext>  {
     constructor(backend: JsonDecodeBackend, injector: Injector) {
         super(backend, () => injector.get(JSON_DECODE_INTERCEPTORS, []))
     }

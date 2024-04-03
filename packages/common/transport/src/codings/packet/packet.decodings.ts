@@ -1,7 +1,7 @@
 import { Abstract, ArgumentExecption, Inject, Injectable, Injector, Module, Optional, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Observable, Subscriber, mergeMap, throwError } from 'rxjs';
-import { Decoder, InputContext } from '../codings';
+import { Decoder, CodingsContext } from '../codings';
 import { Packet, PacketData } from '../../packet';
 import { StreamAdapter, isBuffer } from '../../StreamAdapter';
 import { PACKET_CODING_OPTIONS, PacketIdGenerator, PacketOptions } from './packet.encodings';
@@ -22,7 +22,7 @@ export abstract class PayloadDeserialization {
 
 
 @Injectable()
-export class PacketDecodeBackend implements Backend<Buffer, Packet, InputContext> {
+export class PacketDecodeBackend implements Backend<Buffer, Packet, CodingsContext> {
     packs: Map<string | number, PacketData & { cacheSize: number }>;
 
     constructor(
@@ -35,7 +35,7 @@ export class PacketDecodeBackend implements Backend<Buffer, Packet, InputContext
         this.packs = new Map();
     }
 
-    handle(input: Buffer, context: InputContext): Observable<Packet> {
+    handle(input: Buffer, context: CodingsContext): Observable<Packet> {
 
         if (!isBuffer(input)) {
             return throwError(() => new ArgumentExecption('asset decoding input is not buffer'));
@@ -107,8 +107,8 @@ export class PacketDecodeBackend implements Backend<Buffer, Packet, InputContext
 }
 
 @Abstract()
-export abstract class PacketDecodeHandler implements Handler<Buffer, Packet, InputContext> {
-    abstract handle(input: Buffer, context: InputContext): Observable<Packet>
+export abstract class PacketDecodeHandler implements Handler<Buffer, Packet, CodingsContext> {
+    abstract handle(input: Buffer, context: CodingsContext): Observable<Packet>
 }
 
 /**
@@ -122,7 +122,7 @@ export interface ChannelBuffer {
 }
 
 @Injectable()
-export class ConcatPacketDecodeInterceptor implements Interceptor<Buffer, Packet, InputContext> {
+export class ConcatPacketDecodeInterceptor implements Interceptor<Buffer, Packet, CodingsContext> {
 
     protected channels: Map<string, ChannelBuffer>;
 
@@ -134,7 +134,7 @@ export class ConcatPacketDecodeInterceptor implements Interceptor<Buffer, Packet
 
 
 
-    intercept(input: Buffer, next: Handler<Buffer, Packet>, context: InputContext): Observable<Packet> {
+    intercept(input: Buffer, next: Handler<Buffer, Packet>, context: CodingsContext): Observable<Packet> {
         return new Observable((subscriber: Subscriber<Buffer>) => {
             let chl = this.channels.get(this.options.transport ?? '');
 
@@ -220,7 +220,7 @@ export class ConcatPacketDecodeInterceptor implements Interceptor<Buffer, Packet
 export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<Buffer | string, any>[]>('PACKET_DECODE_INTERCEPTORS');
 
 @Injectable()
-export class PacketDecodeInterceptingHandler extends InterceptingHandler<Buffer, any, InputContext>  {
+export class PacketDecodeInterceptingHandler extends InterceptingHandler<Buffer, any, CodingsContext>  {
     constructor(backend: PacketDecodeBackend, injector: Injector) {
         super(backend, () => injector.get(PACKET_DECODE_INTERCEPTORS))
     }
