@@ -1,7 +1,6 @@
 import { Abstract, Injectable, Injector, Module, getClass, getClassName, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { Decoder, InputContext } from '@tsdi/common';
-import { CodingMappings, NotSupportedExecption, PacketData } from '@tsdi/common/transport';
+import { Decoder, InputContext, CodingMappings, NotSupportedExecption, PacketData } from '@tsdi/common/transport';
 import { RequestContext } from '../RequestContext';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
 
@@ -17,13 +16,13 @@ export abstract class IncomingDecodeHandler implements Handler<PacketData, Reque
 
 
 @Injectable()
-export class IncomingDecodeBackend implements Backend<any, RequestContext> {
+export class IncomingDecodeBackend implements Backend<any, RequestContext, InputContext> {
     
     constructor(private mappings: CodingMappings) { }
 
-    handle(input: any, context: any): Observable<RequestContext> {
+    handle(input: any, context: InputContext): Observable<RequestContext> {
         const type = getClass(input?.incoming ?? input);
-        const handlers = this.mappings.getDecodings('server').getHanlder(type);
+        const handlers = this.mappings.getDecodings(context.codingsType).getHanlder(type);
 
         if (handlers && handlers.length) {
             return handlers.reduceRight((obs$, curr) => {

@@ -2,6 +2,35 @@ import { Abstract, OnDestroy } from '@tsdi/ioc';
 import { Handler } from '@tsdi/core';
 import { Observable } from 'rxjs';
 
+export type ClientCodingsType = 'client'
+    | 'tcp'
+    | 'ws'
+    | 'udp'
+    | 'coap'
+    | 'amqp'
+    | 'mqtt'
+    | 'kafka'
+    | 'redis'
+    | 'nats'
+    | 'grpc'
+    | 'modbus';
+
+
+export type ServeCodingsType = 'service'
+    | 'tcp-service'
+    | 'ws-service'
+    | 'udp-service'
+    | 'coap-service'
+    | 'amqp-service'
+    | 'mqtt-service'
+    | 'kafka-service'
+    | 'redis-service'
+    | 'nats-service'
+    | 'grpc-service'
+    | 'modbus-service';
+
+export type CodingsType = ClientCodingsType | ServeCodingsType;
+
 
 export class InputContext implements OnDestroy {
 
@@ -10,7 +39,7 @@ export class InputContext implements OnDestroy {
         return this._inputs;
     }
 
-    constructor() {
+    constructor(readonly codingsType: CodingsType) {
         this._inputs = [];
     }
     

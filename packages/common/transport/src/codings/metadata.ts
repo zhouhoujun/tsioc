@@ -1,5 +1,6 @@
 import { InvocationFactoryResolver, InvocationOptions } from '@tsdi/core';
 import { ActionTypes, DecorDefine, Execption, Type, createDecorator, lang } from '@tsdi/ioc';
+import { CodingsType } from './codings';
 import { CodingMappings } from './mappings';
 
 
@@ -7,7 +8,7 @@ export interface CodingsOptions extends InvocationOptions {
     /**
      * codings type.
      */
-    codingsType?: 'client' | 'server';
+    codingsType?: CodingsType;
 }
 
 

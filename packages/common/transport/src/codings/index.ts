@@ -1,3 +1,4 @@
+export * from './codings';
 export * from './mappings';
 export * from './encodings';
 export * from './decodings';

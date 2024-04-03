@@ -1,5 +1,8 @@
 import { Injectable, ProvdierOf, Type } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
+import { CodingsType } from './codings';
+
+
 
 
 export class Mappings {
@@ -41,6 +44,10 @@ export class Mappings {
     }
 }
 
+
+
+
+
 @Injectable({
     static: true,
     providedIn: 'root'
@@ -52,11 +59,11 @@ export class CodingMappings {
         this.maps = new Map();
     }
 
-    getEncodings(type?: 'client' | 'server'): Mappings {
+    getEncodings(type?: CodingsType): Mappings {
         return this.get(type ?? '', '_encodings')
     }
 
-    getDecodings(type?: 'client' | 'server'): Mappings {
+    getDecodings(type?: CodingsType): Mappings {
         return this.get(type ?? '', '_decodings')
     }
 
