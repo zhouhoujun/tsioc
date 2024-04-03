@@ -1,12 +1,12 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
-import { CLIENT_MODULES, ClientDuplexTransportSessionFactory, ClientOpts, TransportBackend } from '@tsdi/common/client';
+import { CLIENT_MODULES, ClientDuplexTransportSessionFactory, ClientOpts } from '@tsdi/common/client';
 import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { WsClient } from './client/client';
-import { WS_CLIENT_DECODINGS, WS_CLIENT_ENCODINGS, WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS } from './client/options';
+import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS } from './client/options';
 import { WsHandler } from './client/handler';
 import { WsServer } from './server/server';
-import { WS_MICROSERVICE_DECODINGS, WS_MICROSERVICE_ENCODINGS, WS_SERV_FILTERS, WS_SERV_GUARDS, WS_SERV_INTERCEPTORS } from './server/options';
+import { WS_SERV_FILTERS, WS_SERV_GUARDS, WS_SERV_INTERCEPTORS } from './server/options';
 import { WsEndpointHandler } from './server/handler';
 
 
@@ -27,9 +27,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                     url: 'ws://localhost:3000',
                     transportOpts: {
                         delimiter: '#',
-                        maxSize: defaultMaxSize,
-                        encodings: WS_CLIENT_ENCODINGS,
-                        decodings: WS_CLIENT_DECODINGS                        
+                        maxSize: defaultMaxSize                     
                     },
                     interceptorsToken: WS_CLIENT_INTERCEPTORS,
                     filtersToken: WS_CLIENT_FILTERS,
@@ -48,9 +46,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                 defaultOpts: {
                     transportOpts: {
                         delimiter: '#',
-                        maxSize: defaultMaxSize,
-                        encodings: WS_MICROSERVICE_ENCODINGS,
-                        decodings: WS_MICROSERVICE_DECODINGS
+                        maxSize: defaultMaxSize
                     },
                     content: {
                         root: 'public',

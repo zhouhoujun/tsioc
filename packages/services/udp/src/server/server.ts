@@ -1,4 +1,4 @@
-import { Inject, Injectable, lang, promisify } from '@tsdi/ioc';
+import { Injectable, lang, promisify } from '@tsdi/ioc';
 import { LOCALHOST } from '@tsdi/common';
 import { InternalServerExecption, ev } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
@@ -52,8 +52,6 @@ export class UdpServer extends Server<RequestContext, UdpServerOpts> {
         if (!options.protocol) {
             options.protocol = isSecure ? 'udps' : 'udp';
         }
-        const transportOpts = options.transportOpts!;
-        if (!transportOpts.transport) transportOpts.transport = 'udp';
         const session = factory.create(injector, this.serv, options.transportOpts!);
 
         session.listen(this.handler, merge(this.destroy$, fromEvent(this.serv, ev.CLOSE).pipe(first())));

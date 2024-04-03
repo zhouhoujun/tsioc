@@ -1,6 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
-import { CLIENT_MODULES, ClientOpts, TransportBackend } from '@tsdi/common/client';
+import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
 import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { UdpClient } from './client/client';
 import { UDP_CLIENT_FILTERS, UDP_CLIENT_INTERCEPTORS } from './client/options';

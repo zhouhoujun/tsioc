@@ -20,7 +20,7 @@ export class ResponseDecodeBackend implements Backend<any, TransportEvent, Input
 
     handle(input: any, context: InputContext): Observable<TransportEvent> {
         const type = getClass(input);
-        const handlers = this.mappings.getDecodings(context.codingsType).getHanlder(type);
+        const handlers = this.mappings.getDecodings(context.options).getHanlder(type);
         
         if (handlers && handlers.length) {
             return handlers.reduceRight((obs$, curr) => {

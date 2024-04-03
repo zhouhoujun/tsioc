@@ -18,7 +18,7 @@ export class OutgoingEncodeBackend implements Backend<RequestContext, any, Input
 
     handle(input: RequestContext, context: InputContext): Observable<any> {
         const type = getClass(input.response ?? input);
-        const handlers = this.mappings.getEncodings(context.codingsType).getHanlder(type);
+        const handlers = this.mappings.getEncodings(context.options).getHanlder(type);
 
         if (handlers && handlers.length) {
             return handlers.reduceRight((obs$, curr) => {

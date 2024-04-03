@@ -151,8 +151,13 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                 if (!clientOpts.transportOpts) {
                     clientOpts.transportOpts = {};
                 }
+                clientOpts.transportOpts.client = true;
+                clientOpts.transportOpts.transport = opts.transport;
                 if (clientOpts.timeout) {
                     clientOpts.transportOpts.timeout = clientOpts.timeout;
+                }
+                if (clientOpts.microservice) {
+                    clientOpts.transportOpts.microservice = clientOpts.microservice;
                 }
 
                 clientOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, clientOpts.transportOpts.encodeInterceptors ?? [RequestEncoder], true));

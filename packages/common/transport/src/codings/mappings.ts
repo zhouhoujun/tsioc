@@ -1,6 +1,6 @@
-import { Injectable, ProvdierOf, Type } from '@tsdi/ioc';
-import { Handler, Interceptor } from '@tsdi/core';
-import { CodingsType } from './codings';
+import { Injectable, Type } from '@tsdi/ioc';
+import { Handler } from '@tsdi/core';
+import { HybirdTransport, Transport } from '../protocols';
 
 
 
@@ -59,33 +59,33 @@ export class CodingMappings {
         this.maps = new Map();
     }
 
-    getEncodings(type?: CodingsType): Mappings {
-        return this.get(type ?? '', '_encodings')
+    getEncodings(options?: CodingsOpts): Mappings {
+        return this.get('encodings', options)
     }
 
-    getDecodings(type?: CodingsType): Mappings {
-        return this.get(type ?? '', '_decodings')
+    getDecodings(options?: CodingsOpts): Mappings {
+        return this.get('decodings', options)
     }
 
-    private get(type: string, subfix: string): Mappings {
-        const key = type + subfix;
+    private get(subfix: string, options?: CodingsOpts): Mappings {
+        const key = this.getKey(subfix, options);
         let mappings = this.maps.get(key);
         if (!mappings) {
             mappings = new Mappings();
             this.maps.set(key, mappings);
         }
-        return mappings;
+        return mappings
+    }
+
+    private getKey(subfix: string, options?: CodingsOpts) {
+        if (!options) return subfix;
+        return `${options.microservice ? 'micro_' : ''}${(options.transport ?? '')} _${(options.client ? 'client' : 'service')}_${subfix}`;
     }
 
 }
 
 export interface CodingsOpts {
-    /**
-     * encode interceptors
-     */
-    encodeInterceptors?: ProvdierOf<Interceptor>[];
-    /**
-     * encode prefix interceptors
-     */
-    decodeInterceptors?: ProvdierOf<Interceptor>[];
+    transport?: Transport | HybirdTransport;
+    microservice?: boolean;
+    client?: boolean;
 }

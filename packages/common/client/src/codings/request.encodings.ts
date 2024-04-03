@@ -21,7 +21,7 @@ export class RequestEncodeBackend implements Backend<TransportRequest, PacketDat
 
     handle(input: TransportRequest<any>, context: InputContext): Observable<PacketData> {
         const type = getClass(input);
-        const handlers = this.mappings.getEncodings(context.codingsType).getHanlder(type);
+        const handlers = this.mappings.getEncodings(context.options).getHanlder(type);
 
         if (handlers && handlers.length) {
             return handlers.reduceRight((obs$, curr) => {

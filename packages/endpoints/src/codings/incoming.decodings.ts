@@ -22,7 +22,7 @@ export class IncomingDecodeBackend implements Backend<any, RequestContext, Input
 
     handle(input: any, context: InputContext): Observable<RequestContext> {
         const type = getClass(input?.incoming ?? input);
-        const handlers = this.mappings.getDecodings(context.codingsType).getHanlder(type);
+        const handlers = this.mappings.getDecodings(context.options).getHanlder(type);
 
         if (handlers && handlers.length) {
             return handlers.reduceRight((obs$, curr) => {

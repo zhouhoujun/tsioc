@@ -224,8 +224,14 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 if (!serverOpts.transportOpts) {
                     serverOpts.transportOpts = {};
                 }
+
+                serverOpts.transportOpts.client = false;
+                serverOpts.transportOpts.transport = moduleOpts.transport;
                 if (serverOpts.timeout) {
                     serverOpts.transportOpts.timeout = serverOpts.timeout;
+                }
+                if (serverOpts.microservice) {
+                    serverOpts.transportOpts.microservice = serverOpts.microservice;
                 }
 
                 serverOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, serverOpts.transportOpts.encodeInterceptors ?? [OutgoingEncoder], true));

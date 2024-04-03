@@ -114,7 +114,6 @@ export class TcpServer extends Server<RequestContext, TcpServerOpts> implements 
         const injector = this.handler.injector;
         const factory = injector.get(TransportSessionFactory);
         const transportOpts = options.transportOpts!;
-        if (!transportOpts.transport) transportOpts.transport = 'tcp';
 
         if (this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket) => {

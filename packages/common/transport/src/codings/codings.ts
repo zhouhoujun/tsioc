@@ -1,35 +1,8 @@
 import { Abstract, OnDestroy } from '@tsdi/ioc';
 import { Handler } from '@tsdi/core';
 import { Observable } from 'rxjs';
+import { CodingsOpts } from './mappings';
 
-export type ClientCodingsType = 'client'
-    | 'tcp'
-    | 'ws'
-    | 'udp'
-    | 'coap'
-    | 'amqp'
-    | 'mqtt'
-    | 'kafka'
-    | 'redis'
-    | 'nats'
-    | 'grpc'
-    | 'modbus';
-
-
-export type ServeCodingsType = 'service'
-    | 'tcp-service'
-    | 'ws-service'
-    | 'udp-service'
-    | 'coap-service'
-    | 'amqp-service'
-    | 'mqtt-service'
-    | 'kafka-service'
-    | 'redis-service'
-    | 'nats-service'
-    | 'grpc-service'
-    | 'modbus-service';
-
-export type CodingsType = ClientCodingsType | ServeCodingsType;
 
 
 export class InputContext implements OnDestroy {
@@ -39,10 +12,10 @@ export class InputContext implements OnDestroy {
         return this._inputs;
     }
 
-    constructor(readonly codingsType: CodingsType) {
+    constructor(readonly options: CodingsOpts) {
         this._inputs = [];
     }
-    
+
     next<TInput>(input: TInput): this {
         if (this._inputs[0] != input) {
             this._inputs.unshift(input);

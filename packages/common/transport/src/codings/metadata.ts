@@ -1,14 +1,9 @@
 import { InvocationFactoryResolver, InvocationOptions } from '@tsdi/core';
 import { ActionTypes, DecorDefine, Execption, Type, createDecorator, lang } from '@tsdi/ioc';
-import { CodingsType } from './codings';
-import { CodingMappings } from './mappings';
+import { CodingMappings, CodingsOpts } from './mappings';
 
 
-export interface CodingsOptions extends InvocationOptions {
-    /**
-     * codings type.
-     */
-    codingsType?: CodingsType;
+export interface CodingsOptions extends InvocationOptions, CodingsOpts {
 }
 
 
@@ -28,7 +23,7 @@ export interface Encoding {
      * @param {string|Type} encodings encode target.
      * @param {CodingsOptions} option encode handle invoke option.
      */
-    (encodings: string | Type, option?: CodingsOptions): MethodDecorator;
+    (encodings: string | Type, option: CodingsOptions): MethodDecorator;
 }
 
 /**
@@ -60,11 +55,11 @@ export const Encoding: Encoding = createDecorator<EncodingMetadata>('Encoding', 
             if (!codes) throw new Execption(lang.getClassName(CodingMappings) + 'has not registered!');
 
             defines.forEach(def => {
-                const { encodings, order, codingsType, ...options } = def.metadata;
+                const { encodings, order, ...options } = def.metadata;
 
-                const mappings = codes.getEncodings(codingsType);
+                const mappings = codes.getEncodings(options);
 
-                const handler = factory.create(def.propertyKey, { ...options });
+                const handler = factory.create(def.propertyKey, options);
 
                 mappings.addHandler(encodings, handler, order);
                 factory.onDestroy(() => mappings.removeHandler(encodings, handler))
@@ -126,11 +121,11 @@ export const Decoding: Decoding = createDecorator<DecodingMetadata>('Decoding', 
             if (!codes) throw new Execption(lang.getClassName(CodingMappings) + 'has not registered!');
 
             defines.forEach(def => {
-                const { encodings, order, codingsType, ...options } = def.metadata;
+                const { encodings, order, ...options } = def.metadata;
 
-                const mappings = codes.getDecodings(codingsType);
+                const mappings = codes.getDecodings(options);
 
-                const handler = factory.create(def.propertyKey, { ...options });
+                const handler = factory.create(def.propertyKey, options);
 
                 mappings.addHandler(encodings, handler, order);
                 factory.onDestroy(() => mappings.removeHandler(encodings, handler))

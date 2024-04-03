@@ -1,12 +1,12 @@
-import { Abstract, Token } from '@tsdi/ioc';
+import { Abstract, ProvdierOf, Token } from '@tsdi/ioc';
+import { Interceptor } from '@tsdi/core';
 import { TransportErrorResponse, TransportEvent, HeadersLike,  } from '@tsdi/common';
 import { Observable, finalize, mergeMap, share } from 'rxjs';
 import { HybirdTransport, Transport } from './protocols';
 import { CodingsOpts } from './codings/mappings';
 import { EncodingsFactory } from './codings/encodings';
 import { DecodingsFactory } from './codings/decodings';
-import { CodingsType, Decoder, Encoder, InputContext } from './codings/codings';
-
+import { Decoder, Encoder, InputContext } from './codings/codings';
 
 
 
@@ -18,8 +18,10 @@ export interface TransportOpts extends CodingsOpts {
      * transport type.
      */
     transport?: Transport | HybirdTransport;
-
-    codingsType?: CodingsType;
+    /**
+     * microservice or not.
+     */
+    microservice?: boolean;
     /**
      * encodings Factory.
      */
@@ -28,6 +30,15 @@ export interface TransportOpts extends CodingsOpts {
      * decodings Factory.
      */
     decodingsFactory?: Token<DecodingsFactory>;
+    /**
+     * encode interceptors
+     */
+    encodeInterceptors?: ProvdierOf<Interceptor>[];
+    /**
+     * encode prefix interceptors
+     */
+    decodeInterceptors?: ProvdierOf<Interceptor>[];
+
     /**
      * packet delimiter flag
      */
@@ -88,14 +99,12 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      */
     abstract get decodings(): Decoder;
 
-    abstract get codingsType(): CodingsType;
-
     /**
      * send.
      * @param data 
      */
     send(data: TInput, context?: InputContext): Observable<TMsg> {
-        const ctx = context ?? new InputContext(this.codingsType);
+        const ctx = context ?? new InputContext(this.options);
         return this.encodings.encode(data, ctx)
             .pipe(
                 mergeMap(msg => this.sendMessage(data, msg as TMsg)),
@@ -114,7 +123,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
         return this.handleMessage()
             .pipe(
                 mergeMap(msg => {
-                    const ctx = context ?? new InputContext(this.codingsType);
+                    const ctx = context ?? new InputContext(this.options);
                     return this.decodings.decode(msg, ctx)
                         .pipe(
                             finalize(() => !context && ctx.onDestroy())
