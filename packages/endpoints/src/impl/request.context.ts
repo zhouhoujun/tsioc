@@ -138,7 +138,8 @@ const abstl = /^\w+:\/\//i;
 
 @Injectable()
 export class RequestContextFactoryImpl implements RequestContextFactory {
-    create<TSocket = any>(injector: Injector, session: TransportSession, request: Incoming, response: Outgoing, options?: ServerOpts<any> | undefined): RequestContext<TSocket> {
+    create<TSocket = any>(session: TransportSession, request: Incoming, response: Outgoing, options?: ServerOpts<any> | undefined): RequestContext<TSocket> {
+        const injector = session.injector;
         return new RequestContextImpl(injector,
             session,
             request,

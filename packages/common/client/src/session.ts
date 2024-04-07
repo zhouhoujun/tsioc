@@ -12,7 +12,7 @@ export abstract class ClientTransportSession<TSocket = any, TMsg = any> extends 
     protected destroy$ = new Subject<void>;
 
     request(req: TransportRequest, destroy$?: Observable<any>): Observable<TransportEvent> {
-        const context = new CodingsContext(this.options);
+        const context = new CodingsContext(this);
         return this.send(req, context)
             .pipe(
                 mergeMap(msg => this.receive(context.next(msg))),
