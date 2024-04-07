@@ -29,7 +29,7 @@ export class ResponseDecodeBackend implements Backend<any, TransportEvent, Codin
                 );
             }, of(input))
         } else {
-            return throwError(() => new NotSupportedExecption('No encodings handler for response type:' + getClassName(type)));
+            return throwError(() => new NotSupportedExecption(`No encodings handler for ${context.options.transport}${context.options.microservice ? ' microservice' : ''} response type: ${getClassName(type)}`));
         }
     }
 

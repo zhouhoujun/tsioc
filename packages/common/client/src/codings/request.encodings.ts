@@ -1,7 +1,7 @@
-import { Abstract, Injectable, Injector, Module, getClass, getClassName, tokenId } from '@tsdi/ioc';
+import { Abstract, Inject, Injectable, Injector, Module, Optional, getClass, getClassName, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { TransportRequest } from '@tsdi/common';
-import { CodingMappings,  Encoder, CodingsContext, NotSupportedExecption, PacketData } from '@tsdi/common/transport';
+import { CodingMappings, Encoder, CodingsContext, NotSupportedExecption, PacketData } from '@tsdi/common/transport';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
 
 
@@ -12,12 +12,31 @@ export abstract class RequestEncodeHandler implements Handler<TransportRequest, 
     abstract handle(input: TransportRequest, context: CodingsContext): Observable<PacketData>
 }
 
+@Injectable()
+export class DefaultRequestHandler implements RequestEncodeHandler {
+    handle(input: TransportRequest, context: CodingsContext): Observable<PacketData> {
+        const packet = {
+            pattern: input.pattern,
+            headers: input.headers,
+            payload: input.payload,
+            payloadLength: input.headers.getContentLength()
+        } as PacketData;
+        if (input.method) {
+            packet.method = input.method;
+        }
+        return of(packet)
+    }
+}
+
 
 
 @Injectable()
 export class RequestEncodeBackend implements Backend<TransportRequest, PacketData> {
 
-    constructor(private mappings: CodingMappings) { }
+    constructor(
+        private mappings: CodingMappings,
+        @Optional() private defaultHandler: DefaultRequestHandler
+    ) { }
 
     handle(input: TransportRequest<any>, context: CodingsContext): Observable<PacketData> {
         const type = getClass(input);
@@ -30,18 +49,10 @@ export class RequestEncodeBackend implements Backend<TransportRequest, PacketDat
                 );
             }, of(input))
         } else {
-            return throwError(() => new NotSupportedExecption('No encodings handler for request type:' + getClassName(type)));
+            if (this.defaultHandler) return this.defaultHandler.handle(input, context)
+            return throwError(() => new NotSupportedExecption(`No encodings handler for ${context.options.transport}${context.options.microservice ? ' microservice' : ''} request type: ${getClassName(type)}`))
         }
-        // const packet = {
-        //     pattern: input.pattern,
-        //     headers: input.headers,
-        //     payload: input.payload,
-        //     payloadLength: input.headers.getContentLength()
-        // } as PacketData;
-        // if (input.method) {
-        //     packet.method = input.method;
-        // }
-        // return of(packet)
+
     }
 }
 

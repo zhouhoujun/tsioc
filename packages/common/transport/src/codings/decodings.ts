@@ -34,8 +34,8 @@ export class DecodingsBackend implements Backend<any, any, CodingsContext> {
                 );
             }, of(input))
         } else {
-            if (!this.jsonDecodeHanlder) return throwError(() => new NotSupportedExecption('No decodings handler for' + getClassName(type)));
-            return this.jsonDecodeHanlder.handle(input, context)
+            if (this.jsonDecodeHanlder) return this.jsonDecodeHanlder.handle(input, context)
+            return throwError(() => new NotSupportedExecption(`No decodings handler for ${getClassName(type)} of ${context.options.transport}${context.options.microservice ? ' microservice' : ''}${context.options.client? ' client': ''}`))
         }
     }
 }

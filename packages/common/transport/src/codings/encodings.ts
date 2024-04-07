@@ -32,7 +32,7 @@ export class EncodingsBackend implements Backend<any, any, CodingsContext> {
                 );
             }, of(input))
         } else {
-            if (!this.jsonEncodeHandler) return throwError(() => new NotSupportedExecption('No encodings handler for' + getClassName(type)));
+            if (!this.jsonEncodeHandler) return throwError(() => new NotSupportedExecption(`No encodings handler for ${getClassName(type)} of ${context.options.transport}${context.options.microservice ? ' microservice' : ''}${context.options.client? ' client': ''}`));
             return this.jsonEncodeHandler.handle(input, context)
         }
     }

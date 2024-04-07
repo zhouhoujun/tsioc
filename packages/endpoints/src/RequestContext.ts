@@ -685,6 +685,16 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
 
 }
 
+@Abstract()
+export abstract class IncomingFactory<TMsg = any> {
+    abstract create(session: TransportSession, message: TMsg): Incoming;
+}
+
+
+@Abstract()
+export abstract class OutgoingFactory<TMsg = any> {
+    abstract create(session: TransportSession, message: TMsg): Outgoing;
+}
 
 /**
  * request context factory.
@@ -693,13 +703,12 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
 export abstract class RequestContextFactory<TSocket = any> {
     /**
      * create request context.
-     * @param injector 
      * @param session 
      * @param request 
      * @param response 
      * @param options 
      */
-    abstract create(injector: Injector, session: TransportSession, request: Incoming, response: Outgoing, options?: ServerOpts): RequestContext<TSocket>;
+    abstract create(session: TransportSession, request: Incoming, response: Outgoing, options?: ServerOpts): RequestContext<TSocket>;
 }
 
 

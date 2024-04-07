@@ -9,6 +9,7 @@ export class ClientDuplexTransportSession extends ClientTransportSession<IDuplex
 
     protected msgEvent = ev.DATA;
     constructor(
+        readonly injector: Injector,
         readonly socket: IDuplexStream,
         readonly encodings: Encoder,
         readonly decodings: Decoder,
@@ -39,7 +40,7 @@ export class ClientDuplexTransportSessionFactory implements ClientTransportSessi
     constructor() { }
 
     create(injector: Injector, socket: IDuplexStream, options: TransportOpts): ClientDuplexTransportSession {
-        return new ClientDuplexTransportSession(socket,
+        return new ClientDuplexTransportSession(injector, socket,
             injector.get(options.encodingsFactory ?? EncodingsFactory).create(injector, options),
             injector.get(options.decodingsFactory ?? DecodingsFactory).create(injector, options),
             options);

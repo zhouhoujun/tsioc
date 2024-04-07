@@ -27,7 +27,7 @@ export class OutgoingEncodeBackend implements Backend<RequestContext, any, Codin
                 );
             }, of(input))
         } else {
-            return throwError(() => new NotSupportedExecption('No encodings handler for outgoing type:' + getClassName(type)));
+            return throwError(() => new NotSupportedExecption(`No encodings handler for ${context.options.transport}${context.options.microservice ? ' microservice' : ''} outgoing type: ${getClassName(type)}`));
         }
 
     }

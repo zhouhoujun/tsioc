@@ -10,6 +10,7 @@ export class DuplexTransportSession extends TransportSession<IDuplexStream, Buff
 
     protected msgEvent = ev.DATA;
     constructor(
+        readonly injector: Injector,
         readonly socket: IDuplexStream,
         readonly encodings: Encoder,
         readonly decodings: Decoder,
@@ -39,7 +40,7 @@ export class DuplexTransportSessionFactory implements TransportSessionFactory<ID
     constructor() { }
 
     create(injector: Injector, socket: IDuplexStream, options: TransportOpts): DuplexTransportSession {
-        return new DuplexTransportSession(socket,
+        return new DuplexTransportSession(injector, socket,
             injector.get(options.encodingsFactory ?? EncodingsFactory).create(injector, options),
             injector.get(options.decodingsFactory ?? DecodingsFactory).create(injector, options),
             options);

@@ -1,7 +1,7 @@
 import { Abstract, OnDestroy } from '@tsdi/ioc';
 import { Handler } from '@tsdi/core';
 import { Observable } from 'rxjs';
-import { CodingsOpts } from './mappings';
+import { AbstractTransportSession } from '../TransportSession';
 
 
 
@@ -12,8 +12,12 @@ export class CodingsContext implements OnDestroy {
         return this._inputs;
     }
 
-    constructor(readonly options: CodingsOpts) {
+    constructor(readonly session: AbstractTransportSession) {
         this._inputs = [];
+    }
+
+    get options() {
+        return this.session.options
     }
 
     next<TInput>(input: TInput): this {
