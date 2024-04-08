@@ -1,4 +1,4 @@
-import { HeaderRecord, TransportRequest } from '@tsdi/common';
+import { MapHeaders, TransportRequest } from '@tsdi/common';
 import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 
@@ -8,6 +8,6 @@ export abstract class Redirector<TStatus = any> {
     /**
      * redirect.
      */
-    abstract redirect<T>(req: TransportRequest, status: TStatus, headers: HeaderRecord): Observable<T>
+    abstract redirect<T>(req: TransportRequest, status: TStatus, headers: MapHeaders): Observable<T>
 }
 

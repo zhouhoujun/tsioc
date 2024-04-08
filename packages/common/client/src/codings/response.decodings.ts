@@ -1,6 +1,6 @@
 import { Abstract, EMPTY_OBJ, Injectable, Injector, Module, getClass, getClassName, lang, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { HEAD,  ResponseJsonParseError, TransportEvent, TransportRequest } from '@tsdi/common';
+import { HEAD, ResponseJsonParseError, TransportEvent, TransportRequest } from '@tsdi/common';
 import { CodingMappings, Incoming, Decoder, CodingsContext, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer } from '@tsdi/common/transport';
 import { Observable, defer, mergeMap, of, throwError } from 'rxjs';
 
@@ -14,14 +14,14 @@ export abstract class ResponseDecodeHandler implements Handler<any, TransportEve
 
 
 @Injectable()
-export class ResponseDecodeBackend implements Backend<any, TransportEvent, CodingsContext>  {
+export class ResponseDecodeBackend implements Backend<any, TransportEvent, CodingsContext> {
 
     constructor(private mappings: CodingMappings) { }
 
     handle(input: any, context: CodingsContext): Observable<TransportEvent> {
         const type = getClass(input);
         const handlers = this.mappings.getDecodings(context.options).getHanlder(type);
-        
+
         if (handlers && handlers.length) {
             return handlers.reduceRight((obs$, curr) => {
                 return obs$.pipe(
@@ -39,7 +39,7 @@ export class ResponseDecodeBackend implements Backend<any, TransportEvent, Codin
 export const RESPONSE_DECODE_INTERCEPTORS = tokenId<Interceptor<any, TransportEvent, CodingsContext>[]>('RESPONSE_DECODE_INTERCEPTORS');
 
 @Injectable()
-export class ResponseDecodeInterceptingHandler extends InterceptingHandler<any, TransportEvent, CodingsContext>  {
+export class ResponseDecodeInterceptingHandler extends InterceptingHandler<any, TransportEvent, CodingsContext> {
     constructor(backend: ResponseDecodeBackend, injector: Injector) {
         super(backend, () => injector.get(RESPONSE_DECODE_INTERCEPTORS, []))
     }
@@ -81,7 +81,7 @@ export class ResponseDecoder extends Decoder<any, TransportEvent> implements Int
     intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<TransportEvent> {
         return next.handle(input, context)
             .pipe(
-                mergeMap(res=> this.handler.handle(res, context.next(res)))
+                mergeMap(res => this.handler.handle(res, context.next(res)))
             );
     }
 }
@@ -109,7 +109,7 @@ export class IncomingResponseHanlder implements Handler<Incoming, TransportEvent
 
     handle(input: Incoming, context: CodingsContext): Observable<TransportEvent> {
         const streamAdapter = this.streamAdapter;
-        const res = input;
+        const res = input as Incoming & {ok: boolean, error: any };
         return defer(async () => {
             const req = context.first() as TransportRequest;
             const eventFactory = req.context.get(ResponseEventFactory);
@@ -127,11 +127,11 @@ export class IncomingResponseHanlder implements Handler<Incoming, TransportEvent
                     }
                 }
             }
-            if (responseType !== 'stream' && streamAdapter.isReadable(res.payload)) {
-                res.payload = await toBuffer(res.payload);
+            if (responseType !== 'stream' && streamAdapter.isReadable(res.body)) {
+                res.body = await toBuffer(res.body);
             }
             let body, originalBody;
-            body = originalBody = res.payload;
+            body = originalBody = res.body;
             let ok = res.ok ?? !!res.error;
             switch (responseType) {
                 case 'json':
@@ -183,7 +183,7 @@ export class IncomingResponseHanlder implements Handler<Incoming, TransportEvent
                     break;
 
             }
-            res.payload = body;
+            res.body = body;
 
             if (ok) {
                 return eventFactory.createResponse(res);
@@ -218,7 +218,7 @@ export class CompressResponseDecordeInterceptor implements Interceptor<Incoming,
             // 5. content not modified response (304)
             if (rqstatus.compress && req.method !== HEAD && codings) {
                 return defer(async () => {
-                    let body = response.payload;
+                    let body = response.body;
                     // For Node v6+
                     // Be less strict when decoding compressed responses, since sometimes
                     // servers send slightly invalid responses that are still accepted
@@ -266,7 +266,7 @@ export class CompressResponseDecordeInterceptor implements Interceptor<Incoming,
                             await streamAdapter.pipeTo(body, unBr);
                             body = unBr;
                         }
-                        response.payload = body;
+                        response.body = body;
 
                     } catch (err) {
                         throw eventFactory.createErrorResponse({ url: req.urlWithParams, error: err })

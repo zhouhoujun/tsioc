@@ -87,7 +87,7 @@ export interface ClientTokenOpts {
     ],
     providers: [
         ClientDuplexTransportSessionFactory,
-        BodyContentInterceptor,
+        // BodyContentInterceptor,
         RestfulRedirector
     ]
 })

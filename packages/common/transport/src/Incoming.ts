@@ -1,10 +1,10 @@
 import { Abstract } from '@tsdi/ioc';
-import { Pattern } from '@tsdi/common';
+import { Pattern, TransportHeaders } from '@tsdi/common';
 
 
 
 @Abstract()
-export abstract class Incoming<TMsg = any, T = any, TStatus= any> {
+export abstract class Incoming<T = any> {
 
     abstract get id(): any;
 
@@ -17,9 +17,7 @@ export abstract class Incoming<TMsg = any, T = any, TStatus= any> {
 
     abstract get pattern(): Pattern;
 
-    abstract get headers(): Record<string, string | string[] | number | undefined>;
-
-    abstract get message(): TMsg;
+    abstract get headers(): TransportHeaders;
 
     /**
      * has content type or not.
@@ -41,7 +39,7 @@ export abstract class Incoming<TMsg = any, T = any, TStatus= any> {
      * @return {Number}
      * @api public
      */
-    abstract getContentLength(): number | undefined;
+    abstract getContentLength(): number;
 
     /**
      * has header in packet or not.
@@ -54,65 +52,26 @@ export abstract class Incoming<TMsg = any, T = any, TStatus= any> {
      * @param packet 
      * @param field 
      */
-    abstract getHeader(field: string): string;
+    abstract getHeader(field: string): string | null;
 
     /**
-     * Get packet status code.
-     *
-     * @return {TStatus}
-     * @api public
-     */
-    abstract get status(): TStatus;
-    /**
-     * Get packet status message.
-     *
-     * @return {String}
-     * @api public
-     */
-    abstract get statusText(): string;
-    /**
-     * Get message payload
+     * Get message body
      *
      * @return {Number}
      * @api public
      */
-    abstract get payload(): T;
+    abstract get body(): T | null;
     /**
-     * Set message payload
+     * Set message body
      *
      * @return {Number}
      * @api public
      */
-    abstract set payload(value: T);
+    abstract set body(value: T | null);
 
-    get body() {
-        return this.payload;
-    }
+    rawBody?: any;
 
-    abstract get rawBody(): Buffer;
-    abstract set rawBody(value: Buffer);
-
-    /**
-     * requery query params.
-     */
-    query?: Record<string, any>;
-    /**
-     * request path params.
-     */
-    path?: Record<string, any>;
-
-    /**
-     * error message
-     */
-    abstract get error(): any;
-    /**
-     * error message
-     */
-    abstract set error(err: any);
-
-
-    abstract get ok(): boolean;
-
+    path?: any;
 
     abstract getAcceptType?(...contentTypes: string[]): string[];
 

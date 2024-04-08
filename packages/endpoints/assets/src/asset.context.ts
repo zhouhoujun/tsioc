@@ -1,6 +1,6 @@
 import { Abstract, Injector, isArray, isFunction, isNil, isNumber, isString, isUndefined, lang, promisify } from '@tsdi/ioc';
 import { HanlerContextOpts, PipeTransform } from '@tsdi/core';
-import { HEAD, normalize, Header, HeaderRecord } from '@tsdi/common';
+import { HEAD, normalize, Header, MapHeaders } from '@tsdi/common';
 import {
     Incoming, Outgoing, StreamAdapter,  InternalServerExecption, TransportSession, MessageExecption, FileAdapter, MimeAdapter,
     ENOENT, AssetTransportOpts, PacketLengthException, StatusAdapter, encodeUrl, escapeHtml, vary, xmlRegExp, ctype
@@ -818,13 +818,13 @@ export abstract class AbstractAssetContext<TRequest extends Incoming = Incoming,
      * @param {String} val
      * @api public
      */
-    setHeader(fields: HeaderRecord): void;
-    setHeader(field: string | HeaderRecord, val?: string | number | string[]) {
+    setHeader(fields: MapHeaders): void;
+    setHeader(field: string | MapHeaders, val?: string | number | string[]) {
         if (this.sent) return;
         if (val) {
             this.response.setHeader(field as string, val)
         } else {
-            const fields = field as HeaderRecord;
+            const fields = field as MapHeaders;
             for (const key in fields) {
                 this.response.setHeader(key, fields[key])
             }

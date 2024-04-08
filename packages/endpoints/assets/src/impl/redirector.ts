@@ -1,6 +1,6 @@
 /* eslint-disable no-case-declarations */
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
-import { TransportHeaders, TransportRequest, RequestMethod, HeaderRecord } from '@tsdi/common';
+import { TransportHeaders, TransportRequest, RequestMethod, MapHeaders } from '@tsdi/common';
 import { BadRequestExecption, StreamAdapter, StatusAdapter, Redirector } from '@tsdi/common/transport';
 import { Client } from '@tsdi/common/client';
 import { Observable, Observer, Subscription, throwError } from 'rxjs';
@@ -12,7 +12,7 @@ export class AssetRedirector implements Redirector {
     constructor() {
     }
 
-    redirect<T>(req: TransportRequest, status: any, headers: HeaderRecord): Observable<T> {
+    redirect<T>(req: TransportRequest, status: any, headers: MapHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {
             if(!req.url) return observer.error(new BadRequestExecption());
 
@@ -144,7 +144,7 @@ export const referPolicys = new Set([
 
 const splitReg = /[,\s]+/;
 
-export function parseReferrerPolicyFromHeader(headers: HeaderRecord) {
+export function parseReferrerPolicyFromHeader(headers: MapHeaders) {
     const policyTokens = (headers[hdr.REFERRER_POLICY] as string || '').split(splitReg);
     let policy = '';
     for (const token of policyTokens) {

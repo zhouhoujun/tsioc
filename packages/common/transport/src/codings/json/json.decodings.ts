@@ -29,7 +29,7 @@ export class EmptyJsonDecodeInterceptor implements Interceptor<Buffer | string, 
     intercept(input: string | Buffer, next: Handler<string | Buffer, any>, context: CodingsContext): Observable<any> {
         const data = isString(input) ? input : (input.length ? new TextDecoder().decode(input) : '');
         if (!data) return of({});
-        return next.handle(data);
+        return next.handle(data, context);
     }
 
 }

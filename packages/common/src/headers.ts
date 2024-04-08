@@ -6,8 +6,8 @@ import { isArray, isNil, isString } from '@tsdi/ioc';
 export type Header = string | readonly string[] | number | undefined | null;
 
 
-export interface HeaderRecord {
-    [x: string]: Header;
+export interface MapHeaders<T extends Header = Header> extends Record<string, T> {
+
 }
 
 
@@ -51,7 +51,7 @@ export class TransportHeaders<T extends Header = Header> {
         return Array.from(this._normal.keys())
     }
 
-    getHeaders(): Record<string, T> {
+    getHeaders(): MapHeaders {
         if (!this._rcd) {
             const rcd = this._rcd = {} as Record<string, T>;
             this.forEach((v, k) => {
@@ -68,14 +68,23 @@ export class TransportHeaders<T extends Header = Header> {
         this._rcd = null!;
     }
 
+    getHeader<Th = string | number>(name: string): Th | null {
+        const values = this._hdrs.get(name);
+        if (isNil(values)) return null;
+        return isArray(values) && values.length ? values[0] : values;
+    }
+
+    setHeader(name: string, val: T): this {
+        return this.set(name, val)
+    }
+
+
     has(name: string): boolean {
         return this._hdrs.has(name.toLowerCase());
     }
 
-    get(name: string): string | number | null {
-        const values = this._hdrs.get(name);
-        if (isNil(values)) return null;
-        return isArray(values) && values.length ? values[0] : values;
+    get(name: string): T | null {
+        return this._hdrs.get(name) ?? null;
     }
 
     set(name: string, val: T): this {
@@ -115,7 +124,9 @@ export class TransportHeaders<T extends Header = Header> {
     }
 
     delete(name: string): this {
-        this._hdrs.delete(name);
+        const key = name.toLowerCase();
+        this._hdrs.delete(key);
+        this._normal.delete(key);
         this._rcd = null!;
         return this;
     }
@@ -136,8 +147,8 @@ export class TransportHeaders<T extends Header = Header> {
      * content type.
      */
     getContentType(): string {
-        const ty = this.get(this.contentType);
-        return isArray(ty) ? ty[0] : ty;
+        const ty = this.getHeader(this.contentType);
+        return ty as string;
     }
     /**
      * Set Content-Type packet header with `type` through `mime.lookup()`
@@ -157,64 +168,18 @@ export class TransportHeaders<T extends Header = Header> {
      * @param {String} type
      * @api public
      */
-    setContentType(type: T): this {
-        if (isNil(type)) {
-            this.delete(this.contentType);
-        } else {
-            this.set(this.contentType, type);
-        }
-        return this;
-    }
-    /**
-     * remove content type.
-     * @param packet 
-     */
-    removeContentType(): this {
-        this.delete(this.contentType);
+    setContentType(type: string | null | undefined): this {
+        this.set(this.contentType, type as T);
         return this;
     }
 
-
-    protected contentEncoding = 'content-encoding';
-    /**
-     * has Content-Encoding or not.
-     * @param packet
-     */
-    hasContentEncoding(): boolean {
-        return this.has(this.contentEncoding)
-    }
-    /**
-     * Get Content-Encoding.
-     * @param packet
-     */
-    getContentEncoding(): string {
-        const encoding = this.get(this.contentEncoding);
-        return isArray(encoding) ? encoding[0] : encoding
-    }
-    /**
-     * Set Content-Encoding.
-     * @param packet
-     * @param encoding 
-     */
-    setContentEncoding(encoding: T): this {
-        this.set(this.contentEncoding, encoding);
-        return this
-    }
-    /**
-     * remove content encoding.
-     * @param packet 
-     */
-    removeContentEncoding(): this {
-        this.delete(this.contentEncoding);
-        return this
-    }
 
     protected contentLength = 'content-length';
     hasContentLength() {
-        return this.has(this.contentLength)
+        return !!this.getHeader(this.contentLength)
     }
 
-    setContentLenght(len: number) {
+    setContentLength(len: number | null | undefined) {
         this.set(this.contentLength, len as T);
         return this
     }
@@ -224,10 +189,6 @@ export class TransportHeaders<T extends Header = Header> {
         return ~~len
     }
 
-    removeContentLength() {
-        this.delete(this.contentLength);
-        return this;
-    }
 
     private setNormalizedName(name: string, lcName: string): void {
         if (!this._normal.has(lcName)) {
@@ -240,5 +201,5 @@ export class TransportHeaders<T extends Header = Header> {
 /**
  * Header like
  */
-export type HeadersLike<T extends Header = Header> = TransportHeaders<T> | HeaderRecord;
+export type HeadersLike<T extends Header = Header> = TransportHeaders<T> | MapHeaders<T>;
 

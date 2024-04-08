@@ -70,22 +70,22 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
     }
 
     intercept(input: RequestContext, next: Handler<RequestContext, any>): Observable<any> {
-        if (!input.mimeAdapter || !isUndefined(input.args.payload)) return next.handle(input);
+        if (!input.mimeAdapter || !isUndefined(input.request.body)) return next.handle(input);
         return from(this.parseBody(input))
             .pipe(
                 mergeMap(res => {
-                    input.args.payload = res.body ?? {};
-                    if (isUndefined(input.args.rawBody)) input.args.rawBody = res.raw;
+                    input.args.body = res.body ?? {};
+                    if (isUndefined(input.request.rawBody)) input.request.rawBody = res.raw;
                     return next.handle(input)
                 })
             )
     }
 
     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
-        if (!ctx.mimeAdapter || !isUndefined(ctx.args.payload)) return await next();
+        if (!ctx.mimeAdapter || !isUndefined(ctx.request.body)) return await next();
         const res = await this.parseBody(ctx);
-        ctx.args.payload = res.body ?? {};
-        if (isUndefined(ctx.args.rawBody)) ctx.args.rawBody = res.raw;
+        ctx.request.body = res.body ?? {};
+        if (isUndefined(ctx.request.rawBody)) ctx.request.rawBody = res.raw;
         await next()
     }
 

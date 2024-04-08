@@ -1,6 +1,6 @@
-import { Abstract, EMPTY, Injector, OperationArgumentResolver, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
+import { Abstract, EMPTY, OperationArgumentResolver, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
 import { HandlerContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { HeaderRecord, TransportHeaders } from '@tsdi/common';
+import { MapHeaders, TransportHeaders } from '@tsdi/common';
 import {
     FileAdapter, Incoming, InternalServerExecption, MessageExecption, MimeAdapter, Outgoing, ResponsePacket,
     StatusAdapter, StreamAdapter, ctype, isBuffer, xmlRegExp
@@ -62,11 +62,11 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
      * @param {Number} n
      * @api public
      */
-    set length(n: number | undefined) {
+    set length(n: number | null) {
         if (!this.response.hasContentEncoding()) {
             this.response.setContentLength(n)
         } else {
-            this.response.removeContentLength()
+            this.response.setContentLength(null)
         }
     }
     /**
@@ -75,12 +75,12 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
      * @return {Number}
      * @api public
      */
-    get length(): number | undefined {
+    get length(): number | null {
         if (this.response.hasContentLength()) {
             return this.response.getContentLength()
         }
 
-        if (isNil(this.body) || this.streamAdapter.isStream(this.body)) return undefined
+        if (isNil(this.body) || this.streamAdapter.isStream(this.body)) return null
         if (isString(this.body)) return Buffer.byteLength(this.body)
         if (Buffer.isBuffer(this.body)) return this.body.length
         return Buffer.byteLength(JSON.stringify(this.body))
@@ -170,9 +170,9 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
                 this.status = this.statusAdapter.noContent;
             }
             if (val === null) this.onNullBody();
-            this.response.removeContentEncoding();
-            this.response.removeContentLength();
-            this.response.removeContentType();
+            this.response.setContentEncoding(null);
+            this.response.setContentLength(null);
+            this.response.setContentType(null);
             return
         }
 
@@ -201,7 +201,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
         if (this.streamAdapter.isStream(val)) {
             if (original != val) {
                 // overwriting
-                if (null != original) this.response.removeContentLength()
+                if (null != original) this.response.setContentLength(null)
             }
 
             if (setType) this.contentType = ctype.OCTET_STREAM;
@@ -209,7 +209,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
         }
 
         // json
-        this.response.removeContentLength();
+        this.response.setContentLength(null);
         this.contentType = ctype.APPL_JSON;
     }
 
@@ -280,7 +280,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
      * @return {String}
      * @api public
      */
-    getHeader(field: string): string | undefined {
+    getHeader(field: string): string | null {
         return this.request.getHeader(field);
     }
 
@@ -320,9 +320,9 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
      * @param {String} val
      * @api public
      */
-    setHeader(fields: Record<string, string | number | string[]> | HeaderRecord): void;
+    setHeader(fields: Record<string, string | number | string[]> | MapHeaders): void;
     setHeader(headers: TransportHeaders): void;
-    setHeader(field: string | Record<string, string | number | string[]> | HeaderRecord | TransportHeaders, val?: string | number | string[]) {
+    setHeader(field: string | Record<string, string | number | string[]> | MapHeaders | TransportHeaders, val?: string | number | string[]) {
         if (this.sent) return;
         if (val) {
             this.response.setHeader(field as string, val)
@@ -495,7 +495,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
      * Get Content-Encoding or not.
      * @param packet
      */
-    get contentEncoding(): string {
+    get contentEncoding(): string  | null {
         return this.response.getContentEncoding()
     }
     /**
@@ -504,12 +504,12 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
     set contentEncoding(encoding: string | null | undefined) {
         if (this.sent) return;
         if (isNil(encoding)) {
-            this.response.removeContentEncoding()
+            this.response.setContentEncoding(encoding)
         } else {
             const old = this.response.getContentEncoding();
             this.response.setContentEncoding(encoding);
             if (old != encoding) {
-                this.response.removeContentLength();
+                this.response.setContentLength(null);
             }
         }
     }

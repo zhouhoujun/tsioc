@@ -1,9 +1,9 @@
 import { Abstract } from '@tsdi/ioc';
-import { Header, Pattern } from '@tsdi/common';
+import { Header, Pattern, TransportHeaders } from '@tsdi/common';
 
 
 @Abstract()
-export abstract class Outgoing<TMsg = any, T = any, TStatus= any> {
+export abstract class Outgoing<T = any, TStatus = any> {
 
     abstract get id(): any;
 
@@ -14,8 +14,6 @@ export abstract class Outgoing<TMsg = any, T = any, TStatus= any> {
 
     abstract get pattern(): Pattern;
 
-    abstract get message(): TMsg;
-
     /**
      * has content type or not.
      */
@@ -23,7 +21,7 @@ export abstract class Outgoing<TMsg = any, T = any, TStatus= any> {
     /**
      * content type.
      */
-    abstract getContentType(): string;
+    abstract getContentType(): string | null;
     /**
      * Set Content-Type packet header with `type` through `mime.lookup()`
      * when it does not contain a charset.
@@ -43,11 +41,6 @@ export abstract class Outgoing<TMsg = any, T = any, TStatus= any> {
      * @api public
      */
     abstract setContentType(type: string | null | undefined): this;
-    /**
-     * remove content type.
-     * @param packet 
-     */
-    abstract removeContentType(): this;
 
     /**
      * has Content-Encoding or not.
@@ -58,18 +51,13 @@ export abstract class Outgoing<TMsg = any, T = any, TStatus= any> {
      * Get Content-Encoding.
      * @param packet
      */
-    abstract getContentEncoding(): string;
+    abstract getContentEncoding(): string | null;
     /**
      * Set Content-Encoding.
      * @param packet
      * @param encoding 
      */
     abstract setContentEncoding(encoding: string | null | undefined): this;
-    /**
-     * remove content encoding.
-     * @param packet 
-     */
-    abstract removeContentEncoding(): this;
 
     /**
      * has packet content length or not.
@@ -77,30 +65,25 @@ export abstract class Outgoing<TMsg = any, T = any, TStatus= any> {
      * @return {Number}
      * @api public
      */
-    abstract hasContentLength(): number | undefined;
+    abstract hasContentLength(): boolean;
     /**
      * Get packet content length
      *
      * @return {Number}
      * @api public
      */
-    abstract getContentLength(): number | undefined;
+    abstract getContentLength(): number | null;
     /**
      * Set packet content length.
      *
      * @param {Number} n
      * @api public
      */
-    abstract setContentLength(n: number | undefined): this;
-    /**
-     * remove content length.
-     * @param packet 
-     */
-    abstract removeContentLength(): this;
+    abstract setContentLength(n: number | null | undefined): this;
 
-    abstract get headers(): any;
+    abstract get headers(): TransportHeaders;
 
-    abstract set headers(headers: any);
+    abstract set headers(headers: TransportHeaders);
 
     /**
      * Get packet payload
@@ -173,7 +156,7 @@ export abstract class Outgoing<TMsg = any, T = any, TStatus= any> {
      * @param packet 
      * @param field 
      */
-    abstract getHeader(field: string): string;
+    abstract getHeader(field: string): string | number | null;
     /**
      * Set header `field` to `val` or pass
      * an object of header fields.
@@ -221,6 +204,6 @@ export abstract class Outgoing<TMsg = any, T = any, TStatus= any> {
     abstract noCache(): this;
 
     abstract setContentDisposition(disposition: string): this;
-    abstract setLocation(location: string): this;
+    abstract setLocation?(location: string): this;
 
 }
