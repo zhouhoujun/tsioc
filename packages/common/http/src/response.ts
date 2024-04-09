@@ -1,4 +1,4 @@
-import { TransportHeaderResponse, TransportResponse, HttpStatusCode, TransportHeaders, HeadersLike } from '@tsdi/common';
+import { TransportResponse, HttpStatusCode, TransportHeaders, HeadersLike } from '@tsdi/common';
 
 /**
  * Type enumeration for the different kinds of `HttpEvent`.
@@ -136,7 +136,7 @@ export type HttpEvent<T = any> =
  *
  * @publicApi
  */
-export abstract class HttpResponseBase implements TransportHeaderResponse {
+export abstract class HttpResponseBase {
     /**
      * All response headers.
      */
@@ -213,7 +213,7 @@ export abstract class HttpResponseBase implements TransportHeaderResponse {
  *
  * @publicApi
  */
-export class HttpHeaderResponse extends HttpResponseBase implements TransportHeaderResponse {
+export class HttpHeaderResponse extends HttpResponseBase {
 
     /**
      * Create a new `HttpHeaderResponse` with the given parameters.
@@ -255,7 +255,7 @@ export class HttpHeaderResponse extends HttpResponseBase implements TransportHea
  *
  * @publicApi
  */
-export class HttpResponse<T = any> extends HttpResponseBase implements TransportResponse {
+export class HttpResponse<T = any> extends HttpResponseBase {
     /**
      * The response body, or `null` if one was not returned.
      */
