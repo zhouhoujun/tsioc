@@ -5,7 +5,7 @@ import { TransportBackend } from '../backend';
 import { ClientTransportSession } from '../session';
 
 @Injectable()
-export class TransportCodingsBackend extends TransportBackend {
+export class CodingsTransportBackend extends TransportBackend {
 
     handle(req: TransportRequest<any>): Observable<TransportEvent> {
         const session = req.context.get(ClientTransportSession);

@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { RequestEncodingsModule } from './request.encodings';
 import { ResponseDecodingsModule } from './response.decodings';
-import { TransportCodingsBackend } from './transport.backend';
+import { CodingsTransportBackend } from './transport.backend';
 import { TransportBackend } from '../backend';
 
 @Module({
@@ -10,7 +10,7 @@ import { TransportBackend } from '../backend';
         ResponseDecodingsModule
     ],
     providers: [
-        { provide: TransportBackend, useClass: TransportCodingsBackend },
+        { provide: TransportBackend, useClass: CodingsTransportBackend },
     ],
     exports:[
         RequestEncodingsModule,
