@@ -2,7 +2,7 @@ import { Abstract, EMPTY_OBJ, Injectable, Injector, Module, getClass, getClassNa
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { HEAD, ResponseJsonParseError, TransportEvent, TransportRequest } from '@tsdi/common';
 import { CodingMappings, Incoming, Decoder, CodingsContext, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer } from '@tsdi/common/transport';
-import { Observable, defer, mergeMap, of, throwError } from 'rxjs';
+import { Observable, catchError, defer, mergeMap, of, throwError } from 'rxjs';
 
 
 
@@ -81,7 +81,13 @@ export class ResponseDecoder extends Decoder<any, TransportEvent> implements Int
     intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<TransportEvent> {
         return next.handle(input, context)
             .pipe(
-                mergeMap(res => this.handler.handle(res, context.next(res)))
+                mergeMap(res => this.handler.handle(res, context.next(res))),
+
+                catchError((err, caught) => {
+                    const req = context.first() as TransportRequest;
+                    const eventFactory = req.context.get(ResponseEventFactory);
+                    return throwError(() => (eventFactory.createErrorResponse({ ...req, error: err, status: err.status ?? err.statusCode, statusText: err.message })))
+                })
             );
     }
 }
@@ -109,7 +115,7 @@ export class IncomingResponseHanlder implements Handler<Incoming, TransportEvent
 
     handle(input: Incoming, context: CodingsContext): Observable<TransportEvent> {
         const streamAdapter = this.streamAdapter;
-        const res = input as Incoming & {ok: boolean, error: any };
+        const res = input as Incoming & { ok: boolean, error: any };
         return defer(async () => {
             const req = context.first() as TransportRequest;
             const eventFactory = req.context.get(ResponseEventFactory);

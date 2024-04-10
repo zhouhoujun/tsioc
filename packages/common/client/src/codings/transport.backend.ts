@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { TransportRequest, TransportEvent } from '@tsdi/common';
-import { Observable, catchError, take, throwError } from 'rxjs';
+import { Observable, take } from 'rxjs';
 import { TransportBackend } from '../backend';
 import { ClientTransportSession } from '../session';
 
@@ -22,11 +22,7 @@ export class CodingsTransportBackend extends TransportBackend {
                 obs$ = session.request(req).pipe(take(1))
                 break;
         }
-        return obs$.pipe(
-            catchError((err, caught) => {
-                return throwError(() => ({ ...req, error: err, status: err.status ?? err.statusCode, statusText: err.message }))
-            })
-        );
+        return obs$;
     }
 
 }
