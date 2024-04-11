@@ -126,7 +126,7 @@ export class RequestContextImpl<TSocket = any> extends RequestContext<TSocket> {
             message: execption.message,
             status: execption.status ?? execption.statusCode
         };
-        if (!isNil(execption.status)) this.response.status = execption.status;
+        if (!isNil(execption.status)) this.response.statusCode = execption.status;
         this.response.statusText = execption.message;
         return lastValueFrom(this.session.send(this));
     }

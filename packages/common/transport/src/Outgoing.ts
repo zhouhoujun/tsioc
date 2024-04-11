@@ -9,8 +9,8 @@ export abstract class Outgoing<T = any, TStatus = any> {
 
     abstract set id(val: any);
 
-    abstract get type(): string | number;
-    abstract set type(val: string | number);
+    abstract get type(): string | number | null;
+    abstract set type(val: string | number| null);
 
     abstract get pattern(): Pattern;
 
@@ -86,16 +86,16 @@ export abstract class Outgoing<T = any, TStatus = any> {
     abstract set headers(headers: TransportHeaders);
 
     /**
-     * Get packet payload
+     * Get packet body
      *
      * @return {Number}
      * @api public
      */
-    abstract get payload(): T;
+    abstract get body(): T | null;
     /**
-     * Set packet payload
+     * Set packet body
      */
-    abstract set payload(val: T);
+    abstract set body(val: T | null);
 
     /**
      * Get error message
@@ -113,13 +113,13 @@ export abstract class Outgoing<T = any, TStatus = any> {
      * @return {TStatus}
      * @api public
      */
-    abstract get status(): TStatus;
+    abstract get statusCode(): TStatus;
     /**
      * Set packet status code.
      *
      * @api public
      */
-    abstract set status(code: TStatus);
+    abstract set statusCode(code: TStatus);
 
     /**
      * Get packet status message.
@@ -201,7 +201,7 @@ export abstract class Outgoing<T = any, TStatus = any> {
      * set no cache
      * @param packet 
      */
-    abstract noCache(): this;
+    abstract noCache?(): this;
 
     abstract setContentDisposition(disposition: string): this;
     abstract setLocation?(location: string): this;

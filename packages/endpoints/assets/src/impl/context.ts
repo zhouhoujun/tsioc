@@ -32,14 +32,14 @@ export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSo
     }
 
     get status(): any {
-        return this.response.status;
+        return this.response.statusCode;
     }
     set status(code: any) {
         if (this.sent) return;
 
         if (!this.vaildator.isStatus(code)) throw new InternalServerExecption(`invalid status code: ${code}`)
         this._explicitStatus = true;
-        this.response.status = code;
+        this.response.statusCode = code;
         if (this.body && this.vaildator.isEmpty(code)) this.body = null;
     }
 

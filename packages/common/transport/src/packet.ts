@@ -1,4 +1,4 @@
-import { Pattern, TransportHeaders } from '@tsdi/common';
+import { HeadersLike, Pattern } from '@tsdi/common';
 import { IReadableStream } from './stream';
 
 
@@ -12,7 +12,7 @@ export interface HeaderPacket {
     url?: string;
     topic?: string;
     method?: string;
-    headers?: TransportHeaders;
+    headers?: HeadersLike;
 }
 
 /**
@@ -20,6 +20,7 @@ export interface HeaderPacket {
  */
 export interface Packet<T = any> extends HeaderPacket {
     payload?: T;
+    error?: any;
 }
 
 export interface PacketData<T = any> extends Packet<T> {
@@ -28,7 +29,7 @@ export interface PacketData<T = any> extends Packet<T> {
     /**
      * payload length.
      */
-    payloadLength?: number;
+    payloadLength?: number|null;
 }
 
 export interface Message {

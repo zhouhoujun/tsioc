@@ -147,10 +147,10 @@ export class OutgoingMessage<T = any, TStatus = any> extends Writable implements
     }
 
 
-    get payload(): any {
+    get body(): any {
         throw new Error('Method not implemented.');
     }
-    set payload(val: any) {
+    set body(val: any) {
         throw new Error('Method not implemented.');
     }
     get error(): any {
@@ -159,10 +159,10 @@ export class OutgoingMessage<T = any, TStatus = any> extends Writable implements
     set error(err: any) {
         throw new Error('Method not implemented.');
     }
-    get status(): any {
+    get statusCode(): any {
         throw new Error('Method not implemented.');
     }
-    set status(code: any) {
+    set statusCode(code: any) {
         throw new Error('Method not implemented.');
     }
     get statusText(): string {

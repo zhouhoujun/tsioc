@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, OperationArgumentResolver, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
 import { HandlerContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { MapHeaders, TransportHeaders } from '@tsdi/common';
+import { HeadersLike, MapHeaders, TransportHeaders } from '@tsdi/common';
 import {
     FileAdapter, Incoming, InternalServerExecption, MessageExecption, MimeAdapter, Outgoing, ResponsePacket,
     StatusAdapter, StreamAdapter, ctype, isBuffer, xmlRegExp
@@ -92,7 +92,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
      * Get response status.
      */
     get status(): TStatus {
-        return this.response.status;
+        return this.response.statusCode;
     }
     /**
      * Set response status, defaults to OK.
@@ -101,7 +101,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
         if (this.sent) return;
         if (this.statusAdapter && !this.statusAdapter.isStatus(code)) throw new InternalServerExecption(`invalid status code: ${code}`)
         this._explicitStatus = true;
-        this.response.status = code;
+        this.response.statusCode = code;
         if (!isNil(this.body) && this.statusAdapter?.isEmpty(code)) this.body = null;
     }
 
@@ -321,7 +321,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
      * @api public
      */
     setHeader(fields: Record<string, string | number | string[]> | MapHeaders): void;
-    setHeader(headers: TransportHeaders): void;
+    setHeader(headers: HeadersLike): void;
     setHeader(field: string | Record<string, string | number | string[]> | MapHeaders | TransportHeaders, val?: string | number | string[]) {
         if (this.sent) return;
         if (val) {
@@ -685,16 +685,6 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
 
 }
 
-@Abstract()
-export abstract class IncomingFactory<TMsg = any> {
-    abstract create(session: TransportSession, message: TMsg): Incoming;
-}
-
-
-@Abstract()
-export abstract class OutgoingFactory<TMsg = any> {
-    abstract create(session: TransportSession, message: TMsg): Outgoing;
-}
 
 /**
  * request context factory.
@@ -708,7 +698,7 @@ export abstract class RequestContextFactory<TSocket = any> {
      * @param response 
      * @param options 
      */
-    abstract create(session: TransportSession, request: Incoming, response: Outgoing, options?: ServerOpts): RequestContext<TSocket>;
+    abstract create(session: TransportSession, message: Incoming, response: Outgoing, options?: ServerOpts): RequestContext<TSocket>;
 }
 
 

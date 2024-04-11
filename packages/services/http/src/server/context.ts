@@ -359,7 +359,7 @@ export class HttpContext extends RestfulRequestContext<TLSSocket | Socket, HttpS
     }
 
     protected override onBodyChanged(newVal: any, oldVal: any): void {
-        (this.response as Outgoing).payload = newVal;
+        (this.response as Outgoing).body = newVal;
     }
 
 

@@ -1,9 +1,11 @@
 import { Abstract, Injectable, Injector, Module, Optional, getClass, getClassName, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Decoder, CodingsContext, CodingMappings, NotSupportedExecption, PacketData } from '@tsdi/common/transport';
-import { IncomingFactory, OutgoingFactory, RequestContext, RequestContextFactory } from '../RequestContext';
+import { RequestContext, RequestContextFactory } from '../RequestContext';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
 import { TransportSession } from '../transport.session';
+import { JsonIncoming } from './json.incoming';
+import { JsonOutgoing } from './json.outgoing';
 
 
 
@@ -14,8 +16,9 @@ export abstract class IncomingDecodeHandler implements Handler<any, RequestConte
     abstract handle(input: any, context: CodingsContext): Observable<RequestContext>
 }
 
+
 @Injectable()
-export class PacketIncomingHanlder implements IncomingDecodeHandler {
+export class JsonIncomingDecodeHandler implements IncomingDecodeHandler {
 
     handle(input: PacketData, context: CodingsContext): Observable<RequestContext> {
         if (!(input.url || input.topic || input.headers || input.payload)) {
@@ -23,7 +26,8 @@ export class PacketIncomingHanlder implements IncomingDecodeHandler {
         }
         const session = context.session as TransportSession;
         const injector = context.session.injector;
-        return of(injector.get(RequestContextFactory).create(session, injector.get(IncomingFactory).create(session, input), injector.get(OutgoingFactory).create(session, input), session.options));
+
+        return of(injector.get(RequestContextFactory).create(session, new JsonIncoming(input), new JsonOutgoing(input), session.options));
     }
 }
 
@@ -32,7 +36,7 @@ export class IncomingDecodeBackend implements Backend<any, RequestContext, Codin
 
     constructor(
         private mappings: CodingMappings,
-        @Optional() private packetHandler: PacketIncomingHanlder
+        @Optional() private jsonHandler: JsonIncomingDecodeHandler
     ) { }
 
     handle(input: any, context: CodingsContext): Observable<RequestContext> {
@@ -46,7 +50,7 @@ export class IncomingDecodeBackend implements Backend<any, RequestContext, Codin
                 );
             }, of(input))
         } else {
-            if (this.packetHandler) return this.packetHandler.handle(input, context)
+            if (this.jsonHandler) return this.jsonHandler.handle(input, context)
             return throwError(() => new NotSupportedExecption(`No decodings handler for ${context.options.transport}${context.options.microservice ? ' microservice' : ''} incoming type: ${getClassName(type)}`));
         }
 

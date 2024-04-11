@@ -1,8 +1,9 @@
-import { Abstract, Injectable, Injector, Module, getClass, getClassName, tokenId } from '@tsdi/ioc';
+import { Abstract, Injectable, Injector, Module, Optional, getClass, getClassName, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { Encoder, CodingsContext, CodingMappings, NotSupportedExecption, PacketData } from '@tsdi/common/transport';
+import { Encoder, CodingsContext, CodingMappings, NotSupportedExecption, PacketData, Packet } from '@tsdi/common/transport';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
 import { RequestContext } from '../RequestContext';
+import { JsonOutgoing } from './json.outgoing';
 
 
 
@@ -13,8 +14,37 @@ export abstract class OutgoingEncodeHandler implements Handler<RequestContext, a
 
 
 @Injectable()
+export class JsonOutgoingEncodeHandler implements OutgoingEncodeHandler {
+
+    handle(input: RequestContext, context: CodingsContext): Observable<any> {
+        if (!(input.response instanceof JsonOutgoing)) {
+            return throwError(() => new NotSupportedExecption(`${context.options.transport}${context.options.microservice ? ' microservice' : ''} incoming is not packet data!`));
+        }
+
+        const response = input.response;
+        const packet = {
+            id: response.id,
+            type: response.type,
+            status: response.statusCode,
+            statusMessage: response.statusText,
+            headers: response.headers.getHeaders()
+        } as Packet;
+        if (response.error) {
+            packet.error = response.error;
+        }
+        if (response.hasContentLength()) {
+            packet.payload = response.body;
+        }
+
+        return of(packet);
+    }
+}
+
+@Injectable()
 export class OutgoingEncodeBackend implements Backend<RequestContext, any, CodingsContext> {
-    constructor(private mappings: CodingMappings) { }
+    constructor(
+        private mappings: CodingMappings,
+        @Optional() private jsonHandler: JsonOutgoingEncodeHandler) { }
 
     handle(input: RequestContext, context: CodingsContext): Observable<any> {
         const type = getClass(input.response ?? input);
@@ -27,6 +57,7 @@ export class OutgoingEncodeBackend implements Backend<RequestContext, any, Codin
                 );
             }, of(input))
         } else {
+            if (this.jsonHandler) return this.jsonHandler.handle(input, context)
             return throwError(() => new NotSupportedExecption(`No encodings handler for ${context.options.transport}${context.options.microservice ? ' microservice' : ''} outgoing type: ${getClassName(type)}`));
         }
 
@@ -36,7 +67,7 @@ export class OutgoingEncodeBackend implements Backend<RequestContext, any, Codin
 export const OUTGOING_ENCODE_INTERCEPTORS = tokenId<Interceptor<RequestContext, PacketData>[]>('OUTGOING_ENCODE_INTERCEPTORS');
 
 @Injectable({ static: false })
-export class OutgoingEncodeInterceptingHandler extends InterceptingHandler<RequestContext, PacketData>  {
+export class OutgoingEncodeInterceptingHandler extends InterceptingHandler<RequestContext, PacketData> {
     constructor(backend: OutgoingEncodeBackend, injector: Injector) {
         super(backend, () => injector.get(OUTGOING_ENCODE_INTERCEPTORS, []))
     }

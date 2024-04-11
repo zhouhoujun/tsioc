@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { CanActivate, Filter, InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
 import { CodingsModule, DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, Transport } from '@tsdi/common/transport';
-import { RequestContext } from './RequestContext';
+import { RequestContext, RequestContextFactory } from './RequestContext';
 import { Server, ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
 import { FinalizeFilter } from './finalize.filter';
@@ -21,6 +21,7 @@ import { EndpointHandler, createEndpoint } from './EndpointHandler';
 import { ServerCodingsModule } from './codings/server.codings.module';
 import { OutgoingEncoder } from './codings/outgoing.encodings';
 import { IncomingDecoder } from './codings/incoming.decodings';
+import { RequestContextFactoryImpl } from './impl/request.context';
 
 
 
@@ -137,6 +138,7 @@ export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
         DuplexTransportSessionFactory,
 
         { provide: TypedRespond, useClass: EndpointTypedRespond, asDefault: true },
+        { provide: RequestContextFactory, useClass: RequestContextFactoryImpl, asDefault: true },
 
         LoggerInterceptor,
         JsonInterceptor,

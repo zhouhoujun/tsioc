@@ -131,6 +131,16 @@ export class TransportHeaders<T extends Header = Header> {
         return this;
     }
 
+    removeHeader(name: string): this {
+        return this.delete(name)
+    }
+
+    removeHeaders() {
+        this._hdrs.clear();
+        this._normal.clear();
+        this._rcd = null!;
+    }
+
     forEach(fn: (name: string, values: T) => void) {
         Array.from(this._normal.keys())
             .forEach(key => fn(this._normal.get(key)!, this._hdrs.get(key)!))

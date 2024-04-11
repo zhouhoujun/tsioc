@@ -45,7 +45,7 @@ export class MiddlewareBackend<Tx extends RequestContext> implements Backend<Tx>
                 this._middleware = compose(this.middlewares)
             }
             await this._middleware(context, NEXT);
-            return context.response.payload
+            return context.response.body
         })
     }
 
