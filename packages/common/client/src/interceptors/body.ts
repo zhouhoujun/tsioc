@@ -1,4 +1,4 @@
-import { Injectable, isString } from '@tsdi/ioc';
+import { Injectable, isNil, isString } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, TransportEvent, TransportParams, TransportRequest } from '@tsdi/common';
 import { IStream, StreamAdapter } from '@tsdi/common/transport';
@@ -57,7 +57,7 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
      */
     serializeBody(body: any): ArrayBuffer | IStream | Buffer | Blob | FormData | string | null {
         // If no body is present, no need to serialize it.
-        if (body === null) {
+        if (isNil(body)) {
             return null
         }
         // Check whether the body is already in a serialized form. If so,

@@ -1,4 +1,4 @@
-import { isString, InvocationContext, EMPTY_OBJ, isUndefined } from '@tsdi/ioc';
+import { isString, InvocationContext, EMPTY_OBJ, isUndefined, isNil } from '@tsdi/ioc';
 import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, HeadersLike, TransportRequest, TransportHeaders, Pattern } from '@tsdi/common';
 import { HttpParams } from './params';
 
@@ -239,7 +239,7 @@ export class HttpRequest<T = any> implements TransportRequest<T> {
      */
     serializeBody(): ArrayBuffer | Blob | FormData | string | null {
         // If no body is present, no need to serialize it.
-        if (this.body === null) {
+        if (isNil(this.body)) {
             return null
         }
         // Check whether the body is already in a serialized form. If so,
