@@ -58,8 +58,8 @@ export class IncomingMessage<T = any> extends Readable implements Incoming<T> {
         return this.headers.has(field);
     }
     
-    getHeader(field: string): string | null {
-        return this.headers.getHeader(field)?.toString() ?? null;
+    getHeader(field: string): string | undefined {
+        return this.headers.getHeader(field);
     }
 
     get socket() {

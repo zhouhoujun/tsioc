@@ -10,7 +10,7 @@ import { TransportSession } from './transport.session';
  * 支持状态的请求上下文
  */
 @Abstract()
-export abstract class RestfulRequestContext<TSocket = any, TOptions extends ServerOpts = ServerOpts, TStatus = any> extends RequestContext<TSocket, TOptions, TStatus> {
+export abstract class RestfulRequestContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TSocket = any, TOptions extends ServerOpts = ServerOpts, TStatus = any> extends RequestContext<TRequest, TResponse, TSocket, TOptions, TStatus> {
 
     abstract get socket(): TSocket;
 
@@ -59,7 +59,7 @@ export abstract class RestfulRequestContext<TSocket = any, TOptions extends Serv
     private _query?: Record<string, any>;
     get query(): Record<string, any> {
         if (!this._query) {
-            const qs = this._query = { } as Record<string, any>;
+            const qs = this._query = {} as Record<string, any>;
             this.URL.searchParams?.forEach((v, k) => {
                 qs[k] = v;
             });
@@ -115,7 +115,7 @@ export abstract class RestfulRequestContext<TSocket = any, TOptions extends Serv
      * can response stream writeable
      */
     get writable(): boolean {
-        return this.response.writable
+        return this.response.writable != false
     }
 
 
@@ -138,7 +138,7 @@ export abstract class RestfulRequestContext<TSocket = any, TOptions extends Serv
      * @api public
      */
     redirect(url: string, alt?: string): void {
-        if(!this.statusAdapter) return;
+        if (!this.statusAdapter) return;
 
         if ('back' === url) url = this.getHeader('referrer') as string || alt || '/';
         this.setHeader('location', encodeUrl(url));
@@ -164,7 +164,7 @@ export abstract class RestfulRequestContext<TSocket = any, TOptions extends Serv
  * Restful request context factory.
  */
 @Abstract()
-export abstract class RestfulRequestContextFactory {
+export abstract class RestfulRequestContextFactory<TRequest extends Incoming, TResponse extends Outgoing> {
     /**
      * create Restful request context.
      * @param injector 
@@ -173,5 +173,5 @@ export abstract class RestfulRequestContextFactory {
      * @param response 
      * @param options 
      */
-    abstract create(injector: Injector, session: TransportSession, request: Incoming, response: Outgoing, options: ServerOpts): RestfulRequestContext;
+    abstract create(injector: Injector, session: TransportSession, request: TRequest, response: TResponse, options: ServerOpts): RestfulRequestContext<TRequest, TResponse>;
 }

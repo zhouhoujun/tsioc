@@ -15,7 +15,7 @@ export interface SendPacket extends ResponsePacket {
 /**
  * outgoing message.
  */
-export class OutgoingMessage<T = any, TStatus = any> extends Writable implements Outgoing<T, TStatus> {
+export class OutgoingMessage<T = any, TStatus = any> extends Writable implements Outgoing<T> {
 
     _closed = false;
     ending = false;
@@ -50,103 +50,6 @@ export class OutgoingMessage<T = any, TStatus = any> extends Writable implements
         throw new Error('Method not implemented.');
     }
 
-    protected contentType = 'content-type';
-    /**
-     * has content type or not.
-     */
-    hasContentType(): boolean {
-        return this.headers.has(this.contentType)
-    }
-    /**
-     * content type.
-     */
-    getContentType(): string {
-        const ty = this.headers.getHeader(this.contentType);
-        return ty as string;
-    }
-    /**
-     * Set Content-Type packet header with `type` through `mime.lookup()`
-     * when it does not contain a charset.
-     *
-     * Examples:
-     *
-     *     this.contentType = 'application/json';
-     *     this.contentType = 'application/octet-stream';  // buffer stream
-     *     this.contentType = 'image/png';      // png
-     *     this.contentType = 'image/pjpeg';   //jpeg
-     *     this.contentType = 'text/plain';    // text, txt
-     *     this.contentType = 'text/html';    // html, htm, shtml
-     *     this.contextType = 'text/javascript'; // javascript text
-     *     this.contentType = 'application/javascript'; //javascript file .js, .mjs
-     *
-     * @param {String} type
-     * @api public
-     */
-    setContentType(type: string | null | undefined): this {
-        this.headers.set(this.contentType, type);
-        return this;
-    }
-    /**
-     * remove content type.
-     * @param packet 
-     */
-    removeContentType(): this {
-        this.headers.delete(this.contentType);
-        return this;
-    }
-
-
-    protected contentEncoding = 'content-encoding';
-    /**
-     * has Content-Encoding or not.
-     * @param packet
-     */
-    hasContentEncoding(): boolean {
-        return this.headers.has(this.contentEncoding)
-    }
-    /**
-     * Get Content-Encoding.
-     * @param packet
-     */
-    getContentEncoding(): string | null {
-        return this.headers.getHeader(this.contentEncoding) as string;
-    }
-    /**
-     * Set Content-Encoding.
-     * @param packet
-     * @param encoding 
-     */
-    setContentEncoding(encoding: string | null | undefined): this {
-        this.headers.set(this.contentEncoding, encoding);
-        return this
-    }
-
-    removeContentEncoding(): this {
-        this.headers.delete(this.contentEncoding);
-        return this;
-    }
-
-    protected contentLength = 'content-length';
-    hasContentLength() {
-        return !!this.headers.getHeader(this.contentLength)
-    }
-
-    setContentLength(len: number | null | undefined) {
-        this.headers.set(this.contentLength, len);
-        return this
-    }
-
-    getContentLength() {
-        const len = this.headers.get(this.contentLength) ?? '0';
-        return ~~len
-    }
-
-    removeContentLength() {
-        this.headers.delete(this.contentLength);
-        return this;
-    }
-
-
     get body(): any {
         throw new Error('Method not implemented.');
     }
@@ -159,12 +62,7 @@ export class OutgoingMessage<T = any, TStatus = any> extends Writable implements
     set error(err: any) {
         throw new Error('Method not implemented.');
     }
-    get statusCode(): any {
-        throw new Error('Method not implemented.');
-    }
-    set statusCode(code: any) {
-        throw new Error('Method not implemented.');
-    }
+
     get statusText(): string {
         throw new Error('Method not implemented.');
     }
@@ -182,16 +80,15 @@ export class OutgoingMessage<T = any, TStatus = any> extends Writable implements
         return this.session.socket;
     }
 
-
     getHeaderNames(): string[] {
         return this.headers.getHeaderNames();
     }
 
-    get statusCode(): any {
+    get statusCode(): TStatus {
         return this.getHeader(this.statusHead);
     }
 
-    set statusCode(val: any) {
+    set statusCode(val: TStatus) {
         this.setHeader(this.statusHead, val as string);
     }
 

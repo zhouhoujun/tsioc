@@ -1,5 +1,5 @@
-import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE } from '@tsdi/common';
-import { MessageExecption, InternalServerExecption, TransportSession, Outgoing, ResponsePacket, append, parseTokenList, Incoming, StatusAdapter, MimeAdapter, StreamAdapter, FileAdapter, encodeUrl, escapeHtml, ctype } from '@tsdi/common/transport';
+import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, TransportHeaders } from '@tsdi/common';
+import { MessageExecption, InternalServerExecption, Outgoing, ResponsePacket, append, parseTokenList, Incoming, StatusAdapter, MimeAdapter, StreamAdapter, FileAdapter } from '@tsdi/common/transport';
 import { EMPTY_OBJ, Injectable, Injector, isArray, isNumber, isString, lang } from '@tsdi/ioc';
 import * as http from 'http';
 import * as http2 from 'http2';
@@ -9,23 +9,24 @@ import { HttpServerOpts } from './options';
 import { RestfulRequestContext, RestfulRequestContextFactory, ServerOpts, TransportSession, Throwable } from '@tsdi/endpoints';
 
 
-export type HttpServRequest = http.IncomingMessage | http2.Http2ServerRequest;
+export type HttpServRequest = (http.IncomingMessage | http2.Http2ServerRequest) & { transportHeaders: TransportHeaders };
 
-export type HttpServResponse = http.ServerResponse | http2.Http2ServerResponse;
+export type HttpServResponse = (http.ServerResponse | http2.Http2ServerResponse)  & { transportHeaders: TransportHeaders };
 
 /**
  * http context for `HttpServer`.
  */
-export class HttpContext extends RestfulRequestContext<TLSSocket | Socket, HttpServerOpts, number> implements Throwable {
+export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServResponse, TLSSocket | Socket, HttpServerOpts, number> implements Throwable {
 
 
     private _URL?: URL;
+    readonly originalUrl: string;
 
     constructor(
         injector: Injector,
         readonly session: TransportSession,
-        readonly request: Incoming<HttpServRequest>,
-        readonly response: Outgoing<HttpServResponse>,
+        readonly request: HttpServRequest,
+        readonly response: HttpServResponse,
         readonly statusAdapter: StatusAdapter | null,
         readonly mimeAdapter: MimeAdapter | null,
         readonly streamAdapter: StreamAdapter,
@@ -35,9 +36,10 @@ export class HttpContext extends RestfulRequestContext<TLSSocket | Socket, HttpS
         super(injector, { ...serverOptions, args: request });
 
         this.setValue(TransportSession, session);
-        if (!response.id) {
-            response.id = request.id
-        }
+        this.originalUrl = request.url!;
+        // if (!response.id) {
+        //     response.id = request.id
+        // }
         // if (isString(request.pattern)) {
         //     response.url = request.pattern;
         // } else if (isNumber(request.pattern)) {
@@ -54,7 +56,7 @@ export class HttpContext extends RestfulRequestContext<TLSSocket | Socket, HttpS
 
         const searhIdx = this.url.indexOf('?');
         if (searhIdx >= 0) {
-            this.request.query = this.query;
+            (this.request as any).query = this.query;
         }
     }
 
@@ -100,8 +102,8 @@ export class HttpContext extends RestfulRequestContext<TLSSocket | Socket, HttpS
     }
 
 
-    parseURL(incoming: Incoming<HttpServRequest>, proxy?: boolean): URL {
-        const req = incoming.message;
+    parseURL(incoming: HttpServRequest, proxy?: boolean): URL {
+        const req = incoming;
         const url = req.url?.trim() ?? '';
         if (httptl.test(url)) {
             return new URL(url);
@@ -128,7 +130,7 @@ export class HttpContext extends RestfulRequestContext<TLSSocket | Socket, HttpS
      */
 
     get socket() {
-        return this.request.message.socket
+        return this.request.socket
     }
 
     get secure(): boolean {
@@ -359,7 +361,7 @@ export class HttpContext extends RestfulRequestContext<TLSSocket | Socket, HttpS
     }
 
     protected override onBodyChanged(newVal: any, oldVal: any): void {
-        (this.response as Outgoing).body = newVal;
+        (this.response as any).body = newVal;
     }
 
 
@@ -387,8 +389,8 @@ export class HttpContext extends RestfulRequestContext<TLSSocket | Socket, HttpS
         // https://nodejs.org/api/http.html#http_response_writableended
         // response.finished is undocumented feature of previous Node versions
         // https://stackoverflow.com/questions/16254385/undocumented-response-finished-in-node-js
-        if (this.response.message.writableEnded || this.response.message.finished) return false;
-        const socket = this.response.message.socket;
+        if (this.response.writableEnded || this.response.finished) return false;
+        const socket = this.response.socket;
         // There are already pending outgoing res, but still writable
         // https://github.com/nodejs/node/blob/v4.4.7/lib/_http_server.js#L486
         if (!socket) return true;
@@ -438,9 +440,8 @@ export class HttpContext extends RestfulRequestContext<TLSSocket | Socket, HttpS
 }
 
 @Injectable()
-export class HttpAssetContextFactory implements RestfulRequestContextFactory {
-
-    create(injector: Injector, session: TransportSession, incoming: Incoming, outgoing: Outgoing, options: HttpServerOpts): HttpContext {
+export class HttpAssetContextFactory implements RestfulRequestContextFactory<HttpServRequest, HttpServResponse> {
+    create(injector: Injector, session: TransportSession, incoming: HttpServRequest, outgoing: HttpServResponse, options: HttpServerOpts): HttpContext {
         return new HttpContext(injector, session,
             incoming,
             outgoing,

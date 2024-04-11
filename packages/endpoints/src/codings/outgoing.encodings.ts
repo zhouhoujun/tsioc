@@ -25,13 +25,13 @@ export class JsonOutgoingEncodeHandler implements OutgoingEncodeHandler {
             id: response.id,
             type: response.type,
             status: response.statusCode,
-            statusMessage: response.statusText,
-            headers: response.headers.getHeaders()
+            statusMessage: response.statusMessage,
+            headers: response.headers
         } as Packet;
         if (response.error) {
             packet.error = response.error;
         }
-        if (response.hasContentLength()) {
+        if (response.transportHeaders.hasContentLength()) {
             packet.payload = response.body;
         }
 

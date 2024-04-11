@@ -44,10 +44,10 @@ export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSo
     }
 
     get statusMessage(): string {
-        return this.response.statusText ?? '';
+        return this.response.statusMessage ?? '';
     }
     set statusMessage(message: string) {
-        this.response.statusText = message;
+        this.response.statusMessage = message;
     }
 
     get secure(): boolean {

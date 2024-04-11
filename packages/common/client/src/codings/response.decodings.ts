@@ -1,6 +1,6 @@
 import { Abstract, EMPTY_OBJ, Injectable, Injector, Module, Optional, getClass, getClassName, lang, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { HEAD, ResponseJsonParseError, TransportEvent, TransportRequest } from '@tsdi/common';
+import { HEAD, ResponseJsonParseError, TransportEvent, TransportHeaders, TransportRequest } from '@tsdi/common';
 import { CodingMappings, Incoming, Decoder, CodingsContext, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer, Packet, JsonIncoming } from '@tsdi/common/transport';
 import { Observable, catchError, defer, mergeMap, of, throwError } from 'rxjs';
 
@@ -137,7 +137,7 @@ export class IncomingResponseHanlder implements Handler<Incoming, TransportEvent
 
             let responseType = req.responseType;
             if (this.mimeAdapter) {
-                const contentType = res.getContentType();
+                const contentType = res.transportHeaders.getContentType();
                 if (contentType) {
                     if (responseType === 'json' && !this.mimeAdapter.isJson(contentType)) {
                         if (this.mimeAdapter.isXml(contentType) || this.mimeAdapter.isText(contentType)) {
@@ -188,7 +188,7 @@ export class IncomingResponseHanlder implements Handler<Incoming, TransportEvent
 
                 case 'blob':
                     body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
-                        type: res.getContentType()
+                        type: res.transportHeaders.getContentType()
                     });
                     break;
 
@@ -224,8 +224,8 @@ export class CompressResponseDecordeInterceptor implements Interceptor<Incoming,
 
     intercept(input: Incoming, next: Handler<Incoming, TransportEvent, CodingsContext>, context: CodingsContext): Observable<TransportEvent> {
         const response = input;
-        if (response instanceof Incoming) {
-            const codings = response.getContentEncoding();
+        if (response.transportHeaders instanceof TransportHeaders) {
+            const codings = response.transportHeaders.getContentEncoding();
             const req = context.first() as TransportRequest;
             const eventFactory = req.context.get(ResponseEventFactory);
             const streamAdapter = this.streamAdapter;

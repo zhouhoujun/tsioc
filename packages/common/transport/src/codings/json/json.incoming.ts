@@ -1,68 +1,45 @@
-import { Pattern, TransportHeaders } from '@tsdi/common';
+import { MapHeaders, Pattern, TransportHeaders } from '@tsdi/common';
 import { Packet } from '../../packet';
 import { Incoming } from '../../Incoming';
 
-export class JsonIncoming<T = any> extends Incoming<T> {
+export class JsonIncoming<T = any> implements Incoming<T> {
     readonly id: any;
     readonly method: string;
     readonly originalUrl: string;
     readonly pattern: Pattern;
-    readonly headers: TransportHeaders;
+    private _headers: TransportHeaders;
+
+    get headers(): MapHeaders {
+        return this._headers.getHeaders()
+    }
+
+    get transportHeaders() {
+        return this._headers
+    }
+
     url: string;
     body: T | null;
     constructor(packet: Packet) {
-        super()
-        this.headers = new TransportHeaders(packet.headers);
-        this.id = packet.id ?? this.headers.getHeader('identity');
-        this.method = packet.method ?? this.headers.getHeader('method') ?? '';
-        this.url = packet.url ?? this.headers.getHeader('path') ?? '';
+        this._headers = new TransportHeaders(packet.headers);
+        this.id = packet.id ?? this._headers.getIdentity();
+        this.method = packet.method ?? this._headers.getMethod() ?? '';
+        this.url = packet.url ?? this._headers.getPath() ?? '';
         this.originalUrl = this.url.toString();
         this.pattern = packet.pattern ?? this.url;
         this.body = packet.payload ?? null;
 
     }
 
-    hasContentType(): boolean {
-        return this.headers.hasContentType()
-    }
-    getContentType(): string {
-        return this.headers.getContentType()
-    }
-    protected contentEncoding = 'content-encoding';
-    getContentEncoding(): string {
-        return this.headers.getHeader(this.contentEncoding) as string
-    }
 
-    getContentLength(): number {
-        return this.headers.getContentLength()
-    }
 
     hasHeader(field: string): boolean {
-        return this.headers.has(field)
+        return this._headers.has(field)
     }
-    getHeader(field: string): string | null {
-        return this.headers.getHeader(field)
+    getHeader(field: string): string | undefined {
+        return this._headers.getHeader(field)
     }
 
     rawBody?: any;
     path?: any;
 
-    getAcceptType?(...contentTypes: string[]): string[] {
-        throw new Error('Method not implemented.');
-    }
-    getAcceptCharset?(...charsets: string[]): string[] {
-        throw new Error('Method not implemented.');
-    }
-    getAcceptEncoding?(...encodings: string[]): string[] {
-        throw new Error('Method not implemented.');
-    }
-    getAcceptLanguage?(...languages: string[]): string[] {
-        throw new Error('Method not implemented.');
-    }
-    getReferrer?(): string {
-        throw new Error('Method not implemented.');
-    }
-    getLocation?(): string {
-        throw new Error('Method not implemented.');
-    }
 }

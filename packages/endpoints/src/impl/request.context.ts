@@ -12,17 +12,17 @@ import { TransportSession } from '../transport.session';
 
 
 
-export class RequestContextImpl<TSocket = any> extends RequestContext<TSocket> {
+export class RequestContextImpl<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TSocket = any> extends RequestContext<TRequest, TResponse, TSocket> {
 
 
     private _URL?: URL;
-
+    readonly originalUrl: string;
 
     constructor(
         injector: Injector,
         readonly session: TransportSession,
-        readonly request: Incoming,
-        readonly response: Outgoing,
+        readonly request: TRequest,
+        readonly response: TResponse,
         readonly statusAdapter: StatusAdapter | null,
         readonly mimeAdapter: MimeAdapter | null,
         readonly streamAdapter: StreamAdapter,
@@ -36,6 +36,7 @@ export class RequestContextImpl<TSocket = any> extends RequestContext<TSocket> {
             response.id = request.id
         }
 
+        this.originalUrl = this.url;
         const searhIdx = this.url.indexOf('?');
         if (searhIdx >= 0) {
             (this.request as any)['query'] = this.query;
@@ -127,7 +128,7 @@ export class RequestContextImpl<TSocket = any> extends RequestContext<TSocket> {
             status: execption.status ?? execption.statusCode
         };
         if (!isNil(execption.status)) this.response.statusCode = execption.status;
-        this.response.statusText = execption.message;
+        this.response.statusMessage = execption.message;
         return lastValueFrom(this.session.send(this));
     }
 
@@ -137,8 +138,8 @@ const abstl = /^\w+:\/\//i;
 
 
 @Injectable()
-export class RequestContextFactoryImpl implements RequestContextFactory {
-    create<TSocket = any>(session: TransportSession, request: Incoming, response: Outgoing, options?: ServerOpts<any> | undefined): RequestContext<TSocket> {
+export class RequestContextFactoryImpl implements RequestContextFactory<Incoming, Outgoing> {
+    create<TSocket = any>(session: TransportSession, request: Incoming, response: Outgoing, options?: ServerOpts<any> | undefined): RequestContext<Incoming, Outgoing, TSocket> {
         const injector = session.injector;
         return new RequestContextImpl(injector,
             session,

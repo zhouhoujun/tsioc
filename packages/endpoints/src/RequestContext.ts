@@ -15,7 +15,7 @@ import { TransportSession } from './transport.session';
  * 请求上下文
  */
 @Abstract()
-export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts = ServerOpts, TStatus = any> extends HandlerContext<Incoming> {
+export abstract class RequestContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TSocket = any, TOptions extends ServerOpts = ServerOpts, TStatus = any> extends HandlerContext<Incoming> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
         return [...primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
@@ -49,12 +49,12 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
     /**
      * transport response.
      */
-    abstract get request(): Incoming;
+    abstract get request(): TRequest;
 
     /**
      * transport response.
      */
-    abstract get response(): Outgoing;
+    abstract get response(): TResponse;
 
     /**
      * Set response content length.
@@ -63,10 +63,10 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
      * @api public
      */
     set length(n: number | null) {
-        if (!this.response.hasContentEncoding()) {
-            this.response.setContentLength(n)
+        if (!this.response.transportHeaders.hasContentEncoding()) {
+            this.response.transportHeaders.setContentLength(n)
         } else {
-            this.response.setContentLength(null)
+            this.response.transportHeaders.setContentLength(null)
         }
     }
     /**
@@ -76,8 +76,8 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
      * @api public
      */
     get length(): number | null {
-        if (this.response.hasContentLength()) {
-            return this.response.getContentLength()
+        if (this.response.transportHeaders.hasContentLength()) {
+            return this.response.transportHeaders.getContentLength()
         }
 
         if (isNil(this.body) || this.streamAdapter.isStream(this.body)) return null
@@ -106,11 +106,11 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
     }
 
     get statusMessage() {
-        return this.response.statusText
+        return this.response.statusMessage
     }
 
     set statusMessage(msg: string) {
-        this.response.statusText = msg
+        this.response.statusMessage = msg
     }
 
     private _ok = true;
@@ -170,9 +170,9 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
                 this.status = this.statusAdapter.noContent;
             }
             if (val === null) this.onNullBody();
-            this.response.setContentEncoding(null);
-            this.response.setContentLength(null);
-            this.response.setContentType(null);
+            this.response.transportHeaders.setContentEncoding(null);
+            this.response.transportHeaders.setContentLength(null);
+            this.response.transportHeaders.setContentType(null);
             return
         }
 
@@ -181,7 +181,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
 
 
         // set the content-type only if not yet set
-        const setType = !this.response.hasContentType();
+        const setType = !this.response.transportHeaders.hasContentType();
 
         // string
         if (isString(val)) {
@@ -201,7 +201,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
         if (this.streamAdapter.isStream(val)) {
             if (original != val) {
                 // overwriting
-                if (null != original) this.response.setContentLength(null)
+                if (null != original) this.response.transportHeaders.setContentLength(null)
             }
 
             if (setType) this.contentType = ctype.OCTET_STREAM;
@@ -209,7 +209,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
         }
 
         // json
-        this.response.setContentLength(null);
+        this.response.transportHeaders.setContentLength(null);
         this.contentType = ctype.APPL_JSON;
     }
 
@@ -231,7 +231,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
      * Get request rul
      */
     get url(): string {
-        return this.request.url
+        return this.request.url!
     }
     /**
      * Set request url
@@ -243,9 +243,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
     /**
      * original url
      */
-    get originalUrl(): string {
-        return this.request.originalUrl
-    }
+    abstract get originalUrl(): string;
 
     /**
      * request query parameters.
@@ -256,7 +254,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
      * The request method.
      */
     get method(): string {
-        return this.request.method
+        return this.request.method!
     }
 
     /**
@@ -280,8 +278,8 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
      * @return {String}
      * @api public
      */
-    getHeader(field: string): string | null {
-        return this.request.getHeader(field);
+    getHeader(field: string): string | undefined {
+        return this.request.transportHeaders.getHeader(field);
     }
 
 
@@ -383,7 +381,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
      */
     removeHeaders(): void {
         if (this.sent) return;
-        this.response.removeHeaders()
+        this.response.transportHeaders.removeHeaders()
     }
 
     /**
@@ -412,13 +410,13 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
         if (!adapter) return null;
 
         //no body
-        const encoding = this.request.getContentEncoding();
-        const len = this.request.getContentLength();
+        const encoding = this.request.transportHeaders.getContentEncoding();
+        const len = this.request.transportHeaders.getContentLength();
 
         if (encoding && !len) {
             return null
         }
-        const ctype = this.request.getContentType();
+        const ctype = this.request.transportHeaders.getContentType();
         if (!ctype) return false;
         const normaled = adapter.normalize(ctype);
         if (!normaled) return false;
@@ -431,7 +429,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
      * content type.
      */
     get contentType(): string {
-        const ctype = this.response.getContentType();
+        const ctype = this.response.transportHeaders.getContentType();
         return (isArray(ctype) ? lang.first(ctype) : ctype) as string ?? ''
     }
     /**
@@ -453,7 +451,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
      * @api public
      */
     set contentType(type: string) {
-        this.response.setContentType(type);
+        this.response.transportHeaders.setContentType(type);
     }
 
     /**
@@ -495,8 +493,8 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
      * Get Content-Encoding or not.
      * @param packet
      */
-    get contentEncoding(): string  | null {
-        return this.response.getContentEncoding()
+    get contentEncoding(): string  | undefined {
+        return this.response.transportHeaders.getContentEncoding()
     }
     /**
      * Set Content-Encoding.
@@ -504,12 +502,12 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
     set contentEncoding(encoding: string | null | undefined) {
         if (this.sent) return;
         if (isNil(encoding)) {
-            this.response.setContentEncoding(encoding)
+            this.response.transportHeaders.setContentEncoding(encoding)
         } else {
-            const old = this.response.getContentEncoding();
-            this.response.setContentEncoding(encoding);
+            const old = this.response.transportHeaders.getContentEncoding();
+            this.response.transportHeaders.setContentEncoding(encoding);
             if (old != encoding) {
-                this.response.setContentLength(null);
+                this.response.transportHeaders.setContentLength(null);
             }
         }
     }
@@ -521,7 +519,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
      * @api public
      */
     get sent() {
-        return this.response.sent;
+        return this.response.sent == true;
     }
 
     /**
@@ -663,7 +661,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
             this.type = this.fileAdapter.extname(filename);
         }
         const func = this.get(CONTENT_DISPOSITION_TOKEN);
-        this.response.setContentDisposition(func(filename, options))
+        this.response.transportHeaders.setContentDisposition(func(filename, options))
     }
 
     /**
@@ -690,7 +688,7 @@ export abstract class RequestContext<TSocket = any, TOptions extends ServerOpts 
  * request context factory.
  */
 @Abstract()
-export abstract class RequestContextFactory<TSocket = any> {
+export abstract class RequestContextFactory<TRequest extends Incoming, TResponse extends Outgoing, TSocket = any> {
     /**
      * create request context.
      * @param session 
@@ -698,7 +696,7 @@ export abstract class RequestContextFactory<TSocket = any> {
      * @param response 
      * @param options 
      */
-    abstract create(session: TransportSession, message: Incoming, response: Outgoing, options?: ServerOpts): RequestContext<TSocket>;
+    abstract create(session: TransportSession, message: TRequest, response: TResponse, options?: ServerOpts): RequestContext<TRequest, TResponse, TSocket>;
 }
 
 
