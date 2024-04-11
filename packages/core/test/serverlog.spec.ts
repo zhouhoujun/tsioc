@@ -8,7 +8,6 @@ import { logConfig, ServerMainModule } from './demo';
 import * as fs from 'fs';
 import * as path from 'path';
 import { rm } from 'shelljs';
-import del = require('del');
 
 const dir = __dirname;
 @Suite()

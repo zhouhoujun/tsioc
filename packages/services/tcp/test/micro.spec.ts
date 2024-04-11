@@ -10,7 +10,6 @@ import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
-import del = require('del');
 import { BigFileInterceptor } from './BigFileInterceptor';
 
 

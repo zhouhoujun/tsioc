@@ -11,7 +11,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import * as os from 'node:os';
 import expect = require('expect');
 import path = require('path');
-import del = require('del');
+import { rm } from 'shelljs';
 import { TCP_SERV_INTERCEPTORS, TcpClient, TcpModule } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
 
@@ -148,7 +148,7 @@ if (os.platform() != 'win32') {
         let client: TcpClient;
 
         before(async () => {
-            await del(ipcpath);
+            rm(ipcpath);
             ctx = await Application.run(IPCTestModule);
             injector = ctx.injector;
             client = injector.get(TcpClient);
@@ -399,7 +399,7 @@ if (os.platform() != 'win32') {
 
         after(async () => {
             await ctx?.destroy();
-            await del(ipcpath);
+            rm(ipcpath);
         })
     });
 
