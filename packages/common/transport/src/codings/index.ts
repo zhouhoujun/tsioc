@@ -7,6 +7,8 @@ export * from './codings.transport';
 export * from './codings.module';
 
 
+export * from './json/json.incoming';
+export * from './json/json.outgoing';
 export * from './json/json.encodings';
 export * from './json/json.decodings';
 export * from './json/json.module';

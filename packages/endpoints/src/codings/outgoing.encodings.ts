@@ -1,9 +1,8 @@
 import { Abstract, Injectable, Injector, Module, Optional, getClass, getClassName, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { Encoder, CodingsContext, CodingMappings, NotSupportedExecption, PacketData, Packet } from '@tsdi/common/transport';
+import { Encoder, CodingsContext, CodingMappings, NotSupportedExecption, PacketData, Packet, JsonOutgoing } from '@tsdi/common/transport';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
 import { RequestContext } from '../RequestContext';
-import { JsonOutgoing } from './json.outgoing';
 
 
 

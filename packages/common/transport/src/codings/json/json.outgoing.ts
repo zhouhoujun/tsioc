@@ -1,8 +1,8 @@
 import { Header, Pattern, TransportHeaders } from '@tsdi/common';
-import { Outgoing, Packet } from '@tsdi/common/transport';
+import { Outgoing } from '../../Outgoing';
+import { Packet } from '../../packet';
 
-
-export class JsonOutgoing<T = any> implements Outgoing<T> {
+export class JsonOutgoing<T = any> extends Outgoing<T> {
 
     id: any;
     type: number | string | null;
@@ -14,6 +14,7 @@ export class JsonOutgoing<T = any> implements Outgoing<T> {
     statusText!: string;
     private _sent = false;
     constructor(packet: Packet) {
+        super();
         this.headers = new TransportHeaders();
         this.id = packet.id ?? ((packet.headers instanceof TransportHeaders) ? packet.headers?.getHeader('identity') : packet.headers?.['identity'])
         this.type = packet.type ?? null;

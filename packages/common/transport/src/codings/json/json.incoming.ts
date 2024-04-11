@@ -1,7 +1,8 @@
 import { Pattern, TransportHeaders } from '@tsdi/common';
-import { Incoming, Packet } from '@tsdi/common/transport';
+import { Packet } from '../../packet';
+import { Incoming } from '../../Incoming';
 
-export class JsonIncoming<T = any> implements Incoming<T> {
+export class JsonIncoming<T = any> extends Incoming<T> {
     readonly id: any;
     readonly method: string;
     readonly originalUrl: string;
@@ -10,6 +11,7 @@ export class JsonIncoming<T = any> implements Incoming<T> {
     url: string;
     body: T | null;
     constructor(packet: Packet) {
+        super()
         this.headers = new TransportHeaders(packet.headers);
         this.id = packet.id ?? this.headers.getHeader('identity');
         this.method = packet.method ?? this.headers.getHeader('method') ?? '';
@@ -45,4 +47,22 @@ export class JsonIncoming<T = any> implements Incoming<T> {
     rawBody?: any;
     path?: any;
 
+    getAcceptType?(...contentTypes: string[]): string[] {
+        throw new Error('Method not implemented.');
+    }
+    getAcceptCharset?(...charsets: string[]): string[] {
+        throw new Error('Method not implemented.');
+    }
+    getAcceptEncoding?(...encodings: string[]): string[] {
+        throw new Error('Method not implemented.');
+    }
+    getAcceptLanguage?(...languages: string[]): string[] {
+        throw new Error('Method not implemented.');
+    }
+    getReferrer?(): string {
+        throw new Error('Method not implemented.');
+    }
+    getLocation?(): string {
+        throw new Error('Method not implemented.');
+    }
 }

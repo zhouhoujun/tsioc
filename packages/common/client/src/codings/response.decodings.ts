@@ -1,7 +1,7 @@
 import { Abstract, EMPTY_OBJ, Injectable, Injector, Module, Optional, getClass, getClassName, lang, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { HEAD, ResponseJsonParseError, TransportEvent, TransportRequest } from '@tsdi/common';
-import { CodingMappings, Incoming, Decoder, CodingsContext, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer, Packet } from '@tsdi/common/transport';
+import { CodingMappings, Incoming, Decoder, CodingsContext, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer, Packet, JsonIncoming } from '@tsdi/common/transport';
 import { Observable, catchError, defer, mergeMap, of, throwError } from 'rxjs';
 
 
@@ -18,7 +18,7 @@ export class DefaultResponseDecodeHandler implements ResponseDecodeHandler {
         if (!(input.url || input.topic || input.headers || input.payload)) {
             return throwError(() => new NotSupportedExecption(`${context.options.transport}${context.options.microservice ? ' microservice' : ''} response is not packet data!`));
         }
-        return of(input)
+        return of(new JsonIncoming(input))
     }
 }
 

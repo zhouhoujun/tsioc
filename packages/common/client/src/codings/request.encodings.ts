@@ -17,6 +17,7 @@ export class DefaultRequestHandler implements RequestEncodeHandler {
     handle(input: TransportRequest, context: CodingsContext): Observable<PacketData> {
         const packet = {
             pattern: input.pattern,
+            url: input.urlWithParams,
             headers: input.headers,
             payload: input.payload,
             payloadLength: input.headers.getContentLength()
