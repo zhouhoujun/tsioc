@@ -14,7 +14,7 @@ export interface  Incoming<T = any> {
 
     get headers(): MapHeaders;
 
-    get transportHeaders(): TransportHeaders;
+    get tHeaders(): TransportHeaders;
 
 
     body?: T | null
@@ -35,39 +35,6 @@ export interface  Incoming<T = any> {
      * @param field 
      */
     getHeader?(field: string): string | undefined;
-
-    /**
-     * has content type or not.
-     */
-    hasContentType?(): boolean;
-    /**
-     * content type.
-     */
-    getContentType?(): string;
-
-    /**
-     * Get Content-Encoding.
-     * @param packet
-     */
-    getContentEncoding?(): string;
-    /**
-     * Get packet content length
-     *
-     * @return {Number}
-     * @api public
-     */
-    getContentLength?(): number;
-
-    getAcceptType?(...contentTypes: string[]): string[];
-
-    getAcceptCharset?(...charsets: string[]): string[];
-
-    getAcceptEncoding?(...encodings: string[]): string[];
-
-    getAcceptLanguage?(...languages: string[]): string[];
-
-    getReferrer?(): string;
-    getLocation?(): string;
 
 }
 

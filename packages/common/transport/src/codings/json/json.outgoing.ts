@@ -27,7 +27,7 @@ export class JsonOutgoing<T = any> implements Outgoing<T> {
         return this._headers.getHeaders()
     }
 
-    get transportHeaders() {
+    get tHeaders() {
         return this._headers
     }
 

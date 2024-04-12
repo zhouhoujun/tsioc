@@ -1,5 +1,5 @@
 import { InvocationContext, isString, isUndefined } from '@tsdi/ioc';
-import { HeadersLike, TransportHeaders } from './headers';
+import { HeaderFields, HeadersLike, TransportHeaders } from './headers';
 import { ParameterCodec, TransportParams } from './params';
 import { Pattern } from './pattern';
 
@@ -76,7 +76,7 @@ export interface RequestInitOpts<T = any> extends RequestOptions<T>, ResponseAs 
      * request context.
      */
     context: InvocationContext;
-    createHeader?: (options?: HeadersLike) => TransportHeaders;
+    headerFields?: HeaderFields
 }
 
 
@@ -113,7 +113,7 @@ export class TransportRequest<T = any> {
         this.pattern = pattern;
         this.context = options.context;
         this.payload = options.payload ?? options.body ?? null;
-        this.headers = options.createHeader ? options.createHeader(options.headers) : new TransportHeaders(options.headers);
+        this.headers = new TransportHeaders(options.headers, options.headerFields);
         this.params = new TransportParams(options);
         this.responseType = options.responseType ?? 'json';
         this.observe = options.observe ?? 'body';

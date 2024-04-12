@@ -283,8 +283,7 @@ export class TransportHeaders<T extends Header = Header> {
     }
 
 
-
-    getAccept(): string | undefined  {
+    getAccept(): string | string[] | undefined  {
         return this._fields.accept ? this.getHeader(this._fields.accept) : '*'
     }
 

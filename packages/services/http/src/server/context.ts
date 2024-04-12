@@ -1,4 +1,4 @@
-import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, TransportHeaders } from '@tsdi/common';
+import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE } from '@tsdi/common';
 import { MessageExecption, InternalServerExecption, Outgoing, ResponsePacket, append, parseTokenList, Incoming, StatusAdapter, MimeAdapter, StreamAdapter, FileAdapter } from '@tsdi/common/transport';
 import { EMPTY_OBJ, Injectable, Injector, isArray, isNumber, isString, lang } from '@tsdi/ioc';
 import * as http from 'http';
@@ -6,12 +6,12 @@ import * as http2 from 'http2';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
 import { HttpServerOpts } from './options';
-import { RestfulRequestContext, RestfulRequestContextFactory, ServerOpts, TransportSession, Throwable } from '@tsdi/endpoints';
+import { RestfulRequestContext, RestfulRequestContextFactory, TransportSession, Throwable, AcceptsPriority } from '@tsdi/endpoints';
 
 
-export type HttpServRequest = (http.IncomingMessage | http2.Http2ServerRequest) & { transportHeaders: TransportHeaders };
+export type HttpServRequest = (http.IncomingMessage | http2.Http2ServerRequest) & Incoming;
 
-export type HttpServResponse = (http.ServerResponse | http2.Http2ServerResponse)  & { transportHeaders: TransportHeaders };
+export type HttpServResponse = (http.ServerResponse | http2.Http2ServerResponse) & Outgoing;
 
 /**
  * http context for `HttpServer`.
@@ -29,6 +29,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         readonly response: HttpServResponse,
         readonly statusAdapter: StatusAdapter | null,
         readonly mimeAdapter: MimeAdapter | null,
+        readonly acceptsPriority: AcceptsPriority | null,
         readonly streamAdapter: StreamAdapter,
         readonly fileAdapter: FileAdapter,
         readonly serverOptions: HttpServerOpts
@@ -447,6 +448,7 @@ export class HttpAssetContextFactory implements RestfulRequestContextFactory<Htt
             outgoing,
             injector.get(StatusAdapter, null),
             injector.get(MimeAdapter, null),
+            injector.get(AcceptsPriority, null),
             injector.get(StreamAdapter),
             injector.get(FileAdapter),
             options);

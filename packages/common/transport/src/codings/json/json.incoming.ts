@@ -13,7 +13,7 @@ export class JsonIncoming<T = any> implements Incoming<T> {
         return this._headers.getHeaders()
     }
 
-    get transportHeaders() {
+    get tHeaders() {
         return this._headers
     }
 

@@ -10,7 +10,11 @@ import { TransportSession } from './transport.session';
  * 支持状态的请求上下文
  */
 @Abstract()
-export abstract class RestfulRequestContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TSocket = any, TOptions extends ServerOpts = ServerOpts, TStatus = any> extends RequestContext<TRequest, TResponse, TSocket, TOptions, TStatus> {
+export abstract class RestfulRequestContext<
+    TRequest extends Incoming = Incoming,
+    TResponse extends Outgoing = Outgoing, TSocket = any,
+    TOptions extends ServerOpts = ServerOpts,
+    TStatus = any> extends RequestContext<TRequest, TResponse, TSocket, TOptions, TStatus> {
 
     abstract get socket(): TSocket;
 

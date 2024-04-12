@@ -137,7 +137,7 @@ export class IncomingResponseHanlder implements Handler<Incoming, TransportEvent
 
             let responseType = req.responseType;
             if (this.mimeAdapter) {
-                const contentType = res.transportHeaders.getContentType();
+                const contentType = res.tHeaders.getContentType();
                 if (contentType) {
                     if (responseType === 'json' && !this.mimeAdapter.isJson(contentType)) {
                         if (this.mimeAdapter.isXml(contentType) || this.mimeAdapter.isText(contentType)) {
@@ -188,7 +188,7 @@ export class IncomingResponseHanlder implements Handler<Incoming, TransportEvent
 
                 case 'blob':
                     body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
-                        type: res.transportHeaders.getContentType()
+                        type: res.tHeaders.getContentType()
                     });
                     break;
 
@@ -224,8 +224,8 @@ export class CompressResponseDecordeInterceptor implements Interceptor<Incoming,
 
     intercept(input: Incoming, next: Handler<Incoming, TransportEvent, CodingsContext>, context: CodingsContext): Observable<TransportEvent> {
         const response = input;
-        if (response.transportHeaders instanceof TransportHeaders) {
-            const codings = response.transportHeaders.getContentEncoding();
+        if (response.tHeaders instanceof TransportHeaders) {
+            const codings = response.tHeaders.getContentEncoding();
             const req = context.first() as TransportRequest;
             const eventFactory = req.context.get(ResponseEventFactory);
             const streamAdapter = this.streamAdapter;

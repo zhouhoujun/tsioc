@@ -9,7 +9,7 @@ export interface Outgoing<T = any> {
 
     headers?: MapHeaders;
 
-    get transportHeaders(): TransportHeaders;
+    get tHeaders(): TransportHeaders;
 
     body?: T | null;
 

@@ -9,6 +9,7 @@ import { RequestContext, RequestContextFactory } from '../RequestContext';
 import { ServerOpts } from '../Server';
 import { lastValueFrom } from 'rxjs';
 import { TransportSession } from '../transport.session';
+import { AcceptsPriority } from '../accepts';
 
 
 
@@ -25,6 +26,7 @@ export class RequestContextImpl<TRequest extends Incoming = Incoming, TResponse 
         readonly response: TResponse,
         readonly statusAdapter: StatusAdapter | null,
         readonly mimeAdapter: MimeAdapter | null,
+        readonly acceptsPriority: AcceptsPriority | null,
         readonly streamAdapter: StreamAdapter,
         readonly fileAdapter: FileAdapter,
         readonly serverOptions: ServerOpts = EMPTY_OBJ
@@ -147,6 +149,7 @@ export class RequestContextFactoryImpl implements RequestContextFactory<Incoming
             response,
             injector.get(StatusAdapter, null),
             injector.get(MimeAdapter, null),
+            injector.get(AcceptsPriority, null),
             injector.get(StreamAdapter),
             injector.get(FileAdapter),
             options);
