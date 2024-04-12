@@ -20,7 +20,7 @@ export abstract class TransportResponseBase<TStatus = number> {
      */
     readonly status: TStatus | null;
 
-    private _message!: string;
+    protected _message!: string;
     /**
      * Textual description of response status code, defaults to OK.
      *
@@ -113,7 +113,7 @@ export class TransportErrorResponse<TStatus = number> extends TransportResponseB
     }
 
     protected formatMessage() {
-        return this.statusText;
+        return this.error?.message;
     }
 
 }

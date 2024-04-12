@@ -133,7 +133,7 @@ export class OutgoingMessage<T> extends Writable implements Outgoing<T> {
             id: this.id,
             headers: this.getHeaders(),
             status: this.statusCode,
-            statusText: this.statusMessage
+            statusMessage: this.statusMessage
         } as SendPacket;
         if (this.url) pkg.url = this.url;
         if (this.topic) pkg.topic = this.topic;

@@ -27,7 +27,7 @@ export class AssetResponseTransform {
 
         let body = packet.payload ?? null;
         const url = req.url;
-        const { headers, status, statusText } = packet;
+        const { headers, status, statusMessage: statusText } = packet;
         let ok = false;
         const streamAdapter = this.streamAdapter;
 

@@ -48,7 +48,7 @@ export interface Message {
 export interface ResponsePacket<T = any, TStatus= any> extends Packet<T> {
     type?: number | string;
     status?: TStatus;
-    statusText?: string;
+    statusMessage?: string;
     ok?: boolean;
     error?: any;
 }

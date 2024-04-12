@@ -2,7 +2,7 @@ import { MapHeaders, Pattern, TransportHeaders } from '@tsdi/common';
 
 
 
-export interface  Incoming<T = any> {
+export interface Incoming<T = any> {
 
     id?: number | string;
 
@@ -36,6 +36,16 @@ export interface  Incoming<T = any> {
      */
     getHeader?(field: string): string | undefined;
 
+}
+
+
+export interface ResponseIncoming<T = any> extends Incoming<T> {
+    type?: string| number;
+    error?: any;
+    ok?: boolean;
+    status?: string | number;
+    statusText?: string;
+    statusMessage?: string;
 }
 
 

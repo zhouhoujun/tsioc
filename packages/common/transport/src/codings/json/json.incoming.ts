@@ -1,6 +1,6 @@
-import { MapHeaders, Pattern, TransportHeaders } from '@tsdi/common';
-import { Packet } from '../../packet';
-import { Incoming } from '../../Incoming';
+import { HeaderFields, MapHeaders, Pattern, TransportHeaders } from '@tsdi/common';
+import { Packet, ResponsePacket } from '../../packet';
+import { Incoming, ResponseIncoming } from '../../Incoming';
 
 export class JsonIncoming<T = any> implements Incoming<T> {
     readonly id: any;
@@ -19,8 +19,8 @@ export class JsonIncoming<T = any> implements Incoming<T> {
 
     url: string;
     body: T | null;
-    constructor(packet: Packet) {
-        this._headers = new TransportHeaders(packet.headers);
+    constructor(packet: Packet, headerFields?: HeaderFields) {
+        this._headers = new TransportHeaders(packet.headers, headerFields);
         this.id = packet.id ?? this._headers.getIdentity();
         this.method = packet.method ?? this._headers.getMethod() ?? '';
         this.url = packet.url ?? this._headers.getPath() ?? '';
@@ -42,4 +42,27 @@ export class JsonIncoming<T = any> implements Incoming<T> {
     rawBody?: any;
     path?: any;
 
+}
+
+export class JsonResponseIncoming<T = any> extends JsonIncoming<T> implements ResponseIncoming<T> {
+    readonly type: string | number | undefined;
+    readonly status: string | number | undefined;
+    readonly statusMessage: string | undefined;
+    readonly ok?: boolean;
+    error: any;
+
+    get statusText() {
+        return this.statusMessage
+    }
+
+    constructor(packet: ResponsePacket, headerFields?: HeaderFields) {
+        super(packet, headerFields);
+        this.type = packet.type;
+        this.status = packet.status ?? this.tHeaders.getStatus();
+        this.statusMessage = packet.statusMessage ?? this.tHeaders.getStatusMessage();
+        this.error = packet.error;
+        if (this.error) {
+            this.ok = false;
+        }
+    }
 }

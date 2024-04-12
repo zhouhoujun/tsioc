@@ -55,7 +55,7 @@ export class AssetContextImpl<TSocket> extends AbstractAssetContext<Incoming<TSo
     }
 
     setResponse(packet: ResponsePacket): void {
-        const { headers, payload, status, statusText } = packet;
+        const { headers, payload, status, statusMessage: statusText } = packet;
         if (status) this.status = status;
         if (statusText) this.statusMessage = statusText;
         if (headers) this.setHeader(headers);

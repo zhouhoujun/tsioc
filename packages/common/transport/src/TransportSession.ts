@@ -1,6 +1,6 @@
 import { Abstract, Injector, ProvdierOf, Token } from '@tsdi/ioc';
 import { Interceptor } from '@tsdi/core';
-import { TransportErrorResponse, TransportEvent, HeadersLike,  } from '@tsdi/common';
+import { TransportErrorResponse, TransportEvent, HeadersLike, HeaderFields,  } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { HybirdTransport, Transport } from './protocols';
 import { CodingsOpts } from './codings/mappings';
@@ -38,6 +38,7 @@ export interface TransportOpts extends CodingsOpts {
      */
     decodeInterceptors?: ProvdierOf<Interceptor>[];
 
+    headerFields?: HeaderFields;
     /**
      * packet delimiter flag
      */

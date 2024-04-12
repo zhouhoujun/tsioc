@@ -151,7 +151,7 @@ export class HttpClientTransportSession implements TransportSession<ClientHttp2S
                         headPkg = {
                             headers,
                             status: statusCode,
-                            statusText: statusMessage,
+                            statusMessage: statusMessage,
                             httpVersion,
                             httpVersionMinor
                         } as ResponsePacket;
@@ -160,7 +160,7 @@ export class HttpClientTransportSession implements TransportSession<ClientHttp2S
                         const status = (msg.headers[hdr.STATUS2] ?? 200) as HttpStatusCode;
                         headPkg = {
                             status,
-                            statusText: (msg.headers[hdr.STATUS_MESSAGE] || statusMessage[status]) as string,
+                            statusMessage: (msg.headers[hdr.STATUS_MESSAGE] || statusMessage[status]) as string,
                             headers: msg.headers
                         };
                         stream = msg.stream;

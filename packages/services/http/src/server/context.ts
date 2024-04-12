@@ -423,7 +423,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 
 
     setResponse(packet: ResponsePacket): void {
-        const { headers, payload, status, statusText } = packet;
+        const { headers, payload, status, statusMessage: statusText } = packet;
         if (status) this.status = status as number;
         if (statusText) this.statusMessage = statusText;
         if (headers) this.setHeader(headers);

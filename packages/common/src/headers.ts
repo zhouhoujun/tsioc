@@ -18,6 +18,8 @@ export interface HeaderFields {
     contentDisposition?: string;
     identity?: string;
     method?: string;
+    status?: string;
+    statusMessage?: string;
     path?: string;
     accept: string;
     acceptLanguage?: string;
@@ -37,6 +39,8 @@ const defaultFields = {
     identity: 'identity',
     method: ':method',
     path: ':path',
+    status: 'status',
+    statusMessage: 'status-message',
     accept: 'accept',
     acceptLanguage: 'accept-language',
     acceptCharset: 'accept-charset',
@@ -279,6 +283,22 @@ export class TransportHeaders<T extends Header = Header> {
     }
     setPath(path: T): this {
         if (this._fields.path) this.setHeader(this._fields.path, path);
+        return this;
+    }
+
+    getStatus(): string | undefined {
+        return this._fields.status ? this.getHeader(this._fields.status) : undefined
+    }
+    setStatus(status: T): this {
+        if (this._fields.status) this.setHeader(this._fields.status, status);
+        return this;
+    }
+
+    getStatusMessage(): string | undefined {
+        return this._fields.statusMessage ? this.getHeader(this._fields.statusMessage) : undefined
+    }
+    setStatusMessage(statusMessage: T): this {
+        if (this._fields.statusMessage) this.setHeader(this._fields.statusMessage, statusMessage);
         return this;
     }
 
