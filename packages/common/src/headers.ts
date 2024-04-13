@@ -244,7 +244,7 @@ export class TransportHeaders<T extends Header = Header> {
         return !!this._fields.contentEncoding && this.has(this._fields.contentEncoding)
     }
 
-    getContentEncoding(): string | undefined  {
+    getContentEncoding(): string | undefined {
         return this._fields.contentEncoding ? this.getHeader(this._fields.contentEncoding) : undefined
     }
 
@@ -253,7 +253,7 @@ export class TransportHeaders<T extends Header = Header> {
         return this;
     }
 
-    getContentDisposition(): string | undefined  {
+    getContentDisposition(): string | undefined {
         return this._fields.contentDisposition ? this.getHeader(this._fields.contentDisposition) : undefined
     }
     setContentDisposition(disposition: T): this {
@@ -286,9 +286,10 @@ export class TransportHeaders<T extends Header = Header> {
         return this;
     }
 
-    getStatus(): string | undefined {
+    getStatus(): string | number | undefined {
         return this._fields.status ? this.getHeader(this._fields.status) : undefined
     }
+
     setStatus(status: T): this {
         if (this._fields.status) this.setHeader(this._fields.status, status);
         return this;
@@ -303,7 +304,7 @@ export class TransportHeaders<T extends Header = Header> {
     }
 
 
-    getAccept(): string | string[] | undefined  {
+    getAccept(): string | string[] | undefined {
         return this._fields.accept ? this.getHeader(this._fields.accept) : '*'
     }
 
@@ -313,7 +314,7 @@ export class TransportHeaders<T extends Header = Header> {
     }
 
 
-    getAcceptCharset(): string | undefined  {
+    getAcceptCharset(): string | undefined {
         return this._fields.acceptCharset ? this.getHeader(this._fields.acceptCharset) : '*'
     }
 
@@ -322,7 +323,7 @@ export class TransportHeaders<T extends Header = Header> {
         return this;
     }
 
-    getAcceptEncoding(): string | undefined  {
+    getAcceptEncoding(): string | undefined {
         return this._fields.acceptEncoding ? this.getHeader(this._fields.acceptEncoding) : '*'
     }
 
@@ -331,7 +332,7 @@ export class TransportHeaders<T extends Header = Header> {
         return this;
     }
 
-    getAcceptLanguage(): string | undefined  {
+    getAcceptLanguage(): string | undefined {
         return this._fields.acceptLanguage ? this.getHeader(this._fields.acceptLanguage) : '*'
     }
 
@@ -340,7 +341,7 @@ export class TransportHeaders<T extends Header = Header> {
         return this;
     }
 
-    getLastModified(): string | undefined  {
+    getLastModified(): string | undefined {
         return this._fields.lastModified ? this.getHeader(this._fields.lastModified) : undefined
     }
 
@@ -349,7 +350,7 @@ export class TransportHeaders<T extends Header = Header> {
         return this;
     }
 
-    getCacheControl(): string | undefined  {
+    getCacheControl(): string | undefined {
         return this._fields.cacheControl ? this.getHeader(this._fields.cacheControl) : undefined
     }
 
@@ -358,7 +359,7 @@ export class TransportHeaders<T extends Header = Header> {
         return this;
     }
 
-    getLocation(): string | undefined  {
+    getLocation(): string | undefined {
         return this._fields.location ? this.getHeader(this._fields.location) : undefined
     }
 

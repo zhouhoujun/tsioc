@@ -100,7 +100,6 @@ if (os.platform() != 'win32') {
         imports: [
             ServerModule,
             LoggerModule,
-            // AssetTransportModule,
             ServerEndpointModule,
             TcpModule,
             ClientModule.register({
@@ -214,7 +213,7 @@ if (os.platform() != 'win32') {
                     })
                 ));
             // expect(a.status).toEqual(404);
-            expect(a.statusText).toEqual('NotFound')
+            expect(a.statusText).toEqual('Not Found')
         });
 
         it('bad request', async () => {
@@ -226,7 +225,7 @@ if (os.platform() != 'win32') {
                     })
                 ));
             // expect(a.status).toEqual(400);
-            expect(a.statusText).toEqual('BadRequest')
+            expect(a.statusText).toEqual('Bad Request')
         })
 
         it('post route response object', async () => {
@@ -273,7 +272,7 @@ if (os.platform() != 'win32') {
                         return of(err);
                     })));
             // expect(r.status).toEqual(400);
-            expect(r.statusText).toEqual('BadRequest')
+            expect(r.statusText).toEqual('Bad Request')
         })
 
         it('route with request body pipe throw argument err', async () => {
@@ -284,7 +283,7 @@ if (os.platform() != 'win32') {
                         return of(err);
                     })));
             // expect(r.status).toEqual(400);
-            expect(r.statusText).toEqual('BadRequest')
+            expect(r.statusText).toEqual('Bad Request')
         })
 
         it('route with request param pipe', async () => {
@@ -302,7 +301,7 @@ if (os.platform() != 'win32') {
                         return of(err);
                     })));
             // expect(r.status).toEqual(400);
-            expect(r.statusText).toEqual('BadRequest')
+            expect(r.statusText).toEqual('Bad Request')
         })
 
         it('route with request param pipe throw argument err', async () => {
@@ -313,7 +312,7 @@ if (os.platform() != 'win32') {
                         return of(err);
                     })));
             // expect(r.status).toEqual(400);
-            expect(r.statusText).toEqual('BadRequest')
+            expect(r.statusText).toEqual('Bad Request')
         })
 
         it('route with request param pipe', async () => {
@@ -331,7 +330,7 @@ if (os.platform() != 'win32') {
                         return of(err);
                     })));
             // expect(r.status).toEqual(400);
-            expect(r.statusText).toEqual('BadRequest')
+            expect(r.statusText).toEqual('Bad Request')
         })
 
         it('route with request restful param pipe throw argument err', async () => {
@@ -342,7 +341,7 @@ if (os.platform() != 'win32') {
                         return of(err);
                     })));
             // expect(r.status).toEqual(400);
-            expect(r.statusText).toEqual('BadRequest')
+            expect(r.statusText).toEqual('Bad Request')
         })
 
 

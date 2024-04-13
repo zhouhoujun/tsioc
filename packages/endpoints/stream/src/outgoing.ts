@@ -15,7 +15,7 @@ export interface SendPacket extends ResponsePacket {
 /**
  * outgoing message.
  */
-export class OutgoingMessage<T = any, TStatus = any> extends Writable implements Outgoing<T> {
+export class OutgoingMessage<T = any, TStatus = string | number | undefined> extends Writable implements Outgoing<T> {
 
     _closed = false;
     ending = false;
@@ -25,19 +25,27 @@ export class OutgoingMessage<T = any, TStatus = any> extends Writable implements
     readonly id: number | string;
     readonly url: string;
 
-    protected pathHead = ':path';
-    protected statusHead = ':status';
-    protected statusMessageHead = 'status-message';
-
     writable = true;
+
+    private _headers: TransportHeaders;
+
     constructor(
         readonly session: TransportSession<T>,
-        readonly headers: TransportHeaders
+        initHeaders: HeadersLike
     ) {
         super({ objectMode: true });
         this.setMaxListeners(0);
-        this.id = headers.getHeader('id') ?? '';
-        this.url = headers.getHeader(this.pathHead) as string ?? '';
+        const headers = this._headers = new TransportHeaders(initHeaders, session.options.headerFields);
+        this.id = headers.getIdentity() ?? '';
+        this.url = headers.getPath() ?? '';
+    }
+
+    get headers() {
+        return this._headers.getHeaders()
+    }
+
+    get tHeaders() {
+        return this._headers;
     }
 
     get type(): string | number {
@@ -81,23 +89,23 @@ export class OutgoingMessage<T = any, TStatus = any> extends Writable implements
     }
 
     getHeaderNames(): string[] {
-        return this.headers.getHeaderNames();
+        return this.tHeaders.getHeaderNames();
     }
 
     get statusCode(): TStatus {
-        return this.getHeader(this.statusHead);
+        return this.tHeaders.getStatus() as TStatus
     }
 
     set statusCode(val: TStatus) {
-        this.setHeader(this.statusHead, val as string);
+        this.tHeaders.setStatus(val as Header);
     }
 
     get statusMessage(): string {
-        return this.getHeader(this.statusMessageHead) as string ?? '';
+        return this.tHeaders.getStatusMessage() ?? '';
     }
 
     set statusMessage(val: string) {
-        this.setHeader(this.statusMessageHead, val);
+        this.tHeaders.setStatusMessage(val);
     }
 
     get headersSent() {
@@ -105,25 +113,23 @@ export class OutgoingMessage<T = any, TStatus = any> extends Writable implements
     }
 
     getHeaders() {
-        return this.headers.getHeaders();
+        return this.headers;
     }
 
     hasHeader(field: string): boolean {
-        return this.headers.has(field);
+        return this.tHeaders.has(field);
     }
 
-    getHeader(field: string): string | number | null {
-        return this.headers.getHeader(field);
+    getHeader(field: string): string | number | undefined {
+        return this.tHeaders.getHeader(field);
     }
 
-    setHeader(field: string, val: Header): this {
-        this.headers.set(field, val);
-        return this;
+    setHeader(field: string, val: Header): void {
+        this.tHeaders.set(field, val);
 
     }
-    removeHeader(field: string): this {
-        this.headers.delete(field);
-        return this;
+    removeHeader(field: string): void {
+        this.tHeaders.delete(field);
     }
 
     flushHeaders() {
@@ -182,13 +188,13 @@ export class OutgoingMessage<T = any, TStatus = any> extends Writable implements
             if (isArray(headers)) {
                 if (headers.length % 2 === 0) {
                     for (let i = 0; i < headers.length - 1; i += 2) {
-                        this.headers.set(`${headers[i]}`, headers[i + 1]);
+                        this.tHeaders.set(`${headers[i]}`, headers[i + 1]);
                     }
                 } else {
                     throw new ArgumentExecption('headers');
                 }
             } else {
-                this.headers.setHeaders(headers);
+                this.tHeaders.setHeaders(headers);
             }
         }
         this.statusCode = statusCode;

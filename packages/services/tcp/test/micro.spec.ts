@@ -161,7 +161,7 @@ describe('TCP Micro Service', () => {
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
         // expect(a.status).toEqual(404);
-        expect(a.statusText).toEqual('NotFound')
+        expect(a.statusText).toEqual('Not Found')
     });
 
     it('sensor/message/** message', async () => {
@@ -210,7 +210,7 @@ describe('TCP Micro Service', () => {
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
         // expect(a.status).toEqual(404);        
-        expect(a.statusText).toEqual('NotFound')
+        expect(a.statusText).toEqual('Not Found')
     });
 
 

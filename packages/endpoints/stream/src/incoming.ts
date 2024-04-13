@@ -5,7 +5,7 @@ import { Readable } from 'readable-stream';
 
 export class IncomingMessage<T = any> extends Readable implements Incoming<T> {
 
-    readonly headers: TransportHeaders;
+    private _headers: TransportHeaders;
     body: T | null = null;
     rawBody: any;
     private _payloadIndex: number;
@@ -26,7 +26,7 @@ export class IncomingMessage<T = any> extends Readable implements Incoming<T> {
         this.streamAdapter = session.injector.get(StreamAdapter);
         this.id = packet.id;
         this.setMaxListeners(0);
-        const headers = this.headers = new TransportHeaders(packet.headers);
+        const headers = this._headers = new TransportHeaders(packet.headers);
         this.url = packet.url ?? headers.getHeader(this.pathHead) ?? '';
         this.pattern = packet.pattern ?? this.url;
         this.originalUrl = headers.getHeader(this.originPathHead) ?? this.url;
@@ -34,32 +34,40 @@ export class IncomingMessage<T = any> extends Readable implements Incoming<T> {
         this._payloadIndex = 0
     }
 
+    get headers() {
+        return this._headers.getHeaders()
+    }
+
+    get tHeaders() {
+        return this._headers;
+    }
+
     protected contentType = 'content-type';
     hasContentType(): boolean {
-        return this.headers.has(this.contentType)
+        return this.tHeaders.has(this.contentType)
     }
 
     getContentType(): string {
-        return this.headers.getHeader(this.contentType) as string
+        return this.tHeaders.getHeader(this.contentType) as string
     }
 
     protected contentEncoding = 'content-encoding';
     getContentEncoding(): string {
-        return this.headers.getHeader(this.contentEncoding) as string
+        return this.tHeaders.getHeader(this.contentEncoding) as string
     }
 
     protected contentLength = 'content-length';
     getContentLength(): number {
-        const len = this.headers.getHeader(this.contentLength) ?? '0';
+        const len = this.tHeaders.getHeader(this.contentLength) ?? '0';
         return ~~len
     }
 
     hasHeader(field: string): boolean {
-        return this.headers.has(field);
+        return this.tHeaders.has(field);
     }
     
     getHeader(field: string): string | undefined {
-        return this.headers.getHeader(field);
+        return this.tHeaders.getHeader(field);
     }
 
     get socket() {

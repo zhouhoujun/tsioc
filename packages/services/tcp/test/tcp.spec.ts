@@ -227,7 +227,7 @@ describe('TCP Server & TCP Client', () => {
                 })
             ));
         // expect(a.status).toEqual(404);
-        expect(a.statusText).toEqual('NotFound')
+        expect(a.statusText).toEqual('Not Found')
     });
 
     it('bad request', async () => {
@@ -239,7 +239,7 @@ describe('TCP Server & TCP Client', () => {
                 })
             ));
         // expect(a.status).toEqual(400);
-        expect(a.statusText).toEqual('BadRequest')
+        expect(a.statusText).toEqual('Bad Request')
     })
 
     it('post route response object', async () => {
@@ -280,7 +280,7 @@ describe('TCP Server & TCP Client', () => {
                     return of(err);
                 })));
         // expect(r.status).toEqual(400);
-        expect(r.statusText).toEqual('BadRequest')
+        expect(r.statusText).toEqual('Bad Request')
     })
 
     it('route with request body pipe throw argument err', async () => {
@@ -291,7 +291,7 @@ describe('TCP Server & TCP Client', () => {
                     return of(err);
                 })));
         // expect(r.status).toEqual(400);
-        expect(r.statusText).toEqual('BadRequest')
+        expect(r.statusText).toEqual('Bad Request')
     })
 
     it('route with request param pipe', async () => {
@@ -309,7 +309,7 @@ describe('TCP Server & TCP Client', () => {
                     return of(err);
                 })));
         // expect(r.status).toEqual(400);
-        expect(r.statusText).toEqual('BadRequest')
+        expect(r.statusText).toEqual('Bad Request')
     })
 
     it('route with request param pipe throw argument err', async () => {
@@ -320,7 +320,7 @@ describe('TCP Server & TCP Client', () => {
                     return of(err);
                 })));
         // expect(r.status).toEqual(400);
-        expect(r.statusText).toEqual('BadRequest')
+        expect(r.statusText).toEqual('Bad Request')
     })
 
     it('route with request param pipe', async () => {
@@ -338,7 +338,7 @@ describe('TCP Server & TCP Client', () => {
                     return of(err);
                 })));
         // expect(r.status).toEqual(400);
-        expect(r.statusText).toEqual('BadRequest')
+        expect(r.statusText).toEqual('Bad Request')
     })
 
     it('route with request restful param pipe throw argument err', async () => {
@@ -349,7 +349,7 @@ describe('TCP Server & TCP Client', () => {
                     return of(err);
                 })));
         // expect(r.status).toEqual(400);
-        expect(r.statusText).toEqual('BadRequest')
+        expect(r.statusText).toEqual('Bad Request')
     })
 
 
