@@ -22,6 +22,7 @@ import { ServerCodingsModule } from './codings/server.codings.module';
 import { OutgoingEncoder } from './codings/outgoing.encodings';
 import { IncomingDecoder } from './codings/incoming.decodings';
 import { RequestContextFactoryImpl } from './impl/request.context';
+import { DefaultExecptionHandlers } from './execption.handlers';
 
 
 
@@ -239,9 +240,9 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 serverOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, serverOpts.transportOpts.encodeInterceptors ?? [OutgoingEncoder], true));
                 serverOpts.providers.push(...toProviders(DECODINGS_INTERCEPTORS, serverOpts.transportOpts.decodeInterceptors ?? [IncomingDecoder], true));
 
-                if (isArray(serverOpts.execptionHandlers)) {
-                    serverOpts.providers.push(...serverOpts.execptionHandlers)
-                }
+
+                serverOpts.providers.push(...isArray(serverOpts.execptionHandlers) ? serverOpts.execptionHandlers : [serverOpts.execptionHandlers ?? DefaultExecptionHandlers])
+
 
                 if (serverOpts.sessionFactory) {
                     serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory))
@@ -264,6 +265,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 });
 
                 return [
+                    // ... isArray(serverOpts.execptionHandlers)? serverOpts.execptionHandlers : [serverOpts.execptionHandlers ?? DefaultExecptionHandlers],
                     ...moduleOpts.microservice ? createMicroRouteProviders(moduleOpts.transport as Transport, serverOpts.routes || EMPTY_OBJ) : createRouteProviders(serverOpts.routes || EMPTY_OBJ),
                     { provide: REGISTER_SERVICES, useValue: { service: moduleOpts.serverType, bootstrap: serverOpts.bootstrap, microservice: serverOpts.microservice, providers }, multi: true }
                 ];
