@@ -1,6 +1,6 @@
 import { Abstract, Injectable, Injector, Module, Optional, getClass, getClassName, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { TransportRequest } from '@tsdi/common';
+import { PatternFormatter, TransportRequest } from '@tsdi/common';
 import { CodingMappings, Encoder, CodingsContext, NotSupportedExecption, PacketData } from '@tsdi/common/transport';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
 
@@ -16,12 +16,14 @@ export abstract class RequestEncodeHandler implements Handler<TransportRequest, 
 export class DefaultRequestHandler implements RequestEncodeHandler {
     handle(input: TransportRequest, context: CodingsContext): Observable<PacketData> {
         const packet = {
-            pattern: input.pattern,
             url: input.urlWithParams,
             headers: input.headers,
             payload: input.payload,
             payloadLength: input.headers.getContentLength()
         } as PacketData;
+        if (!packet.url && input.pattern) {
+            packet.url = input.context.get(PatternFormatter).format(input.pattern);
+        }
         if (input.method) {
             packet.method = input.method;
         }
@@ -61,7 +63,7 @@ export class RequestEncodeBackend implements Backend<TransportRequest, PacketDat
 export const REQUEST_ENCODE_INTERCEPTORS = tokenId<Interceptor<TransportRequest, PacketData>[]>('REQUEST_ENCODE_INTERCEPTORS');
 
 @Injectable({ static: false })
-export class RequestEncodeInterceptingHandler extends InterceptingHandler<TransportRequest, PacketData>  {
+export class RequestEncodeInterceptingHandler extends InterceptingHandler<TransportRequest, PacketData> {
     constructor(backend: RequestEncodeBackend, injector: Injector) {
         super(backend, () => injector.get(REQUEST_ENCODE_INTERCEPTORS, []))
     }

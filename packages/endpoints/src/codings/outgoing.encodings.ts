@@ -32,7 +32,7 @@ export class JsonOutgoingEncodeHandler implements OutgoingEncodeHandler {
             packet.error = response.error;
         }
         if (response.tHeaders.hasContentLength()) {
-            packet.payload = response.body;
+            packet.payload = input.body;
         }
 
         return of(packet);

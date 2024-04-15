@@ -1,6 +1,6 @@
 import { EMPTY_OBJ, Injectable, Injector, isNil } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { LOCALHOST } from '@tsdi/common';
+import { LOCALHOST, normalize } from '@tsdi/common';
 import {
     FileAdapter, Incoming, MessageExecption, MimeAdapter, Outgoing, PacketLengthException,
     ResponsePacket, StatusAdapter, StreamAdapter, isBuffer, toBuffer,
@@ -38,7 +38,7 @@ export class RequestContextImpl<TRequest extends Incoming = Incoming, TResponse 
             response.id = request.id
         }
 
-        this.originalUrl = this.url;
+        this.originalUrl  = this.url = normalize(this.url);
         const searhIdx = this.url.indexOf('?');
         if (searhIdx >= 0) {
             (this.request as any)['query'] = this.query;

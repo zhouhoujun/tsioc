@@ -25,7 +25,7 @@ export class JsonIncomingDecodeHandler implements IncomingDecodeHandler {
         const session = context.session as TransportSession;
         const injector = context.session.injector;
 
-        return of(injector.get(RequestContextFactory).create(session, new JsonIncoming(input, context.options.headerFields), new JsonOutgoing(input, context.options.headerFields), session.options));
+        return of(injector.get(RequestContextFactory).create(session, new JsonIncoming(input, context.options), new JsonOutgoing(input, context.options), session.options));
     }
 }
 

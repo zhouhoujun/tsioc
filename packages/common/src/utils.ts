@@ -95,7 +95,6 @@ export function normalize(route: string, prefix?: string, noSearch?: boolean): s
         if (path.startsWith(prefix)) {
             path = path.substring(prefix.length).replace(sta$, '')
         }
-
     }
     return path;
 }

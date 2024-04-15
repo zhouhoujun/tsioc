@@ -39,6 +39,8 @@ export interface TransportOpts extends CodingsOpts {
     decodeInterceptors?: ProvdierOf<Interceptor>[];
 
     headerFields?: HeaderFields;
+    
+    defaultMethod?: string;
     /**
      * packet delimiter flag
      */

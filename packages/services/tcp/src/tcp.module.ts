@@ -71,6 +71,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {
                         delimiter: '#',
+                        defaultMethod: '*',
                         maxSize: defaultMaxSize
                     },
                     content: {
@@ -102,6 +103,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {
                         delimiter: '#',
+                        defaultMethod: 'GET',
                         maxSize: defaultMaxSize
                     },
                     content: {

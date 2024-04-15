@@ -715,7 +715,14 @@ export abstract class RequestContextFactory<TRequest extends Incoming, TResponse
 
 
 export function getScopeValue(payload: any, scope: string) {
-    return payload[scope] ?? (scope == 'body' ? payload['payload'] : undefined);
+    switch (scope) {
+        case 'body':
+            return payload['body'] ?? payload['payload'];
+        case 'payload':
+            return payload['payload'] ?? payload['body'];
+        default:
+            return payload[scope]
+    }
 }
 
 const primitiveResolvers = createPayloadResolver(

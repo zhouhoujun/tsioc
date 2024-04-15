@@ -1,6 +1,7 @@
-import { Header, HeaderFields, Pattern, TransportHeaders } from '@tsdi/common';
+import { Header, Pattern, TransportHeaders } from '@tsdi/common';
 import { Outgoing } from '../../Outgoing';
 import { Packet } from '../../packet';
+import { TransportOpts } from '../../TransportSession';
 
 export class JsonOutgoing<T = any> implements Outgoing<T> {
 
@@ -15,8 +16,8 @@ export class JsonOutgoing<T = any> implements Outgoing<T> {
     private _sent = false;
 
     
-    constructor(packet: Packet, headerFields?: HeaderFields) {
-        this._headers = new TransportHeaders(undefined, headerFields);
+    constructor(packet: Packet, options?: TransportOpts) {
+        this._headers = new TransportHeaders(undefined, options?.headerFields);
         this.id = packet.id ?? ((packet.headers instanceof TransportHeaders) ? packet.headers?.getHeader('identity') : packet.headers?.['identity'])
         this.type = packet.type ?? null;
         this.pattern = packet.pattern ?? packet.url ?? ((packet.headers instanceof TransportHeaders) ? packet.headers?.getHeader('path') : packet.headers?.['path'] as string) ?? '';
@@ -33,7 +34,7 @@ export class JsonOutgoing<T = any> implements Outgoing<T> {
 
 
     get sent(): boolean {
-        return this.sent;
+        return this._sent;
     }
 
     hasHeader(field: string): boolean {

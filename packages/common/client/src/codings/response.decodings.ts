@@ -11,13 +11,17 @@ export abstract class ResponseDecodeHandler implements Handler<any, TransportEve
     abstract handle(input: any, context: CodingsContext): Observable<TransportEvent>
 }
 
+const jsonType = /json/i;
+const textType = /^text/i;
+const xmlType = /xml$/i;
+
 
 @Injectable()
 export class JsonIncomingResponseHanlder implements Handler<any, TransportEvent, CodingsContext> {
 
+
     constructor(
-        private streamAdapter: StreamAdapter,
-        @Optional() private mimeAdapter: MimeAdapter
+        private streamAdapter: StreamAdapter
     ) { }
 
     handle(input: Packet, context: CodingsContext): Observable<TransportEvent> {
@@ -25,30 +29,37 @@ export class JsonIncomingResponseHanlder implements Handler<any, TransportEvent,
             return throwError(() => new NotSupportedExecption(`${context.options.transport}${context.options.microservice ? ' microservice' : ''} response is not packet data!`));
         }
         const streamAdapter = this.streamAdapter;
-        const res = new JsonResponseIncoming(input, context.options.headerFields);
+        const res = new JsonResponseIncoming(input, context.options);
         return defer(async () => {
             const req = context.first() as TransportRequest;
             const eventFactory = req.context.get(ResponseEventFactory);
 
             let responseType = req.responseType;
-            if (this.mimeAdapter) {
-                const contentType = res.tHeaders.getContentType();
-                if (contentType) {
-                    if (responseType === 'json' && !this.mimeAdapter.isJson(contentType)) {
-                        if (this.mimeAdapter.isXml(contentType) || this.mimeAdapter.isText(contentType)) {
-                            responseType = 'text';
-                        } else {
-                            responseType = 'blob';
-                        }
+
+            const contentType = res.tHeaders.getContentType();
+            if (contentType && responseType === 'json') {
+                const mimeAdapter = req.context.get(MimeAdapter);
+                if (mimeAdapter && !mimeAdapter.isJson(contentType)) {
+                    if (mimeAdapter.isXml(contentType) || mimeAdapter.isText(contentType)) {
+                        responseType = 'text';
+                    } else {
+                        responseType = 'blob';
+                    }
+                } else if(!mimeAdapter && !jsonType.test(contentType)) {
+                    if (xmlType.test(contentType) || textType.test(contentType)) {
+                        responseType = 'text';
+                    } else {
+                        responseType = 'blob';
                     }
                 }
             }
+
             if (responseType !== 'stream' && streamAdapter.isReadable(res.body)) {
                 res.body = await toBuffer(res.body);
             }
             let body, originalBody;
             body = originalBody = res.body;
-            let ok = res.ok ?? !!res.error;
+            let ok = res.ok ?? !res.error;
             switch (responseType) {
                 case 'json':
                     // Save the original body, before attempting XSSI prefix stripping.
