@@ -17,7 +17,7 @@ export class MessageExecption extends Execption {
     }
 
     get statusCode(): any {
-        return this.status ?? 0;
+        return this.status;
     }
 
     toString() {

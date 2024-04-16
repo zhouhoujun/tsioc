@@ -15,7 +15,7 @@ export const SHOW_DETAIL_ERROR = tokenId<boolean>('SHOW_DETAIL_ERROR');
 
 
 
-@Injectable()
+@Injectable({ static: true })
 export class TransportExecptionHandlers {
 
     constructor() { }

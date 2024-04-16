@@ -1,16 +1,18 @@
 import { ArgumentExecption, Injectable, MissingParameterExecption, isNil, tokenId } from '@tsdi/ioc';
 import { ExecptionHandler } from '@tsdi/core';
-import { HttpStatusCode } from '@tsdi/common';
 import {
     BadRequestExecption, InternalServerExecption, InvalidJsonException, MessageExecption
 } from '@tsdi/common/transport';
 import { MissingModelFieldExecption } from '@tsdi/repository';
-import { RequestContext } from '@tsdi/endpoints';
+import { RequestContext } from './RequestContext';
 
 
 
 
-@Injectable()
+
+@Injectable({
+    static: true
+})
 export class DefaultExecptionHandlers {
 
     constructor() { }
@@ -20,9 +22,9 @@ export class DefaultExecptionHandlers {
     badJsonExecption(ctx: RequestContext, execption: InvalidJsonException) {
         let exp: MessageExecption;
         if (isNil(ctx.body)) {
-            exp = new InternalServerExecption(execption.message, HttpStatusCode.InternalServerError);
+            exp = new InternalServerExecption(execption.message);
         } else {
-            exp = new BadRequestExecption(execption.message, HttpStatusCode.BadRequest);
+            exp = new BadRequestExecption(execption.message);
         }
         ctx.throwExecption(exp)
     }
@@ -30,19 +32,19 @@ export class DefaultExecptionHandlers {
 
     @ExecptionHandler(ArgumentExecption)
     anguExecption(ctx: RequestContext, err: ArgumentExecption) {
-        const execption = new BadRequestExecption(this.detailError(ctx) ? err.message : undefined, HttpStatusCode.BadRequest);
+        const execption = new BadRequestExecption(this.detailError(ctx) ? err.message : undefined);
         ctx.throwExecption(execption)
     }
 
     @ExecptionHandler(MissingModelFieldExecption)
     missFieldExecption(ctx: RequestContext, err: MissingModelFieldExecption) {
-        const execption = new BadRequestExecption(this.detailError(ctx) ? err.message : undefined, HttpStatusCode.BadRequest);
+        const execption = new BadRequestExecption(this.detailError(ctx) ? err.message : undefined);
         ctx.throwExecption(execption)
     }
 
     @ExecptionHandler(MissingParameterExecption)
     missExecption(ctx: RequestContext, err: MissingParameterExecption) {
-        const execption = new BadRequestExecption(this.detailError(ctx) ? err.message : undefined, HttpStatusCode.BadRequest);
+        const execption = new BadRequestExecption(this.detailError(ctx) ? err.message : undefined);
         ctx.throwExecption(execption)
     }
 
