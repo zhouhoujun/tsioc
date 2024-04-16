@@ -1,6 +1,7 @@
 import {
-    EMPTY, InjectFlags, Injector, InvokerOptions, ProvdierOf, StaticProvider,
+    EMPTY, InjectFlags, Injector, InvokerOptions, ProvdierOf, StaticProvider, ClassType,
     Token, InvocationContext, createContext, isClassType, ArgumentExecption, isToken, isArray, toProvider
+
 } from '@tsdi/ioc';
 import { CanActivate, GUARDS_TOKEN, GuardsService } from '../guard';
 import { INTERCEPTORS_TOKEN, Interceptor, InterceptorService } from '../Interceptor';
@@ -238,7 +239,13 @@ export interface HandlerTokenConfigable<TInput = any> extends GuardHandlerOption
 /**
  * Configable handler options.
  */
-export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends HandlerOptions<TInput, TArg>, HandlerTokenConfigable<TInput>, BackendOptions<TInput> { }
+export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends HandlerOptions<TInput, TArg>, HandlerTokenConfigable<TInput>, BackendOptions<TInput> { 
+    
+    /**
+     * execption handlers
+     */
+    execptionHandlers?: ClassType<any> | ClassType[];
+}
 
 /**
  * handler service.
@@ -268,7 +275,11 @@ export function createHandler<TInput, TOutput>(context: Injector | InvocationCon
     filtersToken?: Token<Filter<TInput, TOutput>[]>,
     globalInterceptorsToken?: Token<Interceptor<TInput, TOutput>[]>,
     globalGuardsToken?: Token<CanActivate<TInput>[]>,
-    globalFiltersToken?: Token<Filter<TInput>[]>
+    globalFiltersToken?: Token<Filter<TInput>[]>,
+    /**
+     * execption handlers
+     */
+    execptionHandlers?: ClassType<any> | ClassType[]
 ): ConfigableHandler<TInput, TOutput>;
 export function createHandler<TInput, TOutput>(context: Injector | InvocationContext, arg: ConfigableHandlerOptions<TInput> | Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>,
     interceptorsToken?: Token<Interceptor<TInput, TOutput>[]>,
@@ -276,7 +287,8 @@ export function createHandler<TInput, TOutput>(context: Injector | InvocationCon
     filtersToken?: Token<Filter<TInput, TOutput>[]>,
     globalInterceptorsToken?: Token<Interceptor<TInput, TOutput>[]>,
     globalGuardsToken?: Token<CanActivate<TInput>[]>,
-    globalFiltersToken?: Token<Filter<TInput>[]>): ConfigableHandler<TInput, TOutput> {
+    globalFiltersToken?: Token<Filter<TInput>[]>,
+    execptionHandlers?: ClassType<any> | ClassType[]): ConfigableHandler<TInput, TOutput> {
     let options: ConfigableHandlerOptions<TInput>;
     if (interceptorsToken) {
         options = {
@@ -286,12 +298,26 @@ export function createHandler<TInput, TOutput>(context: Injector | InvocationCon
             filtersToken,
             globalInterceptorsToken,
             globalGuardsToken,
-            globalFiltersToken
+            globalFiltersToken,
+            execptionHandlers
         }
     } else {
         options = arg as ConfigableHandlerOptions<TInput>;
     }
+    options = normalizeConfigableHandlerOptions(options);
     return new ConfigableHandler(createContext(context, options), options)
+}
+
+export function normalizeConfigableHandlerOptions<T extends ConfigableHandlerOptions>(options: T): T {
+    if (options.execptionHandlers) {
+        const handles = isArray(options.execptionHandlers) ? options.execptionHandlers : [options.execptionHandlers];
+        if (!options.providers) {
+            options.providers = [...handles];
+        } else {
+            options.providers.push(...handles)
+        }
+    }
+    return options;
 }
 
 

@@ -1,4 +1,4 @@
-import { Abstract, ClassType, ProvdierOf, StaticProvider } from '@tsdi/ioc';
+import { Abstract, ProvdierOf, StaticProvider } from '@tsdi/ioc';
 import { CanActivate, Interceptor, PipeTransform, Filter, Runner, Shutdown, ApplicationEvent, HandlerService } from '@tsdi/core';
 import { HybirdTransport, TransportOpts } from '@tsdi/common/transport';
 import { EndpointHandler, EndpointOptions } from './EndpointHandler';
@@ -41,10 +41,6 @@ export interface ServerOpts<TSerOpts = any> extends EndpointOptions<any> {
     sessionFactory?: ProvdierOf<TransportSessionFactory>;
     majorVersion?: number;
     server?: any;
-    /**
-     * execption handlers
-     */
-    execptionHandlers?: ClassType<any> | ClassType[];
     /**
      * send detail error message to client or not. 
      */

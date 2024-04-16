@@ -241,7 +241,9 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 serverOpts.providers.push(...toProviders(DECODINGS_INTERCEPTORS, serverOpts.transportOpts.decodeInterceptors ?? [IncomingDecoder], true));
 
 
-                serverOpts.providers.push(...isArray(serverOpts.execptionHandlers) ? serverOpts.execptionHandlers : [serverOpts.execptionHandlers ?? DefaultExecptionHandlers])
+                if (!serverOpts.execptionHandlers) {
+                    serverOpts.execptionHandlers = [DefaultExecptionHandlers]
+                }
 
 
                 if (serverOpts.sessionFactory) {
