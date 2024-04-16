@@ -1,6 +1,6 @@
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
-import { RequestMethod } from '@tsdi/common';
-import { InternalServerExecption, hdr, append, vary } from '@tsdi/common/transport';
+import { HttpStatusCode, RequestMethod } from '@tsdi/common';
+import { InternalServerExecption, append, vary } from '@tsdi/common/transport';
 import { Middleware, RestfulRequestContext } from '@tsdi/endpoints';
 import { Handler, Interceptor } from '@tsdi/core';
 import { defer, lastValueFrom, Observable } from 'rxjs';
@@ -63,6 +63,7 @@ export abstract class CorsOptions {
     maxAge?: number | string;
 }
 
+const ORIGIN = 'Origin';
 
 @Injectable()
 export class Cors implements Middleware<RestfulRequestContext>, Interceptor<RestfulRequestContext> {
@@ -100,8 +101,8 @@ export class Cors implements Middleware<RestfulRequestContext>, Interceptor<Rest
     }
 
     intercept(ctx: RestfulRequestContext, next: Handler<RestfulRequestContext, any>): Observable<any> {
-        const requestOrigin = ctx.getHeader(hdr.ORIGIN);
-        !ctx.sent && vary(ctx.response, hdr.ORIGIN);
+        const requestOrigin = ctx.getHeader(ORIGIN);
+        !ctx.sent && vary(ctx.response, ORIGIN);
         if (!requestOrigin) {
             return next.handle(ctx)
         }
@@ -149,7 +150,7 @@ export class Cors implements Middleware<RestfulRequestContext>, Interceptor<Rest
                     await lastValueFrom(next.handle(ctx));
                 } catch (err: any) {
                     const errHeadersSet = err.headers || {};
-                    const varyWithOrigin = append(errHeadersSet.vary || errHeadersSet.Vary || '', 'Origin');
+                    const varyWithOrigin = append(errHeadersSet.vary || errHeadersSet.Vary || '', ORIGIN);
                     delete errHeadersSet.Vary;
 
                     err.headers = {
@@ -194,15 +195,15 @@ export class Cors implements Middleware<RestfulRequestContext>, Interceptor<Rest
                 if (allowHeaders) {
                     ctx.setHeader(ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
                 }
-                ctx.status = ctx.vaildator.noContent;
+                ctx.status = HttpStatusCode.NotFound;
             }
         });
 
     }
 
     async invoke(ctx: RestfulRequestContext, next: () => Promise<void>): Promise<void> {
-        const requestOrigin = ctx.getHeader(hdr.ORIGIN);
-        !ctx.sent && vary(ctx.response, hdr.ORIGIN);
+        const requestOrigin = ctx.getHeader(ORIGIN);
+        !ctx.sent && vary(ctx.response, ORIGIN);
         if (!requestOrigin) {
             return await next()
         }
@@ -291,7 +292,7 @@ export class Cors implements Middleware<RestfulRequestContext>, Interceptor<Rest
             if (allowHeaders) {
                 ctx.setHeader(ACCESS_CONTROL_ALLOW_HEADERS, allowHeaders)
             }
-            ctx.status = ctx.vaildator.noContent;
+            ctx.status = HttpStatusCode.NoContent;
         }
     }
 }

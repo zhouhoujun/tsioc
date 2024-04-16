@@ -1,7 +1,7 @@
 import { tokenId, Type } from '@tsdi/ioc';
 import { Interceptor, Filter, CanActivate } from '@tsdi/core';
 import { MimeSource } from '@tsdi/common/transport';
-import { ContentOptions, SessionOptions, ProxyOpts, ServerOpts, MiddlewareLike } from '@tsdi/endpoints';
+import { ContentOptions, ProxyOpts, ServerOpts, MiddlewareLike } from '@tsdi/endpoints';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
@@ -16,15 +16,9 @@ import { CsrfOptions } from './interceptors/csrf';
  */
 export interface HttpOpts extends ServerOpts {
     proxy?: ProxyOpts;
-    /**
-     * request timeout.
-     */
-    timeout?: number;
-    detailError?: boolean;
     cors?: boolean | CorsOptions;
     mimeDb?: Record<string, MimeSource>;
     content?: ContentOptions;
-    session?: boolean | SessionOptions;
     controllers?: string[] | Type[];
     listenOpts?: ListenOptions;
     csrf?: boolean | CsrfOptions;

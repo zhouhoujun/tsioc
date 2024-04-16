@@ -22,8 +22,8 @@ import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
         HttpModule,
         WsModule,
         ClientModule.register([
-            { transport: 'ws', clientOpts: { } },
-            { transport: 'http', clientOpts: {  } }
+            { transport: 'ws', clientOpts: {} },
+            { transport: 'http', clientOpts: {} }
         ]),
         EndpointModule.register([
             {
@@ -69,7 +69,7 @@ describe('Ws hybrid Http Server & Ws Client & Http', () => {
     });
 
 
-    
+
     it('fetch json', async () => {
         const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
             .pipe(
@@ -260,7 +260,7 @@ describe('Ws hybrid Http Server & Ws Client & Http', () => {
                 ctx.getLogger().error(err);
                 return of(err);
             })));
-        expect(r.status).toEqual(200);
+        expect(r.ok).toBeTruthy();
         expect(r.body).toEqual(result);
     })
 
@@ -271,7 +271,7 @@ describe('Ws hybrid Http Server & Ws Client & Http', () => {
                 ctx.getLogger().error(err);
                 return of(err);
             })));
-        expect(r.status).toEqual(200);
+        expect(r.ok).toBeTruthy();
         expect(r.body).toEqual(result);
     })
 

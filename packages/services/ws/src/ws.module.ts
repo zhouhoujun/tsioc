@@ -21,6 +21,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
             provide: CLIENT_MODULES,
             useValue: {
                 transport: 'ws',
+                microservice: true,                
                 clientType: WsClient,
                 hanlderType: WsHandler,
                 defaultOpts: {
@@ -46,6 +47,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                 defaultOpts: {
                     transportOpts: {
                         delimiter: '#',
+                        defaultMethod: '*',
                         maxSize: defaultMaxSize
                     },
                     content: {

@@ -21,7 +21,7 @@ export interface ProxyOpts {
  */
 export interface ServerOpts<TSerOpts = any> extends EndpointOptions<any> {
     /**
-     * socket timeout.
+     * request timeout.
      */
     timeout?: number;
     session?: boolean | SessionOptions;
