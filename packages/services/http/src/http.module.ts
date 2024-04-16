@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
-import { JsonCodingsModule, StatusAdapter } from '@tsdi/common/transport';
+import { JsonCodingsModule } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
 import { RestfulRequestContextFactory, ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts, RequestContextFactory } from '@tsdi/endpoints';
 import { Http } from './client/clinet';
@@ -14,6 +14,7 @@ import { HttpServer } from './server/server';
 import { HttpClientSessionFactory, HttpServerSessionFactory } from './http.session';
 import { HttpAssetContextFactory } from './server/context';
 import { HttpStatusAdapter } from './status';
+import { HttpExecptionHandlers } from './execption.handlers';
 
 
 // const defaultMaxSize = 1048576; // 1024 * 1024;
@@ -21,13 +22,13 @@ import { HttpStatusAdapter } from './status';
 // const defaultMaxSize = 524120; // 262060; //65515 * 4;
 
 @Module({
-    imports:[
+    imports: [
         JsonCodingsModule
     ],
     providers: [
         Http,
         HttpServer,
-        { provide: StatusAdapter, useExisting: HttpStatusAdapter },
+        HttpStatusAdapter,
         // HttpTransportBackend,
         HttpPathInterceptor,
         HttpClientSessionFactory,
@@ -39,17 +40,40 @@ import { HttpStatusAdapter } from './status';
             useValue: {
                 transport: 'http',
                 clientType: Http,
+                microservice: true,
                 clientOptsToken: HTTP_CLIENT_OPTS,
                 hanlderType: HttpHandler,
                 defaultOpts: {
                     interceptorsToken: HTTP_CLIENT_INTERCEPTORS,
                     filtersToken: HTTP_CLIENT_FILTERS,
-                    backend: HttpTransportBackend,
+                    statusAdapter: { useExisting: HttpStatusAdapter },
+                    // backend: HttpTransportBackend,
+                    transportOpts: {
+                        delimiter: '#'
+                        // maxSize: defaultMaxSize,
+                    },
+                    // sessionFactory: { useExisting: HttpClientSessionFactory },
+                } as ClientOpts
+            },
+            multi: true
+        },
+        {
+            provide: CLIENT_MODULES,
+            useValue: {
+                transport: 'http',
+                clientType: Http,
+                clientOptsToken: HTTP_CLIENT_OPTS,
+                hanlderType: HttpHandler,
+                defaultOpts: {
+                    interceptorsToken: HTTP_CLIENT_INTERCEPTORS,
+                    filtersToken: HTTP_CLIENT_FILTERS,
+                    statusAdapter: { useExisting: HttpStatusAdapter },
+                    // backend: HttpTransportBackend,
                     transportOpts: {
                         delimiter: '#',
                         // maxSize: defaultMaxSize,
                     },
-                    sessionFactory: { useExisting: HttpClientSessionFactory },
+                    // sessionFactory: { useExisting: HttpClientSessionFactory },
                 } as ClientOpts
             },
             multi: true
@@ -66,26 +90,25 @@ import { HttpStatusAdapter } from './status';
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {
                         delimiter: '#',
+                        defaultMethod: '*',
                         // maxSize: defaultMaxSize
                     },
                     content: {
                         root: 'public',
                         prefix: 'content'
                     },
+                    statusAdapter: { useExisting: HttpStatusAdapter },
                     detailError: true,
                     interceptorsToken: HTTP_SERV_INTERCEPTORS,
                     filtersToken: HTTP_SERV_FILTERS,
                     guardsToken: HTTP_SERV_GUARDS,
-                    sessionFactory: { useExisting: HttpServerSessionFactory },
+                    execptionHandlers: HttpExecptionHandlers,
+                    // sessionFactory: { useExisting: HttpServerSessionFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,
                         ExecptionHandlerFilter,
                         FinalizeFilter
-                    ],
-                    providers: [
-                        { provide: RequestContextFactory, useExisting: HttpAssetContextFactory },
-                        { provide: RestfulRequestContextFactory, useExisting: HttpAssetContextFactory }
                     ]
                 }
             } as ServerModuleOpts,
@@ -108,12 +131,14 @@ import { HttpStatusAdapter } from './status';
                     content: {
                         root: 'public'
                     },
+                    statusAdapter: { useExisting: HttpStatusAdapter },
                     detailError: true,
                     interceptorsToken: HTTP_SERV_INTERCEPTORS,
                     filtersToken: HTTP_SERV_FILTERS,
                     guardsToken: HTTP_SERV_GUARDS,
                     middlewaresToken: HTTP_MIDDLEWARES,
-                    sessionFactory: { useExisting: HttpServerSessionFactory },
+                    execptionHandlers: HttpExecptionHandlers,
+                    // sessionFactory: { useExisting: HttpServerSessionFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,

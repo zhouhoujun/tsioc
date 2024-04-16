@@ -2,7 +2,7 @@ import { ProvdierOf, Token } from '@tsdi/ioc';
 import { ConfigableHandlerOptions } from '@tsdi/core';
 import { TransportRequest } from '@tsdi/common';
 import { TransportBackend } from './backend';
-import { TransportOpts } from '@tsdi/common/transport';
+import { StatusAdapter, TransportOpts } from '@tsdi/common/transport';
 import { ClientTransportSessionFactory } from './session';
 
 /**
@@ -13,6 +13,10 @@ export interface ClientOpts<TConnOpts = any> extends ConfigableHandlerOptions<Tr
      * url
      */
     url?: string;
+    /**
+     * timeout
+     */
+    timeout?: number;
     /**
      * authority base url.
      */
@@ -26,9 +30,9 @@ export interface ClientOpts<TConnOpts = any> extends ConfigableHandlerOptions<Tr
      */
     microservice?: boolean;
     /**
-     * timeout
+     * status adapter
      */
-    timeout?: number;
+    statusAdapter?: ProvdierOf<StatusAdapter>;
     /**
      * transport options.
      */

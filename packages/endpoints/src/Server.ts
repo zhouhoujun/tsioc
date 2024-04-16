@@ -1,6 +1,6 @@
 import { Abstract, ProvdierOf, StaticProvider } from '@tsdi/ioc';
 import { CanActivate, Interceptor, PipeTransform, Filter, Runner, Shutdown, ApplicationEvent, HandlerService } from '@tsdi/core';
-import { HybirdTransport, TransportOpts } from '@tsdi/common/transport';
+import { HybirdTransport, StatusAdapter, TransportOpts } from '@tsdi/common/transport';
 import { EndpointHandler, EndpointOptions } from './EndpointHandler';
 import { RequestContext } from './RequestContext';
 import { SessionOptions } from './Session';
@@ -31,6 +31,10 @@ export interface ServerOpts<TSerOpts = any> extends EndpointOptions<any> {
      * is microservice or not.
      */
     microservice?: boolean;
+    /**
+     * status adapter
+     */
+    statusAdapter?: ProvdierOf<StatusAdapter>;
     /**
      * transport session options.
      */

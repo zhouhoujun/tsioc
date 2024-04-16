@@ -3,7 +3,7 @@ import {
     tokenId, isArray, toProvider, lang, ProvdierOf, Type, toProviders
 } from '@tsdi/ioc';
 import { CanActivate, Filter, InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
-import { CodingsModule, DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, Transport } from '@tsdi/common/transport';
+import { CodingsModule, DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, StatusAdapter, Transport } from '@tsdi/common/transport';
 import { RequestContext, RequestContextFactory } from './RequestContext';
 import { Server, ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
@@ -240,6 +240,9 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 serverOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, serverOpts.transportOpts.encodeInterceptors ?? [OutgoingEncoder], true));
                 serverOpts.providers.push(...toProviders(DECODINGS_INTERCEPTORS, serverOpts.transportOpts.decodeInterceptors ?? [IncomingDecoder], true));
 
+                if(serverOpts.statusAdapter) {
+                    serverOpts.providers.push(toProvider(StatusAdapter, serverOpts.statusAdapter))
+                }
 
                 if (!serverOpts.execptionHandlers) {
                     serverOpts.execptionHandlers = [DefaultExecptionHandlers]

@@ -3,7 +3,7 @@ import {
     Type, Token, isArray, lang, toProvider, tokenId, toProviders
 } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
-import { CodingsModule, DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, ResponseEventFactory, Transport } from '@tsdi/common/transport';
+import { CodingsModule, DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, ResponseEventFactory, StatusAdapter, Transport } from '@tsdi/common/transport';
 import { ClientOpts } from './options';
 import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
@@ -82,7 +82,7 @@ export interface ClientTokenOpts {
  * Client Module.
  */
 @Module({
-    imports:[
+    imports: [
         ClientCodingsModule,
         CodingsModule,
     ],
@@ -91,7 +91,7 @@ export interface ClientTokenOpts {
         BodyContentInterceptor,
         RestfulRedirector,
         DefaultResponseEventFactory,
-        {provide: ResponseEventFactory, useExisting: DefaultResponseEventFactory }
+        { provide: ResponseEventFactory, useExisting: DefaultResponseEventFactory }
     ]
 })
 export class ClientModule {
@@ -161,6 +161,10 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                 }
                 if (clientOpts.microservice) {
                     clientOpts.transportOpts.microservice = clientOpts.microservice;
+                }
+
+                if (clientOpts.statusAdapter) {
+                    clientOpts.providers.push(toProvider(StatusAdapter, clientOpts.statusAdapter))
                 }
 
                 clientOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, clientOpts.transportOpts.encodeInterceptors ?? [RequestEncoder], true));
