@@ -38,6 +38,8 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      * The injector that contains all of the providers of the `Module`.
      */
     abstract get injector(): Injector;
+
+    abstract get ready(): Promise<void>;
     /**
      * the modle instance.
      */
@@ -47,7 +49,7 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      * @param modle
      * @param children import as children or not. 
      */
-    abstract import<M>(modle: Type<M> | ModuleWithProviders<M>, children?: boolean): void;
+    abstract import<M>(modle: Type<M> | ModuleWithProviders<M>, children?: boolean): void | Promise<void>;
     /**
      * use modules.
      * @param modules 

@@ -91,19 +91,33 @@ export function forIn(target: any, iterator: (item: any, idx?: any) => void | bo
  */
 export function deepForEach<T>(
     input: (T | Record<string, T> | any[])[],
-    fn: (value: T) => void,
+    fn: (value: T) => void | Promise<void>,
     isRecord?: (value: any) => boolean,
-    getRecord?: (value: any) => T[]): void {
-    input.forEach(value => {
+    getRecord?: (value: any) => T[]): void | Promise<void> {
+    const ps: Promise<void>[] = [];
+    for (const value of input) {
         if (isArray(value)) {
-            deepForEach(value, fn, isRecord, getRecord)
+            const reslut = deepForEach(value, fn, isRecord, getRecord);
+            if (reslut) {
+                ps.push(reslut);
+            }
         } else if (value && isRecord && isRecord(value)) {
-            deepForEach(getRecord ? getRecord(value) : Object.values(value), fn, isRecord, getRecord)
+            const reslut = deepForEach(getRecord ? getRecord(value) : Object.values(value), fn, isRecord, getRecord);
+            if (reslut) {
+                ps.push(reslut);
+            }
         } else if (value) {
-            fn(value as T)
+            const reslut = fn(value as T);
+            if (reslut && isPromise(reslut)) {
+                ps.push(reslut);
+            }
         }
-    })
+    }
+
+    if (ps.length) return Promise.all(ps) as Promise<any>;
+
 }
+
 
 export function deepClone<T>(input: T): T {
     if (!isObject(input)) return null!;

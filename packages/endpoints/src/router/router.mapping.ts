@@ -428,7 +428,7 @@ export class MappingRoute implements Middleware, RequestHandler {
             const module = await route.loadChildren();
             const platform = this.injector.platform();
             if (!platform.modules.has(module)) {
-                this.injector.get(ModuleRef).import(module, true)
+                await this.injector.get(ModuleRef).import(module, true)
             }
             const router = platform.modules.get(module)?.injector.get(Router) as MappingRouter;
             if (router) {

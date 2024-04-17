@@ -53,7 +53,6 @@ export class TcpService {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        TcpModule,
         ClientModule.register({
             transport: 'tcp',
             microservice: true,

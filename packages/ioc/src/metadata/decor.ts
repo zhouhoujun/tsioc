@@ -76,7 +76,11 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
                 const { type, class: typeRef } = context;
                 // use as dependence inject module.
                 if (context.injectorType) {
-                    context.injectorType(type, typeRef)
+                    const result = context.injectorType(type, typeRef);
+                    if (result) {
+                        result.then(() => next());
+                        return;
+                    }
                 }
                 next()
             }
@@ -649,7 +653,7 @@ export const Injectable: Injectable = createDecorator<InjectableMetadata>('Injec
         if (isString(arg2)) {
             return { provide: getToken(provide, arg2), ...arg3 }
         } else {
-            return { provide, ...arg2}
+            return { provide, ...arg2 }
         }
     }
 });

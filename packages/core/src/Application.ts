@@ -48,7 +48,6 @@ export class Application<T = any, TArg = ApplicationArguments> {
             const option = { module: target, deps: this.getDeps(), scope: Scopes.root };
             this.root = this.createInjector(this.getPlatformDefaultProviders(), option)
         }
-        this.initRoot()
     }
 
     protected getPlatformDefaultProviders(): ProviderType[] {
@@ -57,13 +56,6 @@ export class Application<T = any, TArg = ApplicationArguments> {
 
     protected getRootDefaultProviders(): ProviderType[] {
         return ROOT_DEFAULT_PROVIDERS;
-    }
-
-    protected initRoot() {
-        this.root.setValue(Application, this);
-        if (!this.loader) {
-            this.loader = this.root.get(ModuleLoader);
-        }
     }
 
     /**
@@ -142,6 +134,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
         return []
     }
 
+
     protected createInjector<T, TArg>(providers: ProviderType[], option: ApplicationOption<T, TArg>) {
         const container = option.injector ?? Injector.create(providers);
         if (option.baseURL) {
@@ -177,10 +170,19 @@ export class Application<T = any, TArg = ApplicationArguments> {
         } as ModuleDef);
     }
 
+    protected initRoot() {
+        this.root.setValue(Application, this);
+        if (!this.loader) {
+            this.loader = this.root.get(ModuleLoader);
+        }
+    }
+
     protected async createContext(): Promise<ApplicationContext<T, TArg>> {
         if (!this.context) {
             const target = this.target;
             const root = this.root;
+            await root.ready;
+            this.initRoot();
             if (isFunction(target)) {
                 const modueRef = root.reflectiveFactory.create(target, root);
                 this.context = modueRef.resolve(ApplicationFactory).create(root);

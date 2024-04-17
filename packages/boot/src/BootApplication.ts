@@ -63,7 +63,7 @@ export class BootApplication<T = any, TArg = ApplicationArguments> extends Appli
         injector.setValue(ApplicationConfiguration, config);
 
         if (config.logConfig) {
-            injector.import(LoggerModule.withOptions(config.logConfig, config.debug))
+            await injector.import(LoggerModule.withOptions(config.logConfig, config.debug))
         }
 
         await super.prepareContext(ctx)

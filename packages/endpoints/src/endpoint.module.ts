@@ -1,6 +1,7 @@
 import {
     Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType,
-    tokenId, isArray, toProvider, lang, ProvdierOf, Type, toProviders
+    tokenId, isArray, toProvider, lang, ProvdierOf, Type, toProviders,
+    ModuleRef
 } from '@tsdi/ioc';
 import { CanActivate, Filter, InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
 import { CodingsModule, DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, StatusAdapter, Transport } from '@tsdi/common/transport';
@@ -202,9 +203,28 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
     return [
         ...options.providers ?? EMPTY,
         {
-            provider(injector) {
-                const mdopts = injector.get(SERVER_MODULES).find(r => r.transport === options.transport && r.microservice == options.microservice);
-                if (!mdopts) throw new NotImplementedExecption(`${options.transport} ${options.microservice ? 'microservice' : 'server'} has not implemented`);
+            provider: async (injector) => {
+                let mdopts = injector.get(SERVER_MODULES, EMPTY).find(r => r.transport === options.transport && r.microservice == options.microservice);
+
+                if (!mdopts) {
+                    try {
+                        const m = await import(`@tsdi/${options.transport}`);
+
+                        const transportModuleName = options.transport.charAt(0).toUpperCase() + options.transport.slice(1) + 'Module';
+                        if (m[transportModuleName]) {
+                            await injector.get(ModuleRef).import(m[transportModuleName]);
+                            mdopts = injector.get(SERVER_MODULES, EMPTY).find(r => r.transport === options.transport && r.microservice == options.microservice);
+                        }
+                        if (!mdopts) {
+                            throw new Error(m[transportModuleName] ? 'has not implemented' : 'not found this transport module!')
+                        }
+                    } catch (err: any) {
+
+                        throw new NotImplementedExecption(`${options.transport} ${options.microservice ? 'microservice' : 'server'} ${err.message ?? 'has not implemented'}`);
+                    }
+
+                }
+
                 const moduleOpts = { ...mdopts, ...options } as ServiceModuleOpts & ServiceOpts;
 
                 const serverOpts = {
@@ -240,7 +260,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 serverOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, serverOpts.transportOpts.encodeInterceptors ?? [OutgoingEncoder], true));
                 serverOpts.providers.push(...toProviders(DECODINGS_INTERCEPTORS, serverOpts.transportOpts.decodeInterceptors ?? [IncomingDecoder], true));
 
-                if(serverOpts.statusAdapter) {
+                if (serverOpts.statusAdapter) {
                     serverOpts.providers.push(toProvider(StatusAdapter, serverOpts.statusAdapter))
                 }
 

@@ -3,7 +3,7 @@ import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { cleanObj, deepForEach, immediate } from '../utils/lang';
-import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil, isType } from '../utils/chk';
+import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil, isType, isPromise } from '../utils/chk';
 import {
     MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, Scopes, InjectorEvent,
     Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
@@ -21,6 +21,7 @@ import { ReflectiveFactory } from '../reflective';
 import { ReflectiveFactoryImpl, hasContext } from './reflective';
 import { createContext, InvocationContext, InvokeOptions } from '../context';
 import { DefaultPlatform } from './platform';
+import { ModuleType } from '../module.ref';
 
 /**
  * Default Injector
@@ -132,15 +133,42 @@ export class DefaultInjector extends Injector {
     inject(providers: ProviderType | ProviderType[]): this;
     inject(...providers: ProviderType[]): this;
     inject(...args: any[]): this {
-        this.assertNotDestroyed();
-        if (args.length) {
-            const platform = this.platform();
-            deepForEach(args, p => this.processProvider(platform, p, args), v => isPlainObject(v) && !((v as StaticProviders).provide || (v as DynamicProvider).provider))
-        }
+        this.processInject(args);
         return this
     }
 
-    protected processProvider(platform: Platform, p: TypeOption | StaticProvider | DynamicProvider, providers?: ProviderType[]) {
+    use(modules: ModuleType[]): Type[];
+    use(...modules: ModuleType[]): Type[];
+    use(...args: any[]): Type[] {
+        const types: Type[] = [];
+        this.processUse(args, types);
+        return types
+    }
+
+    protected processInject(providers: ProviderType[]) {
+        this.assertNotDestroyed();
+        if (providers.length) {
+            const platform = this.platform();
+            return deepForEach(providers, p => this.processProvider(platform, p, providers), v => isPlainObject(v) && !((v as StaticProviders).provide || (v as DynamicProvider).provider))
+        }
+    }
+
+    protected processUse(args: ModuleType[], types?: Type[]) {
+        this.assertNotDestroyed();
+        const platform = this.platform();
+        const stk: Type[] = [];
+        return deepForEach(args, (ty: any) => {
+            if (isType(ty)) {
+                types?.push(ty);
+                return this.processInjectorType(platform, ty, stk)
+            } else if (isType(ty.module) && isArray(ty.providers)) {
+                types?.push(ty.module);
+                return this.processInjectorType(platform, ty, stk)
+            }
+        }, v => isPlainObject(v) && !(isType(v.module) && isArray(v.providers)));
+    }
+
+    protected processProvider(platform: Platform, p: TypeOption | StaticProvider | DynamicProvider, providers?: ProviderType[]): void | Promise<void> {
         if (isFunction(p)) {
             this.registerType(platform, p)
         } else if (isPlainObject(p)) {
@@ -150,6 +178,11 @@ export class DefaultInjector extends Injector {
                 this.registerType(platform, (p as TypeOption).type, p as TypeOption)
             } else if ((p as DynamicProvider).provider) {
                 const pdrs = (p as DynamicProvider).provider(this);
+                if (isPromise(pdrs)) {
+                    return pdrs.then(ps => {
+                        isArray(ps) ? ps.forEach(pdr => this.processProvider(platform, pdr)) : this.processProvider(platform, ps);
+                    });
+                }
                 isArray(pdrs) ? pdrs.forEach(pdr => this.processProvider(platform, pdr)) : this.processProvider(platform, pdrs);
             }
         }
@@ -178,7 +211,7 @@ export class DefaultInjector extends Injector {
         }
 
         this.onRegister(def);
-        let injectorType: ((type: Type, typeRef: Class) => void) | undefined;
+        let injectorType: ((type: Type, typeRef: Class) => void | Promise<void>) | undefined;
         if (option?.injectorType) {
             injectorType = (regType, typeRef) => processInjectorType(
                 type, [],
@@ -200,9 +233,10 @@ export class DefaultInjector extends Injector {
             platform,
             type
         } as DesignContext;
-        platform.getAction(DesignLifeScope).register(ctx);
-        cleanObj(ctx);
-        this.onRegistered(def);
+        platform.getAction(DesignLifeScope).register(ctx, () => {
+            cleanObj(ctx);
+            this.onRegistered(def);
+        });
         return true
     }
 
@@ -267,24 +301,12 @@ export class DefaultInjector extends Injector {
     }
 
 
-
-    use(modules: Modules[]): Type[];
-    use(...modules: Modules[]): Type[];
-    use(...args: any[]): Type[] {
-        this.assertNotDestroyed();
-        const types: Type[] = [];
-        const platform = this.platform();
-        deepForEach(args, ty => {
-            if (isType(ty)) {
-                const mdref = get(ty);
-                if (mdref) {
-                    types.push(ty);
-                    this.registerReflect(platform, mdref, { injectorType: mdref.getAnnotation<ModuleDef>().module })
-
-                }
-            }
-        }, v => isPlainObject(v));
-        return types
+    protected processInjectorType(platform: Platform, typeOrDef: Type | ModuleWithProviders, dedupStack: Type[], moduleRefl?: Class) {
+        return processInjectorType(typeOrDef, dedupStack,
+            (pdr, pdrs) => this.processProvider(platform, pdr, pdrs),
+            (tyref, type) => {
+                this.registerReflect(platform, tyref)
+            }, moduleRefl)
     }
 
     has<T>(token: Token<T>, flags = InjectFlags.Default): boolean {
@@ -563,20 +585,25 @@ INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: Inje
 
 export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedupStack: Type[],
     processProvider: (provider: StaticProvider | DynamicProvider, providers?: any[]) => void,
-    regType: (typeRef: Class, type: Type) => void, moduleRefl?: Class, imported?: boolean) {
+    regType: (typeRef: Class, type: Type) => void, moduleRefl?: Class, imported?: boolean): void | Promise<void> {
     let type: Type;
+    const ps: Promise<void>[] = [];
     if (isType(typeOrDef)) {
         type = typeOrDef;
     } else {
         type = typeOrDef.module;
-        deepForEach(
+        const result = deepForEach(
             typeOrDef.providers,
             pdr => processProvider(pdr, typeOrDef.providers),
             v => isPlainObject(v) && !(v.provide || v.provider)
-        )
+        );
+        if (result) {
+            ps.push(result);
+        }
     }
     const isDuplicate = dedupStack.indexOf(type) !== -1;
     if (isDuplicate) {
+        if (ps.length) return Promise.all(ps) as Promise<any>;
         return;
     }
 
@@ -585,32 +612,59 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
     const annotation = typeRef.getAnnotation<ModuleDef>();
     if (annotation.module) {
         annotation.imports?.forEach(imp => {
-            processInjectorType(imp, dedupStack, processProvider, regType, undefined, true)
+            const result = processInjectorType(imp, dedupStack, processProvider, regType, undefined, true);
+            if (result) {
+                ps.push(result);
+            }
         });
 
         if (annotation.providers) {
-            deepForEach(
+            const result = deepForEach(
                 annotation.providers,
                 pdr => processProvider(pdr, annotation.providers),
                 v => isPlainObject(v) && !(v.provide || v.provider)
-            )
+            );
+            if (result) {
+                ps.push(result);
+            }
         }
 
-        if (imported && !(annotation.providedIn === Scopes.root || annotation.providedIn === Scopes.platform)) {
-            annotation.exports?.forEach(d => {
-                processInjectorType(d, dedupStack, processProvider, regType, undefined, true)
-            })
-        } else {
-            annotation.declarations?.forEach(d => {
-                processInjectorType(d, dedupStack, processProvider, regType, undefined, true)
-            });
-            annotation.exports?.forEach(d => {
-                processInjectorType(d, dedupStack, processProvider, regType, undefined, true)
+        const noDecl = !(imported && !(annotation.providedIn === Scopes.root || annotation.providedIn === Scopes.platform));
+        if (ps.length) {
+            return Promise.all(ps).then(() => {
+                const ps: any[] = [];
+                processInjectoDeclarations(annotation, dedupStack, processProvider, regType, ps, noDecl);
+                regType(typeRef, type);
+                if (ps.length) {
+                    return Promise.all(ps) as Promise<any>;
+                }
             })
         }
+        processInjectoDeclarations(annotation, dedupStack, processProvider, regType, ps, noDecl);
     }
-    regType(typeRef, type)
+    regType(typeRef, type);
+    if (ps.length) return Promise.all(ps) as Promise<any>;
 
+}
+
+
+function processInjectoDeclarations(annotation: ModuleDef<any>, dedupStack: Type[],
+    processProvider: (provider: StaticProvider | DynamicProvider, providers?: any[]) => void,
+    regType: (typeRef: Class, type: Type) => void, ps: Promise<void>[], declarations?: boolean): void {
+    if (declarations) {
+        annotation.declarations?.forEach(d => {
+            const result = processInjectorType(d, dedupStack, processProvider, regType, undefined, true);
+            if (result) {
+                ps.push(result);
+            }
+        });
+    }
+    annotation.exports?.forEach(d => {
+        const result = processInjectorType(d, dedupStack, processProvider, regType, undefined, true);
+        if (result) {
+            ps.push(result);
+        }
+    })
 }
 
 

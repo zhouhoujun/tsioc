@@ -101,7 +101,6 @@ if (os.platform() != 'win32') {
             ServerModule,
             LoggerModule,
             ServerEndpointModule,
-            TcpModule,
             ClientModule.register({
                 transport: 'tcp',
                 clientOpts: {

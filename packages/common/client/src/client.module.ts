@@ -1,6 +1,8 @@
 import {
     Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType,
-    Type, Token, isArray, lang, toProvider, tokenId, toProviders
+    Type, Token, isArray, lang, toProvider, tokenId, toProviders,
+    ClassType,
+    ModuleRef
 } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
 import { CodingsModule, DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, ResponseEventFactory, StatusAdapter, Transport } from '@tsdi/common/transport';
@@ -142,9 +144,23 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
     return [
         ...options.providers ?? EMPTY,
         {
-            provider: (injector) => {
-                const defts = injector.get(CLIENT_MODULES).find(r => r.transport === options.transport && r.microservice == options.microservice);
-                if (!defts) throw new NotImplementedExecption(options.transport + ' client has not implemented');
+            provider: async (injector) => {
+                let defts = injector.get(CLIENT_MODULES, EMPTY).find(r => r.transport === options.transport && r.microservice == options.microservice);
+                if (!defts) {
+                    try {
+                        const m = await import(`@tsdi/${options.transport}`);
+                        const transportModuleName = options.transport.charAt(0).toUpperCase() + options.transport.slice(1) + 'Module';
+                        if (m[transportModuleName]) {
+                            await injector.get(ModuleRef).import(m[transportModuleName]);
+                            defts = injector.get(CLIENT_MODULES, EMPTY).find(r => r.transport === options.transport && r.microservice == options.microservice);
+                        }
+                        if (!defts) {
+                            throw new Error(m[transportModuleName] ? 'has not implemented' : 'not found transport module!')
+                        }
+                    } catch (err: any) {
+                        throw new NotImplementedExecption(`${options.transport} ${options.microservice ? 'microservice client' : 'client'} ${err.message ?? 'has not implemented'}`);
+                    }
+                }
                 const opts = { ...defts, ...options } as ClientModuleOpts & ClientTokenOpts;
                 const clientOpts = { backend: opts.backend ?? TransportBackend, globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS, ...opts.defaultOpts, ...opts.clientOpts, providers: [...opts.defaultOpts?.providers || EMPTY, ...opts.clientOpts?.providers || EMPTY] } as ClientOpts & { providers: ProviderType[] };
 

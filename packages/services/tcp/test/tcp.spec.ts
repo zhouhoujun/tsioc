@@ -94,7 +94,6 @@ export class DeviceController {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        TcpModule,
         ClientModule.register([
             {
                 transport: 'tcp',

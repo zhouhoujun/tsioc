@@ -1,15 +1,14 @@
-import { Platform } from '../platform';
 import { Injector, InjectorScope } from '../injector';
 import { get } from '../metadata/refl';
 import { Class, ModuleDef } from '../metadata/type';
-import { ModuleOption, ModuleRef, ModuleType } from '../module.ref';
+import { ModuleOption, ModuleRef } from '../module.ref';
+import { Platform } from '../platform';
 import { isModuleProviders, ModuleWithProviders } from '../providers';
 import { ReflectiveFactory } from '../reflective';
 import { Type, EMPTY, EMPTY_OBJ } from '../types';
-import { isArray, isType } from '../utils/chk';
-import { deepForEach } from '../utils/lang';
-import { isPlainObject } from '../utils/obj';
-import { DefaultInjector, processInjectorType } from './injector';
+import { isType } from '../utils/chk';
+import { defer } from '../utils/lang';
+import { DefaultInjector } from './injector';
 import { ReflectiveFactoryImpl } from './reflective';
 
 
@@ -23,9 +22,10 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     reflectiveFactory = new ReflectiveFactoryImpl();
 
+    private defer = defer<void>();
+
     constructor(moduleType: Class, parent: Injector, option: ModuleOption = EMPTY_OBJ) {
         super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type);
-        const dedupStack: Type[] = [];
         this.isStatic = (moduleType.getAnnotation().static || option.isStatic) !== false;
         this._typeRefl = moduleType;
         this._type = moduleType.type;
@@ -34,13 +34,54 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
             { provide: ReflectiveFactory, useValue: this.reflectiveFactory }
         );
         this.setValue(ModuleRef, this);
+        this.initWithOptions(option);
+    }
+
+    protected initWithOptions(option: ModuleOption) {
+        const dedupStack: Type[] = [];
         const platfrom = this.platform();
         platfrom.modules.set(this._type, this);
-        option.deps && this.use(option.deps);
-        option.providers && this.inject(option.providers);
-        this.processInjectorType(platfrom, this._type, dedupStack, this.moduleReflect);
-        option.uses && this.use(option.uses);
-        this._instance = this.get(this._type)
+        const ps: Promise<void>[] = [];
+        if (option.deps) {
+            const deps$ = this.processUse(option.deps);
+            if (deps$) ps.push(deps$);
+        }
+        if (option.providers) {
+            const providers$ = this.processInject(option.providers);
+            if (providers$) ps.push(providers$);
+        }
+        if (ps.length) {
+            Promise.all(ps).then(() => {
+                this.ininModule(platfrom, dedupStack, option, []);
+            })
+        } else {
+            this.ininModule(platfrom, dedupStack, option, ps);
+        }
+
+    }
+
+    private ininModule(platfrom: Platform, dedupStack: Type[], option: ModuleOption, ps: Promise<void>[]) {
+        const inj$ = this.processInjectorType(platfrom, this._type, dedupStack, this.moduleReflect);
+        if (inj$) ps.push(inj$);
+        if (option.uses) {
+            const uses$ = this.processUse(option.uses);
+            if (uses$) ps.push(uses$);
+        }
+
+        if (ps.length) {
+            Promise.all(ps).then(() => {
+                this._instance = this.get(this._type);
+                this.defer.resolve()
+            })
+        } else {
+            this._instance = this.get(this._type);
+            this.defer.resolve();
+        }
+    }
+
+
+    get ready() {
+        return this.defer.promise
     }
 
     get moduleType() {
@@ -61,37 +102,11 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     import(typeOrDef: Type | ModuleWithProviders, children?: boolean) {
         if (children) {
-            createModuleRef(typeOrDef, this)
+            const modeuleRef = createModuleRef(typeOrDef, this);
+            return modeuleRef.ready;
         } else {
-            this.processInjectorType(this.platform(), typeOrDef, [], this.moduleReflect)
+            return this.processInjectorType(this.platform(), typeOrDef, [])
         }
-    }
-
-    override use(modules: ModuleType[]): Type[];
-    override use(...modules: ModuleType[]): Type[];
-    override use(...args: any[]): Type[] {
-        this.assertNotDestroyed();
-        const types: Type[] = [];
-        const platform = this.platform();
-        const stk: Type[] = [];
-        deepForEach(args, ty => {
-            if (isType(ty)) {
-                types.push(ty);
-                this.processInjectorType(platform, ty, stk)
-            } else if (isType(ty.module) && isArray(ty.providers)) {
-                types.push(ty.module);
-                this.processInjectorType(platform, ty, stk)
-            }
-        }, v => isPlainObject(v) && !(isType(v.module) && isArray(v.providers)));
-        return types
-    }
-
-    protected processInjectorType(platform: Platform, typeOrDef: Type | ModuleWithProviders, dedupStack: Type[], moduleRefl?: Class) {
-        processInjectorType(typeOrDef, dedupStack,
-            (pdr, pdrs) => this.processProvider(platform, pdr, pdrs),
-            (tyref, type) => {
-                this.registerReflect(platform, tyref)
-            }, moduleRefl)
     }
 
     protected override clear() {
