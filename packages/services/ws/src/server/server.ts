@@ -5,7 +5,7 @@ import { LOCALHOST } from '@tsdi/common';
 import { InternalServerExecption, ev } from '@tsdi/common/transport';
 import { BindServerEvent, RequestContext, Server, TransportSessionFactory } from '@tsdi/endpoints';
 import { Server as SocketServer, WebSocketServer, createWebSocketStream } from 'ws';
-import { Subscription, first, fromEvent, merge } from 'rxjs';
+import { Subject, Subscription, first, fromEvent, merge } from 'rxjs';
 import * as tls from 'tls';
 import { WS_BIND_FILTERS, WS_BIND_GUARDS, WS_BIND_INTERCEPTORS, WsServerOpts } from './options';
 import { WsEndpointHandler } from './handler';
@@ -22,12 +22,11 @@ export class WsServer extends Server<RequestContext, WsServerOpts> {
     @InjectLog()
     private logger!: Logger;
 
-    private subs: Subscription;
+    private destroy$: Subject<void>;
 
     constructor(readonly handler: WsEndpointHandler) {
         super();
-
-        this.subs = new Subscription();
+        this.destroy$ = new Subject();
     }
 
     @EventHandler(BindServerEvent, {
@@ -75,7 +74,7 @@ export class WsServer extends Server<RequestContext, WsServerOpts> {
             const stream = createWebSocketStream(socket);
             const transportOpts = options.transportOpts!;
             const session = factory.create(injector, stream, transportOpts!);            
-            session.listen(this.handler, merge(fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
+            session.listen(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
             // this.subs.add(injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options));
         })
 
@@ -89,7 +88,8 @@ export class WsServer extends Server<RequestContext, WsServerOpts> {
 
     protected async onShutdown(): Promise<any> {
         if (!this.serv) return;
-        this.subs?.unsubscribe();
+        this.destroy$.next();
+        this.destroy$.complete();
         await promisify(this.serv.close, this.serv)()
             .catch(err => {
                 this.logger?.error(err);

@@ -1,5 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
+import { JsonCodingsModule } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientDuplexTransportSessionFactory, ClientOpts } from '@tsdi/common/client';
 import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { WsClient } from './client/client';
@@ -14,6 +15,9 @@ import { WsEndpointHandler } from './server/handler';
 const defaultMaxSize = 1048576; //1024 * 1024;
 
 @Module({
+    imports:[
+        JsonCodingsModule
+    ],
     providers: [
         WsClient,
         WsServer,
@@ -21,14 +25,15 @@ const defaultMaxSize = 1048576; //1024 * 1024;
             provide: CLIENT_MODULES,
             useValue: {
                 transport: 'ws',
-                microservice: true,                
+                microservice: true,
+                asDefault: true,
                 clientType: WsClient,
                 hanlderType: WsHandler,
                 defaultOpts: {
                     url: 'ws://localhost:3000',
                     transportOpts: {
                         delimiter: '#',
-                        maxSize: defaultMaxSize                     
+                        maxSize: defaultMaxSize
                     },
                     interceptorsToken: WS_CLIENT_INTERCEPTORS,
                     filtersToken: WS_CLIENT_FILTERS,
@@ -42,6 +47,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
             useValue: {
                 transport: 'ws',
                 microservice: true,
+                asDefault: true,
                 serverType: WsServer,
                 handlerType: WsEndpointHandler,
                 defaultOpts: {

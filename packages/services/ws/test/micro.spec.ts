@@ -1,5 +1,5 @@
 import { Application, ApplicationContext } from '@tsdi/core';
-import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
+import { Injectable, Injector, Module, isString, tokenId } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
@@ -8,7 +8,7 @@ import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
-import { WS_SERV_INTERCEPTORS, WsClient, WsModule, WsServer } from '../src';
+import { WS_SERV_INTERCEPTORS, WsClient } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
 
 const SENSORS = tokenId<string[]>('SENSORS');

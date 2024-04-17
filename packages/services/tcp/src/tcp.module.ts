@@ -27,8 +27,8 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
             provide: CLIENT_MODULES,
             useValue: {
                 transport: 'tcp',
-                clientType: TcpClient,
                 microservice: true,
+                clientType: TcpClient,
                 hanlderType: TcpHandler,
                 defaultOpts: {
                     interceptorsToken: TCP_CLIENT_INTERCEPTORS,

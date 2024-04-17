@@ -49,8 +49,8 @@ import { TransportErrorResponse } from '@tsdi/common';
                 }
             },
             {
-                microservice: true,
                 transport: 'ws',
+                microservice: true,
                 serverOpts: {
                     interceptors: [
                         BigFileInterceptor,

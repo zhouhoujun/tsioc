@@ -1,7 +1,8 @@
 import {
     Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType,
     tokenId, isArray, toProvider, lang, ProvdierOf, Type, toProviders,
-    ModuleRef
+    ModuleRef,
+    isNil
 } from '@tsdi/ioc';
 import { CanActivate, Filter, InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
 import { CodingsModule, DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, StatusAdapter, Transport } from '@tsdi/common/transport';
@@ -105,6 +106,10 @@ export interface ServerModuleOpts extends ServerConfig {
      */
     microservice?: boolean;
     /**
+     * as default service.
+     */
+    asDefault?: boolean;
+    /**
      * server type.
      */
     serverType: Type<Server>;
@@ -204,7 +209,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
         ...options.providers ?? EMPTY,
         {
             provider: async (injector) => {
-                let mdopts = injector.get(SERVER_MODULES, EMPTY).find(r => r.transport === options.transport && r.microservice == options.microservice);
+                let mdopts = injector.get(SERVER_MODULES, EMPTY).find(r => r.transport === options.transport && (isNil(options.microservice) ? (r.asDefault || !r.microservice) : r.microservice == options.microservice));
 
                 if (!mdopts) {
                     try {
@@ -213,7 +218,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                         const transportModuleName = options.transport.charAt(0).toUpperCase() + options.transport.slice(1) + 'Module';
                         if (m[transportModuleName]) {
                             await injector.get(ModuleRef).import(m[transportModuleName]);
-                            mdopts = injector.get(SERVER_MODULES, EMPTY).find(r => r.transport === options.transport && r.microservice == options.microservice);
+                            mdopts = injector.get(SERVER_MODULES, EMPTY).find(r => r.transport === options.transport && (isNil(options.microservice) ? (r.asDefault || !r.microservice) : r.microservice == options.microservice));
                         }
                         if (!mdopts) {
                             throw new Error(m[transportModuleName] ? 'has not implemented' : 'not found this transport module!')
@@ -225,7 +230,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
 
                 }
 
-                const moduleOpts = { ...mdopts, ...options } as ServiceModuleOpts & ServiceOpts;
+                const moduleOpts = { ...mdopts, ...options, asDefault: null } as ServiceModuleOpts & ServiceOpts;
 
                 const serverOpts = {
                     backend: moduleOpts.microservice ? MicroServRouterModule.getToken(moduleOpts.transport as Transport) : HybridRouter,
