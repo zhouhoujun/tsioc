@@ -19,8 +19,6 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        TcpModule,
-        NatsModule,
         ClientModule.register([
             {
                 transport: 'nats',

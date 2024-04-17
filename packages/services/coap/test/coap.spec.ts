@@ -19,7 +19,6 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        CoapModule,
         ClientModule.register({
             transport: 'coap'
         }),

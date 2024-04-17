@@ -62,7 +62,6 @@ export class KafkaService {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        KafkaModule,
         ClientModule.register({
             transport: 'kafka',
             clientOpts: {

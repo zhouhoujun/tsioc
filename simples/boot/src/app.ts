@@ -5,8 +5,7 @@ import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { HttpModule } from '@tsdi/http';
 import { TransactionModule } from '@tsdi/repository';
-import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
-import { EndpointsModule } from '@tsdi/endpoints';
+import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
 
 // default load controllers form folder './controllers'
 @Module({
@@ -15,15 +14,13 @@ import { EndpointsModule } from '@tsdi/endpoints';
         LoggerModule,
         ServerModule,
         ServerEndpointModule,
-        AssetTransportModule,
-        HttpModule,
-        EndpointsModule.register({
+        EndpointModule.register({
             transport: 'http',
             serverOpts: {
                 interceptors:[
-                    Content,
-                    Json,
-                    Bodyparser
+                    ContentInterceptor,
+                    JsonInterceptor,
+                    BodyparserInterceptor
                 ]
             }
         }),

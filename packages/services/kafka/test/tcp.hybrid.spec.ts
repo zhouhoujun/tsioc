@@ -3,8 +3,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { ClientModule } from '@tsdi/common/client';
-import { EndpointModule } from '@tsdi/endpoints';
-import { AssetTransportModule, Bodyparser, Content, Json } from '@tsdi/endpoints/assets';
+import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { TcpClient, TcpModule, TcpServer, } from '@tsdi/tcp';
 import expect = require('expect');
@@ -20,10 +19,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
     imports: [
         ServerModule,
         LoggerModule,
-        AssetTransportModule,
         ServerEndpointModule,
-        TcpModule,
-        KafkaModule,
         ClientModule.register([
             {
                 transport: 'kafka'
@@ -38,9 +34,9 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 serverOpts: {
                     interceptors: [
                         BigFileInterceptor,
-                        Content,
-                        Json,
-                        Bodyparser
+                        ContentInterceptor,
+                        JsonInterceptor,
+                        BodyparserInterceptor
                     ]
                 }
             },
@@ -50,9 +46,9 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 serverOpts: {
                     interceptors: [
                         BigFileInterceptor,
-                        Content,
-                        Json,
-                        Bodyparser
+                        ContentInterceptor,
+                        JsonInterceptor,
+                        BodyparserInterceptor
                     ]
                 }
             }

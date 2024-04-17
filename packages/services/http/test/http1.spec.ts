@@ -24,8 +24,6 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        HttpModule,
-        WsModule,
         ClientModule.register([
             {
                 transport: 'ws'

@@ -19,8 +19,6 @@ import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        MqttModule,
-        HttpModule,
         ClientModule.register([
             { transport: 'mqtt', clientOpts: {  } },
             { transport: 'http', clientOpts: {  } }

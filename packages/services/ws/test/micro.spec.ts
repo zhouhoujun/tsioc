@@ -61,7 +61,6 @@ export class WsService {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        WsModule,
         ClientModule.register([
             {
                 transport: 'ws',

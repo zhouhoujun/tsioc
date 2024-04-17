@@ -19,8 +19,6 @@ import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        HttpModule,
-        RedisModule,
         ClientModule.register([
             { transport: 'redis', clientOpts: {  } },
             { transport: 'http', clientOpts: {  } }

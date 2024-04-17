@@ -62,7 +62,6 @@ export class NatsService {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        NatsModule,
         ClientModule.register({
             transport: 'nats',
             clientOpts: {

@@ -20,8 +20,6 @@ import { TransportErrorResponse } from '@tsdi/common';
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        TcpModule,
-        WsModule,
         ClientModule.register([
             {
                 transport: 'ws'

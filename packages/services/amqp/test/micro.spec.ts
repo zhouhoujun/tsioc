@@ -62,7 +62,6 @@ export class AmqpService {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        AmqpModule,
         ClientModule.register({
             transport: 'amqp'
         }),

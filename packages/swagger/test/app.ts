@@ -1,6 +1,5 @@
 import { Module } from '@tsdi/ioc';
 import { TypeOrmModule } from '@tsdi/typeorm-adapter';
-import { HttpModule } from '@tsdi/http';
 import { Connection } from 'typeorm';
 import { User } from './models/models';
 import { UserController } from './mapping/UserController';
@@ -44,7 +43,6 @@ export const option = <ConnectionOptions>{
     imports: [
         ServerModule,
         ServerEndpointModule,
-        HttpModule,
         HttpClientModule,
         EndpointModule.register({
             transport: 'http',

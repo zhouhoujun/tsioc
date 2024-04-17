@@ -19,8 +19,6 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        TcpModule,
-        MqttModule,
         ClientModule.register([
             {
                 transport: 'tcp'

@@ -62,7 +62,6 @@ export class RedisService {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        RedisModule,
         ClientModule.register({
             transport: 'redis',
             clientOpts: {

@@ -19,8 +19,6 @@ import { DeviceController } from './controller';
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        AmqpModule,
-        HttpModule,
         ClientModule.register([
             {
                 transport: 'amqp'

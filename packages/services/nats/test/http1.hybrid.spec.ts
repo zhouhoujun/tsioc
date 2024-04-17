@@ -18,8 +18,6 @@ import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        HttpModule,
-        NatsModule,
         ClientModule.register([
             { transport: 'nats', clientOpts: {  } },
             { transport: 'http', clientOpts: {  } }

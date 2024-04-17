@@ -19,8 +19,6 @@ import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonIntercep
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        HttpModule,
-        UdpModule,
         ClientModule.register([
             { transport: 'udp', clientOpts: {  } },
             { transport: 'http', clientOpts: {  } }

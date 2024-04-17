@@ -19,8 +19,6 @@ import { DeviceController } from './controller';
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        KafkaModule,
-        HttpModule,
         ClientModule.register([
             {
                 transport: 'kafka'

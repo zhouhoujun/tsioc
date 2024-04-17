@@ -27,8 +27,6 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        HttpModule,
-        WsModule,
         ClientModule.register([
             {
                 transport: 'http',

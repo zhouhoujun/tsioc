@@ -20,8 +20,6 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        TcpModule,
-        UdpModule,
         ClientModule.register([
             {
                 transport: 'udp'

@@ -62,7 +62,6 @@ export class UdpService {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        UdpModule,
         ClientModule.register({
             transport: 'udp',
             clientOpts: {
