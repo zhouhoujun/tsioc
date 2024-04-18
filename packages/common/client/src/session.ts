@@ -3,6 +3,7 @@ import { TransportEvent, TransportRequest } from '@tsdi/common';
 import { TransportOpts, BaseTransportSession, CodingsContext } from '@tsdi/common/transport';
 import { Observable, Subject, finalize, first, merge, mergeMap, takeUntil } from 'rxjs';
 
+
 /**
  * transport session for client.
  */
@@ -33,10 +34,10 @@ export abstract class ClientTransportSession<TSocket = any, TMsg = any> extends 
  * client transport session factory.
  */
 @Abstract()
-export abstract class ClientTransportSessionFactory<TSocket = any, TMsg = any> {
+export abstract class ClientTransportSessionFactory<TSocket = any, TOptions = TransportOpts, TMsg = any> {
     /**
-     * create transport session.
+     * the options to create transport session.
      * @param options 
      */
-    abstract create(injector: Injector, socket: TSocket, options: TransportOpts): ClientTransportSession<TSocket, TMsg>;
+    abstract create(injector: Injector, socket: TSocket, options: TOptions): ClientTransportSession<TSocket, TMsg>;
 }

@@ -1,16 +1,15 @@
 import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
-import { ModuleWithProviders, ProviderType } from './providers';
+import { ModuleType, ModuleWithProviders, ProviderType } from './providers';
 import { Injector } from './injector';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
 import { ReflectiveFactory } from './reflective';
-import { Type, ClassType, Modules } from './types';
+import { Type, ClassType } from './types';
 import { isType } from './utils/chk';
 import { deepForEach } from './utils/lang';
 import { isPlainObject } from './utils/obj';
 
 
-export type ModuleType = Modules | ModuleWithProviders;
 
 /**
  * Represents an instance of an `Module` created by an `ModuleFactory`.
@@ -38,8 +37,6 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      * The injector that contains all of the providers of the `Module`.
      */
     abstract get injector(): Injector;
-
-    abstract get ready(): Promise<void>;
     /**
      * the modle instance.
      */

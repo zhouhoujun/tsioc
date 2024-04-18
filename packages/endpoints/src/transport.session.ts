@@ -11,7 +11,7 @@ export abstract class TransportSession<TSocket = any, TMsg = any> extends BaseTr
 
     listen(handler: RequestHandler, destroy$?: Observable<any>): Subscription {
         return this.receive().pipe(
-            takeUntil(destroy$ ? merge(this.destroy$, destroy$).pipe(first()): this.destroy$),
+            takeUntil(destroy$ ? merge(this.destroy$, destroy$).pipe(first()) : this.destroy$),
             mergeMap(request => handler.handle(request))
         ).subscribe()
     }
@@ -27,11 +27,11 @@ export abstract class TransportSession<TSocket = any, TMsg = any> extends BaseTr
  * transport session factory.
  */
 @Abstract()
-export abstract class TransportSessionFactory<TSocket = any, TMsg = any> {
+export abstract class TransportSessionFactory<TSocket = any, TOptions = TransportOpts, TMsg = any> {
     /**
      * create transport session.
      * @param options 
      */
-    abstract create(injector: Injector, socket: TSocket, options: TransportOpts): TransportSession<TSocket, TMsg>;
+    abstract create(injector: Injector, socket: TSocket, options: TOptions): TransportSession<TSocket, TMsg>;
 }
 

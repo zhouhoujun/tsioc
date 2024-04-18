@@ -3,7 +3,8 @@ import {
     Type, Token, isArray, lang, toProvider, tokenId, toProviders,
     ClassType,
     ModuleRef,
-    isNil
+    isNil,
+    ModuleType
 } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
 import { CodingsModule, DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, ResponseEventFactory, StatusAdapter, Transport } from '@tsdi/common/transport';
@@ -22,6 +23,10 @@ import { DefaultResponseEventFactory } from './response.factory';
  * Client module config.
  */
 export interface ClientModuleConfig {
+    /**
+     * imports modules
+     */
+    imports?: ModuleType[];
     /**
      * client options.
      */
@@ -169,6 +174,17 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                 const opts = { ...defts, ...options, asDefault: null } as ClientModuleOpts & ClientTokenOpts;
                 const clientOpts = { backend: opts.backend ?? TransportBackend, globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS, ...opts.defaultOpts, ...opts.clientOpts, providers: [...opts.defaultOpts?.providers || EMPTY, ...opts.clientOpts?.providers || EMPTY] } as ClientOpts & { providers: ProviderType[] };
 
+                // if(opts.imports) {
+                //     await injector.useAsync(opts.imports)
+                // }
+                if (opts.imports) {
+                    clientOpts.providers.push({
+                        provider: async (injector) => {
+                            await injector.useAsync(opts.imports!)
+                        }
+                    })
+                }
+
                 if (opts.microservice) {
                     clientOpts.microservice = opts.microservice;
                 }
@@ -187,6 +203,8 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                 if (clientOpts.statusAdapter) {
                     clientOpts.providers.push(toProvider(StatusAdapter, clientOpts.statusAdapter))
                 }
+
+
 
                 clientOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, clientOpts.transportOpts.encodeInterceptors ?? [RequestEncoder], true));
                 clientOpts.providers.push(...toProviders(DECODINGS_INTERCEPTORS, clientOpts.transportOpts.decodeInterceptors ?? [ResponseDecoder], true));

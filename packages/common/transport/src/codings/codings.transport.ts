@@ -45,7 +45,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * @param req the message response for.
      */
     receive(context?: CodingsContext): Observable<TOutput> {
-        return this.handleMessage()
+        return this.handleMessage(context)
             .pipe(
                 mergeMap(msg => {
                     const ctx = context ?? new CodingsContext(this);
@@ -61,7 +61,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
     /**
      * handle message
      */
-    abstract handleMessage(): Observable<TMsg>;
+    abstract handleMessage(context?: CodingsContext): Observable<TMsg>;
 
     /**
      * destroy.

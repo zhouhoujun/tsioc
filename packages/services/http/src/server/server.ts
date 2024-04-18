@@ -10,7 +10,7 @@ import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
-import { HttpServerOpts, HTTP_SERV_OPTS } from './options';
+import { HttpServerOpts } from './options';
 import { HttpEndpointHandler } from './handler';
 import { HttpContext } from './context';
 
@@ -24,10 +24,9 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
     @InjectLog() logger!: Logger;
     private destroy$: Subject<void>;
 
-    constructor(readonly handler: HttpEndpointHandler, @Inject(HTTP_SERV_OPTS, { nullable: true }) readonly options: HttpServerOpts) {
+    constructor(readonly handler: HttpEndpointHandler) {
         super()
         this.destroy$ = new Subject();
-        this.validOptions(options);
     }
 
 
@@ -54,26 +53,26 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
     listen(arg1: ListenOptions | number, arg2?: any, listeningListener?: () => void): this {
         if (!this._server) throw new InternalServerExecption();
         const isSecure = this.isSecure;
-
+        const options = this.getOptions();
         const moduleRef = this.handler.injector.get(ModuleRef);
         if (isNumber(arg1)) {
             const port = arg1;
             if (isString(arg2)) {
                 const host = arg2;
-                if (!this.options.listenOpts) {
-                    this.options.listenOpts = { host, port };
+                if (!options.listenOpts) {
+                    options.listenOpts = { host, port };
                 }
-                moduleRef.setValue(HTTP_LISTEN_OPTS, this.options.listenOpts);
+                moduleRef.setValue(HTTP_LISTEN_OPTS, options.listenOpts);
                 this._server.listen(port, host, () => {
                     this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://${host}:${port}`, '!');
                     listeningListener?.();
                 });
             } else {
                 listeningListener = arg2;
-                if (!this.options.listenOpts) {
-                    this.options.listenOpts = { port };
+                if (!options.listenOpts) {
+                    options.listenOpts = { port };
                 }
-                moduleRef.setValue(HTTP_LISTEN_OPTS, this.options.listenOpts);
+                moduleRef.setValue(HTTP_LISTEN_OPTS, options.listenOpts);
                 this._server.listen(port, () => {
                     this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://localhost:${port}`, '!');
                     listeningListener?.();
@@ -81,10 +80,10 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
             }
         } else {
             const opts = arg1;
-            if (!this.options.listenOpts) {
-                this.options.listenOpts = opts;
+            if (!options.listenOpts) {
+                options.listenOpts = opts;
             }
-            moduleRef.setValue(HTTP_LISTEN_OPTS, this.options.listenOpts);
+            moduleRef.setValue(HTTP_LISTEN_OPTS, options.listenOpts);
             this._server.listen(opts, () => {
                 this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `http${isSecure ? 's' : ''}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
                 listeningListener?.();
@@ -94,7 +93,9 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
     }
 
     async onStartup(): Promise<http2.Http2Server | http.Server | https.Server> {
-        const opts = this.options;
+        const opts = this.getOptions();
+        this.validOptions(opts);
+
         const injector = this.handler.injector;
 
         injector.setValue(HttpServer, this);
@@ -129,11 +130,11 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
     protected override async onStart(): Promise<any> {
         await this.onStartup();
         if (!this._server) throw new InternalServerExecption();
-        const opts = this.options;
+        const opts = this.getOptions();
 
         const injector = this.handler.injector;
         const factory = injector.get(TransportSessionFactory);
-        const transportOpts = this.options.transportOpts!;
+        const transportOpts = opts.transportOpts!;
         if (!transportOpts.transport) transportOpts.transport = 'http';
         const session = factory.create(injector, this._server, transportOpts);
         session.listen(this.handler, this.destroy$);
@@ -151,9 +152,10 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
         if (!this._server) return;
         this.destroy$.next();
         this.destroy$.complete();
+        const opts = this.getOptions();
         await promisify(this._server.close, this._server)()
             .then(() => {
-                this.logger.info(lang.getClassName(this), this.options.listenOpts, 'closed !');
+                this.logger.info(lang.getClassName(this), opts.listenOpts, 'closed !');
             })
             .catch(err => {
                 this.logger.error(err);

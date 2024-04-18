@@ -200,7 +200,7 @@ export type TypeProvider<T = any> = ClassType<T>;
  * dynamic provider.
  */
 export interface DynamicProvider {
-    provider(injector: Injector): StaticProvider | StaticProvider[] | Promise<StaticProvider | StaticProvider[]>;
+    provider(injector: Injector): void | StaticProvider | StaticProvider[] | Promise<void | StaticProvider | StaticProvider[]>;
 }
 
 /**
@@ -240,6 +240,8 @@ export interface ModuleWithProviders<T = any> {
      */
     providers: ProviderType[];
 }
+
+export type ModuleType = Modules | ModuleWithProviders;
 
 /**
  * is module providers or not.

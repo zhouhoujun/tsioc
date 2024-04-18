@@ -3,11 +3,10 @@ import { get } from '../metadata/refl';
 import { Class, ModuleDef } from '../metadata/type';
 import { ModuleOption, ModuleRef } from '../module.ref';
 import { Platform } from '../platform';
-import { isModuleProviders, ModuleWithProviders } from '../providers';
+import { isModuleProviders, ModuleWithProviders, ProviderType } from '../providers';
 import { ReflectiveFactory } from '../reflective';
 import { Type, EMPTY, EMPTY_OBJ } from '../types';
 import { isType } from '../utils/chk';
-import { defer } from '../utils/lang';
 import { DefaultInjector } from './injector';
 import { ReflectiveFactoryImpl } from './reflective';
 
@@ -21,8 +20,6 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     private _typeRefl: Class;
 
     reflectiveFactory = new ReflectiveFactoryImpl();
-
-    private defer = defer<void>();
 
     constructor(moduleType: Class, parent: Injector, option: ModuleOption = EMPTY_OBJ) {
         super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type);
@@ -57,7 +54,10 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         } else {
             this.ininModule(platfrom, dedupStack, option, ps);
         }
+    }
 
+    protected override initProviders(providers: ProviderType[]): void {
+        
     }
 
     private ininModule(platfrom: Platform, dedupStack: Type[], option: ModuleOption, ps: Promise<void>[]) {
@@ -71,17 +71,12 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         if (ps.length) {
             Promise.all(ps).then(() => {
                 this._instance = this.get(this._type);
-                this.defer.resolve()
+                this._readyDefer.resolve()
             })
         } else {
             this._instance = this.get(this._type);
-            this.defer.resolve();
+            this._readyDefer.resolve();
         }
-    }
-
-
-    get ready() {
-        return this.defer.promise
     }
 
     get moduleType() {

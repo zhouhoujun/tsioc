@@ -1,8 +1,8 @@
-import { Type, ClassType, Modules, EMPTY } from '../types';
+import { Type, ClassType, EMPTY } from '../types';
 import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { isPlainObject, isTypeObject } from '../utils/obj';
-import { cleanObj, deepForEach, immediate } from '../utils/lang';
+import { cleanObj, deepForEach, defer, immediate } from '../utils/lang';
 import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil, isType, isPromise } from '../utils/chk';
 import {
     MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, Scopes, InjectorEvent,
@@ -13,7 +13,7 @@ import { Platform } from '../platform';
 import { get } from '../metadata/refl';
 import { ModuleDef, Class } from '../metadata/type';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
-import { ModuleWithProviders, ProviderType, DynamicProvider, StaticProvider, StaticProviders } from '../providers';
+import { ModuleWithProviders, ProviderType, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
 import { DesignContext } from '../actions/ctx';
 import { DesignLifeScope } from '../actions/design';
 import { RuntimeLifeScope } from '../actions/runtime';
@@ -21,7 +21,6 @@ import { ReflectiveFactory } from '../reflective';
 import { ReflectiveFactoryImpl, hasContext } from './reflective';
 import { createContext, InvocationContext, InvokeOptions } from '../context';
 import { DefaultPlatform } from './platform';
-import { ModuleType } from '../module.ref';
 
 /**
  * Default Injector
@@ -32,6 +31,8 @@ export class DefaultInjector extends Injector {
     protected _dsryCbs = new Set<DestroyCallback>();
     protected _plat?: Platform;
     protected isStatic?: boolean;
+
+    protected _readyDefer = defer<void>();
     /**
      * factories.
      *
@@ -50,6 +51,10 @@ export class DefaultInjector extends Injector {
         return this._event;
     }
 
+    get ready() {
+        return this._readyDefer.promise
+    }
+
     constructor(providers: ProviderType[] = EMPTY, readonly parent?: Injector, readonly scope?: InjectorScope) {
         super();
         this.records = new Map();
@@ -59,8 +64,9 @@ export class DefaultInjector extends Injector {
             scope = this.scope = Scopes.platform
         }
         this.initScope(scope);
-        this.inject(providers);
+        this.initProviders(providers);
     }
+
 
     protected initScope(scope?: InjectorScope) {
         const val = { value: this };
@@ -86,6 +92,15 @@ export class DefaultInjector extends Injector {
                 injectAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = this.isStatic ? isStaticAlias : isInjectAlias;
                 break;
+        }
+    }
+
+    protected initProviders(providers: ProviderType[]) {
+        const result = this.processInject(providers);
+        if (result) {
+            result.then(() => this._readyDefer.resolve())
+        } else {
+            this._readyDefer.resolve();
         }
     }
 
@@ -145,6 +160,15 @@ export class DefaultInjector extends Injector {
         return types
     }
 
+
+    useAsync(modules: ModuleType[]): Promise<Type[]>;
+    useAsync(...modules: ModuleType[]): Promise<Type[]>;
+    async useAsync(...args: any[]): Promise<Type[]> {
+        const types: Type[] = [];
+        await this.processUse(args, types);
+        return types;
+    }
+
     protected processInject(providers: ProviderType[]) {
         this.assertNotDestroyed();
         if (providers.length) {
@@ -180,10 +204,10 @@ export class DefaultInjector extends Injector {
                 const pdrs = (p as DynamicProvider).provider(this);
                 if (isPromise(pdrs)) {
                     return pdrs.then(ps => {
-                        isArray(ps) ? ps.forEach(pdr => this.processProvider(platform, pdr)) : this.processProvider(platform, ps);
+                        if (ps) isArray(ps) ? ps.forEach(pdr => this.processProvider(platform, pdr)) : this.processProvider(platform, ps);
                     });
                 }
-                isArray(pdrs) ? pdrs.forEach(pdr => this.processProvider(platform, pdr)) : this.processProvider(platform, pdrs);
+                if (pdrs) isArray(pdrs) ? pdrs.forEach(pdr => this.processProvider(platform, pdr)) : this.processProvider(platform, pdrs);
             }
         }
     }

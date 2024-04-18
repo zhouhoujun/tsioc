@@ -48,5 +48,6 @@ export * from './impl/duplex.session';
 
 export * from './SetupServices';
 export * from './endpoint.module';
+export * from './mime.module';
 
 

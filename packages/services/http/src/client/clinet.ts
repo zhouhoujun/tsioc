@@ -4,14 +4,15 @@ import {
     TransportParams, Pattern, patternToPath, HttpRequestMethod, RequestInitOpts
 } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
-import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
-import { HttpRequest, HttpEvent, HttpParams, HttpResponse, HttpRequestInit } from '@tsdi/common/http';
+import { Client, ClientTransportSession } from '@tsdi/common/client';
+import { HttpRequest, HttpEvent, HttpParams, HttpResponse } from '@tsdi/common/http';
 import { Observable, of } from 'rxjs';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import { HttpHandler } from './handler';
-import { HttpClientOpts, HTTP_CLIENT_OPTS } from './options';
+import { HttpClientOpts } from './options';
+import { HttpClientSessionFactory } from './client.session';
 
 
 
@@ -36,12 +37,10 @@ export type HttpReqOptions = HttpRequestOpts & HttpNodeOpts;
  * http client for nodejs
  */
 @Injectable()
-export class Http extends Client<HttpRequest> {
+export class Http extends Client<HttpRequest, HttpEvent, HttpClientOpts> {
 
     private session?: ClientTransportSession<http2.ClientHttp2Session | null> | null;
-    constructor(
-        readonly handler: HttpHandler,
-        @Optional() @Inject(HTTP_CLIENT_OPTS) private option: HttpClientOpts) {
+    constructor(readonly handler: HttpHandler) {
         super()
     }
 
@@ -49,14 +48,15 @@ export class Http extends Client<HttpRequest> {
     protected connect(): Observable<any> {
         if (this.session) return of(this.session);
         const injector = this.handler.injector;
-        if (!this.option.authority) {
-            this.session = injector.get(ClientTransportSessionFactory).create(injector, null, this.option);
+        const options = this.getOptions();
+        if (!options.authority) {
+            this.session = injector.get(HttpClientSessionFactory).create(injector, null, options);
             return of(this.session);
         } else {
 
             return new Observable((observer) => {
 
-                const conn = this.createConnection(this.option);
+                const conn = this.createConnection(options);
 
                 let cleaned = false;
                 const onError = (err: Error) => {
@@ -65,7 +65,7 @@ export class Http extends Client<HttpRequest> {
                 }
                 const onConnect = () => {
 
-                    this.session = injector.get(ClientTransportSessionFactory).create(injector, conn, this.option);
+                    this.session = injector.get(HttpClientSessionFactory).create(injector, conn, options);
                     observer.next(this.session);
                     observer.complete();
                 };

@@ -41,11 +41,6 @@ export interface Http2ServerOpts extends HttpOpts {
 export type HttpServerOpts = Http1ServerOpts | Http2ServerOpts;
 
 
-/**
- * http server opptions.
- */
-export const HTTP_SERV_OPTS = tokenId<HttpServerOpts>('HTTP_SERVER_OPTS');
-
 export const HTTP_SERV_FILTERS = tokenId<Filter[]>('HTTP_SERV_FILTERS');
 
 /**

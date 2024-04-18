@@ -1,6 +1,6 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
-import { Type, ClassType, EMPTY, Modules } from './types';
-import { ClassProvider, ExistingProvider, FactoryProvider, ProviderType, ValueProvider } from './providers';
+import { Type, ClassType, EMPTY } from './types';
+import { ClassProvider, ExistingProvider, FactoryProvider, ModuleType, ProviderType, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
@@ -49,6 +49,10 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * 已注册标记令牌。
      */
     abstract tokens(): Token<any>[];
+    /**
+     * init inject ready.
+     */
+    abstract get ready(): Promise<void>;
     /**
      * token size.
      * 
@@ -198,17 +202,27 @@ export abstract class Injector implements Destroyable, OnDestroy {
     /**
      * use modules.
      *
-     * @param {...Modules[]} modules
+     * @param {...ModuleType[]} modules
      * @returns {this}
      */
-    abstract use(modules: Modules[]): Type<any>[];
+    abstract use(modules: ModuleType[]): Type<any>[];
     /**
      * use modules.
      *
      * @param {...Modules[]} modules
      * @returns {this}
      */
-    abstract use(...modules: Modules[]): Type<any>[];
+    abstract use(...modules: ModuleType[]): Type<any>[];
+    /**
+     * async use modules.
+     * @param modules 
+     */
+    abstract useAsync(modules: ModuleType[]): Promise<Type[]>;
+    /**
+     * async use modules.
+     * @param modules 
+     */
+    abstract useAsync(...modules: ModuleType[]): Promise<Type[]>;
     /**
      * register types.
      * 

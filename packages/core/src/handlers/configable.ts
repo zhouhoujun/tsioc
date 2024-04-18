@@ -9,6 +9,7 @@ import { PipeService, PipeTransform } from '../pipes/pipe';
 import { FILTERS_TOKEN, Filter, FilterService } from '../filters/filter';
 import { GuardHandler } from './guards';
 import { Backend } from '../Handler';
+import { Observable, defer, mergeMap } from 'rxjs';
 
 
 
@@ -26,6 +27,10 @@ export class ConfigableHandler<
 
     get injector() {
         return this.context.injector;
+    }
+
+    get ready() {
+        return this.context.injector.ready;
     }
 
     getOptions(): TOptions {
@@ -48,6 +53,14 @@ export class ConfigableHandler<
         }
 
         setHandlerOptions(this, this.options);
+    }
+
+    handle(input: TInput, context?: TContext | undefined): Observable<TOutput> {
+        return defer(async () => {
+            await this.ready;
+        }).pipe(
+            mergeMap(() => super.handle(input, context))
+        )
     }
 
     protected initOptions(options: TOptions): TOptions {
@@ -239,8 +252,8 @@ export interface HandlerTokenConfigable<TInput = any> extends GuardHandlerOption
 /**
  * Configable handler options.
  */
-export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends HandlerOptions<TInput, TArg>, HandlerTokenConfigable<TInput>, BackendOptions<TInput> { 
-    
+export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends HandlerOptions<TInput, TArg>, HandlerTokenConfigable<TInput>, BackendOptions<TInput> {
+
     /**
      * execption handlers
      */

@@ -32,11 +32,6 @@ export interface HttpClientsOpts extends HttpClientOpts {
     client: Token<Client>;
 }
 
-/**
- * http client opptions.
- */
-export const HTTP_CLIENT_OPTS = tokenId<HttpClientOpts>('HTTP_CLIENT_OPTS');
-
 
 /**
  * http client interceptors for `Http`.

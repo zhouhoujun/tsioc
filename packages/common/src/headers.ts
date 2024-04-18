@@ -95,14 +95,14 @@ export class TransportHeaders<T extends Header = Header> {
         return Array.from(this._normal.keys())
     }
 
-    getHeaders(): MapHeaders {
+    getHeaders<Tx extends Header>(): MapHeaders<Tx> {
         if (!this._rcd) {
             const rcd = this._rcd = {} as Record<string, T>;
             this.forEach((v, k) => {
                 rcd[v] = k;
             });
         }
-        return this._rcd;
+        return this._rcd as MapHeaders<any>;
     }
 
     setHeaders(headers: Record<string, T>): void {

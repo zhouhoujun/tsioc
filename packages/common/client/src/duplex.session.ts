@@ -35,7 +35,7 @@ export class ClientDuplexTransportSession extends ClientTransportSession<IDuplex
 
 
 @Injectable()
-export class ClientDuplexTransportSessionFactory implements ClientTransportSessionFactory<IDuplexStream> {
+export class ClientDuplexTransportSessionFactory implements ClientTransportSessionFactory<IDuplexStream, TransportOpts> {
 
     constructor() { }
 

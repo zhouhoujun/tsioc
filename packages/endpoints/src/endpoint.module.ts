@@ -2,7 +2,8 @@ import {
     Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType,
     tokenId, isArray, toProvider, lang, ProvdierOf, Type, toProviders,
     ModuleRef,
-    isNil
+    isNil,
+    ModuleType
 } from '@tsdi/ioc';
 import { CanActivate, Filter, InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
 import { CodingsModule, DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, StatusAdapter, Transport } from '@tsdi/common/transport';
@@ -34,6 +35,10 @@ import { DefaultExecptionHandlers } from './execption.handlers';
  * server config.
  */
 export interface ServerConfig {
+    /**
+     * imports modules
+     */
+    imports?: ModuleType[];
     /**
      * auto bootstrap or not. default true.
      */
@@ -246,6 +251,14 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     providers: [...moduleOpts.defaultOpts?.providers || EMPTY, ...moduleOpts.serverOpts?.providers || EMPTY]
                 } as ServerOpts & { providers: ProviderType[] };
 
+                if (moduleOpts.imports) {
+                    serverOpts.providers.push({
+                        provider: async (injector) => {
+                            await injector.useAsync(moduleOpts.imports!)
+                        }
+                    })
+                }
+
                 if (moduleOpts.microservice) {
                     serverOpts.microservice = moduleOpts.microservice;
                 }
@@ -262,6 +275,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     serverOpts.transportOpts.microservice = serverOpts.microservice;
                 }
 
+                
                 serverOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, serverOpts.transportOpts.encodeInterceptors ?? [OutgoingEncoder], true));
                 serverOpts.providers.push(...toProviders(DECODINGS_INTERCEPTORS, serverOpts.transportOpts.decodeInterceptors ?? [IncomingDecoder], true));
 
