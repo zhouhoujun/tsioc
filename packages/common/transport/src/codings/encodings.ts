@@ -4,13 +4,16 @@ import { Observable, mergeMap, of, throwError } from 'rxjs';
 import { Encoder, CodingsContext } from '../codings';
 import { NotSupportedExecption } from '../execptions';
 import { CodingMappings, CodingsOpts } from './mappings';
-import { JsonEncodeHandler } from './json/json.encodings';
 
 @Abstract()
 export abstract class EncodingsHandler implements Handler<any, any, CodingsContext> {
     abstract handle(input: Buffer, context: CodingsContext): Observable<any>
 }
 
+@Abstract()
+export abstract class DefaultEncodingsHandler implements EncodingsHandler {
+    abstract handle(input: Buffer, context: CodingsContext): Observable<any>
+}
 
 
 @Injectable()
@@ -18,7 +21,7 @@ export class EncodingsBackend implements Backend<any, any, CodingsContext> {
 
     constructor(
         private mappings: CodingMappings,
-        @Optional() private jsonEncodeHandler: JsonEncodeHandler
+        @Optional() private defaultEncodeHandler: DefaultEncodingsHandler
     ) { }
 
     handle(input: any, context: CodingsContext): Observable<any> {
@@ -32,8 +35,8 @@ export class EncodingsBackend implements Backend<any, any, CodingsContext> {
                 );
             }, of(input))
         } else {
-            if (!this.jsonEncodeHandler) return throwError(() => new NotSupportedExecption(`No encodings handler for ${getClassName(type)} of ${context.options.transport}${context.options.microservice ? ' microservice' : ''}${context.options.client? ' client': ''}`));
-            return this.jsonEncodeHandler.handle(input, context)
+            if (!this.defaultEncodeHandler) return throwError(() => new NotSupportedExecption(`No encodings handler for ${getClassName(type)} of ${context.options.transport}${context.options.microservice ? ' microservice' : ''}${context.options.client ? ' client' : ''}`));
+            return this.defaultEncodeHandler.handle(input, context)
         }
     }
 }
@@ -46,7 +49,7 @@ export const ENCODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, CodingsConte
 
 
 @Injectable({ static: false })
-export class EncodingsInterceptingHandler extends InterceptingHandler<Buffer, any, CodingsContext>  {
+export class EncodingsInterceptingHandler extends InterceptingHandler<Buffer, any, CodingsContext> {
     constructor(backend: EncodingsBackend, injector: Injector) {
         super(backend, () => injector.get(ENCODINGS_INTERCEPTORS, EMPTY))
     }

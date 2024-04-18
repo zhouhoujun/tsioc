@@ -4,6 +4,13 @@ import { TransportRequest } from '@tsdi/common';
 import { TransportBackend } from './backend';
 import { StatusAdapter, TransportOpts } from '@tsdi/common/transport';
 import { ClientTransportSessionFactory } from './session';
+import { DefaultRequestEncodeHandler } from './codings/request.encodings';
+import { DefaultResponseDecodeHandler } from './codings/response.decodings';
+
+export interface ClientTransportOpts extends TransportOpts {
+    defaultOutgoingHanlder?: ProvdierOf<DefaultRequestEncodeHandler>;
+    defaultIncomingHanlder?: ProvdierOf<DefaultResponseDecodeHandler>;
+}
 
 /**
  * Client options.
@@ -36,7 +43,7 @@ export interface ClientOpts<TConnOpts = any> extends ConfigableHandlerOptions<Tr
     /**
      * transport options.
      */
-    transportOpts?: TransportOpts;
+    transportOpts?: ClientTransportOpts;
     /**
      * service transport session factory.
      */

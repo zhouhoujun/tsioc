@@ -4,7 +4,6 @@ import { Observable, mergeMap, of, throwError } from 'rxjs';
 import { Decoder, CodingsContext } from '../codings';
 import { NotSupportedExecption } from '../execptions';
 import { CodingMappings, CodingsOpts } from './mappings';
-import { JsonDecodeHandler } from './json/json.decodings';
 
 
 @Abstract()
@@ -12,15 +11,18 @@ export abstract class DecodingsHandler implements Handler<any, any, CodingsConte
     abstract handle(input: Buffer, context: CodingsContext): Observable<any>
 }
 
+@Abstract()
+export abstract class DefaultDecodingsHandler implements DecodingsHandler {
+    abstract handle(input: Buffer, context: CodingsContext): Observable<any>
+}
 
 
 @Injectable()
 export class DecodingsBackend implements Backend<any, any, CodingsContext> {
 
-
     constructor(
         private mappings: CodingMappings,
-        @Optional() private jsonDecodeHanlder: JsonDecodeHandler
+        @Optional() private defaultDecodeHanlder: DefaultDecodingsHandler
     ) { }
 
     handle(input: any, context: CodingsContext): Observable<any> {
@@ -34,7 +36,7 @@ export class DecodingsBackend implements Backend<any, any, CodingsContext> {
                 );
             }, of(input))
         } else {
-            if (this.jsonDecodeHanlder) return this.jsonDecodeHanlder.handle(input, context)
+            if (this.defaultDecodeHanlder) return this.defaultDecodeHanlder.handle(input, context)
             return throwError(() => new NotSupportedExecption(`No decodings handler for ${getClassName(type)} of ${context.options.transport}${context.options.microservice ? ' microservice' : ''}${context.options.client? ' client': ''}`))
         }
     }

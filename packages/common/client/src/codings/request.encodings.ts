@@ -13,7 +13,7 @@ export abstract class RequestEncodeHandler implements Handler<TransportRequest, 
 }
 
 @Injectable()
-export class DefaultRequestHandler implements RequestEncodeHandler {
+export class DefaultRequestEncodeHandler implements RequestEncodeHandler {
     handle(input: TransportRequest, context: CodingsContext): Observable<PacketData> {
         const packet = {
             url: input.urlWithParams,
@@ -38,7 +38,7 @@ export class RequestEncodeBackend implements Backend<TransportRequest, PacketDat
 
     constructor(
         private mappings: CodingMappings,
-        @Optional() private defaultHandler: DefaultRequestHandler
+        @Optional() private defaultHandler: DefaultRequestEncodeHandler
     ) { }
 
     handle(input: TransportRequest<any>, context: CodingsContext): Observable<PacketData> {

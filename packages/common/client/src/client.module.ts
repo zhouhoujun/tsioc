@@ -3,7 +3,7 @@ import {
     Type, Token, isArray, lang, toProvider, tokenId, toProviders, ModuleRef, isNil, ModuleType
 } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
-import { CodingsModule, DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, ResponseEventFactory, StatusAdapter, Transport } from '@tsdi/common/transport';
+import { CodingsModule, DECODINGS_INTERCEPTORS, DefaultDecodingsHandler, DefaultEncodingsHandler, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, ResponseEventFactory, StatusAdapter, Transport } from '@tsdi/common/transport';
 import { ClientOpts } from './options';
 import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
@@ -12,7 +12,7 @@ import { BodyContentInterceptor } from './interceptors/body';
 import { RestfulRedirector } from './redirector';
 import { ClientTransportSessionFactory } from './session';
 import { ClientDuplexTransportSessionFactory } from './duplex.session';
-import { ClientCodingsModule, RequestEncoder, ResponseDecoder } from './codings';
+import { ClientCodingsModule, DefaultRequestEncodeHandler, DefaultResponseDecodeHandler, RequestEncoder, ResponseDecoder } from './codings';
 import { DefaultResponseEventFactory } from './response.factory';
 
 /**
@@ -198,7 +198,21 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     clientOpts.providers.push(toProvider(StatusAdapter, clientOpts.statusAdapter))
                 }
 
+                if (clientOpts.transportOpts.defaultOutgoingHanlder) {
+                    clientOpts.providers.push(toProvider(DefaultRequestEncodeHandler, clientOpts.transportOpts.defaultOutgoingHanlder))
+                }
 
+                if (clientOpts.transportOpts.defaultIncomingHanlder) {
+                    clientOpts.providers.push(toProvider(DefaultResponseDecodeHandler, clientOpts.transportOpts.defaultIncomingHanlder))
+                }
+
+                if (clientOpts.transportOpts.defaultEncodingsHandler) {
+                    clientOpts.providers.push(toProvider(DefaultEncodingsHandler, clientOpts.transportOpts.defaultEncodingsHandler))
+                }
+
+                if (clientOpts.transportOpts.defaultDecodingsHandler) {
+                    clientOpts.providers.push(toProvider(DefaultDecodingsHandler, clientOpts.transportOpts.defaultDecodingsHandler))
+                }
 
                 clientOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, clientOpts.transportOpts.encodeInterceptors ?? [RequestEncoder], true));
                 clientOpts.providers.push(...toProviders(DECODINGS_INTERCEPTORS, clientOpts.transportOpts.decodeInterceptors ?? [ResponseDecoder], true));

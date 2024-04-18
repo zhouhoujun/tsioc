@@ -15,7 +15,7 @@ const jsonType = /json/i;
 const textType = /^text/i;
 const xmlType = /xml$/i;
 
-export abstract class AbstractIncomingResponseHanlder extends ResponseDecodeHandler {
+export abstract class AbstractResponseDecodeHanlder extends ResponseDecodeHandler {
 
     resolve(res: ResponseIncoming, context: CodingsContext) {
         return defer(async () => {
@@ -111,7 +111,7 @@ export abstract class AbstractIncomingResponseHanlder extends ResponseDecodeHand
 }
 
 @Injectable()
-export class DefaultIncomingResponseHanlder extends AbstractIncomingResponseHanlder {
+export class DefaultResponseDecodeHandler extends AbstractResponseDecodeHanlder {
 
     handle(input: Packet, context: CodingsContext): Observable<TransportEvent> {
         if (!(input.url || input.topic || input.headers || input.payload)) {
@@ -131,7 +131,7 @@ export class ResponseDecodeBackend implements Backend<any, TransportEvent, Codin
 
     constructor(
         private mappings: CodingMappings,
-        @Optional() private defaultHandler: DefaultIncomingResponseHanlder
+        @Optional() private defaultHandler: DefaultResponseDecodeHandler
     ) { }
 
     handle(input: any, context: CodingsContext): Observable<TransportEvent> {

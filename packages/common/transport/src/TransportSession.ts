@@ -1,11 +1,11 @@
 import { Abstract, Injector, ProvdierOf, Token } from '@tsdi/ioc';
 import { Interceptor } from '@tsdi/core';
-import { TransportErrorResponse, TransportEvent, HeadersLike, HeaderFields,  } from '@tsdi/common';
+import { TransportErrorResponse, TransportEvent, HeadersLike, HeaderFields, } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { HybirdTransport, Transport } from './protocols';
 import { CodingsOpts } from './codings/mappings';
-import { EncodingsFactory } from './codings/encodings';
-import { DecodingsFactory } from './codings/decodings';
+import { DefaultEncodingsHandler, EncodingsFactory } from './codings/encodings';
+import { DecodingsFactory, DefaultDecodingsHandler } from './codings/decodings';
 
 
 
@@ -30,6 +30,14 @@ export interface TransportOpts extends CodingsOpts {
      */
     decodingsFactory?: Token<DecodingsFactory>;
     /**
+     * default encodings handler for encode backend.
+     */
+    defaultEncodingsHandler?: ProvdierOf<DefaultEncodingsHandler>;
+    /**
+     * default decodings handler for decode backend.
+     */
+    defaultDecodingsHandler?: ProvdierOf<DefaultDecodingsHandler>;
+    /**
      * encode interceptors
      */
     encodeInterceptors?: ProvdierOf<Interceptor>[];
@@ -39,7 +47,7 @@ export interface TransportOpts extends CodingsOpts {
     decodeInterceptors?: ProvdierOf<Interceptor>[];
 
     headerFields?: HeaderFields;
-    
+
     defaultMethod?: string;
     /**
      * packet delimiter flag
