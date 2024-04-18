@@ -13,7 +13,7 @@ export abstract class OutgoingEncodeHandler implements Handler<RequestContext, a
 
 
 @Injectable()
-export class JsonOutgoingEncodeHandler implements OutgoingEncodeHandler {
+export class DefaultOutgoingEncodeHandler implements OutgoingEncodeHandler {
 
     handle(input: RequestContext, context: CodingsContext): Observable<any> {
         if (!(input.response instanceof JsonOutgoing)) {
@@ -43,7 +43,7 @@ export class JsonOutgoingEncodeHandler implements OutgoingEncodeHandler {
 export class OutgoingEncodeBackend implements Backend<RequestContext, any, CodingsContext> {
     constructor(
         private mappings: CodingMappings,
-        @Optional() private jsonHandler: JsonOutgoingEncodeHandler) { }
+        @Optional() private defaultHandler: DefaultOutgoingEncodeHandler) { }
 
     handle(input: RequestContext, context: CodingsContext): Observable<any> {
         const type = getClass(input.response ?? input);
@@ -56,7 +56,7 @@ export class OutgoingEncodeBackend implements Backend<RequestContext, any, Codin
                 );
             }, of(input))
         } else {
-            if (this.jsonHandler) return this.jsonHandler.handle(input, context)
+            if (this.defaultHandler) return this.defaultHandler.handle(input, context)
             return throwError(() => new NotSupportedExecption(`No encodings handler for ${context.options.transport}${context.options.microservice ? ' microservice' : ''} outgoing type: ${getClassName(type)}`));
         }
 

@@ -1,7 +1,7 @@
 import { Abstract, EMPTY_OBJ, Injectable, Injector, Module, Optional, getClass, getClassName, lang, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { HEAD, ResponseJsonParseError, TransportEvent, TransportHeaders, TransportRequest } from '@tsdi/common';
-import { CodingMappings, Decoder, CodingsContext, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer, Packet, JsonIncoming, JsonResponseIncoming, ResponseIncoming } from '@tsdi/common/transport';
+import { CodingMappings, Decoder, CodingsContext, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer, Packet, JsonIncoming, JsonResponseIncoming, ResponseIncoming, Incoming } from '@tsdi/common/transport';
 import { Observable, defer, mergeMap, of, throwError } from 'rxjs';
 
 
@@ -15,25 +15,13 @@ const jsonType = /json/i;
 const textType = /^text/i;
 const xmlType = /xml$/i;
 
+export abstract class AbstractIncomingResponseHanlder extends ResponseDecodeHandler {
 
-@Injectable()
-export class JsonIncomingResponseHanlder implements Handler<any, TransportEvent, CodingsContext> {
-
-
-    constructor(
-        private streamAdapter: StreamAdapter
-    ) { }
-
-    handle(input: Packet, context: CodingsContext): Observable<TransportEvent> {
-        if (!(input.url || input.topic || input.headers || input.payload)) {
-            return throwError(() => new NotSupportedExecption(`${context.options.transport}${context.options.microservice ? ' microservice' : ''} response is not packet data!`));
-        }
-        const streamAdapter = this.streamAdapter;
-        const res = new JsonResponseIncoming(input, context.options);
+    resolve(res: ResponseIncoming, context: CodingsContext) {
         return defer(async () => {
             const req = context.first() as TransportRequest;
             const eventFactory = req.context.get(ResponseEventFactory);
-
+            const streamAdapter = req.context.get(StreamAdapter);
             let responseType = req.responseType;
 
             const contentType = res.tHeaders.getContentType();
@@ -45,7 +33,7 @@ export class JsonIncomingResponseHanlder implements Handler<any, TransportEvent,
                     } else {
                         responseType = 'blob';
                     }
-                } else if(!mimeAdapter && !jsonType.test(contentType)) {
+                } else if (!mimeAdapter && !jsonType.test(contentType)) {
                     if (xmlType.test(contentType) || textType.test(contentType)) {
                         responseType = 'text';
                     } else {
@@ -120,6 +108,18 @@ export class JsonIncomingResponseHanlder implements Handler<any, TransportEvent,
 
         })
     }
+}
+
+@Injectable()
+export class DefaultIncomingResponseHanlder extends AbstractIncomingResponseHanlder {
+
+    handle(input: Packet, context: CodingsContext): Observable<TransportEvent> {
+        if (!(input.url || input.topic || input.headers || input.payload)) {
+            return throwError(() => new NotSupportedExecption(`${context.options.transport}${context.options.microservice ? ' microservice' : ''} response is not packet data!`));
+        }
+        const res = new JsonResponseIncoming(input, context.options);
+        return this.resolve(res, context)
+    }
 
 }
 
@@ -131,7 +131,7 @@ export class ResponseDecodeBackend implements Backend<any, TransportEvent, Codin
 
     constructor(
         private mappings: CodingMappings,
-        @Optional() private jsonResponeHandler: JsonIncomingResponseHanlder
+        @Optional() private defaultHandler: DefaultIncomingResponseHanlder
     ) { }
 
     handle(input: any, context: CodingsContext): Observable<TransportEvent> {
@@ -145,7 +145,7 @@ export class ResponseDecodeBackend implements Backend<any, TransportEvent, Codin
                 );
             }, of(input))
         } else {
-            if (this.jsonResponeHandler) return this.jsonResponeHandler.handle(input, context.next(input));
+            if (this.defaultHandler) return this.defaultHandler.handle(input, context.next(input));
             return throwError(() => new NotSupportedExecption(`No encodings handler for ${context.options.transport}${context.options.microservice ? ' microservice' : ''} response type: ${getClassName(type)}`));
         }
     }

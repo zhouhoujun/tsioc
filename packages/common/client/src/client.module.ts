@@ -1,10 +1,6 @@
 import {
     Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType,
-    Type, Token, isArray, lang, toProvider, tokenId, toProviders,
-    ClassType,
-    ModuleRef,
-    isNil,
-    ModuleType
+    Type, Token, isArray, lang, toProvider, tokenId, toProviders, ModuleRef, isNil, ModuleType
 } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
 import { CodingsModule, DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, ResponseEventFactory, StatusAdapter, Transport } from '@tsdi/common/transport';
@@ -174,9 +170,7 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                 const opts = { ...defts, ...options, asDefault: null } as ClientModuleOpts & ClientTokenOpts;
                 const clientOpts = { backend: opts.backend ?? TransportBackend, globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS, ...opts.defaultOpts, ...opts.clientOpts, providers: [...opts.defaultOpts?.providers || EMPTY, ...opts.clientOpts?.providers || EMPTY] } as ClientOpts & { providers: ProviderType[] };
 
-                // if(opts.imports) {
-                //     await injector.useAsync(opts.imports)
-                // }
+
                 if (opts.imports) {
                     clientOpts.providers.push({
                         provider: async (injector) => {

@@ -14,8 +14,8 @@ export class HttpClientMessageHandlers {
     }
 
     @Decoding(Http2IncomingMessage, { transport: 'http'})
-    handleHttp2Message(message: IncomingMessage) {
-
+    handleHttp2Message(message: Http2IncomingMessage) {
+        
     }
 
 }

@@ -16,7 +16,7 @@ export abstract class IncomingDecodeHandler implements Handler<any, RequestConte
 
 
 @Injectable()
-export class JsonIncomingDecodeHandler implements IncomingDecodeHandler {
+export class DefaultIncomingDecodeHandler implements IncomingDecodeHandler {
 
     handle(input: PacketData, context: CodingsContext): Observable<RequestContext> {
         if (!(input.url || input.topic || input.headers || input.payload)) {
@@ -34,7 +34,7 @@ export class IncomingDecodeBackend implements Backend<any, RequestContext, Codin
 
     constructor(
         private mappings: CodingMappings,
-        @Optional() private jsonHandler: JsonIncomingDecodeHandler
+        @Optional() private defaultHandler: DefaultIncomingDecodeHandler
     ) { }
 
     handle(input: any, context: CodingsContext): Observable<RequestContext> {
@@ -48,7 +48,7 @@ export class IncomingDecodeBackend implements Backend<any, RequestContext, Codin
                 );
             }, of(input))
         } else {
-            if (this.jsonHandler) return this.jsonHandler.handle(input, context)
+            if (this.defaultHandler) return this.defaultHandler.handle(input, context)
             return throwError(() => new NotSupportedExecption(`No decodings handler for ${context.options.transport}${context.options.microservice ? ' microservice' : ''} incoming type: ${getClassName(type)}`));
         }
 
