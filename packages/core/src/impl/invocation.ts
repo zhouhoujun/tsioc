@@ -37,7 +37,7 @@ export class InvocationHandlerImpl<
         }
     }
 
-    override handle(input: any, context?: TContext): Observable<TOutput> {
+    override handle(input: TInput, context?: TContext): Observable<TOutput> {
         if (input.bootstrap && this.options.bootstrap === false) return of(null) as Observable<TOutput>
         if (isNumber(this.limit)) {
             if (this.limit < 1) return of(null) as Observable<TOutput>;
@@ -67,12 +67,13 @@ export class InvocationHandlerImpl<
      * @returns 
      */
     protected async respond(input: any, context?: TContext) {
+        let newCtx = false;
         if (!(input instanceof InvocationContext)) {
             if (context && context instanceof InvocationContext) {
                 context.setValue(getClass(input), input);
                 input = context;
-
             } else {
+                newCtx = true;
                 const ctx = createContext(this.context);
                 ctx.setValue(getClass(input), input);
                 if (context) ctx.setValue(getClass(context), context);
@@ -88,8 +89,15 @@ export class InvocationHandlerImpl<
         if (isObservable(res)) {
             res = await lastValueFrom(res);
         }
-        if (res instanceof ResultValue) return await res.sendValue(input);
-        return this.respondAs(input, res)
+        if (res instanceof ResultValue) {
+            const result = await res.sendValue(input);
+            if (newCtx) (input as InvocationContext).destroy();
+            return result;
+
+        }
+        const result = this.respondAs(input, res);
+        if (newCtx) (input as InvocationContext).destroy();
+        return result;
     }
 
     /**
@@ -131,7 +139,7 @@ export class InvocationFactorympl<T = any> extends InvocationFactory<T> {
     }
 
     create<TArg>(propertyKey: string, options?: InvocationOptions<TArg>): InvocationHandler {
-        return new InvocationHandlerImpl(this.typeRef.createInvoker<TArg>(propertyKey, options), options ?? EMPTY_OBJ as InvocationOptions);
+        return new InvocationHandlerImpl(this.typeRef.createInvoker<TArg>(propertyKey, options), options ?? EMPTY_OBJ as any);
     }
 
 }
