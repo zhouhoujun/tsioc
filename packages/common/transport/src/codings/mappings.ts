@@ -63,11 +63,10 @@ export class CodingMappings {
 
 
     getEncodeHanlders(type: Type | string, options?: CodingsOpts): Handler[] | null {
-        const maps = this.maps.get(this.getKey(this._enSubfix, options))
-            ?? this.maps.get(this.getKey(this._enSubfix, { transport: options?.transport }))
-                ?? this.maps.get(this.getKey(this._enSubfix));
-        if (!maps) return null;
-        return maps.getHanlder(type) ?? null;
+        const handlers = this.maps.get(this.getKey(this._enSubfix, options))?.getHanlder(type)
+            ?? this.maps.get(this.getKey(this._enSubfix, { transport: options?.transport }))?.getHanlder(type)
+            ?? this.maps.get(this.getKey(this._enSubfix))?.getHanlder(type);
+        return handlers ?? null;
     }
 
     getEncodings(options?: CodingsOpts): Mappings {
@@ -75,11 +74,10 @@ export class CodingMappings {
     }
 
     getDecodeHanlders(type: Type | string, options?: CodingsOpts): Handler[] | null {
-        const maps = this.maps.get(this.getKey(this._deSubFix, options))
-            ?? this.maps.get(this.getKey(this._deSubFix, { transport: options?.transport }))
-                ?? this.maps.get(this.getKey(this._deSubFix));
-        if (!maps) return null;
-        return maps.getHanlder(type) ?? null;
+        const handlers = this.maps.get(this.getKey(this._deSubFix, options))?.getHanlder(type)
+            ?? this.maps.get(this.getKey(this._deSubFix, { transport: options?.transport }))?.getHanlder(type)
+            ?? this.maps.get(this.getKey(this._deSubFix))?.getHanlder(type);
+        return handlers ?? null;
     }
 
     getDecodings(options?: CodingsOpts): Mappings {
