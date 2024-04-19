@@ -1,6 +1,7 @@
-import { InvocationFactoryResolver, InvocationOptions } from '@tsdi/core';
-import { ActionTypes, DecorDefine, Execption, Type, createDecorator, lang } from '@tsdi/ioc';
+import { Interceptor, InvocationFactoryResolver, InvocationOptions } from '@tsdi/core';
+import { ActionTypes, DecorDefine, Execption, Token, Type, createDecorator, getToken, lang } from '@tsdi/ioc';
 import { CodingMappings, CodingsOpts } from './mappings';
+import { CodingsContext } from './codings';
 
 
 export interface CodingsOptions extends InvocationOptions, CodingsOpts {
@@ -15,31 +16,41 @@ export interface EncodingMetadata extends CodingsOptions {
 }
 
 
-export interface Encoding {
+export interface EncodeHandler {
 
     /**
-     * encode handle. use to handle encoding of target, in class with decorator {@link Encoding}.
+     * encode handle. use to handle encoding of target, in class with decorator {@link EncodeHandler}.
      *
      * @param {string|Type} encodings encode target.
      * @param {CodingsOptions} option encode handle invoke option.
      */
-    (encodings: string | Type, option: CodingsOptions): MethodDecorator;
+    (encodings: string | Type, option?: CodingsOptions): MethodDecorator;
+}
+
+const encodingTokens = new Map<string | Type, Token<Interceptor<any, any, CodingsContext>[]>>();
+export function getEncodingInterceptorsToken(encodings: string | Type): Token<Interceptor<any, any, CodingsContext>[]> {
+    let token = encodingTokens.get(encodings);
+    if (!token) {
+        token = getToken<Interceptor<any, any, CodingsContext>[]>(encodings, '_ENCODINGS_INTERCEPTORS');
+        encodingTokens.set(encodings, token);
+    }
+    return token;
 }
 
 /**
  * Encoding decorator. use to define method as Encodings handler.
  * @Encoding
  * 
- * @exports {@link Encoding}
+ * @exports {@link EncodeHandler}
  */
-export const Encoding: Encoding = createDecorator<EncodingMetadata>('Encoding', {
+export const EncodeHandler: EncodeHandler = createDecorator<EncodingMetadata>('Encoding', {
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
-    props: (encodings: string | Type, option?: InvocationOptions) => ({ encodings, ...option }) as EncodingMetadata,
-    def: {
-        class: (ctx, next) => {
-            ctx.class.setAnnotation(ctx.define.metadata);
-            return next();
+    props: (encodings: string | Type, option?: InvocationOptions) => {
+        const opts = { encodings, ...option };
+        if (!opts.interceptorsToken) {
+            opts.interceptorsToken = getEncodingInterceptorsToken(encodings);
         }
+        return opts;
     },
     design: {
         method: (ctx, next) => {
@@ -81,10 +92,10 @@ export interface DecodingMetadata extends CodingsOptions {
 }
 
 
-export interface Decoding {
+export interface DecodeHandler {
 
     /**
-     * encode handle. use to handle encoding of target, in class with decorator {@link Encoding}.
+     * encode handle. use to handle encoding of target, in class with decorator {@link EncodeHandler}.
      *
      * @param {string|Type} encodings encode target.
      * @param {CodingsOptions} option encode handle invoke option.
@@ -92,20 +103,31 @@ export interface Decoding {
     (encodings: string | Type, option?: CodingsOptions): MethodDecorator;
 }
 
+const decodingTokens = new Map<string | Type, Token<Interceptor<any, any, CodingsContext>[]>>();
+export function getDecodingInterceptorsToken(encodings: string | Type): Token<Interceptor<any, any, CodingsContext>[]> {
+    let token = decodingTokens.get(encodings);
+    if (!token) {
+        token = getToken<Interceptor<any, any, CodingsContext>[]>(encodings, '_DECODINGS_INTERCEPTORS');
+        decodingTokens.set(encodings, token);
+    }
+    return token;
+}
+
+
 /**
  * Decoding decorator. use to define method as Decodings handler.
  * @Decoding
  * 
- * @exports {@link Decoding}
+ * @exports {@link DecodeHandler}
  */
-export const Decoding: Decoding = createDecorator<DecodingMetadata>('Decoding', {
+export const DecodeHandler: DecodeHandler = createDecorator<DecodingMetadata>('Decoding', {
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
-    props: (encodings: string | Type, option?: InvocationOptions) => ({ encodings, ...option }) as DecodingMetadata,
-    def: {
-        class: (ctx, next) => {
-            ctx.class.setAnnotation(ctx.define.metadata);
-            return next();
+    props: (encodings: string | Type, option?: InvocationOptions) => {
+        const opts = { encodings, ...option } as DecodingMetadata;
+        if (!opts.interceptorsToken) {
+            opts.interceptorsToken = getDecodingInterceptorsToken(encodings);
         }
+        return opts;
     },
     design: {
         method: (ctx, next) => {

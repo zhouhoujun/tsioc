@@ -1,21 +1,21 @@
-import { Abstract, EMPTY_OBJ, Injectable, Injector, Module, Optional, getClass, getClassName, lang, tokenId } from '@tsdi/ioc';
-import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
+import { EMPTY_OBJ, Injectable, Type, getClass, getClassName, isString, lang } from '@tsdi/ioc';
+import { Handler, Interceptor } from '@tsdi/core';
 import { HEAD, ResponseJsonParseError, TransportEvent, TransportHeaders, TransportRequest } from '@tsdi/common';
-import { CodingMappings, Decoder, CodingsContext, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer, Packet, JsonIncoming, JsonResponseIncoming, ResponseIncoming, Incoming } from '@tsdi/common/transport';
+import {
+    CodingMappings, CodingsContext, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter,
+    XSSI_PREFIX, ev, isBuffer, toBuffer, Packet, JsonResponseIncoming, ResponseIncoming, DecodeHandler
+} from '@tsdi/common/transport';
 import { Observable, defer, mergeMap, of, throwError } from 'rxjs';
 
 
 
-@Abstract()
-export abstract class ResponseDecodeHandler implements Handler<any, TransportEvent, CodingsContext> {
-    abstract handle(input: any, context: CodingsContext): Observable<TransportEvent>
-}
 
 const jsonType = /json/i;
 const textType = /^text/i;
 const xmlType = /xml$/i;
 
-export abstract class AbstractResponseDecodeHanlder extends ResponseDecodeHandler {
+@Injectable()
+export class ResponseIncomingResolver {
 
     resolve(res: ResponseIncoming, context: CodingsContext) {
         return defer(async () => {
@@ -110,55 +110,52 @@ export abstract class AbstractResponseDecodeHanlder extends ResponseDecodeHandle
     }
 }
 
-@Injectable()
-export class DefaultResponseDecodeHandler extends AbstractResponseDecodeHanlder {
 
-    handle(input: Packet, context: CodingsContext): Observable<TransportEvent> {
-        if (!(input.url || input.topic || input.headers || input.payload)) {
-            return throwError(() => new NotSupportedExecption(`${context.options.transport}${context.options.microservice ? ' microservice' : ''} response is not packet data!`));
+@Injectable({ static: true })
+export class ResponseDecodingsHandlers {
+
+    @DecodeHandler('response-message')
+    handleResponseIncoming(context: CodingsContext, resovler: ResponseIncomingResolver) {
+        const res = context.last<ResponseIncoming>();
+        if (!(res.tHeaders instanceof TransportHeaders)) {
+            return throwError(() => new NotSupportedExecption(`${context.options.transport}${context.options.microservice ? ' microservice' : ''} response is not ResponseIncoming!`));
         }
-        const res = new JsonResponseIncoming(input, context.options);
-        return this.resolve(res, context)
+        return resovler.resolve(res, context);
     }
-
 }
 
 
-
-
 @Injectable()
-export class ResponseDecodeBackend implements Backend<any, TransportEvent, CodingsContext> {
+export class ResponseDecodeInterceper implements Interceptor<any, any, CodingsContext> {
 
-    constructor(
-        private mappings: CodingMappings,
-        @Optional() private defaultHandler: DefaultResponseDecodeHandler
-    ) { }
+    constructor(private mappings: CodingMappings) { }
 
-    handle(input: any, context: CodingsContext): Observable<TransportEvent> {
-        const type = getClass(input);
-        const handlers = this.mappings.getDecodings(context.options).getHanlder(type);
+    intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
+        return next.handle(input, context).pipe(
+            mergeMap(res => {
+                let type: Type | string = getClass(res);
+                if (type === Object) {
+                    const packet = res as Packet;
+                    if (!(packet.url || packet.topic || packet.headers || packet.payload)) {
+                        return throwError(() => new NotSupportedExecption(`${context.options.transport}${context.options.microservice ? ' microservice' : ''} response is not packet data!`));
+                    }
+                    type = 'response-message';
+                    res = new JsonResponseIncoming(packet, context.options);
+                    context.next(res);
+                }
 
-        if (handlers && handlers.length) {
-            return handlers.reduceRight((obs$, curr) => {
-                return obs$.pipe(
-                    mergeMap(input => curr.handle(input, context.next(input)))
-                );
-            }, of(input))
-        } else {
-            if (this.defaultHandler) return this.defaultHandler.handle(input, context.next(input));
-            return throwError(() => new NotSupportedExecption(`No encodings handler for ${context.options.transport}${context.options.microservice ? ' microservice' : ''} response type: ${getClassName(type)}`));
-        }
-    }
+                const handlers = this.mappings.getDecodings(context.options).getHanlder(type) ?? this.mappings.getDecodings().getHanlder(type);
 
-}
-
-
-export const RESPONSE_DECODE_INTERCEPTORS = tokenId<Interceptor<any, TransportEvent, CodingsContext>[]>('RESPONSE_DECODE_INTERCEPTORS');
-
-@Injectable()
-export class ResponseDecodeInterceptingHandler extends InterceptingHandler<any, TransportEvent, CodingsContext> {
-    constructor(backend: ResponseDecodeBackend, injector: Injector) {
-        super(backend, () => injector.get(RESPONSE_DECODE_INTERCEPTORS, []))
+                if (handlers && handlers.length) {
+                    return handlers.reduceRight((obs$, curr) => {
+                        return obs$.pipe(
+                            mergeMap(nxt => curr.handle(nxt, context.next(nxt)))
+                        );
+                    }, of(res))
+                } else {
+                    return throwError(() => new NotSupportedExecption(`No encodings handler for ${context.options.transport}${context.options.microservice ? ' microservice' : ''} response type: ${isString(type) ? type : getClassName(type)}`))
+                }
+            }));
     }
 }
 
@@ -185,29 +182,6 @@ export class RequestStauts {
     }
 }
 
-
-
-
-@Injectable()
-export class ResponseDecoder extends Decoder<any, TransportEvent> implements Interceptor<any, TransportEvent, CodingsContext> {
-
-    constructor(readonly handler: ResponseDecodeHandler) {
-        super()
-    }
-
-    intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<TransportEvent> {
-        return next.handle(input, context)
-            .pipe(
-                mergeMap(res => this.handler.handle(res, context.next(res))),
-
-                // catchError((err, caught) => {
-                //     const req = context.first() as TransportRequest;
-                //     const eventFactory = req.context.get(ResponseEventFactory);
-                //     return throwError(() => (eventFactory.createErrorResponse({ ...req, error: err, status: err.status ?? err.statusCode, statusText: err.message })))
-                // })
-            );
-    }
-}
 
 
 @Injectable()
@@ -294,16 +268,4 @@ export class CompressResponseDecordeInterceptor implements Interceptor<ResponseI
         }
         return next.handle(input, context)
     }
-}
-
-
-@Module({
-    providers: [
-        ResponseDecodeBackend,
-        { provide: ResponseDecodeHandler, useClass: ResponseDecodeInterceptingHandler },
-        ResponseDecoder
-    ]
-})
-export class ResponseDecodingsModule {
-
 }

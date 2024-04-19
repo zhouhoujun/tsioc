@@ -1,4 +1,4 @@
-import { Class, EMPTY_OBJ, Injectable, Injector, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, isFunction, isNumber, isPromise, isString } from '@tsdi/ioc';
+import { Class, EMPTY_OBJ, Injectable, Injector, InvocationContext, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, createContext, getClass, isFunction, isNumber, isPromise, isString, lang } from '@tsdi/ioc';
 import { Observable, isObservable, lastValueFrom, of } from 'rxjs';
 import { Backend } from '../Handler';
 import { FnHandler } from '../handlers/handler';
@@ -37,7 +37,7 @@ export class InvocationHandlerImpl<
         }
     }
 
-    override handle(input: TInput, context?: TContext): Observable<TOutput> {
+    override handle(input: any, context?: TContext): Observable<TOutput> {
         if (input.bootstrap && this.options.bootstrap === false) return of(null) as Observable<TOutput>
         if (isNumber(this.limit)) {
             if (this.limit < 1) return of(null) as Observable<TOutput>;
@@ -66,7 +66,19 @@ export class InvocationHandlerImpl<
      * @param input 
      * @returns 
      */
-    protected async respond(input: TInput, context?: TContext) {
+    protected async respond(input: any, context?: TContext) {
+        if (!(input instanceof InvocationContext)) {
+            if (context && context instanceof InvocationContext) {
+                context.setValue(getClass(input), input);
+                input = context;
+
+            } else {
+                const ctx = createContext(this.context);
+                ctx.setValue(getClass(input), input);
+                if (context) ctx.setValue(getClass(context), context);
+                input = ctx;
+            }
+        }
         await this.beforeInvoke(input);
         let res = await this.invoker.invoke(input);
 

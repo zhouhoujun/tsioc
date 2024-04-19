@@ -1,4 +1,4 @@
-import { Decoding } from '@tsdi/common/transport';
+import { DecodeHandler } from '@tsdi/common/transport';
 import { Injectable } from '@tsdi/ioc';
 import { IncomingMessage } from 'http';
 import { Http2IncomingMessage } from './client/client.session';
@@ -8,12 +8,12 @@ import { Http2IncomingMessage } from './client/client.session';
 export class HttpClientMessageHandlers {
 
     
-    @Decoding(IncomingMessage, { transport: 'http'})
+    @DecodeHandler(IncomingMessage, { transport: 'http'})
     handleHttpMessage(message: IncomingMessage) {
 
     }
 
-    @Decoding(Http2IncomingMessage, { transport: 'http'})
+    @DecodeHandler(Http2IncomingMessage, { transport: 'http'})
     handleHttp2Message(message: Http2IncomingMessage) {
         
     }

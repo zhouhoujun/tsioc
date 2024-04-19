@@ -8,12 +8,12 @@ import { CodingMappings, CodingsOpts } from './mappings';
 
 @Abstract()
 export abstract class DecodingsHandler implements Handler<any, any, CodingsContext> {
-    abstract handle(input: Buffer, context: CodingsContext): Observable<any>
+    abstract handle(input: any, context: CodingsContext): Observable<any>
 }
 
 @Abstract()
 export abstract class DefaultDecodingsHandler implements DecodingsHandler {
-    abstract handle(input: Buffer, context: CodingsContext): Observable<any>
+    abstract handle(input: any, context: CodingsContext): Observable<any>
 }
 
 

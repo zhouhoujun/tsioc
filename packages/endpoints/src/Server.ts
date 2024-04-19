@@ -8,19 +8,11 @@ import { RouteOpts } from './router/router.module';
 import { ContentOptions } from './interceptors/content';
 import { RequestHandler } from './RequestHandler';
 import { TransportSessionFactory } from './transport.session';
-import { DefaultOutgoingEncodeHandler } from './codings/outgoing.encodings';
-import { DefaultIncomingDecodeHandler } from './codings/incoming.decodings';
 
 
 export interface ProxyOpts {
     proxyIpHeader: string;
     maxIpsCount?: number;
-}
-
-export interface ServerTransportOpts extends TransportOpts {
-    defaultOutgoingHanlder?: ProvdierOf<DefaultOutgoingEncodeHandler>;
-    defaultIncomingHanlder?: ProvdierOf<DefaultIncomingDecodeHandler>;
-
 }
 
 /**
@@ -45,7 +37,7 @@ export interface ServerOpts<TSerOpts = any> extends EndpointOptions<any> {
     /**
      * transport session options.
      */
-    transportOpts?: ServerTransportOpts;
+    transportOpts?: TransportOpts;
     /**
      * service transport session factory.
      */

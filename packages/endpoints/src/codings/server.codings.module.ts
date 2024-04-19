@@ -1,18 +1,16 @@
 import { Module } from '@tsdi/ioc';
-import { IncomingDecodingsModule } from './incoming.decodings';
-import { OutgoingEncodingsModule } from './outgoing.encodings';
+import { CodingsModule } from '@tsdi/common/transport';
+import { IncomingDecodingsHandlers } from './incoming.decodings';
+import { OutgoingEncodingsHandlers } from './outgoing.encodings';
 
 
 @Module({
     imports: [
-        OutgoingEncodingsModule,
-        IncomingDecodingsModule
+        CodingsModule
     ],
     providers: [
-    ],
-    exports:[
-        OutgoingEncodingsModule,
-        IncomingDecodingsModule
+        IncomingDecodingsHandlers,
+        OutgoingEncodingsHandlers
     ]
 })
 export class ServerCodingsModule {

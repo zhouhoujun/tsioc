@@ -12,7 +12,7 @@ import { BodyContentInterceptor } from './interceptors/body';
 import { RestfulRedirector } from './redirector';
 import { ClientTransportSessionFactory } from './session';
 import { ClientDuplexTransportSessionFactory } from './duplex.session';
-import { ClientCodingsModule, DefaultRequestEncodeHandler, DefaultResponseDecodeHandler, RequestEncoder, ResponseDecoder } from './codings';
+import { ClientCodingsModule, RequestEncodeInterceper, ResponseDecodeInterceper } from './codings';
 import { DefaultResponseEventFactory } from './response.factory';
 
 /**
@@ -91,8 +91,7 @@ export interface ClientTokenOpts {
  */
 @Module({
     imports: [
-        ClientCodingsModule,
-        CodingsModule,
+        ClientCodingsModule
     ],
     providers: [
         ClientDuplexTransportSessionFactory,
@@ -198,14 +197,6 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     clientOpts.providers.push(toProvider(StatusAdapter, clientOpts.statusAdapter))
                 }
 
-                if (clientOpts.transportOpts.defaultOutgoingHanlder) {
-                    clientOpts.providers.push(toProvider(DefaultRequestEncodeHandler, clientOpts.transportOpts.defaultOutgoingHanlder))
-                }
-
-                if (clientOpts.transportOpts.defaultIncomingHanlder) {
-                    clientOpts.providers.push(toProvider(DefaultResponseDecodeHandler, clientOpts.transportOpts.defaultIncomingHanlder))
-                }
-
                 if (clientOpts.transportOpts.defaultEncodingsHandler) {
                     clientOpts.providers.push(toProvider(DefaultEncodingsHandler, clientOpts.transportOpts.defaultEncodingsHandler))
                 }
@@ -214,8 +205,8 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     clientOpts.providers.push(toProvider(DefaultDecodingsHandler, clientOpts.transportOpts.defaultDecodingsHandler))
                 }
 
-                clientOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, clientOpts.transportOpts.encodeInterceptors ?? [RequestEncoder], true));
-                clientOpts.providers.push(...toProviders(DECODINGS_INTERCEPTORS, clientOpts.transportOpts.decodeInterceptors ?? [ResponseDecoder], true));
+                clientOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, clientOpts.transportOpts.encodeInterceptors ?? [RequestEncodeInterceper], true));
+                clientOpts.providers.push(...toProviders(DECODINGS_INTERCEPTORS, clientOpts.transportOpts.decodeInterceptors ?? [ResponseDecodeInterceper], true));
 
                 if (clientOpts.sessionFactory && clientOpts.sessionFactory !== ClientTransportSessionFactory) {
                     clientOpts.providers.push(toProvider(ClientTransportSessionFactory, clientOpts.sessionFactory))

@@ -22,8 +22,8 @@ import { DuplexTransportSessionFactory } from './impl/duplex.session';
 import { MiddlewareOpts, createMiddlewareEndpoint } from './middleware/middleware.endpoint';
 import { EndpointHandler, createEndpoint } from './EndpointHandler';
 import { ServerCodingsModule } from './codings/server.codings.module';
-import { DefaultOutgoingEncodeHandler, OutgoingEncoder } from './codings/outgoing.encodings';
-import { DefaultIncomingDecodeHandler, IncomingDecoder } from './codings/incoming.decodings';
+import { OutgoingEncodeInterceper } from './codings/outgoing.encodings';
+import { IncomingDecodeInterceper } from './codings/incoming.decodings';
 import { RequestContextFactoryImpl } from './impl/request.context';
 import { DefaultExecptionHandlers } from './execption.handlers';
 
@@ -141,7 +141,6 @@ export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
     imports: [
         TransformModule,
         ServerCodingsModule,
-        CodingsModule,
         MicroServRouterModule,
         RouterModule
     ],
@@ -275,14 +274,6 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     serverOpts.transportOpts.microservice = serverOpts.microservice;
                 }
 
-                if (serverOpts.transportOpts.defaultOutgoingHanlder) {
-                    serverOpts.providers.push(toProvider(DefaultOutgoingEncodeHandler, serverOpts.transportOpts.defaultOutgoingHanlder))
-                }
-
-                if (serverOpts.transportOpts.defaultIncomingHanlder) {
-                    serverOpts.providers.push(toProvider(DefaultIncomingDecodeHandler, serverOpts.transportOpts.defaultIncomingHanlder))
-                }
-
                 if (serverOpts.transportOpts.defaultEncodingsHandler) {
                     serverOpts.providers.push(toProvider(DefaultEncodingsHandler, serverOpts.transportOpts.defaultEncodingsHandler))
                 }
@@ -291,8 +282,8 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     serverOpts.providers.push(toProvider(DefaultDecodingsHandler, serverOpts.transportOpts.defaultDecodingsHandler))
                 }
 
-                serverOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, serverOpts.transportOpts.encodeInterceptors ?? [OutgoingEncoder], true));
-                serverOpts.providers.push(...toProviders(DECODINGS_INTERCEPTORS, serverOpts.transportOpts.decodeInterceptors ?? [IncomingDecoder], true));
+                serverOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, serverOpts.transportOpts.encodeInterceptors ?? [OutgoingEncodeInterceper], true));
+                serverOpts.providers.push(...toProviders(DECODINGS_INTERCEPTORS, serverOpts.transportOpts.decodeInterceptors ?? [IncomingDecodeInterceper], true));
 
                 if (serverOpts.statusAdapter) {
                     serverOpts.providers.push(toProvider(StatusAdapter, serverOpts.statusAdapter))

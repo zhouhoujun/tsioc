@@ -17,7 +17,7 @@ export class Mappings {
     }
 
     getHanlder(type: Type | string): Handler[] | null {
-        return this.maps.get(type) ?? [];
+        return this.maps.get(type) ?? null;
     }
 
     addHandler(type: Type | string, handler: Handler, order = -1) {
@@ -79,7 +79,7 @@ export class CodingMappings {
 
     private getKey(subfix: string, options?: CodingsOpts) {
         if (!options) return subfix;
-        return `${options.microservice ? 'micro_' : ''}${(options.transport ?? '')} _${(options.client ? 'client' : 'service')}_${subfix}`;
+        return `${options.microservice ? 'micro_' : ''}${(options.transport ?? '')}${(options.client ? '_client_' : '')}${subfix}`;
     }
 
 }

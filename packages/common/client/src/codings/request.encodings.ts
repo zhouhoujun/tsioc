@@ -1,97 +1,55 @@
-import { Abstract, Injectable, Injector, Module, Optional, getClass, getClassName, tokenId } from '@tsdi/ioc';
-import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
+import { Injectable, getClass, getClassName } from '@tsdi/ioc';
+import { Handler, Interceptor } from '@tsdi/core';
 import { PatternFormatter, TransportRequest } from '@tsdi/common';
-import { CodingMappings, Encoder, CodingsContext, NotSupportedExecption, PacketData } from '@tsdi/common/transport';
+import { CodingMappings, CodingsContext, NotSupportedExecption, PacketData, EncodeHandler } from '@tsdi/common/transport';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
 
 
 
+@Injectable({ static: true })
+export class RequestEncodingsHandlers {
 
-@Abstract()
-export abstract class RequestEncodeHandler implements Handler<TransportRequest, PacketData, CodingsContext> {
-    abstract handle(input: TransportRequest, context: CodingsContext): Observable<PacketData>
-}
-
-@Injectable()
-export class DefaultRequestEncodeHandler implements RequestEncodeHandler {
-    handle(input: TransportRequest, context: CodingsContext): Observable<PacketData> {
+    @EncodeHandler(TransportRequest)
+    handleRequest(req: TransportRequest) {
         const packet = {
-            url: input.urlWithParams,
-            headers: input.headers,
-            payload: input.payload,
-            payloadLength: input.headers.getContentLength()
+            url: req.urlWithParams,
+            headers: req.headers,
+            payload: req.payload,
+            payloadLength: req.headers.getContentLength()
         } as PacketData;
-        if (!packet.url && input.pattern) {
-            packet.url = input.context.get(PatternFormatter).format(input.pattern);
+        if (!packet.url && req.pattern) {
+            packet.url = req.context.get(PatternFormatter).format(req.pattern);
         }
-        if (input.method) {
-            packet.method = input.method;
+        if (req.method) {
+            packet.method = req.method;
         }
-        return of(packet)
+        return packet
     }
 }
 
 
-
 @Injectable()
-export class RequestEncodeBackend implements Backend<TransportRequest, PacketData> {
+export class RequestEncodeInterceper implements Interceptor<any, any, CodingsContext> {
 
-    constructor(
-        private mappings: CodingMappings,
-        @Optional() private defaultHandler: DefaultRequestEncodeHandler
-    ) { }
+    constructor(private mappings: CodingMappings) {
+    }
 
-    handle(input: TransportRequest<any>, context: CodingsContext): Observable<PacketData> {
+    intercept(input: TransportRequest<any>, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
+
         const type = getClass(input);
-        const handlers = this.mappings.getEncodings(context.options).getHanlder(type);
+        const handlers = this.mappings.getEncodings(context.options).getHanlder(type) ?? this.mappings.getEncodings().getHanlder(type);
 
         if (handlers && handlers.length) {
             return handlers.reduceRight((obs$, curr) => {
                 return obs$.pipe(
-                    mergeMap(input => curr.handle(input, context.next(input)))
+                    mergeMap(input => curr.handle(input, context.next(input))),
+                    mergeMap(res => next.handle(res, context))
                 );
             }, of(input))
         } else {
-            if (this.defaultHandler) return this.defaultHandler.handle(input, context)
             return throwError(() => new NotSupportedExecption(`No encodings handler for ${context.options.transport}${context.options.microservice ? ' microservice' : ''} request type: ${getClassName(type)}`))
         }
-
     }
 }
 
 
-export const REQUEST_ENCODE_INTERCEPTORS = tokenId<Interceptor<TransportRequest, PacketData>[]>('REQUEST_ENCODE_INTERCEPTORS');
-
-@Injectable({ static: false })
-export class RequestEncodeInterceptingHandler extends InterceptingHandler<TransportRequest, PacketData> {
-    constructor(backend: RequestEncodeBackend, injector: Injector) {
-        super(backend, () => injector.get(REQUEST_ENCODE_INTERCEPTORS, []))
-    }
-}
-
-
-
-@Injectable()
-export class RequestEncoder extends Encoder<TransportRequest, PacketData> implements Interceptor<any, PacketData, CodingsContext> {
-
-    constructor(readonly handler: RequestEncodeHandler) {
-        super()
-    }
-
-    intercept(input: TransportRequest<any>, next: Handler<any, PacketData<any>, CodingsContext>, context: CodingsContext): Observable<PacketData<any>> {
-        return this.handler.handle(input, context).pipe(
-            mergeMap(output => next.handle(output, context.next(output))));
-    }
-}
-
-
-@Module({
-    providers: [
-        RequestEncodeBackend,
-        { provide: RequestEncodeHandler, useClass: RequestEncodeInterceptingHandler },
-        RequestEncoder
-    ]
-})
-export class RequestEncodingsModule {
-
-}

@@ -1,20 +1,19 @@
 import { Module } from '@tsdi/ioc';
-import { RequestEncodingsModule } from './request.encodings';
-import { ResponseDecodingsModule } from './response.decodings';
+import { RequestEncodingsHandlers } from './request.encodings';
+import { CompressResponseDecordeInterceptor, ResponseDecodingsHandlers } from './response.decodings';
 import { CodingsTransportBackend } from './transport.backend';
 import { TransportBackend } from '../backend';
+import { CodingsModule, getDecodingInterceptorsToken } from '@tsdi/common/transport';
 
 @Module({
-    imports: [
-        RequestEncodingsModule,
-        ResponseDecodingsModule
+    imports:[
+        CodingsModule
     ],
     providers: [
         { provide: TransportBackend, useClass: CodingsTransportBackend },
-    ],
-    exports:[
-        RequestEncodingsModule,
-        ResponseDecodingsModule
+        RequestEncodingsHandlers,
+        ResponseDecodingsHandlers,
+        { provide: getDecodingInterceptorsToken('ResponseIncoming'), useClass: CompressResponseDecordeInterceptor, multi: true }
     ]
 })
 export class ClientCodingsModule {
