@@ -37,7 +37,7 @@ export class RequestEncodeInterceper implements Interceptor<any, any, CodingsCon
     intercept(input: TransportRequest<any>, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
 
         const type = getClass(input);
-        const handlers = this.mappings.getEncodings(context.options).getHanlder(type) ?? this.mappings.getEncodings().getHanlder(type);
+        const handlers = this.mappings.getEncodeHanlders(type, context.options);
 
         if (handlers && handlers.length) {
             return handlers.reduceRight((obs$, curr) => {

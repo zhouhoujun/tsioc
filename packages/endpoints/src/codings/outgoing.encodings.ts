@@ -38,12 +38,12 @@ export class OutgoingEncodeInterceper implements Interceptor<any, any, CodingsCo
     }
 
     intercept(input: RequestContext, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
-
+        const transport = context.options.transport;
         let type = getClass(input);
         if (type == RequestContextImpl) {
             type = RequestContext;
         }
-        const handlers = this.mappings.getEncodings(context.options).getHanlder(type) ?? this.mappings.getEncodings().getHanlder(type);
+        const handlers = this.mappings.getEncodeHanlders(type, context.options);
 
         if (handlers && handlers.length) {
             return handlers.reduceRight((obs$, curr) => {
@@ -53,7 +53,7 @@ export class OutgoingEncodeInterceper implements Interceptor<any, any, CodingsCo
                 );
             }, of(input))
         } else {
-            return throwError(() => new NotSupportedExecption(`No encodings handler for ${context.options.transport}${context.options.microservice ? ' microservice' : ''} outgoing type: ${getClassName(type)}`))
+            return throwError(() => new NotSupportedExecption(`No encodings handler for ${transport}${context.options.microservice ? ' microservice' : ''} outgoing type: ${getClassName(type)}`))
         }
     }
 }

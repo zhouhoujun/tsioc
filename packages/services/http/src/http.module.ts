@@ -15,6 +15,9 @@ import { HttpStatusAdapter } from './status';
 import { HttpExecptionHandlers } from './execption.handlers';
 import { HttpClientSessionFactory } from './client/client.session';
 import { HttpServerSessionFactory } from './server/http.session';
+import { HttpRequestEncodingsHandlers } from './client/encodings.handlers';
+import { HttpResponseEventFactory } from './client/response.factory';
+import { HttpResponseDecodingsHandlers } from './client/decodings.hanlders';
 
 
 // const defaultMaxSize = 1048576; // 1024 * 1024;
@@ -23,9 +26,13 @@ import { HttpServerSessionFactory } from './server/http.session';
 
 @Module({
     providers: [
+
         Http,
         HttpServer,
         HttpStatusAdapter,
+        HttpResponseEventFactory,
+        HttpRequestEncodingsHandlers,
+        HttpResponseDecodingsHandlers,
         // HttpTransportBackend,
         HttpPathInterceptor,
         HttpClientSessionFactory,
@@ -40,6 +47,7 @@ import { HttpServerSessionFactory } from './server/http.session';
                 microservice: true,
                 hanlderType: HttpHandler,
                 imports: [MimeModule],
+                responseEventFactory: { useExisting: HttpResponseEventFactory },
                 defaultOpts: {
                     interceptorsToken: HTTP_CLIENT_INTERCEPTORS,
                     filtersToken: HTTP_CLIENT_FILTERS,
@@ -65,6 +73,7 @@ import { HttpServerSessionFactory } from './server/http.session';
                     interceptorsToken: HTTP_CLIENT_INTERCEPTORS,
                     filtersToken: HTTP_CLIENT_FILTERS,
                     statusAdapter: { useExisting: HttpStatusAdapter },
+                    responseEventFactory: { useExisting: HttpResponseEventFactory },
                     // backend: HttpTransportBackend,
                     transportOpts: {
                         delimiter: '#',

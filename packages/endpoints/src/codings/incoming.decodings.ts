@@ -35,17 +35,17 @@ export class IncomingDecodeInterceper implements Interceptor<any, any, CodingsCo
     intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
         return next.handle(input, context).pipe(
             mergeMap(res => {
-
+                const transport = context.options.transport;
                 let type: Type | string = getClass(res);
                 if (type === Object) {
                     const packet = res as PacketData;
                     if (!(packet.url || packet.topic || packet.headers || packet.payload)) {
-                        return throwError(() => new NotSupportedExecption(`${context.options.transport}${context.options.microservice ? ' microservice' : ''} incoming is not packet data!`));
+                        return throwError(() => new NotSupportedExecption(`${transport}${context.options.microservice ? ' microservice' : ''} incoming is not packet data!`));
                     }
                     type = 'incoming-message';
                     context.next(packet);
                 }
-                const handlers = this.mappings.getDecodings(context.options).getHanlder(type) ?? this.mappings.getDecodings().getHanlder(type);
+                const handlers = this.mappings.getDecodeHanlders(type, context.options);
 
                 if (handlers && handlers.length) {
                     return handlers.reduceRight((obs$, curr) => {
@@ -54,7 +54,7 @@ export class IncomingDecodeInterceper implements Interceptor<any, any, CodingsCo
                         );
                     }, of(res))
                 } else {
-                    return throwError(() => new NotSupportedExecption(`No encodings handler for ${context.options.transport}${context.options.microservice ? ' microservice' : ''} incoming type: ${isString(type) ? type : getClassName(type)}`))
+                    return throwError(() => new NotSupportedExecption(`No encodings handler for ${transport}${context.options.microservice ? ' microservice' : ''} incoming type: ${isString(type) ? type : getClassName(type)}`))
                 }
             })
         );

@@ -59,6 +59,10 @@ export interface ClientModuleOpts extends ClientModuleConfig {
      */
     hanlderType: Type<ClientHandler>;
     /**
+     * response event factory.
+     */
+    responseEventFactory?: ProvdierOf<ResponseEventFactory>;
+    /**
      * client default options
      */
     defaultOpts?: ClientOpts;
@@ -195,6 +199,10 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
 
                 if (clientOpts.statusAdapter) {
                     clientOpts.providers.push(toProvider(StatusAdapter, clientOpts.statusAdapter))
+                }
+
+                if(opts.responseEventFactory) {
+                    clientOpts.providers.push(toProvider(ResponseEventFactory, opts.responseEventFactory));
                 }
 
                 if (clientOpts.transportOpts.defaultEncodingsHandler) {

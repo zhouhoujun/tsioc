@@ -144,7 +144,7 @@ export class ResponseDecodeInterceper implements Interceptor<any, any, CodingsCo
                     context.next(res);
                 }
 
-                const handlers = this.mappings.getDecodings(context.options).getHanlder(type) ?? this.mappings.getDecodings().getHanlder(type);
+                const handlers = this.mappings.getDecodeHanlders(type, context.options);
 
                 if (handlers && handlers.length) {
                     return handlers.reduceRight((obs$, curr) => {

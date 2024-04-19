@@ -27,7 +27,7 @@ export class DecodingsBackend implements Backend<any, any, CodingsContext> {
 
     handle(input: any, context: CodingsContext): Observable<any> {
         const type = getClass(input);
-        const handlers = this.mappings.getDecodings(context.options).getHanlder(type);
+        const handlers = this.mappings.getDecodeHanlders(type, context.options);
 
         if (handlers && handlers.length) {
             return handlers.reduceRight((obs$, curr) => {

@@ -32,8 +32,8 @@ export class Mappings {
 
     }
 
-    removeHandler(event: Type | string, handler: Handler): this {
-        const handlers = this.maps.get(event);
+    removeHandler(type: Type | string, handler: Handler): this {
+        const handlers = this.maps.get(type);
         if (handlers) {
             const idx = handlers.findIndex(i => i.equals ? i.equals(handler) : i === handler);
             if (idx >= 0) {
@@ -55,16 +55,35 @@ export class Mappings {
 export class CodingMappings {
 
     maps: Map<string, Mappings>;
+    private _enSubfix = 'encodings';
+    private _deSubFix = 'decodings';
     constructor() {
         this.maps = new Map();
     }
 
+
+    getEncodeHanlders(type: Type | string, options?: CodingsOpts): Handler[] | null {
+        const maps = this.maps.get(this.getKey(this._enSubfix, options))
+            ?? this.maps.get(this.getKey(this._enSubfix, { transport: options?.transport }))
+                ?? this.maps.get(this.getKey(this._enSubfix));
+        if (!maps) return null;
+        return maps.getHanlder(type) ?? null;
+    }
+
     getEncodings(options?: CodingsOpts): Mappings {
-        return this.get('encodings', options)
+        return this.get(this._enSubfix, options)
+    }
+
+    getDecodeHanlders(type: Type | string, options?: CodingsOpts): Handler[] | null {
+        const maps = this.maps.get(this.getKey(this._deSubFix, options))
+            ?? this.maps.get(this.getKey(this._deSubFix, { transport: options?.transport }))
+                ?? this.maps.get(this.getKey(this._deSubFix));
+        if (!maps) return null;
+        return maps.getHanlder(type) ?? null;
     }
 
     getDecodings(options?: CodingsOpts): Mappings {
-        return this.get('decodings', options)
+        return this.get(this._deSubFix, options)
     }
 
     private get(subfix: string, options?: CodingsOpts): Mappings {
