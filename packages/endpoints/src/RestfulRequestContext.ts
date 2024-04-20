@@ -1,5 +1,5 @@
 import { Abstract, Injector } from '@tsdi/ioc';
-import { Incoming, Outgoing, encodeUrl, escapeHtml, ctype } from '@tsdi/common/transport';
+import { Incoming, Outgoing, encodeUrl, escapeHtml, ctype, NotSupportedExecption } from '@tsdi/common/transport';
 import { RequestContext } from './RequestContext';
 import { ServerOpts } from './Server';
 import { TransportSession } from './transport.session';
@@ -142,7 +142,7 @@ export abstract class RestfulRequestContext<
      * @api public
      */
     redirect(url: string, alt?: string): void {
-        if (!this.statusAdapter) return;
+        if (!this.statusAdapter) throw new NotSupportedExecption();
 
         if ('back' === url) url = this.getHeader('referrer') as string || alt || '/';
         this.setHeader('location', encodeUrl(url));
