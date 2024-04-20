@@ -1,5 +1,5 @@
 import { Injectable, getClass, getClassName } from '@tsdi/ioc';
-import { mergeMap, of, throwError } from 'rxjs';
+import { Observable, mergeMap, of, throwError } from 'rxjs';
 import { NotSupportedExecption } from '../execptions';
 import { CodingMappings } from './mappings';
 import { CodingsContext } from './context';
@@ -13,7 +13,7 @@ export class Codings {
 
     constructor(private mappings: CodingMappings) { }
 
-    encode<T>(input: T, context: CodingsContext): any {
+    encode<TOutput = any>(input: any, context: CodingsContext): Observable<TOutput> {
         const type = getClass(input);
         const handlers = this.mappings.getEncodeHanlders(type, context.options);
 
@@ -28,7 +28,7 @@ export class Codings {
         }
     }
 
-    decode<T>(input: T, context: CodingsContext): any {
+    decode<TOutput = any>(input: any, context: CodingsContext): Observable<TOutput> {
         const type = getClass(input);
         const handlers = this.mappings.getDecodeHanlders(type, context.options);
 

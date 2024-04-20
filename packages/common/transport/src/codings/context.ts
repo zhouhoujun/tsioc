@@ -1,5 +1,6 @@
 import { OnDestroy } from '@tsdi/ioc';
 import { AbstractTransportSession } from '../TransportSession';
+import { CodingsOpts } from './mappings';
 
 
 
@@ -10,13 +11,21 @@ export class CodingsContext implements OnDestroy {
         return this._inputs;
     }
 
-    constructor(readonly session: AbstractTransportSession) {
+    readonly options: CodingsOpts;
+    readonly session?: AbstractTransportSession;
+    
+    constructor(options: CodingsOpts);
+    constructor(session: AbstractTransportSession);
+    constructor(args: CodingsOpts | AbstractTransportSession) {
+        if(args instanceof AbstractTransportSession) {
+            this.session = args;
+            this.options = this.session.options;
+        } else {
+            this.options = args;
+        }
         this._inputs = [];
     }
 
-    get options() {
-        return this.session.options
-    }
 
     next<TInput>(input: TInput): this {
         if (this._inputs[0] != input) {

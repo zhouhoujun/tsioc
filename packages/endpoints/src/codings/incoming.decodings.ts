@@ -17,7 +17,7 @@ export class IncomingDecodingsHandlers {
             return throwError(() => new NotSupportedExecption(`${context.options.transport}${context.options.microservice ? ' microservice' : ''} incoming is not packet data!`));
         }
         const session = context.session as TransportSession;
-        const injector = context.session.injector;
+        const injector = session.injector;
 
         return injector.get(RequestContextFactory).create(session, new PacketIncoming(input, context.options), new PacketOutgoing(input, context.options), session.options);
     }
