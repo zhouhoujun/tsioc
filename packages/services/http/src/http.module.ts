@@ -18,6 +18,7 @@ import { HttpServerSessionFactory } from './server/http.session';
 import { HttpRequestEncodingsHandlers } from './client/encodings.handlers';
 import { HttpResponseEventFactory } from './client/response.factory';
 import { HttpResponseDecodingsHandlers } from './client/decodings.hanlders';
+import { HttpIncomingDecodingsHandlers } from './server/decodings.handlers';
 
 
 // const defaultMaxSize = 1048576; // 1024 * 1024;
@@ -32,6 +33,7 @@ import { HttpResponseDecodingsHandlers } from './client/decodings.hanlders';
         HttpResponseEventFactory,
         HttpRequestEncodingsHandlers,
         HttpResponseDecodingsHandlers,
+        HttpIncomingDecodingsHandlers,
         // HttpTransportBackend,
         HttpPathInterceptor,
         HttpClientSessionFactory,

@@ -6,6 +6,7 @@ import { Server as HttpsServer } from 'https';
 import { Http2Server, ClientHttp2Stream, IncomingHttpHeaders, IncomingHttpStatusHeader } from 'http2';
 import { Observable, defer, share, takeUntil } from 'rxjs';
 import { HttpContext, HttpServRequest, HttpServResponse } from './context';
+import { HttpServerOpts } from './options';
 
 
 export type ResponseMsg = IncomingMessage | {
@@ -28,7 +29,7 @@ export class HttpServerTransportSession extends TransportSession<Http2Server | H
         readonly streamAdapter: StreamAdapter,
         readonly encodings: Encoder,
         readonly decodings: Decoder,
-        readonly options: TransportOpts) {
+        readonly options: HttpServerOpts) {
         super()
     }
 
@@ -71,12 +72,11 @@ export class HttpServerSessionFactory implements TransportSessionFactory<Http2Se
 
     constructor() { }
 
-    create(injector: Injector, socket: Http2Server | HttpsServer | Server, options: TransportOpts): HttpServerTransportSession {
+    create(injector: Injector, socket: Http2Server | HttpsServer | Server, options: HttpServerOpts): HttpServerTransportSession {
         return new HttpServerTransportSession(injector, socket,
             injector.get(StreamAdapter),
-
-            injector.get(options.encodingsFactory ?? EncodingsFactory).create(injector, options),
-            injector.get(options.decodingsFactory ?? DecodingsFactory).create(injector, options),
+            injector.get(options.transportOpts?.encodingsFactory ?? EncodingsFactory).create(injector, options),
+            injector.get(options.transportOpts?.decodingsFactory ?? DecodingsFactory).create(injector, options),
             options);
     }
 
