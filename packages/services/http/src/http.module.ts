@@ -26,7 +26,6 @@ import { HttpResponseDecodingsHandlers } from './client/decodings.hanlders';
 
 @Module({
     providers: [
-
         Http,
         HttpServer,
         HttpStatusAdapter,

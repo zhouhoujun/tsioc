@@ -1,7 +1,7 @@
 import { Interceptor, InvocationFactoryResolver, InvocationOptions } from '@tsdi/core';
 import { ActionTypes, DecorDefine, Execption, Token, Type, createDecorator, getToken, lang } from '@tsdi/ioc';
 import { CodingMappings, CodingsOpts } from './mappings';
-import { CodingsContext } from './codings';
+import { CodingsContext } from './context';
 
 
 export interface CodingsOptions extends InvocationOptions, CodingsOpts {
@@ -28,7 +28,7 @@ export interface EncodeHandler {
 }
 
 const encodingTokens = new Map<string | Type, Token<Interceptor<any, any, CodingsContext>[]>>();
-export function getEncodingInterceptorsToken(encodings: string | Type): Token<Interceptor<any, any, CodingsContext>[]> {
+export function getEncodeInterceptorsToken(encodings: string | Type): Token<Interceptor<any, any, CodingsContext>[]> {
     let token = encodingTokens.get(encodings);
     if (!token) {
         token = getToken<Interceptor<any, any, CodingsContext>[]>(encodings, '_ENCODINGS_INTERCEPTORS');
@@ -48,7 +48,7 @@ export const EncodeHandler: EncodeHandler = createDecorator<EncodingMetadata>('E
     props: (encodings: string | Type, option?: InvocationOptions) => {
         const opts = { encodings, ...option };
         if (!opts.interceptorsToken) {
-            opts.interceptorsToken = getEncodingInterceptorsToken(encodings);
+            opts.interceptorsToken = getEncodeInterceptorsToken(encodings);
         }
         return opts;
     },
@@ -104,7 +104,7 @@ export interface DecodeHandler {
 }
 
 const decodingTokens = new Map<string | Type, Token<Interceptor<any, any, CodingsContext>[]>>();
-export function getDecodingInterceptorsToken(encodings: string | Type): Token<Interceptor<any, any, CodingsContext>[]> {
+export function getDecodeInterceptorsToken(encodings: string | Type): Token<Interceptor<any, any, CodingsContext>[]> {
     let token = decodingTokens.get(encodings);
     if (!token) {
         token = getToken<Interceptor<any, any, CodingsContext>[]>(encodings, '_DECODINGS_INTERCEPTORS');
@@ -125,7 +125,7 @@ export const DecodeHandler: DecodeHandler = createDecorator<DecodingMetadata>('D
     props: (encodings: string | Type, option?: InvocationOptions) => {
         const opts = { encodings, ...option } as DecodingMetadata;
         if (!opts.interceptorsToken) {
-            opts.interceptorsToken = getDecodingInterceptorsToken(encodings);
+            opts.interceptorsToken = getDecodeInterceptorsToken(encodings);
         }
         return opts;
     },

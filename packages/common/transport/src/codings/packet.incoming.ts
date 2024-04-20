@@ -1,9 +1,9 @@
 import { MapHeaders, Pattern, TransportHeaders, normalize } from '@tsdi/common';
-import { Packet, ResponsePacket } from '../../packet';
-import { Incoming, ResponseIncoming } from '../../Incoming';
-import { TransportOpts } from '../../TransportSession';
+import { Packet, ResponsePacket } from '../packet';
+import { Incoming, ResponseIncoming } from '../Incoming';
+import { TransportOpts } from '../TransportSession';
 
-export class JsonIncoming<T = any> implements Incoming<T> {
+export class PacketIncoming<T = any> implements Incoming<T> {
     readonly id: any;
     readonly method: string;
     readonly originalUrl: string;
@@ -49,7 +49,7 @@ export class JsonIncoming<T = any> implements Incoming<T> {
 
 }
 
-export class JsonResponseIncoming<T = any> extends JsonIncoming<T> implements ResponseIncoming<T> {
+export class ResponsePacketIncoming<T = any> extends PacketIncoming<T> implements ResponseIncoming<T> {
     readonly type: string | number | undefined;
     readonly status: string | number | undefined;
     readonly statusMessage: string | undefined;

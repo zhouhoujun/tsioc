@@ -3,7 +3,7 @@ import { RequestEncodingsHandlers } from './request.encodings';
 import { CompressResponseDecordeInterceptor, ResponseDecodingsHandlers } from './response.decodings';
 import { CodingsTransportBackend } from './transport.backend';
 import { TransportBackend } from '../backend';
-import { CodingsModule, getDecodingInterceptorsToken } from '@tsdi/common/transport';
+import { CodingsModule, ResponsePacketIncoming, getDecodeInterceptorsToken } from '@tsdi/common/transport';
 
 @Module({
     imports:[
@@ -13,7 +13,7 @@ import { CodingsModule, getDecodingInterceptorsToken } from '@tsdi/common/transp
         { provide: TransportBackend, useClass: CodingsTransportBackend },
         RequestEncodingsHandlers,
         ResponseDecodingsHandlers,
-        { provide: getDecodingInterceptorsToken('ResponseIncoming'), useClass: CompressResponseDecordeInterceptor, multi: true }
+        { provide: getDecodeInterceptorsToken(ResponsePacketIncoming), useClass: CompressResponseDecordeInterceptor, multi: true }
     ]
 })
 export class ClientCodingsModule {

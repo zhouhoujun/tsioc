@@ -45,9 +45,6 @@ export class Mappings {
 }
 
 
-
-
-
 @Injectable({
     static: true,
     providedIn: 'root'
@@ -100,6 +97,7 @@ export class CodingMappings {
     }
 
 }
+
 
 export interface CodingsOpts {
     transport?: Transport | HybirdTransport;

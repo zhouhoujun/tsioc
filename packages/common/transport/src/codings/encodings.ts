@@ -1,9 +1,10 @@
 import { Abstract, EMPTY, Injectable, Injector, Optional, getClass, getClassName, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
-import { Encoder, CodingsContext } from '../codings';
 import { NotSupportedExecption } from '../execptions';
 import { CodingMappings, CodingsOpts } from './mappings';
+import { CodingsContext } from './context';
+import { Encoder } from './Encoder';
 
 @Abstract()
 export abstract class EncodingsHandler implements Handler<any, any, CodingsContext> {
