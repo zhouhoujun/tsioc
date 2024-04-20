@@ -1,8 +1,8 @@
-import { Injectable, getClass, getClassName } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { PatternFormatter, TransportRequest } from '@tsdi/common';
-import { CodingMappings, CodingsContext, NotSupportedExecption, PacketData, EncodeHandler } from '@tsdi/common/transport';
-import { Observable, mergeMap, of, throwError } from 'rxjs';
+import { CodingsContext, PacketData, EncodeHandler, Codings } from '@tsdi/common/transport';
+import { Observable, mergeMap } from 'rxjs';
 
 
 
@@ -31,24 +31,13 @@ export class RequestEncodingsHandlers {
 @Injectable()
 export class RequestEncodeInterceper implements Interceptor<any, any, CodingsContext> {
 
-    constructor(private mappings: CodingMappings) {
+    constructor(private codings: Codings) {
     }
 
     intercept(input: TransportRequest<any>, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
+        return this.codings.encode(input, context)
+            .pipe(mergeMap(res => next.handle(res, context)));
 
-        const type = getClass(input);
-        const handlers = this.mappings.getEncodeHanlders(type, context.options);
-
-        if (handlers && handlers.length) {
-            return handlers.reduceRight((obs$, curr) => {
-                return obs$.pipe(
-                    mergeMap(input => curr.handle(input, context.next(input))),
-                    mergeMap(res => next.handle(res, context))
-                );
-            }, of(input))
-        } else {
-            return throwError(() => new NotSupportedExecption(`No encodings handler for ${context.options.transport}${context.options.microservice ? ' microservice' : ''} request type: ${getClassName(type)}`))
-        }
     }
 }
 

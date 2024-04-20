@@ -1,8 +1,11 @@
-import { Injectable, Type, getClass, getClassName, isString } from '@tsdi/ioc';
+import { Injectable, getClass } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { CodingsContext, CodingMappings, NotSupportedExecption, PacketData, PacketIncoming, PacketOutgoing, DecodeHandler } from '@tsdi/common/transport';
+import { Observable, mergeMap, throwError } from 'rxjs';
+import {
+    CodingsContext, NotSupportedExecption, PacketData, PacketIncoming,
+    PacketOutgoing, DecodeHandler, Codings
+} from '@tsdi/common/transport';
 import { RequestContextFactory } from '../RequestContext';
-import { Observable, mergeMap, of, throwError } from 'rxjs';
 import { TransportSession } from '../transport.session';
 
 
@@ -10,16 +13,23 @@ import { TransportSession } from '../transport.session';
 @Injectable({ static: true })
 export class IncomingDecodingsHandlers {
 
-    @DecodeHandler('incoming-message')
-    handleResponseIncoming(context: CodingsContext) {
-        const input = context.last<PacketData>();
-        if (!(input.url || input.topic || input.headers || input.payload)) {
-            return throwError(() => new NotSupportedExecption(`${context.options.transport}${context.options.microservice ? ' microservice' : ''} incoming is not packet data!`));
-        }
+    @DecodeHandler(PacketIncoming)
+    handleResponseIncoming(incoming: PacketIncoming, context: CodingsContext) {
+
         const session = context.session as TransportSession;
         const injector = session.injector;
 
-        return injector.get(RequestContextFactory).create(session, new PacketIncoming(input, context.options), new PacketOutgoing(input, context.options), session.options);
+        const outgoing = new PacketOutgoing({
+            id: incoming.id,
+            headers: incoming.headers,
+            pattern: incoming.pattern
+        }, context.options);
+
+        return injector.get(RequestContextFactory).create(
+            session,
+            incoming,
+            outgoing,
+            session.options);
     }
 
 }
@@ -29,33 +39,19 @@ export class IncomingDecodingsHandlers {
 @Injectable()
 export class IncomingDecodeInterceper implements Interceptor<any, any, CodingsContext> {
 
-    constructor(private mappings: CodingMappings) {
-    }
+    constructor(private codings: Codings) { }
 
     intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
         return next.handle(input, context).pipe(
             mergeMap(res => {
-                const transport = context.options.transport;
-                let type: Type | string = getClass(res);
-                if (type === Object) {
+                if (getClass(res) === Object) {
                     const packet = res as PacketData;
                     if (!(packet.url || packet.topic || packet.headers || packet.payload)) {
-                        return throwError(() => new NotSupportedExecption(`${transport}${context.options.microservice ? ' microservice' : ''} incoming is not packet data!`));
+                        return throwError(() => new NotSupportedExecption(`${context.options.transport}${context.options.microservice ? ' microservice' : ''} incoming is not packet data!`));
                     }
-                    type = 'incoming-message';
-                    context.next(packet);
+                    res = new PacketIncoming(packet, context.options);
                 }
-                const handlers = this.mappings.getDecodeHanlders(type, context.options);
-
-                if (handlers && handlers.length) {
-                    return handlers.reduceRight((obs$, curr) => {
-                        return obs$.pipe(
-                            mergeMap(i => curr.handle(i, context.next(i)))
-                        );
-                    }, of(res))
-                } else {
-                    return throwError(() => new NotSupportedExecption(`No encodings handler for ${transport}${context.options.microservice ? ' microservice' : ''} incoming type: ${isString(type) ? type : getClassName(type)}`))
-                }
+                return this.codings.decode(res, context);
             })
         );
     }

@@ -1,4 +1,4 @@
-import { Injectable, getClass, getClassName } from '@tsdi/ioc';
+import { Injectable, Type, getClass, getClassName } from '@tsdi/ioc';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
 import { NotSupportedExecption } from '../execptions';
 import { CodingMappings } from './mappings';
@@ -15,14 +15,18 @@ export class Codings {
 
     encode<TOutput = any>(input: any, context: CodingsContext): Observable<TOutput> {
         const type = getClass(input);
+        return this.encodeType(type, input, context);
+    }
+
+    encodeType<T>(type: Type<T> | string, data: T, context: CodingsContext): Observable<any> {
         const handlers = this.mappings.getEncodeHanlders(type, context.options);
 
         if (handlers && handlers.length) {
             return handlers.reduceRight((obs$, curr) => {
                 return obs$.pipe(
-                    mergeMap(input => curr.handle(input, context.next(input)))
+                    mergeMap(i => curr.handle(i, context.next(i)))
                 );
-            }, of(input))
+            }, of(data))
         } else {
             return throwError(() => new NotSupportedExecption(`No encodings handler for ${getClassName(type)} of ${context.options.transport}${context.options.microservice ? ' microservice' : ''}${context.options.client ? ' client' : ''}`))
         }
@@ -30,14 +34,18 @@ export class Codings {
 
     decode<TOutput = any>(input: any, context: CodingsContext): Observable<TOutput> {
         const type = getClass(input);
+        return this.decodeType(type, input, context)
+    }
+
+    decodeType<T>(type: Type<T> | string, data: T, context: CodingsContext): Observable<any> {
         const handlers = this.mappings.getDecodeHanlders(type, context.options);
 
         if (handlers && handlers.length) {
             return handlers.reduceRight((obs$, curr) => {
                 return obs$.pipe(
-                    mergeMap(input => curr.handle(input, context.next(input)))
+                    mergeMap(i => curr.handle(i, context.next(i)))
                 );
-            }, of(input))
+            }, of(data))
         } else {
             return throwError(() => new NotSupportedExecption(`No decodings handler for ${getClassName(type)} of ${context.options.transport}${context.options.microservice ? ' microservice' : ''}${context.options.client ? ' client' : ''}`))
         }

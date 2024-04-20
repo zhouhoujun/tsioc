@@ -1,11 +1,12 @@
-import { EMPTY_OBJ, Injectable, Type, getClass, getClassName, isString, lang } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, getClass, lang } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { HEAD, ResponseJsonParseError, TransportEvent, TransportHeaders, TransportRequest } from '@tsdi/common';
 import {
-    CodingMappings, CodingsContext, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter,
+    Codings, CodingsContext, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter,
     XSSI_PREFIX, ev, isBuffer, toBuffer, Packet, ResponsePacketIncoming, ResponseIncoming, DecodeHandler
+
 } from '@tsdi/common/transport';
-import { Observable, defer, mergeMap, of, throwError } from 'rxjs';
+import { Observable, defer, mergeMap, throwError } from 'rxjs';
 
 
 
@@ -127,33 +128,20 @@ export class ResponseDecodingsHandlers {
 @Injectable()
 export class ResponseDecodeInterceper implements Interceptor<any, any, CodingsContext> {
 
-    constructor(private mappings: CodingMappings) { }
+    constructor(private codings: Codings) { }
 
     intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
         return next.handle(input, context).pipe(
             mergeMap(res => {
-                let type: Type | string = getClass(res);
-                if (type === Object) {
+                if (getClass(res) === Object) {
                     const packet = res as Packet;
                     if (!(packet.url || packet.topic || packet.headers || packet.payload)) {
                         return throwError(() => new NotSupportedExecption(`${context.options.transport}${context.options.microservice ? ' microservice' : ''} response is not packet data!`));
                     }
-                    type = ResponsePacketIncoming;
                     res = new ResponsePacketIncoming(packet, context.options);
-                    context.next(res);
                 }
 
-                const handlers = this.mappings.getDecodeHanlders(type, context.options);
-
-                if (handlers && handlers.length) {
-                    return handlers.reduceRight((obs$, curr) => {
-                        return obs$.pipe(
-                            mergeMap(nxt => curr.handle(nxt, context.next(nxt)))
-                        );
-                    }, of(res))
-                } else {
-                    return throwError(() => new NotSupportedExecption(`No encodings handler for ${context.options.transport}${context.options.microservice ? ' microservice' : ''} response type: ${isString(type) ? type : getClassName(type)}`))
-                }
+                return this.codings.decode(res, context)
             }));
     }
 }
