@@ -11,7 +11,7 @@ export class HttpIncomingDecodingsHandlers {
     handleIncoming(incoming: HttpIncomings, context: CodingsContext) {
         const session = context.session as HttpServerTransportSession;
         const injector = session.injector;
-        return injector.get(HttpAssetContextFactory).create(injector, session, incoming.req, incoming.res, session.options)
+        return injector.get(HttpAssetContextFactory).create(injector, session, incoming.req, incoming.res, session.serverOpts)
     }
 
 }

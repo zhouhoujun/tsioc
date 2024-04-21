@@ -23,14 +23,16 @@ export class HttpIncomings {
 }
 
 export class HttpServerTransportSession extends TransportSession<Http2Server | HttpsServer | Server> {
+    readonly options: TransportOpts
     constructor(
         readonly injector: Injector,
         readonly socket: Http2Server | HttpsServer | Server,
         readonly streamAdapter: StreamAdapter,
         readonly encodings: Encoder,
         readonly decodings: Decoder,
-        readonly options: HttpServerOpts) {
+        readonly serverOpts: HttpServerOpts) {
         super()
+        this.options = serverOpts.transportOpts ?? {};
     }
 
 
@@ -73,10 +75,11 @@ export class HttpServerSessionFactory implements TransportSessionFactory<Http2Se
     constructor() { }
 
     create(injector: Injector, socket: Http2Server | HttpsServer | Server, options: HttpServerOpts): HttpServerTransportSession {
+        const transOpts = options.transportOpts!;
         return new HttpServerTransportSession(injector, socket,
             injector.get(StreamAdapter),
-            injector.get(options.transportOpts?.encodingsFactory ?? EncodingsFactory).create(injector, options),
-            injector.get(options.transportOpts?.decodingsFactory ?? DecodingsFactory).create(injector, options),
+            injector.get(transOpts?.encodingsFactory ?? EncodingsFactory).create(injector, transOpts),
+            injector.get(transOpts?.decodingsFactory ?? DecodingsFactory).create(injector, transOpts),
             options);
     }
 

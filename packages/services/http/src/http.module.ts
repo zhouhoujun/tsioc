@@ -19,6 +19,7 @@ import { HttpRequestEncodingsHandlers } from './client/encodings.handlers';
 import { HttpResponseEventFactory } from './client/response.factory';
 import { HttpResponseDecodingsHandlers } from './client/decodings.hanlders';
 import { HttpIncomingDecodingsHandlers } from './server/decodings.handlers';
+import { HttpOutgoingEncodingsHandlers } from './server/encodings.handlers';
 
 
 // const defaultMaxSize = 1048576; // 1024 * 1024;
@@ -34,6 +35,7 @@ import { HttpIncomingDecodingsHandlers } from './server/decodings.handlers';
         HttpRequestEncodingsHandlers,
         HttpResponseDecodingsHandlers,
         HttpIncomingDecodingsHandlers,
+        HttpOutgoingEncodingsHandlers,
         // HttpTransportBackend,
         HttpPathInterceptor,
         HttpClientSessionFactory,
@@ -151,10 +153,6 @@ import { HttpIncomingDecodingsHandlers } from './server/decodings.handlers';
                         ExecptionFinalizeFilter,
                         ExecptionHandlerFilter,
                         FinalizeFilter
-                    ],
-                    providers: [
-                        { provide: RequestContextFactory, useExisting: HttpAssetContextFactory },
-                        { provide: RestfulRequestContextFactory, useExisting: HttpAssetContextFactory }
                     ]
                 }
             } as ServerModuleOpts,

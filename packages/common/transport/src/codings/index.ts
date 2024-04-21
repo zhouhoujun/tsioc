@@ -12,8 +12,8 @@ export * from './codings.module';
 
 export * from './packet.incoming';
 export * from './packet.outgoing';
-export * from './json/json.encodings';
-export * from './json/json.decodings';
+
+export * from './json/codings';
 export * from './json/json.module';
 
 export * from './packet/packet.encodings';
