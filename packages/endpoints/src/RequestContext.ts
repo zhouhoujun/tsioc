@@ -146,7 +146,7 @@ export abstract class RequestContext<
     }
 
     private _body: any;
-    private _explicitNullBody?: boolean;
+    protected _explicitNullBody?: boolean;
 
     get explicitNullBody() {
         return this._explicitNullBody;

@@ -1,12 +1,13 @@
 import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, TransportHeaders } from '@tsdi/common';
-import { MessageExecption, InternalServerExecption, Outgoing, ResponsePacket, append, parseTokenList, Incoming, StatusAdapter, MimeAdapter, StreamAdapter, FileAdapter } from '@tsdi/common/transport';
-import { EMPTY_OBJ, Injectable, Injector, isArray, isNumber, isString, lang } from '@tsdi/ioc';
+import { MessageExecption, InternalServerExecption, Outgoing, ResponsePacket, append, parseTokenList, Incoming, StatusAdapter, MimeAdapter, StreamAdapter, FileAdapter, PacketLengthException, isBuffer, ENOENT } from '@tsdi/common/transport';
+import { EMPTY_OBJ, Injectable, Injector, isArray, isNil, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { RestfulRequestContext, RestfulRequestContextFactory, TransportSession, Throwable, AcceptsPriority } from '@tsdi/endpoints';
 import * as http from 'http';
 import * as http2 from 'http2';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
 import { HttpServerOpts } from './options';
+import { PipeTransform } from '@tsdi/core';
 
 
 export type HttpServRequest = (http.IncomingMessage | http2.Http2ServerRequest) & Incoming;
@@ -27,7 +28,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         readonly session: TransportSession,
         readonly request: HttpServRequest,
         readonly response: HttpServResponse,
-        readonly statusAdapter: StatusAdapter | null,
+        readonly statusAdapter: StatusAdapter<number> | null,
         readonly mimeAdapter: MimeAdapter | null,
         readonly acceptsPriority: AcceptsPriority | null,
         readonly streamAdapter: StreamAdapter,
@@ -431,11 +432,133 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
     }
 
 
-    respond(): Promise<any> {
-        throw new Error('Method not implemented.');
+    async respond(): Promise<any> {
+        if (this.destroyed || !this.writable) return;
+
+        // ignore body
+        if (this.statusAdapter?.isEmpty(this.status)) {
+            // strip headers
+            this.body = null;
+            return this.response.end()
+        }
+
+        if (this.isHeadMethod()) {
+            return this.respondHead();
+        }
+
+        // status body
+        if (null == this.body) {
+            return this.respondNoBody();
+        }
+
+        const len = this.length ?? 0;
+        const opts = this.serverOptions.transportOpts;
+        if (opts?.maxSize && len > opts.maxSize) {
+            const btpipe = this.get<PipeTransform>('bytes-format');
+            throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(opts.maxSize)}`);
+        }
+
+        const body = this.body;
+        const res = this.response;
+        if (Buffer.isBuffer(body)) return await promisify<any, void>(res.end, res)(this.body);
+        if (isString(body)) return await promisify<any, void>(res.end, res)(Buffer.from(body));
+
+        if (this.streamAdapter.isReadable(body)) {
+            if (!this.streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
+            return await this.streamAdapter.pipeTo(body, res);
+        }
+
+        return await this.respondJson(body, res);
     }
-    throwExecption(execption: MessageExecption): Promise<void> {
-        throw new Error('Method not implemented.');
+
+    protected isHeadMethod(): boolean {
+        return HEAD === this.method
+    }
+
+    protected respondHead() {
+        if (!this.sent && !this.response.hasHeader(hdr.CONTENT_LENGTH)) {
+            const length = this.length;
+            if (Number.isInteger(length)) this.length = length
+        }
+        return this.response.end()
+    }
+
+    protected respondNoBody() {
+        if (this._explicitNullBody) {
+            this.response.removeHeader(hdr.CONTENT_TYPE);
+            this.response.removeHeader(hdr.CONTENT_LENGTH);
+            this.response.removeHeader(hdr.TRANSFER_ENCODING);
+            return this.response.end()
+        }
+
+        const body = Buffer.from(this.statusMessage ?? String(this.status));
+        if (!this.sent) {
+            this.type = 'text';
+            this.length = Buffer.byteLength(body)
+        }
+        return this.response.end(body)
+    }
+
+    protected async respondJson(body: any, res: TResponse) {
+        // body: json
+        body = Buffer.from(JSON.stringify(body));
+        if (!res.headersSent) {
+            this.length = Buffer.byteLength(body)
+        }
+
+        await promisify<any, void>(res.end, res)(body);
+        return res
+    }
+
+    protected getStatusMessage(status: any): string {
+        return this.statusMessage ?? String(status);
+    }
+
+    async throwExecption(err: MessageExecption): Promise<void> {
+        let headerSent = false;
+        if (this.sent || !this.writable) {
+            headerSent = err.headerSent = true
+        }
+
+        // nothing we can do here other
+        // than delegate to the app-level
+        // handler and log.
+        if (headerSent) {
+            return
+        }
+
+        const res = this.response;
+
+        // first unset all headers
+        this.removeHeaders();
+
+        // then set those specified
+        if (err.headers) this.setHeader(err.headers);
+
+        const statusAdapter = this.statusAdapter!;
+        let status: number = err.status || err.statusCode;
+        // ENOENT support
+        if (ENOENT === err.code) status = statusAdapter.notFound;
+
+        // default to serverError
+        if (!statusAdapter.isStatus(status)) status = statusAdapter.serverError;
+
+        this.status = status;
+        // empty response.
+        if (statusAdapter.isEmptyExecption(status)) {
+            await promisify<void>(res.end, res)();
+            return;
+        }
+
+        // respond
+        let msg: any;
+        msg = err.message;
+
+        // force text/plain
+        this.type = 'text';
+        msg = Buffer.from(msg ?? this.statusMessage ?? '');
+        this.length = Buffer.byteLength(msg);
+        await promisify<any, void>(res.end, res)(msg);
     }
 
 }
