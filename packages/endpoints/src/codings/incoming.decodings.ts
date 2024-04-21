@@ -1,11 +1,11 @@
 import { Injectable, getClass } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { Observable, mergeMap, throwError } from 'rxjs';
+import { Observable, mergeMap, of, throwError } from 'rxjs';
 import {
     CodingsContext, NotSupportedExecption, PacketData, PacketIncoming,
     PacketOutgoing, DecodeHandler, Codings
 } from '@tsdi/common/transport';
-import { RequestContextFactory } from '../RequestContext';
+import { RequestContext, RequestContextFactory } from '../RequestContext';
 import { TransportSession } from '../transport.session';
 
 
@@ -44,6 +44,7 @@ export class IncomingDecodeInterceper implements Interceptor<any, any, CodingsCo
     intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
         return next.handle(input, context).pipe(
             mergeMap(res => {
+                if(res instanceof RequestContext) return of(res);
                 if (getClass(res) === Object) {
                     const packet = res as PacketData;
                     if (!(packet.url || packet.topic || packet.headers || packet.payload)) {

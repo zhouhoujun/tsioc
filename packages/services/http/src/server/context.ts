@@ -1,4 +1,4 @@
-import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE } from '@tsdi/common';
+import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, TransportHeaders } from '@tsdi/common';
 import { MessageExecption, InternalServerExecption, Outgoing, ResponsePacket, append, parseTokenList, Incoming, StatusAdapter, MimeAdapter, StreamAdapter, FileAdapter } from '@tsdi/common/transport';
 import { EMPTY_OBJ, Injectable, Injector, isArray, isNumber, isString, lang } from '@tsdi/ioc';
 import { RestfulRequestContext, RestfulRequestContextFactory, TransportSession, Throwable, AcceptsPriority } from '@tsdi/endpoints';
@@ -443,6 +443,8 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 @Injectable()
 export class HttpAssetContextFactory implements RestfulRequestContextFactory<HttpServRequest, HttpServResponse> {
     create(injector: Injector, session: TransportSession, incoming: HttpServRequest, outgoing: HttpServResponse, options: HttpServerOpts): HttpContext {
+        (incoming as any).tHeaders = new TransportHeaders(incoming.headers);
+        (outgoing as any).tHeaders = new TransportHeaders(outgoing.headers);
         return new HttpContext(injector, session,
             incoming,
             outgoing,

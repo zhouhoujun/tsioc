@@ -7,7 +7,7 @@ import { HttpAssetContextFactory } from './context';
 @Injectable({ static: true })
 export class HttpIncomingDecodingsHandlers {
 
-    @DecodeHandler(HttpIncomings, {transport: 'http'})
+    @DecodeHandler(HttpIncomings, { transport: 'http' })
     handleIncoming(incoming: HttpIncomings, context: CodingsContext) {
         const session = context.session as HttpServerTransportSession;
         const injector = session.injector;

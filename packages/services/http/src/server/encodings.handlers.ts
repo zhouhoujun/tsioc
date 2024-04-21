@@ -5,7 +5,7 @@ import { HttpContext } from './context';
 @Injectable({ static: true })
 export class HttpOutgoingEncodingsHandlers {
 
-    @EncodeHandler(HttpContext)
+    @EncodeHandler(HttpContext, { transport: 'http'})
     handleContext(input: HttpContext) {
         const response = input.response;
         const packet = {
