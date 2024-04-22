@@ -20,7 +20,7 @@ export class PacketCodingsHandlers {
     @DecodeHandler('PACKET', { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
     decodeHandle(context: CodingsContext) {
         const data = context.last<string | Buffer>();
-        let input = isString(data) ? Buffer.from(data) : data;
+        const input = isString(data) ? Buffer.from(data) : data;
 
         if (!isBuffer(input)) {
             return throwError(() => new ArgumentExecption('asset decoding input is not buffer'));
@@ -29,13 +29,8 @@ export class PacketCodingsHandlers {
         const injector = context.session!.injector;
         const headDelimiter = options.headDelimiter ? Buffer.from(options.headDelimiter) : null;
 
-        const idLen = options.idLen ?? 2;
 
-        const id = idLen > 4 ? input.subarray(0, idLen).toString() : input.readIntBE(0, idLen);
-        input = input.subarray(idLen);
-        
         let packet = {
-            id
         } as PacketData;
 
         if (headDelimiter) {
@@ -50,10 +45,7 @@ export class PacketCodingsHandlers {
                 packet.payload = payloadDeserialization ? payloadDeserialization.deserialize(input) : JSON.parse(new TextDecoder().decode(input));
             }
         } else {
-            packet = {
-                id,
-                ...JSON.parse(new TextDecoder().decode(input))
-            };
+            packet = JSON.parse(new TextDecoder().decode(input));
         }
 
         return packet;
@@ -69,9 +61,9 @@ export class PacketCodingsHandlers {
         if (headDelimiter) {
             const handlerSerialization = injector.get(HandlerSerialization, null);
             const payloadSerialization = injector.get(PayloadSerialization, null);
-            const {payload, ...headers} = input;
-            const hbuff = handlerSerialization? handlerSerialization.serialize(headers) : Buffer.from(JSON.stringify(headers));
-            const bbuff = payloadSerialization? payloadSerialization.serialize(payload) : Buffer.from(JSON.stringify(payload));
+            const { payload, ...headers } = input;
+            const hbuff = handlerSerialization ? handlerSerialization.serialize(headers) : Buffer.from(JSON.stringify(headers));
+            const bbuff = payloadSerialization ? payloadSerialization.serialize(payload) : Buffer.from(JSON.stringify(payload));
             return Buffer.concat([hbuff, headDelimiter, bbuff]);
         } else {
             try {

@@ -1,5 +1,5 @@
 import { Handler, Interceptor } from '@tsdi/core';
-import { ArgumentExecption, Injectable, isNil, isNumber, isString } from '@tsdi/ioc';
+import { ArgumentExecption, Injectable, isNil, isNumber } from '@tsdi/ioc';
 import { PacketData } from '../../packet';
 import { CodingsContext } from '../context';
 import { Observable, Subscriber, map, mergeMap, of, range, throwError } from 'rxjs';
@@ -18,9 +18,16 @@ export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableS
 
     packs: Map<string | number, CachePacket> = new Map();
     intercept(input: Buffer, next: Handler<Buffer, PacketData, CodingsContext>, context: CodingsContext): Observable<PacketData> {
+        const options = context.options as TransportOpts;
+        const idLen = options.idLen ?? 2;
+        const id = idLen > 4 ? input.subarray(0, idLen).toString() : input.readIntBE(0, idLen);
+        input = input.subarray(idLen);
         return next.handle(input, context)
             .pipe(
                 mergeMap(packet => {
+                    if (!packet.id) {
+                        packet.id = id;
+                    }
                     return new Observable((subscriber: Subscriber<PacketData>) => {
                         if (!packet.id || !isBuffer(packet.payload)) {
                             subscriber.next(packet);
@@ -150,7 +157,7 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
                             if (!isBuffer(data)) return throwError(() => new ArgumentExecption('payload has not serializized!'))
 
                             return this.subcontract(data, sizeLimit).pipe(
-                                map(data=> this.connectId(input.id, idLen, data))
+                                map(data => this.connectId(input.id, idLen, data))
                             )
                         }
                     }
