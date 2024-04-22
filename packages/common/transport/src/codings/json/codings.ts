@@ -1,5 +1,4 @@
-import { Injectable, isPromise, isString } from '@tsdi/ioc';
-import { Handler, Interceptor } from '@tsdi/core';
+import { Injectable, isPromise, isString, tokenId } from '@tsdi/ioc';
 import { Observable, from, isObservable, mergeMap, of, throwError } from 'rxjs';
 import { DecodeHandler, EncodeHandler } from '../metadata';
 import { CodingsContext } from '../context';
@@ -8,12 +7,17 @@ import { StreamAdapter, isBuffer } from '../../StreamAdapter';
 import { DecodingsHandler } from '../decodings';
 import { Codings } from '../Codings';
 import { EncodingsHandler } from '../encodings';
+import { Interceptor } from '@tsdi/core';
+import { PacketData } from '../../packet';
 
+export const JSON_ENCODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer, CodingsContext>[]>('JSON_ENCODE_INTERCEPTORS');
+
+export const JSON_DECODE_INTERCEPTORS = tokenId<Interceptor<Buffer, PacketData, CodingsContext>[]>('JSON_DECODE_INTERCEPTORS');
 
 @Injectable()
 export class JsonCodingsHandlers {
 
-    @DecodeHandler('JSON')
+    @DecodeHandler('JSON', { interceptorsToken: JSON_DECODE_INTERCEPTORS })
     decodeHandle(context: CodingsContext) {
         const input = context.last<string | Buffer>();
         const jsonStr = isString(input) ? input : new TextDecoder().decode(input);
@@ -25,9 +29,9 @@ export class JsonCodingsHandlers {
         }
     }
 
-    @EncodeHandler('JSON')
+    @EncodeHandler('JSON', { interceptorsToken: JSON_ENCODE_INTERCEPTORS })
     encode(context: CodingsContext) {
-        const input = context.last();
+        const input = context.last<any>();
         try {
             const jsonStr = JSON.stringify(input);
             const buff = Buffer.from(jsonStr);
