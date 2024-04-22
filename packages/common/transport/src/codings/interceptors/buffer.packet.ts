@@ -66,11 +66,12 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer, Packet, Codi
         chl.length += Buffer.byteLength(data);
 
         if (chl.contentLength == null) {
-            const i = data.indexOf(options.delimiter!);
+            const delimiter = Buffer.from(options.delimiter!);
+            const i = data.indexOf(delimiter);
             if (i !== -1) {
                 const buffer = this.concatCaches(chl);
                 const idx = chl.length - Buffer.byteLength(data) + i;
-                const rawContentLength = buffer.subarray(0, idx).readUInt32BE(0);
+                const rawContentLength = buffer.subarray(idx-4, idx).readUInt32BE(0);
                 chl.contentLength = rawContentLength;
 
                 if (isNaN(chl.contentLength) || (options.maxSize && chl.contentLength > options.maxSize)) {

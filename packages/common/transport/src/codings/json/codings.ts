@@ -8,7 +8,8 @@ import { DecodingsHandler } from '../decodings';
 import { Codings } from '../Codings';
 import { EncodingsHandler } from '../encodings';
 import { Interceptor } from '@tsdi/core';
-import { PacketData } from '../../packet';
+import { Packet, PacketData } from '../../packet';
+import { TransportHeaders } from '@tsdi/common/src';
 
 export const JSON_ENCODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer, CodingsContext>[]>('JSON_ENCODE_INTERCEPTORS');
 
@@ -31,8 +32,11 @@ export class JsonCodingsHandlers {
 
     @EncodeHandler('JSON', { interceptorsToken: JSON_ENCODE_INTERCEPTORS })
     encode(context: CodingsContext) {
-        const input = context.last<any>();
+        const input = { ...context.last<Packet>() };
         try {
+            if (input.headers instanceof TransportHeaders) {
+                input.headers = input.headers.getHeaders();
+            }
             const jsonStr = JSON.stringify(input);
             const buff = Buffer.from(jsonStr);
             return of(buff);

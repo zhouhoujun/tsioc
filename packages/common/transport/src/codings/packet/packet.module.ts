@@ -4,12 +4,14 @@ import { BindPacketIdEncodeInterceptor, PacketDecodeInterceptor, PacketEncodeInt
 import { PackageDecodeInterceptor, PackageEncodeInterceptor } from '../interceptors/buffer.package';
 import { DefaultEncodingsHandler } from '../encodings';
 import { DefaultDecodingsHandler } from '../decodings';
+import { PacketIdGenerator, PacketNumberIdGenerator } from '../PacketId';
 
 
 
 @Module({
     providers: [
         PacketCodingsHandlers,
+        { provide: PacketIdGenerator, useClass: PacketNumberIdGenerator, asDefault: true },
         { provide: DefaultEncodingsHandler, useClass: PackageifyEncodeInterceptor, asDefault: true },
         { provide: DefaultDecodingsHandler, useClass: PackageifyDecodeInterceptor, asDefault: true }
 

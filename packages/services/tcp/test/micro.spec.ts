@@ -11,6 +11,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
 import { BigFileInterceptor } from './BigFileInterceptor';
+import { JsonPacketCodingsModule } from '@tsdi/common/transport';
 
 
 const SENSORS = tokenId<string[]>('SENSORS');
@@ -53,6 +54,7 @@ export class TcpService {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
+        // JsonPacketCodingsModule,
         ClientModule.register({
             transport: 'tcp',
             microservice: true,
