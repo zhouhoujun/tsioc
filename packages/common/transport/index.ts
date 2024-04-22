@@ -1,6 +1,5 @@
 
 export * from './src/packet';
-export * from './src/PacketId';
 
 export * from './src/protocols';
 export * from './src/stream';

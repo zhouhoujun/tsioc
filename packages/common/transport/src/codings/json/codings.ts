@@ -62,9 +62,8 @@ export class JsonifyEncodeInterceptor implements EncodingsHandler {
     constructor(private codings: Codings, private streamAdapter: StreamAdapter) { }
 
     handle(input: any, context: CodingsContext): Observable<any> {
-        if (isPromise(input)) return from(input).pipe(mergeMap(v => this.isJson(v) ? this.codings.encodeType('JSON', v, context) : of(v)));
-        if (isObservable(input)) return input.pipe(mergeMap(v => this.isJson(v) ? this.codings.encodeType('JSON', v, context) : of(v)));
-
+        // if (isPromise(input)) return from(input).pipe(mergeMap(v => this.isJson(v) ? this.codings.encodeType('JSON', v, context) : of(v)));
+        // if (isObservable(input)) return input.pipe(mergeMap(v => this.isJson(v) ? this.codings.encodeType('JSON', v, context) : of(v)));
         return this.isJson(input) ? this.codings.encodeType('JSON', input, context) : of(input);
     }
 

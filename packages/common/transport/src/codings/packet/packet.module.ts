@@ -1,22 +1,33 @@
 import { Module } from '@tsdi/ioc';
 import { PACKET_DECODE_INTERCEPTORS, PACKET_ENCODE_INTERCEPTORS, PacketCodingsHandlers } from './codings';
-import { ConcatPacketDecodeInterceptor } from './packet.decodings';
-import { AysncPacketEncodeInterceptor, BindPacketIdEncodeInterceptor, LargePayloadEncodeInterceptor, SerializeHeaderEncodeInterceptor, SerializePayloadEncodeInterceptor } from './packet.encodings';
+import { BindPacketIdEncodeInterceptor, PacketDecodeInterceptor, PacketEncodeInterceptor } from '../interceptors/buffer.packet';
+import { PackageDecodeInterceptor, PackageEncodeInterceptor } from '../interceptors/buffer.package';
 
 
 
 @Module({
     providers:[
         PacketCodingsHandlers,
-        { provide: PACKET_DECODE_INTERCEPTORS, useClass: ConcatPacketDecodeInterceptor, multi: true },
-
-        { provide: PACKET_ENCODE_INTERCEPTORS, useClass: AysncPacketEncodeInterceptor, multi: true },
-        { provide: PACKET_ENCODE_INTERCEPTORS, useClass: BindPacketIdEncodeInterceptor, multi: true },
-        { provide: PACKET_ENCODE_INTERCEPTORS, useClass: SerializePayloadEncodeInterceptor, multi: true },
-        { provide: PACKET_ENCODE_INTERCEPTORS, useClass: SerializeHeaderEncodeInterceptor, multi: true },
-        { provide: PACKET_ENCODE_INTERCEPTORS, useClass: LargePayloadEncodeInterceptor, multi: true },
+        
     ]
 })
 export class PacketCodingsModule {
+
+}
+
+
+@Module({
+    providers: [
+        
+        { provide: PACKET_DECODE_INTERCEPTORS, useClass: PacketDecodeInterceptor, multi: true },
+        { provide: PACKET_DECODE_INTERCEPTORS, useClass: PackageDecodeInterceptor, multi: true },
+
+        { provide: PACKET_ENCODE_INTERCEPTORS, useClass: BindPacketIdEncodeInterceptor, multi: true },
+        { provide: PACKET_ENCODE_INTERCEPTORS, useClass: PacketEncodeInterceptor, multi: true },
+        { provide: PACKET_ENCODE_INTERCEPTORS, useClass: PackageEncodeInterceptor, multi: true },
+        
+    ]
+})
+export class PackageCodingsModule {
 
 }

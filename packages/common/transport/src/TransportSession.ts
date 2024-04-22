@@ -59,6 +59,8 @@ export interface TransportOpts extends CodingsOpts {
      */
     headDelimiter?: string;
 
+    idLen?: number;
+
     timeout?: number;
     /**
      * packet max size limit.

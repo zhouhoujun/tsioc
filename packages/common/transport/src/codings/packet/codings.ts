@@ -1,13 +1,10 @@
-import { ArgumentExecption, Injectable, isPromise, isString, tokenId } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, Injectable, isString, tokenId } from '@tsdi/ioc';
 import { DecodeHandler, EncodeHandler } from '../metadata';
 import { CodingsContext } from '../context';
-import { Observable, Subscriber, of, throwError } from 'rxjs';
-import { StreamAdapter, isBuffer } from '../../StreamAdapter';
+import { of, throwError } from 'rxjs';
+import { isBuffer } from '../../StreamAdapter';
 import { Packet, PacketData } from '../../packet';
-import { PacketIdGenerator } from '../../PacketId';
 import { TransportOpts } from '../../TransportSession';
-import { HeaderDeserialization, PayloadDeserialization } from './packet.decodings';
-import { IDuplexStream } from '../../stream';
 import { Interceptor } from '@tsdi/core';
 
 
@@ -20,11 +17,6 @@ export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer
 @Injectable({ static: true })
 export class PacketCodingsHandlers {
 
-    private packs: Map<string | number, PacketData & { cacheSize: number }>;
-    constructor() {
-        this.packs = new Map();
-    }
-
     @DecodeHandler('PACKET', { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
     decodeHandle(context: CodingsContext) {
         const data = context.last<string | Buffer>();
@@ -33,88 +25,88 @@ export class PacketCodingsHandlers {
         if (!isBuffer(input)) {
             return throwError(() => new ArgumentExecption('asset decoding input is not buffer'));
         }
-
+        const options = context.options as TransportOpts;
         const injector = context.session!.injector;
-        const idGenerator = injector.get(PacketIdGenerator);
-        const streamAdapter = injector.get(StreamAdapter);
-        const headerDeserialization = injector.get(HeaderDeserialization, null);
-        // const payloadDeserialization = injector.get(PayloadDeserialization, null);
+        const headDelimiter = options.headDelimiter ? Buffer.from(options.headDelimiter) : null;
 
-        return new Observable((subscriber: Subscriber<Packet>) => {
-            const id = idGenerator.readId(input);
-            input = input.subarray(idGenerator.idLenght);
-            const options = context.options as TransportOpts;
+        const idLen = options.idLen ?? 2;
 
-            let packet = this.packs.get(id);
-            if (!packet) {
-                if (options.headDelimiter) {
-                    const hidx = input.indexOf(options.headDelimiter);
-                    if (hidx >= 0) {
-                        const headerBuf = input.subarray(0, hidx);
-                        try {
-                            packet = headerDeserialization ? headerDeserialization.deserialize(headerBuf) : JSON.parse(new TextDecoder().decode(headerBuf));
-                            packet!.cacheSize = 0;
-                        } catch (err) {
-                            subscriber.error(err);
-                        }
-                        input = input.subarray(hidx + 1);
-                    }
-                } else {
-                    packet = headerDeserialization ? headerDeserialization.deserialize(input) : JSON.parse(new TextDecoder().decode(input));
-                }
+        const id = idLen > 4 ? input.subarray(0, idLen).toString() : input.readIntBE(0, idLen);
+        input = input.subarray(idLen);
+        
+        let packet = {
+            id
+        } as PacketData;
 
-                if (packet) {
-                    const len = packet.payloadLength;
-                    if (!len) {
-                        packet.payload = input;
-                        subscriber.next(packet);
-                        subscriber.complete();
-                    } else {
-                        packet.payloadLength = len;
-                        packet.cacheSize = input.length;
-                        if (packet.cacheSize >= packet.payloadLength) {
-                            packet.payload = input;
-                            subscriber.next(packet);
-                            subscriber.complete();
-                        } else {
-                            const stream = packet.payload = streamAdapter.createPassThrough();
-                            stream.write(input);
-                            this.packs.set(id, packet);
-                            subscriber.complete();
-                        }
-                    }
-                } else {
-                    subscriber.complete();
-                }
+        if (headDelimiter) {
+            const headerDeserialization = injector.get(HeaderDeserialization, null);
+            const payloadDeserialization = injector.get(PayloadDeserialization, null);
+            const idx = input.indexOf(headDelimiter);
+            if (idx > 0) {
+                const headers = headerDeserialization ? headerDeserialization.deserialize(input.subarray(0, idx)) : JSON.parse(new TextDecoder().decode(input.subarray(0, idx)));
+                packet.headers = headers;
+                packet.payload = payloadDeserialization ? payloadDeserialization.deserialize(input.subarray(idx + headDelimiter.length)) : JSON.parse(new TextDecoder().decode(input.subarray(idx + headDelimiter.length)));
             } else {
-                packet.cacheSize += input.length;
-                (packet.payload as IDuplexStream).write(input);
-                if (packet.cacheSize >= (packet.payloadLength || 0)) {
-                    (packet.payload as IDuplexStream).end();
-                    this.packs.delete(packet.id);
-                    subscriber.next(packet);
-                    subscriber.complete();
-                } else {
-                    subscriber.complete();
-                }
+                packet.payload = payloadDeserialization ? payloadDeserialization.deserialize(input) : JSON.parse(new TextDecoder().decode(input));
             }
+        } else {
+            packet = {
+                id,
+                ...JSON.parse(new TextDecoder().decode(input))
+            };
+        }
 
-            return subscriber;
-        });
-
+        return packet;
     }
 
     @EncodeHandler('PACKET', { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })
     encode(context: CodingsContext) {
-        const input = context.last<any>();
-        try {
-            const jsonStr = JSON.stringify(input);
-            const buff = Buffer.from(jsonStr);
-            return of(buff);
-        } catch (err) {
-            return throwError(() => err);
+        const input = context.last<Packet>();
+        const options = context.options as TransportOpts;
+        const injector = context.session!.injector;
+        const headDelimiter = options.headDelimiter ? Buffer.from(options.headDelimiter) : null;
+
+        if (headDelimiter) {
+            const handlerSerialization = injector.get(HandlerSerialization, null);
+            const payloadSerialization = injector.get(PayloadSerialization, null);
+            const {payload, ...headers} = input;
+            const hbuff = handlerSerialization? handlerSerialization.serialize(headers) : Buffer.from(JSON.stringify(headers));
+            const bbuff = payloadSerialization? payloadSerialization.serialize(payload) : Buffer.from(JSON.stringify(payload));
+            return Buffer.concat([hbuff, headDelimiter, bbuff]);
+        } else {
+            try {
+                const jsonStr = JSON.stringify(input);
+                const buff = Buffer.from(jsonStr);
+                return of(buff);
+            } catch (err) {
+                return throwError(() => err);
+            }
         }
     }
+}
+
+
+@Abstract()
+export abstract class HandlerSerialization {
+    abstract serialize(packet: Packet): Buffer;
+}
+
+
+@Abstract()
+export abstract class PayloadSerialization {
+    abstract serialize(packet: Packet): Buffer;
+}
+
+
+@Abstract()
+export abstract class HeaderDeserialization {
+    abstract deserialize(data: Buffer): Packet;
+}
+
+
+@Abstract()
+export abstract class PayloadDeserialization {
+    abstract deserialize(data: Buffer): Packet;
 }
 
 
