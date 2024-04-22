@@ -1,11 +1,14 @@
 import { Abstract, ArgumentExecption, Injectable, isString, tokenId } from '@tsdi/ioc';
 import { DecodeHandler, EncodeHandler } from '../metadata';
 import { CodingsContext } from '../context';
-import { of, throwError } from 'rxjs';
-import { isBuffer } from '../../StreamAdapter';
+import { Observable, of, throwError } from 'rxjs';
+import { StreamAdapter, isBuffer } from '../../StreamAdapter';
 import { Packet, PacketData } from '../../packet';
 import { TransportOpts } from '../../TransportSession';
 import { Interceptor } from '@tsdi/core';
+import { DecodingsHandler } from '../decodings';
+import { EncodingsHandler } from '../encodings';
+import { Codings } from '../Codings';
 
 
 
@@ -101,4 +104,27 @@ export abstract class PayloadDeserialization {
     abstract deserialize(data: Buffer): Packet;
 }
 
+
+
+@Injectable()
+export class PackageifyDecodeInterceptor implements DecodingsHandler {
+    constructor(private codings: Codings) { }
+
+    handle(input: any, context: CodingsContext): Observable<any> {
+        return this.codings.decodeType('PACKET', input, context);
+    }
+
+}
+
+@Injectable()
+export class PackageifyEncodeInterceptor implements EncodingsHandler {
+
+    constructor(private codings: Codings, private streamAdapter: StreamAdapter) { }
+
+    handle(input: any, context: CodingsContext): Observable<any> {
+        return this.codings.encodeType('PACKET', input, context);
+    }
+
+
+}
 
