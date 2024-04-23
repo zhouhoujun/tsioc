@@ -63,7 +63,7 @@ export class EncodingsFactory {
             globalInterceptorsToken: ENCODINGS_INTERCEPTORS,
             interceptorsToken: BUFFER_ENCODE_INTERCEPTORS,
             backend: EncodingsBackend,
-            ...options
+            ...options.encodes
         }) as EncodingsHandler;
         return new Encodings(handler)
     }

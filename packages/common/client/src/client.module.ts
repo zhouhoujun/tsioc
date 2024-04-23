@@ -201,12 +201,12 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     clientOpts.providers.push(toProvider(StatusAdapter, clientOpts.statusAdapter))
                 }
 
-                if(opts.responseEventFactory) {
+                if (opts.responseEventFactory) {
                     clientOpts.providers.push(toProvider(ResponseEventFactory, opts.responseEventFactory));
                 }
 
-                clientOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, clientOpts.transportOpts.encodeInterceptors ?? [RequestEncodeInterceper], true));
-                clientOpts.providers.push(...toProviders(DECODINGS_INTERCEPTORS, clientOpts.transportOpts.decodeInterceptors ?? [ResponseDecodeInterceper], true));
+                clientOpts.providers.push({ provide: ENCODINGS_INTERCEPTORS, useClass: RequestEncodeInterceper, multi: true });
+                clientOpts.providers.push({ provide: DECODINGS_INTERCEPTORS, useClass: ResponseDecodeInterceper, multi: true });
 
                 if (clientOpts.sessionFactory && clientOpts.sessionFactory !== ClientTransportSessionFactory) {
                     clientOpts.providers.push(toProvider(ClientTransportSessionFactory, clientOpts.sessionFactory))

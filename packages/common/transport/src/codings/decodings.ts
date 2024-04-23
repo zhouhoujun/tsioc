@@ -53,7 +53,7 @@ export class DecodingsFactory {
             globalInterceptorsToken: DECODINGS_INTERCEPTORS,
             interceptorsToken: BUFFER_DECODE_INTERCEPTORS,
             backend: DecodingsBackend,
-            ...options
+            ...options?.decodes
         }) as DecodingsHandler;
 
         return new Decodings(handler)

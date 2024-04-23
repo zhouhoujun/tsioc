@@ -1,5 +1,5 @@
-import { Injectable, Type } from '@tsdi/ioc';
-import { Handler } from '@tsdi/core';
+import { Injectable, Token, Type } from '@tsdi/ioc';
+import { Backend, ConfigableHandlerOptions, Handler } from '@tsdi/core';
 import { HybirdTransport, Transport } from '../protocols';
 
 
@@ -103,4 +103,6 @@ export interface CodingsOpts {
     transport?: Transport | HybirdTransport;
     microservice?: boolean;
     client?: boolean;
+    encodes?: ConfigableHandlerOptions;
+    decodes?: ConfigableHandlerOptions
 }

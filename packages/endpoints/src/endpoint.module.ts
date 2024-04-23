@@ -274,8 +274,8 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     serverOpts.transportOpts.microservice = serverOpts.microservice;
                 }
 
-                serverOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, serverOpts.transportOpts.encodeInterceptors ?? [OutgoingEncodeInterceper], true));
-                serverOpts.providers.push(...toProviders(DECODINGS_INTERCEPTORS, serverOpts.transportOpts.decodeInterceptors ?? [IncomingDecodeInterceper], true));
+                serverOpts.providers.push({ provide: ENCODINGS_INTERCEPTORS, useClass: OutgoingEncodeInterceper, multi: true });
+                serverOpts.providers.push({ provide: DECODINGS_INTERCEPTORS, useClass: IncomingDecodeInterceper, multi: true });
 
                 if (serverOpts.statusAdapter) {
                     serverOpts.providers.push(toProvider(StatusAdapter, serverOpts.statusAdapter))
