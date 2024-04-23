@@ -97,10 +97,6 @@ export class DeviceController {
         ClientModule.register([
             {
                 transport: 'tcp',
-                imports: [
-                    PacketCodingsModule,
-                    PackageCodingsModule,
-                ],
                 clientOpts: {
                     connectOpts: {
                         port: 2000
@@ -122,10 +118,6 @@ export class DeviceController {
             {
                 transport: 'tcp',
                 microservice: true,
-                imports: [
-                    PacketCodingsModule,
-                    PackageCodingsModule,
-                ],
                 serverOpts: {
                     listenOpts: {
                         port: 3000
@@ -151,7 +143,9 @@ export class DeviceController {
                     { provide: TCP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
                 ]
             }
-        ])
+        ]),
+        PacketCodingsModule,
+        PackageCodingsModule
     ],
     declarations: [
         DeviceController

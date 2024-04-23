@@ -1,5 +1,6 @@
 import { Abstract, ArgumentExecption, Injectable, isString, tokenId } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
+import { TransportHeaders } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler } from '../metadata';
 import { CodingsContext } from '../context';
 import { Observable, of, throwError } from 'rxjs';
@@ -55,7 +56,10 @@ export class PacketCodingsHandlers {
 
     @EncodeHandler('PACKET', { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })
     encode(context: CodingsContext) {
-        const input = context.last<Packet>();
+        const input = { ...context.last<Packet>() };
+        if (input.headers instanceof TransportHeaders) {
+            input.headers = input.headers.getHeaders();
+        }
         const options = context.options as TransportOpts;
         const injector = context.session!.injector;
         const headDelimiter = options.headDelimiter ? Buffer.from(options.headDelimiter) : null;
@@ -110,7 +114,10 @@ export class PackageifyDecodeInterceptor implements Interceptor<any, any, Coding
     constructor(private codings: Codings) { }
 
     intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
-        return this.codings.decodeType('PACKET', input, context);
+        if ((context.options as TransportOpts).headDelimiter) {
+            return this.codings.decodeType('PACKET', input, context);
+        }
+        return next.handle(input, context);
     }
 }
 
@@ -120,7 +127,10 @@ export class PackageifyEncodeInterceptor implements Interceptor<any, any, Coding
     constructor(private codings: Codings) { }
 
     intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
-        return this.codings.encodeType('PACKET', input, context);
+        if ((context.options as TransportOpts).headDelimiter) {
+            return this.codings.encodeType('PACKET', input, context);
+        }
+        return next.handle(input, context);
     }
 
 }
