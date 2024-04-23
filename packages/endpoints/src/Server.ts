@@ -74,8 +74,9 @@ export abstract class MicroService<TRequest extends RequestContext = RequestCont
     abstract get handler(): RequestHandler<TRequest>;
 
     @Runner()
-    start() {
-        return this.onStart()
+    async start() {
+        if(this.handler.ready) await this.handler.ready;
+        return await this.onStart()
     }
 
     @Shutdown()

@@ -21,19 +21,6 @@ export class DecodingsBackend implements Backend<any, any, CodingsContext> {
 
     handle(input: any, context: CodingsContext): Observable<any> {
         return this.codings.decodeType('JSON', input, context);
-        // const type = getClass(input);
-        // const handlers = this.mappings.getDecodeHanlders(type, context.options);
-
-        // if (handlers && handlers.length) {
-        //     return handlers.reduceRight((obs$, curr) => {
-        //         return obs$.pipe(
-        //             mergeMap(input => curr.handle(input, context.next(input)))
-        //         );
-        //     }, of(input))
-        // } else {
-        //     if (this.defaultDecodeHanlder) return this.defaultDecodeHanlder.handle(input, context)
-        //     return throwError(() => new NotSupportedExecption(`No decodings handler for ${getClassName(type)} of ${context.options.transport}${context.options.microservice ? ' microservice' : ''}${context.options.client? ' client': ''}`))
-        // }
     }
 }
 

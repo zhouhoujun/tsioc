@@ -4,10 +4,7 @@ import { BindPacketIdEncodeInterceptor, PacketDecodeInterceptor, PacketEncodeInt
 import { PackageDecodeInterceptor, PackageEncodeInterceptor } from '../interceptors/buffer.package';
 // import { ENCODINGS_INTERCEPTORS } from '../encodings';
 // import { DECODINGS_INTERCEPTORS } from '../decodings';
-// import { CodingsModule } from '../codings.module';
 import { JSON_DECODE_INTERCEPTORS, JSON_ENCODE_INTERCEPTORS } from '../json/codings';
-// import { DefaultEncodingsHandler } from '../encodings';
-// import { DefaultDecodingsHandler } from '../decodings';
 
 
 

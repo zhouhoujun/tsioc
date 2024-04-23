@@ -1,13 +1,11 @@
 import { Abstract, ArgumentExecption, Injectable, isString, tokenId } from '@tsdi/ioc';
-import { Interceptor } from '@tsdi/core';
+import { Handler, Interceptor } from '@tsdi/core';
 import { DecodeHandler, EncodeHandler } from '../metadata';
 import { CodingsContext } from '../context';
 import { Observable, of, throwError } from 'rxjs';
-import { StreamAdapter, isBuffer } from '../../StreamAdapter';
+import { isBuffer } from '../../StreamAdapter';
 import { Packet, PacketData } from '../../packet';
 import { TransportOpts } from '../../TransportSession';
-import { DecodingsHandler } from '../decodings';
-import { EncodingsHandler } from '../encodings';
 import { Codings } from '../Codings';
 
 
@@ -19,6 +17,7 @@ export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer
 
 @Injectable({ static: true })
 export class PacketCodingsHandlers {
+
 
     @DecodeHandler('PACKET', { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
     decodeHandle(context: CodingsContext) {
@@ -107,24 +106,22 @@ export abstract class PayloadDeserialization {
 
 
 @Injectable()
-export class PackageifyDecodeInterceptor implements DecodingsHandler {
+export class PackageifyDecodeInterceptor implements Interceptor<any, any, CodingsContext> {
     constructor(private codings: Codings) { }
 
-    handle(input: any, context: CodingsContext): Observable<any> {
+    intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
         return this.codings.decodeType('PACKET', input, context);
     }
-
 }
 
 @Injectable()
-export class PackageifyEncodeInterceptor implements EncodingsHandler {
+export class PackageifyEncodeInterceptor implements Interceptor<any, any, CodingsContext> {
 
-    constructor(private codings: Codings, private streamAdapter: StreamAdapter) { }
+    constructor(private codings: Codings) { }
 
-    handle(input: any, context: CodingsContext): Observable<any> {
+    intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
         return this.codings.encodeType('PACKET', input, context);
     }
-
 
 }
 

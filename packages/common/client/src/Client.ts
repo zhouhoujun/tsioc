@@ -1,7 +1,7 @@
 import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, isNil, isString } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
 import { TransportHeaders, TransportParams, ResponseAs, Pattern, TransportEvent, TransportResponse, TransportRequest, RequestInitOpts, RequestOptions } from '@tsdi/common';
-import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, isObservable } from 'rxjs';
+import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
 import { ClientHandler } from './handler';
 import { ClientOpts } from './options';
 
@@ -251,9 +251,9 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
         if (isNil(req)) {
             return throwError(() => new ArgumentExecption('Invalid message'))
         }
-        const connecting = this.connect();
-        return (isObservable(connecting) ? connecting : defer(() => connecting))
+        return defer(() => this.handler.ready)
             .pipe(
+                mergeMap(() => this.connect()),
                 catchError((err, caught) => {
                     return throwError(() => this.onError(err))
                 }),

@@ -9,6 +9,8 @@ import { RequestContext } from './RequestContext';
  */
 @Abstract()
 export abstract class RequestHandler<TContext extends RequestContext = RequestContext> implements Handler<TContext, any> {
+    
+    ready?: Promise<void>;
     /**
      * Request handle.
      * @param input 
