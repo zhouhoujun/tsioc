@@ -4,7 +4,7 @@ import { DecodingsFactory } from './decodings';
 import { EncodingsFactory } from './encodings';
 import { CodingMappings } from './mappings';
 import { Codings } from './Codings';
-import { JsonCodingsHandlers } from './json/codings';
+// import { JsonCodingsHandlers } from './json/codings';
 import { PacketIdGenerator, PacketNumberIdGenerator } from './PacketId';
 
 @Module({
@@ -13,7 +13,7 @@ import { PacketIdGenerator, PacketNumberIdGenerator } from './PacketId';
         Codings,
         EncodingsFactory,
         DecodingsFactory,
-        JsonCodingsHandlers,
+        // JsonCodingsHandlers,
         { provide: PacketIdGenerator, useClass: PacketNumberIdGenerator, asDefault: true }
     ]
 })

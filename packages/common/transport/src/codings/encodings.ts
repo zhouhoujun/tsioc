@@ -1,6 +1,7 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, Interceptor, createHandler } from '@tsdi/core';
-import { Observable } from 'rxjs';
+import { TransportHeaders } from '@tsdi/common';
+import { Observable, of, throwError } from 'rxjs';
 import { CodingsOpts } from './mappings';
 import { CodingsContext } from './context';
 import { Encoder } from './Encoder';
@@ -21,7 +22,17 @@ export class EncodingsBackend implements Backend<any, any, CodingsContext> {
     ) { }
 
     handle(input: any, context: CodingsContext): Observable<any> {
-        return this.codings.encodeType('JSON', input, context)
+        input = { ...input };
+        try {
+            if (input.headers instanceof TransportHeaders) {
+                input.headers = input.headers.getHeaders();
+            }
+            const jsonStr = JSON.stringify(input);
+            const buff = Buffer.from(jsonStr);
+            return of(buff);
+        } catch (err) {
+            return throwError(() => err);
+        }
     }
 }
 
@@ -31,7 +42,10 @@ export class EncodingsBackend implements Backend<any, any, CodingsContext> {
  */
 export const ENCODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, CodingsContext>[]>('ENCODINGS_INTERCEPTORS');
 
-
+/**
+ * buffer encoding interceptor for backend.
+ */
+export const BUFFER_ENCODE_INTERCEPTORS = tokenId<Interceptor<any, Buffer, CodingsContext>[]>('BUFFER_ENCODE_INTERCEPTORS');
 
 export class Encodings extends Encoder {
 
@@ -46,7 +60,8 @@ export class Encodings extends Encoder {
 export class EncodingsFactory {
     create(injector: Injector, options: CodingsOpts): Encodings {
         const handler = createHandler(injector, {
-            interceptorsToken: ENCODINGS_INTERCEPTORS,
+            globalInterceptorsToken: ENCODINGS_INTERCEPTORS,
+            interceptorsToken: BUFFER_ENCODE_INTERCEPTORS,
             backend: EncodingsBackend,
             ...options
         }) as EncodingsHandler;
