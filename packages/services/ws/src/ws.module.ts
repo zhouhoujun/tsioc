@@ -1,6 +1,5 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
-import { JsonCodingsModule } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientDuplexTransportSessionFactory, ClientOpts } from '@tsdi/common/client';
 import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { WsClient } from './client/client';
@@ -15,9 +14,6 @@ import { WsEndpointHandler } from './server/handler';
 const defaultMaxSize = 1048576; //1024 * 1024;
 
 @Module({
-    imports:[
-        JsonCodingsModule
-    ],
     providers: [
         WsClient,
         WsServer,

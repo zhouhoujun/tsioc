@@ -468,7 +468,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
             return await this.streamAdapter.pipeTo(body, res);
         }
 
-        return await this.respondJson(body, res);
+        return await this.respondJson(body);
     }
 
     protected isHeadMethod(): boolean {
@@ -499,7 +499,8 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         return this.response.end(body)
     }
 
-    protected async respondJson(body: any, res: TResponse) {
+    protected async respondJson(body: any) {
+        const res = this.response;
         // body: json
         body = Buffer.from(JSON.stringify(body));
         if (!res.headersSent) {
