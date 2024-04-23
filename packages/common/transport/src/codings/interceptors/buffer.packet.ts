@@ -56,7 +56,7 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer, Packet, Codi
         );
     }
 
-    protected handleData(chl: ChannelBuffer, dataRaw: string | Buffer | Uint8Array, subscriber: Subscriber<Buffer>, options: TransportOpts) {
+    protected handleData(chl: ChannelBuffer, dataRaw: Buffer, subscriber: Subscriber<Buffer>, options: TransportOpts) {
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
@@ -71,7 +71,7 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer, Packet, Codi
             if (i !== -1) {
                 const buffer = this.concatCaches(chl);
                 const idx = chl.length - Buffer.byteLength(data) + i;
-                const rawContentLength = buffer.subarray(idx-4, idx).readUInt32BE(0);
+                const rawContentLength = buffer.readUInt32BE(idx-4);
                 chl.contentLength = rawContentLength;
 
                 if (isNaN(chl.contentLength) || (options.maxSize && chl.contentLength > options.maxSize)) {
@@ -148,7 +148,7 @@ export class BindPacketIdEncodeInterceptor implements Interceptor<PacketData, Bu
 export class PacketEncodeInterceptor implements Interceptor<Packet, Buffer, CodingsContext> {
 
     intercept(input: Packet<any>, next: Handler<Packet<any>, Buffer, CodingsContext>, context: CodingsContext): Observable<Buffer> {
-        return next.handle(input)
+        return next.handle(input, context)
             .pipe(map(data => {
                 const options = context.options as TransportOpts;
                 const len = Buffer.alloc(4);

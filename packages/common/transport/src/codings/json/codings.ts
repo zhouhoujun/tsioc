@@ -1,15 +1,16 @@
-import { Injectable, isPromise, isString, tokenId } from '@tsdi/ioc';
-import { Observable, from, isObservable, mergeMap, of, throwError } from 'rxjs';
+import { Injectable, isString, tokenId } from '@tsdi/ioc';
+import { Interceptor } from '@tsdi/core';
+import { TransportHeaders } from '@tsdi/common';
+import { Observable, of, throwError } from 'rxjs';
 import { DecodeHandler, EncodeHandler } from '../metadata';
 import { CodingsContext } from '../context';
-import { InvalidJsonException } from '../../execptions';
-import { StreamAdapter, isBuffer } from '../../StreamAdapter';
 import { DecodingsHandler } from '../decodings';
 import { Codings } from '../Codings';
 import { EncodingsHandler } from '../encodings';
-import { Interceptor } from '@tsdi/core';
 import { Packet, PacketData } from '../../packet';
-import { TransportHeaders } from '@tsdi/common/src';
+import { InvalidJsonException } from '../../execptions';
+import { StreamAdapter, isBuffer } from '../../StreamAdapter';
+
 
 export const JSON_ENCODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer, CodingsContext>[]>('JSON_ENCODE_INTERCEPTORS');
 
@@ -53,8 +54,7 @@ export class JsonifyDecodeInterceptor implements DecodingsHandler {
     handle(input: any, context: CodingsContext): Observable<any> {
         if (!(isString(input) || isBuffer(input))) return of(input);
 
-        const data = isString(input) ? input : (input.length ? new TextDecoder().decode(input) : '');
-        if (!data) return of({});
+        const data = isString(input) ? Buffer.from(input) : input;
         return this.codings.decodeType('JSON', data, context);
     }
 
@@ -66,8 +66,6 @@ export class JsonifyEncodeInterceptor implements EncodingsHandler {
     constructor(private codings: Codings, private streamAdapter: StreamAdapter) { }
 
     handle(input: any, context: CodingsContext): Observable<any> {
-        // if (isPromise(input)) return from(input).pipe(mergeMap(v => this.isJson(v) ? this.codings.encodeType('JSON', v, context) : of(v)));
-        // if (isObservable(input)) return input.pipe(mergeMap(v => this.isJson(v) ? this.codings.encodeType('JSON', v, context) : of(v)));
         return this.isJson(input) ? this.codings.encodeType('JSON', input, context) : of(input);
     }
 

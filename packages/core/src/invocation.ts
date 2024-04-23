@@ -26,6 +26,37 @@ export abstract class InvocationHandler<
     abstract equals(target: any): boolean;
 }
 
+export class InvocationArgs {
+
+    private _inputs: any[];
+    get inputs(): any[] {
+        return this._inputs;
+    }
+
+    constructor() {
+        this._inputs = [];
+    }
+
+    next<TInput>(input: TInput): this {
+        if (this._inputs[0] != input) {
+            this._inputs.unshift(input);
+        }
+        return this;
+    }
+
+    first<TInput>(): TInput {
+        return this._inputs[this._inputs.length - 1]
+    }
+
+    last<TInput>(): TInput {
+        return this._inputs[0];
+    }
+
+    onDestroy(): void {
+        this._inputs = [];
+    }
+}
+
 
 /**
  * Invocation Handler factory.
@@ -92,7 +123,7 @@ export abstract class Respond<TInput = any> {
  * Respond adapter with response type.
  */
 @Abstract()
-export abstract class TypedRespond<TInput = any>  {
+export abstract class TypedRespond<TInput = any> {
     /**
      * respond with handled data.
      * @param input input data.

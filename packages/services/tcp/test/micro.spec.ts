@@ -54,7 +54,7 @@ export class TcpService {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        // JsonPacketCodingsModule,
+        JsonPacketCodingsModule,
         ClientModule.register({
             transport: 'tcp',
             microservice: true,

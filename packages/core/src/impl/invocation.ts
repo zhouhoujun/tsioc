@@ -7,7 +7,8 @@ import { ResultValue } from '../handlers/ResultValue';
 import { HandlerContext } from '../handlers/context';
 import {
     InvocationOptions, Respond, TypedRespond, InvocationFactory, OPERA_FILTERS, OPERA_GUARDS,
-    InvocationFactoryResolver, OPERA_INTERCEPTORS, InvocationHandler
+    InvocationFactoryResolver, OPERA_INTERCEPTORS, InvocationHandler,
+    InvocationArgs
 } from '../invocation';
 
 
@@ -76,7 +77,13 @@ export class InvocationHandlerImpl<
                 newCtx = true;
                 const ctx = createContext(this.context);
                 ctx.setValue(getClass(input), input);
-                if (context) ctx.setValue(getClass(context), context);
+                if (context) {
+                    if (context instanceof InvocationArgs) {
+                        context.next(input);
+                        ctx.setValue(InvocationArgs, context);
+                    }
+                    ctx.setValue(getClass(context), context);
+                }
                 input = ctx;
             }
         }
