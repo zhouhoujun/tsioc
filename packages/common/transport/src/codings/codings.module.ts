@@ -1,21 +1,20 @@
 
 import { Module } from '@tsdi/ioc';
-import { DecodingsBackend, DecodingsFactory, DecodingsHandler, DecodingsInterceptingHandler, DefaultDecodingsFactory } from './decodings';
-import { DefaultEncodingsFactory, EncodingsBackend, EncodingsFactory, EncodingsHandler, EncodingsInterceptingHandler } from './encodings';
+import { DecodingsFactory } from './decodings';
+import { EncodingsFactory } from './encodings';
 import { CodingMappings } from './mappings';
 import { Codings } from './Codings';
+import { JsonCodingsHandlers } from './json/codings';
+import { PacketIdGenerator, PacketNumberIdGenerator } from './PacketId';
 
 @Module({
     providers: [
         CodingMappings,
         Codings,
-        EncodingsBackend,
-        { provide: EncodingsHandler, useClass: EncodingsInterceptingHandler },
-        { provide: EncodingsFactory, useClass: DefaultEncodingsFactory },
-        
-        DecodingsBackend,
-        { provide: DecodingsHandler, useClass: DecodingsInterceptingHandler },
-        { provide: DecodingsFactory, useClass: DefaultDecodingsFactory }
+        EncodingsFactory,
+        DecodingsFactory,
+        JsonCodingsHandlers,
+        { provide: PacketIdGenerator, useClass: PacketNumberIdGenerator, asDefault: true }
     ]
 })
 export class CodingsModule {

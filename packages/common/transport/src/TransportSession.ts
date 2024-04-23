@@ -4,8 +4,8 @@ import { TransportErrorResponse, TransportEvent, HeadersLike, HeaderFields, } fr
 import { Observable } from 'rxjs';
 import { HybirdTransport, Transport } from './protocols';
 import { CodingsOpts } from './codings/mappings';
-import { DefaultEncodingsHandler, EncodingsFactory } from './codings/encodings';
-import { DecodingsFactory, DefaultDecodingsHandler } from './codings/decodings';
+import { EncodingsFactory } from './codings/encodings';
+import { DecodingsFactory } from './codings/decodings';
 
 
 
@@ -29,14 +29,6 @@ export interface TransportOpts extends CodingsOpts {
      * decodings Factory.
      */
     decodingsFactory?: Token<DecodingsFactory>;
-    /**
-     * default encodings handler for encode backend.
-     */
-    defaultEncodingsHandler?: ProvdierOf<DefaultEncodingsHandler>;
-    /**
-     * default decodings handler for decode backend.
-     */
-    defaultDecodingsHandler?: ProvdierOf<DefaultDecodingsHandler>;
     /**
      * encode interceptors
      */

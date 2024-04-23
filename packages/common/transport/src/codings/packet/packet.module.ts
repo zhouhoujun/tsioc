@@ -2,24 +2,28 @@ import { Module } from '@tsdi/ioc';
 import { PACKET_DECODE_INTERCEPTORS, PACKET_ENCODE_INTERCEPTORS, PackageifyDecodeInterceptor, PackageifyEncodeInterceptor, PacketCodingsHandlers } from './codings';
 import { BindPacketIdEncodeInterceptor, PacketDecodeInterceptor, PacketEncodeInterceptor } from '../interceptors/buffer.packet';
 import { PackageDecodeInterceptor, PackageEncodeInterceptor } from '../interceptors/buffer.package';
-import { DefaultEncodingsHandler } from '../encodings';
-import { DefaultDecodingsHandler } from '../decodings';
-import { PacketIdGenerator, PacketNumberIdGenerator } from '../PacketId';
+// import { ENCODINGS_INTERCEPTORS } from '../encodings';
+// import { DECODINGS_INTERCEPTORS } from '../decodings';
+// import { CodingsModule } from '../codings.module';
+import { JSON_DECODE_INTERCEPTORS, JSON_ENCODE_INTERCEPTORS } from '../json/codings';
+// import { DefaultEncodingsHandler } from '../encodings';
+// import { DefaultDecodingsHandler } from '../decodings';
+
 
 
 
 @Module({
     providers: [
         PacketCodingsHandlers,
-        { provide: PacketIdGenerator, useClass: PacketNumberIdGenerator, asDefault: true },
-        { provide: DefaultEncodingsHandler, useClass: PackageifyEncodeInterceptor, asDefault: true },
-        { provide: DefaultDecodingsHandler, useClass: PackageifyDecodeInterceptor, asDefault: true }
-
+        { provide: JSON_ENCODE_INTERCEPTORS, useClass: PackageifyEncodeInterceptor, multi: true, multiOrder: 0 },
+        { provide: JSON_DECODE_INTERCEPTORS, useClass: PackageifyDecodeInterceptor, multi: true, multiOrder: 0 }
     ]
 })
 export class PacketCodingsModule {
 
 }
+
+
 
 
 @Module({

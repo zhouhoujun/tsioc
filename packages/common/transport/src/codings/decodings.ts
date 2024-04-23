@@ -1,10 +1,10 @@
-import { Abstract, EMPTY, Injectable, Injector, Optional, getClass, getClassName, tokenId } from '@tsdi/ioc';
-import { Backend, Handler, InterceptingHandler, Interceptor } from '@tsdi/core';
-import { Observable, mergeMap, of, throwError } from 'rxjs';
-import { NotSupportedExecption } from '../execptions';
-import { CodingMappings, CodingsOpts } from './mappings';
+import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
+import { Backend, Handler, Interceptor, createHandler } from '@tsdi/core';
+import { Observable } from 'rxjs';
+import { CodingsOpts } from './mappings';
 import { CodingsContext } from './context';
 import { Decoder } from './Decoder';
+import { Codings } from './Codings';
 
 
 @Abstract()
@@ -12,34 +12,28 @@ export abstract class DecodingsHandler implements Handler<any, any, CodingsConte
     abstract handle(input: any, context: CodingsContext): Observable<any>
 }
 
-@Abstract()
-export abstract class DefaultDecodingsHandler implements DecodingsHandler {
-    abstract handle(input: any, context: CodingsContext): Observable<any>
-}
-
-
 @Injectable()
 export class DecodingsBackend implements Backend<any, any, CodingsContext> {
 
     constructor(
-        private mappings: CodingMappings,
-        @Optional() private defaultDecodeHanlder: DefaultDecodingsHandler
+        private codings: Codings
     ) { }
 
     handle(input: any, context: CodingsContext): Observable<any> {
-        const type = getClass(input);
-        const handlers = this.mappings.getDecodeHanlders(type, context.options);
+        return this.codings.decodeType('JSON', input, context);
+        // const type = getClass(input);
+        // const handlers = this.mappings.getDecodeHanlders(type, context.options);
 
-        if (handlers && handlers.length) {
-            return handlers.reduceRight((obs$, curr) => {
-                return obs$.pipe(
-                    mergeMap(input => curr.handle(input, context.next(input)))
-                );
-            }, of(input))
-        } else {
-            if (this.defaultDecodeHanlder) return this.defaultDecodeHanlder.handle(input, context)
-            return throwError(() => new NotSupportedExecption(`No decodings handler for ${getClassName(type)} of ${context.options.transport}${context.options.microservice ? ' microservice' : ''}${context.options.client? ' client': ''}`))
-        }
+        // if (handlers && handlers.length) {
+        //     return handlers.reduceRight((obs$, curr) => {
+        //         return obs$.pipe(
+        //             mergeMap(input => curr.handle(input, context.next(input)))
+        //         );
+        //     }, of(input))
+        // } else {
+        //     if (this.defaultDecodeHanlder) return this.defaultDecodeHanlder.handle(input, context)
+        //     return throwError(() => new NotSupportedExecption(`No decodings handler for ${getClassName(type)} of ${context.options.transport}${context.options.microservice ? ' microservice' : ''}${context.options.client? ' client': ''}`))
+        // }
     }
 }
 
@@ -48,14 +42,6 @@ export class DecodingsBackend implements Backend<any, any, CodingsContext> {
  * decodings interceptors.
  */
 export const DECODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, CodingsContext>[]>('DECODINGS_INTERCEPTORS');
-
-
-@Injectable({ static: false })
-export class DecodingsInterceptingHandler extends InterceptingHandler<Buffer, any, CodingsContext>  {
-    constructor(backend: DecodingsBackend, injector: Injector) {
-        super(backend, () => injector.get(DECODINGS_INTERCEPTORS, EMPTY))
-    }
-}
 
 
 
@@ -68,17 +54,16 @@ export class Decodings extends Decoder {
 }
 
 
-@Abstract()
-export abstract class DecodingsFactory {
-    abstract create(injector: Injector, options: CodingsOpts): Decodings;
-}
-
 @Injectable()
-export class DefaultDecodingsFactory {
+export class DecodingsFactory {
     create(injector: Injector, options: CodingsOpts): Decodings {
-        return new Decodings(injector.resolve(DecodingsHandler, [
-            { provide: Injector, useValue: injector }
-        ]))
+        const handler = createHandler(injector, {
+            interceptorsToken: DECODINGS_INTERCEPTORS,
+            backend: DecodingsBackend,
+            ...options
+        }) as DecodingsHandler;
+
+        return new Decodings(handler)
     }
 }
 

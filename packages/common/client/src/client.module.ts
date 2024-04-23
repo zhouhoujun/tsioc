@@ -3,7 +3,7 @@ import {
     Type, Token, isArray, lang, toProvider, tokenId, toProviders, ModuleRef, isNil, ModuleType
 } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
-import { CodingsModule, DECODINGS_INTERCEPTORS, DefaultDecodingsHandler, DefaultEncodingsHandler, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, ResponseEventFactory, StatusAdapter, Transport } from '@tsdi/common/transport';
+import { DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, ResponseEventFactory, StatusAdapter, Transport } from '@tsdi/common/transport';
 import { ClientOpts } from './options';
 import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
@@ -203,14 +203,6 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
 
                 if(opts.responseEventFactory) {
                     clientOpts.providers.push(toProvider(ResponseEventFactory, opts.responseEventFactory));
-                }
-
-                if (clientOpts.transportOpts.defaultEncodingsHandler) {
-                    clientOpts.providers.push(toProvider(DefaultEncodingsHandler, clientOpts.transportOpts.defaultEncodingsHandler))
-                }
-
-                if (clientOpts.transportOpts.defaultDecodingsHandler) {
-                    clientOpts.providers.push(toProvider(DefaultDecodingsHandler, clientOpts.transportOpts.defaultDecodingsHandler))
                 }
 
                 clientOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, clientOpts.transportOpts.encodeInterceptors ?? [RequestEncodeInterceper], true));

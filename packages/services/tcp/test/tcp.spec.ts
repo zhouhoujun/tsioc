@@ -2,7 +2,7 @@ import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { Application, ApplicationContext, } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
-import { BadRequestExecption } from '@tsdi/common/transport';
+import { BadRequestExecption, PackageCodingsModule, PacketCodingsModule } from '@tsdi/common/transport';
 import { ClientModule } from '@tsdi/common/client';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
@@ -97,6 +97,10 @@ export class DeviceController {
         ClientModule.register([
             {
                 transport: 'tcp',
+                imports: [
+                    PacketCodingsModule,
+                    PackageCodingsModule,
+                ],
                 clientOpts: {
                     connectOpts: {
                         port: 2000
@@ -118,6 +122,10 @@ export class DeviceController {
             {
                 transport: 'tcp',
                 microservice: true,
+                imports: [
+                    PacketCodingsModule,
+                    PackageCodingsModule,
+                ],
                 serverOpts: {
                     listenOpts: {
                         port: 3000

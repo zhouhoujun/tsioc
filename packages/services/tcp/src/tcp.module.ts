@@ -1,7 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
-import { JsonCodingsModule } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientDuplexTransportSessionFactory, ClientOpts } from '@tsdi/common/client';
 import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';
@@ -17,9 +16,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
 // const defaultMaxSize = 524120; // 262060; //65515 * 4;
 
 @Module({
-    imports:[
-        JsonCodingsModule
-    ],
     providers: [
         TcpClient,
         TcpServer,

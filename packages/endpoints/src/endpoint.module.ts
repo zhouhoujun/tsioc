@@ -6,7 +6,7 @@ import {
     ModuleType
 } from '@tsdi/ioc';
 import { CanActivate, Filter, InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
-import { CodingsModule, DECODINGS_INTERCEPTORS, DefaultDecodingsHandler, DefaultEncodingsHandler, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, StatusAdapter, Transport } from '@tsdi/common/transport';
+import { DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, StatusAdapter, Transport } from '@tsdi/common/transport';
 import { RequestContext, RequestContextFactory } from './RequestContext';
 import { Server, ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
@@ -272,14 +272,6 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 }
                 if (serverOpts.microservice) {
                     serverOpts.transportOpts.microservice = serverOpts.microservice;
-                }
-
-                if (serverOpts.transportOpts.defaultEncodingsHandler) {
-                    serverOpts.providers.push(toProvider(DefaultEncodingsHandler, serverOpts.transportOpts.defaultEncodingsHandler))
-                }
-
-                if (serverOpts.transportOpts.defaultDecodingsHandler) {
-                    serverOpts.providers.push(toProvider(DefaultDecodingsHandler, serverOpts.transportOpts.defaultDecodingsHandler))
                 }
 
                 serverOpts.providers.push(...toProviders(ENCODINGS_INTERCEPTORS, serverOpts.transportOpts.encodeInterceptors ?? [OutgoingEncodeInterceper], true));
