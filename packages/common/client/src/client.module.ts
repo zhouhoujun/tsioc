@@ -171,7 +171,18 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     }
                 }
                 const opts = { ...defts, ...options, asDefault: null } as ClientModuleOpts & ClientTokenOpts;
-                const clientOpts = { backend: opts.backend ?? TransportBackend, globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS, ...opts.defaultOpts, ...opts.clientOpts, providers: [...opts.defaultOpts?.providers || EMPTY, ...opts.clientOpts?.providers || EMPTY] } as ClientOpts & { providers: ProviderType[] };
+                const clientOpts = {
+                    backend: opts.backend ?? TransportBackend,
+                    globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS,
+                    ...opts.defaultOpts,
+                    ...opts.clientOpts,
+                    providers: [
+                        { provide: ENCODINGS_INTERCEPTORS, useClass: RequestEncodeInterceper, multi: true },
+                        { provide: DECODINGS_INTERCEPTORS, useClass: ResponseDecodeInterceper, multi: true },
+                        ...opts.defaultOpts?.providers || EMPTY,
+                        ...opts.clientOpts?.providers || EMPTY
+                    ]
+                } as ClientOpts & { providers: ProviderType[] };
 
 
                 if (opts.imports) {
@@ -204,9 +215,6 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                 if (opts.responseEventFactory) {
                     clientOpts.providers.push(toProvider(ResponseEventFactory, opts.responseEventFactory));
                 }
-
-                clientOpts.providers.push({ provide: ENCODINGS_INTERCEPTORS, useClass: RequestEncodeInterceper, multi: true });
-                clientOpts.providers.push({ provide: DECODINGS_INTERCEPTORS, useClass: ResponseDecodeInterceper, multi: true });
 
                 if (clientOpts.sessionFactory && clientOpts.sessionFactory !== ClientTransportSessionFactory) {
                     clientOpts.providers.push(toProvider(ClientTransportSessionFactory, clientOpts.sessionFactory))

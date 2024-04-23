@@ -1,9 +1,6 @@
 import {
     Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType,
-    tokenId, isArray, toProvider, lang, ProvdierOf, Type, toProviders,
-    ModuleRef,
-    isNil,
-    ModuleType
+    tokenId, isArray, toProvider, lang, ProvdierOf, Type, ModuleRef, isNil, ModuleType
 } from '@tsdi/ioc';
 import { CanActivate, Filter, InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
 import { DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, StatusAdapter, Transport } from '@tsdi/common/transport';
@@ -247,7 +244,12 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                         ...moduleOpts.defaultOpts?.routes,
                         ...moduleOpts.serverOpts?.routes
                     },
-                    providers: [...moduleOpts.defaultOpts?.providers || EMPTY, ...moduleOpts.serverOpts?.providers || EMPTY]
+                    providers: [
+                        { provide: ENCODINGS_INTERCEPTORS, useClass: OutgoingEncodeInterceper, multi: true },
+                        { provide: DECODINGS_INTERCEPTORS, useClass: IncomingDecodeInterceper, multi: true },
+                        ...moduleOpts.defaultOpts?.providers || EMPTY,
+                        ...moduleOpts.serverOpts?.providers || EMPTY
+                    ]
                 } as ServerOpts & { providers: ProviderType[] };
 
                 if (moduleOpts.imports) {
@@ -273,9 +275,6 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 if (serverOpts.microservice) {
                     serverOpts.transportOpts.microservice = serverOpts.microservice;
                 }
-
-                serverOpts.providers.push({ provide: ENCODINGS_INTERCEPTORS, useClass: OutgoingEncodeInterceper, multi: true });
-                serverOpts.providers.push({ provide: DECODINGS_INTERCEPTORS, useClass: IncomingDecodeInterceper, multi: true });
 
                 if (serverOpts.statusAdapter) {
                     serverOpts.providers.push(toProvider(StatusAdapter, serverOpts.statusAdapter))
