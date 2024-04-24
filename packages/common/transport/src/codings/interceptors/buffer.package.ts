@@ -22,6 +22,7 @@ export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableS
         const idLen = options.idLen ?? 2;
         const id = idLen > 4 ? input.subarray(0, idLen).toString() : input.readIntBE(0, idLen);
         input = input.subarray(idLen);
+        context.package = true;
         return next.handle(input, context)
             .pipe(
                 mergeMap(packet => {
@@ -84,6 +85,7 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
     constructor() { }
 
     intercept(input: PacketData, next: Handler<PacketData, Buffer, CodingsContext>, context: CodingsContext): Observable<Buffer | IReadableStream> {
+        context.package = true;
         return next.handle(input, context)
             .pipe(
                 mergeMap(data => {

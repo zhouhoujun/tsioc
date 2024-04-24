@@ -9,7 +9,9 @@ import { RequestContext } from './RequestContext';
  */
 @Abstract()
 export abstract class RequestHandler<TContext extends RequestContext = RequestContext> implements Handler<TContext, any> {
-    
+    /**
+     * async providers ready.
+     */
     ready?: Promise<void>;
     /**
      * Request handle.

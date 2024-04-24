@@ -1,6 +1,6 @@
 import { Injectable, getClass } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { CodingsContext, Packet, EncodeHandler, Codings } from '@tsdi/common/transport';
+import { CodingsContext, Packet, EncodeHandler, Codings, PacketData } from '@tsdi/common/transport';
 import { Observable, mergeMap } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 import { RequestContextImpl } from '../impl/request.context';
@@ -18,12 +18,13 @@ export class OutgoingEncodingsHandlers {
             status: response.statusCode,
             statusMessage: response.statusMessage,
             headers: response.headers
-        } as Packet;
+        } as PacketData;
         if (response.error) {
             packet.error = response.error;
         }
-        if (response.tHeaders.hasContentLength()) {
+        if (input.length) {
             packet.payload = input.body;
+            packet.payloadLength = input.length
         }
         return packet;
     }

@@ -1,7 +1,7 @@
 
 import { Injectable, isPlainObject } from '@tsdi/ioc';
-import { Handler, Interceptor } from '@tsdi/core';
-import { Observable, Subscriber, filter, map, mergeMap } from 'rxjs';
+import { Handler, Interceptor, PipeTransform } from '@tsdi/core';
+import { Observable, Subscriber, filter, map, mergeMap, throwError } from 'rxjs';
 import { Packet, PacketData } from '../../packet';
 import { PacketLengthException } from '../../execptions';
 import { CodingsContext } from '../context';
@@ -31,7 +31,6 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer, Packet, Codi
     }
 
 
-
     intercept(input: Buffer, next: Handler<Buffer, Packet>, context: CodingsContext): Observable<Packet> {
         const options = context.options as TransportOpts;
         return new Observable((subscriber: Subscriber<Buffer>) => {
@@ -47,7 +46,7 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer, Packet, Codi
                 }
                 this.channels.set(channel, chl)
             }
-            this.handleData(chl, input, subscriber, options);
+            this.handleData(chl, input, subscriber, context);
 
             return subscriber;
 
@@ -56,7 +55,8 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer, Packet, Codi
         );
     }
 
-    protected handleData(chl: ChannelBuffer, dataRaw: Buffer, subscriber: Subscriber<Buffer>, options: TransportOpts) {
+    protected handleData(chl: ChannelBuffer, dataRaw: Buffer, subscriber: Subscriber<Buffer>, context: CodingsContext) {
+        const options = context.options as TransportOpts;
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
@@ -71,14 +71,19 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer, Packet, Codi
             if (i !== -1) {
                 const buffer = this.concatCaches(chl);
                 const idx = chl.length - Buffer.byteLength(data) + i;
-                const rawContentLength = buffer.readUInt32BE(idx-4);
+                const rawContentLength = buffer.readUInt32BE(idx - 4);
                 chl.contentLength = rawContentLength;
 
-                if (isNaN(chl.contentLength) || (options.maxSize && chl.contentLength > options.maxSize)) {
+                if (isNaN(rawContentLength) || (options.maxSize && rawContentLength > options.maxSize)) {
                     chl.contentLength = null;
                     chl.length = 0;
                     chl.buffers = [];
-                    throw new PacketLengthException(rawContentLength.toString());
+                    const btpipe = context.session!.injector.get<PipeTransform>('bytes-format');
+                    if (rawContentLength) {
+                        throw new PacketLengthException(`Packet length ${btpipe.transform(rawContentLength)} great than max size ${btpipe.transform(options.maxSize)}`);
+                    } else {
+                        throw new PacketLengthException(`No packet length`);
+                    }
                 }
                 chl.buffers = [buffer.subarray(idx + 1)];
                 chl.length -= (idx + 1);
@@ -95,7 +100,7 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer, Packet, Codi
                 const rest = buffer.subarray(chl.contentLength);
                 this.handleMessage(chl, message, subscriber);
                 if (rest.length) {
-                    this.handleData(chl, rest, subscriber, options);
+                    this.handleData(chl, rest, subscriber, context);
                 }
             } else {
                 subscriber.complete();
@@ -147,10 +152,15 @@ export class BindPacketIdEncodeInterceptor implements Interceptor<PacketData, Bu
 @Injectable()
 export class PacketEncodeInterceptor implements Interceptor<Packet, Buffer, CodingsContext> {
 
-    intercept(input: Packet<any>, next: Handler<Packet<any>, Buffer, CodingsContext>, context: CodingsContext): Observable<Buffer> {
+    intercept(input: PacketData<any>, next: Handler<Packet<any>, Buffer, CodingsContext>, context: CodingsContext): Observable<Buffer> {
+        const length = input.payloadLength;
+        const options = context.options as TransportOpts;
+        if (!context.package && length && options.maxSize && length > options.maxSize) {
+            const btpipe = context.session!.injector.get<PipeTransform>('bytes-format');
+            return throwError(()=> new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(options.maxSize)}`));
+        }
         return next.handle(input, context)
             .pipe(map(data => {
-                const options = context.options as TransportOpts;
                 const len = Buffer.alloc(4);
                 len.writeUInt32BE(data.length);
                 return Buffer.concat([len, Buffer.from(options.delimiter!), data])
