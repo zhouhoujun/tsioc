@@ -1,9 +1,9 @@
 import { Module } from '@tsdi/ioc';
+import { CodingsModule, ResponsePacketIncoming, getDecodeInterceptorsToken } from '@tsdi/common/transport';
 import { RequestEncodingsHandlers } from './request.encodings';
 import { CompressResponseDecordeInterceptor, ResponseDecodingsHandlers } from './response.decodings';
 import { CodingsTransportBackend } from './transport.backend';
 import { TransportBackend } from '../backend';
-import { CodingsModule, ResponsePacketIncoming, getDecodeInterceptorsToken } from '@tsdi/common/transport';
 
 @Module({
     imports:[

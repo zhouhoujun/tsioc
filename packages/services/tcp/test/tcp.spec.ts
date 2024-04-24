@@ -2,13 +2,13 @@ import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { Application, ApplicationContext, } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
-import { BadRequestExecption, PackageCodingsModule, PacketCodingsModule } from '@tsdi/common/transport';
+import { BadRequestExecption, BufferCodingsModule, PackageBufferCodingsModule, PacketCodingsModule } from '@tsdi/common/transport';
 import { ClientModule } from '@tsdi/common/client';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { BodyparserInterceptor, ContentInterceptor, EndpointModule, Handle, JsonInterceptor, MicroServRouterModule, Payload, RedirectResult, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/endpoints';
-import { TCP_SERV_INTERCEPTORS, TcpClient, TcpModule } from '../src';
+import { TCP_SERV_INTERCEPTORS, TcpClient } from '../src';
 
 import { BigFileInterceptor } from './BigFileInterceptor';
 
@@ -144,8 +144,9 @@ export class DeviceController {
                 ]
             }
         ]),
-        PacketCodingsModule,
-        PackageCodingsModule
+        // BufferCodingsModule,
+        // PackageBufferCodingsModule,
+        PacketCodingsModule
     ],
     declarations: [
         DeviceController

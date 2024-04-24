@@ -1,10 +1,9 @@
-import { EMPTY_OBJ, Injectable, getClass, lang } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, getClass, isNil, isString, lang } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { HEAD, ResponseJsonParseError, TransportEvent, TransportHeaders, TransportRequest } from '@tsdi/common';
 import {
     Codings, CodingsContext, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter,
     XSSI_PREFIX, ev, isBuffer, toBuffer, Packet, ResponsePacketIncoming, ResponseIncoming, DecodeHandler
-
 } from '@tsdi/common/transport';
 import { Observable, defer, mergeMap, throwError } from 'rxjs';
 
@@ -49,57 +48,61 @@ export class ResponseIncomingResolver {
             let body, originalBody;
             body = originalBody = res.body;
             let ok = res.ok ?? !res.error;
-            switch (responseType) {
-                case 'json':
-                    // Save the original body, before attempting XSSI prefix stripping.
-                    if (isBuffer(body)) {
-                        body = new TextDecoder().decode(body);
-                    }
-                    originalBody = body;
-                    try {
-                        body = body.replace(XSSI_PREFIX, '');
-                        // Attempt the parse. If it fails, a parse error should be delivered to the user.
-                        body = body !== '' ? JSON.parse(body) : null
-                    } catch (err) {
-                        // Since the JSON.parse failed, it's reasonable to assume this might not have been a
-                        // JSON response. Restore the original body (including any XSSI prefix) to deliver
-                        // a better error response.
-                        body = originalBody;
-
-                        // If this was an error request to begin with, leave it as a string, it probably
-                        // just isn't JSON. Otherwise, deliver the parsing error to the user.
-                        if (ok) {
-                            // Even though the response status was 2xx, this is still an error.
-                            ok = false;
-                            // The parse error contains the text of the body that failed to parse.
-                            res.error = { error: err, text: body } as ResponseJsonParseError
+            if (!isNil(body)) {
+                switch (responseType) {
+                    case 'json':
+                        // Save the original body, before attempting XSSI prefix stripping.
+                        if (isBuffer(body)) {
+                            body = new TextDecoder().decode(body);
                         }
-                    }
-                    break;
+                        if (isString(body)) {
+                            originalBody = body;
+                            try {
+                                body = body.replace(XSSI_PREFIX, '');
+                                // Attempt the parse. If it fails, a parse error should be delivered to the user.
+                                body = body !== '' ? JSON.parse(body) : null
+                            } catch (err) {
+                                // Since the JSON.parse failed, it's reasonable to assume this might not have been a
+                                // JSON response. Restore the original body (including any XSSI prefix) to deliver
+                                // a better error response.
+                                body = originalBody;
 
-                case 'arraybuffer':
-                    body = body.subarray(body.byteOffset, body.byteOffset + body.byteLength);
-                    break;
+                                // If this was an error request to begin with, leave it as a string, it probably
+                                // just isn't JSON. Otherwise, deliver the parsing error to the user.
+                                if (ok) {
+                                    // Even though the response status was 2xx, this is still an error.
+                                    ok = false;
+                                    // The parse error contains the text of the body that failed to parse.
+                                    res.error = { error: err, text: body } as ResponseJsonParseError
+                                }
+                            }
+                        }
+                        break;
 
-                case 'blob':
-                    body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
-                        type: res.tHeaders.getContentType()
-                    });
-                    break;
+                    case 'arraybuffer':
+                        body = body.subarray(body.byteOffset, body.byteOffset + body.byteLength);
+                        break;
 
-                case 'stream':
-                    body = streamAdapter.isStream(body) ? body : streamAdapter.jsonSreamify(body);
-                    break;
+                    case 'blob':
+                        body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
+                            type: res.tHeaders.getContentType()
+                        });
+                        break;
 
-                case 'text':
-                default:
-                    if (isBuffer(body)) {
-                        body = new TextDecoder().decode(body);
-                    }
-                    break;
+                    case 'stream':
+                        body = streamAdapter.isStream(body) ? body : streamAdapter.jsonSreamify(body);
+                        break;
 
+                    case 'text':
+                    default:
+                        if (isBuffer(body)) {
+                            body = new TextDecoder().decode(body);
+                        }
+                        break;
+
+                }
+                res.body = body;
             }
-            res.body = body;
 
             if (ok) {
                 return eventFactory.createResponse(res);

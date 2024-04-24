@@ -33,8 +33,7 @@ export class PacketCodingsHandlers {
         const headDelimiter = options.headDelimiter ? Buffer.from(options.headDelimiter) : null;
 
 
-        let packet = {
-        } as PacketData;
+        let packet = {} as PacketData;
 
         if (headDelimiter) {
             const headerDeserialization = injector.get(HeaderDeserialization, null);

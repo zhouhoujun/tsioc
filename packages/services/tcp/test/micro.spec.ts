@@ -1,6 +1,7 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
 import { TransportErrorResponse } from '@tsdi/common';
+import { BufferCodingsModule } from '@tsdi/common/transport';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
 import { TCP_SERV_INTERCEPTORS, TcpClient, TcpModule, TcpServer } from '../src';
@@ -11,7 +12,6 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import path = require('path');
 import { BigFileInterceptor } from './BigFileInterceptor';
-import { JsonPacketCodingsModule } from '@tsdi/common/transport';
 
 
 const SENSORS = tokenId<string[]>('SENSORS');
@@ -54,7 +54,7 @@ export class TcpService {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        JsonPacketCodingsModule,
+        BufferCodingsModule,
         ClientModule.register({
             transport: 'tcp',
             microservice: true,
