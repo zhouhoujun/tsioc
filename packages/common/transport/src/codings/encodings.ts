@@ -1,11 +1,13 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, Interceptor, createHandler } from '@tsdi/core';
 import { TransportHeaders } from '@tsdi/common';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, defer } from 'rxjs';
 import { CodingsOpts } from './options';
 import { CodingsContext } from './context';
 import { Encoder } from './Encoder';
-import { Codings } from './Codings';
+import { StreamAdapter } from '../StreamAdapter';
+import { PacketData } from '../packet';
+import { NotSupportedExecption } from '../execptions';
 
 @Abstract()
 export abstract class EncodingsHandler implements Handler<any, any, CodingsContext> {
@@ -17,22 +19,21 @@ export abstract class EncodingsHandler implements Handler<any, any, CodingsConte
 @Injectable()
 export class EncodingsBackend implements Backend<any, any, CodingsContext> {
 
-    constructor(
-        private codings: Codings
-    ) { }
+    constructor(private streamAdapter: StreamAdapter) { }
 
-    handle(input: any, context: CodingsContext): Observable<any> {
+    handle(input: PacketData, context: CodingsContext): Observable<any> {
         input = { ...input };
-        try {
+        return defer(async () => {
+            if (this.streamAdapter.isReadable(input.payload)) {
+                throw new NotSupportedExecption('Payload is readable');
+            }
             if (input.headers instanceof TransportHeaders) {
                 input.headers = input.headers.getHeaders();
             }
             const jsonStr = JSON.stringify(input);
             const buff = Buffer.from(jsonStr);
-            return of(buff);
-        } catch (err) {
-            return throwError(() => err);
-        }
+            return buff;
+        });
     }
 }
 

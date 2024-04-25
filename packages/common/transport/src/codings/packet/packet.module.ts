@@ -44,8 +44,8 @@ export class PackageBufferCodingsModule {
 @Module({
     imports: [
         TypedCodingsModule,
+        PackageBufferCodingsModule,
         BufferCodingsModule,
-        PackageBufferCodingsModule
     ],
     providers: [
         PacketCodingsHandlers,

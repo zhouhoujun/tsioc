@@ -140,7 +140,13 @@ export class BindPacketIdDecodeInterceptor implements Interceptor<Buffer, Packet
 export class BindPacketIdEncodeInterceptor implements Interceptor<PacketData, Buffer, CodingsContext> {
 
     intercept(input: PacketData, next: Handler<PacketData, Buffer>, context: CodingsContext): Observable<Buffer> {
-        if (!input.id && context.options.client) {
+        const length = input.payloadLength;
+        const options = context.options;
+        if (!context.package && length && options.maxSize && length > options.maxSize) {
+            const btpipe = context.session!.injector.get<PipeTransform>('bytes-format');
+            return throwError(()=> new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(options.maxSize)}`));
+        }
+        if (!input.id && options.client) {
             input.id = context.session?.injector.get(PacketIdGenerator).getPacketId();
         }
         return next.handle(input, context);
@@ -152,17 +158,12 @@ export class BindPacketIdEncodeInterceptor implements Interceptor<PacketData, Bu
 export class PacketEncodeInterceptor implements Interceptor<Packet, Buffer, CodingsContext> {
 
     intercept(input: PacketData<any>, next: Handler<Packet<any>, Buffer, CodingsContext>, context: CodingsContext): Observable<Buffer> {
-        const length = input.payloadLength;
-        const options = context.options;
-        if (!context.package && length && options.maxSize && length > options.maxSize) {
-            const btpipe = context.session!.injector.get<PipeTransform>('bytes-format');
-            return throwError(()=> new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(options.maxSize)}`));
-        }
+
         return next.handle(input, context)
             .pipe(map(data => {
                 const len = Buffer.alloc(4);
                 len.writeUInt32BE(data.length);
-                return Buffer.concat([len, Buffer.from(options.delimiter!), data])
+                return Buffer.concat([len, Buffer.from(context.options.delimiter!), data])
             }))
     }
 

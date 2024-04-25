@@ -15,6 +15,8 @@ interface CachePacket extends PacketData {
 @Injectable()
 export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableStream, PacketData, CodingsContext> {
 
+    constructor(private streamAdapter: StreamAdapter) { }
+
     packs: Map<string | number, CachePacket> = new Map();
     intercept(input: Buffer, next: Handler<Buffer, PacketData, CodingsContext>, context: CodingsContext): Observable<PacketData> {
         const options = context.options;
@@ -47,8 +49,7 @@ export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableS
                                 subscriber.error(new PacketLengthException('has not content length!'));
                                 return subscriber;
                             }
-                            const streamAdapter = context.session!.injector.get(StreamAdapter);
-                            const payload = streamAdapter.createPassThrough();
+                            const payload = this.streamAdapter.createPassThrough();
                             payload.write(packet.payload);
                             this.packs.set(packet.id, {
                                 ...packet,
@@ -81,7 +82,7 @@ export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableS
 @Injectable()
 export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer | IReadableStream, CodingsContext> {
 
-    constructor() { }
+    constructor(private streamAdapter: StreamAdapter) { }
 
     intercept(input: PacketData, next: Handler<PacketData, Buffer, CodingsContext>, context: CodingsContext): Observable<Buffer | IReadableStream> {
         context.package = true;
@@ -97,14 +98,13 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
                         - (isNil(input.type) ? 0 : 1); // message type.
 
                     if (options.maxSize && packetSize > options.maxSize) {
-                        const streamAdapter = context.session!.injector.get(StreamAdapter);
-                        if (streamAdapter.isReadable(data)) {
+                        if (this.streamAdapter.isReadable(data)) {
                             return new Observable((subsr: Subscriber<Buffer>) => {
                                 let size = 0;
                                 let buffers: Buffer[] = [];
                                 let first = true;
 
-                                streamAdapter.pipeTo(data, streamAdapter.createWritable({
+                                this.streamAdapter.pipeTo(data, this.streamAdapter.createWritable({
                                     write: (chunk: Buffer, encoding, callback) => {
                                         let maxSize = sizeLimit;
                                         if (chunk.length <= maxSize) {

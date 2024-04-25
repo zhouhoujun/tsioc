@@ -18,7 +18,6 @@ export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer
 @Injectable({ static: true })
 export class PacketCodingsHandlers {
 
-
     @DecodeHandler('PACKET', { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
     decodeHandle(context: CodingsContext) {
         const data = context.last<string | Buffer>();
@@ -29,26 +28,21 @@ export class PacketCodingsHandlers {
         }
         const options = context.options;
         const injector = context.session!.injector;
-        const headDelimiter = options.headDelimiter ? Buffer.from(options.headDelimiter) : null;
+        const headDelimiter = Buffer.from(options.headDelimiter || '|');
 
 
-        let packet = {} as PacketData;
+        const packet = {} as PacketData;
 
-        if (headDelimiter) {
-            const headerDeserialization = injector.get(HeaderDeserialization, null);
-            const payloadDeserialization = injector.get(PayloadDeserialization, null);
-            const idx = input.indexOf(headDelimiter);
-            if (idx > 0) {
-                const headers = headerDeserialization ? headerDeserialization.deserialize(input.subarray(0, idx)) : JSON.parse(new TextDecoder().decode(input.subarray(0, idx)));
-                packet.headers = headers;
-                packet.payload = payloadDeserialization ? payloadDeserialization.deserialize(input.subarray(idx + headDelimiter.length)) : JSON.parse(new TextDecoder().decode(input.subarray(idx + headDelimiter.length)));
-            } else {
-                packet.payload = payloadDeserialization ? payloadDeserialization.deserialize(input) : JSON.parse(new TextDecoder().decode(input));
-            }
+        const headerDeserialization = injector.get(HeaderDeserialization, null);
+        const payloadDeserialization = injector.get(PayloadDeserialization, null);
+        const idx = input.indexOf(headDelimiter);
+        if (idx > 0) {
+            const headers = headerDeserialization ? headerDeserialization.deserialize(input.subarray(0, idx)) : JSON.parse(new TextDecoder().decode(input.subarray(0, idx)));
+            packet.headers = headers;
+            packet.payload = payloadDeserialization ? payloadDeserialization.deserialize(input.subarray(idx + headDelimiter.length)) : JSON.parse(new TextDecoder().decode(input.subarray(idx + headDelimiter.length)));
         } else {
-            packet = JSON.parse(new TextDecoder().decode(input));
+            packet.payload = payloadDeserialization ? payloadDeserialization.deserialize(input) : JSON.parse(new TextDecoder().decode(input));
         }
-
         return packet;
     }
 
@@ -60,24 +54,16 @@ export class PacketCodingsHandlers {
         }
         const options = context.options;
         const injector = context.session!.injector;
-        const headDelimiter = options.headDelimiter ? Buffer.from(options.headDelimiter) : null;
+        const headDelimiter = Buffer.from(options.headDelimiter || '|');
 
-        if (headDelimiter) {
-            const handlerSerialization = injector.get(HandlerSerialization, null);
-            const payloadSerialization = injector.get(PayloadSerialization, null);
-            const { payload, ...headers } = input;
-            const hbuff = handlerSerialization ? handlerSerialization.serialize(headers) : Buffer.from(JSON.stringify(headers));
-            const bbuff = payloadSerialization ? payloadSerialization.serialize(payload) : Buffer.from(JSON.stringify(payload));
-            return Buffer.concat([hbuff, headDelimiter, bbuff]);
-        } else {
-            try {
-                const jsonStr = JSON.stringify(input);
-                const buff = Buffer.from(jsonStr);
-                return of(buff);
-            } catch (err) {
-                return throwError(() => err);
-            }
-        }
+
+        const handlerSerialization = injector.get(HandlerSerialization, null);
+        const payloadSerialization = injector.get(PayloadSerialization, null);
+        const { payload, ...headers } = input;
+        const hbuff = handlerSerialization ? handlerSerialization.serialize(headers) : Buffer.from(JSON.stringify(headers));
+        const bbuff = payloadSerialization ? payloadSerialization.serialize(payload) : Buffer.from(JSON.stringify(payload));
+        return Buffer.concat([hbuff, headDelimiter, bbuff]);
+
     }
 }
 
@@ -112,7 +98,7 @@ export class PackageifyDecodeInterceptor implements Interceptor<any, any, Coding
     constructor(private codings: Codings) { }
 
     intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
-        if (context.options.headDelimiter) {
+        if (!context.options.microservice || context.options.headDelimiter) {
             return this.codings.decodeType('PACKET', input, context);
         }
         return next.handle(input, context);
@@ -125,7 +111,7 @@ export class PackageifyEncodeInterceptor implements Interceptor<any, any, Coding
     constructor(private codings: Codings) { }
 
     intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
-        if (context.options.headDelimiter) {
+        if (!context.options.microservice || context.options.headDelimiter) {
             return this.codings.encodeType('PACKET', input, context);
         }
         return next.handle(input, context);
