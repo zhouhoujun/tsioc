@@ -1,7 +1,7 @@
 import { Abstract, Injectable, Injector, isString, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, Interceptor, createHandler } from '@tsdi/core';
 import { Observable, of, throwError } from 'rxjs';
-import { CodingsOpts } from './mappings';
+import { CodingsOpts } from './options';
 import { CodingsContext } from './context';
 import { Decoder } from './Decoder';
 import { InvalidJsonException } from '../execptions';

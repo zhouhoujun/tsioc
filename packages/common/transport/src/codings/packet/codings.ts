@@ -6,7 +6,6 @@ import { CodingsContext } from '../context';
 import { Observable, of, throwError } from 'rxjs';
 import { isBuffer } from '../../StreamAdapter';
 import { Packet, PacketData } from '../../packet';
-import { TransportOpts } from '../../TransportSession';
 import { Codings } from '../Codings';
 
 
@@ -28,7 +27,7 @@ export class PacketCodingsHandlers {
         if (!isBuffer(input)) {
             return throwError(() => new ArgumentExecption('asset decoding input is not buffer'));
         }
-        const options = context.options as TransportOpts;
+        const options = context.options;
         const injector = context.session!.injector;
         const headDelimiter = options.headDelimiter ? Buffer.from(options.headDelimiter) : null;
 
@@ -59,7 +58,7 @@ export class PacketCodingsHandlers {
         if (input.headers instanceof TransportHeaders) {
             input.headers = input.headers.getHeaders();
         }
-        const options = context.options as TransportOpts;
+        const options = context.options;
         const injector = context.session!.injector;
         const headDelimiter = options.headDelimiter ? Buffer.from(options.headDelimiter) : null;
 
@@ -113,7 +112,7 @@ export class PackageifyDecodeInterceptor implements Interceptor<any, any, Coding
     constructor(private codings: Codings) { }
 
     intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
-        if ((context.options as TransportOpts).headDelimiter) {
+        if (context.options.headDelimiter) {
             return this.codings.decodeType('PACKET', input, context);
         }
         return next.handle(input, context);
@@ -126,7 +125,7 @@ export class PackageifyEncodeInterceptor implements Interceptor<any, any, Coding
     constructor(private codings: Codings) { }
 
     intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
-        if ((context.options as TransportOpts).headDelimiter) {
+        if (context.options.headDelimiter) {
             return this.codings.encodeType('PACKET', input, context);
         }
         return next.handle(input, context);

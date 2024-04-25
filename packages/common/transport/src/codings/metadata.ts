@@ -1,7 +1,8 @@
 import { Interceptor, InvocationFactoryResolver, InvocationOptions } from '@tsdi/core';
 import { ActionTypes, DecorDefine, Execption, Token, Type, createDecorator, getToken, lang } from '@tsdi/ioc';
-import { CodingMappings, CodingsOpts } from './mappings';
+import { CodingsOpts } from './options';
 import { CodingsContext } from './context';
+import { CodingMappings } from './mappings';
 
 
 export interface CodingsOptions extends InvocationOptions, CodingsOpts {

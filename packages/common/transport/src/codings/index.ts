@@ -1,3 +1,4 @@
+export * from './options';
 export * from './context';
 export * from './PacketId';
 export * from './Encoder';

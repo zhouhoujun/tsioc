@@ -2,7 +2,7 @@ import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, Interceptor, createHandler } from '@tsdi/core';
 import { TransportHeaders } from '@tsdi/common';
 import { Observable, of, throwError } from 'rxjs';
-import { CodingsOpts } from './mappings';
+import { CodingsOpts } from './options';
 import { CodingsContext } from './context';
 import { Encoder } from './Encoder';
 import { Codings } from './Codings';

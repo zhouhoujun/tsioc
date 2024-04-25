@@ -5,7 +5,6 @@ import { Observable, Subscriber, filter, map, mergeMap, throwError } from 'rxjs'
 import { Packet, PacketData } from '../../packet';
 import { PacketLengthException } from '../../execptions';
 import { CodingsContext } from '../context';
-import { TransportOpts } from '../../TransportSession';
 import { PacketIdGenerator } from '../PacketId';
 
 
@@ -32,7 +31,7 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer, Packet, Codi
 
 
     intercept(input: Buffer, next: Handler<Buffer, Packet>, context: CodingsContext): Observable<Packet> {
-        const options = context.options as TransportOpts;
+        const options = context.options;
         return new Observable((subscriber: Subscriber<Buffer>) => {
             let chl = this.channels.get(options.transport ?? '');
 
@@ -56,7 +55,7 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer, Packet, Codi
     }
 
     protected handleData(chl: ChannelBuffer, dataRaw: Buffer, subscriber: Subscriber<Buffer>, context: CodingsContext) {
-        const options = context.options as TransportOpts;
+        const options = context.options;
         const data = Buffer.isBuffer(dataRaw)
             ? dataRaw
             : Buffer.from(dataRaw);
@@ -154,7 +153,7 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Buffer, Codi
 
     intercept(input: PacketData<any>, next: Handler<Packet<any>, Buffer, CodingsContext>, context: CodingsContext): Observable<Buffer> {
         const length = input.payloadLength;
-        const options = context.options as TransportOpts;
+        const options = context.options;
         if (!context.package && length && options.maxSize && length > options.maxSize) {
             const btpipe = context.session!.injector.get<PipeTransform>('bytes-format');
             return throwError(()=> new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(options.maxSize)}`));

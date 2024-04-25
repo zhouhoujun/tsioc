@@ -3,7 +3,6 @@ import { ArgumentExecption, Injectable, isNil, isNumber } from '@tsdi/ioc';
 import { PacketData } from '../../packet';
 import { CodingsContext } from '../context';
 import { Observable, Subscriber, map, mergeMap, of, range, throwError } from 'rxjs';
-import { TransportOpts } from '../../TransportSession';
 import { StreamAdapter, isBuffer } from '../../StreamAdapter';
 import { IDuplexStream, IReadableStream } from '../../stream';
 import { PacketLengthException } from '../../execptions';
@@ -18,7 +17,7 @@ export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableS
 
     packs: Map<string | number, CachePacket> = new Map();
     intercept(input: Buffer, next: Handler<Buffer, PacketData, CodingsContext>, context: CodingsContext): Observable<PacketData> {
-        const options = context.options as TransportOpts;
+        const options = context.options;
         const idLen = options.idLen ?? 2;
         const id = idLen > 4 ? input.subarray(0, idLen).toString() : input.readIntBE(0, idLen);
         input = input.subarray(idLen);
@@ -89,7 +88,7 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
         return next.handle(input, context)
             .pipe(
                 mergeMap(data => {
-                    const options = context.options as TransportOpts;
+                    const options = context.options;
                     const idLen = options.idLen ?? 2;
                     const packetSize = isBuffer(data) ? data.length : ((input.headerLength ?? 0) + (input.payloadLength ?? 0));
                     const sizeLimit = options.maxSize! - (options.delimiter ? Buffer.byteLength(options.delimiter) : 0)
