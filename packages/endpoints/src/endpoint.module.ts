@@ -15,12 +15,12 @@ import { REGISTER_SERVICES, SetupServices } from './SetupServices';
 import { EndpointTypedRespond } from './typed.respond';
 import { LoggerInterceptor, JsonInterceptor, ContentInterceptor, BodyparserInterceptor } from './interceptors';
 import { TransportSessionFactory } from './transport.session';
-import { DuplexTransportSessionFactory } from './impl/duplex.session';
 import { MiddlewareOpts, createMiddlewareEndpoint } from './middleware/middleware.endpoint';
 import { EndpointHandler, createEndpoint } from './EndpointHandler';
 import { ServerCodingsModule } from './codings/server.codings.module';
 import { OutgoingEncodeInterceper } from './codings/outgoing.encodings';
 import { IncomingDecodeInterceper } from './codings/incoming.decodings';
+import { DuplexTransportSessionFactory } from './impl/duplex.session';
 import { RequestContextFactoryImpl } from './impl/request.context';
 import { DefaultExecptionHandlers } from './execption.handlers';
 

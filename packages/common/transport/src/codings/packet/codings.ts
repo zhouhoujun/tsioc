@@ -3,8 +3,8 @@ import { Handler, Interceptor } from '@tsdi/core';
 import { TransportHeaders } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler } from '../metadata';
 import { CodingsContext } from '../context';
-import { Observable, of, throwError } from 'rxjs';
-import { isBuffer } from '../../StreamAdapter';
+import { Observable, throwError } from 'rxjs';
+import { StreamAdapter, isBuffer } from '../../StreamAdapter';
 import { Packet, PacketData } from '../../packet';
 import { Codings } from '../Codings';
 
@@ -17,6 +17,8 @@ export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer
 
 @Injectable({ static: true })
 export class PacketCodingsHandlers {
+
+    constructor(private streamAdapter: StreamAdapter) {}
 
     @DecodeHandler('PACKET', { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
     decodeHandle(context: CodingsContext) {
@@ -58,9 +60,10 @@ export class PacketCodingsHandlers {
 
 
         const handlerSerialization = injector.get(HandlerSerialization, null);
-        const payloadSerialization = injector.get(PayloadSerialization, null);
         const { payload, ...headers } = input;
         const hbuff = handlerSerialization ? handlerSerialization.serialize(headers) : Buffer.from(JSON.stringify(headers));
+
+        const payloadSerialization = injector.get(PayloadSerialization, null);
         const bbuff = payloadSerialization ? payloadSerialization.serialize(payload) : Buffer.from(JSON.stringify(payload));
         return Buffer.concat([hbuff, headDelimiter, bbuff]);
 
