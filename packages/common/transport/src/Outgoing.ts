@@ -1,4 +1,5 @@
 import { Header, MapHeaders, Pattern, TransportHeaders } from '@tsdi/common';
+import { IWritableStream } from './stream';
 
 export interface Outgoing<T = any> {
 
@@ -87,7 +88,7 @@ export interface Outgoing<T = any> {
      * @api public
      */
     sent?: boolean;
-    
+
     /**
      * is writable or not.
      * @param packet 
@@ -111,6 +112,9 @@ export interface Outgoing<T = any> {
 
 }
 
+export interface OutgoingStream extends IWritableStream {
+    headers?: MapHeaders;
+}
 
 
 // @Abstract()

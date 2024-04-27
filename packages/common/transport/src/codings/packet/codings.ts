@@ -7,12 +7,13 @@ import { Observable, throwError } from 'rxjs';
 import { StreamAdapter, isBuffer } from '../../StreamAdapter';
 import { Packet, PacketData } from '../../packet';
 import { Codings } from '../Codings';
+import { IReadableStream } from '../../stream';
 
 
 
 export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer, CodingsContext>[]>('PACKET_ENCODE_INTERCEPTORS');
 
-export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer, CodingsContext>[]>('PACKET_DECODE_INTERCEPTORS');
+export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<Buffer, PacketData, CodingsContext>[]>('PACKET_DECODE_INTERCEPTORS');
 
 
 @Injectable({ static: true })
@@ -21,42 +22,61 @@ export class PacketCodingsHandlers {
     constructor(private streamAdapter: StreamAdapter) {}
 
     @DecodeHandler('PACKET', { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
-    decodeHandle(context: CodingsContext) {
+    bufferDecode(context: CodingsContext) {
+        const options = context.options;
+        if(!options.headDelimiter) throw new ArgumentExecption('headDelimiter');
+
         const data = context.last<string | Buffer>();
         const input = isString(data) ? Buffer.from(data) : data;
 
         if (!isBuffer(input)) {
             return throwError(() => new ArgumentExecption('asset decoding input is not buffer'));
         }
-        const options = context.options;
         const injector = context.session!.injector;
-        const headDelimiter = Buffer.from(options.headDelimiter || '|');
+        const headDelimiter = Buffer.from(options.headDelimiter);
 
 
         const packet = {} as PacketData;
 
         const headerDeserialization = injector.get(HeaderDeserialization, null);
-        const payloadDeserialization = injector.get(PayloadDeserialization, null);
         const idx = input.indexOf(headDelimiter);
         if (idx > 0) {
             const headers = headerDeserialization ? headerDeserialization.deserialize(input.subarray(0, idx)) : JSON.parse(new TextDecoder().decode(input.subarray(0, idx)));
             packet.headers = headers;
-            packet.payload = payloadDeserialization ? payloadDeserialization.deserialize(input.subarray(idx + headDelimiter.length)) : JSON.parse(new TextDecoder().decode(input.subarray(idx + headDelimiter.length)));
+            packet.payload = input.subarray(idx + headDelimiter.length);
         } else {
-            packet.payload = payloadDeserialization ? payloadDeserialization.deserialize(input) : JSON.parse(new TextDecoder().decode(input));
+            packet.payload = input;
         }
         return packet;
     }
 
+
+
+    // @DecodeHandler('STREAM')
+    // streamDecode(context: CodingsContext) {
+    //     const options = context.options;
+    //     const stream = context.last<IReadableStream>();
+    //     if(!options.headDelimiter) {
+
+    //     }
+
+    // }
+
+
+
+
     @EncodeHandler('PACKET', { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })
-    encode(context: CodingsContext) {
+    bufferEncode(context: CodingsContext) {
+        const options = context.options;
+        if(!options.headDelimiter) throw new ArgumentExecption('headDelimiter');
+
         const input = { ...context.last<Packet>() };
         if (input.headers instanceof TransportHeaders) {
             input.headers = input.headers.getHeaders();
         }
-        const options = context.options;
+        
         const injector = context.session!.injector;
-        const headDelimiter = Buffer.from(options.headDelimiter || '|');
+        const headDelimiter = Buffer.from(options.headDelimiter);
 
 
         const handlerSerialization = injector.get(HandlerSerialization, null);
@@ -101,7 +121,7 @@ export class PackageifyDecodeInterceptor implements Interceptor<any, any, Coding
     constructor(private codings: Codings) { }
 
     intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
-        if (!context.options.microservice || context.options.headDelimiter) {
+        if (context.options.headDelimiter) {
             return this.codings.decodeType('PACKET', input, context);
         }
         return next.handle(input, context);
@@ -114,7 +134,7 @@ export class PackageifyEncodeInterceptor implements Interceptor<any, any, Coding
     constructor(private codings: Codings) { }
 
     intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
-        if (!context.options.microservice || context.options.headDelimiter) {
+        if (context.options.headDelimiter) {
             return this.codings.encodeType('PACKET', input, context);
         }
         return next.handle(input, context);

@@ -1,4 +1,5 @@
 import { MapHeaders, Pattern, TransportHeaders } from '@tsdi/common';
+import { IReadableStream } from './stream';
 
 
 
@@ -38,9 +39,13 @@ export interface Incoming<T = any> {
 
 }
 
+export interface IncomingStream extends IReadableStream {
+    get headers(): MapHeaders;
+}
+
 
 export interface ResponseIncoming<T = any> extends Incoming<T> {
-    type?: string| number;
+    type?: string | number;
     error?: any;
     ok?: boolean;
     status?: string | number;
