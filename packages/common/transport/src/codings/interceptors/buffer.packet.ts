@@ -6,6 +6,9 @@ import { Packet, PacketData } from '../../packet';
 import { PacketLengthException } from '../../execptions';
 import { CodingsContext } from '../context';
 import { PacketIdGenerator } from '../PacketId';
+import { PackageEncodeInterceptor } from './buffer.package';
+import { IReadableStream, IWritableStream } from '../../stream';
+import { StreamAdapter } from '../../StreamAdapter';
 
 
 
@@ -138,12 +141,12 @@ export class BindPacketIdDecodeInterceptor implements Interceptor<Buffer, Packet
 }
 
 @Injectable()
-export class BindPacketIdEncodeInterceptor implements Interceptor<PacketData, Buffer, CodingsContext> {
+export class BindPacketIdEncodeInterceptor implements Interceptor<PacketData, Buffer | IReadableStream, CodingsContext> {
 
-    intercept(input: PacketData, next: Handler<PacketData, Buffer>, context: CodingsContext): Observable<Buffer> {
+    intercept(input: PacketData, next: Handler<PacketData, Buffer>, context: CodingsContext): Observable<Buffer | IReadableStream> {
         const length = input.payloadLength;
         const options = context.options;
-        if (!context.package && length && options.maxSize && length > options.maxSize) {
+        if (length && options.maxSize && length > options.maxSize && !context.session!.injector.has(PackageEncodeInterceptor)) {
             const btpipe = context.session!.injector.get<PipeTransform>('bytes-format');
             return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(options.maxSize)}`));
         }
@@ -156,18 +159,37 @@ export class BindPacketIdEncodeInterceptor implements Interceptor<PacketData, Bu
 
 
 @Injectable()
-export class PacketEncodeInterceptor implements Interceptor<Packet, Buffer, CodingsContext> {
+export class PacketEncodeInterceptor implements Interceptor<Packet, Buffer | IReadableStream, CodingsContext> {
 
-    intercept(input: PacketData<any>, next: Handler<Packet<any>, Buffer, CodingsContext>, context: CodingsContext): Observable<Buffer> {
+    constructor(private streamAdapter: StreamAdapter) { }
+
+    intercept(input: PacketData<any>, next: Handler<Packet<any>, Buffer | IReadableStream, CodingsContext>, context: CodingsContext): Observable<Buffer | IReadableStream> {
 
         return next.handle(input, context)
             .pipe(map(data => {
                 const countLen = context.options.countLen || 4;
                 const buffLen = Buffer.alloc(countLen);
-                buffLen.writeUIntBE(data.length, 0, countLen);
                 const delimiter = Buffer.from(context.options.delimiter!);
-                const total = buffLen.length + delimiter.length + data.length;
-                return Buffer.concat([buffLen, delimiter, data], total);
+                if (this.streamAdapter.isReadable(data)) {
+                    buffLen.writeUIntBE(input.streamLength!, 0, countLen);
+                    let first = true;
+                    return this.streamAdapter.pipeline(data, this.streamAdapter.createPassThrough({
+                        transform: (chunk, encoding, callback) => {
+                            if (first) {
+                                first = false;
+                                const total = buffLen.length + delimiter.length + chunk.length;
+                                callback(null, Buffer.concat([buffLen, delimiter, chunk], total))
+                            } else {
+                                callback()
+                            }
+                        }
+                    }))
+
+                } else {
+                    buffLen.writeUIntBE(data.length, 0, countLen);
+                    const total = buffLen.length + delimiter.length + data.length;
+                    return Buffer.concat([buffLen, delimiter, data], total);
+                }
             }))
     }
 

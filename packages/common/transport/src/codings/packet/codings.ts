@@ -7,6 +7,7 @@ import { Observable, throwError } from 'rxjs';
 import { StreamAdapter, isBuffer } from '../../StreamAdapter';
 import { Packet, PacketData } from '../../packet';
 import { Codings } from '../Codings';
+import { PackageDecodeInterceptor } from '../interceptors/buffer.package';
 
 
 export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer, CodingsContext>[]>('PACKET_ENCODE_INTERCEPTORS');
@@ -45,7 +46,7 @@ export class PacketCodingsHandlers {
         } else {
             packet = { payload: input };
         }
-        if (!context.package) {
+        if (!injector.has(PackageDecodeInterceptor)) {
             if (packet.payload.length) {
                 const payloaDeserialize = injector.get(PayloadDeserialization, null);
                 packet.payload = payloaDeserialize ? payloaDeserialize.deserialize(packet.payload) : JSON.parse(new TextDecoder().decode(packet.payload));
@@ -63,7 +64,7 @@ export class PacketCodingsHandlers {
         const options = context.options;
         if (!options.headDelimiter) throw new ArgumentExecption('headDelimiter');
 
-        const input = { ...context.last<Packet>() };
+        const input = context.last<PacketData>();
         if (input.headers instanceof TransportHeaders) {
             input.headers = input.headers.getHeaders();
         }
@@ -77,11 +78,22 @@ export class PacketCodingsHandlers {
         const hbuff = handlerSerialization ? handlerSerialization.serialize(headers) : Buffer.from(JSON.stringify(headers));
 
         if (this.streamAdapter.isReadable(payload)) {
-            const stream = this.streamAdapter.createPassThrough();
-            stream.write(hbuff);
-            stream.write(headDelimiter);
-            this.streamAdapter.pipeTo(payload, stream);
-            return stream;
+            // const stream = this.streamAdapter.createPassThrough();
+            // stream.write(hbuff);
+            // stream.write(headDelimiter);
+            // this.streamAdapter.pipeTo(payload, stream);
+            let isFist = true;
+            input.streamLength = (input.payloadLength ?? 0) + hbuff.length + headDelimiter.length;
+            return this.streamAdapter.pipeline(payload, this.streamAdapter.createPassThrough({
+                transform: (chunk, encoding, callback) => {
+                    if (isFist) {
+                        isFist = false;
+                        callback(null, Buffer.concat([hbuff, headDelimiter, chunk], hbuff.length + headDelimiter.length + chunk.length))
+                    } else {
+                        callback(null, chunk)
+                    }
+                }
+            }));
         } else {
             const payloadSerialization = injector.get(PayloadSerialization, null);
 

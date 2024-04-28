@@ -30,6 +30,7 @@ export interface PacketData<T = any> extends Packet<T> {
      * payload length.
      */
     payloadLength?: number|null;
+    streamLength?: number;
 }
 
 export interface Message {

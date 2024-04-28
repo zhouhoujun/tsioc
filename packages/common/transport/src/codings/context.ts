@@ -8,7 +8,6 @@ export class CodingsContext extends InvocationArgs implements OnDestroy {
 
     readonly options: CodingsOpts;
     readonly session?: AbstractTransportSession;
-    package?: boolean;
 
     constructor(options: CodingsOpts);
     constructor(session: AbstractTransportSession);

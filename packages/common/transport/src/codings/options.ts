@@ -27,6 +27,7 @@ export interface CodingsOpts {
      * id b
      */
     idLen?: number;
+    limit?: number;
     /**
      * packet max size limit.
      */
