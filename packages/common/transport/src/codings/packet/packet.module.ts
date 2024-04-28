@@ -3,14 +3,14 @@ import { PackageifyDecodeInterceptor, PackageifyEncodeInterceptor, PacketCodings
 import { BindPacketIdEncodeInterceptor, PacketDecodeInterceptor, PacketEncodeInterceptor } from '../interceptors/buffer.packet';
 import { PackageDecodeInterceptor, PackageEncodeInterceptor } from '../interceptors/buffer.package';
 import { TypedDecodeInterceper, TypedEncodeInterceper } from '../interceptors/typed';
-import { BUFFER_ENCODE_INTERCEPTORS } from '../encodings';
-import { BUFFER_DECODE_INTERCEPTORS } from '../decodings';
+import { ENCODINGS_INTERCEPTORS } from '../encodings';
+import { DECODINGS_INTERCEPTORS } from '../decodings';
 
 
 @Module({
     providers: [
-        { provide: BUFFER_DECODE_INTERCEPTORS, useClass: TypedDecodeInterceper, multi: true },
-        { provide: BUFFER_ENCODE_INTERCEPTORS, useClass: TypedEncodeInterceper, multi: true },
+        { provide: DECODINGS_INTERCEPTORS, useClass: TypedDecodeInterceper, multi: true },
+        { provide: ENCODINGS_INTERCEPTORS, useClass: TypedEncodeInterceper, multi: true },
     ]
 })
 export class TypedCodingsModule {
@@ -20,10 +20,10 @@ export class TypedCodingsModule {
 
 @Module({
     providers: [
-        { provide: BUFFER_DECODE_INTERCEPTORS, useClass: PacketDecodeInterceptor, multi: true },
+        { provide: DECODINGS_INTERCEPTORS, useClass: PacketDecodeInterceptor, multi: true },
 
-        { provide: BUFFER_ENCODE_INTERCEPTORS, useClass: BindPacketIdEncodeInterceptor, multi: true },
-        { provide: BUFFER_ENCODE_INTERCEPTORS, useClass: PacketEncodeInterceptor, multi: true }
+        { provide: ENCODINGS_INTERCEPTORS, useClass: BindPacketIdEncodeInterceptor, multi: true },
+        { provide: ENCODINGS_INTERCEPTORS, useClass: PacketEncodeInterceptor, multi: true }
     ]
 })
 export class BufferCodingsModule {
@@ -32,8 +32,8 @@ export class BufferCodingsModule {
 
 @Module({
     providers: [
-        { provide: BUFFER_DECODE_INTERCEPTORS, useClass: PackageDecodeInterceptor, multi: true },
-        { provide: BUFFER_ENCODE_INTERCEPTORS, useClass: PackageEncodeInterceptor, multi: true },
+        { provide: DECODINGS_INTERCEPTORS, useClass: PackageDecodeInterceptor, multi: true },
+        { provide: ENCODINGS_INTERCEPTORS, useClass: PackageEncodeInterceptor, multi: true },
     ]
 })
 export class PackageBufferCodingsModule {
@@ -44,13 +44,13 @@ export class PackageBufferCodingsModule {
 @Module({
     imports: [
         TypedCodingsModule,
-        PackageBufferCodingsModule,
         BufferCodingsModule,
+        PackageBufferCodingsModule
     ],
     providers: [
         PacketCodingsHandlers,
-        { provide: BUFFER_ENCODE_INTERCEPTORS, useClass: PackageifyEncodeInterceptor, multi: true },
-        { provide: BUFFER_DECODE_INTERCEPTORS, useClass: PackageifyDecodeInterceptor, multi: true }
+        { provide: ENCODINGS_INTERCEPTORS, useClass: PackageifyEncodeInterceptor, multi: true },
+        { provide: DECODINGS_INTERCEPTORS, useClass: PackageifyDecodeInterceptor, multi: true }
     ]
 })
 export class PacketCodingsModule {

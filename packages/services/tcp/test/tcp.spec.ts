@@ -124,9 +124,6 @@ export class DeviceController {
                 serverOpts: {
                     listenOpts: {
                         port: 3000
-                    },
-                    transportOpts: {
-                        headDelimiter: '|'
                     }
                 }
             },
@@ -136,6 +133,9 @@ export class DeviceController {
                     // timeout: 1000,
                     listenOpts: {
                         port: 2000
+                    },
+                    transportOpts: {
+                        headDelimiter: '|'
                     },
                     interceptors: [
                         BigFileInterceptor,

@@ -28,13 +28,13 @@ export class DecodingsBackend implements Backend<any, any, CodingsContext> {
 
 
 /**
- * decodings interceptors.
+ * endpoint decodings interceptors.
  */
-export const DECODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, CodingsContext>[]>('DECODINGS_INTERCEPTORS');
+export const ENDPOINT_DECODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, CodingsContext>[]>('ENDPOINT_DECODINGS_INTERCEPTORS');
 /**
- * buffer decoding interceptor for backend.
+ *  decodings interceptors.
  */
-export const BUFFER_DECODE_INTERCEPTORS = tokenId<Interceptor<Buffer, any, CodingsContext>[]>('BUFFER_DECODE_INTERCEPTORS');
+export const DECODINGS_INTERCEPTORS = tokenId<Interceptor<Buffer, any, CodingsContext>[]>('DECODINGS_INTERCEPTORS');
 
 
 export class Decodings extends Decoder {
@@ -50,8 +50,8 @@ export class Decodings extends Decoder {
 export class DecodingsFactory {
     create(injector: Injector, options: CodingsOpts): Decodings {
         const handler = createHandler(injector, {
-            globalInterceptorsToken: DECODINGS_INTERCEPTORS,
-            interceptorsToken: BUFFER_DECODE_INTERCEPTORS,
+            globalInterceptorsToken: ENDPOINT_DECODINGS_INTERCEPTORS,
+            interceptorsToken: DECODINGS_INTERCEPTORS,
             backend: DecodingsBackend,
             ...options?.decodes
         }) as DecodingsHandler;

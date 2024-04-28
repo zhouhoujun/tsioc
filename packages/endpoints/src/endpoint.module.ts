@@ -3,7 +3,7 @@ import {
     tokenId, isArray, toProvider, lang, ProvdierOf, Type, ModuleRef, isNil, ModuleType
 } from '@tsdi/ioc';
 import { CanActivate, Filter, InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
-import { DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, StatusAdapter, Transport } from '@tsdi/common/transport';
+import { ENDPOINT_DECODINGS_INTERCEPTORS, ENDPOINT_ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, StatusAdapter, Transport } from '@tsdi/common/transport';
 import { RequestContext, RequestContextFactory } from './RequestContext';
 import { Server, ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
@@ -240,13 +240,17 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     globalInterceptorsToken: GLOBAL_SERVER_INTERCEPTORS,
                     ...moduleOpts.defaultOpts,
                     ...moduleOpts.serverOpts,
+                    transportOpts: {
+                        ...moduleOpts.defaultOpts?.transportOpts,
+                        ...moduleOpts.serverOpts?.transportOpts
+                    },
                     routes: {
                         ...moduleOpts.defaultOpts?.routes,
                         ...moduleOpts.serverOpts?.routes
                     },
                     providers: [
-                        { provide: ENCODINGS_INTERCEPTORS, useClass: OutgoingEncodeInterceper, multi: true },
-                        { provide: DECODINGS_INTERCEPTORS, useClass: IncomingDecodeInterceper, multi: true },
+                        { provide: ENDPOINT_ENCODINGS_INTERCEPTORS, useClass: OutgoingEncodeInterceper, multi: true },
+                        { provide: ENDPOINT_DECODINGS_INTERCEPTORS, useClass: IncomingDecodeInterceper, multi: true },
                         ...moduleOpts.defaultOpts?.providers || EMPTY,
                         ...moduleOpts.serverOpts?.providers || EMPTY
                     ]

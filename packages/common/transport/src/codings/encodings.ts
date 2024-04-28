@@ -39,14 +39,14 @@ export class EncodingsBackend implements Backend<any, any, CodingsContext> {
 
 
 /**
- * Encodings interceptors.
+ * Endpoint encodings interceptors.
  */
-export const ENCODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, CodingsContext>[]>('ENCODINGS_INTERCEPTORS');
+export const ENDPOINT_ENCODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, CodingsContext>[]>('ENDPOINT_ENCODINGS_INTERCEPTORS');
 
 /**
- * buffer encoding interceptor for backend.
+ * Encodings interceptors.
  */
-export const BUFFER_ENCODE_INTERCEPTORS = tokenId<Interceptor<any, Buffer, CodingsContext>[]>('BUFFER_ENCODE_INTERCEPTORS');
+export const ENCODINGS_INTERCEPTORS = tokenId<Interceptor<any, Buffer, CodingsContext>[]>('ENCODINGS_INTERCEPTORS');
 
 export class Encodings extends Encoder {
 
@@ -61,8 +61,8 @@ export class Encodings extends Encoder {
 export class EncodingsFactory {
     create(injector: Injector, options: CodingsOpts): Encodings {
         const handler = createHandler(injector, {
-            globalInterceptorsToken: ENCODINGS_INTERCEPTORS,
-            interceptorsToken: BUFFER_ENCODE_INTERCEPTORS,
+            globalInterceptorsToken: ENDPOINT_ENCODINGS_INTERCEPTORS,
+            interceptorsToken: ENCODINGS_INTERCEPTORS,
             backend: EncodingsBackend,
             ...options.encodes
         }) as EncodingsHandler;

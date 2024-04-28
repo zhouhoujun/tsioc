@@ -19,6 +19,13 @@ export interface CodingsOpts {
      */
     headDelimiter?: string;
 
+    /**
+     * content count number length.
+     */
+    countLen?: number;
+    /**
+     * id b
+     */
     idLen?: number;
     /**
      * packet max size limit.

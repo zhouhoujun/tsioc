@@ -3,7 +3,7 @@ import {
     Type, Token, isArray, lang, toProvider, tokenId, toProviders, ModuleRef, isNil, ModuleType
 } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
-import { DECODINGS_INTERCEPTORS, ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, ResponseEventFactory, StatusAdapter, Transport } from '@tsdi/common/transport';
+import { ENDPOINT_DECODINGS_INTERCEPTORS, ENDPOINT_ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, ResponseEventFactory, StatusAdapter, Transport } from '@tsdi/common/transport';
 import { ClientOpts } from './options';
 import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
@@ -176,9 +176,13 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS,
                     ...opts.defaultOpts,
                     ...opts.clientOpts,
+                    transportOpts: {
+                        ...opts.defaultOpts?.transportOpts,
+                        ...opts.clientOpts?.transportOpts
+                    },
                     providers: [
-                        { provide: ENCODINGS_INTERCEPTORS, useClass: RequestEncodeInterceper, multi: true },
-                        { provide: DECODINGS_INTERCEPTORS, useClass: ResponseDecodeInterceper, multi: true },
+                        { provide: ENDPOINT_ENCODINGS_INTERCEPTORS, useClass: RequestEncodeInterceper, multi: true },
+                        { provide: ENDPOINT_DECODINGS_INTERCEPTORS, useClass: ResponseDecodeInterceper, multi: true },
                         ...opts.defaultOpts?.providers || EMPTY,
                         ...opts.clientOpts?.providers || EMPTY
                     ]

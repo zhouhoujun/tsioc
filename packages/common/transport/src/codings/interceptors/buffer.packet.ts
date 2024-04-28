@@ -70,7 +70,8 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer, Packet, Codi
             if (i !== -1) {
                 const buffer = this.concatCaches(chl);
                 const idx = chl.length - Buffer.byteLength(data) + i;
-                const rawContentLength = buffer.readUInt32BE(idx - 4);
+                const countLen = options.countLen || 4;
+                const rawContentLength = buffer.readUIntBE(idx - countLen, idx);
                 chl.contentLength = rawContentLength;
 
                 if (isNaN(rawContentLength) || (options.maxSize && rawContentLength > options.maxSize)) {
@@ -110,7 +111,7 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer, Packet, Codi
     }
 
     protected concatCaches(chl: ChannelBuffer) {
-        return chl.buffers.length > 1 ? Buffer.concat(chl.buffers) : chl.buffers[0]
+        return chl.buffers.length > 1 ? Buffer.concat(chl.buffers, chl.length) : chl.buffers[0]
     }
 
     protected handleMessage(chl: ChannelBuffer, message: Buffer, subscriber: Subscriber<Buffer>) {
@@ -144,7 +145,7 @@ export class BindPacketIdEncodeInterceptor implements Interceptor<PacketData, Bu
         const options = context.options;
         if (!context.package && length && options.maxSize && length > options.maxSize) {
             const btpipe = context.session!.injector.get<PipeTransform>('bytes-format');
-            return throwError(()=> new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(options.maxSize)}`));
+            return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(options.maxSize)}`));
         }
         if (!input.id && options.client) {
             input.id = context.session?.injector.get(PacketIdGenerator).getPacketId();
@@ -161,9 +162,12 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Buffer, Codi
 
         return next.handle(input, context)
             .pipe(map(data => {
-                const len = Buffer.alloc(4);
-                len.writeUInt32BE(data.length);
-                return Buffer.concat([len, Buffer.from(context.options.delimiter!), data])
+                const countLen = context.options.countLen || 4;
+                const buffLen = Buffer.alloc(countLen);
+                buffLen.writeUIntBE(data.length, 0, countLen);
+                const delimiter = Buffer.from(context.options.delimiter!);
+                const total = buffLen.length + delimiter.length + data.length;
+                return Buffer.concat([buffLen, delimiter, data], total);
             }))
     }
 

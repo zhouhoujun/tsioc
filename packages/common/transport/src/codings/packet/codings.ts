@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, Injectable, isString, tokenId } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, Injectable, isNil, isString, tokenId } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { TransportHeaders } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler } from '../metadata';
@@ -7,8 +7,6 @@ import { Observable, throwError } from 'rxjs';
 import { StreamAdapter, isBuffer } from '../../StreamAdapter';
 import { Packet, PacketData } from '../../packet';
 import { Codings } from '../Codings';
-import { IReadableStream } from '../../stream';
-
 
 
 export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer, CodingsContext>[]>('PACKET_ENCODE_INTERCEPTORS');
@@ -19,12 +17,12 @@ export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<Buffer, PacketData
 @Injectable({ static: true })
 export class PacketCodingsHandlers {
 
-    constructor(private streamAdapter: StreamAdapter) {}
+    constructor(private streamAdapter: StreamAdapter) { }
 
     @DecodeHandler('PACKET', { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
     bufferDecode(context: CodingsContext) {
         const options = context.options;
-        if(!options.headDelimiter) throw new ArgumentExecption('headDelimiter');
+        if (!options.headDelimiter) throw new ArgumentExecption('headDelimiter');
 
         const data = context.last<string | Buffer>();
         const input = isString(data) ? Buffer.from(data) : data;
@@ -36,45 +34,40 @@ export class PacketCodingsHandlers {
         const headDelimiter = Buffer.from(options.headDelimiter);
 
 
-        const packet = {} as PacketData;
+        let packet: PacketData;
 
         const headerDeserialization = injector.get(HeaderDeserialization, null);
         const idx = input.indexOf(headDelimiter);
         if (idx > 0) {
             const headers = headerDeserialization ? headerDeserialization.deserialize(input.subarray(0, idx)) : JSON.parse(new TextDecoder().decode(input.subarray(0, idx)));
-            packet.headers = headers;
+            packet = headers;
             packet.payload = input.subarray(idx + headDelimiter.length);
         } else {
-            packet.payload = input;
+            packet = { payload: input };
+        }
+        if (!context.package) {
+            if (packet.payload.length) {
+                const payloaDeserialize = injector.get(PayloadDeserialization, null);
+                packet.payload = payloaDeserialize ? payloaDeserialize.deserialize(packet.payload) : JSON.parse(new TextDecoder().decode(packet.payload));
+            } else {
+                packet.payload = null;
+            }
         }
         return packet;
     }
 
 
 
-    // @DecodeHandler('STREAM')
-    // streamDecode(context: CodingsContext) {
-    //     const options = context.options;
-    //     const stream = context.last<IReadableStream>();
-    //     if(!options.headDelimiter) {
-
-    //     }
-
-    // }
-
-
-
-
     @EncodeHandler('PACKET', { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })
     bufferEncode(context: CodingsContext) {
         const options = context.options;
-        if(!options.headDelimiter) throw new ArgumentExecption('headDelimiter');
+        if (!options.headDelimiter) throw new ArgumentExecption('headDelimiter');
 
         const input = { ...context.last<Packet>() };
         if (input.headers instanceof TransportHeaders) {
             input.headers = input.headers.getHeaders();
         }
-        
+
         const injector = context.session!.injector;
         const headDelimiter = Buffer.from(options.headDelimiter);
 
@@ -83,9 +76,19 @@ export class PacketCodingsHandlers {
         const { payload, ...headers } = input;
         const hbuff = handlerSerialization ? handlerSerialization.serialize(headers) : Buffer.from(JSON.stringify(headers));
 
-        const payloadSerialization = injector.get(PayloadSerialization, null);
-        const bbuff = payloadSerialization ? payloadSerialization.serialize(payload) : Buffer.from(JSON.stringify(payload));
-        return Buffer.concat([hbuff, headDelimiter, bbuff]);
+        if (this.streamAdapter.isReadable(payload)) {
+            const stream = this.streamAdapter.createPassThrough();
+            stream.write(hbuff);
+            stream.write(headDelimiter);
+            this.streamAdapter.pipeTo(payload, stream);
+            return stream;
+        } else {
+            const payloadSerialization = injector.get(PayloadSerialization, null);
+
+            const bbuff = isNil(payload) ? Buffer.alloc(0) : (payloadSerialization ? payloadSerialization.serialize(payload) : Buffer.from(JSON.stringify(payload)));
+            return Buffer.concat([hbuff, headDelimiter, bbuff], hbuff.length + headDelimiter.length + bbuff.length);
+
+        }
 
     }
 }

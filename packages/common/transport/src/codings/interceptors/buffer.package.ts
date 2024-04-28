@@ -34,13 +34,13 @@ export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableS
                         if (!packet.id || !isBuffer(packet.payload)) {
                             subscriber.next(packet);
                             subscriber.complete();
-                            return subscriber;
+                            // return subscriber;
                         }
                         const len = packet.payload.length ?? 0;
                         if ((packet.payloadLength ?? 0) <= len) {
                             subscriber.next(packet);
                             subscriber.complete();
-                            return subscriber;
+                            // return subscriber;
                         }
 
                         const cached = this.packs.get(packet.id);
@@ -97,85 +97,89 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
                         - (input.id ? idLen : 0)
                         - (isNil(input.type) ? 0 : 1); // message type.
 
-                    if (options.maxSize && packetSize > options.maxSize) {
-                        if (this.streamAdapter.isReadable(data)) {
-                            return new Observable((subsr: Subscriber<Buffer>) => {
-                                let size = 0;
-                                let buffers: Buffer[] = [];
-                                let first = true;
 
-                                this.streamAdapter.pipeTo(data, this.streamAdapter.createWritable({
-                                    write: (chunk: Buffer, encoding, callback) => {
-                                        let maxSize = sizeLimit;
-                                        if (chunk.length <= maxSize) {
-                                            if (first) {
-                                                maxSize = maxSize - (input.headerLength ?? 0); // header length
-                                            }
-                                            size += chunk.length;
-                                            if (size >= maxSize) {
-                                                first = false;
-                                                const idx = chunk.length - (size - maxSize);
-                                                buffers.push(chunk.subarray(0, idx))
-                                                const sub = chunk.subarray(idx + 1);
+                    if (this.streamAdapter.isReadable(data)) {
+                        return new Observable((subsr: Subscriber<Buffer>) => {
+                            let size = 0;
+                            let buffers: Buffer[] = [];
+                            let first = true;
 
-                                                const payload = Buffer.concat(buffers);
-                                                if (sub.length) {
-                                                    buffers = [sub];
-                                                    size = sub.length;
-                                                } else {
-                                                    buffers = [];
-                                                    size = 0;
-                                                }
-                                                subsr.next(this.connectId(input.id, idLen, payload))
-                                                size = 0;
-                                            } else {
-                                                buffers.push(chunk);
-                                            }
-                                            callback();
-                                        } else {
-                                            this.subcontract(chunk, maxSize).subscribe({
-                                                next: (payload) => {
-                                                    subsr.next(this.connectId(input.id, idLen, payload));
-                                                },
-                                                complete() {
-                                                    callback()
-                                                },
-                                                error(err) {
-                                                    callback(err)
-                                                }
-                                            })
+                            this.streamAdapter.pipeTo(data, this.streamAdapter.createWritable({
+                                write: (chunk: Buffer, encoding, callback) => {
+                                    let maxSize = sizeLimit;
+                                    if (chunk.length <= maxSize) {
+                                        if (first) {
+                                            maxSize = maxSize - (input.headerLength ?? 0); // header length
                                         }
-                                    }
-                                })).then(() => {
-                                    subsr.complete();
-                                }).catch(err => {
-                                    subsr.error(err);
-                                })
-                                return () => subsr.unsubscribe()
-                            })
-                        } else {
+                                        size += chunk.length;
+                                        if (size >= maxSize) {
+                                            first = false;
+                                            const idx = chunk.length - (size - maxSize);
+                                            buffers.push(chunk.subarray(0, idx))
+                                            const sub = chunk.subarray(idx + 1);
 
-                            if (!isBuffer(data)) return throwError(() => new ArgumentExecption('payload has not serializized!'))
+                                            const payload = Buffer.concat(buffers, size);
+                                            if (sub.length) {
+                                                buffers = [sub];
+                                                size = sub.length;
+                                            } else {
+                                                buffers = [];
+                                                size = 0;
+                                            }
+                                            subsr.next(this.connectId(input.id, idLen, payload))
+                                            size = 0;
+                                        } else {
+                                            buffers.push(chunk);
+                                        }
+                                        callback();
+                                    } else {
+                                        this.subcontract(chunk, maxSize).subscribe({
+                                            next: (payload) => {
+                                                subsr.next(this.connectId(input.id, idLen, payload));
+                                            },
+                                            complete() {
+                                                callback()
+                                            },
+                                            error(err) {
+                                                callback(err)
+                                            }
+                                        })
+                                    }
+                                }
+                            })).then(() => {
+                                subsr.complete();
+                            }).catch(err => {
+                                subsr.error(err);
+                            })
+                            return () => subsr.unsubscribe()
+                        })
+                    } else {
+
+                        if (!isBuffer(data)) return throwError(() => new ArgumentExecption('payload has not serializized!'))
+
+                        if (options.maxSize && packetSize > options.maxSize) {
 
                             return this.subcontract(data, sizeLimit).pipe(
                                 map(data => this.connectId(input.id, idLen, data))
                             )
+                        } else {
+                            return of(this.connectId(input.id, idLen, data));
                         }
                     }
-                    return of(this.connectId(input.id, idLen, data));
-
                 })
             );
     }
 
+
     connectId(id: string | number | undefined, idLen: number, payload: Buffer) {
         if (id) {
             if (idLen > 4) {
-                payload = Buffer.concat([Buffer.from(id as string), payload]);
+                const idBuff = Buffer.from(id as string);
+                payload = Buffer.concat([Buffer.from(id as string), payload], idBuff.length + payload.length);
             } else if (isNumber(id)) {
                 const idBuff = Buffer.alloc(idLen);
                 idBuff.writeIntBE(id, 0, idLen);
-                payload = Buffer.concat([idBuff, payload]);
+                payload = Buffer.concat([idBuff, payload], idBuff.length + payload.length);
             }
         }
         return payload;
