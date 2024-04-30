@@ -24,7 +24,7 @@ export class DuplexTransportSession extends TransportSession<IDuplexStream, Buff
     sendMessage(data: RequestContext<any, any>, msg: Buffer | IReadableStream): Observable<Buffer | IReadableStream> {
         let writing: Promise<any>;
         if (this.streamAdapter.isReadable(msg)) {
-            writing = this.streamAdapter.pipeTo(msg, this.socket)
+            writing = this.streamAdapter.write(msg, this.socket);
         } else {
             writing = promisify<Buffer, void>(this.socket.write, this.socket)(msg)
         }

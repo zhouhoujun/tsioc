@@ -87,6 +87,8 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
                     const sizeLimit = options.maxSize! - (options.delimiter ? Buffer.byteLength(options.delimiter) : 0)
                         - ((options.headDelimiter) ? Buffer.byteLength(options.headDelimiter) : 0)
                         - (input.id ? idLen : 0)
+                        - ((options.delimiter) ? Buffer.byteLength(options.delimiter) : 0)
+                        - (options.countLen ?? 4)
                     // - (isNil(input.type) ? 0 : 1); // message type.
 
 
@@ -137,11 +139,11 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
 
                                 this.streamAdapter.pipeTo(data, this.streamAdapter.createWritable({
                                     write: (chunk: Buffer, encoding, callback) => {
-                                        let maxSize = sizeLimit;
+                                        const maxSize = sizeLimit;
                                         if (chunk.length <= maxSize) {
-                                            if (first) {
-                                                maxSize = maxSize - (input.headerLength ?? 0); // header length
-                                            }
+                                            // if (first) {
+                                            //     maxSize = maxSize - (input.headerLength ?? 0); // header length
+                                            // }
                                             size += chunk.length;
                                             if (size >= maxSize) {
                                                 first = false;
@@ -183,7 +185,7 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
                                     subsr.error(err);
                                 });
 
-                                return subsr;
+                                return subsr
                             })
                         } else {
                             // return defer(async () => this.connectId(input.id, idLen, await toBuffer(data)));

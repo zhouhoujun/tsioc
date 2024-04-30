@@ -1,13 +1,13 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Backend, Handler, Interceptor, createHandler } from '@tsdi/core';
+import { Backend, Handler, Interceptor, PipeTransform, createHandler } from '@tsdi/core';
 import { TransportHeaders } from '@tsdi/common';
 import { Observable, defer } from 'rxjs';
 import { CodingsOpts } from './options';
 import { CodingsContext } from './context';
 import { Encoder } from './Encoder';
-import { StreamAdapter } from '../StreamAdapter';
+import { StreamAdapter, toBuffer } from '../StreamAdapter';
 import { PacketData } from '../packet';
-import { NotSupportedExecption } from '../execptions';
+import { NotSupportedExecption, PacketLengthException } from '../execptions';
 
 @Abstract()
 export abstract class EncodingsHandler implements Handler<any, any, CodingsContext> {
@@ -25,7 +25,14 @@ export class EncodingsBackend implements Backend<any, any, CodingsContext> {
         input = { ...input };
         return defer(async () => {
             if (this.streamAdapter.isReadable(input.payload)) {
-                throw new NotSupportedExecption('Payload is readable');
+                if (!context.options.maxSize || !input.payloadLength) {
+                    throw new NotSupportedExecption('Payload is readable');
+                } else if(input.payloadLength > context.options.maxSize) {
+                    const btpipe = context.session!.injector.get<PipeTransform>('bytes-format');
+                    throw new PacketLengthException(`Readable payload length ${btpipe.transform(length)} great than max size ${btpipe.transform(context.options.maxSize)}`);
+                } else {
+                    input.payload = await toBuffer(input.payload);
+                }
             }
             if (input.headers instanceof TransportHeaders) {
                 input.headers = input.headers.getHeaders();

@@ -36,6 +36,21 @@ export async function toBuffer(body: IReadableStream, limit = 0, url?: string) {
  */
 export abstract class StreamAdapter {
 
+
+    /**
+     * write source stream to socket without end.
+     * @param source 
+     * @param socket 
+     * @returns 
+     */
+    write(source: PipeSource | IStream, socket: IWritableStream): Promise<void> {
+        return this.pipeTo(source, this.createWritable({
+            write: (chunk, encoding, callback) => {
+                socket.write(chunk, callback);
+            }
+        }))
+    }
+
     /**
      * send body
      * @param data 
@@ -77,8 +92,8 @@ export abstract class StreamAdapter {
                     throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
             }
         }
-        if (this.isStream(request)) {
-            await this.pipeTo(source, request);
+        if (this.isReadable(request)) {
+            await this.pipeTo(source, request as IWritableStream);
         } else if (this.isStream(source)) {
             const buffers = await toBuffer(source);
             promisify<any, void>(request.end, request)(buffers);
