@@ -7,7 +7,7 @@ import { PacketLengthException } from '../../execptions';
 import { CodingsContext } from '../context';
 import { PacketIdGenerator } from '../PacketId';
 import { PackageEncodeInterceptor } from './buffer.package';
-import { IReadableStream, IWritableStream } from '../../stream';
+import { IReadableStream } from '../../stream';
 import { StreamAdapter } from '../../StreamAdapter';
 
 
@@ -180,7 +180,7 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Buffer | IRe
                                 const total = buffLen.length + delimiter.length + chunk.length;
                                 callback(null, Buffer.concat([buffLen, delimiter, chunk], total))
                             } else {
-                                callback()
+                                callback(null, chunk)
                             }
                         }
                     }))

@@ -42,7 +42,12 @@ export class NodeStreamAdapter extends StreamAdapter {
     pipeline<T extends IDuplexStream>(source: PipeSource<any>, transform: ITransformStream, transform2: ITransformStream, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
     pipeline<T extends IDuplexStream>(source: PipeSource<any>, transform: ITransformStream, transform2: ITransformStream, transform3: ITransformStream, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
     pipeline<T extends IDuplexStream>(...args: any[]): T {
-        return (pipeline as any).apply(pipeline, args) as T;
+        if (!isFunction(args[args.length - 1])) {
+            args.push((err: any) => {
+                if (err) throw err
+            });
+        }
+        return (pipeline as Function)(...args) as T;
     }
 
     jsonSreamify(value: any, replacer?: Function | any[] | undefined, spaces?: string | number | undefined, cycle?: boolean | undefined): IReadableStream {
@@ -61,7 +66,7 @@ export class NodeStreamAdapter extends StreamAdapter {
         return stream instanceof Writable || (isFunction(stream?.write) && (stream as Writable)?.writable);
     }
 
-    createWritable(options?:  {
+    createWritable(options?: {
         emitClose?: boolean | undefined;
         highWaterMark?: number | undefined;
         objectMode?: boolean | undefined;

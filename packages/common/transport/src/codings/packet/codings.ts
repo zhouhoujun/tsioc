@@ -78,10 +78,6 @@ export class PacketCodingsHandlers {
         const hbuff = handlerSerialization ? handlerSerialization.serialize(headers) : Buffer.from(JSON.stringify(headers));
 
         if (this.streamAdapter.isReadable(payload)) {
-            // const stream = this.streamAdapter.createPassThrough();
-            // stream.write(hbuff);
-            // stream.write(headDelimiter);
-            // this.streamAdapter.pipeTo(payload, stream);
             let isFist = true;
             input.streamLength = (input.payloadLength ?? 0) + hbuff.length + headDelimiter.length;
             return this.streamAdapter.pipeline(payload, this.streamAdapter.createPassThrough({
