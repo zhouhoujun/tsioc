@@ -29,9 +29,10 @@ export class EncodingsBackend implements Backend<any, any, CodingsContext> {
                     throw new NotSupportedExecption('Payload is readable');
                 } else if(input.payloadLength > context.options.maxSize) {
                     const btpipe = context.session!.injector.get<PipeTransform>('bytes-format');
-                    throw new PacketLengthException(`Readable payload length ${btpipe.transform(length)} great than max size ${btpipe.transform(context.options.maxSize)}`);
+                    throw new PacketLengthException(`Readable payload length ${btpipe.transform(input.payloadLength)} great than max size ${btpipe.transform(context.options.maxSize)}`);
                 } else {
-                    input.payload = await toBuffer(input.payload);
+                    const buff = await toBuffer(input.payload);
+                    input.payload = new TextDecoder().decode(buff);
                 }
             }
             if (input.headers instanceof TransportHeaders) {

@@ -2,13 +2,13 @@ import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { Application, ApplicationContext, Payload } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { TransportResponse } from '@tsdi/common';
-import { BadRequestExecption } from '@tsdi/common/transport';
+import { BadRequestExecption, PacketCodingsModule } from '@tsdi/common/transport';
 import { ClientModule } from '@tsdi/common/client';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { RequestBody, RequestParam, RequestPath, RouteMapping, Handle, MicroServRouterModule, EndpointModule, ContentInterceptor, JsonInterceptor, BodyparserInterceptor, RedirectResult } from '@tsdi/endpoints';
 import { catchError, lastValueFrom, of } from 'rxjs';
-import * as os from 'node:os';
+import * as os from 'os';
 import expect = require('expect');
 import path = require('path');
 import { rm } from 'shelljs';
@@ -128,7 +128,8 @@ if (os.platform() != 'win32') {
                 providers: [
                     { provide: TCP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
                 ]
-            })
+            }),
+            PacketCodingsModule
         ],
         declarations: [
             DeviceController
