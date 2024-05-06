@@ -65,16 +65,18 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer, Packet, Codi
 
 
         chl.buffers.push(data);
-        chl.length += Buffer.byteLength(data);
+        const bLen = Buffer.byteLength(data);
+        chl.length += bLen;
 
         if (chl.contentLength == null) {
             const delimiter = Buffer.from(options.delimiter!);
+            const countLen = options.countLen || 4;
             const i = data.indexOf(delimiter);
-            if (i !== -1) {
+            if (i == countLen) {
                 const buffer = this.concatCaches(chl);
-                const idx = chl.length - Buffer.byteLength(data) + i;
-                const countLen = options.countLen || 4;
-                const rawContentLength = buffer.readUIntBE(idx - countLen, idx);
+                // const idx = chl.length - bLen + i;
+                const rawContentLength = buffer.readUIntBE(0, countLen);
+                const content = buffer.subarray(countLen + delimiter.length);
                 chl.contentLength = rawContentLength;
 
                 if (isNaN(rawContentLength) || (options.maxSize && rawContentLength > options.maxSize)) {
@@ -88,8 +90,8 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer, Packet, Codi
                         throw new PacketLengthException(`No packet length`);
                     }
                 }
-                chl.buffers = [buffer.subarray(idx + 1)];
-                chl.length -= (idx + 1);
+                chl.buffers = [content];
+                chl.length -= (countLen + delimiter.length);
             }
         }
 
@@ -168,24 +170,36 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Buffer | IRe
         return next.handle(input, context)
             .pipe(map(data => {
                 const countLen = context.options.countLen || 4;
-                const buffLen = Buffer.alloc(countLen);
+                let buffLen: Buffer;
                 const delimiter = Buffer.from(context.options.delimiter!);
                 if (this.streamAdapter.isReadable(data)) {
-                    buffLen.writeUIntBE(input.streamLength!, 0, countLen);
                     let first = true;
+                    let subpacket = false;
                     return this.streamAdapter.pipeline(data, this.streamAdapter.createPassThrough({
                         transform: (chunk, encoding, callback) => {
-                            if (first) {
-                                first = false;
-                                const total = buffLen.length + delimiter.length + chunk.length;
-                                callback(null, Buffer.concat([buffLen, delimiter, chunk], total))
+                            if (chunk.indexOf(delimiter) >= 0) {
+                                subpacket = true;
+                            }
+                            if (subpacket) {
+                                callback(null, chunk);
                             } else {
-                                callback(null, chunk)
+                                if (!buffLen) {
+                                    buffLen = Buffer.alloc(countLen)
+                                    buffLen.writeUIntBE(input.streamLength!, 0, countLen);
+                                }
+                                if (first) {
+                                    first = false;
+                                    const total = buffLen.length + delimiter.length + chunk.length;
+                                    callback(null, Buffer.concat([buffLen, delimiter, chunk], total))
+                                } else {
+                                    callback(null, chunk)
+                                }
                             }
                         }
                     }))
 
                 } else {
+                    buffLen = Buffer.alloc(countLen)
                     buffLen.writeUIntBE(data.length, 0, countLen);
                     const total = buffLen.length + delimiter.length + data.length;
                     return Buffer.concat([buffLen, delimiter, data], total);
