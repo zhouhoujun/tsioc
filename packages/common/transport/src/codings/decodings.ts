@@ -1,10 +1,11 @@
 import { Abstract, Injectable, Injector, isString, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, Interceptor, createHandler } from '@tsdi/core';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, defer, map } from 'rxjs';
 import { CodingsOpts } from './options';
 import { CodingsContext } from './context';
 import { Decoder } from './Decoder';
 import { InvalidJsonException } from '../execptions';
+import { StreamAdapter, toBuffer } from '../StreamAdapter';
 
 
 @Abstract()
@@ -14,15 +15,24 @@ export abstract class DecodingsHandler implements Handler<any, any, CodingsConte
 
 @Injectable()
 export class DecodingsBackend implements Backend<any, any, CodingsContext> {
+    constructor(private streamAdapter: StreamAdapter) { }
 
     handle(input: any, context: CodingsContext): Observable<any> {
-        const jsonStr = isString(input) ? input : new TextDecoder().decode(input);
-        try {
-            const buff = JSON.parse(jsonStr);
-            return of(buff);
-        } catch (err) {
-            return throwError(() => new InvalidJsonException(err, jsonStr));
-        }
+        return defer(async () => {
+            if (this.streamAdapter.isReadable(input)) {
+                return await toBuffer(input)
+            }
+            return input
+        }).pipe(
+            map(data => {
+                const jsonStr = isString(data) ? data : new TextDecoder().decode(data);
+                try {
+                    const buff = JSON.parse(jsonStr);
+                    return buff;
+                } catch (err) {
+                    throw new InvalidJsonException(err, jsonStr);
+                }
+            }));
     }
 }
 

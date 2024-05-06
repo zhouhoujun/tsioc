@@ -4,7 +4,7 @@ import { TransportHeaders } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler } from '../metadata';
 import { CodingsContext } from '../context';
 import { Observable, throwError } from 'rxjs';
-import { StreamAdapter, isBuffer } from '../../StreamAdapter';
+import { StreamAdapter, isBuffer, toBuffer } from '../../StreamAdapter';
 import { Packet, PacketData } from '../../packet';
 import { Codings } from '../Codings';
 import { PackageDecodeInterceptor } from '../interceptors/buffer.package';
@@ -21,23 +21,24 @@ export class PacketCodingsHandlers {
     constructor(private streamAdapter: StreamAdapter) { }
 
     @DecodeHandler('PACKET', { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
-    bufferDecode(context: CodingsContext) {
+    async bufferDecode(context: CodingsContext) {
         const options = context.options;
         if (!options.headDelimiter) throw new ArgumentExecption('headDelimiter');
 
         const data = context.last<string | Buffer>();
-        const input = isString(data) ? Buffer.from(data) : data;
+        let input = isString(data) ? Buffer.from(data) : data;
 
-        if (!isBuffer(input)) {
-            return throwError(() => new ArgumentExecption('asset decoding input is not buffer'));
-        }
+
         const injector = context.session!.injector;
         const headDelimiter = Buffer.from(options.headDelimiter);
-
+        const headerDeserialization = injector.get(HeaderDeserialization, null);
 
         let packet: PacketData;
 
-        const headerDeserialization = injector.get(HeaderDeserialization, null);
+        if (this.streamAdapter.isReadable(input)) {
+            input = await toBuffer(input);
+        }
+
         const idx = input.indexOf(headDelimiter);
         if (idx > 0) {
             const headers = headerDeserialization ? headerDeserialization.deserialize(input.subarray(0, idx)) : JSON.parse(new TextDecoder().decode(input.subarray(0, idx)));
