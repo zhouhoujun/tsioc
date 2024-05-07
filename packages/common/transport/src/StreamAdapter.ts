@@ -40,13 +40,13 @@ export abstract class StreamAdapter {
     /**
      * write source stream to socket without end.
      * @param source 
-     * @param socket 
+     * @param writable 
      * @returns 
      */
-    write(source: PipeSource | IStream, socket: IWritableStream): Promise<void> {
+    write(source: PipeSource | IStream, writable: IWritableStream): Promise<void> {
         return this.pipeTo(source, this.createWritable({
             write: (chunk, encoding, callback) => {
-                socket.write(chunk, callback);
+                writable.write(chunk, callback);
             }
         }))
     }

@@ -25,7 +25,7 @@ export interface ChannelBuffer {
 }
 
 @Injectable()
-export class PacketDecodeInterceptor implements Interceptor<Buffer, Packet, CodingsContext> {
+export class PacketDecodeInterceptor1 implements Interceptor<Buffer, Packet, CodingsContext> {
 
     protected channels: Map<string, ChannelBuffer>;
 
@@ -71,13 +71,13 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer, Packet, Codi
 
         if (chl.contentLength == null) {
             const delimiter = Buffer.from(options.delimiter!);
+            const delimiterLen = Buffer.byteLength(delimiter);
             const countLen = options.countLen || 4;
             const i = data.indexOf(delimiter);
             if (i == countLen) {
                 const buffer = this.concatCaches(chl);
-                // const idx = chl.length - bLen + i;
                 const rawContentLength = buffer.readUIntBE(0, countLen);
-                const content = buffer.subarray(countLen + delimiter.length);
+                const content = buffer.subarray(countLen + delimiterLen);
                 chl.contentLength = rawContentLength;
 
                 if (isNaN(rawContentLength) || (options.maxSize && rawContentLength > options.maxSize)) {
@@ -92,7 +92,7 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer, Packet, Codi
                     }
                 }
                 chl.buffers = [content];
-                chl.length -= (countLen + delimiter.length);
+                chl.length -= (countLen + delimiterLen);
             }
         }
 
@@ -129,7 +129,7 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer, Packet, Codi
 }
 
 @Injectable()
-export class PacketDecodeInterceptor1 implements Interceptor<IReadableStream | Buffer, Packet, CodingsContext> {
+export class PacketDecodeInterceptor implements Interceptor<IReadableStream | Buffer, Packet, CodingsContext> {
 
     protected channels: Map<string, ChannelBuffer>;
 
@@ -172,20 +172,22 @@ export class PacketDecodeInterceptor1 implements Interceptor<IReadableStream | B
 
         const bLen = Buffer.byteLength(data);
         chl.length += bLen;
+
         if (!chl.stream) {
             chl.buffers.push(data);
         }
 
         if (chl.contentLength == null) {
             const delimiter = Buffer.from(options.delimiter!);
+            const delimiterLen = Buffer.byteLength(delimiter);
             const countLen = options.countLen || 4;
             const i = data.indexOf(delimiter);
             if (i == countLen) {
                 const buffer = this.concatCaches(chl);
-                const idx = countLen + delimiter.length;
+                const idx = countLen + delimiterLen;
                 const rawContentLength = buffer.readUIntBE(0, countLen);
                 data = buffer.subarray(idx);
-                chl.length = data.length;
+                chl.length = Buffer.byteLength(data);
                 chl.contentLength = rawContentLength;
                 chl.stream = this.streamAdapter.createPassThrough();
                 if (isNaN(rawContentLength) || (options.maxSize && rawContentLength > options.maxSize)) {
@@ -201,8 +203,6 @@ export class PacketDecodeInterceptor1 implements Interceptor<IReadableStream | B
                         throw new PacketLengthException(`No packet length`);
                     }
                 }
-                // chl.buffers = [content];
-                // chl.length -= idx;
             }
         }
 
@@ -287,6 +287,7 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Buffer | IRe
                 const countLen = context.options.countLen || 4;
                 let buffLen: Buffer;
                 const delimiter = Buffer.from(context.options.delimiter!);
+                const delimiterLen = Buffer.byteLength(delimiter);
                 if (this.streamAdapter.isReadable(data)) {
                     let first = true;
                     let subpacket = false;
@@ -304,7 +305,7 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Buffer | IRe
                                 }
                                 if (first) {
                                     first = false;
-                                    const total = buffLen.length + delimiter.length + chunk.length;
+                                    const total = countLen + delimiterLen + Buffer.byteLength(chunk);
                                     callback(null, Buffer.concat([buffLen, delimiter, chunk], total))
                                 } else {
                                     callback(null, chunk)
@@ -314,9 +315,10 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Buffer | IRe
                     }))
 
                 } else {
-                    buffLen = Buffer.alloc(countLen)
-                    buffLen.writeUIntBE(data.length, 0, countLen);
-                    const total = buffLen.length + delimiter.length + data.length;
+                    buffLen = Buffer.alloc(countLen);
+                    const dataLen = Buffer.byteLength(data);
+                    buffLen.writeUIntBE(dataLen, 0, countLen);
+                    const total = countLen + delimiterLen + dataLen;
                     return Buffer.concat([buffLen, delimiter, data], total);
                 }
             }))

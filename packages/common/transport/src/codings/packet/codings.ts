@@ -3,11 +3,12 @@ import { Handler, Interceptor } from '@tsdi/core';
 import { TransportHeaders } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler } from '../metadata';
 import { CodingsContext } from '../context';
-import { Observable, throwError } from 'rxjs';
-import { StreamAdapter, isBuffer, toBuffer } from '../../StreamAdapter';
+import { Observable } from 'rxjs';
+import { StreamAdapter, toBuffer } from '../../StreamAdapter';
 import { Packet, PacketData } from '../../packet';
 import { Codings } from '../Codings';
 import { PackageDecodeInterceptor } from '../interceptors/buffer.package';
+import { IReadableStream } from '../../stream';
 
 
 export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer, CodingsContext>[]>('PACKET_ENCODE_INTERCEPTORS');
@@ -25,7 +26,7 @@ export class PacketCodingsHandlers {
         const options = context.options;
         if (!options.headDelimiter) throw new ArgumentExecption('headDelimiter');
 
-        const data = context.last<string | Buffer>();
+        const data = context.last<string | Buffer | IReadableStream>();
         let input = isString(data) ? Buffer.from(data) : data;
 
 
@@ -43,18 +44,18 @@ export class PacketCodingsHandlers {
         if (idx > 0) {
             const headers = headerDeserialization ? headerDeserialization.deserialize(input.subarray(0, idx)) : JSON.parse(new TextDecoder().decode(input.subarray(0, idx)));
             packet = headers;
-            packet.payload = input.subarray(idx + headDelimiter.length);
+            packet.payload = input.subarray(idx + Buffer.byteLength(headDelimiter));
         } else {
             packet = { payload: input };
         }
-        if (!injector.has(PackageDecodeInterceptor)) {
-            if (packet.payload.length) {
-                const payloaDeserialize = injector.get(PayloadDeserialization, null);
-                packet.payload = payloaDeserialize ? payloaDeserialize.deserialize(packet.payload) : JSON.parse(new TextDecoder().decode(packet.payload));
-            } else {
-                packet.payload = null;
-            }
-        }
+        // if (!injector.has(PackageDecodeInterceptor)) {
+        //     if (packet.payload.length) {
+        //         const payloaDeserialize = injector.get(PayloadDeserialization, null);
+        //         packet.payload = payloaDeserialize ? payloaDeserialize.deserialize(packet.payload) : JSON.parse(new TextDecoder().decode(packet.payload));
+        //     } else {
+        //         packet.payload = null;
+        //     }
+        // }
         return packet;
     }
 
@@ -80,12 +81,12 @@ export class PacketCodingsHandlers {
 
         if (this.streamAdapter.isReadable(payload)) {
             let isFist = true;
-            input.streamLength = (input.payloadLength ?? 0) + hbuff.length + headDelimiter.length;
+            input.streamLength = (input.payloadLength ?? 0) + Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter);
             return this.streamAdapter.pipeline(payload, this.streamAdapter.createPassThrough({
                 transform: (chunk, encoding, callback) => {
                     if (isFist) {
                         isFist = false;
-                        callback(null, Buffer.concat([hbuff, headDelimiter, chunk], hbuff.length + headDelimiter.length + chunk.length))
+                        callback(null, Buffer.concat([hbuff, headDelimiter, chunk], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(chunk)))
                     } else {
                         callback(null, chunk)
                     }
@@ -95,7 +96,7 @@ export class PacketCodingsHandlers {
             const payloadSerialization = injector.get(PayloadSerialization, null);
 
             const bbuff = isNil(payload) ? Buffer.alloc(0) : (payloadSerialization ? payloadSerialization.serialize(payload) : Buffer.from(JSON.stringify(payload)));
-            return Buffer.concat([hbuff, headDelimiter, bbuff], hbuff.length + headDelimiter.length + bbuff.length);
+            return Buffer.concat([hbuff, headDelimiter, bbuff], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(bbuff));
 
         }
 
