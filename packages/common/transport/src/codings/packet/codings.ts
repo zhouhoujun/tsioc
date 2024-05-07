@@ -7,7 +7,6 @@ import { Observable } from 'rxjs';
 import { StreamAdapter, toBuffer } from '../../StreamAdapter';
 import { Packet, PacketData } from '../../packet';
 import { Codings } from '../Codings';
-import { PackageDecodeInterceptor } from '../interceptors/buffer.package';
 import { IReadableStream } from '../../stream';
 
 
@@ -37,7 +36,10 @@ export class PacketCodingsHandlers {
         let packet: PacketData;
 
         if (this.streamAdapter.isReadable(input)) {
-            input = await toBuffer(input);
+            // if (input.payload) {
+            //     return { payload: input };
+            // }
+            input = await toBuffer(input, options.maxSize);
         }
 
         const idx = input.indexOf(headDelimiter);
@@ -48,14 +50,7 @@ export class PacketCodingsHandlers {
         } else {
             packet = { payload: input };
         }
-        // if (!injector.has(PackageDecodeInterceptor)) {
-        //     if (packet.payload.length) {
-        //         const payloaDeserialize = injector.get(PayloadDeserialization, null);
-        //         packet.payload = payloaDeserialize ? payloaDeserialize.deserialize(packet.payload) : JSON.parse(new TextDecoder().decode(packet.payload));
-        //     } else {
-        //         packet.payload = null;
-        //     }
-        // }
+
         return packet;
     }
 

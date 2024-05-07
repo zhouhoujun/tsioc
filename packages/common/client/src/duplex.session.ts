@@ -23,7 +23,7 @@ export class ClientDuplexTransportSession extends ClientTransportSession<IDuplex
     sendMessage(data: TransportRequest<any>, msg: Buffer | IReadableStream): Observable<Buffer | IReadableStream> {
         let writing: Promise<any>;
         if (this.streamAdapter.isReadable(msg)) {
-            writing = this.streamAdapter.write(msg, this.socket);
+            writing = this.streamAdapter.pipeTo(msg, this.socket, { end: false });
         } else {
             writing = promisify<Buffer, void>(this.socket.write, this.socket)(msg)
         }

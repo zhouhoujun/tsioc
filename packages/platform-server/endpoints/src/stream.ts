@@ -15,7 +15,7 @@ const gunzip = promisify(zlib.gunzip);
 @Injectable({ static: true })
 export class NodeStreamAdapter extends StreamAdapter {
 
-    async pipeTo(source: PipeSource | Stream, destination: IWritableStream): Promise<void> {
+    async pipeTo(source: PipeSource | Stream, destination: IWritableStream, options: { end?: boolean, signal?: any } = { end: true }): Promise<void> {
         if (this.isStream(source) && !this.isReadable(source)) {
             const defer = lang.defer();
             source.once(ev.ERROR, (err) => {
@@ -24,13 +24,13 @@ export class NodeStreamAdapter extends StreamAdapter {
             source.once(ev.END, () => {
                 defer.resolve()
             });
-            source.pipe(destination);
+            source.pipe(destination, options);
             return await defer.promise
                 .finally(() => {
                     isFunction((source as any).destroy) && (source as any).destroy();
                 })
         } else {
-            await pmPipeline(source, destination)
+            await pmPipeline(source, destination, options)
                 .finally(() => {
                     isFunction((source as any).destroy) && (source as any).destroy();
                 });

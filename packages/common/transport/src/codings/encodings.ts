@@ -31,7 +31,7 @@ export class EncodingsBackend implements Backend<any, any, CodingsContext> {
                     const btpipe = context.session!.injector.get<PipeTransform>('bytes-format');
                     throw new PacketLengthException(`Readable payload length ${btpipe.transform(input.payloadLength)} great than max size ${btpipe.transform(context.options.maxSize)}`);
                 } else {
-                    const buff = await toBuffer(input.payload);
+                    const buff = await toBuffer(input.payload, context.options.maxSize);
                     input.payload = new TextDecoder().decode(buff);
                 }
             }

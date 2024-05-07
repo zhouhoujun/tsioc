@@ -1,6 +1,6 @@
 import { Injectable, getClass } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { CodingsContext, Packet, EncodeHandler, Codings, PacketData } from '@tsdi/common/transport';
+import { CodingsContext, EncodeHandler, Codings, PacketData } from '@tsdi/common/transport';
 import { Observable, mergeMap } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 import { RequestContextImpl } from '../impl/request.context';

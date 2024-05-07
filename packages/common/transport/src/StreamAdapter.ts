@@ -30,6 +30,21 @@ export async function toBuffer(body: IReadableStream, limit = 0, url?: string) {
     return Buffer.concat(data, bytes);
 }
 
+export async function writeBuffer(body: IReadableStream, writable: IWritableStream, limit = 0, url?: string) {
+    let bytes = 0;
+    for await (const chunk of body) {
+        if (limit > 0 && bytes + chunk.length > limit) {
+            const error = new TypeExecption(`content size at ${url} over limit: ${limit}`);
+            body.destroy?.(error);
+            throw error;
+        }
+        bytes += chunk.length;
+        writable.write(chunk);
+    }
+
+}
+
+
 
 /**
  * stream adapter
@@ -37,19 +52,19 @@ export async function toBuffer(body: IReadableStream, limit = 0, url?: string) {
 export abstract class StreamAdapter {
 
 
-    /**
-     * write source stream to socket without end.
-     * @param source 
-     * @param writable 
-     * @returns 
-     */
-    write(source: PipeSource | IStream, writable: IWritableStream): Promise<void> {
-        return this.pipeTo(source, this.createWritable({
-            write: (chunk, encoding, callback) => {
-                writable.write(chunk, callback);
-            }
-        }))
-    }
+    // /**
+    //  * write source stream to socket without end.
+    //  * @param source 
+    //  * @param writable 
+    //  * @returns 
+    //  */
+    // write(source: PipeSource | IStream, writable: IWritableStream): Promise<void> {
+    //     return this.pipeTo(source, this.createWritable({
+    //         write: (chunk, encoding, callback) => {
+    //             writable.write(chunk, callback);
+    //         }
+    //     }))
+    // }
 
     /**
      * send body
@@ -106,9 +121,10 @@ export abstract class StreamAdapter {
     /**
      * pipe line
      * @param source 
-     * @param destination 
+     * @param destination
+     * @param options 
      */
-    abstract pipeTo(source: PipeSource | IStream, destination: IWritableStream): Promise<void>;
+    abstract pipeTo(source: PipeSource | IStream, destination: IWritableStream, options?: { end?: boolean, signal?: any }): Promise<void>;
     /**
      * pipe line
      * @param source 

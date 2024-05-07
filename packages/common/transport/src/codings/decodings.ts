@@ -20,7 +20,7 @@ export class DecodingsBackend implements Backend<any, any, CodingsContext> {
     handle(input: any, context: CodingsContext): Observable<any> {
         return defer(async () => {
             if (this.streamAdapter.isReadable(input)) {
-                return await toBuffer(input)
+                return await toBuffer(input, context.options.maxSize)
             }
             return input
         }).pipe(

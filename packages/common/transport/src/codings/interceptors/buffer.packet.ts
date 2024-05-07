@@ -19,114 +19,114 @@ import { StreamAdapter } from '../../StreamAdapter';
 export interface ChannelBuffer {
     channel: string;
     stream?: IDuplexStream | null;
-    buffers: Buffer[];
+    // buffers: Buffer[];
     length: number;
     contentLength: number | null;
 }
 
-@Injectable()
-export class PacketDecodeInterceptor1 implements Interceptor<Buffer, Packet, CodingsContext> {
+// @Injectable()
+// export class PacketDecodeInterceptor1 implements Interceptor<Buffer, Packet, CodingsContext> {
 
-    protected channels: Map<string, ChannelBuffer>;
+//     protected channels: Map<string, ChannelBuffer>;
 
-    constructor() {
-        this.channels = new Map();
-    }
-
-
-    intercept(input: Buffer, next: Handler<Buffer, Packet>, context: CodingsContext): Observable<Packet> {
-        const options = context.options;
-        return new Observable((subscriber: Subscriber<Buffer>) => {
-            let chl = this.channels.get(options.transport ?? '');
-
-            const channel = options.transport ?? '';
-            if (!chl) {
-                chl = {
-                    channel,
-                    buffers: [],
-                    length: 0,
-                    contentLength: null
-                }
-                this.channels.set(channel, chl)
-            }
-            this.handleData(chl, input, subscriber, context);
-
-            return subscriber;
-
-        }).pipe(
-            mergeMap(pkgBuffer => next.handle(pkgBuffer, context))
-        );
-    }
-
-    protected handleData(chl: ChannelBuffer, dataRaw: Buffer, subscriber: Subscriber<Buffer>, context: CodingsContext) {
-        const options = context.options;
-        const data = Buffer.isBuffer(dataRaw)
-            ? dataRaw
-            : Buffer.from(dataRaw);
+//     constructor() {
+//         this.channels = new Map();
+//     }
 
 
-        chl.buffers.push(data);
-        const bLen = Buffer.byteLength(data);
-        chl.length += bLen;
+//     intercept(input: Buffer, next: Handler<Buffer, Packet>, context: CodingsContext): Observable<Packet> {
+//         const options = context.options;
+//         return new Observable((subscriber: Subscriber<Buffer>) => {
+//             let chl = this.channels.get(options.transport ?? '');
 
-        if (chl.contentLength == null) {
-            const delimiter = Buffer.from(options.delimiter!);
-            const delimiterLen = Buffer.byteLength(delimiter);
-            const countLen = options.countLen || 4;
-            const i = data.indexOf(delimiter);
-            if (i == countLen) {
-                const buffer = this.concatCaches(chl);
-                const rawContentLength = buffer.readUIntBE(0, countLen);
-                const content = buffer.subarray(countLen + delimiterLen);
-                chl.contentLength = rawContentLength;
+//             const channel = options.transport ?? '';
+//             if (!chl) {
+//                 chl = {
+//                     channel,
+//                     buffers: [],
+//                     length: 0,
+//                     contentLength: null
+//                 }
+//                 this.channels.set(channel, chl)
+//             }
+//             this.handleData(chl, input, subscriber, context);
 
-                if (isNaN(rawContentLength) || (options.maxSize && rawContentLength > options.maxSize)) {
-                    chl.contentLength = null;
-                    chl.length = 0;
-                    chl.buffers = [];
-                    const btpipe = context.session!.injector.get<PipeTransform>('bytes-format');
-                    if (rawContentLength) {
-                        throw new PacketLengthException(`Packet length ${btpipe.transform(rawContentLength)} great than max size ${btpipe.transform(options.maxSize)}`);
-                    } else {
-                        throw new PacketLengthException(`No packet length`);
-                    }
-                }
-                chl.buffers = [content];
-                chl.length -= (countLen + delimiterLen);
-            }
-        }
+//             return subscriber;
 
-        if (chl.contentLength !== null) {
-            if (chl.length === chl.contentLength) {
-                this.handleMessage(chl, this.concatCaches(chl), subscriber);
-                subscriber.complete();
-            } else if (chl.length > chl.contentLength) {
-                const buffer = this.concatCaches(chl);
-                const message = buffer.subarray(0, chl.contentLength);
-                const rest = buffer.subarray(chl.contentLength);
-                this.handleMessage(chl, message, subscriber);
-                if (rest.length) {
-                    this.handleData(chl, rest, subscriber, context);
-                }
-            } else {
-                subscriber.complete();
-            }
-        } else {
-            subscriber.complete();
-        }
-    }
+//         }).pipe(
+//             mergeMap(pkgBuffer => next.handle(pkgBuffer, context))
+//         );
+//     }
 
-    protected concatCaches(chl: ChannelBuffer) {
-        return chl.buffers.length > 1 ? Buffer.concat(chl.buffers, chl.length) : chl.buffers[0]
-    }
+//     protected handleData(chl: ChannelBuffer, dataRaw: Buffer, subscriber: Subscriber<Buffer>, context: CodingsContext) {
+//         const options = context.options;
+//         const data = Buffer.isBuffer(dataRaw)
+//             ? dataRaw
+//             : Buffer.from(dataRaw);
 
-    protected handleMessage(chl: ChannelBuffer, message: Buffer, subscriber: Subscriber<Buffer>) {
-        chl.contentLength = null;
-        chl.length = 0;
-        chl.buffers = [];
-        subscriber.next(message);
-    }
-}
+
+//         chl.buffers.push(data);
+//         const bLen = Buffer.byteLength(data);
+//         chl.length += bLen;
+
+//         if (chl.contentLength == null) {
+//             const delimiter = Buffer.from(options.delimiter!);
+//             const delimiterLen = Buffer.byteLength(delimiter);
+//             const countLen = options.countLen || 4;
+//             const i = data.indexOf(delimiter);
+//             if (i == countLen) {
+//                 const buffer = this.concatCaches(chl);
+//                 const rawContentLength = buffer.readUIntBE(0, countLen);
+//                 const content = buffer.subarray(countLen + delimiterLen);
+//                 chl.contentLength = rawContentLength;
+
+//                 if (isNaN(rawContentLength) || (options.maxSize && rawContentLength > options.maxSize)) {
+//                     chl.contentLength = null;
+//                     chl.length = 0;
+//                     chl.buffers = [];
+//                     const btpipe = context.session!.injector.get<PipeTransform>('bytes-format');
+//                     if (rawContentLength) {
+//                         throw new PacketLengthException(`Packet length ${btpipe.transform(rawContentLength)} great than max size ${btpipe.transform(options.maxSize)}`);
+//                     } else {
+//                         throw new PacketLengthException(`No packet length`);
+//                     }
+//                 }
+//                 chl.buffers = [content];
+//                 chl.length -= (countLen + delimiterLen);
+//             }
+//         }
+
+//         if (chl.contentLength !== null) {
+//             if (chl.length === chl.contentLength) {
+//                 this.handleMessage(chl, this.concatCaches(chl), subscriber);
+//                 subscriber.complete();
+//             } else if (chl.length > chl.contentLength) {
+//                 const buffer = this.concatCaches(chl);
+//                 const message = buffer.subarray(0, chl.contentLength);
+//                 const rest = buffer.subarray(chl.contentLength);
+//                 this.handleMessage(chl, message, subscriber);
+//                 if (rest.length) {
+//                     this.handleData(chl, rest, subscriber, context);
+//                 }
+//             } else {
+//                 subscriber.complete();
+//             }
+//         } else {
+//             subscriber.complete();
+//         }
+//     }
+
+//     protected concatCaches(chl: ChannelBuffer) {
+//         return chl.buffers.length > 1 ? Buffer.concat(chl.buffers, chl.length) : chl.buffers[0]
+//     }
+
+//     protected handleMessage(chl: ChannelBuffer, message: Buffer, subscriber: Subscriber<Buffer>) {
+//         chl.contentLength = null;
+//         chl.length = 0;
+//         chl.buffers = [];
+//         subscriber.next(message);
+//     }
+// }
 
 @Injectable()
 export class PacketDecodeInterceptor implements Interceptor<IReadableStream | Buffer, Packet, CodingsContext> {
@@ -150,7 +150,6 @@ export class PacketDecodeInterceptor implements Interceptor<IReadableStream | Bu
                     channel,
                     stream: null,
                     length: 0,
-                    buffers: [],
                     contentLength: null
                 }
                 this.channels.set(channel, chl)
@@ -166,34 +165,30 @@ export class PacketDecodeInterceptor implements Interceptor<IReadableStream | Bu
 
     protected handleData(chl: ChannelBuffer, dataRaw: Buffer, subscriber: Subscriber<IReadableStream>, context: CodingsContext) {
         const options = context.options;
-        let data = isString(dataRaw) ?
+        const data = isString(dataRaw) ?
             Buffer.from(dataRaw)
             : dataRaw;
 
         const bLen = Buffer.byteLength(data);
         chl.length += bLen;
-
         if (!chl.stream) {
-            chl.buffers.push(data);
+            chl.stream = this.streamAdapter.createPassThrough();
+        }
+        if (!chl.contentLength || chl.length <= chl.contentLength) {
+            chl.stream.write(data);
         }
 
         if (chl.contentLength == null) {
             const delimiter = Buffer.from(options.delimiter!);
-            const delimiterLen = Buffer.byteLength(delimiter);
             const countLen = options.countLen || 4;
             const i = data.indexOf(delimiter);
-            if (i == countLen) {
-                const buffer = this.concatCaches(chl);
-                const idx = countLen + delimiterLen;
-                const rawContentLength = buffer.readUIntBE(0, countLen);
-                data = buffer.subarray(idx);
-                chl.length = Buffer.byteLength(data);
-                chl.contentLength = rawContentLength;
-                chl.stream = this.streamAdapter.createPassThrough();
+            if (i !== -1) {
+                const idx = chl.length - bLen + i + delimiter.length;
+                const buffer = chl.stream.read(idx) as Buffer;
+                const rawContentLength = buffer.readUIntBE(idx - countLen - delimiter.length, idx - delimiter.length);
                 if (isNaN(rawContentLength) || (options.maxSize && rawContentLength > options.maxSize)) {
                     chl.contentLength = null;
                     chl.length = 0;
-                    chl.buffers = [];
                     chl.stream.end();
                     chl.stream = null;
                     const btpipe = context.session!.injector.get<PipeTransform>('bytes-format');
@@ -202,13 +197,15 @@ export class PacketDecodeInterceptor implements Interceptor<IReadableStream | Bu
                     } else {
                         throw new PacketLengthException(`No packet length`);
                     }
+                } else {
+                    chl.length -= idx;
+                    chl.stream.length = chl.contentLength = rawContentLength;
                 }
             }
         }
 
-        if (chl.contentLength !== null && chl.stream) {
+        if (chl.contentLength !== null) {
             if (chl.length === chl.contentLength) {
-                chl.stream.write(data);
                 this.handleMessage(chl, chl.stream, subscriber);
                 subscriber.complete();
             } else if (chl.length > chl.contentLength) {
@@ -220,24 +217,17 @@ export class PacketDecodeInterceptor implements Interceptor<IReadableStream | Bu
                     this.handleData(chl, rest, subscriber, context);
                 }
             } else {
-                chl.stream.write(data);
                 subscriber.complete();
             }
         } else {
             subscriber.complete();
         }
     }
-
-    protected concatCaches(chl: ChannelBuffer) {
-        return chl.buffers.length > 1 ? Buffer.concat(chl.buffers, chl.length) : chl.buffers[0]
-    }
-
     protected handleMessage(chl: ChannelBuffer, message: IReadableStream, subscriber: Subscriber<IReadableStream>) {
         chl.contentLength = null;
         chl.length = 0;
         chl.stream?.end();
         chl.stream = null;
-        chl.buffers = [];
         subscriber.next(message);
     }
 }
