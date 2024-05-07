@@ -36,9 +36,9 @@ export class PacketCodingsHandlers {
         let packet: PacketData;
 
         if (this.streamAdapter.isReadable(input)) {
-            if (input.payload) {
-                return { payload: input };
-            }
+            // if (input.payload) {
+            //     return { payload: input };
+            // }
             input = await toBuffer(input, options.maxSize);
         }
 

@@ -64,7 +64,7 @@ export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableS
                 throw new PacketLengthException('has not content length!');
             }
             const payload = this.streamAdapter.createPassThrough();
-            payload.setMaxListeners(0);
+            // payload.setMaxListeners(0);
 
             const cached = {
                 ...packet,
@@ -72,7 +72,8 @@ export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableS
                 cacheSize: len
             } as CachePacket;
             if (this.streamAdapter.isReadable(packet.payload)) {
-                this.streamAdapter.pipeTo(packet.payload, cached.payload, { end: false });
+                cached.payload = packet.payload.pipe(cached.payload, {end: false});
+                // this.streamAdapter.pipeTo(packet.payload, cached.payload, { end: false });
             } else {
                 payload.write(packet.payload);
             }
@@ -82,7 +83,8 @@ export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableS
             const cLen = cached.payloadLength!;
             cached.cacheSize += len;
             if (this.streamAdapter.isReadable(packet.payload)) {
-                this.streamAdapter.pipeTo(packet.payload, cached.payload, { end: false });
+                cached.payload = packet.payload.pipe(cached.payload, {end: false});
+                // this.streamAdapter.pipeTo(packet.payload, cached.payload, { end: false });
             } else {
                 cached.payload.write(packet.payload);
             }
@@ -139,7 +141,7 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
                                             if (len >= maxSize) {
                                                 const idx = chLen - (len - maxSize);
                                                 const end = chunk.subarray(0, idx);
-                                                const sub = chunk.subarray(idx + 1);
+                                                const sub = chunk.subarray(idx);
                                                 stream.end(end);
                                                 subsr.next(this.streamConnectId(input, idLen, delimiter, stream, countLen, size + Buffer.byteLength(end)));
                                                 if (sub.length) {
