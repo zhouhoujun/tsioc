@@ -52,19 +52,19 @@ export async function writeBuffer(body: IReadableStream, writable: IWritableStre
 export abstract class StreamAdapter {
 
 
-    // /**
-    //  * write source stream to socket without end.
-    //  * @param source 
-    //  * @param writable 
-    //  * @returns 
-    //  */
-    // write(source: PipeSource | IStream, writable: IWritableStream): Promise<void> {
-    //     return this.pipeTo(source, this.createWritable({
-    //         write: (chunk, encoding, callback) => {
-    //             writable.write(chunk, callback);
-    //         }
-    //     }))
-    // }
+    /**
+     * write source stream to socket without end.
+     * @param source 
+     * @param writable 
+     * @returns 
+     */
+    write(source: PipeSource | IStream, writable: IWritableStream): Promise<void> {
+        return this.pipeTo(source, this.createWritable({
+            write: (chunk, encoding, callback) => {
+                writable.write(chunk, callback);
+            }
+        }))
+    }
 
     /**
      * send body

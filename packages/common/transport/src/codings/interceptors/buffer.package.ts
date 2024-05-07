@@ -46,11 +46,11 @@ export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableS
             packet.id = id;
         }
 
-        if (!packet.id) {
+        if (!packet.id || !(isBuffer(packet.payload) || this.streamAdapter.isReadable(packet.payload))) {
             packet.completed = true;
             return packet;
         }
-        const len = isBuffer(packet.payload) ? Buffer.byteLength(packet.payload) : packet.payload.length ?? 0;
+        const len = isBuffer(packet.payload) ? Buffer.byteLength(packet.payload) : packet.payload?.length ?? 0;
 
         const cached = this.packs.get(packet.id);
 
@@ -64,6 +64,7 @@ export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableS
                 throw new PacketLengthException('has not content length!');
             }
             const payload = this.streamAdapter.createPassThrough();
+            payload.setMaxListeners(0);
 
             const cached = {
                 ...packet,
@@ -174,7 +175,7 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
                                             })
                                         }
                                     }
-                                }), { end: false }).then(() => {
+                                })).then(() => {
                                     subsr.complete();
                                 }).catch(err => {
                                     subsr.error(err);
