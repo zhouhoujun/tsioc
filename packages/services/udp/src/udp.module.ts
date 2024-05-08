@@ -9,7 +9,8 @@ import { UdpServer } from './server/server';
 import { UDP_SERV_FILTERS, UDP_SERV_GUARDS, UDP_SERV_INTERCEPTORS } from './server/options';
 import { UdpEndpointHandler } from './server/handler';
 import { defaultMaxSize } from './consts';
-import { UdpTransportSessionFactory } from './udp.session';
+import { UdpTransportSessionFactory } from './server/server.session';
+import { UdpClientTransportSessionFactory } from './client/client.session';
 
 
 
@@ -17,6 +18,7 @@ import { UdpTransportSessionFactory } from './udp.session';
     providers: [
         UdpClient,
         UdpServer,
+        UdpClientTransportSessionFactory,
         UdpTransportSessionFactory,
         {
             provide: CLIENT_MODULES,
@@ -32,7 +34,7 @@ import { UdpTransportSessionFactory } from './udp.session';
                     },
                     interceptorsToken: UDP_CLIENT_INTERCEPTORS,
                     filtersToken: UDP_CLIENT_FILTERS,
-                    // sessionFactory: { useExisting: UdpTransportSessionFactory },
+                    sessionFactory: { useExisting: UdpClientTransportSessionFactory },
                 } as ClientOpts
             },
             multi: true
@@ -57,7 +59,7 @@ import { UdpTransportSessionFactory } from './udp.session';
                     interceptorsToken: UDP_SERV_INTERCEPTORS,
                     filtersToken: UDP_SERV_FILTERS,
                     guardsToken: UDP_SERV_GUARDS,
-                    // sessionFactory: { useExisting: UdpTransportSessionFactory },
+                    sessionFactory: { useExisting: UdpTransportSessionFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,

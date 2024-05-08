@@ -11,7 +11,7 @@ import { TransportBackend } from './backend';
 import { BodyContentInterceptor } from './interceptors/body';
 import { RestfulRedirector } from './redirector';
 import { ClientTransportSessionFactory } from './session';
-import { ClientDuplexTransportSessionFactory } from './duplex.session';
+import { DuplexClientTransportSessionFactory } from './duplex.session';
 import { ClientCodingsModule, RequestEncodeInterceper, ResponseDecodeInterceper } from './codings';
 import { DefaultResponseEventFactory } from './response.factory';
 
@@ -98,7 +98,7 @@ export interface ClientTokenOpts {
         ClientCodingsModule
     ],
     providers: [
-        ClientDuplexTransportSessionFactory,
+        DuplexClientTransportSessionFactory,
         BodyContentInterceptor,
         RestfulRedirector,
         DefaultResponseEventFactory,

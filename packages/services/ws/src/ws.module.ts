@@ -1,6 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
-import { CLIENT_MODULES, ClientDuplexTransportSessionFactory, ClientOpts } from '@tsdi/common/client';
+import { CLIENT_MODULES, DuplexClientTransportSessionFactory, ClientOpts } from '@tsdi/common/client';
 import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { WsClient } from './client/client';
 import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS } from './client/options';
@@ -33,7 +33,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                     },
                     interceptorsToken: WS_CLIENT_INTERCEPTORS,
                     filtersToken: WS_CLIENT_FILTERS,
-                    sessionFactory: { useExisting: ClientDuplexTransportSessionFactory },
+                    sessionFactory: { useExisting: DuplexClientTransportSessionFactory },
                 } as ClientOpts
             },
             multi: true

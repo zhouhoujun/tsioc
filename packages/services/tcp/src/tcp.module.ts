@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
-import { CLIENT_MODULES, ClientDuplexTransportSessionFactory, ClientOpts } from '@tsdi/common/client';
+import { CLIENT_MODULES, DuplexClientTransportSessionFactory, ClientOpts } from '@tsdi/common/client';
 import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS } from './client/options';
@@ -33,7 +33,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                         delimiter: '#',
                         maxSize: defaultMaxSize,
                     },
-                    sessionFactory: { useExisting: ClientDuplexTransportSessionFactory },
+                    sessionFactory: { useExisting: DuplexClientTransportSessionFactory },
                 } as ClientOpts
             },
             multi: true
@@ -51,7 +51,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                         delimiter: '#',
                         maxSize: defaultMaxSize,
                     },
-                    sessionFactory: { useExisting: ClientDuplexTransportSessionFactory },
+                    sessionFactory: { useExisting: DuplexClientTransportSessionFactory },
                 } as ClientOpts
             },
             multi: true

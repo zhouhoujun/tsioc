@@ -1,7 +1,7 @@
 import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
 import { isFormData } from '@tsdi/common';
 import { StreamAdapter, ev, isBuffer, IWritableStream, IDuplexStream, IReadableStream, ITransformStream, BrotliOptions, PipeSource, ZipOptions } from '@tsdi/common/transport';
-import { isReadable, Stream, Writable, WritableOptions, Readable, Duplex, PassThrough, pipeline, Transform, TransformCallback } from 'stream';
+import { isReadable, Stream, Writable, WritableOptions, Readable, Duplex, PassThrough, pipeline, Transform, TransformCallback, PipelineOptions } from 'stream';
 import { promisify } from 'util';
 import * as zlib from 'zlib';
 import * as FormData from 'form-data';
@@ -31,7 +31,7 @@ export class NodeStreamAdapter extends StreamAdapter {
                     isFunction((source as any).destroy) && (source as any).destroy();
                 })
         } else {
-            await pmPipeline(source, destination, options)
+            await pmPipeline(source, destination, options as PipelineOptions)
                 .finally(() => {
                     (source as IReadableStream).removeAllListeners?.();
                     isFunction((source as any).destroy) && (source as any).destroy();

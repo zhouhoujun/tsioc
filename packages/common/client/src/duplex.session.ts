@@ -5,7 +5,7 @@ import { Observable, from, fromEvent, map, takeUntil } from 'rxjs';
 import { ClientTransportSession, ClientTransportSessionFactory } from './session';
 
 
-export class ClientDuplexTransportSession extends ClientTransportSession<IDuplexStream, Buffer | IReadableStream> {
+export class DuplexClientTransportSession extends ClientTransportSession<IDuplexStream, Buffer | IReadableStream> {
 
     constructor(
         readonly injector: Injector,
@@ -45,12 +45,12 @@ export class ClientDuplexTransportSession extends ClientTransportSession<IDuplex
 
 
 @Injectable()
-export class ClientDuplexTransportSessionFactory implements ClientTransportSessionFactory<IDuplexStream, TransportOpts> {
+export class DuplexClientTransportSessionFactory implements ClientTransportSessionFactory<IDuplexStream, TransportOpts> {
 
     constructor() { }
 
-    create(injector: Injector, socket: IDuplexStream, options: TransportOpts): ClientDuplexTransportSession {
-        return new ClientDuplexTransportSession(injector, socket,
+    create(injector: Injector, socket: IDuplexStream, options: TransportOpts): DuplexClientTransportSession {
+        return new DuplexClientTransportSession(injector, socket,
             injector.get(options.encodingsFactory ?? EncodingsFactory).create(injector, options),
             injector.get(options.decodingsFactory ?? DecodingsFactory).create(injector, options),
             injector.get(StreamAdapter),
