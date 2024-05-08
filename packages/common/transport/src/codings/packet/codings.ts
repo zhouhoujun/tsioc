@@ -8,6 +8,7 @@ import { StreamAdapter, toBuffer } from '../../StreamAdapter';
 import { Packet, PacketData } from '../../packet';
 import { Codings } from '../Codings';
 import { IReadableStream } from '../../stream';
+import { InvalidJsonException } from '../../execptions';
 
 
 export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer, CodingsContext>[]>('PACKET_ENCODE_INTERCEPTORS');
@@ -26,7 +27,7 @@ export class PacketCodingsHandlers {
         if (!options.headDelimiter) throw new ArgumentExecption('headDelimiter');
 
         const data = context.last<string | Buffer | IReadableStream>();
-        let input = isString(data) ? Buffer.from(data) : data;
+        const input = isString(data) ? Buffer.from(data) : data;
 
 
         const injector = context.session!.injector;
@@ -36,21 +37,46 @@ export class PacketCodingsHandlers {
         let packet: PacketData;
 
         if (this.streamAdapter.isReadable(input)) {
-            // if (input.payload) {
-            //     return { payload: input };
-            // }
-            input = await toBuffer(input, options.maxSize);
-        }
-
-        const idx = input.indexOf(headDelimiter);
-        if (idx > 0) {
-            const headers = headerDeserialization ? headerDeserialization.deserialize(input.subarray(0, idx)) : JSON.parse(new TextDecoder().decode(input.subarray(0, idx)));
-            packet = headers;
-            packet.payload = input.subarray(idx + Buffer.byteLength(headDelimiter));
+            if (input.payload) {
+                packet = { payload: input };
+            } else {
+                let buffer = input.read(1) as Buffer;
+                while (buffer.indexOf(headDelimiter) < 0) {
+                    buffer = Buffer.concat([buffer, input.read(1)]);
+                }
+                const headBuffer = buffer.subarray(0, buffer.length - headDelimiter.length);
+                if (input.length) {
+                    input.length = input.length - buffer.length;
+                }
+                packet = this.parsePacket(headBuffer, input, headerDeserialization);
+            }
         } else {
-            packet = { payload: input };
+            const idx = input.indexOf(headDelimiter);
+            if (idx > 0) {
+                const headBuffer = input.subarray(0, idx);
+                packet = this.parsePacket(headBuffer, input.subarray(idx + Buffer.byteLength(headDelimiter)), headerDeserialization);
+            } else {
+                packet = { payload: input };
+            }
         }
 
+        return packet;
+    }
+
+    private parsePacket(headBuffer: Buffer, payload: Buffer | IReadableStream, headerDeserialization?: HeaderDeserialization | null) {
+        let packet: Packet;
+        if (headerDeserialization) {
+            packet = headerDeserialization.deserialize(headBuffer)
+        } else {
+            let jsonStr = '';
+            try {
+                jsonStr = new TextDecoder().decode(headBuffer);
+                packet = JSON.parse(jsonStr);
+            } catch (err) {
+                throw new InvalidJsonException(err, jsonStr)
+            }
+        }
+        packet.payload = payload;
         return packet;
     }
 

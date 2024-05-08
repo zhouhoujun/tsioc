@@ -1,9 +1,10 @@
 
-import { TypeExecption, promisify } from '@tsdi/ioc';
+import { TypeExecption, isArray, promisify } from '@tsdi/ioc';
 import { isArrayBuffer, isBlob, isFormData } from '@tsdi/common';
 import { Buffer } from 'buffer';
 import { IDuplexStream, IReadableStream, IStream, IWritableStream, ITransformStream, IEndable } from './stream';
 import { UnsupportedMediaTypeExecption } from './execptions';
+import { ev } from './consts';
 
 export type PipeSource<T = any> = Iterable<T> | AsyncIterable<T> | IReadableStream;
 
@@ -30,21 +31,6 @@ export async function toBuffer(body: IReadableStream, limit = 0, url?: string) {
     return Buffer.concat(data, bytes);
 }
 
-export async function writeBuffer(body: IReadableStream, writable: IWritableStream, limit = 0, url?: string) {
-    let bytes = 0;
-    for await (const chunk of body) {
-        if (limit > 0 && bytes + chunk.length > limit) {
-            const error = new TypeExecption(`content size at ${url} over limit: ${limit}`);
-            body.destroy?.(error);
-            throw error;
-        }
-        bytes += chunk.length;
-        writable.write(chunk);
-    }
-
-}
-
-
 
 /**
  * stream adapter
@@ -64,6 +50,31 @@ export abstract class StreamAdapter {
                 writable.write(chunk, callback);
             }
         }))
+    }
+
+    merge(writable: IWritableStream, ...sources: IStream[]): void;
+    merge(writable: IWritableStream, sources: IStream[]): void;
+    merge(writable: IWritableStream, ...args: any[]): void {
+
+        const sources: IStream[] = (args.length == 1 && isArray(args[0])) ? args[0] : args;
+
+        if (!sources.length) {
+            writable.end();
+            return;
+        }
+
+        const source = sources.shift()!;
+
+        source.once(ev.ERROR, (err) => {
+            source.removeAllListeners();
+            writable.emit(ev.ERROR, err);
+        });
+
+        source.once(ev.END, () => {
+            source.removeAllListeners();
+            this.merge(writable, sources);
+        });
+        source.pipe(writable, { end: false });
     }
 
     /**

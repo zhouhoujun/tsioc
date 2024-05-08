@@ -27,11 +27,13 @@ export class NodeStreamAdapter extends StreamAdapter {
             source.pipe(destination, options);
             return await defer.promise
                 .finally(() => {
+                    source.removeAllListeners();
                     isFunction((source as any).destroy) && (source as any).destroy();
                 })
         } else {
             await pmPipeline(source, destination, options)
                 .finally(() => {
+                    (source as IReadableStream).removeAllListeners?.();
                     isFunction((source as any).destroy) && (source as any).destroy();
                 });
         }

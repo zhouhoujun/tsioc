@@ -9,6 +9,7 @@ import { PacketLengthException } from '../../execptions';
 
 interface CachePacket extends PacketData {
     payload: IDuplexStream;
+    streams?: IReadableStream[] | null;
     cacheSize: number;
     completed?: boolean;
 }
@@ -72,8 +73,7 @@ export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableS
                 cacheSize: len
             } as CachePacket;
             if (this.streamAdapter.isReadable(packet.payload)) {
-                cached.payload = packet.payload.pipe(cached.payload, {end: false});
-                // this.streamAdapter.pipeTo(packet.payload, cached.payload, { end: false });
+                cached.streams = [packet.payload];
             } else {
                 payload.write(packet.payload);
             }
@@ -83,14 +83,22 @@ export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableS
             const cLen = cached.payloadLength!;
             cached.cacheSize += len;
             if (this.streamAdapter.isReadable(packet.payload)) {
-                cached.payload = packet.payload.pipe(cached.payload, {end: false});
-                // this.streamAdapter.pipeTo(packet.payload, cached.payload, { end: false });
+                if (cached.streams) {
+                    cached.streams.push(packet.payload);
+                } else {
+                    cached.streams = [packet.payload];
+                }
             } else {
                 cached.payload.write(packet.payload);
             }
             if (cached.cacheSize >= cLen) {
                 this.packs.delete(cached.id);
-                cached.payload.end();
+                if (cached.streams) {
+                    this.streamAdapter.merge(cached.payload, cached.streams);
+                    cached.streams = null;
+                } else {
+                    cached.payload.end();
+                }
                 cached.completed = true;
             }
             return cached;

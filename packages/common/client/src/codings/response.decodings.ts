@@ -60,7 +60,7 @@ export class ResponseIncomingResolver {
                             try {
                                 body = body.replace(XSSI_PREFIX, '');
                                 // Attempt the parse. If it fails, a parse error should be delivered to the user.
-                                body = body !== '' ? JSON.parse(body) : null
+                                body = (body !== '') ? JSON.parse(body) : null;
                             } catch (err) {
                                 // Since the JSON.parse failed, it's reasonable to assume this might not have been a
                                 // JSON response. Restore the original body (including any XSSI prefix) to deliver
