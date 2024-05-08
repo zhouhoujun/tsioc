@@ -4,7 +4,7 @@ import { TransportHeaders } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler } from '../metadata';
 import { CodingsContext } from '../context';
 import { Observable } from 'rxjs';
-import { StreamAdapter, toBuffer } from '../../StreamAdapter';
+import { StreamAdapter, isBuffer } from '../../StreamAdapter';
 import { Packet, PacketData } from '../../packet';
 import { Codings } from '../Codings';
 import { IReadableStream } from '../../stream';
@@ -100,7 +100,14 @@ export class PacketCodingsHandlers {
         const { payload, ...headers } = input;
         const hbuff = handlerSerialization ? handlerSerialization.serialize(headers) : Buffer.from(JSON.stringify(headers));
 
-        if (this.streamAdapter.isReadable(payload)) {
+        let bbuff: Buffer;
+        if (isNil(payload)) {
+            bbuff = Buffer.alloc(0)
+        } else if (isString(payload)) {
+            bbuff = Buffer.from(payload);
+        } else if (isBuffer(payload)) {
+            bbuff = payload;
+        } else if (this.streamAdapter.isReadable(payload)) {
             let isFist = true;
             input.streamLength = (input.payloadLength ?? 0) + Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter);
             return this.streamAdapter.pipeline(payload, this.streamAdapter.createPassThrough({
@@ -115,12 +122,10 @@ export class PacketCodingsHandlers {
             }));
         } else {
             const payloadSerialization = injector.get(PayloadSerialization, null);
-
-            const bbuff = isNil(payload) ? Buffer.alloc(0) : (payloadSerialization ? payloadSerialization.serialize(payload) : Buffer.from(JSON.stringify(payload)));
-            return Buffer.concat([hbuff, headDelimiter, bbuff], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(bbuff));
-
+            bbuff = (payloadSerialization ? payloadSerialization.serialize(payload) : Buffer.from(JSON.stringify(payload)));
         }
 
+        return Buffer.concat([hbuff, headDelimiter, bbuff], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(bbuff));
     }
 }
 

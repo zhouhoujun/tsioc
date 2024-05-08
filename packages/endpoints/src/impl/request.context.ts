@@ -38,13 +38,13 @@ export class RequestContextImpl<TRequest extends Incoming = Incoming, TResponse 
             response.id = request.id
         }
 
-        this.originalUrl  = this.url = normalize(this.url);
+        this.originalUrl = this.url = normalize(this.url);
         const searhIdx = this.url.indexOf('?');
         if (searhIdx >= 0) {
             (this.request as any)['query'] = this.query;
         }
     }
-    
+
 
     private _query?: Record<string, any>;
     get query(): Record<string, any> {
@@ -92,7 +92,7 @@ export class RequestContextImpl<TRequest extends Incoming = Incoming, TResponse 
             return uri;
         }
     }
-    
+
 
     setResponse(packet: ResponsePacket): void {
         const { headers, payload, ...pkg } = packet;
@@ -102,26 +102,12 @@ export class RequestContextImpl<TRequest extends Incoming = Incoming, TResponse 
     }
 
     async respond(): Promise<any> {
-        const res = this.response;
-        if (isNil(this.response)) return;
-
-        const session = this.session;
-
-        // const len = this.length ?? 0;
-        // if (session.options.maxSize && len > session.options.maxSize) {
-        //     const btpipe = this.get<PipeTransform>('bytes-format');
-        //     throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(session.options.maxSize)}`);
-        // }
-
-        if (this.streamAdapter.isReadable(res)) {
-            this.body = new TextDecoder().decode(await toBuffer(res));
-        } else if (isBuffer(res)) {
-            this.body = new TextDecoder().decode(res);
-        }
-        await lastValueFrom(session.send(this));
+        if (this.sent) return;
+        await lastValueFrom(this.session.send(this));
     }
 
-    throwExecption(execption: MessageExecption): Promise<void> {
+    async throwExecption(execption: MessageExecption): Promise<void> {
+        if (this.sent) return;
         this.execption = execption;
         this.body = null;
         this.response.error = {
@@ -131,7 +117,7 @@ export class RequestContextImpl<TRequest extends Incoming = Incoming, TResponse 
         };
         if (!isNil(execption.status)) this.response.statusCode = execption.status;
         this.response.statusMessage = execption.message;
-        return lastValueFrom(this.session.send(this));
+        return await lastValueFrom(this.session.send(this));
     }
 
 }
