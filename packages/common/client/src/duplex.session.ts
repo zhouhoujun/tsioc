@@ -7,7 +7,6 @@ import { ClientTransportSession, ClientTransportSessionFactory } from './session
 
 export class ClientDuplexTransportSession extends ClientTransportSession<IDuplexStream, Buffer | IReadableStream> {
 
-    protected msgEvent = ev.DATA;
     constructor(
         readonly injector: Injector,
         readonly socket: IDuplexStream,
@@ -23,7 +22,7 @@ export class ClientDuplexTransportSession extends ClientTransportSession<IDuplex
     sendMessage(data: TransportRequest<any>, msg: Buffer | IReadableStream): Observable<Buffer | IReadableStream> {
         let writing: Promise<any>;
         if (this.streamAdapter.isReadable(msg)) {
-            writing = this.streamAdapter.write(msg, this.socket) // this.streamAdapter.pipeTo(msg, this.socket, { end: false });
+            writing = this.streamAdapter.write(msg, this.socket)
         } else {
             writing = promisify<Buffer, void>(this.socket.write, this.socket)(msg)
         }
@@ -31,7 +30,7 @@ export class ClientDuplexTransportSession extends ClientTransportSession<IDuplex
     }
 
     handleMessage(): Observable<Buffer | IReadableStream> {
-        return fromEvent(this.socket, this.msgEvent, (chunk) => {
+        return fromEvent(this.socket, this.options.messageEvent ?? ev.DATA, (chunk) => {
             if (isBuffer(chunk) || this.streamAdapter.isReadable(chunk)) return chunk;
             return Buffer.from(chunk)
         }).pipe(takeUntil(this.destroy$));

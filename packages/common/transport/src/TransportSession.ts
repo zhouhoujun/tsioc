@@ -32,6 +32,10 @@ export interface TransportOpts extends CodingsOpts {
     headerFields?: HeaderFields;
 
     defaultMethod?: string;
+    /**
+     * message event of socket.
+     */
+    messageEvent?: string;
 
     timeout?: number;
 }

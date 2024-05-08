@@ -1,6 +1,6 @@
 import {
     Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType,
-    Type, Token, isArray, lang, toProvider, tokenId, toProviders, ModuleRef, isNil, ModuleType
+    Type, Token, isArray, lang, toProvider, tokenId, ModuleRef, isNil, ModuleType
 } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
 import { ENDPOINT_DECODINGS_INTERCEPTORS, ENDPOINT_ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, ResponseEventFactory, StatusAdapter, Transport } from '@tsdi/common/transport';

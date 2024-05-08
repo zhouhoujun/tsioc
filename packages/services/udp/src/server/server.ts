@@ -55,7 +55,6 @@ export class UdpServer extends Server<RequestContext, UdpServerOpts> {
         const session = factory.create(injector, this.serv, options.transportOpts!);
 
         session.listen(this.handler, merge(this.destroy$, fromEvent(this.serv, ev.CLOSE).pipe(first())));
-        // injector.get(RequestHandler).handle(this.endpoint, session, this.logger, options);
 
         const bindOpts = options.bindOpts ?? { port: 3000, address: LOCALHOST };
         this.serv.on(ev.LISTENING, () => {

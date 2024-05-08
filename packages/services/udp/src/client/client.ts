@@ -1,4 +1,4 @@
-import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
+import { Injectable, InvocationContext } from '@tsdi/ioc';
 import { TransportEvent, TransportRequest } from '@tsdi/common';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { Socket, createSocket, SocketOptions } from 'dgram';
