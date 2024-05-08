@@ -12,124 +12,18 @@ import { StreamAdapter } from '../../StreamAdapter';
 
 
 
-
 /**
  * Channel buffer.
  */
 export interface ChannelBuffer {
     channel: string;
     stream?: IDuplexStream | null;
-    // buffers: Buffer[];
     length: number;
     contentLength: number | null;
 }
 
-// @Injectable()
-// export class PacketDecodeInterceptor1 implements Interceptor<Buffer, Packet, CodingsContext> {
-
-//     protected channels: Map<string, ChannelBuffer>;
-
-//     constructor() {
-//         this.channels = new Map();
-//     }
-
-
-//     intercept(input: Buffer, next: Handler<Buffer, Packet>, context: CodingsContext): Observable<Packet> {
-//         const options = context.options;
-//         return new Observable((subscriber: Subscriber<Buffer>) => {
-//             let chl = this.channels.get(options.transport ?? '');
-
-//             const channel = options.transport ?? '';
-//             if (!chl) {
-//                 chl = {
-//                     channel,
-//                     buffers: [],
-//                     length: 0,
-//                     contentLength: null
-//                 }
-//                 this.channels.set(channel, chl)
-//             }
-//             this.handleData(chl, input, subscriber, context);
-
-//             return subscriber;
-
-//         }).pipe(
-//             mergeMap(pkgBuffer => next.handle(pkgBuffer, context))
-//         );
-//     }
-
-//     protected handleData(chl: ChannelBuffer, dataRaw: Buffer, subscriber: Subscriber<Buffer>, context: CodingsContext) {
-//         const options = context.options;
-//         const data = Buffer.isBuffer(dataRaw)
-//             ? dataRaw
-//             : Buffer.from(dataRaw);
-
-
-//         chl.buffers.push(data);
-//         const bLen = Buffer.byteLength(data);
-//         chl.length += bLen;
-
-//         if (chl.contentLength == null) {
-//             const delimiter = Buffer.from(options.delimiter!);
-//             const delimiterLen = Buffer.byteLength(delimiter);
-//             const countLen = options.countLen || 4;
-//             const i = data.indexOf(delimiter);
-//             if (i == countLen) {
-//                 const buffer = this.concatCaches(chl);
-//                 const rawContentLength = buffer.readUIntBE(0, countLen);
-//                 const content = buffer.subarray(countLen + delimiterLen);
-//                 chl.contentLength = rawContentLength;
-
-//                 if (isNaN(rawContentLength) || (options.maxSize && rawContentLength > options.maxSize)) {
-//                     chl.contentLength = null;
-//                     chl.length = 0;
-//                     chl.buffers = [];
-//                     const btpipe = context.session!.injector.get<PipeTransform>('bytes-format');
-//                     if (rawContentLength) {
-//                         throw new PacketLengthException(`Packet length ${btpipe.transform(rawContentLength)} great than max size ${btpipe.transform(options.maxSize)}`);
-//                     } else {
-//                         throw new PacketLengthException(`No packet length`);
-//                     }
-//                 }
-//                 chl.buffers = [content];
-//                 chl.length -= (countLen + delimiterLen);
-//             }
-//         }
-
-//         if (chl.contentLength !== null) {
-//             if (chl.length === chl.contentLength) {
-//                 this.handleMessage(chl, this.concatCaches(chl), subscriber);
-//                 subscriber.complete();
-//             } else if (chl.length > chl.contentLength) {
-//                 const buffer = this.concatCaches(chl);
-//                 const message = buffer.subarray(0, chl.contentLength);
-//                 const rest = buffer.subarray(chl.contentLength);
-//                 this.handleMessage(chl, message, subscriber);
-//                 if (rest.length) {
-//                     this.handleData(chl, rest, subscriber, context);
-//                 }
-//             } else {
-//                 subscriber.complete();
-//             }
-//         } else {
-//             subscriber.complete();
-//         }
-//     }
-
-//     protected concatCaches(chl: ChannelBuffer) {
-//         return chl.buffers.length > 1 ? Buffer.concat(chl.buffers, chl.length) : chl.buffers[0]
-//     }
-
-//     protected handleMessage(chl: ChannelBuffer, message: Buffer, subscriber: Subscriber<Buffer>) {
-//         chl.contentLength = null;
-//         chl.length = 0;
-//         chl.buffers = [];
-//         subscriber.next(message);
-//     }
-// }
-
 @Injectable()
-export class PacketDecodeInterceptor implements Interceptor<IReadableStream | Buffer, Packet, CodingsContext> {
+export class PacketDecodeInterceptor implements Interceptor<Buffer | string | IReadableStream, Packet, CodingsContext> {
 
     protected channels: Map<string, ChannelBuffer>;
 
@@ -138,9 +32,11 @@ export class PacketDecodeInterceptor implements Interceptor<IReadableStream | Bu
     }
 
 
-    intercept(input: Buffer | IReadableStream, next: Handler<Buffer | IReadableStream, Packet>, context: CodingsContext): Observable<Packet> {
+    intercept(input: Buffer | string | IReadableStream, next: Handler<Buffer | IReadableStream, Packet>, context: CodingsContext): Observable<Packet> {
         const options = context.options;
+
         if (this.streamAdapter.isReadable(input)) return next.handle(input, context);
+
         return new Observable((subscriber: Subscriber<IReadableStream>) => {
             let chl = this.channels.get(options.transport ?? '');
 
@@ -163,11 +59,9 @@ export class PacketDecodeInterceptor implements Interceptor<IReadableStream | Bu
         );
     }
 
-    protected handleData(chl: ChannelBuffer, dataRaw: Buffer, subscriber: Subscriber<IReadableStream>, context: CodingsContext) {
+    protected handleData(chl: ChannelBuffer, dataRaw: Buffer | string, subscriber: Subscriber<IReadableStream>, context: CodingsContext) {
         const options = context.options;
-        const data = isString(dataRaw) ?
-            Buffer.from(dataRaw)
-            : dataRaw;
+        const data = isString(dataRaw) ? Buffer.from(dataRaw) : dataRaw;
 
         const bLen = Buffer.byteLength(data);
         chl.length += bLen;

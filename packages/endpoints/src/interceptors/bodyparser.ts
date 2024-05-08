@@ -70,7 +70,19 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
     }
 
     intercept(input: RequestContext, next: Handler<RequestContext, any>): Observable<any> {
-        if (!input.mimeAdapter || !isUndefined(input.request.body)) return next.handle(input);
+        if (!input.mimeAdapter) {
+            if (input.streamAdapter.isReadable(input.request.body)) {
+                return from(this.parseJson(input)).pipe(
+                    mergeMap(res => {
+                        input.args.body = res.body ?? {};
+                        if (isUndefined(input.request.rawBody)) input.request.rawBody = res.raw;
+                        return next.handle(input)
+                    })
+                )
+            }
+            return next.handle(input);
+        }
+        if (!isUndefined(input.request.body) && !input.streamAdapter.isReadable(input.request.body)) return next.handle(input);
         return from(this.parseBody(input))
             .pipe(
                 mergeMap(res => {
@@ -82,7 +94,15 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
     }
 
     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
-        if (!ctx.mimeAdapter || !isUndefined(ctx.request.body)) return await next();
+        if (!ctx.mimeAdapter) {
+            if (ctx.streamAdapter.isReadable(ctx.request.body)) {
+                const res = await this.parseJson(ctx);
+                ctx.request.body = res.body ?? {};
+                if (isUndefined(ctx.request.rawBody)) ctx.request.rawBody = res.raw;
+            }
+            return await next();
+        }
+        if (!isUndefined(ctx.request.body) && !ctx.streamAdapter.isReadable(ctx.request.body)) return await next();
         const res = await this.parseBody(ctx);
         ctx.request.body = res.body ?? {};
         if (isUndefined(ctx.request.rawBody)) ctx.request.rawBody = res.raw;
@@ -142,6 +162,12 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
             case 'deflate':
                 break
             case 'identity':
+                if (ctx.streamAdapter.isReadable(ctx.request.body)) {
+                    return ctx.request.body
+                } else if (ctx.streamAdapter.isStream(ctx.request.body)) {
+                    return ctx.request.body.pipe(ctx.streamAdapter.createPassThrough());
+                }
+
                 if (ctx.streamAdapter.isReadable(ctx.request)) {
                     return ctx.request
                 } else if (ctx.streamAdapter.isStream(ctx.request)) {
@@ -150,6 +176,10 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
                 throw new UnsupportedMediaTypeExecption('incoming message not support streamable');
             default:
                 throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
+        }
+
+        if (ctx.streamAdapter.isReadable(ctx.request.body) || ctx.streamAdapter.isStream(ctx.request.body)) {
+            return ctx.request.body.pipe(ctx.streamAdapter.createGunzip());
         }
         if (ctx.streamAdapter.isReadable(ctx.request) || ctx.streamAdapter.isStream(ctx.request)) {
             return ctx.request.pipe(ctx.streamAdapter.createGunzip());

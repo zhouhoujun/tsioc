@@ -124,10 +124,6 @@ export class TcpServer extends Server<RequestContext, TcpServerOpts> implements 
             this.serv.on(ev.CONNECTION, (socket) => {
                 const session = factory.create(injector, socket, transportOpts);
                 session.listen(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
-                // session.receive().pipe(
-                //     takeUntil(this.destroy$),
-                //     mergeMap(request => this.handler.handle(request))
-                // ).subscribe()
             })
         }
 

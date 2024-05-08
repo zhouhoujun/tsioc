@@ -68,9 +68,8 @@ export class PacketCodingsHandlers {
         if (headerDeserialization) {
             packet = headerDeserialization.deserialize(headBuffer)
         } else {
-            let jsonStr = '';
+            const jsonStr = new TextDecoder().decode(headBuffer);
             try {
-                jsonStr = new TextDecoder().decode(headBuffer);
                 packet = JSON.parse(jsonStr);
             } catch (err) {
                 throw new InvalidJsonException(err, jsonStr)
