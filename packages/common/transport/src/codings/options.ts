@@ -4,32 +4,38 @@ import { HybirdTransport, Transport } from '../protocols';
 
 
 export interface CodingsOpts {
-    transport?: Transport | HybirdTransport;
-    microservice?: boolean;
-    client?: boolean;
-    encodes?: ConfigableHandlerOptions;
-    decodes?: ConfigableHandlerOptions;
+    /**
+     * transport type.
+     */
+    readonly transport?: Transport | HybirdTransport;
+    /**
+     * microservice or not.
+     */
+    readonly microservice?: boolean;
+
+    readonly client?: boolean;
+    readonly encodes?: ConfigableHandlerOptions;
+    readonly decodes?: ConfigableHandlerOptions;
     /**
      * packet delimiter flag
      */
-    delimiter?: string;
+    readonly delimiter?: string;
 
     /**
      * head delimiter flag
      */
-    headDelimiter?: string;
+    readonly headDelimiter?: string;
 
     /**
      * content count number length.
      */
-    countLen?: number;
+    readonly countLen?: number;
     /**
      * id b
      */
-    idLen?: number;
-    limit?: number;
+    readonly idLen?: number;
     /**
      * packet max size limit.
      */
-    maxSize?: number;
+    readonly maxSize?: number;
 }

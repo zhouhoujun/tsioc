@@ -33,14 +33,15 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer | string | IR
 
 
     intercept(input: Buffer | string | IReadableStream, next: Handler<Buffer | IReadableStream, Packet>, context: CodingsContext): Observable<Packet> {
-        const options = context.options;
 
         if (this.streamAdapter.isReadable(input)) return next.handle(input, context);
 
         return new Observable((subscriber: Subscriber<IReadableStream>) => {
-            let chl = this.channels.get(options.transport ?? '');
 
-            const channel = options.transport ?? '';
+            const channel = context.channel ?? context.options.transport ?? '';
+
+            let chl = this.channels.get(channel);
+
             if (!chl) {
                 chl = {
                     channel,
@@ -100,13 +101,13 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer | string | IR
 
         if (chl.contentLength !== null) {
             if (chl.length === chl.contentLength) {
-                this.handleMessage(chl, chl.stream, subscriber);
+                this.handleMessage(chl, chl.stream, subscriber, true);
                 subscriber.complete();
             } else if (chl.length > chl.contentLength) {
                 const idx = chl.length - chl.contentLength - 1;
                 chl.stream.write(data.subarray(0, idx));
                 const rest = data.subarray(idx);
-                this.handleMessage(chl, chl.stream, subscriber);
+                this.handleMessage(chl, chl.stream, subscriber, !rest.length);
                 if (rest.length) {
                     this.handleData(chl, rest, subscriber, context);
                 }
@@ -117,11 +118,15 @@ export class PacketDecodeInterceptor implements Interceptor<Buffer | string | IR
             subscriber.complete();
         }
     }
-    protected handleMessage(chl: ChannelBuffer, message: IReadableStream, subscriber: Subscriber<IReadableStream>) {
-        chl.contentLength = null;
-        chl.length = 0;
+    protected handleMessage(chl: ChannelBuffer, message: IReadableStream, subscriber: Subscriber<IReadableStream>, clear: boolean) {
         chl.stream?.end();
         chl.stream = null;
+        if (clear) {
+            this.channels.delete(chl.channel);
+        } else {
+            chl.contentLength = null;
+            chl.length = 0;
+        }
         subscriber.next(message);
     }
 }

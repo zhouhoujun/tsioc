@@ -22,7 +22,7 @@ export class UdpClientTransportSession extends ClientTransportSession<Socket, Ud
         super()
     }
 
-    sendMessage(data: TransportRequest<any>, msg: UdpMessage): Observable<UdpMessage> {
+    sendMessage(request: TransportRequest<any>, msg: UdpMessage): Observable<UdpMessage> {
         let writing: Promise<any>;
         if (this.streamAdapter.isReadable(msg.payload)) {
             writing = toBuffer(msg.payload, this.options.maxSize).then(data => {

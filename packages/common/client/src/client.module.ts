@@ -3,7 +3,10 @@ import {
     Type, Token, isArray, lang, toProvider, tokenId, ModuleRef, isNil, ModuleType
 } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
-import { ENDPOINT_DECODINGS_INTERCEPTORS, ENDPOINT_ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, ResponseEventFactory, StatusAdapter, Transport } from '@tsdi/common/transport';
+import {
+    ENDPOINT_DECODINGS_INTERCEPTORS, ENDPOINT_ENCODINGS_INTERCEPTORS, HybirdTransport,
+    NotImplementedExecption, ResponseEventFactory, StatusAdapter, Transport
+} from '@tsdi/common/transport';
 import { ClientOpts } from './options';
 import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
 import { Client } from './Client';
@@ -176,10 +179,6 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS,
                     ...opts.defaultOpts,
                     ...opts.clientOpts,
-                    transportOpts: {
-                        ...opts.defaultOpts?.transportOpts,
-                        ...opts.clientOpts?.transportOpts
-                    },
                     providers: [
                         { provide: ENDPOINT_ENCODINGS_INTERCEPTORS, useClass: RequestEncodeInterceper, multi: true },
                         { provide: ENDPOINT_DECODINGS_INTERCEPTORS, useClass: ResponseDecodeInterceper, multi: true },
@@ -188,6 +187,18 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     ]
                 } as ClientOpts & { providers: ProviderType[] };
 
+                if (opts.microservice) {
+                    clientOpts.microservice = opts.microservice;
+                }
+
+                clientOpts.transportOpts = {
+                    microservice: clientOpts.microservice,
+                    timeout: clientOpts.timeout,
+                    transport: opts.transport,
+                    ...opts.defaultOpts?.transportOpts,
+                    ...opts.clientOpts?.transportOpts,
+                    client: true
+                }
 
                 if (opts.imports) {
                     clientOpts.providers.push({
@@ -195,21 +206,6 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                             await injector.useAsync(opts.imports!)
                         }
                     })
-                }
-
-                if (opts.microservice) {
-                    clientOpts.microservice = opts.microservice;
-                }
-                if (!clientOpts.transportOpts) {
-                    clientOpts.transportOpts = {};
-                }
-                clientOpts.transportOpts.client = true;
-                clientOpts.transportOpts.transport = opts.transport;
-                if (clientOpts.timeout) {
-                    clientOpts.transportOpts.timeout = clientOpts.timeout;
-                }
-                if (clientOpts.microservice) {
-                    clientOpts.transportOpts.microservice = clientOpts.microservice;
                 }
 
                 if (clientOpts.statusAdapter) {

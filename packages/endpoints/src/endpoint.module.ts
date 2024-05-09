@@ -240,10 +240,6 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     globalInterceptorsToken: GLOBAL_SERVER_INTERCEPTORS,
                     ...moduleOpts.defaultOpts,
                     ...moduleOpts.serverOpts,
-                    transportOpts: {
-                        ...moduleOpts.defaultOpts?.transportOpts,
-                        ...moduleOpts.serverOpts?.transportOpts
-                    },
                     routes: {
                         ...moduleOpts.defaultOpts?.routes,
                         ...moduleOpts.serverOpts?.routes
@@ -256,28 +252,26 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     ]
                 } as ServerOpts & { providers: ProviderType[] };
 
+                if (moduleOpts.microservice) {
+                    serverOpts.microservice = moduleOpts.microservice;
+                }
+                
+                serverOpts.transportOpts = {
+                    transport: moduleOpts.transport,
+                    timeout: serverOpts.timeout,
+                    microservice: serverOpts.microservice,
+                    ...moduleOpts.defaultOpts?.transportOpts,
+                    ...moduleOpts.serverOpts?.transportOpts,
+                    client: false
+                };
+
+                
                 if (moduleOpts.imports) {
                     serverOpts.providers.push({
                         provider: async (injector) => {
                             await injector.useAsync(moduleOpts.imports!)
                         }
                     })
-                }
-
-                if (moduleOpts.microservice) {
-                    serverOpts.microservice = moduleOpts.microservice;
-                }
-                if (!serverOpts.transportOpts) {
-                    serverOpts.transportOpts = {};
-                }
-
-                serverOpts.transportOpts.client = false;
-                serverOpts.transportOpts.transport = moduleOpts.transport;
-                if (serverOpts.timeout) {
-                    serverOpts.transportOpts.timeout = serverOpts.timeout;
-                }
-                if (serverOpts.microservice) {
-                    serverOpts.transportOpts.microservice = serverOpts.microservice;
                 }
 
                 if (serverOpts.statusAdapter) {
