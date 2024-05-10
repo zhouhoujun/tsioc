@@ -1,5 +1,5 @@
 import { Injectable, Injector, lang } from '@tsdi/ioc';
-import { Decoder, DecodingsFactory, Encoder, EncodingsFactory, StreamAdapter, TransportOpts, ev, toBuffer } from '@tsdi/common/transport';
+import { CodingsContext, Decoder, DecodingsFactory, Encoder, EncodingsFactory, StreamAdapter, TransportOpts, ev, toBuffer } from '@tsdi/common/transport';
 import { RequestContext, TransportSession, TransportSessionFactory } from '@tsdi/endpoints';
 import { Socket, RemoteInfo } from 'dgram';
 import { UdpMessage } from '../consts';
@@ -19,6 +19,12 @@ export class UdpTransportSession extends TransportSession<Socket, UdpMessage> {
 
     ) {
         super()
+    }
+
+    protected override initContext(ctx: CodingsContext, msg?: UdpMessage): void {
+        if (!ctx.channel && msg) {
+            ctx.channel = msg.topic;
+        }
     }
 
     sendMessage(ctx: RequestContext, msg: UdpMessage): Observable<UdpMessage> {

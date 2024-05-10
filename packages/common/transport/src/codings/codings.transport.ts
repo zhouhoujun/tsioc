@@ -33,12 +33,17 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      */
     send(data: TInput, context?: CodingsContext): Observable<TMsg> {
         const ctx = context ?? new CodingsContext(this);
+        !context && this.initContext(ctx);
         return this.encodings.encode(data, ctx)
             .pipe(
                 mergeMap(msg => this.sendMessage(data, msg as TMsg)),
                 finalize(() => !context && ctx.onDestroy()),
                 share()
             )
+    }
+
+    protected initContext(ctx: CodingsContext, msg?: TMsg) {
+
     }
 
     abstract sendMessage(data: TInput, msg: TMsg): Observable<TMsg>;
@@ -52,6 +57,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
             .pipe(
                 mergeMap(msg => {
                     const ctx = context ?? new CodingsContext(this);
+                    !context && this.initContext(ctx, msg);
                     return this.decodings.decode(msg, ctx)
                         .pipe(
                             finalize(() => !context && ctx.onDestroy())

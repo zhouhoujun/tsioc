@@ -1,5 +1,5 @@
 import { ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
-import { Decoder, DecodingsFactory, Encoder, EncodingsFactory, StreamAdapter, TransportOpts, ev, toBuffer } from '@tsdi/common/transport';
+import { CodingsContext, Decoder, DecodingsFactory, Encoder, EncodingsFactory, StreamAdapter, TransportOpts, ev, toBuffer } from '@tsdi/common/transport';
 import { Injectable, Injector, lang } from '@tsdi/ioc';
 import { Socket, RemoteInfo } from 'dgram';
 import { UdpMessage } from '../consts';
@@ -20,6 +20,14 @@ export class UdpClientTransportSession extends ClientTransportSession<Socket, Ud
 
     ) {
         super()
+    }
+    
+    protected override initContext(ctx: CodingsContext): void {
+        if(!ctx.channel) {
+            const request = ctx.first<TransportRequest>();
+            const url = new URL(request.url!);
+            ctx.channel = url.hostname;
+        }
     }
 
     sendMessage(request: TransportRequest<any>, msg: UdpMessage): Observable<UdpMessage> {
