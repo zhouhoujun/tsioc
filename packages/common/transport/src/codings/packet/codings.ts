@@ -82,7 +82,7 @@ export class PacketCodingsHandlers {
 
 
     @EncodeHandler('PACKET', { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })
-    bufferEncode(context: CodingsContext) {
+    async bufferEncode(context: CodingsContext) {
         const options = context.options;
         if (!options.headDelimiter) throw new ArgumentExecption('headDelimiter');
 
@@ -99,17 +99,12 @@ export class PacketCodingsHandlers {
         const { payload, ...headers } = input;
         const hbuff = handlerSerialization ? handlerSerialization.serialize(headers) : Buffer.from(JSON.stringify(headers));
 
-        let bbuff: Buffer;
-        if (isNil(payload)) {
-            bbuff = Buffer.alloc(0)
-        } else if (isString(payload)) {
-            bbuff = Buffer.from(payload);
-        } else if (isBuffer(payload)) {
-            bbuff = payload;
-        } else if (this.streamAdapter.isReadable(payload)) {
+        const data = await this.streamAdapter.encode(payload, options.encoding);
+
+        if(this.streamAdapter.isReadable(data)) {
             let isFist = true;
             input.streamLength = (input.payloadLength ?? 0) + Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter);
-            return this.streamAdapter.pipeline(payload, this.streamAdapter.createPassThrough({
+            return this.streamAdapter.pipeline(data, this.streamAdapter.createPassThrough({
                 transform: (chunk, encoding, callback) => {
                     if (isFist) {
                         isFist = false;
@@ -120,11 +115,9 @@ export class PacketCodingsHandlers {
                 }
             }));
         } else {
-            const payloadSerialization = injector.get(PayloadSerialization, null);
-            bbuff = (payloadSerialization ? payloadSerialization.serialize(payload) : Buffer.from(JSON.stringify(payload)));
+            const bbuff = isBuffer(data) ? data : Buffer.from(data as string);
+            return Buffer.concat([hbuff, headDelimiter, bbuff], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(bbuff));
         }
-
-        return Buffer.concat([hbuff, headDelimiter, bbuff], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(bbuff));
     }
 }
 
@@ -134,24 +127,10 @@ export abstract class HandlerSerialization {
     abstract serialize(packet: Packet): Buffer;
 }
 
-
-@Abstract()
-export abstract class PayloadSerialization {
-    abstract serialize(packet: Packet): Buffer;
-}
-
-
 @Abstract()
 export abstract class HeaderDeserialization {
     abstract deserialize(data: Buffer): Packet;
 }
-
-
-@Abstract()
-export abstract class PayloadDeserialization {
-    abstract deserialize(data: Buffer): Packet;
-}
-
 
 
 @Injectable()

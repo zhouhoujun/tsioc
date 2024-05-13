@@ -1,5 +1,5 @@
 
-import { TypeExecption, isArray, promisify } from '@tsdi/ioc';
+import { TypeExecption, isArray, isNil, isString, promisify } from '@tsdi/ioc';
 import { isArrayBuffer, isBlob, isFormData } from '@tsdi/common';
 import { Buffer } from 'buffer';
 import { IDuplexStream, IReadableStream, IStream, IWritableStream, ITransformStream, IEndable } from './stream';
@@ -77,20 +77,16 @@ export abstract class StreamAdapter {
         source.pipe(writable, { end: false });
     }
 
-    /**
-     * send body
-     * @param data 
-     * @param request 
-     * @param callback 
-     * @param encoding 
-     */
-    async sendBody(data: any, request: IWritableStream | IEndable, encoding?: string): Promise<void> {
+    async encode(data: any, encoding?: string): Promise<PipeSource> {
         let source: PipeSource;
-
-        if (isArrayBuffer(data)) {
+        if (isNil(data)) {
+            source = Buffer.alloc(0)
+        } else if (isArrayBuffer(data)) {
             source = Buffer.from(data);
         } else if (Buffer.isBuffer(data)) {
             source = data;
+        } else if (isString(data)) {
+            source = Buffer.from(data);
         } else if (isBlob(data)) {
             const arrbuff = await data.arrayBuffer();
             source = Buffer.from(arrbuff);
@@ -103,8 +99,10 @@ export abstract class StreamAdapter {
                 data = form;
             }
             source = data.getBuffer();
+        } else if (this.isReadable(data)) {
+            source = data;
         } else {
-            source = String(data);
+            source = Buffer.from(JSON.stringify(data));
         }
         if (encoding) {
             switch (encoding) {
@@ -118,6 +116,18 @@ export abstract class StreamAdapter {
                     throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
             }
         }
+        return source;
+    }
+
+    /**
+     * send body
+     * @param data 
+     * @param request 
+     * @param callback 
+     * @param encoding 
+     */
+    async sendBody(data: any, request: IWritableStream | IEndable, encoding?: string): Promise<void> {
+        const source = await this.encode(data, encoding);
         if (this.isReadable(request)) {
             await this.pipeTo(source, request as IWritableStream);
         } else if (this.isStream(source)) {

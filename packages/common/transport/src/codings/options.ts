@@ -38,4 +38,6 @@ export interface CodingsOpts {
      * packet max size limit.
      */
     readonly maxSize?: number;
+
+    readonly encoding?: string;
 }
