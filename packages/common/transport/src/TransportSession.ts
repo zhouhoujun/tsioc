@@ -4,8 +4,12 @@ import { Observable } from 'rxjs';
 import { CodingsOpts } from './codings/options';
 import { EncodingsFactory } from './codings/encodings';
 import { DecodingsFactory } from './codings/decodings';
+import { CodingsContext } from './codings/context';
 
 
+export class SessionContext extends CodingsContext {
+
+}
 
 /**
  * transport options.
@@ -27,6 +31,14 @@ export interface TransportOpts extends CodingsOpts {
      * message event of socket.
      */
     readonly messageEvent?: string;
+
+    write?(socket: any, data: any, encoding?: string, cb?: (err?: Error | null) => void): void;
+
+    end?(socket: any, data: any, encoding?: string, cb?: (err?: Error | null) => void): void;
+
+    handleMessage?(socket: any, context?: CodingsContext): Observable<any>;
+
+    initContext?(ctx: CodingsContext, msg?: any): void;
 
     readonly timeout?: number;
 }
