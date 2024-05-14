@@ -27,7 +27,7 @@ export class UdpTransportSession extends TransportSession<Socket, UdpMessage> {
         }
     }
 
-    sendMessage(ctx: RequestContext, msg: UdpMessage): Observable<UdpMessage> {
+    protected override sendMessage(ctx: RequestContext, msg: UdpMessage): Observable<UdpMessage> {
         let writing: Promise<any>;
         if (this.streamAdapter.isReadable(msg.payload)) {
             writing = toBuffer(msg.payload, this.options.maxSize).then(data => {
@@ -52,7 +52,7 @@ export class UdpTransportSession extends TransportSession<Socket, UdpMessage> {
         return from(writing).pipe(map(r => msg))
     }
 
-    handleMessage(): Observable<UdpMessage> {
+    protected override handleMessage(): Observable<UdpMessage> {
         return fromEvent(this.socket, this.options.messageEvent ?? ev.MESSAGE, (payload: Buffer, rinfo: RemoteInfo) => ({ payload, rinfo, topic: this.toTopic(rinfo) }))
             .pipe(takeUntil(this.destroy$));
     }
@@ -62,7 +62,7 @@ export class UdpTransportSession extends TransportSession<Socket, UdpMessage> {
         this.socket.close();
     }
 
-    toTopic(rinfo: RemoteInfo) {
+    private toTopic(rinfo: RemoteInfo) {
         return rinfo.family == 'IPv6' ? `[${rinfo.address}]:${rinfo.port}` : `${rinfo.address}:${rinfo.port}`
     }
 }

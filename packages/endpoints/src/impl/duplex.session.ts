@@ -21,7 +21,7 @@ export class DuplexTransportSession extends TransportSession<IDuplexStream, Buff
         super()
     }
 
-    sendMessage(data: RequestContext<any, any>, msg: Buffer | IReadableStream): Observable<Buffer | IReadableStream> {
+    protected override sendMessage(data: RequestContext<any, any>, msg: Buffer | IReadableStream): Observable<Buffer | IReadableStream> {
         let writing: Promise<any>;
         if (this.streamAdapter.isReadable(msg)) {
             writing = this.streamAdapter.write(msg, this.socket)
@@ -31,7 +31,7 @@ export class DuplexTransportSession extends TransportSession<IDuplexStream, Buff
         return from(writing).pipe(map(r => msg))
     }
 
-    handleMessage(): Observable<Buffer | IReadableStream> {
+    protected override handleMessage(): Observable<Buffer | IReadableStream> {
         return fromEvent(this.socket, this.options.messageEvent ?? ev.DATA, (chunk) => {
             if (isBuffer(chunk) || this.streamAdapter.isReadable(chunk)) return chunk;
             return Buffer.from(chunk)
