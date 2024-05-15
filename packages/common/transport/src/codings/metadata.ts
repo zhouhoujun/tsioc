@@ -17,6 +17,9 @@ export interface EncodingMetadata extends CodingsOptions {
 }
 
 
+/**
+ * EncodeHandler
+ */
 export interface EncodeHandler {
 
     /**

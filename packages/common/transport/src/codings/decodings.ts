@@ -8,11 +8,17 @@ import { InvalidJsonException } from '../execptions';
 import { StreamAdapter, toBuffer } from '../StreamAdapter';
 
 
+/**
+ * Decodings Handler
+ */
 @Abstract()
 export abstract class DecodingsHandler implements Handler<any, any, CodingsContext> {
     abstract handle(input: any, context: CodingsContext): Observable<any>
 }
 
+/**
+ * Decodings Backend
+ */
 @Injectable()
 export class DecodingsBackend implements Backend<any, any, CodingsContext> {
     constructor(private streamAdapter: StreamAdapter) { }
@@ -46,7 +52,9 @@ export const ENDPOINT_DECODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, Cod
  */
 export const DECODINGS_INTERCEPTORS = tokenId<Interceptor<Buffer, any, CodingsContext>[]>('DECODINGS_INTERCEPTORS');
 
-
+/**
+ * Decodings
+ */
 export class Decodings extends Decoder {
 
     constructor(readonly handler: DecodingsHandler) {
@@ -55,7 +63,9 @@ export class Decodings extends Decoder {
 
 }
 
-
+/**
+ * Decodings factory
+ */
 @Injectable()
 export class DecodingsFactory {
     create(injector: Injector, options: CodingsOpts): Decodings {

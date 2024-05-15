@@ -4,8 +4,9 @@ import { CodingsOpts } from './options';
 
 
 
-
-
+/**
+ * Mappings.
+ */
 export class Mappings {
     private maps: Map<Type | string, Handler[]>;
     constructor() {
@@ -45,7 +46,9 @@ export class Mappings {
     }
 }
 
-
+/**
+ * Coding Mappings
+ */
 @Injectable({
     static: true,
     providedIn: 'root'
@@ -98,4 +101,3 @@ export class CodingMappings {
     }
 
 }
-

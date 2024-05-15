@@ -5,6 +5,9 @@ import { CodingMappings } from './mappings';
 import { CodingsContext } from './context';
 
 
+/**
+ * Codings
+ */
 @Injectable({
     static: true,
     providedIn: 'root'

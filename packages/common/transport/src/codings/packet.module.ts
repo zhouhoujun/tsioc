@@ -1,10 +1,10 @@
 import { Module } from '@tsdi/ioc';
-import { PackageifyDecodeInterceptor, PackageifyEncodeInterceptor, PacketCodingsHandlers } from './codings';
-import { BindPacketIdEncodeInterceptor, PacketDecodeInterceptor, PacketEncodeInterceptor } from '../interceptors/buffer.packet';
-import { PackageDecodeInterceptor, PackageEncodeInterceptor } from '../interceptors/buffer.package';
-import { TypedDecodeInterceper, TypedEncodeInterceper } from '../interceptors/typed';
-import { ENCODINGS_INTERCEPTORS } from '../encodings';
-import { DECODINGS_INTERCEPTORS } from '../decodings';
+import { PackageifyDecodeInterceptor, PackageifyEncodeInterceptor, PacketCodingsHandlers } from './packet.codings';
+import { BindPacketIdEncodeInterceptor, PacketDecodeInterceptor, PacketEncodeInterceptor } from './interceptors/buffer.packet';
+import { PackageDecodeInterceptor, PackageEncodeInterceptor } from './interceptors/buffer.package';
+import { TypedDecodeInterceper, TypedEncodeInterceper } from './interceptors/typed';
+import { ENCODINGS_INTERCEPTORS } from './encodings';
+import { DECODINGS_INTERCEPTORS } from './decodings';
 
 
 @Module({

@@ -6,6 +6,10 @@ import { CodingMappings } from './mappings';
 import { Codings } from './Codings';
 import { PacketIdGenerator, PacketNumberIdGenerator } from './PacketId';
 
+
+/**
+ * Codings Module.
+ */
 @Module({
     providers: [
         CodingMappings,

@@ -2,7 +2,9 @@ import { ConfigableHandlerOptions } from '@tsdi/core';
 import { HybirdTransport, Transport } from '../protocols';
 
 
-
+/**
+ * Codings options.
+ */
 export interface CodingsOpts {
     /**
      * transport type.

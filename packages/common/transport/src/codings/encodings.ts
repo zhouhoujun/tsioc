@@ -9,13 +9,18 @@ import { StreamAdapter, toBuffer } from '../StreamAdapter';
 import { PacketData } from '../packet';
 import { NotSupportedExecption, PacketLengthException } from '../execptions';
 
+/**
+ * Encodings Handler
+ */
 @Abstract()
 export abstract class EncodingsHandler implements Handler<any, any, CodingsContext> {
     abstract handle(input: Buffer, context: CodingsContext): Observable<any>
 }
 
 
-
+/**
+ * Encodings Backend
+ */
 @Injectable()
 export class EncodingsBackend implements Backend<any, any, CodingsContext> {
 
@@ -56,6 +61,10 @@ export const ENDPOINT_ENCODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, Cod
  */
 export const ENCODINGS_INTERCEPTORS = tokenId<Interceptor<any, Buffer, CodingsContext>[]>('ENCODINGS_INTERCEPTORS');
 
+
+/**
+ * Encodings
+ */
 export class Encodings extends Encoder {
 
     constructor(readonly handler: EncodingsHandler) {
@@ -64,7 +73,9 @@ export class Encodings extends Encoder {
 
 }
 
-
+/**
+ * Encodings factory.
+ */
 @Injectable()
 export class EncodingsFactory {
     create(injector: Injector, options: CodingsOpts): Encodings {
