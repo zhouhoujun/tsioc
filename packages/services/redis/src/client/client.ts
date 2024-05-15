@@ -1,12 +1,12 @@
-import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
+import { Injectable, InvocationContext } from '@tsdi/ioc';
 import { LOCALHOST, TransportEvent, TransportRequest } from '@tsdi/common';
-import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
+import { ev } from '@tsdi/common/transport';
+import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import Redis from 'ioredis';
 import { RedisHandler } from './handler';
 import { RedisClientOpts } from './options';
-import { RedisTransportSessionFactory, ReidsTransport } from '../redis.session';
-import { ev } from '@tsdi/common/transport';
+import { ReidsTransport } from '../redis.session';
 
 /**
  * Redis Client.
@@ -54,9 +54,6 @@ export class RedisClient extends Client<TransportRequest, TransportEvent, RedisC
         ]);
 
         const transportOpts =  opts.transportOpts!;
-        if(!transportOpts.transport) {
-            transportOpts.transport = 'redis';
-        }
 
         this._session = this.handler.injector.get(ClientTransportSessionFactory).create(this.handler.injector, {
             subscriber: this.subscriber,

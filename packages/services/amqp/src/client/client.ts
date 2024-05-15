@@ -1,4 +1,4 @@
-import { Inject, Injectable, InvocationContext, lang } from '@tsdi/ioc';
+import { Injectable, InvocationContext, lang } from '@tsdi/ioc';
 import { TransportEvent, TransportRequest } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import {  Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
@@ -59,9 +59,7 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent, AmqpCli
         this._channel = await conn.createChannel();
         const options = this.getOptions();
         const transportOpts = options.transportOpts!;
-        if(transportOpts.transport){
-            transportOpts.transport = 'amqp';
-        }
+        
         const injector = this.handler.injector;
 
         if (!transportOpts.noAssert) {

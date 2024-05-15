@@ -25,9 +25,7 @@ export class NatsClient extends Client<TransportRequest, TransportEvent, NatsCli
         const options = this.getOptions();
         const conn = this.conn = await connect(options.connectOpts);
         const transportOpts = options.transportOpts!;
-        if(!transportOpts.transport) {
-            transportOpts.transport = 'nats';
-        }
+        
         this._session = this.handler.injector.get(ClientTransportSessionFactory).create(this.handler.injector, conn, transportOpts);
     }
 

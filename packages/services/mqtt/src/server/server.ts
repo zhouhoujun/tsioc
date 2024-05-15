@@ -78,9 +78,7 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
 
 
         const transportOpts = options.transportOpts!;
-        if (!transportOpts.transport) {
-            transportOpts.transport = 'mqtt';
-        }
+
         const factory = injector.get(TransportSessionFactory);
         const session = this._session = factory.create(injector, this.mqtt, transportOpts);
         session.listen(this.handler);

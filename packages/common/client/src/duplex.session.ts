@@ -1,11 +1,11 @@
 import { Injectable, Injector, promisify } from '@tsdi/ioc';
 import { TransportRequest } from '@tsdi/common';
-import { Decoder, Encoder, DecodingsFactory, EncodingsFactory, IDuplexStream, TransportOpts, ev, isBuffer, IReadableStream, StreamAdapter } from '@tsdi/common/transport';
+import { Decoder, Encoder, DecodingsFactory, EncodingsFactory, IDuplexStream, TransportOpts, ev, isBuffer, StreamAdapter, CodingsContext } from '@tsdi/common/transport';
 import { Observable, from, fromEvent, map, takeUntil } from 'rxjs';
 import { ClientTransportSession, ClientTransportSessionFactory } from './session';
 
 
-export class DuplexClientTransportSession extends ClientTransportSession<IDuplexStream, Buffer | IReadableStream> {
+export class DuplexClientTransportSession extends ClientTransportSession<IDuplexStream, any> {
 
     constructor(
         readonly injector: Injector,
@@ -19,17 +19,38 @@ export class DuplexClientTransportSession extends ClientTransportSession<IDuplex
         super()
     }
 
-    protected override sendMessage(data: TransportRequest<any>, msg: Buffer | IReadableStream): Observable<Buffer | IReadableStream> {
+    protected override sendMessage(data: TransportRequest<any>, msg: any, context: CodingsContext): Observable<any> {
         let writing: Promise<any>;
         if (this.streamAdapter.isReadable(msg)) {
-            writing = this.streamAdapter.write(msg, this.socket)
+            if (this.options.parseMessage) {
+                msg = this.options.parseMessage(msg, context);
+            }
+            if (this.options.write) {
+                writing = this.streamAdapter.write(msg, this.streamAdapter.createWritable({
+                    write: (chunk, encoding, callback) => {
+                        this.options.write!(this.socket, chunk, encoding, callback)
+                    }
+                }))
+            } else {
+                writing = this.streamAdapter.write(msg, this.socket)
+            }
         } else {
-            writing = promisify<Buffer, void>(this.socket.write, this.socket)(msg)
+            if (this.options.parseMessage) {
+                msg = this.options.parseMessage(msg, context);
+            }
+            if (this.options.write) {
+                writing = promisify<any, Buffer, void>(this.options.write, this.options)(this.socket, msg)
+            } else {
+                writing = promisify<Buffer, void>(this.socket.write, this.socket)(msg)
+            }
         }
         return from(writing).pipe(map(r => msg))
     }
 
-    protected override handleMessage(): Observable<Buffer | IReadableStream> {
+    protected override handleMessage(context?: CodingsContext): Observable<any> {
+        if (this.options.handleMessage) {
+            return this.options.handleMessage(this.socket, context);
+        }
         return fromEvent(this.socket, this.options.messageEvent ?? ev.DATA, (chunk) => {
             if (isBuffer(chunk) || this.streamAdapter.isReadable(chunk)) return chunk;
             return Buffer.from(chunk)

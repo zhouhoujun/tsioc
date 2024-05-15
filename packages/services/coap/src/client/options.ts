@@ -1,7 +1,8 @@
 import { tokenId } from '@tsdi/ioc';
 import { ExecptionFilter, Interceptor } from '@tsdi/core';
-import { TransportEvent, TransportRequest, TransportOpts } from '@tsdi/common';
+import { TransportEvent, TransportRequest } from '@tsdi/common';
 import { ClientOpts } from '@tsdi/common/client';
+import { TransportOpts } from '@tsdi/common/transport';
 import { OptionName } from 'coap-packet';
 import { OptionValue } from 'coap';
 

@@ -83,9 +83,7 @@ export class MqttClient extends Client<TransportRequest, TransportEvent, MqttCli
         const opts = options.connectOpts ?? EMPTY_OBJ;
         const conn = (opts.url ? mqtt.connect(opts.url, opts) : mqtt.connect(opts));
         const transportOpts = options.transportOpts!;
-        if(!transportOpts.transport) {
-            transportOpts.transport = 'mqtt';
-        }
+
         const injector = this.handler.injector;
         this._session = injector.get(ClientTransportSessionFactory).create(injector, conn, transportOpts);
         return conn;

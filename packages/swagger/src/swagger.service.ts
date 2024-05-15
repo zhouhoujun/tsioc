@@ -2,14 +2,14 @@ import { ApplicationContext, MODEL_RESOLVERS, ModelArgumentResolver, Started, Tr
 import { Execption, InjectFlags, Injectable, Type, getClassName, isFunction, isNil, isString, isType, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, joinPath } from '@tsdi/common';
+import { ctype } from '@tsdi/common/transport';
+import { ControllerRoute, HybridRouter, RouteMappingMetadata, Router, ContentInterceptor } from '@tsdi/endpoints';
 import { DBPropertyMetadata, MissingModelFieldExecption } from '@tsdi/repository';
-import { RequestContext, ControllerRoute, HybridRouter, RouteMappingMetadata, Router, ContentInterceptor } from '@tsdi/endpoints';
 import { HttpServer } from '@tsdi/http'
 import { of } from 'rxjs';
 import { getAbsoluteFSPath } from 'swagger-ui-dist';
 import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT, OpenAPIObject, SwaggerOptions, SwaggerUiOptions, SwaggerSetupOptions } from './swagger.config';
 import { ApiModelPropertyMetadata, ApiParamMetadata } from './metadata';
-import { ctype } from '@tsdi/common/transport';
 
 
 
@@ -84,13 +84,9 @@ export class SwaggerService {
                     }
                 }
             }, 2);
-            const httpopts = http.options.listenOpts ?? {};
-            this.logger.info('Swagger started!', 'access with url:', `${http.options.protocol ?? 'http'}://${httpopts.host ?? LOCALHOST}:${httpopts.port ?? 3000}/${prefix}`, '!')
+            const httpopts = http.getOptions().listenOpts ?? {};
+            this.logger.info('Swagger started!', 'access with url:', `${http.getOptions().protocol ?? 'http'}://${httpopts.host ?? LOCALHOST}:${httpopts.port ?? 3000}/${prefix}`, '!')
         });
-
-
-        // const httpopts = moduleRef.get(HTTP_LISTEN_OPTS);
-        // this.logger.info('Swagger started!', 'access with url:', `http${httpopts.withCredentials ? 's' : ''}://${httpopts.host}:${httpopts.port}/${prefix}`, '!')
 
     }
 

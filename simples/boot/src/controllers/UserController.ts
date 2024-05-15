@@ -1,6 +1,6 @@
 import { ApplicationContext, Startup } from '@tsdi/core';
 import { Injectable, lang } from '@tsdi/ioc';
-import { ILogger, Log, Logger } from '@tsdi/logger';
+import { Log, Logger } from '@tsdi/logger';
 import { RequestParam, RouteMapping } from '@tsdi/endpoints';
 import { Repository, Transactional } from '@tsdi/repository';
 import { User } from '../models/models';

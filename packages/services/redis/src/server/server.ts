@@ -1,8 +1,8 @@
-import { Execption, Inject, Injectable } from '@tsdi/ioc';
+import { Execption, Injectable } from '@tsdi/ioc';
 import { PatternFormatter, LOCALHOST } from '@tsdi/common';
-import { MircoServRouters, RequestContext, RequestHandler, Server } from '@tsdi/endpoints';
-import { ev } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
+import { MircoServRouters, RequestContext, Server } from '@tsdi/endpoints';
+import { ev } from '@tsdi/common/transport';
 import Redis from 'ioredis';
 import { RedisEndpointHandler } from './handler';
 import { RedisServerOpts } from './options';
@@ -64,9 +64,6 @@ export class RedisServer extends Server<RequestContext, RedisServerOpts> {
         const injector = this.handler.injector;
 
         const transportOpts = options.transportOpts!;
-        if (!transportOpts.transport) {
-            transportOpts.transport = 'redis';
-        }
 
         const factory = injector.get(RedisTransportSessionFactory);
         const session = this._session = factory.create({

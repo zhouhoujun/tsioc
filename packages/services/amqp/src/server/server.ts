@@ -57,9 +57,7 @@ export class AmqpServer extends Server<RequestContext, AmqpMicroServiceOpts> {
         const channel = this._channel = await this._conn.createChannel();
 
         const transportOpts = options.transportOpts!;
-        if (!transportOpts.transport) {
-            transportOpts.transport = 'amqp';
-        }
+
         if (!transportOpts.noAssert) {
             await channel.assertQueue(transportOpts.queue!, transportOpts.queueOpts)
         }

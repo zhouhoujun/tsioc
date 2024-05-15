@@ -41,17 +41,14 @@ export class NatsServer extends Server<RequestContext, NatsMicroServOpts> {
 
         const conn = this.conn;
         const subs = router.matcher.getPatterns();
+
         const transportOpts = options.transportOpts!;
-        if(!transportOpts.transport)  transportOpts.transport = 'nats';
         
         const session = this._session = injector.get(NatsTransportSessionFactory).create(injector, conn, transportOpts);
 
         subs.map(sub => {
             session.subscribe(sub, options.transportOpts?.subscriptionOpts)
         });
-
-        
-        // injector.get(RequestHandler).handle(this.endpoint, session, this.logger, options);
 
         this.logger.info(
             `Subscribed successfully! This server is currently subscribed topics.`,

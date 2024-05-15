@@ -28,11 +28,14 @@ export interface TransportOpts extends CodingsOpts {
      */
     readonly messageEvent?: string;
 
+    write?(socket: any, data: any, cb?: (err?: Error | null) => void): void;
     write?(socket: any, data: any, encoding?: string, cb?: (err?: Error | null) => void): void;
 
     end?(socket: any, data: any, encoding?: string, cb?: (err?: Error | null) => void): void;
 
     handleMessage?(socket: any, context?: CodingsContext): Observable<any>;
+
+    parseMessage?(data: any, context: CodingsContext): any;
 
     initContext?(ctx: CodingsContext, msg?: any): void;
 

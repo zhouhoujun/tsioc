@@ -16,7 +16,7 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
     constructor(private adapter: StreamAdapter) { }
 
     intercept(req: TRequest & RequestSerialize, next: Handler<TRequest, TResponse>): Observable<TResponse> {
-        
+
         let body = req.serializeBody ? req.serializeBody(req.body) : this.serializeBody(req.body);
         if (body == null) {
             return next.handle(req);
@@ -80,6 +80,7 @@ export class BodyContentInterceptor<TRequest extends TransportRequest = Transpor
         // Fall back on toString() for everything else.
         return (body as any).toString()
     }
+
     /**
      * Examine the body and attempt to infer an appropriate MIME type
      * for it.

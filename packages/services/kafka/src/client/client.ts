@@ -6,7 +6,6 @@ import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, Producer, logLevel } from 'kafkajs';
 import { KafkaHandler } from './handler';
 import { KafkaClientOpts } from './options';
-import { KafkaTransportSession } from '../server/kafka.session';
 import { DEFAULT_BROKERS, KafkaTransportOpts } from '../const';
 import { KafkaReplyPartitionAssigner } from '../kafka.assigner';
 import { KafkaClientTransportSession } from './session';
