@@ -1,4 +1,3 @@
-
 import { Module } from '@tsdi/ioc';
 import { DecodingsFactory } from './decodings';
 import { EncodingsFactory } from './encodings';

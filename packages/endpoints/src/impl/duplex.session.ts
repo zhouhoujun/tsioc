@@ -1,5 +1,5 @@
 import { Injectable, Injector, promisify } from '@tsdi/ioc';
-import { Decoder, Encoder, DecodingsFactory, EncodingsFactory, IDuplexStream, TransportOpts, ev, isBuffer, StreamAdapter, IReadableStream, CodingsContext } from '@tsdi/common/transport';
+import { Decoder, Encoder, DecodingsFactory, EncodingsFactory, IDuplexStream, TransportOpts, ev, isBuffer, StreamAdapter, CodingsContext } from '@tsdi/common/transport';
 import { TransportSession, TransportSessionFactory } from '../transport.session';
 import { Observable, from, fromEvent, map, takeUntil } from 'rxjs';
 import { RequestContext } from '../RequestContext';
@@ -21,7 +21,7 @@ export class DuplexTransportSession extends TransportSession<IDuplexStream, any>
         super()
     }
 
-    protected override sendMessage(data: RequestContext<any, any>, msg: any, context: CodingsContext): Observable<Buffer | IReadableStream> {
+    protected override sendMessage(data: RequestContext<any, any>, msg: any, context: CodingsContext): Observable<any> {
         let writing: Promise<any>;
         if (this.streamAdapter.isReadable(msg)) {
             if (this.options.parseMessage) {
