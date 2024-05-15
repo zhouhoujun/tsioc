@@ -6,14 +6,28 @@ import { IDuplexStream, IReadableStream, IStream, IWritableStream, ITransformStr
 import { UnsupportedMediaTypeExecption } from './execptions';
 import { ev } from './consts';
 
+/**
+ * pipe source.
+ */
 export type PipeSource<T = any> = Iterable<T> | AsyncIterable<T> | IReadableStream;
 
-
+/**
+ * isBuffer or not.
+ * @param target 
+ * @returns 
+ */
 export function isBuffer(target: any): target is Buffer {
     return Buffer.isBuffer(target);
 }
 
 
+/**
+ * to buffer.
+ * @param body 
+ * @param limit 
+ * @param url 
+ * @returns 
+ */
 export async function toBuffer(body: IReadableStream, limit = 0, url?: string) {
     const data = [];
     let bytes = 0;

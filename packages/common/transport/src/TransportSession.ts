@@ -7,10 +7,6 @@ import { DecodingsFactory } from './codings/decodings';
 import { CodingsContext } from './codings/context';
 
 
-export class SessionContext extends CodingsContext {
-
-}
-
 /**
  * transport options.
  */
