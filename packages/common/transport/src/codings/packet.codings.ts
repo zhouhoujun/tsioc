@@ -80,7 +80,6 @@ export class PacketCodingsHandlers {
     }
 
 
-
     @EncodeHandler('PACKET', { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })
     async bufferEncode(context: CodingsContext) {
         const options = context.options;

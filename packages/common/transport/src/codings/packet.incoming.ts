@@ -35,8 +35,6 @@ export class PacketIncoming<T = any> implements Incoming<T> {
 
     }
 
-
-
     hasHeader(field: string): boolean {
         return this._headers.has(field)
     }
