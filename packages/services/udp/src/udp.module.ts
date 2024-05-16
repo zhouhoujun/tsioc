@@ -24,6 +24,7 @@ const udptl = /^udp(s)?:\/\//i;
             provide: CLIENT_MODULES,
             useValue: {
                 transport: 'udp',
+                microservice: true,
                 clientType: UdpClient,
                 hanlderType: UdpHandler,
                 defaultOpts: {

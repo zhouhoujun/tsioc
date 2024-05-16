@@ -4,7 +4,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
-import { UDP_SERV_INTERCEPTORS, UdpClient, UdpModule, UdpServer } from '../src';
+import { UDP_SERV_INTERCEPTORS, UdpClient } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -64,6 +64,7 @@ export class UdpService {
         ServerEndpointModule,
         ClientModule.register({
             transport: 'udp',
+            microservice: true,
             clientOpts: {
                 // connectOpts: {
                 //     port: 6379
@@ -172,7 +173,7 @@ describe('Udp Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(404);
+        expect(a.statusText).toEqual('Not Found');
     });
 
     it('sensor.message/+ message', async () => {
@@ -204,7 +205,7 @@ describe('Udp Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(404);
+        expect(a.statusText).toEqual('Not Found');
     });
 
     it('sensor/message/+ message', async () => {
@@ -268,7 +269,7 @@ describe('Udp Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect(a.status).toEqual(404);
+        expect(a.statusText).toEqual('Not Found');
     });
 
 

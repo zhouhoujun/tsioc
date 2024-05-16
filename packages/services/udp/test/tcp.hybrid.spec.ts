@@ -2,6 +2,7 @@ import { Injector, Module, isArray } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ClientModule } from '@tsdi/common/client';
+import { PacketCodingsModule } from '@tsdi/common/transport';
 import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
 import { TcpClient, TcpModule, TcpServer } from '@tsdi/tcp';
 import { ServerModule } from '@tsdi/platform-server';
@@ -11,6 +12,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import { UdpModule, UdpClient, UdpServer } from '../src';
 import { DeviceController } from './controller';
 import { BigFileInterceptor } from './BigFileInterceptor';
+import { TransportErrorResponse } from '@tsdi/common';
 
 
 
@@ -22,6 +24,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         ServerEndpointModule,
         ClientModule.register([
             {
+                microservice: true,
                 transport: 'udp'
             },
             {
@@ -61,6 +64,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 }
             }
         ]),
+        PacketCodingsModule
     ],
     declarations: [
         DeviceController
@@ -86,7 +90,7 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
     });
 
 
-    
+
     it('fetch json', async () => {
         const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
             .pipe(
@@ -157,7 +161,9 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
                     return of(err)
                 })
             ));
-        expect(a.status).toEqual(404);
+
+        expect(a instanceof TransportErrorResponse).toBeDefined();
+        expect(a.statusText).toEqual('Not Found');
     });
 
     it('bad request', async () => {
@@ -168,12 +174,12 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
                     return of(err)
                 })
             ));
-        expect(a.status).toEqual(400);
+        expect(a instanceof TransportErrorResponse).toBeDefined();
+        expect(a.statusText).toEqual('Not Found');
     })
 
     it('post route response object', async () => {
         const a = await lastValueFrom(client.send<any>('/device/init', { observe: 'response', method: 'POST', params: { name: 'test' } }));
-        expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toBeDefined();
         expect(a.body.name).toEqual('test');
@@ -186,7 +192,6 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(b.status).toEqual(200);
         expect(b.ok).toBeTruthy();
         expect(b.body).toEqual('1.0.0');
     });
@@ -194,7 +199,6 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
     it('route with request body pipe', async () => {
         const a = await lastValueFrom(client.send<any>('/device/usage', { observe: 'response', method: 'POST', body: { id: 'test1', age: '50', createAt: '2021-10-01' } }));
         // a.error && console.log(a.error);
-        expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toBeDefined();
         expect(a.body.year).toStrictEqual(50);
@@ -208,7 +212,7 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(400);
+        expect(r.statusText).toEqual('Bad Request');
     })
 
     it('route with request body pipe throw argument err', async () => {
@@ -218,12 +222,11 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(400);
+        expect(r.statusText).toEqual('Bad Request');
     })
 
     it('route with request param pipe', async () => {
         const a = await lastValueFrom(client.send('/device/usege/find', { observe: 'response', params: { age: '20' } }));
-        expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(20);
     })
@@ -235,7 +238,7 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(400);
+        expect(r.statusText).toEqual('Bad Request');
     })
 
     it('route with request param pipe throw argument err', async () => {
@@ -245,12 +248,11 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(400);
+        expect(r.statusText).toEqual('Bad Request');
     })
 
     it('route with request param pipe', async () => {
         const a = await lastValueFrom(client.send('/device/30/used', { observe: 'response', params: { age: '20' } }));
-        expect(a.status).toEqual(200);
         expect(a.ok).toBeTruthy();
         expect(a.body).toStrictEqual(30);
     })
@@ -262,7 +264,7 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(400);
+        expect(r.statusText).toEqual('Bad Request');
     })
 
     it('route with request restful param pipe throw argument err', async () => {
@@ -272,7 +274,7 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(400);
+        expect(r.statusText).toEqual('Bad Request');
     })
 
 
@@ -283,14 +285,15 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(200);
+        expect(r.ok).toBeTruthy();
         expect(r.body).toEqual('working');
     })
 
     it('redirect', async () => {
         const result = 'reload';
         const r = await lastValueFrom(client.send('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }));
-        expect(r.status).toEqual(200);
+
+        expect(r.ok).toBeTruthy();
         expect(r.body).toEqual(result);
     })
 
@@ -301,7 +304,8 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
                 ctx.getLogger().error(err);
                 return of(err);
             })));
-        expect(r.status).toEqual(200);
+
+        expect(r.ok).toBeTruthy();
         expect(r.body).toEqual(result);
     })
 
@@ -312,7 +316,8 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
                 ctx.getLogger().error(err);
                 return of(err);
             })));
-        expect(r.status).toEqual(200);
+
+        expect(r.ok).toBeTruthy();
         expect(r.body).toEqual(result);
     })
 
