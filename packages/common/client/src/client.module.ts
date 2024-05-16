@@ -14,7 +14,7 @@ import { TransportBackend } from './backend';
 import { BodyContentInterceptor } from './interceptors/body';
 import { RestfulRedirector } from './redirector';
 import { ClientTransportSessionFactory } from './session';
-import { DuplexClientTransportSessionFactory } from './duplex.session';
+import { DefaultClientTransportSessionFactory } from './default.session';
 import { ClientCodingsModule, RequestEncodeInterceper, ResponseDecodeInterceper } from './codings';
 import { DefaultResponseEventFactory } from './response.factory';
 
@@ -101,7 +101,7 @@ export interface ClientTokenOpts {
         ClientCodingsModule
     ],
     providers: [
-        DuplexClientTransportSessionFactory,
+        DefaultClientTransportSessionFactory,
         BodyContentInterceptor,
         RestfulRedirector,
         DefaultResponseEventFactory,
@@ -216,8 +216,8 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     clientOpts.providers.push(toProvider(ResponseEventFactory, opts.responseEventFactory));
                 }
 
-                if (clientOpts.sessionFactory && clientOpts.sessionFactory !== ClientTransportSessionFactory) {
-                    clientOpts.providers.push(toProvider(ClientTransportSessionFactory, clientOpts.sessionFactory))
+                if (clientOpts.sessionFactory !== ClientTransportSessionFactory) {
+                    clientOpts.providers.push(toProvider(ClientTransportSessionFactory, clientOpts.sessionFactory ?? DefaultClientTransportSessionFactory))
                 }
 
 

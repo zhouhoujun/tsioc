@@ -1,8 +1,8 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
-import { CLIENT_MODULES, DuplexClientTransportSessionFactory, ClientOpts } from '@tsdi/common/client';
-import { DuplexTransportSessionFactory, ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
+import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
+import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS } from './client/options';
 import { TcpHandler } from './client/handler';
@@ -32,8 +32,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
-                    },
-                    sessionFactory: { useExisting: DuplexClientTransportSessionFactory },
+                    }
                 } as ClientOpts
             },
             multi: true
@@ -50,8 +49,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
-                    },
-                    sessionFactory: { useExisting: DuplexClientTransportSessionFactory },
+                    }
                 } as ClientOpts
             },
             multi: true
@@ -78,7 +76,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     interceptorsToken: TCP_SERV_INTERCEPTORS,
                     filtersToken: TCP_SERV_FILTERS,
                     guardsToken: TCP_SERV_GUARDS,
-                    sessionFactory: { useExisting: DuplexTransportSessionFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,
@@ -110,7 +107,6 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     filtersToken: TCP_SERV_FILTERS,
                     guardsToken: TCP_SERV_GUARDS,
                     middlewaresToken: TCP_MIDDLEWARES,
-                    sessionFactory: { useExisting: DuplexTransportSessionFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,

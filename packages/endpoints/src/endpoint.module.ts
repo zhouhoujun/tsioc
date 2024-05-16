@@ -20,7 +20,7 @@ import { EndpointHandler, createEndpoint } from './EndpointHandler';
 import { ServerCodingsModule } from './codings/server.codings.module';
 import { OutgoingEncodeInterceper } from './codings/outgoing.encodings';
 import { IncomingDecodeInterceper } from './codings/incoming.decodings';
-import { DuplexTransportSessionFactory } from './impl/duplex.session';
+import { DefaultTransportSessionFactory } from './impl/default.session';
 import { RequestContextFactoryImpl } from './impl/request.context';
 import { DefaultExecptionHandlers } from './execption.handlers';
 
@@ -143,7 +143,7 @@ export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
     ],
     providers: [
         SetupServices,
-        DuplexTransportSessionFactory,
+        DefaultTransportSessionFactory,
 
         { provide: TypedRespond, useClass: EndpointTypedRespond, asDefault: true },
         { provide: RequestContextFactory, useClass: RequestContextFactoryImpl, asDefault: true },
@@ -255,7 +255,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 if (moduleOpts.microservice) {
                     serverOpts.microservice = moduleOpts.microservice;
                 }
-                
+
                 serverOpts.transportOpts = {
                     transport: moduleOpts.transport,
                     timeout: serverOpts.timeout,
@@ -265,7 +265,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     client: false
                 };
 
-                
+
                 if (moduleOpts.imports) {
                     serverOpts.providers.push({
                         provider: async (injector) => {
@@ -283,8 +283,8 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 }
 
 
-                if (serverOpts.sessionFactory) {
-                    serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory))
+                if (serverOpts.sessionFactory !== TransportSessionFactory) {
+                    serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory ?? DefaultTransportSessionFactory))
                 }
 
 

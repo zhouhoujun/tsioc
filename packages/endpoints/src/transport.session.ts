@@ -35,3 +35,4 @@ export abstract class TransportSessionFactory<TSocket = any, TOptions = Transpor
     abstract create(injector: Injector, socket: TSocket, options: TOptions): TransportSession<TSocket, TMsg>;
 }
 
+

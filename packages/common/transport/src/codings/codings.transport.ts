@@ -1,8 +1,13 @@
-import { Observable, finalize, mergeMap, share } from 'rxjs';
+import { promisify } from '@tsdi/ioc';
+import { Observable, Subject, finalize, from, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
 import { AbstractTransportSession, TransportOpts } from '../TransportSession';
 import { Encoder } from './Encoder';
 import { Decoder } from './Decoder';
 import { CodingsContext } from './context';
+import { IEventEmitter, IReadableStream, IWritableStream } from '../stream';
+import { StreamAdapter, isBuffer } from '../StreamAdapter';
+import { NotImplementedExecption } from '../execptions';
+import { ev } from '../consts';
 
 
 /**
@@ -26,6 +31,12 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * decodings
      */
     abstract get decodings(): Decoder;
+    /**
+     * stream adapter.
+     */
+    abstract get streamAdapter(): StreamAdapter;
+
+    protected destroy$ = new Subject<void>;
 
     /**
      * send.
@@ -37,6 +48,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
         return this.encodings.encode(data, ctx)
             .pipe(
                 mergeMap(msg => this.sendMessage(data, msg, ctx)),
+                takeUntil(this.destroy$),
                 finalize(() => !context && ctx.onDestroy()),
                 share()
             )
@@ -54,6 +66,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
                     !context && this.initContext(ctx, msg);
                     return this.decodings.decode(msg, ctx)
                         .pipe(
+                            takeUntil(this.destroy$),
                             finalize(() => !context && ctx.onDestroy())
                         )
                 }),
@@ -76,14 +89,57 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
 
     /**
      * send message.
-     * @param data 
-     * @param msg 
+     * @param originMsg 
+     * @param encodedMsg 
+     * @param context 
+     * @returns 
      */
-    protected abstract sendMessage(data: TInput, msg: any, context: CodingsContext): Observable<TMsg>;
+    protected sendMessage(originMsg: TInput, encodedMsg: Buffer | IReadableStream, context: CodingsContext): Observable<any> {
+        return from(this.parseMessage(originMsg, encodedMsg, context))
+            .pipe(
+                mergeMap(async data => {
+                    if (this.streamAdapter.isReadable(data)) {
+                        if (this.options.write) {
+                            await this.streamAdapter.write(data, this.streamAdapter.createWritable({
+                                write: (chunk, encoding, callback) => {
+                                    this.options.write!(this.socket, chunk, encoding, callback)
+                                }
+                            }))
+                        } else if ((this.socket as IWritableStream).write) {
+                            await this.streamAdapter.write(data, this.socket as IWritableStream)
+                        } else {
+                            throw new NotImplementedExecption('Has not write method!')
+                        }
+                    } else {
+                        if (this.options.write) {
+                            await promisify<any, any, void>(this.options.write, this.options)(this.socket, data)
+                        } else if ((this.socket as IWritableStream).write) {
+                            await promisify<any, void>((this.socket as IWritableStream).write, this.socket)(data)
+                        } else {
+                            throw new NotImplementedExecption('Has not write method!')
+                        }
+                    }
+                    return data;
+                })
+            );
+
+    }
+
+    protected async parseMessage(originMsg: TInput, encodedMsg: Buffer | IReadableStream, context: CodingsContext): Promise<TMsg> {
+        if (this.options.parseMessage) {
+            return await this.options.parseMessage(originMsg, encodedMsg, context)
+        }
+        return encodedMsg as TMsg;
+    }
 
     /**
      * handle message
      */
-    protected abstract handleMessage(context?: CodingsContext): Observable<TMsg>;
+    protected handleMessage(context?: CodingsContext): Observable<TMsg> {
+        return (this.options.handleMessage ? this.options.handleMessage(this.socket, context) : fromEvent(this.socket as IEventEmitter, this.options.messageEvent ?? ev.DATA, (chunk) => {
+            if (isBuffer(chunk) || this.streamAdapter.isReadable(chunk)) return chunk as TMsg;
+            return Buffer.from(chunk) as TMsg;
+        })).pipe(takeUntil(this.destroy$));
+    }
 
 }

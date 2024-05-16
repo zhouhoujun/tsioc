@@ -43,7 +43,7 @@ export * from './impl/micro.router';
 export * from './impl/route.handler';
 export * from './impl/request.context';
 
-export * from './impl/duplex.session';
+export * from './impl/default.session';
 // export * from './impl/topic.session';
 
 export * from './SetupServices';

@@ -27,35 +27,35 @@ export class UdpTransportSession extends TransportSession<Socket, UdpMessage> {
         }
     }
 
-    protected override sendMessage(ctx: RequestContext, msg: UdpMessage): Observable<UdpMessage> {
-        let writing: Promise<any>;
-        if (this.streamAdapter.isReadable(msg.payload)) {
-            writing = toBuffer(msg.payload, this.options.maxSize).then(data => {
-                const defer = lang.defer();
-                if (msg.rinfo.address) {
-                    this.socket.send(data, msg.rinfo.port, msg.rinfo.address, (err) => err ? defer.reject(err) : defer.resolve())
-                } else {
-                    this.socket.send(data, msg.rinfo.port, (err) => err ? defer.reject(err) : defer.resolve())
-                }
-                return defer.promise;
-            });
-        } else {
-            const defer = lang.defer();
-            const data = msg.payload;
-            if (msg.rinfo.address) {
-                this.socket.send(data, msg.rinfo.port, msg.rinfo.address, (err) => err ? defer.reject(err) : defer.resolve())
-            } else {
-                this.socket.send(data, msg.rinfo.port, (err) => err ? defer.reject(err) : defer.resolve())
-            }
-            writing = defer.promise;
-        }
-        return from(writing).pipe(map(r => msg))
-    }
+    // protected override sendMessage(ctx: RequestContext, msg: UdpMessage): Observable<UdpMessage> {
+    //     let writing: Promise<any>;
+    //     if (this.streamAdapter.isReadable(msg.payload)) {
+    //         writing = toBuffer(msg.payload, this.options.maxSize).then(data => {
+    //             const defer = lang.defer();
+    //             if (msg.rinfo.address) {
+    //                 this.socket.send(data, msg.rinfo.port, msg.rinfo.address, (err) => err ? defer.reject(err) : defer.resolve())
+    //             } else {
+    //                 this.socket.send(data, msg.rinfo.port, (err) => err ? defer.reject(err) : defer.resolve())
+    //             }
+    //             return defer.promise;
+    //         });
+    //     } else {
+    //         const defer = lang.defer();
+    //         const data = msg.payload;
+    //         if (msg.rinfo.address) {
+    //             this.socket.send(data, msg.rinfo.port, msg.rinfo.address, (err) => err ? defer.reject(err) : defer.resolve())
+    //         } else {
+    //             this.socket.send(data, msg.rinfo.port, (err) => err ? defer.reject(err) : defer.resolve())
+    //         }
+    //         writing = defer.promise;
+    //     }
+    //     return from(writing).pipe(map(r => msg))
+    // }
 
-    protected override handleMessage(): Observable<UdpMessage> {
-        return fromEvent(this.socket, this.options.messageEvent ?? ev.MESSAGE, (payload: Buffer, rinfo: RemoteInfo) => ({ payload, rinfo, topic: this.toTopic(rinfo) }))
-            .pipe(takeUntil(this.destroy$));
-    }
+    // protected override handleMessage(): Observable<UdpMessage> {
+    //     return fromEvent(this.socket, this.options.messageEvent ?? ev.MESSAGE, (payload: Buffer, rinfo: RemoteInfo) => ({ payload, rinfo, topic: this.toTopic(rinfo) }))
+    //         .pipe(takeUntil(this.destroy$));
+    // }
 
     override async destroy(): Promise<void> {
         super.destroy();

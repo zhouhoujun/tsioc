@@ -31,10 +31,12 @@ import { UdpClientTransportSessionFactory } from './client/client.session';
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
+                        write: (socket, data, encoding, cb) => {
+
+                        }
                     },
                     interceptorsToken: UDP_CLIENT_INTERCEPTORS,
                     filtersToken: UDP_CLIENT_FILTERS,
-                    sessionFactory: { useExisting: UdpClientTransportSessionFactory },
                 } as ClientOpts
             },
             multi: true
@@ -59,7 +61,6 @@ import { UdpClientTransportSessionFactory } from './client/client.session';
                     interceptorsToken: UDP_SERV_INTERCEPTORS,
                     filtersToken: UDP_SERV_FILTERS,
                     guardsToken: UDP_SERV_GUARDS,
-                    sessionFactory: { useExisting: UdpTransportSessionFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,

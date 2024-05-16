@@ -5,6 +5,7 @@ import { CodingsOpts } from './codings/options';
 import { EncodingsFactory } from './codings/encodings';
 import { DecodingsFactory } from './codings/decodings';
 import { CodingsContext } from './codings/context';
+import { IReadableStream } from './stream';
 
 
 /**
@@ -28,6 +29,8 @@ export interface TransportOpts extends CodingsOpts {
      */
     readonly messageEvent?: string;
 
+
+    writeStream?(socket: any, data: IReadableStream): Promise<void>;
     write?(socket: any, data: any, cb?: (err?: Error | null) => void): void;
     write?(socket: any, data: any, encoding?: string, cb?: (err?: Error | null) => void): void;
 
@@ -35,7 +38,7 @@ export interface TransportOpts extends CodingsOpts {
 
     handleMessage?(socket: any, context?: CodingsContext): Observable<any>;
 
-    parseMessage?(data: any, context: CodingsContext): any;
+    parseMessage?(originMsg: any, encodedMsg: Buffer | IReadableStream, context: CodingsContext): any | Promise<any>;
 
     initContext?(ctx: CodingsContext, msg?: any): void;
 
