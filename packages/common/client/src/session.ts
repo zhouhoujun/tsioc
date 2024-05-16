@@ -1,7 +1,7 @@
 import { Abstract, Injector } from '@tsdi/ioc';
 import { TransportEvent, TransportRequest } from '@tsdi/common';
 import { TransportOpts, BaseTransportSession, CodingsContext } from '@tsdi/common/transport';
-import { Observable, Subject, finalize, first, merge, mergeMap, takeUntil } from 'rxjs';
+import { Observable, finalize, first, merge, mergeMap, takeUntil } from 'rxjs';
 
 
 /**
@@ -9,8 +9,6 @@ import { Observable, Subject, finalize, first, merge, mergeMap, takeUntil } from
  */
 @Abstract()
 export abstract class ClientTransportSession<TSocket = any, TMsg = any> extends BaseTransportSession<TSocket, TransportRequest, TransportEvent, TMsg> {
-
-    protected destroy$ = new Subject<void>;
 
     request(req: TransportRequest, destroy$?: Observable<any>): Observable<TransportEvent> {
         const context = new CodingsContext(this);
@@ -21,13 +19,6 @@ export abstract class ClientTransportSession<TSocket = any, TMsg = any> extends 
                 finalize(() => context.onDestroy())
             )
     }
-
-    override async destroy(): Promise<void> {
-        this.destroy$.next();
-        this.destroy$.complete();
-    }
-
-
 }
 
 /**

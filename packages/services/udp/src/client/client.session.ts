@@ -4,8 +4,6 @@ import { Injectable, Injector, lang } from '@tsdi/ioc';
 import { Socket, RemoteInfo } from 'dgram';
 import { UdpMessage } from '../consts';
 import { TransportRequest } from '@tsdi/common';
-import { Observable, from, fromEvent, map, takeUntil } from 'rxjs';
-
 
 
 export class UdpClientTransportSession extends ClientTransportSession<Socket, UdpMessage> {
@@ -22,13 +20,13 @@ export class UdpClientTransportSession extends ClientTransportSession<Socket, Ud
         super()
     }
     
-    protected override initContext(ctx: CodingsContext): void {
-        if(!ctx.channel) {
-            const request = ctx.first<TransportRequest>();
-            const url = new URL(request.url!);
-            ctx.channel = url.hostname;
-        }
-    }
+    // protected override initContext(ctx: CodingsContext): void {
+    //     if(!ctx.channel) {
+    //         const request = ctx.first<TransportRequest>();
+    //         const url = new URL(request.url!);
+    //         ctx.channel = url.hostname;
+    //     }
+    // }
 
     // protected override sendMessage(request: TransportRequest<any>, msg: UdpMessage): Observable<UdpMessage> {
     //     let writing: Promise<any>;

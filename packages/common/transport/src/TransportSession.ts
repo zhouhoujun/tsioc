@@ -28,20 +28,56 @@ export interface TransportOpts extends CodingsOpts {
      * message event of socket.
      */
     readonly messageEvent?: string;
+    /**
+     * message event handle of socket.
+     * @param args 
+     */
+    messageEventHandle?(...args: any[]): any;
 
+    /**
+     * pipe endcoed data to socket
+     * @param socket 
+     * @param data 
+     * @param originData 
+     * @param ctx 
+     */
+    pipeTo?(socket: any, data: IReadableStream, originData: any, ctx: CodingsContext): Promise<void>;
+    /**
+     * write endcoed data to socket.
+     * @param socket 
+     * @param data 
+     * @param originData 
+     * @param ctx 
+     * @param cb 
+     */
+    write?(socket: any, data: any, originData: any, ctx: CodingsContext, cb?: (err?: Error | null) => void): void;
 
-    writeStream?(socket: any, data: IReadableStream): Promise<void>;
-    write?(socket: any, data: any, cb?: (err?: Error | null) => void): void;
-    write?(socket: any, data: any, encoding?: string, cb?: (err?: Error | null) => void): void;
-
-    end?(socket: any, data: any, encoding?: string, cb?: (err?: Error | null) => void): void;
-
+    /**
+     * custom handle mesasge from socket.
+     * 
+     * @param socket 
+     * @param context 
+     */
     handleMessage?(socket: any, context?: CodingsContext): Observable<any>;
 
-    parseOutgoingMessage?(originMsg: any, encodedMsg: Buffer | IReadableStream, context: CodingsContext): any | Promise<any>;
-
+    /**
+     * parse outgoing message.
+     * @param outgoing 
+     * @param encodedMsg 
+     * @param context 
+     */
+    parseOutgoingMessage?(outgoing: any, encodedMsg: Buffer | IReadableStream, context: CodingsContext): any | Promise<any>;
+    /**
+     * parse incoming message.
+     * @param incoming 
+     * @param context 
+     */
     parseIncomingMessage?(incoming: any, context: CodingsContext): Buffer | IReadableStream | Promise<Buffer | IReadableStream>;
 
+    beforeEncode?(context: CodingsContext, input: any): void;
+    afterEncode?(ctx: CodingsContext, data: any, msg: any): void;
+    beforeDecode?(context: CodingsContext, msg: any): void;
+    afterDecode?(context: CodingsContext, msg: any, decoded: any): void;
 
     readonly timeout?: number;
 }

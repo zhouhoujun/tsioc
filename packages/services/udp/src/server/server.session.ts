@@ -21,11 +21,11 @@ export class UdpTransportSession extends TransportSession<Socket, UdpMessage> {
         super()
     }
 
-    protected override initContext(ctx: CodingsContext, msg?: UdpMessage): void {
-        if (!ctx.channel && msg) {
-            ctx.channel = msg.topic;
-        }
-    }
+    // protected override initContext(ctx: CodingsContext, msg?: UdpMessage): void {
+    //     if (!ctx.channel && msg) {
+    //         ctx.channel = msg.topic;
+    //     }
+    // }
 
     // protected override sendMessage(ctx: RequestContext, msg: UdpMessage): Observable<UdpMessage> {
     //     let writing: Promise<any>;
