@@ -44,7 +44,6 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      */
     send(data: TInput, context?: CodingsContext): Observable<TMsg> {
         const ctx = context ?? new CodingsContext(this);
-        !context && this.initContext(ctx);
         return this.encodings.encode(data, ctx)
             .pipe(
                 mergeMap(msg => this.sendMessage(data, msg, ctx)),
@@ -61,10 +60,13 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
     receive(context?: CodingsContext): Observable<TOutput> {
         return this.handleMessage(context)
             .pipe(
-                mergeMap(msg => {
+                mergeMap(async msg => {
                     const ctx = context ?? new CodingsContext(this);
-                    !context && this.initContext(ctx, msg);
-                    return this.decodings.decode(msg, ctx)
+                    const message = await this.parseIncomingMessage(msg, ctx);
+                    return { ctx, message };
+                }),
+                mergeMap(({ ctx, message }) => {
+                    return this.decodings.decode(message, ctx)
                         .pipe(
                             takeUntil(this.destroy$),
                             finalize(() => !context && ctx.onDestroy())
@@ -77,7 +79,10 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
     /**
      * destroy.
      */
-    abstract destroy(): Promise<void>;
+    async destroy(): Promise<void> {
+        this.destroy$.next();
+        this.destroy$.complete();
+    }
 
 
     /**
@@ -95,11 +100,13 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * @returns 
      */
     protected sendMessage(originMsg: TInput, encodedMsg: Buffer | IReadableStream, context: CodingsContext): Observable<any> {
-        return from(this.parseMessage(originMsg, encodedMsg, context))
+        return from(this.parseOutgoingMessage(originMsg, encodedMsg, context))
             .pipe(
                 mergeMap(async data => {
                     if (this.streamAdapter.isReadable(data)) {
-                        if (this.options.write) {
+                        if (this.options.writeStream) {
+                            await this.options.writeStream(this.socket, data)
+                        } else if (this.options.write) {
                             await this.streamAdapter.write(data, this.streamAdapter.createWritable({
                                 write: (chunk, encoding, callback) => {
                                     this.options.write!(this.socket, chunk, encoding, callback)
@@ -108,7 +115,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
                         } else if ((this.socket as IWritableStream).write) {
                             await this.streamAdapter.write(data, this.socket as IWritableStream)
                         } else {
-                            throw new NotImplementedExecption('Has not write method!')
+                            throw new NotImplementedExecption('Can not write message to socket!')
                         }
                     } else {
                         if (this.options.write) {
@@ -116,7 +123,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
                         } else if ((this.socket as IWritableStream).write) {
                             await promisify<any, void>((this.socket as IWritableStream).write, this.socket)(data)
                         } else {
-                            throw new NotImplementedExecption('Has not write method!')
+                            throw new NotImplementedExecption('Can not write message to socket!')
                         }
                     }
                     return data;
@@ -125,11 +132,18 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
 
     }
 
-    protected async parseMessage(originMsg: TInput, encodedMsg: Buffer | IReadableStream, context: CodingsContext): Promise<TMsg> {
-        if (this.options.parseMessage) {
-            return await this.options.parseMessage(originMsg, encodedMsg, context)
+    protected async parseOutgoingMessage(originMsg: TInput, encodedMsg: Buffer | IReadableStream, context: CodingsContext): Promise<TMsg> {
+        if (this.options.parseOutgoingMessage) {
+            return await this.options.parseOutgoingMessage(originMsg, encodedMsg, context)
         }
         return encodedMsg as TMsg;
+    }
+
+    protected async parseIncomingMessage(incoming: TMsg, context: CodingsContext): Promise<Buffer | IReadableStream> {
+        if (this.options.parseIncomingMessage) {
+            return await this.options.parseIncomingMessage(incoming, context);
+        }
+        return incoming as Buffer | IReadableStream;
     }
 
     /**

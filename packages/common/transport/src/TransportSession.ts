@@ -38,9 +38,10 @@ export interface TransportOpts extends CodingsOpts {
 
     handleMessage?(socket: any, context?: CodingsContext): Observable<any>;
 
-    parseMessage?(originMsg: any, encodedMsg: Buffer | IReadableStream, context: CodingsContext): any | Promise<any>;
+    parseOutgoingMessage?(originMsg: any, encodedMsg: Buffer | IReadableStream, context: CodingsContext): any | Promise<any>;
 
-    initContext?(ctx: CodingsContext, msg?: any): void;
+    parseIncomingMessage?(incoming: any, context: CodingsContext): Buffer | IReadableStream | Promise<Buffer | IReadableStream>;
+
 
     readonly timeout?: number;
 }
