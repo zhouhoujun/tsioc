@@ -122,6 +122,7 @@ export class DeviceController {
                 transport: 'tcp',
                 microservice: true,
                 serverOpts: {
+                    detailError: false,
                     listenOpts: {
                         port: 3000
                     }
@@ -131,6 +132,7 @@ export class DeviceController {
                 transport: 'tcp',
                 serverOpts: {
                     // timeout: 1000,
+                    detailError: false,
                     listenOpts: {
                         port: 2000
                     },

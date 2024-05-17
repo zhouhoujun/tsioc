@@ -153,12 +153,6 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
                                             stream = this.streamAdapter.createPassThrough();
                                             stream.write(sub);
                                             size = Buffer.byteLength(sub);
-                                            if (total >= packetSize) {
-                                                stream.end();
-                                                subsr.next(this.streamConnectId(input, idLen, delimiter, stream, countLen, size));
-                                                stream = null;
-                                                size = 0;
-                                            }
                                         } else {
                                             stream = null;
                                             size = 0;
@@ -166,12 +160,13 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
                                     } else {
                                         size += chLen;
                                         stream.write(chunk);
-                                        if (total >= packetSize) {
-                                            stream.end();
-                                            subsr.next(this.streamConnectId(input, idLen, delimiter, stream, countLen, size));
-                                            stream = null;
-                                            size = 0;
-                                        }
+                                    }
+                                    
+                                    if (total >= packetSize) {
+                                        stream!.end();
+                                        subsr.next(this.streamConnectId(input, idLen, delimiter, stream!, countLen, size));
+                                        stream = null;
+                                        size = 0;
                                     }
                                 };
 
@@ -184,7 +179,7 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
                                         } else {
                                             this.subcontract(chunk, maxSize).subscribe({
                                                 next: (payload) => {
-                                                    writeBuffer(payload,  Buffer.byteLength(payload))
+                                                    writeBuffer(payload, Buffer.byteLength(payload))
                                                 },
                                                 complete() {
                                                     callback()

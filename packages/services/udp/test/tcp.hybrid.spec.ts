@@ -47,6 +47,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
             {
                 transport: 'tcp',
                 serverOpts: {
+                    detailError: false,
                     transportOpts: {
                         headDelimiter: '|'
                     },
@@ -65,6 +66,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 microservice: true,
                 transport: 'udp',
                 serverOpts: {
+                    detailError: false,
                     transportOpts: {
                         headDelimiter: '|'
                     },

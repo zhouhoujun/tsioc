@@ -69,6 +69,7 @@ export class TcpService {
             microservice: true,
             serverOpts: {
                 // timeout: 1000,
+                detailError: false,
                 listenOpts: {
                     port: 2000
                 }
@@ -108,7 +109,7 @@ describe('TCP Micro Service', () => {
         const res: any = await lastValueFrom(client.send('/content/510100_full.json')
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
 
@@ -122,7 +123,7 @@ describe('TCP Micro Service', () => {
         const res: any = await lastValueFrom(client.send('content/big.json')
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
 
@@ -140,7 +141,7 @@ describe('TCP Micro Service', () => {
         })
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
 
@@ -156,7 +157,7 @@ describe('TCP Micro Service', () => {
         })
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
 
@@ -173,7 +174,7 @@ describe('TCP Micro Service', () => {
         })
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
 
@@ -189,7 +190,7 @@ describe('TCP Micro Service', () => {
         })
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
 
@@ -205,7 +206,7 @@ describe('TCP Micro Service', () => {
         })
             .pipe(
                 catchError((err, ct) => {
-                   //  ctx.getLogger().error(err);
+                    //  ctx.getLogger().error(err);
                     return of(err);
                 })));
 
