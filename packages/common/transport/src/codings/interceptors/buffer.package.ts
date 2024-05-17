@@ -162,9 +162,9 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
                                         stream.write(chunk);
                                     }
                                     
-                                    if (total >= packetSize) {
-                                        stream!.end();
-                                        subsr.next(this.streamConnectId(input, idLen, delimiter, stream!, countLen, size));
+                                    if (total >= packetSize && stream) {
+                                        stream.end();
+                                        subsr.next(this.streamConnectId(input, idLen, delimiter, stream, countLen, size));
                                         stream = null;
                                         size = 0;
                                     }
