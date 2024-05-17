@@ -43,7 +43,7 @@ export class ContentInterceptor implements Middleware<RequestContext>, Intercept
     }
 
     intercept(input: RequestContext, next: Handler<RequestContext, any>): Observable<any> {
-        if (!(input.method === HEAD || input.method === GET || input.method === MESSAGE)
+        if (!(input.method === HEAD || input.method === GET || input.method === MESSAGE || input.method === '*')
             || !input.originalUrl) {
             return next.handle(input);
         }

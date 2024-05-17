@@ -113,16 +113,15 @@ export class TcpServer extends Server<RequestContext, TcpServerOpts> implements 
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
         const injector = this.handler.injector;
         const factory = injector.get(TransportSessionFactory);
-        const transportOpts = options.transportOpts!;
 
         if (this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket) => {
-                const session = factory.create(injector, socket, transportOpts);
+                const session = factory.create(injector, socket, options);
                 session.listen(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
             })
         } else {
             this.serv.on(ev.CONNECTION, (socket) => {
-                const session = factory.create(injector, socket, transportOpts);
+                const session = factory.create(injector, socket, options);
                 session.listen(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
             })
         }

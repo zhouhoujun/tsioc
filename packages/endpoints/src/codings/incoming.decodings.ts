@@ -29,7 +29,7 @@ export class IncomingDecodingsHandlers {
             session,
             incoming,
             outgoing,
-            session.options);
+            session.serverOptions);
     }
 
 }

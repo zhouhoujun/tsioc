@@ -69,6 +69,12 @@ const chnNameValue: Record<string, { value: number, secUnit: boolean }> = {
     万: { value: 10000, secUnit: true },
     亿: { value: 100000000, secUnit: true }
 }
+
+/**
+ * 中文转数字
+ * @param chnStr 
+ * @returns 
+ */
 export function chineseToNumber(chnStr: string) {
     let rtn = 0;
     let section = 0;

@@ -137,44 +137,54 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
                                 let total = 0;
                                 const maxSize = sizeLimit;
 
+                                const writeBuffer = (chunk: Buffer, chLen: number) => {
+                                    if (!stream) {
+                                        stream = this.streamAdapter.createPassThrough();
+                                    }
+                                    total += chLen;
+                                    const len = size + chLen;
+                                    if (len >= maxSize) {
+                                        const idx = chLen - (len - maxSize);
+                                        const end = chunk.subarray(0, idx);
+                                        const sub = chunk.subarray(idx);
+                                        stream.end(end);
+                                        subsr.next(this.streamConnectId(input, idLen, delimiter, stream, countLen, size + Buffer.byteLength(end)));
+                                        if (sub.length) {
+                                            stream = this.streamAdapter.createPassThrough();
+                                            stream.write(sub);
+                                            size = Buffer.byteLength(sub);
+                                            if (total >= packetSize) {
+                                                stream.end();
+                                                subsr.next(this.streamConnectId(input, idLen, delimiter, stream, countLen, size));
+                                                stream = null;
+                                                size = 0;
+                                            }
+                                        } else {
+                                            stream = null;
+                                            size = 0;
+                                        }
+                                    } else {
+                                        size += chLen;
+                                        stream.write(chunk);
+                                        if (total >= packetSize) {
+                                            stream.end();
+                                            subsr.next(this.streamConnectId(input, idLen, delimiter, stream, countLen, size));
+                                            stream = null;
+                                            size = 0;
+                                        }
+                                    }
+                                };
+
                                 this.streamAdapter.pipeTo(data, this.streamAdapter.createWritable({
                                     write: (chunk: Buffer, encoding, callback) => {
                                         const chLen = Buffer.byteLength(chunk);
-                                        total += chLen;
-                                        const len = size + chLen;
-                                        if (!stream) {
-                                            stream = this.streamAdapter.createPassThrough();
-                                        }
                                         if (chLen <= maxSize) {
-                                            if (len >= maxSize) {
-                                                const idx = chLen - (len - maxSize);
-                                                const end = chunk.subarray(0, idx);
-                                                const sub = chunk.subarray(idx);
-                                                stream.end(end);
-                                                subsr.next(this.streamConnectId(input, idLen, delimiter, stream, countLen, size + Buffer.byteLength(end)));
-                                                if (sub.length) {
-                                                    stream = this.streamAdapter.createPassThrough();
-                                                    stream.write(sub);
-                                                    size = Buffer.byteLength(sub);
-                                                } else {
-                                                    stream = null;
-                                                    size = 0;
-                                                }
-                                            } else {
-                                                size += chLen;
-                                                stream.write(chunk);
-                                                if (total >= packetSize) {
-                                                    stream.end();
-                                                    subsr.next(this.streamConnectId(input, idLen, delimiter, stream, countLen, size));
-                                                    stream = null;
-                                                    size = 0;
-                                                }
-                                            }
+                                            writeBuffer(chunk, chLen);
                                             callback();
                                         } else {
                                             this.subcontract(chunk, maxSize).subscribe({
                                                 next: (payload) => {
-                                                    subsr.next(this.connectId(input.id, idLen, payload));
+                                                    writeBuffer(payload,  Buffer.byteLength(payload))
                                                 },
                                                 complete() {
                                                     callback()

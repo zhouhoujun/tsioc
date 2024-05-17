@@ -1,11 +1,14 @@
 import { Abstract, Injector } from '@tsdi/ioc';
-import { TransportOpts, BaseTransportSession } from '@tsdi/common/transport';
+import { BaseTransportSession } from '@tsdi/common/transport';
 import { Observable, Subscription, first, merge, mergeMap, takeUntil } from 'rxjs';
 import { RequestHandler } from './RequestHandler';
 import { RequestContext } from './RequestContext';
+import { ServerOpts } from './Server';
 
 @Abstract()
-export abstract class TransportSession<TSocket = any, TMsg = any> extends BaseTransportSession<TSocket, RequestContext, any, TMsg> {
+export abstract class TransportSession<TSocket = any, TMsg = any, TOptions extends ServerOpts = ServerOpts> extends BaseTransportSession<TSocket, RequestContext, any, TMsg> {
+
+    abstract get serverOptions(): TOptions;
 
     listen(handler: RequestHandler, destroy$?: Observable<any>): Subscription {
         return this.receive().pipe(
@@ -20,12 +23,12 @@ export abstract class TransportSession<TSocket = any, TMsg = any> extends BaseTr
  * transport session factory.
  */
 @Abstract()
-export abstract class TransportSessionFactory<TSocket = any, TOptions = TransportOpts, TMsg = any> {
+export abstract class TransportSessionFactory<TSocket = any,  TMsg = any> {
     /**
      * create transport session.
      * @param options 
      */
-    abstract create(injector: Injector, socket: TSocket, options: TOptions): TransportSession<TSocket, TMsg>;
+    abstract create(injector: Injector, socket: TSocket, options: ServerOpts): TransportSession<TSocket, TMsg>;
 }
 
 

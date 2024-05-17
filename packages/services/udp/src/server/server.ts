@@ -52,7 +52,7 @@ export class UdpServer extends Server<RequestContext, UdpServerOpts> {
         if (!options.protocol) {
             options.protocol = isSecure ? 'udps' : 'udp';
         }
-        const session = factory.create(injector, this.serv, options.transportOpts!);
+        const session = factory.create(injector, this.serv, options);
 
         session.listen(this.handler, merge(this.destroy$, fromEvent(this.serv, ev.CLOSE).pipe(first())));
 

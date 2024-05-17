@@ -32,6 +32,7 @@ const udptl = /^udp(s)?:\/\//i;
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
+                        defaultMethod: '*',
                         messageEvent: 'message',
                         messageEventHandle(msg: Buffer, rinfo: RemoteInfo) {
                             return { msg, rinfo };
@@ -80,6 +81,7 @@ const udptl = /^udp(s)?:\/\//i;
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
+                        defaultMethod: '*',
                         messageEvent: 'message',
                         messageEventHandle(msg: Buffer, rinfo: RemoteInfo) {
                             return { msg, rinfo };
