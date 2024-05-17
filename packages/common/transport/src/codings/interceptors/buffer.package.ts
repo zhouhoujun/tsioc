@@ -1,5 +1,5 @@
-import { Handler, Interceptor } from '@tsdi/core';
 import { ArgumentExecption, Injectable, isNumber } from '@tsdi/ioc';
+import { Handler, Interceptor } from '@tsdi/core';
 import { Observable, Subscriber, filter, map, mergeMap, of, range, throwError } from 'rxjs';
 import { PacketData } from '../../packet';
 import { CodingsContext } from '../context';
@@ -65,7 +65,6 @@ export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableS
                 throw new PacketLengthException('has not content length!');
             }
             const payload = this.streamAdapter.createPassThrough();
-            // payload.setMaxListeners(0);
 
             const cached = {
                 ...packet,

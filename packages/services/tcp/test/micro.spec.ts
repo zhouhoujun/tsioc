@@ -1,10 +1,10 @@
+import { Injectable, Injector, Module, isString, tokenId } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
 import { TransportErrorResponse } from '@tsdi/common';
 import { BufferCodingsModule } from '@tsdi/common/transport';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
-import { TCP_SERV_INTERCEPTORS, TcpClient, TcpModule, TcpServer } from '../src';
+import { TCP_SERV_INTERCEPTORS, TcpClient } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { LoggerModule } from '@tsdi/logger';

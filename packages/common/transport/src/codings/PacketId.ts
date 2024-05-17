@@ -1,5 +1,5 @@
-import { UuidGenerator } from '@tsdi/core';
 import { Abstract, Execption, Injectable } from '@tsdi/ioc';
+import { UuidGenerator } from '@tsdi/core';
 import { NumberAllocator } from 'number-allocator';
 
 @Abstract()

@@ -1,6 +1,7 @@
+import { tokenId } from '@tsdi/ioc';
 import { Interceptor, Filter, CanActivate, ApplicationEventContext } from '@tsdi/core';
 import { BindServerEvent, MiddlewareLike, ServerOpts } from '@tsdi/endpoints';
-import { tokenId } from '@tsdi/ioc';
+
 import * as net from 'net';
 import * as tls from 'tls';
 
