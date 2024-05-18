@@ -113,6 +113,7 @@ if (os.platform() != 'win32') {
             EndpointModule.register({
                 transport: 'tcp',
                 serverOpts: {
+                    detailError: false,
                     // timeout: 1000,
                     listenOpts: {
                         path: ipcpath

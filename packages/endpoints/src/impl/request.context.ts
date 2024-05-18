@@ -50,7 +50,7 @@ export class RequestContextImpl<TRequest extends Incoming = Incoming, TResponse 
     get query(): Record<string, any> {
         if (!this._query) {
             const qs = this._query = {} as Record<string, any>;
-            this.URL?.searchParams?.forEach((v, k) => {
+            this.URL.searchParams?.forEach((v, k) => {
                 qs[k] = v;
             });
         }
@@ -87,7 +87,12 @@ export class RequestContextImpl<TRequest extends Incoming = Incoming, TResponse 
         } else {
             const { host, port, path } = this.serverOptions.listenOpts ?? EMPTY_OBJ;
             const protocol = this.serverOptions.protocol;
-            const baseUrl = new URL(`${protocol}://${host ?? LOCALHOST}:${port ?? 3000}`, path);
+            let baseUrl: URL;
+            try {
+                baseUrl = new URL(`${protocol}://${host ?? LOCALHOST}:${port ?? 3000}`, path);
+            } catch (err) {
+                baseUrl = new URL(`${protocol}://${host ?? LOCALHOST}:${port ?? 3000}`);
+            }
             const uri = new URL(url, baseUrl);
             return uri;
         }
