@@ -72,7 +72,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                         root: 'public',
                         prefix: 'content'
                     },
-                    detailError: true,
+                    detailError: false,
                     interceptorsToken: TCP_SERV_INTERCEPTORS,
                     filtersToken: TCP_SERV_FILTERS,
                     guardsToken: TCP_SERV_GUARDS,
@@ -102,7 +102,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     content: {
                         root: 'public'
                     },
-                    detailError: true,
+                    detailError: false,
                     interceptorsToken: TCP_SERV_INTERCEPTORS,
                     filtersToken: TCP_SERV_FILTERS,
                     guardsToken: TCP_SERV_GUARDS,

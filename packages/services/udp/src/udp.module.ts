@@ -114,7 +114,7 @@ const udptl = /^udp(s)?:\/\//i;
                         root: 'public',
                         prefix: 'content'
                     },
-                    detailError: true,
+                    detailError: false,
                     interceptorsToken: UDP_SERV_INTERCEPTORS,
                     filtersToken: UDP_SERV_FILTERS,
                     guardsToken: UDP_SERV_GUARDS,
