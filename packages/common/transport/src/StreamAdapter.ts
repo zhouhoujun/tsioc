@@ -229,6 +229,7 @@ export abstract class StreamAdapter {
      */
     abstract createPassThrough(options?: {
         allowHalfOpen?: boolean;
+        objectMode?: boolean;
         readableObjectMode?: boolean;
         writableObjectMode?: boolean;
         readableHighWaterMark?: number;

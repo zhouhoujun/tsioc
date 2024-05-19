@@ -100,7 +100,7 @@ export class PacketCodingsHandlers {
 
         const data = await this.streamAdapter.encode(payload, options.encoding);
 
-        if(this.streamAdapter.isReadable(data)) {
+        if (this.streamAdapter.isReadable(data)) {
             let isFist = true;
             input.streamLength = (input.payloadLength ?? 0) + Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter);
             return this.streamAdapter.pipeline(data, this.streamAdapter.createPassThrough({
