@@ -15,9 +15,8 @@ import { HttpStatusAdapter } from './status';
 import { HttpExecptionHandlers } from './execption.handlers';
 import { HttpClientSessionFactory } from './client/client.session';
 import { HttpServerSessionFactory } from './server/http.session';
-import { HttpRequestEncodingsHandlers } from './client/encodings.handlers';
 import { HttpResponseEventFactory } from './client/response.factory';
-import { HttpResponseDecodingsHandlers } from './client/decodings.hanlders';
+import { HttpClientCodingsHandlers } from './client/codings.hanlders';
 import { HttpIncomingDecodingsHandlers } from './server/decodings.handlers';
 import { HttpOutgoingEncodingsHandlers } from './server/encodings.handlers';
 
@@ -32,8 +31,7 @@ import { HttpOutgoingEncodingsHandlers } from './server/encodings.handlers';
         HttpServer,
         HttpStatusAdapter,
         HttpResponseEventFactory,
-        HttpRequestEncodingsHandlers,
-        HttpResponseDecodingsHandlers,
+        HttpClientCodingsHandlers,
         HttpIncomingDecodingsHandlers,
         HttpOutgoingEncodingsHandlers,
         // HttpTransportBackend,

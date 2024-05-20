@@ -1,13 +1,10 @@
-import { promisify } from '@tsdi/ioc';
-import { Observable, Subject, finalize, from, fromEvent, map, mergeMap, share, takeUntil } from 'rxjs';
+import { Observable, Subject, finalize, from, map, mergeMap, share, takeUntil } from 'rxjs';
 import { AbstractTransportSession, TransportOpts } from '../TransportSession';
 import { Encoder } from './Encoder';
 import { Decoder } from './Decoder';
 import { CodingsContext } from './context';
-import { IEventEmitter, IReadableStream, IWritableStream } from '../stream';
-import { StreamAdapter, isBuffer } from '../StreamAdapter';
-import { NotImplementedExecption } from '../execptions';
-import { ev } from '../consts';
+import { IReadableStream } from '../stream';
+import { StreamAdapter } from '../StreamAdapter';
 
 
 /**
@@ -49,7 +46,8 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
             .pipe(
                 mergeMap(msg => {
                     this.afterEncode(ctx, data, msg);
-                    return this.sendMessage(data, msg, ctx)
+                    return from(this.parseOutgoingMessage(data, msg, ctx))
+                        .pipe(mergeMap(result => this.sendMessage(result, msg, data, ctx)))
                 }),
                 takeUntil(this.destroy$),
                 finalize(() => !context && ctx.onDestroy()),
@@ -116,38 +114,13 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * @param context 
      * @returns 
      */
-    protected sendMessage(originMsg: TInput, encodedMsg: Buffer | IReadableStream, context: CodingsContext): Observable<any> {
-        return from(this.parseOutgoingMessage(originMsg, encodedMsg, context))
-            .pipe(
-                mergeMap(async data => {
-                    if (this.streamAdapter.isReadable(data)) {
-                        if (this.options.pipeTo) {
-                            await this.options.pipeTo(this.socket, data, originMsg, context)
-                        } else if (this.options.write) {
-                            await this.streamAdapter.write(data, this.streamAdapter.createWritable({
-                                write: (chunk, encoding, callback) => {
-                                    this.options.write!(this.socket, chunk, originMsg, context, callback)
-                                }
-                            }))
-                        } else if ((this.socket as IWritableStream).write) {
-                            await this.streamAdapter.write(data, this.socket as IWritableStream)
-                        } else {
-                            throw new NotImplementedExecption('Can not write message to socket!')
-                        }
-                    } else {
-                        if (this.options.write) {
-                            await promisify<any, any, any, CodingsContext, void>(this.options.write, this.options)(this.socket, data, originMsg, context)
-                        } else if ((this.socket as IWritableStream).write) {
-                            await promisify<any, void>((this.socket as IWritableStream).write, this.socket)(data)
-                        } else {
-                            throw new NotImplementedExecption('Can not write message to socket!')
-                        }
-                    }
-                    return data;
-                })
-            );
+    protected abstract sendMessage(data: any, encodedMsg: Buffer | IReadableStream, originMsg: TInput, context: CodingsContext): Promise<any> | Observable<any>;
 
-    }
+
+    /**
+     * handle message
+     */
+    protected abstract handleMessage(context?: CodingsContext): Observable<TMsg>;
 
     protected async parseOutgoingMessage(originMsg: TInput, encodedMsg: Buffer | IReadableStream, context: CodingsContext): Promise<TMsg> {
         if (this.options.parseOutgoingMessage) {
@@ -163,16 +136,16 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
         return incoming as Buffer | IReadableStream;
     }
 
-    /**
-     * handle message
-     */
-    protected handleMessage(context?: CodingsContext): Observable<TMsg> {
-        if (this.options.handleMessage) return this.options.handleMessage(this.socket, context).pipe(takeUntil(this.destroy$));
+    // /**
+    //  * handle message
+    //  */
+    // protected handleMessage(context?: CodingsContext): Observable<TMsg> {
+    //     if (this.options.handleMessage) return this.options.handleMessage(this.socket, context).pipe(takeUntil(this.destroy$));
 
-        return fromEvent(this.socket as IEventEmitter, this.options.messageEvent ?? ev.DATA, this.options.messageEventHandle ? this.options.messageEventHandle : (chunk) => {
-            if (isBuffer(chunk) || this.streamAdapter.isReadable(chunk)) return chunk as TMsg;
-            return Buffer.from(chunk) as TMsg;
-        }).pipe(takeUntil(this.destroy$));
-    }
+    //     return fromEvent(this.socket as IEventEmitter, this.options.messageEvent ?? ev.DATA, this.options.messageEventHandle ? this.options.messageEventHandle : (chunk) => {
+    //         if (isBuffer(chunk) || this.streamAdapter.isReadable(chunk)) return chunk as TMsg;
+    //         return Buffer.from(chunk) as TMsg;
+    //     }).pipe(takeUntil(this.destroy$));
+    // }
 
 }

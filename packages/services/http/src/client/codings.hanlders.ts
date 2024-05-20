@@ -1,13 +1,14 @@
 import { Injectable } from '@tsdi/ioc';
-import { HttpStatusCode, statusMessage } from '@tsdi/common';
-import { Codings, CodingsContext, DecodeHandler, ResponsePacketIncoming, StatusAdapter } from '@tsdi/common/transport';
+import { HttpStatusCode, PatternFormatter, statusMessage } from '@tsdi/common';
+import { Codings, CodingsContext, DecodeHandler, EncodeHandler, PacketData, ResponsePacketIncoming, StatusAdapter } from '@tsdi/common/transport';
 import { IncomingMessage } from 'http';
 import { Http2IncomingMessage } from './client.session';
+import { HttpRequest } from '@tsdi/common/http';
 
 
 
 @Injectable({ static: true })
-export class HttpResponseDecodingsHandlers {
+export class HttpClientCodingsHandlers {
 
     constructor(private codings: Codings) { }
 
@@ -35,5 +36,22 @@ export class HttpResponseDecodingsHandlers {
         }, context.options)
         return this.codings.decode(msg, context);
     }
+
+
+    @EncodeHandler(HttpRequest, { transport: 'http' })
+    handleRequest(req: HttpRequest) {
+        const packet = {
+            url: req.urlWithParams,
+            headers: req.headers,
+            payload: req.payload,
+            method: req.method ?? 'GET',
+            payloadLength: req.headers.getContentLength()
+        } as PacketData;
+        if (!packet.url && req.pattern) {
+            packet.url = req.context.get(PatternFormatter).format(req.pattern);
+        }
+        
+    }
+
 
 }
