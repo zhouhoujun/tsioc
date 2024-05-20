@@ -11,7 +11,10 @@ import { WsEndpointHandler } from './server/handler';
 
 
 // const defaultMaxSize = 65515; //1024 * 64 - 20;
-const defaultMaxSize = 1048576; //1024 * 1024;
+// const defaultMaxSize = 1048576; //1024 * 1024;
+const defaultMaxSize = 5242880; //1024 * 1024 * 5;
+// const defaultMaxSize = 10485760; //1024 * 1024 * 10;
+
 
 @Module({
     providers: [
@@ -55,7 +58,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                         root: 'public',
                         prefix: 'content'
                     },
-                    detailError: true,
+                    detailError: false,
                     interceptorsToken: WS_SERV_INTERCEPTORS,
                     filtersToken: WS_SERV_FILTERS,
                     guardsToken: WS_SERV_GUARDS,
