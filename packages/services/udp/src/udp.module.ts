@@ -37,10 +37,11 @@ const udptl = /^udp(s)?:\/\//i;
                         messageEventHandle(msg: Buffer, rinfo: RemoteInfo) {
                             return { msg, rinfo };
                         },
-                        parseIncomingMessage(incoming: { msg: Buffer, rinfo: RemoteInfo }, context) {
+                        beforeDecode(context, incoming: { msg: Buffer, rinfo: RemoteInfo }) {
                             context.incoming = incoming;
                             return incoming.msg
                         },
+
                         beforeEncode(context, input) {
                             if (!context.channel) {
                                 if (udptl.test(input.url)) {
@@ -50,8 +51,9 @@ const udptl = /^udp(s)?:\/\//i;
                                     context.channel = (context.options as UdpClientTransportOpts).host
                                 }
                             }
+                            return input
                         },
-                        parseOutgoingMessage(outgoing, encodedMsg, context) {
+                        afterEncode(context, outgoing, encodedMsg) {
                             if (isBuffer(encodedMsg)) return encodedMsg;
                             return toBuffer(encodedMsg, context.options.maxSize);
                         },
@@ -91,16 +93,16 @@ const udptl = /^udp(s)?:\/\//i;
                                 const rinfo = msg.rinfo;
                                 context.channel = rinfo.family == 'IPv6' ? `[${rinfo.address}]:${rinfo.port}` : `${rinfo.address}:${rinfo.port}`
                             }
-                        },
-                        parseIncomingMessage(incoming: { msg: Buffer, rinfo: RemoteInfo }, context) {
-                            return incoming.msg
+                            return msg.msg
                         },
                         afterDecode(context, msg: any, decoded) {
                             decoded.channel = context.channel;
+                            return decoded;
                         },
-                        parseOutgoingMessage(outgoing, encodedMsg, context) {
-                            if (isBuffer(encodedMsg)) return encodedMsg;
-                            return toBuffer(encodedMsg, context.options.maxSize);
+                        
+                        afterEncode(context, originData, data) {
+                            if (isBuffer(data)) return data;
+                            return toBuffer(data, context.options.maxSize);
                         },
                         write(socket: Socket, data, originData, ctx, cb) {
                             const url = ctx.channel ?? originData.channel;

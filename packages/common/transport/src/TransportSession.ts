@@ -60,24 +60,11 @@ export interface TransportOpts extends CodingsOpts {
      */
     handleMessage?(socket: any, context?: CodingsContext): Observable<any>;
 
-    /**
-     * parse outgoing message.
-     * @param outgoing 
-     * @param encodedMsg 
-     * @param context 
-     */
-    parseOutgoingMessage?(outgoing: any, encodedMsg: Buffer | IReadableStream, context: CodingsContext): any | Promise<any>;
-    /**
-     * parse incoming message.
-     * @param incoming 
-     * @param context 
-     */
-    parseIncomingMessage?(incoming: any, context: CodingsContext): Buffer | IReadableStream | Promise<Buffer | IReadableStream>;
-
-    beforeEncode?(context: CodingsContext, input: any): void;
-    afterEncode?(ctx: CodingsContext, data: any, msg: any): void;
-    beforeDecode?(context: CodingsContext, msg: any): void;
-    afterDecode?(context: CodingsContext, msg: any, decoded: any): void;
+    beforeEncode?(context: CodingsContext, input: any): any | Promise<any>;
+    afterEncode?(ctx: CodingsContext, data: any, msg: any): any | Promise<any>;
+    
+    beforeDecode?(context: CodingsContext, msg: any): any | Promise<any>;
+    afterDecode?(context: CodingsContext, msg: any, decoded: any): Buffer | IReadableStream | Promise<Buffer | IReadableStream>;
 
     readonly timeout?: number;
 }

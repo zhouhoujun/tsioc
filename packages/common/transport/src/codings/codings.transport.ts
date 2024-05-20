@@ -44,12 +44,11 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      */
     send(data: TInput, context?: CodingsContext): Observable<TMsg> {
         const ctx = context ?? new CodingsContext(this);
-        this.beforeEncode(ctx, data);
-        return this.encodings.encode(data, ctx)
+        return from(this.beforeEncode(ctx, data))
             .pipe(
+                mergeMap(data => this.encodings.encode(data, ctx)),
                 mergeMap(msg => {
-                    this.afterEncode(ctx, data, msg);
-                    return from(this.parseOutgoingMessage(data, msg, ctx))
+                    return from(this.afterEncode(ctx, data, msg))
                         .pipe(mergeMap(result => this.sendMessage(result, msg, data, ctx)))
                 }),
                 takeUntil(this.destroy$),
@@ -67,14 +66,10 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
             .pipe(
                 mergeMap(origin => {
                     const ctx = context ?? new CodingsContext(this);
-                    this.beforeDecode(ctx, origin);
-                    return from(this.parseIncomingMessage(origin, ctx))
+                    return from(this.beforeDecode(ctx, origin))
                         .pipe(
                             mergeMap(msg => this.decodings.decode(msg, ctx)),
-                            map(data => {
-                                this.afterDecode(ctx, origin, data);
-                                return data;
-                            }),
+                            mergeMap(data => this.afterDecode(ctx, origin, data)),
                             takeUntil(this.destroy$),
                             finalize(() => !context && ctx.onDestroy())
                         )
@@ -93,21 +88,25 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
 
 
 
-    protected beforeEncode(ctx: CodingsContext, input: TInput) {
-        if (this.options.beforeEncode) this.options.beforeEncode(ctx, input);
+    protected async beforeEncode(ctx: CodingsContext, input: TInput): Promise<any> {
+        if (this.options.beforeEncode) return await this.options.beforeEncode(ctx, input);
+        return input;
     }
 
-    protected afterEncode(ctx: CodingsContext, data: TInput, msg: any) {
-        if (this.options.beforeEncode) this.options.beforeEncode(ctx, data);
+    protected async afterEncode(ctx: CodingsContext, data: TInput, msg: any): Promise<any> {
+        if (this.options.afterEncode) return await this.options.afterEncode(ctx, data, msg);
+        return msg;
     }
 
 
-    protected beforeDecode(ctx: CodingsContext, msg: TMsg) {
-        if (this.options.beforeDecode) this.options.beforeDecode(ctx, msg);
+    protected async beforeDecode(ctx: CodingsContext, msg: TMsg) {
+        if (this.options.beforeDecode) return await this.options.beforeDecode(ctx, msg);
+        return msg;
     }
 
-    protected afterDecode(ctx: CodingsContext, origin: TMsg, decoded: TOutput) {
-        if (this.options.afterDecode) this.options.afterDecode(ctx, origin, decoded);
+    protected async afterDecode(ctx: CodingsContext, origin: TMsg, decoded: TOutput): Promise<TOutput> {
+        if (this.options.afterDecode) return await this.options.afterDecode(ctx, origin, decoded) as TOutput;
+        return decoded as TOutput;
     }
 
     /**
@@ -178,23 +177,6 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
             if (isBuffer(chunk) || this.streamAdapter.isReadable(chunk)) return chunk as TMsg;
             return Buffer.from(chunk) as TMsg;
         }).pipe(takeUntil(this.destroy$));
-    }
-
-
-
-
-    protected async parseOutgoingMessage(originMsg: TInput, encodedMsg: Buffer | IReadableStream, context: CodingsContext): Promise<TMsg> {
-        if (this.options.parseOutgoingMessage) {
-            return await this.options.parseOutgoingMessage(originMsg, encodedMsg, context)
-        }
-        return encodedMsg as TMsg;
-    }
-
-    protected async parseIncomingMessage(incoming: TMsg, context: CodingsContext): Promise<Buffer | IReadableStream> {
-        if (this.options.parseIncomingMessage) {
-            return await this.options.parseIncomingMessage(incoming, context);
-        }
-        return incoming as Buffer | IReadableStream;
     }
 
 }
