@@ -1,13 +1,13 @@
+import { promisify } from '@tsdi/ioc';
 import { Observable, Subject, finalize, from, fromEvent, map, mergeMap, share, takeUntil } from 'rxjs';
 import { AbstractTransportSession, TransportOpts } from '../TransportSession';
-import { Encoder } from './Encoder';
-import { Decoder } from './Decoder';
-import { CodingsContext } from './context';
 import { IEventEmitter, IReadableStream, IWritableStream } from '../stream';
 import { StreamAdapter, isBuffer } from '../StreamAdapter';
 import { NotImplementedExecption } from '../execptions';
-import { promisify } from '@tsdi/ioc';
 import { ev } from '../consts';
+import { Encoder } from './Encoder';
+import { Decoder } from './Decoder';
+import { CodingsContext } from './context';
 
 
 /**
@@ -119,30 +119,53 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      */
     protected async sendMessage(data: any, encodedMsg: Buffer | IReadableStream, originMsg: TInput, context: CodingsContext): Promise<any> {
         if (this.streamAdapter.isReadable(data)) {
-            if (this.options.pipeTo) {
-                await this.options.pipeTo(this.socket, data, originMsg, context)
-            } else if (this.options.write) {
-                await this.streamAdapter.write(data, this.streamAdapter.createWritable({
-                    write: (chunk, encoding, callback) => {
-                        this.options.write!(this.socket, chunk, originMsg, context, callback)
-                    }
-                }))
-            } else if ((this.socket as IWritableStream).write) {
-                await this.streamAdapter.write(data, this.socket as IWritableStream)
-            } else {
-                throw new NotImplementedExecption('Can not write message to socket!')
-            }
+            await this.pipeTo(this.socket, data, originMsg, context)
         } else {
-            if (this.options.write) {
-                await promisify<any, any, any, CodingsContext, void>(this.options.write, this.options)(this.socket, data, originMsg, context)
-            } else if ((this.socket as IWritableStream).write) {
-                await promisify<any, void>((this.socket as IWritableStream).write, this.socket)(data)
-            } else {
-                throw new NotImplementedExecption('Can not write message to socket!')
-            }
+            await this.write(this.socket, data, originMsg, context);
         }
         return data;
+    }
 
+    /**
+     * pipe endcoed data to socket
+     * @param socket 
+     * @param data 
+     * @param originData 
+     * @param ctx 
+     */
+    protected async pipeTo(socket: any, data: IReadableStream, originData: any, context: CodingsContext): Promise<void> {
+        if (this.options.pipeTo) {
+            await this.options.pipeTo(socket, data, originData, context)
+        } else if (this.options.write) {
+            await this.streamAdapter.write(data, this.streamAdapter.createWritable({
+                write: (chunk, encoding, callback) => {
+                    this.options.write!(socket, chunk, originData, context, callback)
+                }
+            }))
+        } else if ((socket as IWritableStream).write) {
+            await this.streamAdapter.write(data, socket as IWritableStream)
+        } else {
+            throw new NotImplementedExecption('Can not write message to socket!')
+        }
+    }
+
+
+    /**
+     * write endcoed data to socket.
+     * @param socket 
+     * @param data 
+     * @param originData 
+     * @param ctx 
+     * @param cb 
+     */
+    protected async write(socket: any, data: any, originData: any, context: CodingsContext): Promise<void> {
+        if (this.options.write) {
+            await promisify<any, any, any, CodingsContext, void>(this.options.write, this.options)(socket, data, originData, context)
+        } else if ((socket as IWritableStream).write) {
+            await promisify<any, void>((socket as IWritableStream).write, socket)(data)
+        } else {
+            throw new NotImplementedExecption('Can not write message to socket!')
+        }
     }
 
     /**
