@@ -24,6 +24,9 @@ export interface TransportOpts extends CodingsOpts {
     readonly headerFields?: HeaderFields;
 
     readonly defaultMethod?: string;
+    
+    readonly timeout?: number;
+
     /**
      * message event of socket.
      */
@@ -59,14 +62,6 @@ export interface TransportOpts extends CodingsOpts {
      * @param context 
      */
     handleMessage?(socket: any, context?: CodingsContext): Observable<any>;
-
-    beforeEncode?(context: CodingsContext, input: any): any | Promise<any>;
-    afterEncode?(ctx: CodingsContext, data: any, msg: any): any | Promise<any>;
-    
-    beforeDecode?(context: CodingsContext, msg: any): any | Promise<any>;
-    afterDecode?(context: CodingsContext, msg: any, decoded: any): Buffer | IReadableStream | Promise<Buffer | IReadableStream>;
-
-    readonly timeout?: number;
 }
 
 

@@ -1,5 +1,5 @@
 import { promisify } from '@tsdi/ioc';
-import { Observable, Subject, finalize, from, fromEvent, map, mergeMap, share, takeUntil } from 'rxjs';
+import { Observable, Subject, finalize, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
 import { AbstractTransportSession, TransportOpts } from '../TransportSession';
 import { IEventEmitter, IReadableStream, IWritableStream } from '../stream';
 import { StreamAdapter, isBuffer } from '../StreamAdapter';
@@ -44,13 +44,10 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      */
     send(data: TInput, context?: CodingsContext): Observable<TMsg> {
         const ctx = context ?? new CodingsContext(this);
-        return from(this.beforeEncode(ctx, data))
+        ctx.outgoing = data;
+        return this.encodings.encode(data, ctx)
             .pipe(
-                mergeMap(data => this.encodings.encode(data, ctx)),
-                mergeMap(msg => {
-                    return from(this.afterEncode(ctx, data, msg))
-                        .pipe(mergeMap(result => this.sendMessage(result, msg, data, ctx)))
-                }),
+                mergeMap(encoded => this.sendMessage(encoded, data, ctx)),
                 takeUntil(this.destroy$),
                 finalize(() => !context && ctx.onDestroy()),
                 share()
@@ -66,10 +63,9 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
             .pipe(
                 mergeMap(origin => {
                     const ctx = context ?? new CodingsContext(this);
-                    return from(this.beforeDecode(ctx, origin))
+                    ctx.incoming = origin;
+                    return this.decodings.decode(origin, ctx)
                         .pipe(
-                            mergeMap(msg => this.decodings.decode(msg, ctx)),
-                            mergeMap(data => this.afterDecode(ctx, origin, data)),
                             takeUntil(this.destroy$),
                             finalize(() => !context && ctx.onDestroy())
                         )
@@ -86,29 +82,6 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
         this.destroy$.complete();
     }
 
-
-
-    protected async beforeEncode(ctx: CodingsContext, input: TInput): Promise<any> {
-        if (this.options.beforeEncode) return await this.options.beforeEncode(ctx, input);
-        return input;
-    }
-
-    protected async afterEncode(ctx: CodingsContext, data: TInput, msg: any): Promise<any> {
-        if (this.options.afterEncode) return await this.options.afterEncode(ctx, data, msg);
-        return msg;
-    }
-
-
-    protected async beforeDecode(ctx: CodingsContext, msg: TMsg) {
-        if (this.options.beforeDecode) return await this.options.beforeDecode(ctx, msg);
-        return msg;
-    }
-
-    protected async afterDecode(ctx: CodingsContext, origin: TMsg, decoded: TOutput): Promise<TOutput> {
-        if (this.options.afterDecode) return await this.options.afterDecode(ctx, origin, decoded) as TOutput;
-        return decoded as TOutput;
-    }
-
     /**
      * send message.
      * @param originMsg 
@@ -116,7 +89,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * @param context 
      * @returns 
      */
-    protected async sendMessage(data: any, encodedMsg: Buffer | IReadableStream, originMsg: TInput, context: CodingsContext): Promise<any> {
+    protected async sendMessage(data: any, originMsg: TInput, context: CodingsContext): Promise<any> {
         if (this.streamAdapter.isReadable(data)) {
             await this.pipeTo(this.socket, data, originMsg, context)
         } else {
