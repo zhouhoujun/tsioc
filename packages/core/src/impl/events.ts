@@ -1,4 +1,4 @@
-import { ArgumentExecption, getClass, Injectable, InjectFlags, Injector, StaticProvider, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { ArgumentExecption, getClass, Injectable, InjectFlags, Injector, ProvdierOf, StaticProvider, tokenId, Type } from '@tsdi/ioc';
 import { finalize, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanActivate } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
@@ -50,18 +50,33 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    useGuards(guards: TypeOf<CanActivate> | TypeOf<CanActivate>[]): this {
+    useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[]): this {
         this._handler.useGuards(guards);
         return this;
     }
-
-    useInterceptors(interceptor: TypeOf<Interceptor<ApplicationEventContext, any>> | TypeOf<Interceptor<ApplicationEventContext, any>>[], order?: number): this {
-        this._handler.useInterceptors(interceptor, order);
+    
+    useGlobalGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this {
+        this._handler.useGlobalGuards(guards);
         return this;
     }
 
-    useFilters(filter: TypeOf<Filter> | TypeOf<Filter>[], order?: number | undefined): this {
+    useInterceptors(interceptors: ProvdierOf<Interceptor<ApplicationEventContext, any>> | ProvdierOf<Interceptor<ApplicationEventContext, any>>[], order?: number): this {
+        this._handler.useInterceptors(interceptors, order);
+        return this;
+    }
+
+    useGlobalInterceptors(interceptors: ProvdierOf<Interceptor<ApplicationEventContext, any>> | ProvdierOf<Interceptor<ApplicationEventContext, any>>[], order?: number): this {
+        this._handler.useGlobalInterceptors(interceptors, order);
+        return this;
+    }
+
+    useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
         this._handler.useFilters(filter, order);
+        return this;
+    }
+
+    useGlobalFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
+        this._handler.useGlobalFilters(filter, order);
         return this;
     }
 

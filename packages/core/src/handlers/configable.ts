@@ -96,6 +96,19 @@ export class ConfigableHandler<
         return this;
     }
 
+    /**
+     * use global interceptor for the handler.
+     * @param interceptor 
+     * @param order 
+     * @returns 
+     */
+    useGlobalInterceptors(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number): this {
+        if (!this.options.globalFiltersToken) return this;
+        this.regMulti(this.options.globalFiltersToken, interceptor, order);
+        this.reset();
+        return this;
+    }
+
 
     /**
      * use guards for the handler.
@@ -109,6 +122,17 @@ export class ConfigableHandler<
     }
 
     /**
+     * use global guards for the handler.
+     * @param guards 
+     */
+    useGlobalGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this {
+        if (!this.options.globalGuardsToken) throw new ArgumentExecption('no global guards token');
+        this.regMulti(this.options.globalGuardsToken, guards, order);
+        this._cacheGuards = null;
+        return this;
+    }
+
+    /**
      * use filters for the handler.
      * @param filter 
      * @param order 
@@ -117,6 +141,19 @@ export class ConfigableHandler<
     useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this {
         if (!this.options.filtersToken) throw new ArgumentExecption('no filters token');
         this.regMulti(this.options.filtersToken, filter, order);
+        this.reset();
+        return this;
+    }
+
+    /**
+     * use global filters for the handler.
+     * @param filter 
+     * @param order 
+     * @returns 
+     */
+    useGlobalFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this {
+        if (!this.options.globalFiltersToken) throw new ArgumentExecption('no global filters token');
+        this.regMulti(this.options.globalFiltersToken, filter, order);
         this.reset();
         return this;
     }
@@ -213,10 +250,14 @@ export interface HandlerOptions<TInput = any, TArg = any> extends InvokerOptions
      * activate the component. By default, any user can activate.
      */
     guards?: ProvdierOf<CanActivate<TInput>>[];
+
+    globalGuards?: ProvdierOf<CanActivate<TInput>>[];
     /**
      * interceptors of bootstrap.
      */
     interceptors?: ProvdierOf<Interceptor<TInput>>[];
+
+    globalInterceptors?: ProvdierOf<Interceptor<TInput>>[];
     /**
      * pipes for the bootstrap.
      */
@@ -225,6 +266,8 @@ export interface HandlerOptions<TInput = any, TArg = any> extends InvokerOptions
      * filters of bootstrap.
      */
     filters?: ProvdierOf<Filter<TInput>>[];
+
+    globalFilters?: ProvdierOf<Filter<TInput>>[];
 }
 
 /**
@@ -265,8 +308,27 @@ export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends Hand
  * 
  * 处理器服务
  */
-export interface HandlerService extends FilterService, PipeService, InterceptorService, GuardsService {
-
+export interface HandlerService extends FilterService, PipeService, InterceptorService, GuardsService {    
+    /**
+     * use global guards.
+     * @param guards
+     * @param order 
+     */
+    useGlobalGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this;
+    /**
+     * use global filters
+     * @param filters 
+     * @param order 
+     */
+    useGlobalFilters(filters: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
+    /**
+     * use global interceptors
+     * 
+     * 使用拦截器
+     * @param interceptors 
+     * @param order 
+     */
+    useGlobalInterceptors(interceptors: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
 }
 
 /**
@@ -344,4 +406,8 @@ export function setHandlerOptions(service: HandlerService, options: HandlerOptio
     options.filters?.length && service.useFilters(options.filters);
     options.guards?.length && service.useGuards(options.guards);
     options.interceptors?.length && service.useInterceptors(options.interceptors);
+
+    options.globalFilters?.length && service.useGlobalFilters(options.globalFilters);
+    options.globalGuards?.length && service.useGlobalGuards(options.globalGuards);
+    options.globalInterceptors?.length && service.useGlobalInterceptors(options.globalInterceptors);
 }

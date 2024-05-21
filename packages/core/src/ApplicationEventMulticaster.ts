@@ -35,6 +35,13 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * @param guards 
      */
     abstract useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[]): this;
+    
+    /**
+     * use global guards.
+     * @param guards
+     * @param order 
+     */
+    abstract useGlobalGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this;
     /**
      * use interceptor
      * @param interceptor 
@@ -42,11 +49,25 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      */
     abstract useInterceptors(interceptor: ProvdierOf<Interceptor<ApplicationEventContext, any>> | ProvdierOf<Interceptor<ApplicationEventContext, any>>[], order?: number): this;
     /**
+     * use global interceptors
+     * 
+     * 使用拦截器
+     * @param interceptors 
+     * @param order 
+     */
+    abstract useGlobalInterceptors(interceptors: ProvdierOf<Interceptor<ApplicationEventContext, any>> | ProvdierOf<Interceptor<ApplicationEventContext, any>>[], order?: number): this;
+    /**
      * use filter
      * @param filter 
      * @param order 
      */
     abstract useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
+    /**
+     * use global filters
+     * @param filters 
+     * @param order 
+     */
+    abstract useGlobalFilters(filters: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
     /**
      * add event handler.
      * @param event 

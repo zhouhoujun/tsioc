@@ -85,6 +85,11 @@ const udptl = /^udp(s)?:\/\//i;
                         maxSize: defaultMaxSize,
                         defaultMethod: '*',
                         messageEvent: 'message',
+                        encodes: {
+                            interceptors:[
+                                
+                            ]
+                        },
                         messageEventHandle(msg: Buffer, rinfo: RemoteInfo) {
                             return { msg, rinfo };
                         },
