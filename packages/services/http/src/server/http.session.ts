@@ -1,5 +1,5 @@
 import { Injectable, Injector } from '@tsdi/ioc';
-import { Decoder, DecodingsFactory, Encoder, EncodingsFactory, StreamAdapter, TransportOpts, ev } from '@tsdi/common/transport';
+import { CodingsContext, Decoder, DecodingsFactory, Encoder, EncodingsFactory, StreamAdapter, TransportOpts, ev } from '@tsdi/common/transport';
 import { TransportSession, TransportSessionFactory } from '@tsdi/endpoints';
 import { Server, IncomingMessage } from 'http';
 import { Server as HttpsServer } from 'https';
@@ -23,6 +23,7 @@ export class HttpIncomings {
 }
 
 export class HttpServerTransportSession extends TransportSession<Http2Server | HttpsServer | Server> {
+
     readonly options: TransportOpts
     constructor(
         readonly injector: Injector,
@@ -30,13 +31,13 @@ export class HttpServerTransportSession extends TransportSession<Http2Server | H
         readonly streamAdapter: StreamAdapter,
         readonly encodings: Encoder,
         readonly decodings: Decoder,
-        readonly serverOpts: HttpServerOpts) {
+        readonly serverOptions: HttpServerOpts) {
         super()
-        this.options = serverOpts.transportOpts ?? {};
+        this.options = serverOptions.transportOpts ?? {};
     }
 
 
-    sendMessage(ctx: HttpContext, msg: any): Observable<any> {
+    sendMessage(msg: any, ctx: HttpContext, context: CodingsContext): Observable<any> {
         return defer(async () => {
             await this.streamAdapter.sendBody(msg, ctx.response)
             return msg

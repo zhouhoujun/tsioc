@@ -89,13 +89,12 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * @param context 
      * @returns 
      */
-    protected async sendMessage(data: any, originMsg: TInput, context: CodingsContext): Promise<any> {
+    protected sendMessage(data: any, originMsg: TInput, context: CodingsContext): Promise<any> | Observable<any> {
         if (this.streamAdapter.isReadable(data)) {
-            await this.pipeTo(this.socket, data, originMsg, context)
+            return this.pipeTo(this.socket, data, originMsg, context)
         } else {
-            await this.write(this.socket, data, originMsg, context);
+            return this.write(this.socket, data, originMsg, context);
         }
-        return data;
     }
 
     /**
@@ -105,7 +104,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * @param originData 
      * @param ctx 
      */
-    protected async pipeTo(socket: any, data: IReadableStream, originData: any, context: CodingsContext): Promise<void> {
+    protected async pipeTo(socket: any, data: IReadableStream, originData: any, context: CodingsContext): Promise<any> {
         if (this.options.pipeTo) {
             await this.options.pipeTo(socket, data, originData, context)
         } else if (this.options.write) {
@@ -119,6 +118,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
         } else {
             throw new NotImplementedExecption('Can not write message to socket!')
         }
+        return data;
     }
 
 
@@ -130,7 +130,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * @param ctx 
      * @param cb 
      */
-    protected async write(socket: any, data: any, originData: any, context: CodingsContext): Promise<void> {
+    protected async write(socket: any, data: any, originData: any, context: CodingsContext): Promise<any> {
         if (this.options.write) {
             await promisify<any, any, any, CodingsContext, void>(this.options.write, this.options)(socket, data, originData, context)
         } else if ((socket as IWritableStream).write) {
@@ -138,6 +138,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
         } else {
             throw new NotImplementedExecption('Can not write message to socket!')
         }
+        return data
     }
 
     /**
