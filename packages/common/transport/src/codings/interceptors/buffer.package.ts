@@ -160,7 +160,7 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
                                         size += chLen;
                                         stream.write(chunk);
                                     }
-                                    
+
                                     if (total >= packetSize && stream) {
                                         stream.end();
                                         subsr.next(this.streamConnectId(input, idLen, delimiter, stream, countLen, size));
@@ -176,7 +176,15 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
                                             writeBuffer(chunk, chLen);
                                             callback();
                                         } else {
-                                            this.subcontract(chunk, maxSize).subscribe({
+                                            // const count = (chLen % maxSize === 0) ? (chLen / maxSize) : (Math.floor(chLen / maxSize) + 1);
+                                            // for (let i = 1; i <= count; i++) {
+                                            //     const end = i * maxSize;
+                                            //     const sub = chunk.subarray(end - maxSize, end >= chLen ? chLen : end);
+                                            //     writeBuffer(sub, Buffer.byteLength(sub))
+                                            // }
+                                            // callback();
+
+                                            this.subcontract(chunk, chLen, maxSize).subscribe({
                                                 next: (payload) => {
                                                     writeBuffer(payload, Buffer.byteLength(payload))
                                                 },
@@ -206,8 +214,7 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
                         if (!isBuffer(data)) return throwError(() => new ArgumentExecption('payload has not serializized!'))
 
                         if (options.maxSize && packetSize > options.maxSize) {
-
-                            return this.subcontract(data, sizeLimit).pipe(
+                            return this.subcontract(data, packetSize, sizeLimit).pipe(
                                 map(data => this.connectId(input.id, idLen, data))
                             )
                         } else {
@@ -255,15 +262,15 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
     }
 
 
-    subcontract(chunk: Buffer, maxSize: number): Observable<Buffer> {
-        const len = Buffer.byteLength(chunk);
+    subcontract(chunk: Buffer, len: number, maxSize: number): Observable<Buffer> {
+        // const len = Buffer.byteLength(chunk);
         const count = (len % maxSize === 0) ? (len / maxSize) : (Math.floor(len / maxSize) + 1);
 
         return range(1, count)
             .pipe(
                 map(i => {
                     const end = i * maxSize;
-                    return chunk.subarray(end - maxSize, end > len ? len : end)
+                    return chunk.subarray(end - maxSize, end >= len ? len : end)
                 })
             )
     }

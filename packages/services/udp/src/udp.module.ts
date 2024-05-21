@@ -52,7 +52,11 @@ import { UdpMessageDecodeFilter, UdpMessageEncodeFilter } from './server/filters
 
                             const port = parseInt(url.substring(idx + 1));
                             const addr = url.substring(0, idx);
-                            socket.send(data, port, addr, cb);
+                            if(addr) {
+                                socket.send(data, port, addr, cb);
+                            } else {
+                                socket.send(data, port, cb);
+                            }
                         }
                     },
                     interceptorsToken: UDP_CLIENT_INTERCEPTORS,
@@ -100,7 +104,11 @@ import { UdpMessageDecodeFilter, UdpMessageEncodeFilter } from './server/filters
                                 port = parseInt(url.substring(idx + 1));
                                 addr = url.substring(0, idx);
                             }
-                            socket.send(data, port, addr, cb);
+                            if(addr) {
+                                socket.send(data, port, addr, cb);
+                            } else {
+                                socket.send(data, port, cb);
+                            }
                         }
                     },
                     content: {
