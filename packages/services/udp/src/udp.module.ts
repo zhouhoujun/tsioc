@@ -1,18 +1,17 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
-import { isBuffer, toBuffer } from '@tsdi/common/transport';
 import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { Socket, RemoteInfo } from 'dgram';
 import { UdpClient } from './client/client';
-import { UDP_CLIENT_FILTERS, UDP_CLIENT_INTERCEPTORS, UdpClientTransportOpts } from './client/options';
+import { UDP_CLIENT_FILTERS, UDP_CLIENT_INTERCEPTORS } from './client/options';
 import { UdpHandler } from './client/handler';
 import { UdpServer } from './server/server';
 import { UDP_SERV_FILTERS, UDP_SERV_GUARDS, UDP_SERV_INTERCEPTORS } from './server/options';
 import { UdpEndpointHandler } from './server/handler';
 import { defaultMaxSize } from './consts';
-import { UdpClientMessageDecodeInterceptor, UdpClientMessageEncodeInterceptor } from './client/interceptors';
-import { UdpMessageDecodeInterceptor, UdpMessageEncodeInterceptor } from './server/interceptors';
+import { UdpClientMessageDecodeFilter, UdpClientMessageEncodeFilter } from './client/filters';
+import { UdpMessageDecodeFilter, UdpMessageEncodeFilter } from './server/filters';
 
 
 const udptl = /^udp(s)?:\/\//i;
@@ -41,34 +40,14 @@ const udptl = /^udp(s)?:\/\//i;
                         },
                         encodes: {
                             globalFilters: [
-                                UdpClientMessageEncodeInterceptor
+                                UdpClientMessageEncodeFilter
                             ]
                         },
                         decodes: {
                             globalFilters: [
-                                UdpClientMessageDecodeInterceptor
+                                UdpClientMessageDecodeFilter
                             ]
                         },
-                        // beforeDecode(context, incoming: { msg: Buffer, rinfo: RemoteInfo }) {
-                        //     context.incoming = incoming;
-                        //     return incoming.msg
-                        // },
-
-                        // beforeEncode(context, input) {
-                        //     if (!context.channel) {
-                        //         if (udptl.test(input.url)) {
-                        //             const url = new URL(input.url!);
-                        //             context.channel = url.host;
-                        //         } else {
-                        //             context.channel = (context.options as UdpClientTransportOpts).host
-                        //         }
-                        //     }
-                        //     return input
-                        // },
-                        // afterEncode(context, outgoing, encodedMsg) {
-                        //     if (isBuffer(encodedMsg)) return encodedMsg;
-                        //     return toBuffer(encodedMsg, context.options.maxSize);
-                        // },
                         write(socket: Socket, data, originData, context, cb) {
                             const url = context.channel!;
                             const idx = url.lastIndexOf(':');
@@ -102,30 +81,14 @@ const udptl = /^udp(s)?:\/\//i;
                         },
                         encodes: {
                             globalFilters: [
-                                UdpMessageEncodeInterceptor
+                                UdpMessageEncodeFilter
                             ]
                         },
                         decodes: {
                             globalFilters: [
-                                UdpMessageDecodeInterceptor
+                                UdpMessageDecodeFilter
                             ]
                         },
-                        // beforeDecode(context, msg: { msg: Buffer, rinfo: RemoteInfo }) {
-                        //     if (!context.channel) {
-                        //         const rinfo = msg.rinfo;
-                        //         context.channel = rinfo.family == 'IPv6' ? `[${rinfo.address}]:${rinfo.port}` : `${rinfo.address}:${rinfo.port}`
-                        //     }
-                        //     return msg.msg
-                        // },
-                        // afterDecode(context, msg: any, decoded) {
-                        //     decoded.channel = context.channel;
-                        //     return decoded;
-                        // },
-
-                        // afterEncode(context, originData, data) {
-                        //     if (isBuffer(data)) return data;
-                        //     return toBuffer(data, context.options.maxSize);
-                        // },
                         write(socket: Socket, data, originData, ctx, cb) {
                             const url = ctx.channel ?? originData.channel;
                             const idx = url.lastIndexOf(':');

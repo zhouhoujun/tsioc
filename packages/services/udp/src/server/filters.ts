@@ -1,11 +1,11 @@
 import { Injectable } from '@tsdi/ioc';
-import { Handler, Interceptor } from '@tsdi/core';
+import { Filter, Handler } from '@tsdi/core';
 import { CodingsContext, isBuffer, toBuffer } from '@tsdi/common/transport';
 import { Observable, map, mergeMap } from 'rxjs';
 
 
 @Injectable()
-export class UdpMessageDecodeInterceptor implements Interceptor {
+export class UdpMessageDecodeFilter implements Filter {
     intercept(input: any, next: Handler, context: CodingsContext): Observable<any> {
         if (!context.channel) {
             const rinfo = input.rinfo;
@@ -23,7 +23,7 @@ export class UdpMessageDecodeInterceptor implements Interceptor {
 
 
 @Injectable()
-export class UdpMessageEncodeInterceptor implements Interceptor {
+export class UdpMessageEncodeFilter implements Filter {
     intercept(input: any, next: Handler, context: CodingsContext): Observable<any> {
         return next.handle(input, context)
             .pipe(

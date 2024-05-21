@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { Handler, Interceptor } from '@tsdi/core';
+import { Filter, Handler, Interceptor } from '@tsdi/core';
 import { CodingsContext, isBuffer, toBuffer } from '@tsdi/common/transport';
 import { Observable, mergeMap } from 'rxjs';
 import { udptl } from '../consts';
@@ -7,7 +7,7 @@ import { UdpClientTransportOpts } from './options';
 
 
 @Injectable()
-export class UdpClientMessageDecodeInterceptor implements Interceptor {
+export class UdpClientMessageDecodeFilter implements Filter {
     intercept(input: any, next: Handler, context: CodingsContext): Observable<any> {
         return next.handle(input?.msg, context)
     }
@@ -16,7 +16,7 @@ export class UdpClientMessageDecodeInterceptor implements Interceptor {
 
 
 @Injectable()
-export class UdpClientMessageEncodeInterceptor implements Interceptor {
+export class UdpClientMessageEncodeFilter implements Filter {
     intercept(input: any, next: Handler, context: CodingsContext): Observable<any> {
         if (!context.channel) {
             if (udptl.test(input.url)) {
