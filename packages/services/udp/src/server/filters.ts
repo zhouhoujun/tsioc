@@ -15,6 +15,7 @@ export class UdpMessageDecodeFilter implements Filter {
             .pipe(
                 map(ctx => {
                     ctx.channel = context.channel;
+                    ctx.incoming = context.incoming;
                     return ctx;
                 })
             )

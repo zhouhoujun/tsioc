@@ -14,8 +14,6 @@ import { UdpClientMessageDecodeFilter, UdpClientMessageEncodeFilter } from './cl
 import { UdpMessageDecodeFilter, UdpMessageEncodeFilter } from './server/filters';
 
 
-const udptl = /^udp(s)?:\/\//i;
-
 
 @Module({
     providers: [
@@ -90,10 +88,18 @@ const udptl = /^udp(s)?:\/\//i;
                             ]
                         },
                         write(socket: Socket, data, originData, ctx, cb) {
-                            const url = ctx.channel ?? originData.channel;
-                            const idx = url.lastIndexOf(':');
-                            const port = parseInt(url.substring(idx + 1));
-                            const addr = url.substring(0, idx);
+                            const rinfo = ctx.incoming?.rinfo ?? originData.incoming?.rinfo as RemoteInfo;
+                            let port: number;
+                            let addr: string;
+                            if (rinfo) {
+                                port = rinfo.port;
+                                addr = rinfo.address;
+                            } else {
+                                const url = ctx.channel ?? originData.channel;
+                                const idx = url.lastIndexOf(':');
+                                port = parseInt(url.substring(idx + 1));
+                                addr = url.substring(0, idx);
+                            }
                             socket.send(data, port, addr, cb);
                         }
                     },
