@@ -11,6 +11,8 @@ import { UdpServer } from './server/server';
 import { UDP_SERV_FILTERS, UDP_SERV_GUARDS, UDP_SERV_INTERCEPTORS } from './server/options';
 import { UdpEndpointHandler } from './server/handler';
 import { defaultMaxSize } from './consts';
+import { UdpClientMessageDecodeInterceptor, UdpClientMessageEncodeInterceptor } from './client/interceptors';
+import { UdpMessageDecodeInterceptor, UdpMessageEncodeInterceptor } from './server/interceptors';
 
 
 const udptl = /^udp(s)?:\/\//i;
@@ -37,26 +39,36 @@ const udptl = /^udp(s)?:\/\//i;
                         messageEventHandle(msg: Buffer, rinfo: RemoteInfo) {
                             return { msg, rinfo };
                         },
-                        beforeDecode(context, incoming: { msg: Buffer, rinfo: RemoteInfo }) {
-                            context.incoming = incoming;
-                            return incoming.msg
+                        encodes: {
+                            globalFilters: [
+                                UdpClientMessageEncodeInterceptor
+                            ]
                         },
+                        decodes: {
+                            globalFilters: [
+                                UdpClientMessageDecodeInterceptor
+                            ]
+                        },
+                        // beforeDecode(context, incoming: { msg: Buffer, rinfo: RemoteInfo }) {
+                        //     context.incoming = incoming;
+                        //     return incoming.msg
+                        // },
 
-                        beforeEncode(context, input) {
-                            if (!context.channel) {
-                                if (udptl.test(input.url)) {
-                                    const url = new URL(input.url!);
-                                    context.channel = url.host;
-                                } else {
-                                    context.channel = (context.options as UdpClientTransportOpts).host
-                                }
-                            }
-                            return input
-                        },
-                        afterEncode(context, outgoing, encodedMsg) {
-                            if (isBuffer(encodedMsg)) return encodedMsg;
-                            return toBuffer(encodedMsg, context.options.maxSize);
-                        },
+                        // beforeEncode(context, input) {
+                        //     if (!context.channel) {
+                        //         if (udptl.test(input.url)) {
+                        //             const url = new URL(input.url!);
+                        //             context.channel = url.host;
+                        //         } else {
+                        //             context.channel = (context.options as UdpClientTransportOpts).host
+                        //         }
+                        //     }
+                        //     return input
+                        // },
+                        // afterEncode(context, outgoing, encodedMsg) {
+                        //     if (isBuffer(encodedMsg)) return encodedMsg;
+                        //     return toBuffer(encodedMsg, context.options.maxSize);
+                        // },
                         write(socket: Socket, data, originData, context, cb) {
                             const url = context.channel!;
                             const idx = url.lastIndexOf(':');
@@ -85,30 +97,35 @@ const udptl = /^udp(s)?:\/\//i;
                         maxSize: defaultMaxSize,
                         defaultMethod: '*',
                         messageEvent: 'message',
-                        encodes: {
-                            interceptors:[
-                                
-                            ]
-                        },
                         messageEventHandle(msg: Buffer, rinfo: RemoteInfo) {
                             return { msg, rinfo };
                         },
-                        beforeDecode(context, msg: { msg: Buffer, rinfo: RemoteInfo }) {
-                            if (!context.channel) {
-                                const rinfo = msg.rinfo;
-                                context.channel = rinfo.family == 'IPv6' ? `[${rinfo.address}]:${rinfo.port}` : `${rinfo.address}:${rinfo.port}`
-                            }
-                            return msg.msg
+                        encodes: {
+                            globalFilters: [
+                                UdpMessageEncodeInterceptor
+                            ]
                         },
-                        afterDecode(context, msg: any, decoded) {
-                            decoded.channel = context.channel;
-                            return decoded;
+                        decodes: {
+                            globalFilters: [
+                                UdpMessageDecodeInterceptor
+                            ]
                         },
-                        
-                        afterEncode(context, originData, data) {
-                            if (isBuffer(data)) return data;
-                            return toBuffer(data, context.options.maxSize);
-                        },
+                        // beforeDecode(context, msg: { msg: Buffer, rinfo: RemoteInfo }) {
+                        //     if (!context.channel) {
+                        //         const rinfo = msg.rinfo;
+                        //         context.channel = rinfo.family == 'IPv6' ? `[${rinfo.address}]:${rinfo.port}` : `${rinfo.address}:${rinfo.port}`
+                        //     }
+                        //     return msg.msg
+                        // },
+                        // afterDecode(context, msg: any, decoded) {
+                        //     decoded.channel = context.channel;
+                        //     return decoded;
+                        // },
+
+                        // afterEncode(context, originData, data) {
+                        //     if (isBuffer(data)) return data;
+                        //     return toBuffer(data, context.options.maxSize);
+                        // },
                         write(socket: Socket, data, originData, ctx, cb) {
                             const url = ctx.channel ?? originData.channel;
                             const idx = url.lastIndexOf(':');

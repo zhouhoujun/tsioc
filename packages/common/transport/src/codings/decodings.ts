@@ -53,6 +53,17 @@ export const ENDPOINT_DECODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, Cod
 export const DECODINGS_INTERCEPTORS = tokenId<Interceptor<Buffer, any, CodingsContext>[]>('DECODINGS_INTERCEPTORS');
 
 /**
+ *  decodings filters.
+ */
+export const DECODINGS_FILTERS = tokenId<Interceptor<Buffer, any, CodingsContext>[]>('DECODINGS_FILTERS');
+
+
+/**
+ *  endpoint decodings filters.
+ */
+export const ENDPOIN_DECODINGS_FILTERS = tokenId<Interceptor<Buffer, any, CodingsContext>[]>('ENDPOIN_DECODINGS_FILTERS');
+
+/**
  * Decodings
  */
 export class Decodings extends Decoder {
@@ -72,6 +83,8 @@ export class DecodingsFactory {
         const handler = createHandler(injector, {
             globalInterceptorsToken: ENDPOINT_DECODINGS_INTERCEPTORS,
             interceptorsToken: DECODINGS_INTERCEPTORS,
+            globalFiltersToken: ENDPOIN_DECODINGS_FILTERS,
+            filtersToken: DECODINGS_FILTERS,
             backend: DecodingsBackend,
             ...options?.decodes
         }) as DecodingsHandler;

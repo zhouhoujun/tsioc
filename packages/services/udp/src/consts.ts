@@ -9,3 +9,7 @@ export interface UdpMessage {
     topic: string;
     rinfo: RemoteInfo;
 }
+
+
+
+export const udptl = /^udp(s)?:\/\//i;

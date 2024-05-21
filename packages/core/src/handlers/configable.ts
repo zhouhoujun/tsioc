@@ -103,8 +103,8 @@ export class ConfigableHandler<
      * @returns 
      */
     useGlobalInterceptors(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number): this {
-        if (!this.options.globalFiltersToken) return this;
-        this.regMulti(this.options.globalFiltersToken, interceptor, order);
+        if (!this.options.globalInterceptorsToken) return this;
+        this.regMulti(this.options.globalInterceptorsToken, interceptor, order);
         this.reset();
         return this;
     }

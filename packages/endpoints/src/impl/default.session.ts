@@ -30,10 +30,11 @@ export class DefaultTransportSessionFactory implements TransportSessionFactory<a
 
     constructor() { }
 
-    create(injector: Injector, socket: any, options: TransportOpts): DefaultTransportSession {
+    create(injector: Injector, socket: any, options: ServerOpts): DefaultTransportSession {
+        const transportOpts = options?.transportOpts ?? {};
         return new DefaultTransportSession(injector, socket,
-            injector.get(options.encodingsFactory ?? EncodingsFactory).create(injector, options),
-            injector.get(options.decodingsFactory ?? DecodingsFactory).create(injector, options),
+            injector.get(transportOpts.encodingsFactory ?? EncodingsFactory).create(injector, transportOpts),
+            injector.get(transportOpts.decodingsFactory ?? DecodingsFactory).create(injector, transportOpts),
             injector.get(StreamAdapter),
             options);
     }
