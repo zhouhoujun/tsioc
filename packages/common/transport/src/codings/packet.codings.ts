@@ -15,6 +15,27 @@ export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer
 
 export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<Buffer, PacketData, CodingsContext>[]>('PACKET_DECODE_INTERCEPTORS');
 
+export class JsonPacket {
+
+    constructor(options: Packet) {
+
+    }
+
+}
+
+export class BufferPacket {
+    constructor(options: Packet, readonly headDelimiter: string) {
+
+    }
+}
+
+
+export class StreamPacket {
+    constructor(options: Packet, readonly headDelimiter: string) {
+
+    }
+}
+
 
 @Injectable({ static: true })
 export class PacketCodingsHandlers {

@@ -3,7 +3,7 @@ import {
     tokenId, isArray, toProvider, lang, ProvdierOf, Type, ModuleRef, isNil, ModuleType
 } from '@tsdi/ioc';
 import { CanActivate, Filter, InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
-import { ENDPOINT_DECODINGS_INTERCEPTORS, ENDPOINT_ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, StatusAdapter, Transport } from '@tsdi/common/transport';
+import { GLOBAL_DECODINGS_INTERCEPTORS, GLOBAL_ENCODINGS_INTERCEPTORS, HybirdTransport, NotImplementedExecption, StatusAdapter, Transport } from '@tsdi/common/transport';
 import { RequestContext, RequestContextFactory } from './RequestContext';
 import { Server, ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
@@ -245,8 +245,8 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                         ...moduleOpts.serverOpts?.routes
                     },
                     providers: [
-                        { provide: ENDPOINT_ENCODINGS_INTERCEPTORS, useClass: OutgoingEncodeInterceper, multi: true },
-                        { provide: ENDPOINT_DECODINGS_INTERCEPTORS, useClass: IncomingDecodeInterceper, multi: true },
+                        { provide: GLOBAL_ENCODINGS_INTERCEPTORS, useClass: OutgoingEncodeInterceper, multi: true },
+                        { provide: GLOBAL_DECODINGS_INTERCEPTORS, useClass: IncomingDecodeInterceper, multi: true },
                         ...moduleOpts.defaultOpts?.providers || EMPTY,
                         ...moduleOpts.serverOpts?.providers || EMPTY
                     ]

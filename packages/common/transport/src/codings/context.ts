@@ -24,6 +24,10 @@ export class CodingsContext extends InvocationArgs implements OnDestroy {
      */
     channel?: string;
 
+    get complete(): boolean {
+        return false;
+    }
+
     constructor(options: CodingsOpts);
     constructor(session: AbstractTransportSession);
     constructor(args: CodingsOpts | AbstractTransportSession) {

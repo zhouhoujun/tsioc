@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
 import {
-    ENDPOINT_DECODINGS_INTERCEPTORS, ENDPOINT_ENCODINGS_INTERCEPTORS, HybirdTransport,
+    GLOBAL_DECODINGS_INTERCEPTORS, GLOBAL_ENCODINGS_INTERCEPTORS, HybirdTransport,
     NotImplementedExecption, ResponseEventFactory, StatusAdapter, Transport
 } from '@tsdi/common/transport';
 import { ClientOpts } from './options';
@@ -180,8 +180,8 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     ...opts.defaultOpts,
                     ...opts.clientOpts,
                     providers: [
-                        { provide: ENDPOINT_ENCODINGS_INTERCEPTORS, useClass: RequestEncodeInterceper, multi: true },
-                        { provide: ENDPOINT_DECODINGS_INTERCEPTORS, useClass: ResponseDecodeInterceper, multi: true },
+                        { provide: GLOBAL_ENCODINGS_INTERCEPTORS, useClass: RequestEncodeInterceper, multi: true },
+                        { provide: GLOBAL_DECODINGS_INTERCEPTORS, useClass: ResponseDecodeInterceper, multi: true },
                         ...opts.defaultOpts?.providers || EMPTY,
                         ...opts.clientOpts?.providers || EMPTY
                     ]

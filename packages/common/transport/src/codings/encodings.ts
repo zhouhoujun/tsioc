@@ -8,6 +8,7 @@ import { Encoder } from './Encoder';
 import { StreamAdapter, toBuffer } from '../StreamAdapter';
 import { PacketData } from '../packet';
 import { NotSupportedExecption, PacketLengthException } from '../execptions';
+import { Codings } from './Codings';
 
 /**
  * Encodings Handler
@@ -32,7 +33,7 @@ export class EncodingsBackend implements Backend<any, any, CodingsContext> {
             if (this.streamAdapter.isReadable(input.payload)) {
                 if (!context.options.maxSize || !input.payloadLength) {
                     throw new NotSupportedExecption('Payload is readable');
-                } else if(input.payloadLength > context.options.maxSize) {
+                } else if (input.payloadLength > context.options.maxSize) {
                     const btpipe = context.session!.injector.get<PipeTransform>('bytes-format');
                     throw new PacketLengthException(`Readable payload length ${btpipe.transform(input.payloadLength)} great than max size ${btpipe.transform(context.options.maxSize)}`);
                 } else {
@@ -52,9 +53,23 @@ export class EncodingsBackend implements Backend<any, any, CodingsContext> {
 
 
 /**
- * Endpoint encodings interceptors.
+ * Encodings Backend
  */
-export const ENDPOINT_ENCODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, CodingsContext>[]>('ENDPOINT_ENCODINGS_INTERCEPTORS');
+@Injectable()
+export class EncodingsBackend1 implements Backend<any, any, CodingsContext> {
+
+    constructor(private codings: Codings) { }
+
+    handle(input: any, context: CodingsContext): Observable<any> {
+        return this.codings.deepEncode(input, context);
+    }
+}
+
+
+/**
+ * global encodings interceptors.
+ */
+export const GLOBAL_ENCODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, CodingsContext>[]>('GLOBAL_ENCODINGS_INTERCEPTORS');
 
 /**
  * Encodings interceptors.
@@ -69,9 +84,9 @@ export const ENCODINGS_FILTERS = tokenId<Interceptor<any, Buffer, CodingsContext
 
 
 /**
- *  endpoint Encodings filters.
+ *  global Encodings filters.
  */
-export const ENDPOIN_ENCODINGS_FILTERS = tokenId<Interceptor<any, Buffer, CodingsContext>[]>('ENDPOIN_ENCODINGS_FILTERS');
+export const GLOBAL_ENCODINGS_FILTERS = tokenId<Interceptor<any, Buffer, CodingsContext>[]>('GLOBAL_ENCODINGS_FILTERS');
 
 
 /**
@@ -92,9 +107,9 @@ export class Encodings extends Encoder {
 export class EncodingsFactory {
     create(injector: Injector, options: CodingsOpts): Encodings {
         const handler = createHandler(injector, {
-            globalInterceptorsToken: ENDPOINT_ENCODINGS_INTERCEPTORS,
+            globalInterceptorsToken: GLOBAL_ENCODINGS_INTERCEPTORS,
             interceptorsToken: ENCODINGS_INTERCEPTORS,
-            globalFiltersToken: ENDPOIN_ENCODINGS_FILTERS,
+            globalFiltersToken: GLOBAL_ENCODINGS_FILTERS,
             filtersToken: ENCODINGS_FILTERS,
             backend: EncodingsBackend,
             ...options.encodes

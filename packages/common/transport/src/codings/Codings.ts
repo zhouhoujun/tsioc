@@ -21,6 +21,16 @@ export class Codings {
         return this.encodeType(type, input, context);
     }
 
+    deepEncode<TOutput = any>(input: any, context: CodingsContext): Observable<TOutput> {
+        return this.encode(input, context)
+            .pipe(
+                mergeMap(data => {
+                    if (context.complete) return of(data);
+                    return this.encode(data, context)
+                })
+            )
+    }
+
     encodeType<T>(type: Type<T> | string, data: T, context: CodingsContext): Observable<any> {
         const handlers = this.mappings.getEncodeHanlders(type, context.options);
 
@@ -38,6 +48,16 @@ export class Codings {
     decode<TOutput = any>(input: any, context: CodingsContext): Observable<TOutput> {
         const type = getClass(input);
         return this.decodeType(type, input, context)
+    }
+
+    deepDecode<TOutput = any>(input: any, context: CodingsContext): Observable<TOutput> {
+        return this.decode(input, context)
+            .pipe(
+                mergeMap(data => {
+                    if (context.complete) return of(data);
+                    return this.decode(data, context)
+                })
+            )
     }
 
     decodeType<T>(type: Type<T> | string, data: T, context: CodingsContext): Observable<any> {
