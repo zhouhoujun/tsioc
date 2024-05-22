@@ -24,8 +24,9 @@ export class CodingsContext extends InvocationArgs implements OnDestroy {
      */
     channel?: string;
 
+    private _complete = false;
     get complete(): boolean {
-        return false;
+        return this._complete;
     }
 
     constructor(options: CodingsOpts);
@@ -38,6 +39,13 @@ export class CodingsContext extends InvocationArgs implements OnDestroy {
         } else {
             this.options = args;
         }
+    }
+
+    protected override onNext(data: any): void {
+        if (this.options.comolete) {
+            this._complete = this.options.comolete(data)
+        }
+        super.onNext(data);
     }
 
 

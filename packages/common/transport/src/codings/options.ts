@@ -42,4 +42,6 @@ export interface CodingsOpts {
     readonly maxSize?: number;
 
     readonly encoding?: string;
+
+    comolete?(data: any): boolean;
 }

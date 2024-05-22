@@ -178,7 +178,7 @@ if (os.platform() != 'win32') {
             // expect(res).toBeDefined();
             // expect(isArray(res.features)).toBeTruthy();
             expect(res instanceof TransportErrorResponse).toBeDefined();
-            expect(res.statusMessage).toContain('Readable payload length 23.74mb great than max size 1mb');
+            expect(res.statusMessage).toContain('Readable payload length 23.74mb great than max size 5mb');
         })
 
         it('query all', async () => {

@@ -3,6 +3,7 @@ import { CanActivate } from './guard';
 import { Interceptor } from './Interceptor';
 import { Filter } from './filters/filter';
 import { ConfigableHandler, ConfigableHandlerOptions } from './handlers/configable';
+import { BehaviorSubject, Observable, Subject, filter, takeUntil } from 'rxjs';
 
 
 /**
@@ -28,20 +29,33 @@ export abstract class InvocationHandler<
 
 export class InvocationArgs {
 
+    private destory$ = new Subject<void>();
+    private _next$ = new BehaviorSubject<any>(null);
     private _inputs: any[];
+    readonly changed: Observable<any>;
+
     get inputs(): any[] {
         return this._inputs;
     }
 
     constructor() {
         this._inputs = [];
+        this.changed = this._next$.pipe(
+            takeUntil(this.destory$),
+            filter(r => r !== null)
+        )
     }
 
     next<TInput>(input: TInput): this {
         if (this._inputs[0] != input) {
             this._inputs.unshift(input);
+            this.onNext(input);
         }
         return this;
+    }
+
+    protected onNext(data: any) {
+        this._next$.next(data);
     }
 
     first<TInput>(): TInput {
@@ -54,6 +68,9 @@ export class InvocationArgs {
 
     onDestroy(): void {
         this._inputs = [];
+        this.destory$.next();
+        this.destory$.complete();
+
     }
 }
 
