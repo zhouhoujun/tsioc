@@ -118,11 +118,11 @@ export class HttpClientTransportSession extends ClientTransportSession<ClientHtt
         return !ctx || typeof AbortController === 'undefined' ? null! : ctx.getValueify(AbortController, () => new AbortController());
     }
 
-    async destroy(): Promise<void> {
-        if (this.socket) {
-            await promisify(this.socket.close, this.socket)();
-        }
-    }
+    // async destroy(): Promise<void> {
+    //     if (this.socket) {
+    //         await promisify(this.socket.close, this.socket)();
+    //     }
+    // }
 
 }
 

@@ -1,13 +1,13 @@
+import { Injectable, Injector, isArray, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { PipeTransform } from '@tsdi/core';
 import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, TransportHeaders } from '@tsdi/common';
-import { MessageExecption, InternalServerExecption, Outgoing, ResponsePacket, append, parseTokenList, Incoming, StatusAdapter, MimeAdapter, StreamAdapter, FileAdapter, PacketLengthException, isBuffer, ENOENT } from '@tsdi/common/transport';
-import { EMPTY_OBJ, Injectable, Injector, isArray, isNil, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { MessageExecption, InternalServerExecption, Outgoing, ResponsePacket, append, parseTokenList, Incoming, StatusAdapter, MimeAdapter, StreamAdapter, FileAdapter, PacketLengthException, ENOENT } from '@tsdi/common/transport';
 import { RestfulRequestContext, RestfulRequestContextFactory, TransportSession, Throwable, AcceptsPriority } from '@tsdi/endpoints';
 import * as http from 'http';
 import * as http2 from 'http2';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
 import { HttpServerOpts } from './options';
-import { PipeTransform } from '@tsdi/core';
 
 
 export type HttpServRequest = (http.IncomingMessage | http2.Http2ServerRequest) & Incoming;
@@ -476,7 +476,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
     }
 
     protected respondHead() {
-        if (!this.sent && !this.response.hasHeader(hdr.CONTENT_LENGTH)) {
+        if (!this.sent && !this.response.hasHeader(CONTENT_LENGTH)) {
             const length = this.length;
             if (Number.isInteger(length)) this.length = length
         }
@@ -485,9 +485,9 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 
     protected respondNoBody() {
         if (this._explicitNullBody) {
-            this.response.removeHeader(hdr.CONTENT_TYPE);
-            this.response.removeHeader(hdr.CONTENT_LENGTH);
-            this.response.removeHeader(hdr.TRANSFER_ENCODING);
+            this.response.removeHeader(CONTENT_TYPE);
+            this.response.removeHeader(CONTENT_LENGTH);
+            this.response.removeHeader(TRANSFER_ENCODING);
             return this.response.end()
         }
 
@@ -565,10 +565,10 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 }
 
 @Injectable()
-export class HttpAssetContextFactory implements RestfulRequestContextFactory<HttpServRequest, HttpServResponse> {
+export class HttpContextFactory implements RestfulRequestContextFactory<HttpServRequest, HttpServResponse> {
     create(injector: Injector, session: TransportSession, incoming: HttpServRequest, outgoing: HttpServResponse, options: HttpServerOpts): HttpContext {
-        (incoming as any).tHeaders = new TransportHeaders(incoming.headers);
-        (outgoing as any).tHeaders = new TransportHeaders(outgoing.headers);
+        (incoming as any).tHeaders = new TransportHeaders(incoming.headers, true);
+        (outgoing as any).tHeaders = new TransportHeaders(outgoing.headers, true);
         return new HttpContext(injector, session,
             incoming,
             outgoing,
@@ -582,6 +582,10 @@ export class HttpAssetContextFactory implements RestfulRequestContextFactory<Htt
 
 }
 
+const CONTENT_TYPE = 'content-type';
+const CONTENT_ENCODING = 'content-encoding';
+const CONTENT_LENGTH = 'content-length';
+const TRANSFER_ENCODING = 'transfer-encoding';
 
 const X_FORWARDED_PROTO = 'x-forwarded-proto';
 const X_FORWARDED_HOST = 'x-forwarded-host';

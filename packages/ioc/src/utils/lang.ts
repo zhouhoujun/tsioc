@@ -451,7 +451,7 @@ export function pomiseOf<T>(target: T | Observable<T> | Promise<T>): Promise<T> 
 
 
 
-export function promisify<TResult>(fn: (callback: (err: any, result: TResult) => void) => void, owner?: any): () => Promise<TResult>;
+export function promisify<TResult>(fn: (callback: (err?: any, result?: TResult) => void) => void, owner?: any): () => Promise<TResult>;
 export function promisify(fn: (callback: (err?: any) => void) => void, owner?: any): () => Promise<void>;
 export function promisify<T1, TResult>(fn: (arg1: T1, callback: (err: any, result: TResult) => void) => void, owner?: any): (arg1: T1) => Promise<TResult>;
 export function promisify<T1>(fn: (arg1: T1, callback: (err?: any) => void) => void, owner?: any): (arg1: T1) => Promise<void>;

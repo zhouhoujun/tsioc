@@ -79,6 +79,20 @@ export interface RequestInitOpts<T = any> extends RequestOptions<T>, ResponseAs 
     headerFields?: HeaderFields
 }
 
+export abstract class AbstractRequest<T = any> {
+    abstract get pattern(): Pattern;
+    abstract get params(): TransportParams;
+    abstract get responseType(): 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
+    abstract get observe(): 'body' | 'events' | 'response' | 'emit' | 'observe';
+
+    abstract get headers(): TransportHeaders;
+
+    abstract payload: T | null;
+
+    get body(): T | null {
+        return this.payload;
+    }
+}
 
 /**
  * Transport Request.

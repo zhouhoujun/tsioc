@@ -1,4 +1,4 @@
-import { isArray, isNil, isString } from '@tsdi/ioc';
+import { isArray, isBoolean, isNil, isString } from '@tsdi/ioc';
 
 /**
  * header.
@@ -58,17 +58,39 @@ const defaultFields = {
 export class TransportHeaders<T extends Header = Header> {
 
     private _hdrs: Map<string, T>;
-    private _rcd?: Record<string, T>;
+    private _rcd?: Record<string, T> | null;
     private _normal: Map<string, string>;
 
     private _fields: HeaderFields;
+    private _proxy: boolean;
 
-    constructor(headers?: string | HeadersLike<T>, initFields?: HeaderFields) {
+    /**
+     * create transport headers.
+     * @param headers 
+     * @param initFields 
+     */
+    constructor(headers?: string | HeadersLike<T>, initFields?: HeaderFields);
+    /**
+     * create transport headers proxy with headers.
+     * @param headers headers map
+     * @param proxy proxy operation with the headers map.
+     * @param initFields 
+     */
+    constructor(headers: MapHeaders<T> | undefined, proxy: boolean, initFields?: HeaderFields);
+    constructor(headers?: string | HeadersLike<T>, fieldsProxy?: HeaderFields | boolean, initFields?: HeaderFields) {
+        if (isBoolean(fieldsProxy)) {
+            this._proxy = fieldsProxy;
+        } else {
+            this._proxy = false;
+            initFields = fieldsProxy;
+        }
+
         this._hdrs = new Map();
         this._normal = new Map();
         this._fields = { ...defaultFields, ...initFields };
         if (headers) {
             if (isString(headers)) {
+                this._proxy = false;
                 headers.split('\n').forEach(line => {
                     const index = line.indexOf(':');
                     if (index > 0) {
@@ -76,8 +98,9 @@ export class TransportHeaders<T extends Header = Header> {
                         const value = line.slice(index + 1).trim();
                         this.append(name, value as T);
                     }
-                })
+                });
             } else if (headers instanceof TransportHeaders) {
+                this._proxy = false;
                 headers.forEach((n, v) => {
                     this.set(n, v);
                 });
@@ -109,11 +132,17 @@ export class TransportHeaders<T extends Header = Header> {
         for (const f in headers) {
             this.set(f, headers[f]);
         }
-        this._rcd = null!;
+        if (this._proxy) {
+            if (!this._rcd) {
+                this._rcd = headers;
+            }
+        } else {
+            this._rcd = null!;
+        }
     }
 
     getHeader<Th = string | number>(name: string): Th | undefined {
-        const values = this._hdrs.get(name);
+        const values = this._hdrs.get(name.toLowerCase());
         if (isNil(values)) return undefined;
         return isArray(values) && values.length ? values[0] : values;
     }
@@ -135,13 +164,25 @@ export class TransportHeaders<T extends Header = Header> {
         const key = name.toLowerCase();
         if (isNil(val)) {
             this._hdrs.delete(key);
+            if (this._proxy && this._rcd) {
+                delete this._rcd[name];
+                delete this._rcd[key];
+            } else {
+                this._rcd = null;
+            }
             this._normal.delete(key);
             return this;
         }
+        this.setNormalizedName(name, key);
         this._normal.set(key, name);
         this._hdrs.set(key, val)
-
-        this._rcd = null!;
+        if (this._proxy) {
+            if (this._rcd) {
+                this._rcd[name] = val;
+            }
+        } else {
+            this._rcd = null;
+        }
         return this;
     }
 
@@ -159,11 +200,17 @@ export class TransportHeaders<T extends Header = Header> {
             } else {
                 nv = val;
             }
+            if (this._proxy && this._rcd) {
+                this._rcd[name] = nv
+            }
             this._hdrs.set(key, nv);
         } else {
+            if (this._proxy && this._rcd) {
+                this._rcd[name] = val
+            }
             this._hdrs.set(key, val)
         }
-        this._rcd = null!;
+        if (!this._proxy) this._rcd = null;
         return this;
     }
 
@@ -171,7 +218,14 @@ export class TransportHeaders<T extends Header = Header> {
         const key = name.toLowerCase();
         this._hdrs.delete(key);
         this._normal.delete(key);
-        this._rcd = null!;
+        if (this._proxy) {
+            if (this._rcd) {
+                delete this._rcd[name];
+                delete this._rcd[key];
+            }
+        } else {
+            this._rcd = null;
+        }
         return this;
     }
 

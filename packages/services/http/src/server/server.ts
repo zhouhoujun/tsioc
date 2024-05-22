@@ -135,11 +135,8 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
 
         const injector = this.handler.injector;
         const factory = injector.get(HttpServerSessionFactory);
-        const transportOpts = opts.transportOpts!;
-        if (!transportOpts.transport) transportOpts.transport = 'http';
         const session = factory.create(injector, this._server, opts);
         session.listen(this.handler, this.destroy$);
-        // injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options);
 
         // notify hybrid service to bind http server.
         await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this._server, 'http', this)));

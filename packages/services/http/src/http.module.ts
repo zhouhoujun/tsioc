@@ -2,7 +2,7 @@ import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
-import { RestfulRequestContextFactory, ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts, RequestContextFactory, MimeModule } from '@tsdi/endpoints';
+import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts, MimeModule } from '@tsdi/endpoints';
 import { Http } from './client/clinet';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS } from './client/options';
 import { HttpHandler } from './client/handler';
@@ -10,15 +10,14 @@ import { HttpPathInterceptor } from './client/path';
 import { HTTP_MIDDLEWARES, HTTP_SERV_FILTERS, HTTP_SERV_GUARDS, HTTP_SERV_INTERCEPTORS } from './server/options';
 import { HttpEndpointHandler } from './server/handler';
 import { HttpServer } from './server/server';
-import { HttpAssetContextFactory } from './server/context';
+import { HttpContextFactory } from './server/context';
 import { HttpStatusAdapter } from './status';
 import { HttpExecptionHandlers } from './execption.handlers';
 import { HttpClientSessionFactory } from './client/client.session';
 import { HttpServerSessionFactory } from './server/http.session';
 import { HttpResponseEventFactory } from './client/response.factory';
 import { HttpClientCodingsHandlers } from './client/codings.hanlders';
-import { HttpIncomingDecodingsHandlers } from './server/decodings.handlers';
-import { HttpOutgoingEncodingsHandlers } from './server/encodings.handlers';
+import { HttpCodingsHandlers } from './server/codings.handlers';
 
 
 // const defaultMaxSize = 1048576; // 1024 * 1024;
@@ -32,13 +31,12 @@ import { HttpOutgoingEncodingsHandlers } from './server/encodings.handlers';
         HttpStatusAdapter,
         HttpResponseEventFactory,
         HttpClientCodingsHandlers,
-        HttpIncomingDecodingsHandlers,
-        HttpOutgoingEncodingsHandlers,
+        HttpCodingsHandlers,
         // HttpTransportBackend,
         HttpPathInterceptor,
         HttpClientSessionFactory,
         HttpServerSessionFactory,
-        HttpAssetContextFactory,
+        HttpContextFactory,
         { provide: HTTP_CLIENT_INTERCEPTORS, useExisting: HttpPathInterceptor, multi: true },
         {
             provide: CLIENT_MODULES,
@@ -54,10 +52,6 @@ import { HttpOutgoingEncodingsHandlers } from './server/encodings.handlers';
                     filtersToken: HTTP_CLIENT_FILTERS,
                     statusAdapter: { useExisting: HttpStatusAdapter },
                     // backend: HttpTransportBackend,
-                    transportOpts: {
-                        delimiter: '#'
-                        // maxSize: defaultMaxSize,
-                    },
                     sessionFactory: { useExisting: HttpClientSessionFactory },
                 } as ClientOpts
             },
@@ -76,10 +70,6 @@ import { HttpOutgoingEncodingsHandlers } from './server/encodings.handlers';
                     statusAdapter: { useExisting: HttpStatusAdapter },
                     responseEventFactory: { useExisting: HttpResponseEventFactory },
                     // backend: HttpTransportBackend,
-                    transportOpts: {
-                        delimiter: '#',
-                        // maxSize: defaultMaxSize,
-                    },
                     sessionFactory: { useExisting: HttpClientSessionFactory },
                 } as ClientOpts
             },
@@ -96,9 +86,7 @@ import { HttpOutgoingEncodingsHandlers } from './server/encodings.handlers';
                 defaultOpts: {
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {
-                        delimiter: '#',
-                        defaultMethod: '*',
-                        // maxSize: defaultMaxSize
+                        defaultMethod: 'GET'
                     },
                     content: {
                         root: 'public',
@@ -131,9 +119,7 @@ import { HttpOutgoingEncodingsHandlers } from './server/encodings.handlers';
                 defaultOpts: {
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {
-                        delimiter: '#',
-                        defaultMethod: "GET",
-                        // maxSize: defaultMaxSize
+                        defaultMethod: "GET"
                     },
                     content: {
                         root: 'public'
