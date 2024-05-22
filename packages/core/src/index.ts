@@ -23,6 +23,7 @@ export * from './Application';
 export * from './Handler';
 export * from './Interceptor';
 export * from './guard';
+export * from './execptions';
 
 export * from './uuid';
 

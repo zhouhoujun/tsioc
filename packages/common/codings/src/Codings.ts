@@ -1,6 +1,6 @@
 import { Injectable, Type, getClass, getClassName } from '@tsdi/ioc';
+import { NotHandleExecption } from '@tsdi/core';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
-import { NotSupportedExecption } from '../execptions';
 import { CodingMappings } from './mappings';
 import { CodingsContext } from './context';
 
@@ -41,7 +41,7 @@ export class Codings {
                 );
             }, of(data))
         } else {
-            return throwError(() => new NotSupportedExecption(`No encodings handler for ${getClassName(type)} of ${context.options.transport}${context.options.microservice ? ' microservice' : ''}${context.options.client ? ' client' : ''}`))
+            return throwError(() => new NotHandleExecption(`No encodings handler for ${getClassName(type)} of ${context.options.transport}${context.options.microservice ? ' microservice' : ''}${context.options.client ? ' client' : ''}`))
         }
     }
 
@@ -70,7 +70,7 @@ export class Codings {
                 );
             }, of(data))
         } else {
-            return throwError(() => new NotSupportedExecption(`No decodings handler for ${getClassName(type)} of ${context.options.transport}${context.options.microservice ? ' microservice' : ''}${context.options.client ? ' client' : ''}`))
+            return throwError(() => new NotHandleExecption(`No decodings handler for ${getClassName(type)} of ${context.options.transport}${context.options.microservice ? ' microservice' : ''}${context.options.client ? ' client' : ''}`))
         }
     }
 }

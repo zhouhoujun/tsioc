@@ -1,10 +1,10 @@
 import { Module } from '@tsdi/ioc';
+import { ENCODINGS_INTERCEPTORS, DECODINGS_INTERCEPTORS } from '@tsdi/common/codings';
 import { PackageifyDecodeInterceptor, PackageifyEncodeInterceptor, PacketCodingsHandlers } from './packet.codings';
 import { BindPacketIdEncodeInterceptor, PacketDecodeInterceptor, PacketEncodeInterceptor } from './interceptors/buffer.packet';
 import { PackageDecodeInterceptor, PackageEncodeInterceptor } from './interceptors/buffer.package';
 import { TypedDecodeInterceper, TypedEncodeInterceper } from './interceptors/typed';
-import { ENCODINGS_INTERCEPTORS } from './encodings';
-import { DECODINGS_INTERCEPTORS } from './decodings';
+import { PacketIdGenerator, PacketNumberIdGenerator } from './PacketId';
 
 
 @Module({
@@ -20,6 +20,7 @@ export class TypedCodingsModule {
 
 @Module({
     providers: [
+        { provide: PacketIdGenerator, useClass: PacketNumberIdGenerator },
         { provide: DECODINGS_INTERCEPTORS, useClass: PacketDecodeInterceptor, multi: true },
 
         { provide: ENCODINGS_INTERCEPTORS, useClass: BindPacketIdEncodeInterceptor, multi: true },

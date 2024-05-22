@@ -1,16 +1,16 @@
 import { Injectable, getClass, isPrimitive } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
+import { CodingMappings } from '@tsdi/common/codings';
 import { Observable, mergeMap, of } from 'rxjs';
-import { CodingsContext } from '../context';
-import { CodingMappings } from '../mappings';
+import { TransportContext } from '../context';
 
 
 @Injectable()
-export class TypedEncodeInterceper implements Interceptor<any, any, CodingsContext> {
+export class TypedEncodeInterceper implements Interceptor<any, any, TransportContext> {
 
     constructor(private mappings: CodingMappings) { }
 
-    intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
+    intercept(input: any, next: Handler<any, any, TransportContext>, context: TransportContext): Observable<any> {
         const type = getClass(input);
         const handlers = isPrimitive(type) ? null : this.mappings.getEncodeHanlders(type, context.options);
         if (handlers && handlers.length) {
@@ -28,11 +28,11 @@ export class TypedEncodeInterceper implements Interceptor<any, any, CodingsConte
 
 
 @Injectable()
-export class TypedDecodeInterceper implements Interceptor<any, any, CodingsContext> {
+export class TypedDecodeInterceper implements Interceptor<any, any, TransportContext> {
 
     constructor(private mappings: CodingMappings) { }
 
-    intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
+    intercept(input: any, next: Handler<any, any, TransportContext>, context: TransportContext): Observable<any> {
         const type = getClass(input);
         const handlers = isPrimitive(type) ? null : this.mappings.getDecodeHanlders(type, context.options);
         if (handlers && handlers.length) {

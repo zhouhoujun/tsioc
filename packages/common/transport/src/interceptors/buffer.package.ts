@@ -1,11 +1,11 @@
 import { ArgumentExecption, Injectable, isNumber } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { Observable, Subscriber, filter, map, mergeMap, of, range, throwError } from 'rxjs';
-import { PacketData } from '../../packet';
-import { CodingsContext } from '../context';
-import { StreamAdapter, isBuffer } from '../../StreamAdapter';
-import { IDuplexStream, IReadableStream } from '../../stream';
-import { PacketLengthException } from '../../execptions';
+import { PacketData } from '../packet';
+import { TransportContext } from '../context';
+import { StreamAdapter, isBuffer } from '../StreamAdapter';
+import { IDuplexStream, IReadableStream } from '../stream';
+import { PacketLengthException } from '../execptions';
 
 interface CachePacket extends PacketData {
     payload: IDuplexStream;
@@ -15,12 +15,12 @@ interface CachePacket extends PacketData {
 }
 
 @Injectable()
-export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableStream, PacketData, CodingsContext> {
+export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableStream, PacketData, TransportContext> {
 
     constructor(private streamAdapter: StreamAdapter) { }
 
     packs: Map<string | number, CachePacket> = new Map();
-    intercept(input: Buffer | IReadableStream, next: Handler<Buffer | IReadableStream, CachePacket, CodingsContext>, context: CodingsContext): Observable<CachePacket> {
+    intercept(input: Buffer | IReadableStream, next: Handler<Buffer | IReadableStream, CachePacket, TransportContext>, context: TransportContext): Observable<CachePacket> {
         const options = context.options;
         const idLen = options.idLen ?? 2;
         let id: string | number;
@@ -106,11 +106,11 @@ export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableS
 }
 
 @Injectable()
-export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer | IReadableStream, CodingsContext> {
+export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer | IReadableStream, TransportContext> {
 
     constructor(private streamAdapter: StreamAdapter) { }
 
-    intercept(input: PacketData, next: Handler<PacketData, Buffer | IReadableStream, CodingsContext>, context: CodingsContext): Observable<Buffer | IReadableStream> {
+    intercept(input: PacketData, next: Handler<PacketData, Buffer | IReadableStream, TransportContext>, context: TransportContext): Observable<Buffer | IReadableStream> {
         return next.handle(input, context)
             .pipe(
                 mergeMap(data => {

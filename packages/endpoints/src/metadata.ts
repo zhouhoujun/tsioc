@@ -3,8 +3,7 @@ import {
     ClassMethodDecorator, createParamDecorator, TypeMetadata, Execption, isMetadataObject, DecorDefine
 } from '@tsdi/ioc';
 import { CanActivate, PipeTransform, TransportParameterDecorator, TransportParameter } from '@tsdi/core';
-import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod } from '@tsdi/common';
-import { Transport } from '@tsdi/common/transport';
+import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Transport } from '@tsdi/common';
 import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, ProtocolRouteOptions, RouteMappingMetadata, RouteOptions, Router } from './router/router';
 import { Middleware, MiddlewareFn } from './middleware/middleware';
 import { RouteHandlerFactoryResolver } from './router/route.handler';

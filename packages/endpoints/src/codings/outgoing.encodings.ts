@@ -1,6 +1,7 @@
 import { Injectable, getClass } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { CodingsContext, EncodeHandler, Codings, PacketData } from '@tsdi/common/transport';
+import { Codings, EncodeHandler } from '@tsdi/common/codings';
+import { TransportContext, PacketData } from '@tsdi/common/transport';
 import { Observable, mergeMap } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 import { RequestContextImpl } from '../impl/request.context';
@@ -33,11 +34,11 @@ export class OutgoingEncodingsHandlers {
 
 
 @Injectable()
-export class OutgoingEncodeInterceper implements Interceptor<any, any, CodingsContext> {
+export class OutgoingEncodeInterceper implements Interceptor<any, any, TransportContext> {
 
     constructor(private codings: Codings) { }
 
-    intercept(input: RequestContext, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
+    intercept(input: RequestContext, next: Handler<any, any, TransportContext>, context: TransportContext): Observable<any> {
         let type = getClass(input);
         if (type == RequestContextImpl) {
             type = RequestContext;

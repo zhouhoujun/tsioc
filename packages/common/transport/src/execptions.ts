@@ -61,15 +61,6 @@ export class SecurityExecption extends MessageExecption {
     }
 }
 
-/**
- * Invalid Json execption.
- */
-export class InvalidJsonException extends Execption {
-    constructor(err: any, source: string) {
-        super(`is invalid JSON: ${err.message}\nSource data: ${source}`);
-    }
-}
-
 
 
 /**
@@ -279,25 +270,6 @@ export class HeandersSentExecption extends Execption {
 export class InvalidSessionExecption extends Execption {
     constructor(message = 'Invalid session error') {
         super(`InvalidSessionExecption: ${message}`)
-    }
-}
-
-
-export class GoawayExecption extends Execption {
-    constructor(message = 'Connection gowary') {
-        super(`GoawayExecption: ${message}`)
-    }
-}
-
-export class OfflineExecption extends Execption {
-    constructor(message = 'Connection offline') {
-        super(`OfflineExecption: ${message}`)
-    }
-}
-
-export class DisconnectExecption extends Execption {
-    constructor(message = 'Connection disconnect') {
-        super(`DisconnectExecption: ${message}`)
     }
 }
 

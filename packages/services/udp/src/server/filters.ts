@@ -1,12 +1,12 @@
 import { Injectable } from '@tsdi/ioc';
 import { Filter, Handler } from '@tsdi/core';
-import { CodingsContext, isBuffer, toBuffer } from '@tsdi/common/transport';
+import { TransportContext, isBuffer, toBuffer } from '@tsdi/common/transport';
 import { Observable, map, mergeMap } from 'rxjs';
 
 
 @Injectable()
 export class UdpMessageDecodeFilter implements Filter {
-    intercept(input: any, next: Handler, context: CodingsContext): Observable<any> {
+    intercept(input: any, next: Handler, context: TransportContext): Observable<any> {
         if (!context.channel) {
             const rinfo = input.rinfo;
             context.channel = rinfo.family == 'IPv6' ? `[${rinfo.address}]:${rinfo.port}` : `${rinfo.address}:${rinfo.port}`
@@ -25,7 +25,7 @@ export class UdpMessageDecodeFilter implements Filter {
 
 @Injectable()
 export class UdpMessageEncodeFilter implements Filter {
-    intercept(input: any, next: Handler, context: CodingsContext): Observable<any> {
+    intercept(input: any, next: Handler, context: TransportContext): Observable<any> {
         return next.handle(input, context)
             .pipe(
                 mergeMap(async data => {

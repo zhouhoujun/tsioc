@@ -1,19 +1,17 @@
 import { Abstract, ArgumentExecption, Injectable, isString, tokenId } from '@tsdi/ioc';
-import { Handler, Interceptor } from '@tsdi/core';
+import { Handler, Interceptor, InvalidJsonException } from '@tsdi/core';
 import { TransportHeaders } from '@tsdi/common';
-import { DecodeHandler, EncodeHandler } from './metadata';
-import { CodingsContext } from './context';
+import { DecodeHandler, EncodeHandler, Codings } from '@tsdi/common/codings';
+import { TransportContext } from './context';
 import { Observable } from 'rxjs';
-import { StreamAdapter, isBuffer } from '../StreamAdapter';
-import { Packet, PacketData } from '../packet';
-import { Codings } from './Codings';
-import { IReadableStream } from '../stream';
-import { InvalidJsonException } from '../execptions';
+import { StreamAdapter, isBuffer } from './StreamAdapter';
+import { Packet, PacketData } from './packet';
+import { IReadableStream } from './stream';
 
 
-export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer, CodingsContext>[]>('PACKET_ENCODE_INTERCEPTORS');
+export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer, TransportContext>[]>('PACKET_ENCODE_INTERCEPTORS');
 
-export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<Buffer, PacketData, CodingsContext>[]>('PACKET_DECODE_INTERCEPTORS');
+export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<Buffer, PacketData, TransportContext>[]>('PACKET_DECODE_INTERCEPTORS');
 
 export class JsonPacket {
 
@@ -43,7 +41,7 @@ export class PacketCodingsHandlers {
     constructor(private streamAdapter: StreamAdapter) { }
 
     @DecodeHandler('PACKET', { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
-    async bufferDecode(context: CodingsContext) {
+    async bufferDecode(context: TransportContext) {
         const options = context.options;
         if (!options.headDelimiter) throw new ArgumentExecption('headDelimiter');
 
@@ -102,7 +100,7 @@ export class PacketCodingsHandlers {
 
 
     @EncodeHandler('PACKET', { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })
-    async bufferEncode(context: CodingsContext) {
+    async bufferEncode(context: TransportContext) {
         const options = context.options;
         if (!options.headDelimiter) throw new ArgumentExecption('headDelimiter');
 
@@ -154,10 +152,10 @@ export abstract class HeaderDeserialization {
 
 
 @Injectable()
-export class PackageifyDecodeInterceptor implements Interceptor<any, any, CodingsContext> {
+export class PackageifyDecodeInterceptor implements Interceptor<any, any, TransportContext> {
     constructor(private codings: Codings) { }
 
-    intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
+    intercept(input: any, next: Handler<any, any, TransportContext>, context: TransportContext): Observable<any> {
         if (context.options.headDelimiter) {
             return this.codings.decodeType('PACKET', input, context);
         }
@@ -166,11 +164,11 @@ export class PackageifyDecodeInterceptor implements Interceptor<any, any, Coding
 }
 
 @Injectable()
-export class PackageifyEncodeInterceptor implements Interceptor<any, any, CodingsContext> {
+export class PackageifyEncodeInterceptor implements Interceptor<any, any, TransportContext> {
 
     constructor(private codings: Codings) { }
 
-    intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
+    intercept(input: any, next: Handler<any, any, TransportContext>, context: TransportContext): Observable<any> {
         if (context.options.headDelimiter) {
             return this.codings.encodeType('PACKET', input, context);
         }

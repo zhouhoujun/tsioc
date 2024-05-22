@@ -1,11 +1,9 @@
-import { Abstract, Injectable, Injector, isString, tokenId } from '@tsdi/ioc';
+import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Backend, Handler, Interceptor, createHandler } from '@tsdi/core';
-import { Observable, defer, map } from 'rxjs';
+import { Observable } from 'rxjs';
 import { CodingsOpts } from './options';
 import { CodingsContext } from './context';
 import { Decoder } from './Decoder';
-import { InvalidJsonException } from '../execptions';
-import { StreamAdapter, toBuffer } from '../StreamAdapter';
 import { Codings } from './Codings';
 
 
@@ -17,37 +15,37 @@ export abstract class DecodingsHandler implements Handler<any, any, CodingsConte
     abstract handle(input: any, context: CodingsContext): Observable<any>
 }
 
+// /**
+//  * Decodings Backend
+//  */
+// @Injectable()
+// export class DecodingsBackend implements Backend<any, any, CodingsContext> {
+//     constructor(private streamAdapter: StreamAdapter) { }
+
+//     handle(input: any, context: CodingsContext): Observable<any> {
+//         return defer(async () => {
+//             if (this.streamAdapter.isReadable(input)) {
+//                 return await toBuffer(input, context.options.maxSize)
+//             }
+//             return input
+//         }).pipe(
+//             map(data => {
+//                 const jsonStr = isString(data) ? data : new TextDecoder().decode(data);
+//                 try {
+//                     const buff = JSON.parse(jsonStr);
+//                     return buff;
+//                 } catch (err) {
+//                     throw new InvalidJsonException(err, jsonStr);
+//                 }
+//             }));
+//     }
+// }
+
 /**
  * Decodings Backend
  */
 @Injectable()
 export class DecodingsBackend implements Backend<any, any, CodingsContext> {
-    constructor(private streamAdapter: StreamAdapter) { }
-
-    handle(input: any, context: CodingsContext): Observable<any> {
-        return defer(async () => {
-            if (this.streamAdapter.isReadable(input)) {
-                return await toBuffer(input, context.options.maxSize)
-            }
-            return input
-        }).pipe(
-            map(data => {
-                const jsonStr = isString(data) ? data : new TextDecoder().decode(data);
-                try {
-                    const buff = JSON.parse(jsonStr);
-                    return buff;
-                } catch (err) {
-                    throw new InvalidJsonException(err, jsonStr);
-                }
-            }));
-    }
-}
-
-/**
- * Decodings Backend
- */
-@Injectable()
-export class DecodingsBackend1 implements Backend<any, any, CodingsContext> {
     constructor(private codings: Codings) { }
 
     handle(input: any, context: CodingsContext): Observable<any> {

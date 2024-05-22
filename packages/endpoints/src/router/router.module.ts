@@ -1,6 +1,5 @@
 import { InjectFlags, Injector, InstanceOf, Module, ModuleWithProviders, ProviderType, Token, TypeOf, getToken, isFunction, isString, isType, tokenId } from '@tsdi/ioc';
-import { PatternFormatter, patternToPath, normalize } from '@tsdi/common';
-import { Transport } from '@tsdi/common/transport';
+import { PatternFormatter, patternToPath, normalize, Transport } from '@tsdi/common';
 import { ROUTES, Routes } from './route';
 import { RouteMatcher, Router } from './router';
 import { HybridRouter } from './router.hybrid';

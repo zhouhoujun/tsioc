@@ -1,11 +1,9 @@
 import { Abstract, Injector, Token } from '@tsdi/ioc';
 import { TransportErrorResponse, TransportEvent, HeadersLike, HeaderFields, } from '@tsdi/common';
+import { CodingsOpts, EncodingsFactory, DecodingsFactory } from '@tsdi/common/codings';
 import { Observable } from 'rxjs';
-import { CodingsOpts } from './codings/options';
-import { EncodingsFactory } from './codings/encodings';
-import { DecodingsFactory } from './codings/decodings';
-import { CodingsContext } from './codings/context';
 import { IReadableStream } from './stream';
+import { TransportContext } from './context';
 
 
 /**
@@ -24,6 +22,31 @@ export interface TransportOpts extends CodingsOpts {
     readonly headerFields?: HeaderFields;
 
     readonly defaultMethod?: string;
+
+    /**
+     * packet delimiter flag
+     */
+    readonly delimiter?: string;
+
+    /**
+     * head delimiter flag
+     */
+    readonly headDelimiter?: string;
+
+    /**
+     * content count number length.
+     */
+    readonly countLen?: number;
+    /**
+     * id b
+     */
+    readonly idLen?: number;
+    /**
+     * packet max size limit.
+     */
+    readonly maxSize?: number;
+
+    readonly encoding?: string;
     
     readonly timeout?: number;
 
@@ -44,7 +67,7 @@ export interface TransportOpts extends CodingsOpts {
      * @param originData 
      * @param ctx 
      */
-    pipeTo?(socket: any, data: IReadableStream, originData: any, ctx: CodingsContext): Promise<void>;
+    pipeTo?(socket: any, data: IReadableStream, originData: any, ctx: TransportContext): Promise<void>;
     /**
      * write endcoed data to socket.
      * @param socket 
@@ -53,7 +76,7 @@ export interface TransportOpts extends CodingsOpts {
      * @param ctx 
      * @param cb 
      */
-    write?(socket: any, data: any, originData: any, ctx: CodingsContext, cb?: (err?: Error | null) => void): void;
+    write?(socket: any, data: any, originData: any, ctx: TransportContext, cb?: (err?: Error | null) => void): void;
 
     /**
      * custom handle mesasge from socket.
@@ -61,7 +84,7 @@ export interface TransportOpts extends CodingsOpts {
      * @param socket 
      * @param context 
      */
-    handleMessage?(socket: any, context?: CodingsContext): Observable<any>;
+    handleMessage?(socket: any, context?: TransportContext): Observable<any>;
 }
 
 

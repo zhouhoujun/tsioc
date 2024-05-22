@@ -1,7 +1,7 @@
 import { Header, Pattern, TransportHeaders } from '@tsdi/common';
-import { Outgoing } from '../Outgoing';
-import { Packet } from '../packet';
-import { TransportOpts } from '../TransportSession';
+import { Outgoing } from './Outgoing';
+import { Packet } from './packet';
+import { TransportOpts } from './TransportSession';
 
 export class PacketOutgoing<T = any> implements Outgoing<T> {
 

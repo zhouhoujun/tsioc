@@ -1,7 +1,7 @@
 import { MapHeaders, Pattern, TransportHeaders, normalize } from '@tsdi/common';
-import { Packet, ResponsePacket } from '../packet';
-import { Incoming, ResponseIncoming } from '../Incoming';
-import { TransportOpts } from '../TransportSession';
+import { Packet, ResponsePacket } from './packet';
+import { Incoming, ResponseIncoming } from './Incoming';
+import { TransportOpts } from './TransportSession';
 
 export class PacketIncoming<T = any> implements Incoming<T> {
     readonly id: any;

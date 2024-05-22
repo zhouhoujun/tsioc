@@ -1,6 +1,6 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
+import { Transport } from '@tsdi/common';
 import { RequestHandler } from '../RequestHandler';
-import { Transport } from '@tsdi/common/transport';
 import { Router } from './router';
 
 /**

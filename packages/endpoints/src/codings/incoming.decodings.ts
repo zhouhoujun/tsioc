@@ -1,9 +1,7 @@
 import { Injectable, getClass } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import {
-    CodingsContext, NotSupportedExecption, PacketData, PacketIncoming,
-    PacketOutgoing, DecodeHandler, Codings
-} from '@tsdi/common/transport';
+import { DecodeHandler, Codings } from '@tsdi/common/codings';
+import { NotSupportedExecption, PacketData, PacketIncoming, PacketOutgoing, TransportContext } from '@tsdi/common/transport';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
 import { RequestContext, RequestContextFactory } from '../RequestContext';
 import { TransportSession } from '../transport.session';
@@ -14,7 +12,7 @@ import { TransportSession } from '../transport.session';
 export class IncomingDecodingsHandlers {
 
     @DecodeHandler(PacketIncoming)
-    handleResponseIncoming(incoming: PacketIncoming, context: CodingsContext) {
+    handleResponseIncoming(incoming: PacketIncoming, context: TransportContext) {
 
         const session = context.session as TransportSession;
         const injector = session.injector;
@@ -37,11 +35,11 @@ export class IncomingDecodingsHandlers {
 
 
 @Injectable()
-export class IncomingDecodeInterceper implements Interceptor<any, any, CodingsContext> {
+export class IncomingDecodeInterceper implements Interceptor<any, any, TransportContext> {
 
     constructor(private codings: Codings) { }
 
-    intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
+    intercept(input: any, next: Handler<any, any, TransportContext>, context: TransportContext): Observable<any> {
         return next.handle(input, context).pipe(
             mergeMap(res => {
                 if(res instanceof RequestContext) return of(res);

@@ -1,9 +1,10 @@
 import { EMPTY_OBJ, Injectable, getClass, isNil, isString, lang } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { HEAD, ResponseJsonParseError, TransportEvent, TransportHeaders, TransportRequest } from '@tsdi/common';
+import { Codings, DecodeHandler } from '@tsdi/common/codings';
 import {
-    Codings, CodingsContext, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter,
-    XSSI_PREFIX, ev, isBuffer, toBuffer, Packet, ResponsePacketIncoming, ResponseIncoming, DecodeHandler
+    TransportContext, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter,
+    XSSI_PREFIX, ev, isBuffer, toBuffer, Packet, ResponsePacketIncoming, ResponseIncoming
 } from '@tsdi/common/transport';
 import { Observable, defer, mergeMap, throwError } from 'rxjs';
 
@@ -17,7 +18,7 @@ const xmlType = /xml$/i;
 @Injectable()
 export class ResponseIncomingResolver {
 
-    resolve(res: ResponseIncoming, context: CodingsContext) {
+    resolve(res: ResponseIncoming, context: TransportContext) {
         return defer(async () => {
             const req = context.first() as TransportRequest;
             const eventFactory = req.context.get(ResponseEventFactory);
@@ -119,7 +120,7 @@ export class ResponseIncomingResolver {
 export class ResponseDecodingsHandlers {
 
     @DecodeHandler(ResponsePacketIncoming)
-    handleResponseIncoming(res: ResponsePacketIncoming, context: CodingsContext, resovler: ResponseIncomingResolver) {
+    handleResponseIncoming(res: ResponsePacketIncoming, context: TransportContext, resovler: ResponseIncomingResolver) {
         if (!(res.tHeaders instanceof TransportHeaders)) {
             return throwError(() => new NotSupportedExecption(`${context.options.transport}${context.options.microservice ? ' microservice' : ''} response is not ResponseIncoming!`));
         }
@@ -129,11 +130,11 @@ export class ResponseDecodingsHandlers {
 
 
 @Injectable()
-export class ResponseDecodeInterceper implements Interceptor<any, any, CodingsContext> {
+export class ResponseDecodeInterceper implements Interceptor<any, any, TransportContext> {
 
     constructor(private codings: Codings) { }
 
-    intercept(input: any, next: Handler<any, any, CodingsContext>, context: CodingsContext): Observable<any> {
+    intercept(input: any, next: Handler<any, any, TransportContext>, context: TransportContext): Observable<any> {
         return next.handle(input, context).pipe(
             mergeMap(res => {
                 if (getClass(res) === Object) {
@@ -175,11 +176,11 @@ export class RequestStauts {
 
 
 @Injectable()
-export class CompressResponseDecordeInterceptor implements Interceptor<ResponseIncoming, TransportEvent, CodingsContext> {
+export class CompressResponseDecordeInterceptor implements Interceptor<ResponseIncoming, TransportEvent, TransportContext> {
 
     constructor(private streamAdapter: StreamAdapter) { }
 
-    intercept(input: ResponseIncoming, next: Handler<ResponseIncoming, TransportEvent, CodingsContext>, context: CodingsContext): Observable<TransportEvent> {
+    intercept(input: ResponseIncoming, next: Handler<ResponseIncoming, TransportEvent, TransportContext>, context: TransportContext): Observable<TransportEvent> {
         const response = input;
         if (response.tHeaders instanceof TransportHeaders) {
             const codings = response.tHeaders.getContentEncoding();
