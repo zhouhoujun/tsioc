@@ -13,7 +13,7 @@ export class HttpClientCodingsHandlers {
 
     constructor(private codings: Codings) { }
 
-    @DecodeHandler(IncomingMessage, { transport: 'http' })
+    @DecodeHandler(IncomingMessage)
     handleHttpMessage(message: IncomingMessage, context: TransportContext, statusAdapter: StatusAdapter) {
         const msg = new ResponsePacketIncoming({
             status: message.statusCode,
@@ -25,7 +25,7 @@ export class HttpClientCodingsHandlers {
         return this.codings.decode(msg, context);
     }
 
-    @DecodeHandler(Http2IncomingMessage, { transport: 'http' })
+    @DecodeHandler(Http2IncomingMessage)
     handleHttp2Message(message: Http2IncomingMessage, context: TransportContext, statusAdapter: StatusAdapter) {
         const status = message.headers[':status'] as HttpStatusCode;
         const msg = new ResponsePacketIncoming({
@@ -39,7 +39,7 @@ export class HttpClientCodingsHandlers {
     }
 
 
-    @EncodeHandler(HttpRequest, { transport: 'http' })
+    @EncodeHandler(HttpRequest)
     handleRequest(req: HttpRequest) {
         const packet = {
             url: req.urlWithParams,

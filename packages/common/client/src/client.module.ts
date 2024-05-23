@@ -191,6 +191,9 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                 }
 
                 clientOpts.transportOpts = {
+                    name: `${opts.transport}${clientOpts.microservice ? ' microservice' : ''} client`,
+                    group: opts.transport,
+                    subfix: clientOpts.microservice? '_micro' : '',
                     microservice: clientOpts.microservice,
                     timeout: clientOpts.timeout,
                     transport: opts.transport,

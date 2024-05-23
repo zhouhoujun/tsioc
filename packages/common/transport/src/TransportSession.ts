@@ -1,5 +1,5 @@
 import { Abstract, Injector, Token } from '@tsdi/ioc';
-import { TransportErrorResponse, TransportEvent, HeadersLike, HeaderFields, } from '@tsdi/common';
+import { TransportErrorResponse, TransportEvent, HeadersLike, HeaderFields, Transport, HybirdTransport, } from '@tsdi/common';
 import { CodingsOpts, EncodingsFactory, DecodingsFactory } from '@tsdi/common/codings';
 import { Observable } from 'rxjs';
 import { IReadableStream } from './stream';
@@ -10,6 +10,16 @@ import { TransportContext } from './context';
  * transport options.
  */
 export interface TransportOpts extends CodingsOpts {
+    /**
+     * transport type.
+     */
+    readonly transport?: Transport | HybirdTransport;
+    /**
+     * microservice or not.
+     */
+    readonly microservice?: boolean;
+
+    readonly client?: boolean;
     /**
      * encodings Factory.
      */

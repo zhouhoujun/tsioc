@@ -65,7 +65,7 @@ export class CodingMappings {
 
     getEncodeHanlders(type: Type | string, options?: CodingsOpts): Handler[] | null {
         const handlers = this.maps.get(this.getKey(this._enSubfix, options))?.getHanlder(type)
-            ?? this.maps.get(this.getKey(this._enSubfix, { transport: options?.transport }))?.getHanlder(type)
+            ?? this.maps.get(this.getKey(this._enSubfix, { group: options?.group }))?.getHanlder(type)
             ?? this.maps.get(this.getKey(this._enSubfix))?.getHanlder(type);
         return handlers ?? null;
     }
@@ -76,7 +76,7 @@ export class CodingMappings {
 
     getDecodeHanlders(type: Type | string, options?: CodingsOpts): Handler[] | null {
         const handlers = this.maps.get(this.getKey(this._deSubFix, options))?.getHanlder(type)
-            ?? this.maps.get(this.getKey(this._deSubFix, { transport: options?.transport }))?.getHanlder(type)
+            ?? this.maps.get(this.getKey(this._deSubFix, { group: options?.group }))?.getHanlder(type)
             ?? this.maps.get(this.getKey(this._deSubFix))?.getHanlder(type);
         return handlers ?? null;
     }
@@ -97,7 +97,8 @@ export class CodingMappings {
 
     private getKey(subfix: string, options?: CodingsOpts) {
         if (!options) return subfix;
-        return `${options.microservice ? 'micro_' : ''}${(options.transport ?? '')}${(options.client ? '_client_' : '')}${subfix}`;
+
+        return `${options.group ?? ''}${options.subfix ?? ''}${subfix}`;
     }
 
 }
