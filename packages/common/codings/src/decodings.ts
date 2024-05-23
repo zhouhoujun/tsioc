@@ -15,32 +15,6 @@ export abstract class DecodingsHandler implements Handler<any, any, CodingsConte
     abstract handle(input: any, context: CodingsContext): Observable<any>
 }
 
-// /**
-//  * Decodings Backend
-//  */
-// @Injectable()
-// export class DecodingsBackend implements Backend<any, any, CodingsContext> {
-//     constructor(private streamAdapter: StreamAdapter) { }
-
-//     handle(input: any, context: CodingsContext): Observable<any> {
-//         return defer(async () => {
-//             if (this.streamAdapter.isReadable(input)) {
-//                 return await toBuffer(input, context.options.maxSize)
-//             }
-//             return input
-//         }).pipe(
-//             map(data => {
-//                 const jsonStr = isString(data) ? data : new TextDecoder().decode(data);
-//                 try {
-//                     const buff = JSON.parse(jsonStr);
-//                     return buff;
-//                 } catch (err) {
-//                     throw new InvalidJsonException(err, jsonStr);
-//                 }
-//             }));
-//     }
-// }
-
 /**
  * Decodings Backend
  */
