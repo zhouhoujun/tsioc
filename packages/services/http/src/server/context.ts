@@ -8,6 +8,7 @@ import * as http2 from 'http2';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
 import { HttpServerOpts } from './options';
+import { Logger } from '@tsdi/logger';
 
 
 export type HttpServRequest = (http.IncomingMessage | http2.Http2ServerRequest) & Incoming;

@@ -191,16 +191,29 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                 }
 
                 clientOpts.transportOpts = {
-                    name: `${opts.transport}${clientOpts.microservice ? ' microservice' : ''} client`,
-                    group: opts.transport,
-                    subfix: clientOpts.microservice? '_micro' : '',
                     microservice: clientOpts.microservice,
                     timeout: clientOpts.timeout,
                     transport: opts.transport,
                     ...opts.defaultOpts?.transportOpts,
                     ...opts.clientOpts?.transportOpts,
                     client: true
-                }
+                };
+
+                const { encodings, decodings, encodingsFactory, decodingsFactory, ...codeOpts } = clientOpts.transportOpts;
+                clientOpts.transportOpts.encodings = {
+                    name: `${clientOpts.microservice ? ' microservice' : ''} client`,
+                    group: opts.transport,
+                    subfix: clientOpts.microservice ? '_micro' : '',
+                    ...encodings,
+                    ...codeOpts
+                };
+                clientOpts.transportOpts.decodings = {
+                    name: `${clientOpts.microservice ? ' microservice' : ''} client`,
+                    group: opts.transport,
+                    subfix: clientOpts.microservice ? '_micro' : '',
+                    ...decodings,
+                    ...codeOpts
+                };
 
                 if (opts.imports) {
                     clientOpts.providers.push({

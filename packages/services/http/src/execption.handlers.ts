@@ -1,5 +1,5 @@
-import { ArgumentExecption, Injectable, MissingParameterExecption, isNil, tokenId } from '@tsdi/ioc';
-import { ExecptionHandler, InvalidJsonException } from '@tsdi/core';
+import { ArgumentExecption, Injectable, MissingParameterExecption, isNil } from '@tsdi/ioc';
+import { ExecptionHandler, InvalidJsonException, NotHandleExecption } from '@tsdi/core';
 import { HttpStatusCode } from '@tsdi/common';
 import {
     BadRequestExecption, ForbiddenExecption, InternalServerExecption,
@@ -29,6 +29,13 @@ export class HttpExecptionHandlers {
         }
         ctx.throwExecption(exp)
     }
+
+    @ExecptionHandler(NotHandleExecption)
+    notHanldeExecption(ctx: HttpContext, err: NotHandleExecption) {
+        const execption = new InternalServerExecption(this.detailError(ctx) ? err.message : undefined);
+        ctx.throwExecption(execption)
+    }
+    
 
     @ExecptionHandler(BadRequestExecption)
     badReqExecption(ctx: HttpContext, execption: BadRequestExecption) {

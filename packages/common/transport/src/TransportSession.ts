@@ -5,11 +5,10 @@ import { Observable } from 'rxjs';
 import { IReadableStream } from './stream';
 import { TransportContext } from './context';
 
-
 /**
- * transport options.
+ * tranport base options.
  */
-export interface TransportOpts extends CodingsOpts {
+export interface TransportBaseOpts {
     /**
      * transport type.
      */
@@ -20,14 +19,6 @@ export interface TransportOpts extends CodingsOpts {
     readonly microservice?: boolean;
 
     readonly client?: boolean;
-    /**
-     * encodings Factory.
-     */
-    readonly encodingsFactory?: Token<EncodingsFactory>;
-    /**
-     * decodings Factory.
-     */
-    readonly decodingsFactory?: Token<DecodingsFactory>;
 
     readonly headerFields?: HeaderFields;
 
@@ -57,7 +48,7 @@ export interface TransportOpts extends CodingsOpts {
     readonly maxSize?: number;
 
     readonly encoding?: string;
-    
+
     readonly timeout?: number;
 
     /**
@@ -95,6 +86,33 @@ export interface TransportOpts extends CodingsOpts {
      * @param context 
      */
     handleMessage?(socket: any, context?: TransportContext): Observable<any>;
+}
+
+/**
+ * transport codings options.
+ */
+export interface TransportCodingsOpts extends CodingsOpts, TransportBaseOpts {
+
+}
+
+/**
+ * transport options.
+ */
+export interface TransportOpts extends TransportBaseOpts {
+
+    encodings?: CodingsOpts;
+    /**
+     * encodings Factory.
+     */
+    readonly encodingsFactory?: Token<EncodingsFactory>;
+
+
+    decodings?: CodingsOpts;
+    /**
+     * decodings Factory.
+     */
+    readonly decodingsFactory?: Token<DecodingsFactory>;
+
 }
 
 

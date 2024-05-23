@@ -46,7 +46,7 @@ export class IncomingDecodeInterceper implements Interceptor<any, any, Transport
                 if (getClass(res) === Object) {
                     const packet = res as PacketData;
                     if (!(packet.url || packet.topic || packet.headers || packet.payload)) {
-                        return throwError(() => new NotSupportedExecption(`${context.options.transport}${context.options.microservice ? ' microservice' : ''} incoming is not packet data!`));
+                        return throwError(() => new NotSupportedExecption(`${context.options.group ?? ''} ${context.options.name ?? ''} incoming is not packet data!`));
                     }
                     res = new PacketIncoming(packet, context.options);
                 }

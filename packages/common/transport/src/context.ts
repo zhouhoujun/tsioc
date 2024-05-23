@@ -1,11 +1,11 @@
 import { OnDestroy } from '@tsdi/ioc';
 import { CodingsContext } from '@tsdi/common/codings';
-import { AbstractTransportSession, TransportOpts } from './TransportSession';
+import { AbstractTransportSession, TransportCodingsOpts } from './TransportSession';
 
 /**
  * transprot codings context.
  */
-export class TransportContext extends CodingsContext<TransportOpts> implements OnDestroy {
+export class TransportContext extends CodingsContext<TransportCodingsOpts> implements OnDestroy {
 
     /**
      * incoming origin message

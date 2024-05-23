@@ -41,7 +41,7 @@ export class Codings {
                 );
             }, of(data))
         } else {
-            return throwError(() => new NotHandleExecption(`No encodings handler for ${getClassName(type)}${context.options.name ? ' of ' + context.options.name : ''}`))
+            return throwError(() => new NotHandleExecption(`No encodings handler for ${getClassName(type)} of ${context.options.group} ${context.options.name ??''}`))
         }
     }
 
@@ -70,7 +70,7 @@ export class Codings {
                 );
             }, of(data))
         } else {
-            return throwError(() => new NotHandleExecption(`No decodings handler for ${getClassName(type)}${context.options.name ? ' of ' + context.options.name : ''}`))
+            return throwError(() => new NotHandleExecption(`No decodings handler for ${getClassName(type)} of ${context.options.group} ${context.options.name ??''}`))
         }
     }
 }

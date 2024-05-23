@@ -4,7 +4,7 @@ import { ConfigableHandlerOptions } from '@tsdi/core';
 /**
  * Codings options.
  */
-export interface CodingsOpts {
+export interface CodingsOpts extends ConfigableHandlerOptions {
     /**
      * the codings action name.
      */
@@ -18,10 +18,6 @@ export interface CodingsOpts {
      */
     readonly subfix?: string;
 
-    readonly encodes?: ConfigableHandlerOptions;
-    readonly decodes?: ConfigableHandlerOptions;
-
-    
 
     comolete?(data: any): boolean;
 }
