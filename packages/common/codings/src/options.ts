@@ -1,3 +1,4 @@
+import { HybirdTransport, Transport } from '@tsdi/common';
 import { ConfigableHandlerOptions } from '@tsdi/core';
 
 
@@ -12,7 +13,7 @@ export interface CodingsOpts extends ConfigableHandlerOptions {
     /**
      * group of codings.
      */
-    readonly group?: string;
+    readonly group?: Transport | HybirdTransport | 'runner' | 'events';
     /**
      * subfix of group.
      */

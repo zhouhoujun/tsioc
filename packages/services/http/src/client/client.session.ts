@@ -136,8 +136,8 @@ export class HttpClientSessionFactory implements ClientTransportSessionFactory<C
         const transOpts = options.transportOpts!;
         return new HttpClientTransportSession(injector, socket,
             injector.get(StreamAdapter),
-            injector.get(transOpts.encodingsFactory ?? EncodingsFactory).create(injector, transOpts),
-            injector.get(transOpts.decodingsFactory ?? DecodingsFactory).create(injector, transOpts),
+            injector.get(transOpts.encodingsFactory ?? EncodingsFactory).create(injector, transOpts.encodings!),
+            injector.get(transOpts.decodingsFactory ?? DecodingsFactory).create(injector, transOpts.decodings!),
             options);
     }
 

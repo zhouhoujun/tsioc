@@ -13,7 +13,7 @@ export class HttpClientCodingsHandlers {
 
     constructor(private codings: Codings) { }
 
-    @DecodeHandler(IncomingMessage)
+    @DecodeHandler(IncomingMessage, {group: 'http' })
     handleHttpMessage(message: IncomingMessage, context: TransportContext, statusAdapter: StatusAdapter) {
         const msg = new ResponsePacketIncoming({
             status: message.statusCode,
