@@ -1,6 +1,6 @@
 import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, isNil, isString } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
-import { TransportHeaders, TransportParams, ResponseAs, Pattern, TransportEvent, TransportResponse, TransportRequest, RequestInitOpts, RequestOptions } from '@tsdi/common';
+import { TransportHeaders, TransportParams, ResponseAs, Pattern, TransportEvent, TransportResponse, RequestInitOpts, RequestOptions, RequestPacket } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
 import { ClientHandler } from './handler';
 import { ClientOpts } from './options';
@@ -11,7 +11,7 @@ import { ClientOpts } from './options';
  * transport client. use to request text, stream, blob, arraybuffer and json.
  */
 @Abstract()
-export abstract class Client<TRequest extends TransportRequest = TransportRequest, TResponse extends TransportEvent = TransportEvent, TOptions extends ClientOpts = ClientOpts> {
+export abstract class Client<TRequest extends RequestPacket = RequestPacket, TResponse extends TransportEvent = TransportEvent, TOptions extends ClientOpts = ClientOpts> {
 
     /**
      * client handler
@@ -394,12 +394,14 @@ export abstract class Client<TRequest extends TransportRequest = TransportReques
 
 
     protected isRequest(target: any): target is TRequest {
-        return target instanceof TransportRequest;
+        return target instanceof RequestPacket;
     }
 
-    protected createRequest(pattern: Pattern, options: RequestInitOpts): TRequest {
-        return new TransportRequest(pattern, { ...options }) as TRequest;
-    }
+    protected abstract createRequest(pattern: Pattern, options: RequestInitOpts): TRequest;
+
+    // protected createRequest(pattern: Pattern, options: RequestInitOpts): TRequest {
+    //     return new TransportRequest(pattern, { ...options }) as TRequest;
+    // }
 
     protected createParams(params: string | ReadonlyArray<[string, string | number | boolean]>
         | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>>) {

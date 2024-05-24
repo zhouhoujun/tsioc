@@ -5,10 +5,22 @@ import { Observable } from 'rxjs';
 import { IReadableStream } from './stream';
 import { TransportContext } from './context';
 
+
 /**
- * tranport base options.
+ * transport options.
  */
-export interface TransportBaseOpts {
+export interface TransportOpts extends CodingsOpts {
+
+    /**
+     * encodings Factory.
+     */
+    readonly encodingsFactory?: Token<EncodingsFactory>;
+
+    /**
+     * decodings Factory.
+     */
+    readonly decodingsFactory?: Token<DecodingsFactory>;
+
     /**
      * transport type.
      */
@@ -86,32 +98,6 @@ export interface TransportBaseOpts {
      * @param context 
      */
     handleMessage?(socket: any, context?: TransportContext): Observable<any>;
-}
-
-/**
- * transport codings options.
- */
-export interface TransportCodingsOpts extends CodingsOpts, TransportBaseOpts {
-
-}
-
-/**
- * transport options.
- */
-export interface TransportOpts extends TransportBaseOpts {
-
-    encodings?: CodingsOpts;
-    /**
-     * encodings Factory.
-     */
-    readonly encodingsFactory?: Token<EncodingsFactory>;
-
-
-    decodings?: CodingsOpts;
-    /**
-     * decodings Factory.
-     */
-    readonly decodingsFactory?: Token<DecodingsFactory>;
 
 }
 

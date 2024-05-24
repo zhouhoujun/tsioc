@@ -71,7 +71,7 @@ export class DecodingsFactory {
             globalFiltersToken: GLOBAL_DECODINGS_FILTERS,
             filtersToken: DECODINGS_FILTERS,
             backend: DecodingsBackend,
-            ...options
+            ...options.decodings
         }) as DecodingsHandler;
 
         return new Decodings(handler)

@@ -75,7 +75,7 @@ export class EncodingsFactory {
             globalFiltersToken: GLOBAL_ENCODINGS_FILTERS,
             filtersToken: ENCODINGS_FILTERS,
             backend: EncodingsBackend,
-            ...options
+            ...options.encodings
         }) as EncodingsHandler;
         return new Encodings(handler)
     }

@@ -25,7 +25,7 @@ export class Codings {
         return this.encode(input, context)
             .pipe(
                 mergeMap(data => {
-                    if (context.complete) return of(data);
+                    if (context.encodeComplete(data)) return of(data);
                     return this.encode(data, context)
                 })
             )
@@ -54,7 +54,7 @@ export class Codings {
         return this.decode(input, context)
             .pipe(
                 mergeMap(data => {
-                    if (context.complete) return of(data);
+                    if (context.decodeComplete(data)) return of(data);
                     return this.decode(data, context)
                 })
             )

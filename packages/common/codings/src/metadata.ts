@@ -1,15 +1,29 @@
 import { ActionTypes, DecorDefine, Execption, Token, Type, createDecorator, getToken, lang } from '@tsdi/ioc';
 import { Interceptor, InvocationFactoryResolver, InvocationOptions } from '@tsdi/core';
-import { CodingsOpts } from './options';
+import { HybirdTransport, Transport } from '@tsdi/common';
 import { CodingsContext } from './context';
 import { CodingMappings } from './mappings';
 
-
-export interface CodingsOptions extends InvocationOptions, CodingsOpts {
+/**
+ * codings options.
+ */
+export interface CodingsOptions extends InvocationOptions {
+    /**
+     * the codings action name.
+     */
+    name?: string;
+    /**
+     * group of codings.
+     */
+    group?: Transport | HybirdTransport | 'runner' | 'events';
+    /**
+     * subfix of group.
+     */
+    subfix?: string;
 }
 
 
-export interface EncodingMetadata extends CodingsOptions {
+export interface EncodingsMetadata extends CodingsOptions {
     /**
      * codings targe.
      */
@@ -42,12 +56,12 @@ export function getEncodeInterceptorsToken(encodings: string | Type): Token<Inte
 }
 
 /**
- * Encoding decorator. use to define method as Encodings handler.
+ * EncodeHandler decorator. use to define method as Encodings handler.
  * @Encoding
  * 
  * @exports {@link EncodeHandler}
  */
-export const EncodeHandler: EncodeHandler = createDecorator<EncodingMetadata>('Encoding', {
+export const EncodeHandler: EncodeHandler = createDecorator<EncodingsMetadata>('EncodeHandler', {
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
     props: (encodings: string | Type, option?: InvocationOptions) => {
         const opts = { encodings, ...option };
@@ -59,7 +73,7 @@ export const EncodeHandler: EncodeHandler = createDecorator<EncodingMetadata>('E
     design: {
         method: (ctx, next) => {
 
-            const defines = ctx.class.methodDefs.get(ctx.currDecor.toString()) as DecorDefine<EncodingMetadata>[];
+            const defines = ctx.class.methodDefs.get(ctx.currDecor.toString()) as DecorDefine<EncodingsMetadata>[];
             if (!defines || !defines.length) return next();
 
             const injector = ctx.injector;
@@ -90,21 +104,21 @@ export const EncodeHandler: EncodeHandler = createDecorator<EncodingMetadata>('E
 
 export interface DecodingMetadata extends CodingsOptions {
     /**
-     * codings targe.
+     * decodings target.
      */
-    encodings: string | Type;
+    decodings: string | Type;
 }
 
 
 export interface DecodeHandler {
 
     /**
-     * encode handle. use to handle encoding of target, in class with decorator {@link EncodeHandler}.
+     * decode handle. use to handle decoding of target, in class with decorator {@link DecodeHandler}.
      *
-     * @param {string|Type} encodings encode target.
+     * @param {string|Type} decodings encode target.
      * @param {CodingsOptions} option encode handle invoke option.
      */
-    (encodings: string | Type, option?: CodingsOptions): MethodDecorator;
+    (decodings: string | Type, option?: CodingsOptions): MethodDecorator;
 }
 
 const decodingTokens = new Map<string | Type, Token<Interceptor<any, any, CodingsContext>[]>>();
@@ -119,15 +133,15 @@ export function getDecodeInterceptorsToken(encodings: string | Type): Token<Inte
 
 
 /**
- * Decoding decorator. use to define method as Decodings handler.
+ * DecodeHandler decorator. use to define method as Decodings handler.
  * @Decoding
  * 
  * @exports {@link DecodeHandler}
  */
-export const DecodeHandler: DecodeHandler = createDecorator<DecodingMetadata>('Decoding', {
+export const DecodeHandler: DecodeHandler = createDecorator<DecodingMetadata>('DecodeHandler', {
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
     props: (encodings: string | Type, option?: InvocationOptions) => {
-        const opts = { encodings, ...option } as DecodingMetadata;
+        const opts = { decodings: encodings, ...option } as DecodingMetadata;
         if (!opts.interceptorsToken) {
             opts.interceptorsToken = getDecodeInterceptorsToken(encodings);
         }
@@ -147,14 +161,14 @@ export const DecodeHandler: DecodeHandler = createDecorator<DecodingMetadata>('D
             if (!codes) throw new Execption(lang.getClassName(CodingMappings) + 'has not registered!');
 
             defines.forEach(def => {
-                const { encodings, order, ...options } = def.metadata;
+                const { decodings, order, ...options } = def.metadata;
 
                 const mappings = codes.getDecodings(options);
 
                 const handler = factory.create(def.propertyKey, options);
 
-                mappings.addHandler(encodings, handler, order);
-                factory.onDestroy(() => mappings.removeHandler(encodings, handler))
+                mappings.addHandler(decodings, handler, order);
+                factory.onDestroy(() => mappings.removeHandler(decodings, handler))
 
             });
 

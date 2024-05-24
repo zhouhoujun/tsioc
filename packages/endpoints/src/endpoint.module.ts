@@ -259,6 +259,9 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 }
 
                 serverOpts.transportOpts = {
+                    name: `${serverOpts.microservice ? ' microservice' : ''}`,
+                    group: moduleOpts.transport,
+                    subfix: serverOpts.microservice ? '_micro' : '',
                     transport: moduleOpts.transport,
                     timeout: serverOpts.timeout,
                     microservice: serverOpts.microservice,
@@ -267,21 +270,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     client: false
                 };
 
-                const { encodings, decodings, encodingsFactory, decodingsFactory, ...codeOpts } = serverOpts.transportOpts;
-                serverOpts.transportOpts.encodings = {
-                    name: `${serverOpts.microservice ? ' microservice' : ''}`,
-                    group: moduleOpts.transport,
-                    subfix: serverOpts.microservice ? '_micro' : '',
-                    ...encodings,
-                    ...codeOpts
-                };
-                serverOpts.transportOpts.decodings = {
-                    name: `${serverOpts.microservice ? ' microservice' : ''}`,
-                    group: moduleOpts.transport,
-                    subfix: serverOpts.microservice ? '_micro' : '',
-                    ...decodings,
-                    ...codeOpts
-                };
+
 
 
                 if (moduleOpts.imports) {

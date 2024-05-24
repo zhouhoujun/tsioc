@@ -1,4 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, InvocationContext } from '@tsdi/ioc';
 import { Pattern } from './pattern';
 import { HeaderFields, HeadersLike, TransportHeaders } from './headers';
 
@@ -56,8 +56,6 @@ export interface StatusPacketOpts<TStatus = number> extends PacketOpts {
  */
 export class Packet<T = any> {
 
-    readonly method: string;
-
     payload: T | null;
 
     get body(): T | null {
@@ -66,46 +64,54 @@ export class Packet<T = any> {
 
     readonly headers: TransportHeaders;
     constructor(init: {
-        /**
-         * event type
-         */
-        type?: number;
-        method?: string;
         headers?: HeadersLike;
         payload?: T;
     }, options?: PacketOpts) {
         this.headers = new TransportHeaders(init.headers, options?.headerFields);
-        this.method = init.method ?? this.headers.getMethod() ?? options?.defaultMethod ?? '';
         this.payload = init.payload ?? null;
     }
 }
 
-/**
- * Error packet.
- */
-export class ErrorPacket extends Packet {
 
-    readonly error: any | null;
+
+export class RequestPacket<T = any> extends Packet<T> {
+
+    readonly context: InvocationContext;
+    readonly method: string;
+    readonly responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
+    readonly observe: 'body' | 'events' | 'response' | 'emit' | 'observe';
 
     constructor(init: {
-        /**
-         * event type
-         */
-        type?: number;
-        error?: any;
+        context: InvocationContext;
         method?: string;
         headers?: HeadersLike;
-    }, options: PacketOpts) {
-        super(init, options);
-        this.error = init.error;
-        this.payload = null;
+        payload?: T;
+        /**
+         * response observe type
+         */
+        observe?: 'body' | 'events' | 'response' | 'emit' | 'observe';
+        /**
+         * response data type.
+         */
+        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
+    }, options?: PacketOpts) {
+        super(init, options)
+        this.context = init.context;
+        this.method = init.method ?? this.headers.getMethod() ?? options?.defaultMethod ?? '';
+        this.responseType = init.responseType ?? 'json';
+        this.observe = init.observe ?? 'body';
     }
+
 }
 
 /**
  * Response packet.
  */
-export class ResponsePacket<T, TStatus = number> extends Packet<T> {
+export class ResponsePacket<T = any, TStatus = number> extends Packet<T> {
+    /**
+     * Type of the response, narrowed to either the full response or the header.
+     */
+    readonly type: number | undefined;
     /**
      * Response status code.
      */
@@ -132,7 +138,6 @@ export class ResponsePacket<T, TStatus = number> extends Packet<T> {
          * event type
          */
         type?: number;
-        method?: string;
         headers?: HeadersLike;
         payload?: T;
         status?: TStatus;
@@ -142,10 +147,37 @@ export class ResponsePacket<T, TStatus = number> extends Packet<T> {
     }, options?: StatusPacketOpts<TStatus>) {
         super(init, options)
         this.ok = init.ok != false;
-        this.status = init.status !== undefined ? init.status : options?.defaultStatus ?? null!;
+        this.type = init.type;
+        this.status = init.status !== undefined ? init.status : options?.defaultStatus ?? null;
         this._message = (init.statusMessage || init.statusText) ?? options?.defaultStatusText ?? '';
     }
 }
+
+/**
+ * Error packet.
+ */
+export class ErrorResponsePacket<T = any, TStatus = number> extends ResponsePacket<T, TStatus> {
+
+    readonly error: any | null;
+
+    constructor(init: {
+        /**
+         * event type
+         */
+        type?: number;
+        headers?: HeadersLike;
+        error?: any;
+        status?: TStatus;
+        statusMessage?: string;
+        statusText?: string;
+    }, options: PacketOpts) {
+        super(init, options);
+        this.error = init.error;
+        this.payload = null;
+    }
+}
+
+
 
 @Abstract()
 export abstract class PacketFactory {

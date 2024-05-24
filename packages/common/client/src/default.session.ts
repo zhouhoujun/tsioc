@@ -29,8 +29,8 @@ export class DefaultClientTransportSessionFactory implements ClientTransportSess
 
     create(injector: Injector, socket: IDuplexStream, options: TransportOpts): DefaultClientTransportSession {
         return new DefaultClientTransportSession(injector, socket,
-            injector.get(options.encodingsFactory ?? EncodingsFactory).create(injector, options.encodings!),
-            injector.get(options.decodingsFactory ?? DecodingsFactory).create(injector, options.decodings!),
+            injector.get(options.encodingsFactory ?? EncodingsFactory).create(injector, options),
+            injector.get(options.decodingsFactory ?? DecodingsFactory).create(injector, options),
             injector.get(StreamAdapter),
             options);
     }

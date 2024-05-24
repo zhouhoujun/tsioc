@@ -1,4 +1,4 @@
-import { TransportResponse, HttpStatusCode, TransportHeaders, HeadersLike } from '@tsdi/common';
+import { HttpStatusCode, TransportHeaders, HeadersLike } from '@tsdi/common';
 
 /**
  * Type enumeration for the different kinds of `HttpEvent`.

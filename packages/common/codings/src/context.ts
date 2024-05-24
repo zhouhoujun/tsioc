@@ -7,21 +7,22 @@ import { CodingsOpts } from './options';
  */
 export class CodingsContext<TOpts extends CodingsOpts = CodingsOpts> extends InvocationArgs implements OnDestroy {
 
-    private _complete = false;
-    get complete(): boolean {
-        return this._complete;
-    }
-
+    
     constructor(readonly options: TOpts) {
         super()
     }
 
-    protected override onNext(data: any): void {
-        if (this.options.comolete) {
-            this._complete = this.options.comolete(data)
-        }
-        super.onNext(data);
+
+    encodeComplete(data: any): boolean {
+        if(!this.options.encodeComplete) return true;
+        return this.options.encodeComplete(data)
     }
+
+    decodeComplete(data: any): boolean {
+        if(!this.options.decodeComplete) return true;
+        return this.options.decodeComplete(data)
+    }
+
 
 
 }
