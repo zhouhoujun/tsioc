@@ -1,6 +1,6 @@
 import { Injectable, Injector, isArray, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, TransportHeaders } from '@tsdi/common';
+import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, HeaderMappings } from '@tsdi/common';
 import { MessageExecption, InternalServerExecption, Outgoing, ResponsePacket, append, parseTokenList, Incoming, StatusAdapter, MimeAdapter, StreamAdapter, FileAdapter, PacketLengthException, ENOENT } from '@tsdi/common/transport';
 import { RestfulRequestContext, RestfulRequestContextFactory, TransportSession, Throwable, AcceptsPriority } from '@tsdi/endpoints';
 import * as http from 'http';
@@ -568,8 +568,8 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 @Injectable()
 export class HttpContextFactory implements RestfulRequestContextFactory<HttpServRequest, HttpServResponse> {
     create(injector: Injector, session: TransportSession, incoming: HttpServRequest, outgoing: HttpServResponse, options: HttpServerOpts): HttpContext {
-        (incoming as any).tHeaders = new TransportHeaders(incoming.headers, true);
-        (outgoing as any).tHeaders = new TransportHeaders(outgoing.headers, true);
+        (incoming as any).tHeaders = new HeaderMappings(incoming.headers, true);
+        (outgoing as any).tHeaders = new HeaderMappings(outgoing.headers, true);
         return new HttpContext(injector, session,
             incoming,
             outgoing,

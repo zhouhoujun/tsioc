@@ -1,4 +1,4 @@
-import { MapHeaders, Pattern, TransportHeaders } from '@tsdi/common';
+import { IHeaders, Pattern, HeaderMappings } from '@tsdi/common';
 import { IReadableStream } from './stream';
 
 
@@ -15,9 +15,9 @@ export interface Incoming<T = any> {
 
     pattern?: Pattern;
 
-    get headers(): MapHeaders;
+    get headers(): IHeaders;
 
-    get tHeaders(): TransportHeaders;
+    get tHeaders(): HeaderMappings;
 
 
     body?: T | null
@@ -45,7 +45,7 @@ export interface Incoming<T = any> {
  * Incoming stream
  */
 export interface IncomingStream extends IReadableStream {
-    get headers(): MapHeaders;
+    get headers(): IHeaders;
 }
 
 /**

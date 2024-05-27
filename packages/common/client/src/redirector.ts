@@ -1,6 +1,6 @@
 /* eslint-disable no-case-declarations */
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
-import { TransportHeaders, UrlRequest, RequestMethod, MapHeaders } from '@tsdi/common';
+import { HeaderMappings, UrlRequest, RequestMethod, IHeaders } from '@tsdi/common';
 import { BadRequestExecption, StreamAdapter, StatusAdapter, Redirector } from '@tsdi/common/transport';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { Client } from './Client';
@@ -9,7 +9,7 @@ import { Client } from './Client';
 @Injectable()
 export class RestfulRedirector implements Redirector {
 
-    redirect<T>(req: UrlRequest, status: any, headers: MapHeaders): Observable<T> {
+    redirect<T>(req: UrlRequest, status: any, headers: IHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {
             if(!req.url) return observer.error(new BadRequestExecption());
 
@@ -59,7 +59,7 @@ export class RestfulRedirector implements Redirector {
                     // HTTP-redirect fetch step 6 (counter increment)
                     // Create a new Request object.
 
-                    let reqhdrs = req.headers instanceof TransportHeaders ? req.headers : new TransportHeaders(req.headers);
+                    let reqhdrs = req.headers instanceof HeaderMappings ? req.headers : new HeaderMappings(req.headers);
                     let method = req.method as RequestMethod;
                     let body = req.body;
 
@@ -141,7 +141,7 @@ export const referPolicys = new Set([
 
 const splitReg = /[,\s]+/;
 
-export function parseReferrerPolicyFromHeader(headers: MapHeaders) {
+export function parseReferrerPolicyFromHeader(headers: IHeaders) {
     const policyTokens = (headers['referrer-policy'] as string || '').split(splitReg);
     let policy = '';
     for (const token of policyTokens) {

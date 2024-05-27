@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, OperationArgumentResolver, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
 import { HandlerContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { HeadersLike, MapHeaders, TransportHeaders } from '@tsdi/common';
+import { HeadersLike, IHeaders, HeaderMappings } from '@tsdi/common';
 import {
     FileAdapter, Incoming, InternalServerExecption, MessageExecption, MimeAdapter, Outgoing, ResponsePacket,
     StatusAdapter, StreamAdapter, ctype, isBuffer, xmlRegExp
@@ -328,13 +328,13 @@ export abstract class RequestContext<
      * @param {String} val
      * @api public
      */
-    setHeader(fields: Record<string, string | number | string[]> | MapHeaders): void;
+    setHeader(fields: Record<string, string | number | string[]> | IHeaders): void;
     setHeader(headers: HeadersLike): void;
-    setHeader(field: string | Record<string, string | number | string[]> | MapHeaders | TransportHeaders, val?: string | number | string[]) {
+    setHeader(field: string | Record<string, string | number | string[]> | IHeaders | HeaderMappings, val?: string | number | string[]) {
         if (this.sent) return;
         if (val) {
             this.response.setHeader(field as string, val)
-        } else if (field instanceof TransportHeaders) {
+        } else if (field instanceof HeaderMappings) {
             field.forEach((name, values) => {
                 this.response.setHeader(name, values);
             })

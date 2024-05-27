@@ -1,4 +1,4 @@
-import { Header, MapHeaders, Pattern, TransportHeaders } from '@tsdi/common';
+import { Header, IHeaders, Pattern, HeaderMappings } from '@tsdi/common';
 import { IWritableStream } from './stream';
 
 /**
@@ -11,9 +11,9 @@ export interface Outgoing<T = any> {
 
     pattern?: Pattern;
 
-    headers?: MapHeaders;
+    headers?: IHeaders;
 
-    get tHeaders(): TransportHeaders;
+    get tHeaders(): HeaderMappings;
 
     body?: T | null;
 
@@ -119,5 +119,5 @@ export interface Outgoing<T = any> {
  * Outgoing stream.
  */
 export interface OutgoingStream extends IWritableStream {
-    headers?: MapHeaders;
+    headers?: IHeaders;
 }

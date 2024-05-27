@@ -1,38 +1,39 @@
 import { Abstract, ArgumentExecption, Injectable, isString, tokenId } from '@tsdi/ioc';
 import { Handler, Interceptor, InvalidJsonException } from '@tsdi/core';
-import { TransportHeaders } from '@tsdi/common';
+import { HeaderMappings } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler, Codings } from '@tsdi/common/codings';
 import { TransportContext } from './context';
 import { Observable } from 'rxjs';
 import { StreamAdapter, isBuffer } from './StreamAdapter';
 import { Packet, PacketData } from './packet';
 import { IReadableStream } from './stream';
+import { HandlerSerialization, HeaderDeserialization } from './mesage.codings';
 
 
 export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer, TransportContext>[]>('PACKET_ENCODE_INTERCEPTORS');
 
 export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<Buffer, PacketData, TransportContext>[]>('PACKET_DECODE_INTERCEPTORS');
 
-export class JsonPacket {
+// export class JsonPacket {
 
-    constructor(options: Packet) {
+//     constructor(options: Packet) {
 
-    }
+//     }
 
-}
+// }
 
-export class BufferPacket {
-    constructor(options: Packet, readonly headDelimiter: string) {
+// export class BufferPacket {
+//     constructor(options: Packet, readonly headDelimiter: string) {
 
-    }
-}
+//     }
+// }
 
 
-export class StreamPacket {
-    constructor(options: Packet, readonly headDelimiter: string) {
+// export class StreamPacket {
+//     constructor(options: Packet, readonly headDelimiter: string) {
 
-    }
-}
+//     }
+// }
 
 
 @Injectable({ static: true })
@@ -105,7 +106,7 @@ export class PacketCodingsHandlers {
         if (!options.headDelimiter) throw new ArgumentExecption('headDelimiter');
 
         const input = context.last<PacketData>();
-        if (input.headers instanceof TransportHeaders) {
+        if (input.headers instanceof HeaderMappings) {
             input.headers = input.headers.getHeaders();
         }
 
@@ -140,15 +141,15 @@ export class PacketCodingsHandlers {
 }
 
 
-@Abstract()
-export abstract class HandlerSerialization {
-    abstract serialize(packet: Packet): Buffer;
-}
+// @Abstract()
+// export abstract class HandlerSerialization {
+//     abstract serialize(packet: Packet): Buffer;
+// }
 
-@Abstract()
-export abstract class HeaderDeserialization {
-    abstract deserialize(data: Buffer): Packet;
-}
+// @Abstract()
+// export abstract class HeaderDeserialization {
+//     abstract deserialize(data: Buffer): Packet;
+// }
 
 
 @Injectable()

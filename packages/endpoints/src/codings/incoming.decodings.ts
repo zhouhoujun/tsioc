@@ -20,7 +20,8 @@ export class IncomingDecodingsHandlers {
         const outgoing = new PacketOutgoing({
             id: incoming.id,
             headers: incoming.headers,
-            pattern: incoming.pattern
+            pattern: incoming.pattern,
+            
         }, context.options);
 
         return injector.get(RequestContextFactory).create(

@@ -1,11 +1,11 @@
-import { TransportHeaders, MESSAGE, GET, Pattern } from '@tsdi/common';
+import { HeaderMappings, MESSAGE, GET, Pattern } from '@tsdi/common';
 import { Incoming, StreamAdapter, HeaderPacket, IReadableStream } from '@tsdi/common/transport';
 import { TransportSession } from '@tsdi/endpoints';
 import { Readable } from 'readable-stream';
 
 export class IncomingMessage<T = any> extends Readable implements Incoming<T> {
 
-    private _headers: TransportHeaders;
+    private _headers: HeaderMappings;
     body: T | null = null;
     rawBody: any;
     private _payloadIndex: number;
@@ -26,7 +26,7 @@ export class IncomingMessage<T = any> extends Readable implements Incoming<T> {
         this.streamAdapter = session.injector.get(StreamAdapter);
         this.id = packet.id;
         this.setMaxListeners(0);
-        const headers = this._headers = new TransportHeaders(packet.headers);
+        const headers = this._headers = new HeaderMappings(packet.headers);
         this.url = packet.url ?? headers.getHeader(this.pathHead) ?? '';
         this.pattern = packet.pattern ?? this.url;
         this.originalUrl = headers.getHeader(this.originPathHead) ?? this.url;

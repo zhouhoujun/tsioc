@@ -1,6 +1,6 @@
 import { Injectable, isNil, isString } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, ResponseEvent, TransportParams, AbstractRequest } from '@tsdi/common';
+import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, ResponseEvent, RequestParams, AbstractRequest } from '@tsdi/common';
 import { IStream, StreamAdapter } from '@tsdi/common/transport';
 
 import { defer, mergeMap, Observable } from 'rxjs';
@@ -68,7 +68,7 @@ export class BodyContentInterceptor<TRequest extends AbstractRequest = AbstractR
         }
 
         // Check whether the body is an instance of HttpUrlEncodedParams.
-        if (body instanceof TransportParams) {
+        if (body instanceof RequestParams) {
             return body.toString()
         }
 
@@ -111,7 +111,7 @@ export class BodyContentInterceptor<TRequest extends AbstractRequest = AbstractR
             return 'text/plain'
         }
         // `HttpUrlEncodedParams` has its own content-type.
-        if (body instanceof TransportParams) {
+        if (body instanceof RequestParams) {
             return 'application/x-www-form-urlencoded;charset=UTF-8'
         }
         // Arrays, objects, boolean and numbers will be encoded as JSON.

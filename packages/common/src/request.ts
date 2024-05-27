@@ -1,6 +1,6 @@
 import { InvocationContext, isUndefined } from '@tsdi/ioc';
-import { HeadersLike, TransportHeaders } from './headers';
-import { ParameterCodec, TransportParams } from './params';
+import { HeadersLike, HeaderMappings } from './headers';
+import { ParameterCodec, RequestParams } from './params';
 import { Packet, PacketOpts } from './packet';
 import { Pattern } from './pattern';
 
@@ -39,7 +39,7 @@ export abstract class AbstractRequest<T = any> extends Packet<T> {
 
     abstract clone(): AbstractRequest<T>;
     abstract clone(update: {
-        headers?: TransportHeaders;
+        headers?: HeaderMappings;
         context?: InvocationContext<any>;
         method?: string;
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
@@ -53,7 +53,7 @@ export abstract class AbstractRequest<T = any> extends Packet<T> {
         timeout?: number | null;
     }): AbstractRequest<T>
     abstract clone<V>(update: {
-        headers?: TransportHeaders;
+        headers?: HeaderMappings;
         context?: InvocationContext<any>;
         method?: string;
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
@@ -85,7 +85,7 @@ export interface RequestOptions<T = any> {
     /**
      * request params.
      */
-    params?: TransportParams | string
+    params?: RequestParams | string
     | ReadonlyArray<[string, string | number | boolean]>
     | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>>;
 
@@ -149,7 +149,7 @@ export interface RequestInitOpts<T = any> extends RequestOptions<T>, ResponseAs,
  * url Request.
  */
 export class UrlRequest<T = any> extends AbstractRequest<T> {
-    readonly params: TransportParams;
+    readonly params: RequestParams;
 
     readonly reportProgress: boolean;
     readonly withCredentials: boolean;
@@ -167,7 +167,7 @@ export class UrlRequest<T = any> extends AbstractRequest<T> {
 
     constructor(url: string, options: RequestInitOpts<T>) {
         super(options, options)
-        this.params = new TransportParams(options);
+        this.params = new RequestParams(options);
         this.reportProgress = !!options.reportProgress;
         this.withCredentials = !!options.withCredentials;
         this.timeout = options.timeout;
@@ -201,10 +201,10 @@ export class UrlRequest<T = any> extends AbstractRequest<T> {
 
     clone(): UrlRequest<T>;
     clone(update: {
-        headers?: TransportHeaders;
+        headers?: HeaderMappings;
         context?: InvocationContext<any>;
         method?: string;
-        params?: TransportParams;
+        params?: RequestParams;
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
         url?: string;
         body?: T | null;
@@ -216,10 +216,10 @@ export class UrlRequest<T = any> extends AbstractRequest<T> {
         timeout?: number | null;
     }): UrlRequest<T>
     clone<V>(update: {
-        headers?: TransportHeaders;
+        headers?: HeaderMappings;
         context?: InvocationContext<any>;
         method?: string;
-        params?: TransportParams;
+        params?: RequestParams;
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
 
         body?: V | null;
@@ -231,10 +231,10 @@ export class UrlRequest<T = any> extends AbstractRequest<T> {
         timeout?: number | null;
     }): UrlRequest<V>;
     clone(update: {
-        headers?: TransportHeaders;
+        headers?: HeaderMappings;
         context?: InvocationContext<any>;
         method?: string;
-        params?: TransportParams;
+        params?: RequestParams;
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
         url?: string;
         body?: any;
@@ -309,7 +309,8 @@ export class UrlRequest<T = any> extends AbstractRequest<T> {
 export class PatternRequest<T = any> extends AbstractRequest<T> {
 
     readonly pattern: Pattern;
-    readonly params: TransportParams;
+    readonly params: RequestParams;
+    readonly withCredentials: boolean;
 
     get body(): T | null {
         return this.payload;
@@ -322,33 +323,32 @@ export class PatternRequest<T = any> extends AbstractRequest<T> {
 
     constructor(pattern: Pattern, options: RequestInitOpts<T>) {
         super(options, options)
-        this.params = new TransportParams(options);
+        this.params = new RequestParams(options);
         this.timeout = options.timeout;
-
+        this.withCredentials = !!options.withCredentials;
         this.pattern = pattern;
     }
 
     clone(): PatternRequest<T>;
     clone(update: {
-        headers?: TransportHeaders;
+        headers?: HeaderMappings;
         context?: InvocationContext<any>;
         method?: string;
-        params?: TransportParams;
+        params?: RequestParams;
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
         pattern?: Pattern;
         body?: T | null;
         payload?: T | null;
         setHeaders?: { [name: string]: string | string[]; };
         setParams?: { [param: string]: string; };
-        reportProgress?: boolean;
         withCredentials?: boolean;
         timeout?: number | null;
     }): PatternRequest<T>
     clone<V>(update: {
-        headers?: TransportHeaders;
+        headers?: HeaderMappings;
         context?: InvocationContext<any>;
         method?: string;
-        params?: TransportParams;
+        params?: RequestParams;
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
         pattern?: Pattern;
         body?: V | null;
@@ -360,17 +360,16 @@ export class PatternRequest<T = any> extends AbstractRequest<T> {
         timeout?: number | null;
     }): PatternRequest<V>;
     clone(update: {
-        headers?: TransportHeaders;
+        headers?: HeaderMappings;
         context?: InvocationContext<any>;
         method?: string;
-        params?: TransportParams;
+        params?: RequestParams;
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
         pattern?: Pattern;
         body?: any;
         payload?: any;
         setHeaders?: { [name: string]: string | string[]; };
         setParams?: { [param: string]: string; };
-        reportProgress?: boolean;
         withCredentials?: boolean;
         timeout?: number | null;
     } = {}): PatternRequest {
@@ -386,6 +385,11 @@ export class PatternRequest<T = any> extends AbstractRequest<T> {
         if (isUndefined(payload)) {
             payload = this.payload;
         }
+
+        // Carefully handle the boolean options to differentiate between
+        // `false` and `undefined` in the update args.
+        const withCredentials =
+            (update.withCredentials !== undefined) ? update.withCredentials : this.withCredentials;
 
         // Headers and params may be appended to if `setHeaders` or
         // `setParams` are used.
@@ -415,6 +419,7 @@ export class PatternRequest<T = any> extends AbstractRequest<T> {
             params,
             headers,
             responseType,
+            withCredentials,
             observe,
             context,
             timeout

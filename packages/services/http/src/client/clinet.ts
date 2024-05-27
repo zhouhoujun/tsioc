@@ -1,7 +1,7 @@
 import { Inject, Injectable, InvocationContext, Optional } from '@tsdi/ioc';
 import {
     RequestOptions, HeadersLike, PUT, GET, DELETE, HEAD, JSONP, PATCH, POST,
-    TransportParams, Pattern, patternToPath, HttpRequestMethod, RequestInitOpts
+    RequestParams, Pattern, patternToPath, HttpRequestMethod, RequestInitOpts
 } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { Client, ClientTransportSession } from '@tsdi/common/client';
@@ -109,7 +109,7 @@ export class Http extends Client<HttpRequest, HttpEvent, HttpClientOpts> {
         context.setValue(ClientTransportSession, this.session);
     }
 
-    protected override createParams(params: string | readonly [string, string | number | boolean][] | Record<string, string | number | boolean | readonly (string | number | boolean)[]>): TransportParams {
+    protected override createParams(params: string | readonly [string, string | number | boolean][] | Record<string, string | number | boolean | readonly (string | number | boolean)[]>): RequestParams {
         return new HttpParams({ params });
     }
 

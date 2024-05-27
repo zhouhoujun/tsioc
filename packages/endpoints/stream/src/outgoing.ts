@@ -2,7 +2,7 @@ import { ArgumentExecption, isArray, isFunction, isNil, isString, nextTick } fro
 import { Outgoing, Packet, PacketData, ResponsePacket } from '@tsdi/common/transport';
 import { TransportSession } from '@tsdi/endpoints';
 import { Writable } from 'readable-stream';
-import { Header, HeadersLike, Pattern, TransportHeaders } from '@tsdi/common';
+import { Header, HeadersLike, Pattern, HeaderMappings } from '@tsdi/common';
 import { IHeaders } from 'kafkajs';
 
 
@@ -27,7 +27,7 @@ export class OutgoingMessage<T = any, TStatus = string | number | undefined> ext
 
     writable = true;
 
-    private _headers: TransportHeaders;
+    private _headers: HeaderMappings;
 
     constructor(
         readonly session: TransportSession<T>,
@@ -35,7 +35,7 @@ export class OutgoingMessage<T = any, TStatus = string | number | undefined> ext
     ) {
         super({ objectMode: true });
         this.setMaxListeners(0);
-        const headers = this._headers = new TransportHeaders(initHeaders, session.options.headerFields);
+        const headers = this._headers = new HeaderMappings(initHeaders, session.options.headerFields);
         this.id = headers.getIdentity() ?? '';
         this.url = headers.getPath() ?? '';
     }

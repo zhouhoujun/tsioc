@@ -1,4 +1,4 @@
-import { MapHeaders, Pattern, TransportHeaders, normalize } from '@tsdi/common';
+import { IHeaders, Pattern, HeaderMappings, normalize } from '@tsdi/common';
 import { Packet, ResponsePacket } from './packet';
 import { Incoming, ResponseIncoming } from './Incoming';
 import { TransportOpts } from './TransportSession';
@@ -8,9 +8,9 @@ export class PacketIncoming<T = any> implements Incoming<T> {
     readonly method: string;
     readonly originalUrl: string;
     readonly pattern: Pattern;
-    private _headers: TransportHeaders;
+    private _headers: HeaderMappings;
 
-    get headers(): MapHeaders {
+    get headers(): IHeaders {
         return this._headers.getHeaders()
     }
 
@@ -25,7 +25,7 @@ export class PacketIncoming<T = any> implements Incoming<T> {
     url: string;
     body: T | null;
     constructor(packet: Packet, options?: TransportOpts) {
-        this._headers = new TransportHeaders(packet.headers, options?.headerFields);
+        this._headers = new HeaderMappings(packet.headers, options?.headerFields);
         this.id = packet.id ?? this._headers.getIdentity();
         this.method = packet.method ?? this._headers.getMethod() ?? options?.defaultMethod ?? '';
         this.url = normalize(packet.url ?? this._headers.getPath() ?? '');

@@ -24,6 +24,8 @@ export * from './packet.outgoing';
 
 export * from './interceptors';
 
+export * from './mesage.codings';
+
 export * from './packet.codings';
 export * from './packet.module';
 

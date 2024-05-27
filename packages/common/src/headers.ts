@@ -6,7 +6,7 @@ import { isArray, isBoolean, isNil, isString } from '@tsdi/ioc';
 export type Header = string | readonly string[] | number | undefined | null;
 
 
-export interface MapHeaders<T extends Header = Header> extends Record<string, T> {
+export interface IHeaders<T extends Header = Header> extends Record<string, T> {
 
 }
 
@@ -53,9 +53,9 @@ const defaultFields = {
 
 
 /**
- * transport headers.
+ * header mappings.
  */
-export class TransportHeaders<T extends Header = Header> {
+export class HeaderMappings<T extends Header = Header> {
 
     private _hdrs: Map<string, T>;
     private _rcd?: Record<string, T> | null;
@@ -65,18 +65,18 @@ export class TransportHeaders<T extends Header = Header> {
     private _proxy: boolean;
 
     /**
-     * create transport headers.
+     * create headers map.
      * @param headers 
      * @param initFields 
      */
     constructor(headers?: string | HeadersLike<T>, initFields?: HeaderFields);
     /**
-     * create transport headers proxy with headers.
+     * create headers map proxy with headers.
      * @param headers headers map
      * @param proxy proxy operation with the headers map.
      * @param initFields 
      */
-    constructor(headers: MapHeaders<T> | undefined, proxy: boolean, initFields?: HeaderFields);
+    constructor(headers: IHeaders<T> | undefined, proxy: boolean, initFields?: HeaderFields);
     constructor(headers?: string | HeadersLike<T>, fieldsProxy?: HeaderFields | boolean, initFields?: HeaderFields) {
         if (isBoolean(fieldsProxy)) {
             this._proxy = fieldsProxy;
@@ -99,7 +99,7 @@ export class TransportHeaders<T extends Header = Header> {
                         this.append(name, value as T);
                     }
                 });
-            } else if (headers instanceof TransportHeaders) {
+            } else if (headers instanceof HeaderMappings) {
                 this._proxy = false;
                 headers.forEach((n, v) => {
                     this.set(n, v);
@@ -118,14 +118,14 @@ export class TransportHeaders<T extends Header = Header> {
         return Array.from(this._normal.keys())
     }
 
-    getHeaders<Tx extends Header>(): MapHeaders<Tx> {
+    getHeaders<Tx extends Header>(): IHeaders<Tx> {
         if (!this._rcd) {
             const rcd = this._rcd = {} as Record<string, T>;
             this.forEach((v, k) => {
                 rcd[v] = k;
             });
         }
-        return this._rcd as MapHeaders<any>;
+        return this._rcd as IHeaders<any>;
     }
 
     setHeaders(headers: Record<string, T>): void {
@@ -434,5 +434,5 @@ export class TransportHeaders<T extends Header = Header> {
 /**
  * Header like
  */
-export type HeadersLike<T extends Header = Header> = TransportHeaders<T> | MapHeaders<T>;
+export type HeadersLike<T extends Header = Header> = HeaderMappings<T> | IHeaders<T>;
 

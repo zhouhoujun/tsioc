@@ -1,4 +1,4 @@
-import { Header, Pattern, TransportHeaders } from '@tsdi/common';
+import { Header, Pattern, HeaderMappings } from '@tsdi/common';
 import { Outgoing } from './Outgoing';
 import { Packet } from './packet';
 import { TransportOpts } from './TransportSession';
@@ -8,7 +8,7 @@ export class PacketOutgoing<T = any> implements Outgoing<T> {
     id: any;
     type: number | string | null;
     readonly pattern: Pattern;
-    private _headers: TransportHeaders;
+    private _headers: HeaderMappings;
     body: T | null;
     error: any;
     statusCode!: any;
@@ -17,10 +17,10 @@ export class PacketOutgoing<T = any> implements Outgoing<T> {
 
     
     constructor(packet: Packet, options?: TransportOpts) {
-        this._headers = new TransportHeaders(undefined, options?.headerFields);
-        this.id = packet.id ?? ((packet.headers instanceof TransportHeaders) ? packet.headers?.getHeader('identity') : packet.headers?.['identity'])
+        this._headers = new HeaderMappings(undefined, options?.headerFields);
+        this.id = packet.id ?? ((packet.headers instanceof HeaderMappings) ? packet.headers?.getHeader('identity') : packet.headers?.['identity'])
         this.type = packet.type ?? null;
-        this.pattern = packet.pattern ?? packet.url ?? ((packet.headers instanceof TransportHeaders) ? packet.headers?.getHeader('path') : packet.headers?.['path'] as string) ?? '';
+        this.pattern = packet.pattern ?? packet.url ?? ((packet.headers instanceof HeaderMappings) ? packet.headers?.getHeader('path') : packet.headers?.['path'] as string) ?? '';
         this.body = null;
     }
 

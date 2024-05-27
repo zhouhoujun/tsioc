@@ -31,20 +31,20 @@ export const EMPTY_CODER = {
 } as ParameterCodec;
 
 /**
- * transport parameters.
+ * request parameters.
  */
-export class TransportParams {
+export class RequestParams {
     private map: Map<string, string[]>;
     private encoder: ParameterCodec;
     constructor(options: {
-        params?: TransportParams | string
+        params?: RequestParams | string
         | ReadonlyArray<[string, string | number | boolean]>
         | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>>;
         encoder?: ParameterCodec;
     } = {}) {
         this.encoder = options.encoder ?? EMPTY_CODER;
         this.map = new Map<string, string[]>();
-        if (options.params instanceof TransportParams) {
+        if (options.params instanceof RequestParams) {
             if (!options.encoder) {
                 this.encoder = options.params.encoder;
             }
@@ -190,6 +190,14 @@ export class TransportParams {
             // which results in `a=1&&c=1&c=2` instead of `a=1&c=1&c=2` if we don't
             .filter(param => param !== '')
             .join('&')
+    }
+
+    toRecord(): Record<string, any> {
+        return this.keys()
+            .reduce((pre, key) => {
+                pre[key] = this.map.get(key);
+                return pre
+            }, {} as Record<string, any>)
     }
 
     protected parse(rawParams: string) {

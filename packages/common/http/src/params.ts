@@ -1,4 +1,4 @@
-import { ParameterCodec, TransportParams } from '@tsdi/common';
+import { ParameterCodec, RequestParams } from '@tsdi/common';
 
 
 /**
@@ -70,7 +70,7 @@ function standardEncoding(v: string): string {
     STANDARD_ENCODING_REGEX, (s, t) => STANDARD_ENCODING_REPLACEMENTS[t] ?? s);
 }
 
-export class HttpParams extends TransportParams {
+export class HttpParams extends RequestParams {
 
   constructor(options: {
     params?: string

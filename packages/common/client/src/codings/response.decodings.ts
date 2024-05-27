@@ -1,10 +1,10 @@
-import { EMPTY_OBJ, Injectable, getClass, isNil, isString, lang } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, isNil, isString, lang } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { HEAD, ResponseEvent, ResponseJsonParseError, TransportHeaders, UrlRequest } from '@tsdi/common';
+import { HEAD, ResponseEvent, ResponseJsonParseError, HeaderMappings, UrlRequest } from '@tsdi/common';
 import { Codings, DecodeHandler } from '@tsdi/common/codings';
 import {
     TransportContext, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter,
-    XSSI_PREFIX, ev, isBuffer, toBuffer, Packet, ResponsePacketIncoming, ResponseIncoming
+    XSSI_PREFIX, ev, isBuffer, toBuffer, ResponsePacketIncoming, ResponseIncoming
 } from '@tsdi/common/transport';
 import { Observable, defer, mergeMap, throwError } from 'rxjs';
 
@@ -121,7 +121,7 @@ export class ResponseDecodingsHandlers {
 
     @DecodeHandler(ResponsePacketIncoming)
     handleResponseIncoming(res: ResponsePacketIncoming, context: TransportContext, resovler: ResponseIncomingResolver) {
-        if (!(res.tHeaders instanceof TransportHeaders)) {
+        if (!(res.tHeaders instanceof HeaderMappings)) {
             return throwError(() => new NotSupportedExecption(`${context.options.group ?? ''} ${context.options.name ?? ''} response is not ResponseIncoming!`));
         }
         return resovler.resolve(res, context);
@@ -137,13 +137,13 @@ export class ResponseDecodeInterceper implements Interceptor<any, any, Transport
     intercept(input: any, next: Handler<any, any, TransportContext>, context: TransportContext): Observable<any> {
         return next.handle(input, context).pipe(
             mergeMap(res => {
-                if (getClass(res) === Object) {
-                    const packet = res as Packet;
-                    if (!(packet.url || packet.topic || packet.headers || packet.payload)) {
-                        return throwError(() => new NotSupportedExecption(`${context.options.group ?? ''} ${context.options.name ?? ''} response is not packet data!`));
-                    }
-                    res = new ResponsePacketIncoming(packet, context.options);
-                }
+                // if (getClass(res) === Object) {
+                //     const packet = res as Packet;
+                //     if (!(packet.url || packet.topic || packet.headers || packet.payload)) {
+                //         return throwError(() => new NotSupportedExecption(`${context.options.group ?? ''} ${context.options.name ?? ''} response is not packet data!`));
+                //     }
+                //     res = new ResponsePacketIncoming(packet, context.options);
+                // }
 
                 return this.codings.decode(res, context)
             }));
@@ -182,7 +182,7 @@ export class CompressResponseDecordeInterceptor implements Interceptor<ResponseI
 
     intercept(input: ResponseIncoming, next: Handler<ResponseIncoming, ResponseEvent, TransportContext>, context: TransportContext): Observable<ResponseEvent> {
         const response = input;
-        if (response.tHeaders instanceof TransportHeaders) {
+        if (response.tHeaders instanceof HeaderMappings) {
             const codings = response.tHeaders.getContentEncoding();
             const req = context.first() as UrlRequest;
             const eventFactory = req.context.get(ResponseEventFactory);

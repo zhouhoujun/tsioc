@@ -1,5 +1,5 @@
 import { isString, InvocationContext, EMPTY_OBJ, isUndefined, isNil } from '@tsdi/ioc';
-import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, HeadersLike, TransportHeaders, Pattern, AbstractRequest } from '@tsdi/common';
+import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, HeadersLike, HeaderMappings, Pattern, AbstractRequest } from '@tsdi/common';
 import { HttpParams } from './params';
 
 
@@ -66,7 +66,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
     /**
      * Outgoing headers for this request.
      */
-    readonly headers!: TransportHeaders;
+    readonly headers!: HeaderMappings;
 
     /**
      * Whether this request should be made in a way that exposes progress events.
@@ -194,7 +194,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
 
             // Override headers if they're provided.
             if (options.headers) {
-                this.headers = new TransportHeaders(options.headers)
+                this.headers = new HeaderMappings(options.headers)
             }
 
             if (options.params) {
@@ -204,7 +204,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
 
         // If no headers have been passed in, construct a new HeadersLike instance.
         if (!this.headers) {
-            this.headers = new TransportHeaders()
+            this.headers = new HeaderMappings()
         }
 
         // If no parameters have been passed in, construct a new HttpUrlEncodedParams instance.
@@ -305,7 +305,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
 
     clone(): HttpRequest<T>;
     clone(update: {
-        headers?: TransportHeaders,
+        headers?: HeaderMappings,
         context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
@@ -319,7 +319,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         setParams?: { [param: string]: string },
     }): HttpRequest<T>;
     clone<V>(update: {
-        headers?: TransportHeaders,
+        headers?: HeaderMappings,
         context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
@@ -333,7 +333,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         setParams?: { [param: string]: string },
     }): HttpRequest<V>;
     clone(update: {
-        headers?: TransportHeaders,
+        headers?: HeaderMappings,
         context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,

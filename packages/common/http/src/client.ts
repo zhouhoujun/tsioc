@@ -1,5 +1,5 @@
 import { Injectable, InvocationContext } from '@tsdi/ioc';
-import { HttpRequestMethod, HeadersLike, TransportHeaders, DELETE, GET, HEAD, JSONP, PATCH, POST, PUT  } from '@tsdi/common';
+import { HttpRequestMethod, HeadersLike, HeaderMappings, DELETE, GET, HEAD, JSONP, PATCH, POST, PUT  } from '@tsdi/common';
 import { concatMap, filter, map, Observable, of } from 'rxjs';
 import { HttpHandler } from './handler';
 import { HttpParams } from './params';
@@ -416,11 +416,11 @@ export class HttpClient {
 
             const method = first as string;
             // Figure out the headers.
-            let headers: TransportHeaders | undefined = undefined;
-            if (options.headers instanceof TransportHeaders) {
+            let headers: HeaderMappings | undefined = undefined;
+            if (options.headers instanceof HeaderMappings) {
                 headers = options.headers
             } else {
-                headers = new TransportHeaders(options.headers)
+                headers = new HeaderMappings(options.headers)
             }
 
             // Sort out parameters.

@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { Pattern } from './pattern';
-import { HeaderFields, HeadersLike, TransportHeaders } from './headers';
+import { HeaderFields, HeadersLike, HeaderMappings } from './headers';
 
 
 
@@ -40,12 +40,12 @@ export class Packet<T = any> {
         return this.payload;
     }
 
-    readonly headers: TransportHeaders;
+    readonly headers: HeaderMappings;
     constructor(init: {
         headers?: HeadersLike;
         payload?: T;
     }, options?: PacketOpts) {
-        this.headers = new TransportHeaders(init.headers, options?.headerFields);
+        this.headers = new HeaderMappings(init.headers, options?.headerFields);
         this.payload = init.payload ?? null;
     }
 }

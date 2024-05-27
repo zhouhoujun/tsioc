@@ -1,4 +1,4 @@
-import { HttpStatusCode, TransportHeaders, HeadersLike } from '@tsdi/common';
+import { HttpStatusCode, HeaderMappings, HeadersLike } from '@tsdi/common';
 
 /**
  * Type enumeration for the different kinds of `HttpEvent`.
@@ -140,7 +140,7 @@ export abstract class HttpResponseBase {
     /**
      * All response headers.
      */
-    readonly headers: TransportHeaders;
+    readonly headers: HeaderMappings;
 
     /**
      * Response status code.
@@ -196,7 +196,7 @@ export abstract class HttpResponseBase {
         defaultStatus: number = HttpStatusCode.Ok, defaultStatusText = 'OK') {
         // If the hash has values passed, use them to initialize the response.
         // Otherwise use the default values.
-        this.headers = init.headers instanceof TransportHeaders ? init.headers : new TransportHeaders(init.headers);
+        this.headers = init.headers instanceof HeaderMappings ? init.headers : new HeaderMappings(init.headers);
         this.status = init.status !== undefined ? init.status : defaultStatus;
         this._message = init.statusText || defaultStatusText;
         this.url = init.url || null!

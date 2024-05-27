@@ -1,6 +1,6 @@
 import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, isNil, isString } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
-import { TransportHeaders, TransportParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, ResponsePacket } from '@tsdi/common';
+import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, ResponsePacket } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
 import { ClientHandler } from './handler';
 import { ClientOpts } from './options';
@@ -353,17 +353,17 @@ export abstract class Client<TRequest extends AbstractRequest = AbstractRequest,
         } else {
             // const method = first as string;
             // Figure out the headers.
-            let headers: TransportHeaders | undefined = undefined;
-            if (options.headers instanceof TransportHeaders) {
+            let headers: HeaderMappings | undefined = undefined;
+            if (options.headers instanceof HeaderMappings) {
                 headers = options.headers
             } else {
-                headers = new TransportHeaders(options.headers)
+                headers = new HeaderMappings(options.headers)
             }
 
             // Sort out parameters.
-            let params: TransportParams | undefined = undefined;
+            let params: RequestParams | undefined = undefined;
             if (options.params) {
-                if (options.params instanceof TransportParams) {
+                if (options.params instanceof RequestParams) {
                     params = options.params
                 } else {
                     params = this.createParams(options.params)
@@ -405,7 +405,7 @@ export abstract class Client<TRequest extends AbstractRequest = AbstractRequest,
 
     protected createParams(params: string | ReadonlyArray<[string, string | number | boolean]>
         | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>>) {
-        return new TransportParams({ params })
+        return new RequestParams({ params })
     }
 
     /**
