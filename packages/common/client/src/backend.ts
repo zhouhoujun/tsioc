@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { Backend } from '@tsdi/core';
-import { RequestPacket, TransportEvent } from '@tsdi/common';
+import { AbstractRequest, ResponseEvent } from '@tsdi/common';
 import { Observable } from 'rxjs';
 
 
@@ -8,12 +8,12 @@ import { Observable } from 'rxjs';
  * transport client endpoint backend.
  */
 @Abstract()
-export abstract class TransportBackend implements Backend<RequestPacket, TransportEvent>  {
+export abstract class TransportBackend implements Backend<AbstractRequest, ResponseEvent>  {
 
     /**
      * handle client request
      * @param req 
      */
-    abstract handle(req: RequestPacket): Observable<TransportEvent>;
+    abstract handle(req: AbstractRequest): Observable<ResponseEvent>;
 
 }

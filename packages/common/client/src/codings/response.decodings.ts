@@ -1,6 +1,6 @@
 import { EMPTY_OBJ, Injectable, getClass, isNil, isString, lang } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { HEAD, ResponseJsonParseError, TransportEvent, TransportHeaders, TransportRequest } from '@tsdi/common';
+import { HEAD, ResponseEvent, ResponseJsonParseError, TransportHeaders, UrlRequest } from '@tsdi/common';
 import { Codings, DecodeHandler } from '@tsdi/common/codings';
 import {
     TransportContext, MimeAdapter, NotSupportedExecption, ResponseEventFactory, StreamAdapter,
@@ -20,7 +20,7 @@ export class ResponseIncomingResolver {
 
     resolve(res: ResponseIncoming, context: TransportContext) {
         return defer(async () => {
-            const req = context.first() as TransportRequest;
+            const req = context.first() as UrlRequest;
             const eventFactory = req.context.get(ResponseEventFactory);
             const streamAdapter = req.context.get(StreamAdapter);
             let responseType = req.responseType;
@@ -176,15 +176,15 @@ export class RequestStauts {
 
 
 @Injectable()
-export class CompressResponseDecordeInterceptor implements Interceptor<ResponseIncoming, TransportEvent, TransportContext> {
+export class CompressResponseDecordeInterceptor implements Interceptor<ResponseIncoming, ResponseEvent, TransportContext> {
 
     constructor(private streamAdapter: StreamAdapter) { }
 
-    intercept(input: ResponseIncoming, next: Handler<ResponseIncoming, TransportEvent, TransportContext>, context: TransportContext): Observable<TransportEvent> {
+    intercept(input: ResponseIncoming, next: Handler<ResponseIncoming, ResponseEvent, TransportContext>, context: TransportContext): Observable<ResponseEvent> {
         const response = input;
         if (response.tHeaders instanceof TransportHeaders) {
             const codings = response.tHeaders.getContentEncoding();
-            const req = context.first() as TransportRequest;
+            const req = context.first() as UrlRequest;
             const eventFactory = req.context.get(ResponseEventFactory);
             const streamAdapter = this.streamAdapter;
             const rqstatus = req.context.getValueify(RequestStauts, () => new RequestStauts());

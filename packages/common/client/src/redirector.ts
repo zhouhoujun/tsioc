@@ -1,6 +1,6 @@
 /* eslint-disable no-case-declarations */
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
-import { TransportHeaders, TransportRequest, RequestMethod, MapHeaders } from '@tsdi/common';
+import { TransportHeaders, UrlRequest, RequestMethod, MapHeaders } from '@tsdi/common';
 import { BadRequestExecption, StreamAdapter, StatusAdapter, Redirector } from '@tsdi/common/transport';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { Client } from './Client';
@@ -9,7 +9,7 @@ import { Client } from './Client';
 @Injectable()
 export class RestfulRedirector implements Redirector {
 
-    redirect<T>(req: TransportRequest, status: any, headers: MapHeaders): Observable<T> {
+    redirect<T>(req: UrlRequest, status: any, headers: MapHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {
             if(!req.url) return observer.error(new BadRequestExecption());
 

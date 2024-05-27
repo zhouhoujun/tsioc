@@ -1,5 +1,5 @@
 import { Injectable, InvocationContext, promisify } from '@tsdi/ioc';
-import { TransportRequest, Pattern, LOCALHOST, RequestInitOpts } from '@tsdi/common';
+import { Pattern, LOCALHOST, RequestInitOpts, PatternRequest } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
@@ -14,7 +14,7 @@ import { TcpHandler } from './handler';
  * TcpClient. client of  `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpClient extends Client<TransportRequest> {
+export class TcpClient extends Client<PatternRequest> {
 
     @InjectLog()
     private logger!: Logger;
@@ -81,9 +81,9 @@ export class TcpClient extends Client<TransportRequest> {
         context.setValue(ClientTransportSession, this._session);
     }
 
-    protected override createRequest(pattern: Pattern, options: RequestInitOpts): TransportRequest<any> {
+    protected override createRequest(pattern: Pattern, options: RequestInitOpts): PatternRequest<any> {
         options.withCredentials = this.connection instanceof tls.TLSSocket;
-        return new TransportRequest(pattern, options);
+        return new PatternRequest(pattern, options);
     }
 
     protected override async onShutdown(): Promise<void> {

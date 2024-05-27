@@ -1,6 +1,6 @@
 import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, isNil, isString } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
-import { TransportHeaders, TransportParams, ResponseAs, Pattern, TransportEvent, TransportResponse, RequestInitOpts, RequestOptions, RequestPacket } from '@tsdi/common';
+import { TransportHeaders, TransportParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, ResponsePacket } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
 import { ClientHandler } from './handler';
 import { ClientOpts } from './options';
@@ -11,7 +11,7 @@ import { ClientOpts } from './options';
  * transport client. use to request text, stream, blob, arraybuffer and json.
  */
 @Abstract()
-export abstract class Client<TRequest extends RequestPacket = RequestPacket, TResponse extends TransportEvent = TransportEvent, TOptions extends ClientOpts = ClientOpts> {
+export abstract class Client<TRequest extends AbstractRequest = AbstractRequest, TResponse extends ResponseEvent = ResponseEvent, TOptions extends ClientOpts = ClientOpts> {
 
     /**
      * client handler
@@ -23,9 +23,9 @@ export abstract class Client<TRequest extends RequestPacket = RequestPacket, TRe
     }
 
     /**
-     * Sends an `Request` and returns a stream of `TransportEvent`s.
+     * Sends an `Request` and returns a stream of `ResponseEvent`s.
      *
-     * @return An `Observable` of the response, with the response body as a stream of `TransportEvent`s.
+     * @return An `Observable` of the response, with the response body as a stream of `ResponseEvent`s.
      */
     send(req: TRequest): Observable<TResponse>;
 
@@ -79,13 +79,13 @@ export abstract class Client<TRequest extends RequestPacket = RequestPacket, TRe
      * @param pattern     The endpoint URL.
      * @param options The Transport options to send with the request.
      *
-     * @return An `Observable` of the response, with the response body as an array of `TransportEvent`s for
+     * @return An `Observable` of the response, with the response body as an array of `ResponseEvent`s for
      * the request.
      */
     send(pattern: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType: 'arraybuffer',
-    }): Observable<TransportEvent<ArrayBuffer>>;
+    }): Observable<ResponseEvent<ArrayBuffer>>;
 
     /**
      * Constructs a request that interprets the body as a `Blob` and returns
@@ -94,13 +94,13 @@ export abstract class Client<TRequest extends RequestPacket = RequestPacket, TRe
      * @param pattern     The endpoint URL.
      * @param options The Transport options to send with the request.
      *
-     * @return An `Observable` of all `TransportEvent`s for the request,
+     * @return An `Observable` of all `ResponseEvent`s for the request,
      * with the response body of type `Blob`.
      */
     send(pattern: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType: 'blob',
-    }): Observable<TransportEvent<Blob>>;
+    }): Observable<ResponseEvent<Blob>>;
 
     /**
      * Constructs a request which interprets the body as a text string and returns the full event
@@ -109,13 +109,13 @@ export abstract class Client<TRequest extends RequestPacket = RequestPacket, TRe
      * @param pattern     The endpoint URL.
      * @param options The Transport options to send with the request.
      *
-     * @return An `Observable` of all `TransportEvent`s for the request,
+     * @return An `Observable` of all `ResponseEvent`s for the request,
      * with the response body of type string.
      */
     send(pattern: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType?: 'text',
-    }): Observable<TransportEvent<string>>;
+    }): Observable<ResponseEvent<string>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns the full event
@@ -124,13 +124,13 @@ export abstract class Client<TRequest extends RequestPacket = RequestPacket, TRe
      * @param pattern     The endpoint URL.
      * @param options The Transport options to send with the  request.
      *
-     * @return An `Observable` of all `TransportEvent`s for the request,
+     * @return An `Observable` of all `ResponseEvent`s for the request,
      * with the response body of type `Object`.
      */
     send(pattern: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType?: 'json',
-    }): Observable<TransportEvent<any>>;
+    }): Observable<ResponseEvent<any>>;
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns the full event
@@ -139,13 +139,13 @@ export abstract class Client<TRequest extends RequestPacket = RequestPacket, TRe
      * @param pattern     The endpoint URL.
      * @param options The Transport options to send with the request.
      *
-     * @return An `Observable` of all `TransportEvent`s for the request,
+     * @return An `Observable` of all `ResponseEvent`s for the request,
      * with the response body of type `R`.
      */
     send<R>(pattern: Pattern, options: RequestOptions & {
         observe: 'events',
         responseType?: 'json',
-    }): Observable<TransportEvent<R>>;
+    }): Observable<ResponseEvent<R>>;
 
 
     /**
@@ -155,43 +155,43 @@ export abstract class Client<TRequest extends RequestPacket = RequestPacket, TRe
      * @param pattern     The endpoint URL.
      * @param options The Transport options to send with the  request.
      *
-     * @return An `Observable` of all `TransportEvent`s for the request,
+     * @return An `Observable` of all `ResponseEvent`s for the request,
      * with the response body of type `Object`.
      */
     send(pattern: Pattern, options: RequestOptions & {
         observe: 'emit',
-    }): Observable<TransportEvent<any>>;
+    }): Observable<ResponseEvent<any>>;
 
     /**
      * Constructs a request which interprets the body as an `ArrayBuffer`
-     * and returns the full `TransportResponse`.
+     * and returns the full `ResponsePacket`.
      *
      * @param pattern     The endpoint URL.
      * @param options The send options to send with the request.
      *
-     * @return An `Observable` of the `TransportResponse`, with the response body as an `ArrayBuffer`.
+     * @return An `Observable` of the `ResponsePacket`, with the response body as an `ArrayBuffer`.
      */
     send(pattern: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType: 'arraybuffer';
-    }): Observable<TransportResponse<ArrayBuffer>>;
+    }): Observable<ResponsePacket<ArrayBuffer>>;
 
     /**
-     * Constructs a request which interprets the body as a `Blob` and returns the full `TransportResponse`.
+     * Constructs a request which interprets the body as a `Blob` and returns the full `ResponsePacket`.
      *
      * @param pattern     The endpoint URL.
      * @param options The send options to send with the request.
      *
-     * @return An `Observable` of the `TransportResponse`, with the response body of type `Blob`.
+     * @return An `Observable` of the `ResponsePacket`, with the response body of type `Blob`.
      */
     send(pattern: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType: 'blob';
-    }): Observable<TransportResponse<Blob>>;
+    }): Observable<ResponsePacket<Blob>>;
 
     /**
      * Constructs a request which interprets the body as a text stream and returns the full
-     * `TransportResponse`.
+     * `ResponsePacket`.
      *
      * @param pattern     The endpoint URL.
      * @param options The send options to send with the request.
@@ -201,22 +201,22 @@ export abstract class Client<TRequest extends RequestPacket = RequestPacket, TRe
     send(pattern: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType: 'text';
-    }): Observable<TransportResponse<string>>;
+    }): Observable<ResponsePacket<string>>;
 
 
     /**
      * Constructs a request which interprets the body as a JSON object and returns
-     * the full `TransportResponse` with the response body in the requested type.
+     * the full `ResponsePacket` with the response body in the requested type.
      *
      * @param pattern     The endpoint URL.
      * @param options The send options to send with the request.
      *
-     * @return  An `Observable` of the full `TransportResponse`, with the response body of type `R`.
+     * @return  An `Observable` of the full `ResponsePacket`, with the response body of type `R`.
      */
     send<R = any>(pattern: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType?: 'json';
-    }): Observable<TransportResponse<R>>;
+    }): Observable<ResponsePacket<R>>;
 
 
     /**
@@ -226,7 +226,7 @@ export abstract class Client<TRequest extends RequestPacket = RequestPacket, TRe
      * @param pattern     The endpoint URL.
      * @param options The send options to send with the request.
      *
-     * @return An `Observable` of the `TransportResponse`, with the response body of type `R`.
+     * @return An `Observable` of the `ResponsePacket`, with the response body of type `R`.
      */
     send<R = any>(pattern: Pattern, options?: RequestOptions & {
         observe?: 'body';
@@ -234,11 +234,11 @@ export abstract class Client<TRequest extends RequestPacket = RequestPacket, TRe
     }): Observable<R>;
 
     /**
-     * Sends an `Request` and returns a stream of `TransportEvent`s.
+     * Sends an `Request` and returns a stream of `ResponseEvent`s.
      *
-     * @return An `Observable` of the response, with the response body as a stream of `TransportEvent`s.
+     * @return An `Observable` of the response, with the response body as a stream of `ResponseEvent`s.
      */
-    send(pattern: Pattern, options: RequestOptions & ResponseAs): Observable<TransportEvent>;
+    send(pattern: Pattern, options: RequestOptions & ResponseAs): Observable<ResponseEvent>;
     /**
      * Constructs a request where response type and requested observable are not known statically.
      *
@@ -270,7 +270,7 @@ export abstract class Client<TRequest extends RequestPacket = RequestPacket, TRe
         // includes all interceptors) inside a concatMap(). This way, the handler runs
         // inside an Observable chain, which causes interceptors to be re-run on every
         // subscription (this also makes retries re-run the handler, including interceptors).
-        const events$: Observable<TransportEvent> =
+        const events$: Observable<ResponseEvent> =
             of(req).pipe(
                 concatMap((req: TRequest) => this.handler.handle(req)),
                 finalize(() => req.context?.destroy())
@@ -297,7 +297,7 @@ export abstract class Client<TRequest extends RequestPacket = RequestPacket, TRe
                 // requested type.
                 switch (req.responseType) {
                     case 'arraybuffer':
-                        return res$.pipe(map((res: TransportResponse) => {
+                        return res$.pipe(map((res: ResponsePacket) => {
                             // Validate that the body is an ArrayBuffer.
                             if (res.payload !== null && !(res.payload instanceof ArrayBuffer)) {
                                 throw new Execption('Response is not an ArrayBuffer.')
@@ -305,7 +305,7 @@ export abstract class Client<TRequest extends RequestPacket = RequestPacket, TRe
                             return res.payload
                         }));
                     case 'blob':
-                        return res$.pipe(map((res: TransportResponse) => {
+                        return res$.pipe(map((res: ResponsePacket) => {
                             // Validate that the body is a Blob.
                             if (res.payload !== null && !(res.payload instanceof Blob)) {
                                 throw new Execption('Response is not a Blob.')
@@ -313,7 +313,7 @@ export abstract class Client<TRequest extends RequestPacket = RequestPacket, TRe
                             return res.payload
                         }));
                     case 'text':
-                        return res$.pipe(map((res: TransportResponse) => {
+                        return res$.pipe(map((res: ResponsePacket) => {
                             // Validate that the payload is a string.
                             if (res.payload !== null && !isString(res.payload)) {
                                 throw new Execption('Response is not a string.')
@@ -323,7 +323,7 @@ export abstract class Client<TRequest extends RequestPacket = RequestPacket, TRe
                     case 'json':
                     default:
                         // No validation needed for JSON responses, as they can be of any type.
-                        return res$.pipe(map((res: TransportResponse) => res.payload))
+                        return res$.pipe(map((res: ResponsePacket) => res.payload))
                 }
             case 'response':
                 // The response stream was requested directly, so return it.
@@ -394,7 +394,7 @@ export abstract class Client<TRequest extends RequestPacket = RequestPacket, TRe
 
 
     protected isRequest(target: any): target is TRequest {
-        return target instanceof RequestPacket;
+        return target instanceof AbstractRequest;
     }
 
     protected abstract createRequest(pattern: Pattern, options: RequestInitOpts): TRequest;

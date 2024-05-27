@@ -1,6 +1,6 @@
 import { Injectable, Injector, Module, isString, tokenId } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { TransportErrorResponse } from '@tsdi/common';
+import { ErrorResponse } from '@tsdi/common';
 import { BufferCodingsModule } from '@tsdi/common/transport';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
@@ -115,7 +115,7 @@ describe('TCP Micro Service', () => {
 
         // expect(res).toBeDefined();
         // expect(isArray(res.features)).toBeTruthy();
-        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res instanceof ErrorResponse).toBeDefined();
         expect(res.statusMessage).toEqual('Not Found');
     })
 
@@ -129,7 +129,7 @@ describe('TCP Micro Service', () => {
 
         // expect(res).toBeDefined();
         // expect(isArray(res.features)).toBeTruthy();
-        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res instanceof ErrorResponse).toBeDefined();
         expect(res.statusMessage).toContain('Packet length 23.74mb great than max size');
     })
 
@@ -161,7 +161,7 @@ describe('TCP Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         // expect(a.status).toEqual(404);
         expect(a.statusText).toEqual('Not Found')
     });
@@ -210,7 +210,7 @@ describe('TCP Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         // expect(a.status).toEqual(404);        
         expect(a.statusText).toEqual('Not Found')
     });

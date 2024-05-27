@@ -1,5 +1,5 @@
 import { Injectable, Injector, InvocationContext, isNil, promisify } from '@tsdi/ioc';
-import { TransportRequest } from '@tsdi/common';
+import { UrlRequest } from '@tsdi/common';
 import {  CodingsContext, Decoder, DecodingsFactory, Encoder, EncodingsFactory } from '@tsdi/common/codings';
 import { StreamAdapter, TransportContext, TransportOpts, ctype, ev } from '@tsdi/common/transport';
 import { request as httpRequest, IncomingMessage, ClientRequest } from 'http';
@@ -46,7 +46,7 @@ export class HttpClientTransportSession extends ClientTransportSession<ClientHtt
 
 
 
-    override sendMessage(msg: any, req: TransportRequest, ctx: CodingsContext): Observable<any> {
+    override sendMessage(msg: any, req: UrlRequest, ctx: CodingsContext): Observable<any> {
         let path = req.url ?? '';
         const context = req.context;
         const ac = this.getAbortSignal(context);

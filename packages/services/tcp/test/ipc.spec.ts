@@ -1,7 +1,7 @@
 import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { Application, ApplicationContext, Payload } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { TransportErrorResponse, TransportResponse } from '@tsdi/common';
+import { ErrorResponse, ResponsePacket } from '@tsdi/common';
 import { BadRequestExecption, PacketCodingsModule } from '@tsdi/common/transport';
 import { ClientModule } from '@tsdi/common/client';
 import { ServerModule } from '@tsdi/platform-server';
@@ -177,7 +177,7 @@ if (os.platform() != 'win32') {
 
             // expect(res).toBeDefined();
             // expect(isArray(res.features)).toBeTruthy();
-            expect(res instanceof TransportErrorResponse).toBeDefined();
+            expect(res instanceof ErrorResponse).toBeDefined();
             expect(res.statusMessage).toContain('Readable payload length 23.74mb great than max size 5mb');
         })
 
@@ -244,7 +244,7 @@ if (os.platform() != 'win32') {
                 .pipe(
                     catchError((err, ct) => {
                         // ctx.getLogger().error(err);
-                        return of(err as TransportResponse);
+                        return of(err as ResponsePacket);
                     })));
             // expect(b.status).toEqual(200);
             expect(b.ok).toBeTruthy();
@@ -353,7 +353,7 @@ if (os.platform() != 'win32') {
                 .pipe(
                     catchError((err, ct) => {
                         // ctx.getLogger().error(err);
-                        return of(err as TransportResponse<any, number>);
+                        return of(err as ResponsePacket<any, number>);
                     })));
             // expect(r.status).toEqual(200);
             expect(r.ok).toBeTruthy();
@@ -378,7 +378,7 @@ if (os.platform() != 'win32') {
             const r = await lastValueFrom(client.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
                 catchError((err, ct) => {
                     // ctx.getLogger().error(err);
-                    return of(err as TransportResponse<any, number>);
+                    return of(err as ResponsePacket<any, number>);
                 })));
             // expect(r.status).toEqual(200);
             expect(r.ok).toBeTruthy();
@@ -390,7 +390,7 @@ if (os.platform() != 'win32') {
             const r = await lastValueFrom(client.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
                 catchError((err, ct) => {
                     // ctx.getLogger().error(err);
-                    return of(err as TransportResponse<any, number>);
+                    return of(err as ResponsePacket<any, number>);
                 })));
             // expect(r.status).toEqual(200);
             expect(r.ok).toBeTruthy();

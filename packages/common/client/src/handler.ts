@@ -1,6 +1,6 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
 import { ConfigableHandler, Interceptor } from '@tsdi/core';
-import { TransportEvent, RequestPacket } from '@tsdi/common';
+import { ResponseEvent, AbstractRequest } from '@tsdi/common';
 import { ClientOpts } from './options';
 
 
@@ -8,11 +8,11 @@ import { ClientOpts } from './options';
  * Client Handler
  */
 @Abstract()
-export abstract class ClientHandler<TRequest extends RequestPacket = RequestPacket, TResponse extends TransportEvent = TransportEvent, TOptions extends ClientOpts = ClientOpts> extends ConfigableHandler<TRequest, TResponse, TOptions> {
+export abstract class ClientHandler<TRequest extends AbstractRequest = AbstractRequest, TResponse extends ResponseEvent = ResponseEvent, TOptions extends ClientOpts = ClientOpts> extends ConfigableHandler<TRequest, TResponse, TOptions> {
 
 }
 
 /**
  * global client interceptors
  */
-export const GLOBAL_CLIENT_INTERCEPTORS = tokenId<Interceptor<RequestPacket, TransportEvent>[]>('GLOBAL_CLIENT_INTERCEPTORS');
+export const GLOBAL_CLIENT_INTERCEPTORS = tokenId<Interceptor<AbstractRequest, ResponseEvent>[]>('GLOBAL_CLIENT_INTERCEPTORS');

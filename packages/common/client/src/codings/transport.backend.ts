@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { TransportRequest, TransportEvent } from '@tsdi/common';
+import { UrlRequest, ResponseEvent } from '@tsdi/common';
 import { Observable, take } from 'rxjs';
 import { TransportBackend } from '../backend';
 import { ClientTransportSession } from '../session';
@@ -7,10 +7,10 @@ import { ClientTransportSession } from '../session';
 @Injectable()
 export class CodingsTransportBackend extends TransportBackend {
 
-    handle(req: TransportRequest<any>): Observable<TransportEvent> {
+    handle(req: UrlRequest<any>): Observable<ResponseEvent> {
         const session = req.context.get(ClientTransportSession);
 
-        let obs$: Observable<TransportEvent>;
+        let obs$: Observable<ResponseEvent>;
         switch (req.observe) {
             case 'emit':
                 obs$ = session.send(req).pipe(take(1));
