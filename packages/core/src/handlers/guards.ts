@@ -18,24 +18,33 @@ export class GuardHandler<
 
     private destroy$ = new Subject<void>();
 
+    private _guards?: CanActivate[] | null;
+    private _guardsFac?: () => CanActivate[] | null;
+
 
     constructor(
         backend: Backend<TInput, TOutput, TContext> | (() => Backend<TInput, TOutput, TContext>),
         interceptors: Interceptor[] | (() => Interceptor[]) = [],
-        private guards?: CanActivate[] | (() => CanActivate[]),
+        guards?: CanActivate[] | null | (() => CanActivate[] | null),
         private filters?: Filter[] | (() => Filter[]),
     ) {
         super(backend, interceptors);
+        if (isFunction(guards)) {
+            this._guardsFac = guards;
+        } else {
+            this._guards = guards;
+        }
     }
 
     override handle(input: TInput, context?: TContext): Observable<TOutput> {
-
-        if (!this.guards) return super.handle(input, context);
-        const guards = isFunction(this.guards) ? this.guards() : this.guards;
-        if (!guards || !this.guards.length) return super.handle(input, context);
         return defer(async () => {
+            if (this._guards === undefined && this._guardsFac) {
+                this._guards = this._guardsFac() ?? null;
+            }
+            if (!this._guards || !this._guards.length) return true;
+
             if (!(await lang.some(
-                guards.map(gd => () => pomiseOf(gd.canActivate(input, context))),
+                this._guards!.map(gd => () => pomiseOf(gd.canActivate(input, context))),
                 vaild => vaild === false))) {
                 return false;
             }
@@ -47,6 +56,11 @@ export class GuardHandler<
             }),
             takeUntil(this.destroy$)
         )
+    }
+
+    protected override reset(): void {
+        super.reset();
+        this._guards = undefined;
     }
 
     private _destroyed = false;
@@ -63,8 +77,6 @@ export class GuardHandler<
     }
 
     protected clear() {
-        this.guards = null!;
-        this.filters = null!;
         this.reset();
     }
 

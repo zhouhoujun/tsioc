@@ -1,5 +1,5 @@
-import { Abstract, tokenId } from '@tsdi/ioc';
-import { ConfigableHandler, Interceptor } from '@tsdi/core';
+import { Abstract } from '@tsdi/ioc';
+import { ConfigableHandler } from '@tsdi/core';
 import { ResponseEvent, AbstractRequest } from '@tsdi/common';
 import { ClientOpts } from './options';
 
@@ -12,7 +12,3 @@ export abstract class ClientHandler<TRequest extends AbstractRequest = AbstractR
 
 }
 
-/**
- * global client interceptors
- */
-export const GLOBAL_CLIENT_INTERCEPTORS = tokenId<Interceptor<AbstractRequest, ResponseEvent>[]>('GLOBAL_CLIENT_INTERCEPTORS');

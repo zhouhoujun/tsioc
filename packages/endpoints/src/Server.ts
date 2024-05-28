@@ -115,18 +115,8 @@ export abstract class Server<TRequest extends RequestContext = RequestContext, T
         return this;
     }
 
-    useGlobalGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number | undefined): this {
-        this.handler.useGlobalGuards(guards, order);
-        return this;
-    }
-
     useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
         this.handler.useFilters(filter, order);
-        return this;
-    }
-
-    useGlobalFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
-        this.handler.useGlobalFilters(filter, order);
         return this;
     }
 
@@ -137,11 +127,6 @@ export abstract class Server<TRequest extends RequestContext = RequestContext, T
 
     useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number | undefined): this {
         this.handler.useInterceptors(interceptor, order);
-        return this;
-    }
-
-    useGlobalInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number | undefined): this {
-        this.handler.useGlobalInterceptors(interceptor, order);
         return this;
     }
 

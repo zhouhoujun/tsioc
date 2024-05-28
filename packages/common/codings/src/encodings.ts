@@ -1,5 +1,5 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Backend, Handler, Interceptor, createHandler } from '@tsdi/core';
+import { Backend, CanActivate, Handler, Interceptor, createHandler } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { CodingsOpts } from './options';
 import { CodingsContext } from './context';
@@ -30,11 +30,6 @@ export class EncodingsBackend implements Backend<any, any, CodingsContext> {
 
 
 /**
- * global encodings interceptors.
- */
-export const GLOBAL_ENCODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, CodingsContext>[]>('GLOBAL_ENCODINGS_INTERCEPTORS');
-
-/**
  * Encodings interceptors.
  */
 export const ENCODINGS_INTERCEPTORS = tokenId<Interceptor<any, Buffer, CodingsContext>[]>('ENCODINGS_INTERCEPTORS');
@@ -47,9 +42,9 @@ export const ENCODINGS_FILTERS = tokenId<Interceptor<any, Buffer, CodingsContext
 
 
 /**
- *  global Encodings filters.
+ *  Encodings guards.
  */
-export const GLOBAL_ENCODINGS_FILTERS = tokenId<Interceptor<any, Buffer, CodingsContext>[]>('GLOBAL_ENCODINGS_FILTERS');
+export const ENCODINGS_GUARDS = tokenId<CanActivate[]>('ENCODINGS_GUARDS');
 
 
 /**
@@ -70,10 +65,9 @@ export class Encodings extends Encoder {
 export class EncodingsFactory {
     create(injector: Injector, options: CodingsOpts): Encodings {
         const handler = createHandler(injector, {
-            globalInterceptorsToken: GLOBAL_ENCODINGS_INTERCEPTORS,
             interceptorsToken: ENCODINGS_INTERCEPTORS,
-            globalFiltersToken: GLOBAL_ENCODINGS_FILTERS,
             filtersToken: ENCODINGS_FILTERS,
+            guardsToken: ENCODINGS_GUARDS,
             backend: EncodingsBackend,
             ...options.encodings
         }) as EncodingsHandler;

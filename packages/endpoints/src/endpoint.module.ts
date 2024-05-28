@@ -2,11 +2,10 @@ import {
     Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType,
     tokenId, isArray, toProvider, lang, ProvdierOf, Type, ModuleRef, isNil, ModuleType
 } from '@tsdi/ioc';
-import { CanActivate, Filter, InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
+import { InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
 import { HybirdTransport, Transport } from '@tsdi/common';
-import { GLOBAL_DECODINGS_INTERCEPTORS, GLOBAL_ENCODINGS_INTERCEPTORS } from '@tsdi/common/codings';
 import { NotImplementedExecption, StatusAdapter } from '@tsdi/common/transport';
-import { RequestContext, RequestContextFactory } from './RequestContext';
+import { RequestContextFactory } from './RequestContext';
 import { Server, ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
 import { FinalizeFilter } from './finalize.filter';
@@ -20,8 +19,6 @@ import { TransportSessionFactory } from './transport.session';
 import { MiddlewareOpts, createMiddlewareEndpoint } from './middleware/middleware.endpoint';
 import { EndpointHandler, createEndpoint } from './EndpointHandler';
 import { ServerCodingsModule } from './codings/server.codings.module';
-import { OutgoingEncodeInterceper } from './codings/outgoing.encodings';
-import { IncomingDecodeInterceper } from './codings/incoming.decodings';
 import { DefaultTransportSessionFactory } from './impl/default.session';
 import { RequestContextFactoryImpl } from './impl/request.context';
 import { DefaultExecptionHandlers } from './execption.handlers';
@@ -192,18 +189,6 @@ export class EndpointModule {
     }
 }
 
-/**
- * Global filters for all server
- */
-export const GLOBAL_SERVER_FILTERS = tokenId<Filter<RequestContext>[]>('GLOBAL_SERVER_FILTERS');
-/**
- * Global guards for all server
- */
-export const GLOBAL_SERVER_GRAUDS = tokenId<CanActivate<RequestContext>>('GLOBAL_SERVER_GRAUDS');
-/**
- * Global interceptors for all server
- */
-export const GLOBAL_SERVER_INTERCEPTORS = tokenId<Filter<RequestContext>[]>('GLOBAL_SERVER_INTERCEPTORS');
 
 function createServiceProviders(options: ServiceOpts, idx: number) {
 
@@ -237,9 +222,6 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
 
                 const serverOpts = {
                     backend: moduleOpts.microservice ? MicroServRouterModule.getToken(moduleOpts.transport as Transport) : HybridRouter,
-                    globalFiltersToken: GLOBAL_SERVER_FILTERS,
-                    globalGuardsToken: GLOBAL_SERVER_GRAUDS,
-                    globalInterceptorsToken: GLOBAL_SERVER_INTERCEPTORS,
                     ...moduleOpts.defaultOpts,
                     ...moduleOpts.serverOpts,
                     routes: {
@@ -247,8 +229,8 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                         ...moduleOpts.serverOpts?.routes
                     },
                     providers: [
-                        { provide: GLOBAL_ENCODINGS_INTERCEPTORS, useClass: OutgoingEncodeInterceper, multi: true },
-                        { provide: GLOBAL_DECODINGS_INTERCEPTORS, useClass: IncomingDecodeInterceper, multi: true },
+                        // { provide: GLOBAL_ENCODINGS_INTERCEPTORS, useClass: OutgoingEncodeInterceper, multi: true },
+                        // { provide: GLOBAL_DECODINGS_INTERCEPTORS, useClass: IncomingDecodeInterceper, multi: true },
                         ...moduleOpts.defaultOpts?.providers || EMPTY,
                         ...moduleOpts.serverOpts?.providers || EMPTY
                     ]

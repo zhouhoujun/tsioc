@@ -1,5 +1,5 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Backend, Handler, Interceptor, createHandler } from '@tsdi/core';
+import { Backend, CanActivate, Handler, Interceptor, createHandler } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { CodingsOpts } from './options';
 import { CodingsContext } from './context';
@@ -29,10 +29,6 @@ export class DecodingsBackend implements Backend<any, any, CodingsContext> {
 
 
 /**
- * gloabl decodings interceptors.
- */
-export const GLOBAL_DECODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, CodingsContext>[]>('GLOBAL_DECODINGS_INTERCEPTORS');
-/**
  *  decodings interceptors.
  */
 export const DECODINGS_INTERCEPTORS = tokenId<Interceptor<Buffer, any, CodingsContext>[]>('DECODINGS_INTERCEPTORS');
@@ -42,11 +38,11 @@ export const DECODINGS_INTERCEPTORS = tokenId<Interceptor<Buffer, any, CodingsCo
  */
 export const DECODINGS_FILTERS = tokenId<Interceptor<Buffer, any, CodingsContext>[]>('DECODINGS_FILTERS');
 
-
 /**
- *  global decodings filters.
+ *  decodings guards.
  */
-export const GLOBAL_DECODINGS_FILTERS = tokenId<Interceptor<Buffer, any, CodingsContext>[]>('GLOBAL_DECODINGS_FILTERS');
+export const DECODINGS_GUARDS = tokenId<CanActivate[]>('DECODINGS_GUARDS');
+
 
 /**
  * Decodings
@@ -66,9 +62,8 @@ export class Decodings extends Decoder {
 export class DecodingsFactory {
     create(injector: Injector, options: CodingsOpts): Decodings {
         const handler = createHandler(injector, {
-            globalInterceptorsToken: GLOBAL_DECODINGS_INTERCEPTORS,
+            guardsToken: DECODINGS_GUARDS,
             interceptorsToken: DECODINGS_INTERCEPTORS,
-            globalFiltersToken: GLOBAL_DECODINGS_FILTERS,
             filtersToken: DECODINGS_FILTERS,
             backend: DecodingsBackend,
             ...options.decodings

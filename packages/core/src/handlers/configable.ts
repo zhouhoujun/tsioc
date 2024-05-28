@@ -104,7 +104,7 @@ export class ConfigableHandler<
     useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this {
         if (!this.options.guardsToken) throw new ArgumentExecption('no guards token');
         this.regMulti(this.options.guardsToken, guards, order);
-        this._cacheGuards = null;
+        this.reset();
         return this;
     }
 
@@ -145,17 +145,13 @@ export class ConfigableHandler<
         return this.injector.get(this.options.interceptorsToken!, EMPTY);
     }
 
-    private _cacheGuards?: CanActivate[] | null;
+
     /**
      * get registered guards of the handler.
      * @returns 
      */
-    protected getGuards(): CanActivate[] {
-        if (!this._cacheGuards) {
-            this._cacheGuards = this.options.guardsToken ? this.injector.get(this.options.guardsToken, null) : null;
-        }
-        return this._cacheGuards || EMPTY;
-
+    protected getGuards(): CanActivate[] | null {
+        return this.options.guardsToken ? this.injector.get(this.options.guardsToken, null) : null;
     }
 
     protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], multiOrder?: number, isClass?: (type: Function) => boolean) {
@@ -169,7 +165,6 @@ export class ConfigableHandler<
 
     protected clear() {
         super.clear();
-        this._cacheGuards = null;
         if (this.options.interceptorsToken) this.injector.unregister(this.options.interceptorsToken);
         if (this.options.guardsToken) this.injector.unregister(this.options.guardsToken);
         if (this.options.filtersToken) this.injector.unregister(this.options.filtersToken);

@@ -4,17 +4,16 @@ import {
 } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
 import { HybirdTransport, Transport } from '@tsdi/common';
-import { GLOBAL_DECODINGS_INTERCEPTORS, GLOBAL_ENCODINGS_INTERCEPTORS, } from '@tsdi/common/codings';
 import { NotImplementedExecption, ResponseEventFactory, StatusAdapter } from '@tsdi/common/transport';
 import { ClientOpts } from './options';
-import { ClientHandler, GLOBAL_CLIENT_INTERCEPTORS } from './handler';
+import { ClientHandler } from './handler';
 import { Client } from './Client';
 import { TransportBackend } from './backend';
 import { BodyContentInterceptor } from './interceptors/body';
 import { RestfulRedirector } from './redirector';
 import { ClientTransportSessionFactory } from './session';
 import { DefaultClientTransportSessionFactory } from './default.session';
-import { ClientCodingsModule, RequestEncodeInterceper, ResponseDecodeInterceper } from './codings';
+import { ClientCodingsModule } from './codings';
 import { DefaultResponseEventFactory } from './response.factory';
 
 /**
@@ -175,12 +174,11 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                 const opts = { ...defts, ...options, asDefault: null } as ClientModuleOpts & ClientTokenOpts;
                 const clientOpts = {
                     backend: opts.backend ?? TransportBackend,
-                    globalInterceptorsToken: GLOBAL_CLIENT_INTERCEPTORS,
                     ...opts.defaultOpts,
                     ...opts.clientOpts,
                     providers: [
-                        { provide: GLOBAL_ENCODINGS_INTERCEPTORS, useClass: RequestEncodeInterceper, multi: true },
-                        { provide: GLOBAL_DECODINGS_INTERCEPTORS, useClass: ResponseDecodeInterceper, multi: true },
+                        // { provide: GLOBAL_ENCODINGS_INTERCEPTORS, useClass: RequestEncodeInterceper, multi: true },
+                        // { provide: GLOBAL_DECODINGS_INTERCEPTORS, useClass: ResponseDecodeInterceper, multi: true },
                         ...opts.defaultOpts?.providers || EMPTY,
                         ...opts.clientOpts?.providers || EMPTY
                     ]
