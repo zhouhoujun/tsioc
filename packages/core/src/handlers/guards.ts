@@ -1,4 +1,4 @@
-import { Abstract, Execption, lang, OnDestroy, pomiseOf, Token, isFunction } from '@tsdi/ioc';
+import { Abstract, Execption, lang, OnDestroy, pomiseOf, isFunction } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { Backend, Handler } from '../Handler';
 import { CanActivate } from '../guard';

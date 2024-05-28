@@ -54,29 +54,14 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         this._handler.useGuards(guards);
         return this;
     }
-    
-    useGlobalGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this {
-        this._handler.useGlobalGuards(guards);
-        return this;
-    }
 
     useInterceptors(interceptors: ProvdierOf<Interceptor<ApplicationEventContext, any>> | ProvdierOf<Interceptor<ApplicationEventContext, any>>[], order?: number): this {
         this._handler.useInterceptors(interceptors, order);
         return this;
     }
 
-    useGlobalInterceptors(interceptors: ProvdierOf<Interceptor<ApplicationEventContext, any>> | ProvdierOf<Interceptor<ApplicationEventContext, any>>[], order?: number): this {
-        this._handler.useGlobalInterceptors(interceptors, order);
-        return this;
-    }
-
     useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
         this._handler.useFilters(filter, order);
-        return this;
-    }
-
-    useGlobalFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
-        this._handler.useGlobalFilters(filter, order);
         return this;
     }
 

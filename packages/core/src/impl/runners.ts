@@ -68,28 +68,13 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         return this;
     }
 
-    useGlobalGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this {
-        this._handler.useGlobalGuards(guards, order);
-        return this;
-    }
-
     useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this {
         this._handler.useInterceptors(interceptor, order);
         return this;
     }
 
-    useGlobalInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this {
-        this._handler.useGlobalInterceptors(interceptor, order);
-        return this;
-    }
-
     useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
         this._handler.useFilters(filter, order);
-        return this;
-    }
-
-    useGlobalFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
-        this._handler.useGlobalFilters(filter, order);
         return this;
     }
 

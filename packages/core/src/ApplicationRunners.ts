@@ -70,34 +70,17 @@ export abstract class ApplicationRunners implements HandlerService, OnDestroy {
    */
   abstract useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[]): this;
   /**
-   * use global guards.
-   * @param guards 
-   */
-  abstract useGlobalGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[]): this;
-  /**
     * use interceptor
     * @param interceptor 
     * @param order 
     */
   abstract useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
   /**
-    * use global interceptor
-    * @param interceptor 
-    * @param order 
-    */
-  abstract useGlobalInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
-  /**
    * use filter
    * @param filter 
    * @param order 
    */
   abstract useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
-  /**
-   * use global filter
-   * @param filter 
-   * @param order 
-   */
-  abstract useGlobalFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
 
   /**
    * destroy.
