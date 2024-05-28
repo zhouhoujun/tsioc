@@ -4,6 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
 import { HybirdTransport, Transport } from '@tsdi/common';
+import { CodingsModule } from '@tsdi/common/codings';
 import { NotImplementedExecption, StatusAdapter } from '@tsdi/common/transport';
 import { RequestContextFactory } from './RequestContext';
 import { Server, ServerOpts } from './Server';
@@ -18,7 +19,6 @@ import { LoggerInterceptor, JsonInterceptor, ContentInterceptor, BodyparserInter
 import { TransportSessionFactory } from './transport.session';
 import { MiddlewareOpts, createMiddlewareEndpoint } from './middleware/middleware.endpoint';
 import { EndpointHandler, createEndpoint } from './EndpointHandler';
-import { ServerCodingsModule } from './codings/server.codings.module';
 import { DefaultTransportSessionFactory } from './impl/default.session';
 import { RequestContextFactoryImpl } from './impl/request.context';
 import { DefaultExecptionHandlers } from './execption.handlers';
@@ -136,7 +136,7 @@ export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
 @Module({
     imports: [
         TransformModule,
-        ServerCodingsModule,
+        CodingsModule,
         MicroServRouterModule,
         RouterModule
     ],

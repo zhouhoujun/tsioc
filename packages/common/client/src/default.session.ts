@@ -1,6 +1,6 @@
 import { Injectable, Injector } from '@tsdi/ioc';
-import { Decoder, Encoder, DecodingsFactory, EncodingsFactory } from '@tsdi/common/codings';
-import { IDuplexStream, TransportOpts, StreamAdapter } from '@tsdi/common/transport';
+import { Decoder, Encoder } from '@tsdi/common/codings';
+import { IDuplexStream, TransportOpts, StreamAdapter, TransportEncodingsFactory, TransportDecodingsFactory } from '@tsdi/common/transport';
 import { ClientTransportSession, ClientTransportSessionFactory } from './session';
 
 
@@ -29,8 +29,8 @@ export class DefaultClientTransportSessionFactory implements ClientTransportSess
 
     create(injector: Injector, socket: IDuplexStream, options: TransportOpts): DefaultClientTransportSession {
         return new DefaultClientTransportSession(injector, socket,
-            injector.get(options.encodingsFactory ?? EncodingsFactory).create(injector, options),
-            injector.get(options.decodingsFactory ?? DecodingsFactory).create(injector, options),
+            injector.get(options.encodingsFactory ?? TransportEncodingsFactory).create(injector, options),
+            injector.get(options.decodingsFactory ?? TransportDecodingsFactory).create(injector, options),
             injector.get(StreamAdapter),
             options);
     }

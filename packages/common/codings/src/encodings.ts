@@ -21,7 +21,7 @@ export abstract class EncodingsHandler implements Handler<any, any, CodingsConte
 @Injectable()
 export class EncodingsBackend implements Backend<any, any, CodingsContext> {
 
-    constructor(private codings: Codings) { }
+    constructor(protected codings: Codings) { }
 
     handle(input: any, context: CodingsContext): Observable<any> {
         return this.codings.deepEncode(input, context);

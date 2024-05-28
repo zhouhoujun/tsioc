@@ -1,39 +1,41 @@
 import { ArgumentExecption, Injectable, isNumber } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { Observable, Subscriber, filter, map, mergeMap, of, range, throwError } from 'rxjs';
-import { PacketData } from '../packet';
 import { TransportContext } from '../context';
 import { StreamAdapter, isBuffer } from '../StreamAdapter';
 import { IDuplexStream, IReadableStream } from '../stream';
 import { PacketLengthException } from '../execptions';
+import { Packet } from '@tsdi/common';
 
-interface CachePacket extends PacketData {
+interface CachePacket {
     payload: IDuplexStream;
+    packet: Packet<any>;
     streams?: IReadableStream[] | null;
     cacheSize: number;
     completed?: boolean;
 }
 
 @Injectable()
-export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableStream, PacketData, TransportContext> {
+export class PackageDecodeInterceptor implements Interceptor<Packet<Buffer | IReadableStream>, Packet, TransportContext> {
 
     constructor(private streamAdapter: StreamAdapter) { }
 
     packs: Map<string | number, CachePacket> = new Map();
-    intercept(input: Buffer | IReadableStream, next: Handler<Buffer | IReadableStream, CachePacket, TransportContext>, context: TransportContext): Observable<CachePacket> {
+    intercept(input: Packet<Buffer | IReadableStream>, next: Handler<Packet<Buffer | IReadableStream>, Packet, TransportContext>, context: TransportContext): Observable<Packet> {
         const options = context.options;
         const idLen = options.idLen ?? 2;
         let id: string | number;
-        if (this.streamAdapter.isReadable(input)) {
-            const chunk = input.read(idLen);
+        if (this.streamAdapter.isReadable(input.payload)) {
+            const chunk = input.payload.read(idLen);
             id = idLen > 4 ? chunk.subarray(0, idLen).toString() : chunk.readUIntBE(0, idLen);
-            input.payload = this.packs.has(id);
-            if (input.length) {
-                input.length -= idLen;
+            const exist = this.packs.get(id);
+            input.headers = exist?.packet.headers;
+            if (input.payload?.length) {
+                input.payload.length -= idLen;
             }
-        } else {
-            id = idLen > 4 ? input.subarray(0, idLen).toString() : input.readUIntBE(0, idLen);
-            input = input.subarray(idLen);
+        } else if(input.payload) {
+            id = idLen > 4 ? input.payload.subarray(0, idLen).toString() : input.payload.readUIntBE(0, idLen);
+            input.payload = input.payload.subarray(idLen);
         }
         return next.handle(input, context)
             .pipe(
@@ -42,7 +44,7 @@ export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableS
             )
     }
 
-    mergePacket(packet: CachePacket, id: string | number) {
+    mergePacket(packet: Packet, id: string | number): Packet {
         if (!packet.id) {
             packet.id = id;
         }
@@ -106,11 +108,11 @@ export class PackageDecodeInterceptor implements Interceptor<Buffer | IReadableS
 }
 
 @Injectable()
-export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer | IReadableStream, TransportContext> {
+export class PackageEncodeInterceptor implements Interceptor<Packet, Buffer | IReadableStream, TransportContext> {
 
     constructor(private streamAdapter: StreamAdapter) { }
 
-    intercept(input: PacketData, next: Handler<PacketData, Buffer | IReadableStream, TransportContext>, context: TransportContext): Observable<Buffer | IReadableStream> {
+    intercept(input: Packet, next: Handler<Packet, Buffer | IReadableStream, TransportContext>, context: TransportContext): Observable<Buffer | IReadableStream> {
         return next.handle(input, context)
             .pipe(
                 mergeMap(data => {
@@ -225,7 +227,7 @@ export class PackageEncodeInterceptor implements Interceptor<PacketData, Buffer 
             );
     }
 
-    streamConnectId(input: PacketData, idLen: number, delimiter: Buffer, stream: IReadableStream, countLen: number, len: number) {
+    streamConnectId(input: Packet, idLen: number, delimiter: Buffer, stream: IReadableStream, countLen: number, len: number) {
         let isFist = true;
         return this.streamAdapter.pipeline(stream, this.streamAdapter.createPassThrough({
             transform: (chunk, encoding, callback) => {

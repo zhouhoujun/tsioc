@@ -91,6 +91,7 @@ export const EncodeHandler: EncodeHandler = createDecorator<EncodingsMetadata>('
                 const handler = factory.create(def.propertyKey, options);
 
                 mappings.addHandler(encodings, handler, order);
+
                 factory.onDestroy(() => mappings.removeHandler(encodings, handler))
 
             });
@@ -168,6 +169,7 @@ export const DecodeHandler: DecodeHandler = createDecorator<DecodingMetadata>('D
                 const handler = factory.create(def.propertyKey, options);
 
                 mappings.addHandler(decodings, handler, order);
+                
                 factory.onDestroy(() => mappings.removeHandler(decodings, handler))
 
             });

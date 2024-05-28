@@ -1,39 +1,19 @@
 import { Abstract, ArgumentExecption, Injectable, isString, tokenId } from '@tsdi/ioc';
 import { Handler, Interceptor, InvalidJsonException } from '@tsdi/core';
-import { HeaderMappings } from '@tsdi/common';
+import { HeaderMappings, Packet } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler, Codings } from '@tsdi/common/codings';
 import { TransportContext } from './context';
 import { Observable } from 'rxjs';
-import { StreamAdapter, isBuffer } from './StreamAdapter';
-import { Packet, PacketData } from './packet';
+import { StreamAdapter, isBuffer, toBuffer } from './StreamAdapter';
+// import { Packet, PacketData } from './packet';
 import { IReadableStream } from './stream';
 import { HandlerSerialization, HeaderDeserialization } from './mesage.codings';
 
 
-export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<PacketData, Buffer, TransportContext>[]>('PACKET_ENCODE_INTERCEPTORS');
+export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<Packet<any>, Packet<Buffer | IReadableStream>, TransportContext>[]>('PACKET_ENCODE_INTERCEPTORS');
 
-export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<Buffer, PacketData, TransportContext>[]>('PACKET_DECODE_INTERCEPTORS');
+export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<Packet<Buffer | IReadableStream>, Packet<any>, TransportContext>[]>('PACKET_DECODE_INTERCEPTORS');
 
-// export class JsonPacket {
-
-//     constructor(options: Packet) {
-
-//     }
-
-// }
-
-// export class BufferPacket {
-//     constructor(options: Packet, readonly headDelimiter: string) {
-
-//     }
-// }
-
-
-// export class StreamPacket {
-//     constructor(options: Packet, readonly headDelimiter: string) {
-
-//     }
-// }
 
 
 @Injectable({ static: true })
@@ -41,25 +21,21 @@ export class PacketCodingsHandlers {
 
     constructor(private streamAdapter: StreamAdapter) { }
 
-    @DecodeHandler('PACKET', { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
+    @DecodeHandler(Packet, { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
     async bufferDecode(context: TransportContext) {
+        const pkg = context.last<Packet<string | Buffer | IReadableStream>>();
+        if (pkg.headers) return pkg;
+
         const options = context.options;
-        if (!options.headDelimiter) throw new ArgumentExecption('headDelimiter');
+        const input = isString(pkg.payload) ? Buffer.from(pkg.payload) : pkg.payload;
 
-        const data = context.last<string | Buffer | IReadableStream>();
-        const input = isString(data) ? Buffer.from(data) : data;
+        if (options.headDelimiter) {
+            const injector = context.session!.injector;
+            const headDelimiter = Buffer.from(options.headDelimiter);
+            const headerDeserialization = injector.get(HeaderDeserialization, null);
 
-
-        const injector = context.session!.injector;
-        const headDelimiter = Buffer.from(options.headDelimiter);
-        const headerDeserialization = injector.get(HeaderDeserialization, null);
-
-        let packet: PacketData;
-
-        if (this.streamAdapter.isReadable(input)) {
-            if (input.payload) {
-                packet = { payload: input };
-            } else {
+            let packet: Packet | undefined;
+            if (this.streamAdapter.isReadable(input)) {
                 let buffer = input.read(1) as Buffer;
                 while (buffer.indexOf(headDelimiter) < 0) {
                     buffer = Buffer.concat([buffer, input.read(1)]);
@@ -69,19 +45,37 @@ export class PacketCodingsHandlers {
                     input.length = input.length - buffer.length;
                 }
                 packet = this.parsePacket(headBuffer, input, headerDeserialization);
+
+            } else if (input) {
+                const idx = input.indexOf(headDelimiter);
+                if (idx > 0) {
+                    const headBuffer = input.subarray(0, idx);
+                    packet = this.parsePacket(headBuffer, input.subarray(idx + Buffer.byteLength(headDelimiter)), headerDeserialization);
+                } else {
+                    packet = new Packet({ payload: input });
+                }
             }
+            return packet ?? pkg;
         } else {
-            const idx = input.indexOf(headDelimiter);
-            if (idx > 0) {
-                const headBuffer = input.subarray(0, idx);
-                packet = this.parsePacket(headBuffer, input.subarray(idx + Buffer.byteLength(headDelimiter)), headerDeserialization);
-            } else {
-                packet = { payload: input };
+            const buff = this.streamAdapter.isReadable(input) ? await toBuffer(input, context.options.maxSize) : input!;
+            const packet = this.parseJson(buff);
+            if (!packet.id) {
+                packet.id = pkg.id;
             }
+            return new Packet(packet)
         }
 
-        return packet;
     }
+
+    parseJson(data: Buffer) {
+        const jsonStr = new TextDecoder().decode(data);
+        try {
+            return JSON.parse(jsonStr);
+        } catch (err) {
+            throw new InvalidJsonException(err, jsonStr)
+        }
+    }
+
 
     private parsePacket(headBuffer: Buffer, payload: Buffer | IReadableStream, headerDeserialization?: HeaderDeserialization | null) {
         let packet: Packet;
@@ -100,15 +94,15 @@ export class PacketCodingsHandlers {
     }
 
 
-    @EncodeHandler('PACKET', { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })
+    @EncodeHandler(Packet, { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })
     async bufferEncode(context: TransportContext) {
         const options = context.options;
         if (!options.headDelimiter) throw new ArgumentExecption('headDelimiter');
 
-        const input = context.last<PacketData>();
-        if (input.headers instanceof HeaderMappings) {
-            input.headers = input.headers.getHeaders();
-        }
+        const input = context.last<Packet>();
+        // if (input.headers instanceof HeaderMappings) {
+        //     input.headers = input.headers.getHeaders();
+        // }
 
         const injector = context.session!.injector;
         const headDelimiter = Buffer.from(options.headDelimiter);
@@ -139,17 +133,6 @@ export class PacketCodingsHandlers {
         }
     }
 }
-
-
-// @Abstract()
-// export abstract class HandlerSerialization {
-//     abstract serialize(packet: Packet): Buffer;
-// }
-
-// @Abstract()
-// export abstract class HeaderDeserialization {
-//     abstract deserialize(data: Buffer): Packet;
-// }
 
 
 @Injectable()

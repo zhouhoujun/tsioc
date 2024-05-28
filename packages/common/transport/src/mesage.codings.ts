@@ -9,7 +9,6 @@ import { StreamAdapter, toBuffer } from './StreamAdapter';
 
 export class Message<T> extends Packet<T> {
 
-    readonly id: string | number;
 
     constructor(init: {
         id: string | number,
@@ -17,7 +16,6 @@ export class Message<T> extends Packet<T> {
         payload?: T;
     }, options?: PacketOpts) {
         super(init, options);
-        this.id = init.id
     }
 }
 

@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { Filter, Handler, Interceptor } from '@tsdi/core';
+import { Filter, Handler } from '@tsdi/core';
 import { TransportContext, isBuffer, toBuffer } from '@tsdi/common/transport';
 import { Observable, mergeMap } from 'rxjs';
 import { udptl } from '../consts';

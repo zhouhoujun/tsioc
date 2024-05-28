@@ -40,13 +40,24 @@ export class Packet<T = any> {
         return this.payload;
     }
 
+    private _id: string | number | undefined;
+    get id(): string | number | undefined {
+        return this.id;
+    }
+
     readonly headers: HeaderMappings;
     constructor(init: {
+        id?: string | number,
         headers?: HeadersLike;
         payload?: T;
     }, options?: PacketOpts) {
+        this._id = init.id;
         this.headers = new HeaderMappings(init.headers, options?.headerFields);
         this.payload = init.payload ?? null;
+    }
+
+    attachId(id: string | number) {
+        this._id = id;
     }
 }
 

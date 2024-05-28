@@ -4,6 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { createHandler } from '@tsdi/core';
 import { HybirdTransport, Transport } from '@tsdi/common';
+import { CodingsModule } from '@tsdi/common/codings';
 import { NotImplementedExecption, ResponseEventFactory, StatusAdapter } from '@tsdi/common/transport';
 import { ClientOpts } from './options';
 import { ClientHandler } from './handler';
@@ -13,8 +14,8 @@ import { BodyContentInterceptor } from './interceptors/body';
 import { RestfulRedirector } from './redirector';
 import { ClientTransportSessionFactory } from './session';
 import { DefaultClientTransportSessionFactory } from './default.session';
-import { ClientCodingsModule } from './codings';
 import { DefaultResponseEventFactory } from './response.factory';
+import { CodingsTransportBackend } from './codings/transport.backend';
 
 /**
  * Client module config.
@@ -96,14 +97,15 @@ export interface ClientTokenOpts {
  */
 @Module({
     imports: [
-        ClientCodingsModule
+        CodingsModule
     ],
     providers: [
         DefaultClientTransportSessionFactory,
         BodyContentInterceptor,
         RestfulRedirector,
         DefaultResponseEventFactory,
-        { provide: ResponseEventFactory, useExisting: DefaultResponseEventFactory }
+        { provide: ResponseEventFactory, useExisting: DefaultResponseEventFactory },
+        { provide: TransportBackend, useClass: CodingsTransportBackend, asDefault: true },
     ]
 })
 export class ClientModule {
