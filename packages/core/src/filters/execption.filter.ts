@@ -2,7 +2,7 @@ import { Abstract, DefaultInvocationContext, Execption, getClass, lang, Injectab
 import { catchError, finalize, isObservable, mergeMap, Observable, of, throwError } from 'rxjs';
 import { Handler } from '../Handler';
 import { Filter, FilterHandlerResolver } from './filter';
-import { runHandlers } from '../handlers/runs';
+import { runSequence } from '../handlers/runs';
 import { HandlerContext } from '../handlers/context';
 
 
@@ -107,7 +107,7 @@ export class ExecptionHandlerFilter<TInput, TOutput = any, TContext = any> exten
         }
 
         const expcption = new ExecptionContext(err, input, injector);
-        return runHandlers(handlers, expcption, null, context)
+        return runSequence(handlers, expcption, context)
             .pipe(
                 catchError((err1, caugh) => {
                     err1.originExecption = err;

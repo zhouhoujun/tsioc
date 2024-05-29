@@ -97,7 +97,6 @@ export class PacketCodingsHandlers {
     @EncodeHandler(Packet, { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })
     async bufferEncode(context: TransportContext) {
         const options = context.options;
-        if (!options.headDelimiter) throw new ArgumentExecption('headDelimiter');
 
         const input = context.last<Packet>();
         // if (input.headers instanceof HeaderMappings) {
@@ -105,31 +104,34 @@ export class PacketCodingsHandlers {
         // }
 
         const injector = context.session!.injector;
-        const headDelimiter = Buffer.from(options.headDelimiter);
+        if (options.headDelimiter) {
+            const headDelimiter = Buffer.from(options.headDelimiter);
 
+            const handlerSerialization = injector.get(HandlerSerialization, null);
 
-        const handlerSerialization = injector.get(HandlerSerialization, null);
-        const { payload, ...headers } = input;
-        const hbuff = handlerSerialization ? handlerSerialization.serialize(headers) : Buffer.from(JSON.stringify(headers));
+            const hbuff = handlerSerialization ? handlerSerialization.serialize(input) : Buffer.from(JSON.stringify(input.headers.getHeaders()));
 
-        const data = await this.streamAdapter.encode(payload, options.encoding);
+            const data = await this.streamAdapter.encode(input.payload, options.encoding);
 
-        if (this.streamAdapter.isReadable(data)) {
-            let isFist = true;
-            input.streamLength = (input.payloadLength ?? 0) + Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter);
-            return this.streamAdapter.pipeline(data, this.streamAdapter.createPassThrough({
-                transform: (chunk, encoding, callback) => {
-                    if (isFist) {
-                        isFist = false;
-                        callback(null, Buffer.concat([hbuff, headDelimiter, chunk], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(chunk)))
-                    } else {
-                        callback(null, chunk)
+            if (this.streamAdapter.isReadable(data)) {
+                let isFist = true;
+                input.streamLength = (input.payloadLength ?? 0) + Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter);
+                return this.streamAdapter.pipeline(data, this.streamAdapter.createPassThrough({
+                    transform: (chunk, encoding, callback) => {
+                        if (isFist) {
+                            isFist = false;
+                            callback(null, Buffer.concat([hbuff, headDelimiter, chunk], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(chunk)))
+                        } else {
+                            callback(null, chunk)
+                        }
                     }
-                }
-            }));
+                }));
+            } else {
+                const bbuff = isBuffer(data) ? data : Buffer.from(data as string);
+                return Buffer.concat([hbuff, headDelimiter, bbuff], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(bbuff));
+            }
         } else {
-            const bbuff = isBuffer(data) ? data : Buffer.from(data as string);
-            return Buffer.concat([hbuff, headDelimiter, bbuff], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(bbuff));
+
         }
     }
 }

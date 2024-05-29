@@ -14,7 +14,7 @@ import { Filter } from '../filters/filter';
 import { ExecptionHandlerFilter } from '../filters/execption.filter';
 import { FnHandler } from '../handlers/handler';
 import { ConfigableHandler, createHandler } from '../handlers/configable';
-import { runHandlers } from '../handlers/runs';
+import { runParallel } from '../handlers/runs';
 import { InvocationFactoryResolver, InvocationOptions } from '../invocation';
 import { HandlerContext } from '../handlers/context';
 
@@ -187,14 +187,14 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
 
     handle(context: HandlerContext<any>): Observable<any> {
         if (isFunction(context.args)) {
-            return runHandlers(this._maps.get(context.args), context, v => v.isDone() === true)
+            return runParallel(this._maps.get(context.args), context)
         }
         if (isArray(context.args)) {
             const handlers: Handler[] = [];
             context.args.forEach(type => {
                 handlers.push(...this._maps.get(type) || []);
             })
-            return runHandlers(handlers, context, v => v.isDone() === true)
+            return runParallel(handlers, context)
         }
         return throwError(() => new ArgumentExecption('input type unknow'))
     }

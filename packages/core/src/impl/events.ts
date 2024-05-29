@@ -6,7 +6,7 @@ import { Interceptor } from '../Interceptor';
 import { Handler } from '../Handler';
 import { Filter } from '../filters/filter';
 import { ExecptionHandlerFilter } from '../filters/execption.filter';
-import { runHandlers } from '../handlers/runs';
+import { runSequence } from '../handlers/runs';
 import { ConfigableHandler, createHandler } from '../handlers/configable';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventContext, ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
@@ -135,7 +135,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
 
     handle(context: ApplicationEventContext): Observable<any> {
         const endpoints = this.maps.get(getClass(context.args));
-        return runHandlers(endpoints, context, v => v.isDone() === true);
+        return runSequence(endpoints, context)
     }
 
     clear(): void {
