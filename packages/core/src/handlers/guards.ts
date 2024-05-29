@@ -38,6 +38,9 @@ export class GuardHandler<
 
     override handle(input: TInput, context?: TContext): Observable<TOutput> {
         return defer(async () => {
+
+            if (this.onReady) await this.onReady();
+
             if (this._guards === undefined && this._guardsFac) {
                 this._guards = this._guardsFac() ?? null;
             }
@@ -57,6 +60,11 @@ export class GuardHandler<
             takeUntil(this.destroy$)
         )
     }
+
+    /**
+     * on ready hook.
+     */
+    protected onReady?(): Promise<void>;
 
     protected override reset(): void {
         super.reset();

@@ -9,7 +9,6 @@ import { PipeService, PipeTransform } from '../pipes/pipe';
 import { FILTERS_TOKEN, Filter, FilterService } from '../filters/filter';
 import { GuardHandler } from './guards';
 import { Backend } from '../Handler';
-import { Observable, defer, mergeMap } from 'rxjs';
 
 
 
@@ -55,12 +54,8 @@ export class ConfigableHandler<
         setHandlerOptions(this, this.options);
     }
 
-    handle(input: TInput, context?: TContext | undefined): Observable<TOutput> {
-        return defer(async () => {
-            await this.ready;
-        }).pipe(
-            mergeMap(() => super.handle(input, context))
-        )
+    protected override onReady(): Promise<void> {
+        return this.ready;
     }
 
     protected initOptions(options: TOptions): TOptions {
