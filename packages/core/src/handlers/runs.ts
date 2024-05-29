@@ -31,6 +31,9 @@ export function runSequence<TInput, TContext = any>(handlers: Handler[] | undefi
         isDone = contextOrFn;
     } else {
         context = contextOrFn;
+        if (!isDone) {
+            isDone = toDoneHooks(input, context)
+        }
     }
 
 
@@ -49,6 +52,16 @@ export function runSequence<TInput, TContext = any>(handlers: Handler[] | undefi
     } else {
         return concat(handlers.map(h => h.handle(input, context))).pipe(concatAll())
     }
+}
+
+
+function toDoneHooks(input: any, context: any) {
+    if (isFunction(input.isDone || input.isCompleted)) {
+        return (input: any) => input.isDone() == true;
+    } if (context && isFunction(context.isDone)) {
+        return (input: any, context: any) => context.isDone(input) == true;
+    }
+    return null;
 }
 
 
