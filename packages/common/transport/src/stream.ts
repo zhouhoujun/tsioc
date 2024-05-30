@@ -345,8 +345,6 @@ export interface IReadableStream extends IStream {
     unshift(chunk: any, encoding?: string): void;
     wrap(oldStream: IReadableStream): this;
     destroy?(error?: any): void;
-    payload?: boolean;
-    length?: number;
     [Symbol.asyncIterator](): AsyncIterableIterator<any>;
 }
 

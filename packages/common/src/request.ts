@@ -1,71 +1,104 @@
 import { InvocationContext, isUndefined } from '@tsdi/ioc';
 import { HeadersLike, HeaderMappings } from './headers';
 import { ParameterCodec, RequestParams } from './params';
-import { Packet, PacketOpts } from './packet';
+import { Packet, PacketInitOpts, PacketOpts } from './packet';
 import { Pattern } from './pattern';
 
 
 
 /**
+ * response option for request.
+ */
+export interface ResponseAs {
+    /**
+     * response observe type
+     */
+    observe?: 'body' | 'events' | 'response' | 'emit' | 'observe';
+    /**
+     * response data type.
+     */
+    responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
+}
+
+export interface RequestInitOpts<T = any> extends PacketInitOpts<T>, ResponseAs {
+    /**
+     * request context.
+     */
+    context: InvocationContext;
+    /**
+     * request method.
+     */
+    method?: string;
+    /**
+     * headers of request.
+     */
+    headers?: HeadersLike;
+    /**
+     * request payload, request body.
+     */
+    payload?: T;
+    /**
+     * request timeout
+     */
+    timeout?: number;
+}
+
+/**
  * Request packet.
  */
 export abstract class AbstractRequest<T = any> extends Packet<T> {
-
+    /**
+     * client side timeout.
+     */
+    readonly timeout?: number;
     readonly context: InvocationContext;
     readonly method: string;
     readonly responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
     readonly observe: 'body' | 'events' | 'response' | 'emit' | 'observe';
 
-    constructor(init: {
-        context: InvocationContext;
-        method?: string;
-        headers?: HeadersLike;
-        payload?: T;
-        /**
-         * response observe type
-         */
-        observe?: 'body' | 'events' | 'response' | 'emit' | 'observe';
-        /**
-         * response data type.
-         */
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-    }, options?: PacketOpts) {
+    constructor(init: RequestInitOpts, options?: PacketOpts) {
         super(init, options)
         this.context = init.context;
         this.method = init.method ?? this.headers.getMethod() ?? options?.defaultMethod ?? '';
         this.responseType = init.responseType ?? 'json';
         this.observe = init.observe ?? 'body';
+        this.timeout = init.timeout;
     }
 
     abstract clone(): AbstractRequest<T>;
     abstract clone(update: {
-        headers?: HeaderMappings;
+        headers?: HeadersLike;
         context?: InvocationContext<any>;
         method?: string;
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-        pattern?: Pattern;
         body?: T | null;
         payload?: T | null;
         setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        reportProgress?: boolean;
-        withCredentials?: boolean;
         timeout?: number | null;
     }): AbstractRequest<T>
     abstract clone<V>(update: {
-        headers?: HeaderMappings;
+        headers?: HeadersLike;
         context?: InvocationContext<any>;
         method?: string;
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-        pattern?: Pattern;
         body?: V | null;
         payload?: V | null;
         setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        reportProgress?: boolean;
-        withCredentials?: boolean;
         timeout?: number | null;
     }): AbstractRequest<V>;
+
+    protected cloneRequestWays(init: RequestInitOpts, update: {
+        context?: InvocationContext<any>;
+        method?: string;
+        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
+        timeout?: number | null;
+    }) {
+        init.context = update.context ?? this.context;
+        init.method = update.method ?? this.method;
+        init.responseType = update.responseType || this.responseType;
+        init.observe = this.observe;
+    }
+
 
 }
 
@@ -120,24 +153,11 @@ export interface RequestOptions<T = any> {
 }
 
 
-/**
- * response option for request.
- */
-export interface ResponseAs {
-    /**
-     * response observe type
-     */
-    observe?: 'body' | 'events' | 'response' | 'emit' | 'observe';
-    /**
-     * response data type.
-     */
-    responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-}
 
 /**
  * Request init options.
  */
-export interface RequestInitOpts<T = any> extends RequestOptions<T>, ResponseAs, PacketOpts {
+export interface UrlRequestInitOpts<T = any> extends RequestOptions<T>, RequestInitOpts<T>, PacketOpts {
     /**
      * request context.
      */
@@ -160,17 +180,11 @@ export class UrlRequest<T = any> extends AbstractRequest<T> {
         return this.payload;
     }
 
-    /**
-     * client side timeout.
-     */
-    readonly timeout?: number;
-
-    constructor(url: string, options: RequestInitOpts<T>) {
+    constructor(url: string, options: UrlRequestInitOpts<T>) {
         super(options, options)
         this.params = new RequestParams(options);
         this.reportProgress = !!options.reportProgress;
         this.withCredentials = !!options.withCredentials;
-        this.timeout = options.timeout;
 
         this.url = url;
         // If no parameters have been passed in, construct a new HttpUrlEncodedParams instance.
@@ -246,37 +260,21 @@ export class UrlRequest<T = any> extends AbstractRequest<T> {
         timeout?: number | null;
     } = {}): UrlRequest {
         const url = update.url || this.url;
-        const responseType = update.responseType || this.responseType;
-        const observe = this.observe;
-        const method = update.method ?? this.method;
-        // The payload is somewhat special - a `null` value in update.payload means
-        // whatever current payload is present is being overridden with an empty
-        // payload, whereas an `undefined` value in update.payload implies no
-        // override.
-        let payload = isUndefined(update.payload) ? update.body : update.payload;
-        if (isUndefined(payload)) {
-            payload = this.payload;
-        }
+
+        const init = {} as UrlRequestInitOpts;
+        this.cloneHeaderBody(init, update);
+        this.cloneRequestWays(init, update);
 
         // Carefully handle the boolean options to differentiate between
         // `false` and `undefined` in the update args.
-        const withCredentials =
+        init.withCredentials =
             (update.withCredentials !== undefined) ? update.withCredentials : this.withCredentials;
-        const reportProgress =
+        init.reportProgress =
             (update.reportProgress !== undefined) ? update.reportProgress : this.reportProgress;
 
-        // Headers and params may be appended to if `setHeaders` or
+
         // `setParams` are used.
-        let headers = update.headers || this.headers;
         let params = update.params || this.params;
-        const context = update.context ?? this.context;
-        // Check whether the caller has asked to add headers.
-        if (update.setHeaders !== undefined) {
-            // Set every requested header.
-            headers =
-                Object.keys(update.setHeaders)
-                    .reduce((headers, name) => headers.set(name, update.setHeaders![name]), headers)
-        }
 
         // Check whether the caller has asked to set params.
         if (update.setParams) {
@@ -284,21 +282,10 @@ export class UrlRequest<T = any> extends AbstractRequest<T> {
             params = Object.keys(update.setParams)
                 .reduce((params, param) => params.set(param, update.setParams![param]), params)
         }
+        init.params = params;
 
-        const timeout = update.timeout ?? this.timeout;
         // Finally, construct the new HttpRequest using the pieces from above.
-        return new UrlRequest(url, {
-            payload,
-            method,
-            params,
-            headers,
-            responseType,
-            observe,
-            reportProgress,
-            withCredentials,
-            context,
-            timeout
-        })
+        return new UrlRequest(url, init)
     }
 }
 
@@ -321,7 +308,7 @@ export class PatternRequest<T = any> extends AbstractRequest<T> {
      */
     readonly timeout?: number;
 
-    constructor(pattern: Pattern, options: RequestInitOpts<T>) {
+    constructor(pattern: Pattern, options: UrlRequestInitOpts<T>) {
         super(options, options)
         this.params = new RequestParams(options);
         this.timeout = options.timeout;
@@ -331,7 +318,7 @@ export class PatternRequest<T = any> extends AbstractRequest<T> {
 
     clone(): PatternRequest<T>;
     clone(update: {
-        headers?: HeaderMappings;
+        headers?: HeadersLike;
         context?: InvocationContext<any>;
         method?: string;
         params?: RequestParams;
@@ -345,7 +332,7 @@ export class PatternRequest<T = any> extends AbstractRequest<T> {
         timeout?: number | null;
     }): PatternRequest<T>
     clone<V>(update: {
-        headers?: HeaderMappings;
+        headers?: HeadersLike;
         context?: InvocationContext<any>;
         method?: string;
         params?: RequestParams;
@@ -360,7 +347,7 @@ export class PatternRequest<T = any> extends AbstractRequest<T> {
         timeout?: number | null;
     }): PatternRequest<V>;
     clone(update: {
-        headers?: HeaderMappings;
+        headers?: HeadersLike;
         context?: InvocationContext<any>;
         method?: string;
         params?: RequestParams;
@@ -393,7 +380,14 @@ export class PatternRequest<T = any> extends AbstractRequest<T> {
 
         // Headers and params may be appended to if `setHeaders` or
         // `setParams` are used.
-        let headers = update.headers || this.headers;
+        let headers: HeaderMappings;
+        if (update.headers instanceof HeaderMappings) {
+            headers = update.headers;
+        } else {
+            headers = this.headers;
+            update.headers && headers.setHeaders(update.headers);
+        }
+
         let params = update.params || this.params;
         const context = update.context ?? this.context;
         // Check whether the caller has asked to add headers.

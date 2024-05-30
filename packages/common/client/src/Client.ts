@@ -1,6 +1,6 @@
 import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, isNil, isString } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
-import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, ResponsePacket } from '@tsdi/common';
+import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, UrlRequestInitOpts, RequestOptions, AbstractRequest, ResponsePacket } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
 import { ClientHandler } from './handler';
 import { ClientOpts } from './options';
@@ -397,7 +397,7 @@ export abstract class Client<TRequest extends AbstractRequest = AbstractRequest,
         return target instanceof AbstractRequest;
     }
 
-    protected abstract createRequest(pattern: Pattern, options: RequestInitOpts): TRequest;
+    protected abstract createRequest(pattern: Pattern, options: UrlRequestInitOpts): TRequest;
 
     // protected createRequest(pattern: Pattern, options: RequestInitOpts): TRequest {
     //     return new TransportRequest(pattern, { ...options }) as TRequest;

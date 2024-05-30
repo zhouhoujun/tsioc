@@ -1,14 +1,18 @@
 import { HeadersLike } from './headers';
-import { Packet, PacketInitOpts, PacketOpts } from './packet';
+import { Packet,  PacketInitOpts,  PacketOpts } from './packet';
 
 
 /**
  * response packet data.
  */
 export interface ResponseInitOpts<T = any, TStatus = any> extends PacketInitOpts<T> {
-    type?: number | string;
+    /**
+     * event type
+     */
+    type?: number;
     status?: TStatus;
     statusMessage?: string;
+    statusText?: string;
     ok?: boolean;
     error?: any;
 }
@@ -21,7 +25,7 @@ export interface StatusPacketOpts<TStatus = number> extends PacketOpts {
 /**
  * base Response packet.
  */
-export class ResponsePacketBase<T = any, TStatus = number> extends Packet<T> {
+export abstract class ResponsePacketBase<T = any, TStatus = number> extends Packet<T> {
     /**
      * Type of the response, narrowed to either the full response or the header.
      */
@@ -47,27 +51,33 @@ export class ResponsePacketBase<T = any, TStatus = number> extends Packet<T> {
         return this._message
     }
 
-    constructor(init: {
-        /**
-         * event type
-         */
-        type?: number;
-        headers?: HeadersLike;
-        payload?: T;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        ok?: boolean;
-    }, options?: StatusPacketOpts<TStatus>) {
+    constructor(init: ResponseInitOpts, options?: StatusPacketOpts<TStatus>) {
         super(init, options)
         this.ok = init.ok != false;
         this.type = init.type;
         this.status = init.status !== undefined ? init.status : options?.defaultStatus ?? null;
         this._message = (init.statusMessage || init.statusText) ?? options?.defaultStatusText ?? '';
     }
+
+    protected cloneStatus(init: ResponseInitOpts, update: {
+        type?: number;
+        ok?: boolean;
+        status?: TStatus;
+        statusMessage?: string;
+        statusText?: string;
+    }): void {
+        init.type = update.type ?? this.type;
+        init.ok = update.ok ?? this.ok;
+        const status = update.status ?? this.status;
+        if (status !== null) {
+            init.status = status;
+        }
+        init.statusMessage = update.statusMessage ?? update.statusText ?? this.statusMessage;
+    }
+
 }
 
-export class HeaderResponse<TStatus> extends ResponsePacketBase<null, TStatus> {
+export class HeaderResponse<TStatus = number> extends ResponsePacketBase<null, TStatus> {
     constructor(init: {
         /**
          * event type
@@ -79,8 +89,35 @@ export class HeaderResponse<TStatus> extends ResponsePacketBase<null, TStatus> {
         statusMessage?: string;
         statusText?: string;
     }, options?: StatusPacketOpts<TStatus>) {
-        super(init, options);
-        this.payload = null;
+        super(Object.assign(init, { payload: null }), options);
+    }
+
+
+    clone(): HeaderResponse;
+    clone(update: {
+        type?: number;
+        ok?: boolean;
+        headers?: HeadersLike;
+        status?: TStatus;
+        statusMessage?: string;
+        statusText?: string;
+        setHeaders?: { [name: string]: string | string[]; };
+    }): HeaderResponse
+    clone(update: {
+        type?: number;
+        ok?: boolean;
+        headers?: HeadersLike;
+        status?: any;
+        statusMessage?: string;
+        statusText?: string;
+        setHeaders?: { [name: string]: string | string[]; }
+    } = {}): HeaderResponse {
+        const init = {} as ResponseInitOpts;
+        this.cloneHeaderBody(init, update);
+        this.cloneStatus(init, update);
+
+        return new HeaderResponse(init) as HeaderResponse<any>;
+
     }
 }
 
@@ -99,6 +136,45 @@ export class ResponsePacket<T = any, TStatus = number> extends ResponsePacketBas
         ok?: boolean;
     }, options?: StatusPacketOpts<TStatus>) {
         super(init, options)
+    }
+
+    clone(): ResponsePacket<T, TStatus>;
+    clone(update: {
+        type?: number;
+        ok?: boolean;
+        headers?: HeadersLike;
+        payload?: T;
+        status?: TStatus;
+        statusMessage?: string;
+        statusText?: string;
+        setHeaders?: { [name: string]: string | string[]; };
+    }): ResponsePacket<T, TStatus>;
+    clone<V>(update: {
+        type?: number;
+        ok?: boolean;
+        headers?: HeadersLike;
+        payload?: V;
+        status?: TStatus;
+        statusMessage?: string;
+        statusText?: string;
+        setHeaders?: { [name: string]: string | string[]; };
+    }): ResponsePacket<V, TStatus>;
+    clone(update: {
+        type?: number;
+        ok?: boolean;
+        headers?: HeadersLike;
+        payload?: any;
+        status?: any;
+        statusMessage?: string;
+        statusText?: string;
+        setHeaders?: { [name: string]: string | string[]; }
+    } = {}): ResponsePacket<any, TStatus> {
+        const init = {} as ResponseInitOpts;
+        this.cloneHeaderBody(init, update);
+        this.cloneStatus(init, update);
+
+        return new ResponsePacket(init) as ResponsePacket<any, TStatus>;
+
     }
 }
 
@@ -120,9 +196,39 @@ export class ErrorResponse<TStatus = number> extends ResponsePacketBase<null, TS
         statusMessage?: string;
         statusText?: string;
     }, options?: StatusPacketOpts<TStatus>) {
-        super(Object.assign(init, { ok: false }), options);
+        super(Object.assign(init, { ok: false, payload: null }), options);
         this.error = init.error;
-        this.payload = null;
+    }
+
+    clone(): ErrorResponse;
+    clone(update: {
+        type?: number;
+        ok?: boolean;
+        headers?: HeadersLike;
+        error?: any;
+        status?: TStatus;
+        statusMessage?: string;
+        statusText?: string;
+        setHeaders?: { [name: string]: string | string[]; };
+    }): ErrorResponse
+    clone(update: {
+        type?: number;
+        ok?: boolean;
+        headers?: HeadersLike;
+        error?: any;
+        status?: any;
+        statusMessage?: string;
+        statusText?: string;
+        setHeaders?: { [name: string]: string | string[]; }
+    } = {}): ErrorResponse {
+        const init = {
+            error: update.error ?? this.error
+        } as ResponseInitOpts;
+        this.cloneHeaderBody(init, update);
+        this.cloneStatus(init, update);
+
+        return new ErrorResponse(init) as ErrorResponse<any>;
+
     }
 }
 

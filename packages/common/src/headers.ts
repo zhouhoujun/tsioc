@@ -140,8 +140,9 @@ export class HeaderMappings<T extends Header = Header> {
             this._rcd = null!;
         }
     }
-
-    getHeader<Th = string | number>(name: string): Th | undefined {
+    getHeader<Th = string | number>(name: string): Th;
+    getHeader(name: string): Header;
+    getHeader(name: string): Header {
         const values = this._hdrs.get(name.toLowerCase());
         if (isNil(values)) return undefined;
         return isArray(values) && values.length ? values[0] : values;
@@ -289,7 +290,7 @@ export class HeaderMappings<T extends Header = Header> {
         return this
     }
 
-    getContentLength() {
+    getContentLength(): number {
         const len = this.get(this._fields.contentLength) ?? '0';
         return ~~len
     }

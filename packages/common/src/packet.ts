@@ -1,23 +1,23 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, isUndefined } from '@tsdi/ioc';
 import { Pattern } from './pattern';
 import { HeaderFields, HeadersLike, HeaderMappings } from './headers';
 
 
 
-/**
- * packet data.
- */
-export interface PacketInitOpts<T = any> {
-    id?: any;
-    type?: number | string;
-    pattern?: Pattern;
-    url?: string;
-    topic?: string;
-    method?: string;
-    headers?: HeadersLike;
-    payload?: T;
-    error?: any;
-}
+// /**
+//  * packet data.
+//  */
+// export interface PacketInitOpts<T = any> {
+//     id?: any;
+//     type?: number | string;
+//     pattern?: Pattern;
+//     url?: string;
+//     topic?: string;
+//     method?: string;
+//     headers?: HeadersLike;
+//     payload?: T;
+//     error?: any;
+// }
 
 
 
@@ -28,13 +28,27 @@ export interface PacketOpts {
 }
 
 
+export interface PacketInitOpts<T = any> {
+    /**
+     * packet id.
+     */
+    id?: string | number,
+    /**
+     * headers of packet.
+     */
+    headers?: HeadersLike;
+    /**
+     * payload of packet.
+     */
+    payload?: T | null;
+}
 
 /**
  * packet.
  */
-export class Packet<T = any> {
+export abstract class Packet<T = any> {
 
-    payload: T | null;
+    readonly payload: T | null;
 
     get body(): T | null {
         return this.payload;
@@ -46,11 +60,7 @@ export class Packet<T = any> {
     }
 
     readonly headers: HeaderMappings;
-    constructor(init: {
-        id?: string | number,
-        headers?: HeadersLike;
-        payload?: T;
-    }, options?: PacketOpts) {
+    constructor(init: PacketInitOpts<T>, protected options?: PacketOpts) {
         this._id = init.id;
         this.headers = new HeaderMappings(init.headers, options?.headerFields);
         this.payload = init.payload ?? null;
@@ -59,6 +69,56 @@ export class Packet<T = any> {
     attachId(id: string | number) {
         this._id = id;
     }
+
+    abstract clone(): Packet<T>;
+    abstract clone(update: {
+        headers?: HeadersLike;
+        payload?: T | null;
+        setHeaders?: { [name: string]: string | string[]; };
+    }): Packet<T>
+    abstract clone<V>(update: {
+        headers?: HeadersLike;
+        payload?: V | null;
+        setHeaders?: { [name: string]: string | string[]; };
+    }): Packet<V>;
+
+    protected cloneHeaderBody(init: PacketInitOpts, update: {
+        headers?: HeadersLike;
+        body?: any;
+        payload?: any;
+        setHeaders?: { [name: string]: string | string[]; };
+    }): void {
+        // The payload is somewhat special - a `null` value in update.payload means
+        // whatever current payload is present is being overridden with an empty
+        // payload, whereas an `undefined` value in update.payload implies no
+        // override.
+        let payload = isUndefined(update.payload) ? update.body : update.payload;
+        if (isUndefined(payload)) {
+            payload = this.payload;
+        }
+
+        // Headers and params may be appended to if `setHeaders` or
+        // `setParams` are used.
+        let headers: HeaderMappings;
+        if (update.headers instanceof HeaderMappings) {
+            headers = update.headers;
+        } else {
+            headers = this.headers;
+            update.headers && headers.setHeaders(update.headers);
+        }
+        // Check whether the caller has asked to add headers.
+        if (update.setHeaders !== undefined) {
+            // Set every requested header.
+            headers =
+                Object.keys(update.setHeaders)
+                    .reduce((headers, name) => headers.set(name, update.setHeaders![name]), headers)
+        }
+
+        init.id = this.id;
+        init.headers = headers;
+        init.payload = payload;
+    }
+
 }
 
 

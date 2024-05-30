@@ -1,13 +1,11 @@
-import { Abstract, ArgumentExecption, Injectable, isString, tokenId } from '@tsdi/ioc';
+import { Abstract, Injectable, isString, tokenId } from '@tsdi/ioc';
 import { Handler, Interceptor, InvalidJsonException } from '@tsdi/core';
-import { HeaderMappings, Packet } from '@tsdi/common';
+import { Packet, PacketInitOpts } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler, Codings } from '@tsdi/common/codings';
 import { TransportContext } from './context';
 import { Observable } from 'rxjs';
 import { StreamAdapter, isBuffer, toBuffer } from './StreamAdapter';
-// import { Packet, PacketData } from './packet';
 import { IReadableStream } from './stream';
-import { HandlerSerialization, HeaderDeserialization } from './mesage.codings';
 
 
 export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<Packet<any>, Packet<Buffer | IReadableStream>, TransportContext>[]>('PACKET_ENCODE_INTERCEPTORS');
@@ -24,7 +22,7 @@ export class PacketCodingsHandlers {
     @DecodeHandler(Packet, { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
     async bufferDecode(context: TransportContext) {
         const pkg = context.last<Packet<string | Buffer | IReadableStream>>();
-        if (pkg.headers) return pkg;
+        // if (pkg.headers) return pkg;
 
         const options = context.options;
         const input = isString(pkg.payload) ? Buffer.from(pkg.payload) : pkg.payload;
@@ -41,18 +39,18 @@ export class PacketCodingsHandlers {
                     buffer = Buffer.concat([buffer, input.read(1)]);
                 }
                 const headBuffer = buffer.subarray(0, buffer.length - headDelimiter.length);
-                if (input.length) {
-                    input.length = input.length - buffer.length;
+                if (pkg.headers.has('stream-length')) {
+                    pkg.headers.set('stream-length', pkg.headers.getHeader<number>('stream-length') - buffer.length);
                 }
-                packet = this.parsePacket(headBuffer, input, headerDeserialization);
+                packet = pkg.clone(this.parsePacket(headBuffer, input, headerDeserialization));
 
             } else if (input) {
                 const idx = input.indexOf(headDelimiter);
                 if (idx > 0) {
                     const headBuffer = input.subarray(0, idx);
-                    packet = this.parsePacket(headBuffer, input.subarray(idx + Buffer.byteLength(headDelimiter)), headerDeserialization);
+                    packet = pkg.clone(this.parsePacket(headBuffer, input.subarray(idx + Buffer.byteLength(headDelimiter)), headerDeserialization));
                 } else {
-                    packet = new Packet({ payload: input });
+                    packet = pkg.clone({ payload: input })
                 }
             }
             return packet ?? pkg;
@@ -62,7 +60,7 @@ export class PacketCodingsHandlers {
             if (!packet.id) {
                 packet.id = pkg.id;
             }
-            return new Packet(packet)
+            return pkg.clone(packet)
         }
 
     }
@@ -78,7 +76,7 @@ export class PacketCodingsHandlers {
 
 
     private parsePacket(headBuffer: Buffer, payload: Buffer | IReadableStream, headerDeserialization?: HeaderDeserialization | null) {
-        let packet: Packet;
+        let packet: PacketInitOpts;
         if (headerDeserialization) {
             packet = headerDeserialization.deserialize(headBuffer)
         } else {
@@ -99,9 +97,6 @@ export class PacketCodingsHandlers {
         const options = context.options;
 
         const input = context.last<Packet>();
-        // if (input.headers instanceof HeaderMappings) {
-        //     input.headers = input.headers.getHeaders();
-        // }
 
         const injector = context.session!.injector;
         if (options.headDelimiter) {
@@ -113,10 +108,11 @@ export class PacketCodingsHandlers {
 
             const data = await this.streamAdapter.encode(input.payload, options.encoding);
 
+            let payload: any;
             if (this.streamAdapter.isReadable(data)) {
                 let isFist = true;
-                input.streamLength = (input.payloadLength ?? 0) + Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter);
-                return this.streamAdapter.pipeline(data, this.streamAdapter.createPassThrough({
+                input.headers.set('stream-length', input.headers.getContentLength() + Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter));
+                payload = this.streamAdapter.pipeline(data, this.streamAdapter.createPassThrough({
                     transform: (chunk, encoding, callback) => {
                         if (isFist) {
                             isFist = false;
@@ -128,13 +124,36 @@ export class PacketCodingsHandlers {
                 }));
             } else {
                 const bbuff = isBuffer(data) ? data : Buffer.from(data as string);
-                return Buffer.concat([hbuff, headDelimiter, bbuff], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(bbuff));
+                payload = Buffer.concat([hbuff, headDelimiter, bbuff], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(bbuff));
             }
+            return input.clone({ payload });
         } else {
+            let payload: any;
+            if (this.streamAdapter.isReadable(input.payload)) {
+                payload = await toBuffer(input.payload, context.options.maxSize);
+                return input.clone({ payload })
+            } else if (isBuffer(input.payload)) {
+                payload = new TextDecoder().decode(payload);
+                return input.clone({ payload })
+            } else {
+                return input;
+            }
 
         }
     }
 }
+
+
+@Abstract()
+export abstract class HandlerSerialization {
+    abstract serialize(packet: Packet): Buffer;
+}
+
+@Abstract()
+export abstract class HeaderDeserialization {
+    abstract deserialize(data: Buffer): PacketInitOpts;
+}
+
 
 
 @Injectable()

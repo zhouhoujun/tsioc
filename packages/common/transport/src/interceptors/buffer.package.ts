@@ -29,13 +29,17 @@ export class PackageDecodeInterceptor implements Interceptor<Packet<Buffer | IRe
             const chunk = input.payload.read(idLen);
             id = idLen > 4 ? chunk.subarray(0, idLen).toString() : chunk.readUIntBE(0, idLen);
             const exist = this.packs.get(id);
-            input.headers = exist?.packet.headers;
-            if (input.payload?.length) {
-                input.payload.length -= idLen;
+            exist && input.headers.setHeader('payload-only', id);
+            input.attachId(id);
+            // input.headers = exist?.packet.headers;
+            if (input.headers.has('stream-length')) {
+                input.headers.set('stream-length', input.headers.getHeader<number>('stream-length') - idLen);
             }
-        } else if(input.payload) {
+        } else if (input.payload) {
             id = idLen > 4 ? input.payload.subarray(0, idLen).toString() : input.payload.readUIntBE(0, idLen);
-            input.payload = input.payload.subarray(idLen);
+            input.attachId(id);
+            const payload = input.payload.subarray(idLen);
+            input = input.clone({ payload })
         }
         return next.handle(input, context)
             .pipe(
@@ -108,23 +112,24 @@ export class PackageDecodeInterceptor implements Interceptor<Packet<Buffer | IRe
 }
 
 @Injectable()
-export class PackageEncodeInterceptor implements Interceptor<Packet, Buffer | IReadableStream, TransportContext> {
+export class PackageEncodeInterceptor implements Interceptor<Packet, Packet<Buffer | IReadableStream>, TransportContext> {
 
     constructor(private streamAdapter: StreamAdapter) { }
 
-    intercept(input: Packet, next: Handler<Packet, Buffer | IReadableStream, TransportContext>, context: TransportContext): Observable<Buffer | IReadableStream> {
+    intercept(input: Packet, next: Handler<Packet, Packet<Buffer | IReadableStream>, TransportContext>, context: TransportContext): Observable<Packet<Buffer | IReadableStream>> {
         return next.handle(input, context)
             .pipe(
-                mergeMap(data => {
+                mergeMap(pkg => {
                     const options = context.options;
                     const idLen = options.idLen ?? 2;
-                    const packetSize = isBuffer(data) ? Buffer.byteLength(data) : (input.streamLength ?? ((input.headerLength ?? 0) + (input.payloadLength ?? 0)));
+                    const data = pkg.payload
+                    const packetSize = isBuffer(data) ? Buffer.byteLength(data) : (pkg.headers.getHeader<number>('stream-length') ?? ((pkg.headers.getHeader<number>('header-length') ?? 0) + pkg.headers.getContentLength()));
                     const sizeLimit = options.maxSize! - (options.delimiter ? Buffer.byteLength(options.delimiter) : 0)
                         - ((options.headDelimiter) ? Buffer.byteLength(options.headDelimiter) : 0)
                         - idLen
                         - ((options.delimiter) ? Buffer.byteLength(options.delimiter) : 0)
                         - (options.countLen ?? 4)
-                    // - (isNil(input.type) ? 0 : 1); // message type.
+                    // - (isNil(pkg.type) ? 0 : 1); // message type.
 
 
                     if (this.streamAdapter.isReadable(data)) {
@@ -132,7 +137,7 @@ export class PackageEncodeInterceptor implements Interceptor<Packet, Buffer | IR
                         const countLen = context.options.countLen || 4;
                         if (options.maxSize && packetSize > options.maxSize) {
 
-                            return new Observable((subsr: Subscriber<IReadableStream | Buffer>) => {
+                            return new Observable((subsr: Subscriber<Packet<Buffer | IReadableStream>>) => {
                                 let size = 0;
                                 let stream: IDuplexStream | null;
                                 let total = 0;
@@ -149,7 +154,7 @@ export class PackageEncodeInterceptor implements Interceptor<Packet, Buffer | IR
                                         const end = chunk.subarray(0, idx);
                                         const sub = chunk.subarray(idx);
                                         stream.end(end);
-                                        subsr.next(this.streamConnectId(input, idLen, delimiter, stream, countLen, size + Buffer.byteLength(end)));
+                                        subsr.next(this.streamConnectId(pkg, idLen, delimiter, stream, countLen, size + Buffer.byteLength(end)));
                                         if (sub.length) {
                                             stream = this.streamAdapter.createPassThrough();
                                             stream.write(sub);
@@ -165,7 +170,7 @@ export class PackageEncodeInterceptor implements Interceptor<Packet, Buffer | IR
 
                                     if (total >= packetSize && stream) {
                                         stream.end();
-                                        subsr.next(this.streamConnectId(input, idLen, delimiter, stream, countLen, size));
+                                        subsr.next(this.streamConnectId(pkg, idLen, delimiter, stream, countLen, size));
                                         stream = null;
                                         size = 0;
                                     }
@@ -209,7 +214,7 @@ export class PackageEncodeInterceptor implements Interceptor<Packet, Buffer | IR
                             })
 
                         } else {
-                            return of(this.streamConnectId(input, idLen, delimiter, data, countLen, packetSize));
+                            return of(this.streamConnectId(pkg, idLen, delimiter, data, countLen, packetSize));
                         }
                     } else {
 
@@ -217,24 +222,24 @@ export class PackageEncodeInterceptor implements Interceptor<Packet, Buffer | IR
 
                         if (options.maxSize && packetSize > options.maxSize) {
                             return this.subcontract(data, packetSize, sizeLimit).pipe(
-                                map(data => this.connectId(input.id, idLen, data))
+                                map(data => this.connectId(pkg, idLen, data))
                             )
                         } else {
-                            return of(this.connectId(input.id, idLen, data));
+                            return of(this.connectId(pkg, idLen, data));
                         }
                     }
                 })
             );
     }
 
-    streamConnectId(input: Packet, idLen: number, delimiter: Buffer, stream: IReadableStream, countLen: number, len: number) {
+    streamConnectId(packet: Packet, idLen: number, delimiter: Buffer, stream: IReadableStream, countLen: number, len: number): Packet<IReadableStream> {
         let isFist = true;
-        return this.streamAdapter.pipeline(stream, this.streamAdapter.createPassThrough({
+        const payload = this.streamAdapter.pipeline(stream, this.streamAdapter.createPassThrough({
             transform: (chunk, encoding, callback) => {
                 if (isFist) {
                     isFist = false;
                     const buffLen = Buffer.alloc(countLen);
-                    const idBuff = this.getIdBuffer(input.id, idLen)!;
+                    const idBuff = this.getIdBuffer(packet.id, idLen)!;
                     buffLen.writeUIntBE(len + idLen, 0, countLen);
                     callback(null, Buffer.concat([buffLen, delimiter, idBuff, chunk], countLen + Buffer.byteLength(delimiter) + idLen + Buffer.byteLength(chunk)));
                 } else {
@@ -242,6 +247,7 @@ export class PackageEncodeInterceptor implements Interceptor<Packet, Buffer | IR
                 }
             }
         }))
+        return packet.clone({ payload })
     }
 
     getIdBuffer(id: string | number | undefined, idLen: number) {
@@ -255,12 +261,12 @@ export class PackageEncodeInterceptor implements Interceptor<Packet, Buffer | IR
         return null;
     }
 
-    connectId(id: string | number | undefined, idLen: number, payload: Buffer) {
-        if (id) {
-            const idBuff = this.getIdBuffer(id, idLen)!;
-            return Buffer.concat([idBuff, payload], idLen + Buffer.byteLength(payload))
+    connectId(input: Packet, idLen: number, payload: Buffer): Packet<Buffer> {
+        if (input.id) {
+            const idBuff = this.getIdBuffer(input.id, idLen)!;
+            payload = Buffer.concat([idBuff, payload], idLen + Buffer.byteLength(payload))
         }
-        return payload;
+        return input.clone({ payload });
     }
 
 

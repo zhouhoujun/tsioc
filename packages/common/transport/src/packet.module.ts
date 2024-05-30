@@ -3,19 +3,19 @@ import { ENCODINGS_INTERCEPTORS, DECODINGS_INTERCEPTORS } from '@tsdi/common/cod
 import { PackageifyDecodeInterceptor, PackageifyEncodeInterceptor, PacketCodingsHandlers } from './packet.codings';
 import { BindPacketIdEncodeInterceptor, PacketDecodeInterceptor, PacketEncodeInterceptor } from './interceptors/buffer.packet';
 import { PackageDecodeInterceptor, PackageEncodeInterceptor } from './interceptors/buffer.package';
-import { TypedDecodeInterceper, TypedEncodeInterceper } from './interceptors/typed';
+// import { TypedDecodeInterceper, TypedEncodeInterceper } from './interceptors/typed';
 import { PacketIdGenerator, PacketNumberIdGenerator } from './PacketId';
 
 
-@Module({
-    providers: [
-        { provide: DECODINGS_INTERCEPTORS, useClass: TypedDecodeInterceper, multi: true },
-        { provide: ENCODINGS_INTERCEPTORS, useClass: TypedEncodeInterceper, multi: true },
-    ]
-})
-export class TypedCodingsModule {
+// @Module({
+//     providers: [
+//         { provide: DECODINGS_INTERCEPTORS, useClass: TypedDecodeInterceper, multi: true },
+//         { provide: ENCODINGS_INTERCEPTORS, useClass: TypedEncodeInterceper, multi: true },
+//     ]
+// })
+// export class TypedCodingsModule {
 
-}
+// }
 
 
 @Module({
@@ -44,7 +44,7 @@ export class PackageBufferCodingsModule {
 
 @Module({
     imports: [
-        TypedCodingsModule,
+        // TypedCodingsModule,
         BufferCodingsModule,
         PackageBufferCodingsModule
     ],
