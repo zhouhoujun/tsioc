@@ -8,8 +8,8 @@ import { PacketLengthException } from '../execptions';
 import { Packet } from '@tsdi/common';
 
 interface CachePacket {
-    payload: IDuplexStream;
-    packet: Packet<any>;
+    // payload: IDuplexStream;
+    packet: Packet<IDuplexStream>;
     streams?: IReadableStream[] | null;
     cacheSize: number;
     completed?: boolean;
@@ -43,50 +43,50 @@ export class PackageDecodeInterceptor implements Interceptor<Packet<Buffer | IRe
         }
         return next.handle(input, context)
             .pipe(
-                map(packet => this.mergePacket(packet, id)),
-                filter(p => p.completed == true)
+                map(packet => this.mergePacket(packet)),
+                filter(p => p.completed == true),
+                map(p => p.packet)
             )
     }
 
-    mergePacket(packet: Packet, id: string | number): Packet {
-        if (!packet.id) {
-            packet.id = id;
-        }
+    mergePacket(packet: Packet): CachePacket {
 
-        if (!packet.id || !(isBuffer(packet.payload) || this.streamAdapter.isReadable(packet.payload))) {
-            packet.completed = true;
-            return packet;
+        if (!packet.id || !(isBuffer(packet.payload) || this.streamAdapter.isReadable(packet.payload)) || packet.headers.getContentLength() <= 0) {
+            return { packet, completed: true } as CachePacket;
         }
-        const len = isBuffer(packet.payload) ? Buffer.byteLength(packet.payload) : packet.payload?.length ?? 0;
+        const len = isBuffer(packet.payload) ? Buffer.byteLength(packet.payload) : packet.headers.getHeader<number>('stream-length');
+
+        if (packet.headers.getContentLength() <= len) {
+            return { packet, completed: true } as CachePacket;
+        }
 
         const cached = this.packs.get(packet.id);
 
-        if ((cached?.payloadLength ?? packet.payloadLength ?? 0) <= len) {
-            packet.completed = true;
-            return packet
-        }
-
         if (!cached) {
-            if (!packet.payloadLength) {
+            if (!packet.headers.getContentLength()) {
                 throw new PacketLengthException('has not content length!');
             }
-            const payload = this.streamAdapter.createPassThrough();
+            const payload = packet.payload;
+            packet = packet.clone({ payload: this.streamAdapter.createPassThrough() });
 
             const cached = {
-                ...packet,
-                payload,
+                packet,
                 cacheSize: len
             } as CachePacket;
-            if (this.streamAdapter.isReadable(packet.payload)) {
-                cached.streams = [packet.payload];
+            if (this.streamAdapter.isReadable(payload)) {
+                cached.streams = [payload];
             } else {
-                payload.write(packet.payload);
+                packet.payload.write(payload);
             }
-            this.packs.set(packet.id, cached);
+            this.packs.set(packet.id!, cached);
             return cached;
         } else {
-            const cLen = cached.payloadLength!;
+            const cLen = cached.packet.headers.getContentLength(); //cached.payloadLength!;
             cached.cacheSize += len;
+            if(packet.headers.size){
+                cached.packet.headers.setHeaders(packet.headers.getHeaders())
+            }
+
             if (this.streamAdapter.isReadable(packet.payload)) {
                 if (cached.streams) {
                     cached.streams.push(packet.payload);
@@ -94,15 +94,15 @@ export class PackageDecodeInterceptor implements Interceptor<Packet<Buffer | IRe
                     cached.streams = [packet.payload];
                 }
             } else {
-                cached.payload.write(packet.payload);
+                cached.packet.payload!.write(packet.payload);
             }
             if (cached.cacheSize >= cLen) {
-                this.packs.delete(cached.id);
+                this.packs.delete(packet.id);
                 if (cached.streams) {
-                    this.streamAdapter.merge(cached.payload, cached.streams);
+                    this.streamAdapter.merge(cached.packet.payload!, cached.streams);
                     cached.streams = null;
                 } else {
-                    cached.payload.end();
+                    cached.packet.payload!.end();
                 }
                 cached.completed = true;
             }
