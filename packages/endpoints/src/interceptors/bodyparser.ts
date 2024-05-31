@@ -128,8 +128,8 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
     }
 
     protected async parseJson(context: RequestContext): Promise<{ raw?: any, body?: any }> {
-        const len = context.request.tHeaders.getContentLength();
-        const hdrcode = context.request.tHeaders.getContentEncoding() as string || identity;
+        const len = context.reqHeaders.getContentLength();
+        const hdrcode = context.reqHeaders.getContentEncoding() as string || identity;
         let length: number | undefined;
         if (len && hdrcode === identity) {
             length = ~~len
@@ -199,8 +199,8 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
     }
 
     protected async parseForm(ctx: RequestContext): Promise<{ raw?: any, body?: any }> {
-        const len = ctx.request.tHeaders.getContentLength();
-        const hdrcode = ctx.request.tHeaders.getContentEncoding() as string || identity;
+        const len = ctx.reqHeaders.getContentLength();
+        const hdrcode = ctx.reqHeaders.getContentEncoding() as string || identity;
         let length: number | undefined;
         if (len && hdrcode === identity) {
             length = ~~len
@@ -230,8 +230,8 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
     }
 
     protected async parseText(ctx: RequestContext): Promise<{ raw?: any, body?: any }> {
-        const len = ctx.request.tHeaders.getContentLength();
-        const hdrcode = ctx.request.tHeaders.getContentEncoding() as string || identity;
+        const len = ctx.reqHeaders.getContentLength();
+        const hdrcode = ctx.reqHeaders.getContentEncoding() as string || identity;
         let length: number | undefined;
         if (len && hdrcode === identity) {
             length = ~~len

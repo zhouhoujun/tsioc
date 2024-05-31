@@ -1,8 +1,8 @@
 import { Abstract, EMPTY, OperationArgumentResolver, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
 import { HandlerContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { HeadersLike, IHeaders, HeaderMappings } from '@tsdi/common';
+import { HeadersLike, IHeaders, HeaderMappings, ResponsePacket } from '@tsdi/common';
 import {
-    FileAdapter, Incoming, InternalServerExecption, MessageExecption, MimeAdapter, Outgoing, ResponsePacket,
+    FileAdapter, Incoming, InternalServerExecption, MessageExecption, MimeAdapter, Outgoing,
     StatusAdapter, StreamAdapter, ctype, isBuffer, xmlRegExp
 } from '@tsdi/common/transport';
 import { ServerOpts } from './Server';
@@ -57,14 +57,22 @@ export abstract class RequestContext<
     abstract get fileAdapter(): FileAdapter;
 
     /**
-     * transport response.
+     * request.
      */
     abstract get request(): TRequest;
+    /**
+     * request header mappings
+     */
+    abstract get reqHeaders(): HeaderMappings;
 
     /**
-     * transport response.
+     * response.
      */
     abstract get response(): TResponse;
+    /**
+     * response header mappings
+     */
+    abstract get resHeaders(): HeaderMappings;
 
     /**
      * Set response content length.
@@ -73,10 +81,10 @@ export abstract class RequestContext<
      * @api public
      */
     set length(n: number | null) {
-        if (!this.response.tHeaders.hasContentEncoding()) {
-            this.response.tHeaders.setContentLength(n)
+        if (!this.resHeaders.hasContentEncoding()) {
+            this.resHeaders.setContentLength(n)
         } else {
-            this.response.tHeaders.setContentLength(null)
+            this.resHeaders.setContentLength(null)
         }
     }
     /**
@@ -86,8 +94,8 @@ export abstract class RequestContext<
      * @api public
      */
     get length(): number | null {
-        if (this.response.tHeaders.hasContentLength()) {
-            return this.response.tHeaders.getContentLength()
+        if (this.resHeaders.hasContentLength()) {
+            return this.resHeaders.getContentLength()
         }
 
         if (isNil(this.body) || this.streamAdapter.isStream(this.body)) return null
@@ -180,9 +188,9 @@ export abstract class RequestContext<
                 this.status = this.statusAdapter.noContent;
             }
             if (val === null) this.onNullBody();
-            this.response.tHeaders.setContentEncoding(null);
-            this.response.tHeaders.setContentLength(null);
-            this.response.tHeaders.setContentType(null);
+            this.resHeaders.setContentEncoding(null);
+            this.resHeaders.setContentLength(null);
+            this.resHeaders.setContentType(null);
             return
         }
 
@@ -191,7 +199,7 @@ export abstract class RequestContext<
 
 
         // set the content-type only if not yet set
-        const setType = !this.response.tHeaders.hasContentType();
+        const setType = !this.resHeaders.hasContentType();
 
         // string
         if (isString(val)) {
@@ -211,7 +219,7 @@ export abstract class RequestContext<
         if (this.streamAdapter.isStream(val)) {
             if (original != val) {
                 // overwriting
-                if (null != original) this.response.tHeaders.setContentLength(null)
+                if (null != original) this.resHeaders.setContentLength(null)
             }
 
             if (setType) this.contentType = ctype.OCTET_STREAM;
@@ -219,7 +227,7 @@ export abstract class RequestContext<
         }
 
         // json
-        this.response.tHeaders.setContentLength(null);
+        this.resHeaders.setContentLength(null);
         this.contentType = ctype.APPL_JSON;
     }
 
@@ -289,7 +297,7 @@ export abstract class RequestContext<
      * @api public
      */
     getHeader(field: string): string | undefined {
-        return this.request.tHeaders.getHeader(field);
+        return this.reqHeaders.getHeader(field);
     }
 
 
@@ -391,7 +399,7 @@ export abstract class RequestContext<
      */
     removeHeaders(): void {
         if (this.sent) return;
-        this.response.tHeaders.removeHeaders()
+        this.resHeaders.removeHeaders()
     }
 
     /**
@@ -420,13 +428,13 @@ export abstract class RequestContext<
         if (!adapter) return null;
 
         //no body
-        const encoding = this.request.tHeaders.getContentEncoding();
-        const len = this.request.tHeaders.getContentLength();
+        const encoding = this.reqHeaders.getContentEncoding();
+        const len = this.reqHeaders.getContentLength();
 
         if (encoding && !len) {
             return null
         }
-        const ctype = this.request.tHeaders.getContentType();
+        const ctype = this.reqHeaders.getContentType();
         if (!ctype) return false;
         const normaled = adapter.normalize(ctype);
         if (!normaled) return false;
@@ -439,7 +447,7 @@ export abstract class RequestContext<
      * content type.
      */
     get contentType(): string {
-        const ctype = this.response.tHeaders.getContentType();
+        const ctype = this.resHeaders.getContentType();
         return (isArray(ctype) ? lang.first(ctype) : ctype) as string ?? ''
     }
     /**
@@ -461,7 +469,7 @@ export abstract class RequestContext<
      * @api public
      */
     set contentType(type: string) {
-        this.response.tHeaders.setContentType(type);
+        this.resHeaders.setContentType(type);
     }
 
     /**
@@ -504,7 +512,7 @@ export abstract class RequestContext<
      * @param packet
      */
     get contentEncoding(): string | undefined {
-        return this.response.tHeaders.getContentEncoding()
+        return this.resHeaders.getContentEncoding()
     }
     /**
      * Set Content-Encoding.
@@ -512,12 +520,12 @@ export abstract class RequestContext<
     set contentEncoding(encoding: string | null | undefined) {
         if (this.sent) return;
         if (isNil(encoding)) {
-            this.response.tHeaders.setContentEncoding(encoding)
+            this.resHeaders.setContentEncoding(encoding)
         } else {
-            const old = this.response.tHeaders.getContentEncoding();
-            this.response.tHeaders.setContentEncoding(encoding);
+            const old = this.resHeaders.getContentEncoding();
+            this.resHeaders.setContentEncoding(encoding);
             if (old != encoding) {
-                this.response.tHeaders.setContentLength(null);
+                this.resHeaders.setContentLength(null);
             }
         }
     }
@@ -574,7 +582,7 @@ export abstract class RequestContext<
 
     accepts(...args: string[]): string | string[] | false {
         if (!this.acceptsPriority) return '*';
-        const accepts = this.request.tHeaders.getAccept() ?? '*';
+        const accepts = this.reqHeaders.getAccept() ?? '*';
         if (!args.length) {
             return accepts ?? false
         }
@@ -596,7 +604,7 @@ export abstract class RequestContext<
     */
     acceptsEncodings(...encodings: string[]): string | string[] | false {
         if (!this.acceptsPriority) return '*';
-        const accepts = this.request.tHeaders.getAcceptEncoding() ?? '*';
+        const accepts = this.reqHeaders.getAcceptEncoding() ?? '*';
         if (!encodings.length) {
             return accepts
         }
@@ -616,7 +624,7 @@ export abstract class RequestContext<
      */
     acceptsCharsets(...charsets: string[]): string | string[] | false {
         if (!this.acceptsPriority) return '*';
-        const accepts = this.request.tHeaders.getAcceptCharset() ?? '*';
+        const accepts = this.reqHeaders.getAcceptCharset() ?? '*';
         if (!charsets.length) {
             return accepts
         }
@@ -637,7 +645,7 @@ export abstract class RequestContext<
      */
     acceptsLanguages(...langs: string[]): string | string[] {
         if (!this.acceptsPriority) return '*';
-        const accepts = this.request.tHeaders.getAcceptLanguage() ?? '*';
+        const accepts = this.reqHeaders.getAcceptLanguage() ?? '*';
         if (!langs.length) {
             return accepts
         }
@@ -675,7 +683,7 @@ export abstract class RequestContext<
             this.type = this.fileAdapter.extname(filename);
         }
         const func = this.get(CONTENT_DISPOSITION_TOKEN);
-        this.response.tHeaders.setContentDisposition(func(filename, options))
+        this.resHeaders.setContentDisposition(func(filename, options))
     }
 
     /**

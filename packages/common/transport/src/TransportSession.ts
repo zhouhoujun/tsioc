@@ -1,5 +1,5 @@
-import { Abstract, Injector, Token } from '@tsdi/ioc';
-import { ErrorResponse, ResponseEvent, HeadersLike, HeaderFields, Transport, HybirdTransport } from '@tsdi/common';
+import { Injector, Token } from '@tsdi/ioc';
+import { HeaderFields, Transport, HybirdTransport } from '@tsdi/common';
 import { CodingsOpts, EncodingsFactory, DecodingsFactory } from '@tsdi/common/codings';
 import { Observable } from 'rxjs';
 import { IReadableStream } from './stream';
@@ -135,16 +135,4 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
      */
     abstract destroy(): Promise<void>;
 
-}
-
-
-
-/**
- * response factory.
- */
-@Abstract()
-export abstract class ResponseEventFactory<TResponse = ResponseEvent, TErrorResponse = ErrorResponse, TStatus = any> {
-    abstract createErrorResponse(options: { url?: string; headers?: HeadersLike; status?: TStatus; error?: any; statusText?: string; statusMessage?: string; }): TErrorResponse;
-    abstract createHeadResponse(options: { url?: string; ok?: boolean; headers?: HeadersLike; status?: TStatus; statusText?: string; statusMessage?: string; }): TResponse;
-    abstract createResponse(options: { url?: string; ok?: boolean; headers?: HeadersLike; status?: TStatus; statusText?: string; statusMessage?: string; body?: any; payload?: any; }): TResponse;
 }

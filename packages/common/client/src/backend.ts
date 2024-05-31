@@ -5,10 +5,10 @@ import { Observable } from 'rxjs';
 
 
 /**
- * transport client endpoint backend.
+ * client backend.
  */
 @Abstract()
-export abstract class TransportBackend implements Backend<AbstractRequest, ResponseEvent>  {
+export abstract class ClientBackend implements Backend<AbstractRequest, ResponseEvent>  {
 
     /**
      * handle client request

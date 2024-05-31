@@ -46,15 +46,15 @@ export class InvocationArgs {
         )
     }
 
-    next<TInput>(input: TInput): this {
+    next<TInput>(input: TInput, state?: number): this {
         if (this._inputs[0] != input) {
             this._inputs.unshift(input);
-            this.onNext(input);
+            this.onNext(input, state);
         }
         return this;
     }
 
-    protected onNext(data: any) {
+    protected onNext(data: any, state?: number) {
         this._next$.next(data);
     }
 

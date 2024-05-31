@@ -1,4 +1,4 @@
-import { IHeaders, Pattern, HeaderMappings } from '@tsdi/common';
+import { HeadersLike, IHeaders, Pattern } from '@tsdi/common';
 import { IReadableStream } from './stream';
 
 
@@ -15,10 +15,7 @@ export interface Incoming<T = any> {
 
     pattern?: Pattern;
 
-    get headers(): IHeaders;
-
-    get tHeaders(): HeaderMappings;
-
+    headers: HeadersLike;
 
     body?: T | null
 
@@ -48,15 +45,15 @@ export interface IncomingStream extends IReadableStream {
     get headers(): IHeaders;
 }
 
-/**
- * client incoming message.
- */
-export interface ResponseIncoming<T = any> extends Incoming<T> {
-    type?: string | number;
-    error?: any;
-    ok?: boolean;
-    status?: string | number;
-    statusText?: string;
-    statusMessage?: string;
-}
+// /**
+//  * client incoming message.
+//  */
+// export interface ResponseIncoming<T = any> extends Incoming<T> {
+//     type?: string | number;
+//     error?: any;
+//     ok?: boolean;
+//     status?: string | number;
+//     statusText?: string;
+//     statusMessage?: string;
+// }
 

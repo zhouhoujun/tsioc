@@ -2,7 +2,7 @@ import { Injectable, Type, getClass, getClassName } from '@tsdi/ioc';
 import { NotHandleExecption } from '@tsdi/core';
 import { Observable, mergeMap, of, throwError } from 'rxjs';
 import { CodingMappings } from './mappings';
-import { CodingsContext } from './context';
+import { CodingType, CodingsContext } from './context';
 
 
 /**
@@ -25,7 +25,7 @@ export class Codings {
         return this.encode(input, context)
             .pipe(
                 mergeMap(data => {
-                    if (context.encodeComplete(data)) return of(data);
+                    if (context.encodeCompleted) return of(data);
                     return this.encode(data, context)
                 })
             )
@@ -37,11 +37,11 @@ export class Codings {
         if (handlers && handlers.length) {
             return handlers.reduceRight((obs$, curr) => {
                 return obs$.pipe(
-                    mergeMap(i => curr.handle(i, context.next(i)))
+                    mergeMap(i => curr.handle(i, context.next(i, CodingType.Encode)))
                 );
             }, of(data))
         } else {
-            return throwError(() => new NotHandleExecption(`No encodings handler for ${getClassName(type)} of ${context.options.group} ${context.options.name ??''}`))
+            return throwError(() => new NotHandleExecption(`No encodings handler for ${getClassName(type)} of ${context.options.group} ${context.options.name ?? ''}`))
         }
     }
 
@@ -54,7 +54,7 @@ export class Codings {
         return this.decode(input, context)
             .pipe(
                 mergeMap(data => {
-                    if (context.decodeComplete(data)) return of(data);
+                    if (context.decodeCompleted) return of(data);
                     return this.decode(data, context)
                 })
             )
@@ -66,11 +66,11 @@ export class Codings {
         if (handlers && handlers.length) {
             return handlers.reduceRight((obs$, curr) => {
                 return obs$.pipe(
-                    mergeMap(i => curr.handle(i, context.next(i)))
+                    mergeMap(i => curr.handle(i, context.next(i, CodingType.Decode)))
                 );
             }, of(data))
         } else {
-            return throwError(() => new NotHandleExecption(`No decodings handler for ${getClassName(type)} of ${context.options.group} ${context.options.name ??''}`))
+            return throwError(() => new NotHandleExecption(`No decodings handler for ${getClassName(type)} of ${context.options.group} ${context.options.name ?? ''}`))
         }
     }
 }

@@ -2,6 +2,7 @@ import { Abstract, Injector } from '@tsdi/ioc';
 import { ResponseEvent, AbstractRequest } from '@tsdi/common';
 import { TransportOpts, BaseTransportSession, TransportContext } from '@tsdi/common/transport';
 import { Observable, finalize, first, merge, mergeMap, takeUntil } from 'rxjs';
+import { CodingType } from '@tsdi/common/codings';
 
 
 /**
@@ -12,9 +13,9 @@ export abstract class ClientTransportSession<TSocket = any, TMsg = any> extends 
 
     request(req: AbstractRequest, destroy$?: Observable<any>): Observable<ResponseEvent> {
         const context = new TransportContext(this);
-        return this.send(req, context.next(req))
+        return this.send(req, context.next(req, CodingType.Encode))
             .pipe(
-                mergeMap(msg => this.receive(context.next(msg))),
+                mergeMap(msg => this.receive(context.next(msg, CodingType.Decode))),
                 takeUntil(destroy$ ? merge(this.destroy$, destroy$).pipe(first()) : this.destroy$),
                 finalize(() => context.onDestroy())
             )

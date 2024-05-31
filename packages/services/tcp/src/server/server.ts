@@ -87,7 +87,7 @@ export class TcpServer extends Server<RequestContext, TcpServerOpts> implements 
     @EventHandler(BindServerEvent, {
         interceptorsToken: TCP_BIND_INTERCEPTORS,
         filtersToken: TCP_BIND_FILTERS,
-        globalGuardsToken: TCP_BIND_GUARDS
+        guardsToken: TCP_BIND_GUARDS
     })
     async bind(event: BindServerEvent<any>) {
         const options = this.getOptions();

@@ -1,4 +1,4 @@
-import { Header, IHeaders, Pattern, HeaderMappings } from '@tsdi/common';
+import { Header, HeadersLike, IHeaders, Pattern } from '@tsdi/common';
 import { IWritableStream } from './stream';
 
 /**
@@ -11,13 +11,11 @@ export interface Outgoing<T = any> {
 
     pattern?: Pattern;
 
-    headers?: IHeaders;
-
-    get tHeaders(): HeaderMappings;
-
     body?: T | null;
 
     error?: any;
+
+    headers: HeadersLike;
 
     /**
      * Get packet status code.
@@ -97,21 +95,6 @@ export interface Outgoing<T = any> {
      * @param packet 
      */
     writable?: boolean;
-
-    // getLastModified?(): string;
-    // setLastModified?(control: string): this;
-    // removeLastModified?(): this;
-
-    // getCacheControl?(): string;
-    // setCacheControl?(control: string): this;
-    // /**
-    //  * set no cache
-    //  * @param packet 
-    //  */
-    // noCache?(): this;
-
-    // setContentDisposition(disposition: string): this;
-    // setLocation?(location: string): this;
 
 }
 

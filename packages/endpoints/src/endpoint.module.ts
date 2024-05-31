@@ -4,8 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
 import { HybirdTransport, Transport } from '@tsdi/common';
-import { CodingsModule } from '@tsdi/common/codings';
-import { NotImplementedExecption, StatusAdapter } from '@tsdi/common/transport';
+import { NotImplementedExecption, StatusAdapter, TransportPacketModule } from '@tsdi/common/transport';
 import { RequestContextFactory } from './RequestContext';
 import { Server, ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
@@ -136,7 +135,7 @@ export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
 @Module({
     imports: [
         TransformModule,
-        CodingsModule,
+        TransportPacketModule,
         MicroServRouterModule,
         RouterModule
     ],

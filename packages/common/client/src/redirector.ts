@@ -7,7 +7,7 @@ import { Client } from './Client';
 
 
 @Injectable()
-export class RestfulRedirector implements Redirector {
+export class UrlRedirector implements Redirector {
 
     redirect<T>(req: UrlRequest, status: any, headers: IHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {

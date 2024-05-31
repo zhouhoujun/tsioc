@@ -1,5 +1,6 @@
+import { isPlainObject, isUndefined } from '@tsdi/ioc';
 import { HeadersLike } from './headers';
-import { Packet,  PacketInitOpts,  PacketOpts } from './packet';
+import { PacketInitOpts, StatusPacket, StatusPacketOpts } from './packet';
 
 
 /**
@@ -17,67 +18,10 @@ export interface ResponseInitOpts<T = any, TStatus = any> extends PacketInitOpts
     error?: any;
 }
 
-export interface StatusPacketOpts<TStatus = number> extends PacketOpts {
-    defaultStatus?: TStatus;
-    defaultStatusText?: string
-}
-
 /**
- * base Response packet.
+ * header response.
  */
-export abstract class ResponsePacketBase<T = any, TStatus = number> extends Packet<T> {
-    /**
-     * Type of the response, narrowed to either the full response or the header.
-     */
-    readonly type: number | undefined;
-    /**
-     * Response status code.
-     */
-    readonly status: TStatus | null;
-
-    readonly ok: boolean;
-
-    protected _message!: string;
-    /**
-     * Textual description of response status code, defaults to OK.
-     *
-     * Do not depend on this.
-     */
-    get statusText(): string {
-        return this._message
-    }
-
-    get statusMessage(): string {
-        return this._message
-    }
-
-    constructor(init: ResponseInitOpts, options?: StatusPacketOpts<TStatus>) {
-        super(init, options)
-        this.ok = init.ok != false;
-        this.type = init.type;
-        this.status = init.status !== undefined ? init.status : options?.defaultStatus ?? null;
-        this._message = (init.statusMessage || init.statusText) ?? options?.defaultStatusText ?? '';
-    }
-
-    protected cloneStatus(init: ResponseInitOpts, update: {
-        type?: number;
-        ok?: boolean;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-    }): void {
-        init.type = update.type ?? this.type;
-        init.ok = update.ok ?? this.ok;
-        const status = update.status ?? this.status;
-        if (status !== null) {
-            init.status = status;
-        }
-        init.statusMessage = update.statusMessage ?? update.statusText ?? this.statusMessage;
-    }
-
-}
-
-export class HeaderResponse<TStatus = number> extends ResponsePacketBase<null, TStatus> {
+export class HeaderResponse<TStatus = number> extends StatusPacket<null, TStatus> {
     constructor(init: {
         /**
          * event type
@@ -93,7 +37,7 @@ export class HeaderResponse<TStatus = number> extends ResponsePacketBase<null, T
     }
 
 
-    clone(): HeaderResponse;
+    clone(): HeaderResponse<TStatus>;
     clone(update: {
         type?: number;
         ok?: boolean;
@@ -102,7 +46,7 @@ export class HeaderResponse<TStatus = number> extends ResponsePacketBase<null, T
         statusMessage?: string;
         statusText?: string;
         setHeaders?: { [name: string]: string | string[]; };
-    }): HeaderResponse
+    }): HeaderResponse<TStatus>
     clone(update: {
         type?: number;
         ok?: boolean;
@@ -111,7 +55,7 @@ export class HeaderResponse<TStatus = number> extends ResponsePacketBase<null, T
         statusMessage?: string;
         statusText?: string;
         setHeaders?: { [name: string]: string | string[]; }
-    } = {}): HeaderResponse {
+    } = {}): HeaderResponse<TStatus> {
         const init = {} as ResponseInitOpts;
         this.cloneHeaderBody(init, update);
         this.cloneStatus(init, update);
@@ -121,7 +65,10 @@ export class HeaderResponse<TStatus = number> extends ResponsePacketBase<null, T
     }
 }
 
-export class ResponsePacket<T = any, TStatus = number> extends ResponsePacketBase<T, TStatus> {
+/**
+ * response packet.
+ */
+export class ResponsePacket<T = any, TStatus = number> extends StatusPacket<T, TStatus> {
 
     constructor(init: {
         /**
@@ -181,7 +128,7 @@ export class ResponsePacket<T = any, TStatus = number> extends ResponsePacketBas
 /**
  * Error packet.
  */
-export class ErrorResponse<TStatus = number> extends ResponsePacketBase<null, TStatus> {
+export class ErrorResponse<TStatus = number> extends StatusPacket<null, TStatus> {
 
     readonly error: any | null;
 
@@ -197,10 +144,9 @@ export class ErrorResponse<TStatus = number> extends ResponsePacketBase<null, TS
         statusText?: string;
     }, options?: StatusPacketOpts<TStatus>) {
         super(Object.assign(init, { ok: false, payload: null }), options);
-        this.error = init.error;
     }
 
-    clone(): ErrorResponse;
+    clone(): ErrorResponse<TStatus>;
     clone(update: {
         type?: number;
         ok?: boolean;
@@ -210,7 +156,7 @@ export class ErrorResponse<TStatus = number> extends ResponsePacketBase<null, TS
         statusMessage?: string;
         statusText?: string;
         setHeaders?: { [name: string]: string | string[]; };
-    }): ErrorResponse
+    }): ErrorResponse<TStatus>
     clone(update: {
         type?: number;
         ok?: boolean;
@@ -220,7 +166,7 @@ export class ErrorResponse<TStatus = number> extends ResponsePacketBase<null, TS
         statusMessage?: string;
         statusText?: string;
         setHeaders?: { [name: string]: string | string[]; }
-    } = {}): ErrorResponse {
+    } = {}): ErrorResponse<TStatus> {
         const init = {
             error: update.error ?? this.error
         } as ResponseInitOpts;
@@ -254,7 +200,11 @@ export interface ResponseJsonParseError {
 /**
  * Response Event
  */
-export type ResponseEvent<T = any, TStatus = any> = HeaderResponse<TStatus> | ResponsePacket<T, TStatus> | ResponseEventPacket | ErrorResponse<TStatus>;
+export type ResponseEvent<T = any, TStatus = any> = HeaderResponse<TStatus> | ResponsePacket<T, TStatus> | ErrorResponse<TStatus> | ResponseEventPacket;
+
+export function isEvent(response: ResponseEvent): response is ResponseEventPacket {
+    return isPlainObject(response) && isUndefined(response.type)
+}
 
 
 /**

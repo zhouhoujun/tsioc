@@ -156,29 +156,29 @@ export abstract class HeaderDeserialization {
 
 
 
-@Injectable()
-export class PackageifyDecodeInterceptor implements Interceptor<any, any, TransportContext> {
-    constructor(private codings: Codings) { }
+// @Injectable()
+// export class PackageifyDecodeInterceptor implements Interceptor<any, any, TransportContext> {
+//     constructor(private codings: Codings) { }
 
-    intercept(input: any, next: Handler<any, any, TransportContext>, context: TransportContext): Observable<any> {
-        if (context.options.headDelimiter) {
-            return this.codings.decodeType('PACKET', input, context);
-        }
-        return next.handle(input, context);
-    }
-}
+//     intercept(input: any, next: Handler<any, any, TransportContext>, context: TransportContext): Observable<any> {
+//         if (context.options.headDelimiter) {
+//             return this.codings.decodeType('PACKET', input, context);
+//         }
+//         return next.handle(input, context);
+//     }
+// }
 
-@Injectable()
-export class PackageifyEncodeInterceptor implements Interceptor<any, any, TransportContext> {
+// @Injectable()
+// export class PackageifyEncodeInterceptor implements Interceptor<any, any, TransportContext> {
 
-    constructor(private codings: Codings) { }
+//     constructor(private codings: Codings) { }
 
-    intercept(input: any, next: Handler<any, any, TransportContext>, context: TransportContext): Observable<any> {
-        if (context.options.headDelimiter) {
-            return this.codings.encodeType('PACKET', input, context);
-        }
-        return next.handle(input, context);
-    }
+//     intercept(input: any, next: Handler<any, any, TransportContext>, context: TransportContext): Observable<any> {
+//         if (context.options.headDelimiter) {
+//             return this.codings.encodeType('PACKET', input, context);
+//         }
+//         return next.handle(input, context);
+//     }
 
-}
+// }
 

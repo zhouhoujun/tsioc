@@ -1,11 +1,11 @@
 import { Injectable } from '@tsdi/ioc';
 import { UrlRequest, ResponseEvent } from '@tsdi/common';
 import { Observable, take } from 'rxjs';
-import { TransportBackend } from '../backend';
-import { ClientTransportSession } from '../session';
+import { ClientBackend } from './backend';
+import { ClientTransportSession } from './session';
 
 @Injectable()
-export class CodingsTransportBackend extends TransportBackend {
+export class ClientTransportBackend extends ClientBackend {
 
     handle(req: UrlRequest<any>): Observable<ResponseEvent> {
         const session = req.context.get(ClientTransportSession);

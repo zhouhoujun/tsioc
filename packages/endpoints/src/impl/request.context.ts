@@ -1,8 +1,8 @@
 import { EMPTY_OBJ, Injectable, Injector, isNil } from '@tsdi/ioc';
-import { LOCALHOST, normalize } from '@tsdi/common';
+import { HeaderMappings, LOCALHOST, normalize, ResponsePacket } from '@tsdi/common';
 import {
     FileAdapter, Incoming, MessageExecption, MimeAdapter, Outgoing,
-    ResponsePacket, StatusAdapter, StreamAdapter
+    StatusAdapter, StreamAdapter
 } from '@tsdi/common/transport';
 import { RequestContext, RequestContextFactory } from '../RequestContext';
 import { ServerOpts } from '../Server';
@@ -17,6 +17,16 @@ export class RequestContextImpl<TRequest extends Incoming = Incoming, TResponse 
 
     private _URL?: URL;
     readonly originalUrl: string;
+
+
+    /**
+     * request header mappings
+     */
+    readonly reqHeaders: HeaderMappings;
+    /**
+     * request header mappings
+     */
+    readonly resHeaders: HeaderMappings;
 
     constructor(
         injector: Injector,
@@ -36,6 +46,8 @@ export class RequestContextImpl<TRequest extends Incoming = Incoming, TResponse 
         if (!response.id) {
             response.id = request.id
         }
+        this.reqHeaders = request.headers instanceof HeaderMappings ? request.headers : new HeaderMappings(request.headers);
+        this.resHeaders = response.headers instanceof HeaderMappings ? response.headers : new HeaderMappings(response.headers);
 
         this.originalUrl = this.url = normalize(this.url);
         const searhIdx = this.url.indexOf('?');
