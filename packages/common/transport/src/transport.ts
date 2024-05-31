@@ -1,7 +1,8 @@
 import { promisify } from '@tsdi/ioc';
+import { Message } from '@tsdi/common';
 import { Encoder, Decoder } from '@tsdi/common/codings';
 import { Observable, Subject, finalize, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
-import { AbstractTransportSession, TransportOpts } from './TransportSession';
+import { AbstractTransportSession } from './TransportSession';
 import { IEventEmitter, IReadableStream, IWritableStream } from './stream';
 import { StreamAdapter, isBuffer } from './StreamAdapter';
 import { NotImplementedExecption } from './execptions';
@@ -10,17 +11,9 @@ import { TransportContext } from './context';
 
 
 /**
- * base codings transport session.
+ * base transport session via codings.
  */
-export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput = any, TMsg = any> extends AbstractTransportSession<TSocket, TInput, TOutput, TMsg, TransportContext> {
-    /**
-     * socket.
-     */
-    abstract get socket(): TSocket;
-    /**
-     * transport options.
-     */
-    abstract get options(): TransportOpts;
+export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput = any, TMsg extends Message = Message> extends AbstractTransportSession<TSocket, TInput, TOutput> {
 
     /**
      * encodings
@@ -34,6 +27,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * stream adapter.
      */
     abstract get streamAdapter(): StreamAdapter;
+
 
     protected destroy$ = new Subject<void>;
 
@@ -83,72 +77,74 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
 
     /**
      * send message.
-     * @param originMsg 
-     * @param encodedMsg 
+     * @param msg 
+     * @param input 
      * @param context 
      * @returns 
      */
-    protected sendMessage(data: any, originMsg: TInput, context: TransportContext): Promise<any> | Observable<any> {
-        if (this.streamAdapter.isReadable(data)) {
-            return this.pipeTo(this.socket, data, originMsg, context)
+    protected sendMessage(msg: TMsg, input: TInput, context: TransportContext): Promise<TMsg> | Observable<TMsg> {
+        if (this.streamAdapter.isReadable(msg.data)) {
+            return this.pipeTo(this.socket, msg, input, context)
         } else {
-            return this.write(this.socket, data, originMsg, context);
+            return this.write(this.socket, msg, input, context);
         }
     }
 
     /**
      * pipe endcoed data to socket
      * @param socket 
-     * @param data 
-     * @param originData 
+     * @param msg 
+     * @param input 
      * @param ctx 
      */
-    protected async pipeTo(socket: any, data: IReadableStream, originData: any, context: TransportContext): Promise<any> {
+    protected async pipeTo(socket: any, msg: Message<IReadableStream>, input: TInput, context: TransportContext): Promise<TMsg> {
         if (this.options.pipeTo) {
-            await this.options.pipeTo(socket, data, originData, context)
+            await this.options.pipeTo(socket, msg, input, context)
         } else if (this.options.write) {
-            await this.streamAdapter.write(data, this.streamAdapter.createWritable({
+            await this.streamAdapter.write(msg.data, this.streamAdapter.createWritable({
                 write: (chunk, encoding, callback) => {
-                    this.options.write!(socket, chunk, originData, context, callback)
+                    this.options.write!(socket, chunk, input, context, callback)
                 }
             }))
         } else if ((socket as IWritableStream).write) {
-            await this.streamAdapter.write(data, socket as IWritableStream)
+            await this.streamAdapter.write(msg.data, socket as IWritableStream)
         } else {
             throw new NotImplementedExecption('Can not write message to socket!')
         }
-        return data;
+        return msg as TMsg;
     }
 
 
     /**
      * write endcoed data to socket.
      * @param socket 
-     * @param data 
-     * @param originData 
+     * @param msg 
+     * @param input 
      * @param ctx 
      * @param cb 
      */
-    protected async write(socket: any, data: any, originData: any, context: TransportContext): Promise<any> {
+    protected async write(socket: any, msg: Message<Buffer>, input: TInput, context: TransportContext): Promise<TMsg> {
         if (this.options.write) {
-            await promisify<any, any, any, TransportContext, void>(this.options.write, this.options)(socket, data, originData, context)
+            await promisify<any, any, any, TransportContext, void>(this.options.write, this.options)(socket, msg, input, context)
         } else if ((socket as IWritableStream).write) {
-            await promisify<any, void>((socket as IWritableStream).write, socket)(data)
+            await promisify<any, void>((socket as IWritableStream).write, socket)(msg.data)
         } else {
             throw new NotImplementedExecption('Can not write message to socket!')
         }
-        return data
+        return msg as TMsg
     }
 
     /**
      * handle message
      */
     protected handleMessage(context?: TransportContext): Observable<TMsg> {
-        if (this.options.handleMessage) return this.options.handleMessage(this.socket, context).pipe(takeUntil(this.destroy$));
+        if (this.options.handleMessage) return this.options.handleMessage(this.socket, this.messageFactory, context).pipe(takeUntil(this.destroy$));
 
         return fromEvent(this.socket as IEventEmitter, this.options.messageEvent ?? ev.DATA, this.options.messageEventHandle ? this.options.messageEventHandle : (chunk) => {
-            if (isBuffer(chunk) || this.streamAdapter.isReadable(chunk)) return chunk as TMsg;
-            return Buffer.from(chunk) as TMsg;
+            if (!isBuffer(chunk) && !this.streamAdapter.isReadable(chunk)) {
+                chunk = Buffer.from(chunk);
+            }
+            return this.messageFactory.create(chunk);
         }).pipe(takeUntil(this.destroy$));
     }
 

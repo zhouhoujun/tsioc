@@ -1,5 +1,5 @@
 import { Abstract, Injector } from '@tsdi/ioc';
-import { ResponseEvent, AbstractRequest } from '@tsdi/common';
+import { ResponseEvent, AbstractRequest, Message } from '@tsdi/common';
 import { TransportOpts, BaseTransportSession, TransportContext } from '@tsdi/common/transport';
 import { Observable, finalize, first, merge, mergeMap, takeUntil } from 'rxjs';
 import { CodingType } from '@tsdi/common/codings';
@@ -9,7 +9,7 @@ import { CodingType } from '@tsdi/common/codings';
  * transport session for client.
  */
 @Abstract()
-export abstract class ClientTransportSession<TSocket = any, TMsg = any> extends BaseTransportSession<TSocket, AbstractRequest, ResponseEvent, TMsg> {
+export abstract class ClientTransportSession<TSocket = any, TMsg extends Message = Message> extends BaseTransportSession<TSocket, AbstractRequest, ResponseEvent, TMsg> {
 
     request(req: AbstractRequest, destroy$?: Observable<any>): Observable<ResponseEvent> {
         const context = new TransportContext(this);
@@ -26,7 +26,7 @@ export abstract class ClientTransportSession<TSocket = any, TMsg = any> extends 
  * client transport session factory.
  */
 @Abstract()
-export abstract class ClientTransportSessionFactory<TSocket = any, TOptions = TransportOpts, TMsg = any> {
+export abstract class ClientTransportSessionFactory<TSocket = any, TOptions = TransportOpts, TMsg extends Message = Message> {
     /**
      * the options to create transport session.
      * @param options 

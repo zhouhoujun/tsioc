@@ -10,6 +10,7 @@ export * from './utils';
 export * from './listen';
 
 export * from './protocols';
+export * from './message';
 export * from './packet';
 
 export * from './request';

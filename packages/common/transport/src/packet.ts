@@ -1,8 +1,6 @@
 // import { HeadersLike, Pattern } from '@tsdi/common';
 // import { IReadableStream } from './stream';
 
-import { HeaderMappings } from "@tsdi/common/src";
-
 
 // /**
 //  * packet data.

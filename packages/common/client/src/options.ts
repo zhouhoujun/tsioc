@@ -1,6 +1,6 @@
 import { ProvdierOf, Token } from '@tsdi/ioc';
 import { ConfigableHandlerOptions } from '@tsdi/core';
-import { AbstractRequest } from '@tsdi/common';
+import { AbstractRequest, MessageFactory } from '@tsdi/common';
 import { ClientBackend } from './backend';
 import { StatusAdapter, TransportOpts } from '@tsdi/common/transport';
 import { ClientTransportSessionFactory } from './session';
@@ -38,6 +38,10 @@ export interface ClientOpts<TConnOpts = any> extends ConfigableHandlerOptions<Ab
      * transport options.
      */
     transportOpts?: TransportOpts;
+    /**
+     * message factory.
+     */
+    messageFactory?: ProvdierOf<MessageFactory>,
     /**
      * service transport session factory.
      */

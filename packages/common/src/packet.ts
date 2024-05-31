@@ -2,25 +2,6 @@ import { Abstract, isUndefined } from '@tsdi/ioc';
 import { HeaderFields, HeadersLike, HeaderMappings } from './headers';
 
 
-
-// /**
-//  * packet data.
-//  */
-// export interface PacketInitOpts<T = any> {
-//     id?: any;
-//     type?: number | string;
-//     pattern?: Pattern;
-//     url?: string;
-//     topic?: string;
-//     method?: string;
-//     headers?: HeadersLike;
-//     payload?: T;
-//     error?: any;
-// }
-
-
-
-
 export interface PacketOpts {
     readonly headerFields?: HeaderFields;
     readonly defaultMethod?: string;

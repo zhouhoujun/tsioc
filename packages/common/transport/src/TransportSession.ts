@@ -1,5 +1,5 @@
 import { Injector, Token } from '@tsdi/ioc';
-import { HeaderFields, Transport, HybirdTransport } from '@tsdi/common';
+import { HeaderFields, Transport, HybirdTransport, MessageFactory, Message, Packet } from '@tsdi/common';
 import { CodingsOpts, EncodingsFactory, DecodingsFactory } from '@tsdi/common/codings';
 import { Observable } from 'rxjs';
 import { IReadableStream } from './stream';
@@ -76,28 +76,29 @@ export interface TransportOpts extends CodingsOpts {
     /**
      * pipe endcoed data to socket
      * @param socket 
-     * @param data 
-     * @param originData 
+     * @param msg 
+     * @param input 
      * @param ctx 
      */
-    pipeTo?(socket: any, data: IReadableStream, originData: any, ctx: TransportContext): Promise<void>;
+    pipeTo?(socket: any, msg: Message<IReadableStream>, input: any, ctx: TransportContext): Promise<void>;
     /**
      * write endcoed data to socket.
      * @param socket 
-     * @param data 
-     * @param originData 
+     * @param msg 
+     * @param input 
      * @param ctx 
      * @param cb 
      */
-    write?(socket: any, data: any, originData: any, ctx: TransportContext, cb?: (err?: Error | null) => void): void;
+    write?(socket: any, msg: Message<IReadableStream>, input: any, ctx: TransportContext, cb?: (err?: Error | null) => void): void;
 
     /**
      * custom handle mesasge from socket.
      * 
-     * @param socket 
+     * @param socket
+     * @param factory 
      * @param context 
      */
-    handleMessage?(socket: any, context?: TransportContext): Observable<any>;
+    handleMessage?(socket: any, factory: MessageFactory, context?: TransportContext): Observable<any>;
 
 }
 
@@ -105,7 +106,7 @@ export interface TransportOpts extends CodingsOpts {
 /**
  * base transport session.
  */
-export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOutput = any, TMsg = any, TContext = any> {
+export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOutput = any, TMsg = any> {
     /**
      * socket.
      */
@@ -119,16 +120,20 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
      */
     abstract get injector(): Injector;
     /**
+     * message factory.
+     */
+    abstract get messageFactory(): MessageFactory;
+    /**
      * send.
      * @param data 
      */
-    abstract send(data: TInput, context?: TContext): Observable<TMsg>;
+    abstract send(data: TInput, context?: TransportContext): Observable<TMsg>;
 
     /**
      * receive
      * @param req the message response for.
      */
-    abstract receive(context?: TContext): Observable<TOutput>;
+    abstract receive(context?: TransportContext): Observable<TOutput>;
 
     /**
      * destroy.
