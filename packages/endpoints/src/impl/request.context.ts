@@ -133,7 +133,7 @@ export class RequestContextImpl<TRequest extends Incoming = Incoming, TResponse 
         };
         if (!isNil(execption.status)) this.response.statusCode = execption.status;
         this.response.statusMessage = execption.message;
-        return await lastValueFrom(this.session.send(this));
+        await lastValueFrom(this.session.send(this));
     }
 
 }

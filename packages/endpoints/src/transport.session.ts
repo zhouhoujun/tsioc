@@ -4,9 +4,10 @@ import { Observable, Subscription, first, merge, mergeMap, takeUntil } from 'rxj
 import { RequestHandler } from './RequestHandler';
 import { RequestContext } from './RequestContext';
 import { ServerOpts } from './Server';
+import { Message } from '@tsdi/common';
 
 @Abstract()
-export abstract class TransportSession<TSocket = any, TMsg = any, TOptions extends ServerOpts = ServerOpts> extends BaseTransportSession<TSocket, RequestContext, any, TMsg> {
+export abstract class TransportSession<TSocket = any, TMsg extends Message = Message, TOptions extends ServerOpts = ServerOpts> extends BaseTransportSession<TSocket, RequestContext, any, TMsg> {
 
     abstract get serverOptions(): TOptions;
 
@@ -23,7 +24,7 @@ export abstract class TransportSession<TSocket = any, TMsg = any, TOptions exten
  * transport session factory.
  */
 @Abstract()
-export abstract class TransportSessionFactory<TSocket = any,  TMsg = any> {
+export abstract class TransportSessionFactory<TSocket = any,  TMsg extends Message = Message> {
     /**
      * create transport session.
      * @param options 

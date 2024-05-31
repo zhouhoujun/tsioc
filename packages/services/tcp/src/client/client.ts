@@ -21,7 +21,7 @@ export class TcpClient extends Client<TcpRequest> {
     private logger!: Logger;
 
     private connection!: tls.TLSSocket | net.Socket;
-    private _session?: ClientTransportSession<any, tls.TLSSocket | net.Socket>;
+    private _session?: ClientTransportSession<tls.TLSSocket | net.Socket>;
 
     constructor(readonly handler: TcpHandler) {
         super();
