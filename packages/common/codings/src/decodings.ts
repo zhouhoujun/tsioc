@@ -11,18 +11,18 @@ import { Codings } from './Codings';
  * Decodings Handler
  */
 @Abstract()
-export abstract class DecodingsHandler implements Handler<any, any, CodingsContext> {
-    abstract handle(input: any, context: CodingsContext): Observable<any>
+export abstract class DecodingsHandler<TInput = any, TOutput = any> implements Handler<TInput, TOutput, CodingsContext> {
+    abstract handle(input: TInput, context: CodingsContext): Observable<TOutput>
 }
 
 /**
  * Decodings Backend
  */
 @Injectable()
-export class DecodingsBackend implements Backend<any, any, CodingsContext> {
+export class DecodingsBackend<TInput = any, TOutput = any> implements Backend<TInput, TOutput, CodingsContext> {
     constructor(protected codings: Codings) { }
 
-    handle(input: any, context: CodingsContext): Observable<any> {
+    handle(input: TInput, context: CodingsContext): Observable<TOutput> {
         return this.codings.deepDecode(input, context);
     }
 }
@@ -31,12 +31,12 @@ export class DecodingsBackend implements Backend<any, any, CodingsContext> {
 /**
  *  decodings interceptors.
  */
-export const DECODINGS_INTERCEPTORS = tokenId<Interceptor<Buffer, any, CodingsContext>[]>('DECODINGS_INTERCEPTORS');
+export const DECODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, CodingsContext>[]>('DECODINGS_INTERCEPTORS');
 
 /**
  *  decodings filters.
  */
-export const DECODINGS_FILTERS = tokenId<Interceptor<Buffer, any, CodingsContext>[]>('DECODINGS_FILTERS');
+export const DECODINGS_FILTERS = tokenId<Interceptor<any, any, CodingsContext>[]>('DECODINGS_FILTERS');
 
 /**
  *  decodings guards.
