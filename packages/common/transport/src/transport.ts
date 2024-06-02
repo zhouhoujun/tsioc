@@ -3,7 +3,7 @@ import { Message } from '@tsdi/common';
 import { Encoder, Decoder } from '@tsdi/common/codings';
 import { Observable, Subject, finalize, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
 import { AbstractTransportSession } from './TransportSession';
-import { IEventEmitter, IReadableStream, IWritableStream } from './stream';
+import { IEventEmitter, IWritableStream } from './stream';
 import { StreamAdapter, isBuffer } from './StreamAdapter';
 import { NotImplementedExecption } from './execptions';
 import { ev } from './consts';
@@ -97,16 +97,16 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * @param input 
      * @param ctx 
      */
-    protected async pipeTo(socket: any, msg: Message<IReadableStream>, input: TInput, context: TransportContext): Promise<TMsg> {
+    protected async pipeTo(socket: any, msg: Message, input: TInput, context: TransportContext): Promise<TMsg> {
         if (this.options.pipeTo) {
             await this.options.pipeTo(socket, msg, input, context)
-        } else if (this.options.write) {
+        } else if (msg.data && this.options.write) {
             await this.streamAdapter.write(msg.data, this.streamAdapter.createWritable({
                 write: (chunk, encoding, callback) => {
                     this.options.write!(socket, chunk, input, context, callback)
                 }
             }))
-        } else if ((socket as IWritableStream).write) {
+        } else if (msg.data && (socket as IWritableStream).write) {
             await this.streamAdapter.write(msg.data, socket as IWritableStream)
         } else {
             throw new NotImplementedExecption('Can not write message to socket!')
@@ -123,10 +123,10 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * @param ctx 
      * @param cb 
      */
-    protected async write(socket: any, msg: Message<Buffer>, input: TInput, context: TransportContext): Promise<TMsg> {
+    protected async write(socket: any, msg: Message, input: TInput, context: TransportContext): Promise<TMsg> {
         if (this.options.write) {
             await promisify<any, any, any, TransportContext, void>(this.options.write, this.options)(socket, msg, input, context)
-        } else if ((socket as IWritableStream).write) {
+        } else if (msg.data && (socket as IWritableStream).write) {
             await promisify<any, void>((socket as IWritableStream).write, socket)(msg.data)
         } else {
             throw new NotImplementedExecption('Can not write message to socket!')

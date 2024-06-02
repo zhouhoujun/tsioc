@@ -1,6 +1,6 @@
 import { Abstract, Injectable, isString, tokenId } from '@tsdi/ioc';
 import { Handler, Interceptor, InvalidJsonException } from '@tsdi/core';
-import { Packet, PacketInitOpts } from '@tsdi/common';
+import { Message, MessageFactory, Packet, PacketFactory, PacketInitOpts } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler, Codings } from '@tsdi/common/codings';
 import { TransportContext } from './context';
 import { Observable } from 'rxjs';
@@ -19,49 +19,49 @@ export class PacketCodingsHandlers {
 
     constructor(private streamAdapter: StreamAdapter) { }
 
-    @DecodeHandler(Packet, { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
+    @DecodeHandler(Message, { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
     async bufferDecode(context: TransportContext) {
-        const pkg = context.last<Packet<string | Buffer | IReadableStream>>();
-        // if (pkg.headers) return pkg;
+        let msg = context.last<Message>();
 
         const options = context.options;
-        const input = isString(pkg.payload) ? Buffer.from(pkg.payload) : pkg.payload;
+        const data = isString(msg.data) ? Buffer.from(msg.data) : msg.data;
+        const injector = context.session!.injector;
 
         if (options.headDelimiter) {
-            const injector = context.session!.injector;
             const headDelimiter = Buffer.from(options.headDelimiter);
             const headerDeserialization = injector.get(HeaderDeserialization, null);
 
-            let packet: Packet | undefined;
-            if (this.streamAdapter.isReadable(input)) {
-                let buffer = input.read(1) as Buffer;
+            // let packet: Packet | undefined;
+            if (this.streamAdapter.isReadable(data)) {
+                let buffer = data.read(1) as Buffer;
                 while (buffer.indexOf(headDelimiter) < 0) {
-                    buffer = Buffer.concat([buffer, input.read(1)]);
+                    buffer = Buffer.concat([buffer, data.read(1)]);
                 }
                 const headBuffer = buffer.subarray(0, buffer.length - headDelimiter.length);
-                if (pkg.headers.has('stream-length')) {
-                    pkg.headers.set('stream-length', pkg.headers.getHeader<number>('stream-length') - buffer.length);
+                if (msg.headers.has('stream-length')) {
+                    msg.headers.set('stream-length', msg.headers['stream-length'] - buffer.length);
                 }
-                packet = pkg.clone(this.parsePacket(headBuffer, input, headerDeserialization));
+                msg = msg.clone(this.parsePacket(headBuffer, data, headerDeserialization));
 
-            } else if (input) {
-                const idx = input.indexOf(headDelimiter);
+            } else if (data) {
+                const idx = data.indexOf(headDelimiter);
                 if (idx > 0) {
-                    const headBuffer = input.subarray(0, idx);
-                    packet = pkg.clone(this.parsePacket(headBuffer, input.subarray(idx + Buffer.byteLength(headDelimiter)), headerDeserialization));
+                    const headBuffer = data.subarray(0, idx);
+                    msg = msg.clone(this.parsePacket(headBuffer, data.subarray(idx + Buffer.byteLength(headDelimiter)), headerDeserialization));
                 } else {
-                    packet = pkg.clone({ payload: input })
+                    msg = msg.clone({ data: data })
                 }
             }
-            return packet ?? pkg;
         } else {
-            const buff = this.streamAdapter.isReadable(input) ? await toBuffer(input, context.options.maxSize) : input!;
+            const buff = this.streamAdapter.isReadable(data) ? await toBuffer(data, context.options.maxSize) : data!;
             const packet = this.parseJson(buff);
             if (!packet.id) {
-                packet.id = pkg.id;
+                packet.id = msg.id;
             }
-            return pkg.clone(packet)
+            msg = msg.clone(packet)
         }
+
+        return injector.get(PacketFactory).create({ payload: msg.data, ...msg })
 
     }
 
@@ -96,22 +96,24 @@ export class PacketCodingsHandlers {
     async bufferEncode(context: TransportContext) {
         const options = context.options;
 
-        const input = context.last<Packet>();
+        const pkg = context.last<Packet>();
 
         const injector = context.session!.injector;
+
+        let payload: any;
         if (options.headDelimiter) {
             const headDelimiter = Buffer.from(options.headDelimiter);
 
             const handlerSerialization = injector.get(HandlerSerialization, null);
 
-            const hbuff = handlerSerialization ? handlerSerialization.serialize(input) : Buffer.from(JSON.stringify(input.headers.getHeaders()));
+            const hbuff = handlerSerialization ? handlerSerialization.serialize(pkg) : Buffer.from(JSON.stringify(pkg.headers.getHeaders()));
 
-            const data = await this.streamAdapter.encode(input.payload, options.encoding);
+            const data = await this.streamAdapter.encode(pkg.payload, options.encoding);
 
-            let payload: any;
+
             if (this.streamAdapter.isReadable(data)) {
                 let isFist = true;
-                input.headers.set('stream-length', input.headers.getContentLength() + Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter));
+                pkg.headers.set('stream-length', pkg.headers.getContentLength() + Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter));
                 payload = this.streamAdapter.pipeline(data, this.streamAdapter.createPassThrough({
                     transform: (chunk, encoding, callback) => {
                         if (isFist) {
@@ -126,20 +128,19 @@ export class PacketCodingsHandlers {
                 const bbuff = isBuffer(data) ? data : Buffer.from(data as string);
                 payload = Buffer.concat([hbuff, headDelimiter, bbuff], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(bbuff));
             }
-            return input.clone({ payload });
         } else {
-            let payload: any;
-            if (this.streamAdapter.isReadable(input.payload)) {
-                payload = await toBuffer(input.payload, context.options.maxSize);
-                return input.clone({ payload })
-            } else if (isBuffer(input.payload)) {
+            if (this.streamAdapter.isReadable(pkg.payload)) {
+                payload = await toBuffer(pkg.payload, context.options.maxSize);
+                payload = Buffer.from(JSON.stringify(pkg.clone({ payload })))
+            } else if (isBuffer(pkg.payload)) {
                 payload = new TextDecoder().decode(payload);
-                return input.clone({ payload })
+                payload = Buffer.from(JSON.stringify(pkg.clone({ payload })))
             } else {
-                return input;
+                payload = Buffer.from(JSON.stringify(pkg)) // pkg.payload;
             }
-
         }
+
+        return injector.get(MessageFactory).create(payload, pkg);
     }
 }
 

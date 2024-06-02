@@ -80,7 +80,7 @@ export interface TransportOpts extends CodingsOpts {
      * @param input 
      * @param ctx 
      */
-    pipeTo?(socket: any, msg: Message<IReadableStream>, input: any, ctx: TransportContext): Promise<void>;
+    pipeTo?(socket: any, msg: Message, input: any, ctx: TransportContext): Promise<void>;
     /**
      * write endcoed data to socket.
      * @param socket 
@@ -89,7 +89,7 @@ export interface TransportOpts extends CodingsOpts {
      * @param ctx 
      * @param cb 
      */
-    write?(socket: any, msg: Message<IReadableStream>, input: any, ctx: TransportContext, cb?: (err?: Error | null) => void): void;
+    write?(socket: any, msg: Message, input: any, ctx: TransportContext, cb?: (err?: Error | null) => void): void;
 
     /**
      * custom handle mesasge from socket.

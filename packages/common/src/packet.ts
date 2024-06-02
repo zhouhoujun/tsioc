@@ -36,7 +36,7 @@ export abstract class Packet<T = any> {
 
     private _id: string | number | undefined;
     get id(): string | number | undefined {
-        return this.id;
+        return this._id;
     }
 
     readonly headers: HeaderMappings;
