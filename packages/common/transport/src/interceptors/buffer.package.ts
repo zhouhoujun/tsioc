@@ -29,11 +29,11 @@ export class PackageDecodeInterceptor implements Interceptor<Message, Packet, Tr
             const chunk = input.data.read(idLen);
             id = idLen > 4 ? chunk.subarray(0, idLen).toString() : chunk.readUIntBE(0, idLen);
             const exist = this.packs.get(id);
-            exist && input.headers.setHeader('payload-only', id);
+            if (exist) input.headers['payload-only'] = id;
             input.attachId(id);
             // input.headers = exist?.packet.headers;
             if (input.headers['stream-length']) {
-                input.headers['stream-length'] = input.headers['stream-length'] - idLen;
+                input.headers['stream-length'] = input.headers['stream-length'] as number - idLen;
             }
         } else if (input.data) {
             id = idLen > 4 ? input.data.subarray(0, idLen).toString() : input.data.readUIntBE(0, idLen);
@@ -83,7 +83,7 @@ export class PackageDecodeInterceptor implements Interceptor<Message, Packet, Tr
         } else {
             const cLen = cached.packet.headers.getContentLength(); //cached.payloadLength!;
             cached.cacheSize += len;
-            if(packet.headers.size){
+            if (packet.headers.size) {
                 cached.packet.headers.setHeaders(packet.headers.getHeaders())
             }
 
@@ -123,7 +123,7 @@ export class PackageEncodeInterceptor implements Interceptor<Packet, Message, Tr
                     const options = context.options;
                     const idLen = options.idLen ?? 2;
                     const data = msg.data;
-                    const packetSize = isBuffer(data) ? Buffer.byteLength(data) : (msg.headers['stream-length'] ?? ((msg.headers['header-length'] ?? 0) + input.headers.getContentLength())) //pkg.headers['content-length']));
+                    const packetSize = isBuffer(data) ? Buffer.byteLength(data) : (msg.headers['stream-length'] as number ?? ((msg.headers['header-length'] as number ?? 0) + input.headers.getContentLength())) //pkg.headers['content-length']));
                     const sizeLimit = options.maxSize! - (options.delimiter ? Buffer.byteLength(options.delimiter) : 0)
                         - ((options.headDelimiter) ? Buffer.byteLength(options.headDelimiter) : 0)
                         - idLen

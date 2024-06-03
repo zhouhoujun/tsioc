@@ -1,5 +1,5 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Backend, CanActivate, Handler, Interceptor, createHandler } from '@tsdi/core';
+import { Backend, CanActivate, ExecptionHandlerFilter, Handler, Interceptor, createHandler } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { CodingsOpts } from './options';
 import { CodingsContext } from './context';
@@ -70,7 +70,10 @@ export class EncodingsFactory {
             guardsToken: ENCODINGS_GUARDS,
             backend: EncodingsBackend,
             ...options.encodings
-        }) as EncodingsHandler;
+        });
+        
+        handler.useFilters(ExecptionHandlerFilter);
+
         return new Encodings(handler)
     }
 }

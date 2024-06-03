@@ -10,6 +10,7 @@ import { TcpServer } from './server/server';
 import { TCP_MIDDLEWARES, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS } from './server/options';
 import { TcpEndpointHandler } from './server/handler';
 import { TcpMessageFactory } from './message';
+import { TcpIncomingFactory } from './packet';
 
 
 // const defaultMaxSize = 65515; //65535 - 20;
@@ -81,6 +82,7 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                     filtersToken: TCP_SERV_FILTERS,
                     guardsToken: TCP_SERV_GUARDS,
                     messageFactory: { useClass: TcpMessageFactory },
+                    packetFactory: { useClass: TcpIncomingFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,
@@ -113,6 +115,7 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                     guardsToken: TCP_SERV_GUARDS,
                     middlewaresToken: TCP_MIDDLEWARES,
                     messageFactory: { useClass: TcpMessageFactory },
+                    packetFactory: { useClass: TcpIncomingFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,

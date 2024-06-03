@@ -1,4 +1,4 @@
-import { Execption } from '@tsdi/ioc';
+import { Execption, Type } from '@tsdi/ioc';
 
 
 
@@ -24,7 +24,7 @@ export class InvalidStreamExecption extends Execption {
  * Not handled execption.
  */
 export class NotHandleExecption extends Execption {
-    constructor(message = 'Not handle') {
+    constructor(readonly target: any, readonly targetType: Type | string, message = 'Not handle') {
         super(`NotHandleExecption: ${message}`)
     }
 }

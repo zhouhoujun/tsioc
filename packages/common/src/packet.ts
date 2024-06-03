@@ -1,4 +1,4 @@
-import { Abstract, isUndefined } from '@tsdi/ioc';
+import { Abstract, isNil, isUndefined } from '@tsdi/ioc';
 import { HeaderFields, HeadersLike, HeaderMappings } from './headers';
 
 
@@ -30,10 +30,6 @@ export abstract class Packet<T = any> {
 
     readonly payload: T | null;
 
-    get body(): T | null {
-        return this.payload;
-    }
-
     private _id: string | number | undefined;
     get id(): string | number | undefined {
         return this._id;
@@ -62,12 +58,27 @@ export abstract class Packet<T = any> {
         setHeaders?: { [name: string]: string | string[]; };
     }): Packet<V>;
 
-    protected cloneHeaderBody(init: PacketInitOpts, update: {
+    toJson(): Record<string, any> {
+        const record = {} as Record<string, any>;
+        if (this.id) {
+            record.id = this.id;
+        }
+        if (this.headers.size) {
+            record.headers = this.headers.getHeaders();
+        }
+        if (!isNil(this.payload)) {
+            record.payload = this.payload;
+        }
+        return record;
+
+    }
+
+    protected cloneOpts(update: {
         headers?: HeadersLike;
         body?: any;
         payload?: any;
         setHeaders?: { [name: string]: string | string[]; };
-    }): void {
+    }): PacketInitOpts {
         // The payload is somewhat special - a `null` value in update.payload means
         // whatever current payload is present is being overridden with an empty
         // payload, whereas an `undefined` value in update.payload implies no
@@ -94,9 +105,8 @@ export abstract class Packet<T = any> {
                     .reduce((headers, name) => headers.set(name, update.setHeaders![name]), headers)
         }
 
-        init.id = this.id;
-        init.headers = headers;
-        init.payload = payload;
+        const id = this.id;
+        return { id, headers, payload };
     }
 
 }
@@ -154,6 +164,13 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
         return this._message
     }
 
+    /**
+     * body, payload alias name.
+     */
+    get body(): T | null {
+        return this.payload;
+    }
+
     constructor(init: StatusInitOpts, options?: StatusPacketOpts<TStatus>) {
         super(init, options)
         this.ok = init.error ? false : init.ok != false;
@@ -163,14 +180,18 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
         this._message = (init.statusMessage || init.statusText) ?? options?.defaultStatusText ?? '';
     }
 
-    protected cloneStatus(init: StatusInitOpts, update: {
+    protected cloneOpts(update: {
+        headers?: HeadersLike;
+        payload?: any;
+        setHeaders?: { [name: string]: string | string[]; };
         type?: number;
         ok?: boolean;
         status?: TStatus;
         statusMessage?: string;
         statusText?: string;
         error?: any;
-    }): void {
+    }): StatusInitOpts {
+        const init = super.cloneOpts(update) as StatusInitOpts;
         init.type = update.type ?? this.type;
         init.ok = update.ok ?? this.ok;
         const status = update.status ?? this.status;
@@ -178,6 +199,7 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
             init.status = status;
         }
         init.statusMessage = update.statusMessage ?? update.statusText ?? this.statusMessage;
+        return init;
     }
 
     abstract clone(): StatusPacket<T, TStatus>;
@@ -209,5 +231,6 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
 
 @Abstract()
 export abstract class PacketFactory {
+    abstract create(packet: PacketInitOpts, options?: PacketOpts): Packet;
     abstract create<T>(packet: PacketInitOpts<T>, options?: PacketOpts): Packet<T>
 }

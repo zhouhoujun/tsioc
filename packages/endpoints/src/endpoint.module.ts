@@ -3,7 +3,7 @@ import {
     tokenId, isArray, toProvider, lang, ProvdierOf, Type, ModuleRef, isNil, ModuleType
 } from '@tsdi/ioc';
 import { InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
-import { HybirdTransport, MessageFactory, Transport } from '@tsdi/common';
+import { HybirdTransport, MessageFactory, PacketFactory, Transport } from '@tsdi/common';
 import { NotImplementedExecption, StatusAdapter, TransportPacketModule } from '@tsdi/common/transport';
 import { RequestContextFactory } from './RequestContext';
 import { Server, ServerOpts } from './Server';
@@ -268,6 +268,10 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
 
                 if (!serverOpts.execptionHandlers) {
                     serverOpts.execptionHandlers = [DefaultExecptionHandlers]
+                }
+
+                if (serverOpts.packetFactory) {
+                    serverOpts.providers.push(toProvider(PacketFactory, serverOpts.packetFactory));
                 }
 
                 if (serverOpts.messageFactory) {

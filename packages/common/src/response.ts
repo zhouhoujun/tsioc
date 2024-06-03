@@ -1,22 +1,12 @@
-import { isPlainObject, isUndefined } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 import { HeadersLike } from './headers';
-import { PacketInitOpts, StatusPacket, StatusPacketOpts } from './packet';
+import { StatusInitOpts, StatusPacket, StatusPacketOpts } from './packet';
 
 
 /**
  * response packet data.
  */
-export interface ResponseInitOpts<T = any, TStatus = any> extends PacketInitOpts<T> {
-    /**
-     * event type
-     */
-    type?: number;
-    status?: TStatus;
-    statusMessage?: string;
-    statusText?: string;
-    ok?: boolean;
-    error?: any;
-}
+export interface ResponseInitOpts<T = any, TStatus = any> extends StatusInitOpts<T, TStatus> { }
 
 /**
  * header response.
@@ -56,10 +46,7 @@ export class HeaderResponse<TStatus = number> extends StatusPacket<null, TStatus
         statusText?: string;
         setHeaders?: { [name: string]: string | string[]; }
     } = {}): HeaderResponse<TStatus> {
-        const init = {} as ResponseInitOpts;
-        this.cloneHeaderBody(init, update);
-        this.cloneStatus(init, update);
-
+        const init = this.cloneOpts(update) as ResponseInitOpts;
         return new HeaderResponse(init) as HeaderResponse<any>;
 
     }
@@ -116,10 +103,7 @@ export class ResponsePacket<T = any, TStatus = number> extends StatusPacket<T, T
         statusText?: string;
         setHeaders?: { [name: string]: string | string[]; }
     } = {}): ResponsePacket<any, TStatus> {
-        const init = {} as ResponseInitOpts;
-        this.cloneHeaderBody(init, update);
-        this.cloneStatus(init, update);
-
+        const init = this.cloneOpts(update);
         return new ResponsePacket(init) as ResponsePacket<any, TStatus>;
 
     }
@@ -167,12 +151,8 @@ export class ErrorResponse<TStatus = number> extends StatusPacket<null, TStatus>
         statusText?: string;
         setHeaders?: { [name: string]: string | string[]; }
     } = {}): ErrorResponse<TStatus> {
-        const init = {
-            error: update.error ?? this.error
-        } as ResponseInitOpts;
-        this.cloneHeaderBody(init, update);
-        this.cloneStatus(init, update);
-
+        const init = this.cloneOpts(update);
+        init.error = update.error ?? this.error;
         return new ErrorResponse(init) as ErrorResponse<any>;
 
     }
@@ -202,9 +182,6 @@ export interface ResponseJsonParseError {
  */
 export type ResponseEvent<T = any, TStatus = any> = HeaderResponse<TStatus> | ResponsePacket<T, TStatus> | ErrorResponse<TStatus> | ResponseEventPacket;
 
-export function isEvent(response: ResponseEvent): response is ResponseEventPacket {
-    return isPlainObject(response) && isUndefined(response.type)
-}
 
 
 /**
@@ -212,3 +189,12 @@ export function isEvent(response: ResponseEvent): response is ResponseEventPacke
  */
 export type UrlResponseEvent<T = any, TStatus = any> = ResponseEvent<T, TStatus> & { url: string };
 
+
+@Abstract()
+export abstract class ResponseFactory<TStatus = null> {
+    /**
+     * create response.
+     * @param options 
+     */
+    abstract create<T>(options: ResponseInitOpts): ResponseEvent<T, TStatus>;
+}

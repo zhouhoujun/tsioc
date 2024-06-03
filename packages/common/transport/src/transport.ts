@@ -144,7 +144,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
             if (!isBuffer(chunk) && !this.streamAdapter.isReadable(chunk)) {
                 chunk = Buffer.from(chunk);
             }
-            return this.messageFactory.create(chunk);
+            return this.messageFactory.create({data: chunk});
         }).pipe(takeUntil(this.destroy$));
     }
 

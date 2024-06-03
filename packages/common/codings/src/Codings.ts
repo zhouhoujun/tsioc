@@ -1,8 +1,8 @@
-import { Injectable, Type, getClass, getClassName } from '@tsdi/ioc';
-import { NotHandleExecption } from '@tsdi/core';
-import { Observable, map, mergeMap, of, throwError } from 'rxjs';
+import { Injectable, Type, getClass } from '@tsdi/ioc';
+import { Observable, mergeMap, of, throwError } from 'rxjs';
 import { CodingMappings } from './mappings';
 import { CodingType, CodingsContext } from './context';
+import { CodingsNotHandleExecption } from './execptions';
 
 
 /**
@@ -16,22 +16,22 @@ export class Codings {
 
     constructor(private mappings: CodingMappings) { }
 
-    encode<TOutput = any>(input: any, context: CodingsContext, failed?: (data: any) => Observable<any>): Observable<TOutput> {
+    encode<TOutput = any>(input: any, context: CodingsContext): Observable<TOutput> {
         const type = getClass(input);
-        return this.encodeType(type, input, context, failed);
+        return this.encodeType(type, input, context);
     }
 
-    deepEncode<TOutput = any>(input: any, context: CodingsContext, failed?: (data: any) => Observable<any>): Observable<TOutput> {
-        return this.encode(input, context, failed)
+    deepEncode<TOutput = any>(input: any, context: CodingsContext): Observable<TOutput> {
+        return this.encode(input, context)
             .pipe(
                 mergeMap(data => {
                     if (context.encodeCompleted) return of(data);
-                    return this.encode(data, context, failed)
+                    return this.encode(data, context)
                 })
             )
     }
 
-    encodeType<T>(type: Type<T> | string, data: T, context: CodingsContext, failed?: (data: any) => Observable<any>): Observable<any> {
+    encodeType<T>(type: Type<T> | string, data: T, context: CodingsContext): Observable<any> {
         const handlers = this.mappings.getEncodeHanlders(type, context.options);
 
         if (handlers && handlers.length) {
@@ -44,37 +44,26 @@ export class Codings {
                 );
             }, of(data))
         } else {
-            if (failed) {
-                return failed(data)
-                    .pipe(
-                        map(d => {
-                            if (d === data) {
-                                throw new NotHandleExecption(`No encodings handler for ${getClassName(type)} of ${context.options.group} ${context.options.name ?? ''}`);
-                            }
-                            return d;
-                        })
-                    )
-            }
-            return throwError(() => new NotHandleExecption(`No encodings handler for ${getClassName(type)} of ${context.options.group} ${context.options.name ?? ''}`))
+            return throwError(() => new CodingsNotHandleExecption(data, type, CodingType.Encode, context, `${context.options.group} ${context.options.name ?? ''}`))
         }
     }
 
-    decode<TOutput = any>(input: any, context: CodingsContext, failed?: (data: any) => Observable<any>): Observable<TOutput> {
+    decode<TOutput = any>(input: any, context: CodingsContext): Observable<TOutput> {
         const type = getClass(input);
-        return this.decodeType(type, input, context, failed)
+        return this.decodeType(type, input, context)
     }
 
-    deepDecode<TOutput = any>(input: any, context: CodingsContext, failed?: (data: any) => Observable<any>): Observable<TOutput> {
-        return this.decode(input, context, failed)
+    deepDecode<TOutput = any>(input: any, context: CodingsContext): Observable<TOutput> {
+        return this.decode(input, context)
             .pipe(
                 mergeMap(data => {
                     if (context.decodeCompleted) return of(data);
-                    return this.decode(data, context, failed)
+                    return this.decode(data, context)
                 })
             )
     }
 
-    decodeType<T>(type: Type<T> | string, data: T, context: CodingsContext, failed?: (data: T) => Observable<any>): Observable<any> {
+    decodeType<T>(type: Type<T> | string, data: T, context: CodingsContext): Observable<any> {
         const handlers = this.mappings.getDecodeHanlders(type, context.options);
 
         if (handlers && handlers.length) {
@@ -87,18 +76,7 @@ export class Codings {
                 );
             }, of(data))
         } else {
-            if (failed) {
-                return failed(data)
-                    .pipe(
-                        map(d => {
-                            if (d === data) {
-                                throw new NotHandleExecption(`No decodings handler for ${getClassName(type)} of ${context.options.group} ${context.options.name ?? ''}`);
-                            }
-                            return d;
-                        })
-                    )
-            }
-            return throwError(() => new NotHandleExecption(`No decodings handler for ${getClassName(type)} of ${context.options.group} ${context.options.name ?? ''}`))
+            return throwError(() => new CodingsNotHandleExecption(data, type, CodingType.Encode, context, `${context.options.group} ${context.options.name ?? ''}`))
         }
     }
 }

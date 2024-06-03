@@ -39,7 +39,7 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
             const channel = context.channel ?? context.options.transport ?? '';
 
             let cache = this.channels.get(channel);
-            const payload = input.data as Buffer;
+            const data = input.data as Buffer;
 
             if (!cache) {
                 cache = {
@@ -50,7 +50,7 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
                 }
                 this.channels.set(channel, cache)
             }
-            this.handleData(channel, cache, payload, subscriber, context);
+            this.handleData(channel, cache, data, subscriber, context);
 
             return subscriber;
 
@@ -93,7 +93,7 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
                 } else {
                     cache.length -= idx;
                     cache.contentLength = rawContentLength;
-                    cache.message.headers.setHeader('stream-length', rawContentLength);
+                    cache.message.headers['stream-length'] = rawContentLength;
                 }
             }
         }
@@ -192,7 +192,7 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Message, Tra
                             } else {
                                 if (!buffLen) {
                                     buffLen = Buffer.alloc(countLen)
-                                    buffLen.writeUIntBE(msg.headers.getHeader('stream-length')!, 0, countLen);
+                                    buffLen.writeUIntBE(msg.headers['stream-length'] as number, 0, countLen);
                                 }
                                 if (first) {
                                     first = false;
@@ -204,7 +204,7 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Message, Tra
                             }
                         }
                     }));
-                    headers.removeHeader('stream-length');
+                    headers['stream-length'] = undefined;
                 } else {
                     buffLen = Buffer.alloc(countLen);
                     const dataLen = Buffer.byteLength(data);

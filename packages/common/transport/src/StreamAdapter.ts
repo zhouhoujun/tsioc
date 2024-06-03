@@ -90,16 +90,16 @@ export abstract class StreamAdapter {
         source.pipe(writable, { end: false });
     }
 
-    async encode(data: any, encoding?: string): Promise<PipeSource> {
-        let source: PipeSource;
-        if (isNil(data)) {
-            source = Buffer.alloc(0)
-        } else if (isArrayBuffer(data)) {
+    async encode(data: any, encoding?: string): Promise<string | Buffer | IReadableStream | null> {
+        if (isNil(data)) return null;
+
+        let source: string | Buffer | IReadableStream;
+        if (isArrayBuffer(data)) {
             source = Buffer.from(data);
         } else if (Buffer.isBuffer(data)) {
             source = data;
         } else if (isString(data)) {
-            source = Buffer.from(data);
+            source = data;
         } else if (isBlob(data)) {
             const arrbuff = await data.arrayBuffer();
             source = Buffer.from(arrbuff);
@@ -115,7 +115,7 @@ export abstract class StreamAdapter {
         } else if (this.isReadable(data)) {
             source = data;
         } else {
-            source = Buffer.from(JSON.stringify(data));
+            source = JSON.stringify(data);
         }
         if (encoding) {
             switch (encoding) {
@@ -140,7 +140,7 @@ export abstract class StreamAdapter {
      * @param encoding 
      */
     async sendBody(data: any, request: IWritableStream | IEndable, encoding?: string): Promise<void> {
-        const source = await this.encode(data, encoding);
+        const source = await this.encode(data, encoding) ?? Buffer.alloc(0);
         if (this.isReadable(request)) {
             await this.pipeTo(source, request as IWritableStream);
         } else if (this.isStream(source)) {

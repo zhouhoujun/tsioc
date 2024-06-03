@@ -1,11 +1,11 @@
 import { Abstract, Injectable, isString, tokenId } from '@tsdi/ioc';
-import { Handler, Interceptor, InvalidJsonException } from '@tsdi/core';
+import { ExecptionHandler, Interceptor, InvalidJsonException } from '@tsdi/core';
 import { Message, MessageFactory, Packet, PacketFactory, PacketInitOpts } from '@tsdi/common';
-import { DecodeHandler, EncodeHandler, Codings } from '@tsdi/common/codings';
+import { CodingType, Codings, CodingsNotHandleExecption, DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
 import { TransportContext } from './context';
-import { Observable } from 'rxjs';
 import { StreamAdapter, isBuffer, toBuffer } from './StreamAdapter';
 import { IReadableStream } from './stream';
+import { throwError } from 'rxjs';
 
 
 export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<Packet<any>, Packet<Buffer | IReadableStream>, TransportContext>[]>('PACKET_ENCODE_INTERCEPTORS');
@@ -17,7 +17,7 @@ export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<Packet<Buffer | IR
 @Injectable({ static: true })
 export class PacketCodingsHandlers {
 
-    constructor(private streamAdapter: StreamAdapter) { }
+    constructor(private streamAdapter: StreamAdapter, private codings: Codings) { }
 
     @DecodeHandler(Message, { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
     async bufferDecode(context: TransportContext) {
@@ -38,8 +38,8 @@ export class PacketCodingsHandlers {
                     buffer = Buffer.concat([buffer, data.read(1)]);
                 }
                 const headBuffer = buffer.subarray(0, buffer.length - headDelimiter.length);
-                if (msg.headers.has('stream-length')) {
-                    msg.headers.set('stream-length', msg.headers['stream-length'] - buffer.length);
+                if (msg.headers['stream-length']) {
+                    msg.headers['stream-length'] = msg.headers['stream-length'] as number - buffer.length;
                 }
                 msg = msg.clone(this.parsePacket(headBuffer, data, headerDeserialization));
 
@@ -60,8 +60,8 @@ export class PacketCodingsHandlers {
             }
             msg = msg.clone(packet)
         }
-
-        return injector.get(PacketFactory).create({ payload: msg.data, ...msg })
+        const { data: payload, ...opts } = msg;
+        return injector.get(PacketFactory).create({ payload, ...opts })
 
     }
 
@@ -100,7 +100,8 @@ export class PacketCodingsHandlers {
 
         const injector = context.session!.injector;
 
-        let payload: any;
+        let data = await this.streamAdapter.encode(pkg.payload, options.encoding);
+        let json: any;
         if (options.headDelimiter) {
             const headDelimiter = Buffer.from(options.headDelimiter);
 
@@ -108,13 +109,10 @@ export class PacketCodingsHandlers {
 
             const hbuff = handlerSerialization ? handlerSerialization.serialize(pkg) : Buffer.from(JSON.stringify(pkg.headers.getHeaders()));
 
-            const data = await this.streamAdapter.encode(pkg.payload, options.encoding);
-
-
             if (this.streamAdapter.isReadable(data)) {
                 let isFist = true;
                 pkg.headers.set('stream-length', pkg.headers.getContentLength() + Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter));
-                payload = this.streamAdapter.pipeline(data, this.streamAdapter.createPassThrough({
+                data = this.streamAdapter.pipeline(data, this.streamAdapter.createPassThrough({
                     transform: (chunk, encoding, callback) => {
                         if (isFist) {
                             isFist = false;
@@ -125,22 +123,50 @@ export class PacketCodingsHandlers {
                     }
                 }));
             } else {
+                if (!data) {
+                    data = Buffer.alloc(0)
+                }
                 const bbuff = isBuffer(data) ? data : Buffer.from(data as string);
-                payload = Buffer.concat([hbuff, headDelimiter, bbuff], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(bbuff));
+                data = Buffer.concat([hbuff, headDelimiter, bbuff], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(bbuff));
             }
+            json = pkg.toJson();
         } else {
-            if (this.streamAdapter.isReadable(pkg.payload)) {
-                payload = await toBuffer(pkg.payload, context.options.maxSize);
-                payload = Buffer.from(JSON.stringify(pkg.clone({ payload })))
-            } else if (isBuffer(pkg.payload)) {
-                payload = new TextDecoder().decode(payload);
-                payload = Buffer.from(JSON.stringify(pkg.clone({ payload })))
+            if (this.streamAdapter.isReadable(data)) {
+                data = await toBuffer(data, context.options.maxSize);
+                json = pkg.clone({ payload: data }).toJson();
+                data = Buffer.from(JSON.stringify(json))
+            } else if (data) {
+                data = isString(data) ? data : new TextDecoder().decode(data);
+                json = pkg.clone({ payload: data }).toJson();
+                data = Buffer.from(JSON.stringify(json))
             } else {
-                payload = Buffer.from(JSON.stringify(pkg)) // pkg.payload;
+                json = pkg.toJson();
+                data = Buffer.from(JSON.stringify(json)) // pkg.payload;
+            }
+        }
+        json.data = data;
+        return injector.get(MessageFactory).create(json);
+    }
+
+
+    @ExecptionHandler(CodingsNotHandleExecption)
+    noHandle(execption: CodingsNotHandleExecption) {
+
+        if (execption.target instanceof Message) {
+            if (execption.codingType === CodingType.Encode) {
+                return this.codings.encodeType(Message, execption.target, execption.codingsContext)
+            } else {
+                return this.codings.decodeType(Message, execption.target, execption.codingsContext)
+            }
+        } else if (execption.target instanceof Packet) {
+            if (execption.codingType === CodingType.Encode) {
+                return this.codings.encodeType(Packet, execption.target, execption.codingsContext)
+            } else {
+                return this.codings.decodeType(Packet, execption.target, execption.codingsContext)
             }
         }
 
-        return injector.get(MessageFactory).create(payload, pkg);
+        return throwError(() => execption);
     }
 }
 
