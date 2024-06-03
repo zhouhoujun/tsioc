@@ -76,7 +76,7 @@ export class Codings {
                 );
             }, of(data))
         } else {
-            return throwError(() => new CodingsNotHandleExecption(data, type, CodingType.Encode, context, `${context.options.group} ${context.options.name ?? ''}`))
+            return throwError(() => new CodingsNotHandleExecption(data, type, CodingType.Decode, context, `${context.options.group} ${context.options.name ?? ''}`))
         }
     }
 }

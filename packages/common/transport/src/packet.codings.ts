@@ -5,7 +5,7 @@ import { CodingType, Codings, CodingsNotHandleExecption, DecodeHandler, EncodeHa
 import { TransportContext } from './context';
 import { StreamAdapter, isBuffer, toBuffer } from './StreamAdapter';
 import { IReadableStream } from './stream';
-import { throwError } from 'rxjs';
+import { map, throwError } from 'rxjs';
 
 
 export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<Packet<any>, Packet<Buffer | IReadableStream>, TransportContext>[]>('PACKET_ENCODE_INTERCEPTORS');
@@ -91,6 +91,11 @@ export class PacketCodingsHandlers {
         return packet;
     }
 
+    // @DecodeHandler(Packet)
+    // incomingDecode(context: TransportContext) {
+    //     const pkg = context.last<Packet>();
+    //     // return context.session.injector.get(RequestContextFactory).create(context.session as any, pkg, {}, context.session.options)
+    // }
 
     @EncodeHandler(Packet, { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })
     async bufferEncode(context: TransportContext) {
@@ -152,17 +157,19 @@ export class PacketCodingsHandlers {
     @ExecptionHandler(CodingsNotHandleExecption)
     noHandle(execption: CodingsNotHandleExecption) {
 
+        const context = execption.codingsContext as TransportContext;
+
         if (execption.target instanceof Message) {
             if (execption.codingType === CodingType.Encode) {
-                return this.codings.encodeType(Message, execption.target, execption.codingsContext)
+                return this.codings.encodeType(Message, execption.target, context)
             } else {
-                return this.codings.decodeType(Message, execption.target, execption.codingsContext)
+                return this.codings.decodeType(Message, execption.target, context)
             }
         } else if (execption.target instanceof Packet) {
             if (execption.codingType === CodingType.Encode) {
-                return this.codings.encodeType(Packet, execption.target, execption.codingsContext)
+                return this.codings.encodeType(Packet, execption.target, context)
             } else {
-                return this.codings.decodeType(Packet, execption.target, execption.codingsContext)
+                return this.codings.decodeType(Packet, execption.target, context)
             }
         }
 

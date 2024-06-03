@@ -1,7 +1,7 @@
 import { Injector, tokenId } from '@tsdi/ioc';
-import { CanActivate, ExecptionFilter, ExecptionHandlerFilter, Interceptor, createHandler } from '@tsdi/core';
+import { CanActivate, ExecptionHandlerFilter, Interceptor, createHandler } from '@tsdi/core';
 import { Message, Packet } from '@tsdi/common';
-import { Decodings, DecodingsBackend, DecodingsFactory, DecodingsHandler, Encodings, EncodingsBackend, EncodingsFactory, EncodingsHandler } from '@tsdi/common/codings';
+import { DECODINGS_FILTERS, DECODINGS_INTERCEPTORS, Decodings, DecodingsBackend, DecodingsFactory, ENCODINGS_FILTERS, ENCODINGS_INTERCEPTORS, Encodings, EncodingsBackend, EncodingsFactory } from '@tsdi/common/codings';
 import { TransportOpts } from './TransportSession';
 import { TransportContext } from './context';
 
@@ -26,14 +26,6 @@ export const TRANSPORT_ENCODINGS_FILTERS = tokenId<Interceptor<Packet, Message, 
 export const TRANSPORT_ENCODINGS_GUARDS = tokenId<CanActivate[]>('TRANSPORT_ENCODINGS_GUARDS');
 
 
-// @Injectable()
-// export class TransportEncodingsBackend extends EncodingsBackend<Packet, Message> {
-//     override handle(input: Packet, context: TransportContext): Observable<Message> {
-//         return this.codings.deepEncode(input, context)
-//     }
-// }
-
-
 /**
  * Transport encodings factory.
  */
@@ -43,10 +35,14 @@ export class TransportEncodingsFactory implements EncodingsFactory {
             interceptorsToken: TRANSPORT_ENCODINGS_INTERCEPTORS,
             filtersToken: TRANSPORT_ENCODINGS_FILTERS,
             guardsToken: TRANSPORT_ENCODINGS_GUARDS,
-            backend: EncodingsBackend,
+            backend: createHandler(injector, {
+                filters: [ExecptionHandlerFilter],
+                filtersToken: ENCODINGS_FILTERS,
+                interceptorsToken: ENCODINGS_INTERCEPTORS,
+                backend: EncodingsBackend,
+            }),
             ...options.encodings
         });
-        handler.useFilters(ExecptionHandlerFilter);
         return new Encodings(handler)
     }
 }
@@ -68,17 +64,6 @@ export const TRANSPORT_DECODINGS_FILTERS = tokenId<Interceptor<Message, Packet, 
 export const TRANSPORT_DECODINGS_GUARDS = tokenId<CanActivate[]>('TRANSPORT_DECODINGS_GUARDS');
 
 
-
-// @Injectable()
-// export class TransportDecodingsBackend extends DecodingsBackend<Message, Packet> {
-//     override handle(input: Message, context: TransportContext): Observable<Packet> {
-//         return this.codings.deepDecode(input, context)
-//             .pipe(
-//                 catc
-//             )
-//     }
-// }
-
 /**
  * Transport decodings factory.
  */
@@ -89,11 +74,14 @@ export class TransportDecodingsFactory implements DecodingsFactory {
             guardsToken: TRANSPORT_DECODINGS_GUARDS,
             interceptorsToken: TRANSPORT_DECODINGS_INTERCEPTORS,
             filtersToken: TRANSPORT_DECODINGS_FILTERS,
-            backend: DecodingsBackend,
+            backend: createHandler(injector, {
+                filters: [ExecptionHandlerFilter],
+                filtersToken: DECODINGS_FILTERS,
+                interceptorsToken: DECODINGS_INTERCEPTORS,
+                backend: DecodingsBackend,
+            }),
             ...options.decodings
         });
-
-        handler.useFilters(ExecptionHandlerFilter);
 
         return new Decodings(handler)
     }
