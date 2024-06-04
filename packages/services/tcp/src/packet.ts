@@ -1,10 +1,11 @@
-import { HeadersLike, Packet, PacketFactory, Pattern, RequestPacket, RequestPacketOpts, RequestParams } from "@tsdi/common";
 import { Injectable } from "@tsdi/ioc";
+import { HeadersLike, Packet, PacketFactory, Pattern, IncomingPacket, IncomingOpts, RequestParams } from "@tsdi/common";
 
 
-export class TcpIncoming<T = any> extends RequestPacket<T> {
 
-    constructor(readonly pattern: Pattern, options: RequestPacketOpts<T>) {
+export class TcpIncoming<T = any> extends IncomingPacket<T> {
+
+    constructor(readonly pattern: Pattern, options: IncomingOpts<T>) {
         super(options)
     }
 
@@ -49,7 +50,7 @@ export class TcpIncoming<T = any> extends RequestPacket<T> {
 
 @Injectable()
 export class TcpIncomingFactory implements PacketFactory {
-    create<T>(packet: RequestPacketOpts<T> & { pattern: Pattern; }): Packet<T> {
+    create<T>(packet: IncomingOpts<T> & { pattern: Pattern; }): Packet<T> {
         return new TcpIncoming<T>(packet.pattern, packet);
     }
 

@@ -27,7 +27,7 @@ export abstract class ResponseStatusFormater {
 
     abstract format(logger: Logger, ctx: RequestContext, hrtime?: [number, number]): string[];
 
-    protected formatSize(size?: number, precise = 2) {
+    protected formatSize(size?: number | null, precise = 2) {
         if (!isNumber(size)) return ''
         return this.bytes.transform(size, precise)
     }

@@ -1,11 +1,11 @@
 import { Abstract, Injectable, isString, tokenId } from '@tsdi/ioc';
 import { ExecptionHandler, Interceptor, InvalidJsonException } from '@tsdi/core';
-import { Message, MessageFactory, Packet, PacketFactory, PacketInitOpts } from '@tsdi/common';
+import { IncomingPacket, Message, MessageFactory, Packet, PacketFactory, PacketInitOpts } from '@tsdi/common';
 import { CodingType, Codings, CodingsNotHandleExecption, DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
 import { TransportContext } from './context';
 import { StreamAdapter, isBuffer, toBuffer } from './StreamAdapter';
 import { IReadableStream } from './stream';
-import { map, throwError } from 'rxjs';
+import { throwError } from 'rxjs';
 
 
 export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<Packet<any>, Packet<Buffer | IReadableStream>, TransportContext>[]>('PACKET_ENCODE_INTERCEPTORS');
@@ -91,11 +91,6 @@ export class PacketCodingsHandlers {
         return packet;
     }
 
-    // @DecodeHandler(Packet)
-    // incomingDecode(context: TransportContext) {
-    //     const pkg = context.last<Packet>();
-    //     // return context.session.injector.get(RequestContextFactory).create(context.session as any, pkg, {}, context.session.options)
-    // }
 
     @EncodeHandler(Packet, { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })
     async bufferEncode(context: TransportContext) {
@@ -165,7 +160,16 @@ export class PacketCodingsHandlers {
             } else {
                 return this.codings.decodeType(Message, execption.target, context)
             }
-        } else if (execption.target instanceof Packet) {
+        }
+
+        if (execption.target instanceof IncomingPacket) {
+            if (execption.codingType === CodingType.Decode) {
+                return this.codings.decodeType(IncomingPacket, execption.target, context);
+            }
+            return throwError(() => execption);
+        }
+
+        if (execption.target instanceof Packet) {
             if (execption.codingType === CodingType.Encode) {
                 return this.codings.encodeType(Packet, execption.target, context)
             } else {
@@ -187,32 +191,3 @@ export abstract class HandlerSerialization {
 export abstract class HeaderDeserialization {
     abstract deserialize(data: Buffer): PacketInitOpts;
 }
-
-
-
-// @Injectable()
-// export class PackageifyDecodeInterceptor implements Interceptor<any, any, TransportContext> {
-//     constructor(private codings: Codings) { }
-
-//     intercept(input: any, next: Handler<any, any, TransportContext>, context: TransportContext): Observable<any> {
-//         if (context.options.headDelimiter) {
-//             return this.codings.decodeType('PACKET', input, context);
-//         }
-//         return next.handle(input, context);
-//     }
-// }
-
-// @Injectable()
-// export class PackageifyEncodeInterceptor implements Interceptor<any, any, TransportContext> {
-
-//     constructor(private codings: Codings) { }
-
-//     intercept(input: any, next: Handler<any, any, TransportContext>, context: TransportContext): Observable<any> {
-//         if (context.options.headDelimiter) {
-//             return this.codings.encodeType('PACKET', input, context);
-//         }
-//         return next.handle(input, context);
-//     }
-
-// }
-

@@ -60,82 +60,6 @@ export interface RequestPacketOpts<T = any> extends PacketInitOpts<T>, PacketOpt
     withCredentials?: boolean;
 }
 
-/**
- * Request packet.
- */
-export abstract class RequestPacket<T = any> extends Packet<T> {
-    /**
-     * client side timeout.
-     */
-    readonly timeout?: number;
-    readonly method: string;
-    readonly params: RequestParams;
-
-    constructor(init: RequestPacketOpts<T>) {
-        super(init, init)
-        this.params = new RequestParams(init);
-        this.method = init.method ?? this.headers.getMethod() ?? init.defaultMethod ?? '';
-        this.timeout = init.timeout;
-    }
-
-    abstract clone(): RequestPacket<T>;
-    abstract clone(update: {
-        headers?: HeadersLike;
-        params?: RequestParams;
-        method?: string;
-        body?: T | null;
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        timeout?: number | null;
-    }): RequestPacket<T>
-    abstract clone<V>(update: {
-        headers?: HeadersLike;
-        params?: RequestParams;
-        method?: string;
-        body?: V | null;
-        payload?: V | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        timeout?: number | null;
-    }): RequestPacket<V>;
-
-    protected override cloneOpts(update: {
-        headers?: HeadersLike;
-        params?: RequestParams;
-        method?: string;
-        body?: any;
-        payload?: any;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        timeout?: number | null;
-    }): RequestInitOpts {
-        const init = super.cloneOpts(update) as RequestInitOpts;
-        init.method = update.method ?? this.method;
-        // `setParams` are used.
-        let params = update.params || this.params;
-
-        // Check whether the caller has asked to set params.
-        if (update.setParams) {
-            // Set every requested param.
-            params = Object.keys(update.setParams)
-                .reduce((params, param) => params.set(param, update.setParams![param]), params)
-        }
-        init.params = params;
-        return init;
-    }
-
-    override toJson(): Record<string, any> {
-        const rcd = super.toJson();
-        if (this.params.size) rcd.params = this.params.toRecord();
-        if (this.method) rcd.method = this.method;
-        if (this.timeout) rcd.timeout = this.timeout;
-        return rcd;
-    }
-
-}
-
-
 
 
 export interface RequestInitOpts<T = any> extends RequestPacketOpts<T>, ResponseAs {
@@ -148,8 +72,14 @@ export interface RequestInitOpts<T = any> extends RequestPacketOpts<T>, Response
 /**
  * Request packet.
  */
-export abstract class AbstractRequest<T = any> extends RequestPacket<T> {
+export abstract class AbstractRequest<T = any> extends Packet<T> {
 
+    /**
+     * client side timeout.
+     */
+    readonly timeout?: number;
+    readonly method: string;
+    readonly params: RequestParams;
     readonly context: InvocationContext;
     readonly responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
     readonly observe: 'body' | 'events' | 'response' | 'emit' | 'observe';
@@ -164,6 +94,10 @@ export abstract class AbstractRequest<T = any> extends RequestPacket<T> {
 
     constructor(init: RequestInitOpts) {
         super(init)
+
+        this.params = new RequestParams(init);
+        this.method = init.method ?? this.headers.getMethod() ?? init.defaultMethod ?? '';
+        this.timeout = init.timeout;
         this.context = init.context;
         this.responseType = init.responseType ?? 'json';
         this.observe = init.observe ?? 'body';
@@ -210,6 +144,17 @@ export abstract class AbstractRequest<T = any> extends RequestPacket<T> {
         withCredentials?: boolean;
     }): RequestInitOpts {
         const init = super.cloneOpts(update) as RequestInitOpts;
+        init.method = update.method ?? this.method;
+        // `setParams` are used.
+        let params = update.params || this.params;
+
+        // Check whether the caller has asked to set params.
+        if (update.setParams) {
+            // Set every requested param.
+            params = Object.keys(update.setParams)
+                .reduce((params, param) => params.set(param, update.setParams![param]), params)
+        }
+        init.params = params;
         // Carefully handle the boolean options to differentiate between
         // `false` and `undefined` in the update args.
         init.withCredentials =
@@ -219,6 +164,9 @@ export abstract class AbstractRequest<T = any> extends RequestPacket<T> {
 
     override toJson(): Record<string, any> {
         const rcd = super.toJson();
+        if (this.params.size) rcd.params = this.params.toRecord();
+        if (this.method) rcd.method = this.method;
+        if (this.timeout) rcd.timeout = this.timeout;
         rcd.withCredentials = this.withCredentials;
         return rcd;
     }

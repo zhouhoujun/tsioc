@@ -18,7 +18,7 @@ export abstract class Filter<TInput = any, TOutput = any, TContext = any> implem
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    abstract intercept(input: TInput, next: Handler<TInput, TOutput>, context?: TContext): Observable<TOutput>;
+    abstract intercept(input: TInput, next: Handler, context?: TContext): Observable<TOutput>;
 }
 
 /**

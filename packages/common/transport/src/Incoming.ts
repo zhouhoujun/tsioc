@@ -45,6 +45,14 @@ export interface IncomingStream extends IReadableStream {
     get headers(): IHeaders;
 }
 
+/**
+ * Incoming factory.
+ */
+export abstract class IncomingFactory {
+    abstract create(): Incoming;
+    abstract create<T>(): Incoming<T>;
+}
+
 // /**
 //  * client incoming message.
 //  */

@@ -2,7 +2,9 @@ import { NotHandleExecption } from '@tsdi/core';
 import { Type, getClassName, isString } from '@tsdi/ioc';
 import { CodingType, CodingsContext } from './context';
 
-
+/**
+ * 
+ */
 export class CodingsNotHandleExecption extends NotHandleExecption {
     constructor(
         readonly target: any,

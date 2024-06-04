@@ -104,3 +104,12 @@ export interface Outgoing<T = any> {
 export interface OutgoingStream extends IWritableStream {
     headers?: IHeaders;
 }
+
+
+/**
+ * Outgoing factory.
+ */
+export abstract class OutgoingFactory {
+    abstract create(): Outgoing;
+    abstract create<T>(): Outgoing<T>;
+}

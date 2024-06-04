@@ -69,7 +69,6 @@ export class DecodingsFactory {
             ...options.decodings
         });
 
-        
         handler.useFilters(ExecptionHandlerFilter);
 
         return new Decodings(handler)

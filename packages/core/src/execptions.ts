@@ -25,7 +25,7 @@ export class InvalidStreamExecption extends Execption {
  */
 export class NotHandleExecption extends Execption {
     constructor(readonly target: any, readonly targetType: Type | string, message = 'Not handle') {
-        super(`NotHandleExecption: ${message}`)
+        super(message)
     }
 }
 

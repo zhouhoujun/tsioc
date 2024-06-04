@@ -24,7 +24,7 @@ export abstract class TransportSession<TSocket = any, TMsg extends Message = Mes
  * transport session factory.
  */
 @Abstract()
-export abstract class TransportSessionFactory<TSocket = any,  TMsg extends Message = Message> {
+export abstract class TransportSessionFactory<TSocket = any, TMsg extends Message = Message> {
     /**
      * create transport session.
      * @param options 

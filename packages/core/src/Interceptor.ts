@@ -18,7 +18,7 @@ export interface Interceptor<TInput = any, TOutput = any, TContext = any> {
      * @param context interceptor with context.
      * @returns An observable of the event stream.
      */
-    intercept(input: TInput, next: Handler<TInput, TOutput, TContext>, context?: TContext): Observable<TOutput>;
+    intercept(input: TInput, next: Handler, context?: TContext): Observable<TOutput>;
 }
 
 

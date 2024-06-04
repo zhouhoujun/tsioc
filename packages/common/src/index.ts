@@ -12,6 +12,8 @@ export * from './listen';
 export * from './protocols';
 export * from './message';
 export * from './packet';
+export * from './incoming';
+export * from './outgoing';
 
 export * from './request';
 export * from './response';

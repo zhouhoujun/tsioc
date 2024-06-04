@@ -2,9 +2,9 @@ import {
     Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType,
     tokenId, isArray, toProvider, lang, ProvdierOf, Type, ModuleRef, isNil, ModuleType
 } from '@tsdi/ioc';
-import { InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
+import { ExecptionHandlerFilter, InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
 import { HybirdTransport, MessageFactory, PacketFactory, Transport } from '@tsdi/common';
-import { NotImplementedExecption, StatusAdapter, TransportPacketModule } from '@tsdi/common/transport';
+import { NotImplementedExecption, StatusAdapter, TRANSPORT_DECODINGS_FILTERS, TRANSPORT_ENCODINGS_FILTERS, TransportPacketModule } from '@tsdi/common/transport';
 import { RequestContextFactory } from './RequestContext';
 import { Server, ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
@@ -21,6 +21,9 @@ import { EndpointHandler, createEndpoint } from './EndpointHandler';
 import { DefaultTransportSessionFactory } from './impl/default.session';
 import { RequestContextFactoryImpl } from './impl/request.context';
 import { DefaultExecptionHandlers } from './execption.handlers';
+import { IncomingDecodeFilter } from './codings/incoming.filter';
+import { ServerEndpointCodingsHanlders } from './codings/codings.handlers';
+import { OutgoingEncodeFilter } from './codings/outgoing.filter';
 
 
 
@@ -230,6 +233,11 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     providers: [
                         // { provide: GLOBAL_ENCODINGS_INTERCEPTORS, useClass: OutgoingEncodeInterceper, multi: true },
                         // { provide: GLOBAL_DECODINGS_INTERCEPTORS, useClass: IncomingDecodeInterceper, multi: true },
+                        { provide: TRANSPORT_DECODINGS_FILTERS, useExisting: ExecptionHandlerFilter, multi: true },
+                        { provide: TRANSPORT_DECODINGS_FILTERS, useClass: IncomingDecodeFilter, multi: true },
+                        
+                        { provide: TRANSPORT_ENCODINGS_FILTERS, useClass: ExecptionHandlerFilter, multi: true },
+                        { provide: TRANSPORT_ENCODINGS_FILTERS, useClass: OutgoingEncodeFilter, multi: true },
                         ...moduleOpts.defaultOpts?.providers || EMPTY,
                         ...moduleOpts.serverOpts?.providers || EMPTY
                     ]
@@ -267,7 +275,13 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 }
 
                 if (!serverOpts.execptionHandlers) {
-                    serverOpts.execptionHandlers = [DefaultExecptionHandlers]
+                    serverOpts.execptionHandlers = [DefaultExecptionHandlers, ServerEndpointCodingsHanlders]
+                } else {
+                    if (isArray(serverOpts.execptionHandlers)) {
+                        serverOpts.execptionHandlers.push(ServerEndpointCodingsHanlders)
+                    } else {
+                        serverOpts.execptionHandlers = [serverOpts.execptionHandlers, ServerEndpointCodingsHanlders];
+                    }
                 }
 
                 if (serverOpts.packetFactory) {

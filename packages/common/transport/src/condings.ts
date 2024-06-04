@@ -1,7 +1,10 @@
 import { Injector, tokenId } from '@tsdi/ioc';
 import { CanActivate, ExecptionHandlerFilter, Interceptor, createHandler } from '@tsdi/core';
 import { Message, Packet } from '@tsdi/common';
-import { DECODINGS_FILTERS, DECODINGS_INTERCEPTORS, Decodings, DecodingsBackend, DecodingsFactory, ENCODINGS_FILTERS, ENCODINGS_INTERCEPTORS, Encodings, EncodingsBackend, EncodingsFactory } from '@tsdi/common/codings';
+import {
+    DECODINGS_FILTERS, DECODINGS_GUARDS, DECODINGS_INTERCEPTORS, Decodings, DecodingsBackend, DecodingsFactory,
+    ENCODINGS_FILTERS, ENCODINGS_GUARDS, ENCODINGS_INTERCEPTORS, Encodings, EncodingsBackend, EncodingsFactory
+} from '@tsdi/common/codings';
 import { TransportOpts } from './TransportSession';
 import { TransportContext } from './context';
 
@@ -38,6 +41,7 @@ export class TransportEncodingsFactory implements EncodingsFactory {
             backend: createHandler(injector, {
                 filters: [ExecptionHandlerFilter],
                 filtersToken: ENCODINGS_FILTERS,
+                guardsToken: ENCODINGS_GUARDS,
                 interceptorsToken: ENCODINGS_INTERCEPTORS,
                 backend: EncodingsBackend,
             }),
@@ -77,6 +81,7 @@ export class TransportDecodingsFactory implements DecodingsFactory {
             backend: createHandler(injector, {
                 filters: [ExecptionHandlerFilter],
                 filtersToken: DECODINGS_FILTERS,
+                guardsToken: DECODINGS_GUARDS,
                 interceptorsToken: DECODINGS_INTERCEPTORS,
                 backend: DecodingsBackend,
             }),

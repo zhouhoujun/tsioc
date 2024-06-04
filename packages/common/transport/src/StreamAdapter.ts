@@ -346,8 +346,6 @@ export abstract class StreamAdapter {
     abstract isJson(target: any): boolean;
 }
 
-export const streamUtil: StreamAdapter = {
-} as StreamAdapter;
 
 export interface ZipOptions {
     /**
