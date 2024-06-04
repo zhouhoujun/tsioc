@@ -231,13 +231,12 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                         ...moduleOpts.serverOpts?.routes
                     },
                     providers: [
-                        // { provide: GLOBAL_ENCODINGS_INTERCEPTORS, useClass: OutgoingEncodeInterceper, multi: true },
-                        // { provide: GLOBAL_DECODINGS_INTERCEPTORS, useClass: IncomingDecodeInterceper, multi: true },
                         { provide: TRANSPORT_DECODINGS_FILTERS, useExisting: ExecptionHandlerFilter, multi: true },
                         { provide: TRANSPORT_DECODINGS_FILTERS, useClass: IncomingDecodeFilter, multi: true },
                         
                         { provide: TRANSPORT_ENCODINGS_FILTERS, useClass: ExecptionHandlerFilter, multi: true },
                         { provide: TRANSPORT_ENCODINGS_FILTERS, useClass: OutgoingEncodeFilter, multi: true },
+                        
                         ...moduleOpts.defaultOpts?.providers || EMPTY,
                         ...moduleOpts.serverOpts?.providers || EMPTY
                     ]

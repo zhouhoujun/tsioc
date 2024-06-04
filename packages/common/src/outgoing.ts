@@ -118,3 +118,48 @@ export abstract class OutgoingPacket<T = any, TStatus = number> extends Packet<T
     }): OutgoingPacket<V, TStatus>;
 
 }
+
+
+/**
+ * client incoming init options
+ */
+export interface ClientIncomingOpts<T = any, TStatus = any> extends OutgoingInitOpts<T>, OutgoingPacketOpts<TStatus> {
+
+}
+
+/**
+ * client incoming packet
+ */
+export abstract class ClientIncomingPacket<T = any, TStatus = number> extends OutgoingPacket<T, TStatus> {
+
+    constructor(init: ClientIncomingOpts) {
+        super(init, init);
+    }
+
+    abstract clone(): ClientIncomingPacket<T, TStatus>;
+    abstract clone(update: {
+        headers?: HeadersLike;
+        body?: T | null,
+        payload?: T | null;
+        setHeaders?: { [name: string]: string | string[]; };
+        type?: number;
+        ok?: boolean;
+        status?: TStatus;
+        statusMessage?: string;
+        statusText?: string;
+        error?: any;
+    }): ClientIncomingPacket<T, TStatus>
+    abstract clone<V>(update: {
+        headers?: HeadersLike;
+        body?: T | null,
+        payload?: V | null;
+        setHeaders?: { [name: string]: string | string[]; };
+        type?: number;
+        ok?: boolean;
+        status?: TStatus;
+        statusMessage?: string;
+        statusText?: string;
+        error?: any;
+    }): ClientIncomingPacket<V, TStatus>;
+
+}

@@ -6,14 +6,14 @@ import { TransportContext } from '@tsdi/common/transport';
 import { RequestContext, RequestContextFactory } from '../RequestContext';
 import { TransportSession } from '../transport.session';
 
-export const INCOMING_PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<IncomingPacket, RequestContext, TransportContext>[]>('INCOMING_PACKET_DECODE_INTERCEPTORS');
+export const SERVER_INCOMING_DECODE_INTERCEPTORS = tokenId<Interceptor<IncomingPacket, RequestContext, TransportContext>[]>('SERVER_INCOMING_DECODE_INTERCEPTORS');
 
 
 @Injectable()
 export class ServerEndpointCodingsHanlders {
 
 
-    @DecodeHandler(IncomingPacket, { interceptorsToken: INCOMING_PACKET_DECODE_INTERCEPTORS })
+    @DecodeHandler(IncomingPacket, { interceptorsToken: SERVER_INCOMING_DECODE_INTERCEPTORS })
     decodePacket(context: TransportContext) {
         const incoming = context.last<IncomingPacket>();
         const session = context.session as TransportSession;

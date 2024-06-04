@@ -1,6 +1,6 @@
 import { Abstract, Injectable, isString, tokenId } from '@tsdi/ioc';
 import { ExecptionHandler, Interceptor, InvalidJsonException } from '@tsdi/core';
-import { IncomingPacket, Message, MessageFactory, Packet, PacketFactory, PacketInitOpts } from '@tsdi/common';
+import { ClientIncomingPacket, IncomingPacket, Message, MessageFactory, OutgoingPacket, Packet, PacketFactory, PacketInitOpts } from '@tsdi/common';
 import { CodingType, Codings, CodingsNotHandleExecption, DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
 import { TransportContext } from './context';
 import { StreamAdapter, isBuffer, toBuffer } from './StreamAdapter';
@@ -167,9 +167,17 @@ export class PacketCodingsHandlers {
                 return this.codings.decodeType(IncomingPacket, execption.target, context);
             }
             return throwError(() => execption);
-        }
-
-        if (execption.target instanceof Packet) {
+        } else if (execption.target instanceof OutgoingPacket) {
+            if (execption.codingType === CodingType.Encode) {
+                return this.codings.encodeType(OutgoingPacket, execption.target, context);
+            }
+            return throwError(() => execption);
+        } else if (execption.target instanceof ClientIncomingPacket) {
+            if (execption.codingType === CodingType.Decode) {
+                return this.codings.decodeType(ClientIncomingPacket, execption.target, context);
+            }
+            return throwError(() => execption);
+        } else if (execption.target instanceof Packet) {
             if (execption.codingType === CodingType.Encode) {
                 return this.codings.encodeType(Packet, execption.target, context)
             } else {

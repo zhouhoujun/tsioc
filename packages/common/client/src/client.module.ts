@@ -2,9 +2,9 @@ import {
     Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType,
     Type, Token, isArray, lang, toProvider, tokenId, ModuleRef, isNil, ModuleType
 } from '@tsdi/ioc';
-import { createHandler } from '@tsdi/core';
+import { ExecptionHandlerFilter, createHandler } from '@tsdi/core';
 import { HybirdTransport, MessageFactory, PacketFactory, Transport } from '@tsdi/common';
-import { NotImplementedExecption, StatusAdapter, TransportPacketModule } from '@tsdi/common/transport';
+import { NotImplementedExecption, StatusAdapter, TRANSPORT_DECODINGS_FILTERS, TRANSPORT_ENCODINGS_FILTERS, TransportPacketModule } from '@tsdi/common/transport';
 import { ClientOpts } from './options';
 import { ClientHandler } from './handler';
 import { Client } from './Client';
@@ -14,6 +14,8 @@ import { UrlRedirector } from './redirector';
 import { ClientTransportSessionFactory } from './session';
 import { DefaultClientTransportSessionFactory } from './default.session';
 import { ClientTransportBackend } from './transport.backend';
+import { ClientIncomingDecodeFilter } from './codings/incoming.filter';
+import { ClientEndpointCodingsHanlders } from './codings/codings.handlers';
 
 /**
  * Client module config.
@@ -177,8 +179,12 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     ...opts.defaultOpts,
                     ...opts.clientOpts,
                     providers: [
-                        // { provide: GLOBAL_ENCODINGS_INTERCEPTORS, useClass: RequestEncodeInterceper, multi: true },
-                        // { provide: GLOBAL_DECODINGS_INTERCEPTORS, useClass: ResponseDecodeInterceper, multi: true },
+                        { provide: TRANSPORT_DECODINGS_FILTERS, useExisting: ExecptionHandlerFilter, multi: true },
+                        { provide: TRANSPORT_DECODINGS_FILTERS, useClass: ClientIncomingDecodeFilter, multi: true },
+
+                        // { provide: TRANSPORT_ENCODINGS_FILTERS, useClass: ExecptionHandlerFilter, multi: true },
+                        // { provide: TRANSPORT_ENCODINGS_FILTERS, useClass: OutgoingEncodeFilter, multi: true },
+
                         ...opts.defaultOpts?.providers || EMPTY,
                         ...opts.clientOpts?.providers || EMPTY
                     ]
@@ -207,6 +213,16 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                             await injector.useAsync(opts.imports!)
                         }
                     })
+                }
+
+                if (!clientOpts.execptionHandlers) {
+                    clientOpts.execptionHandlers = [ClientEndpointCodingsHanlders]
+                } else {
+                    if (isArray(clientOpts.execptionHandlers)) {
+                        clientOpts.execptionHandlers.push(ClientEndpointCodingsHanlders)
+                    } else {
+                        clientOpts.execptionHandlers = [clientOpts.execptionHandlers, ClientEndpointCodingsHanlders];
+                    }
                 }
 
                 if (clientOpts.statusAdapter) {
