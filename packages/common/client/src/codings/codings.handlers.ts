@@ -1,10 +1,13 @@
 import { Injectable, tokenId } from '@tsdi/ioc';
 import { Interceptor } from '@tsdi/core';
-import { ClientIncomingPacket, ResponseEvent, ResponseFactory } from '@tsdi/common';
+import { ResponseEvent, ResponseFactory } from '@tsdi/common';
 import { DecodeHandler } from '@tsdi/common/codings';
-import { TransportContext } from '@tsdi/common/transport';
+import { ClientIncomingPacket, TransportContext } from '@tsdi/common/transport';
 import { ClientTransportSession } from '../session';
 
+/**
+ * client incoming decode interceptors.
+ */
 export const CLIENT_INCOMING_DECODE_INTERCEPTORS = tokenId<Interceptor<ClientIncomingPacket, ResponseEvent, TransportContext>[]>('CLIENT_INCOMING_DECODE_INTERCEPTORS');
 
 

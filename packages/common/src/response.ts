@@ -1,17 +1,17 @@
 import { Abstract } from '@tsdi/ioc';
 import { HeadersLike } from './headers';
-import { OutgoingInitOpts, OutgoingPacket, OutgoingPacketOpts } from './outgoing';
+import { StatusPacket, StatusPacketOpts } from './packet';
 
 
 /**
  * response packet data.
  */
-export interface ResponseInitOpts<T = any, TStatus = any> extends OutgoingInitOpts<T, TStatus>, OutgoingPacketOpts<TStatus> { }
+export interface ResponseInitOpts<T = any, TStatus = any> extends StatusPacketOpts<T, TStatus> { }
 
 /**
  * header response.
  */
-export class HeaderResponse<TStatus = number> extends OutgoingPacket<null, TStatus> {
+export class HeaderResponse<TStatus = number> extends StatusPacket<null, TStatus> {
     constructor(init: {
         /**
          * event type
@@ -22,8 +22,8 @@ export class HeaderResponse<TStatus = number> extends OutgoingPacket<null, TStat
         status?: TStatus;
         statusMessage?: string;
         statusText?: string;
-    }, options?: ResponseInitOpts<null, TStatus>) {
-        super(Object.assign(init, { payload: null }), options);
+    }) {
+        super(Object.assign(init, { payload: null }));
     }
 
 
@@ -55,7 +55,7 @@ export class HeaderResponse<TStatus = number> extends OutgoingPacket<null, TStat
 /**
  * response packet.
  */
-export class ResponsePacket<T = any, TStatus = number> extends OutgoingPacket<T, TStatus> {
+export class ResponsePacket<T = any, TStatus = number> extends StatusPacket<T, TStatus> {
 
     constructor(init: {
         /**
@@ -68,8 +68,8 @@ export class ResponsePacket<T = any, TStatus = number> extends OutgoingPacket<T,
         statusMessage?: string;
         statusText?: string;
         ok?: boolean;
-    }, options?: ResponseInitOpts<T, TStatus>) {
-        super(init, options)
+    }) {
+        super(init)
     }
 
     clone(): ResponsePacket<T, TStatus>;
@@ -112,7 +112,7 @@ export class ResponsePacket<T = any, TStatus = number> extends OutgoingPacket<T,
 /**
  * Error packet.
  */
-export class ErrorResponse<TStatus = number> extends OutgoingPacket<null, TStatus> {
+export class ErrorResponse<TStatus = number> extends StatusPacket<null, TStatus> {
 
     readonly error: any | null;
 
@@ -126,8 +126,8 @@ export class ErrorResponse<TStatus = number> extends OutgoingPacket<null, TStatu
         status?: TStatus;
         statusMessage?: string;
         statusText?: string;
-    }, options?: ResponseInitOpts<null, TStatus>) {
-        super(Object.assign(init, { ok: false, payload: null }), options);
+    }) {
+        super(Object.assign(init, { ok: false, payload: null }));
     }
 
     clone(): ErrorResponse<TStatus>;

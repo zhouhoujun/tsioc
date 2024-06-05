@@ -1,8 +1,7 @@
 import { Injectable, tokenId } from '@tsdi/ioc';
 import { Interceptor } from '@tsdi/core';
-import { IncomingPacket } from '@tsdi/common';
 import { DecodeHandler } from '@tsdi/common/codings';
-import { TransportContext } from '@tsdi/common/transport';
+import { IncomingPacket, TransportContext } from '@tsdi/common/transport';
 import { RequestContext, RequestContextFactory } from '../RequestContext';
 import { TransportSession } from '../transport.session';
 

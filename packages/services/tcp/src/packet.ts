@@ -1,5 +1,6 @@
-import { Injectable } from "@tsdi/ioc";
-import { HeadersLike, Packet, PacketFactory, Pattern, IncomingPacket, IncomingOpts, RequestParams } from "@tsdi/common";
+import { Injectable } from '@tsdi/ioc';
+import { HeadersLike, Packet, PacketFactory, Pattern, RequestParams } from '@tsdi/common';
+import { IncomingOpts, IncomingPacket } from '@tsdi/common/transport';
 
 
 

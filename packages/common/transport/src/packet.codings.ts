@@ -1,16 +1,29 @@
 import { Abstract, Injectable, isString, tokenId } from '@tsdi/ioc';
 import { ExecptionHandler, Interceptor, InvalidJsonException } from '@tsdi/core';
-import { ClientIncomingPacket, IncomingPacket, Message, MessageFactory, OutgoingPacket, Packet, PacketFactory, PacketInitOpts } from '@tsdi/common';
+import { Message, MessageFactory, Packet, PacketFactory, PacketOpts } from '@tsdi/common';
 import { CodingType, Codings, CodingsNotHandleExecption, DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
 import { TransportContext } from './context';
 import { StreamAdapter, isBuffer, toBuffer } from './StreamAdapter';
 import { IReadableStream } from './stream';
 import { throwError } from 'rxjs';
+import { IncomingPacket } from './Incoming';
+import { ClientIncomingPacket, OutgoingPacket } from './Outgoing';
 
 
 export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<Packet<any>, Packet<Buffer | IReadableStream>, TransportContext>[]>('PACKET_ENCODE_INTERCEPTORS');
 
 export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<Packet<Buffer | IReadableStream>, Packet<any>, TransportContext>[]>('PACKET_DECODE_INTERCEPTORS');
+
+
+@Abstract()
+export abstract class HandlerSerialization {
+    abstract serialize(packet: Packet): Buffer;
+}
+
+@Abstract()
+export abstract class HeaderDeserialization {
+    abstract deserialize(data: Buffer): PacketOpts;
+}
 
 
 
@@ -20,7 +33,7 @@ export class PacketCodingsHandlers {
     constructor(private streamAdapter: StreamAdapter, private codings: Codings) { }
 
     @DecodeHandler(Message, { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
-    async bufferDecode(context: TransportContext) {
+    async messageDecode(context: TransportContext) {
         let msg = context.last<Message>();
 
         const options = context.options;
@@ -65,35 +78,9 @@ export class PacketCodingsHandlers {
 
     }
 
-    parseJson(data: Buffer) {
-        const jsonStr = new TextDecoder().decode(data);
-        try {
-            return JSON.parse(jsonStr);
-        } catch (err) {
-            throw new InvalidJsonException(err, jsonStr)
-        }
-    }
-
-
-    private parsePacket(headBuffer: Buffer, payload: Buffer | IReadableStream, headerDeserialization?: HeaderDeserialization | null) {
-        let packet: PacketInitOpts;
-        if (headerDeserialization) {
-            packet = headerDeserialization.deserialize(headBuffer)
-        } else {
-            const jsonStr = new TextDecoder().decode(headBuffer);
-            try {
-                packet = JSON.parse(jsonStr);
-            } catch (err) {
-                throw new InvalidJsonException(err, jsonStr)
-            }
-        }
-        packet.payload = payload;
-        return packet;
-    }
-
 
     @EncodeHandler(Packet, { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })
-    async bufferEncode(context: TransportContext) {
+    async packetEncode(context: TransportContext) {
         const options = context.options;
 
         const pkg = context.last<Packet>();
@@ -187,15 +174,34 @@ export class PacketCodingsHandlers {
 
         return throwError(() => execption);
     }
-}
 
 
-@Abstract()
-export abstract class HandlerSerialization {
-    abstract serialize(packet: Packet): Buffer;
+    
+    private parseJson(data: Buffer) {
+        const jsonStr = new TextDecoder().decode(data);
+        try {
+            return JSON.parse(jsonStr);
+        } catch (err) {
+            throw new InvalidJsonException(err, jsonStr)
+        }
+    }
+
+
+    private parsePacket(headBuffer: Buffer, payload: Buffer | IReadableStream, headerDeserialization?: HeaderDeserialization | null) {
+        let packet: PacketOpts;
+        if (headerDeserialization) {
+            packet = headerDeserialization.deserialize(headBuffer)
+        } else {
+            const jsonStr = new TextDecoder().decode(headBuffer);
+            try {
+                packet = JSON.parse(jsonStr);
+            } catch (err) {
+                throw new InvalidJsonException(err, jsonStr)
+            }
+        }
+        packet.payload = payload;
+        return packet;
+    }
+
 }
 
-@Abstract()
-export abstract class HeaderDeserialization {
-    abstract deserialize(data: Buffer): PacketInitOpts;
-}

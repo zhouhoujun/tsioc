@@ -1,7 +1,7 @@
 import { InvocationContext } from '@tsdi/ioc';
 import { HeadersLike, HeaderMappings } from './headers';
 import { ParameterCodec, RequestParams } from './params';
-import { Packet, PacketInitOpts, PacketOpts } from './packet';
+import { Packet, PacketOpts } from './packet';
 import { Pattern } from './pattern';
 
 
@@ -20,7 +20,7 @@ export interface ResponseAs {
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
 }
 
-export interface RequestPacketOpts<T = any> extends PacketInitOpts<T>, PacketOpts {
+export interface RequestPacketOpts<T = any> extends PacketOpts<T> {
 
     /**
      * request method.
@@ -58,6 +58,10 @@ export interface RequestPacketOpts<T = any> extends PacketInitOpts<T>, PacketOpt
      * for restful
      */
     withCredentials?: boolean;
+    /**
+     * default method.
+     */
+    defaultMethod?: string;
 }
 
 
