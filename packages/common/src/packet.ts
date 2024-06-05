@@ -143,9 +143,11 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
      */
     readonly type: number | undefined;
     /**
-     * Response status code.
+     * status code.
      */
-    readonly status: TStatus | null;
+    get status(): TStatus | null {
+        return this._status;
+    }
 
     readonly error: any | null;
 
@@ -172,12 +174,14 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
         return this.payload;
     }
 
+    protected _status: TStatus | null;
+
     constructor(init: StatusPacketOpts) {
         super(init)
         this.ok = init.error ? false : init.ok != false;
         this.error = init.error;
         this.type = init.type;
-        this.status = init.status !== undefined ? init.status : init?.defaultStatus ?? null;
+        this._status = init.status !== undefined ? init.status : init?.defaultStatus ?? null;
         this._message = (init.statusMessage || init.statusText) ?? init?.defaultStatusText ?? '';
     }
 

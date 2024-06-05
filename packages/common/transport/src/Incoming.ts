@@ -1,4 +1,4 @@
-import { HeadersLike, IHeaders, Packet, PacketOpts, ParameterCodec, Pattern, RequestParams } from '@tsdi/common';
+import { HeadersLike, IHeaders, Packet, PacketOpts, ParameterCodec, Pattern, RequestParams, StatusPacket, StatusPacketOpts } from '@tsdi/common';
 import { IReadableStream } from './stream';
 
 
@@ -105,7 +105,7 @@ export interface IncomingOpts<T = any> extends PacketOpts<T> {
 /**
  * Incoming packet.
  */
-export abstract class IncomingPacket<T = any> extends Packet<T> {
+export abstract class IncomingPacket<T = any> extends Packet<T> implements Incoming {
     /**
      * client side timeout.
      */
@@ -195,15 +195,119 @@ export abstract class IncomingPacket<T = any> extends Packet<T> {
 }
 
 
-// /**
-//  * client incoming message.
-//  */
-// export interface ResponseIncoming<T = any> extends Incoming<T> {
-//     type?: string | number;
-//     error?: any;
-//     ok?: boolean;
-//     status?: string | number;
-//     statusText?: string;
-//     statusMessage?: string;
-// }
+
+/**
+ * Clientincoming message
+ */
+export interface ClientIncoming<T = any, TStatus = null> {
+    /**
+     * event type
+     */
+    type?: number;
+
+    id?: number | string;
+
+    url?: string;
+
+    pattern?: Pattern;
+
+    headers: HeadersLike;
+
+    body?: T | null
+
+    status?: TStatus | null;
+
+    statusCode?: TStatus | null;
+
+    statusMessage?: string;
+
+    statusText?: string;
+
+    ok?: boolean;
+    error?: any;
+
+    /**
+     * has header in packet or not.
+     * @param packet 
+     * @param field 
+     */
+    hasHeader?(field: string): boolean;
+    /**
+     * get header from packet.
+     * @param packet 
+     * @param field 
+     */
+    getHeader?(field: string): string | undefined;
+
+}
+
+
+/**
+ * Incoming factory.
+ */
+export abstract class ClientIncomingFactory {
+    abstract create(): ClientIncoming;
+    abstract create<T, TStatus>(): ClientIncoming<T, TStatus>;
+}
+
+/**
+ * client incoming init options
+ */
+export interface ClientIncomingOpts<T = any, TStatus = any> extends StatusPacketOpts<T, TStatus> {
+
+}
+
+/**
+ * client incoming packet
+ */
+export abstract class ClientIncomingPacket<T = any, TStatus = number> extends StatusPacket<T, TStatus> implements ClientIncoming<T, TStatus> {
+
+    constructor(init: ClientIncomingOpts) {
+        super(init);
+    }
+
+    /**
+     * has header in packet or not.
+     * @param packet 
+     * @param field 
+     */
+    hasHeader(field: string): boolean {
+        return this.headers.has(field)
+    }
+    /**
+     * get header from packet.
+     * @param packet 
+     * @param field 
+     */
+    getHeader(field: string): string | undefined {
+        return this.headers.getHeader(field);
+    }
+
+    abstract clone(): ClientIncomingPacket<T, TStatus>;
+    abstract clone(update: {
+        headers?: HeadersLike;
+        body?: T | null,
+        payload?: T | null;
+        setHeaders?: { [name: string]: string | string[]; };
+        type?: number;
+        ok?: boolean;
+        status?: TStatus;
+        statusMessage?: string;
+        statusText?: string;
+        error?: any;
+    }): ClientIncomingPacket<T, TStatus>
+    abstract clone<V>(update: {
+        headers?: HeadersLike;
+        body?: T | null,
+        payload?: V | null;
+        setHeaders?: { [name: string]: string | string[]; };
+        type?: number;
+        ok?: boolean;
+        status?: TStatus;
+        statusMessage?: string;
+        statusText?: string;
+        error?: any;
+    }): ClientIncomingPacket<V, TStatus>;
+
+}
 

@@ -138,11 +138,27 @@ export interface OutgoingPacketOpts<T = any, TStatus = any> extends StatusPacket
 /**
  * Outgoing packet.
  */
-export abstract class OutgoingPacket<T = any, TStatus = number> extends StatusPacket<T, TStatus> {
+export abstract class OutgoingPacket<T = any, TStatus = number> extends StatusPacket<T, TStatus> implements Outgoing<T> {
+
 
     constructor(init: OutgoingPacketOpts) {
         super(init)
     }
+
+    get statusCode(): TStatus {
+        return this._status!;
+    }
+    set statusCode(code: TStatus) {
+        this._status = code;
+    }
+
+    setHeader(field: string, val: Header): void {
+        this.headers.setHeader(field, val);
+    }
+    removeHeader(field: string): void {
+        this.headers.removeHeader(field);
+    }
+
 
 
     abstract clone(): OutgoingPacket<T, TStatus>;
@@ -173,47 +189,3 @@ export abstract class OutgoingPacket<T = any, TStatus = number> extends StatusPa
 }
 
 
-
-/**
- * client incoming init options
- */
-export interface ClientIncomingOpts<T = any, TStatus = any> extends OutgoingPacketOpts<T, TStatus> {
-    
-}
-
-/**
- * client incoming packet
- */
-export abstract class ClientIncomingPacket<T = any, TStatus = number> extends OutgoingPacket<T, TStatus> {
-
-    constructor(init: ClientIncomingOpts) {
-        super(init);
-    }
-
-    abstract clone(): ClientIncomingPacket<T, TStatus>;
-    abstract clone(update: {
-        headers?: HeadersLike;
-        body?: T | null,
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        type?: number;
-        ok?: boolean;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        error?: any;
-    }): ClientIncomingPacket<T, TStatus>
-    abstract clone<V>(update: {
-        headers?: HeadersLike;
-        body?: T | null,
-        payload?: V | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        type?: number;
-        ok?: boolean;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        error?: any;
-    }): ClientIncomingPacket<V, TStatus>;
-
-}

@@ -6,8 +6,8 @@ import { TransportContext } from './context';
 import { StreamAdapter, isBuffer, toBuffer } from './StreamAdapter';
 import { IReadableStream } from './stream';
 import { throwError } from 'rxjs';
-import { IncomingPacket } from './Incoming';
-import { ClientIncomingPacket, OutgoingPacket } from './Outgoing';
+import { IncomingPacket, ClientIncomingPacket } from './Incoming';
+import { OutgoingPacket } from './Outgoing';
 
 
 export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<Packet<any>, Packet<Buffer | IReadableStream>, TransportContext>[]>('PACKET_ENCODE_INTERCEPTORS');
