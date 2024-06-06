@@ -3,8 +3,8 @@ import {
     Type, Token, isArray, lang, toProvider, tokenId, ModuleRef, isNil, ModuleType
 } from '@tsdi/ioc';
 import { ExecptionHandlerFilter, createHandler } from '@tsdi/core';
-import { HybirdTransport, MessageFactory, PacketFactory, Transport } from '@tsdi/common';
-import { NotImplementedExecption, StatusAdapter, TRANSPORT_DECODINGS_FILTERS, TRANSPORT_ENCODINGS_FILTERS, TransportPacketModule } from '@tsdi/common/transport';
+import { HybirdTransport, MessageFactory, Transport } from '@tsdi/common';
+import { ClientIncomingFactory, NotImplementedExecption, StatusAdapter, TRANSPORT_DECODINGS_FILTERS, TRANSPORT_ENCODINGS_FILTERS, TransportPacketModule } from '@tsdi/common/transport';
 import { ClientOpts } from './options';
 import { ClientHandler } from './handler';
 import { Client } from './Client';
@@ -229,8 +229,8 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     clientOpts.providers.push(toProvider(StatusAdapter, clientOpts.statusAdapter))
                 }
 
-                if (clientOpts.packetFactory) {
-                    clientOpts.providers.push(toProvider(PacketFactory, clientOpts.packetFactory));
+                if (clientOpts.incomingFactory) {
+                    clientOpts.providers.push(toProvider(ClientIncomingFactory, clientOpts.incomingFactory));
                 }
 
                 if (clientOpts.messageFactory) {

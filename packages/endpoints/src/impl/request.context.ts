@@ -1,18 +1,18 @@
 import { EMPTY_OBJ, Injectable, Injector, isNil } from '@tsdi/ioc';
-import { HeaderMappings, LOCALHOST, normalize, ResponsePacket } from '@tsdi/common';
+import { HeaderMappings, LOCALHOST, normalize, PatternFormatter, ResponsePacket } from '@tsdi/common';
 import {
     FileAdapter, Incoming, MessageExecption, MimeAdapter, Outgoing,
     StatusAdapter, StreamAdapter
 } from '@tsdi/common/transport';
+import { lastValueFrom } from 'rxjs';
 import { RequestContext, RequestContextFactory } from '../RequestContext';
 import { ServerOpts } from '../Server';
-import { lastValueFrom } from 'rxjs';
 import { TransportSession } from '../transport.session';
 import { AcceptsPriority } from '../accepts';
 
 
 
-export class RequestContextImpl<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TSocket = any> extends RequestContext<TRequest, TResponse, TSocket> {
+export class UrlRequestContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TSocket = any> extends RequestContext<TRequest, TResponse, TSocket> {
 
 
     private _URL?: URL;
@@ -43,9 +43,6 @@ export class RequestContextImpl<TRequest extends Incoming = Incoming, TResponse 
         super(injector, { ...serverOptions, args: request });
 
         this.setValue(TransportSession, session);
-        if (!response.id) {
-            response.id = request.id
-        }
         this.reqHeaders = request.headers instanceof HeaderMappings ? request.headers : new HeaderMappings(request.headers);
         this.resHeaders = response.headers instanceof HeaderMappings ? response.headers : new HeaderMappings(response.headers);
 
@@ -54,6 +51,19 @@ export class RequestContextImpl<TRequest extends Incoming = Incoming, TResponse 
         if (searhIdx >= 0) {
             (this.request as any)['query'] = this.query;
         }
+    }
+
+    /**
+     * Get request rul
+     */
+    get url(): string {
+        return this.request.url!
+    }
+    /**
+     * Set request url
+     */
+    set url(value: string) {
+        this.request.url = value;
     }
 
 
@@ -141,20 +151,104 @@ export class RequestContextImpl<TRequest extends Incoming = Incoming, TResponse 
 const abstl = /^\w+:\/\//i;
 
 
+export class PatternRequestContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TSocket = any> extends RequestContext<TRequest, TResponse, TSocket> {
+
+
+
+    readonly originalUrl: string;
+
+    url: string;
+    /**
+     * request header mappings
+     */
+    readonly reqHeaders: HeaderMappings;
+    /**
+     * request header mappings
+     */
+    readonly resHeaders: HeaderMappings;
+
+    constructor(
+        injector: Injector,
+        readonly session: TransportSession,
+        readonly request: TRequest,
+        readonly response: TResponse,
+        readonly statusAdapter: StatusAdapter | null,
+        readonly mimeAdapter: MimeAdapter | null,
+        readonly acceptsPriority: AcceptsPriority | null,
+        readonly streamAdapter: StreamAdapter,
+        readonly fileAdapter: FileAdapter,
+        readonly serverOptions: ServerOpts = EMPTY_OBJ
+    ) {
+        super(injector, { ...serverOptions, args: request });
+
+        this.setValue(TransportSession, session);
+        this.reqHeaders = request.headers instanceof HeaderMappings ? request.headers : new HeaderMappings(request.headers);
+        this.resHeaders = response.headers instanceof HeaderMappings ? response.headers : new HeaderMappings(response.headers);
+
+        this.originalUrl = this.url = injector.get(PatternFormatter).format(request.pattern!);
+    }
+
+    get query(): Record<string, any> {
+        return this.request.params ?? {}
+    }
+
+
+    setResponse(packet: ResponsePacket): void {
+        const { headers, payload, ...pkg } = packet;
+        Object.assign(this.response, pkg);
+        if (headers) this.setHeader(headers);
+        this.body = payload;
+    }
+
+    async respond(): Promise<any> {
+        if (this.sent) return;
+        await lastValueFrom(this.session.send(this));
+    }
+
+    async throwExecption(execption: MessageExecption): Promise<void> {
+        if (this.sent) return;
+        this.execption = execption;
+        this.body = null;
+        this.response.error = {
+            name: execption.name,
+            message: execption.message,
+            status: execption.status ?? execption.statusCode
+        };
+        if (!isNil(execption.status)) this.response.statusCode = execption.status;
+        this.response.statusMessage = execption.message;
+        await lastValueFrom(this.session.send(this));
+    }
+}
+
+
+
 @Injectable()
 export class RequestContextFactoryImpl implements RequestContextFactory<Incoming, Outgoing> {
     create<TSocket = any>(session: TransportSession, request: Incoming, response: Outgoing, options?: ServerOpts<any> | undefined): RequestContext<Incoming, Outgoing, TSocket> {
         const injector = session.injector;
-        return new RequestContextImpl(injector,
-            session,
-            request,
-            response,
-            injector.get(StatusAdapter, null),
-            injector.get(MimeAdapter, null),
-            injector.get(AcceptsPriority, null),
-            injector.get(StreamAdapter),
-            injector.get(FileAdapter),
-            options);
+        if (request.url) {
+            return new UrlRequestContext(injector,
+                session,
+                request,
+                response,
+                injector.get(StatusAdapter, null),
+                injector.get(MimeAdapter, null),
+                injector.get(AcceptsPriority, null),
+                injector.get(StreamAdapter),
+                injector.get(FileAdapter),
+                options);
+        } else {
+            return new PatternRequestContext(injector,
+                session,
+                request,
+                response,
+                injector.get(StatusAdapter, null),
+                injector.get(MimeAdapter, null),
+                injector.get(AcceptsPriority, null),
+                injector.get(StreamAdapter),
+                injector.get(FileAdapter),
+                options);
+        }
     }
 
 }

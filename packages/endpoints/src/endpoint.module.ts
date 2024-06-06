@@ -3,8 +3,8 @@ import {
     tokenId, isArray, toProvider, lang, ProvdierOf, Type, ModuleRef, isNil, ModuleType
 } from '@tsdi/ioc';
 import { ExecptionHandlerFilter, InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
-import { HybirdTransport, MessageFactory, PacketFactory, Transport } from '@tsdi/common';
-import { NotImplementedExecption, StatusAdapter, TRANSPORT_DECODINGS_FILTERS, TRANSPORT_ENCODINGS_FILTERS, TransportPacketModule } from '@tsdi/common/transport';
+import { HybirdTransport, MessageFactory, Transport } from '@tsdi/common';
+import { IncomingFactory, NotImplementedExecption, OutgoingFactory, StatusAdapter, TRANSPORT_DECODINGS_FILTERS, TRANSPORT_ENCODINGS_FILTERS, TransportPacketModule } from '@tsdi/common/transport';
 import { RequestContextFactory } from './RequestContext';
 import { Server, ServerOpts } from './Server';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
@@ -283,8 +283,11 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     }
                 }
 
-                if (serverOpts.packetFactory) {
-                    serverOpts.providers.push(toProvider(PacketFactory, serverOpts.packetFactory));
+                if (serverOpts.incomingFactory) {
+                    serverOpts.providers.push(toProvider(IncomingFactory, serverOpts.incomingFactory));
+                }
+                if (serverOpts.outgoingFactory) {
+                    serverOpts.providers.push(toProvider(OutgoingFactory, serverOpts.outgoingFactory));
                 }
 
                 if (serverOpts.messageFactory) {

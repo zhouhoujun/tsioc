@@ -1,7 +1,7 @@
 import { Abstract, ProvdierOf, StaticProvider } from '@tsdi/ioc';
 import { CanActivate, Interceptor, PipeTransform, Filter, Runner, Shutdown, ApplicationEvent, HandlerService } from '@tsdi/core';
-import { HybirdTransport, MessageFactory, PacketFactory } from '@tsdi/common';
-import { StatusAdapter, TransportOpts } from '@tsdi/common/transport';
+import { HybirdTransport, MessageFactory } from '@tsdi/common';
+import { IncomingFactory, OutgoingFactory, StatusAdapter, TransportOpts } from '@tsdi/common/transport';
 import { EndpointHandler, EndpointOptions } from './EndpointHandler';
 import { RequestContext } from './RequestContext';
 import { SessionOptions } from './Session';
@@ -44,9 +44,13 @@ export interface ServerOpts<TSerOpts = any> extends EndpointOptions<any> {
      */
     messageFactory?: ProvdierOf<MessageFactory>;
     /**
-     * packet factory.
+     * incoming factory.
      */
-    packetFactory?: ProvdierOf<PacketFactory>;
+    incomingFactory?: ProvdierOf<IncomingFactory>;
+    /**
+     * outgoing factory.
+     */
+    outgoingFactory?: ProvdierOf<OutgoingFactory>;
     /**
      * service transport session factory.
      */

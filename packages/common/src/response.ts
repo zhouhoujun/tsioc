@@ -2,7 +2,6 @@ import { Abstract } from '@tsdi/ioc';
 import { HeadersLike } from './headers';
 import { StatusPacket, StatusPacketOpts } from './packet';
 
-
 /**
  * response packet data.
  */
@@ -182,12 +181,6 @@ export interface ResponseJsonParseError {
  */
 export type ResponseEvent<T = any, TStatus = any> = HeaderResponse<TStatus> | ResponsePacket<T, TStatus> | ErrorResponse<TStatus> | ResponseEventPacket;
 
-
-
-/**
- * Url response event
- */
-export type UrlResponseEvent<T = any, TStatus = any> = ResponseEvent<T, TStatus> & { url: string };
 
 
 @Abstract()

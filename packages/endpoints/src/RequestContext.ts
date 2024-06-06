@@ -248,15 +248,11 @@ export abstract class RequestContext<
     /**
      * Get request rul
      */
-    get url(): string {
-        return this.request.url!
-    }
+    abstract get url(): string;
     /**
      * Set request url
      */
-    set url(value: string) {
-        this.request.url = value;
-    }
+    abstract set url(value: string);
 
     /**
      * original url

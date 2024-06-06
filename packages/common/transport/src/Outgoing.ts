@@ -1,10 +1,11 @@
 import { Header, HeadersLike, IHeaders, Pattern, StatusPacket, StatusPacketOpts } from '@tsdi/common';
 import { IWritableStream } from './stream';
+import { Incoming } from './Incoming';
 
 /**
  * Outgoing message.
  */
-export interface Outgoing<T = any> {
+export interface Outgoing<T = any, TStatus = any> {
 
     id?: string | number;
     type?: string | number | null;
@@ -23,13 +24,13 @@ export interface Outgoing<T = any> {
      * @return {TStatus}
      * @api public
      */
-    get statusCode(): any;
+    get statusCode(): TStatus;
     /**
      * Set packet status code.
      *
      * @api public
      */
-    set statusCode(code: any);
+    set statusCode(code: TStatus);
 
     /**
      * Get packet status message.
@@ -110,8 +111,8 @@ export interface OutgoingStream extends IWritableStream {
  * Outgoing factory.
  */
 export abstract class OutgoingFactory {
-    abstract create(): Outgoing;
-    abstract create<T>(): Outgoing<T>;
+    abstract create(incoming: Incoming, options?: OutgoingPacketOpts): Outgoing;
+    abstract create<T, TStatus>(incoming: Incoming, options?: OutgoingPacketOpts<T, TStatus>): Outgoing<T, TStatus>;
 }
 
 
@@ -138,7 +139,7 @@ export interface OutgoingPacketOpts<T = any, TStatus = any> extends StatusPacket
 /**
  * Outgoing packet.
  */
-export abstract class OutgoingPacket<T = any, TStatus = number> extends StatusPacket<T, TStatus> implements Outgoing<T> {
+export abstract class OutgoingPacket<T = any, TStatus = number> extends StatusPacket<T, TStatus> implements Outgoing<T, TStatus> {
 
 
     constructor(init: OutgoingPacketOpts) {
@@ -151,6 +152,21 @@ export abstract class OutgoingPacket<T = any, TStatus = number> extends StatusPa
     set statusCode(code: TStatus) {
         this._status = code;
     }
+
+    /**
+     * Textual description of response status code, defaults to OK.
+     *
+     * Do not depend on this.
+     */
+    set statusText(text: string) {
+        this._message = text;
+    }
+
+    set statusMessage(message: string) {
+        this._message = message;
+    }
+
+
 
     setHeader(field: string, val: Header): void {
         this.headers.setHeader(field, val);

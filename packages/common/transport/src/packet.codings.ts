@@ -1,12 +1,12 @@
 import { Abstract, Injectable, isString, tokenId } from '@tsdi/ioc';
 import { ExecptionHandler, Interceptor, InvalidJsonException } from '@tsdi/core';
-import { Message, MessageFactory, Packet, PacketFactory, PacketOpts } from '@tsdi/common';
+import { Message, MessageFactory, Packet, PacketOpts } from '@tsdi/common';
 import { CodingType, Codings, CodingsNotHandleExecption, DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
 import { TransportContext } from './context';
 import { StreamAdapter, isBuffer, toBuffer } from './StreamAdapter';
 import { IReadableStream } from './stream';
 import { throwError } from 'rxjs';
-import { IncomingPacket, ClientIncomingPacket } from './Incoming';
+import { IncomingPacket, ClientIncomingPacket, IncomingFactory, ClientIncomingFactory } from './Incoming';
 import { OutgoingPacket } from './Outgoing';
 
 
@@ -74,7 +74,10 @@ export class PacketCodingsHandlers {
             msg = msg.clone(packet)
         }
         const { data: payload, ...opts } = msg;
-        return injector.get(PacketFactory).create({ payload, ...opts })
+        if(options.client) {
+            return injector.get(ClientIncomingFactory).create({ payload, ...opts })
+        }
+        return injector.get(IncomingFactory).create({ payload, ...opts })
 
     }
 

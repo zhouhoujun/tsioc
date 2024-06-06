@@ -114,6 +114,10 @@ export class HeaderMappings<T extends Header = Header> {
         return this._hdrs.size;
     }
 
+    get headerFields() {
+        return this._fields;
+    }
+
     getHeaderNames(): string[] {
         return Array.from(this._normal.keys())
     }

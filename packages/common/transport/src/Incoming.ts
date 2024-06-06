@@ -17,6 +17,8 @@ export interface Incoming<T = any> {
 
     headers: HeadersLike;
 
+    params?: Record<string, any>;
+
     body?: T | null
 
     rawBody?: any;
@@ -51,8 +53,8 @@ export interface IncomingStream extends IReadableStream {
  * Incoming factory.
  */
 export abstract class IncomingFactory {
-    abstract create(): Incoming;
-    abstract create<T>(): Incoming<T>;
+    abstract create(options: IncomingOpts): Incoming;
+    abstract create<T>(options: IncomingOpts<T>): Incoming<T>;
 }
 
 /**
@@ -246,8 +248,8 @@ export interface ClientIncoming<T = any, TStatus = null> {
  * Incoming factory.
  */
 export abstract class ClientIncomingFactory {
-    abstract create(): ClientIncoming;
-    abstract create<T, TStatus>(): ClientIncoming<T, TStatus>;
+    abstract create(options: ClientIncomingOpts): ClientIncoming;
+    abstract create<T, TStatus>(options: ClientIncomingOpts<T, TStatus>): ClientIncoming<T, TStatus>;
 }
 
 /**
@@ -260,7 +262,7 @@ export interface ClientIncomingOpts<T = any, TStatus = any> extends StatusPacket
 /**
  * client incoming packet
  */
-export abstract class ClientIncomingPacket<T = any, TStatus = number> extends StatusPacket<T, TStatus> implements ClientIncoming<T, TStatus> {
+export abstract class ClientIncomingPacket<T = any, TStatus = any> extends StatusPacket<T, TStatus> implements ClientIncoming<T, TStatus> {
 
     constructor(init: ClientIncomingOpts) {
         super(init);

@@ -250,11 +250,3 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
 
 }
 
-
-
-
-@Abstract()
-export abstract class PacketFactory {
-    abstract create(packet: PacketOpts): Packet;
-    abstract create<T>(packet: PacketOpts<T>): Packet<T>
-}
