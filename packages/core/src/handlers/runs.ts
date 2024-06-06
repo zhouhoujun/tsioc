@@ -1,5 +1,5 @@
-import { isFunction, isPromise } from '@tsdi/ioc';
-import { concat, concatAll, isObservable, merge, mergeAll, mergeMap, Observable, of } from 'rxjs';
+import { isFunction, isPromise, isUndefined } from '@tsdi/ioc';
+import { concat, concatAll, filter, isObservable, map, merge, mergeAll, mergeMap, Observable, of } from 'rxjs';
 import { Handler } from '../Handler';
 
 
@@ -41,11 +41,9 @@ export function runSequence<TInput, TContext = any>(handlers: Handler[] | undefi
         let $obs: Observable<any> = of(input);
         handlers.forEach(i => {
             $obs = $obs.pipe(
-                mergeMap(() => {
-                    if (isDone && isDone(input, context)) return of(input);
-                    const $res = i.handle(input, context);
-                    if (isPromise($res) || isObservable($res)) return $res;
-                    return of($res);
+                mergeMap((r) => {
+                    if (isDone && isDone(r, context)) return of(r);
+                    return i.handle(input, context);
                 }));
         });
         return $obs;
@@ -56,9 +54,7 @@ export function runSequence<TInput, TContext = any>(handlers: Handler[] | undefi
 
 
 function toDoneHooks(input: any, context: any) {
-    if (isFunction(input.isDone || input.isCompleted)) {
-        return (input: any) => input.isDone() == true;
-    } if (context && isFunction(context.isDone)) {
+    if (context && isFunction(context.isDone)) {
         return (input: any, context: any) => context.isDone(input) == true;
     }
     return null;
