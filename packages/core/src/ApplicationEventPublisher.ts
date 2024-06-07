@@ -21,6 +21,6 @@ export interface ApplicationEventPublisher {
      * execution for longer-running and potentially blocking operations.
      * @param event the event to publish
      */
-    publishEvent(event: ApplicationEvent | Object): Observable<any>;
+    publishEvent(event: ApplicationEvent | Object): Observable<void | false>;
 
 }

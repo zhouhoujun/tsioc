@@ -13,14 +13,12 @@ export interface HanlerContextOpts<T = any> extends InvokeArguments<T> {
  * invoke handler context.
  */
 export class HandlerContext<TInput = any> extends DefaultInvocationContext<TInput> {
-    private doneFn?: (ctx: HandlerContext<TInput>) => boolean;
     readonly bootstrap: boolean;
     constructor(
         injector: Injector,
         options: HanlerContextOpts<TInput> = EMPTY_OBJ) {
         super(injector, options);
         this.bootstrap = options.bootstrap === true;
-        this.doneFn = options.isDone;
         this.setValue(getClass(this), this);
     }
     private _execption: any;
@@ -37,10 +35,6 @@ export class HandlerContext<TInput = any> extends DefaultInvocationContext<TInpu
     }
 
     protected onExecption(err: any) { }
-
-    isDone() {
-        return this.doneFn ? this.doneFn(this) : false;
-    }
 
     protected override getArgumentResolver(): OperationArgumentResolver<any>[] {
         if (!this.args) return EMPTY;

@@ -1,8 +1,7 @@
 import { Abstract, DefaultInvocationContext, Execption, getClass, lang, Injectable, Injector, InvokeArguments, isPromise, isUndefined } from '@tsdi/ioc';
-import { catchError, filter, finalize, isObservable, mergeMap, Observable, of, throwError } from 'rxjs';
+import { catchError, finalize, isObservable, mergeMap, Observable, of, throwError } from 'rxjs';
 import { Handler } from '../Handler';
 import { Filter, FilterHandlerResolver } from './filter';
-import { runSequence } from '../handlers/runs';
 import { HandlerContext } from '../handlers/context';
 
 
@@ -107,19 +106,26 @@ export class ExecptionHandlerFilter<TInput, TOutput = any, TContext = any> exten
         }
 
         const expcption = new ExecptionContext(err, input, injector);
-        return runSequence(handlers, expcption, context)
-            .pipe(
-                catchError((err1, caugh) => {
-                    err1.originExecption = err;
-                    err1.message = `${err1.message}\r\n${err.toString()}`;
-                    return throwError(() => err1)
-                }),
-                finalize(() => {
-                    expcption.destroy();
+
+        return handlers.reduce(($obs, h) => {
+            return $obs.pipe(
+                mergeMap(r => {
+                    if (isUndefined(r)) {
+                        return h.handle(expcption, context)
+                    }
+                    return of(r);
                 })
-            );
+            )
+        }, of(undefined)).pipe(
+            catchError((err1, caugh) => {
+                err1.originExecption = err;
+                err1.message = `${err1.message}\r\n${err.toString()}`;
+                return throwError(() => err1)
+            }),
+            finalize(() => {
+                expcption.destroy();
+            })
+        );
     }
 
 }
-
-

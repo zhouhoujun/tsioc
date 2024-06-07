@@ -63,7 +63,7 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * multicast emit event.
      * @param event 
      */
-    abstract emit(event: ApplicationEvent): Observable<any>;
+    abstract emit(event: ApplicationEvent): Observable<void | false>;
 
     /**
      * Notify all <strong>matching</strong> listeners registered with this
@@ -76,7 +76,7 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * execution for longer-running and potentially blocking operations.
      * @param event the event to publish
      */
-    abstract publishEvent(event: ApplicationEvent | Object): Observable<any>;
+    abstract publishEvent(event: ApplicationEvent | Object): Observable<void | false>;
 
 
     abstract clear(): void;

@@ -1,5 +1,5 @@
 import {
-    EMPTY, ModuleRef, isFunction, lang, OnDestroy, pomiseOf, Injector,
+    EMPTY, ModuleRef, isFunction, lang, OnDestroy, promiseOf, Injector,
     Execption, isArray, isPromise, isObservable, isBoolean
 } from '@tsdi/ioc';
 import {
@@ -81,7 +81,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
     }
 
     handle(ctx: RequestContext, noFound?: () => Observable<any>): Observable<any> {
-        if (ctx.isDone()) return of(ctx)
+        if (ctx.sent) return of(ctx)
         const route = this.getRoute(ctx);
         if (route) {
             if (isArray(route)) {
@@ -105,7 +105,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
     }
 
     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.isDone()) return next()
+        if (ctx.sent) return next()
         const route = this.getRoute(ctx);
         if (route) {
             if (isArray(route)) {
@@ -405,7 +405,7 @@ export class MappingRoute implements Middleware, RequestHandler {
             this._guards = this.route.guards?.map(g => isFunction(g) ? ctx.resolve(g) : g) ?? EMPTY
         }
         if (!this._guards.length) return true;
-        return lang.some(this._guards.map(guard => () => pomiseOf(guard.canActivate(ctx))), vaild => vaild === false)
+        return lang.some(this._guards.map(guard => () => promiseOf(guard.canActivate(ctx))), vaild => vaild === false)
     }
 
     protected async parse(route: Route & { router?: Router }): Promise<MiddlewareLike> {

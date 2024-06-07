@@ -282,6 +282,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
 
 /**
  * event hander.
+ * handle method return false, stop event loop.
  * @EventHandler
  */
 export const EventHandler: EventHandler = createEventHandler(PayloadApplicationEvent, 'EventHandler', true);

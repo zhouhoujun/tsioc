@@ -2,7 +2,7 @@ import {
     isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, refl, ProvdierOf, getClassName,
     StaticProviders, ReflectiveFactory, isArray, ArgumentExecption, ReflectiveRef, StaticProvider, EMPTY
 } from '@tsdi/ioc';
-import { finalize, lastValueFrom, mergeMap, Observable, throwError } from 'rxjs';
+import { finalize, forkJoin, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { ApplicationRunners, RunnableFactory, RunnableRef } from '../ApplicationRunners';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent, ApplicationStartupEvent } from '../events';
@@ -14,9 +14,9 @@ import { Filter } from '../filters/filter';
 import { ExecptionHandlerFilter } from '../filters/execption.filter';
 import { FnHandler } from '../handlers/handler';
 import { ConfigableHandler, createHandler } from '../handlers/configable';
-import { runParallel } from '../handlers/runs';
 import { InvocationFactoryResolver, InvocationOptions } from '../invocation';
 import { HandlerContext } from '../handlers/context';
+import { NotHandleExecption } from '../execptions';
 
 
 /**
@@ -151,7 +151,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         return this._refs.get(type) ?? EMPTY;
     }
 
-    run(type?: Type|Type[]): Promise<void> {
+    run(type?: Type | Type[]): Promise<void> {
         if (type) {
             return lastValueFrom(this._handler.handle(new HandlerContext(this.injector, { args: { useValue: type } })));
         }
@@ -159,7 +159,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
             this.startup()
                 .pipe(
                     mergeMap(v => this.beforeRun()),
-                    mergeMap(v => this._handler.handle(new HandlerContext(this.injector, { bootstrap: true, args: { useValue: this._types } }))),
+                    mergeMap(v => this._types?.length ? this._handler.handle(new HandlerContext(this.injector, { bootstrap: true, args: { useValue: this._types } })) : of(v)),
                     mergeMap(v => this.afterRun())
                 )
         );
@@ -186,17 +186,19 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
     }
 
     handle(context: HandlerContext<any>): Observable<any> {
+        let handlers: Handler[] | undefined;
         if (isFunction(context.args)) {
-            return runParallel(this._maps.get(context.args), context)
-        }
-        if (isArray(context.args)) {
-            const handlers: Handler[] = [];
+            handlers = this._maps.get(context.args)
+        } else if (isArray(context.args)) {
+            handlers = [];
             context.args.forEach(type => {
-                handlers.push(...this._maps.get(type) || []);
-            })
-            return runParallel(handlers, context)
+                handlers = handlers!.concat(this._maps.get(type) ?? EMPTY);
+            });
+        } else {
+            return throwError(() => new ArgumentExecption('input type unknow'))
         }
-        return throwError(() => new ArgumentExecption('input type unknow'))
+        if (handlers && handlers.length) return forkJoin(handlers.map(h => h.handle(context)));
+        return throwError(() => new NotHandleExecption(context, context.args));
     }
 
     protected startup(): Observable<any> {

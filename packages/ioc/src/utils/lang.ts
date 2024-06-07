@@ -5,55 +5,6 @@ import { getClass, isArray, isFunction, isNil, isObject, isPrimitive, isPromise,
 import { isPlainObject } from './obj';
 import { getClassAnnotation } from './util';
 
-/**
- * create an new object from target object omit some field.
- *
- * @export
- * @param {any} target
- * @param {...string[]} fields
- * @returns {*}
- */
-export function omit(target: any, ...fields: string[]): any {
-    if (target) {
-        const result: any = {};
-        for (const key in target) {
-            if (fields.indexOf(key) < 0) {
-                result[key] = target[key]
-            }
-        }
-        return result
-    } else {
-        return target
-    }
-}
-
-export function pick(target: any, ...fields: string[]): any {
-    const obj: any = {};
-    for (const fd in fields) {
-        const val = target[fd];
-        if (!isNil(val)) {
-            obj[fd] = val;
-        }
-    }
-    return obj;
-}
-
-/**
- * assign key values to target.
- * @param target target object
- * @param values key values map.
- * @param omits omit fileds.
- * @returns 
- */
-export function assign(target: any, values: any, ...omits: string[]): any {
-    if (!values) return target;
-    for (const key in values) {
-        if (omits.indexOf(key) < 0) {
-            target[key] = values[key]
-        }
-    }
-    return target
-}
 
 /**
  * for in opter for object or array.
@@ -132,22 +83,22 @@ export function deepClone<T>(input: T): T {
 
 }
 
-/**
- * deep in object.
- * @param input 
- * @param fn 
- * @param path 
- * @returns 
- */
-export function deepIn(input: any, fn: (path: string, val: any) => void | false, path = '') {
-    if (isObject(input) == false) return;
-    Object.keys(input).forEach(name => {
-        const chpth = path ? `${path}.${name}` : name;
-        const val = (input as Record<string, any>)[name];
-        if (isNil(val) || fn(chpth, val) === false) return;
-        deepIn(val, fn, chpth);
-    })
-}
+// /**
+//  * deep in object.
+//  * @param input 
+//  * @param fn 
+//  * @param path 
+//  * @returns 
+//  */
+// export function deepIn(input: any, fn: (path: string, val: any) => void | false, path = '') {
+//     if (isObject(input) == false) return;
+//     Object.keys(input).forEach(name => {
+//         const chpth = path ? `${path}.${name}` : name;
+//         const val = (input as Record<string, any>)[name];
+//         if (isNil(val) || fn(chpth, val) === false) return;
+//         deepIn(val, fn, chpth);
+//     })
+// }
 
 
 /**
@@ -440,7 +391,7 @@ export function some<T>(promises: (T | PromiseLike<T> | ((value?: T) => T | Prom
  * @param target promise of the target.
  * @returns 
  */
-export function pomiseOf<T>(target: T | Observable<T> | Promise<T>): Promise<T> {
+export function promiseOf<T>(target: T | Observable<T> | Promise<T>): Promise<T> {
     if (isObservable(target)) {
         return lastValueFrom(target)
     } else if (isPromise(target)) {

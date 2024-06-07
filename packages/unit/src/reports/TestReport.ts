@@ -1,4 +1,4 @@
-import { Singleton, Inject, Token, lang, Injector } from '@tsdi/ioc';
+import { Singleton, Inject, Token, Injector } from '@tsdi/ioc';
 import { TestReport, SuiteDescribe, ICaseDescribe } from './interface';
 import { Reporter, RealtimeReporter, UNIT_REPORTES } from './Reporter';
 
@@ -31,7 +31,7 @@ export class DefaultTestReport implements TestReport {
     }
 
     track(error: Error): void {
-        this.reports.forEach(rep=> {
+        this.reports.forEach(rep => {
             rep.track(error)
         })
     }
@@ -40,8 +40,8 @@ export class DefaultTestReport implements TestReport {
         if (!this.suites.has(suit)) {
             describe.start = new Date().getTime();
             // init suite must has no completed cases.
-            if (describe.cases.length) {
-                describe = lang.omit(describe, 'cases')
+            if(describe.cases.length) {
+                describe = { ...describe};
             }
             describe.cases = [];
 

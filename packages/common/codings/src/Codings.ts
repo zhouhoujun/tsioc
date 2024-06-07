@@ -35,7 +35,7 @@ export class Codings {
         const handlers = this.mappings.getEncodeHanlders(type, context.options);
 
         if (handlers && handlers.length) {
-            return handlers.reduceRight((obs$, curr) => {
+            return handlers.reduce((obs$, curr) => {
                 return obs$.pipe(
                     mergeMap(i => {
                         if (context.encodeCompleted) return of(i);
@@ -67,7 +67,7 @@ export class Codings {
         const handlers = this.mappings.getDecodeHanlders(type, context.options);
 
         if (handlers && handlers.length) {
-            return handlers.reduceRight((obs$, curr) => {
+            return handlers.reduce((obs$, curr) => {
                 return obs$.pipe(
                     mergeMap(i => {
                         if (context.encodeCompleted) return of(i);

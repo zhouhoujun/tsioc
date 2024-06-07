@@ -174,8 +174,6 @@ export class PacketCodingsHandlers {
                 return this.codings.decodeType(Packet, execption.target, context)
             }
         }
-
-        return throwError(() => execption);
     }
 
 

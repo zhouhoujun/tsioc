@@ -141,8 +141,8 @@ export class UrlRequestContext<TRequest extends Incoming = Incoming, TResponse e
             message: execption.message,
             status: execption.status ?? execption.statusCode
         };
-        if (!isNil(execption.status)) this.response.statusCode = execption.status;
-        this.response.statusMessage = execption.message;
+        if (!isNil(execption.status)) this.status = execption.status;
+        this.statusMessage = execption.message;
         await lastValueFrom(this.session.send(this));
     }
 
@@ -214,8 +214,8 @@ export class PatternRequestContext<TRequest extends Incoming = Incoming, TRespon
             message: execption.message,
             status: execption.status ?? execption.statusCode
         };
-        if (!isNil(execption.status)) this.response.statusCode = execption.status;
-        this.response.statusMessage = execption.message;
+        if (!isNil(execption.status)) this.status = execption.status;
+        this.statusMessage = execption.message;
         await lastValueFrom(this.session.send(this));
     }
 }

@@ -1,4 +1,4 @@
-import { Abstract, Execption, lang, OnDestroy, pomiseOf, isFunction } from '@tsdi/ioc';
+import { Abstract, Execption, lang, OnDestroy, promiseOf, isFunction } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { Backend, Handler } from '../Handler';
 import { CanActivate } from '../guard';
@@ -47,7 +47,7 @@ export class GuardHandler<
             if (!this._guards || !this._guards.length) return true;
 
             if (!(await lang.some(
-                this._guards!.map(gd => () => pomiseOf(gd.canActivate(input, context))),
+                this._guards!.map(gd => () => promiseOf(gd.canActivate(input, context))),
                 vaild => vaild === false))) {
                 return false;
             }

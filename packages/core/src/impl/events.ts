@@ -6,7 +6,6 @@ import { Interceptor } from '../Interceptor';
 import { Handler } from '../Handler';
 import { Filter } from '../filters/filter';
 import { ExecptionHandlerFilter } from '../filters/execption.filter';
-import { runSequence } from '../handlers/runs';
 import { ConfigableHandler, createHandler } from '../handlers/configable';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventContext, ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
@@ -87,7 +86,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    emit(value: ApplicationEvent): Observable<any> {
+    emit(value: ApplicationEvent): Observable<void | false> {
         const ctx = new ApplicationEventContext(this.injector, { args: value });
         ctx.setValue(getClass(value), value);
         return this.handler.handle(ctx)
@@ -99,9 +98,9 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     }
 
 
-    publishEvent(event: ApplicationEvent): Observable<any>;
-    publishEvent(event: Object): Observable<any>;
-    publishEvent(obj: ApplicationEvent | Object): Observable<any> {
+    publishEvent(event: ApplicationEvent): Observable<void | false>;
+    publishEvent(event: Object): Observable<void | false>;
+    publishEvent(obj: ApplicationEvent | Object): Observable<void | false> {
         if (!obj) throwError(() => new ArgumentExecption('Event must not be null'));
 
         // Decorate event as an ApplicationEvent if necessary
@@ -115,6 +114,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this.emit(event)
             .pipe(
                 mergeMap(res => {
+                    if (res === false) return of(res);
                     const multicaster = this.injector.get(ApplicationEventMulticaster, null, InjectFlags.SkipSelf);
                     if (multicaster) {
                         // Publish event via parent multicaster as well...
@@ -124,18 +124,26 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
                                     return res;
                                 })
                             )
-                    } else {
-                        return of(res);
                     }
+                    return of(res);
                 })
             );
-
-
     }
 
-    handle(context: ApplicationEventContext): Observable<any> {
-        const endpoints = this.maps.get(getClass(context.args));
-        return runSequence(endpoints, context)
+    handle(context: ApplicationEventContext): Observable<void | false> {
+        const handlers = this.maps.get(getClass(context.args));
+        if (!handlers || !handlers.length) return of(undefined);
+
+        return handlers.reduce(($obs, h) => {
+            return $obs.pipe(
+                mergeMap(r => {
+                    if (r !== false) {
+                        return h.handle(context)
+                    }
+                    return of(r);
+                })
+            )
+        }, of(undefined))
     }
 
     clear(): void {

@@ -162,10 +162,23 @@ export abstract class OutgoingPacket<T = any, TStatus = number> extends StatusPa
         this._message = text;
     }
 
+    /**
+     * Textual description of response status code, defaults to OK.
+     *
+     * Do not depend on this.
+     */
+    get statusText(): string {
+        return this._message
+    }
+
+
     set statusMessage(message: string) {
         this._message = message;
     }
 
+    get statusMessage(): string {
+        return this._message
+    }
 
 
     setHeader(field: string, val: Header): void {
