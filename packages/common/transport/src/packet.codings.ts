@@ -74,7 +74,7 @@ export class PacketCodingsHandlers {
             msg = msg.clone(packet)
         }
         const { data: payload, ...opts } = msg;
-        if(options.client) {
+        if (options.client) {
             return injector.get(ClientIncomingFactory).create({ payload, ...opts })
         }
         return injector.get(IncomingFactory).create({ payload, ...opts })
@@ -138,6 +138,11 @@ export class PacketCodingsHandlers {
         return injector.get(MessageFactory).create(json);
     }
 
+    @EncodeHandler(OutgoingPacket, { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })
+    outgoingEncode(context: TransportContext) {
+        return this.packetEncode(context)
+    }
+
 
     @ExecptionHandler(CodingsNotHandleExecption)
     noHandle(execption: CodingsNotHandleExecption) {
@@ -177,7 +182,7 @@ export class PacketCodingsHandlers {
     }
 
 
-    
+
     private parseJson(data: Buffer) {
         const jsonStr = new TextDecoder().decode(data);
         try {

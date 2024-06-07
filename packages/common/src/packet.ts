@@ -1,4 +1,4 @@
-import { Abstract, isNil, isUndefined } from '@tsdi/ioc';
+import { isNil, isUndefined } from '@tsdi/ioc';
 import { HeaderFields, HeadersLike, HeaderMappings } from './headers';
 
 
@@ -246,6 +246,17 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
         }
         init.statusMessage = update.statusMessage ?? update.statusText ?? this.statusMessage;
         return init;
+    }
+
+    override toJson(): Record<string, any> {
+        const rcd = super.toJson();
+        rcd.status = this.status;
+        rcd.statusMessage = this.statusMessage;
+        rcd.ok = this.ok;
+        if (this.type) {
+            rcd.type = this.type;
+        }
+        return rcd;
     }
 
 }

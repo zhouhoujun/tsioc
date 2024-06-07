@@ -86,7 +86,14 @@ export class InvocationHandlerImpl<
                 }
                 input = ctx;
             }
+        } else if (context) {
+            if (context instanceof InvocationArgs) {
+                context.next(input);
+                input.setValue(InvocationArgs, context);
+            }
+            input.setValue(getClass(context), context);
         }
+        
         await this.beforeInvoke(input);
         let res = await this.invoker.invoke(input);
 
