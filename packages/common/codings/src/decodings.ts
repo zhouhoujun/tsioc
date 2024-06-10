@@ -1,7 +1,7 @@
-import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Backend, CanActivate, ExecptionHandlerFilter, Handler, Interceptor, createHandler } from '@tsdi/core';
+import { Injectable, Injector, tokenId } from '@tsdi/ioc';
+import { Backend, CanActivate, ConfigableHandler, ExecptionHandlerFilter, Interceptor, createHandler } from '@tsdi/core';
 import { Observable } from 'rxjs';
-import { CodingsOpts } from './options';
+import { CodingsOpts, DecodingsOptions } from './options';
 import { CodingsContext } from './context';
 import { Decoder } from './Decoder';
 import { Codings } from './Codings';
@@ -10,9 +10,17 @@ import { Codings } from './Codings';
 /**
  * Decodings Handler
  */
-@Abstract()
-export abstract class DecodingsHandler<TInput = any, TOutput = any> implements Handler<TInput, TOutput, CodingsContext> {
-    abstract handle(input: TInput, context: CodingsContext): Observable<TOutput>
+export class DecodingsHandler<TInput = any, TOutput = any> extends ConfigableHandler<TInput, TOutput, DecodingsOptions, CodingsContext> {
+
+    private _backend?: DecodingsBackend;
+    protected override getBackend(): DecodingsBackend {
+        if (!this._backend) {
+            this._backend = super.getBackend() as DecodingsBackend;
+        }
+        return this._backend
+    }
+
+
 }
 
 /**
@@ -20,9 +28,11 @@ export abstract class DecodingsHandler<TInput = any, TOutput = any> implements H
  */
 @Injectable()
 export class DecodingsBackend<TInput = any, TOutput = any> implements Backend<TInput, TOutput, CodingsContext> {
+    
     constructor(protected codings: Codings) { }
 
     handle(input: TInput, context: CodingsContext): Observable<TOutput> {
+        context.options.decodings?.end
         return this.codings.deepDecode(input, context);
     }
 }
@@ -66,7 +76,8 @@ export class DecodingsFactory {
             interceptorsToken: DECODINGS_INTERCEPTORS,
             filtersToken: DECODINGS_FILTERS,
             backend: DecodingsBackend,
-            ...options.decodings
+            ...options.decodings,
+            classType: DecodingsHandler
         });
 
         handler.useFilters(ExecptionHandlerFilter);

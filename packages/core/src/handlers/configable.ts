@@ -227,6 +227,10 @@ export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends Hand
     execptionHandlers?: ClassType<any> | ClassType[];
 }
 
+export interface TypeConfigableHandlerOptions<TClass extends ConfigableHandler, TInput = any, TArg = any> extends ConfigableHandlerOptions<TInput, TArg> {
+    classType: ClassType<TClass>;
+}
+
 /**
  * handler service.
  * 
@@ -238,6 +242,11 @@ export interface HandlerService extends FilterService, PipeService, InterceptorS
  * create configable hanlder with options
  */
 export function createHandler<TInput, TOutput>(context: Injector | InvocationContext, options: ConfigableHandlerOptions<TInput>): ConfigableHandler<TInput, TOutput>;
+
+/**
+ * create configable hanlder with options
+ */
+export function createHandler<TClass extends ConfigableHandler, TInput>(context: Injector | InvocationContext, options: TypeConfigableHandlerOptions<TClass, TInput>): TClass;
 /**
  * create configable hanlder with param options
  * @param context 
@@ -246,7 +255,7 @@ export function createHandler<TInput, TOutput>(context: Injector | InvocationCon
  * @param guardsToken 
  * @param filtersToken 
  */
-export function createHandler<TInput, TOutput>(context: Injector | InvocationContext,
+export function createHandler<TInput, TOutput, TClass extends ConfigableHandler>(context: Injector | InvocationContext,
     backend: Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>,
     interceptorsToken: Token<Interceptor<TInput, TOutput>[]>,
     guardsToken?: Token<CanActivate[]>,
@@ -260,8 +269,9 @@ export function createHandler<TInput, TOutput>(context: Injector | InvocationCon
     interceptorsToken?: Token<Interceptor<TInput, TOutput>[]>,
     guardsToken?: Token<CanActivate[]>,
     filtersToken?: Token<Filter<TInput, TOutput>[]>,
-    execptionHandlers?: ClassType<any> | ClassType[]): ConfigableHandler<TInput, TOutput> {
-    let options: ConfigableHandlerOptions<TInput>;
+    execptionHandlers?: ClassType<any> | ClassType[],
+): ConfigableHandler<TInput, TOutput> {
+    let options: ConfigableHandlerOptions<TInput> & { classType?: ClassType<ConfigableHandler> };
     if (interceptorsToken) {
         options = {
             backend: arg as (Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>),
@@ -274,7 +284,8 @@ export function createHandler<TInput, TOutput>(context: Injector | InvocationCon
         options = arg as ConfigableHandlerOptions<TInput>;
     }
     options = normalizeConfigableHandlerOptions(options);
-    return new ConfigableHandler(createContext(context, options), options)
+    const Type = options.classType ?? ConfigableHandler;
+    return new Type(createContext(context, options), options)
 }
 
 export function normalizeConfigableHandlerOptions<T extends ConfigableHandlerOptions>(options: T): T {

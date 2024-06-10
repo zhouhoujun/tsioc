@@ -137,7 +137,7 @@ export function remove<T>(list: T[] | null | undefined, el: T) {
  * @param {T[]} list
  * @returns {T}
  */
-export function last<T>(list: T[]): T {
+export function last<T>(list?: T[]): T {
     if (isArray(list) && list.length) {
         return list[list.length - 1]
     }

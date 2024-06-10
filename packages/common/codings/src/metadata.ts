@@ -1,5 +1,5 @@
 import { ActionTypes, DecorDefine, Execption, Token, Type, createDecorator, getToken, lang } from '@tsdi/ioc';
-import { Interceptor, InvocationFactoryResolver, InvocationOptions } from '@tsdi/core';
+import { Filter, Interceptor, InvocationFactoryResolver, InvocationOptions } from '@tsdi/core';
 import { HybirdTransport, Transport } from '@tsdi/common';
 import { CodingsContext } from './context';
 import { CodingMappings } from './mappings';
@@ -55,6 +55,16 @@ export function getEncodeInterceptorsToken(encodings: string | Type): Token<Inte
     return token;
 }
 
+const encodingFilterTokens = new Map<string | Type, Token<Filter<any, any, CodingsContext>[]>>();
+export function getEncodeFilterToken(encodings: string | Type): Token<Filter<any, any, CodingsContext>[]> {
+    let token = encodingFilterTokens.get(encodings);
+    if (!token) {
+        token = getToken<Filter<any, any, CodingsContext>[]>(encodings, '_ENCODINGS_FILTERS');
+        encodingFilterTokens.set(encodings, token);
+    }
+    return token;
+}
+
 /**
  * EncodeHandler decorator. use to define method as Encodings handler.
  * @Encoding
@@ -67,6 +77,9 @@ export const EncodeHandler: EncodeHandler = createDecorator<EncodingsMetadata>('
         const opts = { encodings, ...option };
         if (!opts.interceptorsToken) {
             opts.interceptorsToken = getEncodeInterceptorsToken(encodings);
+        }
+        if (!opts.filtersToken) {
+            opts.filtersToken = getEncodeFilterToken(encodings);
         }
         return opts;
     },
@@ -132,6 +145,16 @@ export function getDecodeInterceptorsToken(encodings: string | Type): Token<Inte
     return token;
 }
 
+const decodingFilterTokens = new Map<string | Type, Token<Filter<any, any, CodingsContext>[]>>();
+export function getDecodeFilterToken(encodings: string | Type): Token<Filter<any, any, CodingsContext>[]> {
+    let token = decodingFilterTokens.get(encodings);
+    if (!token) {
+        token = getToken<Filter<any, any, CodingsContext>[]>(encodings, '_DECODINGS_FILTERS');
+        decodingFilterTokens.set(encodings, token);
+    }
+    return token;
+}
+
 
 /**
  * DecodeHandler decorator. use to define method as Decodings handler.
@@ -145,6 +168,9 @@ export const DecodeHandler: DecodeHandler = createDecorator<DecodingMetadata>('D
         const opts = { decodings: encodings, ...option } as DecodingMetadata;
         if (!opts.interceptorsToken) {
             opts.interceptorsToken = getDecodeInterceptorsToken(encodings);
+        }
+        if (!opts.filtersToken) {
+            opts.filtersToken = getDecodeFilterToken(encodings);
         }
         return opts;
     },

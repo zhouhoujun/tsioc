@@ -1,4 +1,4 @@
-import { OnDestroy } from '@tsdi/ioc';
+import { OnDestroy, lang } from '@tsdi/ioc';
 import { InvocationArgs } from '@tsdi/core';
 import { CodingsOpts } from './options';
 
@@ -39,10 +39,20 @@ export class CodingsContext<TOpts extends CodingsOpts = CodingsOpts> extends Inv
         if (state == CodingType.Encode) {
             if (this.options.encodeComplete) {
                 this._encodeCompleted = this.options.encodeComplete(data)
+            } else {
+                const end = this.options.encodings?.end ?? lang.last(this.options.encodings?.chain);
+                if (end && data instanceof end) {
+                    this._encodeCompleted = true;
+                }
             }
         } else {
             if (this.options.decodeComplete) {
                 this._decodeCompleted = this.options.decodeComplete(data)
+            } else {
+                const end = this.options.decodings?.end ?? lang.last(this.options.decodings?.chain);
+                if (end && data instanceof end) {
+                    this._decodeCompleted = true;
+                }
             }
         }
     }

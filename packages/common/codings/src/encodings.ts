@@ -1,7 +1,7 @@
 import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Backend, CanActivate, ExecptionHandlerFilter, Handler, Interceptor, createHandler } from '@tsdi/core';
+import { Backend, CanActivate, ConfigableHandler, ExecptionHandlerFilter, Handler, Interceptor, createHandler } from '@tsdi/core';
 import { Observable } from 'rxjs';
-import { CodingsOpts } from './options';
+import { CodingsOpts, EncodingsOptions } from './options';
 import { CodingsContext } from './context';
 import { Encoder } from './Encoder';
 import { Codings } from './Codings';
@@ -9,9 +9,8 @@ import { Codings } from './Codings';
 /**
  * Encodings Handler
  */
-@Abstract()
-export abstract class EncodingsHandler<TInput = any, TOutput = any> implements Handler<TInput, TOutput, CodingsContext> {
-    abstract handle(input: TInput, context: CodingsContext): Observable<TOutput>
+export class EncodingsHandler<TInput = any, TOutput = any> extends ConfigableHandler<TInput, TOutput, EncodingsOptions, CodingsContext> {
+
 }
 
 
@@ -69,9 +68,10 @@ export class EncodingsFactory {
             filtersToken: ENCODINGS_FILTERS,
             guardsToken: ENCODINGS_GUARDS,
             backend: EncodingsBackend,
-            ...options.encodings
+            ...options.encodings,
+            classType: EncodingsHandler
         });
-        
+
         handler.useFilters(ExecptionHandlerFilter);
 
         return new Encodings(handler)
