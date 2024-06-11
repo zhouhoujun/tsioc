@@ -2,7 +2,7 @@ import { Injectable, Type, getClass } from '@tsdi/ioc';
 import { Handler } from '@tsdi/core';
 import { CodingsOpts } from './options';
 import { CodingType, CodingsContext } from './context';
-import { Observable, mergeMap, of, throwError } from 'rxjs';
+import { Observable, map, mergeMap, of, throwError } from 'rxjs';
 import { CodingsNotHandleExecption } from './execptions';
 
 
@@ -78,7 +78,12 @@ export class CodingMappings {
                 return obs$.pipe(
                     mergeMap(i => {
                         if (context.encodeCompleted) return of(i);
-                        return curr.handle(i, context.next(i, CodingType.Encode))
+                        return curr.handle(i, context).pipe(
+                            map(n => {
+                                context.next(n, CodingType.Encode);
+                                return n;
+                            })
+                        )
                     })
                 );
             }, of(data))
@@ -99,7 +104,12 @@ export class CodingMappings {
                 return obs$.pipe(
                     mergeMap(i => {
                         if (context.encodeCompleted) return of(i);
-                        return curr.handle(i, context.next(i, CodingType.Decode))
+                        return curr.handle(i, context).pipe(
+                            map(n => {
+                                context.next(n, CodingType.Encode);
+                                return n;
+                            })
+                        )
                     })
                 );
             }, of(data))

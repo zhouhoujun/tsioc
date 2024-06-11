@@ -2,7 +2,8 @@ import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST, Message, Packet } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
-import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
+import { ClientIncomingPacket, IncomingPacket, OutgoingPacket } from '@tsdi/common/transport';
+import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, PatternRequestContext, RequestContext, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS } from './client/options';
 import { TcpHandler } from './client/handler';
@@ -11,8 +12,7 @@ import { TCP_MIDDLEWARES, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTO
 import { TcpEndpointHandler } from './server/handler';
 import { TcpMessage, TcpMessageFactory } from './message';
 import { TcpClientIncoming, TcpClientIncomingFactory, TcpIncoming, TcpIncomingFactory } from './incoming';
-import { TcpOutgoingFactory } from './outgoing';
-import { ClientIncomingPacket, IncomingPacket } from '@tsdi/common/transport';
+import { TcpOutgoing, TcpOutgoingFactory } from './outgoing';
 import { TcpRequest } from './client/request';
 
 
@@ -72,6 +72,19 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
+                        encodings: {
+                            end: TcpMessage,
+                            defaults: [
+                                [TcpRequest, Packet],
+                                [TcpMessage, Message]
+                            ]
+
+                        },
+                        decodings: {
+                            defaults: [
+                                [TcpClientIncoming, ClientIncomingPacket]
+                            ]
+                        }
                     }
                 } as ClientOpts
             },
@@ -91,8 +104,17 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                         defaultMethod: '*',
                         maxSize: defaultMaxSize,
                         decodings: {
+                            end: RequestContext,
                             defaults: [
-                                [TcpIncoming, IncomingPacket]
+                                [TcpIncoming, IncomingPacket],
+                                [TcpMessage, Message]
+                            ]
+                        },
+                        encodings: {
+                            end: TcpMessage,
+                            defaults: [
+                                [PatternRequestContext, RequestContext],
+                                [TcpOutgoing, OutgoingPacket]
                             ]
                         }
                     },
@@ -128,7 +150,21 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                     transportOpts: {
                         delimiter: '#',
                         defaultMethod: 'GET',
-                        maxSize: defaultMaxSize
+                        maxSize: defaultMaxSize,
+                        decodings: {
+                            end: RequestContext,
+                            defaults: [
+                                [TcpIncoming, IncomingPacket],
+                                [TcpMessage, Message]
+                            ]
+                        },
+                        encodings: {
+                            end: TcpMessage,
+                            defaults: [
+                                [PatternRequestContext, RequestContext],
+                                [TcpOutgoing, OutgoingPacket]
+                            ]
+                        }
                     },
                     content: {
                         root: 'public'

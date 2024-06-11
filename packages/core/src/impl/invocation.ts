@@ -1,4 +1,4 @@
-import { Class, EMPTY_OBJ, Injectable, Injector, InvocationContext, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, createContext, getClass, isFunction, isNumber, isPromise, isString, lang } from '@tsdi/ioc';
+import { Class, EMPTY_OBJ, Injectable, Injector, InvocationContext, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, createContext, getClass, isDefined, isFunction, isNumber, isPromise, isString, lang } from '@tsdi/ioc';
 import { Observable, isObservable, lastValueFrom, of } from 'rxjs';
 import { Backend } from '../Handler';
 import { FnHandler } from '../handlers/handler';
@@ -77,7 +77,7 @@ export class InvocationHandlerImpl<
                 newCtx = true;
                 const ctx = createContext(this.context);
                 ctx.setValue(getClass(input), input);
-                if (context) this.attchContext(ctx, context)
+                if (context) this.attchContext(ctx, context, input)
                 input = ctx;
             }
         }
@@ -102,9 +102,9 @@ export class InvocationHandlerImpl<
         return result;
     }
 
-    protected attchContext(input: InvocationContext, context: TContext) {
+    protected attchContext(input: InvocationContext, context: TContext, nextData?: any) {
         if (context instanceof Context) {
-            context.next(input);
+            isDefined(nextData) && context.next(nextData);
             input.setValue(Context, context);
         }
         input.setValue(getClass(context), context);
