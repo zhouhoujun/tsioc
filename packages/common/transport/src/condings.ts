@@ -2,8 +2,8 @@ import { Injector, tokenId } from '@tsdi/ioc';
 import { CanActivate, ExecptionHandlerFilter, Interceptor, createHandler } from '@tsdi/core';
 import { Message, Packet } from '@tsdi/common';
 import {
-    DECODINGS_FILTERS, DECODINGS_GUARDS, DECODINGS_INTERCEPTORS, Decodings, DecodingsBackend, DecodingsFactory,
-    ENCODINGS_FILTERS, ENCODINGS_GUARDS, ENCODINGS_INTERCEPTORS, Encodings, EncodingsBackend, EncodingsFactory
+    Decodings, DecodingsBackend, DecodingsFactory,
+    Encodings, EncodingsBackend, EncodingsFactory
 } from '@tsdi/common/codings';
 import { TransportOpts } from './TransportSession';
 import { TransportContext } from './context';
@@ -38,15 +38,12 @@ export class TransportEncodingsFactory implements EncodingsFactory {
             interceptorsToken: TRANSPORT_ENCODINGS_INTERCEPTORS,
             filtersToken: TRANSPORT_ENCODINGS_FILTERS,
             guardsToken: TRANSPORT_ENCODINGS_GUARDS,
-            backend: createHandler(injector, {
-                filters: [ExecptionHandlerFilter],
-                filtersToken: ENCODINGS_FILTERS,
-                guardsToken: ENCODINGS_GUARDS,
-                interceptorsToken: ENCODINGS_INTERCEPTORS,
-                backend: EncodingsBackend,
-            }),
+            backend: EncodingsBackend,
             ...options.encodings
         });
+        
+        handler.useFilters(ExecptionHandlerFilter, 0);
+
         return new Encodings(handler)
     }
 }
@@ -78,15 +75,11 @@ export class TransportDecodingsFactory implements DecodingsFactory {
             guardsToken: TRANSPORT_DECODINGS_GUARDS,
             interceptorsToken: TRANSPORT_DECODINGS_INTERCEPTORS,
             filtersToken: TRANSPORT_DECODINGS_FILTERS,
-            backend: createHandler(injector, {
-                filters: [ExecptionHandlerFilter],
-                filtersToken: DECODINGS_FILTERS,
-                guardsToken: DECODINGS_GUARDS,
-                interceptorsToken: DECODINGS_INTERCEPTORS,
-                backend: DecodingsBackend,
-            }),
+            backend: DecodingsBackend,
             ...options.decodings
         });
+
+        handler.useFilters(ExecptionHandlerFilter, 0);
 
         return new Decodings(handler)
     }

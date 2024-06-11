@@ -1,39 +1,36 @@
-import { Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { Backend, CanActivate, ConfigableHandler, ExecptionHandlerFilter, Interceptor, createHandler } from '@tsdi/core';
-import { Observable } from 'rxjs';
-import { CodingsOpts, DecodingsOptions } from './options';
+import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
+import { Backend, CanActivate, ExecptionHandlerFilter, Handler, Interceptor, createHandler } from '@tsdi/core';
+import { Observable, mergeMap, of } from 'rxjs';
+import { CodingsOpts } from './options';
 import { CodingsContext } from './context';
 import { Decoder } from './Decoder';
-import { Codings } from './Codings';
+import { CodingMappings } from './mappings';
 
 
 /**
  * Decodings Handler
  */
-export class DecodingsHandler<TInput = any, TOutput = any> extends ConfigableHandler<TInput, TOutput, DecodingsOptions, CodingsContext> {
-
-    private _backend?: DecodingsBackend;
-    protected override getBackend(): DecodingsBackend {
-        if (!this._backend) {
-            this._backend = super.getBackend() as DecodingsBackend;
-        }
-        return this._backend
-    }
-
-
+@Abstract()
+export abstract class DecodingsHandler<TInput = any, TOutput = any> implements Handler<TInput, TOutput, CodingsContext> {
+    abstract handle(input: TInput, context: CodingsContext): Observable<TOutput>
 }
 
 /**
- * Decodings Backend
+ * Decoding Backend
  */
 @Injectable()
 export class DecodingsBackend<TInput = any, TOutput = any> implements Backend<TInput, TOutput, CodingsContext> {
-    
-    constructor(protected codings: Codings) { }
+
+    constructor(protected mappings: CodingMappings) { }
 
     handle(input: TInput, context: CodingsContext): Observable<TOutput> {
-        context.options.decodings?.end
-        return this.codings.deepDecode(input, context);
+        return this.mappings.decode(input, context)
+            .pipe(
+                mergeMap(data => {
+                    if (context.encodeCompleted) return of(data);
+                    return this.mappings.decode(data, context)
+                })
+            );
     }
 }
 
@@ -57,13 +54,19 @@ export const DECODINGS_GUARDS = tokenId<CanActivate[]>('DECODINGS_GUARDS');
 /**
  * Decodings
  */
-export class Decodings extends Decoder {
+export class Decodings implements Decoder {
 
-    constructor(readonly handler: DecodingsHandler) {
-        super()
+    constructor(private handler: DecodingsHandler) { }
+
+    /**
+     * decode inport
+     * @param input 
+     */
+    decode(input: any, context: CodingsContext): Observable<any> {
+        return this.handler.handle(input, context);
     }
-
 }
+
 
 /**
  * Decodings factory
@@ -76,11 +79,10 @@ export class DecodingsFactory {
             interceptorsToken: DECODINGS_INTERCEPTORS,
             filtersToken: DECODINGS_FILTERS,
             backend: DecodingsBackend,
-            ...options.decodings,
-            classType: DecodingsHandler
+            ...options.decodings
         });
 
-        handler.useFilters(ExecptionHandlerFilter);
+        handler.useFilters(ExecptionHandlerFilter, 0);
 
         return new Decodings(handler)
     }

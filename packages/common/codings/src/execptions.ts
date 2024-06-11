@@ -3,7 +3,7 @@ import { Type, getClassName, isString } from '@tsdi/ioc';
 import { CodingType, CodingsContext } from './context';
 
 /**
- * 
+ * codings not handle execption.
  */
 export class CodingsNotHandleExecption extends NotHandleExecption {
     constructor(

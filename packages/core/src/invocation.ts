@@ -1,9 +1,8 @@
-import { Abstract, Type, InvocationContext, OperationInvoker, tokenId, OnDestroy, Destroyable, ReflectiveRef, DestroyCallback, Injector, Class } from '@tsdi/ioc';
+import { Abstract, Type, OperationInvoker, tokenId, OnDestroy, Destroyable, ReflectiveRef, DestroyCallback, Injector, Class } from '@tsdi/ioc';
 import { CanActivate } from './guard';
 import { Interceptor } from './Interceptor';
 import { Filter } from './filters/filter';
 import { ConfigableHandler, ConfigableHandlerOptions } from './handlers/configable';
-import { BehaviorSubject, Observable, Subject, filter, takeUntil } from 'rxjs';
 
 
 /**
@@ -11,7 +10,7 @@ import { BehaviorSubject, Observable, Subject, filter, takeUntil } from 'rxjs';
  */
 @Abstract()
 export abstract class InvocationHandler<
-    TInput extends InvocationContext = InvocationContext,
+    TInput = any,
     TOutput = any,
     TOptions extends InvocationOptions = InvocationOptions,
     TContext = any> extends ConfigableHandler<TInput, TOutput, TOptions, TContext> {
@@ -25,53 +24,6 @@ export abstract class InvocationHandler<
      * @param target 
      */
     abstract equals(target: any): boolean;
-}
-
-export class InvocationArgs {
-
-    private destory$ = new Subject<void>();
-    private _next$ = new BehaviorSubject<any>(null);
-    private _inputs: any[];
-    readonly changed: Observable<any>;
-
-    get inputs(): any[] {
-        return this._inputs;
-    }
-
-    constructor() {
-        this._inputs = [];
-        this.changed = this._next$.pipe(
-            takeUntil(this.destory$),
-            filter(r => r !== null)
-        )
-    }
-
-    next<TInput>(input: TInput, state?: number): this {
-        if (this._inputs[0] != input) {
-            this._inputs.unshift(input);
-            this.onNext(input, state);
-        }
-        return this;
-    }
-
-    protected onNext(data: any, state?: number) {
-        this._next$.next(data);
-    }
-
-    first<TInput>(): TInput {
-        return this._inputs[this._inputs.length - 1]
-    }
-
-    last<TInput>(): TInput {
-        return this._inputs[0];
-    }
-
-    onDestroy(): void {
-        this._inputs = [];
-        this.destory$.next();
-        this.destory$.complete();
-
-    }
 }
 
 
@@ -118,7 +70,6 @@ export abstract class InvocationFactoryResolver {
      */
     abstract resolve<T>(type: Type<T> | Class<T>, injector: Injector): InvocationFactory<T>;
 }
-
 
 
 

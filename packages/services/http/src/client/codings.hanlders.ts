@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { HttpStatusCode, PatternFormatter, statusMessage } from '@tsdi/common';
-import { Codings, DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
+import { Codings, DecodingsHandler, EncodingsHandler } from '@tsdi/common/codings';
 import { TransportContext, PacketData, ResponsePacketIncoming, StatusAdapter } from '@tsdi/common/transport';
 import { HttpRequest } from '@tsdi/common/http';
 import { IncomingMessage } from 'http';
@@ -13,7 +13,7 @@ export class HttpClientCodingsHandlers {
 
     constructor(private codings: Codings) { }
 
-    @DecodeHandler(IncomingMessage, {group: 'http' })
+    @DecodingsHandler(IncomingMessage, {group: 'http' })
     handleHttpMessage(message: IncomingMessage, context: TransportContext, statusAdapter: StatusAdapter) {
         const msg = new ResponsePacketIncoming({
             status: message.statusCode,
@@ -25,7 +25,7 @@ export class HttpClientCodingsHandlers {
         return this.codings.decode(msg, context);
     }
 
-    @DecodeHandler(Http2IncomingMessage)
+    @DecodingsHandler(Http2IncomingMessage)
     handleHttp2Message(message: Http2IncomingMessage, context: TransportContext, statusAdapter: StatusAdapter) {
         const status = message.headers[':status'] as HttpStatusCode;
         const msg = new ResponsePacketIncoming({
@@ -39,7 +39,7 @@ export class HttpClientCodingsHandlers {
     }
 
 
-    @EncodeHandler(HttpRequest)
+    @EncodingsHandler(HttpRequest)
     handleRequest(req: HttpRequest) {
         const packet = {
             url: req.urlWithParams,

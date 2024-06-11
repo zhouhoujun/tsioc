@@ -1,5 +1,5 @@
-import { OnDestroy, lang } from '@tsdi/ioc';
-import { InvocationArgs } from '@tsdi/core';
+import { OnDestroy, Type } from '@tsdi/ioc';
+import { Context } from '@tsdi/core';
 import { CodingsOpts } from './options';
 
 export enum CodingType {
@@ -10,13 +10,19 @@ export enum CodingType {
 /**
  * transprot codings context.
  */
-export class CodingsContext<TOpts extends CodingsOpts = CodingsOpts> extends InvocationArgs implements OnDestroy {
+export class CodingsContext<TOpts extends CodingsOpts = CodingsOpts> extends Context implements OnDestroy {
 
 
     private _encodeCompleted = false;
     private _decodeCompleted = false;
+
+    private _encodeDefs: Map<Type | string, Type | string>;
+    private _decodeDefs: Map<Type | string, Type | string>;
+
     constructor(readonly options: TOpts) {
         super()
+        this._encodeDefs = new Map(this.options.encodings?.defaults);
+        this._decodeDefs = new Map(this.options.decodings?.defaults);
     }
 
 
@@ -28,6 +34,14 @@ export class CodingsContext<TOpts extends CodingsOpts = CodingsOpts> extends Inv
         return this._decodeCompleted;
     }
 
+    getDefault(type: Type | string, state: CodingType): Type | string | undefined {
+        if (state == CodingType.Encode) {
+            return this._encodeDefs.get(type)
+        } else {
+            return this._decodeDefs.get(type)
+        }
+    }
+
 
     next<TInput>(input: TInput, state: CodingType): this {
         super.next(input, state);
@@ -37,20 +51,18 @@ export class CodingsContext<TOpts extends CodingsOpts = CodingsOpts> extends Inv
     protected onNext(data: any, state: CodingType) {
         super.onNext(data, state);
         if (state == CodingType.Encode) {
-            if (this.options.encodeComplete) {
-                this._encodeCompleted = this.options.encodeComplete(data)
-            } else {
-                const end = this.options.encodings?.end ?? lang.last(this.options.encodings?.chain);
-                if (end && data instanceof end) {
+            if (this.options.encodings?.complete) {
+                this._encodeCompleted = this.options.encodings.complete(data)
+            } else if (this.options.encodings?.end) {
+                if (data instanceof this.options.encodings.end) {
                     this._encodeCompleted = true;
                 }
             }
         } else {
-            if (this.options.decodeComplete) {
-                this._decodeCompleted = this.options.decodeComplete(data)
-            } else {
-                const end = this.options.decodings?.end ?? lang.last(this.options.decodings?.chain);
-                if (end && data instanceof end) {
+            if (this.options.decodings?.complete) {
+                this._decodeCompleted = this.options.decodings.complete(data)
+            } else if (this.options.decodings?.end) {
+                if (data instanceof this.options.decodings.end) {
                     this._decodeCompleted = true;
                 }
             }

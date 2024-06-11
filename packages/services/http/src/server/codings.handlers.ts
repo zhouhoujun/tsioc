@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
+import { DecodingsHandler, EncodingsHandler } from '@tsdi/common/codings';
 import { TransportContext, Packet } from '@tsdi/common/transport';
 import { HttpIncomings, HttpServerTransportSession } from './http.session';
 import { HttpContextFactory, HttpContext } from './context';
@@ -8,7 +8,7 @@ import { HttpContextFactory, HttpContext } from './context';
 @Injectable({ static: true })
 export class HttpCodingsHandlers {
 
-    @DecodeHandler(HttpIncomings, { transport: 'http' })
+    @DecodingsHandler(HttpIncomings, { transport: 'http' })
     handleIncoming(incoming: HttpIncomings, context: TransportContext) {
         const session = context.session as HttpServerTransportSession;
         const injector = session.injector;
@@ -16,7 +16,7 @@ export class HttpCodingsHandlers {
     }
 
 
-    @EncodeHandler(HttpContext, { transport: 'http' })
+    @EncodingsHandler(HttpContext, { transport: 'http' })
     handleContext(input: HttpContext) {
         const response = input.response;
         const packet = {

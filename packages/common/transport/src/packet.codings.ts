@@ -1,7 +1,7 @@
 import { Abstract, Injectable, isString, tokenId } from '@tsdi/ioc';
 import { ExecptionHandler, Interceptor, InvalidJsonException } from '@tsdi/core';
 import { Message, MessageFactory, Packet, PacketOpts } from '@tsdi/common';
-import { CodingType, Codings, CodingsNotHandleExecption, DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
+import { CodingType, CodingsNotHandleExecption, DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
 import { TransportContext } from './context';
 import { StreamAdapter, isBuffer, toBuffer } from './StreamAdapter';
 import { IReadableStream } from './stream';
@@ -30,7 +30,7 @@ export abstract class HeaderDeserialization {
 @Injectable({ static: true })
 export class PacketCodingsHandlers {
 
-    constructor(private streamAdapter: StreamAdapter, private codings: Codings) { }
+    constructor(private streamAdapter: StreamAdapter) { }
 
     @DecodeHandler(Message, { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
     async messageDecode(context: TransportContext) {
@@ -144,42 +144,42 @@ export class PacketCodingsHandlers {
     }
 
 
-    @ExecptionHandler(CodingsNotHandleExecption)
-    noHandle(execption: CodingsNotHandleExecption) {
+    // @ExecptionHandler(CodingsNotHandleExecption)
+    // noHandle(execption: CodingsNotHandleExecption) {
 
-        const context = execption.codingsContext as TransportContext;
+    //     const context = execption.codingsContext as TransportContext;
 
-        if (execption.target instanceof Message) {
-            if (execption.codingType === CodingType.Encode) {
-                return this.codings.encodeType(Message, execption.target, context)
-            } else {
-                return this.codings.decodeType(Message, execption.target, context)
-            }
-        }
+    //     if (execption.target instanceof Message) {
+    //         if (execption.codingType === CodingType.Encode) {
+    //             return this.codings.encodeType(Message, execption.target, context)
+    //         } else {
+    //             return this.codings.decodeType(Message, execption.target, context)
+    //         }
+    //     }
 
-        if (execption.target instanceof IncomingPacket) {
-            if (execption.codingType === CodingType.Decode) {
-                return this.codings.decodeType(IncomingPacket, execption.target, context);
-            }
-            return throwError(() => execption);
-        } else if (execption.target instanceof OutgoingPacket) {
-            if (execption.codingType === CodingType.Encode) {
-                return this.codings.encodeType(OutgoingPacket, execption.target, context);
-            }
-            return throwError(() => execption);
-        } else if (execption.target instanceof ClientIncomingPacket) {
-            if (execption.codingType === CodingType.Decode) {
-                return this.codings.decodeType(ClientIncomingPacket, execption.target, context);
-            }
-            return throwError(() => execption);
-        } else if (execption.target instanceof Packet) {
-            if (execption.codingType === CodingType.Encode) {
-                return this.codings.encodeType(Packet, execption.target, context)
-            } else {
-                return this.codings.decodeType(Packet, execption.target, context)
-            }
-        }
-    }
+    //     if (execption.target instanceof IncomingPacket) {
+    //         if (execption.codingType === CodingType.Decode) {
+    //             return this.codings.decodeType(IncomingPacket, execption.target, context);
+    //         }
+    //         return throwError(() => execption);
+    //     } else if (execption.target instanceof OutgoingPacket) {
+    //         if (execption.codingType === CodingType.Encode) {
+    //             return this.codings.encodeType(OutgoingPacket, execption.target, context);
+    //         }
+    //         return throwError(() => execption);
+    //     } else if (execption.target instanceof ClientIncomingPacket) {
+    //         if (execption.codingType === CodingType.Decode) {
+    //             return this.codings.decodeType(ClientIncomingPacket, execption.target, context);
+    //         }
+    //         return throwError(() => execption);
+    //     } else if (execption.target instanceof Packet) {
+    //         if (execption.codingType === CodingType.Encode) {
+    //             return this.codings.encodeType(Packet, execption.target, context)
+    //         } else {
+    //             return this.codings.decodeType(Packet, execption.target, context)
+    //         }
+    //     }
+    // }
 
 
 

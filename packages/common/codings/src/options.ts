@@ -4,12 +4,14 @@ import { HybirdTransport, Transport } from '@tsdi/common';
 
 export interface EncodingsOptions extends ConfigableHandlerOptions {
     end?: Type;
-    chain?: Type[];
+    complete? (data: any): boolean;
+    defaults?: Array<[Type|string, Type|string]>
 }
 
 export interface DecodingsOptions extends ConfigableHandlerOptions {
     end?: Type;
-    chain?: Type[];
+    complete? (data: any): boolean;
+    defaults?: Array<[Type|string, Type|string]>
 }
 
 /**
@@ -31,8 +33,4 @@ export interface CodingsOpts {
 
     readonly encodings?: EncodingsOptions;
     readonly decodings?: DecodingsOptions;
-
-
-    encodeComplete?(data: any): boolean;
-    decodeComplete?(data: any): boolean;
 }

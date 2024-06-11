@@ -1,6 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
-import { LOCALHOST } from '@tsdi/common';
+import { LOCALHOST, Message, Packet } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
 import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';
@@ -9,9 +9,11 @@ import { TcpHandler } from './client/handler';
 import { TcpServer } from './server/server';
 import { TCP_MIDDLEWARES, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS } from './server/options';
 import { TcpEndpointHandler } from './server/handler';
-import { TcpMessageFactory } from './message';
-import { TcpClientIncomingFactory, TcpIncomingFactory } from './incoming';
+import { TcpMessage, TcpMessageFactory } from './message';
+import { TcpClientIncoming, TcpClientIncomingFactory, TcpIncoming, TcpIncomingFactory } from './incoming';
 import { TcpOutgoingFactory } from './outgoing';
+import { ClientIncomingPacket, IncomingPacket } from '@tsdi/common/transport';
+import { TcpRequest } from './client/request';
 
 
 // const defaultMaxSize = 65515; //65535 - 20;
@@ -38,6 +40,19 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
+                        encodings: {
+                            end: TcpMessage,
+                            defaults: [
+                                [TcpRequest, Packet],
+                                [TcpMessage, Message]
+                            ]
+
+                        },
+                        decodings: {
+                            defaults: [
+                                [TcpClientIncoming, ClientIncomingPacket]
+                            ]
+                        }
                     }
                 } as ClientOpts
             },
@@ -74,7 +89,12 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                     transportOpts: {
                         delimiter: '#',
                         defaultMethod: '*',
-                        maxSize: defaultMaxSize
+                        maxSize: defaultMaxSize,
+                        decodings: {
+                            defaults: [
+                                [TcpIncoming, IncomingPacket]
+                            ]
+                        }
                     },
                     content: {
                         root: 'public',

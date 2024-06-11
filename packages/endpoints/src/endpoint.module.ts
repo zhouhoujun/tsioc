@@ -21,9 +21,9 @@ import { EndpointHandler, createEndpoint } from './EndpointHandler';
 import { DefaultTransportSessionFactory } from './impl/default.session';
 import { RequestContextFactoryImpl } from './impl/request.context';
 import { DefaultExecptionHandlers } from './execption.handlers';
-import { IncomingDecodeFilter } from './codings/incoming.filter';
+// import { IncomingDecodeFilter } from './codings/incoming.filter';
 import { ServerEndpointCodingsHanlders } from './codings/codings.handlers';
-import { OutgoingEncodeFilter } from './codings/outgoing.filter';
+// import { OutgoingEncodeFilter } from './codings/outgoing.filter';
 
 
 
@@ -231,11 +231,11 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                         ...moduleOpts.serverOpts?.routes
                     },
                     providers: [
-                        { provide: TRANSPORT_DECODINGS_FILTERS, useExisting: ExecptionHandlerFilter, multi: true },
-                        { provide: TRANSPORT_DECODINGS_FILTERS, useClass: IncomingDecodeFilter, multi: true },
+                        // { provide: TRANSPORT_DECODINGS_FILTERS, useExisting: ExecptionHandlerFilter, multi: true },
+                        // { provide: TRANSPORT_DECODINGS_FILTERS, useClass: IncomingDecodeFilter, multi: true },
                         
-                        { provide: TRANSPORT_ENCODINGS_FILTERS, useClass: ExecptionHandlerFilter, multi: true },
-                        { provide: TRANSPORT_ENCODINGS_FILTERS, useClass: OutgoingEncodeFilter, multi: true },
+                        // { provide: TRANSPORT_ENCODINGS_FILTERS, useClass: ExecptionHandlerFilter, multi: true },
+                        // { provide: TRANSPORT_ENCODINGS_FILTERS, useClass: OutgoingEncodeFilter, multi: true },
                         
                         ...moduleOpts.defaultOpts?.providers || EMPTY,
                         ...moduleOpts.serverOpts?.providers || EMPTY

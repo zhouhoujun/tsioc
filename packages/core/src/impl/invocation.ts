@@ -4,17 +4,16 @@ import { Backend } from '../Handler';
 import { FnHandler } from '../handlers/handler';
 import { ConfigableHandler } from '../handlers/configable';
 import { ResultValue } from '../handlers/ResultValue';
-import { HandlerContext } from '../handlers/context';
+import { Context, HandlerContext } from '../handlers/context';
 import {
     InvocationOptions, Respond, TypedRespond, InvocationFactory, OPERA_FILTERS, OPERA_GUARDS,
     InvocationFactoryResolver, OPERA_INTERCEPTORS, InvocationHandler,
-    InvocationArgs
 } from '../invocation';
 
 
 
 export class InvocationHandlerImpl<
-    TInput extends HandlerContext = HandlerContext,
+    TInput = any,
     TOutput = any,
     TOptions extends InvocationOptions<TInput> = InvocationOptions<TInput>,
     TContext = any
@@ -39,7 +38,7 @@ export class InvocationHandlerImpl<
     }
 
     override handle(input: TInput, context?: TContext): Observable<TOutput> {
-        if (input.bootstrap && this.options.bootstrap === false) return of(null) as Observable<TOutput>
+        if ((input as HandlerContext).bootstrap && this.options.bootstrap === false) return of(null) as Observable<TOutput>
         if (isNumber(this.limit)) {
             if (this.limit < 1) return of(null) as Observable<TOutput>;
             this.limit -= 1;
@@ -61,7 +60,6 @@ export class InvocationHandlerImpl<
      * @param ctx 
      */
     protected beforeInvoke(ctx: TInput): any { }
-
     /**
      * respond.
      * @param input 
@@ -69,7 +67,9 @@ export class InvocationHandlerImpl<
      */
     protected async respond(input: any, context?: TContext) {
         let newCtx = false;
-        if (!(input instanceof InvocationContext)) {
+        if (input instanceof InvocationContext) {
+            if (context) this.attchContext(input, context);
+        } else {
             if (context && context instanceof InvocationContext) {
                 context.setValue(getClass(input), input);
                 input = context;
@@ -77,23 +77,11 @@ export class InvocationHandlerImpl<
                 newCtx = true;
                 const ctx = createContext(this.context);
                 ctx.setValue(getClass(input), input);
-                if (context) {
-                    if (context instanceof InvocationArgs) {
-                        context.next(input);
-                        ctx.setValue(InvocationArgs, context);
-                    }
-                    ctx.setValue(getClass(context), context);
-                }
+                if (context) this.attchContext(ctx, context)
                 input = ctx;
             }
-        } else if (context) {
-            if (context instanceof InvocationArgs) {
-                context.next(input);
-                input.setValue(InvocationArgs, context);
-            }
-            input.setValue(getClass(context), context);
         }
-        
+
         await this.beforeInvoke(input);
         let res = await this.invoker.invoke(input);
 
@@ -114,13 +102,21 @@ export class InvocationHandlerImpl<
         return result;
     }
 
+    protected attchContext(input: InvocationContext, context: TContext) {
+        if (context instanceof Context) {
+            context.next(input);
+            input.setValue(Context, context);
+        }
+        input.setValue(getClass(context), context);
+    }
+
     /**
      * respond as
      * @param ctx 
      * @param res 
      * @returns 
      */
-    protected respondAs(ctx: TInput, res: any): TOutput {
+    protected respondAs(ctx: InvocationContext, res: any): TOutput {
         if (isString(this.options.response)) {
             const trespond = ctx.get(TypedRespond);
             if (trespond) {
@@ -141,7 +137,7 @@ export class InvocationHandlerImpl<
         return res;
     }
 
-    protected defaultRespond(ctx: TInput, res: any): void { }
+    protected defaultRespond(ctx: InvocationContext, res: any): void { }
 
 }
 
