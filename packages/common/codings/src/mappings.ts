@@ -77,7 +77,7 @@ export class CodingMappings {
             return handlers.reduce((obs$, curr) => {
                 return obs$.pipe(
                     mergeMap(i => {
-                        if (context.encodeCompleted) return of(i);
+                        if (context.isCompleted(i, CodingType.Encode)) return of(i);
                         return curr.handle(i, context).pipe(
                             map(n => {
                                 context.next(n, CodingType.Encode);
@@ -103,10 +103,10 @@ export class CodingMappings {
             return handlers.reduce((obs$, curr) => {
                 return obs$.pipe(
                     mergeMap(i => {
-                        if (context.encodeCompleted) return of(i);
+                        if (context.isCompleted(i, CodingType.Decode)) return of(i);
                         return curr.handle(i, context).pipe(
                             map(n => {
-                                context.next(n, CodingType.Encode);
+                                context.next(n, CodingType.Decode);
                                 return n;
                             })
                         )

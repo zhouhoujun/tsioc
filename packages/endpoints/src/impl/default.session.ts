@@ -1,7 +1,7 @@
 import { Injectable, Injector } from '@tsdi/ioc';
 import { MessageFactory } from '@tsdi/common';
 import { Decoder, Encoder } from '@tsdi/common/codings';
-import { TransportOpts, StreamAdapter, TransportEncodingsFactory, TransportDecodingsFactory } from '@tsdi/common/transport';
+import { TransportOpts, StreamAdapter, TransportEncodingsFactory, TransportDecodingsFactory, StatusAdapter } from '@tsdi/common/transport';
 import { TransportSession, TransportSessionFactory } from '../transport.session';
 import { ServerOpts } from '../Server';
 
@@ -18,6 +18,7 @@ export class DefaultTransportSession extends TransportSession<any> {
         readonly encodings: Encoder,
         readonly decodings: Decoder,
         readonly streamAdapter: StreamAdapter,
+        readonly statusAdapter: StatusAdapter | null,
         readonly messageFactory: MessageFactory,
         readonly serverOptions: ServerOpts,
     ) {
@@ -37,6 +38,7 @@ export class DefaultTransportSessionFactory implements TransportSessionFactory<a
             injector.get(transportOpts.encodingsFactory ?? TransportEncodingsFactory).create(injector, transportOpts),
             injector.get(transportOpts.decodingsFactory ?? TransportDecodingsFactory).create(injector, transportOpts),
             injector.get(StreamAdapter),
+            injector.get(StatusAdapter, null),
             injector.get(MessageFactory),
             options);
     }

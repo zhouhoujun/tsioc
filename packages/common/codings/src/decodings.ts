@@ -2,7 +2,7 @@ import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
 import { Backend, CanActivate, ExecptionHandlerFilter, Handler, Interceptor, createHandler } from '@tsdi/core';
 import { Observable, mergeMap, of } from 'rxjs';
 import { CodingsOpts } from './options';
-import { CodingsContext } from './context';
+import { CodingType, CodingsContext } from './context';
 import { Decoder } from './Decoder';
 import { CodingMappings } from './mappings';
 
@@ -27,7 +27,7 @@ export class DecodingsBackend<TInput = any, TOutput = any> implements Backend<TI
         return this.mappings.decode(input, context)
             .pipe(
                 mergeMap(data => {
-                    if (context.encodeCompleted) return of(data);
+                    if (context.isCompleted(data, CodingType.Decode)) return of(data);
                     return this.mappings.decode(data, context)
                 })
             );

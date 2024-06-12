@@ -2,9 +2,9 @@ import {
     Arrayify, EMPTY, Injector, Module, ModuleWithProviders, ProvdierOf, ProviderType,
     Type, Token, isArray, lang, toProvider, tokenId, ModuleRef, isNil, ModuleType
 } from '@tsdi/ioc';
-import { ExecptionHandlerFilter, createHandler } from '@tsdi/core';
-import { HybirdTransport, MessageFactory, Transport } from '@tsdi/common';
-import { ClientIncomingFactory, NotImplementedExecption, StatusAdapter, TRANSPORT_DECODINGS_FILTERS, TRANSPORT_ENCODINGS_FILTERS, TransportPacketModule } from '@tsdi/common/transport';
+import { createHandler } from '@tsdi/core';
+import { DefaultResponseFactory, HybirdTransport, MessageFactory, ResponseFactory, Transport } from '@tsdi/common';
+import { ClientIncomingFactory, NotImplementedExecption, StatusAdapter, TransportPacketModule } from '@tsdi/common/transport';
 import { ClientOpts } from './options';
 import { ClientHandler } from './handler';
 import { Client } from './Client';
@@ -13,9 +13,8 @@ import { BodyContentInterceptor } from './interceptors/body';
 import { UrlRedirector } from './redirector';
 import { ClientTransportSessionFactory } from './session';
 import { DefaultClientTransportSessionFactory } from './default.session';
-import { ClientTransportBackend } from './transport.backend';
-// import { ClientIncomingDecodeFilter } from './codings/incoming.filter';
 import { ClientEndpointCodingsHanlders } from './codings/codings.handlers';
+import { ClientCodingsModule } from './codings/client.codings.module';
 
 /**
  * Client module config.
@@ -60,10 +59,10 @@ export interface ClientModuleOpts extends ClientModuleConfig {
      * client handler type.
      */
     hanlderType: Type<ClientHandler>;
-    // /**
-    //  * response event factory.
-    //  */
-    // responseEventFactory?: ProvdierOf<ResponseEventFactory>;
+    /**
+     * response event factory.
+     */
+    responseFactory?: ProvdierOf<ResponseFactory>;
     /**
      * client default options
      */
@@ -97,15 +96,13 @@ export interface ClientTokenOpts {
  */
 @Module({
     imports: [
-        TransportPacketModule
+        TransportPacketModule,
+        ClientCodingsModule
     ],
     providers: [
         DefaultClientTransportSessionFactory,
         BodyContentInterceptor,
-        UrlRedirector,
-        // DefaultResponseEventFactory,
-        // { provide: ResponseEventFactory, useExisting: DefaultResponseEventFactory },
-        { provide: ClientBackend, useClass: ClientTransportBackend, asDefault: true },
+        UrlRedirector
     ]
 })
 export class ClientModule {
@@ -224,6 +221,8 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                         clientOpts.execptionHandlers = [clientOpts.execptionHandlers, ClientEndpointCodingsHanlders];
                     }
                 }
+
+                clientOpts.providers.push(toProvider(ResponseFactory, clientOpts.responseFactory || DefaultResponseFactory))
 
                 if (clientOpts.statusAdapter) {
                     clientOpts.providers.push(toProvider(StatusAdapter, clientOpts.statusAdapter))

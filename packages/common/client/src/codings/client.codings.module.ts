@@ -1,22 +1,24 @@
-// import { Module } from '@tsdi/ioc';
-// import { CodingsModule, getDecodeInterceptorsToken } from '@tsdi/common/codings';
-// import { ResponsePacketIncoming } from '@tsdi/common/transport';
-// import { RequestEncodingsHandlers } from './request.encodings';
-// import { CompressResponseDecordeInterceptor, ResponseDecodingsHandlers } from './response.decodings';
-// import { CodingsTransportBackend } from './transport.backend';
-// import { TransportBackend } from '../backend';
+import { Module } from '@tsdi/ioc';
+import { CodingsModule } from '@tsdi/common/codings';
+import { CompressResponseDecordeInterceptor, EmptyResponseDecordeInterceptor, RedirectDecodeInterceptor, ResponseTypeDecodeInterceptor } from './response.decodings';
+import { ClientBackend } from '../backend';
+import { ClientTransportBackend } from './transport.backend';
+import { CLIENT_INCOMING_DECODE_INTERCEPTORS, ClientEndpointCodingsHanlders } from './codings.handlers';
 
-// @Module({
-//     imports:[
-//         CodingsModule
-//     ],
-//     providers: [
-//         { provide: TransportBackend, useClass: CodingsTransportBackend },
-//         RequestEncodingsHandlers,
-//         ResponseDecodingsHandlers,
-//         { provide: getDecodeInterceptorsToken(ResponsePacketIncoming), useClass: CompressResponseDecordeInterceptor, multi: true }
-//     ]
-// })
-// export class ClientCodingsModule {
 
-// }
+@Module({
+    imports:[
+        CodingsModule
+    ],
+    providers: [
+        { provide: ClientBackend, useClass: ClientTransportBackend, asDefault: true },
+        { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: EmptyResponseDecordeInterceptor, multi: true },
+        { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: RedirectDecodeInterceptor, multi: true },
+        { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: CompressResponseDecordeInterceptor, multi: true },
+        { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: ResponseTypeDecodeInterceptor, multi: true },
+        ClientEndpointCodingsHanlders
+    ]
+})
+export class ClientCodingsModule {
+
+}

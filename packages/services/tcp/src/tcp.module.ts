@@ -1,6 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
-import { LOCALHOST, Message, Packet } from '@tsdi/common';
+import { LOCALHOST, Message, Packet, isResponseEvent } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
 import { ClientIncomingPacket, IncomingPacket, OutgoingPacket } from '@tsdi/common/transport';
 import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, PatternRequestContext, RequestContext, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
@@ -49,8 +49,10 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
 
                         },
                         decodings: {
+                            complete: isResponseEvent,
                             defaults: [
-                                [TcpClientIncoming, ClientIncomingPacket]
+                                [TcpClientIncoming, ClientIncomingPacket],
+                                [TcpMessage, Message]
                             ]
                         }
                     }
@@ -81,8 +83,10 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
 
                         },
                         decodings: {
+                            complete: isResponseEvent,
                             defaults: [
-                                [TcpClientIncoming, ClientIncomingPacket]
+                                [TcpClientIncoming, ClientIncomingPacket],
+                                [TcpMessage, Message]
                             ]
                         }
                     }

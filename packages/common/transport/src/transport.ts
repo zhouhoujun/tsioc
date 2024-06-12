@@ -8,6 +8,7 @@ import { StreamAdapter, isBuffer } from './StreamAdapter';
 import { NotImplementedExecption } from './execptions';
 import { ev } from './consts';
 import { TransportContext } from './context';
+import { StatusAdapter } from './StatusAdapter';
 
 
 /**
@@ -27,6 +28,10 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * stream adapter.
      */
     abstract get streamAdapter(): StreamAdapter;
+    /**
+     * status adapter.
+     */
+    abstract get statusAdapter(): StatusAdapter | null;
 
 
     protected destroy$ = new Subject<void>;
@@ -37,7 +42,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      */
     send(data: TInput, context?: TransportContext): Observable<TMsg> {
         const ctx = context ?? new TransportContext(this);
-        ctx.outgoing = data;
+        // ctx.outgoing = data;
         return this.encodings.encode(data, ctx.next(data, CodingType.Encode))
             .pipe(
                 mergeMap(encoded => this.sendMessage(encoded, data, ctx)),
@@ -56,7 +61,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
             .pipe(
                 mergeMap(origin => {
                     const ctx = context ?? new TransportContext(this);
-                    ctx.incoming = origin;
+                    // ctx.incoming = origin;
                     return this.decodings.decode(origin, ctx)
                         .pipe(
                             takeUntil(this.destroy$),

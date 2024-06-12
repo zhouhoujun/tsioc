@@ -26,14 +26,6 @@ export class CodingsContext<TOpts extends CodingsOpts = CodingsOpts> extends Con
     }
 
 
-    get encodeCompleted(): boolean {
-        return this._encodeCompleted;
-    }
-
-    get decodeCompleted(): boolean {
-        return this._decodeCompleted;
-    }
-
     getDefault(type: Type | string, state: CodingType): Type | string | undefined {
         if (state == CodingType.Encode) {
             return this._encodeDefs.get(type)
@@ -50,23 +42,27 @@ export class CodingsContext<TOpts extends CodingsOpts = CodingsOpts> extends Con
 
     protected onNext(data: any, state: CodingType) {
         super.onNext(data, state);
-        if (state == CodingType.Encode) {
+
+    }
+
+    isCompleted(data: any, type: CodingType) {
+        if (type == CodingType.Encode) {
+            if (this._encodeCompleted) return true;
             if (this.options.encodings?.complete) {
-                this._encodeCompleted = this.options.encodings.complete(data)
+                return this.options.encodings.complete(data)
             } else if (this.options.encodings?.end) {
-                if (data instanceof this.options.encodings.end) {
-                    this._encodeCompleted = true;
-                }
+                return data instanceof this.options.encodings.end
             }
         } else {
+            if (this._decodeCompleted) return true;
+
             if (this.options.decodings?.complete) {
-                this._decodeCompleted = this.options.decodings.complete(data)
+                return this.options.decodings.complete(data)
             } else if (this.options.decodings?.end) {
-                if (data instanceof this.options.decodings.end) {
-                    this._decodeCompleted = true;
-                }
+                return data instanceof this.options.decodings.end
             }
         }
+        return false;
     }
 
     complete(type: CodingType) {
@@ -75,6 +71,12 @@ export class CodingsContext<TOpts extends CodingsOpts = CodingsOpts> extends Con
         } else {
             this._decodeCompleted = true;
         }
+    }
+
+    override onDestroy(): void {
+        super.onDestroy();
+        this._decodeDefs.clear();
+        this._encodeDefs.clear();
     }
 
 }

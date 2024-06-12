@@ -1,200 +1,65 @@
 import { EMPTY_OBJ, Injectable, isNil, isString, lang } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { HEAD, ResponseEvent, ResponseJsonParseError, UrlRequest, ResponseFactory, ClientIncomingPacket } from '@tsdi/common';
-import { TransportContext, MimeAdapter, StreamAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer } from '@tsdi/common/transport';
-import { Observable, defer, mergeMap } from 'rxjs';
+import { HEAD, ResponseEvent, ResponseJsonParseError, AbstractRequest } from '@tsdi/common';
+import { TransportContext, MimeAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer, ClientIncomingPacket } from '@tsdi/common/transport';
+import { Observable, defer, mergeMap, of } from 'rxjs';
+import { ClientTransportSession } from '../session';
 
 
 
-
-const jsonType = /json/i;
-const textType = /^text/i;
-const xmlType = /xml$/i;
 
 @Injectable()
-export class ResponseIncomingResolver {
+export class EmptyResponseDecordeInterceptor implements Interceptor<ClientIncomingPacket, ResponseEvent, TransportContext> {
 
-    resolve(res: ClientIncomingPacket, context: TransportContext) {
-        return defer(async () => {
-
-            const req = context.first() as UrlRequest;
-            const eventFactory = req.context.get(ResponseFactory);
-            const streamAdapter = req.context.get(StreamAdapter);
-            let responseType = req.responseType;
-
-            const contentType = res.headers.getContentType();
-            if (contentType && responseType === 'json') {
-                const mimeAdapter = req.context.get(MimeAdapter);
-                if (mimeAdapter && !mimeAdapter.isJson(contentType)) {
-                    if (mimeAdapter.isXml(contentType) || mimeAdapter.isText(contentType)) {
-                        responseType = 'text';
-                    } else {
-                        responseType = 'blob';
-                    }
-                } else if (!mimeAdapter && !jsonType.test(contentType)) {
-                    if (xmlType.test(contentType) || textType.test(contentType)) {
-                        responseType = 'text';
-                    } else {
-                        responseType = 'blob';
-                    }
-                }
-            }
-
-            let body, originalBody;
-            body = originalBody = res.body;
-
-            if (responseType !== 'stream' && streamAdapter.isReadable(body)) {
-                body = await toBuffer(body);
-            }
-
-            let error = res.error;
-            let ok = res.ok ?? !error;
-            if (!isNil(body)) {
-                switch (responseType) {
-                    case 'json':
-                        // Save the original body, before attempting XSSI prefix stripping.
-                        if (isBuffer(body)) {
-                            body = new TextDecoder().decode(body);
-                        }
-                        if (isString(body)) {
-                            originalBody = body;
-                            try {
-                                body = body.replace(XSSI_PREFIX, '');
-                                // Attempt the parse. If it fails, a parse error should be delivered to the user.
-                                body = (body !== '') ? JSON.parse(body) : null;
-                            } catch (err) {
-                                // Since the JSON.parse failed, it's reasonable to assume this might not have been a
-                                // JSON response. Restore the original body (including any XSSI prefix) to deliver
-                                // a better error response.
-                                body = originalBody;
-
-                                // If this was an error request to begin with, leave it as a string, it probably
-                                // just isn't JSON. Otherwise, deliver the parsing error to the user.
-                                if (ok) {
-                                    // Even though the response status was 2xx, this is still an error.
-                                    ok = false;
-                                    // The parse error contains the text of the body that failed to parse.
-                                    error = { error: err, text: body } as ResponseJsonParseError
-                                }
-                            }
-                        }
-                        break;
-
-                    case 'arraybuffer':
-                        body = body.subarray(body.byteOffset, body.byteOffset + body.byteLength);
-                        break;
-
-                    case 'blob':
-                        body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
-                            type: res.headers.getContentType()
-                        });
-                        break;
-
-                    case 'stream':
-                        body = streamAdapter.isStream(body) ? body : streamAdapter.jsonSreamify(body);
-                        break;
-
-                    case 'text':
-                    default:
-                        if (isBuffer(body)) {
-                            body = new TextDecoder().decode(body);
-                        }
-                        break;
-
-                }
-            }
-
-            if (ok) {
-                return eventFactory.create(res.clone({ ok, body }).toJson());
-            } else {
-                throw eventFactory.create(res.clone({ ok, body, error }).toJson());
-            }
-
-        })
+    intercept(input: ClientIncomingPacket, next: Handler<ClientIncomingPacket, ResponseEvent, TransportContext>, context: TransportContext): Observable<ResponseEvent> {
+        const len = input.headers.getContentLength();
+        const session = context.session as ClientTransportSession;
+        if (!len && session.statusAdapter?.isEmpty(input.status)) {
+            return of(session.responseFactory.create({ ...input.toJson(), payload: null }));
+        }
+        return next.handle(input, context);
     }
 }
 
+@Injectable()
+export class RedirectDecodeInterceptor implements Interceptor<ClientIncomingPacket, ResponseEvent, TransportContext> {
 
-// @Injectable({ static: true })
-// export class ResponseDecodingsHandlers {
+    intercept(input: ClientIncomingPacket, next: Handler<ClientIncomingPacket, ResponseEvent, TransportContext>, context: TransportContext): Observable<ResponseEvent> {
+        const session = context.session as ClientTransportSession;
+        // HTTP fetch step 5
+        if (session.redirector) {
+            if (session.statusAdapter?.isRedirect(input.status)) {
+                // HTTP fetch step 5.2
+                return session.redirector.redirect<ResponseEvent>(context.first(), input.status, input.headers.getHeaders());
+            }
+        }
+        return next.handle(input, context);
 
-//     @DecodeHandler(ResponsePacket)
-//     handleResponseIncoming(res: ResponsePacket, context: TransportContext, resovler: ResponseIncomingResolver) {
-//         // if (!(res.headers instanceof HeaderMappings)) {
-//         //     return throwError(() => new NotSupportedExecption(`${context.options.group ?? ''} ${context.options.name ?? ''} response is not ResponseIncoming!`));
-//         // }
-//         return resovler.resolve(res, context);
-//     }
-// }
-
-
-// @Injectable()
-// export class ResponseDecodeInterceper implements Interceptor<any, any, TransportContext> {
-
-//     constructor(private codings: Codings) { }
-
-//     intercept(input: any, next: Handler<any, any, TransportContext>, context: TransportContext): Observable<any> {
-//         return next.handle(input, context).pipe(
-//             mergeMap(res => {
-//                 // if (getClass(res) === Object) {
-//                 //     const packet = res as Packet;
-//                 //     if (!(packet.url || packet.topic || packet.headers || packet.payload)) {
-//                 //         return throwError(() => new NotSupportedExecption(`${context.options.group ?? ''} ${context.options.name ?? ''} response is not packet data!`));
-//                 //     }
-//                 //     res = new ResponsePacketIncoming(packet, context.options);
-//                 // }
-
-//                 return this.codings.decode(res, context)
-//             }));
-//     }
-// }
-
-
-
-export class RequestStauts {
-    public highWaterMark: number;
-    public insecureParser: boolean;
-    public referrerPolicy: ReferrerPolicy;
-    readonly compress: boolean;
-    constructor(init: {
-        compress?: boolean;
-        follow?: number;
-        counter?: number;
-        highWaterMark?: number;
-        insecureParser?: boolean;
-        referrerPolicy?: ReferrerPolicy;
-        redirect?: 'manual' | 'error' | 'follow' | '';
-    } = EMPTY_OBJ) {
-        this.compress = init.compress ?? false;
-        this.highWaterMark = init.highWaterMark ?? 16384;
-        this.insecureParser = init.insecureParser ?? false;
-        this.referrerPolicy = init.referrerPolicy ?? '';
     }
 }
-
 
 
 @Injectable()
 export class CompressResponseDecordeInterceptor implements Interceptor<ClientIncomingPacket, ResponseEvent, TransportContext> {
 
-    constructor(private streamAdapter: StreamAdapter) { }
 
     intercept(input: ClientIncomingPacket, next: Handler<ClientIncomingPacket, ResponseEvent, TransportContext>, context: TransportContext): Observable<ResponseEvent> {
-        const response = input;
-        const codings = response.headers.getContentEncoding();
-        const req = context.first() as UrlRequest;
-        const eventFactory = req.context.get(ResponseFactory);
-        const streamAdapter = this.streamAdapter;
-        const rqstatus = req.context.getValueify(RequestStauts, () => new RequestStauts());
-        // HTTP-network fetch step 12.1.1.4: handle content codings
-        // in following scenarios we ignore compression support
-        // 1. compression support is disabled
-        // 2. HEAD request
-        // 3. no Content-Encoding header
-        // 4. no content response (204)
-        // 5. content not modified response (304)
-        if (rqstatus.compress && req.method !== HEAD && codings) {
-            return defer(async () => {
+        return defer(async () => {
+            const response = input;
+            const session = context.session as ClientTransportSession;
+            const codings = response.headers.getContentEncoding();
+            const req = context.first() as AbstractRequest;
+            const streamAdapter = session.streamAdapter;
+            const rqstatus = req.context.getValueify(RequestStauts, () => new RequestStauts());
+            // HTTP-network fetch step 12.1.1.4: handle content codings
+            // in following scenarios we ignore compression support
+            // 1. compression support is disabled
+            // 2. HEAD request
+            // 3. no Content-Encoding header
+            // 4. no content response (204)
+            // 5. content not modified response (304)
+            if (rqstatus.compress && req.method !== HEAD && codings) {
+
                 let body = response.body;
                 // For Node v6+
                 // Be less strict when decoding compressed responses, since sometimes
@@ -247,15 +112,148 @@ export class CompressResponseDecordeInterceptor implements Interceptor<ClientInc
                     return response.clone({ body });
 
                 } catch (err) {
-                    throw eventFactory.create(response.clone({ error: err }).toJson())
+                    throw session.responseFactory.create(response.clone({ error: err }).toJson())
                 }
-            }).pipe(
-                mergeMap(() => {
-                    return next.handle(input, context);
-                })
-            )
-        }
+            }
+            return response;
+        }).pipe(
+            mergeMap(event => next.handle(event, context))
+        )
 
-        return next.handle(input, context)
     }
 }
+
+
+export class RequestStauts {
+    public highWaterMark: number;
+    public insecureParser: boolean;
+    public referrerPolicy: ReferrerPolicy;
+    readonly compress: boolean;
+    constructor(init: {
+        compress?: boolean;
+        follow?: number;
+        counter?: number;
+        highWaterMark?: number;
+        insecureParser?: boolean;
+        referrerPolicy?: ReferrerPolicy;
+        redirect?: 'manual' | 'error' | 'follow' | '';
+    } = EMPTY_OBJ) {
+        this.compress = init.compress ?? false;
+        this.highWaterMark = init.highWaterMark ?? 16384;
+        this.insecureParser = init.insecureParser ?? false;
+        this.referrerPolicy = init.referrerPolicy ?? '';
+    }
+}
+
+
+@Injectable()
+export class ResponseTypeDecodeInterceptor implements Interceptor<ClientIncomingPacket, ResponseEvent, TransportContext> {
+
+    intercept(input: ClientIncomingPacket, next: Handler<ClientIncomingPacket, ResponseEvent, TransportContext>, context: TransportContext): Observable<ResponseEvent> {
+        return defer(async () => {
+            const session = context.session as ClientTransportSession;
+
+            const req = context.first() as AbstractRequest;
+            const eventFactory = session.responseFactory;
+            const streamAdapter = session.streamAdapter;
+            let responseType = req.responseType;
+
+            const contentType = input.headers.getContentType();
+            if (contentType && responseType === 'json') {
+                const mimeAdapter = req.context.get(MimeAdapter);
+                if (mimeAdapter && !mimeAdapter.isJson(contentType)) {
+                    if (mimeAdapter.isXml(contentType) || mimeAdapter.isText(contentType)) {
+                        responseType = 'text';
+                    } else {
+                        responseType = 'blob';
+                    }
+                } else if (!mimeAdapter && !jsonType.test(contentType)) {
+                    if (xmlType.test(contentType) || textType.test(contentType)) {
+                        responseType = 'text';
+                    } else {
+                        responseType = 'blob';
+                    }
+                }
+            }
+
+            let body, originalBody;
+            body = originalBody = input.body;
+
+            if (responseType !== 'stream' && streamAdapter.isReadable(body)) {
+                body = await toBuffer(body);
+            }
+
+            let error = input.error;
+            let ok = input.ok ?? !error;
+            if (!isNil(body)) {
+                switch (responseType) {
+                    case 'json':
+                        // Save the original body, before attempting XSSI prefix stripping.
+                        if (isBuffer(body)) {
+                            body = new TextDecoder().decode(body);
+                        }
+                        if (isString(body)) {
+                            originalBody = body;
+                            try {
+                                body = body.replace(XSSI_PREFIX, '');
+                                // Attempt the parse. If it fails, a parse error should be delivered to the user.
+                                body = (body !== '') ? JSON.parse(body) : null;
+                            } catch (err) {
+                                // Since the JSON.parse failed, it's reasonable to assume this might not have been a
+                                // JSON response. Restore the original body (including any XSSI prefix) to deliver
+                                // a better error response.
+                                body = originalBody;
+
+                                // If this was an error request to begin with, leave it as a string, it probably
+                                // just isn't JSON. Otherwise, deliver the parsing error to the user.
+                                if (ok) {
+                                    // Even though the response status was 2xx, this is still an error.
+                                    ok = false;
+                                    // The parse error contains the text of the body that failed to parse.
+                                    error = { error: err, text: body } as ResponseJsonParseError
+                                }
+                            }
+                        }
+                        break;
+
+                    case 'arraybuffer':
+                        body = body.subarray(body.byteOffset, body.byteOffset + body.byteLength);
+                        break;
+
+                    case 'blob':
+                        body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
+                            type: input.headers.getContentType()
+                        });
+                        break;
+
+                    case 'stream':
+                        body = streamAdapter.isStream(body) ? body : streamAdapter.jsonSreamify(body);
+                        break;
+
+                    case 'text':
+                    default:
+                        if (isBuffer(body)) {
+                            body = new TextDecoder().decode(body);
+                        }
+                        break;
+
+                }
+            }
+
+            if (ok) {
+                return input.clone({ ok, body });
+            } else {
+                throw eventFactory.create(input.clone({ ok, body, error }).toJson());
+            }
+
+        }).pipe(
+            mergeMap(res => next.handle(res, context))
+        )
+
+
+    }
+}
+
+const jsonType = /json/i;
+const textType = /^text/i;
+const xmlType = /xml$/i;
