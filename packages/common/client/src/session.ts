@@ -1,8 +1,8 @@
 import { Abstract, Injector } from '@tsdi/ioc';
 import { ResponseEvent, AbstractRequest, Message, ResponseFactory } from '@tsdi/common';
+import { CodingType } from '@tsdi/common/codings';
 import { TransportOpts, BaseTransportSession, TransportContext, Redirector } from '@tsdi/common/transport';
 import { Observable, finalize, first, merge, mergeMap, takeUntil } from 'rxjs';
-import { CodingType } from '@tsdi/common/codings';
 
 
 /**
@@ -11,8 +11,13 @@ import { CodingType } from '@tsdi/common/codings';
 @Abstract()
 export abstract class ClientTransportSession<TSocket = any, TMsg extends Message = Message> extends BaseTransportSession<TSocket, AbstractRequest, ResponseEvent, TMsg> {
 
+    /**
+     * response factory.
+     */
     abstract get responseFactory(): ResponseFactory;
-
+    /**
+     * redirector.
+     */
     abstract get redirector(): Redirector | null;
 
     request(req: AbstractRequest, destroy$?: Observable<any>): Observable<ResponseEvent> {

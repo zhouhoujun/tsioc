@@ -40,11 +40,6 @@ export class CodingsContext<TOpts extends CodingsOpts = CodingsOpts> extends Con
         return this;
     }
 
-    protected onNext(data: any, state: CodingType) {
-        super.onNext(data, state);
-
-    }
-
     isCompleted(data: any, type: CodingType) {
         if (type == CodingType.Encode) {
             if (this._encodeCompleted) return true;

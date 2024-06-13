@@ -43,8 +43,7 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                         encodings: {
                             end: TcpMessage,
                             defaults: [
-                                [TcpRequest, Packet],
-                                [TcpMessage, Message]
+                                [TcpRequest, Packet]
                             ]
 
                         },
@@ -77,8 +76,7 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                         encodings: {
                             end: TcpMessage,
                             defaults: [
-                                [TcpRequest, Packet],
-                                [TcpMessage, Message]
+                                [TcpRequest, Packet]
                             ]
 
                         },

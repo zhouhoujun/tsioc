@@ -31,5 +31,4 @@ export class TcpOutgoingFactory implements OutgoingFactory {
         return new TcpOutgoing(incoming.pattern!, { id: incoming.id, ...options });
     }
 
-
 }
