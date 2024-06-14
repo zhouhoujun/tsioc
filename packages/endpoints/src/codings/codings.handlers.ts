@@ -31,9 +31,6 @@ export class ServerEndpointCodingsHanlders {
     @EncodeHandler(RequestContext, { interceptorsToken: SERVER_OUTGOING_ENCODE_INTERCEPTORS })
     encodePacket(context: TransportContext) {
         const reqContext = context.last<RequestContext>();
-        if(!reqContext.response) {
-            console.log(reqContext);
-        }
         return (reqContext.response as OutgoingPacket).clone({ payload: reqContext.body });
     }
 

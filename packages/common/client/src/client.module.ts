@@ -176,12 +176,6 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     ...opts.defaultOpts,
                     ...opts.clientOpts,
                     providers: [
-                        // { provide: TRANSPORT_DECODINGS_FILTERS, useExisting: ExecptionHandlerFilter, multi: true },
-                        // { provide: TRANSPORT_DECODINGS_FILTERS, useClass: ClientIncomingDecodeFilter, multi: true },
-
-                        // { provide: TRANSPORT_ENCODINGS_FILTERS, useClass: ExecptionHandlerFilter, multi: true },
-                        // { provide: TRANSPORT_ENCODINGS_FILTERS, useClass: OutgoingEncodeFilter, multi: true },
-
                         ...opts.defaultOpts?.providers || EMPTY,
                         ...opts.clientOpts?.providers || EMPTY
                     ]

@@ -100,6 +100,8 @@ export namespace ctype {
     * request default accept.
     */
    export const REQUEST_ACCEPT = 'application/json, text/plain, */*';
+
+   export const X_WWW_FORM_URLENCODED = 'application/x-www-form-urlencoded;charset=UTF-8'
 }
 
 

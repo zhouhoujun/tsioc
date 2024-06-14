@@ -4,11 +4,10 @@ import { Encoder, Decoder, CodingType } from '@tsdi/common/codings';
 import { Observable, Subject, finalize, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
 import { AbstractTransportSession } from './TransportSession';
 import { IEventEmitter, IWritableStream } from './stream';
-import { StreamAdapter, isBuffer } from './StreamAdapter';
+import { isBuffer } from './StreamAdapter';
 import { NotImplementedExecption } from './execptions';
 import { ev } from './consts';
 import { TransportContext } from './context';
-import { StatusAdapter } from './StatusAdapter';
 
 
 /**
@@ -24,14 +23,6 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * decodings
      */
     abstract get decodings(): Decoder;
-    /**
-     * stream adapter.
-     */
-    abstract get streamAdapter(): StreamAdapter;
-    /**
-     * status adapter.
-     */
-    abstract get statusAdapter(): StatusAdapter | null;
 
 
     protected destroy$ = new Subject<void>;

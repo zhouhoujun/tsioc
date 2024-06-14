@@ -1,9 +1,9 @@
 import { TypeExecption, isArray, isNil, isString, promisify } from '@tsdi/ioc';
-import { isArrayBuffer, isBlob, isFormData } from '@tsdi/common';
+import { Packet, RequestParams, isArrayBuffer, isBlob, isFormData } from '@tsdi/common';
 import { Buffer } from 'buffer';
 import { IDuplexStream, IReadableStream, IStream, IWritableStream, ITransformStream, IEndable } from './stream';
 import { UnsupportedMediaTypeExecption } from './execptions';
-import { ev } from './consts';
+import { ctype, ev } from './consts';
 
 /**
  * pipe source.
@@ -90,67 +90,26 @@ export abstract class StreamAdapter {
         source.pipe(writable, { end: false });
     }
 
-    async encode(data: any, encoding?: string): Promise<string | Buffer | IReadableStream | null> {
-        if (isNil(data)) return null;
 
-        let source: string | Buffer | IReadableStream;
-        if (isArrayBuffer(data)) {
-            source = Buffer.from(data);
-        } else if (Buffer.isBuffer(data)) {
-            source = data;
-        } else if (isString(data)) {
-            source = data;
-        } else if (isBlob(data)) {
-            const arrbuff = await data.arrayBuffer();
-            source = Buffer.from(arrbuff);
-        } else if (this.isFormDataLike(data)) {
-            if (isFormData(data)) {
-                const form = this.createFormData();
-                data.forEach((v, k, parent) => {
-                    form.append(k, v);
-                });
-                data = form;
-            }
-            source = data.getBuffer();
-        } else if (this.isReadable(data)) {
-            source = data;
-        } else {
-            source = JSON.stringify(data);
-        }
-        if (encoding) {
-            switch (encoding) {
-                case 'gzip':
-                case 'deflate':
-                    source = (this.isReadable(source) ? source : this.pipeline(source, this.createPassThrough())).pipe(this.createGzip());
-                    break;
-                case 'identity':
-                    break;
-                default:
-                    throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
-            }
-        }
-        return source;
-    }
+    // /**
+    //  * send body
+    //  * @param data 
+    //  * @param request 
+    //  * @param callback 
+    //  * @param encoding 
+    //  */
+    // async sendBody(data: any, request: IWritableStream | IEndable, encoding?: string): Promise<void> {
+    //     const source = await this.encodePayload(data, encoding) ?? Buffer.alloc(0);
+    //     if (this.isReadable(request)) {
+    //         await this.pipeTo(source, request as IWritableStream);
+    //     } else if (this.isStream(source)) {
+    //         const buffers = await toBuffer(source);
+    //         promisify<any, void>(request.end, request)(buffers);
+    //     } else {
+    //         promisify<any, void>(request.end, request)(source);
+    //     }
 
-    /**
-     * send body
-     * @param data 
-     * @param request 
-     * @param callback 
-     * @param encoding 
-     */
-    async sendBody(data: any, request: IWritableStream | IEndable, encoding?: string): Promise<void> {
-        const source = await this.encode(data, encoding) ?? Buffer.alloc(0);
-        if (this.isReadable(request)) {
-            await this.pipeTo(source, request as IWritableStream);
-        } else if (this.isStream(source)) {
-            const buffers = await toBuffer(source);
-            promisify<any, void>(request.end, request)(buffers);
-        } else {
-            promisify<any, void>(request.end, request)(source);
-        }
-
-    }
+    // }
 
     /**
      * pipe line

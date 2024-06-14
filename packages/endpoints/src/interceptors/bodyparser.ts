@@ -70,11 +70,12 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
     }
 
     intercept(input: RequestContext, next: Handler<RequestContext, any>): Observable<any> {
+        if (!isUndefined(input.request.body) && !input.streamAdapter.isReadable(input.request.body)) return next.handle(input);
         if (!input.mimeAdapter) {
-            if (input.streamAdapter.isReadable(input.request.body)) {
+            if (input.streamAdapter.isReadable(input.request.payload) || input.streamAdapter.isReadable(input.request)) {
                 return from(this.parseJson(input)).pipe(
                     mergeMap(res => {
-                        input.args.body = res.body ?? {};
+                        input.request.body = res.body ?? {};
                         if (isUndefined(input.request.rawBody)) input.request.rawBody = res.raw;
                         return next.handle(input)
                     })
@@ -82,11 +83,10 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
             }
             return next.handle(input);
         }
-        if (!isUndefined(input.request.body) && !input.streamAdapter.isReadable(input.request.body)) return next.handle(input);
         return from(this.parseBody(input))
             .pipe(
                 mergeMap(res => {
-                    input.args.body = res.body ?? {};
+                    input.request.body = res.body ?? {};
                     if (isUndefined(input.request.rawBody)) input.request.rawBody = res.raw;
                     return next.handle(input)
                 })
@@ -94,15 +94,15 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
     }
 
     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
+        if (!isUndefined(ctx.request.body) && !ctx.streamAdapter.isReadable(ctx.request.body)) return await next();
         if (!ctx.mimeAdapter) {
-            if (ctx.streamAdapter.isReadable(ctx.request.body)) {
+            if (ctx.streamAdapter.isReadable(ctx.request.payload) || ctx.streamAdapter.isReadable(ctx.request)) {
                 const res = await this.parseJson(ctx);
                 ctx.request.body = res.body ?? {};
                 if (isUndefined(ctx.request.rawBody)) ctx.request.rawBody = res.raw;
             }
             return await next();
         }
-        if (!isUndefined(ctx.request.body) && !ctx.streamAdapter.isReadable(ctx.request.body)) return await next();
         const res = await this.parseBody(ctx);
         ctx.request.body = res.body ?? {};
         if (isUndefined(ctx.request.rawBody)) ctx.request.rawBody = res.raw;
@@ -162,10 +162,10 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
             case 'deflate':
                 break
             case 'identity':
-                if (ctx.streamAdapter.isReadable(ctx.request.body)) {
-                    return ctx.request.body
-                } else if (ctx.streamAdapter.isStream(ctx.request.body)) {
-                    return ctx.request.body.pipe(ctx.streamAdapter.createPassThrough());
+                if (ctx.streamAdapter.isReadable(ctx.request.payload)) {
+                    return ctx.request.payload
+                } else if (ctx.streamAdapter.isStream(ctx.request.payload)) {
+                    return ctx.request.payload.pipe(ctx.streamAdapter.createPassThrough());
                 }
 
                 if (ctx.streamAdapter.isReadable(ctx.request)) {
@@ -178,8 +178,8 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
                 throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
         }
 
-        if (ctx.streamAdapter.isReadable(ctx.request.body) || ctx.streamAdapter.isStream(ctx.request.body)) {
-            return ctx.request.body.pipe(ctx.streamAdapter.createGunzip());
+        if (ctx.streamAdapter.isReadable(ctx.request.payload) || ctx.streamAdapter.isStream(ctx.request.payload)) {
+            return ctx.request.payload.pipe(ctx.streamAdapter.createGunzip());
         }
         if (ctx.streamAdapter.isReadable(ctx.request) || ctx.streamAdapter.isStream(ctx.request)) {
             return ctx.request.pipe(ctx.streamAdapter.createGunzip());

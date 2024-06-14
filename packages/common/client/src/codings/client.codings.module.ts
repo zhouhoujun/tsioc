@@ -1,6 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import { CodingsModule } from '@tsdi/common/codings';
-import { CompressResponseDecordeInterceptor, EmptyResponseDecordeInterceptor, RedirectDecodeInterceptor, ResponseTypeDecodeInterceptor } from './response.decodings';
+import { CompressResponseDecordeInterceptor, EmptyResponseDecordeInterceptor, ErrorResponseDecordeInterceptor, RedirectDecodeInterceptor, ResponseTypeDecodeInterceptor } from './response.decodings';
 import { ClientBackend } from '../backend';
 import { ClientTransportBackend } from './transport.backend';
 import { CLIENT_INCOMING_DECODE_INTERCEPTORS, ClientEndpointCodingsHanlders } from './codings.handlers';
@@ -12,6 +12,7 @@ import { CLIENT_INCOMING_DECODE_INTERCEPTORS, ClientEndpointCodingsHanlders } fr
     ],
     providers: [
         { provide: ClientBackend, useClass: ClientTransportBackend, asDefault: true },
+        { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: ErrorResponseDecordeInterceptor, multi: true },
         { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: EmptyResponseDecordeInterceptor, multi: true },
         { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: RedirectDecodeInterceptor, multi: true },
         { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: CompressResponseDecordeInterceptor, multi: true },

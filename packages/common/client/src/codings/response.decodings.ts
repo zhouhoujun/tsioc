@@ -2,10 +2,21 @@ import { EMPTY_OBJ, Injectable, isNil, isString, lang } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { HEAD, ResponseEvent, ResponseJsonParseError, AbstractRequest } from '@tsdi/common';
 import { TransportContext, MimeAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer, ClientIncomingPacket } from '@tsdi/common/transport';
-import { Observable, defer, mergeMap, of } from 'rxjs';
+import { Observable, defer, mergeMap, of, throwError } from 'rxjs';
 import { ClientTransportSession } from '../session';
 
 
+@Injectable()
+export class ErrorResponseDecordeInterceptor implements Interceptor<ClientIncomingPacket, ResponseEvent, TransportContext> {
+
+    intercept(input: ClientIncomingPacket, next: Handler<ClientIncomingPacket, ResponseEvent, TransportContext>, context: TransportContext): Observable<ResponseEvent> {
+        if (!input.ok || input.error) {
+            const session = context.session as ClientTransportSession;
+            return throwError(()=> session.responseFactory.create({ ...input.toJson(), payload: null }));
+        }
+        return next.handle(input, context);
+    }
+}
 
 
 @Injectable()
@@ -14,7 +25,7 @@ export class EmptyResponseDecordeInterceptor implements Interceptor<ClientIncomi
     intercept(input: ClientIncomingPacket, next: Handler<ClientIncomingPacket, ResponseEvent, TransportContext>, context: TransportContext): Observable<ResponseEvent> {
         const len = input.headers.getContentLength();
         const session = context.session as ClientTransportSession;
-        if (!len && session.statusAdapter?.isEmpty(input.status)) {
+        if (!len || session.statusAdapter?.isEmpty(input.status)) {
             return of(session.responseFactory.create({ ...input.toJson(), payload: null }));
         }
         return next.handle(input, context);

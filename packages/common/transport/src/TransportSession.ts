@@ -3,6 +3,9 @@ import { HeaderFields, Transport, HybirdTransport, MessageFactory, Message } fro
 import { CodingsOpts, EncodingsFactory, DecodingsFactory } from '@tsdi/common/codings';
 import { Observable } from 'rxjs';
 import { TransportContext } from './context';
+import { StreamAdapter } from './StreamAdapter';
+import { StatusAdapter } from './StatusAdapter';
+import { AbstractIncomingFactory } from './Incoming';
 
 
 /**
@@ -122,6 +125,18 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
      * message factory.
      */
     abstract get messageFactory(): MessageFactory;
+    /**
+     * incoming message factory.
+     */
+    abstract get incomingFactory(): AbstractIncomingFactory;
+    /**
+     * stream adapter.
+     */
+    abstract get streamAdapter(): StreamAdapter;
+    /**
+     * status adapter.
+     */
+    abstract get statusAdapter(): StatusAdapter | null;
     /**
      * send.
      * @param data 

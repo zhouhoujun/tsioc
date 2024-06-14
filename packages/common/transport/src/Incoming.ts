@@ -1,5 +1,6 @@
 import { HeadersLike, IHeaders, Packet, PacketOpts, ParameterCodec, Pattern, RequestParams, StatusPacket, StatusPacketOpts } from '@tsdi/common';
 import { IReadableStream } from './stream';
+import { isUndefined } from '@tsdi/ioc';
 
 
 /**
@@ -18,6 +19,8 @@ export interface Incoming<T = any> {
     headers: HeadersLike;
 
     params?: Record<string, any>;
+
+    payload?: any;
 
     body?: T | null
 
@@ -48,11 +51,14 @@ export interface IncomingStream extends IReadableStream {
 }
 
 
+export abstract class AbstractIncomingFactory<TIcoming = any> {
+    abstract create(options: any): TIcoming;
+}
 
 /**
  * Incoming factory.
  */
-export abstract class IncomingFactory {
+export abstract class IncomingFactory implements AbstractIncomingFactory<Incoming> {
     abstract create(options: IncomingOpts): Incoming;
     abstract create<T>(options: IncomingOpts<T>): Incoming<T>;
 }
@@ -108,12 +114,22 @@ export interface IncomingOpts<T = any> extends PacketOpts<T> {
  * Incoming packet.
  */
 export abstract class IncomingPacket<T = any> extends Packet<T> implements Incoming {
+
     /**
      * client side timeout.
      */
     readonly timeout?: number;
     readonly method: string;
     readonly params: RequestParams;
+
+    private _body?: T | null;
+    get body(): T | null {
+        return isUndefined(this._body) ? this.payload : this._body;
+    }
+
+    set body(data: T | null) {
+        this._body = data;
+    }
 
     constructor(init: IncomingOpts<T>) {
         super(init)
@@ -247,7 +263,7 @@ export interface ClientIncoming<T = any, TStatus = null> {
 /**
  * Incoming factory.
  */
-export abstract class ClientIncomingFactory {
+export abstract class ClientIncomingFactory implements AbstractIncomingFactory<ClientIncoming> {
     abstract create(options: ClientIncomingOpts): ClientIncoming;
     abstract create<T, TStatus>(options: ClientIncomingOpts<T, TStatus>): ClientIncoming<T, TStatus>;
 }

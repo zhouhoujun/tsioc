@@ -244,6 +244,9 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
         if (status !== null) {
             init.status = status;
         }
+        if (this.error || update.error) {
+            init.error = update.error ?? this.error
+        }
         init.statusMessage = update.statusMessage ?? update.statusText ?? this.statusMessage;
         return init;
     }
@@ -254,7 +257,10 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
         rcd.statusMessage = this.statusMessage;
         rcd.ok = this.ok;
         if (this.type) {
-            rcd.type = this.type;
+            rcd.type = this.type
+        }
+        if (this.error) {
+            rcd.error = this.error
         }
         return rcd;
     }

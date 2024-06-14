@@ -26,13 +26,13 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
 
     protected channels: Map<string, ChannelCache>;
 
-    constructor(private streamAdapter: StreamAdapter) {
+    constructor() {
         this.channels = new Map();
     }
 
     intercept(input: Message, next: Handler<Message, Packet>, context: TransportContext): Observable<Packet> {
-
-        if (this.streamAdapter.isReadable(input.data)) return next.handle(input, context);
+        const streamAdapter = context.session.streamAdapter;
+        if (streamAdapter.isReadable(input.data)) return next.handle(input, context);
 
         return new Observable((subscriber: Subscriber<Message>) => {
 
@@ -50,7 +50,7 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
                 }
                 this.channels.set(channel, cache)
             }
-            this.handleData(channel, cache, data, subscriber, context);
+            this.handleData(streamAdapter, channel, cache, data, subscriber, context);
 
             return subscriber;
 
@@ -59,13 +59,13 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
         );
     }
 
-    protected handleData(channel: string, cache: ChannelCache, data: Buffer, subscriber: Subscriber<Message>, context: TransportContext) {
+    protected handleData(streamAdapter: StreamAdapter, channel: string, cache: ChannelCache, data: Buffer, subscriber: Subscriber<Message>, context: TransportContext) {
         const options = context.options;
 
         const bLen = Buffer.byteLength(data);
         cache.length += bLen;
         if (!cache.stream) {
-            cache.stream = this.streamAdapter.createPassThrough();
+            cache.stream = streamAdapter.createPassThrough();
         }
         if (!cache.contentLength || cache.length <= cache.contentLength) {
             cache.stream.write(data);
@@ -108,7 +108,7 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
                 const rest = data.subarray(idx);
                 this.handleMessage(channel, cache, subscriber, !rest.length);
                 if (rest.length) {
-                    this.handleData(channel, cache, rest, subscriber, context);
+                    this.handleData(streamAdapter, channel, cache, rest, subscriber, context);
                 }
             } else {
                 subscriber.complete();
@@ -118,8 +118,8 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
         }
     }
     protected handleMessage(channel: string, cache: ChannelCache, subscriber: Subscriber<Message>, clear: boolean) {
-        cache.stream?.end();
         const data = cache.stream;
+        data?.end();
         const packet = cache.message.clone({ data });
         cache.stream = null;
         if (clear) {
@@ -167,22 +167,21 @@ export class BindPacketIdEncodeInterceptor implements Interceptor<Packet, Messag
 @Injectable()
 export class PacketEncodeInterceptor implements Interceptor<Packet, Message, TransportContext> {
 
-    constructor(private streamAdapter: StreamAdapter) { }
-
     intercept(input: Packet<any>, next: Handler<Packet, Message, TransportContext>, context: TransportContext): Observable<Message> {
 
         return next.handle(input, context)
             .pipe(map(msg => {
+                const streamAdapter = context.session.streamAdapter;
                 const countLen = context.options.countLen || 4;
                 let buffLen: Buffer;
                 const delimiter = Buffer.from(context.options.delimiter!);
                 const delimiterLen = Buffer.byteLength(delimiter);
                 const headers = msg.headers;
                 let data: IReadableStream | Buffer = msg.data ?? Buffer.alloc(0);
-                if (this.streamAdapter.isReadable(data)) {
+                if (streamAdapter.isReadable(data)) {
                     let first = true;
                     let subpacket = false;
-                    data = this.streamAdapter.pipeline(data, this.streamAdapter.createPassThrough({
+                    data = streamAdapter.pipeline(data, streamAdapter.createPassThrough({
                         transform: (chunk, encoding, callback) => {
                             if (chunk.indexOf(delimiter) >= 0) {
                                 subpacket = true;
