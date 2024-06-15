@@ -88,7 +88,7 @@ export abstract class AbstractRequest<T = any> extends Packet<T> {
     readonly responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
     readonly observe: 'body' | 'events' | 'response' | 'emit' | 'observe';
     readonly withCredentials: boolean;
-
+    override readonly payload: T | null;
     /**
      * request body, payload alias name.
      */
@@ -98,7 +98,7 @@ export abstract class AbstractRequest<T = any> extends Packet<T> {
 
     constructor(init: RequestInitOpts) {
         super(init)
-
+        this.payload = init.body ?? init.payload ?? null;
         this.params = new RequestParams(init);
         this.method = init.method ?? this.headers.getMethod() ?? init.defaultMethod ?? '';
         this.timeout = init.timeout;

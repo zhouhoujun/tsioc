@@ -718,14 +718,14 @@ export abstract class RequestContextFactory<TRequest extends Incoming, TResponse
 }
 
 
-export function getScopeValue(payload: any, scope: string) {
+export function getScopeValue(req: any, scope: string) {
     switch (scope) {
         case 'body':
-            return payload['body'] ?? payload['payload'];
+            return req['body'] ?? req['payload'];
         case 'payload':
-            return payload['payload'] ?? payload['body'];
+            return req['payload'] ?? req['body'];
         default:
-            return payload[scope]
+            return req[scope]
     }
 }
 
@@ -744,7 +744,7 @@ const primitiveResolvers = createPayloadResolver(
         }
         return data;
     },
-    (param, payload) => payload && isDefined(getScopeValue(payload, param.scope ?? 'query')));
+    (param, req) => req && isDefined(getScopeValue(req, param.scope ?? 'query')));
 
 
 /**
