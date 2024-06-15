@@ -118,6 +118,7 @@ export class RequestParams {
         } else {
             this.map.set(param, isArray(value) ? value.map(v => parseString(v)) : [parseString(value as any)])
         }
+        this._query = null;
         return this
     }
 
@@ -142,6 +143,7 @@ export class RequestParams {
      */
     set(param: string, value: string | number | boolean): this {
         this.map.set(param, [parseString(value)]);
+        this._query = null;
         return this;
     }
 
@@ -161,6 +163,7 @@ export class RequestParams {
                 values.splice(values.indexOf(parseString(value)), 1);
             }
         }
+        this._query = null;
         return this;
     }
 
@@ -195,9 +198,18 @@ export class RequestParams {
     toRecord(): Record<string, any> {
         return this.keys()
             .reduce((pre, key) => {
-                pre[key] = this.map.get(key);
+                const val = this.map.get(key);
+                pre[key] = isArray(val) ? (val.length == 1 ? val[0] : val) : val;
                 return pre
             }, {} as Record<string, any>)
+    }
+
+    private _query?: Record<string, any>|null;
+    getQuery(){
+        if(!this._query){
+            this._query = this.toRecord();
+        }
+        return this._query;
     }
 
     protected parse(rawParams: string) {

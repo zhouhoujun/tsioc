@@ -1,6 +1,6 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Injectable, Injector, Module, isString, tokenId } from '@tsdi/ioc';
-import { TransportErrorResponse } from '@tsdi/common';
+import { ErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
 import { MQTT_SERV_INTERCEPTORS, MqttClient } from '../src';
@@ -113,7 +113,7 @@ describe('Mqtt Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res instanceof ErrorResponse).toBeDefined();
         expect(res.statusMessage).toEqual('Not Found');
     })
 
@@ -125,7 +125,7 @@ describe('Mqtt Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res instanceof ErrorResponse).toBeDefined();
         expect(res.statusMessage).toContain('Packet length 23.74mb great than max size');
     })
 
@@ -137,7 +137,7 @@ describe('Mqtt Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res instanceof ErrorResponse).toBeDefined();
         expect(res.statusMessage).toEqual('Not Found');
     })
 
@@ -169,7 +169,7 @@ describe('Mqtt Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         expect(a.statusMessage).toEqual('Timeout has occurred');
     });
 
@@ -201,7 +201,7 @@ describe('Mqtt Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         expect(a.statusMessage).toEqual('Timeout has occurred');
     });
 
@@ -265,7 +265,7 @@ describe('Mqtt Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         expect(a.statusMessage).toEqual('Timeout has occurred');
     });
 

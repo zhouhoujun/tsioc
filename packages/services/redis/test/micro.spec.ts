@@ -1,6 +1,6 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
-import { TransportErrorResponse } from '@tsdi/common';
+import { ErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
@@ -116,7 +116,7 @@ describe('Redis Micro Service', () => {
 
         // expect(res).toBeDefined();
         // expect(isArray(res.features)).toBeTruthy();
-        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res instanceof ErrorResponse).toBeDefined();
         expect(res.statusMessage).toEqual('Not Found');
     })
 
@@ -130,7 +130,7 @@ describe('Redis Micro Service', () => {
 
         // expect(res).toBeDefined();
         // expect(isArray(res.features)).toBeTruthy();
-        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res instanceof ErrorResponse).toBeDefined();
         expect(res.statusMessage).toContain('Packet length 23.74mb great than max size');
     })
 
@@ -144,7 +144,7 @@ describe('Redis Micro Service', () => {
 
         // expect(res).toBeDefined();
         // expect(res.test).toEqual('ok');
-        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res instanceof ErrorResponse).toBeDefined();
         expect(res.statusMessage).toEqual('Not Found');
     })
 
@@ -176,7 +176,7 @@ describe('Redis Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         expect(a.statusMessage).toEqual('Timeout has occurred');
     });
 
@@ -208,7 +208,7 @@ describe('Redis Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         expect(a.statusMessage).toEqual('Timeout has occurred');
     });
 
@@ -272,7 +272,7 @@ describe('Redis Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         expect(a.statusMessage).toEqual('Timeout has occurred');
     });
 

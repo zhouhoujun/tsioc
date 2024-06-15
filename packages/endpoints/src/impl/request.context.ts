@@ -1,6 +1,6 @@
 import { EMPTY_OBJ, Injectable, Injector, isNil } from '@tsdi/ioc';
-import { HeaderMappings, LOCALHOST, normalize, PatternFormatter, ResponsePacket } from '@tsdi/common';
-import {  FileAdapter, Incoming, MessageExecption, MimeAdapter, Outgoing, StatusAdapter, StreamAdapter } from '@tsdi/common/transport';
+import { HeaderMappings, LOCALHOST, normalize, PatternFormatter, RequestParams, ResponsePacket } from '@tsdi/common';
+import { FileAdapter, Incoming, MessageExecption, MimeAdapter, Outgoing, StatusAdapter, StreamAdapter } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
 import { RequestContext, RequestContextFactory } from '../RequestContext';
 import { ServerOpts } from '../Server';
@@ -46,7 +46,7 @@ export class UrlRequestContext<TRequest extends Incoming = Incoming, TResponse e
         this.originalUrl = this.url = normalize(this.url);
         const searhIdx = this.url.indexOf('?');
         if (searhIdx >= 0) {
-            (this.request as any)['query'] = this.query;
+            this.request.query = this.query;
         }
     }
 
@@ -64,15 +64,14 @@ export class UrlRequestContext<TRequest extends Incoming = Incoming, TResponse e
     }
 
 
-    private _query?: Record<string, any>;
     get query(): Record<string, any> {
-        if (!this._query) {
-            const qs = this._query = {} as Record<string, any>;
+        if (!this.request.query) {
+            const qs = this.request.query = {} as Record<string, any>;
             this.URL.searchParams?.forEach((v, k) => {
                 qs[k] = v;
             });
         }
-        return this._query;
+        return this.request.query;
     }
 
     /**
@@ -183,10 +182,20 @@ export class PatternRequestContext<TRequest extends Incoming = Incoming, TRespon
         this.resHeaders = response.headers instanceof HeaderMappings ? response.headers : new HeaderMappings(response.headers);
 
         this.originalUrl = this.url = injector.get(PatternFormatter).format(request.pattern!);
+        if (!this.request.query) {
+            this.request.query = this.query;
+        }
     }
 
     get query(): Record<string, any> {
-        return this.request.params ?? {}
+        if (!this.request.query) {
+            if (this.request.params instanceof RequestParams) {
+                this.request.query = this.request.params.toRecord();
+            } else {
+                this.request.query = this.request.params ?? {}
+            }
+        }
+        return this.request.query;
     }
 
 

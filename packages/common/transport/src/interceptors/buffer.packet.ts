@@ -152,7 +152,7 @@ export class BindPacketIdEncodeInterceptor implements Interceptor<Packet, Messag
     intercept(input: Packet, next: Handler<Packet, Message>, context: TransportContext): Observable<Message> {
         const length = input.headers.getContentLength();
         const options = context.options;
-        if (length && options.maxSize && length > options.maxSize && !context.session!.injector.has(PackageEncodeInterceptor)) {
+        if (length && options.maxSize && length > options.maxSize && !context.options.headDelimiter) {
             const btpipe = context.session!.injector.get<PipeTransform>('bytes-format');
             return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(options.maxSize)}`));
         }

@@ -1,9 +1,8 @@
 import { Injectable, Injector, Module, isArray, isString, tokenId } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { TransportErrorResponse } from '@tsdi/common';
+import { ErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
-import { BufferCodingsModule } from '@tsdi/common/transport';
 import { EndpointModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -63,7 +62,6 @@ export class UdpService {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        BufferCodingsModule,
         ClientModule.register({
             transport: 'udp',
             microservice: true,
@@ -117,7 +115,7 @@ describe('Udp Micro Service', () => {
                 })));
 
 
-        expect(res).toBeInstanceOf(TransportErrorResponse);
+        expect(res).toBeInstanceOf(ErrorResponse);
         expect(res.statusMessage).toEqual('Not Found');
     })
 
@@ -130,7 +128,7 @@ describe('Udp Micro Service', () => {
                 })));
 
 
-        expect(res).toBeInstanceOf(TransportErrorResponse);
+        expect(res).toBeInstanceOf(ErrorResponse);
         expect(res.statusMessage).toContain('Packet length 23.74mb great than max size');
     })
 
@@ -142,7 +140,7 @@ describe('Udp Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res).toBeInstanceOf(TransportErrorResponse);
+        expect(res).toBeInstanceOf(ErrorResponse);
         expect(res.statusMessage).toEqual('Not Found');
     })
 
@@ -174,7 +172,7 @@ describe('Udp Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         expect(a.statusText).toEqual('Not Found');
     });
 
@@ -206,7 +204,7 @@ describe('Udp Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         expect(a.statusText).toEqual('Not Found');
     });
 
@@ -270,7 +268,7 @@ describe('Udp Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         expect(a.statusText).toEqual('Not Found');
     });
 

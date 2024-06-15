@@ -1,6 +1,7 @@
+import { isUndefined } from '@tsdi/ioc';
 import { HeadersLike, IHeaders, Packet, PacketOpts, ParameterCodec, Pattern, RequestParams, StatusPacket, StatusPacketOpts } from '@tsdi/common';
 import { IReadableStream } from './stream';
-import { isUndefined } from '@tsdi/ioc';
+
 
 
 /**
@@ -18,7 +19,9 @@ export interface Incoming<T = any> {
 
     headers: HeadersLike;
 
-    params?: Record<string, any>;
+    params?: Record<string, any> | RequestParams;
+
+    query?: Record<string, any>
 
     payload?: any;
 
@@ -129,6 +132,10 @@ export abstract class IncomingPacket<T = any> extends Packet<T> implements Incom
 
     set body(data: T | null) {
         this._body = data;
+    }
+
+    get query(): Record<string, any> {
+        return this.params.getQuery();
     }
 
     constructor(init: IncomingOpts<T>) {

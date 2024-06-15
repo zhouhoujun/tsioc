@@ -1,7 +1,7 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Injectable, Injector, Module, isString, tokenId } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
-import { TransportErrorResponse } from '@tsdi/common';
+import { ErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { Handle, EndpointModule, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
@@ -125,7 +125,7 @@ describe('Ws Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res).toBeInstanceOf(TransportErrorResponse);
+        expect(res).toBeInstanceOf(ErrorResponse);
         expect(res.statusMessage).toEqual('Not Found');
     })
 
@@ -137,8 +137,8 @@ describe('Ws Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res).toBeInstanceOf(TransportErrorResponse);
-        expect(res.statusMessage).toContain('Readable payload length 23.74mb great than max size');
+        expect(res).toBeInstanceOf(ErrorResponse);
+        expect(res.statusMessage).toContain('Packet length 23.74mb great than max size');
     })
 
     it('fetch json 2', async () => {
@@ -149,7 +149,7 @@ describe('Ws Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res).toBeInstanceOf(TransportErrorResponse);
+        expect(res).toBeInstanceOf(ErrorResponse);
         expect(res.statusMessage).toEqual('Not Found');
     })
 
@@ -179,11 +179,11 @@ describe('Ws Micro Service', () => {
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
-                    return of(err as TransportErrorResponse);
+                    return of(err as ErrorResponse);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect((a as TransportErrorResponse).statusText).toEqual('Not Found');
+        expect(a).toBeInstanceOf(ErrorResponse);
+        expect((a as ErrorResponse).statusText).toEqual('Not Found');
     });
 
     it('sensor.message/+ message', async () => {
@@ -214,8 +214,8 @@ describe('Ws Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect((a as TransportErrorResponse).statusText).toEqual('Not Found');
+        expect(a).toBeInstanceOf(ErrorResponse);
+        expect((a as ErrorResponse).statusText).toEqual('Not Found');
     });
 
     it('client2 sensor.message/+ message', async () => {
@@ -246,8 +246,8 @@ describe('Ws Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect((a as TransportErrorResponse).statusText).toEqual('Not Found');
+        expect(a).toBeInstanceOf(ErrorResponse);
+        expect((a as ErrorResponse).statusText).toEqual('Not Found');
     });
 
     it('sensor/message/+ message', async () => {
@@ -310,8 +310,8 @@ describe('Ws Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
-        expect((a as TransportErrorResponse).statusText).toEqual('Not Found');
+        expect(a).toBeInstanceOf(ErrorResponse);
+        expect((a as ErrorResponse).statusText).toEqual('Not Found');
     });
 
 

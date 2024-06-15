@@ -75,7 +75,7 @@ export class PacketCodingsHandlers {
 
         const { data: payload, headers, ...opts } = msg;
 
-        return incomingFactory.create({ payload, ...opts, ...packet, headers })
+        return incomingFactory.create({ payload, defaultMethod: context.options.defaultMethod, ...opts, ...packet, headers })
 
     }
 
