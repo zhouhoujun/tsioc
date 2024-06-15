@@ -143,6 +143,7 @@ export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
     providers: [
         SetupServices,
         DefaultTransportSessionFactory,
+        ServerEndpointCodingsHanlders,
 
         { provide: TypedRespond, useClass: EndpointTypedRespond, asDefault: true },
         { provide: RequestContextFactory, useClass: RequestContextFactoryImpl, asDefault: true },
@@ -266,13 +267,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 }
 
                 if (!serverOpts.execptionHandlers) {
-                    serverOpts.execptionHandlers = [DefaultExecptionHandlers, ServerEndpointCodingsHanlders]
-                } else {
-                    if (isArray(serverOpts.execptionHandlers)) {
-                        serverOpts.execptionHandlers.push(ServerEndpointCodingsHanlders)
-                    } else {
-                        serverOpts.execptionHandlers = [serverOpts.execptionHandlers, ServerEndpointCodingsHanlders];
-                    }
+                    serverOpts.execptionHandlers = [DefaultExecptionHandlers]
                 }
 
                 if (serverOpts.incomingFactory) {

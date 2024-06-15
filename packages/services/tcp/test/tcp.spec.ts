@@ -2,7 +2,7 @@ import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { Application, ApplicationContext, } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
-import { BadRequestExecption, TransportPacketModule } from '@tsdi/common/transport';
+import { BadRequestExecption, PackageBufferCodingsModule, TransportPacketModule } from '@tsdi/common/transport';
 import { ClientModule } from '@tsdi/common/client';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');

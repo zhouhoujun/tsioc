@@ -15,7 +15,7 @@ export const SERVER_OUTGOING_ENCODE_INTERCEPTORS = tokenId<Interceptor<RequestCo
 
 
 
-@Injectable()
+@Injectable({ static: true })
 export class ServerEndpointCodingsHanlders {
 
     @DecodeHandler(IncomingPacket, { interceptorsToken: SERVER_INCOMING_DECODE_INTERCEPTORS })
