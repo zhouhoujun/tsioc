@@ -190,8 +190,9 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Message, Tra
                                 callback(null, chunk);
                             } else {
                                 if (!buffLen) {
-                                    buffLen = Buffer.alloc(countLen)
+                                    buffLen = Buffer.alloc(countLen);
                                     buffLen.writeUIntBE(msg.headers['stream-length'] as number, 0, countLen);
+                                    // headers['stream-length'] = undefined;
                                 }
                                 if (first) {
                                     first = false;
@@ -203,7 +204,6 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Message, Tra
                             }
                         }
                     }));
-                    headers['stream-length'] = undefined;
                 } else {
                     buffLen = Buffer.alloc(countLen);
                     const dataLen = Buffer.byteLength(data);
@@ -214,7 +214,5 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Message, Tra
                 return msg.clone({ headers, data });
             }))
     }
-
-
 
 }
