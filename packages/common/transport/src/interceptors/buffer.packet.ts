@@ -16,7 +16,7 @@ import { PackageEncodeInterceptor } from './buffer.package';
  */
 export interface ChannelCache {
     message: Message;
-    stream?: IDuplexStream | null;
+    stream: IDuplexStream | null;
     length: number;
     contentLength: number | null;
 }
@@ -40,10 +40,10 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
 
             let cache = this.channels.get(channel);
             const data = input.data as Buffer;
-
+            input.data = null;
             if (!cache) {
                 cache = {
-                    message: input.clone({ data: null }),
+                    message: input,
                     stream: null,
                     length: 0,
                     contentLength: null
@@ -93,7 +93,7 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
                 } else {
                     cache.length -= idx;
                     cache.contentLength = rawContentLength;
-                    cache.message.headers['stream-length'] = rawContentLength;
+                    cache.message.streamLength = rawContentLength;
                 }
             }
         }
@@ -121,7 +121,8 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
     protected handleMessage(channel: string, cache: ChannelCache, subscriber: Subscriber<Message>, clear: boolean) {
         const data = cache.stream;
         data?.end();
-        const packet = cache.message.clone({ data });
+        const message = cache.message;
+        message.data = data;
         cache.stream = null;
         if (clear) {
             this.channels.delete(channel);
@@ -129,7 +130,7 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
             cache.contentLength = null;
             cache.length = 0;
         }
-        subscriber.next(packet);
+        subscriber.next(message);
     }
 }
 
@@ -177,7 +178,7 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Message, Tra
                 let buffLen: Buffer;
                 const delimiter = Buffer.from(context.options.delimiter!);
                 const delimiterLen = Buffer.byteLength(delimiter);
-                const headers = msg.headers;
+                // const headers = msg.headers;
                 let data: IReadableStream | Buffer = msg.data ?? Buffer.alloc(0);
                 if (streamAdapter.isReadable(data)) {
                     let first = true;
@@ -192,8 +193,7 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Message, Tra
                             } else {
                                 if (!buffLen) {
                                     buffLen = Buffer.alloc(countLen);
-                                    buffLen.writeUIntBE(msg.headers['stream-length'] as number, 0, countLen);
-                                    headers['stream-length'] = undefined;
+                                    buffLen.writeUIntBE(msg.streamLength!, 0, countLen);
                                 }
                                 if (first) {
                                     first = false;
@@ -212,7 +212,9 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Message, Tra
                     const total = countLen + delimiterLen + dataLen;
                     data = Buffer.concat([buffLen, delimiter, data], total);
                 }
-                return msg.clone({ headers, data });
+                msg.data = data;
+
+                return msg;
             }))
     }
 

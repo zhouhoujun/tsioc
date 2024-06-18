@@ -1,6 +1,6 @@
-import { Abstract, ClassType, getClass, isUndefined } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 import { IReadableStream } from '../transport';
-import { Header, HeaderMappings, HeadersLike, IHeaders } from './headers';
+import { Header } from './headers';
 import { Pattern } from './pattern';
 
 
@@ -15,73 +15,26 @@ export interface MessageInitOpts {
  * base message.
  */
 export class Message {
-    protected _id?: string | number;
-    get id(): string | number | undefined {
-        return this._id;
-    }
+    public id: string | number | undefined;
 
     readonly headers: Record<string, Header>;
 
-    readonly data: Buffer | IReadableStream | null
+    public data: Buffer | IReadableStream | null;
 
+    public streamLength?: number;
+
+    public noHead?: boolean;
 
     constructor(init: {
         id?: string | number;
         headers?: Record<string, any>;
         data?: Buffer | IReadableStream | null;
+        streamLength?: number;
     }) {
-        this._id = init.id;
+        this.id = init.id;
         this.data = init.data ?? null;
+        this.streamLength = init.streamLength;
         this.headers = init.headers ?? {};
-    }
-
-    clone(update: {
-        id?: number | string;
-        headers?: HeadersLike;
-        data?: Buffer | IReadableStream | null;
-        setHeaders?: { [name: string]: string | string[]; };
-    }): this {
-        const opts = this.cloneOpts(update);
-        return this.createInstance(opts);
-    }
-
-    protected cloneOpts(update: {
-        id?: number | string;
-        headers?: HeadersLike;
-        data?: Buffer | IReadableStream | null;
-        setHeaders?: { [name: string]: string | string[]; };
-    }): MessageInitOpts {
-        const id = this.id ?? update.id;
-        const data = isUndefined(update.data) ? this.data : update.data;
-        // Headers and params may be appended to if `setHeaders` or
-        // `setParams` are used.
-        let headers: IHeaders;
-        if (update.headers instanceof HeaderMappings) {
-            headers = update.headers.getHeaders();
-        } else {
-            headers = update.headers ? Object.assign(update.headers, this.headers) : this.headers;
-        }
-        // Check whether the caller has asked to add headers.
-        if (update.setHeaders !== undefined) {
-            // Set every requested header.
-            headers =
-                Object.keys(update.setHeaders)
-                    .reduce((headers, name) => {
-                        headers[name] = update.setHeaders![name];
-                        return headers;
-                    }, headers)
-        }
-
-        return { id, headers, data }
-    }
-
-    protected createInstance(opts: MessageInitOpts) {
-        const type = getClass(this) as ClassType;
-        return new type(opts);
-    }
-
-    attachId(id: string | number): void {
-        this._id = id;
     }
 }
 
@@ -93,20 +46,10 @@ export class PatternMesage extends Message {
         pattern: Pattern;
         headers?: Record<string, any>;
         data?: Buffer | IReadableStream | null;
+        streamLength?: number;
     }) {
         super(init)
         this.pattern = init.pattern
-    }
-
-    protected override cloneOpts(update: {
-        id?: string | number | undefined;
-        headers?: HeadersLike | undefined;
-        pattern?: Pattern;
-        setHeaders?: { [name: string]: string | string[]; } | undefined;
-    }): MessageInitOpts {
-        const opts = super.cloneOpts(update) as MessageInitOpts & { pattern: Pattern };
-        opts.pattern = update.pattern ?? this.pattern;
-        return opts;
     }
 
 }
@@ -120,11 +63,12 @@ export abstract class MessageFactory {
         id?: string | number;
         headers?: Record<string, any>;
         data?: Buffer | IReadableStream | null;
-
+        streamLength?: number;
     }): Message;
     abstract create<T = any>(initOpts: {
         id?: string | number;
         headers?: Record<string, any>;
         data?: T;
+        streamLength?: number;
     }): Message;
 }

@@ -153,18 +153,18 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
 
     readonly ok: boolean;
 
-    protected _message!: string;
+    protected _message: string|undefined;
     /**
      * Textual description of response status code, defaults to OK.
      *
      * Do not depend on this.
      */
     get statusText(): string {
-        return this._message
+        return this._message!
     }
 
     get statusMessage(): string {
-        return this._message
+        return this._message!
     }
 
     /**
@@ -182,7 +182,7 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
         this.error = init.error;
         this.type = init.type;
         this._status = init.status !== undefined ? init.status : init?.defaultStatus ?? null;
-        this._message = (init.statusMessage || init.statusText) ?? init?.defaultStatusText ?? '';
+        this._message = (init.statusMessage || init.statusText) ?? init?.defaultStatusText;
     }
 
     /**

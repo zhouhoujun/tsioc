@@ -110,6 +110,8 @@ export interface IncomingOpts<T = any> extends PacketOpts<T> {
 
     defaultMethod?: string;
 
+    streamLength?: number;
+
 }
 
 
@@ -124,6 +126,8 @@ export abstract class IncomingPacket<T = any> extends Packet<T> implements Incom
     readonly timeout?: number;
     readonly method: string;
     readonly params: RequestParams;
+
+    public streamLength?: number;
 
     private _body?: T | null;
     get body(): T | null {
@@ -143,6 +147,7 @@ export abstract class IncomingPacket<T = any> extends Packet<T> implements Incom
         this.params = new RequestParams(init);
         this.method = init.method ?? this.headers.getMethod() ?? init.defaultMethod ?? '';
         this.timeout = init.timeout;
+        this.streamLength = init.streamLength;
     }
 
     /**
@@ -279,7 +284,7 @@ export abstract class ClientIncomingFactory implements AbstractIncomingFactory<C
  * client incoming init options
  */
 export interface ClientIncomingOpts<T = any, TStatus = any> extends StatusPacketOpts<T, TStatus> {
-
+    streamLength?: number;
 }
 
 /**
@@ -287,8 +292,12 @@ export interface ClientIncomingOpts<T = any, TStatus = any> extends StatusPacket
  */
 export abstract class ClientIncomingPacket<T = any, TStatus = any> extends StatusPacket<T, TStatus> implements ClientIncoming<T, TStatus> {
 
+
+    public streamLength?: number;
+
     constructor(init: ClientIncomingOpts) {
         super(init);
+        this.streamLength = init.streamLength;
     }
 
     /**

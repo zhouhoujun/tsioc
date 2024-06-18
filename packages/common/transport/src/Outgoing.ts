@@ -168,7 +168,7 @@ export abstract class OutgoingPacket<T = any, TStatus = number> extends StatusPa
      * Do not depend on this.
      */
     get statusText(): string {
-        return this._message
+        return this._message!
     }
 
 
@@ -177,7 +177,7 @@ export abstract class OutgoingPacket<T = any, TStatus = number> extends StatusPa
     }
 
     get statusMessage(): string {
-        return this._message
+        return this._message!
     }
 
 

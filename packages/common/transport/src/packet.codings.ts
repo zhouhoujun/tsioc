@@ -32,7 +32,7 @@ export class PacketCodingsHandlers {
 
     @DecodeHandler(Message, { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
     async messageDecode(context: TransportContext) {
-        let msg = context.last<Message>();
+        const msg = context.last<Message>();
         const { streamAdapter, incomingFactory } = context.session;
         const options = context.options;
         const data = isString(msg.data) ? Buffer.from(msg.data) : msg.data;
@@ -40,42 +40,40 @@ export class PacketCodingsHandlers {
 
         let packet: any;
         if (options.headDelimiter) {
+            if (msg.noHead) {
+                return incomingFactory.create({ ...msg, payload: msg.data })
+            }
             const headDelimiter = Buffer.from(options.headDelimiter);
             const headerDeserialization = injector.get(HeaderDeserialization, null);
 
-            // let packet: Packet | undefined;
             if (streamAdapter.isReadable(data)) {
                 let buffer = data.read(1) as Buffer;
                 while (buffer.indexOf(headDelimiter) < 0) {
                     buffer = Buffer.concat([buffer, data.read(1)]);
                 }
                 const headBuffer = buffer.subarray(0, buffer.length - headDelimiter.length);
-                if (msg.headers['stream-length']) {
-                    msg.headers['stream-length'] = msg.headers['stream-length'] as number - buffer.length;
+                if (msg.streamLength) {
+                    msg.streamLength = msg.streamLength - buffer.length;
                 }
                 packet = this.parsePacket(headBuffer, data, headerDeserialization);
-                msg = msg.clone({ data: packet.payload ?? null, ...packet });
 
             } else if (data) {
                 const idx = data.indexOf(headDelimiter);
                 if (idx > 0) {
                     const headBuffer = data.subarray(0, idx);
                     packet = this.parsePacket(headBuffer, data.subarray(idx + Buffer.byteLength(headDelimiter)), headerDeserialization);
-                    msg = msg.clone({ data: packet.payload ?? null, ...packet });
                 } else {
-                    msg = msg.clone({ data: data })
+                    packet = { payload: data }
                 }
             }
         } else {
             const buff = streamAdapter.isReadable(data) ? await toBuffer(data, context.options.maxSize) : data!;
-            const opts = this.parseJson(buff);
-            msg = msg.clone({ data: opts.payload ?? null, ...opts });
-            packet = opts;
+            packet = this.parseJson(buff);
         }
 
         const { data: payload, headers, ...opts } = msg;
 
-        return incomingFactory.create({ payload, defaultMethod: context.options.defaultMethod, ...opts, ...packet, headers })
+        return incomingFactory.create({ defaultMethod: context.options.defaultMethod, ...opts, ...packet, headers: { ...headers, ...packet?.headers } })
 
     }
 
@@ -88,7 +86,7 @@ export class PacketCodingsHandlers {
         const pkg = context.last<Packet>();
 
 
-        let data: any;
+        let data: any, streamLen: number | undefined;
         if (options.headDelimiter) {
             data = await this.encodePayload(streamAdapter, pkg, options.encoding);
             const headDelimiter = Buffer.from(options.headDelimiter);
@@ -99,7 +97,7 @@ export class PacketCodingsHandlers {
 
             if (streamAdapter.isReadable(data)) {
                 let isFist = true;
-                pkg.headers.set('stream-length', pkg.headers.getContentLength() + Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter));
+                streamLen = pkg.headers.getContentLength() + Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter);
                 data = streamAdapter.pipeline(data, streamAdapter.createPassThrough({
                     transform: (chunk, encoding, callback) => {
                         if (isFist) {
@@ -122,6 +120,7 @@ export class PacketCodingsHandlers {
         }
         const json = pkg.toJson();
         json.data = data;
+        if (streamLen) json.streamLength = streamLen;
         return messageFactory.create(json);
     }
 
@@ -231,7 +230,6 @@ export class PacketCodingsHandlers {
 
     private serializeHeader(packet: Packet): Buffer {
         const { payload, ...headers } = packet.toJson();
-        if(!isUndefined(headers.headers?.['stream-length'])) delete headers.headers['stream-length'];
         return Buffer.from(JSON.stringify(headers));
     }
 
