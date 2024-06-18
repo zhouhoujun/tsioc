@@ -1,4 +1,4 @@
-import { Abstract, Injectable, isNil, isString, tokenId } from '@tsdi/ioc';
+import { Abstract, Injectable, isNil, isString, isUndefined, tokenId } from '@tsdi/ioc';
 import { Interceptor, InvalidJsonException } from '@tsdi/core';
 import { Message, Packet, PacketOpts, RequestParams, isArrayBuffer, isBlob, isFormData } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
@@ -88,7 +88,7 @@ export class PacketCodingsHandlers {
         const pkg = context.last<Packet>();
 
 
-        let json: any, data: any;
+        let data: any;
         if (options.headDelimiter) {
             data = await this.encodePayload(streamAdapter, pkg, options.encoding);
             const headDelimiter = Buffer.from(options.headDelimiter);
@@ -117,11 +117,10 @@ export class PacketCodingsHandlers {
                 const bbuff = isBuffer(data) ? data : Buffer.from(data as string);
                 data = Buffer.concat([hbuff, headDelimiter, bbuff], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(bbuff));
             }
-            json = pkg.toJson();
         } else {
-            json = pkg.toJson();
             data = await this.encodePacket(streamAdapter, pkg, context.options.maxSize, context.options.encoding);
         }
+        const json = pkg.toJson();
         json.data = data;
         return messageFactory.create(json);
     }
@@ -232,6 +231,7 @@ export class PacketCodingsHandlers {
 
     private serializeHeader(packet: Packet): Buffer {
         const { payload, ...headers } = packet.toJson();
+        if(!isUndefined(headers.headers?.['stream-length'])) delete headers.headers['stream-length'];
         return Buffer.from(JSON.stringify(headers));
     }
 

@@ -152,9 +152,7 @@ export class DeviceController {
                 ]
             }
         ]),
-        // BufferCodingsModule,
-        // PackageBufferCodingsModule,
-        // TransportPacketModule
+        PackageBufferCodingsModule,
     ],
     declarations: [
         DeviceController

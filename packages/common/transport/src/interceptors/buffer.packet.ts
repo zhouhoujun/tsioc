@@ -117,6 +117,7 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
             subscriber.complete();
         }
     }
+
     protected handleMessage(channel: string, cache: ChannelCache, subscriber: Subscriber<Message>, clear: boolean) {
         const data = cache.stream;
         data?.end();
@@ -192,7 +193,7 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Message, Tra
                                 if (!buffLen) {
                                     buffLen = Buffer.alloc(countLen);
                                     buffLen.writeUIntBE(msg.headers['stream-length'] as number, 0, countLen);
-                                    // headers['stream-length'] = undefined;
+                                    headers['stream-length'] = undefined;
                                 }
                                 if (first) {
                                     first = false;

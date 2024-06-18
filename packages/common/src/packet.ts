@@ -256,7 +256,7 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
 
         if (!isNil(this.type)) rcd.type = this.type;
         if (!isNil(this.status)) rcd.status = this.status;
-        if (!this.statusMessage) rcd.statusMessage = this.statusMessage;
+        if (this.statusMessage) rcd.statusMessage = this.statusMessage;
 
         rcd.ok = this.ok;
 
@@ -267,4 +267,3 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
     }
 
 }
-
