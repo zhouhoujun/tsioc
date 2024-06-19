@@ -129,13 +129,14 @@ export abstract class IncomingPacket<T = any> extends Packet<T> implements Incom
 
     public streamLength?: number;
 
-    private _body?: T | null;
+    public override payload: T | null;
+
     get body(): T | null {
-        return isUndefined(this._body) ? this.payload : this._body;
+        return this.payload
     }
 
     set body(data: T | null) {
-        this._body = data;
+        this.payload = data;
     }
 
     get query(): Record<string, any> {
@@ -144,6 +145,7 @@ export abstract class IncomingPacket<T = any> extends Packet<T> implements Incom
 
     constructor(init: IncomingOpts<T>) {
         super(init)
+        this.payload = init.payload ?? null;
         this.params = new RequestParams(init);
         this.method = init.method ?? this.headers.getMethod() ?? init.defaultMethod ?? '';
         this.timeout = init.timeout;

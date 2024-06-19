@@ -75,7 +75,7 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
             if (input.streamAdapter.isReadable(input.request.payload) || input.streamAdapter.isReadable(input.request)) {
                 return from(this.parseJson(input)).pipe(
                     mergeMap(res => {
-                        input.request.body = res.body ?? {};
+                        input.request.body = input.request.payload = res.body ?? {};
                         if (isUndefined(input.request.rawBody)) input.request.rawBody = res.raw;
                         return next.handle(input)
                     })
@@ -86,7 +86,7 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
         return from(this.parseBody(input))
             .pipe(
                 mergeMap(res => {
-                    input.request.body = res.body ?? {};
+                    input.request.body = input.request.payload = res.body ?? {};
                     if (isUndefined(input.request.rawBody)) input.request.rawBody = res.raw;
                     return next.handle(input)
                 })
