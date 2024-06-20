@@ -31,8 +31,7 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
     }
 
     intercept(input: Message, next: Handler<Message, Packet>, context: TransportContext): Observable<Packet> {
-        const streamAdapter = context.session.streamAdapter;
-        if (streamAdapter.isReadable(input.data)) return next.handle(input, context);
+        if (context.streamAdapter.isReadable(input.data)) return next.handle(input, context);
 
         return new Observable((subscriber: Subscriber<Message>) => {
 
@@ -50,7 +49,7 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
                 }
                 this.channels.set(channel, cache)
             }
-            this.handleData(streamAdapter, channel, cache, data, subscriber, context);
+            this.handleData(channel, cache, data, subscriber, context);
 
             return subscriber;
 
@@ -59,8 +58,8 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
         );
     }
 
-    protected handleData(streamAdapter: StreamAdapter, channel: string, cache: ChannelCache, data: Buffer, subscriber: Subscriber<Message>, context: TransportContext) {
-        const options = context.options;
+    protected handleData(channel: string, cache: ChannelCache, data: Buffer, subscriber: Subscriber<Message>, context: TransportContext) {
+        const {options, streamAdapter, injector } = context;
 
         const bLen = Buffer.byteLength(data);
         cache.length += bLen;
@@ -84,7 +83,7 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
                     cache.length = 0;
                     cache.stream.end();
                     cache.stream = null;
-                    const btpipe = context.session!.injector.get<PipeTransform>('bytes-format');
+                    const btpipe = injector.get<PipeTransform>('bytes-format');
                     if (rawContentLength) {
                         throw new PacketLengthException(`Packet length ${btpipe.transform(rawContentLength)} great than max size ${btpipe.transform(options.maxSize)}`);
                     } else {
@@ -108,7 +107,7 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
                 const rest = data.subarray(idx);
                 this.handleMessage(channel, cache, subscriber, !rest.length);
                 if (rest.length) {
-                    this.handleData(streamAdapter, channel, cache, rest, subscriber, context);
+                    this.handleData(channel, cache, rest, subscriber, context);
                 }
             } else {
                 subscriber.complete();
@@ -154,12 +153,12 @@ export class BindPacketIdEncodeInterceptor implements Interceptor<Packet, Messag
     intercept(input: Packet, next: Handler<Packet, Message>, context: TransportContext): Observable<Message> {
         const length = input.headers.getContentLength();
         const options = context.options;
-        if (length && options.maxSize && length > options.maxSize && !context.options.headDelimiter && !context.session.injector.has(PackageEncodeInterceptor)) {
-            const btpipe = context.session!.injector.get<PipeTransform>('bytes-format');
+        if (length && options.maxSize && length > options.maxSize && !context.options.headDelimiter && !context.injector.has(PackageEncodeInterceptor)) {
+            const btpipe = context.injector.get<PipeTransform>('bytes-format');
             return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(options.maxSize)}`));
         }
         if (!input.id && options.client) {
-            input.attachId(context.session?.injector.get(PacketIdGenerator).getPacketId());
+            input.attachId(context.injector.get(PacketIdGenerator).getPacketId());
         }
         return next.handle(input, context);
     }
@@ -173,7 +172,7 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Message, Tra
 
         return next.handle(input, context)
             .pipe(map(msg => {
-                const streamAdapter = context.session.streamAdapter;
+                const streamAdapter = context.streamAdapter;
                 const countLen = context.options.countLen || 4;
                 let buffLen: Buffer;
                 const delimiter = Buffer.from(context.options.delimiter!);

@@ -30,7 +30,7 @@ export const TRANSPORT_ENCODINGS_GUARDS = tokenId<CanActivate[]>('TRANSPORT_ENCO
 
 export class TransportEncodings extends Encodings {
 
-    
+
 
 }
 
@@ -71,8 +71,6 @@ export const TRANSPORT_DECODINGS_FILTERS = tokenId<Interceptor<Message, Packet, 
 export const TRANSPORT_DECODINGS_GUARDS = tokenId<CanActivate[]>('TRANSPORT_DECODINGS_GUARDS');
 
 export class TransportDecodings extends Decodings {
-
-    recive()
 
 }
 
