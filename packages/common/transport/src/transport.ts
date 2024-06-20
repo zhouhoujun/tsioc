@@ -1,6 +1,6 @@
 import { promisify } from '@tsdi/ioc';
 import { Message } from '@tsdi/common';
-import { Encoder, Decoder, CodingType } from '@tsdi/common/codings';
+import { Encoder, Decoder } from '@tsdi/common/codings';
 import { Observable, Subject, finalize, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
 import { AbstractTransportSession } from './TransportSession';
 import { IEventEmitter, IWritableStream } from './stream';
@@ -34,7 +34,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
     send(data: TInput, context?: TransportContext): Observable<TMsg> {
         const ctx = context ?? new TransportContext(this);
         // ctx.outgoing = data;
-        return this.encodings.encode(data, ctx.next(data, CodingType.Encode))
+        return this.encodings.encode(data, ctx.next(data))
             .pipe(
                 mergeMap(encoded => this.sendMessage(encoded, data, ctx)),
                 takeUntil(this.destroy$),

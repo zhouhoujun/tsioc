@@ -1,8 +1,8 @@
-import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
+import { Abstract, Injectable, Injector, Type, tokenId } from '@tsdi/ioc';
 import { Backend, CanActivate, ExecptionHandlerFilter, Handler, Interceptor, createHandler } from '@tsdi/core';
-import { Observable, mergeMap, of } from 'rxjs';
-import { CodingsOpts } from './options';
-import { CodingType, CodingsContext } from './context';
+import { Observable, finalize, mergeMap, of } from 'rxjs';
+import { CodingsOption, CodingsOptions } from './options';
+import { CodingsContext } from './context';
 import { Encoder } from './Encoder';
 import { CodingMappings } from './mappings';
 
@@ -27,7 +27,7 @@ export class EncodingsBackend<TInput = any, TOutput = any> implements Backend<TI
     handle(input: TInput, context: CodingsContext): Observable<TOutput> {
         return this.mappings.encode(input, context).pipe(
             mergeMap(data => {
-                if (context.isCompleted(data, CodingType.Encode)) return of(data);
+                if (context.isCompleted(data)) return of(data);
                 return this.mappings.encode(data, context)
             })
         );
@@ -58,14 +58,28 @@ export const ENCODINGS_GUARDS = tokenId<CanActivate[]>('ENCODINGS_GUARDS');
  */
 export class Encodings implements Encoder {
 
-    constructor(private handler: EncodingsHandler) { }
+    readonly defaultMaps: Map<Type | string, Type | string>;
+    constructor(
+        private handler: EncodingsHandler,
+        protected options: CodingsOption
+    ) {
+        this.defaultMaps = new Map(options.defaults);
+    }
 
     /**
      * encode inport
      * @param input 
      */
-    encode(input: any, context: CodingsContext): Observable<any> {
-        return this.handler.handle(input, context);
+    encode(input: any, context?: CodingsContext): Observable<any> {
+        const ctx = context ?? this.createContext();
+        return this.handler.handle(input, ctx)
+            .pipe(
+                finalize(() => !context && ctx.onDestroy()),
+            );
+    }
+
+    protected createContext() {
+        return new CodingsContext(this.options, this.defaultMaps)
     }
 
 }
@@ -75,18 +89,19 @@ export class Encodings implements Encoder {
  */
 @Injectable()
 export class EncodingsFactory {
-    create(injector: Injector, options: CodingsOpts): Encodings {
+    create(injector: Injector, options: CodingsOptions): Encodings {
+        const { configable, ...opts } = options;
         const handler = createHandler(injector, {
             interceptorsToken: ENCODINGS_INTERCEPTORS,
             filtersToken: ENCODINGS_FILTERS,
             guardsToken: ENCODINGS_GUARDS,
             backend: EncodingsBackend,
-            ...options.encodings
+            ...configable
         });
 
         handler.useFilters(ExecptionHandlerFilter, 0);
 
-        return new Encodings(handler)
+        return new Encodings(handler, opts)
     }
 }
 

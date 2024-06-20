@@ -1,9 +1,9 @@
 import { Injectable, Type, getClass } from '@tsdi/ioc';
 import { Handler } from '@tsdi/core';
-import { CodingsOpts } from './options';
-import { CodingType, CodingsContext } from './context';
+import { CodingsContext } from './context';
 import { Observable, map, mergeMap, of, throwError } from 'rxjs';
 import { CodingsNotHandleExecption } from './execptions';
+import { CodingsOption } from './options';
 
 
 
@@ -71,16 +71,16 @@ export class CodingMappings {
     }
 
     encodeType<T>(type: Type<T> | string, data: T, context: CodingsContext): Observable<any> {
-        const handlers = this.getEncodeHanlders(type, context.getDefault(type, CodingType.Encode), context.options);
+        const handlers = this.getEncodeHanlders(type, context.getDefault(type), context.options);
 
         if (handlers && handlers.length) {
             return handlers.reduce((obs$, curr) => {
                 return obs$.pipe(
                     mergeMap(i => {
-                        if (context.isCompleted(i, CodingType.Encode)) return of(i);
+                        if (context.isCompleted(i)) return of(i);
                         return curr.handle(i, context).pipe(
                             map(n => {
-                                context.next(n, CodingType.Encode);
+                                context.next(n);
                                 return n;
                             })
                         )
@@ -88,7 +88,7 @@ export class CodingMappings {
                 );
             }, of(data))
         } else {
-            return throwError(() => new CodingsNotHandleExecption(data, type, CodingType.Encode, context, `${context.options.group} ${context.options.name ?? ''}`))
+            return throwError(() => new CodingsNotHandleExecption(data, type, 'encodings', context, `${context.options.group} ${context.options.name ?? ''}`))
         }
     }
 
@@ -97,16 +97,16 @@ export class CodingMappings {
     }
 
     decodeType<T>(type: Type<T> | string, data: T, context: CodingsContext): Observable<any> {
-        const handlers = this.getDecodeHanlders(type, context.getDefault(type, CodingType.Decode), context.options);
+        const handlers = this.getDecodeHanlders(type, context.getDefault(type), context.options);
 
         if (handlers && handlers.length) {
             return handlers.reduce((obs$, curr) => {
                 return obs$.pipe(
                     mergeMap(i => {
-                        if (context.isCompleted(i, CodingType.Decode)) return of(i);
+                        if (context.isCompleted(i)) return of(i);
                         return curr.handle(i, context).pipe(
                             map(n => {
-                                context.next(n, CodingType.Decode);
+                                context.next(n);
                                 return n;
                             })
                         )
@@ -114,34 +114,32 @@ export class CodingMappings {
                 );
             }, of(data))
         } else {
-            return throwError(() => new CodingsNotHandleExecption(data, type, CodingType.Decode, context, `${context.options.group} ${context.options.name ?? ''}`))
+            return throwError(() => new CodingsNotHandleExecption(data, type, 'decodings', context, `${context.options.group} ${context.options.name ?? ''}`))
         }
     }
 
 
-    getEncodeHanlders(type: Type | string, defaultType?: Type | string, options?: CodingsOpts): Handler[] | null {
+    getEncodeHanlders(type: Type | string, defaultType?: Type | string, options?: CodingsOption): Handler[] | null {
         const handlers = this.maps.get(this.getKey(this._enSubfix, options))?.getHanlder(type, defaultType)
-            ?? this.maps.get(this.getKey(this._enSubfix, { group: options?.group }))?.getHanlder(type, defaultType)
             ?? this.maps.get(this.getKey(this._enSubfix))?.getHanlder(type, defaultType);
         return handlers ?? null;
     }
 
-    getEncodings(options?: CodingsOpts): Mappings {
+    getEncodings(options?: CodingsOption): Mappings {
         return this.get(this._enSubfix, options)
     }
 
-    getDecodeHanlders(type: Type | string, defaultType?: Type | string, options?: CodingsOpts): Handler[] | null {
+    getDecodeHanlders(type: Type | string, defaultType?: Type | string, options?: CodingsOption): Handler[] | null {
         const handlers = this.maps.get(this.getKey(this._deSubFix, options))?.getHanlder(type, defaultType)
-            ?? this.maps.get(this.getKey(this._deSubFix, { group: options?.group }))?.getHanlder(type, defaultType)
             ?? this.maps.get(this.getKey(this._deSubFix))?.getHanlder(type, defaultType);
         return handlers ?? null;
     }
 
-    getDecodings(options?: CodingsOpts): Mappings {
+    getDecodings(options?: CodingsOption): Mappings {
         return this.get(this._deSubFix, options)
     }
 
-    private get(subfix: string, options?: CodingsOpts): Mappings {
+    private get(subfix: string, options?: CodingsOption): Mappings {
         const key = this.getKey(subfix, options);
         let mappings = this.maps.get(key);
         if (!mappings) {
@@ -151,7 +149,7 @@ export class CodingMappings {
         return mappings
     }
 
-    private getKey(subfix: string, options?: CodingsOpts) {
+    private getKey(subfix: string, options?: CodingsOption) {
         if (!options) return subfix;
 
         return `${options.group ?? ''}${options.subfix ?? ''}${subfix}`;

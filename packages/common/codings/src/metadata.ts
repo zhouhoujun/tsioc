@@ -1,29 +1,16 @@
 import { ActionTypes, DecorDefine, Execption, Token, Type, createDecorator, getToken, lang } from '@tsdi/ioc';
 import { Filter, Interceptor, InvocationFactoryResolver, InvocationOptions } from '@tsdi/core';
-import { HybirdTransport, Transport } from '@tsdi/common';
 import { CodingsContext } from './context';
 import { CodingMappings } from './mappings';
+import { CodingsOption } from './options';
 
 /**
  * codings options.
  */
-export interface CodingsOptions extends InvocationOptions {
-    /**
-     * the codings action name.
-     */
-    name?: string;
-    /**
-     * group of codings.
-     */
-    group?: Transport | HybirdTransport | 'runner' | 'events';
-    /**
-     * subfix of group.
-     */
-    subfix?: string;
-}
+export interface CodingsMetadata extends InvocationOptions, CodingsOption { }
 
 
-export interface EncodingsMetadata extends CodingsOptions {
+export interface EncodingsMetadata extends CodingsMetadata {
     /**
      * codings targe.
      */
@@ -40,9 +27,9 @@ export interface EncodeHandler {
      * encode handle. use to handle encoding of target, in class with decorator {@link EncodeHandler}.
      *
      * @param {string|Type} encodings encode target.
-     * @param {CodingsOptions} option encode handle invoke option.
+     * @param {CodingsMetadata} option encode handle invoke option.
      */
-    (encodings: string | Type, option?: CodingsOptions): MethodDecorator;
+    (encodings: string | Type, option?: CodingsMetadata): MethodDecorator;
 }
 
 const encodingTokens = new Map<string | Type, Token<Interceptor<any, any, CodingsContext>[]>>();
@@ -116,7 +103,7 @@ export const EncodeHandler: EncodeHandler = createDecorator<EncodingsMetadata>('
 
 
 
-export interface DecodingMetadata extends CodingsOptions {
+export interface DecodingMetadata extends CodingsMetadata {
     /**
      * decodings target.
      */
@@ -130,9 +117,9 @@ export interface DecodeHandler {
      * decode handle. use to handle decoding of target, in class with decorator {@link DecodeHandler}.
      *
      * @param {string|Type} decodings encode target.
-     * @param {CodingsOptions} option encode handle invoke option.
+     * @param {CodingsMetadata} option encode handle invoke option.
      */
-    (decodings: string | Type, option?: CodingsOptions): MethodDecorator;
+    (decodings: string | Type, option?: CodingsMetadata): MethodDecorator;
 }
 
 const decodingTokens = new Map<string | Type, Token<Interceptor<any, any, CodingsContext>[]>>();

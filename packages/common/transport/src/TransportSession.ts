@@ -1,6 +1,6 @@
 import { Injector, Token } from '@tsdi/ioc';
 import { HeaderFields, Transport, HybirdTransport, MessageFactory, Message } from '@tsdi/common';
-import { CodingsOpts, EncodingsFactory, DecodingsFactory } from '@tsdi/common/codings';
+import { EncodingsFactory, DecodingsFactory, CodingsOptions } from '@tsdi/common/codings';
 import { Observable } from 'rxjs';
 import { TransportContext } from './context';
 import { StreamAdapter } from './StreamAdapter';
@@ -11,7 +11,18 @@ import { AbstractIncomingFactory } from './Incoming';
 /**
  * transport options.
  */
-export interface TransportOpts extends CodingsOpts {
+export interface TransportOpts {
+    /**
+     * the codings action name.
+     */
+    readonly name?: string;
+    /**
+     * subfix of group.
+     */
+    readonly subfix?: string;
+
+    readonly encodings?: CodingsOptions;
+    readonly decodings?: CodingsOptions;
 
     /**
      * encodings Factory.

@@ -1,8 +1,8 @@
-import { Abstract, Injectable, Injector, tokenId } from '@tsdi/ioc';
+import { Abstract, Injectable, Injector, Type, tokenId } from '@tsdi/ioc';
 import { Backend, CanActivate, ExecptionHandlerFilter, Handler, Interceptor, createHandler } from '@tsdi/core';
-import { Observable, mergeMap, of } from 'rxjs';
-import { CodingsOpts } from './options';
-import { CodingType, CodingsContext } from './context';
+import { Observable, finalize, mergeMap, of } from 'rxjs';
+import { CodingsOption, CodingsOptions } from './options';
+import { CodingsContext } from './context';
 import { Decoder } from './Decoder';
 import { CodingMappings } from './mappings';
 
@@ -27,7 +27,7 @@ export class DecodingsBackend<TInput = any, TOutput = any> implements Backend<TI
         return this.mappings.decode(input, context)
             .pipe(
                 mergeMap(data => {
-                    if (context.isCompleted(data, CodingType.Decode)) return of(data);
+                    if (context.isCompleted(data)) return of(data);
                     return this.mappings.decode(data, context)
                 })
             );
@@ -56,14 +56,30 @@ export const DECODINGS_GUARDS = tokenId<CanActivate[]>('DECODINGS_GUARDS');
  */
 export class Decodings implements Decoder {
 
-    constructor(private handler: DecodingsHandler) { }
+    readonly defaultMaps: Map<Type | string, Type | string>;
+
+    constructor(
+        protected handler: DecodingsHandler,
+        protected options: CodingsOption
+    ) {
+        this.defaultMaps = new Map(options.defaults);
+    }
 
     /**
      * decode inport
      * @param input 
      */
-    decode(input: any, context: CodingsContext): Observable<any> {
-        return this.handler.handle(input, context);
+    decode(input: any, context?: CodingsContext): Observable<any> {
+        const ctx = context ?? this.createContext();
+        return this.handler.handle(input, ctx)
+            .pipe(
+                finalize(() => !context && ctx.onDestroy()),
+            );
+    }
+
+
+    protected createContext() {
+        return new CodingsContext(this.options, this.defaultMaps)
     }
 }
 
@@ -73,18 +89,19 @@ export class Decodings implements Decoder {
  */
 @Injectable()
 export class DecodingsFactory {
-    create(injector: Injector, options: CodingsOpts): Decodings {
+    create(injector: Injector, options: CodingsOptions): Decodings {
+        const { configable, ...opts } = options;
         const handler = createHandler(injector, {
             guardsToken: DECODINGS_GUARDS,
             interceptorsToken: DECODINGS_INTERCEPTORS,
             filtersToken: DECODINGS_FILTERS,
             backend: DecodingsBackend,
-            ...options.decodings
+            ...configable
         });
 
         handler.useFilters(ExecptionHandlerFilter, 0);
 
-        return new Decodings(handler)
+        return new Decodings(handler, opts)
     }
 }
 

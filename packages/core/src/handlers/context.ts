@@ -76,15 +76,15 @@ export class Context {
         )
     }
 
-    next<TInput>(input: TInput, state?: number): this {
+    next<TInput>(input: TInput): this {
         if (this._inputs[0] != input) {
             this._inputs.unshift(input);
-            this.onNext(input, state);
+            this.onNext(input);
         }
         return this;
     }
 
-    protected onNext(data: any, state?: number) {
+    protected onNext(data: any) {
         this._next$.next(data);
     }
 

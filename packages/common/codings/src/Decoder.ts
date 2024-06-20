@@ -1,4 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, Type } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { CodingsContext } from './context';
 
@@ -7,9 +7,11 @@ import { CodingsContext } from './context';
  */
 @Abstract()
 export abstract class Decoder<TInput = any, TOutput = any> {
+
+    abstract get defaultMaps(): Map<Type | string, Type | string>;
     /**
      * decode inport
      * @param input 
      */
-    abstract decode(input: TInput, context: CodingsContext): Observable<TOutput>;
+    abstract decode(input: TInput, context?: CodingsContext): Observable<TOutput>;
 }
