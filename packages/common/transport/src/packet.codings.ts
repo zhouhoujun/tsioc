@@ -33,10 +33,9 @@ export class PacketCodingsHandlers {
     @DecodeHandler(Message, { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
     async messageDecode(context: TransportContext) {
         const msg = context.last<Message>();
-        const { streamAdapter, incomingFactory } = context.session;
-        const options = context.options;
+        const { streamAdapter, incomingFactory, options, injector } = context.session;
+
         const data = isString(msg.data) ? Buffer.from(msg.data) : msg.data;
-        const injector = context.session!.injector;
 
         let packet: any;
         if (options.headDelimiter) {
@@ -67,21 +66,21 @@ export class PacketCodingsHandlers {
                 }
             }
         } else {
-            const buff = streamAdapter.isReadable(data) ? await toBuffer(data, context.options.maxSize) : data!;
+            const buff = streamAdapter.isReadable(data) ? await toBuffer(data, options.maxSize) : data!;
             packet = this.parseJson(buff);
         }
 
         const { data: payload, headers, ...opts } = msg;
 
-        return incomingFactory.create({ defaultMethod: context.options.defaultMethod, ...opts, ...packet, headers: { ...headers, ...packet?.headers } })
+        return incomingFactory.create({ defaultMethod: options.defaultMethod, ...opts, ...packet, headers: { ...headers, ...packet?.headers } })
 
     }
 
 
     @EncodeHandler(Packet, { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })
     async packetEncode(context: TransportContext) {
-        const { streamAdapter, injector, messageFactory } = context.session;
-        const options = context.options;
+
+        const { streamAdapter, injector, messageFactory, options } = context.session;
 
         const pkg = context.last<Packet>();
 
@@ -116,7 +115,7 @@ export class PacketCodingsHandlers {
                 data = Buffer.concat([hbuff, headDelimiter, bbuff], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(bbuff));
             }
         } else {
-            data = await this.encodePacket(streamAdapter, pkg, context.options.maxSize, context.options.encoding);
+            data = await this.encodePacket(streamAdapter, pkg, options.maxSize, options.encoding);
         }
         const json = pkg.toJson();
         json.data = data;

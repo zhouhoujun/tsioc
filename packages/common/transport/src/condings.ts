@@ -31,7 +31,6 @@ export const TRANSPORT_ENCODINGS_GUARDS = tokenId<CanActivate[]>('TRANSPORT_ENCO
 export class TransportEncodings extends Encodings {
 
 
-
 }
 
 /**
@@ -39,7 +38,7 @@ export class TransportEncodings extends Encodings {
  */
 export class TransportEncodingsFactory implements EncodingsFactory {
     create(injector: Injector, options: TransportOpts): TransportEncodings {
-        const { encodings, decodings, encodingsFactory, decodingsFactory, ...opts } = options;
+        const { encodings, name, subfix, transport } = options;
         const handler = createHandler(injector, {
             interceptorsToken: TRANSPORT_ENCODINGS_INTERCEPTORS,
             filtersToken: TRANSPORT_ENCODINGS_FILTERS,
@@ -50,7 +49,7 @@ export class TransportEncodingsFactory implements EncodingsFactory {
 
         handler.useFilters(ExecptionHandlerFilter, 0);
 
-        return new TransportEncodings(handler, { ...opts, ...encodings })
+        return new TransportEncodings(handler, { name, subfix, group: transport, ...encodings })
     }
 }
 
@@ -80,7 +79,7 @@ export class TransportDecodings extends Decodings {
 export class TransportDecodingsFactory implements DecodingsFactory {
 
     create(injector: Injector, options: TransportOpts): TransportDecodings {
-        const { encodings, decodings, encodingsFactory, decodingsFactory, ...opts } = options;
+        const { decodings, name, subfix, transport } = options;
         const handler = createHandler(injector, {
             guardsToken: TRANSPORT_DECODINGS_GUARDS,
             interceptorsToken: TRANSPORT_DECODINGS_INTERCEPTORS,
@@ -91,6 +90,6 @@ export class TransportDecodingsFactory implements DecodingsFactory {
 
         handler.useFilters(ExecptionHandlerFilter, 0);
 
-        return new TransportDecodings(handler, {...opts, ...decodings})
+        return new TransportDecodings(handler, { name, subfix, group: transport, ...decodings })
     }
 }

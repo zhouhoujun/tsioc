@@ -20,10 +20,10 @@ export class PackageDecodeInterceptor implements Interceptor<Message, Packet, Tr
 
     packs: Map<string | number, CachePacket> = new Map();
     intercept(input: Message, next: Handler<Message, Packet, TransportContext>, context: TransportContext): Observable<Packet> {
-        const options = context.options;
+        const {options, streamAdapter} = context.session;
         const idLen = options.idLen ?? 2;
         let id: string | number;
-        if (context.streamAdapter.isReadable(input.data)) {
+        if (streamAdapter.isReadable(input.data)) {
             const chunk = input.data.read(idLen);
             id = idLen > 4 ? chunk.subarray(0, idLen).toString() : chunk.readUIntBE(0, idLen);
             const exist = this.packs.get(id);
@@ -39,7 +39,7 @@ export class PackageDecodeInterceptor implements Interceptor<Message, Packet, Tr
         }
         return next.handle(input, context)
             .pipe(
-                map(packet => this.mergePacket(packet, context.streamAdapter, input.noHead)),
+                map(packet => this.mergePacket(packet, streamAdapter, input.noHead)),
                 filter(p => p.completed == true),
                 map(p => p.packet)
             )
@@ -114,7 +114,7 @@ export class PackageEncodeInterceptor implements Interceptor<Packet, Message, Tr
         return next.handle(input, context)
             .pipe(
                 mergeMap(msg => {
-                    const {options, streamAdapter } = context;
+                    const {options, streamAdapter } = context.session;
                     const idLen = options.idLen ?? 2;
                     const data = msg.data;
                     const packetSize = isBuffer(data) ? Buffer.byteLength(data) : msg.streamLength!;

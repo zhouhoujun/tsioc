@@ -6,7 +6,6 @@ import { PacketLengthException } from '../execptions';
 import { TransportContext } from '../context';
 import { PacketIdGenerator } from '../PacketId';
 import { IDuplexStream, IReadableStream } from '../stream';
-import { StreamAdapter } from '../StreamAdapter';
 import { PackageEncodeInterceptor } from './buffer.package';
 
 
@@ -31,11 +30,11 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
     }
 
     intercept(input: Message, next: Handler<Message, Packet>, context: TransportContext): Observable<Packet> {
-        if (context.streamAdapter.isReadable(input.data)) return next.handle(input, context);
+        if (context.session.streamAdapter.isReadable(input.data)) return next.handle(input, context);
 
         return new Observable((subscriber: Subscriber<Message>) => {
 
-            const channel = context.channel ?? context.options.transport ?? '';
+            const channel = context.channel ?? context.session.options.transport ?? '';
 
             let cache = this.channels.get(channel);
             const data = input.data as Buffer;
@@ -59,7 +58,7 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet, Tra
     }
 
     protected handleData(channel: string, cache: ChannelCache, data: Buffer, subscriber: Subscriber<Message>, context: TransportContext) {
-        const {options, streamAdapter, injector } = context;
+        const { options, streamAdapter, injector } = context.session;
 
         const bLen = Buffer.byteLength(data);
         cache.length += bLen;
@@ -140,7 +139,7 @@ export class BindPacketIdDecodeInterceptor implements Interceptor<Message, Packe
         return next.handle(input, context)
             .pipe(
                 filter(packet => {
-                    if (!context.options.client) return true;
+                    if (!context.session.options.client) return true;
                     return packet.id == input.id;
                 })
             );
@@ -152,13 +151,13 @@ export class BindPacketIdEncodeInterceptor implements Interceptor<Packet, Messag
 
     intercept(input: Packet, next: Handler<Packet, Message>, context: TransportContext): Observable<Message> {
         const length = input.headers.getContentLength();
-        const options = context.options;
-        if (length && options.maxSize && length > options.maxSize && !context.options.headDelimiter && !context.injector.has(PackageEncodeInterceptor)) {
-            const btpipe = context.injector.get<PipeTransform>('bytes-format');
+        const { options, injector } = context.session;
+        if (length && options.maxSize && length > options.maxSize && !options.headDelimiter && !injector.has(PackageEncodeInterceptor)) {
+            const btpipe = injector.get<PipeTransform>('bytes-format');
             return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(options.maxSize)}`));
         }
         if (!input.id && options.client) {
-            input.attachId(context.injector.get(PacketIdGenerator).getPacketId());
+            input.attachId(injector.get(PacketIdGenerator).getPacketId());
         }
         return next.handle(input, context);
     }
@@ -172,10 +171,10 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Message, Tra
 
         return next.handle(input, context)
             .pipe(map(msg => {
-                const streamAdapter = context.streamAdapter;
-                const countLen = context.options.countLen || 4;
+                const {streamAdapter, options } = context.session;
+                const countLen = options.countLen || 4;
                 let buffLen: Buffer;
-                const delimiter = Buffer.from(context.options.delimiter!);
+                const delimiter = Buffer.from(options.delimiter!);
                 const delimiterLen = Buffer.byteLength(delimiter);
                 // const headers = msg.headers;
                 let data: IReadableStream | Buffer = msg.data ?? Buffer.alloc(0);

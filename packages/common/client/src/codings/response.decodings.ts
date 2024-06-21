@@ -162,11 +162,9 @@ export class ResponseTypeDecodeInterceptor implements Interceptor<ClientIncoming
 
     intercept(input: ClientIncomingPacket, next: Handler<ClientIncomingPacket, ResponseEvent, TransportContext>, context: TransportContext): Observable<ResponseEvent> {
         return defer(async () => {
-            const session = context.session as ClientTransportSession;
+            const { responseFactory, streamAdapter} = context.session as ClientTransportSession;
 
             const req = context.first() as AbstractRequest;
-            const eventFactory = session.responseFactory;
-            const streamAdapter = session.streamAdapter;
             let responseType = req.responseType;
 
             const contentType = input.headers.getContentType();
@@ -254,7 +252,7 @@ export class ResponseTypeDecodeInterceptor implements Interceptor<ClientIncoming
             if (ok) {
                 return input.clone({ ok, body });
             } else {
-                throw eventFactory.create(input.clone({ ok, body, error }).toJson());
+                throw responseFactory.create(input.clone({ ok, body, error }).toJson());
             }
 
         }).pipe(
