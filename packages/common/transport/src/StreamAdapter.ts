@@ -1,9 +1,7 @@
-import { TypeExecption, isArray, isNil, isString, promisify } from '@tsdi/ioc';
-import { Packet, RequestParams, isArrayBuffer, isBlob, isFormData } from '@tsdi/common';
+import { TypeExecption, isArray } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
-import { IDuplexStream, IReadableStream, IStream, IWritableStream, ITransformStream, IEndable } from './stream';
-import { UnsupportedMediaTypeExecption } from './execptions';
-import { ctype, ev } from './consts';
+import { IDuplexStream, IReadableStream, IStream, IWritableStream, ITransformStream } from './stream';
+import { ev } from './consts';
 
 /**
  * pipe source.

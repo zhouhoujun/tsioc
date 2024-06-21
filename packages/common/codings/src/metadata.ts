@@ -2,12 +2,12 @@ import { ActionTypes, DecorDefine, Execption, Token, Type, createDecorator, getT
 import { Filter, Interceptor, InvocationFactoryResolver, InvocationOptions } from '@tsdi/core';
 import { CodingsContext } from './context';
 import { CodingMappings } from './mappings';
-import { CodingsOption } from './options';
+import { CodingsOptions } from './options';
 
 /**
  * codings options.
  */
-export interface CodingsMetadata extends InvocationOptions, CodingsOption { }
+export interface CodingsMetadata extends InvocationOptions, CodingsOptions { }
 
 
 export interface EncodingsMetadata extends CodingsMetadata {

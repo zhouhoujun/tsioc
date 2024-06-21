@@ -5,7 +5,7 @@ import {
     Decodings, DecodingsBackend, DecodingsFactory,
     Encodings, EncodingsBackend, EncodingsFactory
 } from '@tsdi/common/codings';
-import { TransportOpts } from './TransportSession';
+import { AbstractTransportSession, TransportOpts } from './TransportSession';
 import { TransportContext } from './context';
 
 
@@ -29,7 +29,14 @@ export const TRANSPORT_ENCODINGS_FILTERS = tokenId<Interceptor<Packet, Message, 
 export const TRANSPORT_ENCODINGS_GUARDS = tokenId<CanActivate[]>('TRANSPORT_ENCODINGS_GUARDS');
 
 export class TransportEncodings extends Encodings {
+    /**
+     * transport session
+     */
+    session!: AbstractTransportSession;
 
+    protected override createContext(): TransportContext {
+        return new TransportContext(this.session, this.options, this.defaultMaps);
+    }
 
 }
 
@@ -71,6 +78,14 @@ export const TRANSPORT_DECODINGS_GUARDS = tokenId<CanActivate[]>('TRANSPORT_DECO
 
 export class TransportDecodings extends Decodings {
 
+    /**
+     * transport session
+     */
+    session!: AbstractTransportSession;
+
+    protected override createContext(): TransportContext {
+        return new TransportContext(this.session, this.options, this.defaultMaps);
+    }
 }
 
 /**

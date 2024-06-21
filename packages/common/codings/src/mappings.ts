@@ -3,7 +3,7 @@ import { Handler } from '@tsdi/core';
 import { CodingsContext } from './context';
 import { Observable, map, mergeMap, of, throwError } from 'rxjs';
 import { CodingsNotHandleExecption } from './execptions';
-import { CodingsOption } from './options';
+import { CodingsOptions } from './options';
 
 
 
@@ -119,27 +119,27 @@ export class CodingMappings {
     }
 
 
-    getEncodeHanlders(type: Type | string, defaultType?: Type | string, options?: CodingsOption): Handler[] | null {
+    getEncodeHanlders(type: Type | string, defaultType?: Type | string, options?: CodingsOptions): Handler[] | null {
         const handlers = this.maps.get(this.getKey(this._enSubfix, options))?.getHanlder(type, defaultType)
             ?? this.maps.get(this.getKey(this._enSubfix))?.getHanlder(type, defaultType);
         return handlers ?? null;
     }
 
-    getEncodings(options?: CodingsOption): Mappings {
+    getEncodings(options?: CodingsOptions): Mappings {
         return this.get(this._enSubfix, options)
     }
 
-    getDecodeHanlders(type: Type | string, defaultType?: Type | string, options?: CodingsOption): Handler[] | null {
+    getDecodeHanlders(type: Type | string, defaultType?: Type | string, options?: CodingsOptions): Handler[] | null {
         const handlers = this.maps.get(this.getKey(this._deSubFix, options))?.getHanlder(type, defaultType)
             ?? this.maps.get(this.getKey(this._deSubFix))?.getHanlder(type, defaultType);
         return handlers ?? null;
     }
 
-    getDecodings(options?: CodingsOption): Mappings {
+    getDecodings(options?: CodingsOptions): Mappings {
         return this.get(this._deSubFix, options)
     }
 
-    private get(subfix: string, options?: CodingsOption): Mappings {
+    private get(subfix: string, options?: CodingsOptions): Mappings {
         const key = this.getKey(subfix, options);
         let mappings = this.maps.get(key);
         if (!mappings) {
@@ -149,7 +149,7 @@ export class CodingMappings {
         return mappings
     }
 
-    private getKey(subfix: string, options?: CodingsOption) {
+    private getKey(subfix: string, options?: CodingsOptions) {
         if (!options) return subfix;
 
         return `${options.group ?? ''}${options.subfix ?? ''}${subfix}`;

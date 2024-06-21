@@ -1,11 +1,12 @@
 import { Injector, Token } from '@tsdi/ioc';
 import { HeaderFields, Transport, HybirdTransport, MessageFactory, Message } from '@tsdi/common';
-import { EncodingsFactory, DecodingsFactory, CodingsOptions } from '@tsdi/common/codings';
+import { CodingsHandlerOptions } from '@tsdi/common/codings';
 import { Observable } from 'rxjs';
 import { TransportContext } from './context';
 import { StreamAdapter } from './StreamAdapter';
 import { StatusAdapter } from './StatusAdapter';
 import { AbstractIncomingFactory } from './Incoming';
+import { TransportDecodingsFactory, TransportEncodingsFactory } from './condings';
 
 
 /**
@@ -21,18 +22,18 @@ export interface TransportOpts {
      */
     readonly subfix?: string;
 
-    readonly encodings?: CodingsOptions;
-    readonly decodings?: CodingsOptions;
+    readonly encodings?: CodingsHandlerOptions;
+    readonly decodings?: CodingsHandlerOptions;
 
     /**
      * encodings Factory.
      */
-    readonly encodingsFactory?: Token<EncodingsFactory>;
+    readonly encodingsFactory?: Token<TransportEncodingsFactory>;
 
     /**
      * decodings Factory.
      */
-    readonly decodingsFactory?: Token<DecodingsFactory>;
+    readonly decodingsFactory?: Token<TransportDecodingsFactory>;
 
     /**
      * transport type.
@@ -90,10 +91,9 @@ export interface TransportOpts {
      * pipe endcoed data to socket
      * @param socket 
      * @param msg 
-     * @param input 
-     * @param ctx 
+     * @param input
      */
-    pipeTo?(socket: any, msg: Message, input: any, ctx: TransportContext): Promise<void>;
+    pipeTo?(socket: any, msg: Message, input: any): Promise<void>;
     /**
      * write endcoed data to socket.
      * @param socket 
@@ -102,7 +102,7 @@ export interface TransportOpts {
      * @param ctx 
      * @param cb 
      */
-    write?(socket: any, msg: Message, input: any, ctx: TransportContext, cb?: (err?: Error | null) => void): void;
+    write?(socket: any, msg: Message, input: any, cb?: (err?: Error | null) => void): void;
 
     /**
      * custom handle mesasge from socket.
@@ -111,7 +111,7 @@ export interface TransportOpts {
      * @param factory 
      * @param context 
      */
-    handleMessage?(socket: any, factory: MessageFactory, context?: TransportContext): Observable<any>;
+    handleMessage?(socket: any, factory: MessageFactory): Observable<any>;
 
 }
 

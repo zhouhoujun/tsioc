@@ -1,12 +1,12 @@
 import { OnDestroy, Type } from '@tsdi/ioc';
 import { Context } from '@tsdi/core';
-import { CodingsOption } from './options';
+import { CodingsOptions } from './options';
 
 
 /**
  * codings context.
  */
-export class CodingsContext<TOpts extends CodingsOption = CodingsOption> extends Context implements OnDestroy {
+export class CodingsContext<TOpts extends CodingsOptions = CodingsOptions> extends Context implements OnDestroy {
 
 
     private _completed = false;

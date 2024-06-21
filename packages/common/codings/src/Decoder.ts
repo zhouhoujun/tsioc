@@ -1,6 +1,5 @@
 import { Abstract, Type } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { CodingsContext } from './context';
 
 /**
  * Decoder
@@ -13,5 +12,5 @@ export abstract class Decoder<TInput = any, TOutput = any> {
      * decode inport
      * @param input 
      */
-    abstract decode(input: TInput, context?: CodingsContext): Observable<TOutput>;
+    abstract decode(input: TInput, context?: any): Observable<TOutput>;
 }

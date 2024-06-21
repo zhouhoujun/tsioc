@@ -1,7 +1,7 @@
 import { Abstract, Injectable, Injector, Type, tokenId } from '@tsdi/ioc';
 import { Backend, CanActivate, ExecptionHandlerFilter, Handler, Interceptor, createHandler } from '@tsdi/core';
 import { Observable, finalize, mergeMap, of } from 'rxjs';
-import { CodingsOption, CodingsOptions } from './options';
+import { CodingsOptions, CodingsHandlerOptions } from './options';
 import { CodingsContext } from './context';
 import { Encoder } from './Encoder';
 import { CodingMappings } from './mappings';
@@ -61,7 +61,7 @@ export class Encodings implements Encoder {
     readonly defaultMaps: Map<Type | string, Type | string>;
     constructor(
         private handler: EncodingsHandler,
-        protected options: CodingsOption
+        protected options: CodingsOptions
     ) {
         this.defaultMaps = new Map(options.defaults);
     }
@@ -70,8 +70,18 @@ export class Encodings implements Encoder {
      * encode inport
      * @param input 
      */
-    encode(input: any, context?: CodingsContext): Observable<any> {
-        const ctx = context ?? this.createContext();
+    encode(input: any, context?: any): Observable<any> {
+        let ctx: CodingsContext;
+        if (context instanceof CodingsContext) {
+            ctx = context;
+        } else {
+            ctx = this.createContext();
+            if (context) {
+                ctx.next(context);
+                context = null;
+            }
+        }
+        ctx.next(input);
         return this.handler.handle(input, ctx)
             .pipe(
                 finalize(() => !context && ctx.onDestroy()),
@@ -89,7 +99,7 @@ export class Encodings implements Encoder {
  */
 @Injectable()
 export class EncodingsFactory {
-    create(injector: Injector, options: CodingsOptions): Encodings {
+    create(injector: Injector, options: CodingsHandlerOptions): Encodings {
         const { configable, ...opts } = options;
         const handler = createHandler(injector, {
             interceptorsToken: ENCODINGS_INTERCEPTORS,

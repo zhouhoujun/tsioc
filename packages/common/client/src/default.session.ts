@@ -1,7 +1,6 @@
 import { Injectable, Injector } from '@tsdi/ioc';
 import { MessageFactory, ResponseFactory } from '@tsdi/common';
-import { Decoder, Encoder } from '@tsdi/common/codings';
-import { IDuplexStream, TransportOpts, StreamAdapter, TransportEncodingsFactory, TransportDecodingsFactory, StatusAdapter, Redirector, ClientIncomingFactory } from '@tsdi/common/transport';
+import { IDuplexStream, TransportOpts, StreamAdapter, TransportEncodingsFactory, TransportDecodingsFactory, StatusAdapter, Redirector, ClientIncomingFactory, TransportEncodings, TransportDecodings } from '@tsdi/common/transport';
 import { ClientTransportSession, ClientTransportSessionFactory } from './session';
 
 
@@ -11,8 +10,8 @@ export class DefaultClientTransportSession extends ClientTransportSession<any> {
     constructor(
         readonly injector: Injector,
         readonly socket: any,
-        readonly encodings: Encoder,
-        readonly decodings: Decoder,
+        readonly encodings: TransportEncodings,
+        readonly decodings: TransportDecodings,
         readonly streamAdapter: StreamAdapter,
         readonly statusAdapter: StatusAdapter | null,
         readonly redirector: Redirector | null,
@@ -23,6 +22,7 @@ export class DefaultClientTransportSession extends ClientTransportSession<any> {
 
     ) {
         super()
+        this.encodings.session = this.decodings.session = this;
     }
 
 }

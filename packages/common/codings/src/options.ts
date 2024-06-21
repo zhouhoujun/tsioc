@@ -5,7 +5,7 @@ import { HybirdTransport, Transport } from '@tsdi/common';
 /**
  * codings option.
  */
-export interface CodingsOption {
+export interface CodingsOptions {
     /**
      * the codings action name.
      */
@@ -21,34 +21,12 @@ export interface CodingsOption {
 
     end?: Type;
 
-    complete? (data: any): boolean;
+    complete?(data: any): boolean;
 
-    defaults?: Array<[Type|string, Type|string]>
+    defaults?: Array<[Type | string, Type | string]>
 }
 
 
-export interface CodingsOptions extends CodingsOption {
+export interface CodingsHandlerOptions extends CodingsOptions {
     configable?: ConfigableHandlerOptions;
 }
-
-
-// /**
-//  * Codings options.
-//  */
-// export interface CodingsOpts {
-//     /**
-//      * the codings action name.
-//      */
-//     readonly name?: string;
-//     /**
-//      * group of codings.
-//      */
-//     readonly group?: Transport | HybirdTransport | 'runner' | 'events';
-//     /**
-//      * subfix of group.
-//      */
-//     readonly subfix?: string;
-
-//     // readonly encodings?: EncodingsOptions;
-//     // readonly decodings?: DecodingsOptions;
-// }

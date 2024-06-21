@@ -1,11 +1,11 @@
 import { OnDestroy, Type } from '@tsdi/ioc';
-import { CodingsContext, CodingsOption } from '@tsdi/common/codings';
+import { CodingsContext, CodingsOptions } from '@tsdi/common/codings';
 import { AbstractTransportSession } from './TransportSession';
 
 /**
  * transprot codings context.
  */
-export class TransportContext extends CodingsContext<CodingsOption> implements OnDestroy {
+export class TransportContext extends CodingsContext<CodingsOptions> implements OnDestroy {
     /**
      * channel
      */
@@ -13,7 +13,7 @@ export class TransportContext extends CodingsContext<CodingsOption> implements O
 
     constructor(
         public session: AbstractTransportSession,
-        options: CodingsOption,
+        options: CodingsOptions,
         defaults: Map<Type | string, Type | string>
         
     ) {

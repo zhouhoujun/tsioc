@@ -241,7 +241,6 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
 
                 serverOpts.transportOpts = {
                     name: `${serverOpts.microservice ? ' microservice' : ''}`,
-                    group: moduleOpts.transport,
                     subfix: serverOpts.microservice ? '_micro' : '',
                     transport: moduleOpts.transport,
                     timeout: serverOpts.timeout,
