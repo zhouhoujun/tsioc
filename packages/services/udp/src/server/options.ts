@@ -1,6 +1,6 @@
+import { tokenId } from '@tsdi/ioc';
 import { CanActivate, Filter, Interceptor } from '@tsdi/core';
 import { ServerOpts } from '@tsdi/endpoints';
-import { tokenId } from '@tsdi/ioc';
 import { SocketOptions, BindOptions } from 'dgram';
 
 

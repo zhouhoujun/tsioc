@@ -1,5 +1,5 @@
 import { Injectable, InvocationContext } from '@tsdi/ioc';
-import { LOCALHOST, TransportEvent, TransportRequest } from '@tsdi/common';
+import { LOCALHOST, Pattern, ResponseEvent, UrlRequestInitOpts } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ev } from '@tsdi/common/transport';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
@@ -7,12 +7,13 @@ import Redis from 'ioredis';
 import { RedisHandler } from './handler';
 import { RedisClientOpts } from './options';
 import { ReidsTransport } from '../redis.session';
+import { RedisRequest } from './request';
 
 /**
  * Redis Client.
  */
 @Injectable()
-export class RedisClient extends Client<TransportRequest, TransportEvent, RedisClientOpts> {
+export class RedisClient extends Client<RedisRequest, ResponseEvent, RedisClientOpts> {
 
     @InjectLog()
     private logger!: Logger;
@@ -66,6 +67,11 @@ export class RedisClient extends Client<TransportRequest, TransportEvent, RedisC
         context.setValue(Client, this);
         context.setValue(ClientTransportSession, this._session);
     }
+
+    protected createRequest(pattern: Pattern, options: UrlRequestInitOpts<any>): RedisRequest<any> {
+        return new RedisRequest(pattern, options);
+    }
+
 
     protected createRetryStrategy(options: RedisClientOpts): (times: number) => undefined | number {
         return (times: number) => {

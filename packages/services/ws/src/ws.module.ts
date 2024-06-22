@@ -1,7 +1,10 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
-import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, PatternRequestContext, RequestContext, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
+import {
+    ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, PatternRequestContext,
+    RequestContext, SERVER_MODULES, ServerModuleOpts
+} from '@tsdi/endpoints';
 import { WsClient } from './client/client';
 import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS } from './client/options';
 import { WsHandler } from './client/handler';

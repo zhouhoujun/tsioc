@@ -1,9 +1,10 @@
 import { Filter, Interceptor } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
-import { TransportRequest, TransportEvent } from '@tsdi/common';
+import { ResponseEvent } from '@tsdi/common';
 import { TransportOpts } from '@tsdi/common/transport';
 import { ClientOpts } from '@tsdi/common/client';
 import { SocketOptions } from 'dgram';
+import { UdpRequest } from './request';
 
 
 export interface UdpClientTransportOpts extends TransportOpts {
@@ -24,8 +25,8 @@ export interface UdpClientOpts extends ClientOpts<SocketOptions> {
 /**
  * UDP client interceptors.
  */
-export const UDP_CLIENT_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('UDP_CLIENT_INTERCEPTORS');
+export const UDP_CLIENT_INTERCEPTORS = tokenId<Interceptor<UdpRequest, ResponseEvent>[]>('UDP_CLIENT_INTERCEPTORS');
 /**
  * UDP client filters.
  */
-export const UDP_CLIENT_FILTERS = tokenId<Filter<TransportRequest, TransportEvent>[]>('UDP_CLIENT_FILTERS');
+export const UDP_CLIENT_FILTERS = tokenId<Filter<UdpRequest, ResponseEvent>[]>('UDP_CLIENT_FILTERS');
