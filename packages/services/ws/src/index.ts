@@ -1,6 +1,7 @@
 export * from './client/options';
 export * from './client/handler';
 export * from './client/client';
+export * from './client/request';
 
 export * from './server/options';
 export * from './server/handler';

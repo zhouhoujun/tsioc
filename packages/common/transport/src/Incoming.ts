@@ -1,6 +1,6 @@
-import { isUndefined } from '@tsdi/ioc';
 import { HeadersLike, IHeaders, Packet, PacketOpts, ParameterCodec, Pattern, RequestParams, StatusPacket, StatusPacketOpts } from '@tsdi/common';
 import { IReadableStream } from './stream';
+import { ClassType, getClass } from '@tsdi/ioc';
 
 
 
@@ -227,6 +227,21 @@ export abstract class IncomingPacket<T = any> extends Packet<T> implements Incom
 }
 
 
+export abstract class PatternIncoming<T = any> extends IncomingPacket<T> {
+
+    constructor(readonly pattern: Pattern, options: IncomingOpts<T>) {
+        super(options)
+    }
+
+
+    toJson(): Record<string, any> {
+        const rcd = super.toJson();
+        rcd.pattern = this.pattern;
+        return rcd;
+    }
+
+}
+
 
 /**
  * Clientincoming message
@@ -344,6 +359,21 @@ export abstract class ClientIncomingPacket<T = any, TStatus = any> extends Statu
         statusText?: string;
         error?: any;
     }): ClientIncomingPacket<V, TStatus>;
+
+}
+
+
+export abstract class ClientPatternIncoming<T = any, TStatus = any> extends ClientIncomingPacket<T, TStatus> {
+
+    constructor(readonly pattern: Pattern, options: ClientIncomingOpts<T, TStatus>) {
+        super(options);
+    }
+
+    toJson(): Record<string, any> {
+        const rcd = super.toJson();
+        rcd.pattern = this.pattern;
+        return rcd;
+    }
 
 }
 

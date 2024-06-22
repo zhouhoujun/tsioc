@@ -1,14 +1,10 @@
 import { Injectable } from '@tsdi/ioc';
 import { HeadersLike, Pattern, RequestParams } from '@tsdi/common';
-import { ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket, IncomingFactory, IncomingOpts, IncomingPacket } from '@tsdi/common/transport';
+import { ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket, ClientPatternIncoming, IncomingFactory, IncomingOpts, PatternIncoming } from '@tsdi/common/transport';
 
 
 
-export class TcpIncoming<T = any> extends IncomingPacket<T> {
-
-    constructor(readonly pattern: Pattern, options: IncomingOpts<T>) {
-        super(options)
-    }
+export class TcpIncoming<T = any> extends PatternIncoming<T> {
 
     clone(): TcpIncoming<T>;
     clone(update: {
@@ -36,15 +32,8 @@ export class TcpIncoming<T = any> extends IncomingPacket<T> {
     clone(update: any = {}): TcpIncoming {
         const pattern = update.pattern ?? this.pattern;
         const opts = this.cloneOpts(update);
-
         return new TcpIncoming(pattern, opts);
 
-    }
-
-    toJson(): Record<string, any> {
-        const rcd = super.toJson();
-        rcd.pattern = this.pattern;
-        return rcd;
     }
 
 }
@@ -57,11 +46,7 @@ export class TcpIncomingFactory implements IncomingFactory {
 }
 
 
-export class TcpClientIncoming<T = any> extends ClientIncomingPacket<T, null> {
-
-    constructor(readonly pattern: Pattern, options: ClientIncomingOpts<T, null>) {
-        super(options);
-    }
+export class TcpClientIncoming<T = any> extends ClientPatternIncoming<T, null> {
 
     clone(): ClientIncomingPacket<T, null>;
     clone(update: { headers?: HeadersLike | undefined; body?: T | null | undefined; payload?: T | null | undefined; setHeaders?: { [name: string]: string | string[]; } | undefined; type?: number | undefined; ok?: boolean | undefined; status?: number | undefined; statusMessage?: string | undefined; statusText?: string | undefined; error?: any; }): TcpClientIncoming<T>;
@@ -69,16 +54,8 @@ export class TcpClientIncoming<T = any> extends ClientIncomingPacket<T, null> {
     clone(update: any = {}): TcpClientIncoming {
         const pattern = update.pattern ?? this.pattern;
         const opts = this.cloneOpts(update);
-
         return new TcpClientIncoming(pattern, opts);
     }
-
-    toJson(): Record<string, any> {
-        const rcd = super.toJson();
-        rcd.pattern = this.pattern;
-        return rcd;
-    }
-
 }
 
 @Injectable()

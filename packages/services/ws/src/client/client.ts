@@ -1,16 +1,19 @@
 import { Injectable, InvocationContext } from '@tsdi/ioc';
-import { TransportEvent, TransportRequest } from '@tsdi/common';
+import { ResponseEvent, Pattern, UrlRequestInitOpts } from '@tsdi/common';
 import { ServiceUnavailableExecption, ev } from '@tsdi/common/transport';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { Observable } from 'rxjs';
 import { WebSocket, createWebSocketStream } from 'ws';
 import { WsHandler } from './handler';
 import { WsClientOpts } from './options';
+import { WsRequest } from './request';
+
+
 /**
  * ws client.
  */
 @Injectable()
-export class WsClient extends Client<TransportRequest, TransportEvent, WsClientOpts> {
+export class WsClient extends Client<WsRequest, ResponseEvent, WsClientOpts> {
     private socket?: WebSocket | null;
     private session?: ClientTransportSession | null;
 
@@ -74,8 +77,14 @@ export class WsClient extends Client<TransportRequest, TransportEvent, WsClientO
         this.socket = null;
     }
 
+
+    protected createRequest(pattern: Pattern, options: UrlRequestInitOpts<any>): WsRequest<any> {
+        return new WsRequest(pattern, options);
+    }
+
     protected initContext(context: InvocationContext<any>): void {
         context.setValue(Client, this);
+        context.setValue(WsClient, this);
         context.setValue(ClientTransportSession, this.session);
     }
 

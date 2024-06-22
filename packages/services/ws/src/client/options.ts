@@ -1,6 +1,6 @@
 import { tokenId } from '@tsdi/ioc';
 import { Filter, Interceptor } from '@tsdi/core';
-import { TransportRequest, TransportEvent } from '@tsdi/common';
+import { PatternRequest, ResponseEvent } from '@tsdi/common';
 import { ClientOpts } from '@tsdi/common/client';
 import { ClientOptions } from 'ws';
 
@@ -18,7 +18,7 @@ export interface WsClientOpts extends ClientOpts<ClientOptions> {
 /**
  * WS client interceptors.
  */
-export const WS_CLIENT_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('WS_CLIENT_INTERCEPTORS');
+export const WS_CLIENT_INTERCEPTORS = tokenId<Interceptor<PatternRequest, ResponseEvent>[]>('WS_CLIENT_INTERCEPTORS');
 /**
  * WS client filters.
  */

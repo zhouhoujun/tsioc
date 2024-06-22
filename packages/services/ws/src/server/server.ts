@@ -32,7 +32,7 @@ export class WsServer extends Server<RequestContext, WsServerOpts> {
     @EventHandler(BindServerEvent, {
         interceptorsToken: WS_BIND_INTERCEPTORS,
         filtersToken: WS_BIND_FILTERS,
-        globalGuardsToken: WS_BIND_GUARDS
+        guardsToken: WS_BIND_GUARDS
     })
     async bind(event: BindServerEvent<any>) {
         const options = this.getOptions();
