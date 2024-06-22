@@ -12,6 +12,8 @@ import { UdpEndpointHandler } from './server/handler';
 import { defaultMaxSize } from './consts';
 import { UdpClientMessageDecodeFilter, UdpClientMessageEncodeFilter } from './client/filters';
 import { UdpMessageDecodeFilter, UdpMessageEncodeFilter } from './server/filters';
+import { UdpMessageFactory } from './message';
+import { UdpClientIncomingFactory } from './incoming';
 
 
 
@@ -28,39 +30,41 @@ import { UdpMessageDecodeFilter, UdpMessageEncodeFilter } from './server/filters
                 hanlderType: UdpHandler,
                 defaultOpts: {
                     url: 'udp://localhost:3000',
+                    interceptorsToken: UDP_CLIENT_INTERCEPTORS,
+                    filtersToken: UDP_CLIENT_FILTERS,
+                    messageFactory: { useClass: UdpMessageFactory },
+                    incomingFactory: { useClass: UdpClientIncomingFactory },
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
-                        defaultMethod: '*',
-                        messageEvent: 'message',
-                        messageEventHandle(msg: Buffer, rinfo: RemoteInfo) {
-                            return { msg, rinfo };
-                        },
-                        encodes: {
-                            globalFilters: [
-                                UdpClientMessageEncodeFilter
-                            ]
-                        },
-                        decodes: {
-                            globalFilters: [
-                                UdpClientMessageDecodeFilter
-                            ]
-                        },
-                        write(socket: Socket, data, originData, context, cb) {
+                        defaultMethod: '*',                        
+                        // messageEvent: 'message',
+                        // messageEventHandle(msg: Buffer, rinfo: RemoteInfo) {
+                        //     return { msg, rinfo };
+                        // },
+                        // encodes: {
+                        //     globalFilters: [
+                        //         UdpClientMessageEncodeFilter
+                        //     ]
+                        // },
+                        // decodes: {
+                        //     globalFilters: [
+                        //         UdpClientMessageDecodeFilter
+                        //     ]
+                        // },
+                        write(socket: Socket, data, originData, cb) {
                             const url = context.channel!;
                             const idx = url.lastIndexOf(':');
 
                             const port = parseInt(url.substring(idx + 1));
                             const addr = url.substring(0, idx);
-                            if(addr) {
+                            if (addr) {
                                 socket.send(data, port, addr, cb);
                             } else {
                                 socket.send(data, port, cb);
                             }
                         }
-                    },
-                    interceptorsToken: UDP_CLIENT_INTERCEPTORS,
-                    filtersToken: UDP_CLIENT_FILTERS,
+                    }
                 } as ClientOpts
             },
             multi: true
@@ -78,20 +82,20 @@ import { UdpMessageDecodeFilter, UdpMessageEncodeFilter } from './server/filters
                         maxSize: defaultMaxSize,
                         defaultMethod: '*',
                         messageEvent: 'message',
-                        messageEventHandle(msg: Buffer, rinfo: RemoteInfo) {
-                            return { msg, rinfo };
-                        },
-                        encodes: {
-                            globalFilters: [
-                                UdpMessageEncodeFilter
-                            ]
-                        },
-                        decodes: {
-                            globalFilters: [
-                                UdpMessageDecodeFilter
-                            ]
-                        },
-                        write(socket: Socket, data, originData, ctx, cb) {
+                        // messageEventHandle(msg: Buffer, rinfo: RemoteInfo) {
+                        //     return { msg, rinfo };
+                        // },
+                        // encodes: {
+                        //     globalFilters: [
+                        //         UdpMessageEncodeFilter
+                        //     ]
+                        // },
+                        // decodes: {
+                        //     globalFilters: [
+                        //         UdpMessageDecodeFilter
+                        //     ]
+                        // },
+                        write(socket: Socket, data, originData, cb) {
                             const rinfo = ctx.incoming?.rinfo ?? originData.incoming?.rinfo as RemoteInfo;
                             let port: number;
                             let addr: string;
@@ -104,7 +108,7 @@ import { UdpMessageDecodeFilter, UdpMessageEncodeFilter } from './server/filters
                                 port = parseInt(url.substring(idx + 1));
                                 addr = url.substring(0, idx);
                             }
-                            if(addr) {
+                            if (addr) {
                                 socket.send(data, port, addr, cb);
                             } else {
                                 socket.send(data, port, cb);
