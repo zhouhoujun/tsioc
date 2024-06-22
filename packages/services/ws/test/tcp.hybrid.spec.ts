@@ -1,8 +1,9 @@
 import { Application, ApplicationContext } from '@tsdi/core';
 import { Injector, Module, isArray } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
-import { TransportErrorResponse } from '@tsdi/common';
+import { ErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
+import { PackageBufferCodingsModule } from '@tsdi/common/transport';
 import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -12,7 +13,6 @@ import { TcpClient, TcpModule } from '@tsdi/tcp';
 import { WsModule, WsClient, WsServer } from '../src';
 import { DeviceController } from './controller';
 import { BigFileInterceptor } from './BigFileInterceptor';
-import { PacketCodingsModule } from '@tsdi/common/transport';
 
 
 @Module({
@@ -76,7 +76,7 @@ import { PacketCodingsModule } from '@tsdi/common/transport';
                 }
             }
         ]),
-        PacketCodingsModule
+        PackageBufferCodingsModule
     ],
     declarations: [
         DeviceController
@@ -184,7 +184,7 @@ describe('Ws hybrid Tcp Server & Ws Client & TcpClient', () => {
                     return of(err)
                 })
             ));
-        expect((a as TransportErrorResponse).statusText).toEqual('Bad Request');
+        expect((a as ErrorResponse).statusText).toEqual('Bad Request');
     })
 
     it('post route response object', async () => {
@@ -221,7 +221,7 @@ describe('Ws hybrid Tcp Server & Ws Client & TcpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect((r as TransportErrorResponse).statusText).toEqual('Bad Request');
+        expect((r as ErrorResponse).statusText).toEqual('Bad Request');
     })
 
     it('route with request body pipe throw argument err', async () => {
@@ -231,7 +231,7 @@ describe('Ws hybrid Tcp Server & Ws Client & TcpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect((r as TransportErrorResponse).statusText).toEqual('Bad Request');
+        expect((r as ErrorResponse).statusText).toEqual('Bad Request');
     })
 
     it('route with request param pipe', async () => {
@@ -247,7 +247,7 @@ describe('Ws hybrid Tcp Server & Ws Client & TcpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect((r as TransportErrorResponse).statusText).toEqual('Bad Request');
+        expect((r as ErrorResponse).statusText).toEqual('Bad Request');
     })
 
     it('route with request param pipe throw argument err', async () => {
@@ -258,7 +258,7 @@ describe('Ws hybrid Tcp Server & Ws Client & TcpClient', () => {
                     return of(err);
                 })));
 
-        expect((r as TransportErrorResponse).statusText).toEqual('Bad Request');
+        expect((r as ErrorResponse).statusText).toEqual('Bad Request');
     })
 
     it('route with request param pipe', async () => {
@@ -275,7 +275,7 @@ describe('Ws hybrid Tcp Server & Ws Client & TcpClient', () => {
                     return of(err);
                 })));
 
-        expect((r as TransportErrorResponse).statusText).toEqual('Bad Request');
+        expect((r as ErrorResponse).statusText).toEqual('Bad Request');
     })
 
     it('route with request restful param pipe throw argument err', async () => {
@@ -286,7 +286,7 @@ describe('Ws hybrid Tcp Server & Ws Client & TcpClient', () => {
                     return of(err);
                 })));
 
-        expect((r as TransportErrorResponse).statusText).toEqual('Bad Request');
+        expect((r as ErrorResponse).statusText).toEqual('Bad Request');
     })
 
 

@@ -45,7 +45,6 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                             defaults: [
                                 [TcpRequest, Packet]
                             ]
-
                         },
                         decodings: {
                             complete: isResponseEvent,

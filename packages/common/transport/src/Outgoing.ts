@@ -218,3 +218,15 @@ export abstract class OutgoingPacket<T = any, TStatus = number> extends StatusPa
 }
 
 
+export abstract class PatternOutgoing<T = any> extends OutgoingPacket<T, null> {
+
+    constructor(readonly pattern: Pattern, options: OutgoingPacketOpts<T, null>) {
+        super(options);
+    }
+
+    toJson(): Record<string, any> {
+        const rcd = super.toJson();
+        rcd.pattern = this.pattern;
+        return rcd;
+    }
+}
