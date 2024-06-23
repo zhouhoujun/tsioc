@@ -1,19 +1,20 @@
-import { Module } from '@tsdi/ioc';
-import { ExecptionHandlerFilter } from '@tsdi/core';
+import { Message, Packet, isResponseEvent } from '@tsdi/common';
 import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
-import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
-import { Socket, RemoteInfo } from 'dgram';
+import { ClientIncomingPacket, IncomingPacket, OutgoingPacket } from '@tsdi/common/transport';
+import { ExecptionHandlerFilter } from '@tsdi/core';
+import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, PatternRequestContext, RequestContext, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
+import { Module } from '@tsdi/ioc';
 import { UdpClient } from './client/client';
-import { UDP_CLIENT_FILTERS, UDP_CLIENT_INTERCEPTORS } from './client/options';
 import { UdpHandler } from './client/handler';
-import { UdpServer } from './server/server';
-import { UDP_SERV_FILTERS, UDP_SERV_GUARDS, UDP_SERV_INTERCEPTORS } from './server/options';
-import { UdpEndpointHandler } from './server/handler';
+import { UDP_CLIENT_FILTERS, UDP_CLIENT_INTERCEPTORS } from './client/options';
+import { UdpRequest } from './client/request';
 import { defaultMaxSize } from './consts';
-import { UdpClientMessageDecodeFilter, UdpClientMessageEncodeFilter } from './client/filters';
-import { UdpMessageDecodeFilter, UdpMessageEncodeFilter } from './server/filters';
-import { UdpMessageFactory } from './message';
-import { UdpClientIncomingFactory } from './incoming';
+import { UdpClientIncoming, UdpClientIncomingFactory, UdpIncoming, UdpIncomingFactory } from './incoming';
+import { UdpMessage, UdpMessageFactory, UdpMessageReader, UdpMessageWriter } from './message';
+import { UdpOutgoing, UdpOutgoingFactory } from './outgoing';
+import { UdpEndpointHandler } from './server/handler';
+import { UDP_SERV_FILTERS, UDP_SERV_GUARDS, UDP_SERV_INTERCEPTORS } from './server/options';
+import { UdpServer } from './server/server';
 
 
 
@@ -33,36 +34,25 @@ import { UdpClientIncomingFactory } from './incoming';
                     interceptorsToken: UDP_CLIENT_INTERCEPTORS,
                     filtersToken: UDP_CLIENT_FILTERS,
                     messageFactory: { useClass: UdpMessageFactory },
+                    messageReader: { useClass: UdpMessageReader },
+                    messageWriter: { useClass: UdpMessageWriter },
                     incomingFactory: { useClass: UdpClientIncomingFactory },
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
-                        defaultMethod: '*',                        
-                        // messageEvent: 'message',
-                        // messageEventHandle(msg: Buffer, rinfo: RemoteInfo) {
-                        //     return { msg, rinfo };
-                        // },
-                        // encodes: {
-                        //     globalFilters: [
-                        //         UdpClientMessageEncodeFilter
-                        //     ]
-                        // },
-                        // decodes: {
-                        //     globalFilters: [
-                        //         UdpClientMessageDecodeFilter
-                        //     ]
-                        // },
-                        write(socket: Socket, data, originData, cb) {
-                            const url = context.channel!;
-                            const idx = url.lastIndexOf(':');
-
-                            const port = parseInt(url.substring(idx + 1));
-                            const addr = url.substring(0, idx);
-                            if (addr) {
-                                socket.send(data, port, addr, cb);
-                            } else {
-                                socket.send(data, port, cb);
-                            }
+                        defaultMethod: '*',
+                        encodings: {
+                            end: UdpMessage,
+                            defaults: [
+                                [UdpRequest, Packet]
+                            ]
+                        },
+                        decodings: {
+                            complete: isResponseEvent,
+                            defaults: [
+                                [UdpClientIncoming, ClientIncomingPacket],
+                                [UdpMessage, Message]
+                            ]
                         }
                     }
                 } as ClientOpts
@@ -77,42 +67,28 @@ import { UdpClientIncomingFactory } from './incoming';
                 serverType: UdpServer,
                 handlerType: UdpEndpointHandler,
                 defaultOpts: {
+                    messageReader: { useClass: UdpMessageReader },
+                    messageWriter: { useClass: UdpMessageWriter },
+                    messageFactory: { useClass: UdpMessageFactory },
+                    incomingFactory: { useClass: UdpIncomingFactory },
+                    outgoingFactory: { useClass: UdpOutgoingFactory },
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
                         defaultMethod: '*',
-                        messageEvent: 'message',
-                        // messageEventHandle(msg: Buffer, rinfo: RemoteInfo) {
-                        //     return { msg, rinfo };
-                        // },
-                        // encodes: {
-                        //     globalFilters: [
-                        //         UdpMessageEncodeFilter
-                        //     ]
-                        // },
-                        // decodes: {
-                        //     globalFilters: [
-                        //         UdpMessageDecodeFilter
-                        //     ]
-                        // },
-                        write(socket: Socket, data, originData, cb) {
-                            const rinfo = ctx.incoming?.rinfo ?? originData.incoming?.rinfo as RemoteInfo;
-                            let port: number;
-                            let addr: string;
-                            if (rinfo) {
-                                port = rinfo.port;
-                                addr = rinfo.address;
-                            } else {
-                                const url = ctx.channel ?? originData.channel;
-                                const idx = url.lastIndexOf(':');
-                                port = parseInt(url.substring(idx + 1));
-                                addr = url.substring(0, idx);
-                            }
-                            if (addr) {
-                                socket.send(data, port, addr, cb);
-                            } else {
-                                socket.send(data, port, cb);
-                            }
+                        decodings: {
+                            end: RequestContext,
+                            defaults: [
+                                [UdpIncoming, IncomingPacket],
+                                [UdpMessage, Message]
+                            ]
+                        },
+                        encodings: {
+                            end: UdpMessage,
+                            defaults: [
+                                [PatternRequestContext, RequestContext],
+                                [UdpOutgoing, OutgoingPacket]
+                            ]
                         }
                     },
                     content: {

@@ -1,13 +1,13 @@
-import { Abstract, ProvdierOf, StaticProvider } from '@tsdi/ioc';
-import { CanActivate, Interceptor, PipeTransform, Filter, Runner, Shutdown, ApplicationEvent, HandlerService } from '@tsdi/core';
 import { HybirdTransport, MessageFactory } from '@tsdi/common';
-import { IncomingFactory, OutgoingFactory, StatusAdapter, TransportOpts } from '@tsdi/common/transport';
+import { IncomingFactory, MessageReader, MessageWriter, OutgoingFactory, StatusAdapter, TransportOpts } from '@tsdi/common/transport';
+import { ApplicationEvent, CanActivate, Filter, HandlerService, Interceptor, PipeTransform, Runner, Shutdown } from '@tsdi/core';
+import { Abstract, ProvdierOf, StaticProvider } from '@tsdi/ioc';
 import { EndpointHandler, EndpointOptions } from './EndpointHandler';
 import { RequestContext } from './RequestContext';
-import { SessionOptions } from './Session';
-import { RouteOpts } from './router/router.module';
-import { ContentOptions } from './interceptors/content';
 import { RequestHandler } from './RequestHandler';
+import { SessionOptions } from './Session';
+import { ContentOptions } from './interceptors/content';
+import { RouteOpts } from './router/router.module';
 import { TransportSessionFactory } from './transport.session';
 
 
@@ -43,6 +43,14 @@ export interface ServerOpts<TSerOpts = any> extends EndpointOptions<any> {
      * message factory.
      */
     messageFactory?: ProvdierOf<MessageFactory>;
+    /**
+     * message reader.
+     */
+    readonly messageReader?: ProvdierOf<MessageReader>;
+    /**
+     * message writer.
+     */
+    readonly messageWriter?: ProvdierOf<MessageWriter>;
     /**
      * incoming factory.
      */

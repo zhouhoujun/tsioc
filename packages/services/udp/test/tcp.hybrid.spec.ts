@@ -1,18 +1,18 @@
-import { Injector, Module, isArray } from '@tsdi/ioc';
-import { Application, ApplicationContext } from '@tsdi/core';
-import { LoggerModule } from '@tsdi/logger';
-import { TransportErrorResponse } from '@tsdi/common';
+import { ErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
-import { PacketCodingsModule } from '@tsdi/common/transport';
+import { PackageBufferCodingsModule } from '@tsdi/common/transport';
+import { Application, ApplicationContext } from '@tsdi/core';
 import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
-import { TcpClient } from '@tsdi/tcp';
+import { Injector, Module, isArray } from '@tsdi/ioc';
+import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
-import expect = require('expect');
+import { TcpClient } from '@tsdi/tcp';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import { UdpClient } from '../src';
-import { DeviceController } from './controller';
 import { BigFileInterceptor } from './BigFileInterceptor';
+import { DeviceController } from './controller';
+import expect = require('expect');
 
 
 @Module({
@@ -79,7 +79,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 }
             }
         ]),
-        PacketCodingsModule
+        PackageBufferCodingsModule
     ],
     declarations: [
         DeviceController
@@ -177,7 +177,7 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
                 })
             ));
 
-        expect(a instanceof TransportErrorResponse).toBeDefined();
+        expect(a instanceof ErrorResponse).toBeDefined();
         expect(a.statusText).toEqual('Not Found');
     });
 
@@ -189,7 +189,7 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
                     return of(err)
                 })
             ));
-        expect(a instanceof TransportErrorResponse).toBeDefined();
+        expect(a instanceof ErrorResponse).toBeDefined();
         expect(a.statusText).toEqual('Bad Request');
     })
 

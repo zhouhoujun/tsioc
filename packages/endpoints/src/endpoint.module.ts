@@ -1,27 +1,37 @@
-import {
-    Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleWithProviders, ProviderType,
-    tokenId, isArray, toProvider, lang, ProvdierOf, Type, ModuleRef, isNil, ModuleType
-} from '@tsdi/ioc';
-import { InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
 import { HybirdTransport, MessageFactory, Transport } from '@tsdi/common';
-import { IncomingFactory, NotImplementedExecption, OutgoingFactory, StatusAdapter, TransportPacketModule } from '@tsdi/common/transport';
+import { IncomingFactory, MessageReader, MessageWriter, NotImplementedExecption, OutgoingFactory, SocketMessageReader, SocketMessageWriter, StatusAdapter, TransportPacketModule } from '@tsdi/common/transport';
+import { InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
+import {
+    Arrayify, EMPTY, EMPTY_OBJ, Injector, Module,
+    ModuleRef,
+    ModuleType,
+    ModuleWithProviders,
+    ProvdierOf,
+    ProviderType,
+    Type,
+    isArray,
+    isNil,
+    lang,
+    toProvider,
+    tokenId
+} from '@tsdi/ioc';
+import { EndpointHandler, createEndpoint } from './EndpointHandler';
 import { RequestContextFactory } from './RequestContext';
 import { Server, ServerOpts } from './Server';
-import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
-import { FinalizeFilter } from './finalize.filter';
-import { ExecptionFinalizeFilter } from './execption.filter';
 import { Session } from './Session';
-import { HybridRouter } from './router/router.hybrid';
 import { REGISTER_SERVICES, SetupServices } from './SetupServices';
-import { EndpointTypedRespond } from './typed.respond';
-import { LoggerInterceptor, JsonInterceptor, ContentInterceptor, BodyparserInterceptor } from './interceptors';
-import { TransportSessionFactory } from './transport.session';
-import { MiddlewareOpts, createMiddlewareEndpoint } from './middleware/middleware.endpoint';
-import { EndpointHandler, createEndpoint } from './EndpointHandler';
+import { ServerEndpointCodingsHanlders } from './codings/codings.handlers';
+import { ExecptionFinalizeFilter } from './execption.filter';
+import { DefaultExecptionHandlers } from './execption.handlers';
+import { FinalizeFilter } from './finalize.filter';
 import { DefaultTransportSessionFactory } from './impl/default.session';
 import { RequestContextFactoryImpl } from './impl/request.context';
-import { DefaultExecptionHandlers } from './execption.handlers';
-import { ServerEndpointCodingsHanlders } from './codings/codings.handlers';
+import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, LoggerInterceptor } from './interceptors';
+import { MiddlewareOpts, createMiddlewareEndpoint } from './middleware/middleware.endpoint';
+import { HybridRouter } from './router/router.hybrid';
+import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
+import { TransportSessionFactory } from './transport.session';
+import { EndpointTypedRespond } from './typed.respond';
 
 
 
@@ -279,6 +289,9 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 if (serverOpts.messageFactory) {
                     serverOpts.providers.push(toProvider(MessageFactory, serverOpts.messageFactory));
                 }
+                serverOpts.providers.push(toProvider(MessageReader, serverOpts.messageReader ?? SocketMessageReader));
+                serverOpts.providers.push(toProvider(MessageWriter, serverOpts.messageWriter ?? SocketMessageWriter));
+
 
                 if (serverOpts.sessionFactory !== TransportSessionFactory) {
                     serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory ?? DefaultTransportSessionFactory))

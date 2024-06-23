@@ -43,13 +43,13 @@ export class PatternMesage extends Message {
     readonly pattern: Pattern
     constructor(init: {
         id?: string | number;
-        pattern: Pattern;
+        pattern?: Pattern;
         headers?: Record<string, any>;
         data?: Buffer | IReadableStream | null;
         streamLength?: number;
     }) {
         super(init)
-        this.pattern = init.pattern
+        this.pattern = init.pattern!
     }
 
 }

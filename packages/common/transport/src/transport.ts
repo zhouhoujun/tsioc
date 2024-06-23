@@ -3,28 +3,28 @@ import { Decoder, Encoder } from '@tsdi/common/codings';
 import { Injectable, promisify } from '@tsdi/ioc';
 import { Observable, Subject, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
 import { StreamAdapter } from './StreamAdapter';
-import { AbstractTransportSession } from './TransportSession';
+import { AbstractTransportSession, MessageReader, MessageWriter } from './TransportSession';
 import { ev } from './consts';
-import { IEventEmitter, IReadableStream, IWritableStream } from './stream';
+import { IReadableStream, IWritableStream } from './stream';
 
 
 @Injectable()
-export class MessageReader {
-    read<TMsg extends Message, TSocket = any>(socket: TSocket, messageFactory: MessageFactory, session: BaseTransportSession): Observable<TMsg> {
-        return fromEvent<TMsg>(socket as IEventEmitter, ev.DATA, (chunk: Buffer | string) => {
-            return messageFactory.create({ data: chunk }) as TMsg;
+export class SocketMessageReader implements MessageReader<IWritableStream> {
+    read(socket: IWritableStream, messageFactory: MessageFactory, session: BaseTransportSession): Observable<Message> {
+        return fromEvent(socket, ev.DATA, (chunk: Buffer | string) => {
+            return messageFactory.create({ data: chunk });
         })
     }
 }
 
 @Injectable()
-export class MessageWriter {
-    write<TSocket = any>(socket: TSocket, msg: Message): Promise<void> {
-        return promisify<any, void>((socket as IWritableStream).write, socket)(msg.data)
+export class SocketMessageWriter implements MessageWriter<IWritableStream> {
+    write(socket: IWritableStream, msg: Message): Promise<void> {
+        return promisify<any, void>(socket.write, socket)(msg.data)
     }
 
-    writeStream<TSocket = any>(socket: TSocket, msg: Message, streamAdapter: StreamAdapter) {
-        return streamAdapter.pipeTo(msg.data as IReadableStream, socket as IWritableStream, { end: false });
+    writeStream(socket: IWritableStream, msg: Message, streamAdapter: StreamAdapter) {
+        return streamAdapter.pipeTo(msg.data as IReadableStream, socket, { end: false });
     }
 }
 
@@ -42,16 +42,6 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      */
     abstract get decodings(): Decoder;
 
-    /**
-     * message reader.
-     */
-    abstract get messageReader(): MessageReader;
-
-    /**
-     * message writer.
-     */
-    abstract get messageWriter(): MessageWriter;
-
 
     protected destroy$ = new Subject<void>;
 
@@ -59,7 +49,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * send.
      * @param data 
      */
-    send(data: TInput): Observable<void> {
+    send(data: TInput): Observable<any> {
         return this.encodings.encode(data)
             .pipe(
                 mergeMap(encoded => this.sendMessage(encoded, data)),
@@ -112,10 +102,10 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * handle message
      */
     protected handleMessage(): Observable<TMsg> {
-        return this.messageReader.read<TMsg>(this.socket, this.messageFactory, this)
+        return this.messageReader.read(this.socket, this.messageFactory, this)
             .pipe(
                 takeUntil(this.destroy$)
-            )
+            ) as Observable<any>;
     }
 
 }

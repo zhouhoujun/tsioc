@@ -5,7 +5,6 @@ import { TransportDecodingsFactory, TransportEncodingsFactory } from './condings
 import { PackageDecodeInterceptor, PackageEncodeInterceptor } from './interceptors/buffer.package';
 import { BindPacketIdEncodeInterceptor, PacketDecodeInterceptor, PacketEncodeInterceptor } from './interceptors/buffer.packet';
 import { PACKET_DECODE_INTERCEPTORS, PACKET_ENCODE_INTERCEPTORS, PacketCodingsHandlers } from './packet.codings';
-import { MessageReader, MessageWriter } from './transport';
 
 
 
@@ -15,8 +14,6 @@ import { MessageReader, MessageWriter } from './transport';
         CodingMappings
     ],
     providers: [
-        MessageReader,
-        MessageWriter,
         TransportEncodingsFactory,
         TransportDecodingsFactory,
         PacketCodingsHandlers,

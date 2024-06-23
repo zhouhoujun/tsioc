@@ -1,7 +1,8 @@
-import { Injectable } from '@tsdi/ioc';
 import { MessageFactory, Pattern, PatternMesage } from '@tsdi/common';
-import { IReadableStream } from '@tsdi/common/transport';
-import { RemoteInfo } from 'dgram';
+import { AbstractTransportSession, IReadableStream, MessageReader, MessageWriter, StreamAdapter, ev, toBuffer } from '@tsdi/common/transport';
+import { Injectable, promisify } from '@tsdi/ioc';
+import { RemoteInfo, Socket } from 'dgram';
+import { Observable, fromEvent } from 'rxjs';
 
 export class UdpMessage extends PatternMesage {
     readonly remoteInfo: RemoteInfo;
@@ -9,7 +10,7 @@ export class UdpMessage extends PatternMesage {
         init: {
             id?: string | number;
             remoteInfo: RemoteInfo,
-            pattern: Pattern;
+            pattern?: Pattern;
             headers?: Record<string, any>;
             data?: Buffer | IReadableStream | null;
             streamLength?: number;
@@ -27,7 +28,7 @@ export class UdpMessageFactory implements MessageFactory {
     create(initOpts: {
         id?: string | number;
         remoteInfo: RemoteInfo,
-        pattern: Pattern;
+        pattern?: Pattern;
         headers?: Record<string, any>;
         /**
          * params.
@@ -38,6 +39,29 @@ export class UdpMessageFactory implements MessageFactory {
 
     }): UdpMessage {
         return new UdpMessage(initOpts);
+    }
+
+}
+
+@Injectable()
+export class UdpMessageReader implements MessageReader<Socket> {
+    read(socket: Socket, messageFactory: UdpMessageFactory, session?: AbstractTransportSession): Observable<UdpMessage> {
+        return fromEvent(socket, ev.MESSAGE, (msg: Buffer, rinfo: RemoteInfo) => {
+            return messageFactory.create({ data: msg, remoteInfo: rinfo });
+        });
+
+    }
+}
+
+@Injectable()
+export class UdpMessageWriter implements MessageWriter<Socket, UdpMessage> {
+    
+    write(socket: Socket, msg: UdpMessage): Promise<any> {
+      return promisify<Buffer, number, string>(socket.send, socket)(msg.data as Buffer, msg.remoteInfo.port, msg.remoteInfo.address)
+    }
+    async writeStream(socket: Socket, msg: UdpMessage, streamAdapter: StreamAdapter): Promise<any> {
+       const bufs = await toBuffer(msg.data as IReadableStream);
+       return await promisify<Buffer, number, string>(socket.send, socket)(bufs, msg.remoteInfo.port, msg.remoteInfo.address)
     }
 
 }

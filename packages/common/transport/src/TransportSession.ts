@@ -1,12 +1,13 @@
 import { HeaderFields, HybirdTransport, Message, MessageFactory, Transport } from '@tsdi/common';
 import { CodingsHandlerOptions } from '@tsdi/common/codings';
-import { Injector, Token } from '@tsdi/ioc';
+import { Abstract, Injector, Token } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { AbstractIncomingFactory } from './Incoming';
 import { StatusAdapter } from './StatusAdapter';
 import { StreamAdapter } from './StreamAdapter';
 import { TransportDecodingsFactory, TransportEncodingsFactory } from './condings';
 import { TransportContext } from './context';
+
 
 
 /**
@@ -29,7 +30,6 @@ export interface TransportOpts {
      * encodings Factory.
      */
     readonly encodingsFactory?: Token<TransportEncodingsFactory>;
-
     /**
      * decodings Factory.
      */
@@ -72,36 +72,14 @@ export interface TransportOpts {
      * packet max size limit.
      */
     readonly maxSize?: number;
-
+    /**
+     * encoding
+     */
     readonly encoding?: string;
-
+    /**
+     * timeout
+     */
     readonly timeout?: number;
-
-    /**
-     * pipe endcoed data to socket
-     * @param socket 
-     * @param msg 
-     * @param input
-     */
-    pipeTo?(socket: any, msg: Message, input: any): Promise<void>;
-    /**
-     * write endcoed data to socket.
-     * @param socket 
-     * @param msg 
-     * @param input 
-     * @param ctx 
-     * @param cb 
-     */
-    write?(socket: any, msg: Message, input: any, cb?: (err?: Error | null) => void): void;
-
-    /**
-     * custom handle mesasge from socket.
-     * 
-     * @param socket
-     * @param factory 
-     * @param context 
-     */
-    handleMessage?(socket: any, factory: MessageFactory): Observable<any>;
 
 }
 
@@ -139,6 +117,15 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
      */
     abstract get statusAdapter(): StatusAdapter | null;
     /**
+     * message reader.
+     */
+    abstract get messageReader(): MessageReader;
+
+    /**
+     * message writer.
+     */
+    abstract get messageWriter(): MessageWriter;
+    /**
      * send.
      * @param data 
      */
@@ -155,4 +142,15 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
      */
     abstract destroy(): Promise<void>;
 
+}
+
+@Abstract()
+export abstract class MessageReader<TSocket = any, TMsg extends Message = Message> {
+    abstract read(socket: TSocket, messageFactory: MessageFactory, session?: AbstractTransportSession): Observable<TMsg>
+}
+
+@Abstract()
+export abstract class MessageWriter<TSocket = any, TMsg extends Message = Message> {
+    abstract write(socket: TSocket, msg: TMsg): Promise<any>;
+    abstract writeStream(socket: TSocket, msg: TMsg, streamAdapter: StreamAdapter): Promise<any>;
 }
