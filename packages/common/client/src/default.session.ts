@@ -1,6 +1,6 @@
-import { Injectable, Injector } from '@tsdi/ioc';
 import { MessageFactory, ResponseFactory } from '@tsdi/common';
-import { IDuplexStream, TransportOpts, StreamAdapter, TransportEncodingsFactory, TransportDecodingsFactory, StatusAdapter, Redirector, ClientIncomingFactory, TransportEncodings, TransportDecodings } from '@tsdi/common/transport';
+import { ClientIncomingFactory, IDuplexStream, MessageReader, MessageWriter, Redirector, StatusAdapter, StreamAdapter, TransportDecodings, TransportDecodingsFactory, TransportEncodings, TransportEncodingsFactory, TransportOpts } from '@tsdi/common/transport';
+import { Injectable, Injector } from '@tsdi/ioc';
 import { ClientTransportSession, ClientTransportSessionFactory } from './session';
 
 
@@ -15,6 +15,8 @@ export class DefaultClientTransportSession extends ClientTransportSession<any> {
         readonly streamAdapter: StreamAdapter,
         readonly statusAdapter: StatusAdapter | null,
         readonly redirector: Redirector | null,
+        readonly messageReader: MessageReader,
+        readonly messageWriter: MessageWriter,
         readonly messageFactory: MessageFactory,
         readonly incomingFactory: ClientIncomingFactory,
         readonly responseFactory: ResponseFactory,
@@ -40,6 +42,8 @@ export class DefaultClientTransportSessionFactory implements ClientTransportSess
             injector.get(StreamAdapter),
             injector.get(StatusAdapter, null),
             injector.get(Redirector, null),
+            injector.get(MessageReader),
+            injector.get(MessageWriter),
             injector.get(MessageFactory),
             injector.get(ClientIncomingFactory),
             injector.get(ResponseFactory),

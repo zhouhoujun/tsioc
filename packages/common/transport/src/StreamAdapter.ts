@@ -1,7 +1,7 @@
 import { TypeExecption, isArray } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
-import { IDuplexStream, IReadableStream, IStream, IWritableStream, ITransformStream } from './stream';
 import { ev } from './consts';
+import { IDuplexStream, IReadableStream, IStream, ITransformStream, IWritableStream } from './stream';
 
 /**
  * pipe source.
@@ -49,19 +49,19 @@ export async function toBuffer(body: IReadableStream, limit = 0, url?: string) {
 export abstract class StreamAdapter {
 
 
-    /**
-     * write source stream to socket without end.
-     * @param source 
-     * @param writable 
-     * @returns 
-     */
-    write(source: PipeSource | IStream, writable: IWritableStream): Promise<void> {
-        return this.pipeTo(source, this.createWritable({
-            write: (chunk, encoding, callback) => {
-                writable.write(chunk, callback);
-            }
-        }))
-    }
+    // /**
+    //  * write source stream to socket without end.
+    //  * @param source 
+    //  * @param writable 
+    //  * @returns 
+    //  */
+    // write(source: PipeSource | IStream, writable: IWritableStream): Promise<void> {
+    //     return this.pipeTo(source, this.createWritable({
+    //         write: (chunk, encoding, callback) => {
+    //             writable.write(chunk, callback);
+    //         }
+    //     }))
+    // }
 
     merge(writable: IWritableStream, ...sources: IStream[]): void;
     merge(writable: IWritableStream, sources: IStream[]): void;

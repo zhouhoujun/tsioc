@@ -1,13 +1,32 @@
-import { promisify } from '@tsdi/ioc';
-import { Message } from '@tsdi/common';
-import { Encoder, Decoder } from '@tsdi/common/codings';
+import { Message, MessageFactory } from '@tsdi/common';
+import { Decoder, Encoder } from '@tsdi/common/codings';
+import { Injectable, promisify } from '@tsdi/ioc';
 import { Observable, Subject, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
+import { StreamAdapter } from './StreamAdapter';
 import { AbstractTransportSession } from './TransportSession';
-import { IEventEmitter, IWritableStream } from './stream';
-import { isBuffer } from './StreamAdapter';
-import { NotImplementedExecption } from './execptions';
 import { ev } from './consts';
+import { IEventEmitter, IReadableStream, IWritableStream } from './stream';
 
+
+@Injectable()
+export class MessageReader {
+    read<TMsg extends Message, TSocket = any>(socket: TSocket, messageFactory: MessageFactory, session: BaseTransportSession): Observable<TMsg> {
+        return fromEvent<TMsg>(socket as IEventEmitter, ev.DATA, (chunk: Buffer | string) => {
+            return messageFactory.create({ data: chunk }) as TMsg;
+        })
+    }
+}
+
+@Injectable()
+export class MessageWriter {
+    write<TSocket = any>(socket: TSocket, msg: Message): Promise<void> {
+        return promisify<any, void>((socket as IWritableStream).write, socket)(msg.data)
+    }
+
+    writeStream<TSocket = any>(socket: TSocket, msg: Message, streamAdapter: StreamAdapter) {
+        return streamAdapter.pipeTo(msg.data as IReadableStream, socket as IWritableStream, { end: false });
+    }
+}
 
 /**
  * base transport session via codings.
@@ -23,6 +42,16 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      */
     abstract get decodings(): Decoder;
 
+    /**
+     * message reader.
+     */
+    abstract get messageReader(): MessageReader;
+
+    /**
+     * message writer.
+     */
+    abstract get messageWriter(): MessageWriter;
+
 
     protected destroy$ = new Subject<void>;
 
@@ -30,7 +59,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * send.
      * @param data 
      */
-    send(data: TInput): Observable<TMsg> {
+    send(data: TInput): Observable<void> {
         return this.encodings.encode(data)
             .pipe(
                 mergeMap(encoded => this.sendMessage(encoded, data)),
@@ -71,70 +100,24 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * @param context 
      * @returns 
      */
-    protected sendMessage(msg: TMsg, input: TInput): Promise<TMsg> | Observable<TMsg> {
+    protected sendMessage(msg: TMsg, input: TInput): Promise<void> | Observable<void> {
         if (this.streamAdapter.isReadable(msg.data)) {
-            return this.pipeTo(this.socket, msg, input)
+            return this.messageWriter.writeStream(this.socket, msg, this.streamAdapter)
         } else {
-            return this.write(this.socket, msg, input);
+            return this.messageWriter.write(this.socket, msg);
         }
-    }
-
-    /**
-     * pipe endcoed data to socket
-     * @param socket 
-     * @param msg 
-     * @param input 
-     * @param ctx 
-     */
-    protected async pipeTo(socket: any, msg: Message, input: TInput): Promise<TMsg> {
-        if (this.options.pipeTo) {
-            await this.options.pipeTo(socket, msg, input)
-        } else if (msg.data && this.options.write) {
-            await this.streamAdapter.write(msg.data, this.streamAdapter.createWritable({
-                write: (chunk, encoding, callback) => {
-                    this.options.write!(socket, chunk, input, callback)
-                }
-            }))
-        } else if (msg.data && (socket as IWritableStream).write) {
-            await this.streamAdapter.write(msg.data, socket as IWritableStream)
-        } else {
-            throw new NotImplementedExecption('Can not write message to socket!')
-        }
-        return msg as TMsg;
-    }
-
-
-    /**
-     * write endcoed data to socket.
-     * @param socket 
-     * @param msg 
-     * @param input 
-     * @param ctx 
-     * @param cb 
-     */
-    protected async write(socket: any, msg: Message, input: TInput): Promise<TMsg> {
-        if (this.options.write) {
-            await promisify<any, any, any, void>(this.options.write, this.options)(socket, msg, input)
-        } else if (msg.data && (socket as IWritableStream).write) {
-            await promisify<any, void>((socket as IWritableStream).write, socket)(msg.data)
-        } else {
-            throw new NotImplementedExecption('Can not write message to socket!')
-        }
-        return msg as TMsg
     }
 
     /**
      * handle message
      */
     protected handleMessage(): Observable<TMsg> {
-        if (this.options.handleMessage) return this.options.handleMessage(this.socket, this.messageFactory).pipe(takeUntil(this.destroy$));
-
-        return fromEvent(this.socket as IEventEmitter, this.options.messageEvent ?? ev.DATA, this.options.messageEventHandle ? this.options.messageEventHandle : (chunk) => {
-            if (!isBuffer(chunk) && !this.streamAdapter.isReadable(chunk)) {
-                chunk = Buffer.from(chunk);
-            }
-            return this.messageFactory.create({data: chunk});
-        }).pipe(takeUntil(this.destroy$));
+        return this.messageReader.read<TMsg>(this.socket, this.messageFactory, this)
+            .pipe(
+                takeUntil(this.destroy$)
+            )
     }
 
 }
+
+

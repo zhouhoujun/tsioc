@@ -1,6 +1,6 @@
+import { AbstractRequest, Message, ResponseEvent, ResponseFactory } from '@tsdi/common';
+import { BaseTransportSession, Redirector, TransportOpts } from '@tsdi/common/transport';
 import { Abstract, Injector } from '@tsdi/ioc';
-import { ResponseEvent, AbstractRequest, Message, ResponseFactory } from '@tsdi/common';
-import { TransportOpts, BaseTransportSession, Redirector } from '@tsdi/common/transport';
 import { Observable, first, merge, mergeMap, takeUntil } from 'rxjs';
 
 
@@ -22,7 +22,7 @@ export abstract class ClientTransportSession<TSocket = any, TMsg extends Message
     request(req: AbstractRequest, destroy$?: Observable<any>): Observable<ResponseEvent> {
         return this.send(req)
             .pipe(
-                mergeMap(msg => this.receive(req)),
+                mergeMap(() => this.receive(req)),
                 takeUntil(destroy$ ? merge(this.destroy$, destroy$).pipe(first()) : this.destroy$)
             )
     }

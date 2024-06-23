@@ -1,12 +1,12 @@
-import { Injector, Token } from '@tsdi/ioc';
-import { HeaderFields, Transport, HybirdTransport, MessageFactory, Message } from '@tsdi/common';
+import { HeaderFields, HybirdTransport, Message, MessageFactory, Transport } from '@tsdi/common';
 import { CodingsHandlerOptions } from '@tsdi/common/codings';
+import { Injector, Token } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { TransportContext } from './context';
-import { StreamAdapter } from './StreamAdapter';
-import { StatusAdapter } from './StatusAdapter';
 import { AbstractIncomingFactory } from './Incoming';
+import { StatusAdapter } from './StatusAdapter';
+import { StreamAdapter } from './StreamAdapter';
 import { TransportDecodingsFactory, TransportEncodingsFactory } from './condings';
+import { TransportContext } from './context';
 
 
 /**
@@ -76,16 +76,6 @@ export interface TransportOpts {
     readonly encoding?: string;
 
     readonly timeout?: number;
-
-    /**
-     * message event of socket.
-     */
-    readonly messageEvent?: string;
-    /**
-     * message event handle of socket.
-     * @param args 
-     */
-    messageEventHandle?(...args: any[]): any;
 
     /**
      * pipe endcoed data to socket
