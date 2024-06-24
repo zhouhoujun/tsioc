@@ -50,6 +50,8 @@ export interface TransportOpts {
 
     readonly defaultMethod?: string;
 
+    readonly serializeIgnores?: string[];
+
     /**
      * packet delimiter flag
      */

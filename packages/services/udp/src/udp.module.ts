@@ -44,6 +44,7 @@ import { UdpServer } from './server/server';
                         delimiter: '#',
                         maxSize: defaultMaxSize,
                         defaultMethod: '*',
+                        serializeIgnores: ['remoteInfo'],
                         encodings: {
                             end: UdpMessage,
                             defaults: [
@@ -79,6 +80,7 @@ import { UdpServer } from './server/server';
                         delimiter: '#',
                         maxSize: defaultMaxSize,
                         defaultMethod: '*',
+                        serializeIgnores: ['remoteInfo'],
                         decodings: {
                             end: RequestContext,
                             defaults: [

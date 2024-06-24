@@ -1,5 +1,6 @@
 import { isNil, isUndefined } from '@tsdi/ioc';
 import { HeaderFields, HeadersLike, HeaderMappings } from './headers';
+import { RequestParams } from './params';
 
 
 /**
@@ -59,19 +60,31 @@ export abstract class Packet<T = any> {
         setHeaders?: { [name: string]: string | string[]; };
     }): Packet<V>;
 
-    toJson(): Record<string, any> {
+    protected isIngores(name: string) {
+        return (name.startsWith('_') || name.startsWith('#'))
+    }
+
+    toJson(ignores?: string[]): Record<string, any> {
         const record = {} as Record<string, any>;
-        if (this.id) {
-            record.id = this.id;
-        }
-        if (this.headers.size) {
-            record.headers = this.headers.getHeaders();
-        }
-        if (!isNil(this.payload)) {
-            record.payload = this.payload;
+        for (const n in this) {
+            if ((!ignores || ignores.indexOf(n) < 0)
+                && !this.isIngores(n)
+                && !isNil(this[n])) {
+                const val = this[n];
+                switch (n) {
+                    case 'params':
+                        record[n] = val instanceof RequestParams ? val.toRecord() : val;
+                        break;
+                    case 'headers':
+                        record[n] = val instanceof HeaderMappings ? val.getHeaders() : val;
+                        break;
+                    default:
+                        record[n] = val;
+                        break;
+                }
+            }
         }
         return record;
-
     }
 
     protected cloneOpts(update: {
@@ -153,7 +166,7 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
 
     readonly ok: boolean;
 
-    protected _message: string|undefined;
+    protected _message: string | undefined;
     /**
      * Textual description of response status code, defaults to OK.
      *
@@ -251,19 +264,19 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
         return init;
     }
 
-    override toJson(): Record<string, any> {
-        const rcd = super.toJson();
+    // override toJson(): Record<string, any> {
+    //     const rcd = super.toJson();
 
-        if (!isNil(this.type)) rcd.type = this.type;
-        if (!isNil(this.status)) rcd.status = this.status;
-        if (this.statusMessage) rcd.statusMessage = this.statusMessage;
+    //     if (!isNil(this.type)) rcd.type = this.type;
+    //     if (!isNil(this.status)) rcd.status = this.status;
+    //     if (this.statusMessage) rcd.statusMessage = this.statusMessage;
 
-        rcd.ok = this.ok;
+    //     rcd.ok = this.ok;
 
-        if (this.error) {
-            rcd.error = this.error
-        }
-        return rcd;
-    }
+    //     if (this.error) {
+    //         rcd.error = this.error
+    //     }
+    //     return rcd;
+    // }
 
 }

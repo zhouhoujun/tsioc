@@ -1,4 +1,4 @@
-import { Abstract, Injectable, hasOwn, isPlainObject, lang } from '@tsdi/ioc';
+import { Abstract, EMPTY, Injectable, hasOwn, isPlainObject, lang } from '@tsdi/ioc';
 import { HeadersLike } from './headers';
 import { StatusPacket, StatusPacketOpts } from './packet';
 import { Pattern } from './pattern';
@@ -43,8 +43,12 @@ export abstract class ResponseBase<T = any, TStatus = any> extends StatusPacket<
 
     }
 
-    override toJson(): Record<string, any> {
-        const red = super.toJson();
+    protected override isIngores(name: string): boolean {
+        return ['url', 'pattern'].indexOf(name)>=0 || super.isIngores(name)
+    }
+
+    override toJson(ignores?: string[]): Record<string, any> {
+        const red = super.toJson(ignores);
         if (this.url) {
             red.url = this.url;
         } else if (this.pattern) {
@@ -250,8 +254,8 @@ export interface ResponseJsonParseError {
 export type ResponseEvent<T = any, TStatus = any> = HeaderResponse<TStatus> | ResponsePacket<T, TStatus> | ErrorResponse<TStatus> | ResponseEventPacket;
 
 export function isResponseEvent(target: any): target is ResponseEvent {
-    if(!target) return false;
-    return target instanceof ResponseBase || (isPlainObject(target)&& hasOwn(target, 'type'));
+    if (!target) return false;
+    return target instanceof ResponseBase || (isPlainObject(target) && hasOwn(target, 'type'));
 }
 
 @Abstract()

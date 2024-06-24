@@ -1,4 +1,4 @@
-import { Abstract, Injectable, isNil, isString, tokenId } from '@tsdi/ioc';
+import { Abstract, EMPTY, Injectable, isNil, isString, tokenId } from '@tsdi/ioc';
 import { Interceptor, InvalidJsonException } from '@tsdi/core';
 import { Message, Packet, PacketOpts, RequestParams, isArrayBuffer, isBlob, isFormData } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
@@ -17,7 +17,7 @@ export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<Packet<Buffer | IR
 
 @Abstract()
 export abstract class HeaderSerialization {
-    abstract serialize(packet: Packet): Buffer;
+    abstract serialize(packet: Packet, ignores?: string[]): Buffer;
 }
 
 @Abstract()
@@ -92,7 +92,7 @@ export class PacketCodingsHandlers {
 
             const headerSerialization = injector.get(HeaderSerialization, null);
 
-            const hbuff = headerSerialization ? headerSerialization.serialize(pkg) : this.serializeHeader(pkg);
+            const hbuff = headerSerialization ? headerSerialization.serialize(pkg, options.serializeIgnores) : this.serializeHeader(pkg, options.serializeIgnores);
 
             if (streamAdapter.isReadable(data)) {
                 let isFist = true;
@@ -115,7 +115,7 @@ export class PacketCodingsHandlers {
                 data = Buffer.concat([hbuff, headDelimiter, bbuff], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(bbuff));
             }
         } else {
-            data = await this.encodePacket(streamAdapter, pkg, options.maxSize, options.encoding);
+            data = await this.encodePacket(streamAdapter, pkg, options.maxSize, options.encoding, options.serializeIgnores);
         }
         const json = pkg.toJson();
         json.data = data;
@@ -129,7 +129,7 @@ export class PacketCodingsHandlers {
     }
 
 
-    async encodePacket(streamAdapter: StreamAdapter, packet: Packet, maxSize?: number, encoding?: string): Promise<Buffer> {
+    async encodePacket(streamAdapter: StreamAdapter, packet: Packet, maxSize?: number, encoding?: string, ignores?: string[]): Promise<Buffer> {
 
         let source: string | Buffer | IReadableStream | null = null;
 
@@ -156,9 +156,9 @@ export class PacketCodingsHandlers {
         }
 
         if (source) {
-            source = JSON.stringify(packet.clone({ payload: isBuffer(source) ? new TextDecoder().decode(source) : source }).toJson());
+            source = JSON.stringify(packet.clone({ payload: isBuffer(source) ? new TextDecoder().decode(source) : source }).toJson(ignores));
         } else {
-            source = JSON.stringify(packet.toJson());
+            source = JSON.stringify(packet.toJson(ignores));
         }
 
         source = Buffer.from(source)
@@ -227,8 +227,8 @@ export class PacketCodingsHandlers {
         return source;
     }
 
-    private serializeHeader(packet: Packet): Buffer {
-        const { payload, ...headers } = packet.toJson();
+    private serializeHeader(packet: Packet, ignores?: string[]): Buffer {
+        const headers = packet.toJson(['payload', ...ignores ?? EMPTY]);
         return Buffer.from(JSON.stringify(headers));
     }
 

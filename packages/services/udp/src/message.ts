@@ -2,7 +2,7 @@ import { MessageFactory, Pattern, PatternMesage } from '@tsdi/common';
 import { AbstractTransportSession, IReadableStream, MessageReader, MessageWriter, StreamAdapter, ev, toBuffer } from '@tsdi/common/transport';
 import { Injectable, promisify } from '@tsdi/ioc';
 import { RemoteInfo, Socket } from 'dgram';
-import { Observable, fromEvent } from 'rxjs';
+import { Observable, filter, fromEvent } from 'rxjs';
 
 export class UdpMessage extends PatternMesage {
     readonly remoteInfo: RemoteInfo;
@@ -47,8 +47,12 @@ export class UdpMessageReader implements MessageReader<Socket> {
 
     read(socket: Socket, messageFactory: UdpMessageFactory, session?: AbstractTransportSession): Observable<UdpMessage> {
         return fromEvent(socket, ev.MESSAGE, (msg: Buffer, rinfo: RemoteInfo) => {
+            const addr = socket.address();
+            if(rinfo.address == addr.address && rinfo.port == addr.port) return null!;
             return messageFactory.create({ data: msg, remoteInfo: rinfo });
-        });
+        }).pipe(
+            filter(r => r !== null)
+        );
     }
 }
 

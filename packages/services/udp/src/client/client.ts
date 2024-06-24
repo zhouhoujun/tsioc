@@ -1,10 +1,10 @@
-import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
+import { Injectable, InvocationContext } from '@tsdi/ioc';
 import { Pattern, ResponseEvent, UrlRequestInitOpts } from '@tsdi/common';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { UdpHandler } from './handler';
 import { UdpClientOpts } from './options';
-import { defaultMaxSize, udpUrl$ } from '../consts';
+import { defaultMaxSize } from '../consts';
 import { UdpRequest } from './request';
 
 

@@ -224,9 +224,4 @@ export abstract class PatternOutgoing<T = any> extends OutgoingPacket<T, null> {
         super(options);
     }
 
-    toJson(): Record<string, any> {
-        const rcd = super.toJson();
-        rcd.pattern = this.pattern;
-        return rcd;
-    }
 }
