@@ -2,4 +2,4 @@
 
 export const defaultMaxSize = 65507
 
-export const udptl = /^udp(s)?:\/\//i;
+export const udpUrl$ = /^udp(s)?:\/\//i;

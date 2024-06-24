@@ -1,5 +1,5 @@
-import { CodingMappings } from '@tsdi/common/codings';
 import { Module } from '@tsdi/ioc';
+import { CodingMappings } from '@tsdi/common/codings';
 import { PacketIdGenerator, PacketNumberIdGenerator } from './PacketId';
 import { TransportDecodingsFactory, TransportEncodingsFactory } from './condings';
 import { PackageDecodeInterceptor, PackageEncodeInterceptor } from './interceptors/buffer.package';

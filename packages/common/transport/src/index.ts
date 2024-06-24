@@ -17,7 +17,7 @@ export * from './Outgoing';
 
 export * from './context';
 export * from './PacketId';
-export * from './transport';
+export * from './base.transport';
 export * from './condings';
 
 export * from './interceptors';

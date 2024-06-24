@@ -36,9 +36,9 @@ import { UdpServer } from './server/server';
                     url: 'udp://localhost:3000',
                     interceptorsToken: UDP_CLIENT_INTERCEPTORS,
                     filtersToken: UDP_CLIENT_FILTERS,
-                    messageFactory: { useClass: UdpMessageFactory },
                     messageReader: { useClass: UdpMessageReader },
                     messageWriter: { useClass: UdpMessageWriter },
+                    messageFactory: { useClass: UdpMessageFactory },
                     incomingFactory: { useClass: UdpClientIncomingFactory },
                     transportOpts: {
                         delimiter: '#',

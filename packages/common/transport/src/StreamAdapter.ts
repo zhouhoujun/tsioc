@@ -17,7 +17,6 @@ export function isBuffer(target: any): target is Buffer {
     return Buffer.isBuffer(target);
 }
 
-
 /**
  * to buffer.
  * @param body 
@@ -42,26 +41,10 @@ export async function toBuffer(body: IReadableStream, limit = 0, url?: string) {
     return Buffer.concat(data, bytes);
 }
 
-
 /**
  * stream adapter
  */
 export abstract class StreamAdapter {
-
-
-    // /**
-    //  * write source stream to socket without end.
-    //  * @param source 
-    //  * @param writable 
-    //  * @returns 
-    //  */
-    // write(source: PipeSource | IStream, writable: IWritableStream): Promise<void> {
-    //     return this.pipeTo(source, this.createWritable({
-    //         write: (chunk, encoding, callback) => {
-    //             writable.write(chunk, callback);
-    //         }
-    //     }))
-    // }
 
     merge(writable: IWritableStream, ...sources: IStream[]): void;
     merge(writable: IWritableStream, sources: IStream[]): void;
@@ -87,27 +70,6 @@ export abstract class StreamAdapter {
         });
         source.pipe(writable, { end: false });
     }
-
-
-    // /**
-    //  * send body
-    //  * @param data 
-    //  * @param request 
-    //  * @param callback 
-    //  * @param encoding 
-    //  */
-    // async sendBody(data: any, request: IWritableStream | IEndable, encoding?: string): Promise<void> {
-    //     const source = await this.encodePayload(data, encoding) ?? Buffer.alloc(0);
-    //     if (this.isReadable(request)) {
-    //         await this.pipeTo(source, request as IWritableStream);
-    //     } else if (this.isStream(source)) {
-    //         const buffers = await toBuffer(source);
-    //         promisify<any, void>(request.end, request)(buffers);
-    //     } else {
-    //         promisify<any, void>(request.end, request)(source);
-    //     }
-
-    // }
 
     /**
      * pipe line
@@ -302,7 +264,6 @@ export abstract class StreamAdapter {
 
     abstract isJson(target: any): boolean;
 }
-
 
 export interface ZipOptions {
     /**
