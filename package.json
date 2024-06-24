@@ -73,7 +73,7 @@
     "gulp-sourcemaps": "^2.6.4",
     "interpret": "^2.0.0",
     "json-in-place": "^1.0.1",
-    "liftoff": "^2.5.0",
+    "liftoff": "^5.0.0",
     "lodash": "^4.13.1",
     "log4js": "^6.3.0",
     "minimatch": "^3.0.4",

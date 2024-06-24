@@ -24,7 +24,6 @@ export class UdpMessage extends PatternMesage {
 @Injectable()
 export class UdpMessageFactory implements MessageFactory {
 
-
     create(initOpts: {
         id?: string | number;
         remoteInfo: RemoteInfo,
@@ -55,14 +54,14 @@ export class UdpMessageReader implements MessageReader<Socket> {
 
 @Injectable()
 export class UdpMessageWriter implements MessageWriter<Socket, UdpMessage> {
-    
+
     write(socket: Socket, msg: UdpMessage): Promise<any> {
-      return promisify<Buffer, number, string>(socket.send, socket)(msg.data as Buffer, msg.remoteInfo.port, msg.remoteInfo.address)
+        return promisify<Buffer, number, string>(socket.send, socket)(msg.data as Buffer, msg.remoteInfo.port, msg.remoteInfo.address)
     }
 
     async writeStream(socket: Socket, msg: UdpMessage, streamAdapter: StreamAdapter): Promise<any> {
-       const bufs = await toBuffer(msg.data as IReadableStream);
-       return await promisify<Buffer, number, string>(socket.send, socket)(bufs, msg.remoteInfo.port, msg.remoteInfo.address)
+        const bufs = await toBuffer(msg.data as IReadableStream);
+        return await promisify<Buffer, number, string>(socket.send, socket)(bufs, msg.remoteInfo.port, msg.remoteInfo.address)
     }
 
 }

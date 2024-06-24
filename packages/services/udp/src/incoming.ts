@@ -1,10 +1,19 @@
-import { Injectable } from '@tsdi/ioc';
 import { HeadersLike, Pattern, RequestParams } from '@tsdi/common';
 import { ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket, ClientPatternIncoming, IncomingFactory, IncomingOpts, PatternIncoming } from '@tsdi/common/transport';
+import { Injectable } from '@tsdi/ioc';
+import { RemoteInfo } from 'dgram';
 
 
+export interface UdpIncomingOpts extends IncomingOpts {
+    remoteInfo?: RemoteInfo;
+}
 
 export class UdpIncoming<T = any> extends PatternIncoming<T> {
+    readonly remoteInfo: RemoteInfo;
+    constructor(pattern: Pattern, options: UdpIncomingOpts) {
+        super(pattern, options)
+        this.remoteInfo = options.remoteInfo!;
+    }
 
     clone(): UdpIncoming<T>;
     clone(update: {
@@ -31,9 +40,15 @@ export class UdpIncoming<T = any> extends PatternIncoming<T> {
     }): UdpIncoming<V>;
     clone(update: any = {}): UdpIncoming {
         const pattern = update.pattern ?? this.pattern;
-        const opts = this.cloneOpts(update);
+        const opts = this.cloneOpts(update) as UdpIncomingOpts;
+        opts.remoteInfo = this.remoteInfo;
         return new UdpIncoming(pattern, opts);
+    }
 
+    toJson(): Record<string, any> {
+        const rcd = super.toJson();
+        rcd.remoteInfo = this.remoteInfo;
+        return rcd;
     }
 
 }
@@ -45,16 +60,33 @@ export class UdpIncomingFactory implements IncomingFactory {
     }
 }
 
+export interface UdpClientIncomingOpts extends ClientIncomingOpts {
+    remoteInfo?: RemoteInfo;
+}
+
 
 export class UdpClientIncoming<T = any> extends ClientPatternIncoming<T, null> {
+
+    readonly remoteInfo: RemoteInfo;
+    constructor(pattern: Pattern, options: UdpClientIncomingOpts) {
+        super(pattern, options)
+        this.remoteInfo = options.remoteInfo!;
+    }
 
     clone(): ClientIncomingPacket<T, null>;
     clone(update: { headers?: HeadersLike | undefined; body?: T | null | undefined; payload?: T | null | undefined; setHeaders?: { [name: string]: string | string[]; } | undefined; type?: number | undefined; ok?: boolean | undefined; status?: number | undefined; statusMessage?: string | undefined; statusText?: string | undefined; error?: any; }): UdpClientIncoming<T>;
     clone<V>(update: { headers?: HeadersLike | undefined; body?: T | null | undefined; payload?: V | null | undefined; setHeaders?: { [name: string]: string | string[]; } | undefined; type?: number | undefined; ok?: boolean | undefined; status?: number | undefined; statusMessage?: string | undefined; statusText?: string | undefined; error?: any; }): UdpClientIncoming<V>;
     clone(update: any = {}): UdpClientIncoming {
         const pattern = update.pattern ?? this.pattern;
-        const opts = this.cloneOpts(update);
+        const opts = this.cloneOpts(update) as UdpClientIncomingOpts;
+        opts.remoteInfo = this.remoteInfo;
         return new UdpClientIncoming(pattern, opts);
+    }
+
+    toJson(): Record<string, any> {
+        const rcd = super.toJson();
+        rcd.remoteInfo = this.remoteInfo;
+        return rcd;
     }
 }
 
