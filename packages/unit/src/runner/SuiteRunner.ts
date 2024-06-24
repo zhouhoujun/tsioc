@@ -104,7 +104,7 @@ export class SuiteRunner<T = any> extends RunnableRef<T> implements UnitRunner {
                     df.propertyKey,
                     'sutie before ' + df.propertyKey,
                     df.metadata.timeout)
-            })).catch(err=> {
+            })).catch(err => {
                 this.runAfter(describe);
                 throw err;
             })

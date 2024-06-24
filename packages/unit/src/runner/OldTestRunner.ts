@@ -214,7 +214,7 @@ export class OldTestRunner implements UnitRunner {
     }
 
     async runBefore(describe: SuiteDescribe) {
-        await this.runHook(describe, 'before', 'suite before').catch(err=> {
+        await this.runHook(describe, 'before', 'suite before').catch(err => {
             this.runAfter(describe);
             throw err;
         })

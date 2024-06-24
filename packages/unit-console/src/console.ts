@@ -27,7 +27,7 @@ export class ConsoleReporter extends RealtimeReporter {
     }
 
     override renderCase(desc: ICaseDescribe): void {
-        console.log('    ', desc.error ? chalk.red('x') : chalk.green('√'), chalk.gray(desc.title))
+        console.log('    ', desc.error ? chalk.red('x') : chalk.green('√'), chalk.gray(desc.title), chalk.gray(` (${this.timesPipe.transform((desc.end ?? 0) - (desc.start ?? 0), 3)})`))
     }
 
     override async render(suites: Map<Token, SuiteDescribe>): Promise<void> {
