@@ -108,10 +108,6 @@ export abstract class AbstractRequest<T = any> extends Packet<T> {
         this.withCredentials = !!init.withCredentials;
     }
 
-    protected override isIngores(name: string): boolean {
-        return ['context', 'observe', 'responseType'].indexOf(name) >= 0 || super.isIngores(name);
-    }
-
     abstract clone(): AbstractRequest<T>;
     abstract clone(update: {
         headers?: HeadersLike;
@@ -168,6 +164,15 @@ export abstract class AbstractRequest<T = any> extends Packet<T> {
         init.withCredentials =
             (update.withCredentials !== undefined) ? update.withCredentials : this.withCredentials;
         return init;
+    }
+
+    protected override toRecord(): Record<string, any> {
+        const rcd = super.toRecord();
+        if (this.params.size) rcd.params = this.params.toRecord();
+        if (this.method) rcd.method = this.method;
+        if (this.timeout) rcd.timeout = this.timeout;
+        rcd.withCredentials = this.withCredentials;
+        return rcd;
     }
 }
 
@@ -316,12 +321,8 @@ export class UrlRequest<T = any> extends AbstractRequest<T> {
 
     }
 
-    protected override isIngores(name: string): boolean {
-        return ['url', 'urlWithParams'].indexOf(name) >= 0 || super.isIngores(name);
-    }
-
-    override toJson(ignores?: string[]): Record<string, any> {
-        const rcd = super.toJson(ignores);
+    protected override toRecord(): Record<string, any> {
+        const rcd = super.toRecord();
         rcd.url = this.urlWithParams;
         return rcd;
     }
@@ -398,6 +399,12 @@ export class PatternRequest<T = any> extends AbstractRequest<T> {
         const options = this.cloneOpts(update);
         // Finally, construct the new HttpRequest using the pieces from above.
         return new PatternRequest(pattern, options)
+    }
+
+    protected override toRecord(): Record<string, any> {
+        const rcd = super.toRecord();
+        rcd.pattern = this.pattern;
+        return rcd;
     }
 }
 

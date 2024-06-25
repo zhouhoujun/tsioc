@@ -84,4 +84,10 @@ export class UdpRequest<T = any> extends PatternRequest<T> {
         return new PatternRequest(pattern, options)
     }
 
+    protected override toRecord(): Record<string, any> {
+        const rcd = super.toRecord();
+        rcd.remoteInfo = this.remoteInfo;
+        return rcd;
+    }
+
 }

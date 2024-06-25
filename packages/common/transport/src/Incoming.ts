@@ -1,6 +1,5 @@
 import { HeadersLike, IHeaders, Packet, PacketOpts, ParameterCodec, Pattern, RequestParams, StatusPacket, StatusPacketOpts } from '@tsdi/common';
 import { IReadableStream } from './stream';
-import { ClassType, getClass } from '@tsdi/ioc';
 
 
 
@@ -216,6 +215,14 @@ export abstract class IncomingPacket<T = any> extends Packet<T> implements Incom
         return init;
     }
 
+    protected override toRecord(): Record<string, any> {
+        const rcd = super.toRecord();
+        if (this.params.size) rcd.params = this.params.toRecord();
+        if (this.method) rcd.method = this.method;
+        if (this.timeout) rcd.timeout = this.timeout;
+        return rcd;
+    }
+
 }
 
 
@@ -223,6 +230,12 @@ export abstract class PatternIncoming<T = any> extends IncomingPacket<T> {
 
     constructor(readonly pattern: Pattern, options: IncomingOpts<T>) {
         super(options)
+    }
+
+    protected override toRecord(): Record<string, any> {
+        const rcd = super.toRecord();
+        rcd.pattern = this.pattern;
+        return rcd;
     }
 
 }
@@ -352,6 +365,12 @@ export abstract class ClientPatternIncoming<T = any, TStatus = any> extends Clie
 
     constructor(readonly pattern: Pattern, options: ClientIncomingOpts<T, TStatus>) {
         super(options);
+    }
+
+    protected override toRecord(): Record<string, any> {
+        const rcd = super.toRecord();
+        rcd.pattern = this.pattern;
+        return rcd;
     }
 
 }

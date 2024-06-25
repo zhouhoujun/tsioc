@@ -1,6 +1,5 @@
 import { isNil, isUndefined } from '@tsdi/ioc';
 import { HeaderFields, HeadersLike, HeaderMappings } from './headers';
-import { RequestParams } from './params';
 
 
 /**
@@ -60,29 +59,30 @@ export abstract class Packet<T = any> {
         setHeaders?: { [name: string]: string | string[]; };
     }): Packet<V>;
 
-    protected isIngores(name: string) {
-        return (name.startsWith('_') || name.startsWith('#'))
+    toJson(ignores?: string[]): Record<string, any> {
+        const obj = this.toRecord();
+        if (!ignores) return obj;
+
+        const record = {} as Record<string, any>;
+        for (const n in obj) {
+            if (ignores.indexOf(n) < 0
+                && !isNil(obj[n])) {
+                record[n] = obj[n];
+            }
+        }
+        return record;
     }
 
-    toJson(ignores?: string[]): Record<string, any> {
+    protected toRecord(): Record<string, any> {
         const record = {} as Record<string, any>;
-        for (const n in this) {
-            if ((!ignores || ignores.indexOf(n) < 0)
-                && !this.isIngores(n)
-                && !isNil(this[n])) {
-                const val = this[n];
-                switch (n) {
-                    case 'params':
-                        record[n] = val instanceof RequestParams ? val.toRecord() : val;
-                        break;
-                    case 'headers':
-                        record[n] = val instanceof HeaderMappings ? val.getHeaders() : val;
-                        break;
-                    default:
-                        record[n] = val;
-                        break;
-                }
-            }
+        if (this.id) {
+            record.id = this.id;
+        }
+        if (this.headers.size) {
+            record.headers = this.headers.getHeaders();
+        }
+        if (!isNil(this.payload)) {
+            record.payload = this.payload;
         }
         return record;
     }
@@ -264,19 +264,19 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
         return init;
     }
 
-    // override toJson(): Record<string, any> {
-    //     const rcd = super.toJson();
+    protected override toRecord(): Record<string, any> {
+        const rcd = super.toRecord();
 
-    //     if (!isNil(this.type)) rcd.type = this.type;
-    //     if (!isNil(this.status)) rcd.status = this.status;
-    //     if (this.statusMessage) rcd.statusMessage = this.statusMessage;
+        if (!isNil(this.type)) rcd.type = this.type;
+        if (!isNil(this.status)) rcd.status = this.status;
+        if (this.statusMessage) rcd.statusMessage = this.statusMessage;
 
-    //     rcd.ok = this.ok;
+        rcd.ok = this.ok;
 
-    //     if (this.error) {
-    //         rcd.error = this.error
-    //     }
-    //     return rcd;
-    // }
+        if (this.error) {
+            rcd.error = this.error
+        }
+        return rcd;
+    }
 
 }

@@ -224,4 +224,10 @@ export abstract class PatternOutgoing<T = any> extends OutgoingPacket<T, null> {
         super(options);
     }
 
+    protected override toRecord(): Record<string, any> {
+        const rcd = super.toRecord();
+        rcd.pattern = this.pattern;
+        return rcd;
+    }
+
 }

@@ -47,6 +47,12 @@ export class UdpOutgoing<T = any> extends PatternOutgoing<T> {
         return new UdpOutgoing(pattern, opts);
     }
 
+    protected override toRecord(): Record<string, any> {
+        const rcd = super.toRecord();
+        rcd.remoteInfo = this.remoteInfo;
+        return rcd;
+    }
+
 }
 
 

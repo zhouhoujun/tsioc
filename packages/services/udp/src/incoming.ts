@@ -47,6 +47,12 @@ export class UdpIncoming<T = any> extends PatternIncoming<T> {
         return new UdpIncoming(pattern, opts);
     }
 
+    protected override toRecord(): Record<string, any> {
+        const rcd = super.toRecord();
+        rcd.remoteInfo = this.remoteInfo;
+        return rcd;
+    }
+
 }
 
 @Injectable()
@@ -101,6 +107,12 @@ export class UdpClientIncoming<T = any> extends ClientPatternIncoming<T, null> {
         const opts = this.cloneOpts(update) as UdpClientIncomingOpts;
         opts.remoteInfo = this.remoteInfo;
         return new UdpClientIncoming(pattern, opts);
+    }
+
+    protected override toRecord(): Record<string, any> {
+        const rcd = super.toRecord();
+        rcd.remoteInfo = this.remoteInfo;
+        return rcd;
     }
 }
 

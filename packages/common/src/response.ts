@@ -43,12 +43,8 @@ export abstract class ResponseBase<T = any, TStatus = any> extends StatusPacket<
 
     }
 
-    protected override isIngores(name: string): boolean {
-        return ['url', 'pattern'].indexOf(name)>=0 || super.isIngores(name)
-    }
-
-    override toJson(ignores?: string[]): Record<string, any> {
-        const red = super.toJson(ignores);
+    protected override toRecord(): Record<string, any> {
+        const red = super.toRecord();
         if (this.url) {
             red.url = this.url;
         } else if (this.pattern) {
