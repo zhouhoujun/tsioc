@@ -1,6 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
-import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
+import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
 import {
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, PatternRequestContext,
     RequestContext, SERVER_MODULES, ServerModuleOpts
@@ -60,8 +60,8 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                             ]
                         }
                     }
-                } as ClientOpts
-            },
+                }
+            } as ClientModuleOpts,
             multi: true
         },
         {

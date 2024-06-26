@@ -1,13 +1,13 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { PatternFormatter } from '@tsdi/common';
-import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
+import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
 import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { KafkaClient } from './client/client';
 import { KAFKA_CLIENT_FILTERS, KAFKA_CLIENT_INTERCEPTORS } from './client/options';
 import { KafkaHandler } from './client/handler';
 import { KafkaServer } from './server/server';
-import { KAFKA_SERV_FILTERS, KAFKA_SERV_GUARDS, KAFKA_SERV_INTERCEPTORS, KAFKA_SERV_OPTS } from './server/options';
+import { KAFKA_SERV_FILTERS, KAFKA_SERV_GUARDS, KAFKA_SERV_INTERCEPTORS } from './server/options';
 import { KafkaEndpointHandler } from './server/handler';
 import { KafkaPatternFormatter, KafkaRouteMatcher } from './pattern';
 import { KafkaTransportSessionFactory } from './server/kafka.session';
@@ -38,8 +38,8 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                     },
                     // sessionFactory: { useExisting: KafkaTransportSessionFactory },
                     providers: [{ provide: PatternFormatter, useExisting: KafkaPatternFormatter }]
-                } as ClientOpts
-            },
+                }
+            } as ClientModuleOpts,
             multi: true
         },
         {

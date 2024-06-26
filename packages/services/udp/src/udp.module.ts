@@ -1,5 +1,5 @@
 import { Message, Packet, isResponseEvent } from '@tsdi/common';
-import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
+import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
 import { ClientIncomingPacket, IncomingPacket, OutgoingPacket } from '@tsdi/common/transport';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import {
@@ -59,8 +59,8 @@ import { UdpServer } from './server/server';
                             ]
                         }
                     }
-                } as ClientOpts
-            },
+                }
+            } as ClientModuleOpts,
             multi: true
         },
         {

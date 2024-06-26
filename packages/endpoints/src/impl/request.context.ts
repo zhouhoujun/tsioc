@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Injectable, Injector, isNil } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, Injector, isNil, isString } from '@tsdi/ioc';
 import { HeaderMappings, LOCALHOST, normalize, PatternFormatter, RequestParams, ResponsePacket } from '@tsdi/common';
 import { FileAdapter, Incoming, MessageExecption, MimeAdapter, Outgoing, StatusAdapter, StreamAdapter } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
@@ -189,9 +189,28 @@ export class PatternRequestContext<TRequest extends Incoming = Incoming, TRespon
 
     get query(): Record<string, any> {
         if (!this.request.query) {
+            let urlParams: Record<string, any> = null!;
+            if (isString(this.request.pattern)) {
+                const idx = this.request.pattern.indexOf('?');
+                if (idx > 0) {
+                    urlParams = {};
+                    const params = this.request.pattern.slice(idx + 1).split('&');
+                    params.forEach(p => {
+                        const [key, value] = p.split('=');
+                        if (value) {
+                            urlParams[decodeURIComponent(key)] = decodeURIComponent(value);
+                        }
+                    })
+                }
+            }
+
             if (this.request.params instanceof RequestParams) {
+                urlParams && this.request.params.appendAll(urlParams);
                 this.request.query = this.request.params.toRecord();
             } else {
+                if (urlParams) {
+                    this.request.params = { ...urlParams, ...this.request.params }
+                }
                 this.request.query = this.request.params ?? {}
             }
         }

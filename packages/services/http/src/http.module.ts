@@ -1,7 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
-import { CLIENT_MODULES, ClientOpts } from '@tsdi/common/client';
+import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
 import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts, MimeModule } from '@tsdi/endpoints';
 import { Http } from './client/clinet';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS } from './client/options';
@@ -53,8 +53,8 @@ import { HttpCodingsHandlers } from './server/codings.handlers';
                     statusAdapter: { useExisting: HttpStatusAdapter },
                     // backend: HttpTransportBackend,
                     sessionFactory: { useExisting: HttpClientSessionFactory },
-                } as ClientOpts
-            },
+                }
+            } as ClientModuleOpts,
             multi: true
         },
         {
@@ -71,8 +71,8 @@ import { HttpCodingsHandlers } from './server/codings.handlers';
                     responseEventFactory: { useExisting: HttpResponseEventFactory },
                     // backend: HttpTransportBackend,
                     sessionFactory: { useExisting: HttpClientSessionFactory },
-                } as ClientOpts
-            },
+                }
+            } as ClientModuleOpts,
             multi: true
         },
         {
