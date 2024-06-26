@@ -1,4 +1,4 @@
-import { ArgumentExecption, Injectable, isNumber } from '@tsdi/ioc';
+import { ArgumentExecption, Injectable, isNumber, isString } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { Message, Packet } from '@tsdi/common';
 import { Observable, Subscriber, filter, map, mergeMap, of, range, throwError } from 'rxjs';
@@ -20,7 +20,7 @@ export class PackageDecodeInterceptor implements Interceptor<Message, Packet, Tr
 
     packs: Map<string | number, CachePacket> = new Map();
     intercept(input: Message, next: Handler<Message, Packet, TransportContext>, context: TransportContext): Observable<Packet> {
-        const {options, streamAdapter} = context.session;
+        const { options, streamAdapter } = context.session;
         const idLen = options.idLen ?? 2;
         let id: string | number;
         if (streamAdapter.isReadable(input.data)) {
@@ -32,10 +32,13 @@ export class PackageDecodeInterceptor implements Interceptor<Message, Packet, Tr
             if (input.streamLength) {
                 input.streamLength = input.streamLength - idLen;
             }
-        } else if (input.data) {
+        } else if (isBuffer(input.data)) {
             id = idLen > 4 ? input.data.subarray(0, idLen).toString() : input.data.readUIntBE(0, idLen);
             input.id = id;
             input.data = input.data.subarray(idLen);
+        } else if (isString(input.data)) {
+            id = input.data.slice(0, idLen);
+            input.data = input.data.slice(idLen);
         }
         return next.handle(input, context)
             .pipe(
@@ -114,7 +117,7 @@ export class PackageEncodeInterceptor implements Interceptor<Packet, Message, Tr
         return next.handle(input, context)
             .pipe(
                 mergeMap(msg => {
-                    const {options, streamAdapter } = context.session;
+                    const { options, streamAdapter } = context.session;
                     const idLen = options.idLen ?? 2;
                     const data = msg.data;
                     const packetSize = isBuffer(data) ? Buffer.byteLength(data) : msg.streamLength!;

@@ -1,4 +1,4 @@
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, isString } from '@tsdi/ioc';
 import { Handler, Interceptor, PipeTransform } from '@tsdi/core';
 import { Message, Packet } from '@tsdi/common';
 import { Observable, Subscriber, filter, map, mergeMap, throwError } from 'rxjs';
@@ -171,13 +171,13 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Message, Tra
 
         return next.handle(input, context)
             .pipe(map(msg => {
-                const {streamAdapter, options } = context.session;
+                const { streamAdapter, options } = context.session;
                 const countLen = options.countLen || 4;
                 let buffLen: Buffer;
                 const delimiter = Buffer.from(options.delimiter!);
                 const delimiterLen = Buffer.byteLength(delimiter);
                 // const headers = msg.headers;
-                let data: IReadableStream | Buffer = msg.data ?? Buffer.alloc(0);
+                let data: IReadableStream | Buffer | string | null = msg.data;
                 if (streamAdapter.isReadable(data)) {
                     let first = true;
                     let subpacket = false;
@@ -203,7 +203,10 @@ export class PacketEncodeInterceptor implements Interceptor<Packet, Message, Tra
                             }
                         }
                     }));
+                } else if (isString(data)) {
+                    data = countLen + options.delimiter! + data;
                 } else {
+                    if (!data) data = Buffer.alloc(0);
                     buffLen = Buffer.alloc(countLen);
                     const dataLen = Buffer.byteLength(data);
                     buffLen.writeUIntBE(dataLen, 0, countLen);
