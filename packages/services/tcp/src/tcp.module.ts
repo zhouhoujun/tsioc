@@ -35,8 +35,8 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                 defaultOpts: {
                     interceptorsToken: TCP_CLIENT_INTERCEPTORS,
                     filtersToken: TCP_CLIENT_FILTERS,
-                    messageFactory: { useClass: TcpMessageFactory },
-                    incomingFactory: { useClass: TcpClientIncomingFactory },
+                    messageFactory: TcpMessageFactory,
+                    incomingFactory: TcpClientIncomingFactory,
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
@@ -67,8 +67,8 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                 defaultOpts: {
                     interceptorsToken: TCP_CLIENT_INTERCEPTORS,
                     filtersToken: TCP_CLIENT_FILTERS,
-                    messageFactory: { useClass: TcpMessageFactory },
-                    incomingFactory: { useClass: TcpClientIncomingFactory },
+                    messageFactory: TcpMessageFactory,
+                    incomingFactory: TcpClientIncomingFactory,
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
@@ -127,9 +127,9 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                     interceptorsToken: TCP_SERV_INTERCEPTORS,
                     filtersToken: TCP_SERV_FILTERS,
                     guardsToken: TCP_SERV_GUARDS,
-                    messageFactory: { useClass: TcpMessageFactory },
-                    incomingFactory: { useClass: TcpIncomingFactory },
-                    outgoingFactory: { useClass: TcpOutgoingFactory },
+                    messageFactory: TcpMessageFactory,
+                    incomingFactory: TcpIncomingFactory,
+                    outgoingFactory: TcpOutgoingFactory,
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,
@@ -175,9 +175,9 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                     filtersToken: TCP_SERV_FILTERS,
                     guardsToken: TCP_SERV_GUARDS,
                     middlewaresToken: TCP_MIDDLEWARES,
-                    messageFactory: { useClass: TcpMessageFactory },
-                    incomingFactory: { useClass: TcpIncomingFactory },
-                    outgoingFactory: { useClass: TcpOutgoingFactory },
+                    messageFactory: TcpMessageFactory,
+                    incomingFactory: TcpIncomingFactory,
+                    outgoingFactory: TcpOutgoingFactory,
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,

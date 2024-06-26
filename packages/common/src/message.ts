@@ -19,7 +19,7 @@ export class Message {
 
     readonly headers: Record<string, Header>;
 
-    public data: Buffer | IReadableStream | null;
+    public data: string | Buffer | IReadableStream | null;
 
     public streamLength?: number;
 
@@ -28,7 +28,7 @@ export class Message {
     constructor(init: {
         id?: string | number;
         headers?: Record<string, any>;
-        data?: Buffer | IReadableStream | null;
+        data?: string | Buffer | IReadableStream | null;
         streamLength?: number;
     }) {
         this.id = init.id;
@@ -45,7 +45,7 @@ export class PatternMesage extends Message {
         id?: string | number;
         pattern?: Pattern;
         headers?: Record<string, any>;
-        data?: Buffer | IReadableStream | null;
+        data?: string | Buffer | IReadableStream | null;
         streamLength?: number;
     }) {
         super(init)
@@ -62,7 +62,7 @@ export abstract class MessageFactory {
     abstract create(initOpts: {
         id?: string | number;
         headers?: Record<string, any>;
-        data?: Buffer | IReadableStream | null;
+        data?: string | Buffer | IReadableStream | null;
         streamLength?: number;
     }): Message;
     abstract create<T = any>(initOpts: {

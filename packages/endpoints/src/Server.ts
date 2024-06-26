@@ -1,4 +1,4 @@
-import { HybirdTransport, MessageFactory } from '@tsdi/common';
+import { HybirdTransport, MessageFactory, PatternFormatter } from '@tsdi/common';
 import { IncomingFactory, MessageReader, MessageWriter, OutgoingFactory, StatusAdapter, TransportOpts } from '@tsdi/common/transport';
 import { ApplicationEvent, CanActivate, Filter, HandlerService, Interceptor, PipeTransform, Runner, Shutdown } from '@tsdi/core';
 import { Abstract, ProvdierOf, StaticProvider } from '@tsdi/ioc';
@@ -39,6 +39,10 @@ export interface ServerOpts<TSerOpts = any> extends EndpointOptions<any> {
      * transport session options.
      */
     transportOpts?: TransportOpts;
+    /**
+     * pattern formatter
+     */
+    patternFormatter?: ProvdierOf<PatternFormatter>;
     /**
      * message factory.
      */

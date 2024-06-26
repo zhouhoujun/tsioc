@@ -1,8 +1,8 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
-import { PatternFormatter } from '@tsdi/common';
+import { Message, Packet, PatternFormatter, isResponseEvent } from '@tsdi/common';
 import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
-import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
+import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, PatternRequestContext, RequestContext, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { RedisClient } from './client/client';
 import { REDIS_CLIENT_FILTERS, REDIS_CLIENT_INTERCEPTORS } from './client/options';
 import { RedisHandler } from './client/handler';
@@ -11,6 +11,11 @@ import { REDIS_SERV_FILTERS, REDIS_SERV_GUARDS, REDIS_SERV_INTERCEPTORS } from '
 import { RedisEndpointHandler } from './server/handler';
 import { RedisPatternFormatter } from './pattern';
 import { RedisTransportSessionFactory } from './redis.session';
+import { RedisMessage, RedisMessageFactory } from './message';
+import { RedisClientIncoming, RedisClientIncomingFactory, RedisIncoming, RedisIncomingFactory } from './incoming';
+import { RedisOutgoing, RedisOutgoingFactory } from './outgoing';
+import { ClientIncomingPacket, IncomingPacket, OutgoingPacket } from '@tsdi/common/transport';
+import { RedisRequest } from './client/request';
 
 
 const defaultMaxSize = 1048576; //1024 * 1024;
@@ -25,9 +30,13 @@ const defaultMaxSize = 1048576; //1024 * 1024;
             provide: CLIENT_MODULES,
             useValue: {
                 transport: 'redis',
-                microservice: true,                
+                microservice: true,
                 clientType: RedisClient,
                 hanlderType: RedisHandler,
+                messageReader: RedisMessageReader,
+                messageWriter: RedisMessageWriter,
+                messageFactory: RedisMessageFactory,
+                incomingFactory: RedisClientIncomingFactory,
                 defaultOpts: {
                     encoding: 'utf8',
                     interceptorsToken: REDIS_CLIENT_INTERCEPTORS,
@@ -35,8 +44,21 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
+                        defaultMethod: '*',
+                        encodings: {
+                            end: RedisMessage,
+                            defaults: [
+                                [RedisRequest, Packet]
+                            ]
+                        },
+                        decodings: {
+                            complete: isResponseEvent,
+                            defaults: [
+                                [RedisClientIncoming, ClientIncomingPacket],
+                                [RedisMessage, Message]
+                            ]
+                        }
                     },
-                    // sessionFactory: { useExisting: RedisTransportSessionFactory },
                     providers: [{ provide: PatternFormatter, useExisting: RedisPatternFormatter }]
                 }
             } as ClientModuleOpts,
@@ -51,9 +73,29 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                 handlerType: RedisEndpointHandler,
                 defaultOpts: {
                     encoding: 'utf8',
+                    messageReader: RedisMessageReader,
+                    messageWriter: RedisMessageWriter,
+                    messageFactory: RedisMessageFactory,
+                    incomingFactory: RedisIncomingFactory,
+                    outgoingFactory: RedisOutgoingFactory,
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
+                        defaultMethod: '*',
+                        decodings: {
+                            end: RequestContext,
+                            defaults: [
+                                [RedisIncoming, IncomingPacket],
+                                [RedisMessage, Message]
+                            ]
+                        },
+                        encodings: {
+                            end: RedisMessage,
+                            defaults: [
+                                [PatternRequestContext, RequestContext],
+                                [RedisOutgoing, OutgoingPacket]
+                            ]
+                        }
                     },
                     content: {
                         root: 'public',

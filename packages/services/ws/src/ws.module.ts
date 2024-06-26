@@ -41,8 +41,8 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                     url: 'ws://localhost:3000',
                     interceptorsToken: WS_CLIENT_INTERCEPTORS,
                     filtersToken: WS_CLIENT_FILTERS,
-                    messageFactory: { useClass: WsMessageFactory },
-                    incomingFactory: { useClass: WsClientIncomingFactory },
+                    messageFactory: WsMessageFactory,
+                    incomingFactory: WsClientIncomingFactory,
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
@@ -100,9 +100,9 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                     interceptorsToken: WS_SERV_INTERCEPTORS,
                     filtersToken: WS_SERV_FILTERS,
                     guardsToken: WS_SERV_GUARDS,
-                    messageFactory: { useClass: WsMessageFactory },
-                    incomingFactory: { useClass: WsIncomingFactory },
-                    outgoingFactory: { useClass: WsOutgoingFactory },
+                    messageFactory: WsMessageFactory,
+                    incomingFactory: WsIncomingFactory,
+                    outgoingFactory: WsOutgoingFactory,
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,
