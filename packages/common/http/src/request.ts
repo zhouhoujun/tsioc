@@ -1,5 +1,5 @@
 import { isString, InvocationContext, EMPTY_OBJ, isUndefined, isNil } from '@tsdi/ioc';
-import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, HeadersLike, HeaderMappings, Pattern, AbstractRequest } from '@tsdi/common';
+import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, HeadersLike, HeaderMappings, Pattern, AbstractRequest, RequestInitOpts, RequestParams } from '@tsdi/common';
 import { HttpParams } from './params';
 
 
@@ -46,7 +46,17 @@ function mightHaveBody(method: string): boolean {
  * @publicApi
  */
 export class HttpRequest<T = any> implements AbstractRequest<T> {
-    
+
+    private _id?: string | number;
+    get id(): string | number | undefined {
+        return this._id;
+    }
+
+
+    attachId(id: string | number) {
+        this._id = id;
+    }
+
     get pattern(): Pattern {
         return this.url;
     }
@@ -305,7 +315,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
 
     clone(): HttpRequest<T>;
     clone(update: {
-        headers?: HeaderMappings,
+        headers?: HeadersLike,
         context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
@@ -319,7 +329,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         setParams?: { [param: string]: string },
     }): HttpRequest<T>;
     clone<V>(update: {
-        headers?: HeaderMappings,
+        headers?: HeadersLike,
         context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
@@ -333,7 +343,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         setParams?: { [param: string]: string },
     }): HttpRequest<V>;
     clone(update: {
-        headers?: HeaderMappings,
+        headers?: HeadersLike,
         context?: InvocationContext,
         reportProgress?: boolean,
         params?: HttpParams,
@@ -350,16 +360,37 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         // it is overridden in the update hash.
         const method = update.method || this.method;
         const url = update.url || this.url;
-        const responseType = update.responseType || this.responseType;
 
         // The body is somewhat special - a `null` value in update.body means
         // whatever current body is present is being overridden with an empty
         // body, whereas an `undefined` value in update.body implies no
         // override.
-        let body = isUndefined(update.body)?  update.payload: update.body;
-        if(isUndefined(body)) {
+        let body = isUndefined(update.body) ? update.payload : update.body;
+        if (isUndefined(body)) {
             body = this.body;
         }
+
+        const options = this.cloneOpts(update);
+
+        // Finally, construct the new HttpRequest using the pieces from above.
+        return new HttpRequest(method, url, body, options)
+    }
+
+    protected cloneOpts(update: {
+        headers?: HeadersLike,
+        context?: InvocationContext,
+        reportProgress?: boolean,
+        params?: HttpParams,
+        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
+        withCredentials?: boolean,
+        body?: any | null,
+        payload?: any;
+        method?: string,
+        url?: string,
+        setHeaders?: { [name: string]: string | string[] },
+        setParams?: { [param: string]: string };
+    }): HttpRequestInit {
+        const responseType = update.responseType || this.responseType;
 
         // Carefully handle the boolean options to differentiate between
         // `false` and `undefined` in the update args.
@@ -368,34 +399,66 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         const reportProgress =
             (update.reportProgress !== undefined) ? update.reportProgress : this.reportProgress;
 
-        // Headers and params may be appended to if `setHeaders` or
+        const context = update.context ?? this.context!;
+         // Headers and params may be appended to if `setHeaders` or
         // `setParams` are used.
-        let headers = update.headers || this.headers;
-        let params = update.params || this.params;
-        const context = update.context ?? this.context;
-        // Check whether the caller has asked to add headers.
-        if (update.setHeaders !== undefined) {
-            // Set every requested header.
-            headers =
-                Object.keys(update.setHeaders)
-                    .reduce((headers, name) => headers.set(name, update.setHeaders![name]), headers)
+        let headers: HeaderMappings;
+        if (update.headers instanceof HeaderMappings) {
+            headers = update.headers;
+        } else {
+            headers = this.headers;
+            update.headers && headers.setHeaders(update.headers);
         }
-
+        
+        // `setParams` are used.
+        let params = update.params || this.params;
         // Check whether the caller has asked to set params.
         if (update.setParams) {
             // Set every requested param.
             params = Object.keys(update.setParams)
                 .reduce((params, param) => params.set(param, update.setParams![param]), params)
         }
-
-        // Finally, construct the new HttpRequest using the pieces from above.
-        return new HttpRequest(method, url, body, {
+        return {
             params,
             headers,
             reportProgress,
             responseType,
             withCredentials,
             context
-        })
+        }
+
     }
+
+    toJson(ignores?: string[]): Record<string, any> {
+        const obj = this.toRecord();
+        if (!ignores) return obj;
+
+        const record = {} as Record<string, any>;
+        for (const n in obj) {
+            if (ignores.indexOf(n) < 0
+                && !isNil(obj[n])) {
+                record[n] = obj[n];
+            }
+        }
+        return record;
+    }
+
+    protected toRecord(): Record<string, any> {
+        const rcd = {} as Record<string, any>;
+        if (this.id) {
+            rcd.id = this.id;
+        }
+        if (this.headers.size) {
+            rcd.headers = this.headers.getHeaders();
+        }
+        if (!isNil(this.payload)) {
+            rcd.payload = this.payload;
+        }
+        if (this.params.size) rcd.params = this.params.toRecord();
+        if (this.method) rcd.method = this.method;
+        rcd.withCredentials = this.withCredentials;
+        rcd.url = this.urlWithParams;
+        return rcd;
+    }
+
 }

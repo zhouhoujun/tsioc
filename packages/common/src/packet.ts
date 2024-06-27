@@ -31,7 +31,7 @@ export abstract class Packet<T = any> {
 
     readonly payload: T | null;
 
-    private _id: string | number | undefined;
+    private _id?: string | number;
     get id(): string | number | undefined {
         return this._id;
     }

@@ -51,10 +51,6 @@ export interface RequestPacketOpts<T = any> extends PacketOpts<T> {
      */
     body?: T | null;
     /**
-     * request timeout
-     */
-    timeout?: number;
-    /**
      * for restful
      */
     withCredentials?: boolean;
@@ -78,10 +74,6 @@ export interface RequestInitOpts<T = any> extends RequestPacketOpts<T>, Response
  */
 export abstract class AbstractRequest<T = any> extends Packet<T> {
 
-    /**
-     * client side timeout.
-     */
-    readonly timeout?: number;
     readonly method: string;
     readonly params: RequestParams;
     readonly context: InvocationContext;
@@ -101,7 +93,6 @@ export abstract class AbstractRequest<T = any> extends Packet<T> {
         this.payload = init.body ?? init.payload ?? null;
         this.params = new RequestParams(init);
         this.method = init.method ?? this.headers.getMethod() ?? init.defaultMethod ?? '';
-        this.timeout = init.timeout;
         this.context = init.context;
         this.responseType = init.responseType ?? 'json';
         this.observe = init.observe ?? 'body';
@@ -112,14 +103,13 @@ export abstract class AbstractRequest<T = any> extends Packet<T> {
     abstract clone(update: {
         headers?: HeadersLike;
         params?: RequestParams;
-        context?: InvocationContext<any>;
-        method?: string;
+        context?: InvocationContext;
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
         body?: T | null;
         payload?: T | null;
+        method?: string;
         setHeaders?: { [name: string]: string | string[]; };
         setParams?: { [param: string]: string; };
-        timeout?: number | null;
     }): AbstractRequest<T>
     abstract clone<V>(update: {
         headers?: HeadersLike;
@@ -131,22 +121,20 @@ export abstract class AbstractRequest<T = any> extends Packet<T> {
         payload?: V | null;
         setHeaders?: { [name: string]: string | string[]; };
         setParams?: { [param: string]: string; };
-        timeout?: number | null;
     }): AbstractRequest<V>;
 
     protected override cloneOpts(update: {
         headers?: HeadersLike;
         params?: RequestParams;
-        context?: InvocationContext<any>;
-        method?: string;
+        context?: InvocationContext;
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
+        withCredentials?: boolean;
         body?: any;
         payload?: any;
+        method?: string;
         setHeaders?: { [name: string]: string | string[]; };
         setParams?: { [param: string]: string; };
-        timeout?: number | null;
-        withCredentials?: boolean;
-    }): RequestInitOpts {
+    }): any {
         const init = super.cloneOpts(update) as RequestInitOpts;
         init.method = update.method ?? this.method;
         // `setParams` are used.
@@ -170,36 +158,36 @@ export abstract class AbstractRequest<T = any> extends Packet<T> {
         const rcd = super.toRecord();
         if (this.params.size) rcd.params = this.params.toRecord();
         if (this.method) rcd.method = this.method;
-        if (this.timeout) rcd.timeout = this.timeout;
         rcd.withCredentials = this.withCredentials;
         return rcd;
     }
 
-    protected appendUrlParams(url: string) {
-        // If no parameters have been passed in, construct a new HttpUrlEncodedParams instance.
-        if (!this.params.size) {
+}
+
+export function appendUrlParams(url: string, reqParams: RequestParams) {
+    // If no parameters have been passed in, construct a new HttpUrlEncodedParams instance.
+    if (!reqParams.size) {
+        return url
+    } else {
+        // Encode the parameters to a string in preparation for inclusion in the URL.
+        const params = reqParams.toString();
+        if (params.length === 0) {
+            // No parameters, the visible URL is just the URL given at creation time.
             return url
         } else {
-            // Encode the parameters to a string in preparation for inclusion in the URL.
-            const params = this.params.toString();
-            if (params.length === 0) {
-                // No parameters, the visible URL is just the URL given at creation time.
-                return url
-            } else {
-                // Does the URL already have query parameters? Look for '?'.
-                const qIdx = url.indexOf('?');
-                // There are 3 cases to handle:
-                // 1) No existing parameters -> append '?' followed by params.
-                // 2) '?' exists and is followed by existing query string ->
-                //    append '&' followed by params.
-                // 3) '?' exists at the end of the url -> append params directly.
-                // This basically amounts to determining the character, if any, with
-                // which to join the URL and parameters.
-                const sep: string = qIdx === -1 ? '?' : (qIdx < url.length - 1 ? '&' : '');
-                return url + sep + params
-            }
-
+            // Does the URL already have query parameters? Look for '?'.
+            const qIdx = url.indexOf('?');
+            // There are 3 cases to handle:
+            // 1) No existing parameters -> append '?' followed by params.
+            // 2) '?' exists and is followed by existing query string ->
+            //    append '&' followed by params.
+            // 3) '?' exists at the end of the url -> append params directly.
+            // This basically amounts to determining the character, if any, with
+            // which to join the URL and parameters.
+            const sep: string = qIdx === -1 ? '?' : (qIdx < url.length - 1 ? '&' : '');
+            return url + sep + params
         }
+
     }
 }
 
@@ -245,7 +233,7 @@ export class UrlRequest<T = any> extends AbstractRequest<T> {
         this.reportProgress = !!options.reportProgress;
 
         this.url = url;
-        this.urlWithParams = this.appendUrlParams(url);
+        this.urlWithParams = appendUrlParams(url, this.params);
     }
 
     clone(): UrlRequest<T>;
@@ -262,7 +250,6 @@ export class UrlRequest<T = any> extends AbstractRequest<T> {
         setParams?: { [param: string]: string; };
         reportProgress?: boolean;
         withCredentials?: boolean;
-        timeout?: number | null;
     }): UrlRequest<T>
     clone<V>(update: {
         headers?: HeaderMappings;
@@ -277,7 +264,6 @@ export class UrlRequest<T = any> extends AbstractRequest<T> {
         setParams?: { [param: string]: string; };
         reportProgress?: boolean;
         withCredentials?: boolean;
-        timeout?: number | null;
     }): UrlRequest<V>;
     clone(update: {
         headers?: HeaderMappings;
@@ -292,7 +278,6 @@ export class UrlRequest<T = any> extends AbstractRequest<T> {
         setParams?: { [param: string]: string; };
         reportProgress?: boolean;
         withCredentials?: boolean;
-        timeout?: number | null;
     } = {}): UrlRequest {
         const url = update.url || this.url;
 
@@ -315,7 +300,6 @@ export class UrlRequest<T = any> extends AbstractRequest<T> {
         setParams?: { [param: string]: string; };
         reportProgress?: boolean;
         withCredentials?: boolean;
-        timeout?: number | null;
     }): UrlRequestInitOpts {
         const init = super.cloneOpts(update) as UrlRequestInitOpts;
         init.reportProgress =
@@ -350,7 +334,6 @@ export class PatternRequest<T = any> extends AbstractRequest<T> {
     constructor(pattern: Pattern, options: RequestInitOpts<T>) {
         super(options)
         this.params = new RequestParams(options);
-        this.timeout = options.timeout;
         this.withCredentials = !!options.withCredentials;
         this.pattern = pattern;
     }
@@ -368,7 +351,6 @@ export class PatternRequest<T = any> extends AbstractRequest<T> {
         setHeaders?: { [name: string]: string | string[]; };
         setParams?: { [param: string]: string; };
         withCredentials?: boolean;
-        timeout?: number | null;
     }): PatternRequest<T>
     clone<V>(update: {
         headers?: HeadersLike;
@@ -382,7 +364,6 @@ export class PatternRequest<T = any> extends AbstractRequest<T> {
         setHeaders?: { [name: string]: string | string[]; };
         setParams?: { [param: string]: string; };
         withCredentials?: boolean;
-        timeout?: number | null;
     }): PatternRequest<V>;
     clone(update: {
         headers?: HeadersLike;
@@ -396,7 +377,6 @@ export class PatternRequest<T = any> extends AbstractRequest<T> {
         setHeaders?: { [name: string]: string | string[]; };
         setParams?: { [param: string]: string; };
         withCredentials?: boolean;
-        timeout?: number | null;
     } = {}): PatternRequest {
         const pattern = update.pattern || this.pattern;
 
