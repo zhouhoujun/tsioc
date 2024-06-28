@@ -1,11 +1,11 @@
 import { InvocationContext, isString } from '@tsdi/ioc';
-import { HeadersLike, Pattern, PatternRequest, RequestInitOpts, RequestParams } from '@tsdi/common';
+import { HeadersLike, Pattern, PatternRequest, RequestCloneOpts, RequestInitOpts, RequestParams } from '@tsdi/common';
 import { isIPv4 } from '@tsdi/common/transport';
 import { RemoteInfo } from 'dgram';
 import { udpUrl$ } from '../consts';
 
 
-export interface UdpRequestInitOpts<T = any> extends RequestInitOpts<T> {
+export interface UdpRequestInitOpts<T = any> extends RequestInitOpts {
     remoteInfo?: RemoteInfo;
     baseUrl?: string;
 }
@@ -13,8 +13,8 @@ export interface UdpRequestInitOpts<T = any> extends RequestInitOpts<T> {
 export class UdpRequest<T = any> extends PatternRequest<T> {
 
     readonly remoteInfo: RemoteInfo;
-    constructor(pattern: Pattern, options: UdpRequestInitOpts<T>) {
-        super(pattern, options);
+    constructor(pattern: Pattern, body:T|null|undefined, options: UdpRequestInitOpts<T>) {
+        super(pattern, body, options);
         if (options.remoteInfo) {
             this.remoteInfo = options.remoteInfo;
         } else {
@@ -82,6 +82,10 @@ export class UdpRequest<T = any> extends PatternRequest<T> {
         options.remoteInfo = update.remoteInfo ?? this.remoteInfo;
         // Finally, construct the new HttpRequest using the pieces from above.
         return new PatternRequest(pattern, options)
+    }
+    
+    protected override cloneOpts(update: RequestInitOpts, cloneOpts: RequestCloneOpts<any>): RequestInitOpts {
+        return 
     }
 
     protected override toRecord(): Record<string, any> {

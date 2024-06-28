@@ -1,17 +1,11 @@
-import { HeadersLike } from '@tsdi/common';
+import { CloneOpts, Pattern } from '@tsdi/common';
 import { Incoming, OutgoingFactory, OutgoingPacketOpts, PatternOutgoing } from '@tsdi/common/transport';
 
 
-export class TcpOutgoing<T = any> extends PatternOutgoing<T> {
+export class TcpOutgoing<T = any, TStatus= null> extends PatternOutgoing<T, TStatus> {
 
-    clone(): TcpOutgoing<T>;
-    clone(update: { headers?: HeadersLike | undefined; payload?: T | null | undefined; setHeaders?: { [name: string]: string | string[]; } | undefined; type?: number | undefined; ok?: boolean | undefined; statusMessage?: string | undefined; statusText?: string | undefined; error?: any; }): TcpOutgoing<T>;
-    clone<V>(update: { headers?: HeadersLike | undefined; payload?: V | null | undefined; setHeaders?: { [name: string]: string | string[]; } | undefined; type?: number | undefined; ok?: boolean | undefined; statusMessage?: string | undefined; statusText?: string | undefined; error?: any; }): TcpOutgoing<V>;
-    clone(update: any = {}): TcpOutgoing {
-        const pattern = update.pattern ?? this.pattern;
-        const opts = this.cloneOpts(update);
-
-        return new TcpOutgoing(pattern, opts);
+    protected createInstance(initOpts: OutgoingPacketOpts<any, any>, update: CloneOpts<T> & { pattern?: Pattern | undefined; }): TcpOutgoing<any, TStatus> {
+        return new TcpOutgoing(update.pattern ?? this.pattern, initOpts)
     }
 }
 

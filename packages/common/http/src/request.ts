@@ -10,7 +10,7 @@ import { HttpParams } from './params';
  */
 export interface HttpRequestInit {
     headers?: HeadersLike;
-    context?: InvocationContext;
+    context: InvocationContext;
     reportProgress?: boolean;
     params?: HttpParams;
 
@@ -127,7 +127,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
 
     readonly context: InvocationContext<any>;
 
-    constructor(method: 'DELETE' | 'GET' | 'HEAD' | 'JSONP' | 'OPTIONS', url: string, init?: {
+    constructor(method: 'DELETE' | 'GET' | 'HEAD' | 'JSONP' | 'OPTIONS', url: string, init: {
         headers?: HeadersLike,
         reportProgress?: boolean,
         params?: HttpParams,
@@ -136,7 +136,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         withCredentials?: boolean,
         context: InvocationContext
     });
-    constructor(method: 'POST' | 'PUT' | 'PATCH', url: string, body: T | null, init?: {
+    constructor(method: 'POST' | 'PUT' | 'PATCH', url: string, body: T | null, init: {
         headers?: HeadersLike,
         reportProgress?: boolean,
         params?: HttpParams,
@@ -145,7 +145,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         withCredentials?: boolean,
         context: InvocationContext
     });
-    constructor(method: string, url: string, body: T | null, init?: {
+    constructor(method: string, url: string, body: T | null, init: {
         headers?: HeadersLike,
         reportProgress?: boolean,
         params?: HttpParams,
@@ -182,7 +182,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         if (mightHaveBody(this.method) || !!fourth) {
             // Body is the third argument, options are the fourth.
             this.body = (third !== undefined) ? third as T : null;
-            options = fourth || EMPTY_OBJ;
+            options = fourth as HttpRequestInit;
         } else {
             // No body required, options are the third argument. The body stays null.
             options = third as HttpRequestInit
@@ -318,7 +318,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         headers?: HeadersLike,
         context?: InvocationContext,
         reportProgress?: boolean,
-        params?: HttpParams,
+        params?: RequestParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
         body?: T | null,
@@ -332,7 +332,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         headers?: HeadersLike,
         context?: InvocationContext,
         reportProgress?: boolean,
-        params?: HttpParams,
+        params?: RequestParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
         body?: V | null,
@@ -346,7 +346,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         headers?: HeadersLike,
         context?: InvocationContext,
         reportProgress?: boolean,
-        params?: HttpParams,
+        params?: RequestParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
         body?: any | null,
@@ -355,7 +355,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         url?: string,
         setHeaders?: { [name: string]: string | string[] },
         setParams?: { [param: string]: string };
-    } = {}): HttpRequest {
+    }): HttpRequest<any> {
         // For method, url, and responseType, take the current value unless
         // it is overridden in the update hash.
         const method = update.method || this.method;
@@ -373,7 +373,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         const options = this.cloneOpts(update);
 
         // Finally, construct the new HttpRequest using the pieces from above.
-        return new HttpRequest(method, url, body, options)
+        return new HttpRequest(method, url, body, options as any)
     }
 
     protected cloneOpts(update: {
@@ -385,8 +385,6 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         withCredentials?: boolean,
         body?: any | null,
         payload?: any;
-        method?: string,
-        url?: string,
         setHeaders?: { [name: string]: string | string[] },
         setParams?: { [param: string]: string };
     }): HttpRequestInit {
@@ -425,7 +423,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
             responseType,
             withCredentials,
             context
-        }
+        } as HttpRequestInit
 
     }
 

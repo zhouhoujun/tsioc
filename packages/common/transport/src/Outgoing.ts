@@ -1,4 +1,4 @@
-import { Header, HeadersLike, IHeaders, Pattern, StatusPacket, StatusPacketOpts } from '@tsdi/common';
+import { Clonable, CloneOpts, Header, HeadersLike, IHeaders, Pattern, StatusInitOpts, StatusPacket } from '@tsdi/common';
 import { IWritableStream } from './stream';
 import { Incoming } from './Incoming';
 
@@ -120,30 +120,19 @@ export abstract class OutgoingFactory {
 /**
  * Outgoing packet options.
  */
-export interface OutgoingPacketOpts<T = any, TStatus = any> extends StatusPacketOpts<T> {
-    /**
-     * event type
-     */
-    type?: number;
-    status?: TStatus;
-    statusMessage?: string;
-    statusText?: string;
-    ok?: boolean;
-    error?: any;
-
-    defaultStatus?: TStatus;
-    defaultStatusText?: string;
+export interface OutgoingPacketOpts<T = any, TStatus = any> extends StatusInitOpts<TStatus> {
+    payload?: T | null;
 }
 
 
 /**
  * Outgoing packet.
  */
-export abstract class OutgoingPacket<T = any, TStatus = number> extends StatusPacket<T, TStatus> implements Outgoing<T, TStatus> {
+export abstract class OutgoingPacket<T = any, TStatus = any, TExtOpts = Record<string, any>> extends StatusPacket<T, TStatus> implements Outgoing<T, TStatus>, Clonable<OutgoingPacket> {
 
 
-    constructor(init: OutgoingPacketOpts) {
-        super(init)
+    constructor(init: OutgoingPacketOpts<T, TStatus>) {
+        super(null, init)
     }
 
     get statusCode(): TStatus {
@@ -189,38 +178,24 @@ export abstract class OutgoingPacket<T = any, TStatus = number> extends StatusPa
     }
 
 
+    clone(): OutgoingPacket;
+    clone(update: OutgoingPacketOpts<T> & CloneOpts<T> & TExtOpts): OutgoingPacket;
+    clone<V>(update: OutgoingPacketOpts<V> & CloneOpts<T> & TExtOpts): OutgoingPacket<V>;
+    clone(update: OutgoingPacketOpts<any> & CloneOpts<T> & TExtOpts = {} as any): OutgoingPacket {
+        const opts = this.cloneOpts(update, update);
+        return this.createInstance(opts, update);
+    }
 
-    abstract clone(): OutgoingPacket<T, TStatus>;
-    abstract clone(update: {
-        headers?: HeadersLike;
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        type?: number;
-        ok?: boolean;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        error?: any;
-    }): OutgoingPacket<T, TStatus>
-    abstract clone<V>(update: {
-        headers?: HeadersLike;
-        payload?: V | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        type?: number;
-        ok?: boolean;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        error?: any;
-    }): OutgoingPacket<V, TStatus>;
+    protected abstract createInstance(initOpts: OutgoingPacketOpts, update: CloneOpts<T> & TExtOpts): OutgoingPacket;
+
 
 
 }
 
 
-export abstract class PatternOutgoing<T = any> extends OutgoingPacket<T, null> {
+export abstract class PatternOutgoing<T = any, TStatus = any> extends OutgoingPacket<T, TStatus, { pattern?: Pattern }> {
 
-    constructor(readonly pattern: Pattern, options: OutgoingPacketOpts<T, null>) {
+    constructor(readonly pattern: Pattern, options: OutgoingPacketOpts<T, TStatus>) {
         super(options);
     }
 

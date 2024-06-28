@@ -1,4 +1,4 @@
-import { HeadersLike, IHeaders, Packet, PacketOpts, ParameterCodec, Pattern, RequestParams, StatusPacket, StatusPacketOpts } from '@tsdi/common';
+import { CloneOpts, HeadersLike, IHeaders, PacketInitOpts, Packet, ParameterCodec, Pattern, RequestParams, StatusInitOpts, StatusPacket, PayloadOpts, BodyOpts, Clonable } from '@tsdi/common';
 import { IReadableStream } from './stream';
 
 
@@ -6,7 +6,7 @@ import { IReadableStream } from './stream';
 /**
  * Incoming message
  */
-export interface Incoming<T = any> {
+export interface Incoming<T = any> extends PayloadOpts<T>, BodyOpts<T> {
 
     id?: number | string;
 
@@ -20,11 +20,7 @@ export interface Incoming<T = any> {
 
     params?: Record<string, any> | RequestParams;
 
-    query?: Record<string, any>
-
-    payload?: any;
-
-    body?: T | null
+    query?: Record<string, any>;
 
     rawBody?: any;
 
@@ -60,15 +56,12 @@ export abstract class AbstractIncomingFactory<TIcoming = any> {
 /**
  * Incoming factory.
  */
-export abstract class IncomingFactory implements AbstractIncomingFactory<Incoming> {
-    abstract create(options: IncomingOpts): Incoming;
-    abstract create<T>(options: IncomingOpts<T>): Incoming<T>;
+export abstract class IncomingFactory<TExtOpts = Record<string, any>> implements AbstractIncomingFactory<Incoming> {
+    abstract create(options: IncomingInitOpts & BodyOpts & PayloadOpts & TExtOpts): Incoming;
+    abstract create<T>(options: IncomingInitOpts & BodyOpts<T> & PayloadOpts<T> & TExtOpts): Incoming<T>;
 }
 
-/**
- * incoming options
- */
-export interface IncomingOpts<T = any> extends PacketOpts<T> {
+export interface IncomingInitOpts extends PacketInitOpts {
 
     /**
      * request method.
@@ -89,15 +82,6 @@ export interface IncomingOpts<T = any> extends PacketOpts<T> {
      * parameter codec.
      */
     encoder?: ParameterCodec;
-
-    /**
-     * request payload, request body.
-     */
-    payload?: T;
-    /**
-     * request body. alias of payload.
-     */
-    body?: T | null;
     /**
      * request timeout
      */
@@ -114,10 +98,18 @@ export interface IncomingOpts<T = any> extends PacketOpts<T> {
 }
 
 
+export interface IncomingCloneOpts<T = any> extends CloneOpts<T> {
+    params?: RequestParams;
+    setParams?: { [param: string]: string; };
+    method?: string;
+    withCredentials?: boolean;
+}
+
+
 /**
  * Incoming packet.
  */
-export abstract class IncomingPacket<T = any> extends Packet<T> implements Incoming {
+export abstract class IncomingPacket<T = any, TExtOpts = Record<string, any>> extends Packet<T, IncomingInitOpts> implements Incoming, Clonable<IncomingPacket> {
 
     /**
      * client side timeout.
@@ -142,9 +134,9 @@ export abstract class IncomingPacket<T = any> extends Packet<T> implements Incom
         return this.params.getQuery();
     }
 
-    constructor(init: IncomingOpts<T>) {
-        super(init)
-        this.payload = init.payload ?? null;
+    constructor(payload: T | null | undefined, init: IncomingInitOpts) {
+        super(payload, init)
+        this.payload = payload ?? null;
         this.params = new RequestParams(init);
         this.method = init.method ?? this.headers.getMethod() ?? init.defaultMethod ?? '';
         this.timeout = init.timeout;
@@ -168,48 +160,28 @@ export abstract class IncomingPacket<T = any> extends Packet<T> implements Incom
         return this.headers.getHeader(field);
     }
 
-    abstract clone(): IncomingPacket<T>;
-    abstract clone(update: {
-        headers?: HeadersLike;
-        params?: RequestParams;
-        method?: string;
-        body?: T | null;
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        timeout?: number | null;
-    }): IncomingPacket<T>
-    abstract clone<V>(update: {
-        headers?: HeadersLike;
-        params?: RequestParams;
-        method?: string;
-        body?: V | null;
-        payload?: V | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        timeout?: number | null;
-    }): IncomingPacket<V>;
+    clone(): IncomingPacket;
+    clone(update: IncomingInitOpts & IncomingCloneOpts<T> & TExtOpts): IncomingPacket;
+    clone<V>(update: IncomingInitOpts & IncomingCloneOpts<V> & TExtOpts): IncomingPacket<V>;
+    clone(update: IncomingInitOpts & IncomingCloneOpts<any> & TExtOpts = {} as any): IncomingPacket {
+        const opts = this.cloneOpts(update, update);
+        return this.createInstance(opts, update);
+    }
 
-    protected override cloneOpts(update: {
-        headers?: HeadersLike;
-        params?: RequestParams;
-        method?: string;
-        body?: any;
-        payload?: any;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        timeout?: number | null;
-    }): IncomingOpts {
-        const init = super.cloneOpts(update) as IncomingOpts;
+    protected abstract createInstance(initOpts: IncomingInitOpts, cloneOpts: IncomingCloneOpts<any> & TExtOpts): IncomingPacket;
+
+
+    protected override cloneOpts(update: IncomingInitOpts, cloneOpts: IncomingCloneOpts): IncomingInitOpts {
+        const init = super.cloneOpts(update, cloneOpts) as IncomingInitOpts;
         init.method = update.method ?? this.method;
         // `setParams` are used.
-        let params = update.params || this.params;
+        let params = update.params as RequestParams || this.params;
 
         // Check whether the caller has asked to set params.
-        if (update.setParams) {
+        if (cloneOpts.setParams) {
             // Set every requested param.
-            params = Object.keys(update.setParams)
-                .reduce((params, param) => params.set(param, update.setParams![param]), params)
+            params = Object.keys(cloneOpts.setParams)
+                .reduce((params, param) => params.set(param, cloneOpts.setParams![param]), params)
         }
         init.params = params;
         return init;
@@ -226,10 +198,10 @@ export abstract class IncomingPacket<T = any> extends Packet<T> implements Incom
 }
 
 
-export abstract class PatternIncoming<T = any> extends IncomingPacket<T> {
+export abstract class PatternIncoming<T = any> extends IncomingPacket<T, { pattern?: Pattern }> {
 
-    constructor(readonly pattern: Pattern, options: IncomingOpts<T>) {
-        super(options)
+    constructor(readonly pattern: Pattern, payload: T | null | undefined, init: IncomingInitOpts) {
+        super(payload, init)
     }
 
     protected override toRecord(): Record<string, any> {
@@ -290,28 +262,28 @@ export interface ClientIncoming<T = any, TStatus = null> {
 /**
  * Incoming factory.
  */
-export abstract class ClientIncomingFactory implements AbstractIncomingFactory<ClientIncoming> {
-    abstract create(options: ClientIncomingOpts): ClientIncoming;
-    abstract create<T, TStatus>(options: ClientIncomingOpts<T, TStatus>): ClientIncoming<T, TStatus>;
+export abstract class ClientIncomingFactory<TExtOpts = Record<string, any>> implements AbstractIncomingFactory<ClientIncoming> {
+    abstract create(options: ClientIncomingInitOpts & BodyOpts & PayloadOpts & TExtOpts): ClientIncoming;
+    abstract create<T, TStatus>(options: ClientIncomingInitOpts<TStatus> & BodyOpts<T> & PayloadOpts<T> & TExtOpts): ClientIncoming<T, TStatus>;
 }
 
 /**
  * client incoming init options
  */
-export interface ClientIncomingOpts<T = any, TStatus = any> extends StatusPacketOpts<T, TStatus> {
+export interface ClientIncomingInitOpts<TStatus = any> extends StatusInitOpts<TStatus> {
     streamLength?: number;
 }
 
 /**
  * client incoming packet
  */
-export abstract class ClientIncomingPacket<T = any, TStatus = any> extends StatusPacket<T, TStatus> implements ClientIncoming<T, TStatus> {
+export abstract class ClientIncomingPacket<T = any, TStatus = any, TExtOpts = Record<string, any>> extends StatusPacket<T, TStatus, ClientIncomingInitOpts<TStatus>> implements ClientIncoming<T, TStatus>, Clonable<ClientIncomingPacket> {
 
 
     public streamLength?: number;
 
-    constructor(init: ClientIncomingOpts) {
-        super(init);
+    constructor(payload: T | null | undefined, init: ClientIncomingInitOpts<TStatus>) {
+        super(payload, init);
         this.streamLength = init.streamLength;
     }
 
@@ -332,39 +304,23 @@ export abstract class ClientIncomingPacket<T = any, TStatus = any> extends Statu
         return this.headers.getHeader(field);
     }
 
-    abstract clone(): ClientIncomingPacket<T, TStatus>;
-    abstract clone(update: {
-        headers?: HeadersLike;
-        body?: T | null,
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        type?: number;
-        ok?: boolean;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        error?: any;
-    }): ClientIncomingPacket<T, TStatus>
-    abstract clone<V>(update: {
-        headers?: HeadersLike;
-        body?: T | null,
-        payload?: V | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        type?: number;
-        ok?: boolean;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        error?: any;
-    }): ClientIncomingPacket<V, TStatus>;
+    clone(): ClientIncomingPacket;
+    clone(update: ClientIncomingInitOpts & CloneOpts<T> & TExtOpts): ClientIncomingPacket;
+    clone<V>(update: ClientIncomingInitOpts & CloneOpts<V> & TExtOpts): ClientIncomingPacket<V>;
+    clone(update: ClientIncomingInitOpts & CloneOpts<any> & TExtOpts = {} as any): ClientIncomingPacket {
+        const opts = this.cloneOpts(update, update);
+        return this.createInstance(opts, update);
+    }
+
+    protected abstract createInstance(initOpts: ClientIncomingInitOpts, cloneOpts: CloneOpts<any> & TExtOpts): ClientIncomingPacket;
 
 }
 
 
-export abstract class ClientPatternIncoming<T = any, TStatus = any> extends ClientIncomingPacket<T, TStatus> {
+export abstract class ClientPatternIncoming<T = any, TStatus = any> extends ClientIncomingPacket<T, TStatus, { pattern?: Pattern }> {
 
-    constructor(readonly pattern: Pattern, options: ClientIncomingOpts<T, TStatus>) {
-        super(options);
+    constructor(readonly pattern: Pattern, payload: T | null | undefined, init: ClientIncomingInitOpts<TStatus>) {
+        super(payload, init);
     }
 
     protected override toRecord(): Record<string, any> {

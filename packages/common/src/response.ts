@@ -1,39 +1,42 @@
-import { Abstract, EMPTY, Injectable, hasOwn, isPlainObject, lang } from '@tsdi/ioc';
+import { Abstract, EMPTY, Injectable, hasOwn, isPlainObject, isString, lang } from '@tsdi/ioc';
 import { HeadersLike } from './headers';
-import { StatusPacket, StatusPacketOpts } from './packet';
+import { Clonable, CloneOpts, Packet, StatusInitOpts, StatusPacket } from './packet';
 import { Pattern } from './pattern';
 
 /**
  * response packet data.
  */
-export interface ResponseInitOpts<T = any, TStatus = any> extends StatusPacketOpts<T, TStatus> {
+export interface ResponseInitOpts<TStatus = number> extends StatusInitOpts<TStatus> {
     url?: string;
     pattern?: Pattern;
 }
 
-export abstract class ResponseBase<T = any, TStatus = any> extends StatusPacket<T, TStatus> {
+export interface ResponseCloneOpts<T = any> extends CloneOpts<T> {
+    url?: string;
+    pattern?: Pattern;
+}
+
+export abstract class ResponseBase<T = any, TStatus = number> extends StatusPacket<T, TStatus, ResponseInitOpts<TStatus>> implements Clonable<ResponseBase<any, TStatus>> {
     readonly url: string | undefined;
     readonly pattern: Pattern | undefined;
-    constructor(init: ResponseInitOpts) {
-        super(init);
+    constructor(payload: T | null | undefined, init: ResponseInitOpts<TStatus>) {
+        super(payload, init);
         this.url = init.url;
         this.pattern = init.pattern;
     }
 
-    protected override cloneOpts(update: {
-        url?: string;
-        pattern?: Pattern;
-        headers?: HeadersLike;
-        payload?: any;
-        setHeaders?: { [name: string]: string | string[]; };
-        type?: number;
-        ok?: boolean;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        error?: any;
-    }): ResponseInitOpts {
-        const opts = super.cloneOpts(update) as ResponseInitOpts;
+    clone(): ResponseBase<T, TStatus>;
+    clone(update: ResponseInitOpts<TStatus> & ResponseCloneOpts<T>): ResponseBase<T, TStatus>;
+    clone<V>(update: ResponseInitOpts<TStatus> & ResponseCloneOpts<V>): ResponseBase<V, TStatus>;
+    clone(update: ResponseInitOpts<TStatus> & ResponseCloneOpts<any> = {} as any): ResponseBase<any, TStatus> {
+        const opts = this.cloneOpts(update, update);
+        return this.createInstance(opts, update);
+    }
+
+    protected abstract createInstance(initOpts: ResponseInitOpts<TStatus>, cloneOpts: ResponseCloneOpts): ResponseBase<any, TStatus>;
+
+    protected override cloneOpts(update: ResponseInitOpts<TStatus>, cloneOpts: ResponseCloneOpts): ResponseInitOpts<TStatus> {
+        const opts = super.cloneOpts(update, cloneOpts) as ResponseInitOpts<TStatus>;
         if (update.url) {
             opts.url = update.url;
         } else if (update.pattern) {
@@ -59,50 +62,14 @@ export abstract class ResponseBase<T = any, TStatus = any> extends StatusPacket<
  * header response.
  */
 export class HeaderResponse<TStatus = number> extends ResponseBase<null, TStatus> {
-    constructor(init: {
-        url?: string;
-        pattern?: Pattern;
-        /**
-         * event type
-         */
-        type?: number;
-        ok?: boolean;
-        headers?: HeadersLike;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-    }) {
-        super(Object.assign(init, { payload: null }));
+    constructor(init: ResponseInitOpts<TStatus>) {
+        super(null, init);
     }
 
-
-    clone(): HeaderResponse<TStatus>;
-    clone(update: {
-        url?: string;
-        pattern?: Pattern;
-        type?: number;
-        ok?: boolean;
-        headers?: HeadersLike;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        setHeaders?: { [name: string]: string | string[]; };
-    }): HeaderResponse<TStatus>
-    clone(update: {
-        url?: string;
-        pattern?: Pattern;
-        type?: number;
-        ok?: boolean;
-        headers?: HeadersLike;
-        status?: any;
-        statusMessage?: string;
-        statusText?: string;
-        setHeaders?: { [name: string]: string | string[]; }
-    } = {}): HeaderResponse<TStatus> {
-        const init = this.cloneOpts(update) as ResponseInitOpts;
-        return new HeaderResponse(init) as HeaderResponse<any>;
-
+    protected override createInstance(initOpts: ResponseInitOpts<TStatus>, cloneOpts: ResponseCloneOpts): HeaderResponse<TStatus> {
+        return new HeaderResponse(initOpts);
     }
+
 }
 
 /**
@@ -110,63 +77,8 @@ export class HeaderResponse<TStatus = number> extends ResponseBase<null, TStatus
  */
 export class ResponsePacket<T = any, TStatus = number> extends ResponseBase<T, TStatus> {
 
-    constructor(init: {
-        url?: string;
-        pattern?: Pattern;
-        /**
-         * event type
-         */
-        type?: number;
-        headers?: HeadersLike;
-        payload?: T;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        ok?: boolean;
-    }) {
-        super(init)
-    }
-
-    clone(): ResponsePacket<T, TStatus>;
-    clone(update: {
-        url?: string;
-        pattern?: Pattern;
-        type?: number;
-        ok?: boolean;
-        headers?: HeadersLike;
-        payload?: T;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        setHeaders?: { [name: string]: string | string[]; };
-    }): ResponsePacket<T, TStatus>;
-    clone<V>(update: {
-        url?: string;
-        pattern?: Pattern;
-        type?: number;
-        ok?: boolean;
-        headers?: HeadersLike;
-        payload?: V;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        setHeaders?: { [name: string]: string | string[]; };
-    }): ResponsePacket<V, TStatus>;
-    clone(update: {
-        url?: string;
-        pattern?: Pattern;
-        type?: number;
-        ok?: boolean;
-        headers?: HeadersLike;
-        payload?: any;
-        status?: any;
-        statusMessage?: string;
-        statusText?: string;
-        setHeaders?: { [name: string]: string | string[]; }
-    } = {}): ResponsePacket<any, TStatus> {
-        const init = this.cloneOpts(update);
-        return new ResponsePacket(init) as ResponsePacket<any, TStatus>;
-
+    protected override createInstance(initOpts: ResponseInitOpts<TStatus>, cloneOpts: ResponseCloneOpts): ResponsePacket<T, TStatus> {
+        return new ResponsePacket(this.updatePayload(cloneOpts), initOpts);
     }
 }
 
@@ -175,53 +87,12 @@ export class ResponsePacket<T = any, TStatus = number> extends ResponseBase<T, T
  */
 export class ErrorResponse<TStatus = number> extends ResponseBase<null, TStatus> {
 
-    readonly error: any | null;
-
-    constructor(init: {
-        url?: string;
-        pattern?: Pattern;
-        /**
-         * event type
-         */
-        type?: number;
-        headers?: HeadersLike;
-        error?: any;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-    }) {
-        super(Object.assign(init, { ok: false, payload: null }));
+    constructor(init: ResponseInitOpts<TStatus>) {
+        super(null, init);
     }
 
-    clone(): ErrorResponse<TStatus>;
-    clone(update: {
-        url?: string;
-        pattern?: Pattern;
-        type?: number;
-        ok?: boolean;
-        headers?: HeadersLike;
-        error?: any;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        setHeaders?: { [name: string]: string | string[]; };
-    }): ErrorResponse<TStatus>
-    clone(update: {
-        url?: string;
-        pattern?: Pattern;
-        type?: number;
-        ok?: boolean;
-        headers?: HeadersLike;
-        error?: any;
-        status?: any;
-        statusMessage?: string;
-        statusText?: string;
-        setHeaders?: { [name: string]: string | string[]; }
-    } = {}): ErrorResponse<TStatus> {
-        const init = this.cloneOpts(update);
-        init.error = update.error ?? this.error;
-        return new ErrorResponse(init) as ErrorResponse<any>;
-
+    protected createInstance(initOpts: ResponseInitOpts<TStatus>, cloneOpts: ResponseCloneOpts): ErrorResponse<TStatus> {
+        return new ErrorResponse(initOpts);
     }
 }
 
@@ -254,24 +125,29 @@ export function isResponseEvent(target: any): target is ResponseEvent {
     return target instanceof ResponseBase || (isPlainObject(target) && hasOwn(target, 'type'));
 }
 
+export interface ResponseOptions<T = any, TStatus = any> extends ResponseInitOpts<TStatus> {
+    body?: T | null;
+    payload?: T | null
+}
+
 @Abstract()
 export abstract class ResponseFactory<TStatus = null> {
     /**
      * create response.
      * @param options 
      */
-    abstract create<T>(options: ResponseInitOpts): ResponseEvent<T, TStatus>;
+    abstract create<T>(options: ResponseOptions): ResponseEvent<T, TStatus>;
 }
 
 @Injectable()
 export class DefaultResponseFactory<TStatus = null> {
 
-    create<T>(options: ResponseInitOpts): ResponseEvent<T, TStatus> {
+    create<T>(options: ResponseOptions<T, TStatus>): ResponseEvent<T, TStatus> {
 
         if (!options.ok || options.error) {
             return new ErrorResponse(options);
         }
-        return new ResponsePacket(options);
+        return new ResponsePacket<T, TStatus>(options.body ?? options.payload, options);
 
     }
 }

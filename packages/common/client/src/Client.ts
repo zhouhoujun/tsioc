@@ -373,12 +373,11 @@ export abstract class Client<TRequest extends AbstractRequest = AbstractRequest,
             const context = options.context || createContext(this.handler.injector);
             this.initContext(context);
             // Construct the request.
-            req = this.createRequest(first, {
+            req = this.createRequest(first, options.payload ?? options.body ?? null, {
                 context,
                 ...options,
                 headers,
                 params,
-                payload: options.payload ?? null,
                 // By default, JSON is assumed to be returned for all calls.
                 responseType: options.responseType || 'json'
             })
@@ -397,11 +396,8 @@ export abstract class Client<TRequest extends AbstractRequest = AbstractRequest,
         return target instanceof AbstractRequest;
     }
 
-    protected abstract createRequest(pattern: Pattern, options: UrlRequestInitOpts): TRequest;
+    protected abstract createRequest(pattern: Pattern, body: any, options: UrlRequestInitOpts): TRequest;
 
-    // protected createRequest(pattern: Pattern, options: RequestInitOpts): TRequest {
-    //     return new TransportRequest(pattern, { ...options }) as TRequest;
-    // }
 
     protected createParams(params: string | ReadonlyArray<[string, string | number | boolean]>
         | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>>) {

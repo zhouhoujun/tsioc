@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, Injectable, isNil, isString, tokenId } from '@tsdi/ioc';
 import { Interceptor, InvalidJsonException } from '@tsdi/core';
-import { Message, Packet, PacketOpts, RequestParams, isArrayBuffer, isBlob, isFormData } from '@tsdi/common';
+import { Message, Packet, PacketInitOpts, PacketOpts, RequestParams, isArrayBuffer, isBlob, isFormData } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
 import { TransportContext } from './context';
 import { StreamAdapter, isBuffer, toBuffer } from './StreamAdapter';
@@ -22,7 +22,7 @@ export abstract class HeaderSerialization {
 
 @Abstract()
 export abstract class HeaderDeserialization {
-    abstract deserialize(data: Buffer): PacketOpts;
+    abstract deserialize(data: Buffer): PacketInitOpts;
 }
 
 
@@ -83,7 +83,6 @@ export class PacketCodingsHandlers {
         const { streamAdapter, injector, messageFactory, options } = context.session;
 
         const pkg = context.last<Packet>();
-
 
         let data: any, streamLen: number | undefined;
         if (options.headDelimiter) {
