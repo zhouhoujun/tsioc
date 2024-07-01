@@ -7,10 +7,10 @@ import { ClientTransportSession } from '../session';
 @Injectable()
 export class ClientTransportBackend extends ClientBackend {
 
-    handle(req: UrlRequest<any>): Observable<ResponseEvent> {
+    handle(req: UrlRequest<any>): Observable<ResponseEvent<any>> {
         const session = req.context.get(ClientTransportSession);
 
-        let obs$: Observable<ResponseEvent>;
+        let obs$: Observable<ResponseEvent<any>>;
         switch (req.observe) {
             case 'emit':
                 obs$ = session.send(req).pipe(take(1));

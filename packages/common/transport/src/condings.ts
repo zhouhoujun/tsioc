@@ -14,13 +14,13 @@ import { TransportContext } from './context';
 /**
  * Transport encodings interceptors.
  */
-export const TRANSPORT_ENCODINGS_INTERCEPTORS = tokenId<Interceptor<Packet, Message, TransportContext>[]>('TRANSPORT_ENCODINGS_INTERCEPTORS');
+export const TRANSPORT_ENCODINGS_INTERCEPTORS = tokenId<Interceptor<Packet<any>, Message, TransportContext>[]>('TRANSPORT_ENCODINGS_INTERCEPTORS');
 
 
 /**
  *  Transport encodings filters.
  */
-export const TRANSPORT_ENCODINGS_FILTERS = tokenId<Interceptor<Packet, Message, TransportContext>[]>('TRANSPORT_ENCODINGS_FILTERS');
+export const TRANSPORT_ENCODINGS_FILTERS = tokenId<Interceptor<Packet<any>, Message, TransportContext>[]>('TRANSPORT_ENCODINGS_FILTERS');
 
 
 /**
@@ -64,12 +64,12 @@ export class TransportEncodingsFactory implements EncodingsFactory {
 /**
  * Transport decodings interceptors.
  */
-export const TRANSPORT_DECODINGS_INTERCEPTORS = tokenId<Interceptor<Message, Packet, TransportContext>[]>('TRANSPORT_DECODINGS_INTERCEPTORS');
+export const TRANSPORT_DECODINGS_INTERCEPTORS = tokenId<Interceptor<Message, Packet<any>, TransportContext>[]>('TRANSPORT_DECODINGS_INTERCEPTORS');
 
 /**
  *  Transport decodings filters.
  */
-export const TRANSPORT_DECODINGS_FILTERS = tokenId<Interceptor<Message, Packet, TransportContext>[]>('TRANSPORT_DECODINGS_FILTERS');
+export const TRANSPORT_DECODINGS_FILTERS = tokenId<Interceptor<Message, Packet<any>, TransportContext>[]>('TRANSPORT_DECODINGS_FILTERS');
 
 /**
  *  Transport decodings guards.

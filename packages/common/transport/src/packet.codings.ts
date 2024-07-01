@@ -17,7 +17,7 @@ export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<Packet<Buffer | IR
 
 @Abstract()
 export abstract class HeaderSerialization {
-    abstract serialize(packet: Packet, ignores?: string[]): Buffer;
+    abstract serialize(packet: Packet<any>, ignores?: string[]): Buffer;
 }
 
 @Abstract()
@@ -82,7 +82,7 @@ export class PacketCodingsHandlers {
 
         const { streamAdapter, injector, messageFactory, options } = context.session;
 
-        const pkg = context.last<Packet>();
+        const pkg = context.last<Packet<any>>();
 
 
         let data: any, streamLen: number | undefined;
@@ -129,7 +129,7 @@ export class PacketCodingsHandlers {
     }
 
 
-    async encodePacket(streamAdapter: StreamAdapter, packet: Packet, maxSize?: number, encoding?: string, ignores?: string[]): Promise<Buffer> {
+    async encodePacket(streamAdapter: StreamAdapter, packet: Packet<any>, maxSize?: number, encoding?: string, ignores?: string[]): Promise<Buffer> {
 
         let source: string | Buffer | IReadableStream | null = null;
 
@@ -178,7 +178,7 @@ export class PacketCodingsHandlers {
         return source;
     }
 
-    async encodePayload(streamAdapter: StreamAdapter, packet: Packet, encoding?: string): Promise<string | Buffer | IReadableStream | null> {
+    async encodePayload(streamAdapter: StreamAdapter, packet: Packet<any>, encoding?: string): Promise<string | Buffer | IReadableStream | null> {
         if (isNil(packet.payload)) return null;
 
         let source: string | Buffer | IReadableStream;
@@ -227,7 +227,7 @@ export class PacketCodingsHandlers {
         return source;
     }
 
-    private serializeHeader(packet: Packet, ignores?: string[]): Buffer {
+    private serializeHeader(packet: Packet<any>, ignores?: string[]): Buffer {
         const headers = packet.toJson(['payload', ...ignores ?? EMPTY]);
         return Buffer.from(JSON.stringify(headers));
     }

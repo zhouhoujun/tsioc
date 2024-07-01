@@ -147,7 +147,7 @@ const field_name = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 * @param {String|Array} field
 * @public
 */
-export function vary(res: Outgoing, field: string) {
+export function vary(res: Outgoing<any>, field: string) {
   // get existing header
   let val = res.getHeader(VARY) || '';
   const header = Array.isArray(val)

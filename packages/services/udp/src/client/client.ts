@@ -10,7 +10,7 @@ import { UdpRequest } from './request';
 
 
 @Injectable()
-export class UdpClient extends Client<UdpRequest, ResponseEvent, UdpClientOpts> {
+export class UdpClient extends Client<UdpRequest<any>, ResponseEvent<any>, UdpClientOpts> {
     private socket?: Socket | null;
     private session?: ClientTransportSession | null;
 

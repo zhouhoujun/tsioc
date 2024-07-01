@@ -9,7 +9,7 @@ import { ClientTransportSessionFactory } from './session';
 /**
  * Client options.
  */
-export interface ClientOpts<TConnOpts = any> extends ConfigableHandlerOptions<AbstractRequest> {
+export interface ClientOpts<TConnOpts = any> extends ConfigableHandlerOptions<AbstractRequest<any>> {
     /**
      * url
      */

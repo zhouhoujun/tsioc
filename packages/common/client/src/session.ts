@@ -8,7 +8,7 @@ import { Observable, first, merge, mergeMap, takeUntil } from 'rxjs';
  * transport session for client.
  */
 @Abstract()
-export abstract class ClientTransportSession<TSocket = any, TMsg extends Message = Message> extends BaseTransportSession<TSocket, AbstractRequest, ResponseEvent, TMsg> {
+export abstract class ClientTransportSession<TSocket = any, TMsg extends Message = Message> extends BaseTransportSession<TSocket, AbstractRequest<any>, ResponseEvent<any>, TMsg> {
 
     /**
      * response factory.
@@ -19,7 +19,7 @@ export abstract class ClientTransportSession<TSocket = any, TMsg extends Message
      */
     abstract get redirector(): Redirector | null;
 
-    request(req: AbstractRequest, destroy$?: Observable<any>): Observable<ResponseEvent> {
+    request(req: AbstractRequest<any>, destroy$?: Observable<any>): Observable<ResponseEvent<any>> {
         return this.send(req)
             .pipe(
                 mergeMap(() => this.receive(req)),

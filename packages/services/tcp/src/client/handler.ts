@@ -4,6 +4,6 @@ import { TcpRequest } from './request';
 
 
 @Abstract()
-export abstract class TcpHandler extends ClientHandler<TcpRequest> {
+export abstract class TcpHandler extends ClientHandler<TcpRequest<any>> {
 
 }

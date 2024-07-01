@@ -8,7 +8,7 @@ import { ClientTransportSession } from '../session';
 /**
  * client incoming decode interceptors.
  */
-export const CLIENT_INCOMING_DECODE_INTERCEPTORS = tokenId<Interceptor<ClientIncomingPacket, ResponseEvent, TransportContext>[]>('CLIENT_INCOMING_DECODE_INTERCEPTORS');
+export const CLIENT_INCOMING_DECODE_INTERCEPTORS = tokenId<Interceptor<ClientIncomingPacket<any>, ResponseEvent<any>, TransportContext>[]>('CLIENT_INCOMING_DECODE_INTERCEPTORS');
 
 
 @Injectable({ static: true })
@@ -16,7 +16,7 @@ export class ClientEndpointCodingsHanlders {
 
     @DecodeHandler(ClientIncomingPacket, { interceptorsToken: CLIENT_INCOMING_DECODE_INTERCEPTORS })
     decodePacket(context: TransportContext) {
-        const incoming = context.last<ClientIncomingPacket>();
+        const incoming = context.last<ClientIncomingPacket<any>>();
         const session = context.session as ClientTransportSession;
         return session.responseFactory.create(incoming);
     }

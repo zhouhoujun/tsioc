@@ -10,7 +10,7 @@ export interface UdpRequestInitOpts<T = any> extends RequestInitOpts<T> {
     baseUrl?: string;
 }
 
-export class UdpRequest<T = any> extends PatternRequest<T> {
+export class UdpRequest<T> extends PatternRequest<T> {
 
     readonly remoteInfo: RemoteInfo;
     constructor(pattern: Pattern, options: UdpRequestInitOpts<T>) {
@@ -32,21 +32,6 @@ export class UdpRequest<T = any> extends PatternRequest<T> {
     }
 
     clone(): PatternRequest<T>;
-    clone(update: {
-        headers?: HeadersLike;
-        context?: InvocationContext<any>;
-        method?: string;
-        params?: RequestParams;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-        pattern?: Pattern;
-        remoteInfo?:RemoteInfo;
-        body?: T | null;
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        withCredentials?: boolean;
-        timeout?: number | null;
-    }): PatternRequest<T>
     clone<V>(update: {
         headers?: HeadersLike;
         context?: InvocationContext<any>;
@@ -62,6 +47,21 @@ export class UdpRequest<T = any> extends PatternRequest<T> {
         withCredentials?: boolean;
         timeout?: number | null;
     }): PatternRequest<V>;
+    clone(update: {
+        headers?: HeadersLike;
+        context?: InvocationContext<any>;
+        method?: string;
+        params?: RequestParams;
+        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
+        pattern?: Pattern;
+        remoteInfo?:RemoteInfo;
+        body?: T | null;
+        payload?: T | null;
+        setHeaders?: { [name: string]: string | string[]; };
+        setParams?: { [param: string]: string; };
+        withCredentials?: boolean;
+        timeout?: number | null;
+    }): PatternRequest<T>;
     clone(update: {
         headers?: HeadersLike;
         context?: InvocationContext<any>;

@@ -9,7 +9,7 @@ import { AcceptsPriority } from '../accepts';
 
 
 
-export class UrlRequestContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TSocket = any> extends RequestContext<TRequest, TResponse, TSocket> {
+export class UrlRequestContext<TRequest extends Incoming<any> = Incoming<any>, TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any> extends RequestContext<TRequest, TResponse, TSocket> {
 
 
     private _URL?: URL;
@@ -97,7 +97,7 @@ export class UrlRequestContext<TRequest extends Incoming = Incoming, TResponse e
         }
     }
 
-    protected parseURL(req: Incoming): URL {
+    protected parseURL(req: Incoming<any>): URL {
         const url = req.url ?? '';
         if (abstl.test(url)) {
             return new URL(url);
@@ -116,7 +116,7 @@ export class UrlRequestContext<TRequest extends Incoming = Incoming, TResponse e
     }
 
 
-    setResponse(packet: ResponsePacket): void {
+    setResponse(packet: ResponsePacket<any>): void {
         const { headers, payload, ...pkg } = packet;
         Object.assign(this.response, pkg);
         if (headers) this.setHeader(headers);
@@ -147,7 +147,7 @@ export class UrlRequestContext<TRequest extends Incoming = Incoming, TResponse e
 const abstl = /^\w+:\/\//i;
 
 
-export class PatternRequestContext<TRequest extends Incoming = Incoming, TResponse extends Outgoing = Outgoing, TSocket = any> extends RequestContext<TRequest, TResponse, TSocket> {
+export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any>, TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any> extends RequestContext<TRequest, TResponse, TSocket> {
 
 
 
@@ -218,7 +218,7 @@ export class PatternRequestContext<TRequest extends Incoming = Incoming, TRespon
     }
 
 
-    setResponse(packet: ResponsePacket): void {
+    setResponse(packet: ResponsePacket<any>): void {
         const { headers, payload, ...pkg } = packet;
         Object.assign(this.response, pkg);
         if (headers) this.setHeader(headers);
@@ -248,8 +248,8 @@ export class PatternRequestContext<TRequest extends Incoming = Incoming, TRespon
 
 
 @Injectable()
-export class RequestContextFactoryImpl implements RequestContextFactory<Incoming, Outgoing> {
-    create<TSocket = any>(session: TransportSession, request: Incoming, response: Outgoing, options?: ServerOpts<any> | undefined): RequestContext<Incoming, Outgoing, TSocket> {
+export class RequestContextFactoryImpl implements RequestContextFactory<Incoming<any>, Outgoing<any>> {
+    create<TSocket = any>(session: TransportSession, request: Incoming<any>, response: Outgoing<any>, options?: ServerOpts<any> | undefined): RequestContext<Incoming<any>, Outgoing<any>, TSocket> {
         const injector = session.injector;
         if (request.url) {
             return new UrlRequestContext(injector,

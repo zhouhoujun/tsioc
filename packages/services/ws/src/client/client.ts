@@ -13,7 +13,7 @@ import { WsRequest } from './request';
  * ws client.
  */
 @Injectable()
-export class WsClient extends Client<WsRequest, ResponseEvent, WsClientOpts> {
+export class WsClient extends Client<WsRequest<any>, ResponseEvent<any>, WsClientOpts> {
     private socket?: WebSocket | null;
     private session?: ClientTransportSession | null;
 

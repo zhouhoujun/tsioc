@@ -8,7 +8,7 @@ import { ClientOpts } from './options';
  * Client Handler
  */
 @Abstract()
-export abstract class ClientHandler<TRequest extends AbstractRequest = AbstractRequest, TResponse extends ResponseEvent = ResponseEvent, TOptions extends ClientOpts = ClientOpts> extends ConfigableHandler<TRequest, TResponse, TOptions> {
+export abstract class ClientHandler<TRequest extends AbstractRequest<any> = AbstractRequest<any>, TResponse extends ResponseEvent<any> = ResponseEvent<any>, TOptions extends ClientOpts = ClientOpts> extends ConfigableHandler<TRequest, TResponse, TOptions> {
 
 }
 

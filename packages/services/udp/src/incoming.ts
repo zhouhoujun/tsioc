@@ -8,7 +8,7 @@ export interface UdpIncomingOpts extends IncomingOpts {
     remoteInfo?: RemoteInfo;
 }
 
-export class UdpIncoming<T = any> extends PatternIncoming<T> {
+export class UdpIncoming<T> extends PatternIncoming<T> {
     readonly remoteInfo: RemoteInfo;
     constructor(pattern: Pattern, options: UdpIncomingOpts) {
         super(pattern, options)
@@ -16,18 +16,6 @@ export class UdpIncoming<T = any> extends PatternIncoming<T> {
     }
 
     clone(): UdpIncoming<T>;
-    clone(update: {
-        pattern?: Pattern;
-        remoteInfo?: RemoteInfo;
-        headers?: HeadersLike | undefined;
-        params?: RequestParams | undefined;
-        method?: string | undefined;
-        body?: T;
-        payload?: T;
-        setHeaders?: { [name: string]: string | string[]; } | undefined;
-        setParams?: { [param: string]: string; } | undefined;
-        timeout?: number | null | undefined;
-    }): UdpIncoming<T>;
     clone<V>(update: {
         pattern?: Pattern;
         remoteInfo?: RemoteInfo;
@@ -40,7 +28,19 @@ export class UdpIncoming<T = any> extends PatternIncoming<T> {
         etParams?: { [param: string]: string; } | undefined;
         timeout?: number | null | undefined;
     }): UdpIncoming<V>;
-    clone(update: any = {}): UdpIncoming {
+    clone(update: {
+        pattern?: Pattern;
+        remoteInfo?: RemoteInfo;
+        headers?: HeadersLike | undefined;
+        params?: RequestParams | undefined;
+        method?: string | undefined;
+        body?: T;
+        payload?: T;
+        setHeaders?: { [name: string]: string | string[]; } | undefined;
+        setParams?: { [param: string]: string; } | undefined;
+        timeout?: number | null | undefined;
+    }): UdpIncoming<T>;
+    clone(update: any = {}): UdpIncoming<any> {
         const pattern = update.pattern ?? this.pattern;
         const opts = this.cloneOpts(update) as UdpIncomingOpts;
         opts.remoteInfo = this.remoteInfo;
@@ -67,7 +67,7 @@ export interface UdpClientIncomingOpts extends ClientIncomingOpts {
 }
 
 
-export class UdpClientIncoming<T = any> extends ClientPatternIncoming<T, null> {
+export class UdpClientIncoming<T> extends ClientPatternIncoming<T, null> {
 
     readonly remoteInfo: RemoteInfo;
     constructor(pattern: Pattern, options: UdpClientIncomingOpts) {
@@ -76,19 +76,6 @@ export class UdpClientIncoming<T = any> extends ClientPatternIncoming<T, null> {
     }
 
     clone(): ClientIncomingPacket<T, null>;
-    clone(update: {
-        remoteInfo?: RemoteInfo;
-        headers?: HeadersLike | undefined;
-        body?: T | null | undefined;
-        payload?: T | null | undefined;
-        setHeaders?: { [name: string]: string | string[]; } | undefined;
-        type?: number | undefined;
-        ok?: boolean | undefined;
-        status?: number | undefined;
-        statusMessage?: string | undefined;
-        statusText?: string | undefined;
-        error?: any;
-    }): UdpClientIncoming<T>;
     clone<V>(update: {
         remoteInfo?:RemoteInfo;
         headers?: HeadersLike | undefined;
@@ -102,7 +89,20 @@ export class UdpClientIncoming<T = any> extends ClientPatternIncoming<T, null> {
         statusText?: string | undefined;
         error?: any;
     }): UdpClientIncoming<V>;
-    clone(update: any = {}): UdpClientIncoming {
+    clone(update: {
+        remoteInfo?: RemoteInfo;
+        headers?: HeadersLike | undefined;
+        body?: T | null | undefined;
+        payload?: T | null | undefined;
+        setHeaders?: { [name: string]: string | string[]; } | undefined;
+        type?: number | undefined;
+        ok?: boolean | undefined;
+        status?: number | undefined;
+        statusMessage?: string | undefined;
+        statusText?: string | undefined;
+        error?: any;
+    }): UdpClientIncoming<T>;
+    clone(update: any = {}): UdpClientIncoming<any> {
         const pattern = update.pattern ?? this.pattern;
         const opts = this.cloneOpts(update) as UdpClientIncomingOpts;
         opts.remoteInfo = this.remoteInfo;

@@ -17,11 +17,11 @@ import { AcceptsPriority } from './accepts';
  */
 @Abstract()
 export abstract class RequestContext<
-    TRequest extends Incoming = Incoming,
-    TResponse extends Outgoing = Outgoing,
+    TRequest extends Incoming<any> = Incoming<any>,
+    TResponse extends Outgoing<any> = Outgoing<any>,
     TSocket = any,
     TOptions extends ServerOpts = ServerOpts,
-    TStatus = any> extends HandlerContext<Incoming> {
+    TStatus = any> extends HandlerContext<Incoming<any>> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
         return [...primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
@@ -691,7 +691,7 @@ export abstract class RequestContext<
      * set response with response packet
      * @param headers 
      */
-    abstract setResponse(packet: ResponsePacket): void;
+    abstract setResponse(packet: ResponsePacket<any>): void;
 
     /**
      * throw execption to client.
@@ -706,7 +706,7 @@ export abstract class RequestContext<
  * request context factory.
  */
 @Abstract()
-export abstract class RequestContextFactory<TRequest extends Incoming, TResponse extends Outgoing, TSocket = any> {
+export abstract class RequestContextFactory<TRequest extends Incoming<any>, TResponse extends Outgoing<any>, TSocket = any> {
     /**
      * create request context.
      * @param session 

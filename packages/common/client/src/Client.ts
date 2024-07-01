@@ -11,7 +11,7 @@ import { ClientOpts } from './options';
  * transport client. use to request text, stream, blob, arraybuffer and json.
  */
 @Abstract()
-export abstract class Client<TRequest extends AbstractRequest = AbstractRequest, TResponse extends ResponseEvent = ResponseEvent, TOptions extends ClientOpts = ClientOpts> {
+export abstract class Client<TRequest extends AbstractRequest<any> = AbstractRequest<any>, TResponse extends ResponseEvent<any> = ResponseEvent<any>, TOptions extends ClientOpts = ClientOpts> {
 
     /**
      * client handler
@@ -238,7 +238,7 @@ export abstract class Client<TRequest extends AbstractRequest = AbstractRequest,
      *
      * @return An `Observable` of the response, with the response body as a stream of `ResponseEvent`s.
      */
-    send(pattern: Pattern, options: RequestOptions & ResponseAs): Observable<ResponseEvent>;
+    send(pattern: Pattern, options: RequestOptions & ResponseAs): Observable<ResponseEvent<any>>;
     /**
      * Constructs a request where response type and requested observable are not known statically.
      *
@@ -270,7 +270,7 @@ export abstract class Client<TRequest extends AbstractRequest = AbstractRequest,
         // includes all interceptors) inside a concatMap(). This way, the handler runs
         // inside an Observable chain, which causes interceptors to be re-run on every
         // subscription (this also makes retries re-run the handler, including interceptors).
-        const events$: Observable<ResponseEvent> =
+        const events$: Observable<ResponseEvent<any>> =
             of(req).pipe(
                 concatMap((req: TRequest) => this.handler.handle(req)),
                 finalize(() => req.context?.destroy())
@@ -297,7 +297,7 @@ export abstract class Client<TRequest extends AbstractRequest = AbstractRequest,
                 // requested type.
                 switch (req.responseType) {
                     case 'arraybuffer':
-                        return res$.pipe(map((res: ResponsePacket) => {
+                        return res$.pipe(map((res: ResponsePacket<any>) => {
                             // Validate that the body is an ArrayBuffer.
                             if (res.payload !== null && !(res.payload instanceof ArrayBuffer)) {
                                 throw new Execption('Response is not an ArrayBuffer.')
@@ -305,7 +305,7 @@ export abstract class Client<TRequest extends AbstractRequest = AbstractRequest,
                             return res.payload
                         }));
                     case 'blob':
-                        return res$.pipe(map((res: ResponsePacket) => {
+                        return res$.pipe(map((res: ResponsePacket<any>) => {
                             // Validate that the body is a Blob.
                             if (res.payload !== null && !(res.payload instanceof Blob)) {
                                 throw new Execption('Response is not a Blob.')
@@ -313,7 +313,7 @@ export abstract class Client<TRequest extends AbstractRequest = AbstractRequest,
                             return res.payload
                         }));
                     case 'text':
-                        return res$.pipe(map((res: ResponsePacket) => {
+                        return res$.pipe(map((res: ResponsePacket<any>) => {
                             // Validate that the payload is a string.
                             if (res.payload !== null && !isString(res.payload)) {
                                 throw new Execption('Response is not a string.')
@@ -323,7 +323,7 @@ export abstract class Client<TRequest extends AbstractRequest = AbstractRequest,
                     case 'json':
                     default:
                         // No validation needed for JSON responses, as they can be of any type.
-                        return res$.pipe(map((res: ResponsePacket) => res.payload))
+                        return res$.pipe(map((res: ResponsePacket<any>) => res.payload))
                 }
             case 'response':
                 // The response stream was requested directly, so return it.

@@ -11,11 +11,13 @@ export interface ResponseInitOpts<T = any, TStatus = any> extends StatusPacketOp
     pattern?: Pattern;
 }
 
-export abstract class ResponseBase<T = any, TStatus = any> extends StatusPacket<T, TStatus> {
+export abstract class ResponseBase<T, TStatus = any> extends StatusPacket<T, TStatus> {
     readonly url: string | undefined;
     readonly pattern: Pattern | undefined;
-    constructor(init: ResponseInitOpts) {
+    override readonly payload: T | null;
+    constructor(payload: T | null, init: ResponseInitOpts) {
         super(init);
+        this.payload = payload;
         this.url = init.url;
         this.pattern = init.pattern;
     }
@@ -72,7 +74,7 @@ export class HeaderResponse<TStatus = number> extends ResponseBase<null, TStatus
         statusMessage?: string;
         statusText?: string;
     }) {
-        super(Object.assign(init, { payload: null }));
+        super(null, init);
     }
 
 
@@ -108,7 +110,7 @@ export class HeaderResponse<TStatus = number> extends ResponseBase<null, TStatus
 /**
  * response packet.
  */
-export class ResponsePacket<T = any, TStatus = number> extends ResponseBase<T, TStatus> {
+export class ResponsePacket<T, TStatus = number> extends ResponseBase<T, TStatus> {
 
     constructor(init: {
         url?: string;
@@ -124,22 +126,10 @@ export class ResponsePacket<T = any, TStatus = number> extends ResponseBase<T, T
         statusText?: string;
         ok?: boolean;
     }) {
-        super(init)
+        super(init.payload ?? null, init)
     }
 
     clone(): ResponsePacket<T, TStatus>;
-    clone(update: {
-        url?: string;
-        pattern?: Pattern;
-        type?: number;
-        ok?: boolean;
-        headers?: HeadersLike;
-        payload?: T;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        setHeaders?: { [name: string]: string | string[]; };
-    }): ResponsePacket<T, TStatus>;
     clone<V>(update: {
         url?: string;
         pattern?: Pattern;
@@ -152,6 +142,18 @@ export class ResponsePacket<T = any, TStatus = number> extends ResponseBase<T, T
         statusText?: string;
         setHeaders?: { [name: string]: string | string[]; };
     }): ResponsePacket<V, TStatus>;
+    clone(update: {
+        url?: string;
+        pattern?: Pattern;
+        type?: number;
+        ok?: boolean;
+        headers?: HeadersLike;
+        payload?: T;
+        status?: TStatus;
+        statusMessage?: string;
+        statusText?: string;
+        setHeaders?: { [name: string]: string | string[]; };
+    }): ResponsePacket<T, TStatus>;
     clone(update: {
         url?: string;
         pattern?: Pattern;
@@ -190,7 +192,7 @@ export class ErrorResponse<TStatus = number> extends ResponseBase<null, TStatus>
         statusMessage?: string;
         statusText?: string;
     }) {
-        super(Object.assign(init, { ok: false, payload: null }));
+        super(null, init);
     }
 
     clone(): ErrorResponse<TStatus>;
@@ -247,9 +249,9 @@ export interface ResponseJsonParseError {
 /**
  * Response Event
  */
-export type ResponseEvent<T = any, TStatus = any> = HeaderResponse<TStatus> | ResponsePacket<T, TStatus> | ErrorResponse<TStatus> | ResponseEventPacket;
+export type ResponseEvent<T, TStatus = any> = HeaderResponse<TStatus> | ResponsePacket<T, TStatus> | ErrorResponse<TStatus> | ResponseEventPacket;
 
-export function isResponseEvent(target: any): target is ResponseEvent {
+export function isResponseEvent(target: any): target is ResponseEvent<any> {
     if (!target) return false;
     return target instanceof ResponseBase || (isPlainObject(target) && hasOwn(target, 'type'));
 }

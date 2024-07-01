@@ -16,10 +16,10 @@ interface CachePacket {
 }
 
 @Injectable()
-export class PackageDecodeInterceptor implements Interceptor<Message, Packet, TransportContext> {
+export class PackageDecodeInterceptor implements Interceptor<Message, Packet<any>, TransportContext> {
 
     packs: Map<string | number, CachePacket> = new Map();
-    intercept(input: Message, next: Handler<Message, Packet, TransportContext>, context: TransportContext): Observable<Packet> {
+    intercept(input: Message, next: Handler<Message, Packet<any>, TransportContext>, context: TransportContext): Observable<Packet<any>> {
         const { options, streamAdapter } = context.session;
         const idLen = options.idLen ?? 2;
         let id: string | number;
@@ -48,12 +48,12 @@ export class PackageDecodeInterceptor implements Interceptor<Message, Packet, Tr
             )
     }
 
-    mergePacket(packet: Packet, streamAdapter: StreamAdapter, noHead?: boolean): CachePacket {
+    mergePacket(packet: Packet<any>, streamAdapter: StreamAdapter, noHead?: boolean): CachePacket {
 
         if (!packet.id || !(isBuffer(packet.payload) || streamAdapter.isReadable(packet.payload)) || (!noHead && packet.headers.getContentLength() <= 0)) {
             return { packet, completed: true } as CachePacket;
         }
-        const len = isBuffer(packet.payload) ? Buffer.byteLength(packet.payload) : (packet as IncomingPacket).streamLength!;
+        const len = isBuffer(packet.payload) ? Buffer.byteLength(packet.payload) : (packet as IncomingPacket<any>).streamLength!;
 
         if (!noHead && packet.headers.getContentLength() <= len) {
             return { packet, completed: true } as CachePacket;
@@ -111,9 +111,9 @@ export class PackageDecodeInterceptor implements Interceptor<Message, Packet, Tr
 }
 
 @Injectable()
-export class PackageEncodeInterceptor implements Interceptor<Packet, Message, TransportContext> {
+export class PackageEncodeInterceptor implements Interceptor<Packet<any>, Message, TransportContext> {
 
-    intercept(input: Packet, next: Handler<Packet, Message, TransportContext>, context: TransportContext): Observable<Message> {
+    intercept(input: Packet<any>, next: Handler<Packet<any>, Message, TransportContext>, context: TransportContext): Observable<Message> {
         return next.handle(input, context)
             .pipe(
                 mergeMap(msg => {

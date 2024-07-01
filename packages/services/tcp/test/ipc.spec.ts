@@ -243,7 +243,7 @@ if (os.platform() != 'win32') {
                 .pipe(
                     catchError((err, ct) => {
                         // ctx.getLogger().error(err);
-                        return of(err as ResponsePacket);
+                        return of(err as ResponsePacket<any>);
                     })));
             // expect(b.status).toEqual(200);
             expect(b.ok).toBeTruthy();

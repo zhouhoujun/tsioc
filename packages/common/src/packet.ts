@@ -27,7 +27,7 @@ export interface PacketOpts<T = any> {
 /**
  * packet.
  */
-export abstract class Packet<T = any> {
+export abstract class Packet<T> {
 
     readonly payload: T | null;
 
@@ -37,10 +37,10 @@ export abstract class Packet<T = any> {
     }
 
     readonly headers: HeaderMappings;
-    constructor(init: PacketOpts<T>) {
-        this._id = init.id;
-        this.headers = new HeaderMappings(init.headers, init.headerFields);
-        this.payload = init.payload ?? null;
+    constructor(init?: PacketOpts<T>) {
+        this._id = init?.id;
+        this.headers = new HeaderMappings(init?.headers, init?.headerFields);
+        this.payload = init?.payload ?? null;
     }
 
     attachId(id: string | number) {
@@ -48,16 +48,16 @@ export abstract class Packet<T = any> {
     }
 
     abstract clone(): Packet<T>;
-    abstract clone(update: {
-        headers?: HeadersLike;
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-    }): Packet<T>
     abstract clone<V>(update: {
         headers?: HeadersLike;
         payload?: V | null;
         setHeaders?: { [name: string]: string | string[]; };
     }): Packet<V>;
+    abstract clone(update: {
+        headers?: HeadersLike;
+        payload?: T | null;
+        setHeaders?: { [name: string]: string | string[]; };
+    }): Packet<T>
 
     toJson(ignores?: string[]): Record<string, any> {
         const obj = this.toRecord();
@@ -150,7 +150,7 @@ export interface StatusPacketOpts<T = any, TStatus = any> extends PacketOpts<T> 
 /**
  * Status packet.
  */
-export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> {
+export abstract class StatusPacket<T, TStatus = any> extends Packet<T> {
     /**
      * Type of the response, narrowed to either the full response or the header.
      */
@@ -216,17 +216,6 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
     }
 
     abstract clone(): StatusPacket<T, TStatus>;
-    abstract clone(update: {
-        headers?: HeadersLike;
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        type?: number;
-        ok?: boolean;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        error?: any;
-    }): StatusPacket<T, TStatus>
     abstract clone<V>(update: {
         headers?: HeadersLike;
         payload?: V | null;
@@ -238,6 +227,17 @@ export abstract class StatusPacket<T = any, TStatus = number> extends Packet<T> 
         statusText?: string;
         error?: any;
     }): StatusPacket<V, TStatus>;
+    abstract clone(update: {
+        headers?: HeadersLike;
+        payload?: T | null;
+        setHeaders?: { [name: string]: string | string[]; };
+        type?: number;
+        ok?: boolean;
+        status?: TStatus;
+        statusMessage?: string;
+        statusText?: string;
+        error?: any;
+    }): StatusPacket<T, TStatus>;
 
     protected cloneOpts(update: {
         headers?: HeadersLike;

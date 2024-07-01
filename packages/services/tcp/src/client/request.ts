@@ -1,5 +1,5 @@
 import { PatternRequest } from '@tsdi/common';
 
-export class TcpRequest<T= any> extends PatternRequest<T> {
+export class TcpRequest<T> extends PatternRequest<T> {
 
 }

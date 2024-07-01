@@ -15,7 +15,7 @@ import { TcpRequest } from './request';
  * TcpClient. client of  `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpClient extends Client<TcpRequest> {
+export class TcpClient extends Client<TcpRequest<any>> {
 
     @InjectLog()
     private logger!: Logger;

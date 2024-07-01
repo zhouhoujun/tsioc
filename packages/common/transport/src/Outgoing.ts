@@ -5,7 +5,7 @@ import { Incoming } from './Incoming';
 /**
  * Outgoing message.
  */
-export interface Outgoing<T = any, TStatus = any> {
+export interface Outgoing<T, TStatus = any> {
 
     id?: string | number;
     type?: string | number | null;
@@ -111,8 +111,8 @@ export interface OutgoingStream extends IWritableStream {
  * Outgoing factory.
  */
 export abstract class OutgoingFactory {
-    abstract create(incoming: Incoming, options?: OutgoingPacketOpts): Outgoing;
-    abstract create<T, TStatus>(incoming: Incoming, options?: OutgoingPacketOpts<T, TStatus>): Outgoing<T, TStatus>;
+    abstract create(incoming: Incoming<any>, options?: OutgoingPacketOpts): Outgoing<any>;
+    abstract create<T, TStatus>(incoming: Incoming<any>, options?: OutgoingPacketOpts<T, TStatus>): Outgoing<T, TStatus>;
 }
 
 
@@ -139,7 +139,7 @@ export interface OutgoingPacketOpts<T = any, TStatus = any> extends StatusPacket
 /**
  * Outgoing packet.
  */
-export abstract class OutgoingPacket<T = any, TStatus = number> extends StatusPacket<T, TStatus> implements Outgoing<T, TStatus> {
+export abstract class OutgoingPacket<T, TStatus = number> extends StatusPacket<T, TStatus> implements Outgoing<T, TStatus> {
 
 
     constructor(init: OutgoingPacketOpts) {
@@ -191,17 +191,6 @@ export abstract class OutgoingPacket<T = any, TStatus = number> extends StatusPa
 
 
     abstract clone(): OutgoingPacket<T, TStatus>;
-    abstract clone(update: {
-        headers?: HeadersLike;
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        type?: number;
-        ok?: boolean;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        error?: any;
-    }): OutgoingPacket<T, TStatus>
     abstract clone<V>(update: {
         headers?: HeadersLike;
         payload?: V | null;
@@ -213,6 +202,17 @@ export abstract class OutgoingPacket<T = any, TStatus = number> extends StatusPa
         statusText?: string;
         error?: any;
     }): OutgoingPacket<V, TStatus>;
+    abstract clone(update: {
+        headers?: HeadersLike;
+        payload?: T | null;
+        setHeaders?: { [name: string]: string | string[]; };
+        type?: number;
+        ok?: boolean;
+        status?: TStatus;
+        statusMessage?: string;
+        statusText?: string;
+        error?: any;
+    }): OutgoingPacket<T, TStatus>;
 
 
 }

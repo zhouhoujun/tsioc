@@ -6,7 +6,7 @@ import { IReadableStream } from './stream';
 /**
  * Incoming message
  */
-export interface Incoming<T = any> {
+export interface Incoming<T> {
 
     id?: number | string;
 
@@ -60,8 +60,8 @@ export abstract class AbstractIncomingFactory<TIcoming = any> {
 /**
  * Incoming factory.
  */
-export abstract class IncomingFactory implements AbstractIncomingFactory<Incoming> {
-    abstract create(options: IncomingOpts): Incoming;
+export abstract class IncomingFactory implements AbstractIncomingFactory<Incoming<any>> {
+    abstract create(options: IncomingOpts): Incoming<any>;
     abstract create<T>(options: IncomingOpts<T>): Incoming<T>;
 }
 
@@ -117,7 +117,7 @@ export interface IncomingOpts<T = any> extends PacketOpts<T> {
 /**
  * Incoming packet.
  */
-export abstract class IncomingPacket<T = any> extends Packet<T> implements Incoming {
+export abstract class IncomingPacket<T> extends Packet<T> implements Incoming<T> {
 
     /**
      * client side timeout.
@@ -169,16 +169,6 @@ export abstract class IncomingPacket<T = any> extends Packet<T> implements Incom
     }
 
     abstract clone(): IncomingPacket<T>;
-    abstract clone(update: {
-        headers?: HeadersLike;
-        params?: RequestParams;
-        method?: string;
-        body?: T | null;
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        timeout?: number | null;
-    }): IncomingPacket<T>
     abstract clone<V>(update: {
         headers?: HeadersLike;
         params?: RequestParams;
@@ -189,6 +179,16 @@ export abstract class IncomingPacket<T = any> extends Packet<T> implements Incom
         setParams?: { [param: string]: string; };
         timeout?: number | null;
     }): IncomingPacket<V>;
+    abstract clone(update: {
+        headers?: HeadersLike;
+        params?: RequestParams;
+        method?: string;
+        body?: T | null;
+        payload?: T | null;
+        setHeaders?: { [name: string]: string | string[]; };
+        setParams?: { [param: string]: string; };
+        timeout?: number | null;
+    }): IncomingPacket<T>;
 
     protected override cloneOpts(update: {
         headers?: HeadersLike;
@@ -226,7 +226,7 @@ export abstract class IncomingPacket<T = any> extends Packet<T> implements Incom
 }
 
 
-export abstract class PatternIncoming<T = any> extends IncomingPacket<T> {
+export abstract class PatternIncoming<T> extends IncomingPacket<T> {
 
     constructor(readonly pattern: Pattern, options: IncomingOpts<T>) {
         super(options)
@@ -305,7 +305,7 @@ export interface ClientIncomingOpts<T = any, TStatus = any> extends StatusPacket
 /**
  * client incoming packet
  */
-export abstract class ClientIncomingPacket<T = any, TStatus = any> extends StatusPacket<T, TStatus> implements ClientIncoming<T, TStatus> {
+export abstract class ClientIncomingPacket<T, TStatus = any> extends StatusPacket<T, TStatus> implements ClientIncoming<T, TStatus> {
 
 
     public streamLength?: number;
@@ -333,18 +333,6 @@ export abstract class ClientIncomingPacket<T = any, TStatus = any> extends Statu
     }
 
     abstract clone(): ClientIncomingPacket<T, TStatus>;
-    abstract clone(update: {
-        headers?: HeadersLike;
-        body?: T | null,
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        type?: number;
-        ok?: boolean;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        error?: any;
-    }): ClientIncomingPacket<T, TStatus>
     abstract clone<V>(update: {
         headers?: HeadersLike;
         body?: T | null,
@@ -357,6 +345,18 @@ export abstract class ClientIncomingPacket<T = any, TStatus = any> extends Statu
         statusText?: string;
         error?: any;
     }): ClientIncomingPacket<V, TStatus>;
+    abstract clone(update: {
+        headers?: HeadersLike;
+        body?: T | null,
+        payload?: T | null;
+        setHeaders?: { [name: string]: string | string[]; };
+        type?: number;
+        ok?: boolean;
+        status?: TStatus;
+        statusMessage?: string;
+        statusText?: string;
+        error?: any;
+    }): ClientIncomingPacket<T, TStatus>;
 
 }
 

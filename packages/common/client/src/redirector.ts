@@ -9,7 +9,7 @@ import { Client } from './Client';
 @Injectable()
 export class UrlRedirector implements Redirector {
 
-    redirect<T>(req: UrlRequest, status: any, headers: IHeaders): Observable<T> {
+    redirect<T>(req: UrlRequest<any>, status: any, headers: IHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {
             if(!req.url) return observer.error(new BadRequestExecption());
 

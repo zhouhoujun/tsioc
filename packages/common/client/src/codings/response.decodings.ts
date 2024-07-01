@@ -7,9 +7,9 @@ import { ClientTransportSession } from '../session';
 
 
 @Injectable()
-export class ErrorResponseDecordeInterceptor implements Interceptor<ClientIncomingPacket, ResponseEvent, TransportContext> {
+export class ErrorResponseDecordeInterceptor implements Interceptor<ClientIncomingPacket<any>, ResponseEvent<any>, TransportContext> {
 
-    intercept(input: ClientIncomingPacket, next: Handler<ClientIncomingPacket, ResponseEvent, TransportContext>, context: TransportContext): Observable<ResponseEvent> {
+    intercept(input: ClientIncomingPacket<any>, next: Handler<ClientIncomingPacket<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         if (!input.ok || input.error) {
             const session = context.session as ClientTransportSession;
             return throwError(()=> session.responseFactory.create({ ...input.toJson(), payload: null }));
@@ -20,9 +20,9 @@ export class ErrorResponseDecordeInterceptor implements Interceptor<ClientIncomi
 
 
 @Injectable()
-export class EmptyResponseDecordeInterceptor implements Interceptor<ClientIncomingPacket, ResponseEvent, TransportContext> {
+export class EmptyResponseDecordeInterceptor implements Interceptor<ClientIncomingPacket<any>, ResponseEvent<any>, TransportContext> {
 
-    intercept(input: ClientIncomingPacket, next: Handler<ClientIncomingPacket, ResponseEvent, TransportContext>, context: TransportContext): Observable<ResponseEvent> {
+    intercept(input: ClientIncomingPacket<any>, next: Handler<ClientIncomingPacket<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         const len = input.headers.getContentLength();
         const session = context.session as ClientTransportSession;
         if (!len || session.statusAdapter?.isEmpty(input.status)) {
@@ -33,15 +33,15 @@ export class EmptyResponseDecordeInterceptor implements Interceptor<ClientIncomi
 }
 
 @Injectable()
-export class RedirectDecodeInterceptor implements Interceptor<ClientIncomingPacket, ResponseEvent, TransportContext> {
+export class RedirectDecodeInterceptor implements Interceptor<ClientIncomingPacket<any>, ResponseEvent<any>, TransportContext> {
 
-    intercept(input: ClientIncomingPacket, next: Handler<ClientIncomingPacket, ResponseEvent, TransportContext>, context: TransportContext): Observable<ResponseEvent> {
+    intercept(input: ClientIncomingPacket<any>, next: Handler<ClientIncomingPacket<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         const session = context.session as ClientTransportSession;
         // HTTP fetch step 5
         if (session.redirector) {
             if (session.statusAdapter?.isRedirect(input.status)) {
                 // HTTP fetch step 5.2
-                return session.redirector.redirect<ResponseEvent>(context.first(), input.status, input.headers.getHeaders());
+                return session.redirector.redirect<ResponseEvent<any>>(context.first(), input.status, input.headers.getHeaders());
             }
         }
         return next.handle(input, context);
@@ -51,15 +51,15 @@ export class RedirectDecodeInterceptor implements Interceptor<ClientIncomingPack
 
 
 @Injectable()
-export class CompressResponseDecordeInterceptor implements Interceptor<ClientIncomingPacket, ResponseEvent, TransportContext> {
+export class CompressResponseDecordeInterceptor implements Interceptor<ClientIncomingPacket<any>, ResponseEvent<any>, TransportContext> {
 
 
-    intercept(input: ClientIncomingPacket, next: Handler<ClientIncomingPacket, ResponseEvent, TransportContext>, context: TransportContext): Observable<ResponseEvent> {
+    intercept(input: ClientIncomingPacket<any>, next: Handler<ClientIncomingPacket<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         return defer(async () => {
             const response = input;
             const session = context.session as ClientTransportSession;
             const codings = response.headers.getContentEncoding();
-            const req = context.first() as AbstractRequest;
+            const req = context.first() as AbstractRequest<any>;
             const streamAdapter = session.streamAdapter;
             const rqstatus = req.context.getValueify(RequestStauts, () => new RequestStauts());
             // HTTP-network fetch step 12.1.1.4: handle content codings
@@ -158,13 +158,13 @@ export class RequestStauts {
 
 
 @Injectable()
-export class ResponseTypeDecodeInterceptor implements Interceptor<ClientIncomingPacket, ResponseEvent, TransportContext> {
+export class ResponseTypeDecodeInterceptor implements Interceptor<ClientIncomingPacket<any>, ResponseEvent<any>, TransportContext> {
 
-    intercept(input: ClientIncomingPacket, next: Handler<ClientIncomingPacket, ResponseEvent, TransportContext>, context: TransportContext): Observable<ResponseEvent> {
+    intercept(input: ClientIncomingPacket<any>, next: Handler<ClientIncomingPacket<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         return defer(async () => {
             const { responseFactory, streamAdapter} = context.session as ClientTransportSession;
 
-            const req = context.first() as AbstractRequest;
+            const req = context.first() as AbstractRequest<any>;
             let responseType = req.responseType;
 
             const contentType = input.headers.getContentType();

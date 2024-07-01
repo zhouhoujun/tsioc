@@ -8,10 +8,10 @@ import { TransportSession } from '../transport.session';
 
 
 
-export const SERVER_INCOMING_DECODE_INTERCEPTORS = tokenId<Interceptor<IncomingPacket, RequestContext, TransportContext>[]>('SERVER_INCOMING_DECODE_INTERCEPTORS');
+export const SERVER_INCOMING_DECODE_INTERCEPTORS = tokenId<Interceptor<IncomingPacket<any>, RequestContext, TransportContext>[]>('SERVER_INCOMING_DECODE_INTERCEPTORS');
 
 
-export const SERVER_OUTGOING_ENCODE_INTERCEPTORS = tokenId<Interceptor<RequestContext, OutgoingPacket, TransportContext>[]>('SERVER_OUTGOING_ENCODE_INTERCEPTORS');
+export const SERVER_OUTGOING_ENCODE_INTERCEPTORS = tokenId<Interceptor<RequestContext, OutgoingPacket<any>, TransportContext>[]>('SERVER_OUTGOING_ENCODE_INTERCEPTORS');
 
 
 
@@ -20,7 +20,7 @@ export class ServerEndpointCodingsHanlders {
 
     @DecodeHandler(IncomingPacket, { interceptorsToken: SERVER_INCOMING_DECODE_INTERCEPTORS })
     decodePacket(context: TransportContext) {
-        const incoming = context.last<IncomingPacket>();
+        const incoming = context.last<IncomingPacket<any>>();
         const session = context.session as TransportSession;
         const injector = session.injector;
         const outgoing = injector.get(OutgoingFactory).create(incoming, { headerFields: incoming?.headers?.headerFields });
@@ -31,7 +31,7 @@ export class ServerEndpointCodingsHanlders {
     @EncodeHandler(RequestContext, { interceptorsToken: SERVER_OUTGOING_ENCODE_INTERCEPTORS })
     encodePacket(context: TransportContext) {
         const reqContext = context.last<RequestContext>();
-        return (reqContext.response as OutgoingPacket).clone({ payload: reqContext.body });
+        return (reqContext.response as OutgoingPacket<any>).clone({ payload: reqContext.body });
     }
 
 }

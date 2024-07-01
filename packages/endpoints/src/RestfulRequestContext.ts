@@ -11,8 +11,8 @@ import { TransportSession } from './transport.session';
  */
 @Abstract()
 export abstract class RestfulRequestContext<
-    TRequest extends Incoming = Incoming,
-    TResponse extends Outgoing = Outgoing, TSocket = any,
+    TRequest extends Incoming<any> = Incoming<any>,
+    TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any,
     TOptions extends ServerOpts = ServerOpts,
     TStatus = any> extends RequestContext<TRequest, TResponse, TSocket, TOptions, TStatus> {
 
@@ -168,7 +168,7 @@ export abstract class RestfulRequestContext<
  * Restful request context factory.
  */
 @Abstract()
-export abstract class RestfulRequestContextFactory<TRequest extends Incoming, TResponse extends Outgoing> {
+export abstract class RestfulRequestContextFactory<TRequest extends Incoming<any>, TResponse extends Outgoing<any>> {
     /**
      * create Restful request context.
      * @param injector 
