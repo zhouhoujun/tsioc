@@ -7,19 +7,85 @@ import { ClientTransportSession, ClientTransportSessionFactory } from './session
 
 export class DefaultClientTransportSession extends ClientTransportSession<any> {
 
+    private _encodings?: TransportEncodings;
+    private _decodings?: TransportDecodings;
+    private _streamAdapter?: StreamAdapter;
+    private _statusAdapter?: StatusAdapter | null;
+    private _incomingFactory?: ClientIncomingFactory;
+    private _messageReader?: MessageReader;
+    private _messageWriter?: MessageWriter;
+    private _messageFactory?: MessageFactory;
+    private _responseFactory?: ResponseFactory;
+    private _redirector?: Redirector | null;
+
+    get encodings(): TransportEncodings {
+        if (!this._encodings) {
+            this._encodings = this.injector.get(this.options.encodingsFactory ?? TransportEncodingsFactory)
+                .create(this.injector, this.options)
+        }
+        return this._encodings;
+    }
+    get decodings(): TransportDecodings {
+        if (!this._decodings) {
+            this._decodings = this.injector.get(this.options.decodingsFactory ?? TransportDecodingsFactory)
+                .create(this.injector, this.options)
+        }
+        return this._decodings;
+    }
+
+    get streamAdapter(): StreamAdapter {
+        if (!this._streamAdapter) {
+            this._streamAdapter = this.injector.get(StreamAdapter)
+        }
+        return this._streamAdapter;
+    }
+
+    get statusAdapter(): StatusAdapter | null {
+        if (this._statusAdapter === undefined) {
+            this._statusAdapter = this.injector.get(StatusAdapter, null)
+        }
+        return this._statusAdapter;
+    }
+    get messageReader(): MessageReader {
+        if (!this._messageReader) {
+            this._messageReader = this.injector.get(MessageReader)
+        }
+        return this._messageReader;
+    }
+    get messageWriter(): MessageWriter {
+        if (!this._messageWriter) {
+            this._messageWriter = this.injector.get(MessageWriter)
+        }
+        return this._messageWriter;
+    }
+    get messageFactory(): MessageFactory {
+        if (!this._messageFactory) {
+            this._messageFactory = this.injector.get(MessageFactory)
+        }
+        return this._messageFactory;
+    }
+    get incomingFactory(): ClientIncomingFactory {
+        if (!this._incomingFactory) {
+            this._incomingFactory = this.injector.get(ClientIncomingFactory)
+        }
+        return this._incomingFactory;
+    }
+    get responseFactory(): ResponseFactory {
+        if (!this._responseFactory) {
+            this._responseFactory = this.injector.get(ResponseFactory)
+        }
+        return this._responseFactory;
+    }
+    get redirector(): Redirector | null {
+        if (this._redirector === undefined) {
+            this._redirector = this.injector.get(Redirector, null)
+        }
+        return this._redirector;
+    }
+
     constructor(
         readonly injector: Injector,
         readonly socket: any,
-        readonly encodings: TransportEncodings,
-        readonly decodings: TransportDecodings,
-        readonly streamAdapter: StreamAdapter,
-        readonly statusAdapter: StatusAdapter | null,
-        readonly redirector: Redirector | null,
-        readonly messageReader: MessageReader,
-        readonly messageWriter: MessageWriter,
-        readonly messageFactory: MessageFactory,
-        readonly incomingFactory: ClientIncomingFactory,
-        readonly responseFactory: ResponseFactory,
         readonly options: TransportOpts
 
     ) {
@@ -36,18 +102,7 @@ export class DefaultClientTransportSessionFactory implements ClientTransportSess
     constructor() { }
 
     create(injector: Injector, socket: IDuplexStream, options: TransportOpts): DefaultClientTransportSession {
-        return new DefaultClientTransportSession(injector, socket,
-            injector.get(options.encodingsFactory ?? TransportEncodingsFactory).create(injector, options),
-            injector.get(options.decodingsFactory ?? TransportDecodingsFactory).create(injector, options),
-            injector.get(StreamAdapter),
-            injector.get(StatusAdapter, null),
-            injector.get(Redirector, null),
-            injector.get(MessageReader),
-            injector.get(MessageWriter),
-            injector.get(MessageFactory),
-            injector.get(ClientIncomingFactory),
-            injector.get(ResponseFactory),
-            options);
+        return new DefaultClientTransportSession(injector, socket, options);
     }
 
 }

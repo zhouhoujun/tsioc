@@ -15,6 +15,21 @@ export class UrlRequestContext<TRequest extends Incoming<any> = Incoming<any>, T
     private _URL?: URL;
     readonly originalUrl: string;
 
+    get statusAdapter(): StatusAdapter | null {
+        return this.session.statusAdapter
+    }
+    get mimeAdapter(): MimeAdapter | null {
+        return this.session.mimeAdapter
+    }
+    get acceptsPriority(): AcceptsPriority | null {
+        return this.session.acceptsPriority
+    }
+    get streamAdapter(): StreamAdapter {
+        return this.session.streamAdapter
+    }
+    get fileAdapter(): FileAdapter {
+        return this.session.fileAdapter
+    }
 
     /**
      * request header mappings
@@ -30,11 +45,6 @@ export class UrlRequestContext<TRequest extends Incoming<any> = Incoming<any>, T
         readonly session: TransportSession,
         readonly request: TRequest,
         readonly response: TResponse,
-        readonly statusAdapter: StatusAdapter | null,
-        readonly mimeAdapter: MimeAdapter | null,
-        readonly acceptsPriority: AcceptsPriority | null,
-        readonly streamAdapter: StreamAdapter,
-        readonly fileAdapter: FileAdapter,
         readonly serverOptions: ServerOpts = EMPTY_OBJ
     ) {
         super(injector, { ...serverOptions, args: request });
@@ -163,16 +173,27 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
      */
     readonly resHeaders: HeaderMappings;
 
+    get statusAdapter(): StatusAdapter | null {
+        return this.session.statusAdapter
+    }
+    get mimeAdapter(): MimeAdapter | null {
+        return this.session.mimeAdapter
+    }
+    get acceptsPriority(): AcceptsPriority | null {
+        return this.session.acceptsPriority
+    }
+    get streamAdapter(): StreamAdapter {
+        return this.session.streamAdapter
+    }
+    get fileAdapter(): FileAdapter {
+        return this.session.fileAdapter
+    }
+
     constructor(
         injector: Injector,
         readonly session: TransportSession,
         readonly request: TRequest,
         readonly response: TResponse,
-        readonly statusAdapter: StatusAdapter | null,
-        readonly mimeAdapter: MimeAdapter | null,
-        readonly acceptsPriority: AcceptsPriority | null,
-        readonly streamAdapter: StreamAdapter,
-        readonly fileAdapter: FileAdapter,
         readonly serverOptions: ServerOpts = EMPTY_OBJ
     ) {
         super(injector, { ...serverOptions, args: request });
@@ -256,22 +277,12 @@ export class RequestContextFactoryImpl implements RequestContextFactory<Incoming
                 session,
                 request,
                 response,
-                session.statusAdapter,// injector.get(StatusAdapter, null),
-                session.mimeAdapter, //injector.get(MimeAdapter, null),
-                session.acceptsPriority, // injector.get(AcceptsPriority, null),
-                session.streamAdapter, //injector.get(StreamAdapter),
-                session.fileAdapter, // injector.get(FileAdapter),
                 options);
         } else {
             return new PatternRequestContext(injector,
                 session,
                 request,
                 response,
-                session.statusAdapter, // injector.get(StatusAdapter, null),
-                session.mimeAdapter, // injector.get(MimeAdapter, null),
-                session.acceptsPriority, // injector.get(AcceptsPriority, null),
-                session.streamAdapter, //injector.get(StreamAdapter),
-                session.fileAdapter, // injector.get(FileAdapter),
                 options);
         }
     }
