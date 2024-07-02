@@ -1,10 +1,11 @@
 import { Abstract, Injector } from '@tsdi/ioc';
 import { Message } from '@tsdi/common';
-import { BaseTransportSession, OutgoingFactory } from '@tsdi/common/transport';
+import { BaseTransportSession, FileAdapter, MimeAdapter, OutgoingFactory } from '@tsdi/common/transport';
 import { Observable, Subscription, first, merge, mergeMap, takeUntil } from 'rxjs';
 import { RequestHandler } from './RequestHandler';
 import { RequestContext, RequestContextFactory } from './RequestContext';
 import { ServerOpts } from './Server';
+import { AcceptsPriority } from './accepts';
 
 @Abstract()
 export abstract class TransportSession<TSocket = any, TMsg extends Message = Message, TOptions extends ServerOpts = ServerOpts> extends BaseTransportSession<TSocket, RequestContext, any, TMsg> {
@@ -20,6 +21,18 @@ export abstract class TransportSession<TSocket = any, TMsg extends Message = Mes
      * outgoing message factory.
      */
     abstract get outgoingFactory(): OutgoingFactory;
+    /**
+     * mime adapter.
+     */
+    abstract get mimeAdapter(): MimeAdapter | null;
+    /**
+     * accepts
+     */
+    abstract get acceptsPriority(): AcceptsPriority | null;
+    /**
+     * file adapter.
+     */
+    abstract get fileAdapter(): FileAdapter;
 
     listen(handler: RequestHandler, destroy$?: Observable<any>): Subscription {
         return this.receive().pipe(

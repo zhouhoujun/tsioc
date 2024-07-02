@@ -37,7 +37,7 @@ export type HttpReqOptions = HttpRequestOpts & HttpNodeOpts;
  * http client for nodejs
  */
 @Injectable()
-export class Http extends Client<HttpRequest, HttpEvent, HttpClientOpts> {
+export class Http extends Client<HttpRequest<any>, HttpEvent<any>, HttpClientOpts> {
 
     private session?: ClientTransportSession<http2.ClientHttp2Session | null> | null;
     constructor(readonly handler: HttpHandler) {

@@ -1,8 +1,10 @@
 import { MessageFactory } from '@tsdi/common';
 import {
+    FileAdapter,
     IncomingFactory,
     MessageReader,
     MessageWriter,
+    MimeAdapter,
     OutgoingFactory,
     StatusAdapter,
     StreamAdapter,
@@ -16,6 +18,7 @@ import { Injectable, Injector } from '@tsdi/ioc';
 import { ServerOpts } from '../Server';
 import { TransportSession, TransportSessionFactory } from '../transport.session';
 import { RequestContextFactory } from '../RequestContext';
+import { AcceptsPriority } from '../accepts';
 
 
 export class DefaultTransportSession extends TransportSession<any> {
@@ -30,6 +33,9 @@ export class DefaultTransportSession extends TransportSession<any> {
         readonly encodings: TransportEncodings,
         readonly decodings: TransportDecodings,
         readonly streamAdapter: StreamAdapter,
+        readonly fileAdapter: FileAdapter,
+        readonly mimeAdapter: MimeAdapter | null,
+        readonly acceptsPriority: AcceptsPriority | null,
         readonly statusAdapter: StatusAdapter | null,
         readonly messageReader: MessageReader,
         readonly messageWriter: MessageWriter,
@@ -56,6 +62,9 @@ export class DefaultTransportSessionFactory implements TransportSessionFactory<a
             injector.get(transportOpts.encodingsFactory ?? TransportEncodingsFactory).create(injector, transportOpts),
             injector.get(transportOpts.decodingsFactory ?? TransportDecodingsFactory).create(injector, transportOpts),
             injector.get(StreamAdapter),
+            injector.get(FileAdapter),
+            injector.get(MimeAdapter, null),
+            injector.get(AcceptsPriority, null),
             injector.get(StatusAdapter, null),
             injector.get(MessageReader),
             injector.get(MessageWriter),

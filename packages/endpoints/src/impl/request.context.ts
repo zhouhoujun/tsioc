@@ -256,22 +256,22 @@ export class RequestContextFactoryImpl implements RequestContextFactory<Incoming
                 session,
                 request,
                 response,
-                injector.get(StatusAdapter, null),
-                injector.get(MimeAdapter, null),
-                injector.get(AcceptsPriority, null),
-                injector.get(StreamAdapter),
-                injector.get(FileAdapter),
+                session.statusAdapter,// injector.get(StatusAdapter, null),
+                session.mimeAdapter, //injector.get(MimeAdapter, null),
+                session.acceptsPriority, // injector.get(AcceptsPriority, null),
+                session.streamAdapter, //injector.get(StreamAdapter),
+                session.fileAdapter, // injector.get(FileAdapter),
                 options);
         } else {
             return new PatternRequestContext(injector,
                 session,
                 request,
                 response,
-                injector.get(StatusAdapter, null),
-                injector.get(MimeAdapter, null),
-                injector.get(AcceptsPriority, null),
-                injector.get(StreamAdapter),
-                injector.get(FileAdapter),
+                session.statusAdapter, // injector.get(StatusAdapter, null),
+                session.mimeAdapter, // injector.get(MimeAdapter, null),
+                session.acceptsPriority, // injector.get(AcceptsPriority, null),
+                session.streamAdapter, //injector.get(StreamAdapter),
+                session.fileAdapter, // injector.get(FileAdapter),
                 options);
         }
     }

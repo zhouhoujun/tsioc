@@ -1,7 +1,7 @@
 import { Injectable, Injector, isArray, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, HeaderMappings } from '@tsdi/common';
-import { MessageExecption, InternalServerExecption, Outgoing, ResponsePacket, append, parseTokenList, Incoming, StatusAdapter, MimeAdapter, StreamAdapter, FileAdapter, PacketLengthException, ENOENT } from '@tsdi/common/transport';
+import { MessageExecption, InternalServerExecption, Outgoing, append, parseTokenList, Incoming, StatusAdapter, MimeAdapter, StreamAdapter, FileAdapter, PacketLengthException, ENOENT } from '@tsdi/common/transport';
 import { RestfulRequestContext, RestfulRequestContextFactory, TransportSession, Throwable, AcceptsPriority } from '@tsdi/endpoints';
 import * as http from 'http';
 import * as http2 from 'http2';
@@ -11,9 +11,9 @@ import { HttpServerOpts } from './options';
 import { Logger } from '@tsdi/logger';
 
 
-export type HttpServRequest = (http.IncomingMessage | http2.Http2ServerRequest) & Incoming;
+export type HttpServRequest = (http.IncomingMessage | http2.Http2ServerRequest) & Incoming<any>;
 
-export type HttpServResponse = (http.ServerResponse | http2.Http2ServerResponse) & Outgoing;
+export type HttpServResponse = (http.ServerResponse | http2.Http2ServerResponse) & Outgoing<any>;
 
 /**
  * http context for `HttpServer`.
