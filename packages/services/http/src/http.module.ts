@@ -37,7 +37,7 @@ import { HttpCodingsHandlers } from './server/codings.handlers';
         HttpClientSessionFactory,
         HttpServerSessionFactory,
         HttpContextFactory,
-        { provide: HTTP_CLIENT_INTERCEPTORS, useExisting: HttpPathInterceptor, multi: true },
+        // { provide: HTTP_CLIENT_INTERCEPTORS, useExisting: HttpPathInterceptor, multi: true },
         {
             provide: CLIENT_MODULES,
             useValue: {
@@ -46,13 +46,13 @@ import { HttpCodingsHandlers } from './server/codings.handlers';
                 microservice: true,
                 hanlderType: HttpHandler,
                 imports: [MimeModule],
-                responseEventFactory: { useExisting: HttpResponseEventFactory },
+                responseEventFactory: HttpResponseEventFactory,
                 defaultOpts: {
                     interceptorsToken: HTTP_CLIENT_INTERCEPTORS,
                     filtersToken: HTTP_CLIENT_FILTERS,
-                    statusAdapter: { useExisting: HttpStatusAdapter },
+                    statusAdapter: HttpStatusAdapter,
                     // backend: HttpTransportBackend,
-                    sessionFactory: { useExisting: HttpClientSessionFactory },
+                    // sessionFactory: { useExisting: HttpClientSessionFactory },
                 }
             } as ClientModuleOpts,
             multi: true
@@ -67,10 +67,13 @@ import { HttpCodingsHandlers } from './server/codings.handlers';
                 defaultOpts: {
                     interceptorsToken: HTTP_CLIENT_INTERCEPTORS,
                     filtersToken: HTTP_CLIENT_FILTERS,
-                    statusAdapter: { useExisting: HttpStatusAdapter },
-                    responseEventFactory: { useExisting: HttpResponseEventFactory },
+                    statusAdapter: HttpStatusAdapter,
+                    responseEventFactory: HttpResponseEventFactory,
                     // backend: HttpTransportBackend,
-                    sessionFactory: { useExisting: HttpClientSessionFactory },
+                    // sessionFactory: { useExisting: HttpClientSessionFactory },
+                    transportOpts: {
+                        
+                    }
                 }
             } as ClientModuleOpts,
             multi: true
@@ -92,13 +95,13 @@ import { HttpCodingsHandlers } from './server/codings.handlers';
                         root: 'public',
                         prefix: 'content'
                     },
-                    statusAdapter: { useExisting: HttpStatusAdapter },
+                    statusAdapter: HttpStatusAdapter,
                     detailError: true,
                     interceptorsToken: HTTP_SERV_INTERCEPTORS,
                     filtersToken: HTTP_SERV_FILTERS,
                     guardsToken: HTTP_SERV_GUARDS,
                     execptionHandlers: HttpExecptionHandlers,
-                    sessionFactory: { useExisting: HttpServerSessionFactory },
+                    // sessionFactory: { useExisting: HttpServerSessionFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,
@@ -124,14 +127,14 @@ import { HttpCodingsHandlers } from './server/codings.handlers';
                     content: {
                         root: 'public'
                     },
-                    statusAdapter: { useExisting: HttpStatusAdapter },
+                    statusAdapter: HttpStatusAdapter,
                     detailError: true,
                     interceptorsToken: HTTP_SERV_INTERCEPTORS,
                     filtersToken: HTTP_SERV_FILTERS,
                     guardsToken: HTTP_SERV_GUARDS,
                     middlewaresToken: HTTP_MIDDLEWARES,
                     execptionHandlers: HttpExecptionHandlers,
-                    sessionFactory: { useExisting: HttpServerSessionFactory },
+                    // sessionFactory: { useExisting: HttpServerSessionFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,

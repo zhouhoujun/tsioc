@@ -8,26 +8,26 @@ import { HttpEvent } from './response';
  * http handler.
  */
 @Abstract()
-export abstract class HttpHandler implements Handler<HttpRequest, HttpEvent> {
+export abstract class HttpHandler implements Handler<HttpRequest<any>, HttpEvent<any>> {
     /**
      * http transport handler.
      * @param req http request input.
      * @param context request with context for interceptor
      */
-    abstract handle(req: HttpRequest): Observable<HttpEvent>;
+    abstract handle(req: HttpRequest<any>): Observable<HttpEvent<any>>;
 }
 
 /**
  * http backend.
  */
 @Abstract()
-export abstract class HttpBackend implements Backend<HttpRequest, HttpEvent> {
+export abstract class HttpBackend implements Backend<HttpRequest<any>, HttpEvent<any>> {
     /**
      * http transport handler.
      * @param req http request input.
      * @param context request with context for interceptor
      */
-    abstract handle(req: HttpRequest): Observable<HttpEvent>;
+    abstract handle(req: HttpRequest<any>): Observable<HttpEvent<any>>;
 }
 
 /**

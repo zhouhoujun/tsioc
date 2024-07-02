@@ -8,13 +8,13 @@ import { HttpEvent } from './response';
 /**
  * http interceptor.
  */
-export interface HttpInterceptor extends Interceptor<HttpRequest, HttpEvent> {
+export interface HttpInterceptor extends Interceptor<HttpRequest<any>, HttpEvent<any>> {
     /**
      * the method to implemet interceptor.
      * @param req request.
      * @param next route handler.
      */
-    intercept(req: HttpRequest, next: HttpHandler): Observable<HttpEvent>;
+    intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>>;
 }
 
 
@@ -34,7 +34,7 @@ export const HTTP_COMMON_INTERCEPTORS = tokenId<HttpInterceptor[]>('HTTP_COMMON_
  * @see `TransportInterceptor`
  */
 @Injectable()
-export class HttpInterceptingHandler extends InterceptingHandler<HttpRequest, HttpEvent> implements HttpHandler {
+export class HttpInterceptingHandler extends InterceptingHandler<HttpRequest<any>, HttpEvent<any>> implements HttpHandler {
     constructor(backend: HttpBackend, injector: Injector) {
         super(backend, () => injector.get(HTTP_COMMON_INTERCEPTORS))
     }
@@ -42,7 +42,7 @@ export class HttpInterceptingHandler extends InterceptingHandler<HttpRequest, Ht
 
 @Injectable()
 export class NoopInterceptor implements HttpInterceptor {
-    intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent> {
+    intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
         return next.handle(req)
     }
 }

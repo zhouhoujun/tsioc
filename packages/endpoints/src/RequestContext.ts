@@ -706,7 +706,7 @@ export abstract class RequestContext<
  * request context factory.
  */
 @Abstract()
-export abstract class RequestContextFactory<TRequest extends Incoming<any>, TResponse extends Outgoing<any>, TSocket = any> {
+export abstract class RequestContextFactory<TRequest extends Incoming<any> =Incoming<any>, TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any> {
     /**
      * create request context.
      * @param session 

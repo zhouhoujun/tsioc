@@ -1,11 +1,11 @@
 import { Injectable } from '@tsdi/ioc';
-import { ResponseEventFactory } from '@tsdi/common/transport';
+import { ResponseFactory } from '@tsdi/common';
 import { HeadersLike } from '@tsdi/common';
 import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpResponse } from '@tsdi/common/http';
 
 
 @Injectable()
-export class HttpResponseEventFactory implements ResponseEventFactory<HttpEvent, HttpErrorResponse, number> {
+export class HttpResponseEventFactory implements ResponseFactory<number> {
     createErrorResponse(options: { url?: string | undefined; headers?: HeadersLike | undefined; status?: number; error?: any; statusText?: string | undefined; statusMessage?: string | undefined; }): HttpErrorResponse {
         return new HttpErrorResponse(options);
     }

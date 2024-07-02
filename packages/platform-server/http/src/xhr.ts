@@ -26,7 +26,7 @@ export class HttpClientBackend implements HttpBackend {
 
   handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
     return new Observable(observer => process.nextTick(() => {
-      let request: HttpRequest;
+      let request: HttpRequest<any>;
       if (!isAbsoluteUrl.test(req.url)) {
         const { host, port, path, withCredentials } = req.context?.get(HTTP_LISTEN_OPTS) ?? this.injector.get(HTTP_LISTEN_OPTS, EMPTY_OBJ);
         const protocol = (req.withCredentials || withCredentials) ? 'https' : 'http';

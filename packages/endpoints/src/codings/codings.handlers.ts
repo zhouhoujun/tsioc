@@ -1,8 +1,8 @@
 import { Injectable, tokenId } from '@tsdi/ioc';
 import { Interceptor } from '@tsdi/core';
 import { DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
-import { IncomingPacket, OutgoingFactory, OutgoingPacket, TransportContext } from '@tsdi/common/transport';
-import { RequestContext, RequestContextFactory } from '../RequestContext';
+import { IncomingPacket, OutgoingPacket, TransportContext } from '@tsdi/common/transport';
+import { RequestContext } from '../RequestContext';
 import { TransportSession } from '../transport.session';
 
 
@@ -22,10 +22,9 @@ export class ServerEndpointCodingsHanlders {
     decodePacket(context: TransportContext) {
         const incoming = context.last<IncomingPacket<any>>();
         const session = context.session as TransportSession;
-        const injector = session.injector;
-        const outgoing = injector.get(OutgoingFactory).create(incoming, { headerFields: incoming?.headers?.headerFields });
+        const outgoing = session.outgoingFactory.create(incoming, { headerFields: incoming?.headers?.headerFields });
 
-        return injector.get(RequestContextFactory).create(session, incoming, outgoing, session.serverOptions);
+        return session.requestContextFactory.create(session, incoming, outgoing, session.serverOptions);
     }
 
     @EncodeHandler(RequestContext, { interceptorsToken: SERVER_OUTGOING_ENCODE_INTERCEPTORS })

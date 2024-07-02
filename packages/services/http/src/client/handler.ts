@@ -5,6 +5,6 @@ import { HttpClientOpts } from './options';
 
 
 @Abstract()
-export abstract class HttpHandler extends ConfigableHandler<HttpRequest, HttpEvent, HttpClientOpts> {
+export abstract class HttpHandler extends ConfigableHandler<HttpRequest<any>, HttpEvent<any>, HttpClientOpts> {
 
 }
