@@ -1,4 +1,4 @@
-import { HeadersLike, IHeaders, Packet, PacketOpts, ParameterCodec, Pattern, RequestParams, StatusPacket, StatusPacketOpts } from '@tsdi/common';
+import { BasePacket, HeadersLike, IHeaders, Packet, PacketOpts, ParameterCodec, Pattern, RequestParams, StatusPacket, StatusPacketOpts } from '@tsdi/common';
 import { IReadableStream } from './stream';
 
 
@@ -117,7 +117,7 @@ export interface IncomingOpts<T = any> extends PacketOpts<T> {
 /**
  * Incoming packet.
  */
-export abstract class IncomingPacket<T> extends Packet<T> implements Incoming<T> {
+export abstract class IncomingPacket<T> extends BasePacket<T> implements Incoming<T> {
 
     /**
      * client side timeout.

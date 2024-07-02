@@ -2,6 +2,14 @@ import { isNil, isUndefined } from '@tsdi/ioc';
 import { HeaderFields, HeadersLike, HeaderMappings } from './headers';
 
 
+
+/**
+ * clonable.
+ */
+export interface Clonable<T> {
+    clone(): T;
+}
+
 /**
  * packet options.
  */
@@ -25,26 +33,53 @@ export interface PacketOpts<T = any> {
 }
 
 /**
- * packet.
+ * Packet
  */
-export abstract class Packet<T> {
+export abstract class Packet<T> implements Clonable<Packet<T>> {
+    id?: string | number;
+    abstract get headers(): HeaderMappings;
+    abstract get payload(): T | null;
+
+    abstract clone(): Packet<T>;
+    abstract clone<V>(update: {
+        headers?: HeadersLike;
+        payload?: V | null;
+        setHeaders?: { [name: string]: string | string[]; };
+    }): Packet<V>;
+    abstract clone(update: {
+        headers?: HeadersLike;
+        payload?: T | null;
+        setHeaders?: { [name: string]: string | string[]; };
+    }): Packet<T>
+
+    abstract toJson(ignores?: string[]): Record<string, any>;
+
+    abstract attachId(id: string | number): void;
+}
+
+/**
+ * base packet.
+ */
+export abstract class BasePacket<T> implements Packet<T> {
 
     readonly payload: T | null;
 
-    private _id?: string | number;
-    get id(): string | number | undefined {
-        return this._id;
-    }
+    id?: string | number;
 
     readonly headers: HeaderMappings;
     constructor(init?: PacketOpts<T>) {
-        this._id = init?.id;
-        this.headers = new HeaderMappings(init?.headers, init?.headerFields);
-        this.payload = init?.payload ?? null;
+        if (init) {
+            this.id = init.id;
+            this.headers = new HeaderMappings(init.headers, init.headerFields);
+            this.payload = init.payload ?? null;
+        } else {
+            this.headers = new HeaderMappings();
+            this.payload = null;
+        }
     }
 
     attachId(id: string | number) {
-        this._id = id;
+        this.id = id;
     }
 
     abstract clone(): Packet<T>;
@@ -126,8 +161,6 @@ export abstract class Packet<T> {
 }
 
 
-
-
 /**
  * Status packet options.
  */
@@ -150,7 +183,7 @@ export interface StatusPacketOpts<T = any, TStatus = any> extends PacketOpts<T> 
 /**
  * Status packet.
  */
-export abstract class StatusPacket<T, TStatus = any> extends Packet<T> {
+export abstract class StatusPacket<T, TStatus = any> extends BasePacket<T> {
     /**
      * Type of the response, narrowed to either the full response or the header.
      */

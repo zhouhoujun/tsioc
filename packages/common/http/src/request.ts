@@ -1,5 +1,5 @@
-import { isString, InvocationContext, EMPTY_OBJ, isUndefined, isNil } from '@tsdi/ioc';
-import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, HeadersLike, HeaderMappings, Pattern, AbstractRequest, RequestInitOpts, RequestParams } from '@tsdi/common';
+import { isString, InvocationContext, isUndefined, isNil } from '@tsdi/ioc';
+import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, HeadersLike, HeaderMappings, Pattern, AbstractRequest, RequestParams } from '@tsdi/common';
 import { HttpParams } from './params';
 
 
@@ -10,7 +10,7 @@ import { HttpParams } from './params';
  */
 export interface HttpRequestInit {
     headers?: HeadersLike;
-    context?: InvocationContext;
+    context: InvocationContext;
     reportProgress?: boolean;
     params?: HttpParams;
 
@@ -45,25 +45,15 @@ function mightHaveBody(method: string): boolean {
  *
  * @publicApi
  */
-export class HttpRequest<T = any> implements AbstractRequest<T> {
+export class HttpRequest<T> implements AbstractRequest<T> {
 
-    private _id?: string | number;
-    get id(): string | number | undefined {
-        return this._id;
-    }
-
-
-    attachId(id: string | number) {
-        this._id = id;
-    }
+    id?: string | number;
 
     get pattern(): Pattern {
         return this.url;
     }
 
-    get payload(): T | null {
-        return this.body;
-    }
+
     /**
      * The request body, or `null` if one isn't set.
      *
@@ -71,7 +61,18 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
      * user-defined data type. However, interceptors should take care to preserve
      * idempotence by treating them as such.
      */
-    readonly body: T | null = null;
+    readonly payload: T | null;
+
+    /**
+     * The request body, or `null` if one isn't set.
+     *
+     * Bodies are not enforced to be immutable, as they can include a reference to any
+     * user-defined data type. However, interceptors should take care to preserve
+     * idempotence by treating them as such.
+     */
+    get body(): T | null {
+        return this.payload
+    }
 
     /**
      * Outgoing headers for this request.
@@ -127,7 +128,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
 
     readonly context: InvocationContext<any>;
 
-    constructor(method: 'DELETE' | 'GET' | 'HEAD' | 'JSONP' | 'OPTIONS', url: string, init?: {
+    constructor(method: 'DELETE' | 'GET' | 'HEAD' | 'JSONP' | 'OPTIONS', url: string, init: {
         headers?: HeadersLike,
         reportProgress?: boolean,
         params?: HttpParams,
@@ -136,7 +137,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         withCredentials?: boolean,
         context: InvocationContext
     });
-    constructor(method: 'POST' | 'PUT' | 'PATCH', url: string, body: T | null, init?: {
+    constructor(method: 'POST' | 'PUT' | 'PATCH', url: string, body: T | null, init: {
         headers?: HeadersLike,
         reportProgress?: boolean,
         params?: HttpParams,
@@ -145,7 +146,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         withCredentials?: boolean,
         context: InvocationContext
     });
-    constructor(method: string, url: string, body: T | null, init?: {
+    constructor(method: string, url: string, body: T | null, init: {
         headers?: HeadersLike,
         reportProgress?: boolean,
         params?: HttpParams,
@@ -181,11 +182,12 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         // the body argument is to use a known no-body method like GET.
         if (mightHaveBody(this.method) || !!fourth) {
             // Body is the third argument, options are the fourth.
-            this.body = (third !== undefined) ? third as T : null;
-            options = fourth || EMPTY_OBJ;
+            this.payload = (third !== undefined) ? third as T : null;
+            options = fourth as HttpRequestInit;
         } else {
             // No body required, options are the third argument. The body stays null.
             options = third as HttpRequestInit
+            this.payload = null;
         }
 
 
@@ -241,6 +243,11 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
                 this.urlWithParams = url + sep + params
             }
         }
+    }
+
+    
+    attachId(id: string | number) {
+        this.id = id;
     }
 
     /**
@@ -314,23 +321,9 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
     }
 
     clone(): HttpRequest<T>;
-    clone(update: {
-        headers?: HeadersLike,
-        context?: InvocationContext,
-        reportProgress?: boolean,
-        params?: HttpParams,
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-        withCredentials?: boolean,
-        body?: T | null,
-        payload?: T | null;
-        method?: string,
-        url?: string,
-        setHeaders?: { [name: string]: string | string[] },
-        setParams?: { [param: string]: string },
-    }): HttpRequest<T>;
     clone<V>(update: {
         headers?: HeadersLike,
-        context?: InvocationContext,
+        context?: InvocationContext<any>,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -344,7 +337,21 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
     }): HttpRequest<V>;
     clone(update: {
         headers?: HeadersLike,
-        context?: InvocationContext,
+        context?: InvocationContext<any>,
+        reportProgress?: boolean,
+        params?: HttpParams,
+        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
+        withCredentials?: boolean,
+        body?: T | null,
+        payload?: T | null;
+        method?: string,
+        url?: string,
+        setHeaders?: { [name: string]: string | string[] },
+        setParams?: { [param: string]: string },
+    }): HttpRequest<T>;
+    clone(update: {
+        headers?: HeadersLike,
+        context?: InvocationContext<any>,
         reportProgress?: boolean,
         params?: HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
@@ -355,7 +362,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         url?: string,
         setHeaders?: { [name: string]: string | string[] },
         setParams?: { [param: string]: string };
-    } = {}): HttpRequest {
+    } = {}): HttpRequest<any> {
         // For method, url, and responseType, take the current value unless
         // it is overridden in the update hash.
         const method = update.method || this.method;
@@ -380,7 +387,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
         headers?: HeadersLike,
         context?: InvocationContext,
         reportProgress?: boolean,
-        params?: HttpParams,
+        params?: RequestParams | HttpParams,
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
         withCredentials?: boolean,
         body?: any | null,
@@ -400,7 +407,7 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
             (update.reportProgress !== undefined) ? update.reportProgress : this.reportProgress;
 
         const context = update.context ?? this.context!;
-         // Headers and params may be appended to if `setHeaders` or
+        // Headers and params may be appended to if `setHeaders` or
         // `setParams` are used.
         let headers: HeaderMappings;
         if (update.headers instanceof HeaderMappings) {
@@ -409,14 +416,14 @@ export class HttpRequest<T = any> implements AbstractRequest<T> {
             headers = this.headers;
             update.headers && headers.setHeaders(update.headers);
         }
-        
+
         // `setParams` are used.
         let params = update.params || this.params;
         // Check whether the caller has asked to set params.
         if (update.setParams) {
             // Set every requested param.
             params = Object.keys(update.setParams)
-                .reduce((params, param) => params.set(param, update.setParams![param]), params)
+                .reduce((params, param) => params.set(param, update.setParams![param]), params);
         }
         return {
             params,
