@@ -20,6 +20,7 @@ export class Http2IncomingMessage {
 }
 export type HttpClientIncomingMessage = IncomingMessage | Http2IncomingMessage;
 
+
 const {
     HTTP2_HEADER_PATH,
     HTTP2_HEADER_METHOD,
@@ -29,116 +30,118 @@ const {
 const httptl = /^https?:\/\//i;
 const secureExp = /^https:/;
 
-export class HttpClientTransportSession extends ClientTransportSession<ClientHttp2Session | null> {
-
-    readonly options: TransportOpts
-    constructor(
-        readonly injector: Injector,
-        readonly socket: ClientHttp2Session | null,
-        readonly streamAdapter: StreamAdapter,
-        readonly encodings: Encoder,
-        readonly decodings: Decoder,
-        readonly clientOpts: HttpClientOpts
-    ) {
-        super();
-        this.options = clientOpts.transportOpts ?? {};
-    }
 
 
+// export class HttpClientTransportSession extends ClientTransportSession<ClientHttp2Session | null> {
 
-    override sendMessage(msg: any, req: UrlRequest, ctx: CodingsContext): Observable<any> {
-        let path = req.url ?? '';
-        const context = req.context;
-        const ac = this.getAbortSignal(context);
-        let stream: ClientHttp2Stream | ClientRequest;
-        if (this.clientOpts.authority && this.socket && (!httptl.test(path) || path.startsWith(this.clientOpts.authority))) {
-            path = path.replace(this.clientOpts.authority, '');
-
-            const reqHeaders = (req.headers.getHeaders() ?? {}) as OutgoingHttpHeaders;
-
-            if (!reqHeaders[HTTP2_HEADER_ACCEPT]) reqHeaders[HTTP2_HEADER_ACCEPT] = ctype.REQUEST_ACCEPT;
-            reqHeaders[HTTP2_HEADER_METHOD] = req.method;
-            reqHeaders[HTTP2_HEADER_PATH] = path;
-
-            stream = this.socket.request(reqHeaders, { abort: ac?.signal, ...this.clientOpts.requestOptions } as ClientSessionRequestOptions);
-
-        } else {
-            const headers = req.headers ?? {};
+//     readonly options: TransportOpts
+//     constructor(
+//         readonly injector: Injector,
+//         readonly socket: ClientHttp2Session | null,
+//         readonly streamAdapter: StreamAdapter,
+//         readonly encodings: Encoder,
+//         readonly decodings: Decoder,
+//         readonly clientOpts: HttpClientOpts
+//     ) {
+//         super();
+//         this.options = clientOpts.transportOpts ?? {};
+//     }
 
 
-            const option = {
-                method: req.method,
-                headers: {
-                    'accept': ctype.REQUEST_ACCEPT,
-                    ...headers,
-                },
-                abort: ac?.signal
-            };
 
-            stream = secureExp.test(path) ? httpsRequest(path, option) : httpRequest(path, option);
+//     override sendMessage(msg: any, req: UrlRequest, ctx: CodingsContext): Observable<any> {
+//         let path = req.url ?? '';
+//         const context = req.context;
+//         const ac = this.getAbortSignal(context);
+//         let stream: ClientHttp2Stream | ClientRequest;
+//         if (this.clientOpts.authority && this.socket && (!httptl.test(path) || path.startsWith(this.clientOpts.authority))) {
+//             path = path.replace(this.clientOpts.authority, '');
 
-        }
+//             const reqHeaders = (req.headers.getHeaders() ?? {}) as OutgoingHttpHeaders;
 
-        return defer(async () => {
-            if (isNil(msg)) {
-                await promisify(stream.end, stream)();
-            } else {
-                await this.streamAdapter.sendBody(msg, stream);
-            }
-            return stream;
-        });
-    }
+//             if (!reqHeaders[HTTP2_HEADER_ACCEPT]) reqHeaders[HTTP2_HEADER_ACCEPT] = ctype.REQUEST_ACCEPT;
+//             reqHeaders[HTTP2_HEADER_METHOD] = req.method;
+//             reqHeaders[HTTP2_HEADER_PATH] = path;
 
-    override handleMessage(context: TransportContext): Observable<HttpClientIncomingMessage> {
-        const stream = context.last() as ClientHttp2Stream | ClientRequest;
-        if (stream instanceof ClientRequest) {
-            return new Observable<HttpClientIncomingMessage>(subscribe => {
-                const onResponse = (resp: IncomingMessage) => subscribe.next(resp);
-                const onError = (err: any) => err && subscribe.error(err);
-                stream.on(ev.CLOSE, onError);
-                stream.on(ev.ERROR, onError);
-                stream.on(ev.ABOUT, onError);
-                stream.on(ev.TIMEOUT, onError);
-                stream.on(ev.RESPONSE, onResponse);
+//             stream = this.socket.request(reqHeaders, { abort: ac?.signal, ...this.clientOpts.requestOptions } as ClientSessionRequestOptions);
 
-                return () => {
-                    stream.off(ev.CLOSE, onError);
-                    stream.off(ev.ERROR, onError);
-                    stream.off(ev.ABOUT, onError);
-                    stream.off(ev.TIMEOUT, onError);
-                    stream.off(ev.RESPONSE, onResponse);
-                    subscribe.unsubscribe();
-                }
-            }).pipe(takeUntil(this.destroy$))
-        } else {
-            return fromEvent(stream, ev.RESPONSE, (headers) => new Http2IncomingMessage(headers, stream)).pipe(takeUntil(this.destroy$));
-        }
-    }
+//         } else {
+//             const headers = req.headers ?? {};
 
-    protected getAbortSignal(ctx?: InvocationContext): AbortController {
-        return !ctx || typeof AbortController === 'undefined' ? null! : ctx.getValueify(AbortController, () => new AbortController());
-    }
 
-    // async destroy(): Promise<void> {
-    //     if (this.socket) {
-    //         await promisify(this.socket.close, this.socket)();
-    //     }
-    // }
+//             const option = {
+//                 method: req.method,
+//                 headers: {
+//                     'accept': ctype.REQUEST_ACCEPT,
+//                     ...headers,
+//                 },
+//                 abort: ac?.signal
+//             };
 
-}
+//             stream = secureExp.test(path) ? httpsRequest(path, option) : httpRequest(path, option);
 
-@Injectable()
-export class HttpClientSessionFactory implements ClientTransportSessionFactory<ClientHttp2Session | null, HttpClientOpts> {
+//         }
 
-    constructor() { }
+//         return defer(async () => {
+//             if (isNil(msg)) {
+//                 await promisify(stream.end, stream)();
+//             } else {
+//                 await this.streamAdapter.sendBody(msg, stream);
+//             }
+//             return stream;
+//         });
+//     }
 
-    create(injector: Injector, socket: ClientHttp2Session | null, options: HttpClientOpts): HttpClientTransportSession {
-        const transOpts = options.transportOpts!;
-        return new HttpClientTransportSession(injector, socket,
-            injector.get(StreamAdapter),
-            injector.get(transOpts.encodingsFactory ?? EncodingsFactory).create(injector, transOpts.encodings!),
-            injector.get(transOpts.decodingsFactory ?? DecodingsFactory).create(injector, transOpts.decodings!),
-            options);
-    }
+//     override handleMessage(context: TransportContext): Observable<HttpClientIncomingMessage> {
+//         const stream = context.last() as ClientHttp2Stream | ClientRequest;
+//         if (stream instanceof ClientRequest) {
+//             return new Observable<HttpClientIncomingMessage>(subscribe => {
+//                 const onResponse = (resp: IncomingMessage) => subscribe.next(resp);
+//                 const onError = (err: any) => err && subscribe.error(err);
+//                 stream.on(ev.CLOSE, onError);
+//                 stream.on(ev.ERROR, onError);
+//                 stream.on(ev.ABOUT, onError);
+//                 stream.on(ev.TIMEOUT, onError);
+//                 stream.on(ev.RESPONSE, onResponse);
 
-}
+//                 return () => {
+//                     stream.off(ev.CLOSE, onError);
+//                     stream.off(ev.ERROR, onError);
+//                     stream.off(ev.ABOUT, onError);
+//                     stream.off(ev.TIMEOUT, onError);
+//                     stream.off(ev.RESPONSE, onResponse);
+//                     subscribe.unsubscribe();
+//                 }
+//             }).pipe(takeUntil(this.destroy$))
+//         } else {
+//             return fromEvent(stream, ev.RESPONSE, (headers) => new Http2IncomingMessage(headers, stream)).pipe(takeUntil(this.destroy$));
+//         }
+//     }
+
+//     protected getAbortSignal(ctx?: InvocationContext): AbortController {
+//         return !ctx || typeof AbortController === 'undefined' ? null! : ctx.getValueify(AbortController, () => new AbortController());
+//     }
+
+//     // async destroy(): Promise<void> {
+//     //     if (this.socket) {
+//     //         await promisify(this.socket.close, this.socket)();
+//     //     }
+//     // }
+
+// }
+
+// @Injectable()
+// export class HttpClientSessionFactory implements ClientTransportSessionFactory<ClientHttp2Session | null, HttpClientOpts> {
+
+//     constructor() { }
+
+//     create(injector: Injector, socket: ClientHttp2Session | null, options: HttpClientOpts): HttpClientTransportSession {
+//         const transOpts = options.transportOpts!;
+//         return new HttpClientTransportSession(injector, socket,
+//             injector.get(StreamAdapter),
+//             injector.get(transOpts.encodingsFactory ?? EncodingsFactory).create(injector, transOpts.encodings!),
+//             injector.get(transOpts.decodingsFactory ?? DecodingsFactory).create(injector, transOpts.decodings!),
+//             options);
+//     }
+
+// }

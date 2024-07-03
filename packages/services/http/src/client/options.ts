@@ -36,11 +36,11 @@ export interface HttpClientsOpts extends HttpClientOpts {
 /**
  * http client interceptors for `Http`.
  */
-export const HTTP_CLIENT_INTERCEPTORS = tokenId<Interceptor<HttpRequest, HttpEvent>[]>('HTTP_CLIENT_INTERCEPTORS');
+export const HTTP_CLIENT_INTERCEPTORS = tokenId<Interceptor<HttpRequest<any>, HttpEvent<any>>[]>('HTTP_CLIENT_INTERCEPTORS');
 /**
  * http client filters for `Http`.
  */
-export const HTTP_CLIENT_FILTERS = tokenId<Filter<HttpRequest, HttpEvent>[]>('HTTP_CLIENT_FILTERS');
+export const HTTP_CLIENT_FILTERS = tokenId<Filter<HttpRequest<any>, HttpEvent<any>>[]>('HTTP_CLIENT_FILTERS');
 /**
  * http serssion options.
  */

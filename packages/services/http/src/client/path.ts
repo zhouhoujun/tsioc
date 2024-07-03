@@ -8,11 +8,11 @@ import { Observable } from 'rxjs';
 const abstUrlExp = /^http(s)?:/;
 
 @Injectable()
-export class HttpPathInterceptor implements Interceptor<HttpRequest, HttpEvent> {
+export class HttpPathInterceptor implements Interceptor<HttpRequest<any>, HttpEvent<any>> {
 
     constructor() { }
 
-    intercept(req: HttpRequest, next: Handler<HttpRequest, HttpEvent>): Observable<HttpEvent> {
+    intercept(req: HttpRequest<any>, next: Handler<HttpRequest<any>, HttpEvent<any>>): Observable<HttpEvent<any>> {
         let url = req.url.trim();
         if (!abstUrlExp.test(url)) {
             const context = req.context;

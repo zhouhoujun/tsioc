@@ -1,11 +1,10 @@
 import { EMPTY_OBJ, Injectable, Injector, isNil, isString } from '@tsdi/ioc';
 import { HeaderMappings, LOCALHOST, normalize, PatternFormatter, RequestParams, ResponsePacket } from '@tsdi/common';
-import { FileAdapter, Incoming, MessageExecption, MimeAdapter, Outgoing, StatusAdapter, StreamAdapter } from '@tsdi/common/transport';
+import { Incoming, MessageExecption, Outgoing } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
 import { RequestContext, RequestContextFactory } from '../RequestContext';
 import { ServerOpts } from '../Server';
 import { TransportSession } from '../transport.session';
-import { AcceptsPriority } from '../accepts';
 
 
 
@@ -14,23 +13,6 @@ export class UrlRequestContext<TRequest extends Incoming<any> = Incoming<any>, T
 
     private _URL?: URL;
     readonly originalUrl: string;
-
-    get statusAdapter(): StatusAdapter | null {
-        return this.session.statusAdapter
-    }
-    get mimeAdapter(): MimeAdapter | null {
-        return this.session.mimeAdapter
-    }
-    get acceptsPriority(): AcceptsPriority | null {
-        return this.session.acceptsPriority
-    }
-    get streamAdapter(): StreamAdapter {
-        return this.session.streamAdapter
-    }
-    get fileAdapter(): FileAdapter {
-        return this.session.fileAdapter
-    }
-
     /**
      * request header mappings
      */
@@ -172,22 +154,6 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
      * request header mappings
      */
     readonly resHeaders: HeaderMappings;
-
-    get statusAdapter(): StatusAdapter | null {
-        return this.session.statusAdapter
-    }
-    get mimeAdapter(): MimeAdapter | null {
-        return this.session.mimeAdapter
-    }
-    get acceptsPriority(): AcceptsPriority | null {
-        return this.session.acceptsPriority
-    }
-    get streamAdapter(): StreamAdapter {
-        return this.session.streamAdapter
-    }
-    get fileAdapter(): FileAdapter {
-        return this.session.fileAdapter
-    }
 
     constructor(
         injector: Injector,

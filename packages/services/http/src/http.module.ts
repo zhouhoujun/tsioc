@@ -12,8 +12,8 @@ import { HttpEndpointHandler } from './server/handler';
 import { HttpServer } from './server/server';
 import { HttpContextFactory } from './server/context';
 import { HttpStatusAdapter } from './status';
-import { HttpExecptionHandlers } from './execption.handlers';
-import { HttpClientSessionFactory } from './client/client.session';
+// import { HttpExecptionHandlers } from './execption.handlers';
+// import { HttpClientSessionFactory } from './client/client.session';
 import { HttpServerSessionFactory } from './server/http.session';
 import { HttpResponseEventFactory } from './client/response.factory';
 import { HttpClientCodingsHandlers } from './client/codings.hanlders';
@@ -34,8 +34,8 @@ import { HttpCodingsHandlers } from './server/codings.handlers';
         HttpCodingsHandlers,
         // HttpTransportBackend,
         HttpPathInterceptor,
-        HttpClientSessionFactory,
-        HttpServerSessionFactory,
+        // HttpClientSessionFactory,
+        // HttpServerSessionFactory,
         HttpContextFactory,
         // { provide: HTTP_CLIENT_INTERCEPTORS, useExisting: HttpPathInterceptor, multi: true },
         {

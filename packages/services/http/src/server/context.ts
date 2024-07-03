@@ -1,6 +1,6 @@
 import { Injectable, Injector, isArray, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, HeaderMappings } from '@tsdi/common';
+import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, HeaderMappings, ResponsePacket } from '@tsdi/common';
 import { MessageExecption, InternalServerExecption, Outgoing, append, parseTokenList, Incoming, StatusAdapter, MimeAdapter, StreamAdapter, FileAdapter, PacketLengthException, ENOENT } from '@tsdi/common/transport';
 import { RestfulRequestContext, RestfulRequestContextFactory, TransportSession, Throwable, AcceptsPriority } from '@tsdi/endpoints';
 import * as http from 'http';
@@ -8,7 +8,6 @@ import * as http2 from 'http2';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
 import { HttpServerOpts } from './options';
-import { Logger } from '@tsdi/logger';
 
 
 export type HttpServRequest = (http.IncomingMessage | http2.Http2ServerRequest) & Incoming<any>;
@@ -23,45 +22,51 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 
     private _URL?: URL;
     readonly originalUrl: string;
+    private _url: string;
+    
+    /**
+     * request header mappings
+     */
+    readonly reqHeaders: HeaderMappings;
+    /**
+     * request header mappings
+     */
+    readonly resHeaders: HeaderMappings;
 
     constructor(
         injector: Injector,
         readonly session: TransportSession,
         readonly request: HttpServRequest,
         readonly response: HttpServResponse,
-        readonly statusAdapter: StatusAdapter<number> | null,
-        readonly mimeAdapter: MimeAdapter | null,
-        readonly acceptsPriority: AcceptsPriority | null,
-        readonly streamAdapter: StreamAdapter,
-        readonly fileAdapter: FileAdapter,
         readonly serverOptions: HttpServerOpts
     ) {
         super(injector, { ...serverOptions, args: request });
 
         this.setValue(TransportSession, session);
-        this.originalUrl = request.url!;
-        // if (!response.id) {
-        //     response.id = request.id
-        // }
-        // if (isString(request.pattern)) {
-        //     response.url = request.pattern;
-        // } else if (isNumber(request.pattern)) {
-        //     response.type = request.pattern;
-        // } else {
-        //     if (request.pattern.topic) {
-        //         response.topic = request.pattern.topic;
-        //         if (request.pattern.replyTo) {
-        //             response.replyTo = request.replyTo;
-        //         }
-        //     }
+        const url = this._url = this.originalUrl = request.url!;
 
-        // }
-
-        const searhIdx = this.url.indexOf('?');
+        this.reqHeaders = request.headers instanceof HeaderMappings ? request.headers : new HeaderMappings(request.headers);
+        this.resHeaders = response.headers instanceof HeaderMappings ? response.headers : new HeaderMappings(response.headers);
+        const searhIdx = url.indexOf('?');
         if (searhIdx >= 0) {
             (this.request as any).query = this.query;
         }
     }
+
+    /**
+     * Get request rul
+     */
+    get url(): string {
+        return this._url;
+    }
+
+    /**
+     * Set request url
+     */
+    set url(value: string) {
+        this._url = value;
+    }
+
 
     get protocol(): string {
         if ((this.socket as TLSSocket).encrypted) return httpsPtl;
@@ -69,17 +74,6 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         const proto = this.getHeader(X_FORWARDED_PROTO);
         return proto ? proto.split(/\s*,\s*/, 1)[0] : httpPtl;
     }
-
-    // private _query?: Record<string, any>;
-    // get query(): Record<string, any> {
-    //     if (!this._query) {
-    //         const qs = this._query = {} as Record<string, any>;
-    //         this.URL?.searchParams?.forEach((v, k) => {
-    //             qs[k] = v;
-    //         });
-    //     }
-    //     return this._query;
-    // }
 
     /**
     * Get WHATWG parsed URL.
@@ -424,7 +418,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
     }
 
 
-    setResponse(packet: ResponsePacket): void {
+    setResponse(packet: ResponsePacket<any>): void {
         const { headers, payload, status, statusMessage: statusText } = packet;
         if (status) this.status = status as number;
         if (statusText) this.statusMessage = statusText;
@@ -568,16 +562,9 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 @Injectable()
 export class HttpContextFactory implements RestfulRequestContextFactory<HttpServRequest, HttpServResponse> {
     create(injector: Injector, session: TransportSession, incoming: HttpServRequest, outgoing: HttpServResponse, options: HttpServerOpts): HttpContext {
-        (incoming as any).tHeaders = new HeaderMappings(incoming.headers, true);
-        (outgoing as any).tHeaders = new HeaderMappings(outgoing.headers, true);
         return new HttpContext(injector, session,
             incoming,
             outgoing,
-            injector.get(StatusAdapter, null),
-            injector.get(MimeAdapter, null),
-            injector.get(AcceptsPriority, null),
-            injector.get(StreamAdapter),
-            injector.get(FileAdapter),
             options);
     }
 

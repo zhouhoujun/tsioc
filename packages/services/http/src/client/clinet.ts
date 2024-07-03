@@ -1,10 +1,10 @@
-import { Inject, Injectable, InvocationContext, Optional } from '@tsdi/ioc';
+import { Injectable, InvocationContext } from '@tsdi/ioc';
 import {
     RequestOptions, HeadersLike, PUT, GET, DELETE, HEAD, JSONP, PATCH, POST,
     RequestParams, Pattern, patternToPath, HttpRequestMethod, UrlRequestInitOpts
 } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
-import { Client, ClientTransportSession } from '@tsdi/common/client';
+import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse } from '@tsdi/common/http';
 import { Observable, of } from 'rxjs';
 import * as http from 'http';
@@ -12,7 +12,6 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import { HttpHandler } from './handler';
 import { HttpClientOpts } from './options';
-import { HttpClientSessionFactory } from './client.session';
 
 
 
@@ -50,7 +49,7 @@ export class Http extends Client<HttpRequest<any>, HttpEvent<any>, HttpClientOpt
         const injector = this.handler.injector;
         const options = this.getOptions();
         if (!options.authority) {
-            this.session = injector.get(HttpClientSessionFactory).create(injector, null, options);
+            this.session = injector.get(ClientTransportSessionFactory).create(injector, null, options);
             return of(this.session);
         } else {
 
@@ -65,7 +64,7 @@ export class Http extends Client<HttpRequest<any>, HttpEvent<any>, HttpClientOpt
                 }
                 const onConnect = () => {
 
-                    this.session = injector.get(HttpClientSessionFactory).create(injector, conn, options);
+                    this.session = injector.get(ClientTransportSessionFactory).create(injector, conn, options);
                     observer.next(this.session);
                     observer.complete();
                 };
@@ -100,7 +99,7 @@ export class Http extends Client<HttpRequest<any>, HttpEvent<any>, HttpClientOpt
         return http2.connect(opts.authority!, opts.connectOpts);
     }
 
-    protected override isRequest(target: any): target is HttpRequest {
+    protected override isRequest(target: any): target is HttpRequest<any> {
         return target instanceof HttpRequest
     }
 
@@ -113,7 +112,7 @@ export class Http extends Client<HttpRequest<any>, HttpEvent<any>, HttpClientOpt
         return new HttpParams({ params });
     }
 
-    protected override createRequest(pattern: Pattern, options: UrlRequestInitOpts): HttpRequest {
+    protected override createRequest(pattern: Pattern, options: UrlRequestInitOpts): HttpRequest<any> {
         return new HttpRequest(options.method ?? GET, patternToPath(pattern), options.body ?? options.payload ?? null, options as any);
     }
 

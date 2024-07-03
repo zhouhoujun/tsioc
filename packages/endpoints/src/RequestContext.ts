@@ -37,24 +37,33 @@ export abstract class RequestContext<
     /**
      * mime adapter.
      */
-    abstract get mimeAdapter(): MimeAdapter | null;
+    get mimeAdapter(): MimeAdapter | null {
+        return this.session.mimeAdapter
+    }
     /**
      * mime accepts priority
      */
-    abstract get acceptsPriority(): AcceptsPriority | null;
-
+    get acceptsPriority(): AcceptsPriority | null {
+        return this.session.acceptsPriority
+    }
     /**
      * status adapter.
      */
-    abstract get statusAdapter(): StatusAdapter<TStatus> | null;
+    get statusAdapter(): StatusAdapter<TStatus> | null {
+        return this.session.statusAdapter
+    }
     /**
      * stream adapter
      */
-    abstract get streamAdapter(): StreamAdapter;
+    get streamAdapter(): StreamAdapter {
+        return this.session.streamAdapter
+    }
     /**
      * file adapter
      */
-    abstract get fileAdapter(): FileAdapter;
+    get fileAdapter(): FileAdapter {
+        return this.session.fileAdapter
+    }
 
     /**
      * request.
