@@ -79,7 +79,7 @@ export class KafkaClient extends Client<TransportRequest, TransportEvent, KafkaC
         }
         this.client = new Kafka(connectOpts);
 
-        const transportOpts = { transport: 'kafka', ...options.transportOpts } as KafkaTransportOpts;
+        const transportOpts = options.transportOpts = { transport: 'kafka', ...options.transportOpts } as KafkaTransportOpts;
 
         if (!options.producerOnlyMode) {
             const partitionAssigners = [
@@ -117,7 +117,7 @@ export class KafkaClient extends Client<TransportRequest, TransportEvent, KafkaC
         this._session = injector.get(ClientTransportSessionFactory).create(injector, {
             producer: this.producer,
             consumer: this.consumer!
-        }, transportOpts) as KafkaClientTransportSession
+        }, options) as KafkaClientTransportSession
 
         if (!options.producerOnlyMode) {
             const topics = options.topics ? options.topics.map(t => {

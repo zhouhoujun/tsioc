@@ -34,7 +34,7 @@ export class DefaultTransportSession extends TransportSession<any> {
     private _messageWriter?: MessageWriter;
     private _messageFactory?: MessageFactory;
     private _incomingFactory?: IncomingFactory;
-    private _outgoingFactory?: OutgoingFactory;
+    private _outgoingFactory?: OutgoingFactory | null;
     private _requestContextFactory?: RequestContextFactory;
 
     get encodings(): TransportEncodings {
@@ -109,9 +109,9 @@ export class DefaultTransportSession extends TransportSession<any> {
         }
         return this._incomingFactory;
     }
-    get outgoingFactory(): OutgoingFactory {
-        if (!this._outgoingFactory) {
-            this._outgoingFactory = this.injector.get(OutgoingFactory)
+    get outgoingFactory(): OutgoingFactory | null {
+        if (this._outgoingFactory === undefined) {
+            this._outgoingFactory = this.injector.get(OutgoingFactory, null)
         }
         return this._outgoingFactory;
     }

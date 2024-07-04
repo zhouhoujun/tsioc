@@ -2,7 +2,6 @@ import { Message, MessageFactory } from '@tsdi/common';
 import { Decoder, Encoder } from '@tsdi/common/codings';
 import { Injectable, promisify } from '@tsdi/ioc';
 import { Observable, Subject, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
-import { StreamAdapter } from './StreamAdapter';
 import { AbstractTransportSession, MessageReader, MessageWriter } from './TransportSession';
 import { ev } from './consts';
 import { IReadableStream, IWritableStream } from './stream';
@@ -19,12 +18,11 @@ export class SocketMessageReader implements MessageReader<IWritableStream> {
 
 @Injectable()
 export class SocketMessageWriter implements MessageWriter<IWritableStream> {
-    write(socket: IWritableStream, msg: Message): Promise<void> {
+    write(socket: IWritableStream, msg: Message, origin: any, session: AbstractTransportSession): Promise<void> {
+        if (session.streamAdapter.isReadable(msg.data)) {
+            return session.streamAdapter.pipeTo(msg.data as IReadableStream, socket, { end: false });
+        }
         return promisify<any, void>(socket.write, socket)(msg.data)
-    }
-
-    writeStream(socket: IWritableStream, msg: Message, streamAdapter: StreamAdapter) {
-        return streamAdapter.pipeTo(msg.data as IReadableStream, socket, { end: false });
     }
 }
 
@@ -61,9 +59,10 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
     /**
      * receive
      * @param req the message response for.
+     * @param reqHost the host context of req.
      */
-    receive(req?: any): Observable<TOutput> {
-        return this.handleMessage()
+    receive(req?: TInput, reqHost?: any): Observable<TOutput> {
+        return this.handleMessage(reqHost)
             .pipe(
                 mergeMap(origin => {
                     return this.decodings.decode(origin, req)
@@ -90,19 +89,15 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * @param context 
      * @returns 
      */
-    protected sendMessage(msg: TMsg, input: TInput): Promise<void> | Observable<void> {
-        if (this.streamAdapter.isReadable(msg.data)) {
-            return this.messageWriter.writeStream(this.socket, msg, this.streamAdapter)
-        } else {
-            return this.messageWriter.write(this.socket, msg);
-        }
+    protected sendMessage(msg: TMsg, input: TInput): Promise<any> | Observable<any> {
+        return this.messageWriter.write(this.socket, msg, input, this)
     }
 
     /**
      * handle message
      */
-    protected handleMessage(): Observable<TMsg> {
-        return this.messageReader.read(this.socket, this.messageFactory, this)
+    protected handleMessage(reqHost?: any): Observable<TMsg> {
+        return this.messageReader.read(this.socket ?? reqHost, this.messageFactory, this)
             .pipe(
                 takeUntil(this.destroy$)
             ) as Observable<any>;

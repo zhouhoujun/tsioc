@@ -12,12 +12,10 @@ import { HttpEndpointHandler } from './server/handler';
 import { HttpServer } from './server/server';
 import { HttpContextFactory } from './server/context';
 import { HttpStatusAdapter } from './status';
-// import { HttpExecptionHandlers } from './execption.handlers';
-// import { HttpClientSessionFactory } from './client/client.session';
-import { HttpServerSessionFactory } from './server/http.session';
 import { HttpResponseEventFactory } from './client/response.factory';
 import { HttpClientCodingsHandlers } from './client/codings.hanlders';
 import { HttpCodingsHandlers } from './server/codings.handlers';
+import { HttpExecptionHandlers } from './execption.handlers';
 
 
 // const defaultMaxSize = 1048576; // 1024 * 1024;
@@ -37,7 +35,7 @@ import { HttpCodingsHandlers } from './server/codings.handlers';
         // HttpClientSessionFactory,
         // HttpServerSessionFactory,
         HttpContextFactory,
-        // { provide: HTTP_CLIENT_INTERCEPTORS, useExisting: HttpPathInterceptor, multi: true },
+        { provide: HTTP_CLIENT_INTERCEPTORS, useExisting: HttpPathInterceptor, multi: true },
         {
             provide: CLIENT_MODULES,
             useValue: {
@@ -71,9 +69,6 @@ import { HttpCodingsHandlers } from './server/codings.handlers';
                     responseEventFactory: HttpResponseEventFactory,
                     // backend: HttpTransportBackend,
                     // sessionFactory: { useExisting: HttpClientSessionFactory },
-                    transportOpts: {
-                        
-                    }
                 }
             } as ClientModuleOpts,
             multi: true
@@ -96,12 +91,12 @@ import { HttpCodingsHandlers } from './server/codings.handlers';
                         prefix: 'content'
                     },
                     statusAdapter: HttpStatusAdapter,
+                    execptionHandlers: HttpExecptionHandlers,
+                    requestContextFactory: HttpContextFactory,
                     detailError: true,
                     interceptorsToken: HTTP_SERV_INTERCEPTORS,
                     filtersToken: HTTP_SERV_FILTERS,
                     guardsToken: HTTP_SERV_GUARDS,
-                    execptionHandlers: HttpExecptionHandlers,
-                    // sessionFactory: { useExisting: HttpServerSessionFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,
@@ -128,13 +123,13 @@ import { HttpCodingsHandlers } from './server/codings.handlers';
                         root: 'public'
                     },
                     statusAdapter: HttpStatusAdapter,
+                    execptionHandlers: HttpExecptionHandlers,
+                    requestContextFactory: HttpContextFactory,
                     detailError: true,
                     interceptorsToken: HTTP_SERV_INTERCEPTORS,
                     filtersToken: HTTP_SERV_FILTERS,
                     guardsToken: HTTP_SERV_GUARDS,
                     middlewaresToken: HTTP_MIDDLEWARES,
-                    execptionHandlers: HttpExecptionHandlers,
-                    // sessionFactory: { useExisting: HttpServerSessionFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,

@@ -268,7 +268,6 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
         if (!isNil(this.payload)) {
             record.payload = this.payload;
         }
-        if (this.params.size) record.params = this.params.toRecord();
         if (this.method) record.method = this.method;
         record.withCredentials = this.withCredentials;
         return record;
@@ -421,6 +420,7 @@ export class UrlRequest<T> extends BaseRequest<T> {
 
     protected override toRecord(): Record<string, any> {
         const rcd = super.toRecord();
+        rcd.reportProgress = this.reportProgress;
         rcd.url = this.urlWithParams;
         return rcd;
     }
@@ -497,6 +497,7 @@ export class PatternRequest<T = any> extends BaseRequest<T> {
 
     protected override toRecord(): Record<string, any> {
         const rcd = super.toRecord();
+        if (this.params.size) rcd.params = this.params.toRecord();
         rcd.pattern = this.pattern;
         return rcd;
     }

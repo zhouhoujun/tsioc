@@ -1,6 +1,6 @@
 import { Abstract, Injector } from '@tsdi/ioc';
 import { Incoming, Outgoing, encodeUrl, escapeHtml, ctype, NotSupportedExecption } from '@tsdi/common/transport';
-import { RequestContext } from './RequestContext';
+import { RequestContext, RequestContextFactory } from './RequestContext';
 import { ServerOpts } from './Server';
 import { TransportSession } from './transport.session';
 
@@ -168,7 +168,7 @@ export abstract class RestfulRequestContext<
  * Restful request context factory.
  */
 @Abstract()
-export abstract class RestfulRequestContextFactory<TRequest extends Incoming<any>, TResponse extends Outgoing<any>> {
+export abstract class RestfulRequestContextFactory<TRequest extends Incoming<any>, TResponse extends Outgoing<any>> extends RequestContextFactory<TRequest, TResponse> {
     /**
      * create Restful request context.
      * @param injector 
@@ -177,5 +177,5 @@ export abstract class RestfulRequestContextFactory<TRequest extends Incoming<any
      * @param response 
      * @param options 
      */
-    abstract create(injector: Injector, session: TransportSession, request: TRequest, response: TResponse, options: ServerOpts): RestfulRequestContext<TRequest, TResponse>;
+    abstract create(session: TransportSession, request: TRequest, response: TResponse, options: ServerOpts): RestfulRequestContext<TRequest, TResponse>;
 }

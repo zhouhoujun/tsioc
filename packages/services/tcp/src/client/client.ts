@@ -107,8 +107,7 @@ export class TcpClient extends Client<TcpRequest<any>> {
         if (opts.keepalive) {
             socket.setKeepAlive(true, opts.keepalive);
         }
-        const transportOpts = opts.transportOpts!;
-        this._session = this.handler.injector.get(ClientTransportSessionFactory).create(this.handler.injector, socket, transportOpts);
+        this._session = this.handler.injector.get(ClientTransportSessionFactory).create(this.handler.injector, socket, opts);
         return socket
     }
 

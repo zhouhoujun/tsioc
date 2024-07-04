@@ -11,15 +11,17 @@ import { Http2IncomingMessage } from './client.session';
 @Injectable({ static: true })
 export class HttpClientCodingsHandlers {
 
-    @DecodeHandler(IncomingMessage, {group: 'http' })
+    @DecodeHandler(IncomingMessage)
     handleHttpMessage(message: IncomingMessage, context: TransportContext, statusAdapter: StatusAdapter) {
-        const msg = new ResponsePacketIncoming({
+        const msg = new ClientIncomingPacket({
             status: message.statusCode,
             statusMessage: message.statusMessage,
             headers: message.headers,
             ok: statusAdapter.isOk(message.statusCode),
             payload: message
         }, context.options)
+
+        
         // return this.codings.decode(msg, context);
     }
 
@@ -39,17 +41,7 @@ export class HttpClientCodingsHandlers {
 
     @EncodeHandler(HttpRequest)
     handleRequest(req: HttpRequest<any>) {
-        const packet = {
-            url: req.urlWithParams,
-            headers: req.headers,
-            payload: req.payload,
-            method: req.method ?? 'GET',
-            payloadLength: req.headers.getContentLength()
-        } as PacketOpts;
-        if (!packet.url && req.pattern) {
-            packet.url = req.context.get(PatternFormatter).format(req.pattern);
-        }
-        
+        return req;
     }
 
 

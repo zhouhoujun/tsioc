@@ -14,13 +14,13 @@ export abstract class TransportSession<TSocket = any, TMsg extends Message = Mes
      */
     abstract get serverOptions(): TOptions;
     /**
+     * outgoing message factory.
+     */
+    abstract get outgoingFactory(): OutgoingFactory | null;
+    /**
      * request context factory.
      */
     abstract get requestContextFactory(): RequestContextFactory;
-    /**
-     * outgoing message factory.
-     */
-    abstract get outgoingFactory(): OutgoingFactory;
     /**
      * mime adapter.
      */

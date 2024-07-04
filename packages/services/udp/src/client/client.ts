@@ -29,7 +29,7 @@ export class UdpClient extends Client<UdpRequest<any>, ResponseEvent<any>, UdpCl
             this.socket = createSocket(connectOpts);
 
             const injector = this.handler.injector;
-            this.session = injector.get(ClientTransportSessionFactory).create(injector, this.socket, options.transportOpts!);
+            this.session = injector.get(ClientTransportSessionFactory).create(injector, this.socket, options);
         }
     }
 

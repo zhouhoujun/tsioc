@@ -114,7 +114,7 @@ export abstract class RequestContext<
     }
 
 
-    private _explicitStatus?: boolean;
+    protected _explicitStatus?: boolean;
     /**
      * Get response status.
      */
@@ -126,11 +126,17 @@ export abstract class RequestContext<
      */
     set status(code: TStatus) {
         if (this.sent) return;
+        this.beforeStatusChanged(code);
         if (this.statusAdapter && !this.statusAdapter.isStatus(code)) throw new InternalServerExecption(`invalid status code: ${code}`)
         this._explicitStatus = true;
         this.response.statusCode = code;
         if (!isNil(this.body) && this.statusAdapter?.isEmpty(code)) this.body = null;
+        this.afterStatusChanged(code);
     }
+
+    protected beforeStatusChanged(code: TStatus) { }
+
+    protected afterStatusChanged(code: TStatus) { }
 
     get statusMessage() {
         return this.response.statusMessage
@@ -715,7 +721,7 @@ export abstract class RequestContext<
  * request context factory.
  */
 @Abstract()
-export abstract class RequestContextFactory<TRequest extends Incoming<any> =Incoming<any>, TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any> {
+export abstract class RequestContextFactory<TRequest extends Incoming<any> = Incoming<any>, TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any> {
     /**
      * create request context.
      * @param session 

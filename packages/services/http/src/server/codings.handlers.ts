@@ -1,9 +1,9 @@
 import { Injectable } from '@tsdi/ioc';
-import { Packet, PacketOpts } from '@tsdi/common';
+import { PacketOpts } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
 import { TransportContext } from '@tsdi/common/transport';
 import { HttpIncomings } from './http.session';
-import { HttpContextFactory, HttpContext } from './context';
+import { HttpContext } from './context';
 import { TransportSession } from '@tsdi/endpoints';
 
 
@@ -13,7 +13,6 @@ export class HttpCodingsHandlers {
     @DecodeHandler(HttpIncomings)
     handleIncoming(incoming: HttpIncomings, context: TransportContext) {
         const session = context.session as TransportSession;
-        const outgoing = session.outgoingFactory.create(incoming, session.options);
         return session.requestContextFactory.create(session, incoming.req, incoming.res, session.serverOptions)
     }
 
@@ -31,7 +30,7 @@ export class HttpCodingsHandlers {
         if (response.error) {
             packet.error = response.error;
         }
-        if (response.tHeaders.hasContentLength()) {
+        if (input.resHeaders.hasContentLength()) {
             packet.payload = input.body;
         }
         

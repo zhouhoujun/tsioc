@@ -3,7 +3,7 @@ import { IncomingFactory, MessageReader, MessageWriter, OutgoingFactory, StatusA
 import { ApplicationEvent, CanActivate, Filter, HandlerService, Interceptor, PipeTransform, Runner, Shutdown } from '@tsdi/core';
 import { Abstract, ProvdierOf, StaticProvider } from '@tsdi/ioc';
 import { EndpointHandler, EndpointOptions } from './EndpointHandler';
-import { RequestContext } from './RequestContext';
+import { RequestContext, RequestContextFactory } from './RequestContext';
 import { RequestHandler } from './RequestHandler';
 import { SessionOptions } from './Session';
 import { ContentOptions } from './interceptors/content';
@@ -63,6 +63,10 @@ export interface ServerOpts<TSerOpts = any> extends EndpointOptions<any> {
      * outgoing factory.
      */
     outgoingFactory?: ProvdierOf<OutgoingFactory>;
+    /**
+     * request context factory.
+     */
+    requestContextFactory?: ProvdierOf<RequestContextFactory>;
     /**
      * service transport session factory.
      */

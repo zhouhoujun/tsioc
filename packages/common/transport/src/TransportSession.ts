@@ -137,7 +137,7 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
      * receive
      * @param req the message response for.
      */
-    abstract receive(context?: TransportContext): Observable<TOutput>;
+    abstract receive(req?: TInput): Observable<TOutput>;
 
     /**
      * destroy.
@@ -147,12 +147,11 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
 }
 
 @Abstract()
-export abstract class MessageReader<TSocket = any, TMsg extends Message = Message> {
-    abstract read(socket: TSocket, messageFactory: MessageFactory, session?: AbstractTransportSession): Observable<TMsg>
+export abstract class MessageReader<TSocket = any, TMsg extends Message = Message, TSession extends AbstractTransportSession = AbstractTransportSession> {
+    abstract read(socket: TSocket, messageFactory: MessageFactory, session: TSession): Observable<TMsg>
 }
 
 @Abstract()
-export abstract class MessageWriter<TSocket = any, TMsg extends Message = Message> {
-    abstract write(socket: TSocket, msg: TMsg): Promise<any>;
-    abstract writeStream(socket: TSocket, msg: TMsg, streamAdapter: StreamAdapter): Promise<any>;
+export abstract class MessageWriter<TSocket = any, TMsg extends Message = Message, TOrigin = any, TSession extends AbstractTransportSession = AbstractTransportSession> {
+    abstract write(socket: TSocket, msg: TMsg, origin: TOrigin, session: TSession): Promise<any>;
 }

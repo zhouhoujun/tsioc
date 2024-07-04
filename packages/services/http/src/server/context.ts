@@ -5,6 +5,7 @@ import { MessageExecption, InternalServerExecption, Outgoing, append, parseToken
 import { RestfulRequestContext, RestfulRequestContextFactory, TransportSession, Throwable, AcceptsPriority } from '@tsdi/endpoints';
 import * as http from 'http';
 import * as http2 from 'http2';
+import * as assert from 'assert';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
 import { HttpServerOpts } from './options';
@@ -138,77 +139,12 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         return this.method === PUT;
     }
 
-    isAbsoluteUrl(url: string): boolean {
-        return httptl.test(url.trim())
-    }
-
-    get pathname(): string {
-        return this.URL.pathname
-    }
-
-    get params(): URLSearchParams {
-        return this.URL.searchParams
-    }
-
-    /**
-     * Get full request URL.
-     *
-     * @return {String}
-     * @api public
-     */
-
-    get href() {
-        return this.URL.href;
-    }
-
-    /**
-     * Get the search string. Same as the query string
-     * except it includes the leading ?.
-     *
-     * @return {String}
-     * @api public
-     */
-    get search() {
-        return this.URL.search
-    }
-
-    /**
-    //  * Set the search string. Same as
-    //  * request.querystring= but included for ubiquity.
-    //  *
-    //  * @param {String} str
-    //  * @api public
-    //  */
-    // set search(str: string) {
-    //     this.URL.search = str;
-    //     this._query = null!
+    // isAbsoluteUrl(url: string): boolean {
+    //     return httptl.test(url.trim())
     // }
-
-    // /**
-    //  * Get query string.
-    //  *
-    //  * @return {String}
-    //  * @api public
-    //  */
-
-    // get querystring() {
-    //     return this.URL.search?.slice(1)
-    // }
-
-    // /**
-    //  * Set query string.
-    //  *
-    //  * @param {String} str
-    //  * @api public
-    //  */
-
-    // set querystring(str) {
-    //     this.search = `?${str}`
-    // }
-
 
     // get status(): number {
-    //     return this.response.status
+    //     return this.response.statusCode
     // }
 
     // set status(code: number) {
@@ -217,10 +153,18 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
     //     assert(Number.isInteger(code), 'status code must be a number');
     //     assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
     //     this._explicitStatus = true;
-    //     this.response.status = code;
-    //     if (this.request.httpVersionMajor < 2) this.response.statusMessage = statusMessage[code];
+    //     this.response.statusCode = code;
     //     if (this.body && this.vaildator.isEmpty(code)) this.body = null;
     // }
+
+    protected override beforeStatusChanged(code: number): void {
+        assert(Number.isInteger(code), 'status code must be a number');
+        assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
+    }
+
+    protected override afterStatusChanged(code: number): void {
+        if (this.request.httpVersionMajor < 2) this.response.statusMessage = statusMessage[code as HttpStatusCode];
+    }
 
     /**
      * When `httpServer.proxy` is `true`, parse
@@ -561,8 +505,8 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 
 @Injectable()
 export class HttpContextFactory implements RestfulRequestContextFactory<HttpServRequest, HttpServResponse> {
-    create(injector: Injector, session: TransportSession, incoming: HttpServRequest, outgoing: HttpServResponse, options: HttpServerOpts): HttpContext {
-        return new HttpContext(injector, session,
+    create(session: TransportSession, incoming: HttpServRequest, outgoing: HttpServResponse, options: HttpServerOpts): HttpContext {
+        return new HttpContext(session.injector, session,
             incoming,
             outgoing,
             options);

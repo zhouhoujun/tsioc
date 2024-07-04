@@ -2,6 +2,7 @@ import { MessageFactory, ResponseFactory } from '@tsdi/common';
 import { ClientIncomingFactory, IDuplexStream, MessageReader, MessageWriter, Redirector, StatusAdapter, StreamAdapter, TransportDecodings, TransportDecodingsFactory, TransportEncodings, TransportEncodingsFactory, TransportOpts } from '@tsdi/common/transport';
 import { Injectable, Injector } from '@tsdi/ioc';
 import { ClientTransportSession, ClientTransportSessionFactory } from './session';
+import { ClientOpts } from './options';
 
 
 
@@ -17,6 +18,10 @@ export class DefaultClientTransportSession extends ClientTransportSession<any> {
     private _messageFactory?: MessageFactory;
     private _responseFactory?: ResponseFactory;
     private _redirector?: Redirector | null;
+
+    get options(): TransportOpts {
+        return this.clientOptions.transportOpts!
+    }
 
     get encodings(): TransportEncodings {
         if (!this._encodings) {
@@ -86,7 +91,7 @@ export class DefaultClientTransportSession extends ClientTransportSession<any> {
     constructor(
         readonly injector: Injector,
         readonly socket: any,
-        readonly options: TransportOpts
+        readonly clientOptions: ClientOpts
 
     ) {
         super()
@@ -101,7 +106,7 @@ export class DefaultClientTransportSessionFactory implements ClientTransportSess
 
     constructor() { }
 
-    create(injector: Injector, socket: IDuplexStream, options: TransportOpts): DefaultClientTransportSession {
+    create(injector: Injector, socket: IDuplexStream, options: ClientOpts): DefaultClientTransportSession {
         return new DefaultClientTransportSession(injector, socket, options);
     }
 

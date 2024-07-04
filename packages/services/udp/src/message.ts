@@ -1,6 +1,6 @@
 import { MessageFactory, Pattern, PatternMesage } from '@tsdi/common';
-import { AbstractTransportSession, IReadableStream, MessageReader, MessageWriter, StreamAdapter, ev, toBuffer } from '@tsdi/common/transport';
-import { Injectable, promisify } from '@tsdi/ioc';
+import { AbstractTransportSession, IReadableStream, MessageReader, MessageWriter, ev, toBuffer } from '@tsdi/common/transport';
+import { Execption, Injectable, promisify } from '@tsdi/ioc';
 import { RemoteInfo, Socket } from 'dgram';
 import { Observable, filter, fromEvent } from 'rxjs';
 
@@ -45,10 +45,10 @@ export class UdpMessageFactory implements MessageFactory {
 @Injectable()
 export class UdpMessageReader implements MessageReader<Socket> {
 
-    read(socket: Socket, messageFactory: UdpMessageFactory, session?: AbstractTransportSession): Observable<UdpMessage> {
+    read(socket: Socket, messageFactory: UdpMessageFactory, session: AbstractTransportSession): Observable<UdpMessage> {
         return fromEvent(socket, ev.MESSAGE, (msg: Buffer, rinfo: RemoteInfo) => {
             const addr = socket.address();
-            if(rinfo.address == addr.address && rinfo.port == addr.port) return null!;
+            if (rinfo.address == addr.address && rinfo.port == addr.port) return null!;
             return messageFactory.create({ data: msg, remoteInfo: rinfo });
         }).pipe(
             filter(r => r !== null)
@@ -59,13 +59,13 @@ export class UdpMessageReader implements MessageReader<Socket> {
 @Injectable()
 export class UdpMessageWriter implements MessageWriter<Socket, UdpMessage> {
 
-    write(socket: Socket, msg: UdpMessage): Promise<any> {
-        return promisify<Buffer, number, string>(socket.send, socket)(msg.data as Buffer, msg.remoteInfo.port, msg.remoteInfo.address)
-    }
-
-    async writeStream(socket: Socket, msg: UdpMessage, streamAdapter: StreamAdapter): Promise<any> {
-        const bufs = await toBuffer(msg.data as IReadableStream);
-        return await promisify<Buffer, number, string>(socket.send, socket)(bufs, msg.remoteInfo.port, msg.remoteInfo.address)
+    async write(socket: Socket, msg: UdpMessage, origin: any, session: AbstractTransportSession): Promise<any> {
+        let data = msg.data;
+        if (session.streamAdapter.isReadable(data)) {
+            data = await toBuffer(data);
+        }
+        if (!data) throw new Execption('message data is empty');
+        return promisify<Buffer | string, number, string>(socket.send, socket)(data, msg.remoteInfo.port, msg.remoteInfo.address)
     }
 
 }
