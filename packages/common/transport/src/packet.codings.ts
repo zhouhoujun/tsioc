@@ -25,10 +25,64 @@ export abstract class HeaderDeserialization {
     abstract deserialize(data: Buffer): PacketOpts;
 }
 
+@Injectable()
+export class PayloadEncoder {
+
+    async encode(streamAdapter: StreamAdapter, packet: Packet<any>, encoding?: string): Promise<string | Buffer | IReadableStream | null> {
+        if (isNil(packet.payload)) return null;
+
+        let source: string | Buffer | IReadableStream;
+        if (isArrayBuffer(packet.payload)) {
+            source = Buffer.from(packet.payload);
+        } else if (Buffer.isBuffer(packet.payload)) {
+            source = packet.payload;
+        } else if (isString(packet.payload)) {
+            if (!packet.headers.hasContentType()) packet.headers.setContentType(ctype.TEXT_PLAIN);
+            source = packet.payload;
+        } else if (isBlob(packet.payload)) {
+            packet.headers.setContentType(packet.payload.type);
+            const arrbuff = await packet.payload.arrayBuffer();
+            source = Buffer.from(arrbuff);
+        } else if (streamAdapter.isFormDataLike(packet.payload)) {
+            let data = packet.payload;
+            if (isFormData(data)) {
+                const form = streamAdapter.createFormData();
+                data.forEach((v, k, parent) => {
+                    form.append(k, v);
+                });
+                data = form;
+            }
+            source = data.getBuffer();
+        } else if (streamAdapter.isReadable(packet.payload)) {
+            source = packet.payload;
+        } else if (packet.payload instanceof RequestParams) {
+            packet.headers.setContentType(ctype.X_WWW_FORM_URLENCODED);
+            source = packet.payload.toString();
+        } else {
+            packet.headers.setContentType(ctype.APPL_JSON);
+            source = JSON.stringify(packet.payload);
+        }
+        if (encoding) {
+            switch (encoding) {
+                case 'gzip':
+                case 'deflate':
+                    source = (streamAdapter.isReadable(source) ? source : streamAdapter.pipeline(source, streamAdapter.createPassThrough())).pipe(streamAdapter.createGzip());
+                    break;
+                case 'identity':
+                    break;
+                default:
+                    throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
+            }
+        }
+        return source;
+    }
+}
 
 
 @Injectable({ static: true })
 export class PacketCodingsHandlers {
+
+    constructor(private payloadEncoder: PayloadEncoder) { }
 
     @DecodeHandler(Message, { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
     async messageDecode(context: TransportContext) {
@@ -87,7 +141,7 @@ export class PacketCodingsHandlers {
 
         let data: any, streamLen: number | undefined;
         if (options.headDelimiter) {
-            data = await this.encodePayload(streamAdapter, pkg, options.encoding);
+            data = await this.payloadEncoder.encode(streamAdapter, pkg, options.encoding);
             const headDelimiter = Buffer.from(options.headDelimiter);
 
             const headerSerialization = injector.get(HeaderSerialization, null);
@@ -178,54 +232,6 @@ export class PacketCodingsHandlers {
         return source;
     }
 
-    async encodePayload(streamAdapter: StreamAdapter, packet: Packet<any>, encoding?: string): Promise<string | Buffer | IReadableStream | null> {
-        if (isNil(packet.payload)) return null;
-
-        let source: string | Buffer | IReadableStream;
-        if (isArrayBuffer(packet.payload)) {
-            source = Buffer.from(packet.payload);
-        } else if (Buffer.isBuffer(packet.payload)) {
-            source = packet.payload;
-        } else if (isString(packet.payload)) {
-            if (!packet.headers.hasContentType()) packet.headers.setContentType(ctype.TEXT_PLAIN);
-            source = packet.payload;
-        } else if (isBlob(packet.payload)) {
-            packet.headers.setContentType(packet.payload.type);
-            const arrbuff = await packet.payload.arrayBuffer();
-            source = Buffer.from(arrbuff);
-        } else if (streamAdapter.isFormDataLike(packet.payload)) {
-            let data = packet.payload;
-            if (isFormData(data)) {
-                const form = streamAdapter.createFormData();
-                data.forEach((v, k, parent) => {
-                    form.append(k, v);
-                });
-                data = form;
-            }
-            source = data.getBuffer();
-        } else if (streamAdapter.isReadable(packet.payload)) {
-            source = packet.payload;
-        } else if (packet.payload instanceof RequestParams) {
-            packet.headers.setContentType(ctype.X_WWW_FORM_URLENCODED);
-            source = packet.payload.toString();
-        } else {
-            packet.headers.setContentType(ctype.APPL_JSON);
-            source = JSON.stringify(packet.payload);
-        }
-        if (encoding) {
-            switch (encoding) {
-                case 'gzip':
-                case 'deflate':
-                    source = (streamAdapter.isReadable(source) ? source : streamAdapter.pipeline(source, streamAdapter.createPassThrough())).pipe(streamAdapter.createGzip());
-                    break;
-                case 'identity':
-                    break;
-                default:
-                    throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
-            }
-        }
-        return source;
-    }
 
     private serializeHeader(packet: Packet<any>, ignores?: string[]): Buffer {
         const headers = packet.toJson(['payload', ...ignores ?? EMPTY]);

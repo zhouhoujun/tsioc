@@ -16,6 +16,7 @@ import { HttpResponseEventFactory } from './client/response.factory';
 import { HttpClientCodingsHandlers } from './client/codings.hanlders';
 import { HttpCodingsHandlers } from './server/codings.handlers';
 import { HttpExecptionHandlers } from './execption.handlers';
+import { HttpClientMessageFactory, HttpClientMessageReader, HttpClientMessageWriter } from './client/message';
 
 
 // const defaultMaxSize = 1048576; // 1024 * 1024;
@@ -44,13 +45,14 @@ import { HttpExecptionHandlers } from './execption.handlers';
                 microservice: true,
                 hanlderType: HttpHandler,
                 imports: [MimeModule],
-                responseEventFactory: HttpResponseEventFactory,
                 defaultOpts: {
                     interceptorsToken: HTTP_CLIENT_INTERCEPTORS,
                     filtersToken: HTTP_CLIENT_FILTERS,
                     statusAdapter: HttpStatusAdapter,
-                    // backend: HttpTransportBackend,
-                    // sessionFactory: { useExisting: HttpClientSessionFactory },
+                    responseFactory: HttpResponseEventFactory,
+                    messageReader: HttpClientMessageReader,
+                    messageWriter: HttpClientMessageWriter,
+                    messageFactory: HttpClientMessageFactory,
                 }
             } as ClientModuleOpts,
             multi: true
@@ -66,9 +68,10 @@ import { HttpExecptionHandlers } from './execption.handlers';
                     interceptorsToken: HTTP_CLIENT_INTERCEPTORS,
                     filtersToken: HTTP_CLIENT_FILTERS,
                     statusAdapter: HttpStatusAdapter,
-                    responseEventFactory: HttpResponseEventFactory,
-                    // backend: HttpTransportBackend,
-                    // sessionFactory: { useExisting: HttpClientSessionFactory },
+                    responseFactory: HttpResponseEventFactory,
+                    messageReader: HttpClientMessageReader,
+                    messageWriter: HttpClientMessageWriter,
+                    messageFactory: HttpClientMessageFactory,
                 }
             } as ClientModuleOpts,
             multi: true

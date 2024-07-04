@@ -13,7 +13,7 @@ import * as assert from 'assert';
 import { HttpServerOpts } from './options';
 import { HttpEndpointHandler } from './handler';
 import { HttpContext } from './context';
-import { HttpServerSessionFactory } from './http.session';
+import { HttpServerSessionFactory } from './message';
 
 
 /**

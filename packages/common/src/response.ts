@@ -1,4 +1,4 @@
-import { Abstract, EMPTY, Injectable, hasOwn, isPlainObject, lang } from '@tsdi/ioc';
+import { Abstract, Injectable, hasOwn, isPlainObject } from '@tsdi/ioc';
 import { HeadersLike } from './headers';
 import { StatusPacket, StatusPacketOpts } from './packet';
 import { Pattern } from './pattern';
@@ -249,7 +249,7 @@ export interface ResponseJsonParseError {
 /**
  * Response Event
  */
-export type ResponseEvent<T, TStatus = any> = HeaderResponse<TStatus> | ResponsePacket<T, TStatus> | ErrorResponse<TStatus> | ResponseEventPacket;
+export type ResponseEvent<T, TStatus = any> = HeaderResponse<TStatus> | ResponsePacket<T, TStatus> | ResponseEventPacket;
 
 export function isResponseEvent(target: any): target is ResponseEvent<any> {
     if (!target) return false;
@@ -262,7 +262,7 @@ export abstract class ResponseFactory<TStatus = null> {
      * create response.
      * @param options 
      */
-    abstract create<T>(options: ResponseInitOpts): ResponseEvent<T, TStatus>;
+    abstract create<T>(options: ResponseInitOpts): ResponseEvent<T, TStatus> | ErrorResponse<TStatus>;
 }
 
 @Injectable()

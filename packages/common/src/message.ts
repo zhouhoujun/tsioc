@@ -10,11 +10,26 @@ export interface MessageInitOpts {
     data?: Buffer | IReadableStream | null;
 }
 
+export abstract class Message {
+
+    id: string | number | undefined;
+
+    streamLength?: number;
+    
+    noHead?: boolean;
+
+    abstract get headers(): Record<string, Header>;
+
+    abstract get data(): string | Buffer | IReadableStream | null;
+
+    abstract set data(value: string | Buffer | IReadableStream | null);
+}
+
 
 /**
  * base message.
  */
-export class Message {
+export class BaseMessage implements Message {
     public id: string | number | undefined;
 
     readonly headers: Record<string, Header>;
@@ -39,7 +54,7 @@ export class Message {
 }
 
 
-export class PatternMesage extends Message {
+export class PatternMesage extends BaseMessage {
     readonly pattern: Pattern
     constructor(init: {
         id?: string | number;
@@ -62,13 +77,7 @@ export abstract class MessageFactory {
     abstract create(initOpts: {
         id?: string | number;
         headers?: Record<string, any>;
-        data?: string | Buffer | IReadableStream | null;
-        streamLength?: number;
-    }): Message;
-    abstract create<T = any>(initOpts: {
-        id?: string | number;
-        headers?: Record<string, any>;
-        data?: T;
+        data?: any;
         streamLength?: number;
     }): Message;
 }

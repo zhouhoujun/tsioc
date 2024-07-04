@@ -2,7 +2,7 @@ import { Injectable } from '@tsdi/ioc';
 import { PacketOpts } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
 import { TransportContext } from '@tsdi/common/transport';
-import { HttpIncomings } from './http.session';
+import { HttpIncomings } from './message';
 import { HttpContext } from './context';
 import { TransportSession } from '@tsdi/endpoints';
 
