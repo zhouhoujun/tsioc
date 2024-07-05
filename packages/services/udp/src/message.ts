@@ -1,5 +1,5 @@
 import { MessageFactory, Pattern, PatternMesage } from '@tsdi/common';
-import { AbstractTransportSession, IReadableStream, MessageReader, MessageWriter, ev, toBuffer } from '@tsdi/common/transport';
+import { AbstractTransportSession, IEventEmitter, IReadableStream, MessageReader, MessageWriter, ev, toBuffer } from '@tsdi/common/transport';
 import { Execption, Injectable, promisify } from '@tsdi/ioc';
 import { RemoteInfo, Socket } from 'dgram';
 import { Observable, filter, fromEvent } from 'rxjs';
@@ -45,7 +45,7 @@ export class UdpMessageFactory implements MessageFactory {
 @Injectable()
 export class UdpMessageReader implements MessageReader<Socket> {
 
-    read(socket: Socket, messageFactory: UdpMessageFactory, session: AbstractTransportSession): Observable<UdpMessage> {
+    read(socket: Socket, channel: IEventEmitter | null | undefined, messageFactory: UdpMessageFactory, session: AbstractTransportSession): Observable<UdpMessage> {
         return fromEvent(socket, ev.MESSAGE, (msg: Buffer, rinfo: RemoteInfo) => {
             const addr = socket.address();
             if (rinfo.address == addr.address && rinfo.port == addr.port) return null!;
