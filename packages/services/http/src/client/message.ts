@@ -52,28 +52,28 @@ const secureExp = /^https:/;
 @Injectable()
 export class HttpClientMessageReader implements MessageReader {
 
-    read(socket: ClientHttp2Session | ClientRequest, messageFactory: MessageFactory, session: AbstractTransportSession): Observable<Message> {
-        if (socket instanceof ClientRequest) {
+    read(socket: ClientHttp2Session | null, channel: ClientHttp2Stream | ClientRequest, messageFactory: MessageFactory, session: AbstractTransportSession): Observable<Message> {
+        if (channel instanceof ClientRequest) {
             return new Observable<Message>(subscribe => {
                 const onResponse = (resp: IncomingMessage) => subscribe.next(messageFactory.create(resp));
                 const onError = (err: any) => err && subscribe.error(err);
-                socket.on(ev.CLOSE, onError);
-                socket.on(ev.ERROR, onError);
-                socket.on(ev.ABOUT, onError);
-                socket.on(ev.TIMEOUT, onError);
-                socket.on(ev.RESPONSE, onResponse);
+                channel.on(ev.CLOSE, onError);
+                channel.on(ev.ERROR, onError);
+                channel.on(ev.ABOUT, onError);
+                channel.on(ev.TIMEOUT, onError);
+                channel.on(ev.RESPONSE, onResponse);
 
                 return () => {
-                    socket.off(ev.CLOSE, onError);
-                    socket.off(ev.ERROR, onError);
-                    socket.off(ev.ABOUT, onError);
-                    socket.off(ev.TIMEOUT, onError);
-                    socket.off(ev.RESPONSE, onResponse);
+                    channel.off(ev.CLOSE, onError);
+                    channel.off(ev.ERROR, onError);
+                    channel.off(ev.ABOUT, onError);
+                    channel.off(ev.TIMEOUT, onError);
+                    channel.off(ev.RESPONSE, onResponse);
                     subscribe.unsubscribe();
                 }
             })
         } else {
-            return fromEvent(socket, ev.RESPONSE, (headers) => messageFactory.create({ headers, data: socket }));
+            return fromEvent(channel, ev.RESPONSE, (headers) => messageFactory.create({ headers, data: channel }));
         }
     }
 }
@@ -82,7 +82,7 @@ export class HttpClientMessageReader implements MessageReader {
 export class HttpClientMessageWriter implements MessageWriter<ClientHttp2Session | null, Message, HttpRequest<any>, ClientTransportSession> {
 
     async write(socket: ClientHttp2Session | null, msg: Message, req: HttpRequest<any>, session: ClientTransportSession): Promise<any> {
-        let path = req.url ?? '';
+        let path = req.urlWithParams ?? '';
         const clientOpts = session.clientOptions as HttpClientOpts;
         const ac = this.getAbortSignal(req.context);
         let stream: ClientHttp2Stream | ClientRequest;

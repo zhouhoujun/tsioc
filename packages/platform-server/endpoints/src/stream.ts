@@ -1,6 +1,7 @@
 import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
 import { isFormData } from '@tsdi/common';
 import { StreamAdapter, ev, isBuffer, IWritableStream, IDuplexStream, IReadableStream, ITransformStream, BrotliOptions, PipeSource, ZipOptions } from '@tsdi/common/transport';
+import { EventEmitter } from 'events';
 import { isReadable, Stream, Writable, WritableOptions, Readable, Duplex, PassThrough, pipeline, Transform, TransformCallback, PipelineOptions } from 'stream';
 import { promisify } from 'util';
 import * as zlib from 'zlib';
@@ -54,6 +55,10 @@ export class NodeStreamAdapter extends StreamAdapter {
 
     jsonSreamify(value: any, replacer?: Function | any[] | undefined, spaces?: string | number | undefined, cycle?: boolean | undefined): IReadableStream {
         return new JsonStreamStringify(value, replacer, spaces, cycle);
+    }
+
+    isEventEmitter(target: any): target is EventEmitter {
+        return target instanceof EventEmitter
     }
 
     isStream(target: any): target is Stream {

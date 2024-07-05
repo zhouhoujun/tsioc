@@ -4,13 +4,13 @@ import { Injectable, promisify } from '@tsdi/ioc';
 import { Observable, Subject, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
 import { AbstractTransportSession, MessageReader, MessageWriter } from './TransportSession';
 import { ev } from './consts';
-import { IReadableStream, IWritableStream } from './stream';
+import { IEventEmitter, IReadableStream, IWritableStream } from './stream';
 
 
 @Injectable()
-export class SocketMessageReader implements MessageReader<IWritableStream> {
-    read(socket: IWritableStream, messageFactory: MessageFactory, session: BaseTransportSession): Observable<Message> {
-        return fromEvent(socket, ev.DATA, (chunk: Buffer | string) => {
+export class SocketMessageReader implements MessageReader<IReadableStream> {
+    read(socket: IReadableStream, channel: IEventEmitter, messageFactory: MessageFactory, session: BaseTransportSession): Observable<Message> {
+        return fromEvent(channel ?? socket, ev.DATA, (chunk: Buffer | string) => {
             return messageFactory.create({ data: chunk });
         })
     }
@@ -58,11 +58,11 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
 
     /**
      * receive
+     * @param channel the req channel.
      * @param req the message response for.
-     * @param reqHost the host context of req.
      */
-    receive(req?: TInput, reqHost?: any): Observable<TOutput> {
-        return this.handleMessage(reqHost)
+    receive(channel?: IEventEmitter, req?: TInput): Observable<TOutput> {
+        return this.handleMessage(channel)
             .pipe(
                 mergeMap(origin => {
                     return this.decodings.decode(origin, req)
@@ -96,8 +96,8 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
     /**
      * handle message
      */
-    protected handleMessage(reqHost?: any): Observable<TMsg> {
-        return this.messageReader.read(this.socket ?? reqHost, this.messageFactory, this)
+    protected handleMessage(channel?: IEventEmitter): Observable<TMsg> {
+        return this.messageReader.read(this.socket, this.streamAdapter.isEventEmitter(channel)? channel : null, this.messageFactory, this)
             .pipe(
                 takeUntil(this.destroy$)
             ) as Observable<any>;

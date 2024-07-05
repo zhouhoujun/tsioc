@@ -1,13 +1,14 @@
 import { Injectable, Injector } from '@tsdi/ioc';
 import { Decoder, DecodingsFactory, Encoder, EncodingsFactory } from '@tsdi/common/codings';
-import { TransportContext, StreamAdapter, TransportOpts, ev } from '@tsdi/common/transport';
+import { TransportContext, StreamAdapter, TransportOpts, ev, MessageReader, AbstractTransportSession } from '@tsdi/common/transport';
 import { TransportSession, TransportSessionFactory } from '@tsdi/endpoints';
-import { Server, IncomingMessage } from 'http';
+import { Server, IncomingMessage, ServerResponse } from 'http';
 import { Server as HttpsServer } from 'https';
 import { Http2Server, ClientHttp2Stream, IncomingHttpHeaders, IncomingHttpStatusHeader } from 'http2';
 import { Observable, defer, share, takeUntil } from 'rxjs';
 import { HttpContext, HttpServRequest, HttpServResponse } from './context';
 import { HttpServerOpts } from './options';
+import { MessageFactory, Message } from '@tsdi/common';
 
 
 export type ResponseMsg = IncomingMessage | {
@@ -21,6 +22,31 @@ export class HttpIncomings {
         readonly req: HttpServRequest,
         readonly res: HttpServResponse
     ) { }
+}
+
+@Injectable()
+export class HttpServerMessageReader implements MessageReader<Http2Server | HttpsServer | Server> {
+
+    read(socket: Http2Server | HttpsServer | Server,  channel:  null | undefined, messageFactory: MessageFactory, session: AbstractTransportSession<any, any, any, any>): Observable<Message> {
+        return new Observable<HttpIncomings>(subscribe => {
+            const onRequest = (req: HttpServRequest, res: HttpServResponse) => subscribe.next(new HttpIncomings(req, res));
+            const onError = (err: any) => err && subscribe.error(err);
+            socket.on(ev.CLOSE, onError);
+            socket.on(ev.ERROR, onError);
+            socket.on(ev.ABOUT, onError);
+            socket.on(ev.TIMEOUT, onError);
+            socket.on(ev.REQUEST, onRequest);
+
+            return () => {
+                socket.off(ev.CLOSE, onError);
+                socket.off(ev.ERROR, onError);
+                socket.off(ev.ABOUT, onError);
+                socket.off(ev.TIMEOUT, onError);
+                socket.off(ev.REQUEST, onRequest);
+                subscribe.unsubscribe();
+            }
+        })
+    }
 }
 
 // export class HttpServerTransportSession extends TransportSession<Http2Server | HttpsServer | Server> {

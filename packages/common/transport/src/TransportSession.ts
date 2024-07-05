@@ -7,6 +7,7 @@ import { StatusAdapter } from './StatusAdapter';
 import { StreamAdapter } from './StreamAdapter';
 import { TransportDecodingsFactory, TransportEncodingsFactory } from './condings';
 import { TransportContext } from './context';
+import { IEventEmitter } from './stream';
 
 
 
@@ -131,13 +132,14 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
      * send.
      * @param data 
      */
-    abstract send(data: TInput, context?: TransportContext): Observable<TMsg>;
+    abstract send(data: TInput): Observable<TMsg>;
 
     /**
      * receive
+     * @param channel the req channel.
      * @param req the message response for.
      */
-    abstract receive(req?: TInput): Observable<TOutput>;
+    abstract receive(channel?: IEventEmitter, req?: TInput): Observable<TOutput>;
 
     /**
      * destroy.
@@ -147,8 +149,8 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
 }
 
 @Abstract()
-export abstract class MessageReader<TSocket = any, TMsg extends Message = Message, TSession extends AbstractTransportSession = AbstractTransportSession> {
-    abstract read(socket: TSocket, messageFactory: MessageFactory, session: TSession): Observable<TMsg>
+export abstract class MessageReader<TSocket = any, TChannel extends IEventEmitter = IEventEmitter, TMsg extends Message = Message, TSession extends AbstractTransportSession = AbstractTransportSession> {
+    abstract read(socket: TSocket, channel: TChannel | null | undefined, messageFactory: MessageFactory, session: TSession): Observable<TMsg>
 }
 
 @Abstract()

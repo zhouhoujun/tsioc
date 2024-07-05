@@ -1,6 +1,6 @@
 import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
 import { global, isFormData  } from '@tsdi/common';
-import { StreamAdapter, BrotliOptions, IDuplexStream, IReadableStream, ITransformStream, IWritableStream, PipeSource, ZipOptions, ev, isBuffer } from '@tsdi/common/transport'
+import { StreamAdapter, BrotliOptions, IDuplexStream, IReadableStream, ITransformStream, IWritableStream, PipeSource, ZipOptions, ev, isBuffer, IEventEmitter } from '@tsdi/common/transport';
 import { Stream, Writable, Readable, Duplex, PassThrough, Transform, WritableOptions } from 'readable-stream';
 import * as pumpify from 'pumpify';
 import * as FormData from 'form-data';
@@ -41,6 +41,10 @@ export class BrowserStreamAdapter extends StreamAdapter {
 
     jsonSreamify(value: any, replacer?: Function | any[] | undefined, spaces?: string | number | undefined, cycle?: boolean | undefined): IReadableStream {
         return new JsonStreamStringify(value, replacer, spaces, cycle);
+    }
+
+    isEventEmitter(target: any): target is IEventEmitter {
+        return target && isFunction(target.once) && isFunction(target.on) && isFunction(target.off) && isFunction(target.addListener)  && isFunction(target.removeListener);
     }
 
     isStream(target: any): target is Stream {

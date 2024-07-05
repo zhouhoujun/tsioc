@@ -66,7 +66,6 @@ export class PatternMesage extends BaseMessage {
         super(init)
         this.pattern = init.pattern!
     }
-
 }
 
 /**

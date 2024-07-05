@@ -26,7 +26,7 @@ export abstract class ClientTransportSession<TSocket = any, TMsg extends Message
     request(req: AbstractRequest<any>, destroy$?: Observable<any>): Observable<ResponseEvent<any>> {
         return this.send(req)
             .pipe(
-                mergeMap((reqHost) => this.receive(req, reqHost)),
+                mergeMap((channel) => this.receive(channel, req)),
                 takeUntil(destroy$ ? merge(this.destroy$, destroy$).pipe(first()) : this.destroy$)
             )
     }

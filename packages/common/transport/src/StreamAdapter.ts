@@ -1,7 +1,7 @@
 import { TypeExecption, isArray } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { ev } from './consts';
-import { IDuplexStream, IReadableStream, IStream, ITransformStream, IWritableStream } from './stream';
+import { IDuplexStream, IEventEmitter, IReadableStream, IStream, ITransformStream, IWritableStream } from './stream';
 
 /**
  * pipe source.
@@ -122,6 +122,8 @@ export abstract class StreamAdapter {
     abstract jsonSreamify(value: any, replacer?: Function | any[], spaces?: number | string, cycle?: boolean): IReadableStream;
 
     abstract isStream(target: any): target is IStream;
+
+    abstract isEventEmitter(target: any): target is IEventEmitter;
 
     abstract isReadable(stream: any): stream is IReadableStream;
 

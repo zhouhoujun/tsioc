@@ -461,7 +461,6 @@ export class HttpRequest<T> implements AbstractRequest<T> {
         if (!isNil(this.payload)) {
             rcd.payload = this.payload;
         }
-        if (this.params.size) rcd.params = this.params.toRecord();
         if (this.method) rcd.method = this.method;
         rcd.withCredentials = this.withCredentials;
         rcd.reportProgress = this.reportProgress;

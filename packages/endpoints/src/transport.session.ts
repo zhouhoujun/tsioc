@@ -8,7 +8,7 @@ import { ServerOpts } from './Server';
 import { AcceptsPriority } from './accepts';
 
 @Abstract()
-export abstract class TransportSession<TSocket = any, TMsg extends Message = Message, TOptions extends ServerOpts = ServerOpts> extends BaseTransportSession<TSocket, RequestContext, any, TMsg> {
+export abstract class TransportSession<TSocket = any, TMsg extends Message = Message, TOptions extends ServerOpts = ServerOpts> extends BaseTransportSession<TSocket, RequestContext, RequestContext, TMsg> {
     /**
      * server options.
      */
