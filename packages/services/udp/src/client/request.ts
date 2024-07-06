@@ -1,5 +1,5 @@
 import { isString } from '@tsdi/ioc';
-import { BaseRequest, Pattern, RequestCloneOpts, RequestInitOpts } from '@tsdi/common';
+import { BaseRequest, RequestCloneOpts, RequestInitOpts } from '@tsdi/common';
 import { isIPv4 } from '@tsdi/common/transport';
 import { RemoteInfo } from 'dgram';
 import { udpUrl$ } from '../consts';
@@ -11,11 +11,9 @@ export interface UdpRequestInitOpts<T = any> extends RequestInitOpts<T> {
 }
 
 export class UdpRequest<T> extends BaseRequest<T> {
-    readonly pattern: Pattern;
     readonly remoteInfo: RemoteInfo;
     constructor(options: UdpRequestInitOpts<T>) {
         super(options);
-        this.pattern = options.pattern!;
         if (options.remoteInfo) {
             this.remoteInfo = options.remoteInfo;
         } else {
