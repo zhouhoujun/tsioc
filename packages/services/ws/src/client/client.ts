@@ -78,7 +78,8 @@ export class WsClient extends Client<WsRequest<any>, ResponseEvent<any>, WsClien
 
 
     protected createRequest(pattern: Pattern, options: UrlRequestInitOpts<any>): WsRequest<any> {
-        return new WsRequest(pattern, options);
+        options.pattern = pattern;
+        return new WsRequest(options);
     }
 
     protected initContext(context: InvocationContext<any>): void {

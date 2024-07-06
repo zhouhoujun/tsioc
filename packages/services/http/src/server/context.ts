@@ -1,6 +1,6 @@
 import { Injectable, Injector, isArray, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
-import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, HeaderMappings, ResponsePacket } from '@tsdi/common';
+import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, HeaderMappings, Response } from '@tsdi/common';
 import { MessageExecption, InternalServerExecption, Outgoing, append, parseTokenList, Incoming, StatusAdapter, MimeAdapter, StreamAdapter, FileAdapter, PacketLengthException, ENOENT } from '@tsdi/common/transport';
 import { RestfulRequestContext, RestfulRequestContextFactory, TransportSession, Throwable, AcceptsPriority } from '@tsdi/endpoints';
 import * as http from 'http';
@@ -362,7 +362,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
     }
 
 
-    setResponse(packet: ResponsePacket<any>): void {
+    setResponse(packet: Response<any>): void {
         const { headers, payload, status, statusMessage: statusText } = packet;
         if (status) this.status = status as number;
         if (statusText) this.statusMessage = statusText;

@@ -1,7 +1,7 @@
 import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { Application, ApplicationContext, Payload } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { ErrorResponse, ResponsePacket } from '@tsdi/common';
+import { ErrorResponse, Response } from '@tsdi/common';
 import { BadRequestExecption } from '@tsdi/common/transport';
 import { ClientModule } from '@tsdi/common/client';
 import { ServerModule } from '@tsdi/platform-server';
@@ -243,7 +243,7 @@ if (os.platform() != 'win32') {
                 .pipe(
                     catchError((err, ct) => {
                         // ctx.getLogger().error(err);
-                        return of(err as ResponsePacket<any>);
+                        return of(err as Response<any>);
                     })));
             // expect(b.status).toEqual(200);
             expect(b.ok).toBeTruthy();
@@ -352,7 +352,7 @@ if (os.platform() != 'win32') {
                 .pipe(
                     catchError((err, ct) => {
                         // ctx.getLogger().error(err);
-                        return of(err as ResponsePacket<any, number>);
+                        return of(err as Response<any, number>);
                     })));
             // expect(r.status).toEqual(200);
             expect(r.ok).toBeTruthy();
@@ -377,7 +377,7 @@ if (os.platform() != 'win32') {
             const r = await lastValueFrom(client.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
                 catchError((err, ct) => {
                     // ctx.getLogger().error(err);
-                    return of(err as ResponsePacket<any, number>);
+                    return of(err as Response<any, number>);
                 })));
             // expect(r.status).toEqual(200);
             expect(r.ok).toBeTruthy();
@@ -389,7 +389,7 @@ if (os.platform() != 'win32') {
             const r = await lastValueFrom(client.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
                 catchError((err, ct) => {
                     // ctx.getLogger().error(err);
-                    return of(err as ResponsePacket<any, number>);
+                    return of(err as Response<any, number>);
                 })));
             // expect(r.status).toEqual(200);
             expect(r.ok).toBeTruthy();

@@ -1,5 +1,5 @@
 import { EMPTY_OBJ, Injectable, Injector, isNil, isString } from '@tsdi/ioc';
-import { HeaderMappings, LOCALHOST, normalize, PatternFormatter, RequestParams, ResponsePacket } from '@tsdi/common';
+import { HeaderMappings, LOCALHOST, normalize, PatternFormatter, RequestParams, Response } from '@tsdi/common';
 import { Incoming, MessageExecption, Outgoing } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
 import { RequestContext, RequestContextFactory } from '../RequestContext';
@@ -108,7 +108,7 @@ export class UrlRequestContext<TRequest extends Incoming<any> = Incoming<any>, T
     }
 
 
-    setResponse(packet: ResponsePacket<any>): void {
+    setResponse(packet: Response<any>): void {
         const { headers, payload, ...pkg } = packet;
         Object.assign(this.response, pkg);
         if (headers) this.setHeader(headers);
@@ -168,7 +168,7 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
         this.reqHeaders = request.headers instanceof HeaderMappings ? request.headers : new HeaderMappings(request.headers);
         this.resHeaders = response.headers instanceof HeaderMappings ? response.headers : new HeaderMappings(response.headers);
 
-        this.originalUrl = this.url = injector.get(PatternFormatter).format(request.pattern!);
+        this.originalUrl = this.url = request.url ?? injector.get(PatternFormatter).format(request.pattern!);
         if (!this.request.query) {
             this.request.query = this.query;
         }
@@ -205,7 +205,7 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
     }
 
 
-    setResponse(packet: ResponsePacket<any>): void {
+    setResponse(packet: Response<any>): void {
         const { headers, payload, ...pkg } = packet;
         Object.assign(this.response, pkg);
         if (headers) this.setHeader(headers);

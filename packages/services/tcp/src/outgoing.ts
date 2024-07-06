@@ -1,24 +1,23 @@
-import { HeadersLike } from '@tsdi/common';
-import { Incoming, OutgoingFactory, OutgoingPacketOpts, PatternOutgoing } from '@tsdi/common/transport';
+import { Incoming, OutgoingCloneOpts, OutgoingFactory, OutgoingPacket, OutgoingPacketOpts } from '@tsdi/common/transport';
 
 
-export class TcpOutgoing<T> extends PatternOutgoing<T> {
+export class TcpOutgoing<T, TStatus = null> extends OutgoingPacket<T, TStatus> {
 
-    clone(): TcpOutgoing<T>;
-    clone<V>(update: { headers?: HeadersLike | undefined; payload?: V | null | undefined; setHeaders?: { [name: string]: string | string[]; } | undefined; type?: number | undefined; ok?: boolean | undefined; statusMessage?: string | undefined; statusText?: string | undefined; error?: any; }): TcpOutgoing<V>;
-    clone(update: { headers?: HeadersLike | undefined; payload?: T | null | undefined; setHeaders?: { [name: string]: string | string[]; } | undefined; type?: number | undefined; ok?: boolean | undefined; statusMessage?: string | undefined; statusText?: string | undefined; error?: any; }): TcpOutgoing<T>;
-    clone(update: any = {}): TcpOutgoing<any> {
-        const pattern = update.pattern ?? this.pattern;
+    clone(): TcpOutgoing<T, TStatus>;
+    clone<V>(update: OutgoingCloneOpts<V, TStatus>): TcpOutgoing<V, TStatus>;
+    clone(update: OutgoingCloneOpts<T, TStatus>): TcpOutgoing<T, TStatus>;
+    clone(update: OutgoingCloneOpts<any, TStatus> = {}): TcpOutgoing<any, TStatus> {
+
         const opts = this.cloneOpts(update);
 
-        return new TcpOutgoing(pattern, opts);
+        return new TcpOutgoing(opts);
     }
 }
 
 
 export class TcpOutgoingFactory implements OutgoingFactory {
-    create<T>(incoming: Incoming<any>, options?: OutgoingPacketOpts<T, null>): TcpOutgoing<T> {
-        return new TcpOutgoing(incoming.pattern!, { id: incoming.id, ...options });
+    create<T>(incoming: Incoming<any>, options?: OutgoingPacketOpts<T, any>): TcpOutgoing<T> {
+        return new TcpOutgoing({ id: incoming.id, pattern: incoming.pattern, ...options });
     }
 
 }

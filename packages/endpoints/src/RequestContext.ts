@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, OperationArgumentResolver, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
 import { HandlerContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { HeadersLike, IHeaders, HeaderMappings, ResponsePacket } from '@tsdi/common';
+import { HeadersLike, IHeaders, HeaderMappings, Response } from '@tsdi/common';
 import {
     FileAdapter, Incoming, InternalServerExecption, MessageExecption, MimeAdapter, Outgoing,
     StatusAdapter, StreamAdapter, ctype, isBuffer, xmlRegExp
@@ -706,7 +706,7 @@ export abstract class RequestContext<
      * set response with response packet
      * @param headers 
      */
-    abstract setResponse(packet: ResponsePacket<any>): void;
+    abstract setResponse(packet: Response<any>): void;
 
     /**
      * throw execption to client.

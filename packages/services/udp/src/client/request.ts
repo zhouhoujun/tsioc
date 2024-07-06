@@ -1,5 +1,5 @@
-import { InvocationContext, isString } from '@tsdi/ioc';
-import { HeadersLike, Pattern, PatternRequest, RequestInitOpts, RequestParams } from '@tsdi/common';
+import { isString } from '@tsdi/ioc';
+import { BaseRequest, Pattern, RequestCloneOpts, RequestInitOpts } from '@tsdi/common';
 import { isIPv4 } from '@tsdi/common/transport';
 import { RemoteInfo } from 'dgram';
 import { udpUrl$ } from '../consts';
@@ -10,15 +10,16 @@ export interface UdpRequestInitOpts<T = any> extends RequestInitOpts<T> {
     baseUrl?: string;
 }
 
-export class UdpRequest<T> extends PatternRequest<T> {
-
+export class UdpRequest<T> extends BaseRequest<T> {
+    readonly pattern: Pattern;
     readonly remoteInfo: RemoteInfo;
-    constructor(pattern: Pattern, options: UdpRequestInitOpts<T>) {
-        super(pattern, options);
+    constructor(options: UdpRequestInitOpts<T>) {
+        super(options);
+        this.pattern = options.pattern!;
         if (options.remoteInfo) {
             this.remoteInfo = options.remoteInfo;
         } else {
-            let host = isString(pattern) && udpUrl$.test(pattern) ? pattern : options.baseUrl!;
+            let host = isString(this.pattern) && udpUrl$.test(this.pattern) ? this.pattern : options.baseUrl!;
             host = new URL(host).host;
             const idx = host.lastIndexOf(':');
             const port = parseInt(host.substring(idx + 1));
@@ -31,57 +32,20 @@ export class UdpRequest<T> extends PatternRequest<T> {
         }
     }
 
-    clone(): PatternRequest<T>;
+    clone(): UdpRequest<T>;
     clone<V>(update: {
-        headers?: HeadersLike;
-        context?: InvocationContext<any>;
-        method?: string;
-        params?: RequestParams;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-        pattern?: Pattern;
         remoteInfo?:RemoteInfo;
-        body?: V | null;
-        payload?: V | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        withCredentials?: boolean;
-        timeout?: number | null;
-    }): PatternRequest<V>;
+    } & RequestCloneOpts<V>): UdpRequest<V>;
     clone(update: {
-        headers?: HeadersLike;
-        context?: InvocationContext<any>;
-        method?: string;
-        params?: RequestParams;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-        pattern?: Pattern;
         remoteInfo?:RemoteInfo;
-        body?: T | null;
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        withCredentials?: boolean;
-        timeout?: number | null;
-    }): PatternRequest<T>;
+    } & RequestCloneOpts<T>): UdpRequest<T>;
     clone(update: {
-        headers?: HeadersLike;
-        context?: InvocationContext<any>;
-        method?: string;
-        params?: RequestParams;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-        pattern?: Pattern;
         remoteInfo?:RemoteInfo;
-        body?: any;
-        payload?: any;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        withCredentials?: boolean;
-        timeout?: number | null;
-    } = {}): PatternRequest {
-        const pattern = update.pattern || this.pattern;
+    } & RequestCloneOpts<any> = {}): UdpRequest<any> {
         const options = this.cloneOpts(update) as UdpRequestInitOpts;
         options.remoteInfo = update.remoteInfo ?? this.remoteInfo;
         // Finally, construct the new HttpRequest using the pieces from above.
-        return new PatternRequest(pattern, options)
+        return new UdpRequest(options)
     }
 
     protected override toRecord(): Record<string, any> {

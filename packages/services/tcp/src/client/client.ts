@@ -85,7 +85,8 @@ export class TcpClient extends Client<TcpRequest<any>> {
 
     protected override createRequest(pattern: Pattern, options: RequestInitOpts): TcpRequest<any> {
         // options.withCredentials = this.connection instanceof tls.TLSSocket;
-        return new TcpRequest(pattern, options);
+        options.pattern = pattern;
+        return new TcpRequest(options);
     }
 
     protected override async onShutdown(): Promise<void> {

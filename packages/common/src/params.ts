@@ -204,9 +204,9 @@ export class RequestParams {
             }, {} as Record<string, any>)
     }
 
-    private _query?: Record<string, any>|null;
-    getQuery(){
-        if(!this._query){
+    private _query?: Record<string, any> | null;
+    getQuery() {
+        if (!this._query) {
             this._query = this.toRecord();
         }
         return this._query;
@@ -234,3 +234,6 @@ function parseString(value: string | number | boolean): string {
     return `${value}`
 }
 
+export type RequestParamsLike = RequestParams | string
+    | ReadonlyArray<[string, string | number | boolean]>
+    | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>>;

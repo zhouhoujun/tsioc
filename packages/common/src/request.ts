@@ -1,7 +1,7 @@
 import { InvocationContext, isNil, isUndefined } from '@tsdi/ioc';
 import { HeadersLike, HeaderMappings } from './headers';
-import { ParameterCodec, RequestParams } from './params';
-import { Clonable, Packet, PacketOpts } from './packet';
+import { ParameterCodec, RequestParams, RequestParamsLike } from './params';
+import { Clonable, CloneOpts, Packet, PacketOpts } from './packet';
 import { Pattern } from './pattern';
 
 
@@ -33,9 +33,7 @@ export interface RequestPacketOpts<T = any> extends PacketOpts<T> {
     /**
      * request params.
      */
-    params?: RequestParams | string
-    | ReadonlyArray<[string, string | number | boolean]>
-    | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>>;
+    params?: RequestParamsLike;
 
     /**
      * parameter codec.
@@ -63,10 +61,21 @@ export interface RequestPacketOpts<T = any> extends PacketOpts<T> {
 
 
 export interface RequestInitOpts<T = any> extends RequestPacketOpts<T>, ResponseAs {
+    pattern?: Pattern;
     /**
      * request context.
      */
     context: InvocationContext;
+}
+
+export interface RequestCloneOpts<T> extends CloneOpts<T> {
+    pattern?: Pattern;
+    params?: RequestParams;
+    context?: InvocationContext;
+    responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
+    method?: string;
+    setParams?: { [param: string]: string; };
+    withCredentials?: boolean;
 }
 
 /**
@@ -97,28 +106,8 @@ export abstract class AbstractRequest<T> extends Packet<T> implements Clonable<A
     }
 
     abstract clone(): AbstractRequest<T>;
-    abstract clone<V>(update: {
-        headers?: HeadersLike;
-        params?: RequestParams;
-        context?: InvocationContext<any>;
-        method?: string;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-        body?: V | null;
-        payload?: V | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-    }): AbstractRequest<V>;
-    abstract clone(update: {
-        headers?: HeadersLike;
-        params?: RequestParams;
-        context?: InvocationContext;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-        body?: T | null;
-        payload?: T | null;
-        method?: string;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-    }): AbstractRequest<T>;
+    abstract clone<V>(update: RequestCloneOpts<V>): AbstractRequest<V>;
+    abstract clone(update: RequestCloneOpts<T>): AbstractRequest<T>;
 
 }
 
@@ -127,7 +116,7 @@ export abstract class AbstractRequest<T> extends Packet<T> implements Clonable<A
  * Request packet.
  */
 export abstract class BaseRequest<T> extends AbstractRequest<T> {
-
+    readonly pattern?: Pattern;
     readonly method: string;
     readonly headers: HeaderMappings;
     readonly params: RequestParams;
@@ -143,9 +132,12 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
         return this.payload;
     }
 
+    protected urlParams?: boolean;
+
     constructor(init: RequestInitOpts) {
         super()
         this.id = init.id;
+        this.pattern = init.pattern;
         this.headers = new HeaderMappings(init.headers, init.headerFields);
         this.payload = init.payload ?? null;
         this.payload = init.body ?? init.payload ?? null;
@@ -158,28 +150,8 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
     }
 
     abstract clone(): AbstractRequest<T>;
-    abstract clone<V>(update: {
-        headers?: HeadersLike;
-        params?: RequestParams;
-        context?: InvocationContext<any>;
-        method?: string;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-        body?: V | null;
-        payload?: V | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-    }): AbstractRequest<V>;
-    abstract clone(update: {
-        headers?: HeadersLike;
-        params?: RequestParams;
-        context?: InvocationContext;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-        body?: T | null;
-        payload?: T | null;
-        method?: string;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-    }): AbstractRequest<T>;
+    abstract clone<V>(update: RequestCloneOpts<V>): AbstractRequest<V>;
+    abstract clone(update: RequestCloneOpts<T>): AbstractRequest<T>;
 
     toJson(ignores?: string[]): Record<string, any> {
         const obj = this.toRecord();
@@ -199,18 +171,7 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
         this.id = id;
     }
 
-    protected cloneOpts(update: {
-        headers?: HeadersLike;
-        params?: RequestParams;
-        context?: InvocationContext;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-        withCredentials?: boolean;
-        body?: any;
-        payload?: any;
-        method?: string;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-    }): any {
+    protected cloneOpts(update: RequestCloneOpts<any>): RequestInitOpts<any> {
 
         // The payload is somewhat special - a `null` value in update.payload means
         // whatever current payload is present is being overridden with an empty
@@ -254,21 +215,19 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
         const withCredentials =
             (update.withCredentials !== undefined) ? update.withCredentials : this.withCredentials;
         const id = this.id;
-        return { id, headers, params, payload, method, withCredentials };
+        const context = update.context ?? this.context;
+        const pattern = update.pattern ?? this.pattern;
+        return { id, pattern, headers, params, payload, method, withCredentials, context };
     }
 
     protected toRecord(): Record<string, any> {
         const record = {} as Record<string, any>;
-        if (this.id) {
-            record.id = this.id;
-        }
-        if (this.headers.size) {
-            record.headers = this.headers.getHeaders();
-        }
-        if (!isNil(this.payload)) {
-            record.payload = this.payload;
-        }
+        if (this.id) record.id = this.id;
+        if (this.pattern) record.pattern = this.pattern;
+        if (this.headers.size) record.headers = this.headers.getHeaders();
+        if (!isNil(this.payload)) record.payload = this.payload;
         if (this.method) record.method = this.method;
+        if(!this.urlParams) record.params = this.params.toRecord();
         record.withCredentials = this.withCredentials;
         return record;
     }
@@ -328,6 +287,16 @@ export interface UrlRequestInitOpts<T = any> extends RequestOptions<T>, RequestI
     context: InvocationContext;
 }
 
+export interface UrlRequestCloneOpts<T> extends RequestCloneOpts<T> {
+    /**
+     * request url.
+     */
+    url?: string;
+    /**
+     * for restful
+     */
+    reportProgress?: boolean;
+}
 
 /**
  * url Request.
@@ -337,6 +306,7 @@ export class UrlRequest<T> extends BaseRequest<T> {
     readonly reportProgress: boolean;
     readonly url: string;
     readonly urlWithParams: string | undefined;
+    protected urlParams = true;
 
     constructor(url: string, options: UrlRequestInitOpts<T>) {
         super(options)
@@ -347,47 +317,9 @@ export class UrlRequest<T> extends BaseRequest<T> {
     }
 
     clone(): UrlRequest<T>;
-    clone<V>(update: {
-        headers?: HeaderMappings;
-        context?: InvocationContext<any>;
-        method?: string;
-        params?: RequestParams;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-        body?: V | null;
-        payload?: V | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        reportProgress?: boolean;
-        withCredentials?: boolean;
-    }): UrlRequest<V>;
-    clone(update: {
-        headers?: HeaderMappings;
-        context?: InvocationContext<any>;
-        method?: string;
-        params?: RequestParams;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-        url?: string;
-        body?: T | null;
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        reportProgress?: boolean;
-        withCredentials?: boolean;
-    }): UrlRequest<T>
-    clone(update: {
-        headers?: HeaderMappings;
-        context?: InvocationContext<any>;
-        method?: string;
-        params?: RequestParams;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-        url?: string;
-        body?: any;
-        payload?: any;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        reportProgress?: boolean;
-        withCredentials?: boolean;
-    } = {}): UrlRequest<any> {
+    clone<V>(update: UrlRequestCloneOpts<V>): UrlRequest<V>;
+    clone(update: UrlRequestCloneOpts<T>): UrlRequest<T>
+    clone(update: UrlRequestCloneOpts<any> = {}): UrlRequest<any> {
         const url = update.url || this.url;
 
         const init = this.cloneOpts(update);
@@ -396,20 +328,7 @@ export class UrlRequest<T> extends BaseRequest<T> {
         return new UrlRequest(url, init)
     }
 
-    protected override cloneOpts(update: {
-        headers?: HeaderMappings;
-        context?: InvocationContext<any>;
-        method?: string;
-        params?: RequestParams;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-        url?: string;
-        body?: any;
-        payload?: any;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        reportProgress?: boolean;
-        withCredentials?: boolean;
-    }): UrlRequestInitOpts {
+    protected override cloneOpts(update: UrlRequestCloneOpts<any>): UrlRequestInitOpts {
         const init = super.cloneOpts(update) as UrlRequestInitOpts;
         init.reportProgress =
             (update.reportProgress !== undefined) ? update.reportProgress : this.reportProgress;
@@ -425,81 +344,3 @@ export class UrlRequest<T> extends BaseRequest<T> {
         return rcd;
     }
 }
-
-
-/**
- * Pattern Request.
- */
-export class PatternRequest<T = any> extends BaseRequest<T> {
-
-    readonly pattern: Pattern;
-    readonly params: RequestParams;
-    readonly withCredentials: boolean;
-
-    /**
-     * client side timeout.
-     */
-    readonly timeout?: number;
-
-    constructor(pattern: Pattern, options: RequestInitOpts<T>) {
-        super(options)
-        this.params = new RequestParams(options);
-        this.withCredentials = !!options.withCredentials;
-        this.pattern = pattern;
-    }
-
-    clone(): PatternRequest<T>;
-    clone<V>(update: {
-        headers?: HeadersLike;
-        context?: InvocationContext<any>;
-        method?: string;
-        params?: RequestParams;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-        pattern?: Pattern;
-        body?: V | null;
-        payload?: V | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        withCredentials?: boolean;
-    }): PatternRequest<V>;
-    clone(update: {
-        headers?: HeadersLike;
-        context?: InvocationContext<any>;
-        method?: string;
-        params?: RequestParams;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-        pattern?: Pattern;
-        body?: T | null;
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        withCredentials?: boolean;
-    }): PatternRequest<T>;
-    clone(update: {
-        headers?: HeadersLike;
-        context?: InvocationContext<any>;
-        method?: string;
-        params?: RequestParams;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-        pattern?: Pattern;
-        body?: any;
-        payload?: any;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        withCredentials?: boolean;
-    } = {}): PatternRequest {
-        const pattern = update.pattern || this.pattern;
-
-        const options = this.cloneOpts(update);
-        // Finally, construct the new HttpRequest using the pieces from above.
-        return new PatternRequest(pattern, options)
-    }
-
-    protected override toRecord(): Record<string, any> {
-        const rcd = super.toRecord();
-        if (this.params.size) rcd.params = this.params.toRecord();
-        rcd.pattern = this.pattern;
-        return rcd;
-    }
-}
-

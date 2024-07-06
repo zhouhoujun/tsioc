@@ -1,5 +1,5 @@
 import { HeadersLike, Pattern } from '@tsdi/common';
-import { OutgoingFactory, OutgoingPacketOpts, PatternOutgoing } from '@tsdi/common/transport';
+import { OutgoingCloneOpts, OutgoingFactory, OutgoingPacket, OutgoingPacketOpts } from '@tsdi/common/transport';
 import { RemoteInfo } from 'dgram';
 import { UdpIncoming } from './incoming';
 
@@ -9,42 +9,26 @@ export interface UdpOutgoinOpts<T = any, TStatus = any> extends OutgoingPacketOp
 
 }
 
-export class UdpOutgoing<T> extends PatternOutgoing<T> {
+export class UdpOutgoing<T, TStatus = null> extends OutgoingPacket<T, TStatus> {
     readonly remoteInfo: RemoteInfo;
-    constructor(pattern: Pattern, options: UdpOutgoinOpts<T>) {
-        super(pattern, options)
+    constructor(options: UdpOutgoinOpts<T, TStatus>) {
+        super(options)
         this.remoteInfo = options.remoteInfo!;
     }
 
-    clone(): UdpOutgoing<T>;
+    clone(): UdpOutgoing<T, TStatus>;
     clone<V>(update: {
-        remoteInfo?:RemoteInfo;
-        headers?: HeadersLike | undefined;
-        payload?: V | null | undefined;
-        setHeaders?: { [name: string]: string | string[]; } | undefined;
-        type?: number | undefined;
-        ok?: boolean | undefined;
-        status?: null | undefined;
-        statusMessage?: string | undefined;
-        statusText?: string | undefined;
-        error?: any;
-    }): UdpOutgoing<V>;
+        remoteInfo?: RemoteInfo;
+    } & OutgoingCloneOpts<V, TStatus>): UdpOutgoing<V, TStatus>;
     clone(update: {
-        headers?: HeadersLike | undefined;
-        payload?: T | null | undefined;
-        setHeaders?: { [name: string]: string | string[]; } | undefined;
-        type?: number | undefined;
-        ok?: boolean | undefined;
-        status?: null | undefined;
-        statusMessage?: string | undefined;
-        statusText?: string | undefined;
-        error?: any;
-    }): UdpOutgoing<T>;
-    clone(update: any = {}): UdpOutgoing<any> {
-        const pattern = update.pattern ?? this.pattern;
+        remoteInfo?: RemoteInfo;
+    } & OutgoingCloneOpts<T, TStatus>): UdpOutgoing<T, TStatus>;
+    clone(update: {
+        remoteInfo?: RemoteInfo;
+    } & OutgoingCloneOpts<any, TStatus> = {}): UdpOutgoing<any, TStatus> {
         const opts = this.cloneOpts(update) as UdpOutgoinOpts;
         opts.remoteInfo = this.remoteInfo;
-        return new UdpOutgoing(pattern, opts);
+        return new UdpOutgoing(opts);
     }
 
     protected override toRecord(): Record<string, any> {
@@ -58,7 +42,7 @@ export class UdpOutgoing<T> extends PatternOutgoing<T> {
 
 export class UdpOutgoingFactory implements OutgoingFactory {
     create<T>(incoming: UdpIncoming<any>, options?: OutgoingPacketOpts<T, null>): UdpOutgoing<T> {
-        return new UdpOutgoing(incoming.pattern!, { id: incoming.id, remoteInfo: incoming.remoteInfo, ...options });
+        return new UdpOutgoing({ id: incoming.id, pattern: incoming.pattern, remoteInfo: incoming.remoteInfo, ...options });
     }
 
 }

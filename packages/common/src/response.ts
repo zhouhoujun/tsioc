@@ -1,12 +1,17 @@
 import { Abstract, Injectable, hasOwn, isPlainObject } from '@tsdi/ioc';
 import { HeadersLike } from './headers';
-import { StatusPacket, StatusPacketOpts } from './packet';
+import { StatusCloneOpts, StatusPacket, StatusPacketOpts } from './packet';
 import { Pattern } from './pattern';
 
 /**
  * response packet data.
  */
 export interface ResponseInitOpts<T = any, TStatus = any> extends StatusPacketOpts<T, TStatus> {
+    url?: string;
+    pattern?: Pattern;
+}
+
+export interface ResponseCloneOpts<T, TStatus> extends StatusCloneOpts<T, TStatus> {
     url?: string;
     pattern?: Pattern;
 }
@@ -22,19 +27,7 @@ export abstract class ResponseBase<T, TStatus = any> extends StatusPacket<T, TSt
         this.pattern = init.pattern;
     }
 
-    protected override cloneOpts(update: {
-        url?: string;
-        pattern?: Pattern;
-        headers?: HeadersLike;
-        payload?: any;
-        setHeaders?: { [name: string]: string | string[]; };
-        type?: number;
-        ok?: boolean;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        error?: any;
-    }): ResponseInitOpts {
+    protected override cloneOpts(update: ResponseCloneOpts<any, TStatus>): ResponseInitOpts {
         const opts = super.cloneOpts(update) as ResponseInitOpts;
         if (update.url) {
             opts.url = update.url;
@@ -110,7 +103,7 @@ export class HeaderResponse<TStatus = number> extends ResponseBase<null, TStatus
 /**
  * response packet.
  */
-export class ResponsePacket<T, TStatus = number> extends ResponseBase<T, TStatus> {
+export class Response<T, TStatus = number> extends ResponseBase<T, TStatus> {
 
     constructor(init: {
         url?: string;
@@ -129,46 +122,12 @@ export class ResponsePacket<T, TStatus = number> extends ResponseBase<T, TStatus
         super(init.payload ?? null, init)
     }
 
-    clone(): ResponsePacket<T, TStatus>;
-    clone<V>(update: {
-        url?: string;
-        pattern?: Pattern;
-        type?: number;
-        ok?: boolean;
-        headers?: HeadersLike;
-        payload?: V;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        setHeaders?: { [name: string]: string | string[]; };
-    }): ResponsePacket<V, TStatus>;
-    clone(update: {
-        url?: string;
-        pattern?: Pattern;
-        type?: number;
-        ok?: boolean;
-        headers?: HeadersLike;
-        payload?: T;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        setHeaders?: { [name: string]: string | string[]; };
-    }): ResponsePacket<T, TStatus>;
-    clone(update: {
-        url?: string;
-        pattern?: Pattern;
-        type?: number;
-        ok?: boolean;
-        headers?: HeadersLike;
-        payload?: any;
-        status?: any;
-        statusMessage?: string;
-        statusText?: string;
-        setHeaders?: { [name: string]: string | string[]; }
-    } = {}): ResponsePacket<any, TStatus> {
+    clone(): Response<T, TStatus>;
+    clone<V>(update: ResponseInitOpts<V, TStatus>): Response<V, TStatus>;
+    clone(update: ResponseInitOpts<T, TStatus>): Response<T, TStatus>;
+    clone(update: ResponseInitOpts<any, TStatus> = {}): Response<any, TStatus> {
         const init = this.cloneOpts(update);
-        return new ResponsePacket(init) as ResponsePacket<any, TStatus>;
-
+        return new Response(init) as Response<any, TStatus>;
     }
 }
 
@@ -249,7 +208,7 @@ export interface ResponseJsonParseError {
 /**
  * Response Event
  */
-export type ResponseEvent<T, TStatus = any> = HeaderResponse<TStatus> | ResponsePacket<T, TStatus> | ResponseEventPacket;
+export type ResponseEvent<T, TStatus = any> = HeaderResponse<TStatus> | Response<T, TStatus> | ResponseEventPacket;
 
 export function isResponseEvent(target: any): target is ResponseEvent<any> {
     if (!target) return false;
@@ -273,7 +232,7 @@ export class DefaultResponseFactory<TStatus = null> {
         if (!options.ok || options.error) {
             return new ErrorResponse(options);
         }
-        return new ResponsePacket(options);
+        return new Response(options);
 
     }
 }

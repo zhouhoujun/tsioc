@@ -1,6 +1,6 @@
 import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, isNil, isString } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
-import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, UrlRequestInitOpts, RequestOptions, AbstractRequest, ResponsePacket } from '@tsdi/common';
+import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, UrlRequestInitOpts, RequestOptions, AbstractRequest, Response } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
 import { ClientHandler } from './handler';
 import { ClientOpts } from './options';
@@ -174,7 +174,7 @@ export abstract class Client<TRequest extends AbstractRequest<any> = AbstractReq
     send(pattern: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType: 'arraybuffer';
-    }): Observable<ResponsePacket<ArrayBuffer>>;
+    }): Observable<Response<ArrayBuffer>>;
 
     /**
      * Constructs a request which interprets the body as a `Blob` and returns the full `ResponsePacket`.
@@ -187,7 +187,7 @@ export abstract class Client<TRequest extends AbstractRequest<any> = AbstractReq
     send(pattern: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType: 'blob';
-    }): Observable<ResponsePacket<Blob>>;
+    }): Observable<Response<Blob>>;
 
     /**
      * Constructs a request which interprets the body as a text stream and returns the full
@@ -201,7 +201,7 @@ export abstract class Client<TRequest extends AbstractRequest<any> = AbstractReq
     send(pattern: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType: 'text';
-    }): Observable<ResponsePacket<string>>;
+    }): Observable<Response<string>>;
 
 
     /**
@@ -216,7 +216,7 @@ export abstract class Client<TRequest extends AbstractRequest<any> = AbstractReq
     send<R = any>(pattern: Pattern, options: RequestOptions & {
         observe: 'response';
         responseType?: 'json';
-    }): Observable<ResponsePacket<R>>;
+    }): Observable<Response<R>>;
 
 
     /**
@@ -297,7 +297,7 @@ export abstract class Client<TRequest extends AbstractRequest<any> = AbstractReq
                 // requested type.
                 switch (req.responseType) {
                     case 'arraybuffer':
-                        return res$.pipe(map((res: ResponsePacket<any>) => {
+                        return res$.pipe(map((res: Response<any>) => {
                             // Validate that the body is an ArrayBuffer.
                             if (res.payload !== null && !(res.payload instanceof ArrayBuffer)) {
                                 throw new Execption('Response is not an ArrayBuffer.')
@@ -305,7 +305,7 @@ export abstract class Client<TRequest extends AbstractRequest<any> = AbstractReq
                             return res.payload
                         }));
                     case 'blob':
-                        return res$.pipe(map((res: ResponsePacket<any>) => {
+                        return res$.pipe(map((res: Response<any>) => {
                             // Validate that the body is a Blob.
                             if (res.payload !== null && !(res.payload instanceof Blob)) {
                                 throw new Execption('Response is not a Blob.')
@@ -313,7 +313,7 @@ export abstract class Client<TRequest extends AbstractRequest<any> = AbstractReq
                             return res.payload
                         }));
                     case 'text':
-                        return res$.pipe(map((res: ResponsePacket<any>) => {
+                        return res$.pipe(map((res: Response<any>) => {
                             // Validate that the payload is a string.
                             if (res.payload !== null && !isString(res.payload)) {
                                 throw new Execption('Response is not a string.')
@@ -323,7 +323,7 @@ export abstract class Client<TRequest extends AbstractRequest<any> = AbstractReq
                     case 'json':
                     default:
                         // No validation needed for JSON responses, as they can be of any type.
-                        return res$.pipe(map((res: ResponsePacket<any>) => res.payload))
+                        return res$.pipe(map((res: Response<any>) => res.payload))
                 }
             case 'response':
                 // The response stream was requested directly, so return it.

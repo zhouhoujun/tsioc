@@ -1,4 +1,4 @@
-import { BasePacket, HeadersLike, IHeaders, Packet, PacketOpts, ParameterCodec, Pattern, RequestParams, StatusPacket, StatusPacketOpts } from '@tsdi/common';
+import { BasePacket, CloneOpts, HeadersLike, IHeaders, PacketOpts, ParameterCodec, Pattern, RequestParams, StatusCloneOpts, StatusPacket, StatusPacketOpts } from '@tsdi/common';
 import { IReadableStream } from './stream';
 
 
@@ -69,7 +69,7 @@ export abstract class IncomingFactory implements AbstractIncomingFactory<Incomin
  * incoming options
  */
 export interface IncomingOpts<T = any> extends PacketOpts<T> {
-
+    pattern?: Pattern;
     /**
      * request method.
      */
@@ -113,12 +113,20 @@ export interface IncomingOpts<T = any> extends PacketOpts<T> {
 
 }
 
+export interface IncomingCloneOpts<T> extends CloneOpts<T> {
+    pattern?: Pattern;
+    params?: RequestParams;
+    method?: string;
+    setParams?: { [param: string]: string; };
+    timeout?: number | null;
+}
 
 /**
  * Incoming packet.
  */
 export abstract class IncomingPacket<T> extends BasePacket<T> implements Incoming<T> {
 
+    readonly pattern?: Pattern;
     /**
      * client side timeout.
      */
@@ -144,6 +152,7 @@ export abstract class IncomingPacket<T> extends BasePacket<T> implements Incomin
 
     constructor(init: IncomingOpts<T>) {
         super(init)
+        this.pattern = init.pattern;
         this.payload = init.payload ?? null;
         this.params = new RequestParams(init);
         this.method = init.method ?? this.headers.getMethod() ?? init.defaultMethod ?? '';
@@ -169,38 +178,12 @@ export abstract class IncomingPacket<T> extends BasePacket<T> implements Incomin
     }
 
     abstract clone(): IncomingPacket<T>;
-    abstract clone<V>(update: {
-        headers?: HeadersLike;
-        params?: RequestParams;
-        method?: string;
-        body?: V | null;
-        payload?: V | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        timeout?: number | null;
-    }): IncomingPacket<V>;
-    abstract clone(update: {
-        headers?: HeadersLike;
-        params?: RequestParams;
-        method?: string;
-        body?: T | null;
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        timeout?: number | null;
-    }): IncomingPacket<T>;
+    abstract clone<V>(update: IncomingCloneOpts<V>): IncomingPacket<V>;
+    abstract clone(update: IncomingCloneOpts<T>): IncomingPacket<T>;
 
-    protected override cloneOpts(update: {
-        headers?: HeadersLike;
-        params?: RequestParams;
-        method?: string;
-        body?: any;
-        payload?: any;
-        setHeaders?: { [name: string]: string | string[]; };
-        setParams?: { [param: string]: string; };
-        timeout?: number | null;
-    }): IncomingOpts {
+    protected override cloneOpts(update: IncomingCloneOpts<any>): IncomingOpts {
         const init = super.cloneOpts(update) as IncomingOpts;
+        init.pattern = update.pattern ?? this.pattern;
         init.method = update.method ?? this.method;
         // `setParams` are used.
         let params = update.params || this.params;
@@ -217,24 +200,10 @@ export abstract class IncomingPacket<T> extends BasePacket<T> implements Incomin
 
     protected override toRecord(): Record<string, any> {
         const rcd = super.toRecord();
+        if (this.pattern) rcd.pattern = this.pattern;
         if (this.params.size) rcd.params = this.params.toRecord();
         if (this.method) rcd.method = this.method;
         if (this.timeout) rcd.timeout = this.timeout;
-        return rcd;
-    }
-
-}
-
-
-export abstract class PatternIncoming<T> extends IncomingPacket<T> {
-
-    constructor(readonly pattern: Pattern, options: IncomingOpts<T>) {
-        super(options)
-    }
-
-    protected override toRecord(): Record<string, any> {
-        const rcd = super.toRecord();
-        rcd.pattern = this.pattern;
         return rcd;
     }
 
@@ -299,14 +268,21 @@ export abstract class ClientIncomingFactory implements AbstractIncomingFactory<C
  * client incoming init options
  */
 export interface ClientIncomingOpts<T = any, TStatus = any> extends StatusPacketOpts<T, TStatus> {
+    pattern?: Pattern;
     streamLength?: number;
 }
+
+export interface ClientIncomingCloneOpts<T, TStatus> extends StatusCloneOpts<T, TStatus> {
+    pattern?: Pattern;
+}
+
 
 /**
  * client incoming packet
  */
 export abstract class ClientIncomingPacket<T, TStatus = any> extends StatusPacket<T, TStatus> implements ClientIncoming<T, TStatus> {
 
+    readonly pattern?: Pattern;
 
     public streamLength?: number;
 
@@ -333,43 +309,18 @@ export abstract class ClientIncomingPacket<T, TStatus = any> extends StatusPacke
     }
 
     abstract clone(): ClientIncomingPacket<T, TStatus>;
-    abstract clone<V>(update: {
-        headers?: HeadersLike;
-        body?: T | null,
-        payload?: V | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        type?: number;
-        ok?: boolean;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        error?: any;
-    }): ClientIncomingPacket<V, TStatus>;
-    abstract clone(update: {
-        headers?: HeadersLike;
-        body?: T | null,
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        type?: number;
-        ok?: boolean;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        error?: any;
-    }): ClientIncomingPacket<T, TStatus>;
+    abstract clone<V>(update: ClientIncomingCloneOpts<V, TStatus>): ClientIncomingPacket<V, TStatus>;
+    abstract clone(update: ClientIncomingCloneOpts<T, TStatus>): ClientIncomingPacket<T, TStatus>;
 
-}
-
-
-export abstract class ClientPatternIncoming<T = any, TStatus = any> extends ClientIncomingPacket<T, TStatus> {
-
-    constructor(readonly pattern: Pattern, options: ClientIncomingOpts<T, TStatus>) {
-        super(options);
+    protected override cloneOpts(update: ClientIncomingCloneOpts<any, TStatus>): ClientIncomingOpts {
+        const init = super.cloneOpts(update) as ClientIncomingOpts;
+        init.pattern = update.pattern ?? this.pattern;
+        return init
     }
 
     protected override toRecord(): Record<string, any> {
         const rcd = super.toRecord();
-        rcd.pattern = this.pattern;
+        if(this.pattern) rcd.pattern = this.pattern;
         return rcd;
     }
 

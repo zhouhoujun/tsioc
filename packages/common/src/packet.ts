@@ -32,6 +32,14 @@ export interface PacketOpts<T = any> {
     headerFields?: HeaderFields;
 }
 
+export interface CloneOpts<T> {
+    headers?: HeadersLike;
+    body?: T | null;
+    payload?: T | null;
+    setHeaders?: { [name: string]: string | string[]; };
+
+}
+
 /**
  * Packet
  */
@@ -41,16 +49,8 @@ export abstract class Packet<T> implements Clonable<Packet<T>> {
     abstract get payload(): T | null;
 
     abstract clone(): Packet<T>;
-    abstract clone<V>(update: {
-        headers?: HeadersLike;
-        payload?: V | null;
-        setHeaders?: { [name: string]: string | string[]; };
-    }): Packet<V>;
-    abstract clone(update: {
-        headers?: HeadersLike;
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-    }): Packet<T>
+    abstract clone<V>(update: CloneOpts<V>): Packet<V>;
+    abstract clone(update: CloneOpts<T>): Packet<T>
 
     abstract toJson(ignores?: string[]): Record<string, any>;
 
@@ -83,16 +83,8 @@ export abstract class BasePacket<T> implements Packet<T> {
     }
 
     abstract clone(): Packet<T>;
-    abstract clone<V>(update: {
-        headers?: HeadersLike;
-        payload?: V | null;
-        setHeaders?: { [name: string]: string | string[]; };
-    }): Packet<V>;
-    abstract clone(update: {
-        headers?: HeadersLike;
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-    }): Packet<T>
+    abstract clone<V>(update: CloneOpts<V>): Packet<V>;
+    abstract clone(update: CloneOpts<T>): Packet<T>
 
     toJson(ignores?: string[]): Record<string, any> {
         const obj = this.toRecord();
@@ -122,12 +114,7 @@ export abstract class BasePacket<T> implements Packet<T> {
         return record;
     }
 
-    protected cloneOpts(update: {
-        headers?: HeadersLike;
-        body?: any;
-        payload?: any;
-        setHeaders?: { [name: string]: string | string[]; };
-    }): PacketOpts {
+    protected cloneOpts(update: CloneOpts<any>): PacketOpts {
         // The payload is somewhat special - a `null` value in update.payload means
         // whatever current payload is present is being overridden with an empty
         // payload, whereas an `undefined` value in update.payload implies no
@@ -179,6 +166,14 @@ export interface StatusPacketOpts<T = any, TStatus = any> extends PacketOpts<T> 
     defaultStatusText?: string;
 }
 
+export interface StatusCloneOpts<T, TStatus> extends CloneOpts<T> {
+    type?: number;
+    ok?: boolean;
+    status?: TStatus;
+    statusMessage?: string;
+    statusText?: string;
+    error?: any;
+}
 
 /**
  * Status packet.
@@ -249,40 +244,10 @@ export abstract class StatusPacket<T, TStatus = any> extends BasePacket<T> {
     }
 
     abstract clone(): StatusPacket<T, TStatus>;
-    abstract clone<V>(update: {
-        headers?: HeadersLike;
-        payload?: V | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        type?: number;
-        ok?: boolean;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        error?: any;
-    }): StatusPacket<V, TStatus>;
-    abstract clone(update: {
-        headers?: HeadersLike;
-        payload?: T | null;
-        setHeaders?: { [name: string]: string | string[]; };
-        type?: number;
-        ok?: boolean;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        error?: any;
-    }): StatusPacket<T, TStatus>;
+    abstract clone<V>(update: StatusCloneOpts<V, TStatus>): StatusPacket<V, TStatus>;
+    abstract clone(update: StatusCloneOpts<T, TStatus>): StatusPacket<T, TStatus>;
 
-    protected cloneOpts(update: {
-        headers?: HeadersLike;
-        payload?: any;
-        setHeaders?: { [name: string]: string | string[]; };
-        type?: number;
-        ok?: boolean;
-        status?: TStatus;
-        statusMessage?: string;
-        statusText?: string;
-        error?: any;
-    }): StatusPacketOpts {
+    protected cloneOpts(update: StatusCloneOpts<any, TStatus>): StatusPacketOpts {
         const init = super.cloneOpts(update) as StatusPacketOpts;
         init.type = update.type ?? this.type;
         init.ok = update.ok ?? this.ok;

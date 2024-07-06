@@ -45,7 +45,7 @@ export class UdpClient extends Client<UdpRequest<any>, ResponseEvent<any>, UdpCl
     }
 
     protected createRequest(pattern: Pattern, options: UrlRequestInitOpts<any>): UdpRequest<any> {
-        return new UdpRequest(pattern, { baseUrl: this.getOptions().url, ...options });
+        return new UdpRequest({ pattern, baseUrl: this.getOptions().url, ...options });
     }
 
 }
