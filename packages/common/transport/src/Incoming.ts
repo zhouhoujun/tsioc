@@ -1,4 +1,7 @@
-import { BasePacket, CloneOpts, HeadersLike, IHeaders, PacketOpts, ParameterCodec, Pattern, RequestParams, StatusCloneOpts, StatusPacket, StatusPacketOpts } from '@tsdi/common';
+import {
+    BasePacket, Clonable, CloneOpts, HeadersLike, IHeaders, PacketOpts, ParameterCodec,
+    Pattern, RequestParams, StatusCloneOpts, StatusPacket, StatusPacketOpts
+} from '@tsdi/common';
 import { IReadableStream } from './stream';
 
 
@@ -124,7 +127,7 @@ export interface IncomingCloneOpts<T> extends CloneOpts<T> {
 /**
  * Incoming packet.
  */
-export abstract class IncomingPacket<T> extends BasePacket<T> implements Incoming<T> {
+export abstract class IncomingPacket<T> extends BasePacket<T> implements Incoming<T>, Clonable<IncomingPacket<T>> {
 
     readonly pattern?: Pattern;
     /**
@@ -280,7 +283,7 @@ export interface ClientIncomingCloneOpts<T, TStatus> extends StatusCloneOpts<T, 
 /**
  * client incoming packet
  */
-export abstract class ClientIncomingPacket<T, TStatus = any> extends StatusPacket<T, TStatus> implements ClientIncoming<T, TStatus> {
+export abstract class ClientIncomingPacket<T, TStatus = any> extends StatusPacket<T, TStatus> implements ClientIncoming<T, TStatus>, Clonable<ClientIncomingPacket<T, TStatus>> {
 
     readonly pattern?: Pattern;
 
@@ -320,7 +323,7 @@ export abstract class ClientIncomingPacket<T, TStatus = any> extends StatusPacke
 
     protected override toRecord(): Record<string, any> {
         const rcd = super.toRecord();
-        if(this.pattern) rcd.pattern = this.pattern;
+        if (this.pattern) rcd.pattern = this.pattern;
         return rcd;
     }
 

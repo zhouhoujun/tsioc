@@ -10,12 +10,15 @@ export interface MessageInitOpts {
     data?: Buffer | IReadableStream | null;
 }
 
+/**
+ * Message.
+ */
 export abstract class Message {
 
     id: string | number | undefined;
 
     streamLength?: number;
-    
+
     noHead?: boolean;
 
     abstract get headers(): Record<string, Header>;

@@ -227,8 +227,8 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
         if (this.headers.size) record.headers = this.headers.getHeaders();
         if (!isNil(this.payload)) record.payload = this.payload;
         if (this.method) record.method = this.method;
-        if(!this.urlParams) record.params = this.params.toRecord();
-        record.withCredentials = this.withCredentials;
+        if (!this.urlParams) record.params = this.params.toRecord();
+        // record.withCredentials = this.withCredentials;
         return record;
     }
 
@@ -339,7 +339,7 @@ export class UrlRequest<T> extends BaseRequest<T> {
 
     protected override toRecord(): Record<string, any> {
         const rcd = super.toRecord();
-        rcd.reportProgress = this.reportProgress;
+        // rcd.reportProgress = this.reportProgress;
         rcd.url = this.urlWithParams;
         return rcd;
     }

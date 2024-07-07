@@ -462,8 +462,8 @@ export class HttpRequest<T> implements AbstractRequest<T> {
             rcd.payload = this.payload;
         }
         if (this.method) rcd.method = this.method;
-        rcd.withCredentials = this.withCredentials;
-        rcd.reportProgress = this.reportProgress;
+        // rcd.withCredentials = this.withCredentials;
+        // rcd.reportProgress = this.reportProgress;
         rcd.url = this.urlWithParams;
         return rcd;
     }

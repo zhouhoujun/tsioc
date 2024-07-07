@@ -32,12 +32,14 @@ export interface PacketOpts<T = any> {
     headerFields?: HeaderFields;
 }
 
+/**
+ * clone options.
+ */
 export interface CloneOpts<T> {
     headers?: HeadersLike;
     body?: T | null;
     payload?: T | null;
     setHeaders?: { [name: string]: string | string[]; };
-
 }
 
 /**

@@ -1,4 +1,4 @@
-import { Header, HeadersLike, IHeaders, Pattern, StatusCloneOpts, StatusPacket, StatusPacketOpts } from '@tsdi/common';
+import { Clonable, Header, HeadersLike, IHeaders, Pattern, StatusCloneOpts, StatusPacket, StatusPacketOpts } from '@tsdi/common';
 import { IWritableStream } from './stream';
 import { Incoming } from './Incoming';
 
@@ -132,7 +132,7 @@ export interface OutgoingCloneOpts<T, TStatus> extends StatusCloneOpts<T, TStatu
 /**
  * Outgoing packet.
  */
-export abstract class OutgoingPacket<T, TStatus = number> extends StatusPacket<T, TStatus> implements Outgoing<T, TStatus> {
+export abstract class OutgoingPacket<T, TStatus = number> extends StatusPacket<T, TStatus> implements Outgoing<T, TStatus>, Clonable<OutgoingPacket<T, TStatus>> {
     
     readonly pattern?: Pattern;
 
