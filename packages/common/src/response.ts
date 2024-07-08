@@ -7,31 +7,25 @@ import { Pattern } from './pattern';
  * response packet data.
  */
 export interface ResponseInitOpts<T = any, TStatus = any> extends StatusPacketOpts<T, TStatus> {
-    url?: string;
     pattern?: Pattern;
 }
 
 export interface ResponseCloneOpts<T, TStatus> extends StatusCloneOpts<T, TStatus> {
-    url?: string;
     pattern?: Pattern;
 }
 
 export abstract class ResponseBase<T, TStatus = any> extends StatusPacket<T, TStatus> {
-    readonly url: string | undefined;
     readonly pattern: Pattern | undefined;
     override readonly payload: T | null;
     constructor(payload: T | null, init: ResponseInitOpts) {
         super(init);
         this.payload = payload;
-        this.url = init.url;
         this.pattern = init.pattern;
     }
 
     protected override cloneOpts(update: ResponseCloneOpts<any, TStatus>): ResponseInitOpts {
         const opts = super.cloneOpts(update) as ResponseInitOpts;
-        if (update.url) {
-            opts.url = update.url;
-        } else if (update.pattern) {
+        if (update.pattern) {
             opts.pattern = update.pattern;
         }
         return opts;
@@ -40,9 +34,7 @@ export abstract class ResponseBase<T, TStatus = any> extends StatusPacket<T, TSt
 
     protected override toRecord(): Record<string, any> {
         const red = super.toRecord();
-        if (this.url) {
-            red.url = this.url;
-        } else if (this.pattern) {
+        if (this.pattern) {
             red.pattern = this.pattern;
         }
         return red;
@@ -106,7 +98,6 @@ export class HeaderResponse<TStatus = number> extends ResponseBase<null, TStatus
 export class Response<T, TStatus = number> extends ResponseBase<T, TStatus> {
 
     constructor(init: {
-        url?: string;
         pattern?: Pattern;
         /**
          * event type
@@ -139,7 +130,6 @@ export class ErrorResponse<TStatus = number> extends ResponseBase<null, TStatus>
     readonly error: any | null;
 
     constructor(init: {
-        url?: string;
         pattern?: Pattern;
         /**
          * event type
@@ -156,7 +146,6 @@ export class ErrorResponse<TStatus = number> extends ResponseBase<null, TStatus>
 
     clone(): ErrorResponse<TStatus>;
     clone(update: {
-        url?: string;
         pattern?: Pattern;
         type?: number;
         ok?: boolean;
@@ -168,7 +157,6 @@ export class ErrorResponse<TStatus = number> extends ResponseBase<null, TStatus>
         setHeaders?: { [name: string]: string | string[]; };
     }): ErrorResponse<TStatus>
     clone(update: {
-        url?: string;
         pattern?: Pattern;
         type?: number;
         ok?: boolean;

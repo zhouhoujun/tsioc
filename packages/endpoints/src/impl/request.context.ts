@@ -120,7 +120,7 @@ export class UrlRequestContext<TRequest extends Incoming<any> = Incoming<any>, T
         await lastValueFrom(this.session.send(this));
     }
 
-    async throwExecption(execption: MessageExecption): Promise<void> {
+    async respondExecption(execption: MessageExecption): Promise<void> {
         if (this.sent) return;
         this.execption = execption;
         this.body = null;
@@ -217,7 +217,7 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
         await lastValueFrom(this.session.send(this));
     }
 
-    async throwExecption(execption: MessageExecption): Promise<void> {
+    async respondExecption(execption: MessageExecption): Promise<void> {
         if (this.sent) return;
         this.execption = execption;
         this.body = null;

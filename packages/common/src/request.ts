@@ -275,72 +275,96 @@ export interface RequestOptions<T = any> extends RequestPacketOpts<T> {
     reportProgress?: boolean;
 }
 
-
-
 /**
- * Request init options.
+ * url request.
  */
-export interface UrlRequestInitOpts<T = any> extends RequestOptions<T>, RequestInitOpts<T> {
+export abstract class UrlRequest<T> extends AbstractRequest<T> {
     /**
-     * request context.
+     * The outgoing url.
      */
-    context: InvocationContext;
-}
+    abstract get url(): string;
 
-export interface UrlRequestCloneOpts<T> extends RequestCloneOpts<T> {
     /**
-     * request url.
+     * The outgoing URL with all URL parameters set.
      */
-    url?: string;
-    /**
-     * for restful
-     */
-    reportProgress?: boolean;
+    abstract get urlWithParams(): string;
 }
 
 /**
- * url Request.
+ * Topic request
  */
-export class UrlRequest<T> extends BaseRequest<T> {
-
-    readonly reportProgress: boolean;
-    readonly url: string;
-    readonly urlWithParams: string | undefined;
-    protected urlParams = true;
-
-    constructor(url: string, options: UrlRequestInitOpts<T>) {
-        super(options)
-        this.reportProgress = !!options.reportProgress;
-
-        this.url = url;
-        this.urlWithParams = appendUrlParams(url, this.params);
-    }
-
-    clone(): UrlRequest<T>;
-    clone<V>(update: UrlRequestCloneOpts<V>): UrlRequest<V>;
-    clone(update: UrlRequestCloneOpts<T>): UrlRequest<T>
-    clone(update: UrlRequestCloneOpts<any> = {}): UrlRequest<any> {
-        const url = update.url || this.url;
-
-        const init = this.cloneOpts(update);
-
-        // Finally, construct the new HttpRequest using the pieces from above.
-        return new UrlRequest(url, init)
-    }
-
-    protected override cloneOpts(update: UrlRequestCloneOpts<any>): UrlRequestInitOpts {
-        const init = super.cloneOpts(update) as UrlRequestInitOpts;
-        init.reportProgress =
-            (update.reportProgress !== undefined) ? update.reportProgress : this.reportProgress;
-
-        return init;
-
-    }
-
-    protected override toRecord(): Record<string, any> {
-        const rcd = super.toRecord();
-        // rcd.reportProgress = this.reportProgress;
-        rcd.url = this.urlWithParams;
-        return rcd;
-    }
+export abstract class TopicRequest<T> extends AbstractRequest<T> {
+    /**
+     * the outgoing topic.
+     */
+    abstract get topic(): string;
 }
+
+
+// /**
+//  * Request init options.
+//  */
+// export interface UrlRequestInitOpts<T = any> extends RequestOptions<T>, RequestInitOpts<T> {
+//     /**
+//      * request context.
+//      */
+//     context: InvocationContext;
+// }
+
+// export interface UrlRequestCloneOpts<T> extends RequestCloneOpts<T> {
+//     /**
+//      * request url.
+//      */
+//     url?: string;
+//     /**
+//      * for restful
+//      */
+//     reportProgress?: boolean;
+// }
+
+// /**
+//  * url Request.
+//  */
+// export class UrlRequest<T> extends BaseRequest<T> {
+
+//     readonly reportProgress: boolean;
+//     readonly url: string;
+//     readonly urlWithParams: string | undefined;
+//     protected urlParams = true;
+
+//     constructor(url: string, options: UrlRequestInitOpts<T>) {
+//         super(options)
+//         this.reportProgress = !!options.reportProgress;
+
+//         this.url = url;
+//         this.urlWithParams = appendUrlParams(url, this.params);
+//     }
+
+//     clone(): UrlRequest<T>;
+//     clone<V>(update: UrlRequestCloneOpts<V>): UrlRequest<V>;
+//     clone(update: UrlRequestCloneOpts<T>): UrlRequest<T>
+//     clone(update: UrlRequestCloneOpts<any> = {}): UrlRequest<any> {
+//         const url = update.url || this.url;
+
+//         const init = this.cloneOpts(update);
+
+//         // Finally, construct the new HttpRequest using the pieces from above.
+//         return new UrlRequest(url, init)
+//     }
+
+//     protected override cloneOpts(update: UrlRequestCloneOpts<any>): UrlRequestInitOpts {
+//         const init = super.cloneOpts(update) as UrlRequestInitOpts;
+//         init.reportProgress =
+//             (update.reportProgress !== undefined) ? update.reportProgress : this.reportProgress;
+
+//         return init;
+
+//     }
+
+//     protected override toRecord(): Record<string, any> {
+//         const rcd = super.toRecord();
+//         // rcd.reportProgress = this.reportProgress;
+//         rcd.url = this.urlWithParams;
+//         return rcd;
+//     }
+// }

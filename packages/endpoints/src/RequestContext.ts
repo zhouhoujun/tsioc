@@ -709,10 +709,10 @@ export abstract class RequestContext<
     abstract setResponse(packet: Response<any>): void;
 
     /**
-     * throw execption to client.
+     * send execption to client.
      * @param execption 
      */
-    abstract throwExecption(execption: MessageExecption): Promise<void>;
+    abstract respondExecption(execption: MessageExecption): Promise<void>;
 
 }
 

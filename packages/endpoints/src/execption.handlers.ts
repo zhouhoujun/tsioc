@@ -26,32 +26,32 @@ export class DefaultExecptionHandlers {
         } else {
             exp = new BadRequestExecption(execption.message);
         }
-        ctx.throwExecption(exp)
+        ctx.respondExecption(exp)
     }
 
     @ExecptionHandler(NotHandleExecption)
     notHanldeExecption(ctx: RequestContext, err: NotHandleExecption) {
         const execption = new InternalServerExecption(this.detailError(ctx) ? err.message : undefined);
-        ctx.throwExecption(execption)
+        ctx.respondExecption(execption)
     }
 
 
     @ExecptionHandler(ArgumentExecption)
     anguExecption(ctx: RequestContext, err: ArgumentExecption) {
         const execption = new BadRequestExecption(this.detailError(ctx) ? err.message : undefined);
-        ctx.throwExecption(execption)
+        ctx.respondExecption(execption)
     }
 
     @ExecptionHandler(MissingModelFieldExecption)
     missFieldExecption(ctx: RequestContext, err: MissingModelFieldExecption) {
         const execption = new BadRequestExecption(this.detailError(ctx) ? err.message : undefined);
-        ctx.throwExecption(execption)
+        ctx.respondExecption(execption)
     }
 
     @ExecptionHandler(MissingParameterExecption)
     missExecption(ctx: RequestContext, err: MissingParameterExecption) {
         const execption = new BadRequestExecption(this.detailError(ctx) ? err.message : undefined);
-        ctx.throwExecption(execption)
+        ctx.respondExecption(execption)
     }
 
     protected detailError(ctx: RequestContext): boolean {

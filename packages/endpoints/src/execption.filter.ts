@@ -8,10 +8,10 @@ import { RequestContext } from './RequestContext';
 @Injectable({ static: true })
 export class ExecptionFinalizeFilter<TInput extends RequestContext, TContext = any> extends ExecptionFilter<TInput, any, TContext> {
 
-    catchError(reqCtx: TInput, err: any, caught: Observable<any>, context?: TContext) {
-        const logger = reqCtx.get(Logger)?? console;
+    catchError(reqContext: TInput, err: any, caught: Observable<any>, context?: TContext) {
+        const logger = reqContext.get(Logger) ?? console;
         logger.error(err);
-        return reqCtx.throwExecption(err);
+        return reqContext.respondExecption(err)
     }
 
 }

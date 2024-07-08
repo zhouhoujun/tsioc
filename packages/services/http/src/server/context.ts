@@ -454,7 +454,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         return this.statusMessage ?? String(status);
     }
 
-    async throwExecption(err: MessageExecption): Promise<void> {
+    async respondExecption(err: MessageExecption): Promise<void> {
         let headerSent = false;
         if (this.sent || !this.writable) {
             headerSent = err.headerSent = true

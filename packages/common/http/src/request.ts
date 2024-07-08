@@ -1,5 +1,8 @@
 import { isString, InvocationContext, isUndefined, isNil } from '@tsdi/ioc';
-import { DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS, HeadersLike, HeaderMappings, Pattern, AbstractRequest, RequestParams } from '@tsdi/common';
+import {
+    DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS,
+    HeadersLike, HeaderMappings, RequestParams, UrlRequest
+} from '@tsdi/common';
 import { HttpParams } from './params';
 
 
@@ -45,15 +48,9 @@ function mightHaveBody(method: string): boolean {
  *
  * @publicApi
  */
-export class HttpRequest<T> implements AbstractRequest<T> {
+export class HttpRequest<T> implements UrlRequest<T> {
 
     id?: string | number;
-
-    get pattern(): Pattern {
-        return this.url;
-    }
-
-
     /**
      * The request body, or `null` if one isn't set.
      *
