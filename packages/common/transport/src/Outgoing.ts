@@ -1,6 +1,7 @@
-import { Clonable, Header, HeadersLike, IHeaders, Pattern, StatusCloneOpts, StatusPacket, StatusPacketOpts } from '@tsdi/common';
+import { BasePacket, Clonable, CloneOpts, Header, HeadersLike, IHeaders, Jsonable, PacketOpts, Pattern, StatusOptions } from '@tsdi/common';
 import { IWritableStream } from './stream';
 import { Incoming } from './Incoming';
+import { isNil } from '@tsdi/ioc';
 
 /**
  * Outgoing message.
@@ -120,11 +121,11 @@ export abstract class OutgoingFactory {
 /**
  * Outgoing packet options.
  */
-export interface OutgoingPacketOpts<T = any, TStatus = any> extends StatusPacketOpts<T, TStatus> {
+export interface OutgoingPacketOpts<T = any, TStatus = any> extends PacketOpts<T>, StatusOptions<TStatus> {
     pattern?: Pattern;
 }
 
-export interface OutgoingCloneOpts<T, TStatus> extends StatusCloneOpts<T, TStatus> {
+export interface OutgoingCloneOpts<T, TStatus> extends CloneOpts<T>, StatusOptions<TStatus> {
     pattern?: Pattern;
 }
 
@@ -132,12 +133,28 @@ export interface OutgoingCloneOpts<T, TStatus> extends StatusCloneOpts<T, TStatu
 /**
  * Outgoing packet.
  */
-export abstract class OutgoingPacket<T, TStatus = number> extends StatusPacket<T, TStatus> implements Outgoing<T, TStatus>, Clonable<OutgoingPacket<T, TStatus>> {
-    
-    readonly pattern?: Pattern;
+export abstract class OutgoingPacket<T, TStatus = any> extends BasePacket<T> implements Outgoing<T, TStatus>, Clonable<OutgoingPacket<T, TStatus>>, Jsonable {
 
-    constructor(init: OutgoingPacketOpts) {
-        super(init)
+    /**
+     * Type of the response, narrowed to either the full response or the header.
+     */
+    readonly type: number | undefined;
+    readonly pattern?: Pattern;
+    readonly error: any | null;
+    readonly ok: boolean;
+    public override payload: T | null;
+
+    protected _status: TStatus | null;
+    protected _message: string | undefined;
+
+    constructor(init: OutgoingPacketOpts, defaultStatus?: TStatus, defaultStatusText?: string) {
+        super(init);
+        this.payload = init.payload ?? null;
+        this.ok = init.error ? false : init.ok != false;
+        this.error = init.error;
+        this.type = init.type;
+        this._status = init.status !== undefined ? init.status : defaultStatus ?? null;
+        this._message = (init.statusMessage || init.statusText) ?? defaultStatusText;
     }
 
     get statusCode(): TStatus {
@@ -146,6 +163,15 @@ export abstract class OutgoingPacket<T, TStatus = number> extends StatusPacket<T
     set statusCode(code: TStatus) {
         this._status = code;
     }
+    
+
+    get status(): TStatus {
+        return this._status!;
+    }
+    set status(code: TStatus) {
+        this._status = code;
+    }
+    
 
     /**
      * Textual description of response status code, defaults to OK.
@@ -174,6 +200,13 @@ export abstract class OutgoingPacket<T, TStatus = number> extends StatusPacket<T
         return this._message!
     }
 
+    hasHeader(field: string): boolean {
+        return this.headers.has(field)
+    }
+
+    getHeader(field: string): string | number | string[] | undefined {
+        return this.headers.getHeader(field)
+    }
 
     setHeader(field: string, val: Header): void {
         this.headers.setHeader(field, val);
@@ -190,12 +223,31 @@ export abstract class OutgoingPacket<T, TStatus = number> extends StatusPacket<T
     protected override cloneOpts(update: OutgoingCloneOpts<any, TStatus>): OutgoingPacketOpts {
         const init = super.cloneOpts(update) as OutgoingPacketOpts;
         init.pattern = update.pattern ?? this.pattern;
+        init.type = update.type ?? this.type;
+        init.ok = update.ok ?? this.ok;
+        const status = update.status ?? this.statusCode;
+        if (status !== null) {
+            init.status = status;
+        }
+        if (this.error || update.error) {
+            init.error = update.error ?? this.error
+        }
+        init.statusMessage = update.statusMessage ?? update.statusText ?? this.statusMessage;
         return init
     }
 
     protected override toRecord(): Record<string, any> {
         const rcd = super.toRecord();
-        if(this.pattern) rcd.pattern = this.pattern;
+        if (this.pattern) rcd.pattern = this.pattern;
+        if (!isNil(this.type)) rcd.type = this.type;
+        if (!isNil(this.statusCode)) rcd.status = this.statusCode;
+        if (this.statusMessage) rcd.statusMessage = this.statusMessage;
+
+        rcd.ok = this.ok;
+
+        if (this.error) {
+            rcd.error = this.error
+        }
         return rcd;
     }
 

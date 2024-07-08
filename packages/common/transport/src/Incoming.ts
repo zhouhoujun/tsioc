@@ -1,8 +1,9 @@
 import {
     BasePacket, Clonable, CloneOpts, HeadersLike, IHeaders, PacketOpts, ParameterCodec,
-    Pattern, RequestParams, StatusCloneOpts, StatusPacket, StatusPacketOpts
+    Pattern, RequestParams, StatusOptions
 } from '@tsdi/common';
 import { IReadableStream } from './stream';
+import { isNil } from '@tsdi/ioc';
 
 
 
@@ -270,12 +271,12 @@ export abstract class ClientIncomingFactory implements AbstractIncomingFactory<C
 /**
  * client incoming init options
  */
-export interface ClientIncomingOpts<T = any, TStatus = any> extends StatusPacketOpts<T, TStatus> {
+export interface ClientIncomingOpts<T = any, TStatus = any> extends PacketOpts<T>, StatusOptions<TStatus> {
     pattern?: Pattern;
     streamLength?: number;
 }
 
-export interface ClientIncomingCloneOpts<T, TStatus> extends StatusCloneOpts<T, TStatus> {
+export interface ClientIncomingCloneOpts<T, TStatus> extends CloneOpts<T>, StatusOptions<TStatus> {
     pattern?: Pattern;
 }
 
@@ -283,14 +284,57 @@ export interface ClientIncomingCloneOpts<T, TStatus> extends StatusCloneOpts<T, 
 /**
  * client incoming packet
  */
-export abstract class ClientIncomingPacket<T, TStatus = any> extends StatusPacket<T, TStatus> implements ClientIncoming<T, TStatus>, Clonable<ClientIncomingPacket<T, TStatus>> {
+export abstract class ClientIncomingPacket<T, TStatus = any> extends BasePacket<T> implements ClientIncoming<T, TStatus>, Clonable<ClientIncomingPacket<T, TStatus>> {
 
     readonly pattern?: Pattern;
 
     public streamLength?: number;
 
-    constructor(init: ClientIncomingOpts) {
+    /**
+     * Type of the response, narrowed to either the full response or the header.
+     */
+    readonly type: number | undefined;
+    readonly error: any | null;
+    readonly ok: boolean;
+
+    protected _status: TStatus | null;
+    protected _message: string | undefined;
+
+    get statusCode(): TStatus {
+        return this._status!;
+    }
+
+    get status(): TStatus {
+        return this._status!;
+    }
+
+    /**
+     * body, payload alias name.
+     */
+    get body(): T | null {
+        return this.payload;
+    }
+
+    /**
+      * Textual description of response status code, defaults to OK.
+      *
+      * Do not depend on this.
+      */
+    get statusText(): string {
+        return this._message!
+    }
+
+    get statusMessage(): string {
+        return this._message!
+    }
+
+    constructor(init: ClientIncomingOpts, defaultStatus?: TStatus, defaultStatusText?: string) {
         super(init);
+        this.ok = init.error ? false : init.ok != false;
+        this.error = init.error;
+        this.type = init.type;
+        this._status = init.status !== undefined ? init.status : defaultStatus ?? null;
+        this._message = (init.statusMessage || init.statusText) ?? defaultStatusText;
         this.streamLength = init.streamLength;
     }
 
@@ -318,12 +362,31 @@ export abstract class ClientIncomingPacket<T, TStatus = any> extends StatusPacke
     protected override cloneOpts(update: ClientIncomingCloneOpts<any, TStatus>): ClientIncomingOpts {
         const init = super.cloneOpts(update) as ClientIncomingOpts;
         init.pattern = update.pattern ?? this.pattern;
+        init.type = update.type ?? this.type;
+        init.ok = update.ok ?? this.ok;
+        const status = update.status ?? this.statusCode;
+        if (status !== null) {
+            init.status = status;
+        }
+        if (this.error || update.error) {
+            init.error = update.error ?? this.error
+        }
+        init.statusMessage = update.statusMessage ?? update.statusText ?? this.statusMessage;
         return init
     }
 
     protected override toRecord(): Record<string, any> {
         const rcd = super.toRecord();
         if (this.pattern) rcd.pattern = this.pattern;
+        if (!isNil(this.type)) rcd.type = this.type;
+        if (!isNil(this.statusCode)) rcd.status = this.statusCode;
+        if (this.statusMessage) rcd.statusMessage = this.statusMessage;
+
+        rcd.ok = this.ok;
+
+        if (this.error) {
+            rcd.error = this.error
+        }
         return rcd;
     }
 

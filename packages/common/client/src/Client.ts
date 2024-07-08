@@ -299,31 +299,31 @@ export abstract class Client<TRequest extends AbstractRequest<any> = AbstractReq
                     case 'arraybuffer':
                         return res$.pipe(map((res: Response<any>) => {
                             // Validate that the body is an ArrayBuffer.
-                            if (res.payload !== null && !(res.payload instanceof ArrayBuffer)) {
+                            if (res.body !== null && !(res.body instanceof ArrayBuffer)) {
                                 throw new Execption('Response is not an ArrayBuffer.')
                             }
-                            return res.payload
+                            return res.body
                         }));
                     case 'blob':
                         return res$.pipe(map((res: Response<any>) => {
                             // Validate that the body is a Blob.
-                            if (res.payload !== null && !(res.payload instanceof Blob)) {
+                            if (res.body !== null && !(res.body instanceof Blob)) {
                                 throw new Execption('Response is not a Blob.')
                             }
-                            return res.payload
+                            return res.body
                         }));
                     case 'text':
                         return res$.pipe(map((res: Response<any>) => {
                             // Validate that the payload is a string.
-                            if (res.payload !== null && !isString(res.payload)) {
+                            if (res.body !== null && !isString(res.body)) {
                                 throw new Execption('Response is not a string.')
                             }
-                            return res.payload
+                            return res.body
                         }));
                     case 'json':
                     default:
                         // No validation needed for JSON responses, as they can be of any type.
-                        return res$.pipe(map((res: Response<any>) => res.payload))
+                        return res$.pipe(map((res: Response<any>) => res.body))
                 }
             case 'response':
                 // The response stream was requested directly, so return it.

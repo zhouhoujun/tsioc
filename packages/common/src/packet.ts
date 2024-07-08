@@ -10,6 +10,10 @@ export interface Clonable<T> {
     clone(): T;
 }
 
+export interface Jsonable {
+    toJson(ignores?: string[]): Record<string, any>;
+}
+
 /**
  * packet options.
  */
@@ -45,7 +49,7 @@ export interface CloneOpts<T> {
 /**
  * Packet
  */
-export abstract class Packet<T> implements Clonable<Packet<T>> {
+export abstract class Packet<T> implements Clonable<Packet<T>>, Jsonable {
     id?: string | number;
     abstract get headers(): HeaderMappings;
     abstract get payload(): T | null;
@@ -150,133 +154,132 @@ export abstract class BasePacket<T> implements Packet<T> {
 }
 
 
-/**
- * Status packet options.
- */
-export interface StatusPacketOpts<T = any, TStatus = any> extends PacketOpts<T> {
-    /**
-     * event type
-     */
-    type?: number;
-    status?: TStatus;
-    statusMessage?: string;
-    statusText?: string;
-    ok?: boolean;
-    error?: any;
+// /**
+//  * Status packet options.
+//  */
+// export interface StatusPacketOpts<T = any, TStatus = any> extends PacketOpts<T> {
+//     /**
+//      * event type
+//      */
+//     type?: number;
+//     status?: TStatus;
+//     statusMessage?: string;
+//     statusText?: string;
+//     ok?: boolean;
+//     error?: any;
+// }
 
-    defaultStatus?: TStatus;
-    defaultStatusText?: string;
-}
+// export interface StatusCloneOpts<T, TStatus> extends CloneOpts<T> {
+//     type?: number;
+//     ok?: boolean;
+//     status?: TStatus;
+//     statusMessage?: string;
+//     statusText?: string;
+//     error?: any;
+// }
 
-export interface StatusCloneOpts<T, TStatus> extends CloneOpts<T> {
-    type?: number;
-    ok?: boolean;
-    status?: TStatus;
-    statusMessage?: string;
-    statusText?: string;
-    error?: any;
-}
 
-/**
- * Status packet.
- */
-export abstract class StatusPacket<T, TStatus = any> extends BasePacket<T> {
-    /**
-     * Type of the response, narrowed to either the full response or the header.
-     */
-    readonly type: number | undefined;
-    /**
-     * status code.
-     */
-    get status(): TStatus | null {
-        return this._status;
-    }
 
-    readonly error: any | null;
+// /**
+//  * Status packet.
+//  */
+// export abstract class StatusPacket<T, TStatus = any> extends BasePacket<T> {
+//     /**
+//      * Type of the response, narrowed to either the full response or the header.
+//      */
+//     readonly type: number | undefined;
+//     /**
+//      * status code.
+//      */
+//     get status(): TStatus | null {
+//         return this._status;
+//     }
 
-    readonly ok: boolean;
+//     readonly error: any | null;
 
-    protected _message: string | undefined;
-    /**
-     * Textual description of response status code, defaults to OK.
-     *
-     * Do not depend on this.
-     */
-    get statusText(): string {
-        return this._message!
-    }
+//     readonly ok: boolean;
 
-    get statusMessage(): string {
-        return this._message!
-    }
+//     protected _message: string | undefined;
+//     /**
+//      * Textual description of response status code, defaults to OK.
+//      *
+//      * Do not depend on this.
+//      */
+//     get statusText(): string {
+//         return this._message!
+//     }
 
-    /**
-     * body, payload alias name.
-     */
-    get body(): T | null {
-        return this.payload;
-    }
+//     get statusMessage(): string {
+//         return this._message!
+//     }
 
-    protected _status: TStatus | null;
+//     /**
+//      * body, payload alias name.
+//      */
+//     get body(): T | null {
+//         return this.payload;
+//     }
 
-    constructor(init: StatusPacketOpts) {
-        super(init)
-        this.ok = init.error ? false : init.ok != false;
-        this.error = init.error;
-        this.type = init.type;
-        this._status = init.status !== undefined ? init.status : init?.defaultStatus ?? null;
-        this._message = (init.statusMessage || init.statusText) ?? init?.defaultStatusText;
-    }
+//     protected _status: TStatus | null;
 
-    /**
-     * has header in packet or not.
-     * @param packet 
-     * @param field 
-     */
-    hasHeader(field: string): boolean {
-        return this.headers.has(field)
-    }
-    /**
-     * get header from packet.
-     * @param packet 
-     * @param field 
-     */
-    getHeader(field: string): string | undefined {
-        return this.headers.getHeader(field);
-    }
+//     constructor(init: StatusPacketOpts, defaultStatus?: TStatus, defaultStatusText?: string) {
+//         super(init)
+//         this.ok = init.error ? false : init.ok != false;
+//         this.error = init.error;
+//         this.type = init.type;
+//         this._status = init.status !== undefined ? init.status : defaultStatus ?? null;
+//         this._message = (init.statusMessage || init.statusText) ?? defaultStatusText;
+//     }
 
-    abstract clone(): StatusPacket<T, TStatus>;
-    abstract clone<V>(update: StatusCloneOpts<V, TStatus>): StatusPacket<V, TStatus>;
-    abstract clone(update: StatusCloneOpts<T, TStatus>): StatusPacket<T, TStatus>;
+//     /**
+//      * has header in packet or not.
+//      * @param packet 
+//      * @param field 
+//      */
+//     hasHeader(field: string): boolean {
+//         return this.headers.has(field)
+//     }
+//     /**
+//      * get header from packet.
+//      * @param packet 
+//      * @param field 
+//      */
+//     getHeader(field: string): string | undefined {
+//         return this.headers.getHeader(field);
+//     }
 
-    protected cloneOpts(update: StatusCloneOpts<any, TStatus>): StatusPacketOpts {
-        const init = super.cloneOpts(update) as StatusPacketOpts;
-        init.type = update.type ?? this.type;
-        init.ok = update.ok ?? this.ok;
-        const status = update.status ?? this.status;
-        if (status !== null) {
-            init.status = status;
-        }
-        if (this.error || update.error) {
-            init.error = update.error ?? this.error
-        }
-        init.statusMessage = update.statusMessage ?? update.statusText ?? this.statusMessage;
-        return init;
-    }
+//     abstract clone(): StatusPacket<T, TStatus>;
+//     abstract clone<V>(update: StatusCloneOpts<V, TStatus>): StatusPacket<V, TStatus>;
+//     abstract clone(update: StatusCloneOpts<T, TStatus>): StatusPacket<T, TStatus>;
 
-    protected override toRecord(): Record<string, any> {
-        const rcd = super.toRecord();
+//     protected cloneOpts(update: StatusCloneOpts<any, TStatus>): StatusPacketOpts {
+//         const init = super.cloneOpts(update) as StatusPacketOpts;
+//         init.type = update.type ?? this.type;
+//         init.ok = update.ok ?? this.ok;
+//         const status = update.status ?? this.status;
+//         if (status !== null) {
+//             init.status = status;
+//         }
+//         if (this.error || update.error) {
+//             init.error = update.error ?? this.error
+//         }
+//         init.statusMessage = update.statusMessage ?? update.statusText ?? this.statusMessage;
+//         return init;
+//     }
 
-        if (!isNil(this.type)) rcd.type = this.type;
-        if (!isNil(this.status)) rcd.status = this.status;
-        if (this.statusMessage) rcd.statusMessage = this.statusMessage;
+//     protected override toRecord(): Record<string, any> {
+//         const rcd = super.toRecord();
 
-        rcd.ok = this.ok;
+//         if (!isNil(this.type)) rcd.type = this.type;
+//         if (!isNil(this.status)) rcd.status = this.status;
+//         if (this.statusMessage) rcd.statusMessage = this.statusMessage;
 
-        if (this.error) {
-            rcd.error = this.error
-        }
-        return rcd;
-    }
+//         rcd.ok = this.ok;
 
-}
+//         if (this.error) {
+//             rcd.error = this.error
+//         }
+//         return rcd;
+//     }
+
+// }
