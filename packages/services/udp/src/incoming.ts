@@ -1,4 +1,3 @@
-import { HeadersLike, Pattern, RequestParams } from '@tsdi/common';
 import { ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket, IncomingCloneOpts, IncomingFactory, IncomingOpts, IncomingPacket } from '@tsdi/common/transport';
 import { Injectable } from '@tsdi/ioc';
 import { RemoteInfo } from 'dgram';
@@ -40,7 +39,7 @@ export class UdpIncoming<T> extends IncomingPacket<T> {
 
 @Injectable()
 export class UdpIncomingFactory implements IncomingFactory {
-    create<T>(packet: IncomingOpts<T> & { pattern: Pattern; }): UdpIncoming<T> {
+    create<T>(packet: IncomingOpts<T>): UdpIncoming<T> {
         return new UdpIncoming<T>(packet);
     }
 }
@@ -83,7 +82,7 @@ export class UdpClientIncoming<T, TStatus = null> extends ClientIncomingPacket<T
 @Injectable()
 export class UdpClientIncomingFactory implements ClientIncomingFactory {
 
-    create<T = any>(options: ClientIncomingOpts<any, any> & { pattern: Pattern }): UdpClientIncoming<T> {
+    create<T = any>(options: ClientIncomingOpts<any, any>): UdpClientIncoming<T> {
         return new UdpClientIncoming(options);
     }
 

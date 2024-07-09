@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { HeadersLike, Pattern, RequestParams } from '@tsdi/common';
+import { RequestParams } from '@tsdi/common';
 import { ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket, IncomingCloneOpts, IncomingFactory, IncomingOpts, IncomingPacket } from '@tsdi/common/transport';
 
 
@@ -19,7 +19,7 @@ export class WsIncoming<T> extends IncomingPacket<T> {
 
 @Injectable()
 export class WsIncomingFactory implements IncomingFactory {
-    create<T>(packet: IncomingOpts<T> & { pattern: Pattern; }): WsIncoming<T> {
+    create<T>(packet: IncomingOpts<T>): WsIncoming<T> {
         return new WsIncoming<T>(packet);
     }
 }
@@ -39,7 +39,7 @@ export class WsClientIncoming<T, TStatus = null> extends ClientIncomingPacket<T,
 @Injectable()
 export class WsClientIncomingFactory implements ClientIncomingFactory {
 
-    create<T = any>(options: ClientIncomingOpts<any, any> & { pattern: Pattern }): WsClientIncoming<T> {
+    create<T = any>(options: ClientIncomingOpts<any, any>): WsClientIncoming<T> {
         return new WsClientIncoming(options);
     }
 

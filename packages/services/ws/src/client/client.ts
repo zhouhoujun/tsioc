@@ -1,5 +1,5 @@
-import { Injectable, InvocationContext } from '@tsdi/ioc';
-import { ResponseEvent, Pattern, UrlRequestInitOpts } from '@tsdi/common';
+import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
+import { ResponseEvent, Pattern, RequestInitOpts, PatternFormatter } from '@tsdi/common';
 import { ServiceUnavailableExecption, ev } from '@tsdi/common/transport';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { Observable } from 'rxjs';
@@ -16,9 +16,11 @@ import { WsRequest } from './request';
 export class WsClient extends Client<WsRequest<any>, ResponseEvent<any>, WsClientOpts> {
     private socket?: WebSocket | null;
     private session?: ClientTransportSession | null;
+    private formatter: PatternFormatter;
 
     constructor(readonly handler: WsHandler) {
         super();
+        this.formatter = handler.injector.get(PatternFormatter);
     }
 
     protected connect(): Observable<any> {
@@ -77,9 +79,13 @@ export class WsClient extends Client<WsRequest<any>, ResponseEvent<any>, WsClien
     }
 
 
-    protected createRequest(pattern: Pattern, options: UrlRequestInitOpts<any>): WsRequest<any> {
-        options.pattern = pattern;
-        return new WsRequest(options);
+    protected createRequest(pattern: Pattern, options: RequestInitOpts<any>): WsRequest<any> {
+        // options.withCredentials = 
+        if (isString(pattern)) {
+            return new WsRequest(pattern, null, options);
+        } else {
+            return new WsRequest(this.formatter.format(pattern), pattern, options);
+        }
     }
 
     protected initContext(context: InvocationContext<any>): void {

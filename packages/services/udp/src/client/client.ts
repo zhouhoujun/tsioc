@@ -1,11 +1,11 @@
-import { Injectable, InvocationContext } from '@tsdi/ioc';
-import { Pattern, ResponseEvent, UrlRequestInitOpts } from '@tsdi/common';
+import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
+import { Pattern, PatternFormatter, RequestInitOpts, ResponseEvent } from '@tsdi/common';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { UdpHandler } from './handler';
 import { UdpClientOpts } from './options';
 import { defaultMaxSize } from '../consts';
-import { UdpRequest } from './request';
+import { UdpRequest, UdpRequestInitOpts } from './request';
 
 
 
@@ -13,9 +13,11 @@ import { UdpRequest } from './request';
 export class UdpClient extends Client<UdpRequest<any>, ResponseEvent<any>, UdpClientOpts> {
     private socket?: Socket | null;
     private session?: ClientTransportSession | null;
+    private formatter: PatternFormatter;
 
     constructor(readonly handler: UdpHandler) {
         super();
+        this.formatter = handler.injector.get(PatternFormatter);
     }
 
     protected async connect(): Promise<any> {
@@ -44,8 +46,13 @@ export class UdpClient extends Client<UdpRequest<any>, ResponseEvent<any>, UdpCl
         context.setValue(ClientTransportSession, this.session)
     }
 
-    protected createRequest(pattern: Pattern, options: UrlRequestInitOpts<any>): UdpRequest<any> {
-        return new UdpRequest({ pattern, baseUrl: this.getOptions().url, ...options });
+    protected createRequest(pattern: Pattern, options: UdpRequestInitOpts<any>): UdpRequest<any> {
+        options.baseUrl = this.getOptions().url;
+        if (isString(pattern)) {
+            return new UdpRequest(pattern, null, options);
+        } else {
+            return new UdpRequest(this.formatter.format(pattern), pattern, options);
+        }
     }
 
 }

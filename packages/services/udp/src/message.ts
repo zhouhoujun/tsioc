@@ -1,22 +1,21 @@
-import { MessageFactory, Pattern, PatternMesage } from '@tsdi/common';
+import { MessageFactory, Pattern, UrlMesage } from '@tsdi/common';
 import { AbstractTransportSession, IEventEmitter, IReadableStream, MessageReader, MessageWriter, ev, toBuffer } from '@tsdi/common/transport';
 import { Execption, Injectable, promisify } from '@tsdi/ioc';
 import { RemoteInfo, Socket } from 'dgram';
 import { Observable, filter, fromEvent } from 'rxjs';
 
-export class UdpMessage extends PatternMesage {
+export class UdpMessage extends UrlMesage {
     readonly remoteInfo: RemoteInfo;
-    constructor(
+    constructor(url: string,
         init: {
             id?: string | number;
             remoteInfo: RemoteInfo,
-            pattern?: Pattern;
             headers?: Record<string, any>;
             data?: Buffer | IReadableStream | null;
             streamLength?: number;
         }
     ) {
-        super(init);
+        super(url, init);
         this.remoteInfo = init.remoteInfo;
     }
 }
@@ -27,7 +26,8 @@ export class UdpMessageFactory implements MessageFactory {
     create(initOpts: {
         id?: string | number;
         remoteInfo: RemoteInfo,
-        pattern?: Pattern;
+        url?: string;
+        pattern?: string;
         headers?: Record<string, any>;
         /**
          * params.
@@ -37,7 +37,7 @@ export class UdpMessageFactory implements MessageFactory {
         data?: Buffer | IReadableStream | null;
 
     }): UdpMessage {
-        return new UdpMessage(initOpts);
+        return new UdpMessage(initOpts.url ?? initOpts.pattern!, initOpts);
     }
 
 }

@@ -13,7 +13,8 @@ export class WsMessageFactory implements MessageFactory {
 
     create(initOpts: {
         id?: string | number;
-        pattern: Pattern;
+        url?: string;
+        pattern?: string;
         headers?: Record<string, any>;
         /**
          * params.
@@ -23,7 +24,7 @@ export class WsMessageFactory implements MessageFactory {
         data?: Buffer | IReadableStream | null;
 
     }): WsMessage {
-        return new WsMessage(initOpts);
+        return new WsMessage(initOpts.url ?? initOpts.pattern!, initOpts);
     }
 
 }

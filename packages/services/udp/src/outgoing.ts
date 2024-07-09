@@ -1,4 +1,3 @@
-import { HeadersLike, Pattern } from '@tsdi/common';
 import { OutgoingCloneOpts, OutgoingFactory, OutgoingPacket, OutgoingPacketOpts } from '@tsdi/common/transport';
 import { RemoteInfo } from 'dgram';
 import { UdpIncoming } from './incoming';
