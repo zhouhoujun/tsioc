@@ -1,7 +1,8 @@
+import { isNil } from '@tsdi/ioc';
 import { BasePacket, Clonable, CloneOpts, Header, HeadersLike, IHeaders, Jsonable, PacketOpts, Pattern, StatusOptions } from '@tsdi/common';
 import { IWritableStream } from './stream';
 import { Incoming } from './Incoming';
-import { isNil } from '@tsdi/ioc';
+
 
 /**
  * Outgoing message.

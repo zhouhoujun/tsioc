@@ -1,6 +1,6 @@
-import { Abstract, Injectable, hasOwn, isNil, isPlainObject } from '@tsdi/ioc';
+import { Abstract, Injectable, hasOwn, isPlainObject } from '@tsdi/ioc';
 import { HeaderMappings, HeadersLike } from './headers';
-import { Clonable, CloneOpts, Jsonable, PacketOpts } from './packet';
+import { Clonable, CloneOpts, PacketOpts } from './packet';
 import { Pattern } from './pattern';
 
 export interface StatusOptions<TStatus = any> {
@@ -68,7 +68,7 @@ export abstract class ResponseBase<T, TStatus = any> {
         this.headers = init.headers instanceof HeaderMappings ? init.headers : new HeaderMappings(init.headers);
         this.status = init.status !== undefined ? init.status : defaultStatus;
         this.ok = init.error ? false : (init.ok === true || this.isOk(this.status));
-        this._message = init.statusText || defaultStatusText;
+        this._message = init.statusText || init.statusMessage || defaultStatusText;
         this.pattern = init.pattern;
     }
 
@@ -81,7 +81,7 @@ export abstract class ResponseBase<T, TStatus = any> {
 /**
  * header response.
  */
-export class HeaderResponse<TStatus = number> extends ResponseBase<null, TStatus> {
+export class HeaderResponse<TStatus = any> extends ResponseBase<null, TStatus> implements Clonable<HeaderResponse<TStatus>> {
     constructor(init: {
         url?: string;
         pattern?: Pattern;
@@ -98,13 +98,30 @@ export class HeaderResponse<TStatus = number> extends ResponseBase<null, TStatus
         super(init);
     }
 
+    /**
+     * Copy this `HttpHeaderResponse`, overriding its contents with the
+     * given parameter hash.
+     */
+    clone(update: { headers?: HeadersLike; status?: TStatus; statusText?: string; pattern?: Pattern; } = {}):
+        HeaderResponse {
+        // Perform a straightforward initialization of the new HttpHeaderResponse,
+        // overriding the current parameters with new ones if given.
+        return new HeaderResponse({
+            ok: this.ok,
+            headers: update.headers || this.headers,
+            status: update.status !== undefined ? update.status : this.status,
+            statusText: update.statusText || this.statusText,
+            pattern: update.pattern || this.pattern || undefined
+        })
+    }
+
 
 }
 
 /**
  * response packet.
  */
-export class Response<T, TStatus = number> extends ResponseBase<T, TStatus> {
+export class Response<T, TStatus = any> extends ResponseBase<T, TStatus> implements Clonable<Response<T, TStatus>> {
     /**
      * The response body, or `null` if one was not returned.
      */
@@ -133,13 +150,18 @@ export class Response<T, TStatus = number> extends ResponseBase<T, TStatus> {
         this.body = init.body !== undefined ? init.body : (init.payload ?? null)!
     }
 
-    // clone(): Response<T, TStatus>;
-    // clone<V>(update: ResponseInitOpts<V, TStatus>): Response<V, TStatus>;
-    // clone(update: ResponseInitOpts<T, TStatus>): Response<T, TStatus>;
-    // clone(update: ResponseInitOpts<any, TStatus> = {}): Response<any, TStatus> {
-    //     const init = this.cloneOpts(update);
-    //     return new Response(init) as Response<any, TStatus>;
-    // }
+    clone(): Response<T, TStatus>;
+    clone<V>(update: ResponseCloneOpts<V, TStatus>): Response<V, TStatus>;
+    clone(update: ResponseCloneOpts<T, TStatus>): Response<T, TStatus>;
+    clone(update: ResponseCloneOpts<any, TStatus> = {}): Response<any, TStatus> {
+        return new Response<any>({
+            body: (update.body !== undefined) ? update.body : (update.payload ?? this.body),
+            headers: update.headers || this.headers,
+            status: (update.status !== undefined) ? update.status : this.status,
+            statusText: update.statusText || this.statusText,
+            pattern: update.pattern || this.pattern || undefined
+        })
+    }
 }
 
 /**
@@ -161,39 +183,9 @@ export class ErrorResponse<TStatus = any> extends ResponseBase<null, TStatus> {
         statusMessage?: string;
         statusText?: string;
     }) {
-        super(init, null!, 'Unknown Error');
-       
-        this.error = init.error || null
+        super(init, null!, init.error?.message ?? 'Unknown Error');
+        this.error = init.error || null;
     }
-
-    // clone(): ErrorResponse<TStatus>;
-    // clone(update: {
-    //     pattern?: Pattern;
-    //     type?: number;
-    //     ok?: boolean;
-    //     headers?: HeadersLike;
-    //     error?: any;
-    //     status?: TStatus;
-    //     statusMessage?: string;
-    //     statusText?: string;
-    //     setHeaders?: { [name: string]: string | string[]; };
-    // }): ErrorResponse<TStatus>
-    // clone(update: {
-    //     pattern?: Pattern;
-    //     type?: number;
-    //     ok?: boolean;
-    //     headers?: HeadersLike;
-    //     error?: any;
-    //     status?: any;
-    //     statusMessage?: string;
-    //     statusText?: string;
-    //     setHeaders?: { [name: string]: string | string[]; }
-    // } = {}): ErrorResponse<TStatus> {
-    //     const init = this.cloneOpts(update);
-    //     init.error = update.error ?? this.error;
-    //     return new ErrorResponse(init) as ErrorResponse<any>;
-
-    // }
 }
 
 /**
