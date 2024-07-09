@@ -1,5 +1,5 @@
 import { isNil } from '@tsdi/ioc';
-import { BasePacket, Clonable, CloneOpts, Header, HeadersLike, IHeaders, Jsonable, PacketOpts, Pattern, StatusOptions } from '@tsdi/common';
+import { BasePacket, Clonable, CloneOpts, Header, HeadersLike, IHeaders, Jsonable, PacketOpts, StatusOptions } from '@tsdi/common';
 import { IWritableStream } from './stream';
 import { Incoming } from './Incoming';
 
@@ -12,7 +12,7 @@ export interface Outgoing<T, TStatus = any> {
     id?: string | number;
     type?: string | number | null;
 
-    pattern?: Pattern;
+    pattern?: string;
 
     body?: T | null;
 
@@ -123,11 +123,11 @@ export abstract class OutgoingFactory {
  * Outgoing packet options.
  */
 export interface OutgoingPacketOpts<T = any, TStatus = any> extends PacketOpts<T>, StatusOptions<TStatus> {
-    pattern?: Pattern;
+    pattern?: string;
 }
 
 export interface OutgoingCloneOpts<T, TStatus> extends CloneOpts<T>, StatusOptions<TStatus> {
-    pattern?: Pattern;
+    pattern?: string;
 }
 
 
@@ -140,7 +140,7 @@ export abstract class OutgoingPacket<T, TStatus = any> extends BasePacket<T> imp
      * Type of the response, narrowed to either the full response or the header.
      */
     readonly type: number | undefined;
-    readonly pattern?: Pattern;
+    readonly pattern?: string;
     readonly error: any | null;
     readonly ok: boolean;
     public override payload: T | null;
@@ -150,6 +150,7 @@ export abstract class OutgoingPacket<T, TStatus = any> extends BasePacket<T> imp
 
     constructor(init: OutgoingPacketOpts, defaultStatus?: TStatus, defaultStatusText?: string) {
         super(init);
+        this.pattern = init.pattern;
         this.payload = init.payload ?? null;
         this.ok = init.error ? false : init.ok != false;
         this.error = init.error;
