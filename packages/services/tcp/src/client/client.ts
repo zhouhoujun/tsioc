@@ -22,11 +22,17 @@ export class TcpClient extends Client<TcpRequest<any>> {
 
     private connection!: tls.TLSSocket | net.Socket;
     private _session?: ClientTransportSession<tls.TLSSocket | net.Socket>;
-    private formatter: PatternFormatter;
+    
+    private _formatter?: PatternFormatter;
+    get formatter(): PatternFormatter {
+        if(!this._formatter){
+            this._formatter = this.handler.injector.get(PatternFormatter);
+        }
+        return this._formatter;
+    }
 
     constructor(readonly handler: TcpHandler) {
         super();
-        this.formatter = handler.injector.get(PatternFormatter);
         if (!this.handler.getOptions().connectOpts) {
             this.handler.getOptions().connectOpts = {
                 port: 3000,

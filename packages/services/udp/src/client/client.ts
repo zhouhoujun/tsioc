@@ -13,11 +13,17 @@ import { UdpRequest, UdpRequestInitOpts } from './request';
 export class UdpClient extends Client<UdpRequest<any>, ResponseEvent<any>, UdpClientOpts> {
     private socket?: Socket | null;
     private session?: ClientTransportSession | null;
-    private formatter: PatternFormatter;
+    
+    private _formatter?: PatternFormatter;
+    get formatter(): PatternFormatter {
+        if(!this._formatter){
+            this._formatter = this.handler.injector.get(PatternFormatter);
+        }
+        return this._formatter;
+    }
 
     constructor(readonly handler: UdpHandler) {
         super();
-        this.formatter = handler.injector.get(PatternFormatter);
     }
 
     protected async connect(): Promise<any> {

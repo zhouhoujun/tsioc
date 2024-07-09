@@ -16,11 +16,17 @@ import { WsRequest } from './request';
 export class WsClient extends Client<WsRequest<any>, ResponseEvent<any>, WsClientOpts> {
     private socket?: WebSocket | null;
     private session?: ClientTransportSession | null;
-    private formatter: PatternFormatter;
+
+    private _formatter?: PatternFormatter;
+    get formatter(): PatternFormatter {
+        if (!this._formatter) {
+            this._formatter = this.handler.injector.get(PatternFormatter);
+        }
+        return this._formatter;
+    }
 
     constructor(readonly handler: WsHandler) {
         super();
-        this.formatter = handler.injector.get(PatternFormatter);
     }
 
     protected connect(): Observable<any> {

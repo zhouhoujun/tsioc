@@ -122,7 +122,7 @@ export abstract class UrlRequest<T> extends AbstractRequest<T> {
     /**
      * The outgoing URL with all URL parameters set.
      */
-    abstract get urlWithParams(): string;
+    abstract getUrlWithParams(): string;
 }
 
 export interface TopicRequestCloneOpts<T> extends RequestCloneOpts<T> {
@@ -301,34 +301,29 @@ export interface RequestOptions<T = any> extends RequestPacketOpts<T> {
 
 export abstract class BaseUrlRequest<T> extends BaseRequest<T> implements UrlRequest<T> {
 
-    /**
-     * The outgoing URL with all URL parameters set.
-     */
-    readonly urlWithParams: string;
-
     constructor(readonly url: string, readonly pattern: Pattern | null | undefined, init: RequestInitOpts<T>, defaultMethod = '') {
         super(init, defaultMethod);
-
-        if (pattern) {
-            this.queryParams = false;
-            this.urlWithParams = this.url;
-        } else {
-            this.queryParams = true;
-            this.urlWithParams = this.appendUrlParams();
-        }
+        this.queryParams = !!pattern;
     }
 
     abstract clone(): BaseUrlRequest<T>;
     abstract clone<V>(update: UrlRequestCloneOpts<V>): BaseUrlRequest<V>;
     abstract clone(update: UrlRequestCloneOpts<T>): BaseUrlRequest<T>;
 
-    protected appendUrlParams() {
-        return appendUrlParams(this.url, this.params);
+
+    /**
+     * The outgoing URL with all URL parameters set.
+     */
+    getUrlWithParams(): string {
+        if (this.queryParams) {
+            return appendUrlParams(this.url, this.params)
+        }
+        return this.url;
     }
 
     protected override toRecord(): Record<string, any> {
         const rcd = super.toRecord();
-        rcd.url = this.queryParams ? this.urlWithParams : this.url;
+        rcd.url = this.getUrlWithParams();
         return rcd;
     }
 }

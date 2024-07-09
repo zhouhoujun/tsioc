@@ -1,5 +1,5 @@
-import { EMPTY_OBJ, Injectable, Injector, isNil, isString } from '@tsdi/ioc';
-import { HeaderMappings, LOCALHOST, normalize, PatternFormatter, RequestParams, Response } from '@tsdi/common';
+import { EMPTY_OBJ, Injectable, Injector, isNil } from '@tsdi/ioc';
+import { HeaderMappings, LOCALHOST, normalize, Response } from '@tsdi/common';
 import { Incoming, MessageExecption, Outgoing } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
 import { RequestContext, RequestContextFactory } from '../RequestContext';
@@ -173,11 +173,11 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
         }
     }
 
-    private _query: Record<string, any>|undefined;
+    private _query: Record<string, any> | undefined;
     get query(): Record<string, any> {
         if (!this._query) {
             let urlParams: Record<string, any> = null!;
-            const url = this.request.url ?? this.request.pattern!
+            const url = this.url;
             const idx = url.indexOf('?');
             if (idx > 0) {
                 urlParams = {};
@@ -189,12 +189,16 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
                     }
                 })
 
-                if (urlParams) {
+                if (this.request.query) {
                     this.request.query = { ...urlParams, ...this.request.query ?? {} }
+                } else {
+                    this.request.query = urlParams;
                 }
             }
-
-            this._query = this.request.query = this.request.query ?? {}
+            if (!this.request.query) {
+                this.request.query = {};
+            }
+            this._query = this.request.query;
 
         }
         return this._query;
