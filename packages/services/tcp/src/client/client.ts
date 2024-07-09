@@ -1,5 +1,5 @@
-import { Injectable, InvocationContext, promisify } from '@tsdi/ioc';
-import { Pattern, LOCALHOST, RequestInitOpts } from '@tsdi/common';
+import { Injectable, InvocationContext, isString, promisify } from '@tsdi/ioc';
+import { Pattern, LOCALHOST, RequestInitOpts, PatternFormatter } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
@@ -22,9 +22,11 @@ export class TcpClient extends Client<TcpRequest<any>> {
 
     private connection!: tls.TLSSocket | net.Socket;
     private _session?: ClientTransportSession<tls.TLSSocket | net.Socket>;
+    private formatter: PatternFormatter;
 
     constructor(readonly handler: TcpHandler) {
         super();
+        this.formatter = handler.injector.get(PatternFormatter);
         if (!this.handler.getOptions().connectOpts) {
             this.handler.getOptions().connectOpts = {
                 port: 3000,
@@ -84,9 +86,12 @@ export class TcpClient extends Client<TcpRequest<any>> {
     }
 
     protected override createRequest(pattern: Pattern, options: RequestInitOpts): TcpRequest<any> {
-        // options.withCredentials = this.connection instanceof tls.TLSSocket;
-        options.pattern = pattern;
-        return new TcpRequest(options);
+        options.withCredentials = this.connection instanceof tls.TLSSocket;
+        if (isString(pattern)) {
+            return new TcpRequest(pattern, null, options);
+        } else {
+            return new TcpRequest(this.formatter.format(pattern), pattern, options);
+        }
     }
 
     protected override async onShutdown(): Promise<void> {

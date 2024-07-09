@@ -52,16 +52,11 @@ export interface RequestPacketOpts<T = any> extends PacketOpts<T> {
      * for restful
      */
     withCredentials?: boolean;
-    /**
-     * default method.
-     */
-    defaultMethod?: string;
 }
 
 
 
 export interface RequestInitOpts<T = any> extends RequestPacketOpts<T>, ResponseAs {
-    pattern?: Pattern;
     /**
      * request context.
      */
@@ -69,7 +64,6 @@ export interface RequestInitOpts<T = any> extends RequestPacketOpts<T>, Response
 }
 
 export interface RequestCloneOpts<T> extends CloneOpts<T> {
-    pattern?: Pattern;
     params?: RequestParams;
     context?: InvocationContext;
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
@@ -96,7 +90,7 @@ export abstract class AbstractRequest<T> extends Packet<T> implements Clonable<A
     /**
      * Whether this request should be sent with outgoing credentials (cookies).
      */
-    abstract get withCredentials(): boolean;
+    abstract get withCredentials(): boolean | undefined;
 
     /**
      * request body, payload alias name.
@@ -112,18 +106,53 @@ export abstract class AbstractRequest<T> extends Packet<T> implements Clonable<A
 }
 
 
+export interface UrlRequestCloneOpts<T> extends RequestCloneOpts<T> {
+    url?: string;
+}
+
+/**
+ * url request.
+ */
+export abstract class UrlRequest<T> extends AbstractRequest<T> {
+    /**
+     * The outgoing url.
+     */
+    abstract get url(): string;
+
+    /**
+     * The outgoing URL with all URL parameters set.
+     */
+    abstract get urlWithParams(): string;
+}
+
+export interface TopicRequestCloneOpts<T> extends RequestCloneOpts<T> {
+    topic?: string;
+}
+
+/**
+ * Topic request
+ */
+export abstract class TopicRequest<T> extends AbstractRequest<T> {
+    /**
+     * the outgoing topic.
+     */
+    abstract get topic(): string;
+}
+
+
+
+
 /**
  * Request packet.
  */
 export abstract class BaseRequest<T> extends AbstractRequest<T> {
-    readonly pattern?: Pattern;
     readonly method: string;
     readonly headers: HeaderMappings;
     readonly params: RequestParams;
     readonly context: InvocationContext;
     readonly responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
     readonly observe: 'body' | 'events' | 'response' | 'emit' | 'observe';
-    readonly withCredentials: boolean;
+    readonly withCredentials: boolean | undefined;
     override readonly payload: T | null;
     /**
      * request body, payload alias name.
@@ -132,26 +161,22 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
         return this.payload;
     }
 
-    protected urlParams?: boolean;
+    protected queryParams?: boolean;
 
-    constructor(init: RequestInitOpts) {
+    constructor(init: RequestInitOpts, defaultMethod = '') {
         super()
         this.id = init.id;
-        this.pattern = init.pattern;
         this.headers = new HeaderMappings(init.headers, init.headerFields);
         this.payload = init.payload ?? null;
         this.payload = init.body ?? init.payload ?? null;
         this.params = new RequestParams(init);
-        this.method = init.method ?? this.headers.getMethod() ?? init.defaultMethod ?? '';
+        this.method = init.method ?? defaultMethod;
         this.context = init.context;
         this.responseType = init.responseType ?? 'json';
         this.observe = init.observe ?? 'body';
         this.withCredentials = !!init.withCredentials;
-    }
 
-    abstract clone(): AbstractRequest<T>;
-    abstract clone<V>(update: RequestCloneOpts<V>): AbstractRequest<V>;
-    abstract clone(update: RequestCloneOpts<T>): AbstractRequest<T>;
+    }
 
     toJson(ignores?: string[]): Record<string, any> {
         const obj = this.toRecord();
@@ -216,19 +241,18 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
             (update.withCredentials !== undefined) ? update.withCredentials : this.withCredentials;
         const id = this.id;
         const context = update.context ?? this.context;
-        const pattern = update.pattern ?? this.pattern;
-        return { id, pattern, headers, params, payload, method, withCredentials, context };
+        return { id, headers, params, payload, method, withCredentials, context };
     }
 
     protected toRecord(): Record<string, any> {
         const record = {} as Record<string, any>;
         if (this.id) record.id = this.id;
-        if (this.pattern) record.pattern = this.pattern;
+        // if (this.pattern) record.pattern = this.pattern;
         if (this.headers.size) record.headers = this.headers.getHeaders();
         if (!isNil(this.payload)) record.payload = this.payload;
         if (this.method) record.method = this.method;
-        if (!this.urlParams) record.params = this.params.toRecord();
-        // record.withCredentials = this.withCredentials;
+        if (!this.queryParams) record.params = this.params.toRecord();
+        if (!isNil(this.withCredentials)) record.withCredentials = this.withCredentials;
         return record;
     }
 
@@ -275,96 +299,53 @@ export interface RequestOptions<T = any> extends RequestPacketOpts<T> {
     reportProgress?: boolean;
 }
 
-/**
- * url request.
- */
-export abstract class UrlRequest<T> extends AbstractRequest<T> {
-    /**
-     * The outgoing url.
-     */
-    abstract get url(): string;
+export abstract class BaseUrlRequest<T> extends BaseRequest<T> implements UrlRequest<T> {
 
     /**
      * The outgoing URL with all URL parameters set.
      */
-    abstract get urlWithParams(): string;
+    readonly urlWithParams: string;
+
+    constructor(readonly url: string, readonly pattern: Pattern | null | undefined, init: RequestInitOpts<T>, defaultMethod = '') {
+        super(init, defaultMethod);
+
+        if (pattern) {
+            this.queryParams = false;
+            this.urlWithParams = this.url;
+        } else {
+            this.queryParams = true;
+            this.urlWithParams = this.appendUrlParams();
+        }
+    }
+
+    abstract clone(): BaseUrlRequest<T>;
+    abstract clone<V>(update: UrlRequestCloneOpts<V>): BaseUrlRequest<V>;
+    abstract clone(update: UrlRequestCloneOpts<T>): BaseUrlRequest<T>;
+
+    protected appendUrlParams() {
+        return appendUrlParams(this.url, this.params);
+    }
+
+    protected override toRecord(): Record<string, any> {
+        const rcd = super.toRecord();
+        rcd.url = this.queryParams ? this.urlWithParams : this.url;
+        return rcd;
+    }
 }
 
-/**
- * Topic request
- */
-export abstract class TopicRequest<T> extends AbstractRequest<T> {
-    /**
-     * the outgoing topic.
-     */
-    abstract get topic(): string;
+export abstract class BaseTopicRequest<T> extends BaseRequest<T> implements TopicRequest<T> {
+
+    constructor(readonly topic: string, readonly pattern: Pattern | null | undefined, init: RequestInitOpts<T>, defaultMethod = '') {
+        super(init, defaultMethod);
+    }
+
+    abstract clone(): BaseTopicRequest<T>;
+    abstract clone<V>(update: TopicRequestCloneOpts<V>): BaseTopicRequest<V>;
+    abstract clone(update: TopicRequestCloneOpts<T>): BaseTopicRequest<T>;
+
+    protected override toRecord(): Record<string, any> {
+        const rcd = super.toRecord();
+        rcd.topic = this.topic;
+        return rcd;
+    }
 }
-
-
-// /**
-//  * Request init options.
-//  */
-// export interface UrlRequestInitOpts<T = any> extends RequestOptions<T>, RequestInitOpts<T> {
-//     /**
-//      * request context.
-//      */
-//     context: InvocationContext;
-// }
-
-// export interface UrlRequestCloneOpts<T> extends RequestCloneOpts<T> {
-//     /**
-//      * request url.
-//      */
-//     url?: string;
-//     /**
-//      * for restful
-//      */
-//     reportProgress?: boolean;
-// }
-
-// /**
-//  * url Request.
-//  */
-// export class UrlRequest<T> extends BaseRequest<T> {
-
-//     readonly reportProgress: boolean;
-//     readonly url: string;
-//     readonly urlWithParams: string | undefined;
-//     protected urlParams = true;
-
-//     constructor(url: string, options: UrlRequestInitOpts<T>) {
-//         super(options)
-//         this.reportProgress = !!options.reportProgress;
-
-//         this.url = url;
-//         this.urlWithParams = appendUrlParams(url, this.params);
-//     }
-
-//     clone(): UrlRequest<T>;
-//     clone<V>(update: UrlRequestCloneOpts<V>): UrlRequest<V>;
-//     clone(update: UrlRequestCloneOpts<T>): UrlRequest<T>
-//     clone(update: UrlRequestCloneOpts<any> = {}): UrlRequest<any> {
-//         const url = update.url || this.url;
-
-//         const init = this.cloneOpts(update);
-
-//         // Finally, construct the new HttpRequest using the pieces from above.
-//         return new UrlRequest(url, init)
-//     }
-
-//     protected override cloneOpts(update: UrlRequestCloneOpts<any>): UrlRequestInitOpts {
-//         const init = super.cloneOpts(update) as UrlRequestInitOpts;
-//         init.reportProgress =
-//             (update.reportProgress !== undefined) ? update.reportProgress : this.reportProgress;
-
-//         return init;
-
-//     }
-
-//     protected override toRecord(): Record<string, any> {
-//         const rcd = super.toRecord();
-//         // rcd.reportProgress = this.reportProgress;
-//         rcd.url = this.urlWithParams;
-//         return rcd;
-//     }
-// }

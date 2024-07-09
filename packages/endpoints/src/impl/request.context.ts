@@ -141,8 +141,6 @@ const abstl = /^\w+:\/\//i;
 
 export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any>, TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any> extends RequestContext<TRequest, TResponse, TSocket> {
 
-
-
     readonly originalUrl: string;
 
     url: string;
@@ -168,40 +166,38 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
         this.reqHeaders = request.headers instanceof HeaderMappings ? request.headers : new HeaderMappings(request.headers);
         this.resHeaders = response.headers instanceof HeaderMappings ? response.headers : new HeaderMappings(response.headers);
 
-        this.originalUrl = this.url = request.url ?? injector.get(PatternFormatter).format(request.pattern!);
-        if (!this.request.query) {
+        this.originalUrl = this.url = normalize(request.url ?? request.pattern!);
+        const searhIdx = this.url.indexOf('?');
+        if (!this.request.query || searhIdx > 0) {
             this.request.query = this.query;
         }
     }
 
+    private _query: Record<string, any>|undefined;
     get query(): Record<string, any> {
-        if (!this.request.query) {
+        if (!this._query) {
             let urlParams: Record<string, any> = null!;
-            if (isString(this.request.pattern)) {
-                const idx = this.request.pattern.indexOf('?');
-                if (idx > 0) {
-                    urlParams = {};
-                    const params = this.request.pattern.slice(idx + 1).split('&');
-                    params.forEach(p => {
-                        const [key, value] = p.split('=');
-                        if (value) {
-                            urlParams[decodeURIComponent(key)] = decodeURIComponent(value);
-                        }
-                    })
+            const url = this.request.url ?? this.request.pattern!
+            const idx = url.indexOf('?');
+            if (idx > 0) {
+                urlParams = {};
+                const params = url.slice(idx + 1).split('&');
+                params.forEach(p => {
+                    const [key, value] = p.split('=');
+                    if (value) {
+                        urlParams[decodeURIComponent(key)] = decodeURIComponent(value);
+                    }
+                })
+
+                if (urlParams) {
+                    this.request.query = { ...urlParams, ...this.request.query ?? {} }
                 }
             }
 
-            if (this.request.params instanceof RequestParams) {
-                urlParams && this.request.params.appendAll(urlParams);
-                this.request.query = this.request.params.toRecord();
-            } else {
-                if (urlParams) {
-                    this.request.params = { ...urlParams, ...this.request.params }
-                }
-                this.request.query = this.request.params ?? {}
-            }
+            this._query = this.request.query = this.request.query ?? {}
+
         }
-        return this.request.query;
+        return this._query;
     }
 
 

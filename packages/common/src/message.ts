@@ -56,10 +56,33 @@ export class BaseMessage implements Message {
     }
 }
 
+export class UrlMesage extends BaseMessage {
+
+    constructor(readonly url: string, init: {
+        id?: string | number;
+        headers?: Record<string, any>;
+        data?: string | Buffer | IReadableStream | null;
+        streamLength?: number;
+    }) {
+        super(init)
+    }
+}
+
+export class TopicMesage extends BaseMessage {
+
+    constructor(readonly topic: string, init: {
+        id?: string | number;
+        headers?: Record<string, any>;
+        data?: string | Buffer | IReadableStream | null;
+        streamLength?: number;
+    }) {
+        super(init)
+    }
+}
+
 
 export class PatternMesage extends BaseMessage {
-    readonly pattern: Pattern
-    constructor(init: {
+    constructor(readonly pattern: string, init: {
         id?: string | number;
         pattern?: Pattern;
         headers?: Record<string, any>;
@@ -67,7 +90,6 @@ export class PatternMesage extends BaseMessage {
         streamLength?: number;
     }) {
         super(init)
-        this.pattern = init.pattern!
     }
 }
 

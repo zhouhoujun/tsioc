@@ -1,9 +1,9 @@
+import { isNil } from '@tsdi/ioc';
 import {
-    BasePacket, Clonable, CloneOpts, HeadersLike, IHeaders, PacketOpts, ParameterCodec,
-    Pattern, RequestParams, StatusOptions
+    BasePacket, Clonable, CloneOpts, HeadersLike, IHeaders, PacketOpts, ParameterCodec, StatusOptions
 } from '@tsdi/common';
 import { IReadableStream } from './stream';
-import { isNil } from '@tsdi/ioc';
+
 
 
 
@@ -15,14 +15,12 @@ export interface Incoming<T> {
     id?: number | string;
 
     url?: string;
-
+    pattern?: string;
     method?: string;
-
-    pattern?: Pattern;
 
     headers: HeadersLike;
 
-    params?: Record<string, any> | RequestParams;
+    params?: Record<string, any>;
 
     query?: Record<string, any>
 
@@ -73,7 +71,9 @@ export abstract class IncomingFactory implements AbstractIncomingFactory<Incomin
  * incoming options
  */
 export interface IncomingOpts<T = any> extends PacketOpts<T> {
-    pattern?: Pattern;
+    url?: string;
+    topic?: string;
+    pattern?: string;
     /**
      * request method.
      */
@@ -83,17 +83,18 @@ export interface IncomingOpts<T = any> extends PacketOpts<T> {
      */
     headers?: HeadersLike;
     /**
-     * request params.
+     * request query params.
      */
-    params?: RequestParams | string
-    | ReadonlyArray<[string, string | number | boolean]>
-    | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>>;
+    params?: Record<string, any>;
+    /**
+     * request query params.
+     */
+    query?: Record<string, any>;
 
     /**
      * parameter codec.
      */
     encoder?: ParameterCodec;
-
     /**
      * request payload, request body.
      */
@@ -118,10 +119,9 @@ export interface IncomingOpts<T = any> extends PacketOpts<T> {
 }
 
 export interface IncomingCloneOpts<T> extends CloneOpts<T> {
-    pattern?: Pattern;
-    params?: RequestParams;
+    pattern?: string;
+    query?: Record<string, any>;
     method?: string;
-    setParams?: { [param: string]: string; };
     timeout?: number | null;
 }
 
@@ -130,13 +130,12 @@ export interface IncomingCloneOpts<T> extends CloneOpts<T> {
  */
 export abstract class IncomingPacket<T> extends BasePacket<T> implements Incoming<T>, Clonable<IncomingPacket<T>> {
 
-    readonly pattern?: Pattern;
+    readonly pattern?: string;
     /**
      * client side timeout.
      */
     readonly timeout?: number;
     readonly method: string;
-    readonly params: RequestParams;
 
     public streamLength?: number;
 
@@ -150,15 +149,14 @@ export abstract class IncomingPacket<T> extends BasePacket<T> implements Incomin
         this.payload = data;
     }
 
-    get query(): Record<string, any> {
-        return this.params.getQuery();
-    }
+    query: Record<string, any> | undefined;
+
 
     constructor(init: IncomingOpts<T>) {
-        super(init)
-        this.pattern = init.pattern;
+        super(init);
+        this.pattern = init.pattern ?? init.url ?? init.topic;
         this.payload = init.payload ?? null;
-        this.params = new RequestParams(init);
+        this.query = init.query ?? init.params;
         this.method = init.method ?? this.headers.getMethod() ?? init.defaultMethod ?? '';
         this.timeout = init.timeout;
         this.streamLength = init.streamLength;
@@ -189,23 +187,15 @@ export abstract class IncomingPacket<T> extends BasePacket<T> implements Incomin
         const init = super.cloneOpts(update) as IncomingOpts;
         init.pattern = update.pattern ?? this.pattern;
         init.method = update.method ?? this.method;
-        // `setParams` are used.
-        let params = update.params || this.params;
 
-        // Check whether the caller has asked to set params.
-        if (update.setParams) {
-            // Set every requested param.
-            params = Object.keys(update.setParams)
-                .reduce((params, param) => params.set(param, update.setParams![param]), params)
-        }
-        init.params = params;
+        init.query = update.query ? { ...this.query, ...update.query } : this.query;
         return init;
     }
 
     protected override toRecord(): Record<string, any> {
         const rcd = super.toRecord();
         if (this.pattern) rcd.pattern = this.pattern;
-        if (this.params.size) rcd.params = this.params.toRecord();
+        if (this.query) rcd.query = this.query;
         if (this.method) rcd.method = this.method;
         if (this.timeout) rcd.timeout = this.timeout;
         return rcd;
@@ -227,7 +217,7 @@ export interface ClientIncoming<T = any, TStatus = null> {
 
     url?: string;
 
-    pattern?: Pattern;
+    pattern?: string;
 
     headers: HeadersLike;
 
@@ -272,12 +262,14 @@ export abstract class ClientIncomingFactory implements AbstractIncomingFactory<C
  * client incoming init options
  */
 export interface ClientIncomingOpts<T = any, TStatus = any> extends PacketOpts<T>, StatusOptions<TStatus> {
-    pattern?: Pattern;
+    url?: string;
+    topic?: string;
+    pattern?: string;
     streamLength?: number;
 }
 
 export interface ClientIncomingCloneOpts<T, TStatus> extends CloneOpts<T>, StatusOptions<TStatus> {
-    pattern?: Pattern;
+    pattern?: string;
 }
 
 
@@ -286,7 +278,7 @@ export interface ClientIncomingCloneOpts<T, TStatus> extends CloneOpts<T>, Statu
  */
 export abstract class ClientIncomingPacket<T, TStatus = any> extends BasePacket<T> implements ClientIncoming<T, TStatus>, Clonable<ClientIncomingPacket<T, TStatus>> {
 
-    readonly pattern?: Pattern;
+    readonly pattern?: string;
 
     public streamLength?: number;
 
@@ -330,6 +322,8 @@ export abstract class ClientIncomingPacket<T, TStatus = any> extends BasePacket<
 
     constructor(init: ClientIncomingOpts, defaultStatus?: TStatus, defaultStatusText?: string) {
         super(init);
+        this.pattern = init.pattern ?? init.url ?? init.topic;
+
         this.ok = init.error ? false : init.ok != false;
         this.error = init.error;
         this.type = init.type;
@@ -361,7 +355,9 @@ export abstract class ClientIncomingPacket<T, TStatus = any> extends BasePacket<
 
     protected override cloneOpts(update: ClientIncomingCloneOpts<any, TStatus>): ClientIncomingOpts {
         const init = super.cloneOpts(update) as ClientIncomingOpts;
+
         init.pattern = update.pattern ?? this.pattern;
+
         init.type = update.type ?? this.type;
         init.ok = update.ok ?? this.ok;
         const status = update.status ?? this.statusCode;
@@ -377,7 +373,7 @@ export abstract class ClientIncomingPacket<T, TStatus = any> extends BasePacket<
 
     protected override toRecord(): Record<string, any> {
         const rcd = super.toRecord();
-        if (this.pattern) rcd.pattern = this.pattern;
+        rcd.pattern = this.pattern;
         if (!isNil(this.type)) rcd.type = this.type;
         if (!isNil(this.statusCode)) rcd.status = this.statusCode;
         if (this.statusMessage) rcd.statusMessage = this.statusMessage;
