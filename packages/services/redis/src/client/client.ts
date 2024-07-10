@@ -1,26 +1,26 @@
-import { Injectable, InvocationContext } from '@tsdi/ioc';
-import { LOCALHOST, Pattern, ResponseEvent, UrlRequestInitOpts } from '@tsdi/common';
+import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
+import { LOCALHOST, Pattern, RequestInitOpts, ResponseEvent } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ev } from '@tsdi/common/transport';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import Redis from 'ioredis';
 import { RedisHandler } from './handler';
 import { RedisClientOpts } from './options';
-import { ReidsTransport } from '../redis.session';
 import { RedisRequest } from './request';
+import { ReidsSocket } from '../message';
 
 /**
  * Redis Client.
  */
 @Injectable()
-export class RedisClient extends Client<RedisRequest, ResponseEvent, RedisClientOpts> {
+export class RedisClient extends Client<RedisRequest<any>, ResponseEvent<any>, RedisClientOpts> {
 
     @InjectLog()
     private logger!: Logger;
 
     private subscriber: Redis | null = null;
     private publisher: Redis | null = null;
-    private _session?: ClientTransportSession<ReidsTransport>;
+    private _session?: ClientTransportSession<ReidsSocket>;
 
     constructor(readonly handler: RedisHandler) {
         super();
@@ -66,8 +66,11 @@ export class RedisClient extends Client<RedisRequest, ResponseEvent, RedisClient
         context.setValue(ClientTransportSession, this._session);
     }
 
-    protected createRequest(pattern: Pattern, options: UrlRequestInitOpts<any>): RedisRequest<any> {
-        return new RedisRequest(pattern, options);
+    protected createRequest(pattern: Pattern, options: RequestInitOpts<any>): RedisRequest<any> {
+        if (isString(pattern)) {
+            return new RedisRequest(pattern, null, options);
+        }
+        return new RedisRequest(this.formatter.format(pattern), pattern, options);
     }
 
 
@@ -85,6 +88,11 @@ export class RedisClient extends Client<RedisRequest, ResponseEvent, RedisClient
 
     protected async onShutdown(): Promise<void> {
         await this._session?.destroy();
+        this.publisher?.quit();
+        this.publisher?.removeAllListeners();
+        this.subscriber?.quit();
+        this.subscriber?.removeAllListeners();
+
         this.publisher = this.subscriber = null;
     }
 }

@@ -123,6 +123,12 @@ export class RedisServer extends Server<RequestContext, RedisServerOpts> {
         await this._session?.destroy();
         this.destroy$.next();
         this.destroy$.complete();
+        
+        this.publisher?.quit();
+        this.publisher?.removeAllListeners();
+        this.subscriber?.quit();
+        this.subscriber?.removeAllListeners();
+        
         this.publisher = this.subscriber = null;
         this.logger.info(`Redis microservice closed!`);
     }

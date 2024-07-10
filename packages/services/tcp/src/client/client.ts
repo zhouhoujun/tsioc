@@ -1,5 +1,5 @@
 import { Injectable, InvocationContext, isString, promisify } from '@tsdi/ioc';
-import { Pattern, LOCALHOST, RequestInitOpts, PatternFormatter } from '@tsdi/common';
+import { Pattern, LOCALHOST, RequestInitOpts } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
@@ -22,14 +22,6 @@ export class TcpClient extends Client<TcpRequest<any>> {
 
     private connection!: tls.TLSSocket | net.Socket;
     private _session?: ClientTransportSession<tls.TLSSocket | net.Socket>;
-    
-    private _formatter?: PatternFormatter;
-    get formatter(): PatternFormatter {
-        if(!this._formatter){
-            this._formatter = this.handler.injector.get(PatternFormatter);
-        }
-        return this._formatter;
-    }
 
     constructor(readonly handler: TcpHandler) {
         super();

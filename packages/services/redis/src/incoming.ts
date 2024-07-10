@@ -1,38 +1,16 @@
 import { Injectable } from '@tsdi/ioc';
-import { HeadersLike, Pattern, RequestParams } from '@tsdi/common';
-import { ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket, ClientPatternIncoming, IncomingFactory, IncomingOpts, PatternIncoming } from '@tsdi/common/transport';
+import { ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket, IncomingCloneOpts, IncomingFactory, IncomingOpts, IncomingPacket } from '@tsdi/common/transport';
 
 
 
-export class RedisIncoming<T = any> extends PatternIncoming<T> {
+export class RedisIncoming<T = any> extends IncomingPacket<T> {
 
     clone(): RedisIncoming<T>;
-    clone(update: {
-        pattern?: Pattern;
-        headers?: HeadersLike | undefined;
-        params?: RequestParams | undefined;
-        method?: string | undefined;
-        body?: T;
-        payload?: T;
-        setHeaders?: { [name: string]: string | string[]; } | undefined;
-        setParams?: { [param: string]: string; } | undefined;
-        timeout?: number | null | undefined;
-    }): RedisIncoming<T>;
-    clone<V>(update: {
-        pattern?: Pattern;
-        headers?: HeadersLike | undefined;
-        params?: RequestParams | undefined;
-        method?: string | undefined;
-        body?: V | null | undefined;
-        payload?: V | null | undefined;
-        setHeaders?: { [name: string]: string | string[]; } | undefined;
-        etParams?: { [param: string]: string; } | undefined;
-        timeout?: number | null | undefined;
-    }): RedisIncoming<V>;
+    clone<V>(update: IncomingCloneOpts<V>): RedisIncoming<V>;
+    clone(update: IncomingCloneOpts<T>): RedisIncoming<T>;
     clone(update: any = {}): RedisIncoming {
-        const pattern = update.pattern ?? this.pattern;
         const opts = this.cloneOpts(update);
-        return new RedisIncoming(pattern, opts);
+        return new RedisIncoming(opts);
 
     }
 
@@ -40,29 +18,28 @@ export class RedisIncoming<T = any> extends PatternIncoming<T> {
 
 @Injectable()
 export class RedisIncomingFactory implements IncomingFactory {
-    create<T>(packet: IncomingOpts<T> & { pattern: Pattern; }): RedisIncoming<T> {
-        return new RedisIncoming<T>(packet.pattern, packet);
+    create<T>(packet: IncomingOpts<T>): RedisIncoming<T> {
+        return new RedisIncoming<T>(packet);
     }
 }
 
 
-export class RedisClientIncoming<T = any> extends ClientPatternIncoming<T, null> {
+export class RedisClientIncoming<T, TStatus = any> extends ClientIncomingPacket<T, TStatus> {
 
-    clone(): ClientIncomingPacket<T, null>;
-    clone(update: { headers?: HeadersLike | undefined; body?: T | null | undefined; payload?: T | null | undefined; setHeaders?: { [name: string]: string | string[]; } | undefined; type?: number | undefined; ok?: boolean | undefined; status?: number | undefined; statusMessage?: string | undefined; statusText?: string | undefined; error?: any; }): RedisClientIncoming<T>;
-    clone<V>(update: { headers?: HeadersLike | undefined; body?: T | null | undefined; payload?: V | null | undefined; setHeaders?: { [name: string]: string | string[]; } | undefined; type?: number | undefined; ok?: boolean | undefined; status?: number | undefined; statusMessage?: string | undefined; statusText?: string | undefined; error?: any; }): RedisClientIncoming<V>;
-    clone(update: any = {}): RedisClientIncoming {
-        const pattern = update.pattern ?? this.pattern;
+    clone(): ClientIncomingPacket<T, TStatus>;
+    clone<V>(update: ClientIncomingCloneOpts<V, TStatus>): RedisClientIncoming<V, TStatus>;
+    clone(update: ClientIncomingCloneOpts<T, TStatus>): RedisClientIncoming<T, TStatus>;
+    clone(update: any = {}): RedisClientIncoming<any, TStatus> {
         const opts = this.cloneOpts(update);
-        return new RedisClientIncoming(pattern, opts);
+        return new RedisClientIncoming(opts);
     }
 }
 
 @Injectable()
 export class RedisClientIncomingFactory implements ClientIncomingFactory {
 
-    create<T = any>(options: ClientIncomingOpts<any, any> & { pattern: Pattern }): RedisClientIncoming<T> {
-        return new RedisClientIncoming(options.pattern, options);
+    create<T = any>(options: ClientIncomingOpts<any, any>): RedisClientIncoming<T> {
+        return new RedisClientIncoming(options);
     }
 
 }

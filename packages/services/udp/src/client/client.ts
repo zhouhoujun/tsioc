@@ -1,5 +1,5 @@
 import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
-import { Pattern, PatternFormatter, RequestInitOpts, ResponseEvent } from '@tsdi/common';
+import { Pattern, ResponseEvent } from '@tsdi/common';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { UdpHandler } from './handler';
@@ -13,14 +13,6 @@ import { UdpRequest, UdpRequestInitOpts } from './request';
 export class UdpClient extends Client<UdpRequest<any>, ResponseEvent<any>, UdpClientOpts> {
     private socket?: Socket | null;
     private session?: ClientTransportSession | null;
-    
-    private _formatter?: PatternFormatter;
-    get formatter(): PatternFormatter {
-        if(!this._formatter){
-            this._formatter = this.handler.injector.get(PatternFormatter);
-        }
-        return this._formatter;
-    }
 
     constructor(readonly handler: UdpHandler) {
         super();

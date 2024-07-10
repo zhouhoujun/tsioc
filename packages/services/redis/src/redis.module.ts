@@ -10,8 +10,8 @@ import { RedisServer } from './server/server';
 import { REDIS_SERV_FILTERS, REDIS_SERV_GUARDS, REDIS_SERV_INTERCEPTORS } from './server/options';
 import { RedisEndpointHandler } from './server/handler';
 import { RedisPatternFormatter } from './pattern';
-import { RedisTransportSessionFactory } from './redis.session';
-import { RedisMessage, RedisMessageFactory } from './message';
+// import { RedisTransportSessionFactory } from './redis.session';
+import { RedisMessage, RedisMessageFactory, RedisMessageReader, RedisMessageWriter } from './message';
 import { RedisClientIncoming, RedisClientIncomingFactory, RedisIncoming, RedisIncomingFactory } from './incoming';
 import { RedisOutgoing, RedisOutgoingFactory } from './outgoing';
 import { ClientIncomingPacket, IncomingPacket, OutgoingPacket } from '@tsdi/common/transport';
@@ -25,7 +25,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
         RedisClient,
         RedisServer,
         RedisPatternFormatter,
-        RedisTransportSessionFactory,
+        // RedisTransportSessionFactory,
         {
             provide: CLIENT_MODULES,
             useValue: {

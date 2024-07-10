@@ -1,5 +1,5 @@
 import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
-import { ResponseEvent, Pattern, RequestInitOpts, PatternFormatter } from '@tsdi/common';
+import { ResponseEvent, Pattern, RequestInitOpts } from '@tsdi/common';
 import { ServiceUnavailableExecption, ev } from '@tsdi/common/transport';
 import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { Observable } from 'rxjs';
@@ -16,14 +16,6 @@ import { WsRequest } from './request';
 export class WsClient extends Client<WsRequest<any>, ResponseEvent<any>, WsClientOpts> {
     private socket?: WebSocket | null;
     private session?: ClientTransportSession | null;
-
-    private _formatter?: PatternFormatter;
-    get formatter(): PatternFormatter {
-        if (!this._formatter) {
-            this._formatter = this.handler.injector.get(PatternFormatter);
-        }
-        return this._formatter;
-    }
 
     constructor(readonly handler: WsHandler) {
         super();
