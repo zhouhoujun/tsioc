@@ -1,13 +1,13 @@
 import { Injectable, InvocationContext, isNil, promisify } from '@tsdi/ioc';
-import { Message, MessageFactory } from '@tsdi/common';
+import { Message, MessageFactory, UrlMesage } from '@tsdi/common';
 import { AbstractTransportSession, MessageReader, MessageWriter, ctype, ev } from '@tsdi/common/transport';
+import { HttpRequest } from '@tsdi/common/http';
+import { ClientTransportSession } from '@tsdi/common/client';
 import { request as httpRequest, IncomingMessage, ClientRequest } from 'http';
 import { request as httpsRequest } from 'https';
 import { ClientHttp2Session, ClientHttp2Stream, constants, OutgoingHttpHeaders, IncomingHttpHeaders, IncomingHttpStatusHeader, ClientSessionRequestOptions } from 'http2';
 import { Observable, fromEvent } from 'rxjs';
 import { HttpClientOpts } from './options';
-import { ClientTransportSession } from '@tsdi/common/client';
-import { HttpRequest } from '@tsdi/common/http';
 
 
 
@@ -79,21 +79,21 @@ export class HttpClientMessageReader implements MessageReader {
 }
 
 @Injectable()
-export class HttpClientMessageWriter implements MessageWriter<ClientHttp2Session | null, Message, HttpRequest<any>, ClientTransportSession> {
+export class HttpClientMessageWriter implements MessageWriter<ClientHttp2Session | null, UrlMesage, HttpRequest<any>, ClientTransportSession> {
 
-    async write(socket: ClientHttp2Session | null, msg: Message, req: HttpRequest<any>, session: ClientTransportSession): Promise<any> {
-        let path = req.urlWithParams ?? '';
+    async write(socket: ClientHttp2Session | null, msg: UrlMesage, req: HttpRequest<any>, session: ClientTransportSession): Promise<any> {
+        let url = msg.url;
         const clientOpts = session.clientOptions as HttpClientOpts;
         const ac = this.getAbortSignal(req.context);
         let stream: ClientHttp2Stream | ClientRequest;
-        if (clientOpts.authority && socket && (!httptl.test(path) || path.startsWith(clientOpts.authority))) {
-            path = path.replace(clientOpts.authority, '');
+        if (clientOpts.authority && socket && (!httptl.test(url) || url.startsWith(clientOpts.authority))) {
+            url = url.replace(clientOpts.authority, '');
 
             const reqHeaders = (msg.headers ?? {}) as OutgoingHttpHeaders;
 
             if (!reqHeaders[HTTP2_HEADER_ACCEPT]) reqHeaders[HTTP2_HEADER_ACCEPT] = ctype.REQUEST_ACCEPT;
             reqHeaders[HTTP2_HEADER_METHOD] = req.method;
-            reqHeaders[HTTP2_HEADER_PATH] = path;
+            reqHeaders[HTTP2_HEADER_PATH] = url;
 
             stream = socket.request(reqHeaders, { abort: ac?.signal, ...clientOpts.requestOptions } as ClientSessionRequestOptions);
 
@@ -110,7 +110,7 @@ export class HttpClientMessageWriter implements MessageWriter<ClientHttp2Session
                 abort: ac?.signal
             };
 
-            stream = secureExp.test(path) ? httpsRequest(path, option) : httpRequest(path, option);
+            stream = secureExp.test(url) ? httpsRequest(url, option) : httpRequest(url, option);
 
         }
 

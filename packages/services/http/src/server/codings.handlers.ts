@@ -27,9 +27,7 @@ export class HttpCodingsHandlers {
             statusMessage: response.statusMessage,
             headers: response.headers
         } as PacketOpts;
-        if (response.error) {
-            packet.error = response.error;
-        }
+        
         if (input.resHeaders.hasContentLength()) {
             packet.payload = input.body;
         }

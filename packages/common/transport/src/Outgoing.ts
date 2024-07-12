@@ -1,6 +1,5 @@
 import { isNil } from '@tsdi/ioc';
-import { BasePacket, Clonable, CloneOpts, Header, HeadersLike, IHeaders, Jsonable, PacketOpts, StatusOptions } from '@tsdi/common';
-import { IWritableStream } from './stream';
+import { BasePacket, Clonable, CloneOpts, Header, HeadersLike, Jsonable, PacketOpts, StatusOptions } from '@tsdi/common';
 import { Incoming } from './Incoming';
 
 
@@ -101,21 +100,7 @@ export interface Outgoing<T, TStatus = any> {
 
 }
 
-/**
- * Outgoing stream.
- */
-export interface OutgoingStream extends IWritableStream {
-    headers?: IHeaders;
-}
 
-
-/**
- * Outgoing factory.
- */
-export abstract class OutgoingFactory {
-    abstract create(incoming: Incoming<any>, options?: OutgoingPacketOpts): Outgoing<any>;
-    abstract create<T, TStatus>(incoming: Incoming<any>, options?: OutgoingPacketOpts<T, TStatus>): Outgoing<T, TStatus>;
-}
 
 
 
@@ -254,4 +239,13 @@ export abstract class OutgoingPacket<T, TStatus = any> extends BasePacket<T> imp
     }
 
 
+}
+
+
+/**
+ * Outgoing factory.
+ */
+export abstract class OutgoingFactory {
+    abstract create(incoming: Incoming<any>, options?: OutgoingPacketOpts): OutgoingPacket<any>;
+    abstract create<T, TStatus>(incoming: Incoming<any>, options?: OutgoingPacketOpts<T, TStatus>): OutgoingPacket<T, TStatus>;
 }

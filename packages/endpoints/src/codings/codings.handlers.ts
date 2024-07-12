@@ -32,6 +32,6 @@ export class ServerEndpointCodingsHanlders {
     encodePacket(context: TransportContext) {
         const reqContext = context.last<RequestContext>();
         return (reqContext.response as OutgoingPacket<any>).clone({ payload: reqContext.body });
-    }
 
+    }
 }
