@@ -15,7 +15,7 @@ export class DefaultClientTransportSession extends ClientTransportSession<any> {
     private _incomingFactory?: ClientIncomingFactory;
     private _messageReader?: MessageReader;
     private _messageWriter?: MessageWriter;
-    private _messageFactory?: MessageFactory;
+    private _messageFactory?: MessageFactory | null;
     private _responseFactory?: ResponseFactory;
     private _redirector?: Redirector | null;
 
@@ -63,9 +63,9 @@ export class DefaultClientTransportSession extends ClientTransportSession<any> {
         }
         return this._messageWriter;
     }
-    get messageFactory(): MessageFactory {
-        if (!this._messageFactory) {
-            this._messageFactory = this.injector.get(MessageFactory)
+    get messageFactory(): MessageFactory | null {
+        if (this._messageFactory === undefined) {
+            this._messageFactory = this.injector.get(MessageFactory, null)
         }
         return this._messageFactory;
     }

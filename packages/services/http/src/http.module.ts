@@ -16,7 +16,7 @@ import { HttpResponseEventFactory } from './client/response.factory';
 import { HttpClientCodingsHandlers } from './client/codings.hanlders';
 import { HttpCodingsHandlers } from './server/codings.handlers';
 import { HttpExecptionHandlers } from './execption.handlers';
-import { HttpClientMessageFactory, HttpClientMessageReader, HttpClientMessageWriter } from './client/message';
+import { HttpClientMessageReader, HttpClientMessageWriter } from './client/message';
 
 
 // const defaultMaxSize = 1048576; // 1024 * 1024;
@@ -52,7 +52,6 @@ import { HttpClientMessageFactory, HttpClientMessageReader, HttpClientMessageWri
                     responseFactory: HttpResponseEventFactory,
                     messageReader: HttpClientMessageReader,
                     messageWriter: HttpClientMessageWriter,
-                    messageFactory: HttpClientMessageFactory,
                 }
             } as ClientModuleOpts,
             multi: true
@@ -71,7 +70,6 @@ import { HttpClientMessageFactory, HttpClientMessageReader, HttpClientMessageWri
                     responseFactory: HttpResponseEventFactory,
                     messageReader: HttpClientMessageReader,
                     messageWriter: HttpClientMessageWriter,
-                    messageFactory: HttpClientMessageFactory,
                 }
             } as ClientModuleOpts,
             multi: true

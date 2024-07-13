@@ -174,7 +174,7 @@ export class PacketCodingsHandlers {
         const json = pkg.toJson();
         json.data = data;
         if (streamLen) json.streamLength = streamLen;
-        return messageFactory.create(json);
+        return messageFactory ? messageFactory.create(json) : json;
     }
 
     @EncodeHandler(OutgoingPacket, { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })

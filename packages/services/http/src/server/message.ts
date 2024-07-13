@@ -1,6 +1,6 @@
 import { Injectable, Injector } from '@tsdi/ioc';
 import { Decoder, DecodingsFactory, Encoder, EncodingsFactory } from '@tsdi/common/codings';
-import { TransportContext, StreamAdapter, TransportOpts, ev, MessageReader, AbstractTransportSession } from '@tsdi/common/transport';
+import { TransportContext, StreamAdapter, TransportOpts, ev, MessageReader, AbstractTransportSession, IReadableStream, IncomingFactory, Incoming, IncomingOpts, MessageWriter } from '@tsdi/common/transport';
 import { TransportSession, TransportSessionFactory } from '@tsdi/endpoints';
 import { Server, IncomingMessage, ServerResponse } from 'http';
 import { Server as HttpsServer } from 'https';
@@ -8,7 +8,7 @@ import { Http2Server, ClientHttp2Stream, IncomingHttpHeaders, IncomingHttpStatus
 import { Observable, defer, share, takeUntil } from 'rxjs';
 import { HttpContext, HttpServRequest, HttpServResponse } from './context';
 import { HttpServerOpts } from './options';
-import { MessageFactory, Message } from '@tsdi/common';
+import { MessageFactory, Message, Header } from '@tsdi/common';
 
 
 export type ResponseMsg = IncomingMessage | {
@@ -17,17 +17,40 @@ export type ResponseMsg = IncomingMessage | {
 }
 
 
-export class HttpIncomings {
+export class HttpIncomings implements Message {
+    id: string | number | undefined;
+    streamLength?: number | undefined;
+    noHead?: boolean | undefined;
+    get headers(): Record<string, Header> {
+        return this.req.headers
+    }
+    public data: string | Buffer | IReadableStream | null;
+
     constructor(
         readonly req: HttpServRequest,
         readonly res: HttpServResponse
-    ) { }
+    ) {
+        const len = ~~(req.headers['content-length'] ?? '0');
+        if (len) {
+            this.data = req;
+        } else {
+            this.data = null;
+        }
+
+    }
+}
+
+export class HttpIncomingFactory extends IncomingFactory {
+    create(options: IncomingOpts): Incoming<any> {
+        return new HttpIncomings(options.req!, options.res!)
+    }
+
 }
 
 @Injectable()
 export class HttpServerMessageReader implements MessageReader<Http2Server | HttpsServer | Server> {
 
-    read(socket: Http2Server | HttpsServer | Server,  channel:  null | undefined, messageFactory: MessageFactory, session: AbstractTransportSession<any, any, any, any>): Observable<Message> {
+    read(socket: Http2Server | HttpsServer | Server, channel: null, session: TransportSession): Observable<HttpIncomings> {
         return new Observable<HttpIncomings>(subscribe => {
             const onRequest = (req: HttpServRequest, res: HttpServResponse) => subscribe.next(new HttpIncomings(req, res));
             const onError = (err: any) => err && subscribe.error(err);
@@ -48,6 +71,16 @@ export class HttpServerMessageReader implements MessageReader<Http2Server | Http
         })
     }
 }
+
+
+@Injectable()
+export class HttpServerMessagerWriter implements MessageWriter<Http2Server | HttpsServer | Server, HttpServResponse> {
+    write(socket: Http2Server | HttpsServer | Server, channel: HttpServResponse | null, msg: any, origin: any, session: TransportSession): Promise<any> {
+        throw new Error('Method not implemented.');
+    }
+
+}
+
 
 // export class HttpServerTransportSession extends TransportSession<Http2Server | HttpsServer | Server> {
 

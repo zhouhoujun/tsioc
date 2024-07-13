@@ -1,5 +1,5 @@
 import { AbstractRequest, Message, ResponseEvent, ResponseFactory } from '@tsdi/common';
-import { BaseTransportSession, Redirector } from '@tsdi/common/transport';
+import { BaseTransportSession, ClientIncomingFactory, IEventEmitter, Redirector } from '@tsdi/common/transport';
 import { Abstract, Injector } from '@tsdi/ioc';
 import { Observable, first, merge, mergeMap, takeUntil } from 'rxjs';
 import { ClientOpts } from './options';
@@ -15,6 +15,10 @@ export abstract class ClientTransportSession<TSocket = any, TMsg extends Message
      */
     abstract get clientOptions(): ClientOpts;
     /**
+     * client incoming message factory.
+     */
+    abstract get incomingFactory(): ClientIncomingFactory;
+    /**
      * response factory.
      */
     abstract get responseFactory(): ResponseFactory;
@@ -23,10 +27,10 @@ export abstract class ClientTransportSession<TSocket = any, TMsg extends Message
      */
     abstract get redirector(): Redirector | null;
 
-    request(req: AbstractRequest<any>, destroy$?: Observable<any>): Observable<ResponseEvent<any>> {
-        return this.send(req)
+    request(req: AbstractRequest<any>, destroy$?: Observable<any>, channel?: IEventEmitter): Observable<ResponseEvent<any>> {
+        return this.send(req, channel)
             .pipe(
-                mergeMap((channel) => this.receive(channel, req)),
+                mergeMap((chl) => this.receive(chl ?? channel, req)),
                 takeUntil(destroy$ ? merge(this.destroy$, destroy$).pipe(first()) : this.destroy$)
             )
     }

@@ -1,6 +1,6 @@
-import { Message, MessageFactory } from '@tsdi/common';
-import { Decoder, Encoder } from '@tsdi/common/codings';
 import { Injectable, promisify } from '@tsdi/ioc';
+import { BaseMessage, Message } from '@tsdi/common';
+import { Decoder, Encoder } from '@tsdi/common/codings';
 import { Observable, Subject, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
 import { AbstractTransportSession, MessageReader, MessageWriter } from './TransportSession';
 import { ev } from './consts';
@@ -9,16 +9,17 @@ import { IEventEmitter, IReadableStream, IWritableStream } from './stream';
 
 @Injectable()
 export class SocketMessageReader implements MessageReader<IReadableStream> {
-    read(socket: IReadableStream, channel: IEventEmitter, messageFactory: MessageFactory, session: BaseTransportSession): Observable<Message> {
+    read(socket: IReadableStream, channel: IEventEmitter, session: AbstractTransportSession): Observable<Message> {
         return fromEvent(channel ?? socket, ev.DATA, (chunk: Buffer | string) => {
-            return messageFactory.create({ data: chunk });
+            if (!session.messageFactory) return new BaseMessage({ data: chunk })
+            return session.messageFactory.create({ data: chunk });
         })
     }
 }
 
 @Injectable()
 export class SocketMessageWriter implements MessageWriter<IWritableStream> {
-    write(socket: IWritableStream, msg: Message, origin: any, session: AbstractTransportSession): Promise<void> {
+    write(socket: IWritableStream, channel: IEventEmitter, msg: Message, origin: any, session: AbstractTransportSession): Promise<void> {
         if (session.streamAdapter.isReadable(msg.data)) {
             return session.streamAdapter.pipeTo(msg.data as IReadableStream, socket, { end: false });
         }
@@ -29,7 +30,7 @@ export class SocketMessageWriter implements MessageWriter<IWritableStream> {
 /**
  * base transport session via codings.
  */
-export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput = any, TMsg extends Message = Message> extends AbstractTransportSession<TSocket, TInput, TOutput> {
+export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput = any, TMsg = any> extends AbstractTransportSession<TSocket, TInput, TOutput> {
 
     /**
      * encodings
@@ -47,10 +48,10 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * send.
      * @param data 
      */
-    send(data: TInput): Observable<any> {
+    send(data: TInput, channel?: IEventEmitter): Observable<any> {
         return this.encodings.encode(data)
             .pipe(
-                mergeMap(encoded => this.sendMessage(encoded, data)),
+                mergeMap(encoded => this.sendMessage(channel, encoded, data)),
                 takeUntil(this.destroy$),
                 share()
             )
@@ -89,15 +90,15 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * @param context 
      * @returns 
      */
-    protected sendMessage(msg: TMsg, input: TInput): Promise<any> | Observable<any> {
-        return this.messageWriter.write(this.socket, msg, input, this)
+    protected sendMessage(channel: IEventEmitter | null | undefined, msg: TMsg, input: TInput): Promise<any> | Observable<any> {
+        return this.messageWriter.write(this.socket, channel, msg, input, this)
     }
 
     /**
      * handle message
      */
     protected handleMessage(channel?: IEventEmitter): Observable<TMsg> {
-        return this.messageReader.read(this.socket, this.streamAdapter.isEventEmitter(channel)? channel : null, this.messageFactory, this)
+        return this.messageReader.read(this.socket, this.streamAdapter.isEventEmitter(channel) ? channel : null, this)
             .pipe(
                 takeUntil(this.destroy$)
             ) as Observable<any>;

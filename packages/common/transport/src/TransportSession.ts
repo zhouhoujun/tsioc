@@ -6,7 +6,6 @@ import { AbstractIncomingFactory } from './Incoming';
 import { StatusAdapter } from './StatusAdapter';
 import { StreamAdapter } from './StreamAdapter';
 import { TransportDecodingsFactory, TransportEncodingsFactory } from './condings';
-import { TransportContext } from './context';
 import { IEventEmitter } from './stream';
 
 
@@ -106,7 +105,7 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
     /**
      * message factory.
      */
-    abstract get messageFactory(): MessageFactory;
+    abstract get messageFactory(): MessageFactory | null;
     /**
      * incoming message factory.
      */
@@ -132,7 +131,7 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
      * send.
      * @param data 
      */
-    abstract send(data: TInput): Observable<TMsg>;
+    abstract send(data: TInput, channel?: IEventEmitter): Observable<TMsg>;
 
     /**
      * receive
@@ -149,11 +148,12 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
 }
 
 @Abstract()
-export abstract class MessageReader<TSocket = any, TChannel extends IEventEmitter = IEventEmitter, TMsg extends Message = Message, TSession extends AbstractTransportSession = AbstractTransportSession> {
-    abstract read(socket: TSocket, channel: TChannel | null | undefined, messageFactory: MessageFactory, session: TSession): Observable<TMsg>
+export abstract class MessageReader<TSocket = any, TChannel extends IEventEmitter = IEventEmitter, TMsg = any, TSession extends AbstractTransportSession = AbstractTransportSession> {
+    abstract read(socket: TSocket, channel: TChannel | null | undefined, session: TSession): Observable<TMsg>
+
 }
 
 @Abstract()
-export abstract class MessageWriter<TSocket = any, TMsg extends Message = Message, TOrigin = any, TSession extends AbstractTransportSession = AbstractTransportSession> {
-    abstract write(socket: TSocket, msg: TMsg, origin: TOrigin, session: TSession): Promise<any>;
+export abstract class MessageWriter<TSocket = any, TChannel extends IEventEmitter = IEventEmitter, TMsg = any, TOrigin = any, TSession extends AbstractTransportSession = AbstractTransportSession> {
+    abstract write(socket: TSocket, channel: TChannel | null | undefined, msg: TMsg, origin: TOrigin, session: TSession): Promise<any>;
 }

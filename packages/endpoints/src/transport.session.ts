@@ -1,6 +1,6 @@
 import { Abstract, Injector } from '@tsdi/ioc';
 import { Message } from '@tsdi/common';
-import { BaseTransportSession, FileAdapter, MimeAdapter, OutgoingFactory } from '@tsdi/common/transport';
+import { BaseTransportSession, FileAdapter, IncomingFactory, MimeAdapter, OutgoingFactory } from '@tsdi/common/transport';
 import { Observable, Subscription, first, merge, mergeMap, takeUntil } from 'rxjs';
 import { RequestHandler } from './RequestHandler';
 import { RequestContext, RequestContextFactory } from './RequestContext';
@@ -13,6 +13,10 @@ export abstract class TransportSession<TSocket = any, TMsg extends Message = Mes
      * server options.
      */
     abstract get serverOptions(): TOptions;
+    /**
+     * server incoming message factory.
+     */
+    abstract get incomingFactory(): IncomingFactory;
     /**
      * outgoing message factory.
      */

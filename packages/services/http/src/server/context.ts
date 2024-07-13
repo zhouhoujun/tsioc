@@ -1,4 +1,4 @@
-import { Injectable, Injector, isArray, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { Injectable, Injector, isArray, isNil, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, HeaderMappings, Response } from '@tsdi/common';
 import { MessageExecption, InternalServerExecption, Outgoing, append, parseTokenList, Incoming, StatusAdapter, MimeAdapter, StreamAdapter, FileAdapter, PacketLengthException, ENOENT } from '@tsdi/common/transport';
@@ -9,6 +9,7 @@ import * as assert from 'assert';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
 import { HttpServerOpts } from './options';
+import { lastValueFrom } from 'rxjs';
 
 
 export type HttpServRequest = (http.IncomingMessage | http2.Http2ServerRequest) & Incoming<any>;
@@ -24,7 +25,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
     private _URL?: URL;
     readonly originalUrl: string;
     private _url: string;
-    
+
     /**
      * request header mappings
      */
@@ -370,10 +371,8 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         this.body = payload;
     }
 
-
     async respond(): Promise<any> {
         if (this.destroyed || !this.writable) return;
-
         // ignore body
         if (this.statusAdapter?.isEmpty(this.status)) {
             // strip headers
@@ -381,77 +380,32 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
             return this.response.end()
         }
 
-        if (this.isHeadMethod()) {
-            return this.respondHead();
+        if (HEAD === this.method) {
+            if (!this.sent && !this.response.hasHeader(CONTENT_LENGTH)) {
+                const length = this.length;
+                if (Number.isInteger(length)) this.length = length
+            }
+            return this.response.end()
         }
 
         // status body
         if (null == this.body) {
-            return this.respondNoBody();
+            if (this._explicitNullBody) {
+                this.response.removeHeader(CONTENT_TYPE);
+                this.response.removeHeader(CONTENT_LENGTH);
+                this.response.removeHeader(TRANSFER_ENCODING);
+                return this.response.end()
+            }
+
+            const body = Buffer.from(this.statusMessage ?? String(this.status));
+            if (!this.sent) {
+                this.type = 'text';
+                this.length = Buffer.byteLength(body)
+            }
+            return this.response.end(body)
         }
-
-        const len = this.length ?? 0;
-        const opts = this.serverOptions.transportOpts;
-        if (opts?.maxSize && len > opts.maxSize) {
-            const btpipe = this.get<PipeTransform>('bytes-format');
-            throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(opts.maxSize)}`);
-        }
-
-        const body = this.body;
-        const res = this.response;
-        if (Buffer.isBuffer(body)) return await promisify<any, void>(res.end, res)(this.body);
-        if (isString(body)) return await promisify<any, void>(res.end, res)(Buffer.from(body));
-
-        if (this.streamAdapter.isReadable(body)) {
-            if (!this.streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
-            return await this.streamAdapter.pipeTo(body, res);
-        }
-
-        return await this.respondJson(body);
-    }
-
-    protected isHeadMethod(): boolean {
-        return HEAD === this.method
-    }
-
-    protected respondHead() {
-        if (!this.sent && !this.response.hasHeader(CONTENT_LENGTH)) {
-            const length = this.length;
-            if (Number.isInteger(length)) this.length = length
-        }
-        return this.response.end()
-    }
-
-    protected respondNoBody() {
-        if (this._explicitNullBody) {
-            this.response.removeHeader(CONTENT_TYPE);
-            this.response.removeHeader(CONTENT_LENGTH);
-            this.response.removeHeader(TRANSFER_ENCODING);
-            return this.response.end()
-        }
-
-        const body = Buffer.from(this.statusMessage ?? String(this.status));
-        if (!this.sent) {
-            this.type = 'text';
-            this.length = Buffer.byteLength(body)
-        }
-        return this.response.end(body)
-    }
-
-    protected async respondJson(body: any) {
-        const res = this.response;
-        // body: json
-        body = Buffer.from(JSON.stringify(body));
-        if (!res.headersSent) {
-            this.length = Buffer.byteLength(body)
-        }
-
-        await promisify<any, void>(res.end, res)(body);
-        return res
-    }
-
-    protected getStatusMessage(status: any): string {
-        return this.statusMessage ?? String(status);
+        
+        await lastValueFrom(this.session.send(this, this.response));
     }
 
     async respondExecption(err: MessageExecption): Promise<void> {
@@ -500,6 +454,137 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         this.length = Buffer.byteLength(msg);
         await promisify<any, void>(res.end, res)(msg);
     }
+
+
+    // async respond(): Promise<any> {
+    //     if (this.destroyed || !this.writable) return;
+
+    //     // ignore body
+    //     if (this.statusAdapter?.isEmpty(this.status)) {
+    //         // strip headers
+    //         this.body = null;
+    //         return this.response.end()
+    //     }
+
+    //     if (this.isHeadMethod()) {
+    //         return this.respondHead();
+    //     }
+
+    //     // status body
+    //     if (null == this.body) {
+    //         return this.respondNoBody();
+    //     }
+
+    //     const len = this.length ?? 0;
+    //     const opts = this.serverOptions.transportOpts;
+    //     if (opts?.maxSize && len > opts.maxSize) {
+    //         const btpipe = this.get<PipeTransform>('bytes-format');
+    //         throw new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(opts.maxSize)}`);
+    //     }
+
+    //     const body = this.body;
+    //     const res = this.response;
+    //     if (Buffer.isBuffer(body)) return await promisify<any, void>(res.end, res)(this.body);
+    //     if (isString(body)) return await promisify<any, void>(res.end, res)(Buffer.from(body));
+
+    //     if (this.streamAdapter.isReadable(body)) {
+    //         if (!this.streamAdapter.isWritable(res)) throw new MessageExecption('response is not writable, no support strem.');
+    //         return await this.streamAdapter.pipeTo(body, res);
+    //     }
+
+    //     return await this.respondJson(body);
+    // }
+
+    // protected isHeadMethod(): boolean {
+    //     return HEAD === this.method
+    // }
+
+    // protected respondHead() {
+    //     if (!this.sent && !this.response.hasHeader(CONTENT_LENGTH)) {
+    //         const length = this.length;
+    //         if (Number.isInteger(length)) this.length = length
+    //     }
+    //     return this.response.end()
+    // }
+
+    // protected respondNoBody() {
+    //     if (this._explicitNullBody) {
+    //         this.response.removeHeader(CONTENT_TYPE);
+    //         this.response.removeHeader(CONTENT_LENGTH);
+    //         this.response.removeHeader(TRANSFER_ENCODING);
+    //         return this.response.end()
+    //     }
+
+    //     const body = Buffer.from(this.statusMessage ?? String(this.status));
+    //     if (!this.sent) {
+    //         this.type = 'text';
+    //         this.length = Buffer.byteLength(body)
+    //     }
+    //     return this.response.end(body)
+    // }
+
+    // protected async respondJson(body: any) {
+    //     const res = this.response;
+    //     // body: json
+    //     body = Buffer.from(JSON.stringify(body));
+    //     if (!res.headersSent) {
+    //         this.length = Buffer.byteLength(body)
+    //     }
+
+    //     await promisify<any, void>(res.end, res)(body);
+    //     return res
+    // }
+
+    // protected getStatusMessage(status: any): string {
+    //     return this.statusMessage ?? String(status);
+    // }
+
+    // async respondExecption(err: MessageExecption): Promise<void> {
+    //     let headerSent = false;
+    //     if (this.sent || !this.writable) {
+    //         headerSent = err.headerSent = true
+    //     }
+
+    //     // nothing we can do here other
+    //     // than delegate to the app-level
+    //     // handler and log.
+    //     if (headerSent) {
+    //         return
+    //     }
+
+    //     const res = this.response;
+
+    //     // first unset all headers
+    //     this.removeHeaders();
+
+    //     // then set those specified
+    //     if (err.headers) this.setHeader(err.headers);
+
+    //     const statusAdapter = this.statusAdapter!;
+    //     let status: number = err.status || err.statusCode;
+    //     // ENOENT support
+    //     if (ENOENT === err.code) status = statusAdapter.notFound;
+
+    //     // default to serverError
+    //     if (!statusAdapter.isStatus(status)) status = statusAdapter.serverError;
+
+    //     this.status = status;
+    //     // empty response.
+    //     if (statusAdapter.isEmptyExecption(status)) {
+    //         await promisify<void>(res.end, res)();
+    //         return;
+    //     }
+
+    //     // respond
+    //     let msg: any;
+    //     msg = err.message;
+
+    //     // force text/plain
+    //     this.type = 'text';
+    //     msg = Buffer.from(msg ?? this.statusMessage ?? '');
+    //     this.length = Buffer.byteLength(msg);
+    //     await promisify<any, void>(res.end, res)(msg);
+    // }
 
 }
 

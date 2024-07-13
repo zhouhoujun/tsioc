@@ -64,7 +64,6 @@ export abstract class AbstractIncomingFactory<TIcoming = any> {
  */
 export abstract class IncomingFactory implements AbstractIncomingFactory<Incoming<any>> {
     abstract create(options: IncomingOpts): Incoming<any>;
-    abstract create<T>(options: IncomingOpts<T>): Incoming<T>;
 }
 
 /**
@@ -255,7 +254,6 @@ export interface ClientIncoming<T = any, TStatus = null> {
  */
 export abstract class ClientIncomingFactory implements AbstractIncomingFactory<ClientIncoming> {
     abstract create(options: ClientIncomingOpts): ClientIncoming;
-    abstract create<T, TStatus>(options: ClientIncomingOpts<T, TStatus>): ClientIncoming<T, TStatus>;
 }
 
 /**

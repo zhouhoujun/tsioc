@@ -32,7 +32,7 @@ export abstract class Message {
 /**
  * base message.
  */
-export class BaseMessage implements Message {
+export class BaseMessage extends Message {
     public id: string | number | undefined;
 
     readonly headers: Record<string, Header>;
@@ -49,6 +49,7 @@ export class BaseMessage implements Message {
         data?: string | Buffer | IReadableStream | null;
         streamLength?: number;
     }) {
+        super();
         this.id = init.id;
         this.data = init.data ?? null;
         this.streamLength = init.streamLength;
@@ -99,6 +100,7 @@ export class PatternMesage extends BaseMessage {
 @Abstract()
 export abstract class MessageFactory {
     abstract create(initOpts: {
+        [x: string]: any;
         id?: string | number;
         headers?: Record<string, any>;
         data?: any;

@@ -1,6 +1,6 @@
 import { Injectable, InvocationContext, isNil, promisify } from '@tsdi/ioc';
 import { Message, MessageFactory, UrlMesage } from '@tsdi/common';
-import { AbstractTransportSession, MessageReader, MessageWriter, ctype, ev } from '@tsdi/common/transport';
+import { AbstractTransportSession, ClientIncoming, ClientIncomingFactory, ClientIncomingOpts, MessageReader, MessageWriter, ctype, ev } from '@tsdi/common/transport';
 import { HttpRequest } from '@tsdi/common/http';
 import { ClientTransportSession } from '@tsdi/common/client';
 import { request as httpRequest, IncomingMessage, ClientRequest } from 'http';
@@ -11,19 +11,19 @@ import { HttpClientOpts } from './options';
 
 
 
-export class HttpClientMessage implements Message {
-    id: string | number | undefined;
-    get headers(): (IncomingHttpHeaders & IncomingHttpStatusHeader) | IncomingHttpHeaders {
-        return this.init.headers
-    }
-    public data: ClientHttp2Stream | IncomingMessage;
-    constructor(private init: IncomingMessage | {
-        headers: IncomingHttpHeaders & IncomingHttpStatusHeader,
-        data: ClientHttp2Stream
-    }) {
-        this.data = init instanceof IncomingMessage ? init : init.data;
-    }
-}
+// export class HttpClientMessage implements Message {
+//     id: string | number | undefined;
+//     get headers(): (IncomingHttpHeaders & IncomingHttpStatusHeader) | IncomingHttpHeaders {
+//         return this.init.headers
+//     }
+//     public data: ClientHttp2Stream | IncomingMessage;
+//     constructor(private init: IncomingMessage | {
+//         headers: IncomingHttpHeaders & IncomingHttpStatusHeader,
+//         data: ClientHttp2Stream
+//     }) {
+//         this.data = init instanceof IncomingMessage ? init : init.data;
+//     }
+// }
 
 
 export class Http2IncomingMessage {
@@ -33,10 +33,17 @@ export class Http2IncomingMessage {
     ) { }
 }
 
-export class HttpClientMessageFactory implements MessageFactory {
-    create(initOpts: IncomingMessage | { id?: string | number; headers: IncomingHttpHeaders & IncomingHttpStatusHeader; data: ClientHttp2Stream; }): HttpClientMessage {
-        return new HttpClientMessage(initOpts);
+// export class HttpClientMessageFactory implements MessageFactory {
+//     create(initOpts: IncomingMessage | { id?: string | number; headers: IncomingHttpHeaders & IncomingHttpStatusHeader; data: ClientHttp2Stream; }): HttpClientMessage {
+//         return new HttpClientMessage(initOpts);
+//     }
+// }
+
+export class HttpClientIncomingFactory implements ClientIncomingFactory {
+    create(options: ClientIncomingOpts): ClientIncoming {
+        throw new Error('Method not implemented.');
     }
+
 }
 
 
@@ -50,12 +57,12 @@ const httptl = /^https?:\/\//i;
 const secureExp = /^https:/;
 
 @Injectable()
-export class HttpClientMessageReader implements MessageReader {
+export class HttpClientMessageReader implements MessageReader<ClientHttp2Session | null, ClientHttp2Stream | ClientRequest, ClientIncoming, ClientTransportSession> {
 
-    read(socket: ClientHttp2Session | null, channel: ClientHttp2Stream | ClientRequest, messageFactory: MessageFactory, session: AbstractTransportSession): Observable<Message> {
+    read(socket: ClientHttp2Session | null, channel: ClientHttp2Stream | ClientRequest, session: ClientTransportSession): Observable<ClientIncoming> {
         if (channel instanceof ClientRequest) {
-            return new Observable<Message>(subscribe => {
-                const onResponse = (resp: IncomingMessage) => subscribe.next(messageFactory.create(resp));
+            return new Observable<ClientIncoming>(subscribe => {
+                const onResponse = (resp: IncomingMessage) => subscribe.next(session.incomingFactory.create(resp));
                 const onError = (err: any) => err && subscribe.error(err);
                 channel.on(ev.CLOSE, onError);
                 channel.on(ev.ERROR, onError);
@@ -73,15 +80,15 @@ export class HttpClientMessageReader implements MessageReader {
                 }
             })
         } else {
-            return fromEvent(channel, ev.RESPONSE, (headers) => messageFactory.create({ headers, data: channel }));
+            return fromEvent(channel, ev.RESPONSE, (headers) => session.incomingFactory.create({ headers, payload: channel }));
         }
     }
 }
 
 @Injectable()
-export class HttpClientMessageWriter implements MessageWriter<ClientHttp2Session | null, UrlMesage, HttpRequest<any>, ClientTransportSession> {
+export class HttpClientMessageWriter implements MessageWriter<ClientHttp2Session | null, any, UrlMesage, HttpRequest<any>, ClientTransportSession> {
 
-    async write(socket: ClientHttp2Session | null, msg: UrlMesage, req: HttpRequest<any>, session: ClientTransportSession): Promise<any> {
+    async write(socket: ClientHttp2Session | null, channel: null, msg: UrlMesage, req: HttpRequest<any>, session: ClientTransportSession): Promise<any> {
         let url = msg.url;
         const clientOpts = session.clientOptions as HttpClientOpts;
         const ac = this.getAbortSignal(req.context);

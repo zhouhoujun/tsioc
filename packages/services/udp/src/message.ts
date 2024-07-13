@@ -45,11 +45,11 @@ export class UdpMessageFactory implements MessageFactory {
 @Injectable()
 export class UdpMessageReader implements MessageReader<Socket> {
 
-    read(socket: Socket, channel: IEventEmitter | null | undefined, messageFactory: UdpMessageFactory, session: AbstractTransportSession): Observable<UdpMessage> {
+    read(socket: Socket, channel: IEventEmitter | null | undefined, session: AbstractTransportSession): Observable<UdpMessage> {
         return fromEvent(socket, ev.MESSAGE, (msg: Buffer, rinfo: RemoteInfo) => {
             const addr = socket.address();
             if (rinfo.address == addr.address && rinfo.port == addr.port) return null!;
-            return messageFactory.create({ data: msg, remoteInfo: rinfo });
+            return (session.messageFactory as UdpMessageFactory).create({ data: msg, remoteInfo: rinfo });
         }).pipe(
             filter(r => r !== null)
         );

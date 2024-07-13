@@ -32,7 +32,7 @@ export class DefaultTransportSession extends TransportSession<any> {
     private _statusAdapter?: StatusAdapter | null;
     private _messageReader?: MessageReader;
     private _messageWriter?: MessageWriter;
-    private _messageFactory?: MessageFactory;
+    private _messageFactory?: MessageFactory | null;
     private _incomingFactory?: IncomingFactory;
     private _outgoingFactory?: OutgoingFactory | null;
     private _requestContextFactory?: RequestContextFactory;
@@ -97,9 +97,9 @@ export class DefaultTransportSession extends TransportSession<any> {
         }
         return this._messageWriter;
     }
-    get messageFactory(): MessageFactory {
-        if (!this._messageFactory) {
-            this._messageFactory = this.injector.get(MessageFactory)
+    get messageFactory(): MessageFactory | null {
+        if (this._messageFactory === undefined) {
+            this._messageFactory = this.injector.get(MessageFactory, null)
         }
         return this._messageFactory;
     }
