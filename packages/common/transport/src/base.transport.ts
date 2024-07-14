@@ -2,7 +2,7 @@ import { Injectable, promisify } from '@tsdi/ioc';
 import { BaseMessage, Message } from '@tsdi/common';
 import { Decoder, Encoder } from '@tsdi/common/codings';
 import { Observable, Subject, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
-import { AbstractTransportSession, MessageReader, MessageWriter } from './TransportSession';
+import { AbstractTransportSession, Incomings, MessageReader, MessageWriter, Outgoings } from './TransportSession';
 import { ev } from './consts';
 import { IEventEmitter, IReadableStream, IWritableStream } from './stream';
 
@@ -30,7 +30,7 @@ export class SocketMessageWriter implements MessageWriter<IWritableStream> {
 /**
  * base transport session via codings.
  */
-export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput = any, TMsg = any> extends AbstractTransportSession<TSocket, TInput, TOutput> {
+export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput = any> extends AbstractTransportSession<TSocket, TInput, TOutput> {
 
     /**
      * encodings
@@ -90,14 +90,14 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
      * @param context 
      * @returns 
      */
-    protected sendMessage(channel: IEventEmitter | null | undefined, msg: TMsg, input: TInput): Promise<any> | Observable<any> {
+    protected sendMessage(channel: IEventEmitter | null | undefined, msg: Outgoings, input: TInput): Promise<any> | Observable<any> {
         return this.messageWriter.write(this.socket, channel, msg, input, this)
     }
 
     /**
      * handle message
      */
-    protected handleMessage(channel?: IEventEmitter): Observable<TMsg> {
+    protected handleMessage(channel?: IEventEmitter): Observable<Incomings> {
         return this.messageReader.read(this.socket, this.streamAdapter.isEventEmitter(channel) ? channel : null, this)
             .pipe(
                 takeUntil(this.destroy$)

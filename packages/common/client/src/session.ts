@@ -9,7 +9,7 @@ import { ClientOpts } from './options';
  * transport session for client.
  */
 @Abstract()
-export abstract class ClientTransportSession<TSocket = any, TMsg extends Message = Message> extends BaseTransportSession<TSocket, AbstractRequest<any>, ResponseEvent<any>, TMsg> {
+export abstract class ClientTransportSession<TSocket = any> extends BaseTransportSession<TSocket, AbstractRequest<any>, ResponseEvent<any>> {
     /**
      * client options
      */
@@ -40,10 +40,10 @@ export abstract class ClientTransportSession<TSocket = any, TMsg extends Message
  * client transport session factory.
  */
 @Abstract()
-export abstract class ClientTransportSessionFactory<TSocket = any, TOptions = ClientOpts, TMsg extends Message = Message> {
+export abstract class ClientTransportSessionFactory<TSocket = any, TOptions = ClientOpts> {
     /**
      * the options to create transport session.
      * @param options 
      */
-    abstract create(injector: Injector, socket: TSocket, options: TOptions): ClientTransportSession<TSocket, TMsg>;
+    abstract create(injector: Injector, socket: TSocket, options: TOptions): ClientTransportSession<TSocket>;
 }

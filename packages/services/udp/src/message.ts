@@ -1,4 +1,4 @@
-import { MessageFactory, Pattern, UrlMesage } from '@tsdi/common';
+import { MessageFactory, UrlMesage } from '@tsdi/common';
 import { AbstractTransportSession, IEventEmitter, IReadableStream, MessageReader, MessageWriter, ev, toBuffer } from '@tsdi/common/transport';
 import { Execption, Injectable, promisify } from '@tsdi/ioc';
 import { RemoteInfo, Socket } from 'dgram';
@@ -43,7 +43,7 @@ export class UdpMessageFactory implements MessageFactory {
 }
 
 @Injectable()
-export class UdpMessageReader implements MessageReader<Socket> {
+export class UdpMessageReader implements MessageReader<Socket, IEventEmitter, UdpMessage> {
 
     read(socket: Socket, channel: IEventEmitter | null | undefined, session: AbstractTransportSession): Observable<UdpMessage> {
         return fromEvent(socket, ev.MESSAGE, (msg: Buffer, rinfo: RemoteInfo) => {
@@ -57,9 +57,9 @@ export class UdpMessageReader implements MessageReader<Socket> {
 }
 
 @Injectable()
-export class UdpMessageWriter implements MessageWriter<Socket, UdpMessage> {
+export class UdpMessageWriter implements MessageWriter<Socket, IEventEmitter, UdpMessage> {
 
-    async write(socket: Socket, msg: UdpMessage, origin: any, session: AbstractTransportSession): Promise<any> {
+    async write(socket: Socket, channel: IEventEmitter | null | undefined, msg: UdpMessage, origin: any, session: AbstractTransportSession): Promise<any> {
         let data = msg.data;
         if (session.streamAdapter.isReadable(data)) {
             data = await toBuffer(data);

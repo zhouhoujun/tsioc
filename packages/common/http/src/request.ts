@@ -1,7 +1,8 @@
 import { isString, InvocationContext, isUndefined, isNil } from '@tsdi/ioc';
 import {
     DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS,
-    HeadersLike, HeaderMappings, RequestParams, UrlRequest
+    HeadersLike, HeaderMappings, RequestParams, UrlRequest,
+    appendUrlParams
 } from '@tsdi/common';
 import { HttpParams } from './params';
 
@@ -219,27 +220,12 @@ export class HttpRequest<T> implements UrlRequest<T> {
         // If no parameters have been passed in, construct a new HttpUrlEncodedParams instance.
         if (!this.params) {
             this.params = new HttpParams();
-            this.urlWithParams = url
-        } else {
-            // Encode the parameters to a string in preparation for inclusion in the URL.
-            const params = this.params.toString();
-            if (params.length === 0) {
-                // No parameters, the visible URL is just the URL given at creation time.
-                this.urlWithParams = url
-            } else {
-                // Does the URL already have query parameters? Look for '?'.
-                const qIdx = url.indexOf('?');
-                // There are 3 cases to handle:
-                // 1) No existing parameters -> append '?' followed by params.
-                // 2) '?' exists and is followed by existing query string ->
-                //    append '&' followed by params.
-                // 3) '?' exists at the end of the url -> append params directly.
-                // This basically amounts to determining the character, if any, with
-                // which to join the URL and parameters.
-                const sep: string = qIdx === -1 ? '?' : (qIdx < url.length - 1 ? '&' : '');
-                this.urlWithParams = url + sep + params
-            }
         }
+        this.urlWithParams = this.getUrlWithParams();
+    }
+
+    getUrlWithParams(): string {
+        return appendUrlParams(this.url, this.params)
     }
 
 

@@ -73,6 +73,8 @@ export interface IncomingOpts<T = any> extends PacketOpts<T> {
     url?: string;
     topic?: string;
     pattern?: string;
+    req?: any;
+    res?: any;
     /**
      * request method.
      */

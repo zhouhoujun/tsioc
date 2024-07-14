@@ -2,11 +2,12 @@ import { HeaderFields, HybirdTransport, Message, MessageFactory, Transport } fro
 import { CodingsHandlerOptions } from '@tsdi/common/codings';
 import { Abstract, Injector, Token } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { AbstractIncomingFactory } from './Incoming';
+import { AbstractIncomingFactory, ClientIncoming, Incoming } from './Incoming';
 import { StatusAdapter } from './StatusAdapter';
 import { StreamAdapter } from './StreamAdapter';
 import { TransportDecodingsFactory, TransportEncodingsFactory } from './condings';
 import { IEventEmitter } from './stream';
+import { Outgoing } from './Outgoing';
 
 
 
@@ -89,7 +90,7 @@ export interface TransportOpts {
 /**
  * base transport session.
  */
-export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOutput = any, TMsg = any> {
+export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOutput = any> {
     /**
      * socket.
      */
@@ -131,7 +132,7 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
      * send.
      * @param data 
      */
-    abstract send(data: TInput, channel?: IEventEmitter): Observable<TMsg>;
+    abstract send(data: TInput, channel?: IEventEmitter): Observable<any>;
 
     /**
      * receive
@@ -147,13 +148,32 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
 
 }
 
+
+/**
+ * Incoming messages
+ */
+export type Incomings = Message | Incoming<any> | ClientIncoming<any>;
+
+
+/**
+ * Outgoing messages
+ */
+export type Outgoings = Message | Outgoing<any>;
+
+
+/**
+ * message reader.
+ */
 @Abstract()
-export abstract class MessageReader<TSocket = any, TChannel extends IEventEmitter = IEventEmitter, TMsg = any, TSession extends AbstractTransportSession = AbstractTransportSession> {
+export abstract class MessageReader<TSocket = any, TChannel extends IEventEmitter = IEventEmitter, TMsg extends Incomings = Incomings, TSession extends AbstractTransportSession = AbstractTransportSession> {
     abstract read(socket: TSocket, channel: TChannel | null | undefined, session: TSession): Observable<TMsg>
 
 }
 
+/**
+ * message writer.
+ */
 @Abstract()
-export abstract class MessageWriter<TSocket = any, TChannel extends IEventEmitter = IEventEmitter, TMsg = any, TOrigin = any, TSession extends AbstractTransportSession = AbstractTransportSession> {
+export abstract class MessageWriter<TSocket = any, TChannel extends IEventEmitter = IEventEmitter, TMsg extends Outgoings = Outgoings, TOrigin = any, TSession extends AbstractTransportSession = AbstractTransportSession> {
     abstract write(socket: TSocket, channel: TChannel | null | undefined, msg: TMsg, origin: TOrigin, session: TSession): Promise<any>;
 }

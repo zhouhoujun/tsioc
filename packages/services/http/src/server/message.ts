@@ -1,6 +1,6 @@
 import { Injectable, Injector } from '@tsdi/ioc';
 import { Decoder, DecodingsFactory, Encoder, EncodingsFactory } from '@tsdi/common/codings';
-import { TransportContext, StreamAdapter, TransportOpts, ev, MessageReader, AbstractTransportSession, IReadableStream, IncomingFactory, Incoming, IncomingOpts, MessageWriter } from '@tsdi/common/transport';
+import { TransportContext, StreamAdapter, TransportOpts, ev, MessageReader, AbstractTransportSession, IReadableStream, IncomingFactory, Incoming, IncomingOpts, MessageWriter, IEventEmitter } from '@tsdi/common/transport';
 import { TransportSession, TransportSessionFactory } from '@tsdi/endpoints';
 import { Server, IncomingMessage, ServerResponse } from 'http';
 import { Server as HttpsServer } from 'https';
@@ -17,14 +17,13 @@ export type ResponseMsg = IncomingMessage | {
 }
 
 
-export class HttpIncomings implements Message {
+export class HttpIncomings<T = any> implements Incoming<T> {
     id: string | number | undefined;
-    streamLength?: number | undefined;
     noHead?: boolean | undefined;
     get headers(): Record<string, Header> {
         return this.req.headers
     }
-    public data: string | Buffer | IReadableStream | null;
+    public payload: string | Buffer | IReadableStream | null;
 
     constructor(
         readonly req: HttpServRequest,
@@ -32,9 +31,9 @@ export class HttpIncomings implements Message {
     ) {
         const len = ~~(req.headers['content-length'] ?? '0');
         if (len) {
-            this.data = req;
+            this.payload = req;
         } else {
-            this.data = null;
+            this.payload = null;
         }
 
     }
@@ -48,7 +47,7 @@ export class HttpIncomingFactory extends IncomingFactory {
 }
 
 @Injectable()
-export class HttpServerMessageReader implements MessageReader<Http2Server | HttpsServer | Server> {
+export class HttpServerMessageReader implements MessageReader<Http2Server | HttpsServer | Server, IEventEmitter, HttpIncomings> {
 
     read(socket: Http2Server | HttpsServer | Server, channel: null, session: TransportSession): Observable<HttpIncomings> {
         return new Observable<HttpIncomings>(subscribe => {

@@ -8,7 +8,7 @@ import { ServerOpts } from './Server';
 import { AcceptsPriority } from './accepts';
 
 @Abstract()
-export abstract class TransportSession<TSocket = any, TMsg extends Message = Message, TOptions extends ServerOpts = ServerOpts> extends BaseTransportSession<TSocket, RequestContext, RequestContext, TMsg> {
+export abstract class TransportSession<TSocket = any, TOptions extends ServerOpts = ServerOpts> extends BaseTransportSession<TSocket, RequestContext, RequestContext> {
     /**
      * server options.
      */
@@ -51,12 +51,12 @@ export abstract class TransportSession<TSocket = any, TMsg extends Message = Mes
  * transport session factory.
  */
 @Abstract()
-export abstract class TransportSessionFactory<TSocket = any, TMsg extends Message = Message> {
+export abstract class TransportSessionFactory<TSocket = any> {
     /**
      * create transport session.
      * @param options 
      */
-    abstract create(injector: Injector, socket: TSocket, options: ServerOpts): TransportSession<TSocket, TMsg>;
+    abstract create(injector: Injector, socket: TSocket, options: ServerOpts): TransportSession<TSocket>;
 }
 
 
