@@ -58,13 +58,27 @@ export const ENCODINGS_GUARDS = tokenId<CanActivate[]>('ENCODINGS_GUARDS');
  */
 export class Encodings implements Encoder {
 
-    readonly defaultMaps: Map<Type | string, Type | string>;
+    protected defaultMaps: Map<Type | string, Type | string>;
     constructor(
         private handler: EncodingsHandler,
         protected options: CodingsOptions
     ) {
         this.defaultMaps = new Map(options.defaults);
     }
+
+
+    // /**
+    //  * set target default codings as adapter.
+    //  * @param target 
+    //  * @param adapter 
+    //  */
+    // setDefault(target: Type | string, adapter: Type | string | undefined): void {
+    //     if (!adapter) {
+    //         this.defaultMaps.delete(target);
+    //     } else {
+    //         this.defaultMaps.set(target, adapter);
+    //     }
+    // }
 
     /**
      * encode inport

@@ -56,7 +56,7 @@ export const DECODINGS_GUARDS = tokenId<CanActivate[]>('DECODINGS_GUARDS');
  */
 export class Decodings implements Decoder {
 
-    readonly defaultMaps: Map<Type | string, Type | string>;
+    protected defaultMaps: Map<Type | string, Type | string>;
 
     constructor(
         protected handler: DecodingsHandler,
@@ -64,6 +64,19 @@ export class Decodings implements Decoder {
     ) {
         this.defaultMaps = new Map(options.defaults);
     }
+
+    // /**
+    //  * set target default codings as adapter.
+    //  * @param target 
+    //  * @param adapter 
+    //  */
+    // setDefault(target: Type | string, adapter: Type | string | undefined): void {
+    //     if (!adapter) {
+    //         this.defaultMaps.delete(target);
+    //     } else {
+    //         this.defaultMaps.set(target, adapter);
+    //     }
+    // }
 
     /**
      * decode inport

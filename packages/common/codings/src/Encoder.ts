@@ -1,4 +1,4 @@
-import { Abstract, Type } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 
 /**
@@ -6,9 +6,6 @@ import { Observable } from 'rxjs';
  */
 @Abstract()
 export abstract class Encoder<TInput = any, TOutput = any> {
-
-
-    abstract get defaultMaps(): Map<Type | string, Type | string>;
     /**
      * encode inport
      * @param input 
