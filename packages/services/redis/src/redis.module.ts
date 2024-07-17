@@ -16,6 +16,7 @@ import { RedisClientIncoming, RedisClientIncomingFactory, RedisIncoming, RedisIn
 import { RedisOutgoing, RedisOutgoingFactory } from './outgoing';
 import { ClientIncomingPacket, IncomingPacket, OutgoingPacket } from '@tsdi/common/transport';
 import { RedisRequest } from './client/request';
+import { CustomCodingsAdapter } from '@tsdi/common/codings';
 
 
 const defaultMaxSize = 1048576; //1024 * 1024;
@@ -45,19 +46,8 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                         delimiter: '#',
                         maxSize: defaultMaxSize,
                         defaultMethod: '*',
-                        encodings: {
-                            end: RedisMessage,
-                            defaults: [
-                                [RedisRequest, Packet]
-                            ]
-                        },
-                        decodings: {
-                            complete: isResponseEvent,
-                            defaults: [
-                                [RedisClientIncoming, ClientIncomingPacket],
-                                [RedisMessage, Message]
-                            ]
-                        }
+                        encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof RedisMessage, [[RedisRequest, Packet]]) },
+                        decodingsAdapter: { useValue: new CustomCodingsAdapter(isResponseEvent, [[RedisClientIncoming, ClientIncomingPacket], [RedisMessage, Message]]) },
                     },
                     providers: [{ provide: PatternFormatter, useExisting: RedisPatternFormatter }]
                 }
@@ -73,8 +63,8 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                 handlerType: RedisEndpointHandler,
                 defaultOpts: {
                     encoding: 'utf8',
-                    messageReader: RedisMessageReader,
-                    messageWriter: RedisMessageWriter,
+                    // messageReader: RedisMessageReader,
+                    // messageWriter: RedisMessageWriter,
                     messageFactory: RedisMessageFactory,
                     incomingFactory: RedisIncomingFactory,
                     outgoingFactory: RedisOutgoingFactory,
@@ -82,20 +72,8 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                         delimiter: '#',
                         maxSize: defaultMaxSize,
                         defaultMethod: '*',
-                        decodings: {
-                            end: RequestContext,
-                            defaults: [
-                                [RedisIncoming, IncomingPacket],
-                                [RedisMessage, Message]
-                            ]
-                        },
-                        encodings: {
-                            end: RedisMessage,
-                            defaults: [
-                                [PatternRequestContext, RequestContext],
-                                [RedisOutgoing, OutgoingPacket]
-                            ]
-                        }
+                        decodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof RequestContext, [[RedisIncoming, IncomingPacket], [RedisMessage, Message]]) },
+                        encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof RedisMessage, [[PatternRequestContext, RequestContext], [RedisOutgoing, OutgoingPacket]]) },
                     },
                     content: {
                         root: 'public',

@@ -1,4 +1,5 @@
 import { HttpStatusCode, HeaderMappings, HeadersLike } from '@tsdi/common';
+import { hasOwn, isPlainObject } from '@tsdi/ioc';
 
 /**
  * Type enumeration for the different kinds of `HttpEvent`.
@@ -347,4 +348,10 @@ export class HttpErrorResponse extends HttpResponseBase implements Error {
         }
         this.error = init.error || null
     }
+}
+
+
+export function isHttpEvent(target: any): target is HttpEvent<any> {
+    if (!target) return false;
+    return target instanceof HttpResponseBase || (isPlainObject(target) && hasOwn(target, 'type'));
 }

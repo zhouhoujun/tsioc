@@ -1,6 +1,7 @@
-import { Type } from '@tsdi/ioc';
 import { ConfigableHandlerOptions } from '@tsdi/core';
 import { HybirdTransport, Transport } from '@tsdi/common';
+import { ProvdierOf } from '@tsdi/ioc';
+import { CodingsAapter } from './CodingsAapter';
 
 /**
  * codings option.
@@ -19,14 +20,15 @@ export interface CodingsOptions {
      */
     subfix?: string;
 
-    end?: Type;
+    // end?: Type;
 
-    complete?(data: any): boolean;
+    // complete?(data: any): boolean;
 
-    defaults?: Array<[Type | string, Type | string]>
+    // defaults?: Array<[Type | string, Type | string]>
 }
 
 
 export interface CodingsHandlerOptions extends CodingsOptions {
     configable?: ConfigableHandlerOptions;
+    adapter?: ProvdierOf<CodingsAapter>;
 }

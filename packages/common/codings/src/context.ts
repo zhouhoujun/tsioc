@@ -1,6 +1,8 @@
 import { OnDestroy, Type } from '@tsdi/ioc';
 import { Context } from '@tsdi/core';
 import { CodingsOptions } from './options';
+import { CodingsAapter } from './CodingsAapter';
+
 
 
 /**
@@ -16,22 +18,25 @@ export class CodingsContext<TOpts extends CodingsOptions = CodingsOptions> exten
     }
 
 
-    constructor(private _opts: TOpts, private defaults: Map<Type | string, Type | string>) {
+    constructor(private _opts: TOpts, private adapter?: CodingsAapter | null) {
         super()
     }
 
     getDefault(type: Type | string): Type | string | undefined {
-        return this.defaults.get(type)
+        return this.adapter?.getDefault(type)
     }
 
 
     isCompleted(data: any) {
         if (this._completed) return true;
-        if (this.options?.complete) {
-            return this.options.complete(data)
-        } else if (this.options?.end) {
-            return data instanceof this.options.end
+        if (this.adapter) {
+            return this.adapter.isCompleted(data);
         }
+        // if (this.options?.complete) {
+        //     return this.options.complete(data)
+        // } else if (this.options?.end) {
+        //     return data instanceof this.options.end
+        // }
         return false;
     }
 
@@ -42,7 +47,7 @@ export class CodingsContext<TOpts extends CodingsOptions = CodingsOptions> exten
     override onDestroy(): void {
         super.onDestroy();
         this._opts = null!;
-        this.defaults = null!;
+        this.adapter = null;
     }
 
 }

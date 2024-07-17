@@ -41,7 +41,8 @@ export class Http2IncomingMessage {
 
 export class HttpClientIncomingFactory implements ClientIncomingFactory {
     create(options: ClientIncomingOpts): ClientIncoming {
-        throw new Error('Method not implemented.');
+       if(options instanceof IncomingMessage) return options;
+       return new Http2IncomingMessage(options)
     }
 
 }

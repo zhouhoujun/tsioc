@@ -1,9 +1,10 @@
-import { Injector, tokenId } from '@tsdi/ioc';
+import { EMPTY, Injector, tokenId, toProvider } from '@tsdi/ioc';
 import { CanActivate, ExecptionHandlerFilter, Interceptor, createHandler } from '@tsdi/core';
 import { Message, Packet } from '@tsdi/common';
 import {
-    Decodings, DecodingsBackend, DecodingsFactory,
-    Encodings, EncodingsBackend, EncodingsFactory
+    CodingsAapter,
+    Decodings, DecodingsBackend, DecodingsConfigableHandler, DecodingsFactory,
+    Encodings, EncodingsBackend, EncodingsConfigableHandler, EncodingsFactory
 } from '@tsdi/common/codings';
 import { AbstractTransportSession, TransportOpts } from './TransportSession';
 import { TransportContext } from './context';
@@ -35,7 +36,7 @@ export class TransportEncodings extends Encodings {
     session!: AbstractTransportSession;
 
     protected override createContext(): TransportContext {
-        return new TransportContext(this.session, this.options, this.defaultMaps);
+        return new TransportContext(this.session, this.options, this.adapter);
     }
 
 }
@@ -45,18 +46,24 @@ export class TransportEncodings extends Encodings {
  */
 export class TransportEncodingsFactory implements EncodingsFactory {
     create(injector: Injector, options: TransportOpts): TransportEncodings {
-        const { encodings, name, subfix, transport } = options;
+        const { encodings, name, subfix, encodingsAdapter, transport } = options;
+        const { configable, adapter, ...opts } = encodings ?? {};
         const handler = createHandler(injector, {
+            classType: EncodingsConfigableHandler,
             interceptorsToken: TRANSPORT_ENCODINGS_INTERCEPTORS,
             filtersToken: TRANSPORT_ENCODINGS_FILTERS,
             guardsToken: TRANSPORT_ENCODINGS_GUARDS,
             backend: EncodingsBackend,
-            ...encodings?.configable
+            ...configable,
+            providers: (adapter ?? encodingsAdapter) ? [
+                ...configable?.providers ?? EMPTY,
+                toProvider(CodingsAapter, (adapter ?? encodingsAdapter))
+            ] : configable?.providers
         });
 
         handler.useFilters(ExecptionHandlerFilter, 0);
 
-        return new TransportEncodings(handler, { name, subfix, group: transport, ...encodings })
+        return new TransportEncodings(handler, { name, subfix, group: transport, ...opts })
     }
 }
 
@@ -84,7 +91,7 @@ export class TransportDecodings extends Decodings {
     session!: AbstractTransportSession;
 
     protected override createContext(): TransportContext {
-        return new TransportContext(this.session, this.options, this.defaultMaps);
+        return new TransportContext(this.session, this.options, this.adapter);
     }
 }
 
@@ -94,17 +101,23 @@ export class TransportDecodings extends Decodings {
 export class TransportDecodingsFactory implements DecodingsFactory {
 
     create(injector: Injector, options: TransportOpts): TransportDecodings {
-        const { decodings, name, subfix, transport } = options;
+        const { decodings, name, subfix, decodingsAdapter, transport } = options;
+        const { configable, adapter, ...opts } = decodings ?? {};
         const handler = createHandler(injector, {
+            classType: DecodingsConfigableHandler,
             guardsToken: TRANSPORT_DECODINGS_GUARDS,
             interceptorsToken: TRANSPORT_DECODINGS_INTERCEPTORS,
             filtersToken: TRANSPORT_DECODINGS_FILTERS,
             backend: DecodingsBackend,
-            ...decodings?.configable
+            ...configable,
+            providers: (adapter ?? decodingsAdapter) ? [
+                ...configable?.providers ?? EMPTY,
+                toProvider(CodingsAapter, adapter ?? decodingsAdapter)
+            ] : configable?.providers
         });
 
         handler.useFilters(ExecptionHandlerFilter, 0);
 
-        return new TransportDecodings(handler, { name, subfix, group: transport, ...decodings })
+        return new TransportDecodings(handler, { name, subfix, group: transport, ...opts })
     }
 }

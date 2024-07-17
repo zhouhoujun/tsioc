@@ -1,10 +1,11 @@
-import { Abstract, Injectable, Injector, Type, tokenId } from '@tsdi/ioc';
-import { Backend, CanActivate, ExecptionHandlerFilter, Handler, Interceptor, createHandler } from '@tsdi/core';
+import { Abstract, EMPTY, Injectable, Injector, Type, toProvider, tokenId } from '@tsdi/ioc';
+import { Backend, CanActivate, ConfigableHandler, ConfigableHandlerOptions, ExecptionHandlerFilter, Handler, Interceptor, createHandler } from '@tsdi/core';
 import { Observable, finalize, mergeMap, of } from 'rxjs';
 import { CodingsOptions, CodingsHandlerOptions } from './options';
 import { CodingsContext } from './context';
 import { Encoder } from './Encoder';
 import { CodingMappings } from './mappings';
+import { CodingsAapter } from './CodingsAapter';
 
 /**
  * Encodings Handler
@@ -36,6 +37,11 @@ export class EncodingsBackend<TInput = any, TOutput = any> implements Backend<TI
 
 
 /**
+ * Encodings configable handler.
+ */
+export class EncodingsConfigableHandler<TInput = any, TOutput = any> extends ConfigableHandler<TInput, TOutput, ConfigableHandlerOptions, CodingsContext> { }
+
+/**
  * Encodings interceptors.
  */
 export const ENCODINGS_INTERCEPTORS = tokenId<Interceptor<any, any, CodingsContext>[]>('ENCODINGS_INTERCEPTORS');
@@ -58,27 +64,21 @@ export const ENCODINGS_GUARDS = tokenId<CanActivate[]>('ENCODINGS_GUARDS');
  */
 export class Encodings implements Encoder {
 
-    protected defaultMaps: Map<Type | string, Type | string>;
-    constructor(
-        private handler: EncodingsHandler,
-        protected options: CodingsOptions
-    ) {
-        this.defaultMaps = new Map(options.defaults);
+    private _adapter?: CodingsAapter | null;
+    get adapter() {
+        if (this._adapter === undefined) {
+            this._adapter = this.handler.injector.get(CodingsAapter, null);
+        }
+        return this._adapter
     }
 
 
-    // /**
-    //  * set target default codings as adapter.
-    //  * @param target 
-    //  * @param adapter 
-    //  */
-    // setDefault(target: Type | string, adapter: Type | string | undefined): void {
-    //     if (!adapter) {
-    //         this.defaultMaps.delete(target);
-    //     } else {
-    //         this.defaultMaps.set(target, adapter);
-    //     }
-    // }
+    constructor(
+        private handler: EncodingsConfigableHandler,
+        protected options: CodingsOptions
+    ) {
+
+    }
 
     /**
      * encode inport
@@ -103,7 +103,7 @@ export class Encodings implements Encoder {
     }
 
     protected createContext() {
-        return new CodingsContext(this.options, this.defaultMaps)
+        return new CodingsContext(this.options, this.adapter)
     }
 
 }
@@ -114,13 +114,18 @@ export class Encodings implements Encoder {
 @Injectable()
 export class EncodingsFactory {
     create(injector: Injector, options: CodingsHandlerOptions): Encodings {
-        const { configable, ...opts } = options;
+        const { configable, adapter, ...opts } = options;
         const handler = createHandler(injector, {
+            classType: EncodingsConfigableHandler,
             interceptorsToken: ENCODINGS_INTERCEPTORS,
             filtersToken: ENCODINGS_FILTERS,
             guardsToken: ENCODINGS_GUARDS,
             backend: EncodingsBackend,
-            ...configable
+            ...configable,
+            providers: adapter ? [
+                ...configable?.providers ?? EMPTY,
+                toProvider(CodingsAapter, adapter)
+            ] : configable?.providers
         });
 
         handler.useFilters(ExecptionHandlerFilter, 0);

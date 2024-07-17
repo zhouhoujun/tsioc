@@ -1,4 +1,5 @@
 import { Message, Packet, isResponseEvent } from '@tsdi/common';
+import { CustomCodingsAdapter } from '@tsdi/common/codings';
 import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
 import { ClientIncomingPacket, IncomingPacket, OutgoingPacket } from '@tsdi/common/transport';
 import { ExecptionHandlerFilter } from '@tsdi/core';
@@ -45,19 +46,8 @@ import { UdpServer } from './server/server';
                         maxSize: defaultMaxSize,
                         defaultMethod: '*',
                         serializeIgnores: ['remoteInfo'],
-                        encodings: {
-                            end: UdpMessage,
-                            defaults: [
-                                [UdpRequest, Packet]
-                            ]
-                        },
-                        decodings: {
-                            complete: isResponseEvent,
-                            defaults: [
-                                [UdpClientIncoming, ClientIncomingPacket],
-                                [UdpMessage, Message]
-                            ]
-                        }
+                        encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof UdpMessage, [[UdpMessage, Packet]]) },
+                        decodingsAdapter: { useValue: new CustomCodingsAdapter(isResponseEvent, [[UdpClientIncoming, ClientIncomingPacket], [UdpMessage, Message]]) },
                     }
                 }
             } as ClientModuleOpts,
@@ -81,20 +71,8 @@ import { UdpServer } from './server/server';
                         maxSize: defaultMaxSize,
                         defaultMethod: '*',
                         serializeIgnores: ['remoteInfo'],
-                        decodings: {
-                            end: RequestContext,
-                            defaults: [
-                                [UdpIncoming, IncomingPacket],
-                                [UdpMessage, Message]
-                            ]
-                        },
-                        encodings: {
-                            end: UdpMessage,
-                            defaults: [
-                                [PatternRequestContext, RequestContext],
-                                [UdpOutgoing, OutgoingPacket]
-                            ]
-                        }
+                        decodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof RequestContext, [[UdpIncoming, IncomingPacket], [UdpMessage, Message]]) },
+                        encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof UdpMessage, [[PatternRequestContext, RequestContext], [UdpOutgoing, OutgoingPacket]]) },
                     },
                     content: {
                         root: 'public',

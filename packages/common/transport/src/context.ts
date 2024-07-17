@@ -1,5 +1,5 @@
 import { OnDestroy, Type } from '@tsdi/ioc';
-import { CodingsContext, CodingsOptions } from '@tsdi/common/codings';
+import { CodingsAapter, CodingsContext, CodingsOptions } from '@tsdi/common/codings';
 import { AbstractTransportSession } from './TransportSession';
 
 /**
@@ -14,10 +14,9 @@ export class TransportContext extends CodingsContext<CodingsOptions> implements 
     constructor(
         public session: AbstractTransportSession,
         options: CodingsOptions,
-        defaults: Map<Type | string, Type | string>
-        
+        adapter?: CodingsAapter | null
     ) {
-        super(options, defaults)
+        super(options, adapter)
     }
 
     override onDestroy(): void {

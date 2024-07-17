@@ -1,6 +1,6 @@
 import { HeaderFields, HybirdTransport, Message, MessageFactory, Transport } from '@tsdi/common';
-import { CodingsHandlerOptions } from '@tsdi/common/codings';
-import { Abstract, Injector, Token } from '@tsdi/ioc';
+import { CodingsAapter, CodingsHandlerOptions } from '@tsdi/common/codings';
+import { Abstract, Injector, ProvdierOf, Token } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { AbstractIncomingFactory, ClientIncoming, Incoming } from './Incoming';
 import { StatusAdapter } from './StatusAdapter';
@@ -27,6 +27,8 @@ export interface TransportOpts {
     readonly encodings?: CodingsHandlerOptions;
     readonly decodings?: CodingsHandlerOptions;
 
+    readonly encodingsAdapter?: ProvdierOf<CodingsAapter>;
+    readonly decodingsAdapter?: ProvdierOf<CodingsAapter>;
     /**
      * encodings Factory.
      */

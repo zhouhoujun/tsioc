@@ -1,6 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST, Message, Packet, isResponseEvent } from '@tsdi/common';
+import { CustomCodingsAdapter } from '@tsdi/common/codings';
 import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
 import { ClientIncomingPacket, IncomingPacket, OutgoingPacket } from '@tsdi/common/transport';
 import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, PatternRequestContext, RequestContext, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
@@ -40,19 +41,8 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
-                        encodings: {
-                            end: TcpMessage,
-                            defaults: [
-                                [TcpRequest, Packet]
-                            ]
-                        },
-                        decodings: {
-                            complete: isResponseEvent,
-                            defaults: [
-                                [TcpClientIncoming, ClientIncomingPacket],
-                                [TcpMessage, Message]
-                            ]
-                        }
+                        encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof TcpMessage, [[TcpRequest, Packet]]) },
+                        decodingsAdapter: { useValue: new CustomCodingsAdapter(isResponseEvent, [[TcpClientIncoming, ClientIncomingPacket], [TcpMessage, Message]]) },
                     }
                 }
             } as ClientModuleOpts,
@@ -72,20 +62,8 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                     transportOpts: {
                         delimiter: '#',
                         maxSize: defaultMaxSize,
-                        encodings: {
-                            end: TcpMessage,
-                            defaults: [
-                                [TcpRequest, Packet]
-                            ]
-
-                        },
-                        decodings: {
-                            complete: isResponseEvent,
-                            defaults: [
-                                [TcpClientIncoming, ClientIncomingPacket],
-                                [TcpMessage, Message]
-                            ]
-                        }
+                        encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof TcpMessage, [[TcpRequest, Packet]]) },
+                        decodingsAdapter: { useValue: new CustomCodingsAdapter(isResponseEvent, [[TcpClientIncoming, ClientIncomingPacket], [TcpMessage, Message]]) },
                     }
                 }
             } as ClientModuleOpts,
@@ -104,20 +82,8 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                         delimiter: '#',
                         defaultMethod: '*',
                         maxSize: defaultMaxSize,
-                        decodings: {
-                            end: RequestContext,
-                            defaults: [
-                                [TcpIncoming, IncomingPacket],
-                                [TcpMessage, Message]
-                            ]
-                        },
-                        encodings: {
-                            end: TcpMessage,
-                            defaults: [
-                                [PatternRequestContext, RequestContext],
-                                [TcpOutgoing, OutgoingPacket]
-                            ]
-                        }
+                        decodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof RequestContext, [[TcpIncoming, IncomingPacket], [TcpMessage, Message]]) },
+                        encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof TcpMessage, [[PatternRequestContext, RequestContext], [TcpOutgoing, OutgoingPacket]]) },
                     },
                     content: {
                         root: 'public',
@@ -152,20 +118,8 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                         delimiter: '#',
                         defaultMethod: 'GET',
                         maxSize: defaultMaxSize,
-                        decodings: {
-                            end: RequestContext,
-                            defaults: [
-                                [TcpIncoming, IncomingPacket],
-                                [TcpMessage, Message]
-                            ]
-                        },
-                        encodings: {
-                            end: TcpMessage,
-                            defaults: [
-                                [PatternRequestContext, RequestContext],
-                                [TcpOutgoing, OutgoingPacket]
-                            ]
-                        }
+                        decodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof RequestContext, [[TcpIncoming, IncomingPacket], [TcpMessage, Message]]) },
+                        encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof TcpMessage, [[PatternRequestContext, RequestContext], [TcpOutgoing, OutgoingPacket]]) },
                     },
                     content: {
                         root: 'public'
