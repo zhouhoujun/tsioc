@@ -265,6 +265,7 @@ export interface ClientIncomingOpts<T = any, TStatus = any> extends PacketOpts<T
     url?: string;
     topic?: string;
     pattern?: string;
+    method?: string;
     streamLength?: number;
 }
 
@@ -327,7 +328,7 @@ export abstract class ClientIncomingPacket<T, TStatus = any> extends BasePacket<
         this.ok = init.error ? false : init.ok != false;
         this.error = init.error;
         this.type = init.type;
-        this._status = init.status !== undefined ? init.status : defaultStatus ?? null;
+        this._status = init.status ?? init.statusCode ?? defaultStatus ?? null;
         this._message = (init.statusMessage || init.statusText) ?? defaultStatusText;
         this.streamLength = init.streamLength;
     }

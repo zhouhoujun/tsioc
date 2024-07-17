@@ -13,8 +13,6 @@ import * as assert from 'assert';
 import { HttpServerOpts } from './options';
 import { HttpEndpointHandler } from './handler';
 import { HttpContext } from './context';
-import { HttpServerSessionFactory } from './message';
-
 
 /**
  * http server.
@@ -134,7 +132,7 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
         const opts = this.getOptions();
 
         const injector = this.handler.injector;
-        const factory = injector.get(HttpServerSessionFactory);
+        const factory = injector.get(TransportSessionFactory);
         const session = factory.create(injector, this._server, opts);
         session.listen(this.handler, this.destroy$);
 

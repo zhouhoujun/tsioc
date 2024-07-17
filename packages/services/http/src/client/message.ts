@@ -1,5 +1,5 @@
 import { Injectable, InvocationContext, isNil, promisify } from '@tsdi/ioc';
-import { UrlMesage } from '@tsdi/common';
+import { HttpStatusCode, statusMessage, UrlMesage } from '@tsdi/common';
 import { ClientIncoming, ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket, MessageReader, MessageWriter, ctype, ev } from '@tsdi/common/transport';
 import { HttpRequest } from '@tsdi/common/http';
 import { ClientTransportSession } from '@tsdi/common/client';
@@ -21,28 +21,31 @@ export class HttpClientIncoming<T> extends ClientIncomingPacket<T, number> {
     clone(): HttpClientIncoming<T>;
     clone<V>(update: ClientIncomingCloneOpts<V, number>): HttpClientIncoming<V>;
     clone(update: ClientIncomingCloneOpts<T, number>): HttpClientIncoming<T>;
-    clone(update:  ClientIncomingCloneOpts<any, number> = {}):  HttpClientIncoming<any> {
+    clone(update: ClientIncomingCloneOpts<any, number> = {}): HttpClientIncoming<any> {
         const init = this.cloneOpts(update);
         return new HttpClientIncoming(init)
     }
 }
 
-export class Http2IncomingMessage {
-    constructor(
-        readonly headers: IncomingHttpHeaders & IncomingHttpStatusHeader,
-        readonly stream: ClientHttp2Stream
-    ) { }
-}
-
 
 export class HttpClientIncomingFactory implements ClientIncomingFactory {
     create(options: ClientIncomingOpts): HttpClientIncoming<any> {
-        // if (options instanceof IncomingMessage) {
-        //     const incoming = options as ClientIncomingOpts;
-        //     // options = options;
-        //     // return incoming;
-        // }
-        return new HttpClientIncoming(options)
+        let opts: ClientIncomingOpts;
+        if (options instanceof IncomingMessage) {
+            // const incoming = options as ClientIncomingOpts;
+            // options = options;
+            // return incoming;
+            const { method, url, headers, httpVersion, httpVersionMajor, httpVersionMinor, statusCode, statusMessage } = options;
+            opts = { statusMessage, statusCode, headers, url, method, payload: options }
+        } else {
+            opts = options;
+            const headers = opts.headers as IncomingHttpHeaders & IncomingHttpStatusHeader;
+            opts.url = headers[':path'];
+            opts.method = headers[':method'];
+            const status = opts.status = headers[':status'] as HttpStatusCode;
+            opts.statusMessage = statusMessage[status];
+        }
+        return new HttpClientIncoming(opts);
     }
 
 }

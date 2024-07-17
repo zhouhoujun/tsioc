@@ -1,4 +1,4 @@
-import { Injectable, Injector } from '@tsdi/ioc';
+import { Injectable, Injector, promisify } from '@tsdi/ioc';
 import { Decoder, DecodingsFactory, Encoder, EncodingsFactory } from '@tsdi/common/codings';
 import { TransportContext, StreamAdapter, TransportOpts, ev, MessageReader, AbstractTransportSession, IReadableStream, IncomingFactory, Incoming, IncomingOpts, MessageWriter, IEventEmitter } from '@tsdi/common/transport';
 import { TransportSession, TransportSessionFactory } from '@tsdi/endpoints';
@@ -11,10 +11,10 @@ import { HttpServerOpts } from './options';
 import { MessageFactory, Message, Header } from '@tsdi/common';
 
 
-export type ResponseMsg = IncomingMessage | {
-    headers: IncomingHttpHeaders & IncomingHttpStatusHeader,
-    stream: ClientHttp2Stream
-}
+// export type ResponseMsg = IncomingMessage | {
+//     headers: IncomingHttpHeaders & IncomingHttpStatusHeader,
+//     stream: ClientHttp2Stream
+// }
 
 
 export class HttpIncomings<T = any> implements Incoming<T> {
@@ -74,10 +74,9 @@ export class HttpServerMessageReader implements MessageReader<Http2Server | Http
 
 @Injectable()
 export class HttpServerMessagerWriter implements MessageWriter<Http2Server | HttpsServer | Server, HttpServResponse> {
-    write(socket: Http2Server | HttpsServer | Server, channel: HttpServResponse | null, msg: any, origin: any, session: TransportSession): Promise<any> {
-        throw new Error('Method not implemented.');
+    write(socket: Http2Server | HttpsServer | Server, channel: HttpServResponse, msg: any, origin: any, session: TransportSession): Promise<any> {
+       return promisify<any, void>(channel.end, channel)(msg);
     }
-
 }
 
 

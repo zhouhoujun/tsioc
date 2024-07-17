@@ -10,6 +10,7 @@ export interface StatusOptions<TStatus = any> {
     type?: number;
     status?: TStatus;
     statusMessage?: string;
+    statusCode?: TStatus;
     statusText?: string;
     ok?: boolean;
     error?: any;
