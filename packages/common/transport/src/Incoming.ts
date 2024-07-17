@@ -208,7 +208,7 @@ export abstract class IncomingPacket<T> extends BasePacket<T> implements Incomin
 /**
  * Clientincoming message
  */
-export interface ClientIncoming<T = any, TStatus = null> {
+export interface ClientIncoming<T = any, TStatus = any> {
     /**
      * event type
      */

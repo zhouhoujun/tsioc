@@ -1,6 +1,6 @@
 import { Injectable, InvocationContext, isNil, promisify } from '@tsdi/ioc';
-import { Message, MessageFactory, UrlMesage } from '@tsdi/common';
-import { AbstractTransportSession, ClientIncoming, ClientIncomingFactory, ClientIncomingOpts, MessageReader, MessageWriter, ctype, ev } from '@tsdi/common/transport';
+import { UrlMesage } from '@tsdi/common';
+import { ClientIncoming, ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket, MessageReader, MessageWriter, ctype, ev } from '@tsdi/common/transport';
 import { HttpRequest } from '@tsdi/common/http';
 import { ClientTransportSession } from '@tsdi/common/client';
 import { request as httpRequest, IncomingMessage, ClientRequest } from 'http';
@@ -11,20 +11,21 @@ import { HttpClientOpts } from './options';
 
 
 
-// export class HttpClientMessage implements Message {
-//     id: string | number | undefined;
-//     get headers(): (IncomingHttpHeaders & IncomingHttpStatusHeader) | IncomingHttpHeaders {
-//         return this.init.headers
-//     }
-//     public data: ClientHttp2Stream | IncomingMessage;
-//     constructor(private init: IncomingMessage | {
-//         headers: IncomingHttpHeaders & IncomingHttpStatusHeader,
-//         data: ClientHttp2Stream
-//     }) {
-//         this.data = init instanceof IncomingMessage ? init : init.data;
-//     }
-// }
 
+
+export class HttpClientIncoming<T> extends ClientIncomingPacket<T, number> {
+    constructor(init: ClientIncomingOpts, defaultStatus = 0, defaultStatusText = 'OK') {
+        super(init, defaultStatus, defaultStatusText)
+    }
+
+    clone(): HttpClientIncoming<T>;
+    clone<V>(update: ClientIncomingCloneOpts<V, number>): HttpClientIncoming<V>;
+    clone(update: ClientIncomingCloneOpts<T, number>): HttpClientIncoming<T>;
+    clone(update:  ClientIncomingCloneOpts<any, number> = {}):  HttpClientIncoming<any> {
+        const init = this.cloneOpts(update);
+        return new HttpClientIncoming(init)
+    }
+}
 
 export class Http2IncomingMessage {
     constructor(
@@ -33,16 +34,15 @@ export class Http2IncomingMessage {
     ) { }
 }
 
-// export class HttpClientMessageFactory implements MessageFactory {
-//     create(initOpts: IncomingMessage | { id?: string | number; headers: IncomingHttpHeaders & IncomingHttpStatusHeader; data: ClientHttp2Stream; }): HttpClientMessage {
-//         return new HttpClientMessage(initOpts);
-//     }
-// }
 
 export class HttpClientIncomingFactory implements ClientIncomingFactory {
-    create(options: ClientIncomingOpts): ClientIncoming {
-       if(options instanceof IncomingMessage) return options;
-       return new Http2IncomingMessage(options)
+    create(options: ClientIncomingOpts): HttpClientIncoming<any> {
+        // if (options instanceof IncomingMessage) {
+        //     const incoming = options as ClientIncomingOpts;
+        //     // options = options;
+        //     // return incoming;
+        // }
+        return new HttpClientIncoming(options)
     }
 
 }

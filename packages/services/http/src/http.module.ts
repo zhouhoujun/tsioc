@@ -16,9 +16,10 @@ import { HttpResponseEventFactory } from './client/response.factory';
 import { HttpClientCodingsHandlers } from './client/codings.hanlders';
 import { HttpCodingsHandlers } from './server/codings.handlers';
 import { HttpExecptionHandlers } from './execption.handlers';
-import { HttpClientMessageReader, HttpClientMessageWriter } from './client/message';
+import { HttpClientIncoming, HttpClientMessageReader, HttpClientMessageWriter } from './client/message';
 import { CustomCodingsAdapter } from '@tsdi/common/codings';
 import { HttpRequest, isHttpEvent } from '@tsdi/common/http';
+import { ClientIncomingPacket } from '@tsdi/common/transport';
 
 
 // const defaultMaxSize = 1048576; // 1024 * 1024;
@@ -56,7 +57,7 @@ import { HttpRequest, isHttpEvent } from '@tsdi/common/http';
                     messageWriter: HttpClientMessageWriter,
                     transportOpts: {
                         encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof HttpRequest) },
-                        decodingsAdapter: { useValue: new CustomCodingsAdapter(isHttpEvent, [[UdpClientIncoming, ClientIncomingPacket]]) },
+                        decodingsAdapter: { useValue: new CustomCodingsAdapter(isHttpEvent, [[HttpClientIncoming, ClientIncomingPacket]]) },
                     }
                 }
             } as ClientModuleOpts,
