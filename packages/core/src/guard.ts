@@ -19,6 +19,10 @@ export interface CanActivate<T = any, TContext = any> {
     canActivate(input: T, context?: TContext): boolean | Promise<boolean> | Observable<boolean>;
 }
 
+/**
+ * hander guard fn.
+ */
+export type CanActivateFn = <T = any, TContext = any>(input: T, context?: TContext) => boolean | Promise<boolean> | Observable<boolean>;
 
 /**
  *  guards multi token
