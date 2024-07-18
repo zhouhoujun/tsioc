@@ -1,9 +1,9 @@
 import { Abstract } from '@tsdi/ioc';
-import { EndpointHandler } from '@tsdi/endpoints';
+import { AbstractRequestHandler } from '@tsdi/endpoints';
 import { HttpContext } from './context';
 import { HttpServerOpts } from './options';
 
 @Abstract()
-export abstract class HttpEndpointHandler extends EndpointHandler<HttpContext, HttpServerOpts> {
+export abstract class HttpRequestHandler extends AbstractRequestHandler<HttpContext, HttpServerOpts> {
     
 }

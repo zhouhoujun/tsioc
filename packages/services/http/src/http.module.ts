@@ -8,7 +8,7 @@ import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS } from './client/options'
 import { HttpHandler } from './client/handler';
 import { HttpPathInterceptor } from './client/path';
 import { HTTP_MIDDLEWARES, HTTP_SERV_FILTERS, HTTP_SERV_GUARDS, HTTP_SERV_INTERCEPTORS } from './server/options';
-import { HttpEndpointHandler } from './server/handler';
+import { HttpRequestHandler } from './server/handler';
 import { HttpServer } from './server/server';
 import { HttpContextFactory } from './server/context';
 import { HttpStatusAdapter } from './status';
@@ -87,7 +87,7 @@ import { ClientIncomingPacket } from '@tsdi/common/transport';
                 transport: 'http',
                 microservice: true,
                 serverType: HttpServer,
-                handlerType: HttpEndpointHandler,
+                handlerType: HttpRequestHandler,
                 imports: [MimeModule],
                 defaultOpts: {
                     listenOpts: { port: 3000, host: LOCALHOST },
@@ -120,7 +120,7 @@ import { ClientIncomingPacket } from '@tsdi/common/transport';
             useValue: {
                 transport: 'http',
                 serverType: HttpServer,
-                handlerType: HttpEndpointHandler,
+                handlerType: HttpRequestHandler,
                 imports: [MimeModule],
                 defaultOpts: {
                     listenOpts: { port: 3000, host: LOCALHOST },

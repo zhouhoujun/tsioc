@@ -2,7 +2,7 @@ import { Abstract, Type, OperationInvoker, tokenId, OnDestroy, Destroyable, Refl
 import { CanActivate } from './guard';
 import { Interceptor } from './Interceptor';
 import { Filter } from './filters/filter';
-import { ConfigableHandler, ConfigableHandlerOptions } from './handlers/configable';
+import { AbstractConfigableHandler, ConfigableHandlerOptions } from './handlers/configable';
 
 
 /**
@@ -13,7 +13,7 @@ export abstract class InvocationHandler<
     TInput = any,
     TOutput = any,
     TOptions extends InvocationOptions = InvocationOptions,
-    TContext = any> extends ConfigableHandler<TInput, TOutput, TOptions, TContext> {
+    TContext = any> extends AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
     /**
      * opteration invoker.
      */

@@ -8,7 +8,7 @@ import { MQTT_CLIENT_FILTERS, MQTT_CLIENT_INTERCEPTORS } from './client/options'
 import { MqttHandler } from './client/handler';
 import { MqttServer } from './server/server';
 import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS } from './server/options';
-import { MqttEndpointHandler } from './server/handler';
+import { MqttRequestHandler } from './server/handler';
 
 const defaultMaxSize = 1048576; // 1024 * 1024;
 // const defaultMaxSize = 524288; //1024 * 512;
@@ -46,7 +46,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                 transport: 'mqtt',
                 microservice: true,
                 serverType: MqttServer,
-                handlerType: MqttEndpointHandler,
+                handlerType: MqttRequestHandler,
                 defaultOpts: {
                     encoding: 'utf8',
                     transportOpts: {

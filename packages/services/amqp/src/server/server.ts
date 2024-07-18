@@ -4,7 +4,7 @@ import { ev } from '@tsdi/common/transport';
 import { Server, TransportSessionFactory, TransportSession, RequestContext } from '@tsdi/endpoints';
 import * as amqp from 'amqplib';
 import { AmqpMicroServiceOpts } from './options';
-import { AmqpEndpointHandler } from './handler';
+import { AmqpRequestHandler } from './handler';
 
 
 
@@ -20,7 +20,7 @@ export class AmqpServer extends Server<RequestContext, AmqpMicroServiceOpts> {
     private _channel: amqp.Channel | null = null;
     private _session?: TransportSession<amqp.Channel>;
 
-    constructor(readonly handler: AmqpEndpointHandler) {
+    constructor(readonly handler: AmqpRequestHandler) {
         super();
     }
 

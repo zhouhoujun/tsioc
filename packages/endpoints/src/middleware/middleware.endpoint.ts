@@ -1,11 +1,9 @@
-import { Injector, InvocationContext, ProvdierOf, Token, createContext, refl } from '@tsdi/ioc';
-import { HandlerService, Backend, normalizeConfigableHandlerOptions } from '@tsdi/core';
+import { ProvdierOf, Token } from '@tsdi/ioc';
+import { HandlerService } from '@tsdi/core';
 import { MiddlewareLike } from './middleware';
 import { MiddlewareService } from './middleware.service';
 import { RequestContext } from '../RequestContext';
-import { EndpointHandler, EndpointOptions } from '../EndpointHandler';
-import { MiddlewareBackend } from './middleware.compose';
-import { RequestHandler } from '../RequestHandler';
+import { AbstractRequestHandler, RequestHandlerOptions } from '../AbstractRequestHandler';
 
 
 /**
@@ -21,7 +19,7 @@ export interface MiddlewareOpts<T extends RequestContext = any> {
  * 
  * 含中间件的传输节点配置
  */
-export interface MiddlewareHandlerOptions<T extends RequestContext = any, TArg = any> extends EndpointOptions<T, TArg>, MiddlewareOpts<T> {
+export interface MiddlewareHandlerOptions<T extends RequestContext = any, TArg = any> extends RequestHandlerOptions<T, TArg>, MiddlewareOpts<T> {
 
 }
 
@@ -33,33 +31,9 @@ export interface MiddlewareHandlerOptions<T extends RequestContext = any, TArg =
  * 含中间件的传输节点
  */
 
-export class MiddlewareHandler<TInput extends RequestContext = any, TOptions extends MiddlewareHandlerOptions = MiddlewareHandlerOptions>
-    extends EndpointHandler<TInput, TOptions> implements RequestHandler<TInput>, HandlerService, MiddlewareService {
+export abstract class MiddlewareHandler<TInput extends RequestContext = any, TOptions extends MiddlewareHandlerOptions = MiddlewareHandlerOptions>
+    extends AbstractRequestHandler<TInput, TOptions> implements HandlerService, MiddlewareService {
 
-    use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this {
-        this.regMulti(this.options.middlewaresToken!, middlewares, order, type => refl.getDef(type).abstract || Reflect.getMetadataKeys(type).length > 0);
-        this.reset();
-        return this;
-    }
+   abstract use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this;
 
-    protected override getBackend(): Backend<TInput> {
-        return new MiddlewareBackend(this.getMiddlewares());
-    }
-
-    protected getMiddlewares() {
-        return this.injector.get(this.options.middlewaresToken!, []);
-    }
-}
-
-/**
- * create middleware hanlder.
- * 
- * 创建含中间件的传输节点实例化对象
- * @param context 
- * @param options 
- * @returns 
- */
-export function createMiddlewareEndpoint<TInput extends RequestContext>(context: Injector | InvocationContext, options: MiddlewareHandlerOptions<TInput>): MiddlewareHandler<TInput> {
-    options = normalizeConfigableHandlerOptions(options);
-    return new MiddlewareHandler(createContext(context, options), options)
 }

@@ -6,7 +6,7 @@ import { Interceptor } from '../Interceptor';
 import { Handler } from '../Handler';
 import { Filter } from '../filters/filter';
 import { ExecptionHandlerFilter } from '../filters/execption.filter';
-import { ConfigableHandler, createHandler } from '../handlers/configable';
+import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventContext, ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { PayloadApplicationEvent } from '../events';

@@ -11,7 +11,7 @@ import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS } from './client/options';
 import { WsHandler } from './client/handler';
 import { WsServer } from './server/server';
 import { WS_SERV_FILTERS, WS_SERV_GUARDS, WS_SERV_INTERCEPTORS } from './server/options';
-import { WsEndpointHandler } from './server/handler';
+import { WsRequestHandler } from './server/handler';
 import { Message, Packet, isResponseEvent } from '@tsdi/common';
 import { ClientIncomingPacket, IncomingPacket, OutgoingPacket } from '@tsdi/common/transport';
 import { WsMessage, WsMessageFactory } from './message';
@@ -61,7 +61,7 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                 microservice: true,
                 asDefault: true,
                 serverType: WsServer,
-                handlerType: WsEndpointHandler,
+                handlerType: WsRequestHandler,
                 defaultOpts: {
                     transportOpts: {
                         delimiter: '#',

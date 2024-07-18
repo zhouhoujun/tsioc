@@ -3,7 +3,7 @@ import { PatternFormatter } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { MircoServRouters, RequestContext, Server } from '@tsdi/endpoints';
 import { NatsConnection, connect } from 'nats';
-import { NatsEndpointHandler } from './handler';
+import { NatsRequestHandler } from './handler';
 import { NatsMicroServOpts } from './options';
 import { NatsTransportSession, NatsTransportSessionFactory } from '../nats.session';
 
@@ -17,7 +17,7 @@ export class NatsServer extends Server<RequestContext, NatsMicroServOpts> {
     @InjectLog()
     private logger!: Logger;
 
-    constructor(readonly handler: NatsEndpointHandler) {
+    constructor(readonly handler: NatsRequestHandler) {
         super()
     }
 

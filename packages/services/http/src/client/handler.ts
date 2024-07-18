@@ -1,10 +1,10 @@
 import { Abstract } from '@tsdi/ioc';
-import { ConfigableHandler } from '@tsdi/core';
+import { ClientHandler } from '@tsdi/common/client';
 import { HttpEvent, HttpRequest } from '@tsdi/common/http';
 import { HttpClientOpts } from './options';
 
 
 @Abstract()
-export abstract class HttpHandler extends ConfigableHandler<HttpRequest<any>, HttpEvent<any>, HttpClientOpts> {
+export abstract class HttpHandler extends ClientHandler<HttpRequest<any>, HttpEvent<any>, HttpClientOpts> {
 
 }

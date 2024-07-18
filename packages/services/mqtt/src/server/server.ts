@@ -5,7 +5,7 @@ import { MircoServRouters, RequestContext, Server, TransportSession, TransportSe
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Client, connect } from 'mqtt';
 import { MqttServiceOpts } from './options';
-import { MqttEndpointHandler } from './handler';
+import { MqttRequestHandler } from './handler';
 
 
 /**
@@ -21,7 +21,7 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
     private mqtt?: Client | null;
     private _session?: TransportSession<Client>;
 
-    constructor(readonly handler: MqttEndpointHandler
+    constructor(readonly handler: MqttRequestHandler
     ) {
         super();
     }

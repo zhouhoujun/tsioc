@@ -1,8 +1,7 @@
 import { Abstract, Injector } from '@tsdi/ioc';
-import { Message } from '@tsdi/common';
 import { BaseTransportSession, FileAdapter, IncomingFactory, MimeAdapter, OutgoingFactory } from '@tsdi/common/transport';
 import { Observable, Subscription, first, merge, mergeMap, takeUntil } from 'rxjs';
-import { RequestHandler } from './RequestHandler';
+import { AbstractRequestHandler } from './AbstractRequestHandler';
 import { RequestContext, RequestContextFactory } from './RequestContext';
 import { ServerOpts } from './Server';
 import { AcceptsPriority } from './accepts';
@@ -38,7 +37,7 @@ export abstract class TransportSession<TSocket = any, TOptions extends ServerOpt
      */
     abstract get fileAdapter(): FileAdapter;
 
-    listen(handler: RequestHandler, destroy$?: Observable<any>): Subscription {
+    listen(handler: AbstractRequestHandler, destroy$?: Observable<any>): Subscription {
         return this.receive().pipe(
             takeUntil(destroy$ ? merge(this.destroy$, destroy$).pipe(first()) : this.destroy$),
             mergeMap(request => handler.handle(request))

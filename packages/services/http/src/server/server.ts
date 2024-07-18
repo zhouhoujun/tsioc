@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, ModuleLoader } from '@tsdi/core';
 import { HTTP_LISTEN_OPTS, ListenService } from '@tsdi/common';
 import { InternalServerExecption } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { BindServerEvent, CONTENT_DISPOSITION_TOKEN, MiddlewareHandler, MiddlewareLike, MiddlewareService, Server, TransportSessionFactory } from '@tsdi/endpoints';
+import { BindServerEvent, CONTENT_DISPOSITION_TOKEN, DefaultMiddlewareHandler, MiddlewareLike, MiddlewareService, Server, TransportSessionFactory } from '@tsdi/endpoints';
 import { Subject, lastValueFrom } from 'rxjs';
 import { ListenOptions } from 'net';
 import * as http from 'http';
@@ -11,7 +11,7 @@ import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
 import { HttpServerOpts } from './options';
-import { HttpEndpointHandler } from './handler';
+import { HttpRequestHandler } from './handler';
 import { HttpContext } from './context';
 
 /**
@@ -23,7 +23,7 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
     @InjectLog() logger!: Logger;
     private destroy$: Subject<void>;
 
-    constructor(readonly handler: HttpEndpointHandler) {
+    constructor(readonly handler: HttpRequestHandler) {
         super()
         this.destroy$ = new Subject();
     }
@@ -37,7 +37,7 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
     _server?: http2.Http2Server | http.Server | https.Server | null;
 
     use(middlewares: ProvdierOf<MiddlewareLike> | ProvdierOf<MiddlewareLike>[], order?: number | undefined): this {
-        const endpoint = this.handler as MiddlewareHandler<HttpContext, HttpServerOpts>;
+        const endpoint = this.handler as DefaultMiddlewareHandler<HttpContext, HttpServerOpts>;
         if (isFunction(endpoint.use)) {
             endpoint.use(middlewares, order);
         } else {

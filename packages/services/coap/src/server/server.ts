@@ -4,7 +4,7 @@ import { BindListenning, LOCALHOST } from '@tsdi/common';
 import { Server, TransportSessionFactory } from '@tsdi/endpoints';
 import { Socket, createSocket } from 'dgram';
 import { COAP_SERV_OPTS, CoapServerOpts } from './options';
-import { CoapEndpointHandler } from './handler';
+import { CoapRequestHandler } from './handler';
 import { InternalServerExecption, ev } from '@tsdi/common/transport';
 
 /**
@@ -16,7 +16,7 @@ export class CoapServer extends Server implements BindListenning {
     @InjectLog() logger!: Logger;
     protected isSecure = false;
     constructor(
-        readonly handler: CoapEndpointHandler,
+        readonly handler: CoapRequestHandler,
         @Inject(COAP_SERV_OPTS) protected options: CoapServerOpts) {
         super()
     }

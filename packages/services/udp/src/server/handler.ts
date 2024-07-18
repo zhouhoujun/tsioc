@@ -1,9 +1,9 @@
 import { Abstract } from '@tsdi/ioc';
-import { EndpointHandler, RequestContext } from '@tsdi/endpoints';
+import { AbstractRequestHandler, RequestContext } from '@tsdi/endpoints';
 import { UdpServerOpts } from './options';
 
 
 @Abstract()
-export abstract class UdpEndpointHandler extends EndpointHandler<RequestContext, UdpServerOpts> {
+export abstract class UdpRequestHandler extends AbstractRequestHandler<RequestContext, UdpServerOpts> {
 
 }

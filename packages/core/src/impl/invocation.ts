@@ -2,7 +2,7 @@ import { Class, EMPTY_OBJ, Injectable, Injector, InvocationContext, OperationInv
 import { Observable, isObservable, lastValueFrom, of } from 'rxjs';
 import { Backend } from '../Handler';
 import { FnHandler } from '../handlers/handler';
-import { ConfigableHandler } from '../handlers/configable';
+import { ConfigableHandler } from '../handlers/configable.impl';
 import { ResultValue } from '../handlers/ResultValue';
 import { Context, HandlerContext } from '../handlers/context';
 import {

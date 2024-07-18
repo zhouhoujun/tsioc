@@ -1,11 +1,11 @@
 import { Abstract } from '@tsdi/ioc';
-import { EndpointHandler, RequestContext } from '@tsdi/endpoints';
+import { AbstractRequestHandler, RequestContext } from '@tsdi/endpoints';
 import { WsServerOpts } from './options';
 
 /**
- * ws endpoint handler.
+ * ws request handler.
  */
 @Abstract()
-export abstract class WsEndpointHandler extends EndpointHandler<RequestContext, WsServerOpts> {
+export abstract class WsRequestHandler extends AbstractRequestHandler<RequestContext, WsServerOpts> {
 
 }

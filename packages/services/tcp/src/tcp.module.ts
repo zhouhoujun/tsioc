@@ -10,7 +10,7 @@ import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS } from './client/options';
 import { TcpHandler } from './client/handler';
 import { TcpServer } from './server/server';
 import { TCP_MIDDLEWARES, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS } from './server/options';
-import { TcpEndpointHandler } from './server/handler';
+import { TcpRequestHandler } from './server/handler';
 import { TcpMessage, TcpMessageFactory } from './message';
 import { TcpClientIncoming, TcpClientIncomingFactory, TcpIncoming, TcpIncomingFactory } from './incoming';
 import { TcpOutgoing, TcpOutgoingFactory } from './outgoing';
@@ -75,7 +75,7 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                 transport: 'tcp',
                 microservice: true,
                 serverType: TcpServer,
-                handlerType: TcpEndpointHandler,
+                handlerType: TcpRequestHandler,
                 defaultOpts: {
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {
@@ -111,7 +111,7 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
             useValue: {
                 transport: 'tcp',
                 serverType: TcpServer,
-                handlerType: TcpEndpointHandler,
+                handlerType: TcpRequestHandler,
                 defaultOpts: {
                     listenOpts: { port: 3000, host: LOCALHOST },
                     transportOpts: {

@@ -5,36 +5,28 @@ import {
 } from '@tsdi/common/transport';
 import { InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
 import {
-    Arrayify, EMPTY, EMPTY_OBJ, Injector, Module,
-    ModuleRef,
-    ModuleType,
-    ModuleWithProviders,
-    ProvdierOf,
-    ProviderType,
-    Type,
-    isArray,
-    isNil,
-    lang,
-    toProvider,
-    tokenId
+    Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleRef, ModuleType, ModuleWithProviders, 
+    ProvdierOf, ProviderType, Type, isArray, isNil, lang, toProvider, tokenId
 } from '@tsdi/ioc';
-import { EndpointHandler, createEndpoint } from './EndpointHandler';
 import { RequestContextFactory } from './RequestContext';
 import { Server, ServerOpts } from './Server';
 import { Session } from './Session';
+import { TransportSessionFactory } from './transport.session';
+import { EndpointTypedRespond } from './typed.respond';
+import { AbstractRequestHandler } from './AbstractRequestHandler';
+import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, LoggerInterceptor } from './interceptors';
+import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
+import { MiddlewareOpts } from './middleware/middleware.endpoint';
+import { HybridRouter } from './router/router.hybrid';
 import { REGISTER_SERVICES, SetupServices } from './SetupServices';
 import { ServerEndpointCodingsHanlders } from './codings/codings.handlers';
 import { ExecptionFinalizeFilter } from './execption.filter';
 import { DefaultExecptionHandlers } from './execption.handlers';
 import { FinalizeFilter } from './finalize.filter';
+import { createRequestHandler } from './impl/request.handler';
 import { DefaultTransportSessionFactory } from './impl/default.session';
 import { RequestContextFactoryImpl } from './impl/request.context';
-import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, LoggerInterceptor } from './interceptors';
-import { MiddlewareOpts, createMiddlewareEndpoint } from './middleware/middleware.endpoint';
-import { HybridRouter } from './router/router.hybrid';
-import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
-import { TransportSessionFactory } from './transport.session';
-import { EndpointTypedRespond } from './typed.respond';
+import { createMiddlewareEndpoint } from './impl/middleware';
 
 
 
@@ -130,7 +122,7 @@ export interface ServerModuleOpts extends ServerConfig {
     /**
      * server endpoint handler type
      */
-    handlerType: Type<EndpointHandler>;
+    handlerType: Type<AbstractRequestHandler>;
     /**
      * server default options.
      */
@@ -311,7 +303,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     provide: moduleOpts.handlerType,
                     useFactory: (injector: Injector) => {
                         const opts = lang.deepClone(serverOpts) as ServerOpts & MiddlewareOpts;
-                        return (!moduleOpts.microservice && opts.middlewaresToken && opts.middlewares) ? createMiddlewareEndpoint(injector, opts) : createEndpoint(injector, opts)
+                        return (!moduleOpts.microservice && opts.middlewaresToken && opts.middlewares) ? createMiddlewareEndpoint(injector, opts) : createRequestHandler(injector, opts)
                     },
                     deps: [Injector]
                 });

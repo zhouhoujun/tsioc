@@ -16,8 +16,8 @@ export * from './router/router.module';
 export * from './metadata';
 export * from './content';
 export * from './transport.session';
-export * from './EndpointHandler';
 export * from './RequestContext';
+export * from './AbstractRequestHandler';
 export * from './RequestHandler';
 export * from './RestfulRequestContext';
 
@@ -38,6 +38,8 @@ export * from './finalize.filter';
 
 export * from './execption.filter';
 
+export * from './impl/request.handler';
+export * from './impl/middleware';
 
 export * from './impl/micro.router';
 export * from './impl/route.handler';

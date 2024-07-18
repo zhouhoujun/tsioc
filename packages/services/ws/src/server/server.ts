@@ -8,7 +8,7 @@ import { Server as SocketServer, WebSocketServer, createWebSocketStream } from '
 import { Subject, Subscription, first, fromEvent, merge } from 'rxjs';
 import * as tls from 'tls';
 import { WS_BIND_FILTERS, WS_BIND_GUARDS, WS_BIND_INTERCEPTORS, WsServerOpts } from './options';
-import { WsEndpointHandler } from './handler';
+import { WsRequestHandler } from './handler';
 
 
 /**
@@ -24,7 +24,7 @@ export class WsServer extends Server<RequestContext, WsServerOpts> {
 
     private destroy$: Subject<void>;
 
-    constructor(readonly handler: WsEndpointHandler) {
+    constructor(readonly handler: WsRequestHandler) {
         super();
         this.destroy$ = new Subject();
     }

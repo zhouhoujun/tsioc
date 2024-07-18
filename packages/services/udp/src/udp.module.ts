@@ -16,7 +16,7 @@ import { defaultMaxSize } from './consts';
 import { UdpClientIncoming, UdpClientIncomingFactory, UdpIncoming, UdpIncomingFactory } from './incoming';
 import { UdpMessage, UdpMessageFactory, UdpMessageReader, UdpMessageWriter } from './message';
 import { UdpOutgoing, UdpOutgoingFactory } from './outgoing';
-import { UdpEndpointHandler } from './server/handler';
+import { UdpRequestHandler } from './server/handler';
 import { UDP_SERV_FILTERS, UDP_SERV_GUARDS, UDP_SERV_INTERCEPTORS } from './server/options';
 import { UdpServer } from './server/server';
 
@@ -46,7 +46,7 @@ import { UdpServer } from './server/server';
                         maxSize: defaultMaxSize,
                         defaultMethod: '*',
                         serializeIgnores: ['remoteInfo'],
-                        encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof UdpMessage, [[UdpMessage, Packet]]) },
+                        encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof UdpMessage, [[UdpRequest, Packet]]) },
                         decodingsAdapter: { useValue: new CustomCodingsAdapter(isResponseEvent, [[UdpClientIncoming, ClientIncomingPacket], [UdpMessage, Message]]) },
                     }
                 }
@@ -59,7 +59,7 @@ import { UdpServer } from './server/server';
                 transport: 'udp',
                 microservice: true,
                 serverType: UdpServer,
-                handlerType: UdpEndpointHandler,
+                handlerType: UdpRequestHandler,
                 defaultOpts: {
                     messageReader: UdpMessageReader,
                     messageWriter: UdpMessageWriter,

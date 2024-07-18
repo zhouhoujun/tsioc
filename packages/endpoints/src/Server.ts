@@ -2,13 +2,13 @@ import { HybirdTransport, MessageFactory, PatternFormatter } from '@tsdi/common'
 import { IncomingFactory, MessageReader, MessageWriter, OutgoingFactory, StatusAdapter, TransportOpts } from '@tsdi/common/transport';
 import { ApplicationEvent, CanActivate, Filter, HandlerService, Interceptor, PipeTransform, Runner, Shutdown } from '@tsdi/core';
 import { Abstract, ProvdierOf, StaticProvider } from '@tsdi/ioc';
-import { EndpointHandler, EndpointOptions } from './EndpointHandler';
 import { RequestContext, RequestContextFactory } from './RequestContext';
-import { RequestHandler } from './RequestHandler';
+import { RequestHandlerOptions, AbstractRequestHandler } from './AbstractRequestHandler';
 import { SessionOptions } from './Session';
 import { ContentOptions } from './interceptors/content';
 import { RouteOpts } from './router/router.module';
 import { TransportSessionFactory } from './transport.session';
+import { RequestHandler } from './RequestHandler';
 
 
 export interface ProxyOpts {
@@ -19,7 +19,7 @@ export interface ProxyOpts {
 /**
  * server options
  */
-export interface ServerOpts<TSerOpts = any> extends EndpointOptions<any> {
+export interface ServerOpts<TSerOpts = any> extends RequestHandlerOptions<any> {
     /**
      * request timeout.
      */
@@ -131,9 +131,9 @@ export abstract class MicroService<TRequest extends RequestContext = RequestCont
 export abstract class Server<TRequest extends RequestContext = RequestContext, TOptions extends ServerOpts = ServerOpts> extends MicroService implements HandlerService {
 
     /**
-     * service endpoint handler.
+     * service request handler.
      */
-    abstract get handler(): EndpointHandler<TRequest, TOptions>;
+    abstract get handler(): AbstractRequestHandler<TRequest, TOptions>;
 
     getOptions(): TOptions {
         return this.handler.getOptions()

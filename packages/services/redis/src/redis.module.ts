@@ -8,7 +8,7 @@ import { REDIS_CLIENT_FILTERS, REDIS_CLIENT_INTERCEPTORS } from './client/option
 import { RedisHandler } from './client/handler';
 import { RedisServer } from './server/server';
 import { REDIS_SERV_FILTERS, REDIS_SERV_GUARDS, REDIS_SERV_INTERCEPTORS } from './server/options';
-import { RedisEndpointHandler } from './server/handler';
+import { RedisRequestHandler } from './server/handler';
 import { RedisPatternFormatter } from './pattern';
 // import { RedisTransportSessionFactory } from './redis.session';
 import { RedisMessage, RedisMessageFactory, RedisMessageReader, RedisMessageWriter } from './message';
@@ -60,7 +60,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                 transport: 'redis',
                 microservice: true,
                 serverType: RedisServer,
-                handlerType: RedisEndpointHandler,
+                handlerType: RedisRequestHandler,
                 defaultOpts: {
                     encoding: 'utf8',
                     // messageReader: RedisMessageReader,

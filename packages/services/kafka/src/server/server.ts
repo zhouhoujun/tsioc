@@ -6,7 +6,7 @@ import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
 import { KafkaTransportSession } from './kafka.session';
 import { DEFAULT_BROKERS, KafkaTransportOpts } from '../const';
 import { KafkaServerOptions } from './options';
-import { KafkaEndpointHandler } from './handler';
+import { KafkaRequestHandler } from './handler';
 import { ServiceUnavailableExecption } from '@tsdi/common/transport';
 import { Subject, fromEvent, merge } from 'rxjs';
 
@@ -28,7 +28,7 @@ export class KafkaServer extends Server<RequestContext, KafkaServerOptions> {
 
     private destroy$: Subject<void>;
 
-    constructor(readonly handler: KafkaEndpointHandler) {
+    constructor(readonly handler: KafkaRequestHandler) {
         super();
         this.destroy$ = new Subject();
     }

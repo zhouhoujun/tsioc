@@ -4,7 +4,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import { MircoServRouters, RequestContext, Server, TransportSession, TransportSessionFactory } from '@tsdi/endpoints';
 import { ev } from '@tsdi/common/transport';
 import Redis from 'ioredis';
-import { RedisEndpointHandler } from './handler';
+import { RedisRequestHandler } from './handler';
 import { RedisServerOpts } from './options';
 import { Subject, first, fromEvent, merge } from 'rxjs';
 import { ReidsSocket } from '../message';
@@ -23,7 +23,7 @@ export class RedisServer extends Server<RequestContext, RedisServerOpts> {
     private subscriber: Redis | null = null;
     private publisher: Redis | null = null;
 
-    constructor(readonly handler: RedisEndpointHandler) {
+    constructor(readonly handler: RedisRequestHandler) {
         super();
         this.destroy$ = new Subject();
     }

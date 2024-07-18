@@ -6,7 +6,7 @@ import { RequestContext, Server, TransportSessionFactory } from '@tsdi/endpoints
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { Subject, first, fromEvent, merge } from 'rxjs';
 import { UdpServerOpts } from './options';
-import { UdpEndpointHandler } from './handler';
+import { UdpRequestHandler } from './handler';
 import { defaultMaxSize } from '../consts';
 
 
@@ -20,7 +20,7 @@ export class UdpServer extends Server<RequestContext, UdpServerOpts> {
 
     private destroy$: Subject<void>;
 
-    constructor(readonly handler: UdpEndpointHandler) {
+    constructor(readonly handler: UdpRequestHandler) {
         super();
         this.destroy$ = new Subject();
     }

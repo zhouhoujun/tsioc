@@ -8,7 +8,7 @@ import { AmqpHandler } from './client/handler';
 import { AmqpTransportSessionFactory } from './amqp.session';
 import { AmqpServer } from './server/server';
 import { AMQP_SERV_FILTERS, AMQP_SERV_GUARDS, AMQP_SERV_INTERCEPTORS } from './server/options';
-import { AmqpEndpointHandler } from './server/handler';
+import { AmqpRequestHandler } from './server/handler';
 
 
 
@@ -49,7 +49,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                 transport: 'amqp',
                 microservice: true,
                 serverType: AmqpServer,
-                handlerType: AmqpEndpointHandler,
+                handlerType: AmqpRequestHandler,
                 defaultOpts: {
                     serverOpts: 'amqp://localhost',
                     transportOpts: {

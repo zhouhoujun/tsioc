@@ -3,12 +3,12 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService } from '@tsdi/common';
 import { InternalServerExecption, ev } from '@tsdi/common/transport';
-import { BindServerEvent, MiddlewareHandler, MiddlewareLike, MiddlewareService, RequestContext, Server, TransportSessionFactory } from '@tsdi/endpoints';
+import { BindServerEvent, DefaultMiddlewareHandler, MiddlewareLike, MiddlewareService, RequestContext, Server, TransportSessionFactory } from '@tsdi/endpoints';
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
 import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TcpServerOpts } from './options';
-import { TcpEndpointHandler } from './handler';
+import { TcpRequestHandler } from './handler';
 
 
 
@@ -27,7 +27,7 @@ export class TcpServer extends Server<RequestContext, TcpServerOpts> implements 
     private destroy$: Subject<void>;
 
     constructor(
-        readonly handler: TcpEndpointHandler,
+        readonly handler: TcpRequestHandler,
     ) {
         super();
 
@@ -36,7 +36,7 @@ export class TcpServer extends Server<RequestContext, TcpServerOpts> implements 
     }
 
     use(middlewares: ProvdierOf<MiddlewareLike> | ProvdierOf<MiddlewareLike>[], order?: number | undefined): this {
-        const endpoint = this.handler as MiddlewareHandler;
+        const endpoint = this.handler as DefaultMiddlewareHandler;
         if (isFunction(endpoint.use)) {
             endpoint.use(middlewares, order);
         } else {
