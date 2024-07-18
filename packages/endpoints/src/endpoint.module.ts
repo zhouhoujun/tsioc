@@ -13,7 +13,6 @@ import { Server, ServerOpts } from './Server';
 import { Session } from './Session';
 import { TransportSessionFactory } from './transport.session';
 import { EndpointTypedRespond } from './typed.respond';
-import { AbstractRequestHandler } from './AbstractRequestHandler';
 import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, LoggerInterceptor } from './interceptors';
 import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
 import { MiddlewareOpts } from './middleware/middleware.endpoint';
@@ -27,6 +26,7 @@ import { createRequestHandler } from './impl/request.handler';
 import { DefaultTransportSessionFactory } from './impl/default.session';
 import { RequestContextFactoryImpl } from './impl/request.context';
 import { createMiddlewareEndpoint } from './impl/middleware';
+import { RequestHandler } from './RequestHandler';
 
 
 
@@ -120,9 +120,9 @@ export interface ServerModuleOpts extends ServerConfig {
      */
     serverType: Type<Server>;
     /**
-     * server endpoint handler type
+     * server request handler type
      */
-    handlerType: Type<AbstractRequestHandler>;
+    handlerType: Type<RequestHandler>;
     /**
      * server default options.
      */

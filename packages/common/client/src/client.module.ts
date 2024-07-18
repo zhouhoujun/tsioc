@@ -12,7 +12,7 @@ import {
     isNil,
     lang, toProvider, tokenId
 } from '@tsdi/ioc';
-import { Client } from './Client';
+import { AbstractClient } from './AbstractClient';
 import { ClientBackend } from './backend';
 import { ClientCodingsModule } from './codings/client.codings.module';
 import { ClientEndpointCodingsHanlders } from './codings/codings.handlers';
@@ -57,11 +57,11 @@ export interface ClientModuleOpts extends ClientModuleConfig {
     /**
      * client type
      */
-    clientType: Type<Client>;
+    clientType: Type<AbstractClient>;
     /**
-     * client providers
+     * client provider
      */
-    clientProvider?: ProvdierOf<Client>;
+    clientProvider?: ProvdierOf<AbstractClient>;
     /**
      * client handler type.
      */
@@ -94,7 +94,7 @@ export interface ClientTokenOpts {
     /**
      * client token.
      */
-    client?: Token<Client>;
+    client?: Token<AbstractClient>;
 }
 
 

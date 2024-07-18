@@ -1,10 +1,11 @@
 import { tokenId } from '@tsdi/ioc';
 import { ExecptionFilter, Interceptor } from '@tsdi/core';
-import { ResponseEvent, AbstractRequest } from '@tsdi/common';
+import { ResponseEvent } from '@tsdi/common';
 import { ClientOpts } from '@tsdi/common/client';
 import { TransportOpts } from '@tsdi/common/transport';
 import { OptionName } from 'coap-packet';
 import { OptionValue } from 'coap';
+import { CoapRequest } from './request';
 
 
 export interface CoapTransportOpts extends TransportOpts {
@@ -44,7 +45,7 @@ export const COAP_CLIENT_OPTS = tokenId<CoapClientOpts>('COAP_CLIENT_OPTS');
 /**
  * Coap client interceptors token.
  */
-export const COAP_CLIENT_INTERCEPTORS = tokenId<Interceptor<AbstractRequest<any>, ResponseEvent<any>[]>>('COAP_INTERCEPTORS');
+export const COAP_CLIENT_INTERCEPTORS = tokenId<Interceptor<CoapRequest<any>, ResponseEvent<any>[]>>('COAP_INTERCEPTORS');
 
 /**
  * Coap client filters token.

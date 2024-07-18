@@ -1,4 +1,5 @@
 export * from './connect';
+export * from './client/request';
 export * from './client/options';
 export * from './client/handler';
 export * from './client/client';

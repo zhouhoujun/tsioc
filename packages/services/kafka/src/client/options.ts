@@ -1,9 +1,10 @@
 import { Token, tokenId } from '@tsdi/ioc';
 import { Filter, Interceptor } from '@tsdi/core';
-import { Pattern, TransportEvent, TransportRequest } from '@tsdi/common';
+import { Pattern, ResponseEvent } from '@tsdi/common';
 import { ClientOpts } from '@tsdi/common/client';
 import { ConsumerConfig, KafkaConfig, ProducerConfig } from 'kafkajs';
 import { KafkaTransportOpts } from '../const';
+import { KafkaRequest } from './request';
 
 
 export interface KafkaClientOpts extends ClientOpts<KafkaConfig> {
@@ -24,7 +25,7 @@ export interface KafkaClientOpts extends ClientOpts<KafkaConfig> {
 /**
  * Kafka client interceptors.
  */
-export const KAFKA_CLIENT_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('KAFKA_CLIENT_INTERCEPTORS');
+export const KAFKA_CLIENT_INTERCEPTORS = tokenId<Interceptor<KafkaRequest<any>, ResponseEvent<any>>[]>('KAFKA_CLIENT_INTERCEPTORS');
 /**
  * Kafka client filters.
  */

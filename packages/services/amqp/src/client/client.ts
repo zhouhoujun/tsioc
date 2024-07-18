@@ -1,16 +1,17 @@
-import { Injectable, InvocationContext, lang } from '@tsdi/ioc';
-import { TransportEvent, TransportRequest } from '@tsdi/common';
+import { Injectable, InvocationContext, isString, lang } from '@tsdi/ioc';
+import { Pattern, RequestInitOpts, ResponseEvent } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ev } from '@tsdi/common/transport';
-import {  Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import * as amqp from 'amqplib';
 import { AmqpClientOpts } from './options';
 import { AmqpHandler } from './handler';
+import { AmqpRequest } from './request';
 
 
 
 @Injectable()
-export class AmqpClient extends Client<TransportRequest, TransportEvent, AmqpClientOpts> {
+export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<any>, AmqpClientOpts> {
 
     @InjectLog()
     private logger!: Logger;
@@ -59,7 +60,7 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent, AmqpCli
         this._channel = await conn.createChannel();
         const options = this.getOptions();
         const transportOpts = options.transportOpts!;
-        
+
         const injector = this.handler.injector;
 
         if (!transportOpts.noAssert) {
@@ -93,9 +94,19 @@ export class AmqpClient extends Client<TransportRequest, TransportEvent, AmqpCli
     }
 
     protected override initContext(context: InvocationContext<any>): void {
-        context.setValue(Client, this);
+        context.setValue(AbstractClient, this);
         context.setValue(ClientTransportSession, this._session);
     }
+
+
+    protected createRequest(pattern: Pattern, options: RequestInitOpts): AmqpRequest<any> {
+        if (isString(pattern)) {
+            return new AmqpRequest(pattern, null, options);
+        } else {
+            return new AmqpRequest(this.formatter.format(pattern), pattern, options);
+        }
+    }
+
 
     protected async onShutdown(): Promise<void> {
         await this._session?.destroy();

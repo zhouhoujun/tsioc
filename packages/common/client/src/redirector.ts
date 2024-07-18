@@ -3,7 +3,7 @@ import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
 import { HeaderMappings, UrlRequest, RequestMethod, IHeaders } from '@tsdi/common';
 import { BadRequestExecption, StreamAdapter, StatusAdapter, Redirector } from '@tsdi/common/transport';
 import { Observable, Observer, Subscription } from 'rxjs';
-import { Client } from './Client';
+import { AbstractClient } from './AbstractClient';
 
 
 @Injectable()
@@ -95,7 +95,7 @@ export class UrlRedirector implements Redirector {
                         reqhdrs = reqhdrs.set('referrer-policy', responseReferrerPolicy);
                     }
                     // HTTP-redirect fetch step 15
-                    sub = req.context.get(Client).send(locationURL, {
+                    sub = req.context.get(AbstractClient).send(locationURL, {
                         method,
                         headers: reqhdrs,
                         body,

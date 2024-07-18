@@ -1,6 +1,6 @@
-import { Inject, Injectable, InvocationContext, isFunction } from '@tsdi/ioc';
-import { TransportEvent, TransportRequest, patternToPath } from '@tsdi/common';
-import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { Inject, Injectable, InvocationContext, isFunction, isString } from '@tsdi/ioc';
+import { Pattern, RequestInitOpts, ResponseEvent, patternToPath } from '@tsdi/common';
+import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { MircoServRouters } from '@tsdi/endpoints';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, Producer, logLevel } from 'kafkajs';
@@ -9,12 +9,12 @@ import { KafkaClientOpts } from './options';
 import { DEFAULT_BROKERS, KafkaTransportOpts } from '../const';
 import { KafkaReplyPartitionAssigner } from '../kafka.assigner';
 import { KafkaClientTransportSession } from './session';
+import { KafkaRequest } from './request';
 
 
 
 @Injectable()
-export class KafkaClient extends Client<TransportRequest, TransportEvent, KafkaClientOpts> {
-
+export class KafkaClient extends AbstractClient<KafkaRequest<any>, ResponseEvent<any>, KafkaClientOpts> {
 
     @InjectLog()
     private logger!: Logger;
@@ -143,9 +143,18 @@ export class KafkaClient extends Client<TransportRequest, TransportEvent, KafkaC
     }
 
     protected override initContext(context: InvocationContext<any>): void {
-        context.setValue(Client, this);
+        context.setValue(AbstractClient, this);
         context.setValue(ClientTransportSession, this._session)
     }
+
+    protected createRequest(pattern: Pattern, options: RequestInitOpts): KafkaRequest<any> {
+        if (isString(pattern)) {
+            return new KafkaRequest(pattern, null, options);
+        } else {
+            return new KafkaRequest(this.formatter.format(pattern), pattern, options);
+        }
+    }
+
 
     protected async onShutdown(): Promise<void> {
         if (this.producer) {

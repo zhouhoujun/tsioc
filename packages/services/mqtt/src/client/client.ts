@@ -1,19 +1,21 @@
-import { EMPTY_OBJ, Inject, Injectable, InvocationContext, promisify } from '@tsdi/ioc';
-import { TransportEvent, TransportRequest } from '@tsdi/common';
-import { DisconnectExecption, OfflineExecption, ev } from '@tsdi/common/transport';
-import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { EMPTY_OBJ, Inject, Injectable, InvocationContext, isString, promisify } from '@tsdi/ioc';
+import { DisconnectExecption, OfflineExecption } from '@tsdi/core';
+import { Pattern, RequestInitOpts, ResponseEvent } from '@tsdi/common';
+import { ev } from '@tsdi/common/transport';
+import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import * as mqtt from 'mqtt';
 import { Observable } from 'rxjs';
 import { MqttHandler } from './handler';
 import { MqttClientOpts } from './options';
+import { MqttRequest } from './request';
 
 
 /**
  * mqtt client.
  */
 @Injectable()
-export class MqttClient extends Client<TransportRequest, TransportEvent, MqttClientOpts> {
+export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<any>, MqttClientOpts> {
 
     @InjectLog()
     private logger?: Logger;
@@ -89,9 +91,19 @@ export class MqttClient extends Client<TransportRequest, TransportEvent, MqttCli
     }
 
     protected override initContext(context: InvocationContext<any>): void {
-        context.setValue(Client, this);
+        context.setValue(AbstractClient, this);
         context.setValue(ClientTransportSession, this._session);
     }
+
+
+    protected createRequest(pattern: Pattern, options: RequestInitOpts): MqttRequest<any> {
+        if (isString(pattern)) {
+            return new MqttRequest(pattern, null, options);
+        } else {
+            return new MqttRequest(this.formatter.format(pattern), pattern, options);
+        }
+    }
+
 
     protected override async onShutdown(): Promise<void> {
         if (!this.mqtt) return;

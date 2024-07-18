@@ -1,6 +1,6 @@
 import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
 import { Pattern, ResponseEvent } from '@tsdi/common';
-import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { UdpHandler } from './handler';
 import { UdpClientOpts } from './options';
@@ -10,7 +10,7 @@ import { UdpRequest, UdpRequestInitOpts } from './request';
 
 
 @Injectable()
-export class UdpClient extends Client<UdpRequest<any>, ResponseEvent<any>, UdpClientOpts> {
+export class UdpClient extends AbstractClient<UdpRequest<any>, ResponseEvent<any>, UdpClientOpts> {
     private socket?: Socket | null;
     private session?: ClientTransportSession | null;
 
@@ -39,7 +39,7 @@ export class UdpClient extends Client<UdpRequest<any>, ResponseEvent<any>, UdpCl
     }
 
     protected initContext(context: InvocationContext<any>): void {
-        context.setValue(Client, this);
+        context.setValue(AbstractClient, this);
         context.setValue(UdpClient, this);
         context.setValue(ClientTransportSession, this.session)
     }

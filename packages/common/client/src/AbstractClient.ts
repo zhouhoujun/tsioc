@@ -8,10 +8,10 @@ import { ClientOpts } from './options';
 
 
 /**
- * transport client. use to request text, stream, blob, arraybuffer and json.
+ * abstract client. use to request text, stream, blob, arraybuffer and json.
  */
 @Abstract()
-export abstract class Client<TRequest extends AbstractRequest<any> = AbstractRequest<any>, TResponse extends ResponseEvent<any> = ResponseEvent<any>, TOptions extends ClientOpts = ClientOpts> {
+export abstract class AbstractClient<TRequest extends AbstractRequest<any> = AbstractRequest<any>, TResponse extends ResponseEvent<any> = ResponseEvent<any>, TOptions extends ClientOpts = ClientOpts> {
 
     /**
      * client handler

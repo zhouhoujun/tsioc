@@ -1,17 +1,18 @@
-import { Inject, Injectable, InvocationContext } from '@tsdi/ioc';
-import { AbstractRequest, Pattern, ResponseEvent, UrlRequestInitOpts } from '@tsdi/common';
-import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
+import { Pattern, RequestInitOpts, ResponseEvent } from '@tsdi/common';
+import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { Socket, createSocket, SocketOptions } from 'dgram';
-import { COAP_CLIENT_OPTS, CoapClientOpts } from './options';
+import { CoapClientOpts } from './options';
 import { CoapHandler } from './handler';
 import { defaultMaxSize } from '../trans';
+import { CoapRequest } from './request';
 
 
 /**
  * COAP Client.
  */
 @Injectable()
-export class CoapClient extends Client<AbstractRequest<any>, ResponseEvent<any, string>, CoapClientOpts> {
+export class CoapClient extends AbstractClient<CoapRequest<any>, ResponseEvent<any, string>, CoapClientOpts> {
     private socket?: Socket | null;
     private session?: ClientTransportSession | null;
 
@@ -43,11 +44,15 @@ export class CoapClient extends Client<AbstractRequest<any>, ResponseEvent<any, 
     }
 
     protected initContext(context: InvocationContext<any>): void {
-        context.setValue(Client, this);
+        context.setValue(AbstractClient, this);
         context.setValue(ClientTransportSession, this.session)
     }
 
-    protected createRequest(pattern: Pattern, options: UrlRequestInitOpts) {
-        throw new Error('Method not implemented.');
+    protected createRequest(pattern: Pattern, options: RequestInitOpts) {
+        if (isString(pattern)) {
+            return new CoapRequest(pattern, null, options);
+        } else {
+            return new CoapRequest(this.formatter.format(pattern), pattern, options);
+        }
     }
 }

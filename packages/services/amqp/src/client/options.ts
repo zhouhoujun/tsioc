@@ -1,9 +1,10 @@
 import { tokenId } from '@tsdi/ioc';
 import { Interceptor, Filter } from '@tsdi/core';
-import { TransportEvent, TransportRequest } from '@tsdi/common';
+import { ResponseEvent } from '@tsdi/common';
 import { ClientOpts } from '@tsdi/common/client';
 import * as amqp from 'amqplib';
 import { AmqpSessionOpts } from '../options';
+import { AmqpRequest } from './request';
 
 
 
@@ -31,7 +32,7 @@ export interface AmqpClientOpts extends ClientOpts<string | amqp.Options.Connect
 /**
  * AMQP client interceptors.
  */
-export const AMQP_CLIENT_INTERCEPTORS = tokenId<Interceptor<TransportRequest, TransportEvent>[]>('AMQP_CLIENT_INTERCEPTORS');
+export const AMQP_CLIENT_INTERCEPTORS = tokenId<Interceptor<AmqpRequest<any>, ResponseEvent<any>>[]>('AMQP_CLIENT_INTERCEPTORS');
 /**
  * AMQP client filters.
  */

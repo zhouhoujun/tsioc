@@ -4,7 +4,7 @@ import {
     RequestParams, Pattern, HttpRequestMethod, RequestInitOpts
 } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
-import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse } from '@tsdi/common/http';
 import { Observable, of } from 'rxjs';
 import * as http from 'http';
@@ -36,7 +36,7 @@ export type HttpReqOptions = HttpRequestOpts & HttpNodeOpts;
  * http client for nodejs
  */
 @Injectable()
-export class Http extends Client<HttpRequest<any>, HttpEvent<any>, HttpClientOpts> {
+export class Http extends AbstractClient<HttpRequest<any>, HttpEvent<any>, HttpClientOpts> {
 
     private session?: ClientTransportSession<http2.ClientHttp2Session | null> | null;
     constructor(readonly handler: HttpHandler) {
@@ -104,7 +104,7 @@ export class Http extends Client<HttpRequest<any>, HttpEvent<any>, HttpClientOpt
     }
 
     protected override initContext(context: InvocationContext<any>): void {
-        context.setValue(Client, this);
+        context.setValue(AbstractClient, this);
         context.setValue(ClientTransportSession, this.session);
     }
 

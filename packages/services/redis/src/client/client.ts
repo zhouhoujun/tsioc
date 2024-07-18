@@ -2,7 +2,7 @@ import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
 import { LOCALHOST, Pattern, RequestInitOpts, ResponseEvent } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ev } from '@tsdi/common/transport';
-import { Client, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import Redis from 'ioredis';
 import { RedisHandler } from './handler';
 import { RedisClientOpts } from './options';
@@ -13,7 +13,7 @@ import { ReidsSocket } from '../message';
  * Redis Client.
  */
 @Injectable()
-export class RedisClient extends Client<RedisRequest<any>, ResponseEvent<any>, RedisClientOpts> {
+export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent<any>, RedisClientOpts> {
 
     @InjectLog()
     private logger!: Logger;
@@ -62,7 +62,7 @@ export class RedisClient extends Client<RedisRequest<any>, ResponseEvent<any>, R
     }
 
     protected override initContext(context: InvocationContext<any>): void {
-        context.setValue(Client, this);
+        context.setValue(AbstractClient, this);
         context.setValue(ClientTransportSession, this._session);
     }
 
