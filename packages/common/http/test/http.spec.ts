@@ -3,17 +3,19 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { BadRequestExecption } from '@tsdi/common/transport';
 import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
-    Middleware, RestfulRequestContext, compose, NEXT, MicroServRouterModule, EndpointModule
+    Middleware, RestfulRequestContext, compose, NEXT, MicroServRouterModule, EndpointModule,
+    RedirectResult,
+    ContentInterceptor,
+    JsonInterceptor,
+    BodyparserInterceptor
 } from '@tsdi/endpoints';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { HttpModule } from '@tsdi/http';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerHttpClientModule } from '@tsdi/platform-server/http';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
-import { HttpClient, HttpClientModule } from '..';
-import { AssetTransportModule, Bodyparser, ContentInterceptor, JsonInterceptor, RedirectResult } from '@tsdi/endpoints/assets';
+import { HttpClient, HttpClientModule } from '../src';
 
 
 @RouteMapping('/device')
@@ -136,8 +138,7 @@ class DeviceStartupHandle implements Middleware {
 
     invoke(ctx: RestfulRequestContext, next: () => Promise<void>): Promise<void> {
 
-        console.log('DeviceStartupHandle.', 'resp:', ctx.args.type, 'req:', ctx.args.type)
-        if (ctx.args.body.type === 'startup') {
+        if (ctx.request.body.type === 'startup') {
             // todo sth.
             const ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceB_state', ret);
@@ -150,7 +151,6 @@ class DeviceStartupHandle implements Middleware {
 class DeviceAStartupHandle implements Middleware {
 
     invoke(ctx: RestfulRequestContext, next: () => Promise<void>): Promise<void> {
-        console.log('DeviceAStartupHandle.', 'resp:', ctx.args.type, 'req:', ctx.args.type)
         if (ctx.args.body.type === 'startup') {
             // todo sth.
             const ret = ctx.get(MyService).dosth();
@@ -198,21 +198,18 @@ class DeviceAModule {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        AssetTransportModule,
-        HttpModule,
         HttpClientModule,
         ServerHttpClientModule,
         EndpointModule.register({
             transport: 'http',
             serverOpts: {
-                interceptors:[
+                interceptors: [
                     ContentInterceptor,
                     JsonInterceptor,
-                    Bodyparser
+                    BodyparserInterceptor
                 ]
             }
         }),
-        HttpClientModule,
         MicroServRouterModule.forRoot('tcp'),
         ServerHttpClientModule,
         DeviceManageModule,
