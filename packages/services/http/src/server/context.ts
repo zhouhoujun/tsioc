@@ -1,8 +1,7 @@
-import { Injectable, Injector, isArray, isNil, isNumber, isString, lang, promisify } from '@tsdi/ioc';
-import { PipeTransform } from '@tsdi/core';
+import { Injectable, Injector, isArray, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, HeaderMappings, Response } from '@tsdi/common';
-import { MessageExecption, InternalServerExecption, Outgoing, append, parseTokenList, Incoming, StatusAdapter, MimeAdapter, StreamAdapter, FileAdapter, PacketLengthException, ENOENT } from '@tsdi/common/transport';
-import { RestfulRequestContext, RestfulRequestContextFactory, TransportSession, Throwable, AcceptsPriority } from '@tsdi/endpoints';
+import { MessageExecption, InternalServerExecption, Outgoing, append, parseTokenList, Incoming, ENOENT } from '@tsdi/common/transport';
+import { RestfulRequestContext, RestfulRequestContextFactory, TransportSession, Throwable } from '@tsdi/endpoints';
 import * as http from 'http';
 import * as http2 from 'http2';
 import * as assert from 'assert';
@@ -139,24 +138,6 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
     get update(): boolean {
         return this.method === PUT;
     }
-
-    // isAbsoluteUrl(url: string): boolean {
-    //     return httptl.test(url.trim())
-    // }
-
-    // get status(): number {
-    //     return this.response.statusCode
-    // }
-
-    // set status(code: number) {
-    //     if (this.sent) return;
-
-    //     assert(Number.isInteger(code), 'status code must be a number');
-    //     assert(code >= 100 && code <= 999, `invalid status code: ${code}`);
-    //     this._explicitStatus = true;
-    //     this.response.statusCode = code;
-    //     if (this.body && this.vaildator.isEmpty(code)) this.body = null;
-    // }
 
     protected override beforeStatusChanged(code: number): void {
         assert(Number.isInteger(code), 'status code must be a number');

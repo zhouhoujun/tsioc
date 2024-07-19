@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { ResponseFactory, ResponseInitOpts } from '@tsdi/common';
-import { HttpErrorResponse, HttpEvent, HttpHeaderResponse, HttpResponse } from '@tsdi/common/http';
+import { HttpErrorResponse, HttpEvent, HttpResponse } from '@tsdi/common/http';
 
 
 @Injectable()

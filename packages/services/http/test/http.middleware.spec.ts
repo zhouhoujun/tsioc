@@ -1,19 +1,19 @@
 import { Module, isString } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { Application, ApplicationContext } from '@tsdi/core';
+import { ErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor, SetupServices } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
-import { WsClient, WsClientOpts, WsModule } from '@tsdi/ws';
+import { WsClient, WsClientOpts } from '@tsdi/ws';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import * as net from 'net';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Http, HttpModule, HttpServer } from '../src';
+import { Http, HttpServer } from '../src';
 import { SENSORS, WsService } from './demo';
-import { TransportErrorResponse } from '@tsdi/common';
 
 
 
@@ -166,7 +166,7 @@ describe('middleware', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         expect(a.status).toEqual(404);
     });
 
@@ -198,7 +198,7 @@ describe('middleware', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         expect(a.status).toEqual(404);
     });
 
@@ -262,7 +262,7 @@ describe('middleware', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         expect(a.status).toEqual(404);
     });
 

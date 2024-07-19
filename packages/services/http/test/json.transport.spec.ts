@@ -5,7 +5,6 @@ import { ClientModule } from '@tsdi/common/client';
 import { EndpointModule } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
-import { WsModule } from '@tsdi/ws';
 
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -25,7 +24,6 @@ import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModu
         LoggerModule,
         ServerEndpointModule,
         HttpModule,
-        WsModule,
         ClientModule.register([
             {
                 transport: 'ws'

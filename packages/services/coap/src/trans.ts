@@ -1,6 +1,5 @@
 import { isArray, isNumber, isString } from '@tsdi/ioc';
-import { hdr, isBuffer } from '@tsdi/common';
-import { ctype } from '@tsdi/endpoints/assets';
+import { isBuffer, ctype } from '@tsdi/common/transport';
 import { OptionName } from 'coap-packet';
 
 
@@ -16,8 +15,8 @@ export const transforms: Record<string, OptionName> = {
 };
 
 export const ignores = [
-    hdr.LAST_MODIFIED,
-    hdr.CACHE_CONTROL
+    'content-type',
+    'cache-control'
 ].reduce((p, c) => {
     p[c] = true;
     return p;
@@ -30,9 +29,9 @@ const maxage$ = /max-age=\d+/;
 export function transHead(head: string | number | readonly string[] | undefined, field: string): Buffer | string | number | Buffer[] {
 
     switch (field) {
-        case hdr.CONTENT_TYPE:
+        case 'content-type':
             return isString(head) && head.startsWith(ctype.APPL_JSON + ';') ? ctype.APPL_JSON : head as string;
-        case hdr.CACHE_CONTROL:
+        case 'cache-control':
             if (isString(head) && maxage$.test(head)) {
                 const maxAge = head.split(',')[0].trim();
                 return parseInt(maxAge.split('=')[1]);
