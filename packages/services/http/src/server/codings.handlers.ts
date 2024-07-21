@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { PacketOpts } from '@tsdi/common';
+import { PacketOpts, UrlMesage } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
 import { TransportContext } from '@tsdi/common/transport';
 import { HttpIncomings } from './message';
@@ -25,14 +25,16 @@ export class HttpCodingsHandlers {
             type: response.type,
             status: response.statusCode,
             statusMessage: response.statusMessage,
-            headers: response.headers
+            headers: response.headers,
+            data: input.body
         } as PacketOpts;
         
-        if (input.resHeaders.hasContentLength()) {
-            packet.payload = input.body;
-        }
+        // if (input.resHeaders.hasContentLength()) {
+        //     packet.payload = input.body;
+        // }
         
-        return packet;
+        // return packet;
+        return new UrlMesage(input.url, packet)
     }
 
 }
