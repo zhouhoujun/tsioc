@@ -1,4 +1,4 @@
-import { Injector, isArray, isMetadataObject, isString, lang, Modules, Type } from '@tsdi/ioc';
+import { ClassType, Injector, isArray, isMetadataObject, isString, lang, Modules, Type } from '@tsdi/ioc';
 import { LoadType, ModuleLoader, PathModules } from '../ModuleLoader';
 
 /**

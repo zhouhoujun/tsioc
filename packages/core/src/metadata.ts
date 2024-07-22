@@ -1,7 +1,9 @@
 import {
     isUndefined, Type, createDecorator, ProviderType, InjectableMetadata, PropertyMetadata, ActionTypes, InjectFlags,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments, EMPTY,
-    isString, Parameter, ProviderMetadata, Decors, createParamDecorator, TypeOf, isNil, PatternMetadata, UseAsStatic, isFunction
+    isString, Parameter, ProviderMetadata, Decors, createParamDecorator, TypeOf, isNil, PatternMetadata, UseAsStatic, isFunction,
+    ModuleType,
+    ClassType
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import {
@@ -152,6 +154,15 @@ export const Bean: BeanDecorator = createDecorator<BeanMetadata>('Bean', {
     }
 });
 
+export interface ConfgiurationMetadata extends InjectableMetadata {
+    /**
+     * imports dependens modules
+     *
+     * @type {Modules[]}
+     */
+    imports?: ModuleType<ClassType>[];
+}
+
 /**
  * `Configuartion` decorator, define the class as auto Configuration provider.
  */
@@ -162,19 +173,18 @@ export interface ConfigurationDecorator {
      * 配置修饰器，声明该类为配置提供者。
      * @Configuartion
      */
-    (option?: PatternMetadata): ClassDecorator;
+    (option?: ConfgiurationMetadata): ClassDecorator;
 }
 
 /**
  * `Configuartion` decorator, define the class as auto Configuration provider.
  * @Configuartion
  */
-export const Configuration: ConfigurationDecorator = createDecorator<InjectableMetadata>('Configuration', {
+export const Configuration: ConfigurationDecorator = createDecorator<ConfgiurationMetadata>('Configuration', {
     actionType: [ActionTypes.annoation],
     design: {
         afterAnnoation: (ctx, next) => {
             const { class: typeRef, injector } = ctx;
-
             const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
             const pdrs = typeRef.defs.filter(d => d.decor === Bean)
                 .map(d => {

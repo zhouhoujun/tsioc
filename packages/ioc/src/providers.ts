@@ -1,4 +1,4 @@
-import { ClassType, Modules, TypeOf, EMPTY_OBJ } from './types';
+import { ClassType, Modules, TypeOf, EMPTY_OBJ, Type } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Injector, OptionFlags } from './injector';
 import { isPlainObject } from './utils/obj';
@@ -241,7 +241,7 @@ export interface ModuleWithProviders<T = any> {
     providers: ProviderType[];
 }
 
-export type ModuleType = Modules | ModuleWithProviders;
+export type ModuleType<T extends Type = Type> = Modules<T> | ModuleWithProviders;
 
 /**
  * is module providers or not.
