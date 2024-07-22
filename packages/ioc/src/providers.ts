@@ -26,10 +26,7 @@ export interface UseAsStatic {
     static?: boolean;
 }
 
-/**
- * provider exts options.
- */
-export interface ProviderExts {
+export interface MutilProvider {    
     /**
      * provide multi or not.
      */
@@ -38,6 +35,12 @@ export interface ProviderExts {
      * multi order.
      */
     multiOrder?: number;
+}
+
+/**
+ * provider exts options.
+ */
+export interface ProviderExts extends MutilProvider {
     /**
      * provide as default. if has exist the provide will not inject.
      */

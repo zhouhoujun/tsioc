@@ -3,7 +3,8 @@ import {
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments, EMPTY,
     isString, Parameter, ProviderMetadata, Decors, createParamDecorator, TypeOf, isNil, PatternMetadata, UseAsStatic, isFunction,
     ModuleType,
-    ClassType
+    ClassType,
+    MutilProvider
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import {
@@ -185,26 +186,39 @@ export const Configuration: ConfigurationDecorator = createDecorator<Confgiurati
     design: {
         afterAnnoation: (ctx, next) => {
             const { class: typeRef, injector } = ctx;
-            const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
-            const pdrs = typeRef.defs.filter(d => d.decor === Bean)
-                .map(d => {
-                    const key = d.propertyKey;
-                    const { provide, static: stac } = d.metadata as BeanMetadata;
-                    if (d.decorType === 'method') {
-                        return {
-                            provide,
-                            useFactory: () => factory.invoke(key),
-                            static: stac,
-                        } as ProviderType
-                    } else {
-                        return {
-                            provide,
-                            useFactory: () => factory.getInstance()[key],
-                            static: stac,
-                        } as ProviderType
-                    }
-                });
-            injector.inject(pdrs);
+            const meta = typeRef.getMetadata<ConfgiurationMetadata>(ctx.currDecor!);
+            injector.inject({
+                provider: async (injector) => {
+                    const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
+
+                    if (meta.imports) await factory.injector.useAsync(meta.imports);
+                    if (meta.providers) factory.injector.inject(meta.providers);
+                    const pdrs = typeRef.defs.filter(d => d.decor === Bean)
+                        .map(d => {
+                            const key = d.propertyKey;
+                            const { provide, static: stac, multi, multiOrder } = d.metadata as BeanMetadata;
+                            if (d.decorType === 'method') {
+                                return {
+                                    provide,
+                                    useFactory: () => factory.invoke(key),
+                                    static: stac,
+                                    multi,
+                                    multiOrder
+                                } as ProviderType
+                            } else {
+                                return {
+                                    provide,
+                                    useFactory: () => factory.getInstance()[key],
+                                    static: stac,
+                                    multi,
+                                    multiOrder
+                                } as ProviderType
+                            }
+                        });
+                    injector.inject(pdrs);
+                },
+            })
+
             next()
         }
     },
@@ -243,7 +257,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
             method: runtime === true ? undefined : (ctx, next) => {
                 const typeRef = ctx.class;
                 if (typeRef.getAnnotation().static === false && !typeRef.getAnnotation().singleton) return next();
-                
+
                 const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? EMPTY;
                 const injector = ctx.injector;
                 const factory = injector.get(InvocationFactoryResolver).resolve(typeRef, injector);
@@ -527,7 +541,7 @@ export interface PipeMetadata extends ProviderMetadata {
 /**
  * bean provider metadata.
  */
-export interface BeanMetadata extends UseAsStatic {
+export interface BeanMetadata extends UseAsStatic, MutilProvider {
     /**
      * the token bean provider to.
      */
