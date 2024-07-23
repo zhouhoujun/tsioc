@@ -129,7 +129,7 @@ export interface AnnotationType<T = any> extends Type<T> {
 /**
  * type or type instance.
  */
-export type TypeOf<T> = Type<T> | T;
+export type TypeOf<T> = Type<T> | Exclude<T, Function>;
 /**
  * arrayify.
  */
