@@ -18,73 +18,73 @@ export interface TransportOpts {
     /**
      * the codings action name.
      */
-    readonly name?: string;
+    name?: string;
     /**
      * subfix of group.
      */
-    readonly subfix?: string;
+    subfix?: string;
 
-    readonly encodings?: CodingsHandlerOptions;
-    readonly decodings?: CodingsHandlerOptions;
+    encodings?: CodingsHandlerOptions;
+    decodings?: CodingsHandlerOptions;
 
-    readonly encodingsAdapter?: ProvdierOf<CodingsAapter>;
-    readonly decodingsAdapter?: ProvdierOf<CodingsAapter>;
+    encodingsAdapter?: ProvdierOf<CodingsAapter>;
+    decodingsAdapter?: ProvdierOf<CodingsAapter>;
     /**
      * encodings Factory.
      */
-    readonly encodingsFactory?: Token<TransportEncodingsFactory>;
+    encodingsFactory?: Token<TransportEncodingsFactory>;
     /**
      * decodings Factory.
      */
-    readonly decodingsFactory?: Token<TransportDecodingsFactory>;
+    decodingsFactory?: Token<TransportDecodingsFactory>;
 
     /**
      * transport type.
      */
-    readonly transport?: Transport | HybirdTransport;
+    transport?: Transport | HybirdTransport;
     /**
      * microservice or not.
      */
-    readonly microservice?: boolean;
+    microservice?: boolean;
 
-    readonly client?: boolean;
+    client?: boolean;
 
-    readonly headerFields?: HeaderFields;
+    headerFields?: HeaderFields;
 
-    readonly defaultMethod?: string;
+    defaultMethod?: string;
 
-    readonly serializeIgnores?: string[];
+    serializeIgnores?: string[];
 
     /**
      * packet delimiter flag
      */
-    readonly delimiter?: string;
+    delimiter?: string;
 
     /**
      * head delimiter flag
      */
-    readonly headDelimiter?: string;
+    headDelimiter?: string;
 
     /**
      * content count number length.
      */
-    readonly countLen?: number;
+    countLen?: number;
     /**
      * id b
      */
-    readonly idLen?: number;
+    idLen?: number;
     /**
      * packet max size limit.
      */
-    readonly maxSize?: number;
+    maxSize?: number;
     /**
      * encoding
      */
-    readonly encoding?: string;
+    encoding?: string;
     /**
      * timeout
      */
-    readonly timeout?: number;
+    timeout?: number;
 
 }
 

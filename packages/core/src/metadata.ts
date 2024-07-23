@@ -133,16 +133,16 @@ export interface BeanDecorator {
      * 
      * 配置项修饰器，用于声明该方法或属性是输出的配置项内容。
      * @param {Token} provide the value of the method or property for the provide token.
-     * @param {UseAsStatic} options the static option for the provide token.
+     * @param {Omit<BeanMetadata, 'provide'>} options the static option for the provide token.
      */
-    (provide?: Token, options?: UseAsStatic): MethodPropDecorator;
+    (provide?: Token, options?: Omit<BeanMetadata, 'provide'>): MethodPropDecorator;
 }
 
 /**
  * `Bean` decorator. bean provider, provider the value of the method or property for `Confgiuration`.
  */
 export const Bean: BeanDecorator = createDecorator<BeanMetadata>('Bean', {
-    props: (provide: Token, options?: UseAsStatic) => ({ ...options, provide }),
+    props: (provide: Token, options?: Omit<BeanMetadata, 'provide'>) => ({ ...options, provide }),
     afterInit: (ctx) => {
         const metadata = ctx.define.metadata as BeanMetadata & PropertyMetadata;
         if (!metadata.provide) {
@@ -187,37 +187,64 @@ export const Configuration: ConfigurationDecorator = createDecorator<Confgiurati
         afterAnnoation: (ctx, next) => {
             const { class: typeRef, injector } = ctx;
             const meta = typeRef.getMetadata<ConfgiurationMetadata>(ctx.currDecor!);
-            injector.inject({
-                provider: async (injector) => {
-                    const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
-
-                    if (meta.imports) await factory.injector.useAsync(meta.imports);
-                    if (meta.providers) factory.injector.inject(meta.providers);
-                    const pdrs = typeRef.defs.filter(d => d.decor === Bean)
-                        .map(d => {
-                            const key = d.propertyKey;
-                            const { provide, static: stac, multi, multiOrder } = d.metadata as BeanMetadata;
-                            if (d.decorType === 'method') {
-                                return {
-                                    provide,
-                                    useFactory: () => factory.invoke(key),
-                                    static: stac,
-                                    multi,
-                                    multiOrder
-                                } as ProviderType
-                            } else {
-                                return {
-                                    provide,
-                                    useFactory: () => factory.getInstance()[key],
-                                    static: stac,
-                                    multi,
-                                    multiOrder
-                                } as ProviderType
-                            }
-                        });
-                    injector.inject(pdrs);
-                },
-            })
+            if (meta.imports) {
+                injector.inject({
+                    provider: async (injector) => {
+                        const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
+                        await factory.injector.useAsync(meta.imports!);
+                        if (meta.providers) factory.injector.inject(meta.providers);
+                        const pdrs = typeRef.defs.filter(d => d.decor === Bean)
+                            .map(d => {
+                                const key = d.propertyKey;
+                                const { provide, static: stac, multi, multiOrder } = d.metadata as BeanMetadata;
+                                if (d.decorType === 'method') {
+                                    return {
+                                        provide,
+                                        useFactory: () => factory.invoke(key),
+                                        static: stac,
+                                        multi,
+                                        multiOrder
+                                    } as ProviderType
+                                } else {
+                                    return {
+                                        provide,
+                                        useFactory: () => factory.getInstance()[key],
+                                        static: stac,
+                                        multi,
+                                        multiOrder
+                                    } as ProviderType
+                                }
+                            });
+                        injector.inject(pdrs);
+                    },
+                })
+            } else {
+                const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
+                if (meta.providers) factory.injector.inject(meta.providers);
+                const pdrs = typeRef.defs.filter(d => d.decor === Bean)
+                    .map(d => {
+                        const key = d.propertyKey;
+                        const { provide, static: stac, multi, multiOrder } = d.metadata as BeanMetadata;
+                        if (d.decorType === 'method') {
+                            return {
+                                provide,
+                                useFactory: () => factory.invoke(key),
+                                static: stac,
+                                multi,
+                                multiOrder
+                            } as ProviderType
+                        } else {
+                            return {
+                                provide,
+                                useFactory: () => factory.getInstance()[key],
+                                static: stac,
+                                multi,
+                                multiOrder
+                            } as ProviderType
+                        }
+                    });
+                injector.inject(pdrs);
+            }
 
             next()
         }
@@ -537,6 +564,7 @@ export interface PipeMetadata extends ProviderMetadata {
      */
     pure?: boolean;
 }
+
 
 /**
  * bean provider metadata.

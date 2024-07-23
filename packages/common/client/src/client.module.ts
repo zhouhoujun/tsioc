@@ -23,6 +23,60 @@ import { ClientOpts } from './options';
 import { UrlRedirector } from './redirector';
 import { ClientTransportSessionFactory } from './session';
 
+
+/**
+ * Client Module.
+ */
+@Module({
+    imports: [
+        TransportPacketModule,
+        ClientCodingsModule
+    ],
+    providers: [
+        DefaultClientTransportSessionFactory,
+        BodyContentInterceptor,
+        UrlRedirector
+    ]
+})
+export class ClientModule {
+
+    /**
+     * import client module with options.
+     * @param options module options.
+     * @returns 
+     */
+    static register(options: ClientModuleConfig & ClientTokenOpts): ModuleWithProviders<ClientModule>;
+    /**
+     * import client module with options.
+     * @param options module options.
+     * @returns 
+     */
+    static register(options: Array<ClientModuleConfig & ClientTokenOpts>): ModuleWithProviders<ClientModule>;
+    /**
+     * import client module with options.
+     * @param options module options.
+     * @returns 
+     */
+    static register(options: Arrayify<ClientModuleConfig & ClientTokenOpts>): ModuleWithProviders<ClientModule> {
+        let providers: ProviderType[];
+        if (isArray(options)) {
+            providers = []
+            options.forEach((op, idx) => {
+                providers.push(...clientProviders(op, idx));
+            })
+        } else {
+            providers = clientProviders(options);
+        }
+
+        return {
+            providers,
+            module: ClientModule
+        }
+    }
+
+}
+
+
 /**
  * Client module config.
  */
@@ -97,58 +151,6 @@ export interface ClientTokenOpts {
     client?: Token<AbstractClient>;
 }
 
-
-/**
- * Client Module.
- */
-@Module({
-    imports: [
-        TransportPacketModule,
-        ClientCodingsModule
-    ],
-    providers: [
-        DefaultClientTransportSessionFactory,
-        BodyContentInterceptor,
-        UrlRedirector
-    ]
-})
-export class ClientModule {
-
-    /**
-     * import client module with options.
-     * @param options module options.
-     * @returns 
-     */
-    static register(options: ClientModuleConfig & ClientTokenOpts): ModuleWithProviders<ClientModule>;
-    /**
-     * import client module with options.
-     * @param options module options.
-     * @returns 
-     */
-    static register(options: Array<ClientModuleConfig & ClientTokenOpts>): ModuleWithProviders<ClientModule>;
-    /**
-     * import client module with options.
-     * @param options module options.
-     * @returns 
-     */
-    static register(options: Arrayify<ClientModuleConfig & ClientTokenOpts>): ModuleWithProviders<ClientModule> {
-        let providers: ProviderType[];
-        if (isArray(options)) {
-            providers = []
-            options.forEach((op, idx) => {
-                providers.push(...clientProviders(op, idx));
-            })
-        } else {
-            providers = clientProviders(options);
-        }
-
-        return {
-            providers,
-            module: ClientModule
-        }
-    }
-
-}
 
 /**
  * global register client modules.

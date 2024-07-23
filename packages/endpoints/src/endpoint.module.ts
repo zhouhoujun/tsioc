@@ -5,7 +5,7 @@ import {
 } from '@tsdi/common/transport';
 import { InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
 import {
-    Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleRef, ModuleType, ModuleWithProviders, 
+    Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleRef, ModuleType, ModuleWithProviders,
     ProvdierOf, ProviderType, Type, isArray, isNil, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { RequestContextFactory } from './RequestContext';
@@ -28,112 +28,6 @@ import { RequestContextFactoryImpl } from './impl/request.context';
 import { createMiddlewareEndpoint } from './impl/middleware';
 import { RequestHandler } from './RequestHandler';
 
-
-
-
-
-/**
- * server config.
- */
-export interface ServerConfig {
-    /**
-     * imports modules
-     */
-    imports?: ModuleType[];
-    /**
-     * auto bootstrap or not. default true.
-     */
-    bootstrap?: boolean;
-    /**
-     * server provdier.
-     */
-    server?: ProvdierOf<Server>;
-    /**
-     * start.
-     */
-    start?: InvocationOptions;
-    /**
-     * server options
-     */
-    serverOpts?: ServerOpts;
-    /**
-     * custom provider with module.
-     */
-    providers?: ProviderType[];
-}
-
-/**
- * heybird options.
- */
-export interface HeybirdOpts {
-    /**
-    * heybird or not.
-    */
-    heybird?: boolean | HybirdTransport;
-}
-
-/**
- * microservice options.
- */
-export interface MicroServiceOpts {
-    /**
-     * microservice or not.
-     */
-    microservice: true;
-    /**
-     * microservice transport.
-     */
-    transport: Transport;
-    /**
-     * server options
-     */
-    serverOpts?: ServerOpts & HeybirdOpts;
-}
-
-export interface HeybirdServiceOpts {
-    microservice?: false;
-    transport: HybirdTransport;
-    /**
-     * server options
-     */
-    serverOpts?: ServerOpts & MiddlewareOpts;
-
-}
-
-export type ServiceOpts = (ServerConfig & HeybirdServiceOpts) | (ServerConfig & MicroServiceOpts);
-
-
-/**
- * server module options.
- */
-export interface ServerModuleOpts extends ServerConfig {
-    /**
-     * is microservice or not.
-     */
-    microservice?: boolean;
-    /**
-     * as default service.
-     */
-    asDefault?: boolean;
-    /**
-     * server type.
-     */
-    serverType: Type<Server>;
-    /**
-     * server request handler type
-     */
-    handlerType: Type<RequestHandler>;
-    /**
-     * server default options.
-     */
-    defaultOpts?: ServerOpts;
-}
-export type ServiceModuleOpts = (ServerModuleOpts & HeybirdServiceOpts) | (ServerModuleOpts & MicroServiceOpts);
-
-/**
- * global registered server modules
- */
-export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
 
 /**
  * Endpoint services module.
@@ -194,6 +88,140 @@ export class EndpointModule {
         }
     }
 }
+
+
+
+
+/**
+ * heybird options.
+ */
+export interface HeybirdOpts {
+    /**
+    * heybird or not.
+    */
+    heybird?: boolean | HybirdTransport;
+}
+
+/**
+ * microservice options.
+ */
+export interface MicroServiceOpts {
+    /**
+     * microservice or not.
+     */
+    microservice: true;
+    /**
+     * microservice transport.
+     */
+    transport: Transport;
+    /**
+     * imports modules
+     */
+    imports?: ModuleType[];
+    /**
+     * auto bootstrap or not. default true.
+     */
+    bootstrap?: boolean;
+    /**
+     * server provdier.
+     */
+    server?: ProvdierOf<Server>;
+    /**
+     * start.
+     */
+    start?: InvocationOptions;
+    /**
+     * server options
+     */
+    serverOpts?: ServerOpts;
+    /**
+     * custom provider with module.
+     */
+    providers?: ProviderType[];
+}
+
+export interface HeybirdServiceOpts {
+    /**
+     * microservice or not.
+     */
+    microservice?: false;
+    transport: HybirdTransport;
+    /**
+     * server options
+     */
+    serverOpts?: ServerOpts & MiddlewareOpts;
+    /**
+     * imports modules
+     */
+    imports?: ModuleType[];
+    /**
+     * auto bootstrap or not. default true.
+     */
+    bootstrap?: boolean;
+    /**
+     * server provdier.
+     */
+    server?: ProvdierOf<Server>;
+    /**
+     * start.
+     */
+    start?: InvocationOptions;
+    /**
+     * custom provider with module.
+     */
+    providers?: ProviderType[];
+
+}
+
+export type ServiceOpts = HeybirdServiceOpts | MicroServiceOpts;
+
+
+export interface ServerModuleOpts extends HeybirdServiceOpts {
+    /**
+     * as default service.
+     */
+    asDefault?: boolean;
+    /**
+     * server type.
+     */
+    serverType: Type<Server>;
+    /**
+     * server request handler type
+     */
+    handlerType: Type<RequestHandler>;
+    /**
+     * server default options.
+     */
+    defaultOpts?: ServerOpts & MiddlewareOpts;
+}
+
+export interface MicroServerModuleOpts extends MicroServiceOpts {
+    /**
+     * as default service.
+     */
+    asDefault?: boolean;
+    /**
+     * server type.
+     */
+    serverType: Type<Server>;
+    /**
+     * server request handler type
+     */
+    handlerType: Type<RequestHandler>;
+    /**
+     * server default options.
+     */
+    defaultOpts?: ServerOpts;
+}
+
+
+
+export type ServiceModuleOpts = MicroServerModuleOpts | ServerModuleOpts;
+
+/**
+ * global registered server modules
+ */
+export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
 
 
 function createServiceProviders(options: ServiceOpts, idx: number) {
