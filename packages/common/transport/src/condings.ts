@@ -57,7 +57,7 @@ export class TransportEncodingsFactory implements EncodingsFactory {
             ...configable,
             providers: (adapter ?? encodingsAdapter) ? [
                 ...configable?.providers ?? EMPTY,
-                toProvider(CodingsAapter, (adapter ?? encodingsAdapter))
+                toProvider(CodingsAapter, adapter ?? encodingsAdapter!)
             ] : configable?.providers
         });
 
@@ -112,7 +112,7 @@ export class TransportDecodingsFactory implements DecodingsFactory {
             ...configable,
             providers: (adapter ?? decodingsAdapter) ? [
                 ...configable?.providers ?? EMPTY,
-                toProvider(CodingsAapter, adapter ?? decodingsAdapter)
+                toProvider(CodingsAapter, adapter ?? decodingsAdapter!)
             ] : configable?.providers
         });
 

@@ -13,7 +13,7 @@ import { HandlerContext } from '../handlers/context';
 export class ExecptionContext<T = any, TArg extends Error = Error> extends DefaultInvocationContext<TArg> {
 
     constructor(public execption: TArg, readonly host: T, injector: Injector, options?: InvokeArguments) {
-        super(injector, { ...options, args: execption })
+        super(injector, { ...options })
 
         this.setValue(getClass(execption), execption);
         const tokens = lang.getClassChain(getClass(host));

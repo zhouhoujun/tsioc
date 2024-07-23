@@ -1,11 +1,11 @@
 import { Abstract, getTokenOf, ProvdierOf, Token, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Handler } from '../Handler';
-import { Interceptor } from '../Interceptor';
+import { Interceptor, InterceptorFn } from '../Interceptor';
 
 
 /**
- * handler filter is a chainable behavior modifier for `handlers`.
+ * filter is a chainable behavior modifier for `handlers`.
  * 
  * 处理器过滤器。
  */
@@ -22,6 +22,18 @@ export abstract class Filter<TInput = any, TOutput = any, TContext = any> implem
 }
 
 /**
+ * FilterFn is a chainable behavior modifier for `handlers`.
+ * 
+ * 处理器过滤方法。
+ */
+export type FilterFn<TInput = any, TOutput = any, TContext = any> = InterceptorFn<TInput, TOutput, TContext>;
+
+/**
+ * filter like
+ */
+export type FilterLike<TInput = any, TOutput = any, TContext = any> = FilterFn<TInput, TOutput, TContext> | Filter<TInput, TOutput, TContext>;
+
+/**
  * filter service.
  * 
  * 过滤器服务。
@@ -32,13 +44,13 @@ export interface FilterService {
      * @param filters 
      * @param order 
      */
-    useFilters(filters: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
+    useFilters(filters: ProvdierOf<FilterLike> | ProvdierOf<FilterLike>[], order?: number): this;
 }
 
 /**
  * multi filters token
  */
-export const FILTERS_TOKEN = tokenId<Filter[]>('FILTERS_TOKEN');
+export const FILTERS_TOKEN = tokenId<FilterLike[]>('FILTERS_TOKEN');
 
 const FILTERS = 'FILTERS';
 /**

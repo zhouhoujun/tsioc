@@ -1,7 +1,7 @@
 import { isFunction, isPromise } from '@tsdi/ioc';
 import { Observable, isObservable, of, from } from 'rxjs';
 import { Backend, Handler } from '../Handler';
-import { Interceptor } from '../Interceptor';
+import { InterceptorLike } from '../Interceptor';
 
 
 /**
@@ -9,10 +9,10 @@ import { Interceptor } from '../Interceptor';
  */
 export class InterceptorHandler<TInput = any, TOutput = any, TContext = any> implements Handler<TInput, TOutput, TContext> {
 
-    constructor(private next: Handler<TInput, TOutput, TContext>, private interceptor: Interceptor<TInput, TOutput, TContext>) { }
+    constructor(private next: Handler<TInput, TOutput, TContext>, private interceptor: InterceptorLike<TInput, TOutput, TContext>) { }
 
     handle(input: TInput, context?: TContext): Observable<TOutput> {
-        return this.interceptor.intercept(input, this.next, context)
+        return isFunction(this.interceptor) ? this.interceptor(input, this.next, context) : this.interceptor.intercept(input, this.next, context)
     }
 }
 
@@ -25,7 +25,7 @@ export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> im
 
     constructor(
         private backend: Backend<TInput, TOutput, TContext> | (() => Backend<TInput, TOutput, TContext>),
-        private interceptors: Interceptor[] | (() => Interceptor[]) = []
+        private interceptors: InterceptorLike[] | (() => InterceptorLike[]) = []
     ) { }
 
     handle(input: TInput, context?: TContext): Observable<TOutput> {
@@ -48,7 +48,7 @@ export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> im
 /**
  * funcation handler.
  */
-export class FnHandler<TInput = any, TOutput = any, TContext= any> implements Handler<TInput, TOutput, TContext> {
+export class FnHandler<TInput = any, TOutput = any, TContext = any> implements Handler<TInput, TOutput, TContext> {
 
     constructor(private dowork: (ctx: TInput, context?: TContext) => TOutput | Observable<TOutput> | Promise<TOutput>) { }
 

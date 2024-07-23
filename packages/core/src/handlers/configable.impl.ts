@@ -2,8 +2,8 @@ import {
     EMPTY, InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType,
     Token, InvocationContext, createContext, isClassType, ArgumentExecption, isToken, isArray, toProvider,
 } from '@tsdi/ioc';
-import { CanActivate, GUARDS_TOKEN } from '../guard';
-import { INTERCEPTORS_TOKEN, Interceptor } from '../Interceptor';
+import { CanActivate, GuardLike, GUARDS_TOKEN } from '../guard';
+import { INTERCEPTORS_TOKEN, Interceptor, InterceptorLike } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
 import { FILTERS_TOKEN, Filter } from '../filters/filter';
 import { GuardHandler } from './guards';
@@ -84,7 +84,7 @@ export class ConfigableHandler<
      * @param order 
      * @returns 
      */
-    useInterceptors(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number): this {
+    useInterceptors(interceptor: ProvdierOf<InterceptorLike<TInput, TOutput>> | ProvdierOf<InterceptorLike<TInput, TOutput>>[], order?: number): this {
         if (!this.options.interceptorsToken) return this;
         this.regMulti(this.options.interceptorsToken, interceptor, order);
         this.reset();
@@ -136,7 +136,7 @@ export class ConfigableHandler<
      * get registered iterceptors of the handler.
      * @returns 
      */
-    protected getInterceptors(): Interceptor<TInput, TOutput>[] {
+    protected getInterceptors(): InterceptorLike<TInput, TOutput>[] {
         return this.injector.get(this.options.interceptorsToken!, EMPTY);
     }
 
@@ -145,7 +145,7 @@ export class ConfigableHandler<
      * get registered guards of the handler.
      * @returns 
      */
-    protected getGuards(): CanActivate[] | null {
+    protected getGuards(): GuardLike[] | null {
         return this.options.guardsToken ? this.injector.get(this.options.guardsToken, null) : null;
     }
 

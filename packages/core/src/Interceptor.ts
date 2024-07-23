@@ -21,12 +21,14 @@ export interface Interceptor<TInput = any, TOutput = any, TContext = any> {
     intercept(input: TInput, next: Handler, context?: TContext): Observable<TOutput>;
 }
 
-
 /**
- * interceptor service.
- * 
- * 拦截器服务
+ * InterceptorFn is a chainable behavior modifier for `hanlders`.
+ * 拦截方法，用于链接多个处理器，组合成处理器串。
  */
+export type InterceptorFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, next: Handler, context?: TContext) => Observable<TOutput>;
+
+export type InterceptorLike<TInput = any, TOutput = any, TContext = any> = Interceptor<TInput, TOutput, TContext> | InterceptorFn<TInput, TOutput, TContext>;
+
 export interface InterceptorService {
     /**
      * use interceptors
@@ -35,7 +37,7 @@ export interface InterceptorService {
      * @param interceptors 
      * @param order 
      */
-    useInterceptors(interceptors: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
+    useInterceptors(interceptors: ProvdierOf<InterceptorLike> | ProvdierOf<InterceptorLike>[], order?: number): this;
 }
 
 /**

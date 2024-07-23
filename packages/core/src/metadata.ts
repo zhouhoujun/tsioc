@@ -15,6 +15,7 @@ import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
 import { TransportParameter, TransportParameterOptions } from './handlers/resolver';
+import { InterceptorFn } from './Interceptor';
 
 
 /**
@@ -440,17 +441,89 @@ export interface DisposeEventHandler {
  */
 export const Dispose: DisposeEventHandler = createEventHandler(ApplicationDisposeEvent, 'Dispose', true);
 
+/**
+ * Intercept metadata.
+ */
+export interface InterceptMetadata {
+    /**
+     * intercept target type.
+     */
+    filter?: Token;
+    /**
+     * regitster in filter token or not. 
+     */
+    token?: boolean;
+
+    order?: number;
+}
+
+export type InterceptDecorator = <T extends InterceptorFn>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void
+
+/**
+ * Interceptable
+ */
+export interface Interceptable {
+    /**
+     * Interceptable decorator, for class. use to define the class as filter register in global interceptor.
+     *
+     * @param {Type} filter intercept target.
+     * @param  {Omit<InterceptMetadata, 'filter'>} option intercept options.
+     */
+    (filter: Type | string, option?: Omit<InterceptMetadata, 'filter'>): InterceptDecorator;
+
+}
+
+
+
+/**
+ * Interceptable decorator, for class. use to define the class as filter register in global filter.
+ * @Interceptable
+ * 
+ * @exports {@link Interceptable}
+ */
+export const Interceptable: Interceptable = createDecorator('Interceptable', {
+    props: (filter: Type | string, options?: InvocationOptions) => ({ filter, ...options }),
+
+});
+
+/**
+ * Filterable
+ */
+export interface Filterable {
+    /**
+     * Filterable decorator, for class. use to define the class as filter register in global filter.
+     *
+     * @param {Type} filter filter target.
+     * @param { Omit<InterceptMetadata, 'filter'>} option filter options.
+     */
+    (filter: Type | string, option?: Omit<InterceptMetadata, 'filter'>): InterceptDecorator;
+}
+
+
+
+/**
+ * Filterable decorator, for class. use to define the class as filter register in global filter.
+ * @Filterable
+ * 
+ * @exports {@link Filterable}
+ */
+export const Filterable: Filterable = createDecorator('Filterable', {
+    props: (filter: Type | string, options?: InvocationOptions) => ({ filter, ...options }),
+
+});
+
+
+
 
 /**
  * Filter handler metadata.
  */
 export interface FilterHandlerMetadata<TArg> extends InvocationOptions<TArg> {
     /**
-     * execption type.
+     * filter type.
      */
     filter: Type | string;
 }
-
 
 
 /**
@@ -461,7 +534,7 @@ export interface FilterHandlerMetadata<TArg> extends InvocationOptions<TArg> {
  */
 export interface FilterHandler {
     /**
-     * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
+     * FilterHandler decorator, for class. use to define the class as handler handle register in global filter.
      *
      * @param {Type} filter message match pattern.
      * @param {order?: number } option message match option.
@@ -476,7 +549,7 @@ export interface FilterHandler {
  * @exports {@link FilterHandler}
  */
 export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
-    props: (filter?: Type | string, options?: { order?: number }) => ({ filter, ...options }),
+    props: (filter?: Type | string, options?: InvocationOptions) => ({ filter, ...options }),
     design: {
         method: (ctx, next) => {
             const typeRef = ctx.class;
@@ -505,7 +578,7 @@ export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
  */
 export interface ExecptionHandler {
     /**
-     * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
+     * ExecptionHandler decorator, for class. use to define the class as execption handle register in global execption filter.
      *
      * @param {string} pattern message match pattern.
      * @param {order?: number } option message match option.

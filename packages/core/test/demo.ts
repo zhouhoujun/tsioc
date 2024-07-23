@@ -1,5 +1,8 @@
 import {
-    Configuration, Bean, Runner, Start, Dispose
+    Configuration, Bean, Runner, Start, Dispose,
+    Filterable,
+    Handler,
+    Interceptable
 } from '../src';
 import { Injectable, Inject, lang, Abstract, Module, Static } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint } from '@tsdi/aop';
@@ -7,6 +10,7 @@ import { Logger, LogConfigure, InjectLog, LoggerModule } from '@tsdi/logger';
 import * as net from 'net';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerLog4Module } from '@tsdi/platform-server/log4js';
+import { Observable } from 'rxjs';
 
 export class TestService {
     testFiled = 'test';
@@ -51,6 +55,16 @@ export class ClassSevice {
     mark!: string;
 
     state!: string;
+
+    @Filterable(String, {token: true})
+    filter(intput: any, next: Handler): Observable<any> {
+        return next.handle(intput);
+    }
+
+    @Interceptable(String)
+    intercept(intput: any, next: Handler): Observable<any> {
+        return next.handle(intput);
+    }
 
     @Runner()
     async run(): Promise<any> {

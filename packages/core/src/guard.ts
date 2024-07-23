@@ -22,7 +22,14 @@ export interface CanActivate<T = any, TContext = any> {
 /**
  * hander guard fn.
  */
-export type CanActivateFn = <T = any, TContext = any>(input: T, context?: TContext) => boolean | Promise<boolean> | Observable<boolean>;
+export type CanActivateFn<T = any, TContext = any> = (input: T, context?: TContext) => boolean | Promise<boolean> | Observable<boolean>;
+
+/**
+ * Handler Guard.
+ * 
+ * 处理器守卫
+ */
+export type GuardLike<T = any, TContext = any> = CanActivate<T, TContext> | CanActivateFn<T, TContext>;
 
 /**
  *  guards multi token
@@ -54,5 +61,5 @@ export interface GuardsService {
      * @param guards
      * @param order 
      */
-    useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this;
+    useGuards(guards: ProvdierOf<GuardLike> | ProvdierOf<GuardLike>[], order?: number): this;
 }

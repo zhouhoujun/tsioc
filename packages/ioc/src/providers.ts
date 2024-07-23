@@ -1,4 +1,4 @@
-import { ClassType, Modules, TypeOf, EMPTY_OBJ, Type } from './types';
+import { ClassType, Modules, EMPTY_OBJ, Type } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Injector, OptionFlags } from './injector';
 import { isPlainObject } from './utils/obj';
@@ -209,7 +209,7 @@ export interface DynamicProvider {
 /**
  * use static provider of.
  */
-export type ProvdierOf<T> = UseClass<T> | UseValue<T> | UseFactory<T> | UseExisting<T> | TypeProvider<T> | TypeOf<T>;
+export type ProvdierOf<T> = UseClass<T> | UseValue<T> | UseFactory<T> | UseExisting<T> | TypeProvider<T> | Exclude<T, Function>;
 
 
 /**

@@ -1,10 +1,10 @@
 import {
     Injector, InvokerOptions, ProvdierOf, StaticProvider, ClassType, Abstract, Token
 } from '@tsdi/ioc';
-import { CanActivate, GuardsService } from '../guard';
-import { Interceptor, InterceptorService } from '../Interceptor';
+import { GuardLike, GuardsService } from '../guard';
+import { InterceptorLike, InterceptorService } from '../Interceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
-import { Filter, FilterService } from '../filters/filter';
+import { FilterLike, FilterService } from '../filters/filter';
 import { Backend, Handler } from '../Handler';
 import { Observable } from 'rxjs';
 
@@ -44,13 +44,13 @@ export abstract class AbstractConfigableHandler<
      * @param order 
      * @returns 
      */
-    abstract useInterceptors(interceptor: ProvdierOf<Interceptor<TInput, TOutput>> | ProvdierOf<Interceptor<TInput, TOutput>>[], order?: number): this;
+    abstract useInterceptors(interceptor: ProvdierOf<InterceptorLike<TInput, TOutput>> | ProvdierOf<InterceptorLike<TInput, TOutput>>[], order?: number): this;
 
     /**
      * use guards for the handler.
      * @param guards 
      */
-    abstract useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this;
+    abstract useGuards(guards: ProvdierOf<GuardLike> | ProvdierOf<GuardLike>[], order?: number): this;
 
     /**
      * use filters for the handler.
@@ -58,7 +58,7 @@ export abstract class AbstractConfigableHandler<
      * @param order 
      * @returns 
      */
-    abstract useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
+    abstract useFilters(filter: ProvdierOf<FilterLike> | ProvdierOf<FilterLike>[], order?: number): this;
 
 
     /**
@@ -86,15 +86,15 @@ export interface GuardHandlerOptions<TInput = any> extends BackendOptions<TInput
     /**
      * interceptors token.
      */
-    interceptorsToken?: Token<Interceptor<TInput>[]>;
+    interceptorsToken?: Token<InterceptorLike<TInput>[]>;
     /**
      * guards tokens.
      */
-    guardsToken?: Token<CanActivate<TInput>[]>;
+    guardsToken?: Token<GuardLike<TInput>[]>;
     /**
      * filter tokens.
      */
-    filtersToken?: Token<Filter<TInput>[]>;
+    filtersToken?: Token<FilterLike<TInput>[]>;
 }
 
 
@@ -107,11 +107,11 @@ export interface HandlerOptions<TInput = any, TArg = any> extends InvokerOptions
      * handlers, in order to determine if the current user is allowed to
      * activate the component. By default, any user can activate.
      */
-    guards?: ProvdierOf<CanActivate<TInput>>[];
+    guards?: ProvdierOf<GuardLike<TInput>>[];
     /**
      * interceptors of bootstrap.
      */
-    interceptors?: ProvdierOf<Interceptor<TInput>>[];
+    interceptors?: ProvdierOf<InterceptorLike<TInput>>[];
     /**
      * pipes for the bootstrap.
      */
@@ -119,7 +119,7 @@ export interface HandlerOptions<TInput = any, TArg = any> extends InvokerOptions
     /**
      * filters of bootstrap.
      */
-    filters?: ProvdierOf<Filter<TInput>>[];
+    filters?: ProvdierOf<FilterLike<TInput>>[];
 }
 
 

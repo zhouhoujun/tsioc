@@ -1,9 +1,9 @@
 import { Abstract, Execption, lang, OnDestroy, promiseOf, isFunction } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { Backend, Handler } from '../Handler';
-import { CanActivate } from '../guard';
-import { Interceptor } from '../Interceptor';
-import { Filter } from '../filters/filter';
+import { GuardLike } from '../guard';
+import { InterceptorLike } from '../Interceptor';
+import { FilterLike } from '../filters/filter';
 import { InterceptingHandler, InterceptorHandler } from './handler';
 
 /**
@@ -18,15 +18,15 @@ export class GuardHandler<
 
     private destroy$ = new Subject<void>();
 
-    private _guards?: CanActivate[] | null;
-    private _guardsFac?: () => CanActivate[] | null;
+    private _guards?: GuardLike[] | null;
+    private _guardsFac?: () => GuardLike[] | null;
 
 
     constructor(
         backend: Backend<TInput, TOutput, TContext> | (() => Backend<TInput, TOutput, TContext>),
-        interceptors: Interceptor[] | (() => Interceptor[]) = [],
-        guards?: CanActivate[] | null | (() => CanActivate[] | null),
-        private filters?: Filter[] | (() => Filter[]),
+        interceptors: InterceptorLike[] | (() => InterceptorLike[]) = [],
+        guards?: GuardLike[] | null | (() => GuardLike[] | null),
+        private filters?: FilterLike[] | (() => FilterLike[]),
     ) {
         super(backend, interceptors);
         if (isFunction(guards)) {
@@ -47,7 +47,7 @@ export class GuardHandler<
             if (!this._guards || !this._guards.length) return true;
 
             if (!(await lang.some(
-                this._guards!.map(gd => () => promiseOf(gd.canActivate(input, context))),
+                this._guards!.map(gd => () => promiseOf(isFunction(gd)? gd(input, context) : gd.canActivate(input, context))),
                 vaild => vaild === false))) {
                 return false;
             }
