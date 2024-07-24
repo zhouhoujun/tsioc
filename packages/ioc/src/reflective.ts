@@ -64,6 +64,16 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
      * 调用反射类方法
      * 
      * @param method method name.
+     * @param option invoke arguments instances.
+     * @param instance target instance.
+     */
+    abstract invoke<TArg>(method: MethodType<T>, args?: any[], instance?: T): any;
+    /**
+     * invoke target method.
+     * 
+     * 调用反射类方法
+     * 
+     * @param method method name.
      * @param option invoke arguments.
      * @param instance target instance.
      */

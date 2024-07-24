@@ -19,6 +19,14 @@ export abstract class Filter<TInput = any, TOutput = any, TContext = any> implem
      * @returns An observable of the event stream.
      */
     abstract intercept(input: TInput, next: Handler, context?: TContext): Observable<TOutput>;
+
+    /**
+     * is this equals to target or not
+     * 
+     * 该实例等于目标与否？
+     * @param target 
+     */
+    equals?(target: any): boolean;
 }
 
 /**
@@ -64,6 +72,32 @@ export function getFiltersToken(type: TypeOf<any>, propertyKey?: string): Token<
 
 
 /**
+ * Filter resolver.
+ */
+@Abstract()
+export abstract class FilterResolver {
+    /**
+     * resolve hanlde filter.
+     * @param target 
+     */
+    abstract resolve<T>(target: Type<T> | T | string): FilterLike[];
+    /**
+     * add handle filter.
+     * @param target filter for the target type
+     * @param filter handler filter.
+     * @param order order.
+     */
+    abstract addFilter(target: Type | string, filter: FilterLike, order?: number): this;
+    /**
+     * remove handle filter.
+     * @param target filter for the target type
+     * @param filter handler filter.
+     */
+    abstract removeFilter(target: Type | string, filter: FilterLike): this;
+}
+
+
+/**
  * Endpoint handler method resolver.
  */
 @Abstract()
@@ -87,3 +121,4 @@ export abstract class FilterHandlerResolver {
      */
     abstract removeHandle(filter: Type | string, handler: Handler): this;
 }
+

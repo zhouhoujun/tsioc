@@ -1,4 +1,4 @@
-import { getTokenOf, Token, ProvdierOf, TypeOf, tokenId } from '@tsdi/ioc';
+import { getTokenOf, Token, ProvdierOf, TypeOf, tokenId, Abstract, Type } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Handler } from './Handler';
 
@@ -19,6 +19,14 @@ export interface Interceptor<TInput = any, TOutput = any, TContext = any> {
      * @returns An observable of the event stream.
      */
     intercept(input: TInput, next: Handler, context?: TContext): Observable<TOutput>;
+
+    /**
+     * is this equals to target or not
+     * 
+     * 该实例等于目标与否？
+     * @param target 
+     */
+    equals?(target: any): boolean;
 }
 
 /**
@@ -55,4 +63,29 @@ export const INTERCEPTORS_TOKEN = tokenId<Interceptor[]>('INTERCEPTORS_TOKEN');
  */
 export function getInterceptorsToken(type: TypeOf<any> | string, propertyKey?: string): Token<Interceptor[]> {
     return getTokenOf(type, 'INTERCEPTORS', propertyKey);
+}
+
+/**
+ * Interceptor resolver.
+ */
+@Abstract()
+export abstract class InterceptorResolver {
+    /**
+     * resolve hanlde interceptor.
+     * @param target 
+     */
+    abstract resolve<T>(target: Type<T> | T | string): InterceptorLike[];
+    /**
+     * add handle interceptor.
+     * @param target interceptor for the target type
+     * @param interceptor handler interceptor.
+     * @param order order.
+     */
+    abstract addInterceptor(target: Type | string, interceptor: InterceptorLike, order?: number): this;
+    /**
+     * remove handle interceptor.
+     * @param target interceptor for the target type
+     * @param interceptor handler interceptor.
+     */
+    abstract removeInterceptor(target: Type | string, interceptor: InterceptorLike): this;
 }

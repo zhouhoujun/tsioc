@@ -1,6 +1,6 @@
 import { Type, ClassType } from '../types';
 import { Class } from '../metadata/type';
-import { isFunction, isPromise } from '../utils/chk';
+import { isArray, isFunction, isPromise } from '../utils/chk';
 import { InjectFlags, Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
@@ -59,11 +59,22 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         return this._ctx.resolveArgument({ provider: token, flags, nullable: true })!
     }
 
-    invoke<TArg>(method: MethodType<T>, option?: InvokeArguments<TArg> | InvocationContext, instance?: T) {
+    invoke<TArg>(method: MethodType<T>, optionOrArgs?: any[] | InvokeArguments<TArg> | InvocationContext, instance?: T) {
         this.assertNotDestroyed();
         const name = this.class.getMethodName(method);
+        let args: any[] | undefined;
+        let option: InvokeArguments<TArg> | InvocationContext | undefined
+        if (isArray(optionOrArgs)) {
+            args = optionOrArgs;
+            option = undefined;
+        } else {
+            option = optionOrArgs;
+        }
+
         const [context, destroy] = this.createMethodContext(name, option);
-        const args = this.class.resolveArguments(name, context);
+        if (!args) {
+            args = this.class.resolveArguments(name, context);
+        }
         const result = this.class.invoke(name, context, instance ?? this.getInstance(), args);
 
         if (destroy) {

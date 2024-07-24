@@ -9,13 +9,13 @@ import {
     ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartupEvent,
     ApplicationStartedEvent, ApplicationStartEvent, PayloadApplicationEvent
 } from './events';
-import { FilterHandlerResolver } from './filters/filter';
+import { FilterHandlerResolver, FilterResolver } from './filters/filter';
 import { InvocationOptions, InvocationFactoryResolver } from './invocation';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
 import { TransportParameter, TransportParameterOptions } from './handlers/resolver';
-import { InterceptorFn } from './Interceptor';
+import { InterceptorFn, InterceptorResolver } from './Interceptor';
 
 
 /**
@@ -476,14 +476,34 @@ export interface Interceptable {
 
 
 /**
- * Interceptable decorator, for class. use to define the class as filter register in global filter.
+ * Interceptable decorator, for class. use to define the class as filter register in global interceptor.
  * @Interceptable
  * 
  * @exports {@link Interceptable}
  */
 export const Interceptable: Interceptable = createDecorator('Interceptable', {
     props: (filter: Type | string, options?: InvocationOptions) => ({ filter, ...options }),
+    design: {
+        method: (ctx, next) => {
+            const typeRef = ctx.class;
+            const decors = typeRef.getDecorDefines<InterceptMetadata>(ctx.currDecor, Decors.method);
+            const injector = ctx.injector;
+            const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
+            const resolver = injector.get(InterceptorResolver);
+            decors.forEach(decor => {
+                const { filter, token, order } = decor.metadata;
+                const interceptor = (...args: any[]) => factory.invoke(decor.propertyKey, args);
+                if (token) {
+                    injector.inject({ provide: interceptor, useValue: interceptor, multi: true, multiOrder: order });
+                } else {
+                    resolver.addInterceptor(filter as Type | string, interceptor, order);
+                    factory.onDestroy(() => resolver.removeInterceptor(filter as Type | string, interceptor));
+                }
+            });
 
+            next()
+        }
+    }
 });
 
 /**
@@ -509,7 +529,27 @@ export interface Filterable {
  */
 export const Filterable: Filterable = createDecorator('Filterable', {
     props: (filter: Type | string, options?: InvocationOptions) => ({ filter, ...options }),
+    design: {
+        method: (ctx, next) => {
+            const typeRef = ctx.class;
+            const decors = typeRef.getDecorDefines<InterceptMetadata>(ctx.currDecor, Decors.method);
+            const injector = ctx.injector;
+            const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
+            const filterResolver = injector.get(FilterResolver);
+            decors.forEach(decor => {
+                const { filter, token, order } = decor.metadata;
+                const filer = (...args: any[]) => factory.invoke(decor.propertyKey, args);
+                if (token) {
+                    injector.inject({ provide: filer, useValue: filer, multi: true, multiOrder: order });
+                } else {
+                    filterResolver.addFilter(filter as Type | string, filer, order);
+                    factory.onDestroy(() => filterResolver.removeFilter(filter as Type | string, filer));
+                }
+            });
 
+            next()
+        }
+    }
 });
 
 
