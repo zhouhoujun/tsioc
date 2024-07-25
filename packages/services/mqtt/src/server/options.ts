@@ -1,5 +1,5 @@
 import { tokenId } from '@tsdi/ioc';
-import { CanActivate, Filter, Interceptor } from '@tsdi/core';
+import { GuardLike, Filter, Interceptor } from '@tsdi/core';
 import { ServerOpts } from '@tsdi/endpoints';
 import { MqttConnectOpts } from '../connect';
 
@@ -24,4 +24,4 @@ export const MQTT_SERV_FILTERS = tokenId<Filter[]>('MQTT_SERV_FILTERS');
 /**
  * MQTT Guards.
  */
-export const MQTT_SERV_GUARDS = tokenId<CanActivate[]>('MQTT_SERV_GUARDS');
+export const MQTT_SERV_GUARDS = tokenId<GuardLike[]>('MQTT_SERV_GUARDS');

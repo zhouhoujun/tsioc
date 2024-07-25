@@ -1,5 +1,5 @@
 import { ClassMethodDecorator, createDecorator, Type, TypeMetadata } from '@tsdi/ioc';
-import { CanActivate, PipeTransform } from '@tsdi/core';
+import { GuardLike, PipeTransform } from '@tsdi/core';
 
 
 /**
@@ -17,7 +17,7 @@ export interface AuthorizationMetadata extends TypeMetadata {
     /**
      * route guards.
      */
-    guards?: Type<CanActivate>[];
+    guards?: Type<GuardLike>[];
 }
 
 

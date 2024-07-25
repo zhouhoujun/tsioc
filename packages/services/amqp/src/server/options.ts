@@ -1,4 +1,4 @@
-import { Interceptor, Filter, CanActivate } from '@tsdi/core';
+import { Interceptor, Filter, GuardLike } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ServerOpts } from '@tsdi/endpoints';
 import * as amqp from 'amqplib';
@@ -29,4 +29,4 @@ export const AMQP_SERV_FILTERS = tokenId<Filter[]>('AMQP_SERV_FILTERS');
 /**
  * Amqp Guards.
  */
-export const AMQP_SERV_GUARDS = tokenId<CanActivate[]>('AMQP_SERV_GUARDS');
+export const AMQP_SERV_GUARDS = tokenId<GuardLike[]>('AMQP_SERV_GUARDS');

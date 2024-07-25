@@ -29,6 +29,7 @@ export abstract class AbstractConfigableHandler<
     TContext = any> implements Handler<TInput, TOutput, TContext>, HandlerService {
     abstract get injector(): Injector;
     abstract get ready(): Promise<void>;
+    
     abstract getOptions(): TOptions;
 
     /**
@@ -103,7 +104,7 @@ export interface GuardHandlerOptions<TInput = any> extends BackendOptions<TInput
  */
 export interface HandlerOptions<TInput = any, TArg = any> extends InvokerOptions<any, TArg> {
     /**
-     * An array of dependency-injection tokens used to look up `CanActivate()`
+     * An array of dependency-injection tokens used to look up `GuardLike()`
      * handlers, in order to determine if the current user is allowed to
      * activate the component. By default, any user can activate.
      */

@@ -1,5 +1,5 @@
 import { tokenId } from '@tsdi/ioc';
-import { CanActivate, Filter, Interceptor } from '@tsdi/core';
+import { GuardLike, Filter, Interceptor } from '@tsdi/core';
 import { ServerOpts } from '@tsdi/endpoints';
 import { RedisOptions } from 'ioredis';
 
@@ -25,5 +25,5 @@ export const REDIS_SERV_FILTERS = tokenId<Filter[]>('REDIS_SERV_FILTERS');
 /**
  * REDIS Guards.
  */
-export const REDIS_SERV_GUARDS = tokenId<CanActivate[]>('REDIS_SERV_GUARDS');
+export const REDIS_SERV_GUARDS = tokenId<GuardLike[]>('REDIS_SERV_GUARDS');
 

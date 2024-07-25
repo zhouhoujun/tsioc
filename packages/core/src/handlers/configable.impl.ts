@@ -1,14 +1,15 @@
 import {
-    EMPTY, InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType,
+    EMPTY, InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType, lang, promiseOf, Execption, isFunction,
     Token, InvocationContext, createContext, isClassType, ArgumentExecption, isToken, isArray, toProvider,
 } from '@tsdi/ioc';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
 import { INTERCEPTORS_TOKEN, Interceptor, InterceptorLike } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
-import { FILTERS_TOKEN, Filter } from '../filters/filter';
-import { GuardHandler } from './guards';
-import { Backend } from '../Handler';
+import { FILTERS_TOKEN, Filter, FilterLike } from '../filters/filter';
+import { Backend, Handler } from '../Handler';
 import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerOptions, HandlerService, TypeConfigableHandlerOptions } from './configable';
+import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
+import { InterceptorHandler } from './handler';
 
 
 
@@ -19,8 +20,12 @@ export class ConfigableHandler<
     TInput = any,
     TOutput = any,
     TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>,
-    TContext = any> extends GuardHandler<TInput, TOutput, TContext> implements AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
+    TContext = any> implements AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
 
+    private destroy$ = new Subject<void>();
+    private chain?: Handler<TInput, TOutput, TContext> | null;
+
+    private _guards?: GuardLike[] | null;
 
     protected options: TOptions;
 
@@ -39,12 +44,6 @@ export class ConfigableHandler<
     constructor(
         protected context: InvocationContext,
         options: TOptions) {
-        super(
-            () => this.getBackend(),
-            () => this.getInterceptors(),
-            () => this.getGuards(),
-            () => this.getFilters()
-        );
 
         this.options = this.initOptions(options);
         if (this.options.backend && isClassType(this.options.backend) && !this.injector.has(this.options.backend, InjectFlags.Self)) {
@@ -54,7 +53,7 @@ export class ConfigableHandler<
         setHandlerOptions(this, this.options);
     }
 
-    protected override onReady(): Promise<void> {
+    protected onReady(): Promise<void> {
         return this.ready;
     }
 
@@ -65,6 +64,37 @@ export class ConfigableHandler<
             filtersToken: FILTERS_TOKEN,
             ...options
         }
+    }
+
+    handle(input: TInput, context?: TContext): Observable<TOutput> {
+        return defer(async () => {
+
+            if (this.onReady) await this.onReady();
+
+            if (this._guards === undefined) {
+                this._guards = this.getGuards() ?? null;
+            }
+
+            if (!this._guards || !this._guards.length) return true;
+
+            if (!(await lang.some(
+                this._guards!.map(gd => () => promiseOf(isFunction(gd) ? gd(input, context) : gd.canHandle(input, context))),
+                vaild => vaild === false))) {
+                return false;
+            }
+            return true;
+        }).pipe(
+            mergeMap(r => {
+                if (r === true) {
+                    if (!this.chain) {
+                        this.chain = this.compose();
+                    }
+                    return this.chain.handle(input, context);
+                }
+                return throwError(() => this.forbiddenError())
+            }),
+            takeUntil(this.destroy$)
+        )
     }
 
 
@@ -116,6 +146,37 @@ export class ConfigableHandler<
         return this;
     }
 
+    protected reset(): void {
+        this.chain = null;
+        this._guards = undefined;
+    }
+
+    private _destroyed = false;
+    onDestroy(): void {
+        if (this._destroyed) return;
+        this._destroyed = true;
+        this.destroy$.next();
+        this.destroy$.complete();
+        this.clear();
+    }
+
+    protected forbiddenError(): Execption {
+        return new Execption('Forbidden')
+    }
+
+
+    /**
+     * compose iterceptors and filters in chain.
+     * @returns 
+     */
+    protected compose(): Handler<TInput, TOutput> {
+        const filters = this.getFilters();
+        const inteceptors = this.getInterceptors();
+        return [...filters, ...inteceptors].reduceRight(
+            (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.getBackend());
+    }
+
+
     /**
      * get registered backend of the handler.
      * @returns 
@@ -128,7 +189,7 @@ export class ConfigableHandler<
     /**
      *  get filters. 
      */
-    protected getFilters(): Filter<TInput, TOutput>[] {
+    protected getFilters(): FilterLike<TInput, TOutput>[] {
         return this.options.filtersToken ? this.injector.get(this.options.filtersToken, EMPTY) : EMPTY;
     }
 
@@ -159,7 +220,6 @@ export class ConfigableHandler<
     }
 
     protected clear() {
-        super.clear();
         if (this.options.interceptorsToken) this.injector.unregister(this.options.interceptorsToken);
         if (this.options.guardsToken) this.injector.unregister(this.options.guardsToken);
         if (this.options.filtersToken) this.injector.unregister(this.options.filtersToken);

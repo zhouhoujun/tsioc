@@ -1,5 +1,5 @@
 import { tokenId } from '@tsdi/ioc';
-import { ExecptionFilter, Interceptor, CanActivate } from '@tsdi/core';
+import { ExecptionFilter, Interceptor, GuardLike } from '@tsdi/core';
 import { ServerOpts } from '@tsdi/endpoints';
 import { CoapServerOptions } from 'coap';
 
@@ -28,7 +28,7 @@ export const COAP_SERV_FILTERS = tokenId<ExecptionFilter[]>('COAP_SERV_FILTERS')
 /**
  * CoAP Guards.
  */
-export const COAP_SERV_GUARDS = tokenId<CanActivate[]>('COAP_SERV_GUARDS');
+export const COAP_SERV_GUARDS = tokenId<GuardLike[]>('COAP_SERV_GUARDS');
 
 
 

@@ -1,5 +1,5 @@
 import { tokenId } from '@tsdi/ioc';
-import { ApplicationEventContext, CanActivate, Filter, Interceptor } from '@tsdi/core';
+import { ApplicationEventContext, GuardLike, Filter, Interceptor } from '@tsdi/core';
 import { BindServerEvent, ServerOpts } from '@tsdi/endpoints';
 import { ServerOptions } from 'ws';
 
@@ -27,7 +27,7 @@ export const WS_SERV_FILTERS = tokenId<Filter[]>('WS_SERV_FILTERS');
 /**
  * WS Guards.
  */
-export const WS_SERV_GUARDS = tokenId<CanActivate[]>('WS_SERV_GUARDS');
+export const WS_SERV_GUARDS = tokenId<GuardLike[]>('WS_SERV_GUARDS');
 
 
 /**
@@ -41,6 +41,6 @@ export const WS_BIND_FILTERS = tokenId<Filter<ApplicationEventContext<BindServer
 /**
  * WS bind server Guards.
  */
-export const WS_BIND_GUARDS = tokenId<CanActivate<ApplicationEventContext<BindServerEvent>>[]>('WS_BIND_GUARDS');
+export const WS_BIND_GUARDS = tokenId<GuardLike<ApplicationEventContext<BindServerEvent>>[]>('WS_BIND_GUARDS');
 
 
