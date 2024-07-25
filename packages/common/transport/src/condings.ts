@@ -1,5 +1,5 @@
 import { EMPTY, Injector, tokenId, toProvider } from '@tsdi/ioc';
-import { CanActivate, ExecptionHandlerFilter, Interceptor, createHandler } from '@tsdi/core';
+import { CanHandle, ExecptionHandlerFilter, Interceptor, createHandler } from '@tsdi/core';
 import { Message, Packet } from '@tsdi/common';
 import {
     CodingsAapter,
@@ -27,7 +27,7 @@ export const TRANSPORT_ENCODINGS_FILTERS = tokenId<Interceptor<Packet<any>, Mess
 /**
  *  Transport encodings guards.
  */
-export const TRANSPORT_ENCODINGS_GUARDS = tokenId<CanActivate[]>('TRANSPORT_ENCODINGS_GUARDS');
+export const TRANSPORT_ENCODINGS_GUARDS = tokenId<CanHandle[]>('TRANSPORT_ENCODINGS_GUARDS');
 
 export class TransportEncodings extends Encodings {
     /**
@@ -81,7 +81,7 @@ export const TRANSPORT_DECODINGS_FILTERS = tokenId<Interceptor<Message, Packet<a
 /**
  *  Transport decodings guards.
  */
-export const TRANSPORT_DECODINGS_GUARDS = tokenId<CanActivate[]>('TRANSPORT_DECODINGS_GUARDS');
+export const TRANSPORT_DECODINGS_GUARDS = tokenId<CanHandle[]>('TRANSPORT_DECODINGS_GUARDS');
 
 export class TransportDecodings extends Decodings {
 

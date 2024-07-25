@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { Filter } from './filters/filter';
-import { CanActivate } from './guard';
+import { CanHandle } from './guard';
 import { Handler } from './Handler';
 import { Interceptor } from './Interceptor';
 import { PipeTransform } from './pipes/pipe';
@@ -34,7 +34,7 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * use guards.
      * @param guards 
      */
-    abstract useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[]): this;
+    abstract useGuards(guards: ProvdierOf<CanHandle> | ProvdierOf<CanHandle>[]): this;
     /**
      * use interceptor
      * @param interceptor 

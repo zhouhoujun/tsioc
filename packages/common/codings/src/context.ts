@@ -32,11 +32,6 @@ export class CodingsContext<TOpts extends CodingsOptions = CodingsOptions> exten
         if (this.adapter) {
             return this.adapter.isCompleted(data);
         }
-        // if (this.options?.complete) {
-        //     return this.options.complete(data)
-        // } else if (this.options?.end) {
-        //     return data instanceof this.options.end
-        // }
         return false;
     }
 

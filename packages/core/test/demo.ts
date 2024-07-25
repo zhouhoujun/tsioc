@@ -56,7 +56,7 @@ export class ClassSevice {
 
     state!: string;
 
-    @Filterable(String, {token: true})
+    @Filterable(String)
     filter(intput: any, next: Handler): Observable<any> {
         return next.handle(intput);
     }

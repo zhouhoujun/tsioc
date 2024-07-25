@@ -1,5 +1,5 @@
 import { Abstract, Type, OperationInvoker, tokenId, OnDestroy, Destroyable, ReflectiveRef, DestroyCallback, Injector, Class } from '@tsdi/ioc';
-import { CanActivate } from './guard';
+import { CanHandle } from './guard';
 import { Interceptor } from './Interceptor';
 import { Filter } from './filters/filter';
 import { AbstractConfigableHandler, ConfigableHandlerOptions } from './handlers/configable';
@@ -129,5 +129,5 @@ export interface InvocationOptions<T = any, TArg = any> extends ConfigableHandle
 
 
 export const OPERA_INTERCEPTORS = tokenId<Interceptor[]>('OPERA_INTERCEPTORS');
-export const OPERA_GUARDS = tokenId<CanActivate[]>('OPERA_GUARDS');
+export const OPERA_GUARDS = tokenId<CanHandle[]>('OPERA_GUARDS');
 export const OPERA_FILTERS = tokenId<Filter[]>('OPERA_FILTERS');

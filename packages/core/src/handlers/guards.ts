@@ -47,7 +47,7 @@ export class GuardHandler<
             if (!this._guards || !this._guards.length) return true;
 
             if (!(await lang.some(
-                this._guards!.map(gd => () => promiseOf(isFunction(gd)? gd(input, context) : gd.canActivate(input, context))),
+                this._guards!.map(gd => () => promiseOf(isFunction(gd)? gd(input, context) : gd.canHandle(input, context))),
                 vaild => vaild === false))) {
                 return false;
             }

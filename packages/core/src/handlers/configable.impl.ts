@@ -2,7 +2,7 @@ import {
     EMPTY, InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType,
     Token, InvocationContext, createContext, isClassType, ArgumentExecption, isToken, isArray, toProvider,
 } from '@tsdi/ioc';
-import { CanActivate, GuardLike, GUARDS_TOKEN } from '../guard';
+import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
 import { INTERCEPTORS_TOKEN, Interceptor, InterceptorLike } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
 import { FILTERS_TOKEN, Filter } from '../filters/filter';
@@ -96,7 +96,7 @@ export class ConfigableHandler<
      * use guards for the handler.
      * @param guards 
      */
-    useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this {
+    useGuards(guards: ProvdierOf<CanHandle> | ProvdierOf<CanHandle>[], order?: number): this {
         if (!this.options.guardsToken) throw new ArgumentExecption('no guards token');
         this.regMulti(this.options.guardsToken, guards, order);
         this.reset();
@@ -189,7 +189,7 @@ export function createHandler<TClass extends ConfigableHandler, TInput>(context:
 export function createHandler<TInput, TOutput, TClass extends ConfigableHandler>(context: Injector | InvocationContext,
     backend: Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>,
     interceptorsToken: Token<Interceptor<TInput, TOutput>[]>,
-    guardsToken?: Token<CanActivate[]>,
+    guardsToken?: Token<CanHandle[]>,
     filtersToken?: Token<Filter<TInput, TOutput>[]>,
     /**
      * execption handlers
@@ -198,7 +198,7 @@ export function createHandler<TInput, TOutput, TClass extends ConfigableHandler>
 ): ConfigableHandler<TInput, TOutput>;
 export function createHandler<TInput, TOutput>(context: Injector | InvocationContext, arg: ConfigableHandlerOptions<TInput> | Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>,
     interceptorsToken?: Token<Interceptor<TInput, TOutput>[]>,
-    guardsToken?: Token<CanActivate[]>,
+    guardsToken?: Token<CanHandle[]>,
     filtersToken?: Token<Filter<TInput, TOutput>[]>,
     execptionHandlers?: ClassType<any> | ClassType[],
 ): ConfigableHandler<TInput, TOutput> {

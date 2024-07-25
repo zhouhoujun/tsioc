@@ -1,5 +1,5 @@
 import { tokenId, Type } from '@tsdi/ioc';
-import { Interceptor, Filter, CanActivate } from '@tsdi/core';
+import { Interceptor, Filter, CanHandle } from '@tsdi/core';
 import { MimeSource } from '@tsdi/common/transport';
 import { ContentOptions, ProxyOpts, ServerOpts, MiddlewareLike } from '@tsdi/endpoints';
 import * as http from 'http';
@@ -61,4 +61,4 @@ export const HTTP_MIDDLEWARES = tokenId<HttpMiddleware[]>('HTTP_MIDDLEWARES');
 /**
  * HTTP Guards.
  */
-export const HTTP_SERV_GUARDS = tokenId<CanActivate<HttpContext>[]>('HTTP_SERV_GUARDS');
+export const HTTP_SERV_GUARDS = tokenId<CanHandle<HttpContext>[]>('HTTP_SERV_GUARDS');

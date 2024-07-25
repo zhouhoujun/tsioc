@@ -3,7 +3,7 @@ import {
     Execption, isArray, isPromise, isObservable, isBoolean
 } from '@tsdi/ioc';
 import {
-    Handler, CanActivate, getGuardsToken, getInterceptorsToken,
+    Handler, CanHandle, getGuardsToken, getInterceptorsToken,
     getFiltersToken, setHandlerOptions, createHandler
 } from '@tsdi/core';
 import { Pattern, PatternFormatter, joinPath, normalize } from '@tsdi/common';
@@ -368,7 +368,7 @@ export function runHybirds<TInput extends RequestContext>(endpoints: (RequestHan
 export class MappingRoute implements Middleware, RequestHandler {
 
     private handler?: RequestHandler;
-    private _guards?: CanActivate[];
+    private _guards?: CanHandle[];
 
     constructor(
         protected injector: Injector,
@@ -405,7 +405,7 @@ export class MappingRoute implements Middleware, RequestHandler {
             this._guards = this.route.guards?.map(g => isFunction(g) ? ctx.resolve(g) : g) ?? EMPTY
         }
         if (!this._guards.length) return true;
-        return lang.some(this._guards.map(guard => () => promiseOf(guard.canActivate(ctx))), vaild => vaild === false)
+        return lang.some(this._guards.map(guard => () => promiseOf(guard.canHandle(ctx))), vaild => vaild === false)
     }
 
     protected async parse(route: Route & { router?: Router }): Promise<MiddlewareLike> {

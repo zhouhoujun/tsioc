@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
  * 
  * 处理器守卫
  */
-export interface CanActivate<T = any, TContext = any> {
+export interface CanHandle<T = any, TContext = any> {
     /**
      * handler guard. can invoke handler or not.
      * 
@@ -16,27 +16,27 @@ export interface CanActivate<T = any, TContext = any> {
      * @param context guard with context.
      * @returns can activate or not. type of boolean, Promise<boolean> or Observable<boolean>.
      */
-    canActivate(input: T, context?: TContext): boolean | Promise<boolean> | Observable<boolean>;
+    canHandle(input: T, context?: TContext): boolean | Promise<boolean> | Observable<boolean>;
 }
 
 /**
  * hander guard fn.
  */
-export type CanActivateFn<T = any, TContext = any> = (input: T, context?: TContext) => boolean | Promise<boolean> | Observable<boolean>;
+export type CanHandleFn<T = any, TContext = any> = (input: T, context?: TContext) => boolean | Promise<boolean> | Observable<boolean>;
 
 /**
  * Handler Guard.
  * 
  * 处理器守卫
  */
-export type GuardLike<T = any, TContext = any> = CanActivate<T, TContext> | CanActivateFn<T, TContext>;
+export type GuardLike<T = any, TContext = any> = CanHandle<T, TContext> | CanHandleFn<T, TContext>;
 
 /**
  *  guards multi token
  * 
  *  处理器守卫组的标记令牌
  */
-export const GUARDS_TOKEN = tokenId<CanActivate[]>('GUARDS_TOKEN');
+export const GUARDS_TOKEN = tokenId<CanHandle[]>('GUARDS_TOKEN');
 
 
 const GUARDS = 'GUARDS';
@@ -45,7 +45,7 @@ const GUARDS = 'GUARDS';
  * @param request 
  * @returns 
  */
-export function getGuardsToken(type: TypeOf<any> | string, propertyKey?: string): Token<CanActivate[]> {
+export function getGuardsToken(type: TypeOf<any> | string, propertyKey?: string): Token<CanHandle[]> {
     return getTokenOf(type, GUARDS, propertyKey)
 }
 

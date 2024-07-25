@@ -1,5 +1,5 @@
 import { Abstract, EMPTY, Injectable, Injector, Type, toProvider, tokenId } from '@tsdi/ioc';
-import { Backend, CanActivate, ConfigableHandler, ConfigableHandlerOptions, ExecptionHandlerFilter, Handler, Interceptor, createHandler } from '@tsdi/core';
+import { Backend, CanHandle, ConfigableHandler, ConfigableHandlerOptions, ExecptionHandlerFilter, Handler, Interceptor, createHandler } from '@tsdi/core';
 import { Observable, finalize, mergeMap, of } from 'rxjs';
 import { CodingsOptions, CodingsHandlerOptions } from './options';
 import { CodingsContext } from './context';
@@ -49,7 +49,7 @@ export const DECODINGS_FILTERS = tokenId<Interceptor<any, any, CodingsContext>[]
 /**
  *  decodings guards.
  */
-export const DECODINGS_GUARDS = tokenId<CanActivate[]>('DECODINGS_GUARDS');
+export const DECODINGS_GUARDS = tokenId<CanHandle[]>('DECODINGS_GUARDS');
 
 /**
  * Decodings configable handler.

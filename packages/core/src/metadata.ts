@@ -448,9 +448,9 @@ export interface InterceptMetadata {
     /**
      * intercept target type.
      */
-    filter?: Token;
+    target: Token;
     /**
-     * regitster in filter token or not. 
+     * regitster in target as token or not. 
      */
     token?: boolean;
 
@@ -464,25 +464,25 @@ export type InterceptDecorator = <T extends InterceptorFn>(target: Object, prope
  */
 export interface Interceptable {
     /**
-     * Interceptable decorator, for class. use to define the class as filter register in global interceptor.
+     * Interceptable decorator, for class. use to define the class as interceptor register in global interceptor.
      *
-     * @param {Type} filter intercept target.
-     * @param  {Omit<InterceptMetadata, 'filter'>} option intercept options.
+     * @param {Type} target intercept target.
+     * @param  {Omit<InterceptMetadata, 'target'>} option intercept options.
      */
-    (filter: Type | string, option?: Omit<InterceptMetadata, 'filter'>): InterceptDecorator;
+    (target: Type | string, option?: Omit<InterceptMetadata, 'target'>): InterceptDecorator;
 
 }
 
 
 
 /**
- * Interceptable decorator, for class. use to define the class as filter register in global interceptor.
+ * Interceptable decorator, for class. use to define the class as interceptor register in global interceptor.
  * @Interceptable
  * 
  * @exports {@link Interceptable}
  */
 export const Interceptable: Interceptable = createDecorator('Interceptable', {
-    props: (filter: Type | string, options?: InvocationOptions) => ({ filter, ...options }),
+    props: (target: Type | string, options?: InvocationOptions) => ({ target, ...options }),
     design: {
         method: (ctx, next) => {
             const typeRef = ctx.class;
@@ -491,13 +491,13 @@ export const Interceptable: Interceptable = createDecorator('Interceptable', {
             const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
             const resolver = injector.get(InterceptorResolver);
             decors.forEach(decor => {
-                const { filter, token, order } = decor.metadata;
+                const { target, token, order } = decor.metadata;
                 const interceptor = (...args: any[]) => factory.invoke(decor.propertyKey, args);
                 if (token) {
                     injector.inject({ provide: interceptor, useValue: interceptor, multi: true, multiOrder: order });
                 } else {
-                    resolver.addInterceptor(filter as Type | string, interceptor, order);
-                    factory.onDestroy(() => resolver.removeInterceptor(filter as Type | string, interceptor));
+                    resolver.addInterceptor(target as Type | string, interceptor, order);
+                    factory.onDestroy(() => resolver.removeInterceptor(target as Type | string, interceptor));
                 }
             });
 
@@ -513,10 +513,10 @@ export interface Filterable {
     /**
      * Filterable decorator, for class. use to define the class as filter register in global filter.
      *
-     * @param {Type} filter filter target.
+     * @param {Type} target filter target.
      * @param { Omit<InterceptMetadata, 'filter'>} option filter options.
      */
-    (filter: Type | string, option?: Omit<InterceptMetadata, 'filter'>): InterceptDecorator;
+    (target: Type | string, option?: Omit<InterceptMetadata, 'target'>): InterceptDecorator;
 }
 
 
@@ -528,7 +528,7 @@ export interface Filterable {
  * @exports {@link Filterable}
  */
 export const Filterable: Filterable = createDecorator('Filterable', {
-    props: (filter: Type | string, options?: InvocationOptions) => ({ filter, ...options }),
+    props: (target: Type | string, options?: InvocationOptions) => ({ target, ...options }),
     design: {
         method: (ctx, next) => {
             const typeRef = ctx.class;
@@ -537,13 +537,13 @@ export const Filterable: Filterable = createDecorator('Filterable', {
             const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
             const filterResolver = injector.get(FilterResolver);
             decors.forEach(decor => {
-                const { filter, token, order } = decor.metadata;
-                const filer = (...args: any[]) => factory.invoke(decor.propertyKey, args);
+                const { target, token, order } = decor.metadata;
+                const filter = (...args: any[]) => factory.invoke(decor.propertyKey, args);
                 if (token) {
-                    injector.inject({ provide: filer, useValue: filer, multi: true, multiOrder: order });
+                    injector.inject({ provide: target, useValue: filter, multi: true, multiOrder: order });
                 } else {
-                    filterResolver.addFilter(filter as Type | string, filer, order);
-                    factory.onDestroy(() => filterResolver.removeFilter(filter as Type | string, filer));
+                    filterResolver.addFilter(target as Type | string, filter, order);
+                    factory.onDestroy(() => filterResolver.removeFilter(target as Type | string, filter));
                 }
             });
 

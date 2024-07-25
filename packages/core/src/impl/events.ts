@@ -1,6 +1,6 @@
 import { ArgumentExecption, getClass, Injectable, InjectFlags, Injector, ProvdierOf, StaticProvider, tokenId, Type } from '@tsdi/ioc';
 import { finalize, map, mergeMap, Observable, of, throwError } from 'rxjs';
-import { CanActivate } from '../guard';
+import { CanHandle } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
 import { Interceptor } from '../Interceptor';
 import { Handler } from '../Handler';
@@ -25,7 +25,7 @@ export const EVENT_MULTICASTER_FILTERS = tokenId<Filter[]>('EVENT_MULTICASTER_FI
 /**
  *  event multicaster guards multi token.
  */
-export const EVENT_MULTICASTER_GUARDS = tokenId<CanActivate[]>('EVENT_MULTICASTER_GUARDS');
+export const EVENT_MULTICASTER_GUARDS = tokenId<CanHandle[]>('EVENT_MULTICASTER_GUARDS');
 
 @Injectable()
 export class DefaultEventMulticaster extends ApplicationEventMulticaster implements Handler<ApplicationEventContext> {
@@ -49,7 +49,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[]): this {
+    useGuards(guards: ProvdierOf<CanHandle> | ProvdierOf<CanHandle>[]): this {
         this._handler.useGuards(guards);
         return this;
     }

@@ -20,11 +20,6 @@ export interface CodingsOptions {
      */
     subfix?: string;
 
-    // end?: Type;
-
-    // complete?(data: any): boolean;
-
-    // defaults?: Array<[Type | string, Type | string]>
 }
 
 

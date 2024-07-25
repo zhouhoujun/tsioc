@@ -2,7 +2,7 @@ import {
     isArray, isString, lang, Type, TypeOf, createDecorator, ActionTypes, PatternMetadata, InjectFlags,
     ClassMethodDecorator, createParamDecorator, TypeMetadata, Execption, isMetadataObject, DecorDefine
 } from '@tsdi/ioc';
-import { CanActivate, PipeTransform, TransportParameterDecorator, TransportParameter } from '@tsdi/core';
+import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter } from '@tsdi/core';
 import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Transport } from '@tsdi/common';
 import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, ProtocolRouteOptions, RouteMappingMetadata, RouteOptions, Router } from './router/router';
 import { Middleware, MiddlewareFn } from './middleware/middleware';
@@ -194,9 +194,9 @@ export interface RouteMapping {
      * route decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {Type<CanActivate>[]} [guards] the guards for the route.
+     * @param {Type<CanHandle>[]} [guards] the guards for the route.
      */
-    (route: string, guards?: TypeOf<CanActivate>[]): ClassMethodDecorator;
+    (route: string, guards?: TypeOf<CanHandle>[]): ClassMethodDecorator;
 
     /**
      * route decorator. define the controller method as an route.
@@ -238,7 +238,7 @@ export interface RouteMapping {
 
 export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<any>>(name: string, controllerOnly?: boolean) {
     return createDecorator<T>(name, {
-        props: (route: string, arg2?: Type<Router> | Type<CanActivate>[] | string | T) => {
+        props: (route: string, arg2?: Type<Router> | Type<CanHandle>[] | string | T) => {
             route = normalize(route);
             if (isArray(arg2)) {
                 return { route, guards: arg2 } as T;
@@ -379,9 +379,9 @@ export interface Controller {
      * controller decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {TypeOf<CanActivate>[]} [guards] the guards for the route.
+     * @param {TypeOf<CanHandle>[]} [guards] the guards for the route.
      */
-    (route?: string, guards?: TypeOf<CanActivate>[]): ClassMethodDecorator;
+    (route?: string, guards?: TypeOf<CanHandle>[]): ClassMethodDecorator;
 
     /**
      * controller decorator. define the controller method as an route.
@@ -445,7 +445,7 @@ export function createRouteDecorator(method: RequestMethod) {
     return createDecorator<RouteMappingMetadata>('Route', {
         props: (
             route: string,
-            arg2?: string | { middlewares: (Middleware | MiddlewareFn)[], guards?: Type<CanActivate>[], contentType?: string, method?: string }
+            arg2?: string | { middlewares: (Middleware | MiddlewareFn)[], guards?: Type<CanHandle>[], contentType?: string, method?: string }
         ) => {
             route = normalize(route);
             const regExp = createRestfulMatcher(route);

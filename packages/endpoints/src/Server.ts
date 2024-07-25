@@ -1,6 +1,6 @@
 import { HybirdTransport, MessageFactory, PatternFormatter } from '@tsdi/common';
 import { IncomingFactory, MessageReader, MessageWriter, OutgoingFactory, StatusAdapter, TransportOpts } from '@tsdi/common/transport';
-import { ApplicationEvent, CanActivate, Filter, HandlerService, Interceptor, PipeTransform, Runner, Shutdown } from '@tsdi/core';
+import { ApplicationEvent, CanHandle, Filter, HandlerService, Interceptor, PipeTransform, Runner, Shutdown } from '@tsdi/core';
 import { Abstract, ProvdierOf, StaticProvider } from '@tsdi/ioc';
 import { RequestContext, RequestContextFactory } from './RequestContext';
 import { RequestHandlerOptions, AbstractRequestHandler } from './AbstractRequestHandler';
@@ -139,7 +139,7 @@ export abstract class Server<TRequest extends RequestContext = RequestContext, T
         return this.handler.getOptions()
     }
 
-    useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number | undefined): this {
+    useGuards(guards: ProvdierOf<CanHandle> | ProvdierOf<CanHandle>[], order?: number | undefined): this {
         this.handler.useGuards(guards, order);
         return this;
     }

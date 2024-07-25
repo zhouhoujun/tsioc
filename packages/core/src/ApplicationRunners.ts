@@ -1,5 +1,5 @@
 import { Abstract, Class, InvocationContext, ModuleRef, OnDestroy, ProvdierOf, ReflectiveRef, StaticProvider, Type } from '@tsdi/ioc';
-import { CanActivate } from './guard';
+import { CanHandle } from './guard';
 import { Interceptor } from './Interceptor';
 import { PipeTransform } from './pipes/pipe';
 import { HandlerService } from './handlers/configable';
@@ -68,7 +68,7 @@ export abstract class ApplicationRunners implements HandlerService, OnDestroy {
    * use guards.
    * @param guards 
    */
-  abstract useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[]): this;
+  abstract useGuards(guards: ProvdierOf<CanHandle> | ProvdierOf<CanHandle>[]): this;
   /**
     * use interceptor
     * @param interceptor 

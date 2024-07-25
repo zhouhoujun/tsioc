@@ -7,7 +7,7 @@ import { ApplicationRunners, RunnableFactory, RunnableRef } from '../Application
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent, ApplicationStartupEvent } from '../events';
 import { PipeTransform } from '../pipes/pipe';
-import { CanActivate } from '../guard';
+import { CanHandle } from '../guard';
 import { Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
 import { Filter } from '../filters/filter';
@@ -32,7 +32,7 @@ export const APP_RUNNERS_FILTERS = tokenId<Filter[]>('APP_RUNNERS_FILTERS');
 /**
  *  Application runner guards multi token
  */
-export const APP_RUNNERS_GUARDS = tokenId<CanActivate[]>('APP_RUNNERS_GUARDS');
+export const APP_RUNNERS_GUARDS = tokenId<CanHandle[]>('APP_RUNNERS_GUARDS');
 
 
 @Injectable()
@@ -63,7 +63,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         return this;
     }
 
-    useGuards(guards: ProvdierOf<CanActivate> | ProvdierOf<CanActivate>[], order?: number): this {
+    useGuards(guards: ProvdierOf<CanHandle> | ProvdierOf<CanHandle>[], order?: number): this {
         this._handler.useGuards(guards, order);
         return this;
     }

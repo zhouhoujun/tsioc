@@ -1,5 +1,5 @@
 import { Class, DecorDefine, Injectable, Injector, isString, OnDestroy, ReflectiveRef, tokenId, Type } from '@tsdi/ioc';
-import { Backend, Handler, CanActivate, Interceptor, Filter, FnHandler, setHandlerOptions, ConfigableHandler } from '@tsdi/core';
+import { Backend, Handler, CanHandle, Interceptor, Filter, FnHandler, setHandlerOptions, ConfigableHandler } from '@tsdi/core';
 import { joinPath, normalize } from '@tsdi/common';
 import { NotFoundExecption, PushDisabledExecption } from '@tsdi/common/transport';
 
@@ -11,7 +11,7 @@ import { RequestContext } from '../RequestContext';
 
 
 export const CTRL_INTERCEPTORS = tokenId<Interceptor[]>('CTRL_INTERCEPTORS');
-export const CTRL_GUARDS = tokenId<CanActivate[]>('CTRL_GUARDS');
+export const CTRL_GUARDS = tokenId<CanHandle[]>('CTRL_GUARDS');
 export const CTRL_FILTERS = tokenId<Filter[]>('CTRL_FILTERS');
 
 /**
