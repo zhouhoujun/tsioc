@@ -30,6 +30,9 @@ export abstract class AbstractConfigableHandler<
     abstract get injector(): Injector;
     abstract get ready(): Promise<void>;
     
+    /**
+     * get config options.
+     */
     abstract getOptions(): TOptions;
 
     /**
