@@ -1,11 +1,11 @@
 import {
     EMPTY, InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType, lang, promiseOf, Execption, isFunction,
-    Token, InvocationContext, createContext, isClassType, ArgumentExecption, isToken, isArray, toProvider,
+    Token, InvocationContext, createContext, isClassType, ArgumentExecption, isToken, isArray, toProvider, Type, getClass,
 } from '@tsdi/ioc';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
-import { INTERCEPTORS_TOKEN, Interceptor, InterceptorLike } from '../Interceptor';
+import { INTERCEPTORS_TOKEN, Interceptor, InterceptorLike, InterceptorResolver } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
-import { FILTERS_TOKEN, Filter, FilterLike } from '../filters/filter';
+import { FILTERS_TOKEN, Filter, FilterLike, FilterResolver } from '../filters/filter';
 import { Backend, Handler } from '../Handler';
 import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerOptions, HandlerService, TypeConfigableHandlerOptions } from './configable';
 import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
@@ -24,6 +24,7 @@ export class ConfigableHandler<
 
     private destroy$ = new Subject<void>();
     private chain?: Handler<TInput, TOutput, TContext> | null;
+    private typeChains: Map<Type | string, Handler<TInput, TOutput, TContext> | null>;
 
     private _guards?: GuardLike[] | null;
 
@@ -51,6 +52,7 @@ export class ConfigableHandler<
         }
 
         setHandlerOptions(this, this.options);
+        this.typeChains = new Map();
     }
 
     protected onReady(): Promise<void> {
@@ -86,10 +88,7 @@ export class ConfigableHandler<
         }).pipe(
             mergeMap(r => {
                 if (r === true) {
-                    if (!this.chain) {
-                        this.chain = this.compose();
-                    }
-                    return this.chain.handle(input, context);
+                    return this.run(input, context);
                 }
                 return throwError(() => this.forbiddenError())
             }),
@@ -145,12 +144,6 @@ export class ConfigableHandler<
         this.reset();
         return this;
     }
-
-    protected reset(): void {
-        this.chain = null;
-        this._guards = undefined;
-    }
-
     private _destroyed = false;
     onDestroy(): void {
         if (this._destroyed) return;
@@ -159,6 +152,47 @@ export class ConfigableHandler<
         this.destroy$.complete();
         this.clear();
     }
+
+    protected run(input: TInput, context?: TContext) {
+        return this.getChain(input).handle(input, context);
+    }
+
+    protected getChain(input: TInput): Handler<TInput, TOutput> {
+        return this.getChainOf(getClass(input));
+    }
+
+    protected getChainOf(type: Type | string): Handler<TInput, TOutput> {
+        let chain = this.typeChains.get(type);
+        if (chain === undefined) {
+            chain = this.composeTypeChain(type);
+            this.typeChains.set(type, chain);
+        }
+
+        return chain ?? this.chain!;
+    }
+
+    /**
+     * componse chain of type.
+     * @param type 
+     * @returns 
+     */
+    protected composeTypeChain(type: Type | string): Handler<TInput, TOutput> | null {
+        if (!this.chain) {
+            this.chain = this.compose();
+        }
+        const filters = this.injector.get(FilterResolver).resolve(type);
+        const inteceptors = this.injector.get(InterceptorResolver).resolve(type);
+        if (!(filters.length || inteceptors.length)) return null;
+        return [...filters, ...inteceptors].reduceRight(
+            (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.chain);
+    }
+
+
+    protected reset(): void {
+        this.chain = null;
+        this._guards = undefined;
+    }
+
 
     protected forbiddenError(): Execption {
         return new Execption('Forbidden')
