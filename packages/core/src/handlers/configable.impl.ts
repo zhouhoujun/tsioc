@@ -1,20 +1,20 @@
 import {
     EMPTY, InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType, lang, promiseOf, Execption, isFunction,
-    Token, InvocationContext, createContext, isClassType, ArgumentExecption, isToken, isArray, toProvider, Type, getClass,
+    Token, InvocationContext, createContext, isClassType, ArgumentExecption, isToken, isArray, toProvider, Type, getClass
 } from '@tsdi/ioc';
+import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
 import { INTERCEPTORS_TOKEN, Interceptor, InterceptorLike, InterceptorResolver } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
 import { FILTERS_TOKEN, Filter, FilterLike, FilterResolver } from '../filters/filter';
 import { Backend, Handler } from '../Handler';
 import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerOptions, HandlerService, TypeConfigableHandlerOptions } from './configable';
-import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { InterceptorHandler } from './handler';
 
 
 
 /**
- * Configable handler
+ * Configable handlers
  */
 export class ConfigableHandler<
     TInput = any,
@@ -157,10 +157,20 @@ export class ConfigableHandler<
         return this.getChain(input).handle(input, context);
     }
 
+    /**
+     * get input chain, register by `@Filterable` or `@Interceptable`
+     * @param input 
+     * @returns 
+     */
     protected getChain(input: TInput): Handler<TInput, TOutput> {
         return this.getChainOf(getClass(input));
     }
 
+    /**
+     * get chain of type, register by `@Filterable` or `@Interceptable`
+     * @param type 
+     * @returns 
+     */
     protected getChainOf(type: Type | string): Handler<TInput, TOutput> {
         let chain = this.chains.get(type);
         if (chain === undefined) {
@@ -172,7 +182,7 @@ export class ConfigableHandler<
     }
 
     /**
-     * componse chain of type.
+     * componse chain of type, register by `@Filterable` or `@Interceptable`
      * @param type 
      * @returns 
      */
