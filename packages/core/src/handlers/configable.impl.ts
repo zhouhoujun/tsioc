@@ -24,7 +24,7 @@ export class ConfigableHandler<
 
     private destroy$ = new Subject<void>();
     private chain?: Handler<TInput, TOutput, TContext> | null;
-    private typeChains: Map<Type | string, Handler<TInput, TOutput, TContext> | null>;
+    private chains: Map<Type | string, Handler<TInput, TOutput, TContext> | null>;
 
     private _guards?: GuardLike[] | null;
 
@@ -52,7 +52,7 @@ export class ConfigableHandler<
         }
 
         setHandlerOptions(this, this.options);
-        this.typeChains = new Map();
+        this.chains = new Map();
     }
 
     protected onReady(): Promise<void> {
@@ -162,10 +162,10 @@ export class ConfigableHandler<
     }
 
     protected getChainOf(type: Type | string): Handler<TInput, TOutput> {
-        let chain = this.typeChains.get(type);
+        let chain = this.chains.get(type);
         if (chain === undefined) {
             chain = this.composeTypeChain(type);
-            this.typeChains.set(type, chain);
+            this.chains.set(type, chain);
         }
 
         return chain ?? this.chain!;
@@ -190,6 +190,7 @@ export class ConfigableHandler<
 
     protected reset(): void {
         this.chain = null;
+        this.chains?.clear();
         this._guards = undefined;
     }
 
@@ -257,6 +258,8 @@ export class ConfigableHandler<
         if (this.options.interceptorsToken) this.injector.unregister(this.options.interceptorsToken);
         if (this.options.guardsToken) this.injector.unregister(this.options.guardsToken);
         if (this.options.filtersToken) this.injector.unregister(this.options.filtersToken);
+        this.chain = undefined;
+        this.chains?.clear();
         this.context = null!;
         this.options = null!;
     }
