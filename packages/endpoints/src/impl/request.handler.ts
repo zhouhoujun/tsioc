@@ -15,7 +15,7 @@ export class DefaultRequestHandler<TInput extends RequestContext = RequestContex
 
 
     protected override getChain(input: TInput): Handler<TInput, any> {
-        return this.getChainOf(getClass(input.request));
+        return this.getChainOf(getClass(input.request)) ?? super.getChain(input);
     }
 
     protected override forbiddenError(): Execption {

@@ -154,6 +154,9 @@ export class ConfigableHandler<
     }
 
     protected run(input: TInput, context?: TContext) {
+        if (!this.chain) {
+            this.chain = this.compose();
+        }
         return this.getChain(input).handle(input, context);
     }
 
@@ -163,7 +166,7 @@ export class ConfigableHandler<
      * @returns 
      */
     protected getChain(input: TInput): Handler<TInput, TOutput> {
-        return this.getChainOf(getClass(input));
+        return this.getChainOf(getClass(input)) ?? this.chain!;
     }
 
     /**
@@ -171,14 +174,14 @@ export class ConfigableHandler<
      * @param type 
      * @returns 
      */
-    protected getChainOf(type: Type | string): Handler<TInput, TOutput> {
+    protected getChainOf(type: Type | string): Handler<TInput, TOutput> | null {
         let chain = this.chains.get(type);
         if (chain === undefined) {
             chain = this.composeTypeChain(type);
             this.chains.set(type, chain);
         }
 
-        return chain ?? this.chain!;
+        return chain;
     }
 
     /**
@@ -187,14 +190,11 @@ export class ConfigableHandler<
      * @returns 
      */
     protected composeTypeChain(type: Type | string): Handler<TInput, TOutput> | null {
-        if (!this.chain) {
-            this.chain = this.compose();
-        }
         const filters = this.injector.get(FilterResolver).resolve(type);
         const inteceptors = this.injector.get(InterceptorResolver).resolve(type);
         if (!(filters.length || inteceptors.length)) return null;
         return [...filters, ...inteceptors].reduceRight(
-            (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.chain);
+            (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.chain!);
     }
 
 
