@@ -25,8 +25,8 @@ import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
         ]),
         EndpointModule.register([
             {
-                microservice: true,
                 transport: 'ws',
+                microservice: true,
                 serverOpts: {
                     heybird: true,
                 }

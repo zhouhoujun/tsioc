@@ -133,7 +133,7 @@ export interface MicroServiceOpts {
     /**
      * server options
      */
-    serverOpts?: ServerOpts;
+    serverOpts?: ServerOpts & HeybirdOpts;
     /**
      * custom provider with module.
      */
