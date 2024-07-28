@@ -38,9 +38,26 @@ export class ConfigableHandler<
         return this.context.injector.ready;
     }
 
+    private _filterResolver?: FilterResolver;
+    get filterResolver() {
+        if (!this._filterResolver) {
+            this._filterResolver = this.injector.get(FilterResolver);
+        }
+        return this._filterResolver;
+    }
+
+    private _interceptorResolver?: InterceptorResolver;
+    get interceptorResolver() {
+        if (!this._interceptorResolver) {
+            this._interceptorResolver = this.injector.get(InterceptorResolver);
+        }
+        return this._interceptorResolver;
+    }
+
     getOptions(): TOptions {
         return this.options;
     }
+
 
     constructor(
         protected context: InvocationContext,
@@ -190,8 +207,8 @@ export class ConfigableHandler<
      * @returns 
      */
     protected composeTypeChain(type: Type | string): Handler<TInput, TOutput> | null {
-        const filters = this.injector.get(FilterResolver).resolve(type);
-        const inteceptors = this.injector.get(InterceptorResolver).resolve(type);
+        const filters = this.filterResolver.resolve(type);
+        const inteceptors = this.interceptorResolver.resolve(type);
         if (!(filters.length || inteceptors.length)) return null;
         return [...filters, ...inteceptors].reduceRight(
             (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.chain!);
@@ -215,9 +232,13 @@ export class ConfigableHandler<
      * @returns 
      */
     protected compose(): Handler<TInput, TOutput> {
+        const type = getClass(this);
+        const hdlFilters = this.filterResolver.resolve(type) ?? EMPTY;
+        const hdlInteceptors = this.interceptorResolver.resolve(type) ?? EMPTY;
+
         const filters = this.getFilters();
         const inteceptors = this.getInterceptors();
-        return [...filters, ...inteceptors].reduceRight(
+        return [...hdlFilters, ...hdlInteceptors, ...filters, ...inteceptors].reduceRight(
             (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.getBackend());
     }
 
@@ -270,6 +291,8 @@ export class ConfigableHandler<
         if (this.options.filtersToken) this.injector.unregister(this.options.filtersToken);
         this.chain = undefined;
         this.chains?.clear();
+        this._filterResolver = undefined;
+        this._interceptorResolver = undefined;
         this.context = null!;
         this.options = null!;
     }
