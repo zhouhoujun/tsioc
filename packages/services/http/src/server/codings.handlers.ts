@@ -1,14 +1,16 @@
 import { Injectable } from '@tsdi/ioc';
-import { PacketOpts, UrlMesage } from '@tsdi/common';
+import { PacketOpts } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
-import { TransportContext } from '@tsdi/common/transport';
-import { HttpIncomings } from './message';
+import { PayloadEncoder, TransportContext } from '@tsdi/common/transport';
+import { HttpIncomings } from './transport';
 import { HttpContext } from './context';
 import { TransportSession } from '@tsdi/endpoints';
 
 
 @Injectable({ static: true })
 export class HttpCodingsHandlers {
+
+    constructor(private payloadEncoder: PayloadEncoder) { }
 
     @DecodeHandler(HttpIncomings)
     handleIncoming(incoming: HttpIncomings, context: TransportContext) {
@@ -18,23 +20,23 @@ export class HttpCodingsHandlers {
 
 
     @EncodeHandler(HttpContext)
-    handleContext(input: HttpContext) {
+    async handleContext(input: HttpContext, context: TransportContext) {
+        const session = context.session as TransportSession;
         const response = input.response;
+        
+        const data = await this.payloadEncoder.encode(session.streamAdapter, input.body, input.resHeaders, session.options.encoding);
         const packet = {
+            url: input.url,
             id: response.id,
             type: response.type,
             status: response.statusCode,
             statusMessage: response.statusMessage,
-            headers: response.headers,
-            data: input.body
+            headers: input.resHeaders.getHeaders(),
+            data
         } as PacketOpts;
         
-        // if (input.resHeaders.hasContentLength()) {
-        //     packet.payload = input.body;
-        // }
-        
         // return packet;
-        return new UrlMesage(input.url, packet)
+        return session.messageFactory?.create(packet)
     }
 
 }

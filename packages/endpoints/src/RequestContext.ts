@@ -143,7 +143,11 @@ export abstract class RequestContext<
     }
 
     set statusMessage(msg: string) {
-        this.response.statusMessage = msg
+        if (this.canSettatusMessage()) this.response.statusMessage = msg
+    }
+
+    protected canSettatusMessage() {
+        return true;
     }
 
     private _ok = true;

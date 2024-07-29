@@ -8,6 +8,7 @@ import { Http2Server, ClientHttp2Stream, IncomingHttpHeaders, IncomingHttpStatus
 import { Observable, defer, share, takeUntil } from 'rxjs';
 import { HttpContext, HttpServRequest, HttpServResponse } from './context';
 import { HttpServerOpts } from './options';
+import { HttpMesage } from '../message';
 
 
 
@@ -68,8 +69,8 @@ export class HttpServerMessageReader implements MessageReader<Http2Server | Http
 
 @Injectable()
 export class HttpServerMessagerWriter implements MessageWriter<Http2Server | HttpsServer | Server, HttpServResponse> {
-    write(socket: Http2Server | HttpsServer | Server, channel: HttpServResponse, msg: any, origin: any, session: TransportSession): Promise<any> {
-       return promisify<any, void>(channel.end, channel)(msg);
+    write(socket: Http2Server | HttpsServer | Server, channel: HttpServResponse, msg: HttpMesage, origin: any, session: TransportSession): Promise<any> {
+       return promisify<any, void>(channel.end, channel)(msg.data);
     }
 }
 

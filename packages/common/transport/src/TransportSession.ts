@@ -167,7 +167,7 @@ export type Outgoings = Message | Outgoing<any>;
  * message reader.
  */
 @Abstract()
-export abstract class MessageReader<TSocket = any, TChannel extends IEventEmitter = IEventEmitter, TMsg extends Incomings = Incomings, TSession extends AbstractTransportSession = AbstractTransportSession> {
+export abstract class MessageReader<TSocket = any, TChannel extends IEventEmitter = IEventEmitter, TMsg = any, TSession extends AbstractTransportSession = AbstractTransportSession> {
     abstract read(socket: TSocket, channel: TChannel | null | undefined, session: TSession): Observable<TMsg>
 
 }
@@ -176,6 +176,6 @@ export abstract class MessageReader<TSocket = any, TChannel extends IEventEmitte
  * message writer.
  */
 @Abstract()
-export abstract class MessageWriter<TSocket = any, TChannel extends IEventEmitter = IEventEmitter, TMsg extends Outgoings = Outgoings, TOrigin = any, TSession extends AbstractTransportSession = AbstractTransportSession> {
+export abstract class MessageWriter<TSocket = any, TChannel extends IEventEmitter = IEventEmitter, TMsg = any, TOrigin = any, TSession extends AbstractTransportSession = AbstractTransportSession> {
     abstract write(socket: TSocket, channel: TChannel | null | undefined, msg: TMsg, origin: TOrigin, session: TSession): Promise<any>;
 }

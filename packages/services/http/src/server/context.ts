@@ -99,6 +99,9 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         }
     }
 
+    protected override canSettatusMessage(): boolean {
+        return this.request.httpVersionMajor < 2
+    }
 
     parseURL(incoming: HttpServRequest, proxy?: boolean): URL {
         const req = incoming;

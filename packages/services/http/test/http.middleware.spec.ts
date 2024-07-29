@@ -267,7 +267,7 @@ describe('middleware', () => {
     });
 
     after(async () => {
-        await ctx.destroy();
+        await ctx?.destroy();
     })
 
 });

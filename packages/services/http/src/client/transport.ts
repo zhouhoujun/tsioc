@@ -1,4 +1,4 @@
-import { Injectable, InvocationContext, isNil, promisify } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, InvocationContext, isNil, promisify } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage, UrlMesage } from '@tsdi/common';
 import { ClientIncoming, ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket, MessageReader, MessageWriter, ctype, ev } from '@tsdi/common/transport';
 import { HttpRequest } from '@tsdi/common/http';
@@ -8,6 +8,7 @@ import { request as httpsRequest } from 'https';
 import { ClientHttp2Session, ClientHttp2Stream, constants, OutgoingHttpHeaders, IncomingHttpHeaders, IncomingHttpStatusHeader, ClientSessionRequestOptions } from 'http2';
 import { Observable, fromEvent } from 'rxjs';
 import { HttpClientOpts } from './options';
+import { HttpMesage } from '../message';
 
 
 
@@ -90,9 +91,9 @@ export class HttpClientMessageReader implements MessageReader<ClientHttp2Session
 }
 
 @Injectable()
-export class HttpClientMessageWriter implements MessageWriter<ClientHttp2Session | null, any, UrlMesage, HttpRequest<any>, ClientTransportSession> {
+export class HttpClientMessageWriter implements MessageWriter<ClientHttp2Session | null, any, HttpMesage, HttpRequest<any>, ClientTransportSession> {
 
-    async write(socket: ClientHttp2Session | null, channel: null, msg: UrlMesage, req: HttpRequest<any>, session: ClientTransportSession): Promise<any> {
+    async write(socket: ClientHttp2Session | null, channel: null, msg: HttpMesage, req: HttpRequest<any>, session: ClientTransportSession): Promise<any> {
         let url = msg.url;
         const clientOpts = session.clientOptions as HttpClientOpts;
         const ac = this.getAbortSignal(req.context);
@@ -100,7 +101,7 @@ export class HttpClientMessageWriter implements MessageWriter<ClientHttp2Session
         if (clientOpts.authority && socket && (!httptl.test(url) || url.startsWith(clientOpts.authority))) {
             url = url.replace(clientOpts.authority, '');
 
-            const reqHeaders = (msg.headers ?? {}) as OutgoingHttpHeaders;
+            const reqHeaders = msg.headers as OutgoingHttpHeaders ?? EMPTY_OBJ;
 
             if (!reqHeaders[HTTP2_HEADER_ACCEPT]) reqHeaders[HTTP2_HEADER_ACCEPT] = ctype.REQUEST_ACCEPT;
             reqHeaders[HTTP2_HEADER_METHOD] = req.method;
@@ -109,7 +110,7 @@ export class HttpClientMessageWriter implements MessageWriter<ClientHttp2Session
             stream = socket.request(reqHeaders, { abort: ac?.signal, ...clientOpts.requestOptions } as ClientSessionRequestOptions);
 
         } else {
-            const headers = req.headers ?? {};
+            const headers = msg.headers ?? {};
 
 
             const option = {

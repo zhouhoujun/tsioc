@@ -1,7 +1,6 @@
 import {
-    EMPTY, InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType, lang, promiseOf, Execption, isFunction,
-    Token, InvocationContext, createContext, isClassType, ArgumentExecption, isToken, isArray, toProvider, Type, getClass,
-    refl
+    EMPTY, InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType, lang, promiseOf, Execption, isFunction, refl,
+    Token, InvocationContext, createContext, isClassType, ArgumentExecption, isToken, isArray, toProvider, Type, getClass
 } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
@@ -281,7 +280,7 @@ export class ConfigableHandler<
         return this.options.guardsToken ? this.injector.get(this.options.guardsToken, null) : null;
     }
 
-    protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], multiOrder?: number, isClass: (type: Function) => boolean = type => !(!type.name || refl.getDef(type).abstract == true)) {
+    protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], multiOrder?: number, isClass: (type: Function) => boolean = type => refl.getDef(type).abstract !== true) {
         const multi = true;
         if (isArray(providers)) {
             this.injector.inject(providers.map((r, i) => toProvider(token, r, { multi, multiOrder, isClass })))

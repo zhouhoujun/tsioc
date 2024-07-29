@@ -22,7 +22,7 @@ export function isFunction(target: any): target is Function {
  * @returns 
  */
 export function isType(v: any): v is Type<any> {
-    return isFunction(v) // && !isPrimit(v)
+    return isFunction(v)  && typeof v.prototype === 'object'; 
 }
 
 /**
@@ -31,7 +31,7 @@ export function isType(v: any): v is Type<any> {
  * @returns 
  */
 export function isClassType(v: any): v is ClassType<any> {
-    return isType(v)
+    return isType(v) && !isPrimit(v)
 }
 
 

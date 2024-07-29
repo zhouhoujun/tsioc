@@ -15,8 +15,9 @@ import { HttpContext, HttpContextFactory } from './server/context';
 import { HttpStatusAdapter } from './status';
 import { HttpResponseEventFactory } from './client/response.factory';
 import { HttpExecptionHandlers } from './execption.handlers';
-import { HttpClientIncoming, HttpClientMessageReader, HttpClientMessageWriter } from './client/message';
-import { HttpServerMessageReader, HttpServerMessagerWriter } from './server/message';
+import { HttpClientIncoming, HttpClientIncomingFactory, HttpClientMessageReader, HttpClientMessageWriter } from './client/transport';
+import { HttpServerMessageReader, HttpServerMessagerWriter } from './server/transport';
+import { HttpMesage, HttpMesageFactory } from './message';
 
 
 @Configuration()
@@ -68,11 +69,13 @@ export class HttpConfiguration {
                 interceptorsToken: HTTP_CLIENT_INTERCEPTORS,
                 filtersToken: HTTP_CLIENT_FILTERS,
                 statusAdapter: HttpStatusAdapter,
+                incomingFactory: HttpClientIncomingFactory,
                 responseFactory: HttpResponseEventFactory,
+                messageFactory: HttpMesageFactory,
                 messageReader: HttpClientMessageReader,
                 messageWriter: HttpClientMessageWriter,
                 transportOpts: {
-                    encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof HttpRequest) },
+                    encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof HttpMesage) },
                     decodingsAdapter: { useValue: new CustomCodingsAdapter(isHttpEvent, [[HttpClientIncoming, ClientIncomingPacket]]) },
                 }
             }
@@ -90,11 +93,12 @@ export class HttpConfiguration {
                 transportOpts: {
                     defaultMethod: 'GET',
                     decodingsAdapter: { useValue: new CustomCodingsAdapter(r => r instanceof HttpContext) },
-                    encodingsAdapter: { useValue: new CustomCodingsAdapter(d => d instanceof UrlMesage) }
+                    encodingsAdapter: { useValue: new CustomCodingsAdapter(d => d instanceof HttpMesage) }
                 },
                 statusAdapter: HttpStatusAdapter,
                 execptionHandlers: HttpExecptionHandlers,
                 requestContextFactory: HttpContextFactory,
+                messageFactory: HttpMesageFactory,
                 messageReader: HttpServerMessageReader,
                 messageWriter: HttpServerMessagerWriter,
                 detailError: true,
