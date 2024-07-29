@@ -42,8 +42,8 @@ export class UdpConfiguration {
             transport: 'udp',
             microservice: true,
             clientType: UdpClient,
-            hanlderType: UdpHandler,
             defaultOpts: {
+                handlerType: UdpHandler,
                 url: 'udp://localhost:3000',
                 interceptorsToken: UDP_CLIENT_INTERCEPTORS,
                 filtersToken: UDP_CLIENT_FILTERS,
@@ -68,8 +68,8 @@ export class UdpConfiguration {
             transport: 'udp',
             microservice: true,
             serverType: UdpServer,
-            handlerType: UdpRequestHandler,
             defaultOpts: {
+                handlerType: UdpRequestHandler,
                 messageReader: UdpMessageReader,
                 messageWriter: UdpMessageWriter,
                 messageFactory: UdpMessageFactory,

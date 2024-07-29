@@ -66,8 +66,8 @@ export class TcpConfiguration {
         return {
             transport: 'tcp',
             clientType: TcpClient,
-            hanlderType: TcpHandler,
             defaultOpts: {
+                handlerType: TcpHandler,
                 interceptorsToken: TCP_CLIENT_INTERCEPTORS,
                 filtersToken: TCP_CLIENT_FILTERS,
                 messageFactory: TcpMessageFactory,
@@ -86,8 +86,8 @@ export class TcpConfiguration {
         return {
             transport: 'tcp',
             serverType: TcpServer,
-            handlerType: TcpRequestHandler,
             defaultOpts: {
+                handlerType: TcpRequestHandler,
                 listenOpts: { port: 3000, host: LOCALHOST },
                 transportOpts: {
                     delimiter: '#',

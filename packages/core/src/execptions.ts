@@ -29,6 +29,12 @@ export class NotHandleExecption extends Execption {
     }
 }
 
+export class ConfigMissingExecption extends Execption {
+    constructor(message = 'Config Missing') {
+        super(`ConfigMissingExecption: ${message}`)
+    }
+}
+
 
 export class GoawayExecption extends Execption {
     constructor(message = 'Connection gowary') {

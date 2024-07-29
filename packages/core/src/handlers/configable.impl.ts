@@ -232,7 +232,7 @@ export class ConfigableHandler<
      * @returns 
      */
     protected compose(): Handler<TInput, TOutput> {
-        const type = getClass(this);
+        const type = this.getHandlerType();
         const hdlFilters = this.filterResolver.resolve(type) ?? EMPTY;
         const hdlInteceptors = this.interceptorResolver.resolve(type) ?? EMPTY;
 
@@ -240,6 +240,10 @@ export class ConfigableHandler<
         const inteceptors = this.getInterceptors();
         return [...hdlFilters, ...hdlInteceptors, ...filters, ...inteceptors].reduceRight(
             (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.getBackend());
+    }
+
+    protected getHandlerType(): Type {
+        return this.getOptions().handlerType ?? getClass(this)
     }
 
 

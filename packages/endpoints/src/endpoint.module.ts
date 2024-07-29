@@ -2,7 +2,7 @@ import {
     Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleRef, ModuleType, ModuleWithProviders,
     ProvdierOf, ProviderType, Type, isArray, isNil, lang, toProvider, tokenId
 } from '@tsdi/ioc';
-import { InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
+import { ConfigMissingExecption, InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
 import { HybirdTransport, MessageFactory, Transport } from '@tsdi/common';
 import {
     IncomingFactory, MessageReader, MessageWriter, NotImplementedExecption, OutgoingFactory,
@@ -26,7 +26,6 @@ import { createRequestHandler } from './impl/request.handler';
 import { DefaultTransportSessionFactory } from './impl/default.session';
 import { RequestContextFactoryImpl } from './impl/request.context';
 import { createMiddlewareEndpoint } from './impl/middleware';
-import { RequestHandler } from './RequestHandler';
 
 
 /**
@@ -186,10 +185,6 @@ export interface ServerModuleOpts extends HeybirdServiceOpts {
      */
     serverType: Type<Server>;
     /**
-     * server request handler type
-     */
-    handlerType: Type<RequestHandler>;
-    /**
      * server default options.
      */
     defaultOpts?: ServerOpts & MiddlewareOpts;
@@ -204,10 +199,6 @@ export interface MicroServerModuleOpts extends MicroServiceOpts {
      * server type.
      */
     serverType: Type<Server>;
-    /**
-     * server request handler type
-     */
-    handlerType: Type<RequestHandler>;
     /**
      * server default options.
      */
@@ -267,6 +258,9 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                         ...moduleOpts.serverOpts?.providers || EMPTY
                     ]
                 } as ServerOpts & { providers: ProviderType[] };
+
+                
+                if (!serverOpts.handlerType) throw new ConfigMissingExecption(`Config Missing handlerType`);
 
                 if (moduleOpts.microservice) {
                     serverOpts.microservice = moduleOpts.microservice;
@@ -328,7 +322,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 }
 
                 providers.push({
-                    provide: moduleOpts.handlerType,
+                    provide: serverOpts.handlerType,
                     useFactory: (injector: Injector) => {
                         const opts = lang.deepClone(serverOpts) as ServerOpts & MiddlewareOpts;
                         return (!moduleOpts.microservice && opts.middlewaresToken && opts.middlewares) ? createMiddlewareEndpoint(injector, opts) : createRequestHandler(injector, opts)

@@ -1,7 +1,7 @@
 import { HybirdTransport, MessageFactory, PatternFormatter } from '@tsdi/common';
 import { IncomingFactory, MessageReader, MessageWriter, OutgoingFactory, StatusAdapter, TransportOpts } from '@tsdi/common/transport';
 import { ApplicationEvent, CanHandle, Filter, HandlerService, Interceptor, PipeTransform, Runner, Shutdown } from '@tsdi/core';
-import { Abstract, ProvdierOf, StaticProvider } from '@tsdi/ioc';
+import { Abstract, ProvdierOf, StaticProvider, Type } from '@tsdi/ioc';
 import { RequestContext, RequestContextFactory } from './RequestContext';
 import { RequestHandlerOptions, AbstractRequestHandler } from './AbstractRequestHandler';
 import { SessionOptions } from './Session';
@@ -31,6 +31,11 @@ export interface ServerOpts<TSerOpts = any> extends RequestHandlerOptions<any> {
      * is microservice or not.
      */
     microservice?: boolean;
+    
+    /**
+     * server request handler type
+     */
+    handlerType?: Type<RequestHandler>;
     /**
      * status adapter
      */

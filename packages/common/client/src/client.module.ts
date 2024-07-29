@@ -1,6 +1,6 @@
 import { DefaultResponseFactory, HybirdTransport, MessageFactory, ResponseFactory, Transport } from '@tsdi/common';
 import { ClientIncomingFactory, MessageReader, MessageWriter, NotImplementedExecption, SocketMessageReader, SocketMessageWriter, StatusAdapter, TransportPacketModule } from '@tsdi/common/transport';
-import { createHandler } from '@tsdi/core';
+import { ConfigMissingExecption, createHandler } from '@tsdi/core';
 import {
     Arrayify, EMPTY, Injector, Module,
     ModuleRef,
@@ -117,10 +117,6 @@ export interface ClientModuleOpts extends ClientModuleConfig {
      */
     clientProvider?: ProvdierOf<AbstractClient>;
     /**
-     * client handler type.
-     */
-    hanlderType: Type<ClientHandler>;
-    /**
      * response event factory.
      */
     responseFactory?: ProvdierOf<ResponseFactory>;
@@ -194,6 +190,8 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     clientOpts.microservice = opts.microservice;
                 }
 
+                if (!clientOpts.handlerType) throw new ConfigMissingExecption(`Config Missing handlerType`);
+
                 clientOpts.transportOpts = {
                     name: `${clientOpts.microservice ? ' microservice' : ''} client`,
                     // group: opts.transport,
@@ -252,7 +250,7 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     providers.push(toProvider(opts.clientType, opts.clientProvider));
                 }
                 providers.push({
-                    provide: opts.hanlderType,
+                    provide: clientOpts.handlerType,
                     useFactory: (injector: Injector) => {
                         return createHandler(injector, lang.deepClone(clientOpts));
                     },

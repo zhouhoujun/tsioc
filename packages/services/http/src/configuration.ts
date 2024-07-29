@@ -13,7 +13,7 @@ import { HttpPathInterceptor } from './client/path';
 import { HTTP_MIDDLEWARES, HTTP_SERV_FILTERS, HTTP_SERV_GUARDS, HTTP_SERV_INTERCEPTORS } from './server/options';
 import { HttpRequestHandler } from './server/handler';
 import { HttpServer } from './server/server';
-import { HttpContextFactory } from './server/context';
+import { HttpContext, HttpContextFactory } from './server/context';
 import { HttpStatusAdapter } from './status';
 import { HttpResponseEventFactory } from './client/response.factory';
 import { HttpClientCodingsHandlers } from './client/codings.hanlders';
@@ -65,9 +65,9 @@ export class HttpConfiguration {
         return {
             transport: 'http',
             clientType: Http,
-            hanlderType: HttpHandler,
             imports: [MimeModule],
             defaultOpts: {
+                handlerType: HttpHandler,
                 interceptorsToken: HTTP_CLIENT_INTERCEPTORS,
                 filtersToken: HTTP_CLIENT_FILTERS,
                 statusAdapter: HttpStatusAdapter,
@@ -86,12 +86,14 @@ export class HttpConfiguration {
         return {
             transport: 'http',
             serverType: HttpServer,
-            handlerType: HttpRequestHandler,
             imports: [MimeModule],
             defaultOpts: {
+                handlerType: HttpRequestHandler,
                 listenOpts: { port: 3000, host: LOCALHOST },
                 transportOpts: {
-                    defaultMethod: 'GET'
+                    defaultMethod: 'GET',
+                    decodingsAdapter: { useValue: new CustomCodingsAdapter(r => r instanceof HttpContext) },
+                    encodingsAdapter: { useValue: new CustomCodingsAdapter(d => d) }
                 },
                 statusAdapter: HttpStatusAdapter,
                 execptionHandlers: HttpExecptionHandlers,

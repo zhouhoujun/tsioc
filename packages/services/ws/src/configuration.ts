@@ -47,8 +47,8 @@ export class WsConfiguration {
             microservice: true,
             asDefault: true,
             clientType: WsClient,
-            hanlderType: WsHandler,
             defaultOpts: {
+                handlerType: WsHandler,
                 url: 'ws://localhost:3000',
                 interceptorsToken: WS_CLIENT_INTERCEPTORS,
                 filtersToken: WS_CLIENT_FILTERS,
@@ -70,8 +70,8 @@ export class WsConfiguration {
             microservice: true,
             asDefault: true,
             serverType: WsServer,
-            handlerType: WsRequestHandler,
             defaultOpts: {
+                handlerType: WsRequestHandler,
                 transportOpts: {
                     delimiter: '#',
                     defaultMethod: '*',

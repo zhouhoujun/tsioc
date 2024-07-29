@@ -1,5 +1,6 @@
 import {
-    Injector, InvokerOptions, ProvdierOf, StaticProvider, ClassType, Abstract, Token
+    Injector, InvokerOptions, ProvdierOf, StaticProvider, ClassType, Abstract, Token,
+    Type
 } from '@tsdi/ioc';
 import { GuardLike, GuardsService } from '../guard';
 import { InterceptorLike, InterceptorService } from '../Interceptor';
@@ -29,7 +30,7 @@ export abstract class AbstractConfigableHandler<
     TContext = any> implements Handler<TInput, TOutput, TContext>, HandlerService {
     abstract get injector(): Injector;
     abstract get ready(): Promise<void>;
-    
+
     /**
      * get config options.
      */
@@ -131,6 +132,7 @@ export interface HandlerOptions<TInput = any, TArg = any> extends InvokerOptions
  * Configable handler options.
  */
 export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends HandlerOptions<TInput, TArg>, GuardHandlerOptions<TInput>, BackendOptions<TInput> {
+    handlerType?: Type<Handler>;
 
     /**
      * execption handlers
