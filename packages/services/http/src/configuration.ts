@@ -1,6 +1,5 @@
-import { Module } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
-import { LOCALHOST } from '@tsdi/common';
+import { LOCALHOST, UrlMesage } from '@tsdi/common';
 import { CustomCodingsAdapter } from '@tsdi/common/codings';
 import { ClientIncomingPacket } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
@@ -9,17 +8,15 @@ import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODU
 import { Http } from './client/clinet';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS } from './client/options';
 import { HttpHandler } from './client/handler';
-import { HttpPathInterceptor } from './client/path';
 import { HTTP_MIDDLEWARES, HTTP_SERV_FILTERS, HTTP_SERV_GUARDS, HTTP_SERV_INTERCEPTORS } from './server/options';
 import { HttpRequestHandler } from './server/handler';
 import { HttpServer } from './server/server';
 import { HttpContext, HttpContextFactory } from './server/context';
 import { HttpStatusAdapter } from './status';
 import { HttpResponseEventFactory } from './client/response.factory';
-import { HttpClientCodingsHandlers } from './client/codings.hanlders';
-import { HttpCodingsHandlers } from './server/codings.handlers';
 import { HttpExecptionHandlers } from './execption.handlers';
 import { HttpClientIncoming, HttpClientMessageReader, HttpClientMessageWriter } from './client/message';
+import { HttpServerMessageReader, HttpServerMessagerWriter } from './server/message';
 
 
 @Configuration()
@@ -93,11 +90,13 @@ export class HttpConfiguration {
                 transportOpts: {
                     defaultMethod: 'GET',
                     decodingsAdapter: { useValue: new CustomCodingsAdapter(r => r instanceof HttpContext) },
-                    encodingsAdapter: { useValue: new CustomCodingsAdapter(d => d) }
+                    encodingsAdapter: { useValue: new CustomCodingsAdapter(d => d instanceof UrlMesage) }
                 },
                 statusAdapter: HttpStatusAdapter,
                 execptionHandlers: HttpExecptionHandlers,
                 requestContextFactory: HttpContextFactory,
+                messageReader: HttpServerMessageReader,
+                messageWriter: HttpServerMessagerWriter,
                 detailError: true,
                 interceptorsToken: HTTP_SERV_INTERCEPTORS,
                 filtersToken: HTTP_SERV_FILTERS,

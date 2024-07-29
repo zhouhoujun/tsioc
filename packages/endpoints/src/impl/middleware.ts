@@ -1,4 +1,4 @@
-import { Injector, InvocationContext, ProvdierOf, createContext, refl } from '@tsdi/ioc';
+import { Injector, InvocationContext, ProvdierOf, createContext } from '@tsdi/ioc';
 import { HandlerService, Backend, normalizeConfigableHandlerOptions } from '@tsdi/core';
 import { MiddlewareLike } from '../middleware/middleware';
 import { MiddlewareService } from '../middleware/middleware.service';
@@ -18,7 +18,7 @@ export class DefaultMiddlewareHandler<TInput extends RequestContext = any, TOpti
     extends DefaultRequestHandler<TInput, TOptions> implements MiddlewareHandler<TInput>, HandlerService, MiddlewareService {
 
     use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this {
-        this.regMulti(this.options.middlewaresToken!, middlewares, order, type => refl.getDef(type).abstract || Reflect.getMetadataKeys(type).length > 0);
+        this.regMulti(this.options.middlewaresToken!, middlewares, order);
         this.reset();
         return this;
     }

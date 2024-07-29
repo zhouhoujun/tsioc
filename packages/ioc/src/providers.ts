@@ -26,7 +26,7 @@ export interface UseAsStatic {
     static?: boolean;
 }
 
-export interface MutilProvider {    
+export interface MutilProvider {
     /**
      * provide multi or not.
      */
@@ -209,7 +209,7 @@ export interface DynamicProvider {
 /**
  * use static provider of.
  */
-export type ProvdierOf<T> = UseClass<T> | UseValue<T> | UseFactory<T> | UseExisting<T> | TypeProvider<T> | Exclude<T, Function>;
+export type ProvdierOf<T> = UseClass<T> | UseValue<T> | UseFactory<T> | UseExisting<T> | TypeProvider<T> | T; //Exclude<T, Function>;
 
 
 /**
@@ -285,7 +285,7 @@ export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: bool
         onRegistered?: (injector: Injector) => void
     };
 
-    if (isType(useOf) && (isClass ? isClass(useOf) : true)) {
+    if (isType(useOf) && (isClass ? isClass(useOf) : !!useOf.name)) {
         if (provide == useOf) throw new ArgumentExecption(getClassName(provide) + ': provide is equals to provider')
         return { ...options, provide, useClass: useOf as ClassType };
     } else if (isPlainObject(useOf) && (isDefined((useOf as UseClass<T>).useClass)

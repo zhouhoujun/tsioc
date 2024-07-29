@@ -259,7 +259,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     ]
                 } as ServerOpts & { providers: ProviderType[] };
 
-                
+
                 if (!serverOpts.handlerType) throw new ConfigMissingExecption(`Config Missing handlerType`);
 
                 if (moduleOpts.microservice) {
@@ -306,6 +306,11 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 if (serverOpts.messageFactory) {
                     serverOpts.providers.push(toProvider(MessageFactory, serverOpts.messageFactory));
                 }
+
+                if (serverOpts.requestContextFactory) {
+                    serverOpts.providers.push(toProvider(RequestContextFactory, serverOpts.requestContextFactory));
+                }
+
                 serverOpts.providers.push(toProvider(MessageReader, serverOpts.messageReader ?? SocketMessageReader));
                 serverOpts.providers.push(toProvider(MessageWriter, serverOpts.messageWriter ?? SocketMessageWriter));
 

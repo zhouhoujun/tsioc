@@ -19,10 +19,7 @@ import { HttpConfiguration } from './configuration';
         HttpResponseEventFactory,
         HttpClientCodingsHandlers,
         HttpCodingsHandlers,
-        // HttpTransportBackend,
         HttpPathInterceptor,
-        // HttpClientSessionFactory,
-        // HttpServerSessionFactory,
         HttpContextFactory,
         { provide: HTTP_CLIENT_INTERCEPTORS, useExisting: HttpPathInterceptor, multi: true },
         HttpConfiguration
