@@ -78,7 +78,6 @@ export class WsClient extends AbstractClient<WsRequest<any>, ResponseEvent<any>,
 
 
     protected createRequest(pattern: Pattern, options: RequestInitOpts<any>): WsRequest<any> {
-        // options.withCredentials = 
         if (isString(pattern)) {
             return new WsRequest(pattern, null, options);
         } else {
