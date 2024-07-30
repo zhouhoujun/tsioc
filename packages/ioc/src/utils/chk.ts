@@ -22,7 +22,7 @@ export function isFunction(target: any): target is Function {
  * @returns 
  */
 export function isType(v: any): v is Type<any> {
-    return isFunction(v)  && typeof v.prototype === 'object'; 
+    return isFunction(v) && typeof v.prototype === 'object';
 }
 
 /**
@@ -195,6 +195,10 @@ const hasOwnProperty = Object.hasOwnProperty;
  */
 export function hasOwn(target: any, property: string) {
     return hasOwnProperty.call(target, property)
+}
+
+export function hasProps(target: any): boolean {
+    return isObject(target) && Object.keys(target).length > 0;
 }
 
 // const dateTag = '[object Date]';

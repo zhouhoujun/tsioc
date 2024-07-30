@@ -23,7 +23,7 @@ export class ServerEndpointCodingsHanlders {
         const incoming = context.last<IncomingPacket<any>>();
         const session = context.session as TransportSession;
         if (!session.outgoingFactory) throw new NotImplementedExecption('outgoingFactory');
-        const outgoing = session.outgoingFactory.create(incoming, { headerFields: incoming?.headers?.headerFields });
+        const outgoing = session.outgoingFactory.create(incoming);
 
         return session.requestContextFactory.create(session, incoming, outgoing, session.serverOptions);
     }

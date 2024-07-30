@@ -158,7 +158,7 @@ export abstract class IncomingPacket<T> extends BasePacket<T> implements Incomin
         this.pattern = init.pattern ?? init.url ?? init.topic;
         this.payload = init.payload ?? null;
         this.query = init.query ?? init.params;
-        this.method = init.method ?? this.headers.getMethod() ?? init.defaultMethod ?? '';
+        this.method = init.method ?? init.defaultMethod ?? '';
         this.timeout = init.timeout;
         this.streamLength = init.streamLength;
     }

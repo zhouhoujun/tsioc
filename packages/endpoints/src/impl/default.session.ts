@@ -1,4 +1,4 @@
-import { MessageFactory } from '@tsdi/common';
+import { HeaderAdapter, MessageFactory } from '@tsdi/common';
 import {
     FileAdapter,
     IncomingFactory,
@@ -25,6 +25,7 @@ export class DefaultTransportSession extends TransportSession<any> {
 
     private _encodings?: TransportEncodings;
     private _decodings?: TransportDecodings;
+    private _headerAdapter?: HeaderAdapter;
     private _streamAdapter?: StreamAdapter;
     private _fileAdapter?: FileAdapter;
     private _mimeAdapter?: MimeAdapter | null;
@@ -50,6 +51,13 @@ export class DefaultTransportSession extends TransportSession<any> {
                 .create(this.injector, this.options)
         }
         return this._decodings;
+    }
+
+    get headerAdapter(): HeaderAdapter {
+        if (!this._headerAdapter) {
+            this._headerAdapter = this.injector.get(HeaderAdapter)
+        }
+        return this._headerAdapter;
     }
 
     get streamAdapter(): StreamAdapter {

@@ -166,7 +166,7 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
     constructor(init: RequestInitOpts, defaultMethod = '') {
         super()
         this.id = init.id;
-        this.headers = new HeaderMappings(init.headers, init.headerFields);
+        this.headers = new HeaderMappings(init.headers);
         this.payload = init.payload ?? null;
         this.payload = init.body ?? init.payload ?? null;
         this.params = new RequestParams(init);

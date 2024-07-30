@@ -1,4 +1,4 @@
-import { HeaderFields, HybirdTransport, Message, MessageFactory, Transport } from '@tsdi/common';
+import { HeaderAdapter, HybirdTransport, Message, MessageFactory, Transport } from '@tsdi/common';
 import { CodingsAapter, CodingsHandlerOptions } from '@tsdi/common/codings';
 import { Abstract, Injector, ProvdierOf, Token } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
@@ -48,8 +48,6 @@ export interface TransportOpts {
     microservice?: boolean;
 
     client?: boolean;
-
-    headerFields?: HeaderFields;
 
     defaultMethod?: string;
 
@@ -117,6 +115,10 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
      * stream adapter.
      */
     abstract get streamAdapter(): StreamAdapter;
+    /**
+     * header adapter.
+     */
+    abstract get headerAdapter(): HeaderAdapter;
     /**
      * status adapter.
      */

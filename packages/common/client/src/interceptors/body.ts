@@ -1,9 +1,10 @@
 import { Injectable, isNil, isString } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, ResponseEvent, RequestParams, AbstractRequest } from '@tsdi/common';
+import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, ResponseEvent, RequestParams, AbstractRequest, HeaderAdapter } from '@tsdi/common';
 import { IStream, StreamAdapter } from '@tsdi/common/transport';
 import { defer, mergeMap, Observable } from 'rxjs';
 import { Buffer } from 'buffer';
+import { ClientTransportSession } from '../session';
 
 
 /**
@@ -12,27 +13,28 @@ import { Buffer } from 'buffer';
 @Injectable()
 export class BodyContentInterceptor<TRequest extends AbstractRequest<any> = AbstractRequest<any>, TResponse = ResponseEvent<any>> implements Interceptor<TRequest, TResponse> {
 
-    constructor(private adapter: StreamAdapter) { }
+    constructor() { }
 
     intercept(req: TRequest & RequestSerialize, next: Handler<TRequest, TResponse>): Observable<TResponse> {
 
-        let body = req.serializeBody ? req.serializeBody(req.body) : this.serializeBody(req.body);
+        const session = req.context.get(ClientTransportSession);
+        let body = req.serializeBody ? req.serializeBody(req.body) : this.serializeBody(session.streamAdapter, req.body);
         if (body == null) {
             return next.handle(req);
         }
         return defer(async () => {
             let headers = req.headers;
-            const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader(req.body) : this.detectContentTypeHeader(req.body);
-            if (!headers.hasContentType() && contentType) {
-                headers = headers.setContentType(contentType);
+            const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader(req.body) : this.detectContentTypeHeader(session.streamAdapter, req.body);
+            if (!session.headerAdapter.hasContentType(headers) && contentType) {
+                headers = session.headerAdapter.setContentType(headers, contentType);
             }
-            if (!headers.hasContentLength()) {
+            if (!session.headerAdapter.hasContentLength(headers)) {
                 if (isBlob(body)) {
                     const arrbuff = await body.arrayBuffer();
                     body = Buffer.from(arrbuff);
-                } else if (this.adapter.isFormDataLike(body)) {
+                } else if (session.streamAdapter.isFormDataLike(body)) {
                     if (isFormData(body)) {
-                        const form = this.adapter.createFormData();
+                        const form = session.streamAdapter.createFormData();
                         body.forEach((v, k, parent) => {
                             form.append(k, v);
                         });
@@ -40,7 +42,7 @@ export class BodyContentInterceptor<TRequest extends AbstractRequest<any> = Abst
                     }
                     body = (body as any).getBuffer();
                 }
-                headers = headers.setContentLength(Buffer.byteLength(body as Buffer));
+                headers = session.headerAdapter.setContentLength(headers, Buffer.byteLength(body as Buffer));
             }
 
             return req.clone({ body, headers }) as TRequest;
@@ -54,14 +56,14 @@ export class BodyContentInterceptor<TRequest extends AbstractRequest<any> = Abst
      * Transform the free-form body into a serialized format suitable for
      * transmission to the server.
      */
-    serializeBody(body: any): ArrayBuffer | IStream | Buffer | Blob | FormData | string | null {
+    serializeBody(adapter: StreamAdapter, body: any): ArrayBuffer | IStream | Buffer | Blob | FormData | string | null {
         // If no body is present, no need to serialize it.
         if (isNil(body)) {
             return null
         }
         // Check whether the body is already in a serialized form. If so,
         // it can just be returned directly.
-        if (isArrayBuffer(body) || Buffer.isBuffer(body) || this.adapter.isStream(body) || isBlob(body) || this.adapter.isFormDataLike(body) ||
+        if (isArrayBuffer(body) || Buffer.isBuffer(body) || adapter.isStream(body) || isBlob(body) || adapter.isFormDataLike(body) ||
             isUrlSearchParams(body) || isString(body)) {
             return body as any;
         }
@@ -86,13 +88,13 @@ export class BodyContentInterceptor<TRequest extends AbstractRequest<any> = Abst
      *
      * If no such type can be inferred, this method will return `null`.
      */
-    detectContentTypeHeader(body: any): string | null {
+    detectContentTypeHeader(adapter: StreamAdapter, body: any): string | null {
         // An empty body has no content type.
         if (body === null) {
             return null
         }
         // FormData bodies rely on the browser's content type assignment.
-        if (this.adapter.isFormDataLike(body)) {
+        if (adapter.isFormDataLike(body)) {
             return null
         }
         // Blobs usually have their own content type. If it doesn't, then

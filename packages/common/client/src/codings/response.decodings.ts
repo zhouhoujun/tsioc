@@ -12,7 +12,7 @@ export class ErrorResponseDecordeInterceptor implements Interceptor<ClientIncomi
     intercept(input: ClientIncomingPacket<any>, next: Handler<ClientIncomingPacket<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         if (!input.ok || input.error) {
             const session = context.session as ClientTransportSession;
-            return throwError(()=> session.responseFactory.create({ ...input.toJson(), payload: null }));
+            return throwError(() => session.responseFactory.create({ ...input.toJson(), payload: null }));
         }
         return next.handle(input, context);
     }
@@ -23,7 +23,7 @@ export class ErrorResponseDecordeInterceptor implements Interceptor<ClientIncomi
 export class EmptyResponseDecordeInterceptor implements Interceptor<ClientIncomingPacket<any>, ResponseEvent<any>, TransportContext> {
 
     intercept(input: ClientIncomingPacket<any>, next: Handler<ClientIncomingPacket<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
-        const len = input.headers.getContentLength();
+        const len = context.session.headerAdapter.getContentLength(input.headers);
         const session = context.session as ClientTransportSession;
         if (!len || session.statusAdapter?.isEmpty(input.status)) {
             return of(session.responseFactory.create({ ...input.toJson(), payload: null }));
@@ -58,7 +58,7 @@ export class CompressResponseDecordeInterceptor implements Interceptor<ClientInc
         return defer(async () => {
             const response = input;
             const session = context.session as ClientTransportSession;
-            const codings = response.headers.getContentEncoding();
+            const codings = session.headerAdapter.getContentEncoding(response.headers);
             const req = context.first() as AbstractRequest<any>;
             const streamAdapter = session.streamAdapter;
             const rqstatus = req.context.getValueify(RequestStauts, () => new RequestStauts());
@@ -162,12 +162,12 @@ export class ResponseTypeDecodeInterceptor implements Interceptor<ClientIncoming
 
     intercept(input: ClientIncomingPacket<any>, next: Handler<ClientIncomingPacket<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         return defer(async () => {
-            const { responseFactory, streamAdapter} = context.session as ClientTransportSession;
+            const { responseFactory, headerAdapter, streamAdapter } = context.session as ClientTransportSession;
 
             const req = context.first() as AbstractRequest<any>;
             let responseType = req.responseType;
 
-            const contentType = input.headers.getContentType();
+            const contentType = headerAdapter.getContentType(input.headers);
             if (contentType && responseType === 'json') {
                 const mimeAdapter = req.context.get(MimeAdapter);
                 if (mimeAdapter && !mimeAdapter.isJson(contentType)) {
@@ -231,7 +231,7 @@ export class ResponseTypeDecodeInterceptor implements Interceptor<ClientIncoming
 
                     case 'blob':
                         body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
-                            type: input.headers.getContentType()
+                            type: headerAdapter.getContentType(input.headers)
                         });
                         break;
 

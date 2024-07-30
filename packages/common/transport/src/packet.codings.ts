@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, Injectable, isNil, isString, tokenId } from '@tsdi/ioc';
 import { Interceptor, InvalidJsonException } from '@tsdi/core';
-import { HeaderMappings, Message, Packet, PacketOpts, RequestParams, isArrayBuffer, isBlob, isFormData } from '@tsdi/common';
+import { HeaderAdapter, HeaderMappings, HeadersLike, Message, Packet, PacketOpts, RequestParams, isArrayBuffer, isBlob, isFormData } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
 import { TransportContext } from './context';
 import { StreamAdapter, isBuffer, toBuffer } from './StreamAdapter';
@@ -28,7 +28,7 @@ export abstract class HeaderDeserialization {
 @Injectable()
 export class PayloadEncoder {
 
-    async encode(streamAdapter: StreamAdapter, payload: any, headers: HeaderMappings, encoding?: string): Promise<string | Buffer | IReadableStream | null> {
+    async encode(streamAdapter: StreamAdapter, headerAdapter: HeaderAdapter, payload: any, headers: HeadersLike, encoding?: string): Promise<string | Buffer | IReadableStream | null> {
         if (isNil(payload)) return null;
 
         let source: string | Buffer | IReadableStream;
@@ -37,10 +37,10 @@ export class PayloadEncoder {
         } else if (Buffer.isBuffer(payload)) {
             source = payload;
         } else if (isString(payload)) {
-            if (!headers.hasContentType()) headers.setContentType(ctype.TEXT_PLAIN);
+            if (!headerAdapter.hasContentType(headers)) headerAdapter.setContentType(headers, ctype.TEXT_PLAIN);
             source = payload;
         } else if (isBlob(payload)) {
-            headers.setContentType(payload.type);
+            headerAdapter.setContentType(headers, payload.type);
             const arrbuff = await payload.arrayBuffer();
             source = Buffer.from(arrbuff);
         } else if (streamAdapter.isFormDataLike(payload)) {
@@ -56,10 +56,10 @@ export class PayloadEncoder {
         } else if (streamAdapter.isReadable(payload)) {
             source = payload;
         } else if (payload instanceof RequestParams) {
-            headers.setContentType(ctype.X_WWW_FORM_URLENCODED);
+            headerAdapter.setContentType(headers, ctype.X_WWW_FORM_URLENCODED);
             source = payload.toString();
         } else {
-            headers.setContentType(ctype.APPL_JSON);
+            headerAdapter.setContentType(headers, ctype.APPL_JSON);
             source = JSON.stringify(payload);
         }
         if (encoding) {
@@ -134,14 +134,14 @@ export class PacketCodingsHandlers {
     @EncodeHandler(Packet, { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })
     async packetEncode(context: TransportContext) {
 
-        const { streamAdapter, injector, messageFactory, options } = context.session;
+        const { streamAdapter, headerAdapter, injector, messageFactory, options } = context.session;
 
         const pkg = context.last<Packet<any>>();
 
 
         let data: any, streamLen: number | undefined;
         if (options.headDelimiter) {
-            data = await this.payloadEncoder.encode(streamAdapter, pkg.payload, pkg.headers, options.encoding);
+            data = await this.payloadEncoder.encode(streamAdapter, headerAdapter, pkg.payload, pkg.headers, options.encoding);
             const headDelimiter = Buffer.from(options.headDelimiter);
 
             const headerSerialization = injector.get(HeaderSerialization, null);
@@ -150,7 +150,7 @@ export class PacketCodingsHandlers {
 
             if (streamAdapter.isReadable(data)) {
                 let isFist = true;
-                streamLen = pkg.headers.getContentLength() + Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter);
+                streamLen = headerAdapter.getContentLength(pkg.headers) + Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter);
                 data = streamAdapter.pipeline(data, streamAdapter.createPassThrough({
                     transform: (chunk, encoding, callback) => {
                         if (isFist) {
@@ -169,7 +169,7 @@ export class PacketCodingsHandlers {
                 data = Buffer.concat([hbuff, headDelimiter, bbuff], Buffer.byteLength(hbuff) + Buffer.byteLength(headDelimiter) + Buffer.byteLength(bbuff));
             }
         } else {
-            data = await this.encodePacket(streamAdapter, pkg, options.maxSize, options.encoding, options.serializeIgnores);
+            data = await this.encodePacket(streamAdapter, headerAdapter, pkg, options.maxSize, options.encoding, options.serializeIgnores);
         }
         const json = pkg.toJson();
         json.data = data;
@@ -183,7 +183,7 @@ export class PacketCodingsHandlers {
     }
 
 
-    async encodePacket(streamAdapter: StreamAdapter, packet: Packet<any>, maxSize?: number, encoding?: string, ignores?: string[]): Promise<Buffer> {
+    async encodePacket(streamAdapter: StreamAdapter, headerAdapter: HeaderAdapter, packet: Packet<any>, maxSize?: number, encoding?: string, ignores?: string[]): Promise<Buffer> {
 
         let source: string | Buffer | IReadableStream | null = null;
 
@@ -192,7 +192,7 @@ export class PacketCodingsHandlers {
         } else if (Buffer.isBuffer(packet.payload)) {
             source = packet.payload;
         } else if (isBlob(packet.payload)) {
-            packet.headers.setContentType(packet.payload.type);
+            headerAdapter.setContentType(packet.headers, packet.payload.type);
             const arrbuff = await packet.payload.arrayBuffer();
             source = Buffer.from(arrbuff);
         } else if (streamAdapter.isFormDataLike(packet.payload)) {

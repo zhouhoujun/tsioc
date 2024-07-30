@@ -1,5 +1,5 @@
 import { isNil, isUndefined } from '@tsdi/ioc';
-import { HeaderFields, HeadersLike, HeaderMappings } from './headers';
+import { HeadersLike, HeaderMappings } from './headers';
 
 
 
@@ -30,10 +30,6 @@ export interface PacketOpts<T = any> {
      * payload of packet.
      */
     payload?: T | null;
-    /**
-     * header fields.
-     */
-    headerFields?: HeaderFields;
 }
 
 /**
@@ -76,7 +72,7 @@ export abstract class BasePacket<T> implements Packet<T> {
     constructor(init?: PacketOpts<T>) {
         if (init) {
             this.id = init.id;
-            this.headers = new HeaderMappings(init.headers, init.headerFields);
+            this.headers = new HeaderMappings(init.headers);
             this.payload = init.payload ?? null;
         } else {
             this.headers = new HeaderMappings();

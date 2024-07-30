@@ -1,4 +1,4 @@
-import { MessageFactory, ResponseFactory } from '@tsdi/common';
+import { HeaderAdapter, MessageFactory, ResponseFactory } from '@tsdi/common';
 import { ClientIncomingFactory, IDuplexStream, MessageReader, MessageWriter, Redirector, StatusAdapter, StreamAdapter, TransportDecodings, TransportDecodingsFactory, TransportEncodings, TransportEncodingsFactory, TransportOpts } from '@tsdi/common/transport';
 import { Injectable, Injector } from '@tsdi/ioc';
 import { ClientTransportSession, ClientTransportSessionFactory } from './session';
@@ -10,6 +10,7 @@ export class DefaultClientTransportSession extends ClientTransportSession<any> {
 
     private _encodings?: TransportEncodings;
     private _decodings?: TransportDecodings;
+    private _headerAdapter?: HeaderAdapter;
     private _streamAdapter?: StreamAdapter;
     private _statusAdapter?: StatusAdapter | null;
     private _incomingFactory?: ClientIncomingFactory;
@@ -36,6 +37,13 @@ export class DefaultClientTransportSession extends ClientTransportSession<any> {
                 .create(this.injector, this.options)
         }
         return this._decodings;
+    }
+
+    get headerAdapter(): HeaderAdapter {
+        if (!this._headerAdapter) {
+            this._headerAdapter = this.injector.get(HeaderAdapter)
+        }
+        return this._headerAdapter;
     }
 
     get streamAdapter(): StreamAdapter {

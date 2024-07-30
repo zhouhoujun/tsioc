@@ -16,11 +16,11 @@ export class UrlRequestContext<TRequest extends Incoming<any> = Incoming<any>, T
     /**
      * request header mappings
      */
-    readonly reqHeaders: HeaderMappings;
+    readonly reqHeaders!: HeaderMappings;
     /**
      * request header mappings
      */
-    readonly resHeaders: HeaderMappings;
+    readonly resHeaders!: HeaderMappings;
 
     constructor(
         injector: Injector,
@@ -32,9 +32,7 @@ export class UrlRequestContext<TRequest extends Incoming<any> = Incoming<any>, T
         super(injector, { ...serverOptions, args: request });
 
         this.setValue(TransportSession, session);
-        this.reqHeaders = request.headers instanceof HeaderMappings ? request.headers : new HeaderMappings(request.headers);
-        this.resHeaders = response.headers instanceof HeaderMappings ? response.headers : new HeaderMappings(response.headers);
-
+        
         this.originalUrl = this.url = normalize(this.url);
         const searhIdx = this.url.indexOf('?');
         if (searhIdx >= 0) {
@@ -144,14 +142,6 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
     readonly originalUrl: string;
 
     url: string;
-    /**
-     * request header mappings
-     */
-    readonly reqHeaders: HeaderMappings;
-    /**
-     * request header mappings
-     */
-    readonly resHeaders: HeaderMappings;
 
     constructor(
         injector: Injector,
@@ -163,8 +153,6 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
         super(injector, { ...serverOptions, args: request });
 
         this.setValue(TransportSession, session);
-        this.reqHeaders = request.headers instanceof HeaderMappings ? request.headers : new HeaderMappings(request.headers);
-        this.resHeaders = response.headers instanceof HeaderMappings ? response.headers : new HeaderMappings(response.headers);
 
         this.originalUrl = this.url = normalize(request.url ?? request.pattern!);
         const searhIdx = this.url.indexOf('?');

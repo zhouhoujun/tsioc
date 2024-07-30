@@ -1,6 +1,6 @@
 import { Injectable, Injector, isArray, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, HeaderMappings, Response } from '@tsdi/common';
-import { MessageExecption, InternalServerExecption, Outgoing, append, parseTokenList, Incoming, ENOENT } from '@tsdi/common/transport';
+import { MessageExecption, InternalServerExecption, Outgoing, append, parseTokenList, Incoming, ENOENT, ctype } from '@tsdi/common/transport';
 import { RestfulRequestContext, RestfulRequestContextFactory, TransportSession, Throwable } from '@tsdi/endpoints';
 import * as http from 'http';
 import * as http2 from 'http2';
@@ -25,15 +25,6 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
     readonly originalUrl: string;
     private _url: string;
 
-    /**
-     * request header mappings
-     */
-    readonly reqHeaders: HeaderMappings;
-    /**
-     * request header mappings
-     */
-    readonly resHeaders: HeaderMappings;
-
     constructor(
         injector: Injector,
         readonly session: TransportSession,
@@ -46,8 +37,6 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         this.setValue(TransportSession, session);
         const url = this._url = this.originalUrl = request.url!;
 
-        this.reqHeaders = request.headers instanceof HeaderMappings ? request.headers : new HeaderMappings(request.headers);
-        this.resHeaders = response.headers instanceof HeaderMappings ? response.headers : new HeaderMappings(response.headers);
         const searhIdx = url.indexOf('?');
         if (searhIdx >= 0) {
             (this.request as any).query = this.query;
@@ -388,7 +377,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
             }
             return this.response.end(body)
         }
-        
+
         await lastValueFrom(this.session.send(this, this.response));
     }
 

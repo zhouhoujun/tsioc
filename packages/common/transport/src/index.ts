@@ -12,6 +12,7 @@ export * from './StreamAdapter';
 export * from './MimeAdapter';
 export * from './FileAdapter';
 export * from './Redirector';
+export * from './headers';
 export * from './Incoming';
 export * from './Outgoing';
 

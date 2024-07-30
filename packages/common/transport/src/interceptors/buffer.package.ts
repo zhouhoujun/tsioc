@@ -1,6 +1,6 @@
 import { ArgumentExecption, Injectable, isNumber, isString } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { Message, Packet } from '@tsdi/common';
+import { HeaderAdapter, Message, Packet } from '@tsdi/common';
 import { Observable, Subscriber, filter, map, mergeMap, of, range, throwError } from 'rxjs';
 import { TransportContext } from '../context';
 import { StreamAdapter, isBuffer } from '../StreamAdapter';
@@ -20,7 +20,7 @@ export class PackageDecodeInterceptor implements Interceptor<Message, Packet<any
 
     packs: Map<string | number, CachePacket> = new Map();
     intercept(input: Message, next: Handler<Message, Packet<any>, TransportContext>, context: TransportContext): Observable<Packet<any>> {
-        const { options, streamAdapter } = context.session;
+        const { options, streamAdapter, headerAdapter } = context.session;
         const idLen = options.idLen ?? 2;
         let id: string | number;
         if (streamAdapter.isReadable(input.data)) {
@@ -42,27 +42,27 @@ export class PackageDecodeInterceptor implements Interceptor<Message, Packet<any
         }
         return next.handle(input, context)
             .pipe(
-                map(packet => this.mergePacket(packet, streamAdapter, input.noHead)),
+                map(packet => this.mergePacket(packet, streamAdapter, headerAdapter, input.noHead)),
                 filter(p => p.completed == true),
                 map(p => p.packet)
             )
     }
 
-    mergePacket(packet: Packet<any>, streamAdapter: StreamAdapter, noHead?: boolean): CachePacket {
+    mergePacket(packet: Packet<any>, streamAdapter: StreamAdapter, headerAdapter: HeaderAdapter, noHead?: boolean): CachePacket {
 
-        if (!packet.id || !(isBuffer(packet.payload) || streamAdapter.isReadable(packet.payload)) || (!noHead && packet.headers.getContentLength() <= 0)) {
+        if (!packet.id || !(isBuffer(packet.payload) || streamAdapter.isReadable(packet.payload)) || (!noHead && headerAdapter.getContentLength(packet.headers) <= 0)) {
             return { packet, completed: true } as CachePacket;
         }
         const len = isBuffer(packet.payload) ? Buffer.byteLength(packet.payload) : (packet as IncomingPacket<any>).streamLength!;
 
-        if (!noHead && packet.headers.getContentLength() <= len) {
+        if (!noHead && headerAdapter.getContentLength(packet.headers) <= len) {
             return { packet, completed: true } as CachePacket;
         }
 
         const cached = this.packs.get(packet.id);
 
         if (!cached) {
-            if (!packet.headers.getContentLength()) {
+            if (!headerAdapter.getContentLength(packet.headers)) {
                 throw new PacketLengthException('has not content length!');
             }
             const payload = packet.payload;
@@ -80,7 +80,7 @@ export class PackageDecodeInterceptor implements Interceptor<Message, Packet<any
             this.packs.set(packet.id!, cached);
             return cached;
         } else {
-            const cLen = cached.packet.headers.getContentLength();
+            const cLen = headerAdapter.getContentLength(cached.packet.headers);
             cached.cacheSize += len;
             if (packet.headers.size) {
                 cached.packet.headers.setHeaders(packet.headers.getHeaders())

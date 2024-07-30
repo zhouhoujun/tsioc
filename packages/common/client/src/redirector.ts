@@ -1,9 +1,10 @@
 /* eslint-disable no-case-declarations */
 import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
 import { HeaderMappings, UrlRequest, RequestMethod, IHeaders } from '@tsdi/common';
-import { BadRequestExecption, StreamAdapter, StatusAdapter, Redirector } from '@tsdi/common/transport';
+import { BadRequestExecption, Redirector } from '@tsdi/common/transport';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { AbstractClient } from './AbstractClient';
+import { ClientTransportSession } from './session';
 
 
 @Injectable()
@@ -11,10 +12,10 @@ export class UrlRedirector implements Redirector {
 
     redirect<T>(req: UrlRequest<any>, status: any, headers: IHeaders): Observable<T> {
         return new Observable((observer: Observer<T>) => {
-            if(!req.url) return observer.error(new BadRequestExecption());
+            if (!req.url) return observer.error(new BadRequestExecption());
 
-            const validator = req.context.get(StatusAdapter);
-            const adapter = req.context.get(StreamAdapter);
+            const { statusAdapter, streamAdapter, headerAdapter } = req.context.get(ClientTransportSession);
+
             const rdstatus = req.context.getValueify(RedirectState, () => new RedirectState());
             // HTTP fetch step 5.2
             const location = headers['location'] as string;
@@ -77,16 +78,16 @@ export class UrlRedirector implements Redirector {
                     }
 
                     // HTTP-redirect fetch step 9
-                    if (validator.redirectBodify(status) && req.body && adapter.isReadable(req.body)) {
+                    if (statusAdapter?.redirectBodify(status) && req.body && streamAdapter.isReadable(req.body)) {
                         observer.error(new BadRequestExecption('Cannot follow redirect with body being a readable stream'));
                         break;
                     }
 
                     // HTTP-redirect fetch step 11
-                    if (!validator.redirectBodify(status, req.method)) {
-                        method = validator.redirectDefaultMethod() as RequestMethod;
+                    if (!statusAdapter?.redirectBodify(status, req.method)) {
+                        method = statusAdapter?.redirectDefaultMethod() as RequestMethod;
                         body = undefined;
-                        reqhdrs = reqhdrs.setContentLength(null);
+                        reqhdrs = headerAdapter.setContentLength(reqhdrs, null);
                     }
 
                     // HTTP-redirect fetch step 14
