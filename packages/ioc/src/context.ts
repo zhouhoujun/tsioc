@@ -2,7 +2,7 @@ import { Type } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
-import { Injector } from './injector';
+import { Injector, InstanceOf } from './injector';
 import { ArgumentResolver, Parameter } from './resolver';
 import { ProvdierOf, ProviderType } from './providers';
 import { Execption } from './execption';
@@ -184,7 +184,7 @@ export interface InvokeOptions {
      * 
      * 调用接口的参数解析器
      */
-    resolvers?: ProvdierOf<ArgumentResolver>[];
+    resolvers?: InstanceOf<ArgumentResolver>[];
     /**
      * custom providers.
      * 

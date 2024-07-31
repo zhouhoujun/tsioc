@@ -13,7 +13,7 @@ import { isArray, isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { Execption } from '../execption';
-import { MethodType } from '../injector';
+import { InstanceOf, MethodType } from '../injector';
 import { Handle } from '../handle';
 
 
@@ -243,9 +243,9 @@ export class Class<T = any> {
     /**
      * class resolvers.
      *
-     * @type {ArgumentResolver[]}
+     * @type {InstanceOf<ArgumentResolver>[]}
      */
-    readonly resolvers: ProvdierOf<ArgumentResolver>[];
+    readonly resolvers: InstanceOf<ArgumentResolver>[];
     /**
      * property metadata.
      *

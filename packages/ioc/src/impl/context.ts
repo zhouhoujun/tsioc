@@ -2,7 +2,7 @@ import { Type, ClassType, EMPTY, EMPTY_OBJ } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getClassName, getClassChain } from '../utils/lang';
 import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getClass } from '../utils/chk';
-import { OperationArgumentResolver, Parameter, composeResolver, CONTEXT_RESOLVERS } from '../resolver';
+import { OperationArgumentResolver, Parameter, composeResolver } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token, tokenId } from '../tokens';
@@ -46,13 +46,13 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     constructor(
         injector: Injector,
-        options: TargetInvokeArguments<T> = EMPTY_OBJ,
+        private options: TargetInvokeArguments<T> = EMPTY_OBJ,
     ) {
         super();
         this._refs = [];
         this.isResolve = options.isResolve == true;
         this.injector = this.createInjector(injector, options.providers);
-        options.resolvers?.length && this.injector.inject(options.resolvers?.map(r => toProvider(this.getResolvesToken(), r)));
+        // options.resolvers?.length && this.injector.inject(options.resolvers?.map(r => toProvider(this.getResolvesToken(), r)));
         if (options.parent && injector !== options.parent.injector) {
             const parent = options.parent;
             this.addRef(parent);
@@ -99,18 +99,14 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * the invocation arguments resolver.
      */
     protected getResolvers(): OperationArgumentResolver[] {
-        if (!this._resolvers) {
+        if (!this._resolvers && !this.destroyed) {
             this._resolvers = [
                 ...this.getArgumentResolver(),
-                ...this.injector.get(this.getResolvesToken(), EMPTY),
+                ...(this.options.resolvers ?? EMPTY).map(r => isFunction(r) ? r(this.injector) : r),
                 ...this.getDefaultResolvers()
             ];
         }
-        return this._resolvers;
-    }
-
-    protected getResolvesToken() {
-        return CONTEXT_RESOLVERS
+        return this._resolvers ?? EMPTY;
     }
 
     protected getDefaultResolvers(): OperationArgumentResolver[] {

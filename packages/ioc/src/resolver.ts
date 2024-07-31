@@ -75,9 +75,3 @@ export function composeResolver<T extends OperationArgumentResolver<any>, TP ext
     }
 }
 
-/**
- * context resolvers {@link OperationArgumentResolver} multi tokens. 
- * 
- * 调用参数解析器集合标记指令。
- */
-export const CONTEXT_RESOLVERS = tokenId<OperationArgumentResolver[]>('CONTEXT_RESOLVERS');

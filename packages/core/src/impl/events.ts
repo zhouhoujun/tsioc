@@ -8,14 +8,14 @@ import { Filter } from '../filters/filter';
 import { ExecptionHandlerFilter } from '../filters/execption.filter';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
 import { ApplicationEvent } from '../ApplicationEvent';
-import { ApplicationEventContext, ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
+import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { PayloadApplicationEvent } from '../events';
 
 
 /**
  *  event multicaster interceptors multi token.
  */
-export const EVENT_MULTICASTER_INTERCEPTORS = tokenId<Interceptor<ApplicationEventContext, any>[]>('EVENT_MULTICASTER_INTERCEPTORS');
+export const EVENT_MULTICASTER_INTERCEPTORS = tokenId<Interceptor<ApplicationEvent, any>[]>('EVENT_MULTICASTER_INTERCEPTORS');
 
 /**
  *  event multicaster filters multi token.
@@ -28,9 +28,9 @@ export const EVENT_MULTICASTER_FILTERS = tokenId<Filter[]>('EVENT_MULTICASTER_FI
 export const EVENT_MULTICASTER_GUARDS = tokenId<CanHandle[]>('EVENT_MULTICASTER_GUARDS');
 
 @Injectable()
-export class DefaultEventMulticaster extends ApplicationEventMulticaster implements Handler<ApplicationEventContext> {
+export class DefaultEventMulticaster extends ApplicationEventMulticaster implements Handler<ApplicationEvent> {
 
-    private _handler: ConfigableHandler<ApplicationEventContext, any>;
+    private _handler: ConfigableHandler<ApplicationEvent, any>;
     private maps: Map<Type, Handler[]>;
 
     constructor(private injector: Injector) {
@@ -40,7 +40,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         this._handler.useFilters(ExecptionHandlerFilter)
     }
 
-    get handler(): Handler<ApplicationEventContext, any> {
+    get handler(): Handler<ApplicationEvent, any> {
         return this._handler
     }
 
@@ -54,7 +54,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    useInterceptors(interceptors: ProvdierOf<Interceptor<ApplicationEventContext, any>> | ProvdierOf<Interceptor<ApplicationEventContext, any>>[], order?: number): this {
+    useInterceptors(interceptors: ProvdierOf<Interceptor<ApplicationEvent, any>> | ProvdierOf<Interceptor<ApplicationEvent, any>>[], order?: number): this {
         this._handler.useInterceptors(interceptors, order);
         return this;
     }
@@ -87,14 +87,14 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     }
 
     protected send(value: ApplicationEvent): Observable<void | false> {
-        const ctx = new ApplicationEventContext(this.injector, { args: value });
-        ctx.setValue(getClass(value), value);
-        return this.handler.handle(ctx)
-            .pipe(
-                finalize(() => {
-                    ctx.destroy();
-                })
-            );
+        // const ctx = new ApplicationEventContext(this.injector, { args: value });
+        // ctx.setValue(getClass(value), value);
+        return this.handler.handle(value)
+            // .pipe(
+            //     finalize(() => {
+            //         ctx.destroy();
+            //     })
+            // );
     }
 
     emit(event: ApplicationEvent): Observable<void | false>;
@@ -136,15 +136,15 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
             );
     }
 
-    handle(context: ApplicationEventContext): Observable<void | false> {
-        const handlers = this.maps.get(getClass(context.args));
+    handle(event: ApplicationEvent): Observable<void | false> {
+        const handlers = this.maps.get(getClass(event));
         if (!handlers || !handlers.length) return of(undefined);
 
         return handlers.reduce(($obs, h) => {
             return $obs.pipe(
                 mergeMap(r => {
-                    if (r !== false) {
-                        return h.handle(context)
+                    if (r !== false || !event.propagation) {
+                        return h.handle(event)
                     }
                     return of(r);
                 })

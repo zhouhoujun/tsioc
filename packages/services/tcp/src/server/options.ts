@@ -1,5 +1,5 @@
 import { tokenId } from '@tsdi/ioc';
-import { Interceptor, Filter, GuardLike, ApplicationEventContext } from '@tsdi/core';
+import { Interceptor, Filter, GuardLike } from '@tsdi/core';
 import { BindServerEvent, MiddlewareLike, ServerOpts } from '@tsdi/endpoints';
 
 import * as net from 'net';
@@ -44,13 +44,13 @@ export const TCP_SERV_GUARDS = tokenId<GuardLike[]>('TCP_SERV_GUARDS');
 /**
  * Token of tcp bind server interceptors.
  */
-export const TCP_BIND_INTERCEPTORS = tokenId<Interceptor<ApplicationEventContext<BindServerEvent>>[]>('TCP_BIND_INTERCEPTORS');
+export const TCP_BIND_INTERCEPTORS = tokenId<Interceptor<BindServerEvent>[]>('TCP_BIND_INTERCEPTORS');
 /**
  * Token of tcp bind server filters.
  */
-export const TCP_BIND_FILTERS = tokenId<Filter<ApplicationEventContext<BindServerEvent>>[]>('TCP_BIND_FILTERS');
+export const TCP_BIND_FILTERS = tokenId<Filter<BindServerEvent>[]>('TCP_BIND_FILTERS');
 /**
  * Token of tcp bind server Guards.
  */
-export const TCP_BIND_GUARDS = tokenId<GuardLike<ApplicationEventContext<BindServerEvent>>[]>('TCP_BIND_GUARDS');
+export const TCP_BIND_GUARDS = tokenId<GuardLike<BindServerEvent>[]>('TCP_BIND_GUARDS');
 

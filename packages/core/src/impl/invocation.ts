@@ -9,6 +9,7 @@ import {
     InvocationOptions, Respond, TypedRespond, InvocationFactory, OPERA_FILTERS, OPERA_GUARDS,
     InvocationFactoryResolver, OPERA_INTERCEPTORS, InvocationHandler,
 } from '../invocation';
+import { getResolverToken } from '../handlers';
 
 
 
@@ -75,7 +76,7 @@ export class InvocationHandlerImpl<
                 input = context;
             } else {
                 newCtx = true;
-                const ctx = createContext(this.context);
+                const ctx = createContext(this.context, { args: input, resolvers: this.injector.get(getResolverToken(input), []) });
                 ctx.setValue(getClass(input), input);
                 if (context) this.attchContext(ctx, context, input)
                 input = ctx;

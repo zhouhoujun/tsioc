@@ -1,26 +1,26 @@
 import { ArgumentExecption, Injectable, InvocationContext, isPlainObject, isString, MissingParameterExecption, Module, ReflectiveRef } from '@tsdi/ioc';
 import expect = require('expect');
 import { catchError, lastValueFrom, Observable, of } from 'rxjs';
-import { Application, ApplicationArguments, ApplicationContext, Dispose, Handler, HandlerContext, EventHandler, Filter, Interceptor, Payload, PayloadApplicationEvent, Runner, Shutdown, Start } from '../src';
+import { Application, ApplicationArguments, ApplicationContext, Dispose, Handler, EventHandler, Filter, Interceptor, Payload, PayloadApplicationEvent, Runner, Shutdown, Start } from '../src';
 
 @Injectable()
 export class StringFilter implements Filter  {
-    intercept(context: HandlerContext<PayloadApplicationEvent>, next: Handler<any, any>): Observable<any> {
-        if(isString(context.args.payload)){
-            return next.handle(context);
+    intercept(event: PayloadApplicationEvent, next: Handler<any, any>): Observable<any> {
+        if(isString(event.payload)){
+            return next.handle(event);
         }
-        return of(context);
+        return of(event);
     }
 }
 
 @Injectable()
 export class JsonFilter implements Filter  {
 
-    intercept(context: HandlerContext<PayloadApplicationEvent>, next: Handler<any, any>): Observable<any> {
-        if(isPlainObject(context.args.payload)){
-            return next.handle(context);
+    intercept(event: PayloadApplicationEvent, next: Handler<any, any>): Observable<any> {
+        if(isPlainObject(event.payload)){
+            return next.handle(event);
         }
-        return of(context);
+        return of(event);
     }
 
 }
@@ -29,11 +29,11 @@ export class JsonFilter implements Filter  {
 
 @Injectable()
 export class PayloadInterceptor implements Interceptor {
-    intercept(context: InvocationContext<PayloadApplicationEvent>, next: Handler<any, any>): Observable<any> {
-        if (isString(context.args.payload)) {
-            context.args.payload = 'hi ' + context.args.payload;
+    intercept(event: PayloadApplicationEvent, next: Handler<any, any>): Observable<any> {
+        if (isString(event.payload)) {
+            event.payload = 'hi ' + event.payload;
         }
-        return next.handle(context);
+        return next.handle(event);
     }
 
 }
