@@ -1,18 +1,12 @@
-import { Abstract, EMPTY, Injectable, isNil, isString, tokenId } from '@tsdi/ioc';
-import { Interceptor, InvalidJsonException } from '@tsdi/core';
-import { HeaderAdapter, HeaderMappings, HeadersLike, Message, Packet, PacketOpts, RequestParams, isArrayBuffer, isBlob, isFormData } from '@tsdi/common';
+import { Abstract, EMPTY, Injectable, isNil, isString } from '@tsdi/ioc';
+import { InvalidJsonException } from '@tsdi/core';
+import { HeaderAdapter, HeadersLike, Message, Packet, PacketOpts, RequestParams, isArrayBuffer, isBlob, isFormData } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
 import { TransportContext } from './context';
 import { StreamAdapter, isBuffer, toBuffer } from './StreamAdapter';
 import { IReadableStream } from './stream';
-import { OutgoingPacket } from './Outgoing';
 import { ctype } from './consts';
 import { UnsupportedMediaTypeExecption } from './execptions';
-
-
-export const PACKET_ENCODE_INTERCEPTORS = tokenId<Interceptor<Packet<any>, Packet<Buffer | IReadableStream>, TransportContext>[]>('PACKET_ENCODE_INTERCEPTORS');
-
-export const PACKET_DECODE_INTERCEPTORS = tokenId<Interceptor<Packet<Buffer | IReadableStream>, Packet<any>, TransportContext>[]>('PACKET_DECODE_INTERCEPTORS');
 
 
 @Abstract()
@@ -84,7 +78,7 @@ export class PacketCodingsHandlers {
 
     constructor(private payloadEncoder: PayloadEncoder) { }
 
-    @DecodeHandler(Message, { interceptorsToken: PACKET_DECODE_INTERCEPTORS })
+    @DecodeHandler(Message)
     async messageDecode(context: TransportContext) {
         const msg = context.last<Message>();
         const { streamAdapter, incomingFactory, options, injector } = context.session;
@@ -131,7 +125,7 @@ export class PacketCodingsHandlers {
     }
 
 
-    @EncodeHandler(Packet, { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })
+    @EncodeHandler(Packet)
     async packetEncode(context: TransportContext) {
 
         const { streamAdapter, headerAdapter, injector, messageFactory, options } = context.session;
@@ -175,11 +169,6 @@ export class PacketCodingsHandlers {
         json.data = data;
         if (streamLen) json.streamLength = streamLen;
         return messageFactory ? messageFactory.create(json) : json;
-    }
-
-    @EncodeHandler(OutgoingPacket, { interceptorsToken: PACKET_ENCODE_INTERCEPTORS })
-    outgoingEncode(context: TransportContext) {
-        return this.packetEncode(context)
     }
 
 

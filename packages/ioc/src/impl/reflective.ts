@@ -26,7 +26,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     private _ctx: InvocationContext;
     private _mthCtx: Map<string, InvocationContext | null>;
     private _isResolve = false;
-    constructor(private _class: Class<T>, readonly injector: Injector, options?: InvokeArguments<any>) {
+    constructor(private _class: Class<T>, injector: Injector, options?: InvokeArguments<any>) {
         super()
         this._type = _class.type;
         this._typeName = getClassName(this._type);
@@ -44,6 +44,10 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 
     get class(): Class<T> {
         return this._class
+    }
+
+    get injector(): Injector {
+        return this._ctx.injector
     }
 
     getInstance(): T {
@@ -219,7 +223,6 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         if (this.destroyed) return;
         this._type = null!;
         this._tagPdrs = null!;
-        (this as any).injector = null!;
         this._class = null!;
         this._instance = null!;
         this._destroyed = true;

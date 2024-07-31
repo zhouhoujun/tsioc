@@ -1,7 +1,7 @@
 import { Message, Packet, isResponseEvent } from '@tsdi/common';
 import { CustomCodingsAdapter } from '@tsdi/common/codings';
 import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
-import { ClientIncomingPacket, IncomingPacket, OutgoingPacket } from '@tsdi/common/transport';
+import { ClientIncomingPacket, IncomingPacket } from '@tsdi/common/transport';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import {
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
@@ -81,7 +81,7 @@ export class UdpConfiguration {
                     defaultMethod: '*',
                     serializeIgnores: ['remoteInfo'],
                     decodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof RequestContext, [[UdpIncoming, IncomingPacket], [UdpMessage, Message]]) },
-                    encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof UdpMessage, [[PatternRequestContext, RequestContext], [UdpOutgoing, OutgoingPacket]]) },
+                    encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof UdpMessage, [[PatternRequestContext, RequestContext], [UdpOutgoing, Packet]]) },
                 },
                 content: {
                     root: 'public',

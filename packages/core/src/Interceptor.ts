@@ -62,7 +62,7 @@ export const INTERCEPTORS_TOKEN = tokenId<Interceptor[]>('INTERCEPTORS_TOKEN');
  * @returns 
  */
 export function getInterceptorsToken(type: TypeOf<any> | string, propertyKey?: string): Token<Interceptor[]> {
-    return getTokenOf(type, 'INTERCEPTORS', propertyKey);
+    return getTokenOf<Interceptor[]>(type, 'INTERCEPTORS', propertyKey);
 }
 
 /**

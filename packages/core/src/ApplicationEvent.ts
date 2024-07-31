@@ -10,8 +10,19 @@ import { Abstract } from '@tsdi/ioc';
 @Abstract()
 export abstract class ApplicationEvent {
     private _timestamp: number;
+    private _propagation = true;
+
+
+    get propagation() {
+        return this._propagation;
+    }
+
     constructor(private _source: Object) {
         this._timestamp = Date.now() / 1000
+    }
+
+    stopPropagation() {
+        this._propagation = false;
     }
     /**
      * event source target.

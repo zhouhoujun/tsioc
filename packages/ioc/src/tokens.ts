@@ -1,5 +1,5 @@
 import { Type, TypeOf } from './types';
-import { isFunction } from './utils/chk';
+import { getClass, isFunction, isString } from './utils/chk';
 import { getClassName } from './utils/lang';
 
 
@@ -47,13 +47,9 @@ export function tokenId<T = any>(key: string): Token<T> {
 }
 
 /**
- * format token.
- * @param token 
- * @returns 
+ * token mappings.
  */
-export function formatToken(token: Token) {
-    return isFunction(token) ? `${getClassName(token)}` : token.toString()
-}
+const tokens = new Map<Token, Map<string, Token>>();
 
 /**
  * get token with alias.
@@ -62,11 +58,26 @@ export function formatToken(token: Token) {
  */
 export function getToken<T>(token: Token<T>, alias?: string): Token<T> {
     if (!alias) return token;
-    if (token instanceof InjectToken) {
-        return token.to(alias)
+
+    let maps = tokens.get(token);
+    if (!maps) {
+        maps = new Map();
+        tokens.set(token, maps);
     }
-    return `${formatToken(token)}_${alias}`
+    let atk = maps.get(alias);
+    if (!atk) {
+        if (token instanceof InjectToken) {
+            atk = token.to(alias);
+        } else {
+            const type = isString(token) ? token : getClassName(token);
+            atk = Symbol(`${type}_${alias}`);
+        }
+        maps.set(alias, atk);
+    }
+
+    return atk;
 }
+
 
 /**
  * get token of type
@@ -76,7 +87,7 @@ export function getToken<T>(token: Token<T>, alias?: string): Token<T> {
  * @returns 
  */
 export function getTokenOf<T>(type: TypeOf<any>, alias: string, propertyKey?: string): Token<T> {
-    return propertyKey ? `${getClassName(type)}_${propertyKey}_${alias}` : `${getClassName(type)}_${alias}`;
+    return getToken<T>(getClass(type), propertyKey ? `${propertyKey}_${alias}` : alias)
 }
 
 /**

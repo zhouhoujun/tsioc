@@ -54,14 +54,13 @@ export interface TransportArgumentResolver<T = any> extends OperationArgumentRes
 }
 
 
-const RESOLVERS = 'RESOLVERS';
 /**
  * get transport argument resolvers token.
  * @param type 
  * @returns 
  */
-export function getResolversToken(type: TypeOf<any>, propertyKey?: string): Token<TransportArgumentResolver[]> {
-    return getTokenOf(type, RESOLVERS, propertyKey);
+export function getResolverToken(type: TypeOf<any>, propertyKey?: string): Token<TransportArgumentResolver[]> {
+    return getTokenOf(type, 'RESOLVERS', propertyKey);
 }
 
 /**

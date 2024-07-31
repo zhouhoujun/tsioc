@@ -86,7 +86,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    emit(value: ApplicationEvent): Observable<void | false> {
+    protected send(value: ApplicationEvent): Observable<void | false> {
         const ctx = new ApplicationEventContext(this.injector, { args: value });
         ctx.setValue(getClass(value), value);
         return this.handler.handle(ctx)
@@ -95,6 +95,12 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
                     ctx.destroy();
                 })
             );
+    }
+
+    emit(event: ApplicationEvent): Observable<void | false>;
+    emit(event: Object): Observable<void | false>;
+    emit(obj: ApplicationEvent | Object): Observable<void | false> {
+        return this.publishEvent(obj)
     }
 
 
@@ -111,10 +117,10 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
             event = new PayloadApplicationEvent(this, obj)
         }
 
-        return this.emit(event)
+        return this.send(event)
             .pipe(
                 mergeMap(res => {
-                    if (res === false) return of(res);
+                    if (res === false || !event.propagation) return of(res);
                     const multicaster = this.injector.get(ApplicationEventMulticaster, null, InjectFlags.SkipSelf);
                     if (multicaster) {
                         // Publish event via parent multicaster as well...

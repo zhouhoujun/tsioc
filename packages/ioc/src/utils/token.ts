@@ -8,23 +8,19 @@ import { isInjectToken, Token } from '../tokens';
  * @param {*} target
  * @returns {target is Token}
  */
- export function isToken(target: any): target is Token {
+export function isToken(target: any): target is Token {
     if (!target) {
         return false
     }
     const type = typeof target;
     switch (type) {
-        case _tyfunc:
+        case 'function':
             return true;
-        case _tystr:
+        case 'string':
             return true
-        case _tysymbol:
+        case 'symbol':
             return true
     }
 
     return isInjectToken(target)
 }
-
-const _tysymbol = 'symbol';
-const _tyfunc = 'function';
-const _tystr = 'string';

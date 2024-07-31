@@ -32,24 +32,12 @@ export interface EncodeHandler {
     (encodings: string | Type, option?: CodingsMetadata): MethodDecorator;
 }
 
-const encodingTokens = new Map<string | Type, Token<Interceptor<any, any, CodingsContext>[]>>();
 export function getEncodeInterceptorsToken(encodings: string | Type): Token<Interceptor<any, any, CodingsContext>[]> {
-    let token = encodingTokens.get(encodings);
-    if (!token) {
-        token = getToken<Interceptor<any, any, CodingsContext>[]>(encodings, '_ENCODINGS_INTERCEPTORS');
-        encodingTokens.set(encodings, token);
-    }
-    return token;
+    return getToken<Interceptor<any, any, CodingsContext>[]>(encodings, '_ENCODINGS_INTERCEPTORS');
 }
 
-const encodingFilterTokens = new Map<string | Type, Token<Filter<any, any, CodingsContext>[]>>();
 export function getEncodeFilterToken(encodings: string | Type): Token<Filter<any, any, CodingsContext>[]> {
-    let token = encodingFilterTokens.get(encodings);
-    if (!token) {
-        token = getToken<Filter<any, any, CodingsContext>[]>(encodings, '_ENCODINGS_FILTERS');
-        encodingFilterTokens.set(encodings, token);
-    }
-    return token;
+    return getToken<Filter<any, any, CodingsContext>[]>(encodings, '_ENCODINGS_FILTERS');
 }
 
 /**
@@ -122,24 +110,12 @@ export interface DecodeHandler {
     (decodings: string | Type, option?: CodingsMetadata): MethodDecorator;
 }
 
-const decodingTokens = new Map<string | Type, Token<Interceptor<any, any, CodingsContext>[]>>();
 export function getDecodeInterceptorsToken(encodings: string | Type): Token<Interceptor<any, any, CodingsContext>[]> {
-    let token = decodingTokens.get(encodings);
-    if (!token) {
-        token = getToken<Interceptor<any, any, CodingsContext>[]>(encodings, '_DECODINGS_INTERCEPTORS');
-        decodingTokens.set(encodings, token);
-    }
-    return token;
+    return getToken<Interceptor<any, any, CodingsContext>[]>(encodings, '_DECODINGS_INTERCEPTORS');
 }
 
-const decodingFilterTokens = new Map<string | Type, Token<Filter<any, any, CodingsContext>[]>>();
 export function getDecodeFilterToken(encodings: string | Type): Token<Filter<any, any, CodingsContext>[]> {
-    let token = decodingFilterTokens.get(encodings);
-    if (!token) {
-        token = getToken<Filter<any, any, CodingsContext>[]>(encodings, '_DECODINGS_FILTERS');
-        decodingFilterTokens.set(encodings, token);
-    }
-    return token;
+    return getToken<Filter<any, any, CodingsContext>[]>(encodings, '_DECODINGS_FILTERS');
 }
 
 

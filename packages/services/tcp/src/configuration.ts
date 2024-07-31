@@ -1,7 +1,7 @@
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import { isResponseEvent, LOCALHOST, Message, Packet } from '@tsdi/common';
 import { CustomCodingsAdapter } from '@tsdi/common/codings';
-import { ClientIncomingPacket, IncomingPacket, OutgoingPacket } from '@tsdi/common/transport';
+import { ClientIncomingPacket, IncomingPacket } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
 import {
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, PatternRequestContext,
@@ -93,7 +93,7 @@ export class TcpConfiguration {
                     delimiter: '#',
                     maxSize: defaultMaxSize,
                     decodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof RequestContext, [[TcpIncoming, IncomingPacket], [TcpMessage, Message]]) },
-                    encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof TcpMessage, [[PatternRequestContext, RequestContext], [TcpOutgoing, OutgoingPacket]]) },
+                    encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof TcpMessage, [[PatternRequestContext, RequestContext], [TcpOutgoing, Packet]]) },
                 },
                 detailError: false,
                 interceptorsToken: TCP_SERV_INTERCEPTORS,

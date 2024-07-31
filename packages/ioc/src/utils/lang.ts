@@ -69,7 +69,11 @@ export function deepForEach<T>(
 
 }
 
-
+/**
+ * deep clone.
+ * @param input 
+ * @returns 
+ */
 export function deepClone<T>(input: T): T {
     if (!isObject(input)) return null!;
     return Object.entries(input).reduce((result, [key, value]) => {
@@ -82,23 +86,6 @@ export function deepClone<T>(input: T): T {
     }, {} as any);
 
 }
-
-// /**
-//  * deep in object.
-//  * @param input 
-//  * @param fn 
-//  * @param path 
-//  * @returns 
-//  */
-// export function deepIn(input: any, fn: (path: string, val: any) => void | false, path = '') {
-//     if (isObject(input) == false) return;
-//     Object.keys(input).forEach(name => {
-//         const chpth = path ? `${path}.${name}` : name;
-//         const val = (input as Record<string, any>)[name];
-//         if (isNil(val) || fn(chpth, val) === false) return;
-//         deepIn(val, fn, chpth);
-//     })
-// }
 
 
 /**

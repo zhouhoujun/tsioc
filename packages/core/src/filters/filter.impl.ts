@@ -1,7 +1,7 @@
 import { EMPTY, getClass, Injectable, isFunction, isString, ProviderType, Type, ArgumentExecption, isDefined } from '@tsdi/ioc';
 import { Handler } from '../Handler';
 import { PayloadApplicationEvent } from '../events';
-import { getResolversToken } from '../handlers/resolver';
+import { getResolverToken } from '../handlers/resolver';
 import { createPayloadResolver } from '../handlers/resolvers';
 import { ExecptionHandlerFilter } from './execption.filter';
 import { Filter, FilterHandlerResolver, FilterLike, FilterResolver } from './filter';
@@ -112,7 +112,7 @@ export const FILTER_PROVIDERS: ProviderType[] = [
     { provide: FilterHandlerResolver, useClass: DefaultFiterHandlerMethodResolver, static: true },
     ExecptionHandlerFilter,
     {
-        provide: getResolversToken(PayloadApplicationEvent),
+        provide: getResolverToken(PayloadApplicationEvent),
         useValue: createPayloadResolver(
             (ctx, scope, field) => {
                 let payload = ctx.args;

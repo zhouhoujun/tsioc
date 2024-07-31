@@ -180,7 +180,7 @@ export class MicroServRouterModule {
     }
 
     static getToken(protocol: Transport): Token<MircoServRouter> {
-        return getMircServRouter(protocol)
+        return getToken(MircoServRouter, protocol)
     }
 }
 
@@ -192,7 +192,7 @@ export interface RouteOpts {
 }
 
 export function createMicroRouteProviders(transport: Transport, optsify: InstanceOf<RouteOpts>): ProviderType[] {
-    const token = getMircServRouter(transport);
+    const token = getToken(MircoServRouter, transport);
     return [
         {
             provide: token,
@@ -212,10 +212,6 @@ export function createMicroRouteProviders(transport: Transport, optsify: Instanc
             multi: true
         }
     ]
-}
-
-export function getMircServRouter(protocol: Transport): Token<MircoServRouter> {
-    return getToken(MircoServRouter, protocol)
 }
 
 

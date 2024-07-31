@@ -1,13 +1,16 @@
 import { Module } from '@tsdi/ioc';
-import { CodingsModule } from '@tsdi/common/codings';
+import { CodingsModule, getDecodeInterceptorsToken } from '@tsdi/common/codings';
+import { ClientIncomingPacket } from '@tsdi/common/transport';
 import {
     CompressResponseDecordeInterceptor, EmptyResponseDecordeInterceptor, ErrorResponseDecordeInterceptor,
     RedirectDecodeInterceptor, ResponseTypeDecodeInterceptor
 } from './response.decodings';
 import { ClientBackend } from '../backend';
 import { ClientTransportBackend } from './transport.backend';
-import { CLIENT_INCOMING_DECODE_INTERCEPTORS, ClientEndpointCodingsHanlders } from './codings.handlers';
+import { ClientEndpointCodingsHanlders } from './codings.handlers';
 
+
+const CLIENT_INCOMING_DECODE_INTERCEPTORS = getDecodeInterceptorsToken(ClientIncomingPacket);
 
 @Module({
     imports: [

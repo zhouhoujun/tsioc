@@ -60,10 +60,10 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      */
     abstract removeListener(event: Type<ApplicationEvent>, handler: Handler): this;
     /**
-     * multicast emit event.
-     * @param event 
+     * emit event. ailas name of publishEvent
+     * @param event the event to publish
      */
-    abstract emit(event: ApplicationEvent): Observable<void | false>;
+    abstract emit(event: ApplicationEvent | Object): Observable<void | false>;
 
     /**
      * Notify all <strong>matching</strong> listeners registered with this

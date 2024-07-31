@@ -1,7 +1,7 @@
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import { Message, Packet, isResponseEvent } from '@tsdi/common';
 import { CustomCodingsAdapter } from '@tsdi/common/codings';
-import { ClientIncomingPacket, IncomingPacket, OutgoingPacket } from '@tsdi/common/transport';
+import { ClientIncomingPacket, IncomingPacket } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
 import {
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, PatternRequestContext,
@@ -76,7 +76,7 @@ export class WsConfiguration {
                     defaultMethod: '*',
                     maxSize: defaultMaxSize,
                     decodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof RequestContext, [[WsIncoming, IncomingPacket], [WsMessage, Message]]) },
-                    encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof WsMessage, [[PatternRequestContext, RequestContext], [WsOutgoing, OutgoingPacket]]) },
+                    encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof WsMessage, [[PatternRequestContext, RequestContext], [WsOutgoing, Packet]]) },
                 },
                 content: {
                     root: 'public',
