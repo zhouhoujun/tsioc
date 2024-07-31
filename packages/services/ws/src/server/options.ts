@@ -1,5 +1,5 @@
 import { tokenId } from '@tsdi/ioc';
-import { ApplicationEventContext, GuardLike, Filter, Interceptor } from '@tsdi/core';
+import { GuardLike, Filter, Interceptor } from '@tsdi/core';
 import { BindServerEvent, ServerOpts } from '@tsdi/endpoints';
 import { ServerOptions } from 'ws';
 
@@ -33,14 +33,14 @@ export const WS_SERV_GUARDS = tokenId<GuardLike[]>('WS_SERV_GUARDS');
 /**
  * Token of ws bind server interceptors.
  */
-export const WS_BIND_INTERCEPTORS = tokenId<Interceptor<ApplicationEventContext<BindServerEvent>>[]>('WS_BIND_INTERCEPTORS');
+export const WS_BIND_INTERCEPTORS = tokenId<Interceptor<BindServerEvent>[]>('WS_BIND_INTERCEPTORS');
 /**
  * Token of ws bind server filters.
  */
-export const WS_BIND_FILTERS = tokenId<Filter<ApplicationEventContext<BindServerEvent>>[]>('WS_BIND_FILTERS');
+export const WS_BIND_FILTERS = tokenId<Filter<BindServerEvent>[]>('WS_BIND_FILTERS');
 /**
  * WS bind server Guards.
  */
-export const WS_BIND_GUARDS = tokenId<GuardLike<ApplicationEventContext<BindServerEvent>>[]>('WS_BIND_GUARDS');
+export const WS_BIND_GUARDS = tokenId<GuardLike<BindServerEvent>[]>('WS_BIND_GUARDS');
 
 

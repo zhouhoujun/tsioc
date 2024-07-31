@@ -5,7 +5,7 @@ import { isPlainObject, isTypeObject } from '../utils/obj';
 import { cleanObj, deepForEach, defer, immediate } from '../utils/lang';
 import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil, isType, isPromise } from '../utils/chk';
 import {
-    MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, Scopes, InjectorEvent,
+    MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, InjectorEvent,
     Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
 } from '../injector';
 import { Execption } from '../execption';
@@ -61,7 +61,7 @@ export class DefaultInjector extends Injector {
         if (parent) {
             this.initParent(parent)
         } else {
-            scope = this.scope = Scopes.platform
+            scope = this.scope = 'platform'
         }
         this.initScope(scope);
         this.initProviders(providers);
@@ -71,22 +71,23 @@ export class DefaultInjector extends Injector {
     protected initScope(scope?: InjectorScope) {
         const val = { value: this };
         switch (scope) {
-            case Scopes.platform:
+            case 'platform':
                 platformAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isPlatformAlias;
                 this._plat = new DefaultPlatform(this);
                 registerCores(this);
                 break;
-            case Scopes.root:
+            case 'root':
                 this.platform().setInjector(scope, this);
                 rootAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isRootAlias;
                 break;
-            case Scopes.static:
+            case 'context':
+            case 'static':
                 break;
-            case Scopes.configuration:
-                this.platform().setInjector(scope, this);
-                break;
+            // case 'configuration':
+            //     this.platform().setInjector(scope, this);
+            //     break;
             default:
                 if (scope) this.platform().setInjector(scope, this);
                 injectAlias.forEach(tk => this.records.set(tk, val));
@@ -600,7 +601,7 @@ const isInjectAlias = (token: any) => token === Injector || token === INJECTOR;
 const isStaticAlias = (token: any) => token === StaticInjector;
 
 INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: InjectorScope) => {
-    if (scope === Scopes.static || scope === Scopes.configuration) {
+    if (scope === 'static' || scope === 'context') {
         return new StaticInjector(providers, parent, scope)
     }
     return new DefaultInjector(providers, parent!, scope)
@@ -653,7 +654,7 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
             }
         }
 
-        const noDecl = !(imported && !(annotation.providedIn === Scopes.root || annotation.providedIn === Scopes.platform));
+        const noDecl = !(imported && !(annotation.providedIn === 'root' || annotation.providedIn === 'platform'));
         if (ps.length) {
             return Promise.all(ps).then(() => {
                 const ps: any[] = [];

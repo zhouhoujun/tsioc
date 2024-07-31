@@ -137,8 +137,8 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
  * @param options 
  * @returns 
  */
-export function createContext<TArg>(parent: Injector | InvocationContext, options?: TargetInvokeArguments<TArg>): InvocationContext {
-    return INVOCATION_CONTEXT_IMPL.create(parent, options)
+export function createContext<TArg>(parent: Injector | InvocationContext, options?: TargetInvokeArguments<TArg>, scope?: 'context'| 'static'): InvocationContext {
+    return INVOCATION_CONTEXT_IMPL.create(parent, options, scope)
 }
 
 /**
@@ -150,7 +150,7 @@ export const INVOCATION_CONTEXT_IMPL = {
      * @param parent parent context or parent injector. 
      * @param options invocation options.
      */
-    create<TArg>(parent: Injector | InvocationContext, options?: TargetInvokeArguments<TArg>): InvocationContext {
+    create<TArg>(parent: Injector | InvocationContext, options?: TargetInvokeArguments<TArg>, scope?: 'context'| 'static'): InvocationContext {
         throw new Execption('not implemented.')
     }
 };

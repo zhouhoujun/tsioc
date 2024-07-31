@@ -1,4 +1,4 @@
-import { isFunction, Type, ClassType, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, Scopes, ModuleRef, getModuleType, createModuleRef } from '@tsdi/ioc';
+import { isFunction, Type, ClassType, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEFAULT_PROVIDERS } from './providers';
 import { ModuleLoader } from './ModuleLoader';
@@ -42,10 +42,10 @@ export class Application<T = any, TArg = ApplicationArguments> {
             if (!this.loader && target.loader) this.loader = target.loader;
             const providers = (target.platformProviders && target.platformProviders.length) ? [...this.getPlatformDefaultProviders(), ...target.platformProviders] : this.getPlatformDefaultProviders();
             target.deps = target.deps?.length ? [...this.getDeps(), ...target.deps] : this.getDeps();
-            target.scope = Scopes.root;
+            target.scope = 'root';
             this.root = this.createInjector(providers, target)
         } else {
-            const option = { module: target, deps: this.getDeps(), scope: Scopes.root };
+            const option = { module: target, deps: this.getDeps(), scope: 'root' };
             this.root = this.createInjector(this.getPlatformDefaultProviders(), option)
         }
     }

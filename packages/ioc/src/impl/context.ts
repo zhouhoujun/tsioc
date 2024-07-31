@@ -6,7 +6,7 @@ import { OperationArgumentResolver, Parameter, composeResolver } from '../resolv
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token, tokenId } from '../tokens';
-import { Injector, isInjector, Scopes } from '../injector';
+import { Injector, isInjector } from '../injector';
 import { Execption } from '../execption';
 import { Class } from '../metadata/type';
 import { getDef } from '../metadata/refl';
@@ -47,12 +47,12 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     constructor(
         injector: Injector,
         private options: TargetInvokeArguments<T> = EMPTY_OBJ,
+        private injectorScope: 'context' | 'static' = 'static'
     ) {
         super();
         this._refs = [];
         this.isResolve = options.isResolve == true;
         this.injector = this.createInjector(injector, options.providers);
-        // options.resolvers?.length && this.injector.inject(options.resolvers?.map(r => toProvider(this.getResolvesToken(), r)));
         if (options.parent && injector !== options.parent.injector) {
             const parent = options.parent;
             this.addRef(parent);
@@ -114,7 +114,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     }
 
     protected createInjector(injector: Injector, providers?: ProviderType[]) {
-        return Injector.create(providers, injector, Scopes.static)
+        return Injector.create(providers, injector, this.injectorScope)
     }
 
     /**
@@ -398,11 +398,11 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
 }
 
 
-INVOCATION_CONTEXT_IMPL.create = <TArg>(parent: Injector | InvocationContext, options?: TargetInvokeArguments<TArg>) => {
+INVOCATION_CONTEXT_IMPL.create = <TArg>(parent: Injector | InvocationContext, options?: TargetInvokeArguments<TArg>, scope?: 'context'| 'static') => {
     if (isInjector(parent)) {
-        return new DefaultInvocationContext(parent, options)
+        return new DefaultInvocationContext(parent, options, scope)
     } else {
-        return new DefaultInvocationContext(parent.injector, { parent, ...options })
+        return new DefaultInvocationContext(parent.injector, { parent, ...options }, scope)
     }
 }
 
