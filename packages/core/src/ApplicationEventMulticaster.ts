@@ -7,16 +7,8 @@ import { CanHandle } from './guard';
 import { Handler } from './Handler';
 import { Interceptor } from './Interceptor';
 import { PipeTransform } from './pipes/pipe';
-// import { HandlerContext } from './handlers/context';
 import { HandlerService } from './handlers/configable';
 
-
-// /**
-//  * Application event context.
-//  */
-// export class ApplicationEventContext<T extends ApplicationEvent = ApplicationEvent> extends HandlerContext<T> {
-
-// }
 
 /**
  * providing the basic listener registration facility.
