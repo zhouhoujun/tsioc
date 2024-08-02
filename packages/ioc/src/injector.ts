@@ -251,6 +251,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * invoke method.
      * 
      * 调用类方法
+     * @deprecated  use `ReflectiveRef` instead.
      * @template T
      * @param {(T | Type<T> | Class<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
@@ -263,6 +264,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * invoke method.
      *
      * 调用类方法
+     * @deprecated  use `ReflectiveRef` instead.
      * @template T
      * @param {(T | Type<T> | Class<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
@@ -274,6 +276,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * invoke method.
      *
      * 调用类方法
+     * @deprecated  use `ReflectiveRef` instead.
      * @template T
      * @param {(T | Type<T> | Class<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
@@ -285,6 +288,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * invoke method.
      * 
      * 调用类方法
+     * @deprecated  use `ReflectiveRef` instead.
      * @template T
      * @param {(T | Type<T> | Class<T>)} target type of class or instance
      * @param {MethodType} propertyKey method name.

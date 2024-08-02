@@ -435,12 +435,12 @@ export class DefaultInjector extends Injector {
         let type: Type | undefined;
         if (!(flags & InjectFlags.SkipSelf)) {
             const rd = this.records.get(token);
-            type = rd?.type
+            type = rd?.type;
         }
-        if (!type || !(flags & InjectFlags.Self)) {
+        if (!type && !(flags & InjectFlags.Self)) {
             type = this.parent?.getTokenProvider(token, flags)
         }
-        return type ?? isFunction(token) ? token as Type : null!
+        return type ?? (isFunction(token) ? token as Type : null)!
     }
 
     unregister<T>(token: Token<T>): this {

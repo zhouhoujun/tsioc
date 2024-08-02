@@ -1,4 +1,4 @@
-import { EMPTY, Injectable, InjectFlags, Injector, isNumber, tokenId } from '@tsdi/ioc';
+import { EMPTY, Injectable, InjectFlags, Injector, isNumber, ReflectiveFactory, tokenId } from '@tsdi/ioc';
 import expect = require('expect');
 import { CollegeStudent, MiddleSchoolStudent, Student } from './debug';
 
@@ -85,9 +85,11 @@ describe('Injector test', () => {
     });
 
 
-    it('invoke by injector', () => {
+    it('invoke', () => {
         const device = inj.get(DeviceA);
-        const data = inj.invoke(device.service, plc => plc.read);
+        const typeRef = inj.get(ReflectiveFactory).create(PlcService, inj);
+        const data = typeRef.invoke(plc => plc.read, device.service);
+        // const data = inj.invoke(device.service, plc => plc.read);
         expect(isNumber(data)).toBeTruthy();
     });
 

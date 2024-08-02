@@ -64,6 +64,15 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
      * 调用反射类方法
      * 
      * @param method method name.
+     * @param instance target instance.
+     */
+    abstract invoke<TArg>(method: MethodType<T>,  instance?: T): any;
+    /**
+     * invoke target method.
+     * 
+     * 调用反射类方法
+     * 
+     * @param method method name.
      * @param option invoke arguments instances.
      * @param instance target instance.
      */
@@ -145,7 +154,7 @@ export abstract class ReflectiveFactory {
      * @param option target type invoke option {@link InvokeArguments}
      * @returns instance of {@link ReflectiveRef}
      */
-    abstract create<T>(type: Type<T> | Class<T>, injector: Injector, option?: InvokeArguments<any>): ReflectiveRef<T>;
+    abstract create<T>(type: Token<T> | Class<T>, injector: Injector, option?: InvokeArguments<any>): ReflectiveRef<T>;
 
 }
 

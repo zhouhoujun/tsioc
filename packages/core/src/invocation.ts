@@ -35,7 +35,7 @@ export abstract class InvocationFactory<T> implements OnDestroy, Destroyable {
 
     abstract get typeRef(): ReflectiveRef<T>;
 
-    abstract create<TArg>(propertyKey: string, options: InvocationOptions<TArg>): InvocationHandler;
+    abstract create<TArg>(propertyKey: string, options?: InvocationOptions<TArg>): InvocationHandler;
 
 
     destroy(): void {

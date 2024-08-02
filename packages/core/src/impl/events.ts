@@ -1,5 +1,5 @@
 import { ArgumentExecption, getClass, Injectable, InjectFlags, Injector, ProvdierOf, StaticProvider, tokenId, Type } from '@tsdi/ioc';
-import { finalize, map, mergeMap, Observable, of, throwError } from 'rxjs';
+import { map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanHandle } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
 import { Interceptor } from '../Interceptor';
@@ -86,17 +86,6 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    protected send(value: ApplicationEvent): Observable<void | false> {
-        // const ctx = new ApplicationEventContext(this.injector, { args: value });
-        // ctx.setValue(getClass(value), value);
-        return this.handler.handle(value)
-            // .pipe(
-            //     finalize(() => {
-            //         ctx.destroy();
-            //     })
-            // );
-    }
-
     emit(event: ApplicationEvent): Observable<void | false>;
     emit(event: Object): Observable<void | false>;
     emit(obj: ApplicationEvent | Object): Observable<void | false> {
@@ -117,7 +106,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
             event = new PayloadApplicationEvent(this, obj)
         }
 
-        return this.send(event)
+        return this.handler.handle(event)
             .pipe(
                 mergeMap(res => {
                     if (res === false || !event.propagation) return of(res);

@@ -1,6 +1,6 @@
 import { Type, ClassType } from '../types';
 import { Class } from '../metadata/type';
-import { isArray, isFunction, isPromise } from '../utils/chk';
+import { isArray, isFunction, isNil, isPromise, isType } from '../utils/chk';
 import { InjectFlags, Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
@@ -63,7 +63,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         return this._ctx.resolveArgument({ provider: token, flags, nullable: true })!
     }
 
-    invoke<TArg>(method: MethodType<T>, optionOrArgs?: any[] | InvokeArguments<TArg> | InvocationContext, instance?: T) {
+    invoke<TArg>(method: MethodType<T>, optionOrArgs?: any[] | InvokeArguments<TArg> | InvocationContext | T, instance?: T) {
         this.assertNotDestroyed();
         const name = this.class.getMethodName(method);
         let args: any[] | undefined;
@@ -71,8 +71,11 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         if (isArray(optionOrArgs)) {
             args = optionOrArgs;
             option = undefined;
+        } else if (isNil(instance) && optionOrArgs instanceof this.type) {
+            instance = optionOrArgs;
+            option = undefined;
         } else {
-            option = optionOrArgs;
+            option = optionOrArgs as InvokeArguments<TArg> | InvocationContext;
         }
 
         const [context, destroy] = this.createMethodContext(name, option);
@@ -253,8 +256,20 @@ export function hasContext<TArg>(option?: InvokeArguments<TArg>) {
 
 export class ReflectiveFactoryImpl extends ReflectiveFactory {
 
-    create<T, TArg>(type: Type<T> | Class<T>, injector: Injector, option?: InvokeArguments<TArg>): ReflectiveRef<T> {
-        return new DefaultReflectiveRef<T>(isFunction(type) ? get(type) : type, injector, option);
+    create<T, TArg>(type: Token<T> | Class<T>, injector: Injector, option?: InvokeArguments<TArg>): ReflectiveRef<T> {
+        if (type instanceof Class) {
+            return new DefaultReflectiveRef<T>(type, injector, option);
+        } else {
+
+            if (isType(type)) {
+                const cls = get(type);
+                if (cls) {
+                    return new DefaultReflectiveRef<T>(cls, injector, option);
+                }
+            }
+            const target = injector.getTokenProvider(type);
+            return new DefaultReflectiveRef<T>(get(target), injector, option);
+        }
     }
 
 }
