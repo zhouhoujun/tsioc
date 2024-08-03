@@ -17,7 +17,7 @@ export * from './impl/loader'
 export { DefaultApplicationContext } from './impl/context';
 export { InvocationHandlerImpl } from './impl/invocation';
 
-export { DEFAULTA_PROVIDERS, ROOT_DEFAULT_PROVIDERS } from './providers';
+export { DEFAULTA_PROVIDERS, RESOLVER_PROVIDERS } from './providers';
 export * from './Application';
 
 export * from './Handler';

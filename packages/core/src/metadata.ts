@@ -449,7 +449,7 @@ export const Dispose: DisposeEventHandler = createEventHandler(ApplicationDispos
 /**
  * Intercept metadata.
  */
-export interface InterceptMetadata {
+export interface InterceptMetadata extends ProvidedInMetadata {
     /**
      * intercept target type.
      */
@@ -494,15 +494,18 @@ export const Interceptable: Interceptable = createDecorator('Interceptable', {
             const decors = typeRef.getDecorDefines<InterceptMetadata>(ctx.currDecor, Decors.method);
             const injector = ctx.injector;
             const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
-            const resolver = injector.get(InterceptorResolver);
+            const currResolver = injector.get(InterceptorResolver);
             decors.forEach(decor => {
-                const { target, token, order } = decor.metadata;
+                const { target, token, order, providedIn } = decor.metadata;
                 const interceptor = (...args: any[]) => factory.invoke(decor.propertyKey, args);
                 if (token) {
-                    injector.inject({ provide: interceptor, useValue: interceptor, multi: true, multiOrder: order });
+                    const provider = { provide: interceptor, useValue: interceptor, multi: true, multiOrder: order };
+                    providedIn ? injector.platform().getInjector(providedIn).inject(provider) : injector.inject(provider);
                 } else {
+                    const resolver = providedIn ? injector.platform().getInjector(providedIn).get(InterceptorResolver) : currResolver;
                     resolver.addInterceptor(target as Type | string, interceptor, order);
                     factory.onDestroy(() => resolver.removeInterceptor(target as Type | string, interceptor));
+
                 }
             });
 
@@ -540,15 +543,17 @@ export const Filterable: Filterable = createDecorator('Filterable', {
             const decors = typeRef.getDecorDefines<InterceptMetadata>(ctx.currDecor, Decors.method);
             const injector = ctx.injector;
             const factory = injector.get(ReflectiveFactory).create(typeRef, injector);
-            const filterResolver = injector.get(FilterResolver);
+            const currResolver = injector.get(FilterResolver);
             decors.forEach(decor => {
-                const { target, token, order } = decor.metadata;
+                const { target, token, order, providedIn } = decor.metadata;
                 const filter = (...args: any[]) => factory.invoke(decor.propertyKey, args);
                 if (token) {
-                    injector.inject({ provide: target, useValue: filter, multi: true, multiOrder: order });
+                    const provider = { provide: target, useValue: filter, multi: true, multiOrder: order };
+                    providedIn ? injector.platform().getInjector(providedIn).inject(provider) : injector.inject(provider);
                 } else {
-                    filterResolver.addFilter(target as Type | string, filter, order);
-                    factory.onDestroy(() => filterResolver.removeFilter(target as Type | string, filter));
+                    const resolver = providedIn ? injector.platform().getInjector(providedIn).get(FilterResolver) : currResolver;
+                    resolver.addFilter(target as Type | string, filter, order);
+                    factory.onDestroy(() => resolver.removeFilter(target as Type | string, filter));
                 }
             });
 
@@ -601,12 +606,13 @@ export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
             const decors = typeRef.getDecorDefines<FilterHandlerMetadata<any>>(ctx.currDecor, Decors.method);
             const injector = ctx.injector;
             const factory = injector.get(InvocationFactoryResolver).resolve(typeRef, injector);
-            const handlerResolver = injector.get(FilterHandlerResolver);
+            const currResolver = injector.get(FilterHandlerResolver);
             decors.forEach(decor => {
-                const { filter, order, ...options } = decor.metadata;
+                const { filter, order, providedIn, ...options } = decor.metadata;
                 const handler = factory.create(decor.propertyKey, options);
-                handlerResolver.addHandle(filter, handler, order);
-                factory.onDestroy(() => handlerResolver.removeHandle(filter, handler));
+                const resolver = providedIn ? injector.platform().getInjector(providedIn).get(FilterHandlerResolver) : currResolver;
+                resolver.addHandle(filter, handler, order);
+                factory.onDestroy(() => resolver.removeHandle(filter, handler));
             });
 
             next()

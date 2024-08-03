@@ -22,6 +22,8 @@ import { ReflectiveFactoryImpl, hasContext } from './reflective';
 import { createContext, InvocationContext, InvokeOptions } from '../context';
 import { DefaultPlatform } from './platform';
 
+export const SCOPE_PRODIDERS:ProviderType[] = [];
+
 /**
  * Default Injector
  */
@@ -85,7 +87,10 @@ export class DefaultInjector extends Injector {
             case 'static':
                 break;
             default:
-                if (scope) this.platform().setInjector(scope, this);
+                if (scope) {
+                    this.platform().setInjector(scope, this);
+                    SCOPE_PRODIDERS.length && this.inject(SCOPE_PRODIDERS);
+                }
                 injectAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = this.isStatic ? isStaticAlias : isInjectAlias;
                 break;

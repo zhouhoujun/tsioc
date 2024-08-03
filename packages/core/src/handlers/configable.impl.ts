@@ -350,7 +350,7 @@ export function createHandler<TInput, TOutput>(context: Injector | InvocationCon
     }
     options = normalizeConfigableHandlerOptions(options);
     const Type = options.classType ?? ConfigableHandler;
-    return new Type(createContext(context, options), options)
+    return new Type(createContext(context, options, options.handlerType), options)
 }
 
 export function normalizeConfigableHandlerOptions<T extends ConfigableHandlerOptions>(options: T): T {

@@ -1,11 +1,9 @@
 import { isFunction, Type, ClassType, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
-import { DEFAULTA_PROVIDERS, ROOT_DEFAULT_PROVIDERS } from './providers';
+import { DEFAULTA_PROVIDERS, ROOT_DEPENDENCE_PROVIDERS, } from './providers';
 import { ModuleLoader } from './ModuleLoader';
 import { DefaultModuleLoader } from './impl/loader';
 import { ApplicationArguments } from './ApplicationArguments';
-import { TRANSFORM_PROVIDERS } from './pipes/transform';
-import { FILTER_PROVIDERS } from './filters/filters';
 
 
 
@@ -61,11 +59,11 @@ export class Application<T = any, TArg = ApplicationArguments> {
     }
 
     protected getRootDependenceProviders(): ProviderType[] {
-        return [...TRANSFORM_PROVIDERS, ...FILTER_PROVIDERS];
+        return ROOT_DEPENDENCE_PROVIDERS;
     }
 
     protected getRootDefaultProviders(): ProviderType[] {
-        return ROOT_DEFAULT_PROVIDERS;
+        return EMPTY;
     }
 
     /**

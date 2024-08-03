@@ -17,7 +17,6 @@ import { ClientBackend } from './backend';
 import { ClientCodingsModule } from './codings/client.codings.module';
 import { ClientEndpointCodingsHanlders } from './codings/codings.handlers';
 import { DefaultClientTransportSessionFactory } from './default.session';
-import { ClientHandler } from './handler';
 import { BodyContentInterceptor } from './interceptors/body';
 import { ClientOpts } from './options';
 import { UrlRedirector } from './redirector';

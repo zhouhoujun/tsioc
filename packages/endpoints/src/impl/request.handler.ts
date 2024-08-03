@@ -3,6 +3,7 @@ import { ConfigableHandler, Handler, normalizeConfigableHandlerOptions } from '@
 import { ForbiddenExecption } from '@tsdi/common/transport';
 import { RequestContext } from '../RequestContext';
 import { AbstractRequestHandler, RequestHandlerOptions } from '../AbstractRequestHandler';
+import { RequestHandler } from '../RequestHandler';
 
 
 /**
@@ -33,8 +34,9 @@ export class DefaultRequestHandler<TInput extends RequestContext = RequestContex
  * @param options 
  * @returns 
  */
-export function createRequestHandler<TInput extends RequestContext>(context: Injector | InvocationContext, options: RequestHandlerOptions<TInput>): AbstractRequestHandler<TInput> {
+export function createRequestHandler<TInput extends RequestContext>(context: Injector | InvocationContext, options: RequestHandlerOptions<TInput>): RequestHandler<TInput> {
     options = normalizeConfigableHandlerOptions(options);
-    return new DefaultRequestHandler(createContext(context, options), options)
+    const Type = options.classType ?? DefaultRequestHandler;
+    return new Type(createContext(context, options, options.handlerType), options);
 }
 

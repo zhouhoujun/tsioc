@@ -1,4 +1,4 @@
-import { Abstract, Token } from '@tsdi/ioc';
+import { Abstract, ClassType, Token } from '@tsdi/ioc';
 import { AbstractConfigableHandler, InvocationOptions } from '@tsdi/core';
 import { RequestContext } from './RequestContext';
 import { Router } from './router/router';
@@ -28,6 +28,7 @@ export abstract class AbstractRequestHandler<TInput extends RequestContext = Req
  * 传输节点配置
  */
 export interface RequestHandlerOptions<T extends RequestContext = RequestContext, TArg = any> extends InvocationOptions<T, TArg> {
+    classType?: ClassType<RequestHandler>;
 
     /**
      * backend of endpoint. defaut `Router`
