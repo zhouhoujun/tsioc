@@ -39,11 +39,15 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         const platfrom = this.platform();
         platfrom.modules.set(this._type, this);
         const ps: Promise<void>[] = [];
-        if (option.deps) {
+        if (option.depProviders?.length) {
+            const providers$ = this.processInject(option.depProviders);
+            if (providers$) ps.push(providers$);
+        }
+        if (option.deps?.length) {
             const deps$ = this.processUse(option.deps);
             if (deps$) ps.push(deps$);
         }
-        if (option.providers) {
+        if (option.providers?.length) {
             const providers$ = this.processInject(option.providers);
             if (providers$) ps.push(providers$);
         }

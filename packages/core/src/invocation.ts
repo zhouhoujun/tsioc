@@ -1,7 +1,4 @@
-import { Abstract, Type, OperationInvoker, tokenId, OnDestroy, Destroyable, ReflectiveRef, DestroyCallback, Injector, Class } from '@tsdi/ioc';
-import { CanHandle } from './guard';
-import { Interceptor } from './Interceptor';
-import { Filter } from './filters/filter';
+import { Abstract, Type, OperationInvoker, OnDestroy, Destroyable, ReflectiveRef, DestroyCallback, Injector, Class, ProvidedInMetadata } from '@tsdi/ioc';
 import { AbstractConfigableHandler, ConfigableHandlerOptions } from './handlers/configable';
 
 
@@ -108,7 +105,7 @@ export abstract class TypedRespond<TInput = any> {
  * 
  * 终结点配置
  */
-export interface InvocationOptions<T = any, TArg = any> extends ConfigableHandlerOptions<T, TArg> {
+export interface InvocationOptions<T = any, TArg = any> extends ConfigableHandlerOptions<T, TArg>, ProvidedInMetadata {
     /**
      * the endpoint run times limit. 
      */
@@ -126,8 +123,3 @@ export interface InvocationOptions<T = any, TArg = any> extends ConfigableHandle
      */
     response?: 'body' | 'header' | 'response' | Type<Respond<T>> | ((input: T, returnning: any) => void)
 }
-
-
-export const OPERA_INTERCEPTORS = tokenId<Interceptor[]>('OPERA_INTERCEPTORS');
-export const OPERA_GUARDS = tokenId<CanHandle[]>('OPERA_GUARDS');
-export const OPERA_FILTERS = tokenId<Filter[]>('OPERA_FILTERS');

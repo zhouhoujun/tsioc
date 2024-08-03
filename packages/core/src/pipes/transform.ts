@@ -1,4 +1,3 @@
-import { Module } from '@tsdi/ioc';
 import { BytesFormatPipe } from './formats/bytes';
 import { DateFormatPipe } from './formats/date';
 import { TimeFormatPipe } from './formats/time';
@@ -15,17 +14,12 @@ import { StringPipe } from './parses/string';
 import { SlicePipe } from './slice';
 import { SortPipe } from './sort';
 
-/*
- * Transform module.
+/**
+ * Transform providers.
  */
-@Module({
-    exports: [
-        LowerCasePipe, UpperCasePipe, SlicePipe, SortPipe,
-        DateFormatPipe, JsonFormatPipe, BytesFormatPipe, TimeFormatPipe,
-        JsonPipe, DatePipe, StringPipe, BoolPipe, EnumPipe,
-        FloatPipe, IntPipe, BigintPipe, NumberPipe
-    ]
-})
-export class TransformModule {
-
-}
+export const TRANSFORM_PROVIDERS = [
+    LowerCasePipe, UpperCasePipe, SlicePipe, SortPipe,
+    DateFormatPipe, JsonFormatPipe, BytesFormatPipe, TimeFormatPipe,
+    JsonPipe, DatePipe, StringPipe, BoolPipe, EnumPipe,
+    FloatPipe, IntPipe, BigintPipe, NumberPipe
+]

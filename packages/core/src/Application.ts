@@ -1,10 +1,12 @@
-import { isFunction, Type, ClassType, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef } from '@tsdi/ioc';
+import { isFunction, Type, ClassType, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEFAULT_PROVIDERS } from './providers';
 import { ModuleLoader } from './ModuleLoader';
 import { DefaultModuleLoader } from './impl/loader';
-import { FilterModule } from './filters/filter.module';
 import { ApplicationArguments } from './ApplicationArguments';
+import { TRANSFORM_PROVIDERS } from './pipes/transform';
+import { FILTER_PROVIDERS } from './filters/filters';
+
 
 
 /**
@@ -52,6 +54,14 @@ export class Application<T = any, TArg = ApplicationArguments> {
 
     protected getPlatformDefaultProviders(): ProviderType[] {
         return DEFAULTA_PROVIDERS
+    }
+
+    protected getRootDependencies(): ModuleType[] {
+        return EMPTY;
+    }
+
+    protected getRootDependenceProviders(): ProviderType[] {
+        return [...TRANSFORM_PROVIDERS, ...FILTER_PROVIDERS];
     }
 
     protected getRootDefaultProviders(): ProviderType[] {
@@ -146,7 +156,8 @@ export class Application<T = any, TArg = ApplicationArguments> {
             this.loader = new DefaultModuleLoader();
         }
         option.platformDeps && container.use(...option.platformDeps);
-        option.deps = [FilterModule, ...option.deps || EMPTY]
+        option.depProviders = [...this.getRootDependenceProviders(), ...option.depProviders || EMPTY];
+        option.deps = [...this.getRootDependencies(), ...option.deps || EMPTY]
         option.providers = [...this.getRootDefaultProviders(), ...option.providers || EMPTY];
         return this.createModuleRef(container, option);
     }

@@ -1,5 +1,5 @@
 import { Type, ClassType, Annotation, EMPTY } from '../types';
-import { ModuleWithProviders, ProvdierOf, ProviderType } from '../providers';
+import { ModuleWithProviders, ProviderType } from '../providers';
 import {
     PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata,
     PropertyMetadata, ParameterMetadata, MethodMetadata

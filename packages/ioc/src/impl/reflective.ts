@@ -205,10 +205,10 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 
         return createContext(injector, {
             ...option,
-            targetType: this.class.type,
+            targetType: this.type,
             providers,
             resolvers
-        }, 'context')
+        }, this.type)
     }
 
     private _destroyed = false;

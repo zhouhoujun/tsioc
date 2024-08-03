@@ -20,5 +20,5 @@ export * from './parses/number';
 export * from './parses/string';
 export * from './parses/json';
 
-export * from './transform.module';
+export * from './transform';
 

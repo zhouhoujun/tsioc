@@ -82,12 +82,8 @@ export class DefaultInjector extends Injector {
                 rootAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isRootAlias;
                 break;
-            case 'context':
             case 'static':
                 break;
-            // case 'configuration':
-            //     this.platform().setInjector(scope, this);
-            //     break;
             default:
                 if (scope) this.platform().setInjector(scope, this);
                 injectAlias.forEach(tk => this.records.set(tk, val));
@@ -601,7 +597,7 @@ const isInjectAlias = (token: any) => token === Injector || token === INJECTOR;
 const isStaticAlias = (token: any) => token === StaticInjector;
 
 INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: InjectorScope) => {
-    if (scope === 'static' || scope === 'context') {
+    if (scope === 'static' || isType(scope)) {
         return new StaticInjector(providers, parent, scope)
     }
     return new DefaultInjector(providers, parent!, scope)

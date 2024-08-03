@@ -47,7 +47,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     constructor(
         injector: Injector,
         private options: TargetInvokeArguments<T> = EMPTY_OBJ,
-        private injectorScope: 'context' | 'static' = 'static'
+        private injectorScope: Type | 'static' = 'static'
     ) {
         super();
         this._refs = [];
@@ -398,7 +398,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
 }
 
 
-INVOCATION_CONTEXT_IMPL.create = <TArg>(parent: Injector | InvocationContext, options?: TargetInvokeArguments<TArg>, scope?: 'context'| 'static') => {
+INVOCATION_CONTEXT_IMPL.create = <TArg>(parent: Injector | InvocationContext, options?: TargetInvokeArguments<TArg>, scope?:  Type | 'static') => {
     if (isInjector(parent)) {
         return new DefaultInvocationContext(parent, options, scope)
     } else {

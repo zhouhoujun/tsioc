@@ -2,7 +2,8 @@ import {
     isUndefined, Type, createDecorator, ProviderType, InjectableMetadata, PropertyMetadata, ActionTypes, InjectFlags,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments, EMPTY,
     isString, Parameter, ProviderMetadata, Decors, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
-    ModuleType, ClassType, MutilProvider, ReflectiveRef, Class, Injector
+    ModuleType, ClassType, MutilProvider, ReflectiveRef, Class, Injector,
+    ProvidedInMetadata
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import {
@@ -211,12 +212,14 @@ function injectBean(injector: Injector, typeRef: Class<any>, meta: Confgiuration
     const factory = factoryRef ?? injector.get(ReflectiveFactory).create(typeRef, injector);
 
     if (meta.providers) factory.injector.inject(meta.providers);
-    const pdrs = typeRef.defs.filter(d => d.decor === Bean)
-        .map(d => {
+
+    typeRef.defs.filter(d => d.decor === Bean)
+        .forEach(d => {
             const key = d.propertyKey;
-            const { provide, static: stac, multi, multiOrder } = d.metadata as BeanMetadata;
+            const { provide, static: stac, multi, multiOrder, providedIn } = d.metadata as BeanMetadata;
+            let provider: ProviderType
             if (d.decorType === 'method') {
-                return {
+                provider = {
                     provide,
                     useFactory: () => factory.invoke(key),
                     static: stac,
@@ -224,7 +227,7 @@ function injectBean(injector: Injector, typeRef: Class<any>, meta: Confgiuration
                     multiOrder
                 } as ProviderType
             } else {
-                return {
+                provider = {
                     provide,
                     useFactory: () => factory.getInstance()[key],
                     static: stac,
@@ -232,8 +235,8 @@ function injectBean(injector: Injector, typeRef: Class<any>, meta: Confgiuration
                     multiOrder
                 } as ProviderType
             }
+            providedIn ? injector.platform().getInjector(providedIn).inject(provider) : injector.inject(provider);
         });
-    injector.inject(pdrs);
 }
 
 /**
@@ -268,14 +271,15 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                 const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? EMPTY;
                 const injector = ctx.injector;
                 const factory = injector.get(InvocationFactoryResolver).resolve(typeRef, injector);
-                const multicaster = injector.get(ApplicationEventMulticaster);
+                const currMulticaster = injector.get(ApplicationEventMulticaster);
                 decors.forEach(decor => {
-                    const { filter, order, ...options } = decor.metadata;
+                    const { filter, order, providedIn, ...options } = decor.metadata as InvocationOptions & { filter: Type<ApplicationEvent> & { getStrategy?: () => string } };
 
                     const handler = factory.create(decor.propertyKey, options);
 
                     const event = filter ?? defaultFilter;
                     const isFILO = isFunction(event.getStrategy) && event.getStrategy() == 'FILO';
+                    const multicaster = providedIn ? injector.platform().getInjector(providedIn).get(ApplicationEventMulticaster) : currMulticaster;
                     multicaster.addListener(event, handler, isFILO ? order ?? 0 : order);
                     factory.onDestroy(() => multicaster.removeListener(event, handler))
                 });
@@ -294,14 +298,15 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                 const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? EMPTY;
                 const injector = ctx.injector;
                 const factory = injector.get(InvocationFactoryResolver).resolve(typeRef, injector);
-                const multicaster = injector.get(ApplicationEventMulticaster);
+                const currMulticaster = injector.get(ApplicationEventMulticaster);
                 decors.forEach(decor => {
-                    const { filter, order, ...options } = decor.metadata;
+                    const { filter, order, providedIn, ...options } = decor.metadata as InvocationOptions & { filter: Type<ApplicationEvent> & { getStrategy?: () => string } };
 
                     const handler = factory.create(decor.propertyKey, { ...options, instance: ctx.instance! });
 
                     const event = filter ?? defaultFilter;
                     const isFILO = isFunction(event.getStrategy) && event.getStrategy() == 'FILO';
+                    const multicaster = providedIn ? injector.platform().getInjector(providedIn).get(ApplicationEventMulticaster) : currMulticaster;
                     multicaster.addListener(event, handler, isFILO ? order ?? 0 : order);
                     factory.onDestroy(() => multicaster.removeListener(event, handler))
                 });
@@ -661,7 +666,7 @@ export interface PipeMetadata extends ProviderMetadata {
 /**
  * bean provider metadata.
  */
-export interface BeanMetadata extends UseAsStatic, MutilProvider {
+export interface BeanMetadata extends UseAsStatic, MutilProvider, ProvidedInMetadata {
     /**
      * the token bean provider to.
      */

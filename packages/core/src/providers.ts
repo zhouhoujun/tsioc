@@ -27,3 +27,4 @@ export const ROOT_DEFAULT_PROVIDERS: ProviderType[] = [
     { provide: ApplicationEventMulticaster,  useClass: DefaultEventMulticaster, static: true },
     { provide: ApplicationRunners, useClass: DefaultApplicationRunners, static: true }
 ]
+

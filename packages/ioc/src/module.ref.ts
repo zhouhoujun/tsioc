@@ -77,6 +77,10 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
  */
 export interface ModuleOption {
     /**
+     *  the provider dependencies.
+     */
+    depProviders?: ProviderType[];
+    /**
      *  providers.
      */
     providers?: ProviderType[];

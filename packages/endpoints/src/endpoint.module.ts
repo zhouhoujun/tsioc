@@ -2,7 +2,7 @@ import {
     Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleRef, ModuleType, ModuleWithProviders,
     ProvdierOf, ProviderType, Type, isArray, isNil, lang, toProvider, tokenId
 } from '@tsdi/ioc';
-import { ConfigMissingExecption, InvocationOptions, TransformModule, TypedRespond } from '@tsdi/core';
+import { ConfigMissingExecption, InvocationOptions, TypedRespond } from '@tsdi/core';
 import { HybirdTransport, MessageFactory, Transport } from '@tsdi/common';
 import {
     IncomingFactory, MessageReader, MessageWriter, NotImplementedExecption, OutgoingFactory,
@@ -33,7 +33,6 @@ import { createMiddlewareEndpoint } from './impl/middleware';
  */
 @Module({
     imports: [
-        TransformModule,
         TransportPacketModule,
         MicroServRouterModule,
         RouterModule
