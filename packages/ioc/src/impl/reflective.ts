@@ -208,7 +208,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
             targetType: this.type,
             providers,
             resolvers
-        }, this.type)
+        })
     }
 
     private _destroyed = false;

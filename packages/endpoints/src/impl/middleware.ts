@@ -42,6 +42,7 @@ export class DefaultMiddlewareHandler<TInput extends RequestContext = any, TOpti
  * @returns 
  */
 export function createMiddlewareEndpoint<TInput extends RequestContext>(context: Injector | InvocationContext, options: MiddlewareHandlerOptions<TInput>): MiddlewareHandler<TInput> {
-    options = normalizeConfigableHandlerOptions(options);
-    return new DefaultMiddlewareHandler(createContext(context, options), options)
+    options = normalizeConfigableHandlerOptions(options);    
+    const Type = options.classType ?? DefaultMiddlewareHandler;
+    return new Type(createContext(context, options, options.handlerType), options) as MiddlewareHandler<TInput>;
 }
