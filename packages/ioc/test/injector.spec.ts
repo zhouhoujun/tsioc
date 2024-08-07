@@ -116,7 +116,7 @@ describe('Injector test', () => {
     describe('with inject flags', () => {
 
         it('resolve default flags', () => {
-            const subinj = Injector.create([], inj);
+            const subinj = Injector.create(inj);
             expect(subinj.get(Student)).toBeInstanceOf(CollegeStudent);
             expect(subinj.get(Student, undefined, InjectFlags.Default)).toBeInstanceOf(CollegeStudent);
             subinj.destroy();
@@ -124,14 +124,14 @@ describe('Injector test', () => {
         })
 
         it('resolve self flags', () => {
-            const subinj = Injector.create([], inj);
+            const subinj = Injector.create(inj);
             expect(subinj.get(Students, EMPTY, InjectFlags.Self)).toEqual(EMPTY);
             expect(subinj.get(Students, null, InjectFlags.Self)).toBeNull();
             subinj.destroy();
         })
 
         it('resolve skip self flags', () => {
-            const subinj = Injector.create([], inj);
+            const subinj = Injector.create(inj);
             const value = subinj.get(Students, EMPTY, InjectFlags.SkipSelf);
             expect(value).not.toEqual(EMPTY);
             expect(Array.isArray(value)).toBeTruthy();

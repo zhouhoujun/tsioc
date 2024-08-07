@@ -3,7 +3,6 @@ import { ModuleType, ModuleWithProviders, ProviderType } from './providers';
 import { Injector } from './injector';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
-import { ReflectiveFactory } from './reflective';
 import { Type, ClassType } from './types';
 import { isType } from './utils/chk';
 import { deepForEach } from './utils/lang';

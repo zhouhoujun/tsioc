@@ -324,24 +324,37 @@ export abstract class Injector implements Destroyable, OnDestroy {
     protected abstract processRegister(platform: Platform, def: Class, option?: TypeOption): void;
 
     /**
+     * create platform injector.
+     * @param providers
+     */
+    static create(providers?: ProviderType[]): Injector;
+    /**
      * create injector.
      * @param providers 
      * @param parent 
+     * @param scope 
      */
-    static create(providers?: ProviderType[], parent?: Injector, scope?: InjectorScope): Injector;
+    static create(parent: Injector, scope?: InjectorScope): Injector;
+    /**
+     * create injector.
+     * @param providers 
+     * @param parent 
+     * @param scope 
+     */
+    static create(providers: ProviderType[] | undefined, parent: Injector, scope?: InjectorScope): Injector;
     /**
      * create injector with option.
      * @param options 
      */
     static create(options: { providers: ProviderType[], parent?: Injector, scope?: InjectorScope }): Injector;
     static create(
-        options: ProviderType[] | { providers: ProviderType[], parent?: Injector, scope?: InjectorScope } | undefined,
-        parent?: Injector, scope?: InjectorScope): Injector {
+        options: ProviderType[] | Injector | { providers: ProviderType[], parent?: Injector, scope?: InjectorScope } | undefined,
+        parent?: Injector | InjectorScope, scope?: InjectorScope): Injector {
         if (!options) {
             options = EMPTY
         }
-        return isArray(options) ? INJECT_IMPL.create(options, parent, scope) :
-            INJECT_IMPL.create(options.providers, options.parent, options.scope)
+        return isArray(options) ? INJECT_IMPL.create(options, parent as Injector, scope) :
+            (isInjector(options) ? INJECT_IMPL.create(undefined, options, parent as InjectorScope) : INJECT_IMPL.create(options.providers, options.parent, options.scope))
     }
 }
 
@@ -389,7 +402,7 @@ export const INJECT_IMPL = {
      * @param parent 
      * @param scope 
      */
-    create(providers: ProviderType[], parent?: Injector, scope?: InjectorScope): Injector {
+    create(providers?: ProviderType[], parent?: Injector, scope?: InjectorScope): Injector {
         throw new Execption('not implemented.')
     }
 };
@@ -400,7 +413,7 @@ export const INJECT_IMPL = {
  */
 export type Factory<T = any> = (...args: any[]) => T;
 
-export type InstanceOf<T> = T | ((injector: Injector)=> T);
+export type InstanceOf<T> = T | ((injector: Injector) => T);
 
 /**
  * register option
