@@ -65,7 +65,7 @@ export abstract class InvocationFactoryResolver {
      * @param injector injector
      * @param categare factory categare
      */
-    abstract resolve<T>(type: Type<T> | Class<T>, injector: Injector): InvocationFactory<T>;
+    abstract resolve<T>(type: Type<T> | Class<T>): InvocationFactory<T>;
 }
 
 

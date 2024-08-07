@@ -1,4 +1,4 @@
-import { Token } from '../tokens';
+import { InjectFlags, Token } from '../tokens';
 import { Type, ClassType } from '../types';
 import { Handle } from '../handle';
 import { isFunction } from '../utils/chk';
@@ -23,14 +23,23 @@ export class DefaultPlatform implements Platform {
     private _scopes: Map<string | Type, Injector>;
 
     readonly modules = new Map<Type, ModuleRef>();
+    private injectors: Injector[];
 
     constructor(readonly injector: Injector) {
         this._scopes = new Map();
         this._pdrs = new Map();
         this._actions = new Map();
         this._singls = new Map();
+        this.injectors = [injector];
         this._singls.set(Platform, this);
         injector.onDestroy(this)
+    }
+
+    register(injector: Injector): void {
+        if (this.injectors.indexOf(injector) < 0) {
+            this.injectors.push(injector);
+            injector.onDestroy(() => this.injectors.splice(this.injectors.indexOf(injector), 1));
+        }
     }
 
     /**
@@ -67,6 +76,15 @@ export class DefaultPlatform implements Platform {
 
     removeInjector(scope: InjectorScope): void {
         this._scopes.delete(scope)
+    }
+
+    getRegisterIn(token: Token): [ClassType, Injector] {
+        let type: ClassType | undefined;
+        const injector = this.injectors.find(r => {
+            type = r.getTokenProvider(token, InjectFlags.Self) as ClassType;
+            return type !== null;
+        })!;
+        return [type!, injector];
     }
 
     /**
@@ -162,6 +180,21 @@ export class DefaultPlatform implements Platform {
         }
     }
 
+    removeTypeProvider(type: Type | Class, ...providers: ProviderType[]): void {
+        const ty = isFunction(type) ? type : type.type;
+        if (!providers.length) {
+            this.clearTypeProvider(ty);
+            return;
+        }
+        const prds = this._pdrs.get(ty);
+        if (prds) {
+            providers.forEach(p => {
+                prds.splice(prds.indexOf(p), 1);
+            })
+        }
+
+    }
+
     clearTypeProvider(type: Type) {
         this._pdrs.delete(type)
     }
@@ -172,6 +205,7 @@ export class DefaultPlatform implements Platform {
         this._pdrs.clear();
         this._actions.clear();
         this._singls.clear()
+        this.injectors = [];
     }
 
 }

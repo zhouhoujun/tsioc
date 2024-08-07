@@ -99,12 +99,12 @@ export interface RefProvider {
 }
 
 /**
- * provider in metadata.
+ * provided in target metadata.
  *
  * @export
- * @interface ProviderInMetadata
+ * @interface ProvidedInTargetMetadata
  */
-export interface ProviderInMetadata {
+export interface ProvidedInTargetMetadata {
     /**
      * int tagert.
      *

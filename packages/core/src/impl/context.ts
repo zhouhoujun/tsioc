@@ -65,7 +65,7 @@ export class DefaultApplicationContext<T = any, TArg = ApplicationArguments> ext
     }
 
     async bootstrap<C, TArg>(type: Type<C> | Class<C>, option?: BootstrapOption<TArg>): Promise<ReflectiveRef<C>> {
-        const typeRef = this.runners.attach(type, option);
+        const typeRef = this.runners.attach(type, { parent: this, ...option });
         if (typeRef) {
             await this.runners.run(typeRef.type);
         }

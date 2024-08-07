@@ -52,7 +52,7 @@ export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
             if (advisor) {
                 const { type, injector } = ctx;
 
-                const factory = injector.get(ReflectiveFactory).create(type, injector);
+                const factory = injector.get(ReflectiveFactory).create(type);
                 injector.onDestroy(() => {
                     advisor.remove(factory);
                     lang.cleanObj(factory);

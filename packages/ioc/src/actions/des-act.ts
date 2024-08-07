@@ -11,6 +11,7 @@ import { Platform } from '../platform';
 import { IocRegScope } from './reg';
 import { RuntimeLifeScope } from './runtime';
 import { DesignContext, RuntimeContext } from './ctx';
+import { isType } from '../utils/chk';
 
 
 /**
@@ -126,11 +127,22 @@ export const DesignPropDecorScope = function (ctx: DesignContext, next: () => vo
  * @extends {ActionComposite}
  */
 export const TypeProviderAction = function (ctx: DesignContext, next: () => void) {
-    const { injector: injector, type, provide: regpdr, regProvides } = ctx;
-    if (regpdr && regpdr !== type) {
+    const { injector, type, provide, regProvides } = ctx;
+    if (provide && provide !== type) {
+        if (ctx.providedIn && isType(ctx.providedIn)) {
+            const platform = injector.platform();
+            if (!platform.getInjector(type)) {
+                const pType = ctx.providedIn;
+                const prd = { provide, useExisting: type };
+                platform.setTypeProvider(pType, [prd]);
+                injector.onDestroy(() => {
+                    platform.removeTypeProvider(pType, prd);
+                });
+            }
+        }
         ctx.class.provides.forEach(provide => {
-            if (provide != regpdr && regProvides !== false) {
-                injector.inject({ provide, useExisting: regpdr })
+            if (provide != provide && regProvides !== false) {
+                injector.inject({ provide, useExisting: provide })
             }
         })
     } else {
@@ -203,7 +215,7 @@ export const IocAutorunAction = function (ctx: DesignContext, next: () => void) 
     const injector = ctx.injector;
     const instance = injector.get(ctx.provide || ctx.type);
     if (!instance) return;
-    const factory = injector.get(ReflectiveFactory).create(ctx.class, injector);
+    const factory = injector.get(ReflectiveFactory).create(ctx.class);
     runs.forEach(meta => {
         factory.invoke(meta.method, undefined, instance);
     });

@@ -172,7 +172,7 @@ export const MthAutorunAction = function (ctx: RuntimeContext, next: () => void)
     const autos = ctx.class.runnables.filter(c => c.auto && c.decorType === Decors.method)
     if (autos.length) {
         const { injector, class: def, instance, context } = ctx;
-        const factory = injector.get(ReflectiveFactory).create(def, injector, context);
+        const factory = injector.get(ReflectiveFactory).create(def, context);
         autos.forEach(aut => {
             factory.invoke(aut.method, context, instance)
         })

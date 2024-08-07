@@ -1,5 +1,5 @@
 import expect = require('expect');
-import { Injectable, Inject, getToken, ProviderIn, Injector, ReflectiveFactory } from '../src';
+import { Injectable, Inject, getToken, ProvidedIn, Injector, ReflectiveFactory } from '../src';
 
 
 @Injectable()
@@ -33,7 +33,7 @@ export class TestService {
 }
 
 
-@ProviderIn(TestService, DataProvider, 'tt')
+@ProvidedIn(TestService, DataProvider, 'tt')
 export class TestServiceProvider extends DataProvider {
     override fetch(): any {
         return 'tt';
@@ -76,7 +76,7 @@ describe('resolve', () => {
     })
 
     it('get service with alias in option', () => {
-        const tsr = injector.get(ReflectiveFactory).create(TestService, injector).resolve(getToken(DataProvider, 'tt'));
+        const tsr = injector.get(ReflectiveFactory).create(TestService).resolve(getToken(DataProvider, 'tt'));
         expect(tsr).toBeInstanceOf(TestServiceProvider);
         expect(tsr.fetch()).toEqual('tt');
     })

@@ -1,4 +1,4 @@
-import { isFunction, Type, ClassType, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType } from '@tsdi/ioc';
+import { isFunction, Type, ClassType, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, ReflectiveFactory } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEPENDENCE_PROVIDERS, } from './providers';
 import { ModuleLoader } from './ModuleLoader';
@@ -193,10 +193,10 @@ export class Application<T = any, TArg = ApplicationArguments> {
             await root.ready;
             this.initRoot();
             if (isFunction(target)) {
-                const modueRef = root.reflectiveFactory.create(target, root);
+                const modueRef = root.get(ReflectiveFactory).create(target);
                 this.context = modueRef.resolve(ApplicationFactory).create(root);
             } else {
-                const modueRef = root.reflectiveFactory.create(root.moduleType, root);
+                const modueRef = root.get(ReflectiveFactory).create(root.moduleType);
                 if (target.loads) {
                     this._loads = await this.loader.register(this.root, target.loads);
                 }

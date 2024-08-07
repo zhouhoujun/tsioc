@@ -30,10 +30,6 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      */
     abstract get moduleReflect(): Class<T>;
     /**
-     * reflectiveRef factory.
-     */
-    abstract get reflectiveFactory(): ReflectiveFactory;
-    /**
      * The injector that contains all of the providers of the `Module`.
      */
     abstract get injector(): Injector;

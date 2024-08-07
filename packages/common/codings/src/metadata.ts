@@ -66,7 +66,7 @@ export const EncodeHandler: EncodeHandler = createDecorator<EncodingsMetadata>('
 
             const injector = ctx.injector;
 
-            const factory = injector.get(InvocationFactoryResolver).resolve(ctx.class, injector);
+            const factory = injector.get(InvocationFactoryResolver).resolve(ctx.class);
 
             const codes = injector.get(CodingMappings);
             if (!codes) throw new Execption(lang.getClassName(CodingMappings) + 'has not registered!');
@@ -145,7 +145,7 @@ export const DecodeHandler: DecodeHandler = createDecorator<DecodingMetadata>('D
 
             const injector = ctx.injector;
 
-            const factory = injector.get(InvocationFactoryResolver).resolve(ctx.class, injector);
+            const factory = injector.get(InvocationFactoryResolver).resolve(ctx.class);
 
             const codes = injector.get(CodingMappings);
             if (!codes) throw new Execption(lang.getClassName(CodingMappings) + 'has not registered!');

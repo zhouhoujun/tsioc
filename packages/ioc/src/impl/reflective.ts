@@ -1,6 +1,6 @@
 import { Type, ClassType } from '../types';
 import { Class } from '../metadata/type';
-import { isArray, isFunction, isNil, isPromise, isType } from '../utils/chk';
+import { isArray, isNil, isPromise, isType } from '../utils/chk';
 import { InjectFlags, Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
@@ -12,6 +12,7 @@ import { OperationInvoker } from '../operation';
 import { ReflectiveOperationInvoker } from './operation';
 import { getClassName, hasItem, immediate } from '../utils/lang';
 import { Execption } from '../execption';
+import { Platform } from '../platform';
 
 
 /**
@@ -254,21 +255,34 @@ export function hasContext<TArg>(option?: InvokeArguments<TArg>) {
     return option && (hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || option.args)
 }
 
-export class ReflectiveFactoryImpl extends ReflectiveFactory {
+export class ReflectiveFactoryImpl implements ReflectiveFactory {
 
-    create<T, TArg>(type: Token<T> | Class<T>, injector: Injector, option?: InvokeArguments<TArg>): ReflectiveRef<T> {
+    constructor(private platform: Platform) {
+
+    }
+
+    create<T, TArg>(type: Token<T> | Class<T>, option?: InvokeArguments<TArg>): ReflectiveRef<T> {
+        let injector: Injector | undefined;
+        let classType: ClassType | undefined;
+
         if (type instanceof Class) {
-            return new DefaultReflectiveRef<T>(type, injector, option);
-        } else {
-
-            if (isType(type)) {
-                const cls = get(type);
-                if (cls) {
-                    return new DefaultReflectiveRef<T>(cls, injector, option);
-                }
+            [classType, injector] = this.platform.getRegisterIn(type.type);
+            if (!injector) {
+                injector = option?.parent?.injector;
             }
-            const target = injector.getTokenProvider(type);
-            return new DefaultReflectiveRef<T>(get(target), injector, option);
+            if (!injector) {
+                throw new Execption(`Type:${type.type} is not registered.`)
+            }
+            return new DefaultReflectiveRef<T>(type, (injector ?? option?.parent?.injector)!, option);
+        } else {
+            [classType, injector] = this.platform.getRegisterIn(type);
+            if (!injector) {
+                injector = option?.parent?.injector;
+            }
+            if (!injector) {
+                throw new Execption(`Type:${classType ?? type.toString()} is not registered.`)
+            }
+            return new DefaultReflectiveRef<T>(get(classType!), (injector ?? option?.parent?.injector)!, option);
         }
     }
 

@@ -75,7 +75,8 @@ export class RouteHandlerFactoryImpl<T = any> extends RouteHandlerFactory<T> {
 /**
  * Route factory resolver implements
  */
-export class RouteHandlerFactoryResolverImpl extends RouteHandlerFactoryResolver {
+export class RouteHandlerFactoryResolverImpl implements RouteHandlerFactoryResolver {
+    constructor(private factory: ReflectiveFactory){}
     /**
      * resolve endpoint factory.
      * @param type factory type
@@ -89,14 +90,13 @@ export class RouteHandlerFactoryResolverImpl extends RouteHandlerFactoryResolver
      * @param injector injector
      * @param categare factory categare
      */
-    resolve<T>(type: Type<T> | Class<T>, injector: Injector): RouteHandlerFactory<T>;
-    resolve<T>(type: Type<T> | Class<T> | ReflectiveRef<T>, arg2?: any): RouteHandlerFactory<T> {
+    resolve<T>(type: Type<T> | Class<T>): RouteHandlerFactory<T>;
+    resolve<T>(type: Type<T> | Class<T> | ReflectiveRef<T>): RouteHandlerFactory<T> {
         let tyref: ReflectiveRef<T>;
         if (type instanceof ReflectiveRef) {
             tyref = type;
         } else {
-            const injector = arg2 as Injector;
-            tyref = injector.get(ReflectiveFactory).create(type, injector);
+            tyref = this.factory.create(type);
         }
         return new RouteHandlerFactoryImpl(tyref);
     }

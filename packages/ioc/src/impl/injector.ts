@@ -1,3 +1,4 @@
+/* eslint-disable no-case-declarations */
 import { Type, ClassType, EMPTY } from '../types';
 import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
@@ -22,7 +23,7 @@ import { ReflectiveFactoryImpl, hasContext } from './reflective';
 import { createContext, InvocationContext, InvokeOptions } from '../context';
 import { DefaultPlatform } from './platform';
 
-export const SCOPE_PRODIDERS:ProviderType[] = [];
+export const SCOPE_PRODIDERS: ProviderType[] = [];
 
 /**
  * Default Injector
@@ -77,18 +78,24 @@ export class DefaultInjector extends Injector {
                 platformAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isPlatformAlias;
                 this._plat = new DefaultPlatform(this);
-                registerCores(this);
+                registerCores(this, this._plat);
                 break;
             case 'root':
-                this.platform().setInjector(scope, this);
+                this._plat = this.parent!.platform();
+                this._plat.register(this);
+                this._plat.setInjector(scope, this);
                 rootAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isRootAlias;
                 break;
             case 'static':
+                this._plat = this.parent!.platform();
+                this._plat.register(this);
                 break;
             default:
+                this._plat = this.parent!.platform();
+                this._plat.register(this);
                 if (scope) {
-                    this.platform().setInjector(scope, this);
+                    this._plat.setInjector(scope, this);
                     SCOPE_PRODIDERS.length && this.inject(SCOPE_PRODIDERS);
                 }
                 injectAlias.forEach(tk => this.records.set(tk, val));
@@ -119,7 +126,7 @@ export class DefaultInjector extends Injector {
     }
 
     platform(): Platform {
-        return (this._plat ?? this.parent?.platform())!
+        return this._plat!
     }
 
     register(types: (Type | RegisterOption)[]): this;
@@ -441,7 +448,7 @@ export class DefaultInjector extends Injector {
         if (!type && !(flags & InjectFlags.Self)) {
             type = this.parent?.getTokenProvider(token, flags)
         }
-        return type ?? (isFunction(token) ? token as Type : null)!
+        return type ?? null!
     }
 
     unregister<T>(token: Token<T>): this {
@@ -503,7 +510,7 @@ export class DefaultInjector extends Injector {
             }
         }
         tgRefl = tgRefl ?? get(targetClass);
-        const refti = this.get(ReflectiveFactory).create(tgRefl, this);
+        const refti = this.get(ReflectiveFactory).create(tgRefl);
         const val = refti.invoke(propertyKey, context, instance);
         immediate(() => refti.destroy());
 
@@ -927,12 +934,12 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
  * @export
  * @param {IContainer} container
  */
-function registerCores(container: Container) {
-    const factory = new ReflectiveFactoryImpl();
+function registerCores(container: Container, platform: Platform) {
+    const factory = new ReflectiveFactoryImpl(platform);
     container.setValue(ReflectiveFactory, factory);
-    // container.onDestroy(factory)
+    platform.registerSingleton(container, ReflectiveFactory, factory);
     // bing action.
-    container.platform().registerAction(
+    platform.registerAction(
         DesignLifeScope,
         RuntimeLifeScope
     )

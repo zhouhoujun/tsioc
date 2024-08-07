@@ -87,7 +87,7 @@ describe('Injector test', () => {
 
     it('invoke', () => {
         const device = inj.get(DeviceA);
-        const typeRef = inj.get(ReflectiveFactory).create(PlcService, inj);
+        const typeRef = inj.get(ReflectiveFactory).create(PlcService);
         const data = typeRef.invoke(plc => plc.read, device.service);
         // const data = inj.invoke(device.service, plc => plc.read);
         expect(isNumber(data)).toBeTruthy();

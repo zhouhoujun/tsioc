@@ -100,7 +100,7 @@ describe('method exec test', () => {
         const mtt = container.get(MethodTest);
         expect(isFunction(mtt.sayHello)).toBeTruthy();
         // expect(container.invoke(MethodTest, 'sayHello')).toEqual('I love you.');
-        const typeRef = container.get(ReflectiveFactory).create(MethodTest, container);
+        const typeRef = container.get(ReflectiveFactory).create(MethodTest);
         expect(typeRef.invoke('sayHello')).toEqual('I love you.');
 
     });
@@ -109,7 +109,7 @@ describe('method exec test', () => {
         // container.register(Person);
         container.register(MethodTest2);
         // expect(container.invoke(MethodTest2, t => t.sayHello)).toEqual('Mama');
-        const typeRef = container.get(ReflectiveFactory).create(MethodTest2, container);
+        const typeRef = container.get(ReflectiveFactory).create(MethodTest2);
         expect(typeRef.invoke(t => t.sayHello)).toEqual('Mama');
 
     });
@@ -118,7 +118,7 @@ describe('method exec test', () => {
         // container.register(Person);
         container.register(MethodTest3);
         // expect(container.invoke(MethodTest3, 'sayHello')).toEqual('Mama, I love you.');
-        const typeRef = container.get(ReflectiveFactory).create(MethodTest3, container);
+        const typeRef = container.get(ReflectiveFactory).create(MethodTest3);
         expect(typeRef.invoke('sayHello')).toEqual('Mama, I love you.');
 
     });
@@ -127,7 +127,7 @@ describe('method exec test', () => {
         // container.register(Person);
         container.register(MethodTest3);
         // expect(container.invoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
-        const typeRef = container.get(ReflectiveFactory).create('Test3', container);
+        const typeRef = container.get(ReflectiveFactory).create('Test3');
         expect(typeRef.invoke('sayHello')).toEqual('Mama, I love you.');
 
     });

@@ -3,7 +3,7 @@ import { isArray, isString } from '../utils/chk';
 import { Token, getToken, InjectFlags } from '../tokens';
 import {
     ClassMetadata, RunnableMetadata, AutoWiredMetadata, InjectMetadata, PatternMetadata,
-    InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProviderInMetadata, ModuleMetadata, ProvidedInMetadata
+    InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProvidedInTargetMetadata, ModuleMetadata, ProvidedInMetadata
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { ProviderType, StaticProvider } from '../providers';
@@ -699,16 +699,16 @@ export const Providers: Providers = createDecorator<ProvidersMetadata>('Provider
 
 
 /**
- * ProviderIn decorator, for class. use to define the class as service of target.
+ * ProvidedIn decorator, for class. use to define the class as service provider for target type.
  *
  * @Refs
  *
  * @export
- * @interface ProviderIn
+ * @interface ProvidedIn
  */
-export interface ProviderIn {
+export interface ProvidedIn {
     /**
-     * Refs decorator, for class. use to define the class as service of target.
+     * ProvidedIn decorator, for class. use to define the class as service provider for target type.
      *
      * @Refs
      *
@@ -717,7 +717,7 @@ export interface ProviderIn {
     (target: Type): ClassDecorator;
 
     /**
-     * Refs decorator, for class. use to define the class as service of target.
+     * ProvidedIn decorator, for class. use to define the class as service provider for target type.
      *
      * @Refs
      *
@@ -728,34 +728,42 @@ export interface ProviderIn {
     (target: Type, provide: Token, alias?: string): ClassDecorator;
 
     /**
-     * Refs decorator, for class. use to define the class as service of target.
+     * ProvidedIn decorator, for class. use to define the class as service provider for target type.
      *
      * @Refs
      *
-     * @param {ProviderInMetadata} [metadata] metadata map.
+     * @param {ProvidedInTargetMetadata} [metadata] metadata map.
      */
-    (metadata: ProviderInMetadata): ClassDecorator;
+    (metadata: ProvidedInTargetMetadata): ClassDecorator;
 }
 
 /**
- * Refs decorator, for class. use to define the class as service of target.
+ * ProvidedIn decorator, for class. use to define the class as service provider for target type.
  *
- * @Refs
+ * @ProvidedIn
  */
-export const ProviderIn: ProviderIn = createDecorator<ProviderInMetadata>('ProviderIn', {
+export const ProvidedIn: ProvidedIn = createDecorator<ProvidedInTargetMetadata>('ProvidedIn', {
     props: (target: Type, provide?: Token, alias?: string) => ({ target, provide: getToken(provide!, alias) }),
     design: {
         afterAnnoation: (ctx, next) => {
-            const meta = ctx.class.getMetadata<ProviderInMetadata>(ctx.currDecor!);
+            const meta = ctx.class.getMetadata<ProvidedInTargetMetadata>(ctx.currDecor!);
             const type = ctx.type;
-            ctx.injector.platform().setTypeProvider(meta.target, [{ provide: meta.provide || type, useClass: type }])
+            const prds = meta.provide ? { provide: meta.provide, useClass: type } : type;
+            const platform = ctx.injector.platform();
+            platform.setTypeProvider(meta.target, [prds]);
+            ctx.injector.onDestroy(() => {
+                platform.removeTypeProvider(type, prds);
+            });
+
             return next()
         }
     }
 });
 
-
-export const Refs = ProviderIn;
+/**
+ * @deprecated use `providedIn` instead.
+ */
+export const Refs = ProvidedIn;
 
 /**
  * Static decorator, for class. use to define the class is static in injector.

@@ -1,4 +1,4 @@
-import { Class, EMPTY_OBJ, Injectable, Injector, InvocationContext, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, createContext, getClass, isDefined, isFunction, isNumber, isPromise, isString, lang } from '@tsdi/ioc';
+import { Class, EMPTY_OBJ, Injectable, InvocationContext, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, createContext, getClass, isDefined, isFunction, isNumber, isPromise, isString, lang } from '@tsdi/ioc';
 import { Observable, isObservable, lastValueFrom, of } from 'rxjs';
 import { Backend } from '../Handler';
 import { InvocationOptions, Respond, TypedRespond, InvocationFactory, InvocationFactoryResolver, InvocationHandler, } from '../invocation';
@@ -147,7 +147,8 @@ export class InvocationFactorympl<T = any> extends InvocationFactory<T> {
 /**
  * factory resolver implements
  */
-export class InvocationFactoryResolverImpl extends InvocationFactoryResolver {
+export class InvocationFactoryResolverImpl implements InvocationFactoryResolver {
+    constructor(private factory: ReflectiveFactory) { }
     /**
      * resolve endpoint factory.
      * @param type factory type
@@ -161,14 +162,13 @@ export class InvocationFactoryResolverImpl extends InvocationFactoryResolver {
      * @param injector injector
      * @param categare factory categare
      */
-    resolve<T>(type: Type<T> | Class<T>, injector: Injector): InvocationFactory<T>;
-    resolve<T>(type: Type<T> | Class<T> | ReflectiveRef<T>, arg2?: any): InvocationFactory<T> {
+    resolve<T>(type: Type<T> | Class<T>): InvocationFactory<T>;
+    resolve<T>(type: Type<T> | Class<T> | ReflectiveRef<T>): InvocationFactory<T> {
         let tyref: ReflectiveRef<T>;
         if (type instanceof ReflectiveRef) {
             tyref = type;
         } else {
-            const injector = arg2 as Injector;
-            tyref = injector.get(ReflectiveFactory).create(type, injector);
+            tyref = this.factory.create(type);
         }
         return new InvocationFactorympl(tyref);
     }

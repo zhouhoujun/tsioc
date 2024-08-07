@@ -4,11 +4,9 @@ import { Class, ModuleDef } from '../metadata/type';
 import { ModuleOption, ModuleRef } from '../module.ref';
 import { Platform } from '../platform';
 import { isModuleProviders, ModuleWithProviders, ProviderType } from '../providers';
-import { ReflectiveFactory } from '../reflective';
 import { Type, EMPTY, EMPTY_OBJ } from '../types';
 import { isType } from '../utils/chk';
 import { DefaultInjector } from './injector';
-import { ReflectiveFactoryImpl } from './reflective';
 
 
 /**
@@ -19,17 +17,12 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     private _type: Type;
     private _typeRefl: Class;
 
-    reflectiveFactory = new ReflectiveFactoryImpl();
-
     constructor(moduleType: Class, parent: Injector, option: ModuleOption = EMPTY_OBJ) {
         super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type);
         this.isStatic = (moduleType.getAnnotation().static || option.isStatic) !== false;
         this._typeRefl = moduleType;
         this._type = moduleType.type;
 
-        this.inject(
-            { provide: ReflectiveFactory, useValue: this.reflectiveFactory }
-        );
         this.setValue(ModuleRef, this);
         this.initWithOptions(option);
     }
@@ -112,7 +105,6 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this.platform()?.modules.delete(this._type);
         super.clear();
         this._type = null!;
-        this.reflectiveFactory = null!;
         this._typeRefl = null!;
         this._instance = null!
     }

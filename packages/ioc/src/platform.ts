@@ -5,7 +5,7 @@ import { Action } from './action';
 import { OnDestroy } from './destroy';
 import { Injector, InjectorScope } from './injector';
 import { Token } from './tokens';
-import { Type } from './types';
+import { ClassType, Type } from './types';
 import { ProviderType } from './providers';
 import { ModuleRef } from './module.ref';
 
@@ -24,6 +24,12 @@ export abstract class Platform implements OnDestroy {
      */
     abstract get injector(): Injector;
     /**
+     * register injector.
+     * @param token 
+     * @param value 
+     */
+    abstract register(injector: Injector): void;
+    /**
      * set singleton value
      * @param token 
      * @param value 
@@ -39,6 +45,12 @@ export abstract class Platform implements OnDestroy {
      * @param token 
      */
     abstract hasSingleton(token: Token): boolean;
+    /**
+     * get token prodider type and the injector the type register in.
+     * @param token
+     * @returns prodider type and the injector the type register in.
+     */
+    abstract getRegisterIn(token: Token): [ClassType | undefined, Injector | undefined];
     /**
      * set injector scope.
      * @param scope 
@@ -66,6 +78,12 @@ export abstract class Platform implements OnDestroy {
      * @param providers
      */
     abstract setTypeProvider(type: Type | Class, providers: ProviderType[]): void;
+    /**
+     * remove type providers.
+     * @param type
+     * @param providers
+     */
+    abstract removeTypeProvider(type: Type | Class, ...providers: ProviderType[]): void;
     /**
      * clear type provider.
      * @param type 

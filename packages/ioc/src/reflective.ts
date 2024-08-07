@@ -150,11 +150,10 @@ export abstract class ReflectiveFactory {
     /**
      * create ReflectiveRef of target type
      * @param type target type or target type def.
-     * @param injector injector.
      * @param option target type invoke option {@link InvokeArguments}
      * @returns instance of {@link ReflectiveRef}
      */
-    abstract create<T>(type: Token<T> | Class<T>, injector: Injector, option?: InvokeArguments<any>): ReflectiveRef<T>;
+    abstract create<T>(type: Token<T> | Class<T>, option?: InvokeArguments<any>): ReflectiveRef<T>;
 
 }
 
