@@ -1,6 +1,6 @@
 import { Type, ClassType } from '../types';
 import { Class } from '../metadata/type';
-import { isArray, isNil, isPromise, isType } from '../utils/chk';
+import { isArray, isNil, isPromise } from '../utils/chk';
 import { InjectFlags, Token } from '../tokens';
 import { get } from '../metadata/refl';
 import { ProviderType } from '../providers';
@@ -209,7 +209,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
             targetType: this.type,
             providers,
             resolvers
-        })
+        }, this.type)
     }
 
     private _destroyed = false;

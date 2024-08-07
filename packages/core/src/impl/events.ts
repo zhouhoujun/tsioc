@@ -27,7 +27,7 @@ export const EVENT_MULTICASTER_FILTERS = tokenId<Filter[]>('EVENT_MULTICASTER_FI
  */
 export const EVENT_MULTICASTER_GUARDS = tokenId<CanHandle[]>('EVENT_MULTICASTER_GUARDS');
 
-@Injectable()
+
 export class DefaultEventMulticaster extends ApplicationEventMulticaster implements Handler<ApplicationEvent> {
 
     private _handler: ConfigableHandler<ApplicationEvent, any>;

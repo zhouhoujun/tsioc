@@ -1,9 +1,9 @@
-import { EMPTY, getClass, Injectable, isFunction, isString, Type, ArgumentExecption } from '@tsdi/ioc';
+import { EMPTY, getClass, isFunction, isString, Type, ArgumentExecption } from '@tsdi/ioc';
 import { Handler } from '../Handler';
 import { Filter, FilterHandlerResolver, FilterLike, FilterResolver } from './filter';
 import { Interceptor, InterceptorLike, InterceptorResolver } from '../Interceptor';
 
-@Injectable()
+
 export class DefaultInterceptorResolver extends InterceptorResolver {
     private maps = new Map<Type | string, InterceptorLike[]>();
 
@@ -33,7 +33,7 @@ export class DefaultInterceptorResolver extends InterceptorResolver {
 }
 
 
-@Injectable()
+
 export class DefaultFilterResolver extends FilterResolver {
     private maps = new Map<Type | string, FilterLike[]>();
 
@@ -65,7 +65,6 @@ export class DefaultFilterResolver extends FilterResolver {
 /**
  * filter hanlders resolver.
  */
-@Injectable()
 export class DefaultFiterHandlerMethodResolver extends FilterHandlerResolver {
 
     private maps = new Map<Type | string, Handler[]>();

@@ -1,4 +1,4 @@
-import { isDefined, ProviderType, ReflectiveFactory, SCOPE_PRODIDERS } from '@tsdi/ioc';
+import { Injector, isDefined, ProviderType, ReflectiveFactory, SCOPE_PRODIDERS } from '@tsdi/ioc';
 import { ApplicationFactory } from './ApplicationContext';
 import { ApplicationRunners } from './ApplicationRunners';
 import { RandomUuidGenerator, UuidGenerator } from './uuid';
@@ -29,10 +29,10 @@ export const DEFAULTA_PROVIDERS: ProviderType[] = [
 ]
 
 export const RESOLVER_PROVIDERS = [
-    { provide: InterceptorResolver, useClass: DefaultInterceptorResolver, static: true },
-    { provide: FilterResolver, useClass: DefaultFilterResolver, static: true },
-    { provide: FilterHandlerResolver, useClass: DefaultFiterHandlerMethodResolver, static: true },
-    { provide: ApplicationEventMulticaster, useClass: DefaultEventMulticaster, static: true },
+    { provide: InterceptorResolver, useFactory: () => new DefaultInterceptorResolver(), static: true },
+    { provide: FilterResolver, useFactory: () => new DefaultFilterResolver(), static: true },
+    { provide: FilterHandlerResolver, useFactory: () => new DefaultFiterHandlerMethodResolver(), static: true },
+    { provide: ApplicationEventMulticaster, useFactory: (injector: Injector) => new DefaultEventMulticaster(injector), deps: [Injector], static: true },
     ExecptionHandlerFilter,
 ]
 
