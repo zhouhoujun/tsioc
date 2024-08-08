@@ -17,6 +17,17 @@ import { HandlerService } from './handlers/configable';
  */
 @Abstract()
 export abstract class ApplicationEventMulticaster implements HandlerService, ApplicationEventPublisher {
+
+    /**
+     * attach child eventMulticaster
+     * @param eventMulticaster 
+     */
+    abstract attach(eventMulticaster: ApplicationEventMulticaster): this;
+    /**
+     * detach child eventMulticaster
+     * @param eventMulticaster 
+     */
+    abstract detach(eventMulticaster: ApplicationEventMulticaster): this;
     /**
      * use pipes.
      * @param guards 
@@ -56,7 +67,16 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * @param event the event to publish
      */
     abstract emit(event: ApplicationEvent | Object): Observable<void | false>;
-
+    /**
+     * event downward
+     * @param event 
+     */
+    abstract downward(event: ApplicationEvent, withSelf?: boolean): Observable<void | false>;
+    /**
+     * event bubble up
+     * @param event 
+     */
+    abstract bubbleup(event: ApplicationEvent, withSelf?: boolean): Observable<void | false>;
     /**
      * Notify all <strong>matching</strong> listeners registered with this
      * application of an application event. Events may be framework events

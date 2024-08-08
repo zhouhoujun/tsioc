@@ -1,5 +1,5 @@
-import { ArgumentExecption, getClass, Injectable, InjectFlags, Injector, ProvdierOf, StaticProvider, tokenId, Type } from '@tsdi/ioc';
-import { map, mergeMap, Observable, of, throwError } from 'rxjs';
+import { ArgumentExecption, getClass, InjectFlags, Injector, ProvdierOf, StaticProvider, tokenId, Type } from '@tsdi/ioc';
+import { forkJoin, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanHandle } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
 import { Interceptor } from '../Interceptor';
@@ -32,16 +32,30 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
 
     private _handler: ConfigableHandler<ApplicationEvent, any>;
     private maps: Map<Type, Handler[]>;
+    protected _children: ApplicationEventMulticaster[];
 
     constructor(private injector: Injector) {
         super();
         this.maps = new Map();
+        this._children = [];
         this._handler = createHandler(injector, this, EVENT_MULTICASTER_INTERCEPTORS, EVENT_MULTICASTER_GUARDS, EVENT_MULTICASTER_FILTERS);
         this._handler.useFilters(ExecptionHandlerFilter)
     }
 
     get handler(): Handler<ApplicationEvent, any> {
         return this._handler
+    }
+
+
+    attach(eventMulticaster: ApplicationEventMulticaster): this {
+        if (this._children.indexOf(eventMulticaster) < 0) {
+            this._children.push(eventMulticaster);
+        }
+        return this;
+    }
+    detach(eventMulticaster: ApplicationEventMulticaster): this {
+        this._children.splice(this._children.indexOf(eventMulticaster), 1);
+        return this;
     }
 
     usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
@@ -106,23 +120,45 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
             event = new PayloadApplicationEvent(this, obj)
         }
 
-        return this.handler.handle(event)
+
+        return this.downward(event, true)
             .pipe(
                 mergeMap(res => {
-                    if (res === false || !event.propagation) return of(res);
+                    if (res === false || !event.propagation) return of(false);
+                    return this.bubbleup(event)
+                })
+            ) as Observable<void | false>;
+    }
+
+    downward(event: ApplicationEvent, withSelf?: boolean): Observable<void | false> {
+        return (withSelf ? this.handler.handle(event) : of(undefined))
+            .pipe(
+                mergeMap(res => {
+                    if (res === false || !event.propagation) return of(false);
+                    if (this._children.length) {
+                        return forkJoin(this._children.map(r => r.downward(event, true)))
+                            .pipe(
+                                map(r => {
+                                    if (!event.propagation) return false;
+                                })
+                            );
+                    }
+                    return of(undefined)
+                })) as Observable<void | false>;
+    }
+
+    bubbleup(event: ApplicationEvent, withSelf?: boolean): Observable<void | false> {
+        return (withSelf ? this.handler.handle(event) : of(undefined))
+            .pipe(
+                mergeMap(res => {
+                    if (res === false || !event.propagation) return of(false);
                     const multicaster = this.injector.get(ApplicationEventMulticaster, null, InjectFlags.SkipSelf);
                     if (multicaster) {
                         // Publish event via parent multicaster as well...
-                        return multicaster.publishEvent(event)
-                            .pipe(
-                                map(() => {
-                                    return res;
-                                })
-                            )
+                        return multicaster.bubbleup(event, true)
                     }
-                    return of(res);
-                })
-            );
+                    return of(undefined);
+                })) as Observable<void | false>;
     }
 
     handle(event: ApplicationEvent): Observable<void | false> {

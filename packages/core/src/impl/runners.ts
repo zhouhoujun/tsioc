@@ -93,6 +93,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         const hasAdapter = target.providers.some(r => (r as StaticProviders).provide === RunnableRef || (r as StaticProviders).provide === RunnableFactory);
         if (hasAdapter) {
             const targetRef = this.reflectiveFactory.create(target, options);
+            this.attachEvent(targetRef);
             const hasFactory = target.providers.some(r => (r as StaticProviders).provide === RunnableFactory);
             const endpoint = new FnHandler((ctx) => hasFactory ? targetRef.resolve(RunnableFactory).create(targetRef).invoke(ctx) : targetRef.resolve(RunnableRef).invoke(ctx));
             ends.push(endpoint);
@@ -104,6 +105,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         const runnables = target.runnables.filter(r => !r.auto);
         if (runnables && runnables.length) {
             const targetRef = this.reflectiveFactory.create(target, options);
+            this.attachEvent(targetRef);
             const facResolver = targetRef.resolve(InvocationFactoryResolver);
             const factory = facResolver.resolve(targetRef);
             const endpoints = runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
@@ -116,6 +118,16 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         }
 
         throw new ArgumentExecption(getClassName(target.type) + ' is invaild runnable');
+    }
+
+    attachEvent(targetRef: ReflectiveRef) {
+        const multicaster = targetRef.injector.get(ApplicationEventMulticaster);
+        if (multicaster && multicaster !== this.multicaster) {
+            this.multicaster.attach(multicaster);
+            targetRef.onDestroy(() => {
+                this.multicaster.detach(multicaster);
+            })
+        }
     }
 
     protected attachRef(tagRef: ReflectiveRef, order?: number) {
