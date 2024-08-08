@@ -19,6 +19,11 @@ import { HandlerService } from './handlers/configable';
 export abstract class ApplicationEventMulticaster implements HandlerService, ApplicationEventPublisher {
 
     /**
+     * parent eventMulticaster
+     */
+    abstract get parent(): ApplicationEventMulticaster | null;
+
+    /**
      * attach child eventMulticaster
      * @param eventMulticaster 
      */

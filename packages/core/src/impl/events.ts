@@ -34,12 +34,23 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     private maps: Map<Type, Handler[]>;
     protected _children: ApplicationEventMulticaster[];
 
+    readonly parent: ApplicationEventMulticaster | null;
+
     constructor(private injector: Injector) {
         super();
         this.maps = new Map();
         this._children = [];
         this._handler = createHandler(injector, this, EVENT_MULTICASTER_INTERCEPTORS, EVENT_MULTICASTER_GUARDS, EVENT_MULTICASTER_FILTERS);
-        this._handler.useFilters(ExecptionHandlerFilter)
+        this._handler.useFilters(ExecptionHandlerFilter);
+        this.parent = this.injector.get(ApplicationEventMulticaster, null, InjectFlags.SkipSelf);
+        if (this.parent) {
+            const parent = this.parent;
+            const multicaster = this as ApplicationEventMulticaster;
+            parent.attach(multicaster);
+            injector.onDestroy(() => {
+                parent.detach(multicaster);
+            })
+        }
     }
 
     get handler(): Handler<ApplicationEvent, any> {
@@ -152,10 +163,9 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
             .pipe(
                 mergeMap(res => {
                     if (res === false || !event.propagation) return of(false);
-                    const multicaster = this.injector.get(ApplicationEventMulticaster, null, InjectFlags.SkipSelf);
-                    if (multicaster) {
+                    if (this.parent) {
                         // Publish event via parent multicaster as well...
-                        return multicaster.bubbleup(event, true)
+                        return this.parent.bubbleup(event, true)
                     }
                     return of(undefined);
                 })) as Observable<void | false>;
