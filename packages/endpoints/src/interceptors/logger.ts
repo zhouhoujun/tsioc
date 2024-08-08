@@ -1,5 +1,5 @@
 import { Abstract, Inject, InjectFlags, Injectable, Nullable, isNumber } from '@tsdi/ioc';
-import { Interceptor, Handler, Filter, BytesFormatPipe, TimeFormatPipe } from '@tsdi/core';
+import { Interceptor, Handler, Filter, BytesFormatPipe, TimeFormatPipe, HrtimeFormatter } from '@tsdi/core';
 import { Level, InjectLog, Logger, matchLevel } from '@tsdi/logger';
 import { Observable, map } from 'rxjs';
 import { RequestContext } from '../RequestContext';
@@ -14,7 +14,7 @@ export abstract class ResponseStatusFormater {
     @Inject()
     protected bytes!: BytesFormatPipe;
     @Inject()
-    protected times!: TimeFormatPipe;
+    readonly htime!: HrtimeFormatter;
 
     abstract get incoming(): string;
     abstract get outgoing(): string;
@@ -23,8 +23,6 @@ export abstract class ResponseStatusFormater {
 
     }
 
-    abstract hrtime(time?: [number, number]): [number, number];
-
     abstract format(logger: Logger, ctx: RequestContext, hrtime?: [number, number]): string[];
 
     protected formatSize(size?: number | null, precise = 2) {
@@ -32,13 +30,6 @@ export abstract class ResponseStatusFormater {
         return this.bytes.transform(size, precise)
     }
 
-    protected formatHrtime(hrtime: [number, number], precise = 2): string {
-        if (!hrtime) return '';
-        const [s, ns] = hrtime;
-        const total = s * 1e3 + ns / 1e6;
-
-        return this.times.transform(total, precise)
-    }
 
     protected cleanZero(num: string) {
         return num.replace(clrZReg, '');
@@ -78,12 +69,12 @@ export class LoggerInterceptor implements Interceptor, Filter {
         }
 
         //todo console log and other. need to refactor formater.
-        const start = this.formatter.hrtime();
+        const start = this.formatter.htime.hrtime();
         logger[level](...this.formatter.format(logger, ctx));
         return next.handle(ctx)
             .pipe(
                 map(res => {
-                    logger[level](...this.formatter.format(logger, ctx, this.formatter.hrtime(start)));
+                    logger[level](...this.formatter.format(logger, ctx, this.formatter.htime.hrtime(start)));
                     return res
                 })
             )

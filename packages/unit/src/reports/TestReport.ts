@@ -1,6 +1,7 @@
-import { Singleton, Inject, Token, Injector } from '@tsdi/ioc';
+import { Singleton, Token, Injector } from '@tsdi/ioc';
 import { TestReport, SuiteDescribe, ICaseDescribe } from './interface';
 import { Reporter, RealtimeReporter, UNIT_REPORTES } from './Reporter';
+import { HrtimeFormatter } from '@tsdi/core';
 
 
 /**
@@ -13,9 +14,6 @@ import { Reporter, RealtimeReporter, UNIT_REPORTES } from './Reporter';
 @Singleton()
 export class DefaultTestReport implements TestReport {
 
-    @Inject()
-    injector!: Injector;
-
     suites: Map<Token, SuiteDescribe>;
 
     reports!: Reporter[];
@@ -26,7 +24,7 @@ export class DefaultTestReport implements TestReport {
         return this.reports || []
     }
 
-    constructor() {
+    constructor(private injector: Injector, protected hrtime: HrtimeFormatter) {
         this.suites = new Map()
     }
 
@@ -38,7 +36,7 @@ export class DefaultTestReport implements TestReport {
 
     addSuite(suit: Token, describe: SuiteDescribe): void {
         if (!this.suites.has(suit)) {
-            describe.start = new Date().getTime();
+            describe.start = this.hrtime.hrtime();
             // init suite must has no completed cases.
             if(describe.cases.length) {
                 describe = { ...describe};
@@ -62,13 +60,13 @@ export class DefaultTestReport implements TestReport {
     setSuiteCompleted(suit: Token): void {
         const suite = this.getSuite(suit);
         if (suite) {
-            suite.end = new Date().getTime()
+            suite.used = this.hrtime.hrtime(suite.start);
         }
     }
 
     addCase(suit: Token, testCase: ICaseDescribe): void {
         if (this.suites.has(suit)) {
-            testCase.start = new Date().getTime();
+            testCase.start = this.hrtime.hrtime();
             this.suites.get(suit)?.cases.push(testCase)
         }
     }
@@ -86,7 +84,7 @@ export class DefaultTestReport implements TestReport {
     }
 
     setCaseCompleted(testCase: ICaseDescribe) {
-        testCase.end = new Date().getTime();
+        testCase.used = this.hrtime.hrtime(testCase.start);
 
         this.getReports().forEach(async rep => {
             if (rep instanceof RealtimeReporter) {

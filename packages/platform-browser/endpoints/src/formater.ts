@@ -1,17 +1,13 @@
 import { Injectable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
 import { RequestContext, ResponseStatusFormater } from '@tsdi/endpoints';
-import hrtime = require('browser-process-hrtime');
+
 
 @Injectable({ static: true })
 export class BrowserResponseStatusFormater extends ResponseStatusFormater {
 
     readonly incoming = '--->';
     readonly outgoing = '<---';
-
-    hrtime(time?: [number, number] | undefined): [number, number] {
-        return hrtime(time);
-    }
 
     format(logger: Logger, ctx: RequestContext, hrtime?: [number, number]): string[] {
         const [status, message] = this.formatStatus(ctx);
@@ -20,7 +16,7 @@ export class BrowserResponseStatusFormater extends ResponseStatusFormater {
             ctx.method,
             ctx.url,
             status,
-            this.formatHrtime(hrtime),
+            this.htime.format(hrtime),
             this.formatSize(ctx.length),
             message
         ] : [

@@ -1,5 +1,6 @@
-import { Token, Abstract, tokenId } from '@tsdi/ioc';
+import { Token, Abstract, tokenId, Inject } from '@tsdi/ioc';
 import { SuiteDescribe, ICaseDescribe } from './interface';
+import { HrtimeFormatter } from '@tsdi/core';
 
 
 /**
@@ -34,6 +35,9 @@ export interface Reporter {
  */
 @Abstract()
 export abstract class AbstractReporter {
+
+    @Inject()
+    protected hrtime!: HrtimeFormatter;
     /**
      * reporter render.
      * @param suites 

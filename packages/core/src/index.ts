@@ -20,6 +20,7 @@ export { InvocationHandlerImpl } from './impl/invocation';
 export { DEFAULTA_PROVIDERS, RESOLVER_PROVIDERS } from './providers';
 export * from './Application';
 
+export * from './hrtime';
 export * from './Handler';
 export * from './Interceptor';
 export * from './guard';

@@ -45,17 +45,18 @@ export interface ICaseDescribe {
      */
     error?: Error;
     /**
-     * case start test at.
+     * case test hrtime start.
      *
      * @type {number}
      */
-    start?: number;
+    start?: [number, number];
+
     /**
-     * case end test at.
+     * case test used hrtime.
      *
      * @type {number}
      */
-    end?: number;
+    used?: [number, number];
 }
 
 /**
@@ -100,17 +101,18 @@ export interface SuiteDescribe {
      */
     timeout?: number;
     /**
-     * suite test start time.
+     * suite test hrtime start.
      *
      * @type {number}
      */
-    start?: number;
+    start?: [number, number];
+
     /**
-     * suite test end time.
+     * suite test used hrtime.
      *
      * @type {number}
      */
-    end?: number;
+    used?: [number, number];
 
     /**
      * suite before hook for old unit test.

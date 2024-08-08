@@ -2,7 +2,6 @@ import { Injectable } from '@tsdi/ioc';
 import { Logger, ConsoleLog } from '@tsdi/logger';
 import { RequestContext, ResponseStatusFormater } from '@tsdi/endpoints';
 import * as chalk from 'chalk';
-import { hrtime } from 'process';
 
 
 
@@ -12,11 +11,6 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
     readonly incoming = '--->';
     readonly outgoing = '<---';
 
-
-    hrtime(time?: [number, number] | undefined): [number, number] {
-        return hrtime(time);
-    }
-
     format(logger: Logger, ctx: RequestContext, hrtime?: [number, number]): string[] {
         return this.formatWithColor(logger instanceof ConsoleLog, ctx, hrtime);
     }
@@ -24,7 +18,7 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
     protected formatWithColor(withColor: boolean, ctx: RequestContext, hrtime?: [number, number]) {
         if (hrtime) {
             const [status, message] = ctx.statusAdapter ? this.formatStatus(ctx, withColor) : this.formatState(ctx, withColor);
-            const hrtimeStr = this.formatHrtime(hrtime);
+            const hrtimeStr = this.htime.format(hrtime);
             const sizeStr = this.formatSize(ctx.length ?? 0);
             return [
                 withColor ? chalk.gray(this.outgoing) : this.outgoing,

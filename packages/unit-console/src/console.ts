@@ -13,9 +13,6 @@ import * as chalk from 'chalk';
 })
 export class ConsoleReporter extends RealtimeReporter {
 
-    constructor(private timesPipe: TimeFormatPipe) {
-        super();
-    }
 
     override track(error: Error): void {
         console.log(chalk.red(error.stack || error.message));
@@ -27,19 +24,21 @@ export class ConsoleReporter extends RealtimeReporter {
     }
 
     override renderCase(desc: ICaseDescribe): void {
-        console.log('    ', desc.error ? chalk.red('x') : chalk.green('√'), chalk.gray(desc.title), chalk.gray(` (${this.timesPipe.transform((desc.end ?? 0) - (desc.start ?? 0), 3)})`))
+        console.log('    ', desc.error ? chalk.red('x') : chalk.green('√'), chalk.gray(desc.title), chalk.gray(` (${this.hrtime.format(desc.used, 3)})`))
     }
 
     override async render(suites: Map<Token, SuiteDescribe>): Promise<void> {
         let reportStr = '';
         let first: SuiteDescribe | undefined;
         let last: SuiteDescribe | undefined;
+        let used:[number, number]|undefined;
         const sus = Array.from(suites.values());
         const fails: Record<string, string[]> = {};
         let successed = 0, failed = 0;
         sus.forEach((d, i) => {
             if (i === 0) {
-                first = d
+                first = d;
+                used = this.hrtime.hrtime(first.start);
             }
             if (i === (sus.length - 1)) {
                 last = d
@@ -64,7 +63,7 @@ export class ConsoleReporter extends RealtimeReporter {
             reportStr = reportStr + ' ' + chalk.red(failed.toString() + ' failed')
         }
         if (sus.length) {
-            reportStr = reportStr + chalk.gray(` (${this.timesPipe.transform((last?.end ?? 0) - (first?.start ?? 0), 3)})`)
+            reportStr = reportStr + chalk.gray(` (${this.hrtime.format(used, 3)})`)
         }
 
         reportStr += '\n';
