@@ -16,7 +16,7 @@ import { HttpStatusAdapter } from './status';
 import { HttpResponseEventFactory } from './client/response.factory';
 import { HttpExecptionHandlers } from './execption.handlers';
 import { HttpClientIncoming, HttpClientIncomingFactory, HttpClientMessageReader, HttpClientMessageWriter } from './client/transport';
-import { HttpServerMessageReader, HttpServerMessagerWriter } from './server/transport';
+import { HttpIncomingFactory, HttpServerMessageReader, HttpServerMessagerWriter } from './server/transport';
 import { HttpMesage, HttpMesageFactory } from './message';
 
 
@@ -96,6 +96,7 @@ export class HttpConfiguration {
                     encodingsAdapter: { useValue: new CustomCodingsAdapter(d => d instanceof HttpMesage) }
                 },
                 statusAdapter: HttpStatusAdapter,
+                incomingFactory: HttpIncomingFactory,
                 execptionHandlers: HttpExecptionHandlers,
                 requestContextFactory: HttpContextFactory,
                 messageFactory: HttpMesageFactory,

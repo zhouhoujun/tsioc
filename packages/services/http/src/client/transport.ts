@@ -33,9 +33,6 @@ export class HttpClientIncomingFactory implements ClientIncomingFactory {
     create(options: ClientIncomingOpts): HttpClientIncoming<any> {
         let opts: ClientIncomingOpts;
         if (options instanceof IncomingMessage) {
-            // const incoming = options as ClientIncomingOpts;
-            // options = options;
-            // return incoming;
             const { method, url, headers, httpVersion, httpVersionMajor, httpVersionMinor, statusCode, statusMessage } = options;
             opts = { statusMessage, statusCode, headers, url, method, payload: options }
         } else {

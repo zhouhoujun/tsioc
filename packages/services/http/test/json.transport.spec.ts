@@ -23,7 +23,6 @@ import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModu
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        HttpModule,
         ClientModule.register([
             {
                 transport: 'ws'

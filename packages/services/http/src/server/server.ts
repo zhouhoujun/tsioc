@@ -137,7 +137,7 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
         session.listen(this.handler, this.destroy$);
 
         // notify hybrid service to bind http server.
-        await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this._server, 'http', this)));
+        await lastValueFrom(injector.get(ApplicationEventMulticaster).publishEvent(new BindServerEvent(this._server, 'http', this)));
 
         if (opts.listenOpts) {
             this.listen(opts.listenOpts);
