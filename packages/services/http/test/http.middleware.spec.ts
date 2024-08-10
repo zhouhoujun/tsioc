@@ -167,7 +167,7 @@ describe('middleware', () => {
                 })));
 
         expect(a).toBeInstanceOf(ErrorResponse);
-        expect(a.status).toEqual(404);
+        expect(a.statusText).toEqual('Not Found');
     });
 
     it('sensor.message/+ message', async () => {

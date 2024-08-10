@@ -1,5 +1,5 @@
 import { Injectable, Injector, isArray, isNumber, isString, lang, promisify } from '@tsdi/ioc';
-import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, HeaderMappings, Response } from '@tsdi/common';
+import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, HeaderMappings, Response, normalize } from '@tsdi/common';
 import { MessageExecption, InternalServerExecption, Outgoing, append, parseTokenList, Incoming, ENOENT, ctype } from '@tsdi/common/transport';
 import { RestfulRequestContext, RestfulRequestContextFactory, TransportSession, Throwable } from '@tsdi/endpoints';
 import * as http from 'http';
@@ -35,7 +35,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         super(injector, { ...serverOptions, args: request });
 
         this.setValue(TransportSession, session);
-        const url = this._url = this.originalUrl = request.url!;
+        const url = this._url = this.originalUrl = normalize(request.url!);
 
         const searhIdx = url.indexOf('?');
         if (searhIdx >= 0) {
