@@ -36,6 +36,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 
         this.setValue(TransportSession, session);
         const url = this._url = this.originalUrl = normalize(request.url!);
+        this.status = HttpStatusCode.NotFound
 
         const searhIdx = url.indexOf('?');
         if (searhIdx >= 0) {

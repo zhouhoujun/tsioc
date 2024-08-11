@@ -1,6 +1,6 @@
-import { hasProps, Injectable, promisify } from '@tsdi/ioc';
+import { hasProps, Injectable, isString, promisify } from '@tsdi/ioc';
 import { Header } from '@tsdi/common';
-import { ev, MessageReader, IReadableStream, IncomingFactory, Incoming, IncomingOpts, MessageWriter, IEventEmitter } from '@tsdi/common/transport';
+import { ev, MessageReader, IReadableStream, IncomingFactory, Incoming, IncomingOpts, MessageWriter, IEventEmitter, isBuffer } from '@tsdi/common/transport';
 import { TransportSession } from '@tsdi/endpoints';
 import { Server } from 'http';
 import { Server as HttpsServer } from 'https';
@@ -72,7 +72,11 @@ export class HttpServerMessagerWriter implements MessageWriter<Http2Server | Htt
         if (hasProps(msg.headers) && !hasProps(channel.headers ?? channel.getHeaders())) {
             channel.writeHead(channel.statusCode, msg.headers as any);
         }
-        return promisify<any, void>(channel.end, channel)(msg.data);
+        if (session.streamAdapter.isStream(msg.data)) {
+            return session.streamAdapter.pipeTo(msg.data, channel);
+        } else {
+            return promisify<any, void>(channel.end, channel)(msg.data);
+        }
     }
 }
 
