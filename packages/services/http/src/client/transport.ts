@@ -134,7 +134,7 @@ export class HttpClientMessageWriter implements MessageWriter<ClientHttp2Session
     }
 
     protected getAbortSignal(ctx?: InvocationContext): AbortController {
-        return !ctx || typeof AbortController === 'undefined' ? null! : ctx.getValueify(AbortController, () => new AbortController());
+        return (!ctx || typeof AbortController === 'undefined') ? null! : ctx.getValueify(AbortController, () => new AbortController());
     }
 
 }
