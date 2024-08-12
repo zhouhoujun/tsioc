@@ -29,9 +29,9 @@ export const DEFAULTA_PROVIDERS: ProviderType[] = [
 ]
 
 export const RESOLVER_PROVIDERS = [
-    { provide: InterceptorResolver, useFactory: () => new DefaultInterceptorResolver(), static: true },
-    { provide: FilterResolver, useFactory: () => new DefaultFilterResolver(), static: true },
-    { provide: FilterHandlerResolver, useFactory: () => new DefaultFiterHandlerMethodResolver(), static: true },
+    { provide: InterceptorResolver, useFactory: (injector: Injector) => new DefaultInterceptorResolver(injector), deps: [Injector], static: true },
+    { provide: FilterResolver, useFactory: (injector: Injector) => new DefaultFilterResolver(injector), deps: [Injector], static: true },
+    { provide: FilterHandlerResolver, useFactory: (injector: Injector) => new DefaultFiterHandlerMethodResolver(injector), deps: [Injector], static: true },
     { provide: ApplicationEventMulticaster, useFactory: (injector: Injector) => new DefaultEventMulticaster(injector), deps: [Injector], static: true },
     ExecptionHandlerFilter,
 ]

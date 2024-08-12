@@ -1,14 +1,25 @@
-import { EMPTY, getClass, isFunction, isString, Type, ArgumentExecption } from '@tsdi/ioc';
+import { EMPTY, getClass, isFunction, isString, Type, ArgumentExecption, Injector, InjectFlags } from '@tsdi/ioc';
 import { Handler } from '../Handler';
 import { Filter, FilterHandlerResolver, FilterLike, FilterResolver } from './filter';
 import { Interceptor, InterceptorLike, InterceptorResolver } from '../Interceptor';
 
 
-export class DefaultInterceptorResolver extends InterceptorResolver {
+export class DefaultInterceptorResolver implements InterceptorResolver {
     private maps = new Map<Type | string, InterceptorLike[]>();
 
+    constructor(private injector: Injector) { }
+
     resolve<T>(target: Type<T> | T | string): InterceptorLike[] {
-        return this.maps.get(isString(target) ? target : (isFunction(target) ? target : getClass(target))) ?? EMPTY
+        const interceptors = this.maps.get(isString(target) ? target : (isFunction(target) ? target : getClass(target))) ?? EMPTY;
+        const resolver = this.injector.get(InterceptorResolver, null, InjectFlags.SkipSelf);
+
+        resolver?.resolve(target)?.forEach(r => {
+            if (!(interceptors.indexOf(r) >= 0 || (r as Interceptor).equals ? interceptors.some(i => (r as Interceptor).equals!(i)) : false)) {
+                interceptors.push(r);
+            }
+        });
+
+        return interceptors;
     }
     addInterceptor(target: Type | string, interceptor: InterceptorLike, order?: number): this {
         if (!interceptor) {
@@ -34,11 +45,22 @@ export class DefaultInterceptorResolver extends InterceptorResolver {
 
 
 
-export class DefaultFilterResolver extends FilterResolver {
+export class DefaultFilterResolver implements FilterResolver {
     private maps = new Map<Type | string, FilterLike[]>();
 
+    constructor(private injector: Injector) { }
+
     resolve<T>(target: Type<T> | T | string): FilterLike[] {
-        return this.maps.get(isString(target) ? target : (isFunction(target) ? target : getClass(target))) ?? EMPTY
+        const filters = this.maps.get(isString(target) ? target : (isFunction(target) ? target : getClass(target))) ?? EMPTY;
+        const resolver = this.injector.get(FilterResolver, null, InjectFlags.SkipSelf);
+
+        resolver?.resolve(target)?.forEach(r => {
+            if (!(filters.indexOf(r) >= 0 || (r as Interceptor).equals ? filters.some(i => (r as Interceptor).equals!(i)) : false)) {
+                filters.push(r);
+            }
+        });
+
+        return filters;
     }
     addFilter(target: Type | string, filter: FilterLike, order?: number): this {
         if (!filter) {
@@ -65,12 +87,23 @@ export class DefaultFilterResolver extends FilterResolver {
 /**
  * filter hanlders resolver.
  */
-export class DefaultFiterHandlerMethodResolver extends FilterHandlerResolver {
+export class DefaultFiterHandlerMethodResolver implements FilterHandlerResolver {
 
     private maps = new Map<Type | string, Handler[]>();
 
-    resolve<T>(filter: Type<T> | T | string): Handler[] {
-        return this.maps.get(isString(filter) ? filter : (isFunction(filter) ? filter : getClass(filter))) ?? EMPTY
+    constructor(private injector: Injector) { }
+
+    resolve<T>(target: Type<T> | T | string): Handler[] {
+        const handlers = this.maps.get(isString(target) ? target : (isFunction(target) ? target : getClass(target))) ?? EMPTY;
+        const resolver = this.injector.get(FilterHandlerResolver, null, InjectFlags.SkipSelf);
+
+        resolver?.resolve(target)?.forEach(r => {
+            if (!(handlers.indexOf(r) >= 0 || (r as Handler).equals ? handlers.some(i => (r as Handler).equals!(i)) : false)) {
+                handlers.push(r);
+            }
+        });
+
+        return handlers;
     }
 
     addHandle(filter: Type | string, handler: Handler, order?: number): this {
