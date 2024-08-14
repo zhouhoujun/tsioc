@@ -115,9 +115,9 @@ export abstract class MicroService<TRequest extends RequestContext = RequestCont
     }
 
     @Shutdown()
-    close() {
+    async close() {
+        await this.onShutdown();
         this.handler.onDestroy?.();
-        return this.onShutdown();
     }
 
     protected abstract onStart(): Promise<any>;
