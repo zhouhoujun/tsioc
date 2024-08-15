@@ -30,9 +30,7 @@ import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModu
             {
                 transport: 'http',
                 clientOpts: {
-                    connectOpts: {
-                        port: 3200
-                    }
+                    url: 'http://localhost:3200'
                 }
             }
         ]),

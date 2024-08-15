@@ -1,7 +1,5 @@
 import { Module } from '@tsdi/ioc';
 import { Http } from './client/clinet';
-import { HTTP_CLIENT_INTERCEPTORS } from './client/options';
-import { HttpPathInterceptor } from './client/path';
 import { HttpServer } from './server/server';
 import { HttpContextFactory } from './server/context';
 import { HttpStatusAdapter } from './status';
@@ -19,9 +17,7 @@ import { HttpConfiguration } from './configuration';
         HttpResponseEventFactory,
         HttpClientCodingsHandlers,
         HttpCodingsHandlers,
-        HttpPathInterceptor,
         HttpContextFactory,
-        { provide: HTTP_CLIENT_INTERCEPTORS, useExisting: HttpPathInterceptor, multi: true },
         HttpConfiguration
     ]
 })

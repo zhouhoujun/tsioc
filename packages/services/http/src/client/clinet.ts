@@ -1,7 +1,8 @@
 import { Injectable, InvocationContext } from '@tsdi/ioc';
 import {
     RequestOptions, HeadersLike, PUT, GET, DELETE, HEAD, JSONP, PATCH, POST,
-    RequestParams, Pattern, HttpRequestMethod, RequestInitOpts
+    RequestParams, Pattern, HttpRequestMethod, RequestInitOpts,
+    joinPath
 } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
@@ -113,7 +114,11 @@ export class Http extends AbstractClient<HttpRequest<any>, HttpEvent<any>, HttpC
     }
 
     protected override createRequest(pattern: Pattern, options: RequestInitOpts): HttpRequest<any> {
-        return new HttpRequest(options.method ?? GET, this.formatter.format(pattern), options.body ?? options.payload ?? null, options as any);
+        let url = this.formatter.format(pattern);
+        if (!abstUrlExp.test(url)) {
+            url = joinPath(this.getOptions().url ?? this.getOptions().authority, url);
+        }
+        return new HttpRequest(options.method ?? GET, url, options.body ?? options.payload ?? null, options as any);
     }
 
     /**
@@ -2377,3 +2382,5 @@ function merge<T>(
         body
     }
 }
+
+const abstUrlExp = /^http(s)?:/;

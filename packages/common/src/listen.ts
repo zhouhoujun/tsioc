@@ -1,4 +1,3 @@
-import { tokenId } from '@tsdi/ioc';
 
 /**
  * Listen options.
@@ -25,26 +24,10 @@ export interface ListenOpts {
     withCredentials?: boolean;
 }
 
-export const HTTP_LISTEN_OPTS = tokenId<ListenOpts>('HTTP_LISTEN_OPTS');
-
-/**
- * Bind listenning.
- */
-export interface BindListenning {
-    listen(listeningListener?: () => void): this;
-    listen(options: number, listeningListener?: () => void): this;
-}
 /**
  * listen service.
  */
 export interface ListenService<LOpt = ListenOpts> {
     listen(options: LOpt | number, listeningListener?: () => void): this;
     listen(port: number, host?: string, listeningListener?: () => void): this;
-}
-
-/**
- * binding server.
- */
-export interface ServerBinding<T = any> {
-    bind(server: T): void;
 }
