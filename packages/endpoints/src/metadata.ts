@@ -8,7 +8,7 @@ import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, 
 import { Middleware, MiddlewareFn } from './middleware/middleware';
 import { RouteHandlerFactoryResolver } from './router/route.handler';
 import { ControllerRouteFactory } from './router/controller';
-import { MircoServRouters } from './router/router.micro';
+import { ProtocolRouters } from './router/routers';
 
 
 export { Topic, Payload } from '@tsdi/core';
@@ -56,11 +56,11 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
 
-            const routers = injector.get(MircoServRouters);
+            const routers = injector.get(ProtocolRouters);
             if (!routers) throw new Execption('has no router!');
 
             const prefix = joinPath(mapping.prefix, mapping.version, mapping.route);
-            const factory = injector.get(RouteHandlerFactoryResolver).resolve(ctx.class, injector);
+            const factory = injector.get(RouteHandlerFactoryResolver).resolve(ctx.class);
 
             defines.forEach(def => {
                 const metadata = def.metadata;
@@ -136,11 +136,11 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
 
-            const routers = injector.get(MircoServRouters);
-            if (!routers) throw new Execption(lang.getClassName(MircoServRouters) + 'has not registered!');
+            const routers = injector.get(ProtocolRouters);
+            if (!routers) throw new Execption(lang.getClassName(ProtocolRouters) + 'has not registered!');
 
             const prefix = joinPath(mapping.prefix, mapping.version, mapping.route);
-            const factory = injector.get(RouteHandlerFactoryResolver).resolve(ctx.class, injector);
+            const factory = injector.get(RouteHandlerFactoryResolver).resolve(ctx.class);
 
             defines.forEach(def => {
                 const metadata = def.metadata;

@@ -83,6 +83,6 @@ export abstract class RouteHandlerFactoryResolver {
      * @param injector injector
      * @param categare factory categare
      */
-    abstract resolve<T>(type: Type<T> | Class<T>, injector: Injector): RouteHandlerFactory<T>;
+    abstract resolve<T>(type: Type<T> | Class<T>): RouteHandlerFactory<T>;
 }
 

@@ -5,7 +5,7 @@ import { RouteMatcher, Router } from './router';
 import { HybridRouter } from './router.hybrid';
 import { ControllerRouteFactory } from './controller';
 import { MappingRouter, DefaultRouteMatcher } from './router.mapping';
-import { MESSAGE_ROUTERS, MircoServRouter, MircoServRouters } from './router.micro';
+import { MESSAGE_ROUTERS, ProtocolRouter, ProtocolRouters } from './routers';
 import { RouteHandlerFactoryResolver } from './route.handler';
 import { RouteHandlerFactoryResolverImpl } from '../impl/route.handler';
 import { MessageRouterImpl, MircoServiceRouterImpl } from '../impl/micro.router';
@@ -120,7 +120,7 @@ export function createRouteProviders(optsify: InstanceOf<RouteOpts>): ProviderTy
         RouteEndpointModule
     ],
     providers: [
-        { provide: MircoServRouters, useClass: MircoServiceRouterImpl },
+        { provide: ProtocolRouters, useClass: MircoServiceRouterImpl },
     ]
 })
 export class MicroServRouterModule {
@@ -177,8 +177,8 @@ export class MicroServRouterModule {
         }
     }
 
-    static getToken(protocol: Transport): Token<MircoServRouter> {
-        return getToken(MircoServRouter, protocol)
+    static getToken(protocol: Transport): Token<ProtocolRouter> {
+        return getToken(ProtocolRouter, protocol)
     }
 }
 
@@ -190,7 +190,7 @@ export interface RouteOpts {
 }
 
 export function createMicroRouteProviders(transport: Transport, optsify: InstanceOf<RouteOpts>): ProviderType[] {
-    const token = getToken(MircoServRouter, transport);
+    const token = getToken(ProtocolRouter, transport);
     return [
         {
             provide: token,

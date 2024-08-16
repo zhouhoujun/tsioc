@@ -6,7 +6,7 @@ import { Server } from 'http';
 import { Server as HttpsServer } from 'https';
 import { Http2Server } from 'http2';
 import { Observable } from 'rxjs';
-import { HttpServRequest, HttpServResponse } from './context';
+import { HttpContext, HttpServRequest, HttpServResponse } from './context';
 import { HttpMesage } from '../message';
 
 
@@ -68,10 +68,7 @@ export class HttpServerMessageReader implements MessageReader<Http2Server | Http
 
 @Injectable()
 export class HttpServerMessagerWriter implements MessageWriter<Http2Server | HttpsServer | Server, HttpServResponse> {
-    write(socket: Http2Server | HttpsServer | Server, channel: HttpServResponse, msg: HttpMesage, origin: any, session: TransportSession): Promise<any> {
-        if (hasProps(msg.headers) && !hasProps(channel.headers ?? channel.getHeaders())) {
-            channel.writeHead(channel.statusCode, msg.headers as any);
-        }
+    write(socket: Http2Server | HttpsServer | Server, channel: HttpServResponse, msg: HttpMesage, origin: HttpContext, session: TransportSession): Promise<any> {
         if (session.streamAdapter.isStream(msg.data)) {
             return session.streamAdapter.pipeTo(msg.data, channel);
         } else {

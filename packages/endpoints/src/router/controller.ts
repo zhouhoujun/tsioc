@@ -128,7 +128,7 @@ export class ControllerRouteFactory {
             factory = injector.get(RouteHandlerFactoryResolver).resolve(type);
         } else {
             injector = arg2;
-            factory = injector.get(RouteHandlerFactoryResolver).resolve(type, injector);
+            factory = injector.get(RouteHandlerFactoryResolver).resolve(type);
         }
 
         return new ControllerRoute(factory, options);

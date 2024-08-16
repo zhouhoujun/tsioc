@@ -128,7 +128,16 @@ describe('http1.1 server, Http', () => {
 
     it('msg work', async () => {
 
-        const rep = await lastValueFrom(client.send<any>('/hdevice', { method: 'POST', observe: 'response', body: { type: 'startup' } }));
+        const rep = await lastValueFrom(client.send<any>('/hdevice', { method: 'POST', observe: 'response', body: { type: 'startup' } })
+        .pipe(
+            catchError((err, ct) => {
+                ctx.getLogger().error(err);
+                return of(err);
+            }))
+        );
+
+        expect(rep).toBeDefined();
+        expect(rep.body).toBeDefined();
 
         const device = rep.body['device'];
         const aState = rep.body['deviceA_state'];
