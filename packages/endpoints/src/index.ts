@@ -41,12 +41,11 @@ export * from './execption.filter';
 export * from './impl/request.handler';
 export * from './impl/middleware';
 
-export * from './impl/micro.router';
+export * from './impl/routers';
 export * from './impl/route.handler';
 export * from './impl/request.context';
 
 export * from './impl/default.session';
-// export * from './impl/topic.session';
 
 export * from './SetupServices';
 export * from './endpoint.module';

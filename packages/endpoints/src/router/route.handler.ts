@@ -1,4 +1,4 @@
-import { Abstract, Class, DestroyCallback, Destroyable, Injector, OnDestroy, ReflectiveRef, Token, Type } from '@tsdi/ioc';
+import { Abstract, Class, DestroyCallback, Destroyable, OnDestroy, ReflectiveRef, Token, Type } from '@tsdi/ioc';
 import { InvocationHandler, InvocationOptions } from '@tsdi/core';
 import { Pattern } from '@tsdi/common';
 

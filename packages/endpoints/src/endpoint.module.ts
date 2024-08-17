@@ -14,7 +14,7 @@ import { Session } from './Session';
 import { TransportSessionFactory } from './transport.session';
 import { EndpointTypedRespond } from './typed.respond';
 import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, LoggerInterceptor } from './interceptors';
-import { MicroServRouterModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
+import { MicroServRouterModule, RouteEndpointModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
 import { MiddlewareOpts } from './middleware/middleware.endpoint';
 import { HybridRouter } from './router/router.hybrid';
 import { REGISTER_SERVICES, SetupServices } from './SetupServices';
@@ -34,6 +34,7 @@ import { createMiddlewareEndpoint } from './impl/middleware';
 @Module({
     imports: [
         TransportPacketModule,
+        RouteEndpointModule,
         MicroServRouterModule,
         RouterModule
     ],

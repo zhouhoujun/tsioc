@@ -8,7 +8,7 @@ import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, 
 import { Middleware, MiddlewareFn } from './middleware/middleware';
 import { RouteHandlerFactoryResolver } from './router/route.handler';
 import { ControllerRouteFactory } from './router/controller';
-import { ProtocolRouters } from './router/routers';
+import { MicroRouters } from './router/routers';
 
 
 export { Topic, Payload } from '@tsdi/core';
@@ -56,7 +56,7 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
 
-            const routers = injector.get(ProtocolRouters);
+            const routers = injector.get(MicroRouters);
             if (!routers) throw new Execption('has no router!');
 
             const prefix = joinPath(mapping.prefix, mapping.version, mapping.route);
@@ -136,8 +136,8 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
 
-            const routers = injector.get(ProtocolRouters);
-            if (!routers) throw new Execption(lang.getClassName(ProtocolRouters) + 'has not registered!');
+            const routers = injector.get(MicroRouters);
+            if (!routers) throw new Execption(lang.getClassName(MicroRouters) + 'has not registered!');
 
             const prefix = joinPath(mapping.prefix, mapping.version, mapping.route);
             const factory = injector.get(RouteHandlerFactoryResolver).resolve(ctx.class);

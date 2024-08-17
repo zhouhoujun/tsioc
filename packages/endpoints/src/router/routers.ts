@@ -4,12 +4,12 @@ import { RequestHandler } from '../RequestHandler';
 import { Router } from './router';
 
 /**
- * Protocol router
+ * microservice router
  * 
- * public api for protocol router
+ * public api for microservice router
  */
 @Abstract()
-export abstract class ProtocolRouter<T = RequestHandler> extends Router<T> {
+export abstract class MircoRouter<T = RequestHandler> extends Router<T> {
     /**
      * protocol
      */
@@ -18,20 +18,20 @@ export abstract class ProtocolRouter<T = RequestHandler> extends Router<T> {
 
 
 /**
- * message routers.
+ * microservice message routers.
  */
-export const MESSAGE_ROUTERS = tokenId<ProtocolRouter[]>('MESSAGE_ROUTERS');
+export const MESSAGE_ROUTERS = tokenId<MircoRouter[]>('MESSAGE_ROUTERS');
 
 
 /**
- * protocol routers.
+ * microservice routers.
  * 
- * public api for all routers
+ * public api for all microservice routers
  */
 @Abstract()
-export abstract class ProtocolRouters {
+export abstract class MicroRouters {
     /**
-     * get protocol router
+     * get microservice router
      */
-    abstract get<T = RequestHandler>(protocol?: Transport): ProtocolRouter<T>;
+    abstract get<T = RequestHandler>(protocol?: Transport): MircoRouter<T>;
 }

@@ -5,10 +5,10 @@ import { RouteMatcher, Router } from './router';
 import { HybridRouter } from './router.hybrid';
 import { ControllerRouteFactory } from './controller';
 import { MappingRouter, DefaultRouteMatcher } from './router.mapping';
-import { MESSAGE_ROUTERS, ProtocolRouter, ProtocolRouters } from './routers';
+import { MESSAGE_ROUTERS, MircoRouter, MicroRouters } from './routers';
 import { RouteHandlerFactoryResolver } from './route.handler';
 import { RouteHandlerFactoryResolverImpl } from '../impl/route.handler';
-import { MessageRouterImpl, MircoServiceRouterImpl } from '../impl/micro.router';
+import { MappingRouterImpl, MicroRoutersImpl } from '../impl/routers';
 
 
 
@@ -35,9 +35,6 @@ export class RouteEndpointModule {
  * Router module.
  */
 @Module({
-    imports: [
-        RouteEndpointModule
-    ],
     providers: [
         {
             provide: HybridRouter,
@@ -116,11 +113,8 @@ export function createRouteProviders(optsify: InstanceOf<RouteOpts>): ProviderTy
  * microservice router module.
  */
 @Module({
-    imports: [
-        RouteEndpointModule
-    ],
     providers: [
-        { provide: ProtocolRouters, useClass: MircoServiceRouterImpl },
+        { provide: MicroRouters, useClass: MicroRoutersImpl },
     ]
 })
 export class MicroServRouterModule {
@@ -177,8 +171,8 @@ export class MicroServRouterModule {
         }
     }
 
-    static getToken(protocol: Transport): Token<ProtocolRouter> {
-        return getToken(ProtocolRouter, protocol)
+    static getToken(protocol: Transport): Token<MircoRouter> {
+        return getToken(MircoRouter, protocol)
     }
 }
 
@@ -190,13 +184,13 @@ export interface RouteOpts {
 }
 
 export function createMicroRouteProviders(transport: Transport, optsify: InstanceOf<RouteOpts>): ProviderType[] {
-    const token = getToken(ProtocolRouter, transport);
+    const token = getToken(MircoRouter, transport);
     return [
         {
             provide: token,
             useFactory: (injector: Injector) => {
                 const opts = isFunction(optsify) ? optsify(injector) : optsify;
-                return new MessageRouterImpl(transport, injector,
+                return new MappingRouterImpl(transport, injector,
                     opts.matcher ? (isType(opts.matcher) ? injector.get(opts.matcher) : opts.matcher) : new DefaultRouteMatcher(),
                     opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter),
                     opts.prefix,

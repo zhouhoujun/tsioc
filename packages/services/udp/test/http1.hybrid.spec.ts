@@ -20,15 +20,18 @@ import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonIntercep
         LoggerModule,
         ServerEndpointModule,
         ClientModule.register([
-            { transport: 'udp', clientOpts: {  } },
-            { transport: 'http', clientOpts: {  } }
+            { transport: 'udp', microservice: true },
+            {
+                transport: 'http',
+                clientOpts: {
+                    url: 'http:/loalhost:3000'
+                }
+            }
         ]),
         EndpointModule.register([
             {
                 microservice: true,
                 transport: 'udp',
-                serverOpts: {
-                }
             },
             {
                 transport: 'http',
@@ -66,7 +69,7 @@ describe('Udp hybrid Http Server & Udp Client & Http', () => {
     });
 
 
-    
+
     it('fetch json', async () => {
         const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
             .pipe(
