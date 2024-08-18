@@ -9,7 +9,7 @@ import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 
-import { Http, HttpModule } from '../src';
+import { Http } from '../src';
 import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
 
 
@@ -46,7 +46,7 @@ import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModu
                 transport: 'http',
                 serverOpts: {
                     majorVersion: 1,
-                    middlewares: [],
+                    // middlewares: [],
                     listenOpts: {
                         port: 3200
                     }
@@ -99,7 +99,13 @@ describe('http server json transport, Http', () => {
 
     it('msg work', async () => {
 
-        const res = await lastValueFrom(client.send<any>('/hdevice', { method: 'POST', observe: 'response', body: { type: 'startup' } }));
+        const res = await lastValueFrom(client.send<any>('/hdevice', { method: 'POST', observe: 'response', body: { type: 'startup' } })
+            .pipe(
+                catchError((err, ct) => {
+                    ctx.getLogger().error(err);
+                    return of(err);
+                }))
+        );
 
         const device = res.body['device'];
         const aState = res.body['deviceA_state'];

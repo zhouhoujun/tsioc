@@ -1,10 +1,10 @@
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
 import { CustomCodingsAdapter } from '@tsdi/common/codings';
-import { ClientIncomingPacket } from '@tsdi/common/transport';
-import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
+import { ClientIncomingPacket, Redirector } from '@tsdi/common/transport';
+import { CLIENT_MODULES, ClientModuleOpts, UrlRedirector } from '@tsdi/common/client';
 import { isHttpEvent } from '@tsdi/common/http';
-import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts, MimeModule, ServiceModuleOpts } from '@tsdi/endpoints';
+import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts, MimeModule, ServiceModuleOpts, JsonInterceptor, BodyparserInterceptor } from '@tsdi/endpoints';
 import { Http } from './client/clinet';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS } from './client/options';
 import { HttpHandler } from './client/handler';
@@ -64,7 +64,7 @@ export class HttpConfiguration {
             transport: 'http',
             clientType: Http,
             imports: [
-                MimeModule
+                MimeModule,
             ],
             defaultOpts: {
                 handlerType: HttpHandler,
@@ -76,6 +76,7 @@ export class HttpConfiguration {
                 messageFactory: HttpMesageFactory,
                 messageReader: HttpClientMessageReader,
                 messageWriter: HttpClientMessageWriter,
+                providers: [{ provide: Redirector, useExisting: UrlRedirector }],
                 transportOpts: {
                     encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof HttpMesage) },
                     decodingsAdapter: { useValue: new CustomCodingsAdapter(isHttpEvent, [[HttpClientIncoming, ClientIncomingPacket]]) },
@@ -115,6 +116,10 @@ export class HttpConfiguration {
                     ExecptionFinalizeFilter,
                     ExecptionHandlerFilter,
                     FinalizeFilter
+                ],
+                interceptors: [
+                    JsonInterceptor,
+                    BodyparserInterceptor
                 ]
             }
         }
