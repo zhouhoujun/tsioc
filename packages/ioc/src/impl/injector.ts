@@ -615,29 +615,35 @@ INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: Inje
     return new DefaultInjector(providers, parent!, scope)
 }
 
+export function mergePromise(ps1: Promise<any> | undefined | void, ps2: () => any) {
+    if (ps1) {
+        return ps1.then(() => ps2());
+    }
+    return ps2();
+}
 
 export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedupStack: Type[],
     processProvider: (provider: StaticProvider | DynamicProvider, providers?: any[]) => void,
     regType: (typeRef: Class, type: Type) => void, moduleRefl?: Class, imported?: boolean): void | Promise<void> {
     let type: Type;
-    const ps: Promise<void>[] = [];
+    let ps: Promise<any> | void | undefined;
+    let mpd: Promise<any> | void | undefined;
     if (isType(typeOrDef)) {
         type = typeOrDef;
     } else {
         type = typeOrDef.module;
-        const result = deepForEach(
-            typeOrDef.providers,
-            pdr => processProvider(pdr, typeOrDef.providers),
-            v => isPlainObject(v) && !(v.provide || v.provider)
-        );
-        if (result) {
-            ps.push(result);
+        const providers = typeOrDef.providers;
+        if (providers && providers.length) {
+            mpd = deepForEach(
+                providers,
+                pdr => processProvider(pdr, providers),
+                v => isPlainObject(v) && !(v.provide || v.provider)
+            );
         }
     }
     const isDuplicate = dedupStack.indexOf(type) !== -1;
     if (isDuplicate) {
-        if (ps.length) return Promise.all(ps) as Promise<any>;
-        return;
+        return ps ?? mpd;
     }
 
     dedupStack.push(type);
@@ -645,59 +651,49 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
     const annotation = typeRef.getAnnotation<ModuleDef>();
     if (annotation.module) {
         annotation.imports?.forEach(imp => {
-            const result = processInjectorType(imp, dedupStack, processProvider, regType, undefined, true);
-            if (result) {
-                ps.push(result);
-            }
+            ps = mergePromise(ps, () => processInjectorType(imp, dedupStack, processProvider, regType, undefined, true));
         });
 
         if (annotation.providers) {
-            const result = deepForEach(
-                annotation.providers,
-                pdr => processProvider(pdr, annotation.providers),
+            const providers = annotation.providers;
+            ps = mergePromise(ps, () => deepForEach(
+                providers,
+                pdr => processProvider(pdr, providers),
                 v => isPlainObject(v) && !(v.provide || v.provider)
-            );
-            if (result) {
-                ps.push(result);
-            }
+            ))
         }
 
         const noDecl = !(imported && !(annotation.providedIn === 'root' || annotation.providedIn === 'platform'));
-        if (ps.length) {
-            return Promise.all(ps).then(() => {
-                const ps: any[] = [];
-                processInjectoDeclarations(annotation, dedupStack, processProvider, regType, ps, noDecl);
-                regType(typeRef, type);
-                if (ps.length) {
-                    return Promise.all(ps) as Promise<any>;
-                }
-            })
-        }
-        processInjectoDeclarations(annotation, dedupStack, processProvider, regType, ps, noDecl);
+
+        ps = mergePromise(ps, () => processInjectoDeclarations(annotation, dedupStack, processProvider, regType, noDecl));
+
     }
-    regType(typeRef, type);
-    if (ps.length) return Promise.all(ps) as Promise<any>;
+
+    return mergePromise(ps && mpd ? Promise.all([ps, mpd]) : ps ?? mpd, () => regType(typeRef, type));
 
 }
 
 
 function processInjectoDeclarations(annotation: ModuleDef<any>, dedupStack: Type[],
     processProvider: (provider: StaticProvider | DynamicProvider, providers?: any[]) => void,
-    regType: (typeRef: Class, type: Type) => void, ps: Promise<void>[], declarations?: boolean): void {
-    if (declarations) {
+    regType: (typeRef: Class, type: Type) => void, declarations?: boolean, ps?: Promise<void> | void): void | Promise<void> {
+    const dps: Promise<void>[] = [];
+    if (ps) dps.push(ps);
+    if (declarations && annotation.declarations?.length) {
         annotation.declarations?.forEach(d => {
-            const result = processInjectorType(d, dedupStack, processProvider, regType, undefined, true);
-            if (result) {
-                ps.push(result);
+            const res = processInjectorType(d, dedupStack, processProvider, regType, undefined, true);
+            if (res) {
+                dps.push(res);
             }
         });
     }
     annotation.exports?.forEach(d => {
-        const result = processInjectorType(d, dedupStack, processProvider, regType, undefined, true);
-        if (result) {
-            ps.push(result);
+        const res = processInjectorType(d, dedupStack, processProvider, regType, undefined, true);
+        if (res) {
+            dps.push(res);
         }
     })
+    if (dps.length) return Promise.all(dps) as Promise<any>;
 }
 
 

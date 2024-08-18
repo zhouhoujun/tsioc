@@ -1,4 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
+import { ProtocolType } from '@tsdi/common';
 import { Router } from './router';
 import { RequestContext } from '../RequestContext';
 import { RequestHandler } from '../RequestHandler';
@@ -15,11 +16,15 @@ export type HybridRoute = RequestHandler | MiddlewareLike | Array<RequestHandler
  * public api for global router
  */
 @Abstract()
-export abstract class HybridRouter extends Router<HybridRoute> implements Middleware {
+export abstract class HybridRouter extends Router<HybridRoute> implements Middleware<RequestContext> {
+    /**
+     * protocol
+     */
+    abstract get protocol(): ProtocolType | null;
     /**
      * invoke middleware.
      *
-     * @param {RequestContext} ctx context.
+     * @param {T} ctx context.
      * @param {() => Promise<void>} next
      * @returns {Observable<T>}
      */

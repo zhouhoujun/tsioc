@@ -3,12 +3,13 @@ import {
     ClassMethodDecorator, createParamDecorator, TypeMetadata, Execption, isMetadataObject, DecorDefine
 } from '@tsdi/ioc';
 import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter } from '@tsdi/core';
-import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Transport } from '@tsdi/common';
+import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Transport, HybirdTransport } from '@tsdi/common';
 import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, ProtocolRouteOptions, RouteMappingMetadata, RouteOptions, Router } from './router/router';
 import { Middleware, MiddlewareFn } from './middleware/middleware';
 import { RouteHandlerFactoryResolver } from './router/route.handler';
 import { ControllerRouteFactory } from './router/controller';
-import { MicroRouters } from './router/routers';
+import { MicroRouters } from './router/routers.micro';
+import { Routers } from './router/routers';
 
 
 export { Topic, Payload } from '@tsdi/core';
@@ -159,7 +160,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             const mapping = ctx.class.getAnnotation<MappingDef>();
             const injector = ctx.injector;
 
-            const router = injector.get(mapping.router ?? Router);
+            const router = mapping.router ? injector.get(mapping.router) : injector.get(Routers).get(mapping.protocol as HybirdTransport);
             const route = mapping.route!;
             if (!route) throw new Execption(lang.getClassName(ctx.type) + 'has not route!');
             if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
@@ -268,7 +269,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 const injector = ctx.injector;
                 const mapping = ctx.class.getAnnotation<MappingDef>();
 
-                const router = injector.get(mapping.router ?? Router);
+                const router = mapping.router ? injector.get(mapping.router) : injector.get(Routers).get(mapping.protocol);
                 if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
                 if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
 

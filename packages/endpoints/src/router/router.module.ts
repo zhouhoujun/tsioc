@@ -1,14 +1,16 @@
-import { InjectFlags, Injector, InstanceOf, Module, ModuleWithProviders, ProviderType, ReflectiveFactory, Token, TypeOf, getToken, isFunction, isString, isType, tokenId } from '@tsdi/ioc';
-import { PatternFormatter, patternToPath, normalize, Transport } from '@tsdi/common';
+import { Injector, InstanceOf, Module, ModuleWithProviders, ProviderType, ReflectiveFactory, Token, TypeOf, getToken, isFunction, isString, isType, tokenId } from '@tsdi/ioc';
+import { PatternFormatter, patternToPath, normalize, Transport, HybirdTransport } from '@tsdi/common';
 import { ROUTES, Routes } from './route';
-import { RouteMatcher, Router } from './router';
+import { RouteMatcher } from './router';
 import { HybridRouter } from './router.hybrid';
 import { ControllerRouteFactory } from './controller';
 import { MappingRouter, DefaultRouteMatcher } from './router.mapping';
-import { MESSAGE_ROUTERS, MircoRouter, MicroRouters } from './routers';
+import { ROUTERS, Routers } from './routers';
+import { MESSAGE_ROUTERS, MircoRouter, MicroRouters } from './routers.micro';
 import { RouteHandlerFactoryResolver } from './route.handler';
 import { RouteHandlerFactoryResolverImpl } from '../impl/route.handler';
-import { MappingRouterImpl, MicroRoutersImpl } from '../impl/routers';
+import { MicroRoutersImpl } from '../impl/routers.micro';
+import { RoutersImpl } from '../impl/routers';
 
 
 
@@ -36,21 +38,7 @@ export class RouteEndpointModule {
  */
 @Module({
     providers: [
-        {
-            provide: HybridRouter,
-            useFactory: (injector: Injector, matcher: RouteMatcher, formatter: PatternFormatter, prefix?: string, routes?: Routes) => {
-                return new MappingRouter(injector, matcher ?? new DefaultRouteMatcher(), formatter, prefix, routes)
-            },
-            deps: [
-                Injector,
-                [RouteMatcher, InjectFlags.Optional],
-                PatternFormatter,
-                [ROUTER_PREFIX, InjectFlags.Optional],
-                [ROUTES, InjectFlags.Optional, InjectFlags.Self]
-            ],
-            asDefault: true
-        },
-        { provide: Router, useExisting: HybridRouter },
+        { provide: Routers, useClass: RoutersImpl },
         ControllerRouteFactory
     ]
 })
@@ -88,21 +76,32 @@ export class RouterModule {
             ]
         }
     }
+
+    static getToken(protocol: HybirdTransport): Token<HybridRouter> {
+        return getToken(HybridRouter, protocol)
+    }
 }
 
-export function createRouteProviders(optsify: InstanceOf<RouteOpts>): ProviderType[] {
+export function createRouteProviders(protocol: HybirdTransport, optsify: InstanceOf<RouteOpts>): ProviderType[] {
+    const token = getToken(HybridRouter, protocol);
     return [
         {
-            provide: HybridRouter,
+            provide: token,
             useFactory: (injector: Injector) => {
                 const opts = isFunction(optsify) ? optsify(injector) : optsify;
                 return new MappingRouter(injector,
                     opts.matcher ? (isType(opts.matcher) ? injector.get(opts.matcher) : opts.matcher) : new DefaultRouteMatcher(),
                     opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter),
+                    protocol,
                     opts.prefix,
                     opts.routes)
             },
             deps: [Injector]
+        },
+        {
+            provide: ROUTERS,
+            useExisting: token,
+            multi: true
         }
     ]
 }
@@ -183,18 +182,20 @@ export interface RouteOpts {
     routes?: Routes;
 }
 
-export function createMicroRouteProviders(transport: Transport, optsify: InstanceOf<RouteOpts>): ProviderType[] {
-    const token = getToken(MircoRouter, transport);
+export function createMicroRouteProviders(protocol: Transport, optsify: InstanceOf<RouteOpts>): ProviderType[] {
+    const token = getToken(MircoRouter, protocol);
     return [
         {
             provide: token,
             useFactory: (injector: Injector) => {
                 const opts = isFunction(optsify) ? optsify(injector) : optsify;
-                return new MappingRouterImpl(transport, injector,
+                return new MappingRouter(injector,
                     opts.matcher ? (isType(opts.matcher) ? injector.get(opts.matcher) : opts.matcher) : new DefaultRouteMatcher(),
                     opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter),
+                    protocol,
                     opts.prefix,
-                    opts.routes)
+                    opts.routes,
+                    true)
             },
             deps: [Injector]
         },

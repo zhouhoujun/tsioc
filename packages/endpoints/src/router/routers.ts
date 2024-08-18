@@ -1,37 +1,22 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { Transport } from '@tsdi/common';
-import { RequestHandler } from '../RequestHandler';
-import { Router } from './router';
+import { ProtocolType } from '@tsdi/common';
+import { HybridRouter } from './router.hybrid';
 
 /**
- * microservice router
+ *  service routers.
+ */
+export const ROUTERS = tokenId<HybridRouter[]>('ROUTERS');
+
+
+/**
+ * routers.
  * 
- * public api for microservice router
+ * public api for all service routers
  */
 @Abstract()
-export abstract class MircoRouter<T = RequestHandler> extends Router<T> {
+export abstract class Routers {
     /**
-     * protocol
+     * get service router
      */
-    abstract get protocol(): Transport;
-}
-
-
-/**
- * microservice message routers.
- */
-export const MESSAGE_ROUTERS = tokenId<MircoRouter[]>('MESSAGE_ROUTERS');
-
-
-/**
- * microservice routers.
- * 
- * public api for all microservice routers
- */
-@Abstract()
-export abstract class MicroRouters {
-    /**
-     * get microservice router
-     */
-    abstract get<T = RequestHandler>(protocol?: Transport): MircoRouter<T>;
+    abstract get(protocol?: ProtocolType): HybridRouter;
 }

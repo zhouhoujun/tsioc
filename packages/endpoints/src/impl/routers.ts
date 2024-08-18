@@ -1,55 +1,36 @@
 import { ArgumentExecption, Injectable, Injector } from '@tsdi/ioc';
-import { PatternFormatter } from '@tsdi/common';
-import { RouteMatcher } from '../router/router';
-import { Routes } from '../router/route';
-import { MappingRouter } from '../router/router.mapping';
-import { MESSAGE_ROUTERS, MircoRouter, MicroRouters } from '../router/routers';
+import { ProtocolType } from '@tsdi/common';
+import { ROUTERS, Routers } from '../router/routers';
+import { HybridRouter } from '../router/router.hybrid';
 
 
 @Injectable()
-export class MicroRoutersImpl implements MicroRouters {
+export class RoutersImpl implements Routers {
 
-    private defaultProtocol?: string;
-    private _rts?: Map<string, MircoRouter> | null;
+    private defaultProtocol?: ProtocolType | 'default';
+    private _rts?: Map<string, HybridRouter> | null;
     constructor(
         private injector: Injector
     ) {
     }
 
-    protected get routers(): Map<string, MircoRouter> {
+    protected get routers(): Map<string, HybridRouter> {
         if (!this._rts) {
             this._rts = new Map();
-            this.injector.get(MESSAGE_ROUTERS).forEach(r => {
+            this.injector.get(ROUTERS).forEach(r => {
                 if (!this.defaultProtocol) {
-                    this.defaultProtocol = r.protocol;
+                    this.defaultProtocol = r.protocol ?? 'default';
                 }
-                this._rts?.set(r.protocol, r);
+                this._rts?.set(r.protocol ?? 'default', r);
             })
         }
         return this._rts;
     }
 
 
-    get<T>(protocol?: string): MircoRouter<T> {
+    get(protocol?: ProtocolType): HybridRouter {
         if (!protocol && this.routers.size > 1) throw new ArgumentExecption('has mutil microservice, protocol param can not empty');
-        return this.routers.get(protocol ?? this.defaultProtocol!) as MircoRouter<T>;
+        return this.routers.get(protocol ?? this.defaultProtocol ?? 'default') as HybridRouter;
     }
 
 }
-
-
-export class MappingRouterImpl extends MappingRouter {
-
-    protected micro = true;
-
-    constructor(
-        readonly protocol: string,
-        injector: Injector,
-        matcher: RouteMatcher,
-        formatter: PatternFormatter,
-        prefix?: string,
-        routes?: Routes) {
-        super(injector, matcher, formatter, prefix, routes)
-    }
-}
-

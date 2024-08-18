@@ -1,9 +1,9 @@
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
-import { LOCALHOST, UrlMesage } from '@tsdi/common';
+import { LOCALHOST } from '@tsdi/common';
 import { CustomCodingsAdapter } from '@tsdi/common/codings';
 import { ClientIncomingPacket } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
-import { HttpRequest, isHttpEvent } from '@tsdi/common/http';
+import { isHttpEvent } from '@tsdi/common/http';
 import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts, MimeModule, ServiceModuleOpts } from '@tsdi/endpoints';
 import { Http } from './client/clinet';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS } from './client/options';
@@ -63,7 +63,9 @@ export class HttpConfiguration {
         return {
             transport: 'http',
             clientType: Http,
-            imports: [MimeModule],
+            imports: [
+                MimeModule
+            ],
             defaultOpts: {
                 handlerType: HttpHandler,
                 interceptorsToken: HTTP_CLIENT_INTERCEPTORS,
@@ -86,7 +88,9 @@ export class HttpConfiguration {
         return {
             transport: 'http',
             serverType: HttpServer,
-            imports: [MimeModule],
+            imports: [
+                MimeModule
+            ],
             defaultOpts: {
                 handlerType: HttpRequestHandler,
                 listenOpts: { port: 3000, host: LOCALHOST },

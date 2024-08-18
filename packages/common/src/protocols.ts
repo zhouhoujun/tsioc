@@ -8,3 +8,8 @@ export type Transport = 'tcp' | 'udp' | 'coap' | 'amqp' | 'mqtt' | 'kafka' | 're
  * hybird transport type.
  */
 export type HybirdTransport = 'http' | 'grpc' | 'tcp' | 'coap';
+
+/**
+ * protocol types
+ */
+export type ProtocolType = Transport | HybirdTransport;

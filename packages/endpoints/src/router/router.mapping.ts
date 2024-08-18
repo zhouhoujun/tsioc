@@ -6,7 +6,7 @@ import {
     Handler, CanHandle, getGuardsToken, getInterceptorsToken,
     getFiltersToken, setHandlerOptions, createHandler
 } from '@tsdi/core';
-import { Pattern, PatternFormatter, joinPath, normalize } from '@tsdi/common';
+import { Pattern, PatternFormatter, ProtocolType, joinPath, normalize } from '@tsdi/common';
 import { NotFoundExecption, BadRequestExecption } from '@tsdi/common/transport';
 import { defer, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { RequestHandler } from '../RequestHandler';
@@ -29,15 +29,14 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
 
     readonly routes: Map<string, HybridRoute>;
 
-
-    protected micro = false;
-
     constructor(
         private injector: Injector,
         readonly matcher: RouteMatcher,
         readonly formatter: PatternFormatter,
+        readonly protocol: ProtocolType | null = null,
         public prefix: string = '',
-        routes?: Routes) {
+        routes?: Routes,
+        protected micro = false) {
         super()
         this.routes = new Map<string, MiddlewareFn>();
         if (routes) {
@@ -421,7 +420,7 @@ export class MappingRoute implements Middleware, RequestHandler {
         } else if (route.controller) {
             return this.injector.get(ControllerRouteFactory).create(route.controller, this.injector, route.path);
         } else if (route.children) {
-            const router = new MappingRouter(this.injector, new DefaultRouteMatcher(), this.injector.get(PatternFormatter), route.path);
+            const router = new MappingRouter(this.injector, new DefaultRouteMatcher(), this.injector.get(PatternFormatter), route.protocol, route.path);
             route.children.forEach(route => router.use(route));
             return router
         } else if (route.loadChildren) {

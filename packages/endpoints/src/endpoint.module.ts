@@ -16,7 +16,6 @@ import { EndpointTypedRespond } from './typed.respond';
 import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, LoggerInterceptor } from './interceptors';
 import { MicroServRouterModule, RouteEndpointModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
 import { MiddlewareOpts } from './middleware/middleware.endpoint';
-import { HybridRouter } from './router/router.hybrid';
 import { REGISTER_SERVICES, SetupServices } from './SetupServices';
 import { ServerEndpointCodingsHanlders } from './codings/codings.handlers';
 import { ExecptionFinalizeFilter } from './execption.filter';
@@ -246,7 +245,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 const moduleOpts = { ...mdopts, ...options, asDefault: null } as ServiceModuleOpts & ServiceOpts;
 
                 const serverOpts = {
-                    backend: moduleOpts.microservice ? MicroServRouterModule.getToken(moduleOpts.transport as Transport) : HybridRouter,
+                    backend: moduleOpts.microservice ? MicroServRouterModule.getToken(moduleOpts.transport) : RouterModule.getToken(moduleOpts.transport),
                     ...moduleOpts.defaultOpts,
                     ...moduleOpts.serverOpts,
                     routes: {
@@ -336,7 +335,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 });
 
                 return [
-                    ...moduleOpts.microservice ? createMicroRouteProviders(moduleOpts.transport as Transport, serverOpts.routes || EMPTY_OBJ) : createRouteProviders(serverOpts.routes || EMPTY_OBJ),
+                    ...moduleOpts.microservice ? createMicroRouteProviders(moduleOpts.transport, serverOpts.routes || EMPTY_OBJ) : createRouteProviders(moduleOpts.transport, serverOpts.routes || EMPTY_OBJ),
                     { provide: REGISTER_SERVICES, useValue: { service: moduleOpts.serverType, bootstrap: serverOpts.bootstrap, microservice: serverOpts.microservice, providers }, multi: true }
                 ];
             }

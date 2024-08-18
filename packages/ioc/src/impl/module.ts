@@ -6,7 +6,7 @@ import { Platform } from '../platform';
 import { isModuleProviders, ModuleWithProviders, ProviderType } from '../providers';
 import { Type, EMPTY, EMPTY_OBJ } from '../types';
 import { isType } from '../utils/chk';
-import { DefaultInjector } from './injector';
+import { DefaultInjector, mergePromise } from './injector';
 
 
 /**
@@ -31,49 +31,40 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         const dedupStack: Type[] = [];
         const platfrom = this.platform();
         platfrom.modules.set(this._type, this);
-        const ps: Promise<void>[] = [];
+        let ps: Promise<void> | void | undefined;
         if (option.depProviders?.length) {
-            const providers$ = this.processInject(option.depProviders);
-            if (providers$) ps.push(providers$);
+            ps = this.processInject(option.depProviders);
         }
+        
         if (option.deps?.length) {
-            const deps$ = this.processUse(option.deps);
-            if (deps$) ps.push(deps$);
+            const deps = option.deps;
+            ps = mergePromise(ps, () => this.processUse(deps))
         }
+
         if (option.providers?.length) {
-            const providers$ = this.processInject(option.providers);
-            if (providers$) ps.push(providers$);
+            const providers = option.providers;
+            ps = mergePromise(ps, () => this.processInject(providers))
         }
-        if (ps.length) {
-            Promise.all(ps).then(() => {
-                this.ininModule(platfrom, dedupStack, option, []);
-            })
-        } else {
-            this.ininModule(platfrom, dedupStack, option, ps);
-        }
+
+        return mergePromise(ps, () => this.ininModule(platfrom, dedupStack, option))
     }
 
     protected override initProviders(providers: ProviderType[]): void {
-        
+
     }
 
-    private ininModule(platfrom: Platform, dedupStack: Type[], option: ModuleOption, ps: Promise<void>[]) {
-        const inj$ = this.processInjectorType(platfrom, this._type, dedupStack, this.moduleReflect);
-        if (inj$) ps.push(inj$);
+    private ininModule(platfrom: Platform, dedupStack: Type[], option: ModuleOption, ps: Promise<void> | void | undefined) {
+
+        ps = mergePromise(ps, () => this.processInjectorType(platfrom, this._type, dedupStack, this.moduleReflect));
+
         if (option.uses) {
-            const uses$ = this.processUse(option.uses);
-            if (uses$) ps.push(uses$);
+            ps = mergePromise(ps, () => this.processUse(option.uses!))
         }
 
-        if (ps.length) {
-            Promise.all(ps).then(() => {
-                this._instance = this.get(this._type);
-                this._readyDefer.resolve()
-            })
-        } else {
+        return mergePromise(ps, () => {
             this._instance = this.get(this._type);
-            this._readyDefer.resolve();
-        }
+            this._readyDefer.resolve()
+        });
     }
 
     get moduleType() {
