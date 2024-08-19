@@ -24,7 +24,7 @@ export abstract class RequestContext<
     TStatus = any> extends HandlerContext<Incoming<any>> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
-        return [...primitiveResolvers, ...this.injector.get(MODEL_RESOLVERS, EMPTY)];
+        return [...this.injector.get(MODEL_RESOLVERS, EMPTY), ...primitiveResolvers];
     }
 
     abstract get serverOptions(): TOptions;
@@ -297,7 +297,7 @@ export abstract class RequestContext<
      * @param type 
      */
     getContentType(type: string | null | undefined): string {
-       return this.headerAdapter.getContentType(this.request.headers ?? this.request);
+        return this.headerAdapter.getContentType(this.request.headers ?? this.request);
     }
 
     /**
@@ -305,7 +305,7 @@ export abstract class RequestContext<
      * @param len 
      */
     getContentLength(): number {
-       return this.headerAdapter.getContentLength(this.request.headers ?? this.request);
+        return this.headerAdapter.getContentLength(this.request.headers ?? this.request);
     }
 
     /**

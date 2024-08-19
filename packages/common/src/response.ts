@@ -233,6 +233,9 @@ export class DefaultResponseFactory<TStatus = null> {
     create<T>(options: ResponseInitOpts): ResponseEvent<T, TStatus> {
 
         if (!options.ok || options.error) {
+            if(!options.error){
+                options.error = options.payload;
+            }
             return new ErrorResponse(options);
         }
         return new Response(options);

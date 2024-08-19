@@ -12,7 +12,17 @@ export class ErrorResponseDecordeInterceptor implements Interceptor<ClientIncomi
     intercept(input: ClientIncomingPacket<any>, next: Handler<ClientIncomingPacket<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         if (!input.ok || input.error) {
             const session = context.session as ClientTransportSession;
-            return throwError(() => session.responseFactory.create({ ...input.toJson(), payload: null }));
+
+            return defer(async () => {
+                if (context.session.streamAdapter.isReadable(input.payload)) {
+                    let payload: any = await toBuffer(input.payload);
+                    payload = new TextDecoder().decode(payload);
+                    return input.clone({ payload })
+                }
+                return input;
+            }).pipe(
+                mergeMap(input => throwError(() => session.responseFactory.create({ ...input.toJson() })))
+            );
         }
         return next.handle(input, context);
     }

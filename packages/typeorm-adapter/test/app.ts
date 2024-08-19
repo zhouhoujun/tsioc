@@ -54,6 +54,8 @@ export const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhos
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
+        HttpClientModule,
+        ServerHttpClientModule,
         EndpointModule.register({
             transport: 'http',
             serverOpts: {
@@ -65,8 +67,6 @@ export const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhos
                 ]
             }
         }),
-        HttpClientModule,
-        ServerHttpClientModule,
         TypeormModule.withConnection({
             ...option,
             entities: [
@@ -166,6 +166,12 @@ export class MockTransBootTest {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
+        TransactionModule,
+        TypeormModule.withConnection({
+            ...option,
+            entities: ['./models/**/*.ts'],
+            repositories: ['./repositories/**/*.ts']
+        }),
         ClientModule.register({
             transport: 'http',
             clientOpts: {
@@ -179,6 +185,7 @@ export class MockTransBootTest {
             transport: 'http',
             serverOpts: {
                 majorVersion: 2,
+                secure: true,
                 serverOpts: {
                     key,
                     cert
@@ -189,12 +196,6 @@ export class MockTransBootTest {
                     BodyparserInterceptor,
                 ]
             }
-        }),
-        TransactionModule,
-        TypeormModule.withConnection({
-            ...option,
-            entities: ['./models/**/*.ts'],
-            repositories: ['./repositories/**/*.ts']
         })
     ],
     declarations: [

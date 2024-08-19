@@ -57,7 +57,7 @@ export class ReposTest {
 
     @After()
     async after() {
-        await this.ctx.destroy();
+        await this.ctx?.destroy();
     }
 
 }

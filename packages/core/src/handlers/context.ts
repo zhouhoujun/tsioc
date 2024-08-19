@@ -38,7 +38,7 @@ export class HandlerContext<TInput = any> extends DefaultInvocationContext<TInpu
 
     protected override getArgumentResolver(): OperationArgumentResolver<any>[] {
         if (!this.args) return this.playloadDefaultResolvers();
-        return this.injector.get(getResolverToken(this.args), this.playloadDefaultResolvers());
+        return [...this.injector.get(getResolverToken(this.args), EMPTY), ...this.playloadDefaultResolvers()];
     }
 
     protected playloadDefaultResolvers(): OperationArgumentResolver<any>[] {

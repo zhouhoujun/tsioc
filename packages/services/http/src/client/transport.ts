@@ -19,6 +19,10 @@ export class HttpClientIncoming<T> extends ClientIncomingPacket<T, number> {
         super(init, defaultStatus, defaultStatusText)
     }
 
+    protected isOk(init: ClientIncomingOpts): boolean {
+        return init.ok !==false && (this.status >= 200 && this.status < 300);
+    }
+
     clone(): HttpClientIncoming<T>;
     clone<V>(update: ClientIncomingCloneOpts<V, number>): HttpClientIncoming<V>;
     clone(update: ClientIncomingCloneOpts<T, number>): HttpClientIncoming<T>;

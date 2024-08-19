@@ -325,14 +325,17 @@ export abstract class ClientIncomingPacket<T, TStatus = any> extends BasePacket<
         super(init);
         this.pattern = init.pattern ?? init.url ?? init.topic;
 
-        this.ok = init.error ? false : init.ok != false;
         this.error = init.error;
         this.type = init.type;
         this._status = init.status ?? init.statusCode ?? defaultStatus ?? null;
         this._message = (init.statusMessage || init.statusText) ?? defaultStatusText;
+        this.ok = this.isOk(init);
         this.streamLength = init.streamLength;
     }
 
+    protected isOk(init: ClientIncomingOpts) {
+        return init.error ? false : init.ok != false
+    }
     /**
      * has header in packet or not.
      * @param packet 
