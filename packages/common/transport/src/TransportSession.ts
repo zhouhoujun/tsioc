@@ -1,6 +1,6 @@
+import { Abstract, Injector, ProvdierOf, Token } from '@tsdi/ioc';
 import { HeaderAdapter, HybirdTransport, Message, MessageFactory, Transport } from '@tsdi/common';
 import { CodingsAapter, CodingsHandlerOptions } from '@tsdi/common/codings';
-import { Abstract, Injector, ProvdierOf, Token } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { AbstractIncomingFactory, ClientIncoming, Incoming } from './Incoming';
 import { StatusAdapter } from './StatusAdapter';
@@ -83,6 +83,12 @@ export interface TransportOpts {
      * timeout
      */
     timeout?: number;
+    /**
+     * close socket
+     * @param socket 
+     * @returns 
+     */
+    close?: (socket: any)=> Promise<any>;
 
 }
 

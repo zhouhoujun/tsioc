@@ -5,6 +5,7 @@ import { ClientIncomingPacket, Redirector } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientModuleOpts, UrlRedirector } from '@tsdi/common/client';
 import { isHttpEvent } from '@tsdi/common/http';
 import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts, MimeModule, ServiceModuleOpts, JsonInterceptor, BodyparserInterceptor } from '@tsdi/endpoints';
+import { ClientHttp2Stream } from 'http2';
 import { Http } from './client/clinet';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS } from './client/options';
 import { HttpHandler } from './client/handler';
@@ -18,6 +19,7 @@ import { HttpExecptionHandlers } from './execption.handlers';
 import { HttpClientIncoming, HttpClientIncomingFactory, HttpClientMessageReader, HttpClientMessageWriter } from './client/transport';
 import { HttpIncomingFactory, HttpServerMessageReader, HttpServerMessagerWriter } from './server/transport';
 import { HttpMesage, HttpMesageFactory } from './message';
+import { promisify } from '@tsdi/ioc';
 
 
 @Configuration()
@@ -80,6 +82,9 @@ export class HttpConfiguration {
                 transportOpts: {
                     encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof HttpMesage) },
                     decodingsAdapter: { useValue: new CustomCodingsAdapter(isHttpEvent, [[HttpClientIncoming, ClientIncomingPacket]]) },
+                    close: async (socket: ClientHttp2Stream) => {
+                        return socket.destroy()
+                    },
                 }
             }
         }

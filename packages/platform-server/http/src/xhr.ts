@@ -1,10 +1,11 @@
 /* eslint-disable no-useless-escape */
 import { Module, EMPTY_OBJ, Injectable, Injector, ProviderType } from '@tsdi/ioc';
-import { DOCUMENT, PLATFORM_ID, PLATFORM_SERVER_ID, HTTP_LISTEN_OPTS } from '@tsdi/common';
+import { DOCUMENT, PLATFORM_ID, PLATFORM_SERVER_ID } from '@tsdi/common';
 import { HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, XhrFactory } from '@tsdi/common/http';
 import { XMLHttpRequest2 } from './xhr.request';
 import { Observable } from 'rxjs';
 import * as domino from 'domino';
+import { ApplicationArguments } from '@tsdi/core';
 
 @Injectable()
 export class ServerXhr implements XhrFactory {
@@ -28,10 +29,12 @@ export class HttpClientBackend implements HttpBackend {
     return new Observable(observer => process.nextTick(() => {
       let request: HttpRequest<any>;
       if (!isAbsoluteUrl.test(req.url)) {
-        const { host, port, path, withCredentials } = req.context?.get(HTTP_LISTEN_OPTS) ?? this.injector.get(HTTP_LISTEN_OPTS, EMPTY_OBJ);
-        const protocol = (req.withCredentials || withCredentials) ? 'https' : 'http';
-        const urlPrefix = `${protocol}://${host ?? 'localhost'}:${port ?? 3000}${path ?? ''}`;
-        const baseUrl = new URL(urlPrefix);
+        let baseUrl: string | URL = this.injector.get(ApplicationArguments)?.env?.httpBaseURL ?? '';
+        if (!baseUrl) {
+          const protocol = req.withCredentials ? 'https' : 'http';
+          const urlPrefix = `${protocol}://localhost:3000`;
+          baseUrl = new URL(urlPrefix);
+        }
         const url = new URL(req.url, baseUrl);
         request = req.clone({ url: url.toString() })
       } else {

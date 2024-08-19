@@ -42,8 +42,12 @@ export abstract class ClientTransportSession<TSocket = any> extends BaseTranspor
 
     protected async closeSocket() {
         const socket = this.socket as any;
-        if (socket && isFunction(socket.close)) {
-            await promisify(socket.close, socket)();
+        if (socket) {
+            if (this.options.close) {
+                await this.options.close(socket)
+            } else if (isFunction(socket.close)) {
+                await promisify(socket.close, socket)();
+            }
         }
     }
 }
