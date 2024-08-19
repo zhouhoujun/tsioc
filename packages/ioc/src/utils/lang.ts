@@ -6,6 +6,46 @@ import { isPlainObject } from './obj';
 import { getClassAnnotation } from './util';
 
 
+
+/**
+ * create an new object from target object omit some field.
+ *
+ * @export
+ * @param {any} target
+ * @param {...string[]} fields
+ * @returns {*}
+ */
+export function omit(target: any, ...fields: string[]): any {
+    if (target) {
+        const result: any = {};
+        for (const key in target) {
+            if (fields.indexOf(key) < 0) {
+                result[key] = target[key]
+            }
+        }
+        return result
+    } else {
+        return target
+    }
+}
+
+/**
+ * create new object with pick fields.
+ * @param target 
+ * @param fields 
+ * @returns 
+ */
+export function pick(target: any, ...fields: string[]): any {
+    const obj: any = {};
+    for (const fd in fields) {
+        const val = target[fd];
+        if (!isNil(val)) {
+            obj[fd] = val;
+        }
+    }
+    return obj;
+}
+
 /**
  * for in opter for object or array.
  *

@@ -7,9 +7,10 @@ export * from './Session';
 export { Session as SessionMiddleware, Session as SessionInterceptor } from './Session';
 export * from './router/route';
 export * from './router/router';
-export * from './router/routers.micro';
 export * from './router/router.hybrid';
-export * from './router/router.mapping'
+export * from './router/router.mapping';
+export * from './router/routers';
+export * from './router/routers.micro';
 export * from './router/controller';
 export * from './router/router.module';
 

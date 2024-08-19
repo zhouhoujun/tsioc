@@ -1,4 +1,5 @@
 import { Module, ModuleWithProviders, ProvdierOf, Type, toProvider } from '@tsdi/ioc';
+import { LoggerModule } from '@tsdi/logger';
 import { ConnectionOptions, CONNECTIONS, RepositoryArgumentResolver, TransactionManager, TransactionResolver } from '@tsdi/repository';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { ParseObjectIdPipe } from './objectid.pipe';
@@ -22,6 +23,9 @@ export interface TypeormOptions extends ConnectionOptions {
 }
 
 @Module({
+    imports:[
+        LoggerModule
+    ],
     providers: [
         TypeormAdapter,
         ParseObjectIdPipe,

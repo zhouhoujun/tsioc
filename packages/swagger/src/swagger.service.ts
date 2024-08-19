@@ -3,7 +3,7 @@ import { Execption, InjectFlags, Injectable, Type, getClassName, isFunction, isN
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, joinPath } from '@tsdi/common';
 import { ctype } from '@tsdi/common/transport';
-import { ControllerRoute, HybridRouter, RouteMappingMetadata, Router, ContentInterceptor } from '@tsdi/endpoints';
+import { ControllerRoute, HybridRouter, RouteMappingMetadata, Router, ContentInterceptor, Routers } from '@tsdi/endpoints';
 import { DBPropertyMetadata, MissingModelFieldExecption } from '@tsdi/repository';
 import { HttpServer } from '@tsdi/http'
 import { of } from 'rxjs';
@@ -27,7 +27,7 @@ export class SwaggerService {
         const moduleRef = ctx.injector;
         const opts = moduleRef.get(SWAGGER_SETUP_OPTIONS, {} as SwaggerSetupOptions);
 
-        const router = moduleRef.get(HybridRouter);
+        const router = moduleRef.get(Routers).get();
 
         const models = moduleRef.get(MODEL_RESOLVERS);
 
