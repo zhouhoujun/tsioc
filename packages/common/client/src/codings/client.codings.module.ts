@@ -18,9 +18,9 @@ const CLIENT_INCOMING_DECODE_INTERCEPTORS = getDecodeInterceptorsToken(ClientInc
     ],
     providers: [
         { provide: ClientBackend, useClass: ClientTransportBackend, asDefault: true },
+        { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: RedirectDecodeInterceptor, multi: true },
         { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: ErrorResponseDecordeInterceptor, multi: true },
         { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: EmptyResponseDecordeInterceptor, multi: true },
-        { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: RedirectDecodeInterceptor, multi: true },
         { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: CompressResponseDecordeInterceptor, multi: true },
         { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: ResponseTypeDecodeInterceptor, multi: true },
         ClientEndpointCodingsHanlders
