@@ -9,7 +9,7 @@ import { RequestHandler } from '../RequestHandler';
  * public api for microservice router
  */
 @Abstract()
-export abstract class MircoRouter<T extends RequestHandler = RequestHandler> extends Router<T> {
+export abstract class MicroRouter<T extends RequestHandler = RequestHandler> extends Router<T> {
     /**
      * protocol
      */
@@ -20,7 +20,7 @@ export abstract class MircoRouter<T extends RequestHandler = RequestHandler> ext
 /**
  * microservice message routers.
  */
-export const MESSAGE_ROUTERS = tokenId<MircoRouter[]>('MESSAGE_ROUTERS');
+export const MESSAGE_ROUTERS = tokenId<MicroRouter[]>('MESSAGE_ROUTERS');
 
 
 /**
@@ -33,5 +33,5 @@ export abstract class MicroRouters {
     /**
      * get microservice router
      */
-    abstract get(protocol?: Transport): MircoRouter;
+    abstract get(protocol?: Transport): MicroRouter;
 }

@@ -6,7 +6,7 @@ import { HybridRouter } from './router.hybrid';
 import { ControllerRouteFactory } from './controller';
 import { MappingRouter, DefaultRouteMatcher } from './router.mapping';
 import { ROUTERS, Routers } from './routers';
-import { MESSAGE_ROUTERS, MircoRouter, MicroRouters } from './routers.micro';
+import { MESSAGE_ROUTERS, MicroRouter, MicroRouters } from './routers.micro';
 import { RouteHandlerFactoryResolver } from './route.handler';
 import { RouteHandlerFactoryResolverImpl } from '../impl/route.handler';
 import { MicroRoutersImpl } from '../impl/routers.micro';
@@ -170,8 +170,8 @@ export class MicroServRouterModule {
         }
     }
 
-    static getToken(protocol: Transport): Token<MircoRouter> {
-        return getToken(MircoRouter, protocol)
+    static getToken(protocol: Transport): Token<MicroRouter> {
+        return getToken(MicroRouter, protocol)
     }
 }
 
@@ -183,7 +183,7 @@ export interface RouteOpts {
 }
 
 export function createMicroRouteProviders(protocol: Transport, optsify: InstanceOf<RouteOpts>): ProviderType[] {
-    const token = getToken(MircoRouter, protocol);
+    const token = getToken(MicroRouter, protocol);
     return [
         {
             provide: token,
