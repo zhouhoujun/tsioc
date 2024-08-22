@@ -1,5 +1,6 @@
-import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
+import { Injectable, InvocationContext, isString, promisify } from '@tsdi/ioc';
 import { Pattern, ResponseEvent } from '@tsdi/common';
+import { InjectLog, Logger } from '@tsdi/logger';
 import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { UdpHandler } from './handler';
@@ -11,6 +12,9 @@ import { UdpRequest, UdpRequestInitOpts } from './request';
 
 @Injectable()
 export class UdpClient extends AbstractClient<UdpRequest<any>, ResponseEvent<any>, UdpClientOpts> {
+    @InjectLog()
+    private logger!: Logger;
+    
     private socket?: Socket | null;
     private session?: ClientTransportSession | null;
 
@@ -34,8 +38,14 @@ export class UdpClient extends AbstractClient<UdpRequest<any>, ResponseEvent<any
     }
 
     protected async onShutdown(): Promise<void> {
-        this.socket?.close();
-        this.session?.destroy();
+        if (!this.socket) return;
+        await this.session?.destroy();
+        await promisify(this.socket.close, this.socket)()
+            .catch(err => {
+                this.logger?.error(err);
+                return err;
+            });
+    
     }
 
     protected initContext(context: InvocationContext<any>): void {

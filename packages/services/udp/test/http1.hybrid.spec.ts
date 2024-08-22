@@ -31,7 +31,7 @@ import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonIntercep
         EndpointModule.register([
             {
                 microservice: true,
-                transport: 'udp',
+                transport: 'udp'
             },
             {
                 transport: 'http',

@@ -1,6 +1,5 @@
 import { ErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
-import { PackageBufferCodingsModule } from '@tsdi/common/transport';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
 import { Injector, Module, isArray } from '@tsdi/ioc';
@@ -78,8 +77,7 @@ import expect = require('expect');
                     ]
                 }
             }
-        ]),
-        PackageBufferCodingsModule
+        ])
     ],
     declarations: [
         DeviceController
