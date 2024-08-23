@@ -14,9 +14,9 @@ import { MqttServer } from './server/server';
 import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS } from './server/options';
 import { MqttRequestHandler } from './server/handler';
 import { MqttMessage, MqttMessageFactory } from './message';
-import { MqttClientIncoming, MqttClientIncomingFactory, MqttIncoming, MqttIncomingFactory } from './incoming';
-import { MqttOutgoing, MqttOutgoingFactory } from './outgoing';
 import { MqttRequest } from './client/request';
+import { MqttClientIncoming, MqttClientIncomingFactory } from './client/transport';
+import { MqttIncoming, MqttIncomingFactory, MqttOutgoing, MqttOutgoingFactory } from './server/transport';
 
 
 const defaultMaxSize = 1048576; // 1024 * 1024;

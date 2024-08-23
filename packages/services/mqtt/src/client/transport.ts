@@ -1,27 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
-import { ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket, IncomingCloneOpts, IncomingFactory, IncomingOpts, IncomingPacket } from '@tsdi/common/transport';
+import { ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket } from '@tsdi/common/transport';
 
-
-
-export class MqttIncoming<T> extends IncomingPacket<T> {
-
-    clone(): MqttIncoming<T>;
-    clone<V>(update: IncomingCloneOpts<V>): MqttIncoming<V>;
-    clone(update: IncomingCloneOpts<T>): MqttIncoming<T>;
-    clone(update: IncomingCloneOpts<any> = {}): MqttIncoming<any> {
-        const opts = this.cloneOpts(update);
-        return new MqttIncoming(opts);
-
-    }
-
-}
-
-@Injectable()
-export class MqttIncomingFactory implements IncomingFactory {
-    create<T>(packet: IncomingOpts<T>): MqttIncoming<T> {
-        return new MqttIncoming<T>(packet);
-    }
-}
 
 
 export class MqttClientIncoming<T, TStatus = null> extends ClientIncomingPacket<T, TStatus> {
