@@ -125,9 +125,16 @@ export abstract class UrlRequest<T> extends AbstractRequest<T> {
     abstract getUrlWithParams(): string;
 }
 
-export interface TopicRequestCloneOpts<T> extends RequestCloneOpts<T> {
+export interface ResponseTopic {
+    responseTopic?: string;
+}
+
+export interface TopicOptions extends ResponseTopic {
     topic?: string;
-    replyTopic?: string;
+}
+
+export interface TopicRequestCloneOpts<T> extends RequestCloneOpts<T>, TopicOptions {
+
 }
 
 /**
@@ -140,13 +147,15 @@ export abstract class TopicRequest<T> extends AbstractRequest<T> {
     abstract get topic(): string;
 }
 
+
+
 /**
  * topic request init options.
  */
-export interface TopicRequestInitOpts extends RequestInitOpts {
-    topic?: string;
-    replyTopic?: string;
+export interface TopicRequestInitOpts extends RequestInitOpts, TopicOptions {
+
 }
+
 
 
 /**

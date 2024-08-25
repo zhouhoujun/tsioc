@@ -7,7 +7,7 @@ export class MqttRequest<T> extends BaseTopicRequest<T> {
     clone(update: TopicRequestCloneOpts<T>): MqttRequest<T>;
     clone(update: TopicRequestCloneOpts<any> = {}): MqttRequest<any> {
         const init = this.cloneOpts(update) as TopicRequestInitOpts;
-        return new MqttRequest(update.topic ?? this.topic, this.pattern, init.replyTopic, init);
+        return new MqttRequest(update.topic ?? this.topic, this.pattern, init.responseTopic, init);
     }
 
 }
