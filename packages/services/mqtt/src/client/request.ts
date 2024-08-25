@@ -1,4 +1,4 @@
-import { BaseTopicRequest, TopicRequestCloneOpts } from '@tsdi/common';
+import { BaseTopicRequest, TopicRequestCloneOpts, TopicRequestInitOpts } from '@tsdi/common';
 
 export class MqttRequest<T> extends BaseTopicRequest<T> {
 
@@ -6,8 +6,8 @@ export class MqttRequest<T> extends BaseTopicRequest<T> {
     clone<V>(update: TopicRequestCloneOpts<V>): MqttRequest<V>;
     clone(update: TopicRequestCloneOpts<T>): MqttRequest<T>;
     clone(update: TopicRequestCloneOpts<any> = {}): MqttRequest<any> {
-        const init = this.cloneOpts(update);
-        return new MqttRequest(update.topic ?? this.topic, this.pattern, init);
+        const init = this.cloneOpts(update) as TopicRequestInitOpts;
+        return new MqttRequest(update.topic ?? this.topic, this.pattern, init.replyTopic, init);
     }
 
 }

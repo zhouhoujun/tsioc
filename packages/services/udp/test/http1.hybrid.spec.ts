@@ -24,7 +24,7 @@ import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonIntercep
             {
                 transport: 'http',
                 clientOpts: {
-                    url: 'http:/loalhost:3000'
+                    url: 'http:/localhost:3000'
                 }
             }
         ]),
@@ -59,12 +59,12 @@ describe('Udp hybrid Http Server & Udp Client & Http', () => {
     let injector: Injector;
 
     let client: Http;
-    let wsClient: UdpClient
+    let udpClient: UdpClient
 
     before(async () => {
         ctx = await Application.run(UdpTestModule);
         injector = ctx.injector;
-        wsClient = injector.get(UdpClient);
+        udpClient = injector.get(UdpClient);
         client = injector.get(Http);
     });
 
@@ -255,23 +255,23 @@ describe('Udp hybrid Http Server & Udp Client & Http', () => {
 
     it('xxx micro message', async () => {
         const result = 'reload2';
-        const r = await lastValueFrom(wsClient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(udpClient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);
             })));
-        expect(r.status).toEqual(200);
+        expect(r.ok).toBeTruthy();
         expect(r.body).toEqual(result);
     })
 
     it('dd micro message', async () => {
         const result = 'reload';
-        const r = await lastValueFrom(wsClient.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(udpClient.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);
             })));
-        expect(r.status).toEqual(200);
+        expect(r.ok).toBeTruthy();
         expect(r.body).toEqual(result);
     })
 

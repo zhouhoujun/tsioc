@@ -11,7 +11,11 @@ import { ClientOpts } from './options';
  * abstract client. use to request text, stream, blob, arraybuffer and json.
  */
 @Abstract()
-export abstract class AbstractClient<TRequest extends AbstractRequest<any> = AbstractRequest<any>, TResponse extends ResponseEvent<any> = ResponseEvent<any>, TOptions extends ClientOpts = ClientOpts> {
+export abstract class AbstractClient<
+    TRequest extends AbstractRequest<any> = AbstractRequest<any>,
+    TResponse extends ResponseEvent<any> = ResponseEvent<any>,
+    TOptions extends ClientOpts = ClientOpts,
+    TReqOptions extends RequestOptions = RequestOptions> {
 
     /**
      * client handler
@@ -20,7 +24,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
 
     private _formatter?: PatternFormatter;
     get formatter(): PatternFormatter {
-        if(!this._formatter){
+        if (!this._formatter) {
             this._formatter = this.handler.injector.get(PatternFormatter);
         }
         return this._formatter;
@@ -47,7 +51,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
      *
      * @return An `Observable` of the response, with the response body as an `ArrayBuffer`.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: TReqOptions & {
         observe?: 'body';
         responseType: 'arraybuffer';
     }): Observable<ArrayBuffer>;
@@ -61,7 +65,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
      *
      * @return An `Observable` of the response, with the response body of type `Blob`.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: TReqOptions & {
         observe?: 'body';
         responseType: 'blob';
     }): Observable<Blob>;
@@ -75,7 +79,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
      *
      * @return An `Observable` of the response, with the response body of type string.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: TReqOptions & {
         observe?: 'body';
         responseType: 'text';
     }): Observable<string>;
@@ -90,7 +94,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
      * @return An `Observable` of the response, with the response body as an array of `ResponseEvent`s for
      * the request.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: TReqOptions & {
         observe: 'events',
         responseType: 'arraybuffer',
     }): Observable<ResponseEvent<ArrayBuffer>>;
@@ -105,7 +109,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
      * @return An `Observable` of all `ResponseEvent`s for the request,
      * with the response body of type `Blob`.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: TReqOptions & {
         observe: 'events',
         responseType: 'blob',
     }): Observable<ResponseEvent<Blob>>;
@@ -120,7 +124,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
      * @return An `Observable` of all `ResponseEvent`s for the request,
      * with the response body of type string.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: TReqOptions & {
         observe: 'events',
         responseType?: 'text',
     }): Observable<ResponseEvent<string>>;
@@ -135,7 +139,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
      * @return An `Observable` of all `ResponseEvent`s for the request,
      * with the response body of type `Object`.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: TReqOptions & {
         observe: 'events',
         responseType?: 'json',
     }): Observable<ResponseEvent<any>>;
@@ -150,7 +154,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
      * @return An `Observable` of all `ResponseEvent`s for the request,
      * with the response body of type `R`.
      */
-    send<R>(pattern: Pattern, options: RequestOptions & {
+    send<R>(pattern: Pattern, options: TReqOptions & {
         observe: 'events',
         responseType?: 'json',
     }): Observable<ResponseEvent<R>>;
@@ -166,7 +170,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
      * @return An `Observable` of all `ResponseEvent`s for the request,
      * with the response body of type `Object`.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: TReqOptions & {
         observe: 'emit',
     }): Observable<ResponseEvent<any>>;
 
@@ -179,7 +183,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
      *
      * @return An `Observable` of the `ResponsePacket`, with the response body as an `ArrayBuffer`.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: TReqOptions & {
         observe: 'response';
         responseType: 'arraybuffer';
     }): Observable<Response<ArrayBuffer>>;
@@ -192,7 +196,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
      *
      * @return An `Observable` of the `ResponsePacket`, with the response body of type `Blob`.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: TReqOptions & {
         observe: 'response';
         responseType: 'blob';
     }): Observable<Response<Blob>>;
@@ -206,7 +210,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
      *
      * @return An `Observable` of the send response, with the response body of type string.
      */
-    send(pattern: Pattern, options: RequestOptions & {
+    send(pattern: Pattern, options: TReqOptions & {
         observe: 'response';
         responseType: 'text';
     }): Observable<Response<string>>;
@@ -221,7 +225,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
      *
      * @return  An `Observable` of the full `ResponsePacket`, with the response body of type `R`.
      */
-    send<R = any>(pattern: Pattern, options: RequestOptions & {
+    send<R = any>(pattern: Pattern, options: TReqOptions & {
         observe: 'response';
         responseType?: 'json';
     }): Observable<Response<R>>;
@@ -236,7 +240,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
      *
      * @return An `Observable` of the `ResponsePacket`, with the response body of type `R`.
      */
-    send<R = any>(pattern: Pattern, options?: RequestOptions & {
+    send<R = any>(pattern: Pattern, options?: TReqOptions & {
         observe?: 'body';
         responseType?: 'json';
     }): Observable<R>;
@@ -246,7 +250,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
      *
      * @return An `Observable` of the response, with the response body as a stream of `ResponseEvent`s.
      */
-    send(pattern: Pattern, options: RequestOptions & ResponseAs): Observable<ResponseEvent<any>>;
+    send(pattern: Pattern, options: TReqOptions & ResponseAs): Observable<ResponseEvent<any>>;
     /**
      * Constructs a request where response type and requested observable are not known statically.
      *
@@ -255,7 +259,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
      *
      * @return An `Observable` of the requested response, with body of type `any`.
      */
-    send(req: TRequest | Pattern, options?: RequestOptions & ResponseAs): Observable<any> {
+    send(req: TRequest | Pattern, options?: TReqOptions & ResponseAs): Observable<any> {
         if (isNil(req)) {
             return throwError(() => new ArgumentExecption('Invalid message'))
         }
@@ -271,7 +275,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
             )
     }
 
-    protected request(first: Pattern | TRequest, options: RequestOptions = EMPTY_OBJ as any): Observable<any> {
+    protected request(first: Pattern | TRequest, options: TReqOptions = EMPTY_OBJ as any): Observable<any> {
         const req = this.buildRequest(first, options);
 
         // Start with an Observable.of() the initial request, and run the handler (which
@@ -351,7 +355,7 @@ export abstract class AbstractClient<TRequest extends AbstractRequest<any> = Abs
      * @param first 
      * @param options 
      */
-    protected buildRequest(first: TRequest | Pattern, options: RequestOptions & ResponseAs = {}): TRequest {
+    protected buildRequest(first: TRequest | Pattern, options: TReqOptions & ResponseAs = {} as any): TRequest {
         let req: TRequest;
         // First, check whether the primary argument is an instance of `TRequest`.
         if (this.isRequest(first)) {

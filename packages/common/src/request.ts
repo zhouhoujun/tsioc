@@ -127,6 +127,7 @@ export abstract class UrlRequest<T> extends AbstractRequest<T> {
 
 export interface TopicRequestCloneOpts<T> extends RequestCloneOpts<T> {
     topic?: string;
+    replyTopic?: string;
 }
 
 /**
@@ -139,7 +140,13 @@ export abstract class TopicRequest<T> extends AbstractRequest<T> {
     abstract get topic(): string;
 }
 
-
+/**
+ * topic request init options.
+ */
+export interface TopicRequestInitOpts extends RequestInitOpts {
+    topic?: string;
+    replyTopic?: string;
+}
 
 
 /**
@@ -330,7 +337,7 @@ export abstract class BaseUrlRequest<T> extends BaseRequest<T> implements UrlReq
 
 export abstract class BaseTopicRequest<T> extends BaseRequest<T> implements TopicRequest<T> {
 
-    constructor(readonly topic: string, readonly pattern: Pattern | null | undefined, init: RequestInitOpts<T>, defaultMethod = '') {
+    constructor(readonly topic: string, readonly pattern: Pattern | null | undefined, readonly replyTopic: string | undefined, init: RequestInitOpts<T>, defaultMethod = '') {
         super(init, defaultMethod);
     }
 

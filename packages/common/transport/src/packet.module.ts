@@ -35,3 +35,14 @@ export class TransportPacketModule {
 
 }
 
+
+@Module({
+    providers: [
+        { provide: PACKET_DECODE_INTERCEPTORS, useClass: PackageDecodeInterceptor, multi: true },
+        { provide: PACKET_ENCODE_INTERCEPTORS, useClass: PackageEncodeInterceptor, multi: true },
+    ]
+})
+export class PackageBufferCodingsModule {
+
+}
+
