@@ -8,18 +8,18 @@ import {
     PatternRequestContext, RequestContext, SERVER_MODULES,
     ServiceModuleOpts
 } from '@tsdi/endpoints';
+import { UdpMessage, UdpMessageFactory, UdpMessageReader, UdpMessageWriter } from './message';
 import { UdpClient } from './client/client';
 import { UdpHandler } from './client/handler';
 import { UDP_CLIENT_FILTERS, UDP_CLIENT_INTERCEPTORS } from './client/options';
 import { UdpRequest } from './client/request';
 import { defaultMaxSize } from './consts';
-import { UdpClientIncoming, UdpClientIncomingFactory, UdpIncoming, UdpIncomingFactory } from './incoming';
-import { UdpMessage, UdpMessageFactory, UdpMessageReader, UdpMessageWriter } from './message';
-import { UdpOutgoing, UdpOutgoingFactory } from './outgoing';
+import { UdpClientIncoming, UdpClientIncomingFactory } from './client/transport';
+
 import { UdpRequestHandler } from './server/handler';
 import { UDP_SERV_FILTERS, UDP_SERV_GUARDS, UDP_SERV_INTERCEPTORS } from './server/options';
 import { UdpServer } from './server/server';
-
+import { UdpIncoming, UdpIncomingFactory, UdpOutgoing, UdpOutgoingFactory } from './server/transport';
 
 
 @Configuration()

@@ -1,8 +1,8 @@
 import { Token, tokenId } from '@tsdi/ioc';
 import { Interceptor, Filter } from '@tsdi/core';
-import { RequestOptions, ResponseEvent, ResponseTopic } from '@tsdi/common';
+import { RequestOptions, ResponseEvent } from '@tsdi/common';
 import { ClientOpts } from '@tsdi/common/client';
-import { Packet, QoS } from 'mqtt';
+import { Packet, QoS, UserProperties } from 'mqtt';
 import { MqttConnectOpts } from '../connect';
 import { MqttRequest } from './request';
 
@@ -22,10 +22,20 @@ export const MQTT_CLIENT_INTERCEPTORS = tokenId<Interceptor<MqttRequest<any>, Re
  */
 export const MQTT_CLIENT_FILTERS = tokenId<Filter[]>('MQTT_CLIENT_FILTERS');
 
-export interface MqttReqOptions extends RequestOptions, ResponseTopic {
+export interface MqttReqOptions extends RequestOptions {
     qos?: QoS
     dup?: boolean
     retain?: boolean
+    properties?: {
+        payloadFormatIndicator?: boolean,
+        messageExpiryInterval?: number,
+        topicAlias?: number,
+        responseTopic?: string,
+        correlationData?: Buffer,
+        userProperties?: UserProperties,
+        subscriptionIdentifier?: number,
+        contentType?: string
+    }
 }
 
 

@@ -1,8 +1,13 @@
 import { MessageFactory, UrlMesage } from '@tsdi/common';
-import { AbstractTransportSession, IEventEmitter, IReadableStream, MessageReader, MessageWriter, ev, toBuffer } from '@tsdi/common/transport';
+import { AbstractTransportSession, IEventEmitter, IReadableStream, IncomingOpts, MessageReader, MessageWriter, ev, toBuffer } from '@tsdi/common/transport';
 import { Execption, Injectable, promisify } from '@tsdi/ioc';
 import { RemoteInfo, Socket } from 'dgram';
 import { Observable, filter, fromEvent } from 'rxjs';
+
+
+export interface UdpIncomingOpts extends IncomingOpts {
+    remoteInfo?: RemoteInfo;
+}
 
 export class UdpMessage extends UrlMesage {
     readonly remoteInfo: RemoteInfo;

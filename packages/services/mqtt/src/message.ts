@@ -13,8 +13,8 @@ export class MqttMessageFactory implements MessageFactory {
 
     create(initOpts: {
         id?: string | number;
-        url?: string;
-        pattern?: string;
+        topic?: string;
+        responseTopic?: string;
         headers?: Record<string, any>;
         /**
          * params.
@@ -24,7 +24,7 @@ export class MqttMessageFactory implements MessageFactory {
         data?: Buffer | IReadableStream | null;
 
     }): MqttMessage {
-        return new MqttMessage(initOpts.url ?? initOpts.pattern!, initOpts);
+        return new MqttMessage(initOpts.topic!, initOpts.responseTopic, initOpts);
     }
 
 }

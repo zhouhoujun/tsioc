@@ -409,7 +409,7 @@ export abstract class AbstractClient<
         return target instanceof AbstractRequest;
     }
 
-    protected abstract createRequest(pattern: Pattern, options: RequestInitOpts): TRequest;
+    protected abstract createRequest(pattern: Pattern, options: TReqOptions & RequestInitOpts): TRequest;
 
     protected createParams(params: string | ReadonlyArray<[string, string | number | boolean]>
         | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>>) {

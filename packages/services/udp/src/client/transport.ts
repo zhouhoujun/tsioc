@@ -1,48 +1,7 @@
-import { ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket, IncomingCloneOpts, IncomingFactory, IncomingOpts, IncomingPacket } from '@tsdi/common/transport';
+import { ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket } from '@tsdi/common/transport';
 import { Injectable } from '@tsdi/ioc';
 import { RemoteInfo } from 'dgram';
 
-
-export interface UdpIncomingOpts extends IncomingOpts {
-    remoteInfo?: RemoteInfo;
-}
-
-export class UdpIncoming<T> extends IncomingPacket<T> {
-    readonly remoteInfo: RemoteInfo;
-    constructor(options: UdpIncomingOpts) {
-        super(options)
-        this.remoteInfo = options.remoteInfo!;
-    }
-
-    clone(): UdpIncoming<T>;
-    clone<V>(update: {
-        remoteInfo?: RemoteInfo;
-    } & IncomingCloneOpts<V>): UdpIncoming<V>;
-    clone(update: {
-        remoteInfo?: RemoteInfo;
-    } & IncomingCloneOpts<T>): UdpIncoming<T>;
-    clone(update: {
-        remoteInfo?: RemoteInfo;
-    } & IncomingCloneOpts<any> = {}): UdpIncoming<any> {
-        const opts = this.cloneOpts(update) as UdpIncomingOpts;
-        opts.remoteInfo = this.remoteInfo;
-        return new UdpIncoming(opts);
-    }
-
-    protected override toRecord(): Record<string, any> {
-        const rcd = super.toRecord();
-        rcd.remoteInfo = this.remoteInfo;
-        return rcd;
-    }
-
-}
-
-@Injectable()
-export class UdpIncomingFactory implements IncomingFactory {
-    create<T>(packet: IncomingOpts<T>): UdpIncoming<T> {
-        return new UdpIncoming<T>(packet);
-    }
-}
 
 export interface UdpClientIncomingOpts extends ClientIncomingOpts {
     remoteInfo?: RemoteInfo;

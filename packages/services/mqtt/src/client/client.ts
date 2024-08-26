@@ -1,6 +1,6 @@
-import { EMPTY_OBJ, Inject, Injectable, InvocationContext, isString, promisify } from '@tsdi/ioc';
+import { EMPTY_OBJ, Injectable, InvocationContext, isString, promisify } from '@tsdi/ioc';
 import { DisconnectExecption, OfflineExecption } from '@tsdi/core';
-import { Pattern, RequestInitOpts, ResponseEvent, TopicRequestInitOpts } from '@tsdi/common';
+import { Pattern, RequestInitOpts, ResponseEvent } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
@@ -95,15 +95,14 @@ export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<a
         context.setValue(ClientTransportSession, this._session);
     }
 
-
-    protected createRequest(pattern: Pattern, options: TopicRequestInitOpts): MqttRequest<any> {
+    protected createRequest(pattern: Pattern, options: MqttReqOptions & RequestInitOpts): MqttRequest<any> {
         if (isString(pattern)) {
-            return new MqttRequest(pattern, null, options.responseTopic, options);
+            return new MqttRequest(pattern, null, options);
         } else {
-            return new MqttRequest(this.formatter.format(pattern), pattern, options.responseTopic, options);
+            const topic = this.formatter.format(pattern);
+            return new MqttRequest(topic, pattern, options);
         }
     }
-
 
     protected override async onShutdown(): Promise<void> {
         if (!this.mqtt) return;

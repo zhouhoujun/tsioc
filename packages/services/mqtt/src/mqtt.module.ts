@@ -3,8 +3,6 @@ import { MqttClient } from './client/client';
 import { MqttServer } from './server/server';
 import { MqttConfiguration } from './configuration';
 
-const defaultMaxSize = 1048576; // 1024 * 1024;
-// const defaultMaxSize = 524288; //1024 * 512;
 
 @Module({
     providers: [

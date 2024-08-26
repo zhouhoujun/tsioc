@@ -125,11 +125,9 @@ export abstract class UrlRequest<T> extends AbstractRequest<T> {
     abstract getUrlWithParams(): string;
 }
 
-export interface ResponseTopic {
-    responseTopic?: string;
-}
 
-export interface TopicOptions extends ResponseTopic {
+
+export interface TopicOptions {
     topic?: string;
 }
 
@@ -345,10 +343,16 @@ export abstract class BaseUrlRequest<T> extends BaseRequest<T> implements UrlReq
 }
 
 export abstract class BaseTopicRequest<T> extends BaseRequest<T> implements TopicRequest<T> {
-
-    constructor(readonly topic: string, readonly pattern: Pattern | null | undefined, readonly replyTopic: string | undefined, init: RequestInitOpts<T>, defaultMethod = '') {
+    readonly replyTopic: string | undefined;
+    constructor(readonly topic: string, readonly pattern: Pattern | null | undefined, init: RequestInitOpts<T>, defaultMethod = '') {
         super(init, defaultMethod);
+        this.replyTopic = this.getResponseTopic(topic, init);
     }
+
+    protected getResponseTopic(topic: string, options: RequestInitOpts): string {
+        return `${topic}\reply`
+    }
+
 
     abstract clone(): BaseTopicRequest<T>;
     abstract clone<V>(update: TopicRequestCloneOpts<V>): BaseTopicRequest<V>;

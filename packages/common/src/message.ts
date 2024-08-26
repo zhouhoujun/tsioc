@@ -71,7 +71,7 @@ export class UrlMesage extends BaseMessage {
 
 export class TopicMesage extends BaseMessage {
 
-    constructor(readonly topic: string, init: {
+    constructor(readonly topic: string, readonly responseTopic: string | undefined, init: {
         id?: string | number;
         headers?: Record<string, any>;
         data?: string | Buffer | IReadableStream | null;
