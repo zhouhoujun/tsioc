@@ -14,9 +14,9 @@ import { WsServer } from './server/server';
 import { WS_SERV_FILTERS, WS_SERV_GUARDS, WS_SERV_INTERCEPTORS } from './server/options';
 import { WsRequestHandler } from './server/handler';
 import { WsMessage, WsMessageFactory } from './message';
-import { WsClientIncoming, WsClientIncomingFactory, WsIncoming, WsIncomingFactory } from './incoming';
-import { WsOutgoing, WsOutgoingFactory } from './outgoing';
 import { WsRequest } from './client/request';
+import { WsIncoming, WsIncomingFactory, WsOutgoing, WsOutgoingFactory } from './server/transport';
+import { WsClientIncoming, WsClientIncomingFactory } from './client/transport';
 
 
 // const defaultMaxSize = 65515; //1024 * 64 - 20;

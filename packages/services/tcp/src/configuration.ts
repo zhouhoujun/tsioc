@@ -11,12 +11,13 @@ import { TcpClient } from './client/client';
 import { TcpHandler } from './client/handler';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS } from './client/options';
 import { TcpMessage, TcpMessageFactory } from './message';
-import { TcpClientIncoming, TcpClientIncomingFactory, TcpIncoming, TcpIncomingFactory } from './incoming';
 import { TcpRequest } from './client/request';
 import { TcpServer } from './server/server';
 import { TcpRequestHandler } from './server/handler';
 import { TCP_MIDDLEWARES, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS } from './server/options';
-import { TcpOutgoing, TcpOutgoingFactory } from './outgoing';
+import { TcpClientIncomingFactory, TcpClientIncoming } from './client/transport';
+import { TcpIncoming, TcpIncomingFactory, TcpOutgoing, TcpOutgoingFactory } from './server/transport';
+
 
 // const defaultMaxSize = 65515; //65535 - 20;
 // const defaultMaxSize = 1048576; // 1024 * 1024;

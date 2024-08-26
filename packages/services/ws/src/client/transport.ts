@@ -1,28 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { RequestParams } from '@tsdi/common';
-import { ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket, IncomingCloneOpts, IncomingFactory, IncomingOpts, IncomingPacket } from '@tsdi/common/transport';
-
-
-
-export class WsIncoming<T> extends IncomingPacket<T> {
-
-    clone(): WsIncoming<T>;
-    clone<V>(update: IncomingCloneOpts<V>): WsIncoming<V>;
-    clone(update: IncomingCloneOpts<T>): WsIncoming<T>;
-    clone(update: IncomingCloneOpts<any> = {}): WsIncoming<any> {
-        const opts = this.cloneOpts(update);
-        return new WsIncoming(opts);
-
-    }
-
-}
-
-@Injectable()
-export class WsIncomingFactory implements IncomingFactory {
-    create<T>(packet: IncomingOpts<T>): WsIncoming<T> {
-        return new WsIncoming<T>(packet);
-    }
-}
+import { ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket } from '@tsdi/common/transport';
 
 
 export class WsClientIncoming<T, TStatus = null> extends ClientIncomingPacket<T, TStatus> {
