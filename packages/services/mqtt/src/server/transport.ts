@@ -1,7 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
 import {
     IncomingFactory, TopicIncoming,
-    OutgoingPacket, OutgoingCloneOpts, OutgoingFactory, Incoming, OutgoingPacketOpts,
+    AbstractOutgoing, OutgoingCloneOpts, OutgoingFactory, Incoming, OutgoingOpts,
     TopicClientIncomingCloneOpts, TopicIncomingOptions
 } from '@tsdi/common/transport';
 
@@ -28,7 +28,7 @@ export class MqttIncomingFactory implements IncomingFactory {
 }
 
 
-export class MqttOutgoing<T, TStatus = null> extends OutgoingPacket<T, TStatus> {
+export class MqttOutgoing<T, TStatus = null> extends AbstractOutgoing<T, TStatus> {
 
     clone(): MqttOutgoing<T, TStatus>;
     clone<V>(update: OutgoingCloneOpts<V, TStatus>): MqttOutgoing<V, TStatus>;
@@ -42,7 +42,7 @@ export class MqttOutgoing<T, TStatus = null> extends OutgoingPacket<T, TStatus> 
 
 
 export class MqttOutgoingFactory implements OutgoingFactory {
-    create<T>(incoming: Incoming<any>, options?: OutgoingPacketOpts<T, null>): MqttOutgoing<T> {
+    create<T>(incoming: Incoming<any>, options?: OutgoingOpts<T, null>): MqttOutgoing<T> {
         return new MqttOutgoing({ id: incoming.id, pattern: incoming.pattern, ...options });
     }
 

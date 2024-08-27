@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
-import { AbstractIncoming, NotImplementedExecption, OutgoingPacket, TransportContext } from '@tsdi/common/transport';
+import { AbstractIncoming, NotImplementedExecption, AbstractOutgoing, TransportContext } from '@tsdi/common/transport';
 import { RequestContext } from '../RequestContext';
 import { TransportSession } from '../transport.session';
 
@@ -23,7 +23,7 @@ export class ServerEndpointCodingsHanlders {
     @EncodeHandler(RequestContext)
     encodePacket(context: TransportContext) {
         const reqContext = context.last<RequestContext>();
-        return (reqContext.response as OutgoingPacket<any>).clone({ payload: reqContext.body });
+        return (reqContext.response as AbstractOutgoing<any>).clone({ payload: reqContext.body });
 
     }
 }

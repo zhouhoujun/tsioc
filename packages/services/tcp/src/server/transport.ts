@@ -1,7 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
 import {
     UrlIncomingCloneOpts, IncomingFactory, UrlIncomingOptions, UrlIncoming,
-    Incoming, OutgoingCloneOpts, OutgoingFactory, OutgoingPacket, OutgoingPacketOpts 
+    Incoming, OutgoingCloneOpts, OutgoingFactory, AbstractOutgoing, OutgoingOpts 
 } from '@tsdi/common/transport';
 
 
@@ -28,7 +28,7 @@ export class TcpIncomingFactory implements IncomingFactory {
 
 
 
-export class TcpOutgoing<T, TStatus = null> extends OutgoingPacket<T, TStatus> {
+export class TcpOutgoing<T, TStatus = null> extends AbstractOutgoing<T, TStatus> {
 
     clone(): TcpOutgoing<T, TStatus>;
     clone<V>(update: OutgoingCloneOpts<V, TStatus>): TcpOutgoing<V, TStatus>;
@@ -43,7 +43,7 @@ export class TcpOutgoing<T, TStatus = null> extends OutgoingPacket<T, TStatus> {
 
 
 export class TcpOutgoingFactory implements OutgoingFactory {
-    create<T>(incoming: Incoming<any>, options?: OutgoingPacketOpts<T, any>): TcpOutgoing<T> {
+    create<T>(incoming: Incoming<any>, options?: OutgoingOpts<T, any>): TcpOutgoing<T> {
         return new TcpOutgoing({ id: incoming.id, pattern: incoming.pattern, ...options });
     }
 

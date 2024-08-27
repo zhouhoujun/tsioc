@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { UrlIncomingCloneOpts, IncomingFactory, UrlIncomingOptions, UrlIncoming, Incoming, OutgoingCloneOpts, OutgoingFactory, OutgoingPacket, OutgoingPacketOpts  } from '@tsdi/common/transport';
+import { UrlIncomingCloneOpts, IncomingFactory, UrlIncomingOptions, UrlIncoming, Incoming, OutgoingCloneOpts, OutgoingFactory, AbstractOutgoing, OutgoingOpts  } from '@tsdi/common/transport';
 
 
 
@@ -24,7 +24,7 @@ export class WsIncomingFactory implements IncomingFactory {
 }
 
 
-export class WsOutgoing<T, TStatus = null> extends OutgoingPacket<T, TStatus> {
+export class WsOutgoing<T, TStatus = null> extends AbstractOutgoing<T, TStatus> {
 
     clone(): WsOutgoing<T, TStatus>;
     clone<V>(update: OutgoingCloneOpts<V, TStatus>): WsOutgoing<V, TStatus>;
@@ -38,7 +38,7 @@ export class WsOutgoing<T, TStatus = null> extends OutgoingPacket<T, TStatus> {
 
 
 export class WsOutgoingFactory implements OutgoingFactory {
-    create<T>(incoming: Incoming<any>, options?: OutgoingPacketOpts<T, null>): WsOutgoing<T> {
+    create<T>(incoming: Incoming<any>, options?: OutgoingOpts<T, null>): WsOutgoing<T> {
         return new WsOutgoing({ id: incoming.id, pattern: incoming.pattern, ...options });
     }
 

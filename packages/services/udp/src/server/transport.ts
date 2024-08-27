@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { IncomingCloneOpts, IncomingFactory, UrlIncoming, OutgoingCloneOpts, OutgoingFactory, OutgoingPacket, OutgoingPacketOpts } from '@tsdi/common/transport';
+import { IncomingCloneOpts, IncomingFactory, UrlIncoming, OutgoingCloneOpts, OutgoingFactory, AbstractOutgoing, OutgoingOpts } from '@tsdi/common/transport';
 import { RemoteInfo } from 'dgram';
 import { UdpIncomingOpts } from '../message';
 
@@ -42,12 +42,12 @@ export class UdpIncomingFactory implements IncomingFactory {
 }
 
 
-export interface UdpOutgoinOpts<T = any, TStatus = any> extends OutgoingPacketOpts<T, TStatus> {
+export interface UdpOutgoinOpts<T = any, TStatus = any> extends OutgoingOpts<T, TStatus> {
     remoteInfo?: RemoteInfo;
 
 }
 
-export class UdpOutgoing<T, TStatus = null> extends OutgoingPacket<T, TStatus> {
+export class UdpOutgoing<T, TStatus = null> extends AbstractOutgoing<T, TStatus> {
     readonly remoteInfo: RemoteInfo;
     constructor(options: UdpOutgoinOpts<T, TStatus>) {
         super(options)
@@ -79,7 +79,7 @@ export class UdpOutgoing<T, TStatus = null> extends OutgoingPacket<T, TStatus> {
 
 
 export class UdpOutgoingFactory implements OutgoingFactory {
-    create<T>(incoming: UdpIncoming<any>, options?: OutgoingPacketOpts<T, null>): UdpOutgoing<T> {
+    create<T>(incoming: UdpIncoming<any>, options?: OutgoingOpts<T, null>): UdpOutgoing<T> {
         return new UdpOutgoing({ id: incoming.id, pattern: incoming.pattern, remoteInfo: incoming.remoteInfo, ...options });
     }
 

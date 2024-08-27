@@ -102,12 +102,10 @@ export interface Outgoing<T, TStatus = any> {
 
 
 
-
-
 /**
  * Outgoing packet options.
  */
-export interface OutgoingPacketOpts<T = any, TStatus = any> extends PacketOpts<T>, StatusOptions<TStatus> {
+export interface OutgoingOpts<T = any, TStatus = any> extends PacketOpts<T>, StatusOptions<TStatus> {
     pattern?: string;
 }
 
@@ -119,7 +117,7 @@ export interface OutgoingCloneOpts<T, TStatus> extends CloneOpts<T>, StatusOptio
 /**
  * Outgoing packet.
  */
-export abstract class OutgoingPacket<T, TStatus = any> extends BasePacket<T> implements Outgoing<T, TStatus>, Clonable<OutgoingPacket<T, TStatus>>, Jsonable {
+export abstract class AbstractOutgoing<T, TStatus = any> extends BasePacket<T> implements Outgoing<T, TStatus>, Clonable<AbstractOutgoing<T, TStatus>>, Jsonable {
 
     /**
      * Type of the response, narrowed to either the full response or the header.
@@ -133,7 +131,7 @@ export abstract class OutgoingPacket<T, TStatus = any> extends BasePacket<T> imp
     protected _status: TStatus | null;
     protected _message: string | undefined;
 
-    constructor(init: OutgoingPacketOpts, defaultStatus?: TStatus, defaultStatusText?: string) {
+    constructor(init: OutgoingOpts, defaultStatus?: TStatus, defaultStatusText?: string) {
         super(init);
         this.pattern = init.pattern;
         this.payload = init.payload ?? null;
@@ -203,12 +201,12 @@ export abstract class OutgoingPacket<T, TStatus = any> extends BasePacket<T> imp
     }
 
 
-    abstract clone(): OutgoingPacket<T, TStatus>;
-    abstract clone<V>(update: OutgoingCloneOpts<V, TStatus>): OutgoingPacket<V, TStatus>;
-    abstract clone(update: OutgoingCloneOpts<T, TStatus>): OutgoingPacket<T, TStatus>;
+    abstract clone(): AbstractOutgoing<T, TStatus>;
+    abstract clone<V>(update: OutgoingCloneOpts<V, TStatus>): AbstractOutgoing<V, TStatus>;
+    abstract clone(update: OutgoingCloneOpts<T, TStatus>): AbstractOutgoing<T, TStatus>;
 
-    protected override cloneOpts(update: OutgoingCloneOpts<any, TStatus>): OutgoingPacketOpts {
-        const init = super.cloneOpts(update) as OutgoingPacketOpts;
+    protected override cloneOpts(update: OutgoingCloneOpts<any, TStatus>): OutgoingOpts {
+        const init = super.cloneOpts(update) as OutgoingOpts;
         init.pattern = update.pattern ?? this.pattern;
         init.type = update.type ?? this.type;
         init.ok = update.ok ?? this.ok;
@@ -246,6 +244,6 @@ export abstract class OutgoingPacket<T, TStatus = any> extends BasePacket<T> imp
  * Outgoing factory.
  */
 export abstract class OutgoingFactory {
-    abstract create(incoming: Incoming<any>, options?: OutgoingPacketOpts): OutgoingPacket<any>;
-    abstract create<T, TStatus>(incoming: Incoming<any>, options?: OutgoingPacketOpts<T, TStatus>): OutgoingPacket<T, TStatus>;
+    abstract create(incoming: Incoming<any>, options?: OutgoingOpts): AbstractOutgoing<any>;
+    abstract create<T, TStatus>(incoming: Incoming<any>, options?: OutgoingOpts<T, TStatus>): AbstractOutgoing<T, TStatus>;
 }
