@@ -1,6 +1,6 @@
-import { hasProps, Injectable, isString, promisify } from '@tsdi/ioc';
+import { Injectable, promisify } from '@tsdi/ioc';
 import { Header } from '@tsdi/common';
-import { ev, MessageReader, IReadableStream, IncomingFactory, Incoming, IncomingOpts, MessageWriter, IEventEmitter, isBuffer } from '@tsdi/common/transport';
+import { ev, MessageReader, IReadableStream, IncomingFactory, Incoming, MessageWriter, IEventEmitter, StreamIncomingOptions } from '@tsdi/common/transport';
 import { TransportSession } from '@tsdi/endpoints';
 import { Server } from 'http';
 import { Server as HttpsServer } from 'https';
@@ -34,8 +34,8 @@ export class HttpIncomings<T = any> implements Incoming<T> {
 }
 
 export class HttpIncomingFactory extends IncomingFactory {
-    create(options: IncomingOpts): Incoming<any> {
-        return new HttpIncomings(options.req!, options.res!)
+    create(options: StreamIncomingOptions): Incoming<any> {
+        return new HttpIncomings(options.req, options.res)
     }
 
 }

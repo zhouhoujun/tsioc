@@ -1,14 +1,14 @@
-import { ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket } from '@tsdi/common/transport';
+import { ClientIncomingCloneOpts, ClientIncomingFactory, UrlClientIncomingOpts, UrlClientIncoming } from '@tsdi/common/transport';
 import { Injectable } from '@tsdi/ioc';
 import { RemoteInfo } from 'dgram';
 
 
-export interface UdpClientIncomingOpts extends ClientIncomingOpts {
+export interface UdpClientIncomingOpts extends UrlClientIncomingOpts {
     remoteInfo?: RemoteInfo;
 }
 
 
-export class UdpClientIncoming<T, TStatus = null> extends ClientIncomingPacket<T, TStatus> {
+export class UdpClientIncoming<T, TStatus = null> extends UrlClientIncoming<T, TStatus> {
 
     readonly remoteInfo: RemoteInfo;
     constructor(options: UdpClientIncomingOpts) {
@@ -41,7 +41,7 @@ export class UdpClientIncoming<T, TStatus = null> extends ClientIncomingPacket<T
 @Injectable()
 export class UdpClientIncomingFactory implements ClientIncomingFactory {
 
-    create<T = any>(options: ClientIncomingOpts<any, any>): UdpClientIncoming<T> {
+    create<T = any>(options: UdpClientIncomingOpts): UdpClientIncoming<T> {
         return new UdpClientIncoming(options);
     }
 

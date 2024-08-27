@@ -1,7 +1,7 @@
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
 import { CustomCodingsAdapter } from '@tsdi/common/codings';
-import { ClientIncomingPacket, Redirector } from '@tsdi/common/transport';
+import { AbstractClientIncoming, Redirector } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientModuleOpts, UrlRedirector } from '@tsdi/common/client';
 import { isHttpEvent } from '@tsdi/common/http';
 import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts, MimeModule, ServiceModuleOpts, JsonInterceptor, BodyparserInterceptor } from '@tsdi/endpoints';
@@ -81,7 +81,7 @@ export class HttpConfiguration {
                 providers: [{ provide: Redirector, useExisting: UrlRedirector }],
                 transportOpts: {
                     encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof HttpMesage) },
-                    decodingsAdapter: { useValue: new CustomCodingsAdapter(isHttpEvent, [[HttpClientIncoming, ClientIncomingPacket]]) },
+                    decodingsAdapter: { useValue: new CustomCodingsAdapter(isHttpEvent, [[HttpClientIncoming, AbstractClientIncoming]]) },
                     close: async (socket: ClientHttp2Stream) => {
                         return socket.destroy()
                     },

@@ -1,17 +1,18 @@
 import { Injectable } from '@tsdi/ioc';
 import {
-    IncomingCloneOpts, IncomingFactory, IncomingOpts, IncomingPacket,
-    OutgoingPacket, OutgoingCloneOpts, OutgoingFactory, Incoming, OutgoingPacketOpts
+    IncomingFactory, TopicIncoming,
+    OutgoingPacket, OutgoingCloneOpts, OutgoingFactory, Incoming, OutgoingPacketOpts,
+    TopicClientIncomingCloneOpts, TopicIncomingOptions
 } from '@tsdi/common/transport';
 
 
 
-export class MqttIncoming<T> extends IncomingPacket<T> {
+export class MqttIncoming<T> extends TopicIncoming<T> {
 
     clone(): MqttIncoming<T>;
-    clone<V>(update: IncomingCloneOpts<V>): MqttIncoming<V>;
-    clone(update: IncomingCloneOpts<T>): MqttIncoming<T>;
-    clone(update: IncomingCloneOpts<any> = {}): MqttIncoming<any> {
+    clone<V>(update: TopicClientIncomingCloneOpts<V>): MqttIncoming<V>;
+    clone(update: TopicClientIncomingCloneOpts<T>): MqttIncoming<T>;
+    clone(update: TopicClientIncomingCloneOpts<any> = {}): MqttIncoming<any> {
         const opts = this.cloneOpts(update);
         return new MqttIncoming(opts);
 
@@ -21,7 +22,7 @@ export class MqttIncoming<T> extends IncomingPacket<T> {
 
 @Injectable()
 export class MqttIncomingFactory implements IncomingFactory {
-    create<T>(packet: IncomingOpts<T>): MqttIncoming<T> {
+    create<T>(packet: TopicIncomingOptions<T>): MqttIncoming<T> {
         return new MqttIncoming<T>(packet);
     }
 }

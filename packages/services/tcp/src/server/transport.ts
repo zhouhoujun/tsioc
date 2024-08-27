@@ -1,17 +1,17 @@
 import { Injectable } from '@tsdi/ioc';
 import {
-    IncomingCloneOpts, IncomingFactory, IncomingOpts, IncomingPacket,
+    UrlIncomingCloneOpts, IncomingFactory, UrlIncomingOptions, UrlIncoming,
     Incoming, OutgoingCloneOpts, OutgoingFactory, OutgoingPacket, OutgoingPacketOpts 
 } from '@tsdi/common/transport';
 
 
 
-export class TcpIncoming<T> extends IncomingPacket<T> {
+export class TcpIncoming<T> extends UrlIncoming<T> {
 
     clone(): TcpIncoming<T>;
-    clone<V>(update: IncomingCloneOpts<V>): TcpIncoming<V>;
-    clone(update: IncomingCloneOpts<T>): TcpIncoming<T>;
-    clone(update: IncomingCloneOpts<any> = {}): TcpIncoming<any> {
+    clone<V>(update: UrlIncomingCloneOpts<V>): TcpIncoming<V>;
+    clone(update: UrlIncomingCloneOpts<T>): TcpIncoming<T>;
+    clone(update: UrlIncomingCloneOpts<any> = {}): TcpIncoming<any> {
         const opts = this.cloneOpts(update);
         return new TcpIncoming(opts);
 
@@ -21,7 +21,7 @@ export class TcpIncoming<T> extends IncomingPacket<T> {
 
 @Injectable()
 export class TcpIncomingFactory implements IncomingFactory {
-    create<T>(packet: IncomingOpts<T>): TcpIncoming<T> {
+    create<T>(packet: UrlIncomingOptions<T>): TcpIncoming<T> {
         return new TcpIncoming<T>(packet);
     }
 }

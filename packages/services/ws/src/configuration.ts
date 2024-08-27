@@ -1,11 +1,12 @@
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import { Message, Packet, isResponseEvent } from '@tsdi/common';
 import { CustomCodingsAdapter } from '@tsdi/common/codings';
-import { ClientIncomingPacket, IncomingPacket } from '@tsdi/common/transport';
+import { AbstractClientIncoming, AbstractIncoming } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
 import {
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, PatternRequestContext,
-    RequestContext, SERVER_MODULES, ServiceModuleOpts
+    RequestContext, SERVER_MODULES, ServiceModuleOpts,
+    UrlRequestContext
 } from '@tsdi/endpoints';
 import { WsClient } from './client/client';
 import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS } from './client/options';
@@ -57,7 +58,7 @@ export class WsConfiguration {
                     delimiter: '#',
                     maxSize: defaultMaxSize,
                     encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof WsMessage, [[WsRequest, Packet]]) },
-                    decodingsAdapter: { useValue: new CustomCodingsAdapter(isResponseEvent, [[WsClientIncoming, ClientIncomingPacket], [WsMessage, Message]]) },
+                    decodingsAdapter: { useValue: new CustomCodingsAdapter(isResponseEvent, [[WsClientIncoming, AbstractClientIncoming], [WsMessage, Message]]) },
                 }
             }
         }
@@ -75,8 +76,8 @@ export class WsConfiguration {
                     delimiter: '#',
                     defaultMethod: '*',
                     maxSize: defaultMaxSize,
-                    decodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof RequestContext, [[WsIncoming, IncomingPacket], [WsMessage, Message]]) },
-                    encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof WsMessage, [[PatternRequestContext, RequestContext], [WsOutgoing, Packet]]) },
+                    decodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof RequestContext, [[WsIncoming, AbstractIncoming], [WsMessage, Message]]) },
+                    encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof WsMessage, [[UrlRequestContext, RequestContext], [PatternRequestContext, RequestContext], [WsOutgoing, Packet]]) },
                 },
                 content: {
                     root: 'public',

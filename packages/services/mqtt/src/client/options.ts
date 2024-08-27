@@ -23,9 +23,10 @@ export const MQTT_CLIENT_INTERCEPTORS = tokenId<Interceptor<MqttRequest<any>, Re
 export const MQTT_CLIENT_FILTERS = tokenId<Filter[]>('MQTT_CLIENT_FILTERS');
 
 export interface MqttReqOptions extends RequestOptions {
-    qos?: QoS
-    dup?: boolean
-    retain?: boolean
+    qos?: QoS;
+    dup?: boolean;
+    retain?: boolean;
+    timeout?: number;
     properties?: {
         payloadFormatIndicator?: boolean,
         messageExpiryInterval?: number,

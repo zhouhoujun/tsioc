@@ -6,7 +6,7 @@ import { TransportContext } from '../context';
 import { StreamAdapter, isBuffer } from '../StreamAdapter';
 import { IDuplexStream, IReadableStream } from '../stream';
 import { PacketLengthException } from '../execptions';
-import { IncomingPacket } from '../Incoming';
+import { AbstractIncoming } from '../Incoming';
 
 interface CachePacket {
     packet: Packet<IDuplexStream>;
@@ -53,7 +53,7 @@ export class PackageDecodeInterceptor implements Interceptor<Message, Packet<any
         if (!packet.id || !(isBuffer(packet.payload) || streamAdapter.isReadable(packet.payload)) || (!noHead && headerAdapter.getContentLength(packet.headers) <= 0)) {
             return { packet, completed: true } as CachePacket;
         }
-        const len = isBuffer(packet.payload) ? Buffer.byteLength(packet.payload) : (packet as IncomingPacket<any>).streamLength!;
+        const len = isBuffer(packet.payload) ? Buffer.byteLength(packet.payload) : (packet as AbstractIncoming<any>).streamLength!;
 
         if (!noHead && headerAdapter.getContentLength(packet.headers) <= len) {
             return { packet, completed: true } as CachePacket;

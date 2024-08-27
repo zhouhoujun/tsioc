@@ -1,16 +1,16 @@
 import { Injectable } from '@tsdi/ioc';
 import {
-    ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket
+    ClientIncomingFactory, UrlClientIncomingOpts, UrlClientIncoming, UrlClientIncomingCloneOpts
 } from '@tsdi/common/transport';
 
 
 
-export class TcpClientIncoming<T, TStatus = null> extends ClientIncomingPacket<T, TStatus> {
+export class TcpClientIncoming<T, TStatus = null> extends UrlClientIncoming<T, TStatus> {
 
-    clone(): ClientIncomingPacket<T, TStatus>;
-    clone<V>(update: ClientIncomingCloneOpts<V, TStatus>): TcpClientIncoming<V, TStatus>;
-    clone(update: ClientIncomingCloneOpts<T, TStatus>): TcpClientIncoming<T, TStatus>;
-    clone(update: ClientIncomingCloneOpts<any, TStatus> = {}): TcpClientIncoming<any, TStatus> {
+    clone(): TcpClientIncoming<T, TStatus>;
+    clone<V>(update: UrlClientIncomingCloneOpts<V, TStatus>): TcpClientIncoming<V, TStatus>;
+    clone(update: UrlClientIncomingCloneOpts<T, TStatus>): TcpClientIncoming<T, TStatus>;
+    clone(update: UrlClientIncomingCloneOpts<any, TStatus> = {}): TcpClientIncoming<any, TStatus> {
         const opts = this.cloneOpts(update);
         return new TcpClientIncoming(opts);
     }
@@ -19,7 +19,7 @@ export class TcpClientIncoming<T, TStatus = null> extends ClientIncomingPacket<T
 @Injectable()
 export class TcpClientIncomingFactory implements ClientIncomingFactory {
 
-    create<T = any>(options: ClientIncomingOpts<any, any>): TcpClientIncoming<T> {
+    create<T = any>(options: UrlClientIncomingOpts<any, any>): TcpClientIncoming<T> {
         return new TcpClientIncoming(options);
     }
 

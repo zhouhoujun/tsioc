@@ -1,10 +1,10 @@
 import { Injectable } from '@tsdi/ioc';
-import { IncomingCloneOpts, IncomingFactory, IncomingOpts, IncomingPacket, OutgoingCloneOpts, OutgoingFactory, OutgoingPacket, OutgoingPacketOpts } from '@tsdi/common/transport';
+import { IncomingCloneOpts, IncomingFactory, UrlIncoming, OutgoingCloneOpts, OutgoingFactory, OutgoingPacket, OutgoingPacketOpts } from '@tsdi/common/transport';
 import { RemoteInfo } from 'dgram';
 import { UdpIncomingOpts } from '../message';
 
 
-export class UdpIncoming<T> extends IncomingPacket<T> {
+export class UdpIncoming<T> extends UrlIncoming<T> {
     readonly remoteInfo: RemoteInfo;
     constructor(options: UdpIncomingOpts) {
         super(options)
@@ -36,7 +36,7 @@ export class UdpIncoming<T> extends IncomingPacket<T> {
 
 @Injectable()
 export class UdpIncomingFactory implements IncomingFactory {
-    create<T>(packet: IncomingOpts<T>): UdpIncoming<T> {
+    create<T>(packet: UdpIncomingOpts): UdpIncoming<T> {
         return new UdpIncoming<T>(packet);
     }
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
-import { IncomingPacket, NotImplementedExecption, OutgoingPacket, TransportContext } from '@tsdi/common/transport';
+import { AbstractIncoming, NotImplementedExecption, OutgoingPacket, TransportContext } from '@tsdi/common/transport';
 import { RequestContext } from '../RequestContext';
 import { TransportSession } from '../transport.session';
 
@@ -10,9 +10,9 @@ import { TransportSession } from '../transport.session';
 @Injectable({ static: true })
 export class ServerEndpointCodingsHanlders {
 
-    @DecodeHandler(IncomingPacket)
+    @DecodeHandler(AbstractIncoming)
     decodePacket(context: TransportContext) {
-        const incoming = context.last<IncomingPacket<any>>();
+        const incoming = context.last<AbstractIncoming<any>>();
         const session = context.session as TransportSession;
         if (!session.outgoingFactory) throw new NotImplementedExecption('outgoingFactory');
         const outgoing = session.outgoingFactory.create(incoming);

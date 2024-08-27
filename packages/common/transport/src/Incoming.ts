@@ -1,9 +1,7 @@
 import { isNil } from '@tsdi/ioc';
 import {
-    BasePacket, Clonable, CloneOpts, HeadersLike, IHeaders, PacketOpts, ParameterCodec, StatusOptions
+    BasePacket, Clonable, CloneOpts, HeadersLike, PacketOpts, ParameterCodec, StatusOptions
 } from '@tsdi/common';
-import { IReadableStream } from './stream';
-
 
 
 
@@ -47,12 +45,6 @@ export interface Incoming<T> {
 
 }
 
-/**
- * Incoming stream
- */
-export interface IncomingStream extends IReadableStream {
-    get headers(): IHeaders;
-}
 
 
 export abstract class AbstractIncomingFactory<TIcoming = any> {
@@ -69,16 +61,11 @@ export abstract class IncomingFactory implements AbstractIncomingFactory<Incomin
 /**
  * incoming options
  */
-export interface IncomingOpts<T = any> extends PacketOpts<T> {
-    url?: string;
-    topic?: string;
-    pattern?: string;
-    req?: any;
-    res?: any;
+export interface BasicIncomingOpts<T = any> extends PacketOpts<T> {
     /**
-     * request method.
+     * pattern.
      */
-    method?: string;
+    pattern?: string;
     /**
      * headers of request.
      */
@@ -108,16 +95,48 @@ export interface IncomingOpts<T = any> extends PacketOpts<T> {
      * request timeout
      */
     timeout?: number;
+
+    streamLength?: number;
+}
+
+export interface UrlIncomingOptions<T = any> extends BasicIncomingOpts<T> {
+    /**
+     * request url.
+     */
+    url: string;
+    /**
+     * request method.
+     */
+    method?: string;
     /**
      * for restful
      */
     withCredentials?: boolean;
 
     defaultMethod?: string;
-
-    streamLength?: number;
-
 }
+
+export interface TopicIncomingOptions<T = any> extends BasicIncomingOpts<T> {
+    /**
+     * request url.
+     */
+    topic: string;
+    /**
+     * response topic.
+     */
+    responseTopic?: string;
+}
+
+export interface StreamIncomingOptions<T = any> extends BasicIncomingOpts<T> {
+    req: any;
+    res: any;
+}
+
+/**
+ * incoming options
+ */
+export type IncomingOpts<T = any> = UrlIncomingOptions<T> | TopicIncomingOptions<T> | StreamIncomingOptions<T>;
+
 
 export interface IncomingCloneOpts<T> extends CloneOpts<T> {
     pattern?: string;
@@ -126,17 +145,18 @@ export interface IncomingCloneOpts<T> extends CloneOpts<T> {
     timeout?: number | null;
 }
 
+
+
 /**
- * Incoming packet.
+ * Incoming base packet.
  */
-export abstract class IncomingPacket<T> extends BasePacket<T> implements Incoming<T>, Clonable<IncomingPacket<T>> {
+export abstract class AbstractIncoming<T> extends BasePacket<T> implements Incoming<T>, Clonable<AbstractIncoming<T>> {
 
     readonly pattern?: string;
     /**
      * client side timeout.
      */
     readonly timeout?: number;
-    readonly method: string;
 
     public streamLength?: number;
 
@@ -155,10 +175,9 @@ export abstract class IncomingPacket<T> extends BasePacket<T> implements Incomin
 
     constructor(init: IncomingOpts<T>) {
         super(init);
-        this.pattern = init.pattern ?? init.url ?? init.topic;
+        this.pattern = init.pattern;
         this.payload = init.payload ?? null;
         this.query = init.query ?? init.params;
-        this.method = init.method ?? init.defaultMethod ?? '';
         this.timeout = init.timeout;
         this.streamLength = init.streamLength;
     }
@@ -180,14 +199,13 @@ export abstract class IncomingPacket<T> extends BasePacket<T> implements Incomin
         return this.headers.getHeader(field);
     }
 
-    abstract clone(): IncomingPacket<T>;
-    abstract clone<V>(update: IncomingCloneOpts<V>): IncomingPacket<V>;
-    abstract clone(update: IncomingCloneOpts<T>): IncomingPacket<T>;
+    abstract clone(): AbstractIncoming<T>;
+    abstract clone<V>(update: IncomingCloneOpts<V>): AbstractIncoming<V>;
+    abstract clone(update: IncomingCloneOpts<T>): AbstractIncoming<T>;
 
     protected override cloneOpts(update: IncomingCloneOpts<any>): IncomingOpts {
         const init = super.cloneOpts(update) as IncomingOpts;
         init.pattern = update.pattern ?? this.pattern;
-        init.method = update.method ?? this.method;
 
         init.query = update.query ? { ...this.query, ...update.query } : this.query;
         return init;
@@ -197,12 +215,151 @@ export abstract class IncomingPacket<T> extends BasePacket<T> implements Incomin
         const rcd = super.toRecord();
         if (this.pattern) rcd.pattern = this.pattern;
         if (this.query) rcd.query = this.query;
-        if (this.method) rcd.method = this.method;
         if (this.timeout) rcd.timeout = this.timeout;
         return rcd;
     }
 
 }
+
+
+export interface UrlIncomingCloneOpts<T = any> extends IncomingCloneOpts<T> {
+
+    /**
+     * request url.
+     */
+    url?: string;
+    /**
+     * request method.
+     */
+    method?: string;
+    /**
+     * for restful
+     */
+    withCredentials?: boolean;
+
+    defaultMethod?: string;
+}
+
+/**
+ * Incoming packet.
+ */
+export abstract class UrlIncoming<T> extends AbstractIncoming<T> implements Incoming<T>, Clonable<UrlIncoming<T>> {
+
+
+    readonly url: string;
+    readonly method: string;
+
+
+    constructor(init: UrlIncomingOptions<T>) {
+        super(init);
+        this.url = init.url;
+        this.method = init.method ?? init.defaultMethod ?? '';
+    }
+
+    /**
+     * has header in packet or not.
+     * @param packet 
+     * @param field 
+     */
+    hasHeader(field: string): boolean {
+        return this.headers.has(field)
+    }
+    /**
+     * get header from packet.
+     * @param packet 
+     * @param field 
+     */
+    getHeader(field: string): string | undefined {
+        return this.headers.getHeader(field);
+    }
+
+    abstract clone(): UrlIncoming<T>;
+    abstract clone<V>(update: UrlIncomingCloneOpts<V>): UrlIncoming<V>;
+    abstract clone(update: UrlIncomingCloneOpts<T>): UrlIncoming<T>;
+
+    protected override cloneOpts(update: UrlIncomingCloneOpts<any>): UrlIncomingOptions {
+        const init = super.cloneOpts(update) as UrlIncomingOptions;
+        init.method = update.method ?? this.method;
+
+        return init;
+    }
+
+    protected override toRecord(): Record<string, any> {
+        const rcd = super.toRecord();
+        if (this.url) rcd.url = this.url;
+        if (this.method) rcd.method = this.method;
+        return rcd;
+    }
+
+}
+
+
+
+export interface TopicIncomingCloneOptions<T = any> extends IncomingCloneOpts<T> {
+    /**
+     * request url.
+     */
+    topic?: string;
+    /**
+     * response topic.
+     */
+    responseTopic?: string;
+}
+
+/**
+ * Incoming packet.
+ */
+export abstract class TopicIncoming<T> extends AbstractIncoming<T> implements Incoming<T>, Clonable<TopicIncoming<T>> {
+
+
+    readonly topic: string;
+    readonly responseTopic: string | undefined;
+
+
+    constructor(init: TopicIncomingOptions<T>) {
+        super(init);
+        this.topic = init.topic;
+        this.responseTopic = init.responseTopic;
+    }
+
+    /**
+     * has header in packet or not.
+     * @param packet 
+     * @param field 
+     */
+    hasHeader(field: string): boolean {
+        return this.headers.has(field)
+    }
+    /**
+     * get header from packet.
+     * @param packet 
+     * @param field 
+     */
+    getHeader(field: string): string | undefined {
+        return this.headers.getHeader(field);
+    }
+
+    abstract clone(): TopicIncoming<T>;
+    abstract clone<V>(update: TopicIncomingCloneOptions<V>): TopicIncoming<V>;
+    abstract clone(update: TopicIncomingCloneOptions<T>): TopicIncoming<T>;
+
+    protected override cloneOpts(update: TopicIncomingCloneOptions<any>): TopicIncomingOptions {
+        const init = super.cloneOpts(update) as TopicIncomingOptions;
+        init.topic = update.topic ?? this.topic;
+        init.responseTopic = update.responseTopic ?? this.responseTopic;
+
+        return init;
+    }
+
+    protected override toRecord(): Record<string, any> {
+        const rcd = super.toRecord();
+        if (this.topic) rcd.topic = this.topic;
+        if (this.responseTopic) rcd.responseTopic = this.responseTopic;
+        return rcd;
+    }
+
+}
+
 
 
 /**
@@ -261,25 +418,46 @@ export abstract class ClientIncomingFactory implements AbstractIncomingFactory<C
 /**
  * client incoming init options
  */
-export interface ClientIncomingOpts<T = any, TStatus = any> extends PacketOpts<T>, StatusOptions<TStatus> {
-    url?: string;
-    topic?: string;
+export interface UrlClientIncomingOpts<T = any, TStatus = any> extends PacketOpts<T>, StatusOptions<TStatus> {
+    url: string;
     pattern?: string;
     method?: string;
     streamLength?: number;
 }
 
-export interface ClientIncomingCloneOpts<T, TStatus> extends CloneOpts<T>, StatusOptions<TStatus> {
+/**
+ * client incoming init options
+ */
+export interface TopicClientIncomingOpts<T = any, TStatus = any> extends PacketOpts<T>, StatusOptions<TStatus> {
+    topic: string;
     pattern?: string;
+    streamLength?: number;
+}
+
+/**
+ * client incoming init options
+ */
+export type ClientIncomingOpts<T = any, TStatus = any> = UrlClientIncomingOpts<T, TStatus> | TopicClientIncomingOpts<T, TStatus>;
+
+export interface ClientIncomingCloneOpts<T, TStatus = any> extends CloneOpts<T>, StatusOptions<TStatus> {
+    pattern?: string;
+}
+
+export interface UrlClientIncomingCloneOpts<T, TStatus = any> extends ClientIncomingCloneOpts<T, TStatus> {
+    url?: string;
+}
+
+export interface TopicClientIncomingCloneOpts<T, TStatus = any> extends ClientIncomingCloneOpts<T, TStatus> {
+    topic?: string;
 }
 
 
 /**
  * client incoming packet
  */
-export abstract class ClientIncomingPacket<T, TStatus = any> extends BasePacket<T> implements ClientIncoming<T, TStatus>, Clonable<ClientIncomingPacket<T, TStatus>> {
+export abstract class AbstractClientIncoming<T, TStatus = any> extends BasePacket<T> implements ClientIncoming<T, TStatus>, Clonable<AbstractClientIncoming<T, TStatus>> {
 
-    readonly pattern?: string;
+    readonly pattern?: string | undefined;
 
     public streamLength?: number;
 
@@ -323,7 +501,7 @@ export abstract class ClientIncomingPacket<T, TStatus = any> extends BasePacket<
 
     constructor(init: ClientIncomingOpts, defaultStatus?: TStatus, defaultStatusText?: string) {
         super(init);
-        this.pattern = init.pattern ?? init.url ?? init.topic;
+        this.pattern = init.pattern;
 
         this.error = init.error;
         this.type = init.type;
@@ -353,9 +531,9 @@ export abstract class ClientIncomingPacket<T, TStatus = any> extends BasePacket<
         return this.headers.getHeader(field);
     }
 
-    abstract clone(): ClientIncomingPacket<T, TStatus>;
-    abstract clone<V>(update: ClientIncomingCloneOpts<V, TStatus>): ClientIncomingPacket<V, TStatus>;
-    abstract clone(update: ClientIncomingCloneOpts<T, TStatus>): ClientIncomingPacket<T, TStatus>;
+    abstract clone(): AbstractClientIncoming<T, TStatus>;
+    abstract clone<V>(update: ClientIncomingCloneOpts<V, TStatus>): AbstractClientIncoming<V, TStatus>;
+    abstract clone(update: ClientIncomingCloneOpts<T, TStatus>): AbstractClientIncoming<T, TStatus>;
 
     protected override cloneOpts(update: ClientIncomingCloneOpts<any, TStatus>): ClientIncomingOpts {
         const init = super.cloneOpts(update) as ClientIncomingOpts;
@@ -392,3 +570,62 @@ export abstract class ClientIncomingPacket<T, TStatus = any> extends BasePacket<
 
 }
 
+
+export abstract class UrlClientIncoming<T = any, TStatus = any> extends AbstractClientIncoming<T, TStatus> {
+
+    readonly url: string;
+    constructor(init: UrlClientIncomingOpts, defaultStatus?: TStatus, defaultStatusText?: string) {
+        super(init, defaultStatus, defaultStatusText);
+        this.url = init.url;
+
+    }
+
+    abstract clone(): UrlClientIncoming<T, TStatus>;
+    abstract clone<V>(update: UrlClientIncomingCloneOpts<V, TStatus>): UrlClientIncoming<V, TStatus>;
+    abstract clone(update: UrlClientIncomingCloneOpts<T, TStatus>): UrlClientIncoming<T, TStatus>;
+
+    protected override cloneOpts(update: UrlClientIncomingCloneOpts<any, TStatus>): UrlClientIncomingOpts {
+
+        const init = super.cloneOpts(update) as UrlClientIncomingOpts;
+
+        init.url = update.url ?? this.url;
+
+        return init;
+    }
+
+    protected override toRecord(): Record<string, any> {
+        const rcd = super.toRecord();
+        rcd.url = this.url;
+        return rcd;
+    }
+}
+
+
+export abstract class TopicClientIncoming<T, TStatus = any> extends AbstractClientIncoming<T, TStatus> {
+
+    readonly topic: string;
+    constructor(init: TopicClientIncomingOpts, defaultStatus?: TStatus, defaultStatusText?: string) {
+        super(init, defaultStatus, defaultStatusText);
+        this.topic = init.topic;
+
+    }
+
+    abstract clone(): TopicClientIncoming<T, TStatus>;
+    abstract clone<V>(update: TopicClientIncomingCloneOpts<V, TStatus>): TopicClientIncoming<V, TStatus>;
+    abstract clone(update: TopicClientIncomingCloneOpts<T, TStatus>): TopicClientIncoming<T, TStatus>;
+
+    protected override cloneOpts(update: TopicClientIncomingCloneOpts<any, TStatus>): TopicClientIncomingOpts {
+
+        const init = super.cloneOpts(update) as TopicClientIncomingOpts;
+
+        init.topic = update.topic ?? this.topic;
+
+        return init;
+    }
+
+    protected override toRecord(): Record<string, any> {
+        const rcd = super.toRecord();
+        rcd.topic = this.topic;
+        return rcd;
+    }
+}

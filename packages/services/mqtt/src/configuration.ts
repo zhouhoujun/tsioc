@@ -1,7 +1,7 @@
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST, Message, Packet, isResponseEvent } from '@tsdi/common';
 import { CustomCodingsAdapter } from '@tsdi/common/codings';
-import { ClientIncomingPacket, IncomingPacket } from '@tsdi/common/transport';
+import { AbstractClientIncoming, AbstractIncoming } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
 import {
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, PatternRequestContext,
@@ -56,7 +56,7 @@ export class MqttConfiguration {
                     delimiter: '#',
                     maxSize: defaultMaxSize,
                     encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof MqttMessage, [[MqttRequest, Packet]]) },
-                    decodingsAdapter: { useValue: new CustomCodingsAdapter(isResponseEvent, [[MqttClientIncoming, ClientIncomingPacket], [MqttMessage, Message]]) },
+                    decodingsAdapter: { useValue: new CustomCodingsAdapter(isResponseEvent, [[MqttClientIncoming, AbstractClientIncoming], [MqttMessage, Message]]) },
                 }
             }
         }
@@ -74,7 +74,7 @@ export class MqttConfiguration {
                     delimiter: '#',
                     defaultMethod: '*',
                     maxSize: defaultMaxSize,
-                    decodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof RequestContext, [[MqttIncoming, IncomingPacket], [MqttMessage, Message]]) },
+                    decodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof RequestContext, [[MqttIncoming, AbstractIncoming], [MqttMessage, Message]]) },
                     encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof MqttMessage, [[PatternRequestContext, RequestContext], [MqttOutgoing, Packet]]) },
                 },
                 content: {

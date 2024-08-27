@@ -1,9 +1,9 @@
 import { Injectable } from '@tsdi/ioc';
-import { ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket } from '@tsdi/common/transport';
+import { ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, AbstractClientIncoming } from '@tsdi/common/transport';
 
 
 
-export class MqttClientIncoming<T, TStatus = null> extends ClientIncomingPacket<T, TStatus> {
+export class MqttClientIncoming<T, TStatus = null> extends AbstractClientIncoming<T, TStatus> {
 
     clone(): MqttClientIncoming<T, TStatus>;
     clone<V>(update: ClientIncomingCloneOpts<V, TStatus>): MqttClientIncoming<V, TStatus>;

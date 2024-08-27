@@ -1,6 +1,6 @@
 import { EMPTY_OBJ, Injectable, InvocationContext, isNil, promisify } from '@tsdi/ioc';
-import { HttpStatusCode, statusMessage, UrlMesage } from '@tsdi/common';
-import { ClientIncoming, ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, ClientIncomingPacket, MessageReader, MessageWriter, ctype, ev } from '@tsdi/common/transport';
+import { HttpStatusCode, statusMessage } from '@tsdi/common';
+import { ClientIncoming, ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, AbstractClientIncoming, MessageReader, MessageWriter, ctype, ev, UrlClientIncomingOpts, UrlClientIncoming } from '@tsdi/common/transport';
 import { HttpRequest } from '@tsdi/common/http';
 import { ClientTransportSession } from '@tsdi/common/client';
 import { request as httpRequest, IncomingMessage, ClientRequest } from 'http';
@@ -14,7 +14,7 @@ import { HttpMesage } from '../message';
 
 
 
-export class HttpClientIncoming<T> extends ClientIncomingPacket<T, number> {
+export class HttpClientIncoming<T> extends AbstractClientIncoming<T, number> {
     constructor(init: ClientIncomingOpts, defaultStatus = 0, defaultStatusText = 'OK') {
         super(init, defaultStatus, defaultStatusText)
     }
@@ -34,7 +34,7 @@ export class HttpClientIncoming<T> extends ClientIncomingPacket<T, number> {
 
 
 export class HttpClientIncomingFactory implements ClientIncomingFactory {
-    create(options: ClientIncomingOpts): HttpClientIncoming<any> {
+    create(options: UrlClientIncomingOpts): HttpClientIncoming<any> {
         let opts: ClientIncomingOpts;
         if (options instanceof IncomingMessage) {
             const { method, url, headers, httpVersion, httpVersionMajor, httpVersionMinor, statusCode, statusMessage } = options;
@@ -42,7 +42,7 @@ export class HttpClientIncomingFactory implements ClientIncomingFactory {
         } else {
             opts = options;
             const headers = opts.headers as IncomingHttpHeaders & IncomingHttpStatusHeader;
-            opts.url = headers[':path'];
+            opts.url = headers[':path']!;
             opts.method = headers[':method'];
             const status = opts.status = headers[':status'] as HttpStatusCode;
             opts.statusMessage = statusMessage[status];
@@ -68,7 +68,7 @@ export class HttpClientMessageReader implements MessageReader<ClientHttp2Session
     read(socket: ClientHttp2Session | null, channel: ClientHttp2Stream | ClientRequest, session: ClientTransportSession): Observable<ClientIncoming> {
         if (channel instanceof ClientRequest) {
             return new Observable<ClientIncoming>(subscribe => {
-                const onResponse = (resp: IncomingMessage) => subscribe.next(session.incomingFactory.create(resp));
+                const onResponse = (resp: IncomingMessage) => subscribe.next(session.incomingFactory.create(resp as UrlClientIncomingOpts));
                 const onError = (err: any) => err && subscribe.error(err);
                 channel.on(ev.CLOSE, onError);
                 channel.on(ev.ERROR, onError);
@@ -86,7 +86,7 @@ export class HttpClientMessageReader implements MessageReader<ClientHttp2Session
                 }
             })
         } else {
-            return fromEvent(channel, ev.RESPONSE, (headers) => session.incomingFactory.create({ headers, payload: channel }));
+            return fromEvent(channel, ev.RESPONSE, (headers) => session.incomingFactory.create({ headers, payload: channel } as UrlClientIncomingOpts));
         }
     }
 }
