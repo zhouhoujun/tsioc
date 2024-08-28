@@ -21,6 +21,7 @@ export interface HttpRequestInit {
     observe?: 'body' | 'events' | 'response';
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
     withCredentials?: boolean;
+    timeout?: number;
 }
 
 /**
@@ -126,6 +127,8 @@ export class HttpRequest<T> implements UrlRequest<T> {
 
     readonly context: InvocationContext<any>;
 
+    readonly timeout: number | undefined;
+
     constructor(method: 'DELETE' | 'GET' | 'HEAD' | 'JSONP' | 'OPTIONS', url: string, init: {
         headers?: HeadersLike,
         reportProgress?: boolean,
@@ -161,6 +164,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
             observe?: 'body' | 'events' | 'response',
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
             withCredentials?: boolean,
+            timeout?: number,
             context: InvocationContext
         } | null,
         fourth?: {
@@ -169,7 +173,9 @@ export class HttpRequest<T> implements UrlRequest<T> {
             params?: HttpParams,
             observe?: 'body' | 'events' | 'response',
             responseType?: 'arraybuffer' | 'blob' | 'json' | 'text',
-            withCredentials?: boolean
+            withCredentials?: boolean,
+            timeout?: number,
+            context: InvocationContext
         }) {
         this.method = method.toUpperCase();
         // Next, need to figure out which argument holds the HttpRequestInit
@@ -210,6 +216,8 @@ export class HttpRequest<T> implements UrlRequest<T> {
             if (options.params) {
                 this.params = options.params
             }
+
+            this.timeout = options.timeout;
         }
 
         // If no headers have been passed in, construct a new HeadersLike instance.

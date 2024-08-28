@@ -387,6 +387,7 @@ export abstract class AbstractClient<
             // Construct the request.
             req = this.createRequest(first, {
                 context,
+                timeout: this.getOptions().timeout,
                 ...options,
                 headers,
                 params,

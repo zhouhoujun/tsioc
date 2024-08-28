@@ -1,14 +1,14 @@
-import { Token, tokenId } from '@tsdi/ioc';
+import { tokenId } from '@tsdi/ioc';
 import { Interceptor, Filter } from '@tsdi/core';
 import { RequestOptions, ResponseEvent } from '@tsdi/common';
 import { ClientOpts } from '@tsdi/common/client';
-import { Packet, QoS, UserProperties } from 'mqtt';
+import { QoS, UserProperties } from 'mqtt';
 import { MqttConnectOpts } from '../connect';
 import { MqttRequest } from './request';
 
 
 export interface MqttClientOpts extends ClientOpts<MqttConnectOpts> {
-    timeout?: number;
+    
 }
 
 
@@ -26,7 +26,6 @@ export interface MqttReqOptions extends RequestOptions {
     qos?: QoS;
     dup?: boolean;
     retain?: boolean;
-    timeout?: number;
     properties?: {
         payloadFormatIndicator?: boolean,
         messageExpiryInterval?: number,

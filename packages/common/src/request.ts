@@ -52,6 +52,10 @@ export interface RequestPacketOpts<T = any> extends PacketOpts<T> {
      * for restful
      */
     withCredentials?: boolean;
+    /**
+     * set request timeout times (ms).
+     */
+    timeout?: number;
 }
 
 
@@ -70,6 +74,10 @@ export interface RequestCloneOpts<T> extends CloneOpts<T> {
     method?: string;
     setParams?: { [param: string]: string; };
     withCredentials?: boolean;
+    /**
+     * set request timeout times (ms).
+     */
+    timeout?: number;
 }
 
 /**
@@ -91,6 +99,12 @@ export abstract class AbstractRequest<T> extends Packet<T> implements Clonable<A
      * Whether this request should be sent with outgoing credentials (cookies).
      */
     abstract get withCredentials(): boolean | undefined;
+
+
+    /**
+     * set request timeout times (ms).
+     */
+    abstract get timeout(): number | undefined;
 
     /**
      * request body, payload alias name.
@@ -169,6 +183,10 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
     readonly withCredentials: boolean | undefined;
     override readonly payload: T | null;
     /**
+     * set request timeout times (ms).
+     */
+    readonly timeout: number | undefined;
+    /**
      * request body, payload alias name.
      */
     get body(): T | null {
@@ -189,6 +207,7 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
         this.responseType = init.responseType ?? 'json';
         this.observe = init.observe ?? 'body';
         this.withCredentials = !!init.withCredentials;
+        this.timeout = init.timeout;
 
     }
 
@@ -253,9 +272,10 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
         // `false` and `undefined` in the update args.
         const withCredentials =
             (update.withCredentials !== undefined) ? update.withCredentials : this.withCredentials;
+        const timeout = update.timeout ?? this.timeout;
         const id = this.id;
         const context = update.context ?? this.context;
-        return { id, headers, params, payload, method, withCredentials, context };
+        return { id, headers, params, payload, method, withCredentials, context, timeout };
     }
 
     protected toRecord(): Record<string, any> {
@@ -267,6 +287,7 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
         if (this.method) record.method = this.method;
         if (!this.queryParams) record.params = this.params.toRecord();
         if (!isNil(this.withCredentials)) record.withCredentials = this.withCredentials;
+        if(this.timeout) record.timeout = this.timeout;
         return record;
     }
 

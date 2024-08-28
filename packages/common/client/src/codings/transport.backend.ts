@@ -1,6 +1,6 @@
 import { ResponseEvent, AbstractRequest } from '@tsdi/common';
 import { Injectable } from '@tsdi/ioc';
-import { Observable, take } from 'rxjs';
+import { Observable, take, timeout } from 'rxjs';
 import { ClientBackend } from '../backend';
 import { ClientTransportSession } from '../session';
 
@@ -22,7 +22,7 @@ export class ClientTransportBackend extends ClientBackend {
                 obs$ = session.request(req).pipe(take(1))
                 break;
         }
-        return obs$;
+        return req.timeout? obs$.pipe(timeout(req.timeout)) :  obs$;
     }
 
 }
