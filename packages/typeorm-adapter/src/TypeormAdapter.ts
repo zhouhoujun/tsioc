@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { Type, isString, Injector, EMPTY, isNil, isType, Static, isFunction, Inject, ROOT_INJECTOR } from '@tsdi/ioc';
 import { Startup, PipeTransform, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS, ModuleLoader, Dispose, HandlerContext } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS } from '@tsdi/repository';
+import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS, toPrimitType } from '@tsdi/repository';
 import { getMetadataArgsStorage, EntitySchema, DataSource, DataSourceOptions, ObjectLiteral, Repository, MongoRepository, TreeRepository, EntityManager } from 'typeorm';
 import { ObjectIDToken } from './objectid.pipe';
 
@@ -48,9 +48,24 @@ export class TypeormAdapter {
         let props = this.mdlmap.get(type);
         if (!props) {
             props = [];
-            getMetadataArgsStorage().columns.filter(col => col.target === type)
+            getMetadataArgsStorage().columns
+            getMetadataArgsStorage().filterColumns(type)
                 .forEach(col => {
-                    props?.push({
+                    const opType = col.options.type;
+                    let type: Type;
+                    if (opType) {
+                        if (isType(opType)) {
+                            type = opType;
+                        } else if (isString(opType)) {
+                            type = isString(col.target) ? toPrimitType(opType) : Reflect.getMetadata("design:type", col.target.prototype, col.propertyName) ?? toPrimitType(opType);
+                        } else {
+                            type = (opType as PropertyDescriptor).value ?? Object
+                        }
+                    } else {
+                        type = Object;
+                    }
+                    
+                    props!.push({
                         name: col.propertyName,
                         primary: col.options.primary,
                         nullable: col.options.nullable,
@@ -58,12 +73,12 @@ export class TypeormAdapter {
                         length: col.options.length,
                         width: col.options.width,
                         default: col.options.default,
-                        dbtype: isString(col.options.type) ? col.options.type : (col.mode === 'objectId' ? 'objectId' : ''),
-                        type: isString(col.options.type) ? Object : col.options.type!
+                        dbtype: isString(opType) ? opType : (col.mode === 'objectId' ? 'objectId' : ''),
+                        type
                     })
                 });
 
-            getMetadataArgsStorage().relations.filter(col => col.target === type)
+            getMetadataArgsStorage().filterRelations(type)
                 .forEach(col => {
                     let relaModel: Type;
                     if (isString(col.type)) {

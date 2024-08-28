@@ -134,6 +134,17 @@ const clob = /^\w*clob$/;
 
 const jsonExp = /^(\s|\w)*json(b)?$/;
 
+export function toPrimitType(dbtype: string): Type {
+    if(dbtype == 'bigint') return BigInt;
+    if(strExp.test(dbtype)) return String;
+    if(boolExp.test(dbtype)) return Boolean;
+    if(dateExp.test(dbtype)) return Date;
+    if(intExp.test(dbtype) || floatExp.test(dbtype) || doubleExp.test(dbtype) || decExp.test(dbtype)) {
+        return Number;
+    }
+    return Object;
+}
+
 /**
  * missing pipe error.
  * @param prop property metadata.
