@@ -50,6 +50,8 @@ export class MqttConfiguration {
                 url: 'mqtt://localhost:1883',
                 interceptorsToken: MQTT_CLIENT_INTERCEPTORS,
                 filtersToken: MQTT_CLIENT_FILTERS,
+                messageReader: MqttMessageReader,
+                messageWriter: MqttMessageWriter,
                 messageFactory: MqttMessageFactory,
                 incomingFactory: MqttClientIncomingFactory,
                 transportOpts: {
