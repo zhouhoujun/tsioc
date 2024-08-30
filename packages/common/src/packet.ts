@@ -1,18 +1,9 @@
 import { isNil, isUndefined } from '@tsdi/ioc';
 import { HeadersLike, HeaderMappings } from './headers';
+import { Clonable } from './Clonable';
+import { Serializable } from './Serializable';
 
 
-
-/**
- * clonable.
- */
-export interface Clonable<T> {
-    clone(update?: any): T;
-}
-
-export interface Jsonable {
-    toJson(ignores?: string[]): Record<string, any>;
-}
 
 /**
  * packet options.
@@ -45,7 +36,7 @@ export interface CloneOpts<T> {
 /**
  * Packet
  */
-export abstract class Packet<T> implements Clonable<Packet<T>>, Jsonable {
+export abstract class Packet<T> implements Clonable<Packet<T>>, Serializable {
     id?: string | number;
     abstract get headers(): HeaderMappings;
     abstract get payload(): T | null;
@@ -54,7 +45,7 @@ export abstract class Packet<T> implements Clonable<Packet<T>>, Jsonable {
     abstract clone<V>(update: CloneOpts<V>): Packet<V>;
     abstract clone(update: CloneOpts<T>): Packet<T>
 
-    abstract toJson(ignores?: string[]): Record<string, any>;
+    abstract serialize(ignores?: string[]): Record<string, any>;
 
     abstract attachId(id: string | number): void;
 }
@@ -88,7 +79,7 @@ export abstract class BasePacket<T> implements Packet<T> {
     abstract clone<V>(update: CloneOpts<V>): Packet<V>;
     abstract clone(update: CloneOpts<T>): Packet<T>
 
-    toJson(ignores?: string[]): Record<string, any> {
+    serialize(ignores?: string[]): Record<string, any> {
         const obj = this.toRecord();
         if (!ignores) return obj;
 

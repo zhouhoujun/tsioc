@@ -21,7 +21,7 @@ export class ErrorResponseDecordeInterceptor implements Interceptor<AbstractClie
                 }
                 return input;
             }).pipe(
-                mergeMap(input => throwError(() => session.responseFactory.create({ ...input.toJson() })))
+                mergeMap(input => throwError(() => session.responseFactory.create({ ...input.serialize() })))
             );
         }
         return next.handle(input, context);
@@ -36,7 +36,7 @@ export class EmptyResponseDecordeInterceptor implements Interceptor<AbstractClie
         const len = context.session.headerAdapter.getContentLength(input.headers);
         const session = context.session as ClientTransportSession;
         if (!len || session.statusAdapter?.isEmpty(input.status)) {
-            return of(session.responseFactory.create({ ...input.toJson(), payload: null }));
+            return of(session.responseFactory.create({ ...input.serialize(), payload: null }));
         }
         return next.handle(input, context);
     }
@@ -133,7 +133,7 @@ export class CompressResponseDecordeInterceptor implements Interceptor<AbstractC
                     return response.clone({ body });
 
                 } catch (err) {
-                    throw session.responseFactory.create(response.clone({ error: err }).toJson())
+                    throw session.responseFactory.create(response.clone({ error: err }).serialize())
                 }
             }
             return response;
@@ -262,7 +262,7 @@ export class ResponseTypeDecodeInterceptor implements Interceptor<AbstractClient
             if (ok) {
                 return input.clone({ ok, body });
             } else {
-                throw responseFactory.create(input.clone({ ok, body, error }).toJson());
+                throw responseFactory.create(input.clone({ ok, body, error }).serialize());
             }
 
         }).pipe(

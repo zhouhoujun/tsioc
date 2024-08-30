@@ -1,5 +1,5 @@
 import { isNil } from '@tsdi/ioc';
-import { BasePacket, Clonable, CloneOpts, Header, HeadersLike, Jsonable, PacketOpts, StatusOptions } from '@tsdi/common';
+import { BasePacket, Clonable, CloneOpts, Header, HeadersLike, Serializable, PacketOpts, StatusOptions } from '@tsdi/common';
 import { Incoming } from './Incoming';
 
 
@@ -117,7 +117,7 @@ export interface OutgoingCloneOpts<T, TStatus> extends CloneOpts<T>, StatusOptio
 /**
  * Outgoing packet.
  */
-export abstract class AbstractOutgoing<T, TStatus = any> extends BasePacket<T> implements Outgoing<T, TStatus>, Clonable<AbstractOutgoing<T, TStatus>>, Jsonable {
+export abstract class AbstractOutgoing<T, TStatus = any> extends BasePacket<T> implements Outgoing<T, TStatus>, Clonable<AbstractOutgoing<T, TStatus>>, Serializable {
 
     /**
      * Type of the response, narrowed to either the full response or the header.

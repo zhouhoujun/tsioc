@@ -1,7 +1,8 @@
 import { Abstract, Injectable, hasOwn, isPlainObject } from '@tsdi/ioc';
 import { HeaderMappings, HeadersLike } from './headers';
-import { Clonable, CloneOpts, PacketOpts } from './packet';
+import { CloneOpts, PacketOpts } from './packet';
 import { Pattern } from './pattern';
+import { Clonable } from './Clonable';
 
 export interface StatusOptions<TStatus = any> {
     /**

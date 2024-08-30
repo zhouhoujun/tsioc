@@ -16,7 +16,7 @@ export class HttpClientCodingsHandlers {
     async handleRequest(req: HttpRequest<any>, context: TransportContext) {
         const session = context.session as ClientTransportSession;
         const data = await this.payloadEncoder.encode(session.streamAdapter, session.headerAdapter, req.body, req.headers, session.options.encoding);
-        return session.messageFactory?.create({ ...req.toJson(), data })
+        return session.messageFactory?.create({ ...req.serialize(), data })
     }
 
 }

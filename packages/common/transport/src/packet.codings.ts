@@ -165,7 +165,7 @@ export class PacketCodingsHandlers {
         } else {
             data = await this.encodePacket(streamAdapter, headerAdapter, pkg, options.maxSize, options.encoding, options.serializeIgnores);
         }
-        const json = pkg.toJson();
+        const json = pkg.serialize();
         json.data = data;
         if (streamLen) json.streamLength = streamLen;
         return messageFactory ? messageFactory.create(json) : json;
@@ -199,9 +199,9 @@ export class PacketCodingsHandlers {
         }
 
         if (source) {
-            source = JSON.stringify(packet.clone({ payload: isBuffer(source) ? new TextDecoder().decode(source) : source }).toJson(ignores));
+            source = JSON.stringify(packet.clone({ payload: isBuffer(source) ? new TextDecoder().decode(source) : source }).serialize(ignores));
         } else {
-            source = JSON.stringify(packet.toJson(ignores));
+            source = JSON.stringify(packet.serialize(ignores));
         }
 
         source = Buffer.from(source)
@@ -223,7 +223,7 @@ export class PacketCodingsHandlers {
 
 
     private serializeHeader(packet: Packet<any>, ignores?: string[]): Buffer {
-        const headers = packet.toJson(['payload', ...ignores ?? EMPTY]);
+        const headers = packet.serialize(['payload', ...ignores ?? EMPTY]);
         return Buffer.from(JSON.stringify(headers));
     }
 

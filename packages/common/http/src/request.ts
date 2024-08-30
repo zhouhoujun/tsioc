@@ -427,7 +427,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
 
     }
 
-    toJson(ignores?: string[]): Record<string, any> {
+    serialize(ignores?: string[]): Record<string, any> {
         const obj = this.toRecord();
         if (!ignores) return obj;
 

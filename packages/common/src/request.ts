@@ -1,8 +1,9 @@
 import { InvocationContext, isNil, isUndefined } from '@tsdi/ioc';
 import { HeadersLike, HeaderMappings } from './headers';
 import { ParameterCodec, RequestParams, RequestParamsLike } from './params';
-import { Clonable, CloneOpts, Packet, PacketOpts } from './packet';
+import { CloneOpts, Packet, PacketOpts } from './packet';
 import { Pattern } from './pattern';
+import { Clonable } from './Clonable';
 
 
 
@@ -211,7 +212,7 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
 
     }
 
-    toJson(ignores?: string[]): Record<string, any> {
+    serialize(ignores?: string[]): Record<string, any> {
         const obj = this.toRecord();
         if (!ignores) return obj;
 
