@@ -1,5 +1,4 @@
 export * from './Clonable';
-export * from './Serializable';
 export * from './methods';
 export * from './platform';
 export * from './global';

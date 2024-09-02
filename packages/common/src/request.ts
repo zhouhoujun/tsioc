@@ -1,7 +1,7 @@
-import { InvocationContext, isNil, isUndefined } from '@tsdi/ioc';
+import { InvocationContext, isUndefined } from '@tsdi/ioc';
 import { HeadersLike, HeaderMappings } from './headers';
 import { ParameterCodec, RequestParams, RequestParamsLike } from './params';
-import { CloneOpts, Packet, PacketOpts } from './packet';
+import { CloneOpts, PacketOpts } from './packet';
 import { Pattern } from './pattern';
 import { Clonable } from './Clonable';
 
@@ -84,7 +84,7 @@ export interface RequestCloneOpts<T> extends CloneOpts<T> {
 /**
  * Abstract request.
  */
-export abstract class AbstractRequest<T> extends Packet<T> implements Clonable<AbstractRequest<T>> {
+export abstract class AbstractRequest<T> implements Clonable<AbstractRequest<T>> {
     abstract get method(): string;
     abstract get params(): RequestParams;
     abstract get context(): InvocationContext;
@@ -111,8 +111,12 @@ export abstract class AbstractRequest<T> extends Packet<T> implements Clonable<A
      * request body, payload alias name.
      */
     get body(): T | null {
-        return this.payload;
+        return this.payload
     }
+    /**
+     * request payload.
+     */
+    abstract get payload(): T | null;
 
     abstract clone(): AbstractRequest<T>;
     abstract clone<V>(update: RequestCloneOpts<V>): AbstractRequest<V>;
@@ -182,7 +186,8 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
     readonly responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
     readonly observe: 'body' | 'events' | 'response' | 'emit' | 'observe';
     readonly withCredentials: boolean | undefined;
-    override readonly payload: T | null;
+    protected id?: any;
+    readonly payload: T | null;
     /**
      * set request timeout times (ms).
      */
@@ -212,19 +217,19 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
 
     }
 
-    serialize(ignores?: string[]): Record<string, any> {
-        const obj = this.toRecord();
-        if (!ignores) return obj;
+    // serialize(ignores?: string[]): Record<string, any> {
+    //     const obj = this.toRecord();
+    //     if (!ignores) return obj;
 
-        const record = {} as Record<string, any>;
-        for (const n in obj) {
-            if (ignores.indexOf(n) < 0
-                && !isNil(obj[n])) {
-                record[n] = obj[n];
-            }
-        }
-        return record;
-    }
+    //     const record = {} as Record<string, any>;
+    //     for (const n in obj) {
+    //         if (ignores.indexOf(n) < 0
+    //             && !isNil(obj[n])) {
+    //             record[n] = obj[n];
+    //         }
+    //     }
+    //     return record;
+    // }
 
     attachId(id: string | number) {
         this.id = id;
@@ -279,18 +284,18 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
         return { id, headers, params, payload, method, withCredentials, context, timeout };
     }
 
-    protected toRecord(): Record<string, any> {
-        const record = {} as Record<string, any>;
-        if (this.id) record.id = this.id;
-        // if (this.pattern) record.pattern = this.pattern;
-        if (this.headers.size) record.headers = this.headers.getHeaders();
-        if (!isNil(this.payload)) record.payload = this.payload;
-        if (this.method) record.method = this.method;
-        if (!this.queryParams) record.params = this.params.toRecord();
-        if (!isNil(this.withCredentials)) record.withCredentials = this.withCredentials;
-        if(this.timeout) record.timeout = this.timeout;
-        return record;
-    }
+    // protected toRecord(): Record<string, any> {
+    //     const record = {} as Record<string, any>;
+    //     if (this.id) record.id = this.id;
+    //     // if (this.pattern) record.pattern = this.pattern;
+    //     if (this.headers.size) record.headers = this.headers.getHeaders();
+    //     if (!isNil(this.payload)) record.payload = this.payload;
+    //     if (this.method) record.method = this.method;
+    //     if (!this.queryParams) record.params = this.params.toRecord();
+    //     if (!isNil(this.withCredentials)) record.withCredentials = this.withCredentials;
+    //     if(this.timeout) record.timeout = this.timeout;
+    //     return record;
+    // }
 
 }
 
@@ -357,11 +362,11 @@ export abstract class BaseUrlRequest<T> extends BaseRequest<T> implements UrlReq
         return this.url;
     }
 
-    protected override toRecord(): Record<string, any> {
-        const rcd = super.toRecord();
-        rcd.url = this.getUrlWithParams();
-        return rcd;
-    }
+    // protected override toRecord(): Record<string, any> {
+    //     const rcd = super.toRecord();
+    //     rcd.url = this.getUrlWithParams();
+    //     return rcd;
+    // }
 }
 
 export abstract class BaseTopicRequest<T> extends BaseRequest<T> implements TopicRequest<T> {
@@ -380,9 +385,9 @@ export abstract class BaseTopicRequest<T> extends BaseRequest<T> implements Topi
     abstract clone<V>(update: TopicRequestCloneOpts<V>): BaseTopicRequest<V>;
     abstract clone(update: TopicRequestCloneOpts<T>): BaseTopicRequest<T>;
 
-    protected override toRecord(): Record<string, any> {
-        const rcd = super.toRecord();
-        rcd.topic = this.topic;
-        return rcd;
-    }
+    // protected override toRecord(): Record<string, any> {
+    //     const rcd = super.toRecord();
+    //     rcd.topic = this.topic;
+    //     return rcd;
+    // }
 }
