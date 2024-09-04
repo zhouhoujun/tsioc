@@ -22,3 +22,8 @@ export * from './parses/json';
 
 export * from './transform';
 
+export * from './serializer';
+export * from './deserializer';
+export * from './serializable';
+
+

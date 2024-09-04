@@ -1,20 +1,19 @@
-import { isNil, isString } from '@tsdi/ioc';
+import { Injector, isNil, isString } from '@tsdi/ioc';
 import { Pipe } from '../metadata';
 import { invalidPipeArgument, PipeTransform } from './pipe';
 
 /**
  * deserializer.
  */
-export abstract class Deserializer<T> {
-    abstract deserialize(value: any): T;
+export abstract class Deserializer<TOut> {
+    abstract deserialize(value: any): TOut;
 }
 
 /**
  * Json deserializer.
  */
-export abstract class JsonDeserializer extends Deserializer<any> {
-    abstract deserialize(value: any): any;
-
+export abstract class JsonDeserializer<T> extends Deserializer<T> {
+    abstract deserialize(value: Record<string, any>): T;
 }
 
 /**
@@ -22,10 +21,12 @@ export abstract class JsonDeserializer extends Deserializer<any> {
  */
 @Pipe('deserialize')
 export class DeserializePipe implements PipeTransform {
+    
+    constructor(private injector: Injector) {}
     /**
      * @param value A value of serialized data to convert into a type Object.
      */
-    transform(value: any, deserializer?: Deserializer<any>): string {
+    transform(value: any, deserializer?: Deserializer<any>): any {
         if (isNil(value)) throw invalidPipeArgument(this, value);
         if (isString(value)) {
             try {

@@ -731,5 +731,10 @@ export const Topic: TransportParameterDecorator = createParamDecorator('Topic', 
 
 
 export const Serializable = createDecorator('Serializable', {
-    
+    design: {
+        class:  (ctx, next) => {
+            ctx
+            next();
+        }
+    }
 })
