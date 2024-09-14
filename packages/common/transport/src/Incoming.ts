@@ -150,7 +150,7 @@ export interface IncomingCloneOpts<T> extends CloneOpts<T> {
 /**
  * Incoming base packet.
  */
-export abstract class AbstractIncoming<T> extends BasePacket<T> implements Incoming<T>, Clonable<AbstractIncoming<T>> {
+export abstract class AbstractIncoming<T> extends BasePacket<T> implements Incoming<T> {
 
     readonly pattern?: string;
     /**
@@ -199,25 +199,25 @@ export abstract class AbstractIncoming<T> extends BasePacket<T> implements Incom
         return this.headers.getHeader(field);
     }
 
-    abstract clone(): AbstractIncoming<T>;
-    abstract clone<V>(update: IncomingCloneOpts<V>): AbstractIncoming<V>;
-    abstract clone(update: IncomingCloneOpts<T>): AbstractIncoming<T>;
+    // abstract clone(): AbstractIncoming<T>;
+    // abstract clone<V>(update: IncomingCloneOpts<V>): AbstractIncoming<V>;
+    // abstract clone(update: IncomingCloneOpts<T>): AbstractIncoming<T>;
 
-    protected override cloneOpts(update: IncomingCloneOpts<any>): IncomingOpts {
-        const init = super.cloneOpts(update) as IncomingOpts;
-        init.pattern = update.pattern ?? this.pattern;
+    // protected override cloneOpts(update: IncomingCloneOpts<any>): IncomingOpts {
+    //     const init = super.cloneOpts(update) as IncomingOpts;
+    //     init.pattern = update.pattern ?? this.pattern;
 
-        init.query = update.query ? { ...this.query, ...update.query } : this.query;
-        return init;
-    }
+    //     init.query = update.query ? { ...this.query, ...update.query } : this.query;
+    //     return init;
+    // }
 
-    protected override toRecord(): Record<string, any> {
-        const rcd = super.toRecord();
-        if (this.pattern) rcd.pattern = this.pattern;
-        if (this.query) rcd.query = this.query;
-        if (this.timeout) rcd.timeout = this.timeout;
-        return rcd;
-    }
+    // protected override toRecord(): Record<string, any> {
+    //     const rcd = super.toRecord();
+    //     if (this.pattern) rcd.pattern = this.pattern;
+    //     if (this.query) rcd.query = this.query;
+    //     if (this.timeout) rcd.timeout = this.timeout;
+    //     return rcd;
+    // }
 
 }
 
@@ -277,19 +277,19 @@ export abstract class UrlIncoming<T> extends AbstractIncoming<T> implements Inco
     abstract clone<V>(update: UrlIncomingCloneOpts<V>): UrlIncoming<V>;
     abstract clone(update: UrlIncomingCloneOpts<T>): UrlIncoming<T>;
 
-    protected override cloneOpts(update: UrlIncomingCloneOpts<any>): UrlIncomingOptions {
-        const init = super.cloneOpts(update) as UrlIncomingOptions;
-        init.method = update.method ?? this.method;
+    // protected override cloneOpts(update: UrlIncomingCloneOpts<any>): UrlIncomingOptions {
+    //     const init = super.cloneOpts(update) as UrlIncomingOptions;
+    //     init.method = update.method ?? this.method;
 
-        return init;
-    }
+    //     return init;
+    // }
 
-    protected override toRecord(): Record<string, any> {
-        const rcd = super.toRecord();
-        if (this.url) rcd.url = this.url;
-        if (this.method) rcd.method = this.method;
-        return rcd;
-    }
+    // protected override toRecord(): Record<string, any> {
+    //     const rcd = super.toRecord();
+    //     if (this.url) rcd.url = this.url;
+    //     if (this.method) rcd.method = this.method;
+    //     return rcd;
+    // }
 
 }
 
@@ -309,7 +309,7 @@ export interface TopicIncomingCloneOptions<T = any> extends IncomingCloneOpts<T>
 /**
  * Incoming packet.
  */
-export abstract class TopicIncoming<T> extends AbstractIncoming<T> implements Incoming<T>, Clonable<TopicIncoming<T>> {
+export abstract class TopicIncoming<T> extends AbstractIncoming<T> implements Incoming<T> {
 
 
     readonly topic: string;
@@ -339,24 +339,24 @@ export abstract class TopicIncoming<T> extends AbstractIncoming<T> implements In
         return this.headers.getHeader(field);
     }
 
-    abstract clone(): TopicIncoming<T>;
-    abstract clone<V>(update: TopicIncomingCloneOptions<V>): TopicIncoming<V>;
-    abstract clone(update: TopicIncomingCloneOptions<T>): TopicIncoming<T>;
+    // abstract clone(): TopicIncoming<T>;
+    // abstract clone<V>(update: TopicIncomingCloneOptions<V>): TopicIncoming<V>;
+    // abstract clone(update: TopicIncomingCloneOptions<T>): TopicIncoming<T>;
 
-    protected override cloneOpts(update: TopicIncomingCloneOptions<any>): TopicIncomingOptions {
-        const init = super.cloneOpts(update) as TopicIncomingOptions;
-        init.topic = update.topic ?? this.topic;
-        init.responseTopic = update.responseTopic ?? this.responseTopic;
+    // protected override cloneOpts(update: TopicIncomingCloneOptions<any>): TopicIncomingOptions {
+    //     const init = super.cloneOpts(update) as TopicIncomingOptions;
+    //     init.topic = update.topic ?? this.topic;
+    //     init.responseTopic = update.responseTopic ?? this.responseTopic;
 
-        return init;
-    }
+    //     return init;
+    // }
 
-    protected override toRecord(): Record<string, any> {
-        const rcd = super.toRecord();
-        if (this.topic) rcd.topic = this.topic;
-        if (this.responseTopic) rcd.responseTopic = this.responseTopic;
-        return rcd;
-    }
+    // protected override toRecord(): Record<string, any> {
+    //     const rcd = super.toRecord();
+    //     if (this.topic) rcd.topic = this.topic;
+    //     if (this.responseTopic) rcd.responseTopic = this.responseTopic;
+    //     return rcd;
+    // }
 
 }
 

@@ -1,5 +1,5 @@
 import { Injectable, promisify } from '@tsdi/ioc';
-import { BaseMessage, Message } from '@tsdi/common';
+import { Packet } from '@tsdi/common';
 import { Decoder, Encoder } from '@tsdi/common/codings';
 import { Observable, Subject, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
 import { AbstractTransportSession, Incomings, MessageReader, MessageWriter, Outgoings } from './TransportSession';
@@ -9,9 +9,8 @@ import { IEventEmitter, IReadableStream, IWritableStream } from './stream';
 
 @Injectable()
 export class SocketMessageReader implements MessageReader<IReadableStream> {
-    read(socket: IReadableStream, channel: IEventEmitter, session: AbstractTransportSession): Observable<Message> {
+    read(socket: IReadableStream, channel: IEventEmitter, session: AbstractTransportSession): Observable<Packet<Buffer|string>> {
         return fromEvent(channel ?? socket, ev.DATA, (chunk: Buffer | string) => {
-            if (!session.messageFactory) return new BaseMessage({ data: chunk })
             return session.messageFactory.create({ data: chunk });
         })
     }
@@ -19,11 +18,11 @@ export class SocketMessageReader implements MessageReader<IReadableStream> {
 
 @Injectable()
 export class SocketMessageWriter implements MessageWriter<IWritableStream> {
-    write(socket: IWritableStream, channel: IEventEmitter, msg: Message, origin: any, session: AbstractTransportSession): Promise<void> {
-        if (session.streamAdapter.isReadable(msg.data)) {
-            return session.streamAdapter.pipeTo(msg.data as IReadableStream, socket, { end: false });
+    write(socket: IWritableStream, channel: IEventEmitter, msg: Packet<Buffer|string>, origin: any, session: AbstractTransportSession): Promise<void> {
+        if (session.streamAdapter.isReadable(msg.payload)) {
+            return session.streamAdapter.pipeTo(msg.payload as IReadableStream, socket, { end: false });
         }
-        return promisify<any, void>(socket.write, socket)(msg.data)
+        return promisify<any, void>(socket.write, socket)(msg.payload)
     }
 }
 

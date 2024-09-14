@@ -250,14 +250,14 @@ export interface EventHandler {
      *
      * @param {order?: number } option message match option.
      */
-    <TArg>(option?: InvocationOptions<TArg>): MethodDecorator;
+    (option?: InvocationOptions): MethodDecorator;
     /**
      * `EventHandler` dectorator, event message handle. use to handle event message of {@link  ApplicationEventPublisher}.
      *
      * @param {Type} event message match pattern.
      * @param {order?: number } option message match option.
      */
-    <TArg>(event: Type<ApplicationEvent>, option?: InvocationOptions<TArg>): MethodDecorator;
+    (event: Type<ApplicationEvent>, option?: InvocationOptions): MethodDecorator;
 }
 
 function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string, runtime?: boolean) {
@@ -346,7 +346,7 @@ export interface StartupEventHandler {
      * rasie after `ApplicationContextRefreshEvent`
      * @param {InvocationOptions} option message match option.
      */
-    <TArg>(option?: InvocationOptions<TArg>): MethodDecorator;
+    (option?: InvocationOptions): MethodDecorator;
 }
 
 /**
@@ -368,7 +368,7 @@ export interface StartEventHandler {
      * rasie after `ApplicationStartupEvent`
      * @param {InvocationOptions} option message match option.
      */
-    <TArg>(option?: InvocationOptions<TArg>): MethodDecorator;
+    (option?: InvocationOptions): MethodDecorator;
 }
 
 /**
@@ -390,7 +390,7 @@ export interface StartedEventHandler {
      * rasie after `ApplicationStartEvent`
      * @param {InvocationOptions} option message match option.
      */
-    <TArg>(option?: InvocationOptions<TArg>): MethodDecorator;
+    (option?: InvocationOptions): MethodDecorator;
 }
 
 /**
@@ -413,7 +413,7 @@ export interface ShutdownEventHandler {
      * rasie after Application close invoked.
      * @param {InvocationOptions} option message match option.
      */
-    <TArg>(option?: InvocationOptions<TArg>): MethodDecorator;
+    (option?: InvocationOptions): MethodDecorator;
 }
 
 /**
@@ -436,7 +436,7 @@ export interface DisposeEventHandler {
      * rasie after `ApplicationShutdownEvent`
      * @param {InvocationOptions} option message match option.
      */
-    <TArg>(option?: InvocationOptions<TArg>): MethodDecorator;
+    (option?: InvocationOptions): MethodDecorator;
 }
 
 /**
@@ -634,7 +634,7 @@ export interface ExecptionHandler {
      * @param {string} pattern message match pattern.
      * @param {order?: number } option message match option.
      */
-    <TArg = any>(execption: Type<Error>, option?: InvocationOptions<TArg>): MethodDecorator;
+    (execption: Type<Error>, option?: InvocationOptions): MethodDecorator;
 }
 
 /**
@@ -733,7 +733,6 @@ export const Topic: TransportParameterDecorator = createParamDecorator('Topic', 
 export const Serializable = createDecorator('Serializable', {
     design: {
         class:  (ctx, next) => {
-            ctx
             next();
         }
     }

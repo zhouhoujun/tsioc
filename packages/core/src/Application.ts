@@ -40,7 +40,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
         }
         if (!isFunction(target)) {
             if (!this.loader && target.loader) this.loader = target.loader;
-            const providers = (target.platformProviders && target.platformProviders.length) ? [...this.getPlatformDefaultProviders(), ...target.platformProviders] : this.getPlatformDefaultProviders();
+            const providers = target.platformProviders?.length ? [...this.getPlatformDefaultProviders(), ...target.platformProviders] : this.getPlatformDefaultProviders();
             target.deps = target.deps?.length ? [...this.getDeps(), ...target.deps] : this.getDeps();
             target.scope = 'root';
             this.root = this.createInjector(providers, target)
