@@ -1,6 +1,6 @@
 import { isNil } from '@tsdi/ioc';
 import {
-    BasePacket, Clonable, CloneOpts, HeadersLike, PacketOpts, ParameterCodec, StatusOptions
+    BasePacket, Clonable, HeadersLike, PacketOpts, ParameterCodec, StatusOptions
 } from '@tsdi/common';
 
 
@@ -138,14 +138,6 @@ export interface StreamIncomingOptions<T = any> extends BasicIncomingOpts<T> {
 export type IncomingOpts<T = any> = UrlIncomingOptions<T> | TopicIncomingOptions<T> | StreamIncomingOptions<T>;
 
 
-export interface IncomingCloneOpts<T> extends CloneOpts<T> {
-    pattern?: string;
-    query?: Record<string, any>;
-    method?: string;
-    timeout?: number | null;
-}
-
-
 
 /**
  * Incoming base packet.
@@ -159,8 +151,6 @@ export abstract class AbstractIncoming<T> extends BasePacket<T> implements Incom
     readonly timeout?: number;
 
     public streamLength?: number;
-
-    public override payload: T | null;
 
     get body(): T | null {
         return this.payload
@@ -222,28 +212,28 @@ export abstract class AbstractIncoming<T> extends BasePacket<T> implements Incom
 }
 
 
-export interface UrlIncomingCloneOpts<T = any> extends IncomingCloneOpts<T> {
+// export interface UrlIncomingCloneOpts<T = any> extends IncomingCloneOpts<T> {
 
-    /**
-     * request url.
-     */
-    url?: string;
-    /**
-     * request method.
-     */
-    method?: string;
-    /**
-     * for restful
-     */
-    withCredentials?: boolean;
+//     /**
+//      * request url.
+//      */
+//     url?: string;
+//     /**
+//      * request method.
+//      */
+//     method?: string;
+//     /**
+//      * for restful
+//      */
+//     withCredentials?: boolean;
 
-    defaultMethod?: string;
-}
+//     defaultMethod?: string;
+// }
 
 /**
  * Incoming packet.
  */
-export abstract class UrlIncoming<T> extends AbstractIncoming<T> implements Incoming<T>, Clonable<UrlIncoming<T>> {
+export abstract class UrlIncoming<T> extends AbstractIncoming<T> implements Incoming<T> {
 
 
     readonly url: string;
@@ -273,9 +263,9 @@ export abstract class UrlIncoming<T> extends AbstractIncoming<T> implements Inco
         return this.headers.getHeader(field);
     }
 
-    abstract clone(): UrlIncoming<T>;
-    abstract clone<V>(update: UrlIncomingCloneOpts<V>): UrlIncoming<V>;
-    abstract clone(update: UrlIncomingCloneOpts<T>): UrlIncoming<T>;
+    // abstract clone(): UrlIncoming<T>;
+    // abstract clone<V>(update: UrlIncomingCloneOpts<V>): UrlIncoming<V>;
+    // abstract clone(update: UrlIncomingCloneOpts<T>): UrlIncoming<T>;
 
     // protected override cloneOpts(update: UrlIncomingCloneOpts<any>): UrlIncomingOptions {
     //     const init = super.cloneOpts(update) as UrlIncomingOptions;
@@ -295,16 +285,16 @@ export abstract class UrlIncoming<T> extends AbstractIncoming<T> implements Inco
 
 
 
-export interface TopicIncomingCloneOptions<T = any> extends IncomingCloneOpts<T> {
-    /**
-     * request url.
-     */
-    topic?: string;
-    /**
-     * response topic.
-     */
-    responseTopic?: string;
-}
+// export interface TopicIncomingCloneOptions<T = any> extends IncomingCloneOpts<T> {
+//     /**
+//      * request url.
+//      */
+//     topic?: string;
+//     /**
+//      * response topic.
+//      */
+//     responseTopic?: string;
+// }
 
 /**
  * Incoming packet.
@@ -439,23 +429,23 @@ export interface TopicClientIncomingOpts<T = any, TStatus = any> extends PacketO
  */
 export type ClientIncomingOpts<T = any, TStatus = any> = UrlClientIncomingOpts<T, TStatus> | TopicClientIncomingOpts<T, TStatus>;
 
-export interface ClientIncomingCloneOpts<T, TStatus = any> extends CloneOpts<T>, StatusOptions<TStatus> {
-    pattern?: string;
-}
+// export interface ClientIncomingCloneOpts<T, TStatus = any> extends CloneOpts<T>, StatusOptions<TStatus> {
+//     pattern?: string;
+// }
 
-export interface UrlClientIncomingCloneOpts<T, TStatus = any> extends ClientIncomingCloneOpts<T, TStatus> {
-    url?: string;
-}
+// export interface UrlClientIncomingCloneOpts<T, TStatus = any> extends ClientIncomingCloneOpts<T, TStatus> {
+//     url?: string;
+// }
 
-export interface TopicClientIncomingCloneOpts<T, TStatus = any> extends ClientIncomingCloneOpts<T, TStatus> {
-    topic?: string;
-}
+// export interface TopicClientIncomingCloneOpts<T, TStatus = any> extends ClientIncomingCloneOpts<T, TStatus> {
+//     topic?: string;
+// }
 
 
 /**
  * client incoming packet
  */
-export abstract class AbstractClientIncoming<T, TStatus = any> extends BasePacket<T> implements ClientIncoming<T, TStatus>, Clonable<AbstractClientIncoming<T, TStatus>> {
+export abstract class AbstractClientIncoming<T, TStatus = any> extends BasePacket<T> implements ClientIncoming<T, TStatus> {
 
     readonly pattern?: string | undefined;
 
@@ -531,42 +521,42 @@ export abstract class AbstractClientIncoming<T, TStatus = any> extends BasePacke
         return this.headers.getHeader(field);
     }
 
-    abstract clone(): AbstractClientIncoming<T, TStatus>;
-    abstract clone<V>(update: ClientIncomingCloneOpts<V, TStatus>): AbstractClientIncoming<V, TStatus>;
-    abstract clone(update: ClientIncomingCloneOpts<T, TStatus>): AbstractClientIncoming<T, TStatus>;
+    // abstract clone(): AbstractClientIncoming<T, TStatus>;
+    // abstract clone<V>(update: ClientIncomingCloneOpts<V, TStatus>): AbstractClientIncoming<V, TStatus>;
+    // abstract clone(update: ClientIncomingCloneOpts<T, TStatus>): AbstractClientIncoming<T, TStatus>;
 
-    protected override cloneOpts(update: ClientIncomingCloneOpts<any, TStatus>): ClientIncomingOpts {
-        const init = super.cloneOpts(update) as ClientIncomingOpts;
+    // protected override cloneOpts(update: ClientIncomingCloneOpts<any, TStatus>): ClientIncomingOpts {
+    //     const init = super.cloneOpts(update) as ClientIncomingOpts;
 
-        init.pattern = update.pattern ?? this.pattern;
+    //     init.pattern = update.pattern ?? this.pattern;
 
-        init.type = update.type ?? this.type;
-        init.ok = update.ok ?? this.ok;
-        const status = update.status ?? this.statusCode;
-        if (status !== null) {
-            init.status = status;
-        }
-        if (this.error || update.error) {
-            init.error = update.error ?? this.error
-        }
-        init.statusMessage = update.statusMessage ?? update.statusText ?? this.statusMessage;
-        return init
-    }
+    //     init.type = update.type ?? this.type;
+    //     init.ok = update.ok ?? this.ok;
+    //     const status = update.status ?? this.statusCode;
+    //     if (status !== null) {
+    //         init.status = status;
+    //     }
+    //     if (this.error || update.error) {
+    //         init.error = update.error ?? this.error
+    //     }
+    //     init.statusMessage = update.statusMessage ?? update.statusText ?? this.statusMessage;
+    //     return init
+    // }
 
-    protected override toRecord(): Record<string, any> {
-        const rcd = super.toRecord();
-        rcd.pattern = this.pattern;
-        if (!isNil(this.type)) rcd.type = this.type;
-        if (!isNil(this.statusCode)) rcd.status = this.statusCode;
-        if (this.statusMessage) rcd.statusMessage = this.statusMessage;
+    // protected override toRecord(): Record<string, any> {
+    //     const rcd = super.toRecord();
+    //     rcd.pattern = this.pattern;
+    //     if (!isNil(this.type)) rcd.type = this.type;
+    //     if (!isNil(this.statusCode)) rcd.status = this.statusCode;
+    //     if (this.statusMessage) rcd.statusMessage = this.statusMessage;
 
-        rcd.ok = this.ok;
+    //     rcd.ok = this.ok;
 
-        if (this.error) {
-            rcd.error = this.error
-        }
-        return rcd;
-    }
+    //     if (this.error) {
+    //         rcd.error = this.error
+    //     }
+    //     return rcd;
+    // }
 
 }
 
@@ -580,24 +570,24 @@ export abstract class UrlClientIncoming<T = any, TStatus = any> extends Abstract
 
     }
 
-    abstract clone(): UrlClientIncoming<T, TStatus>;
-    abstract clone<V>(update: UrlClientIncomingCloneOpts<V, TStatus>): UrlClientIncoming<V, TStatus>;
-    abstract clone(update: UrlClientIncomingCloneOpts<T, TStatus>): UrlClientIncoming<T, TStatus>;
+    // abstract clone(): UrlClientIncoming<T, TStatus>;
+    // abstract clone<V>(update: UrlClientIncomingCloneOpts<V, TStatus>): UrlClientIncoming<V, TStatus>;
+    // abstract clone(update: UrlClientIncomingCloneOpts<T, TStatus>): UrlClientIncoming<T, TStatus>;
 
-    protected override cloneOpts(update: UrlClientIncomingCloneOpts<any, TStatus>): UrlClientIncomingOpts {
+    // protected override cloneOpts(update: UrlClientIncomingCloneOpts<any, TStatus>): UrlClientIncomingOpts {
 
-        const init = super.cloneOpts(update) as UrlClientIncomingOpts;
+    //     const init = super.cloneOpts(update) as UrlClientIncomingOpts;
 
-        init.url = update.url ?? this.url;
+    //     init.url = update.url ?? this.url;
 
-        return init;
-    }
+    //     return init;
+    // }
 
-    protected override toRecord(): Record<string, any> {
-        const rcd = super.toRecord();
-        rcd.url = this.url;
-        return rcd;
-    }
+    // protected override toRecord(): Record<string, any> {
+    //     const rcd = super.toRecord();
+    //     rcd.url = this.url;
+    //     return rcd;
+    // }
 }
 
 
@@ -610,22 +600,22 @@ export abstract class TopicClientIncoming<T, TStatus = any> extends AbstractClie
 
     }
 
-    abstract clone(): TopicClientIncoming<T, TStatus>;
-    abstract clone<V>(update: TopicClientIncomingCloneOpts<V, TStatus>): TopicClientIncoming<V, TStatus>;
-    abstract clone(update: TopicClientIncomingCloneOpts<T, TStatus>): TopicClientIncoming<T, TStatus>;
+    // abstract clone(): TopicClientIncoming<T, TStatus>;
+    // abstract clone<V>(update: TopicClientIncomingCloneOpts<V, TStatus>): TopicClientIncoming<V, TStatus>;
+    // abstract clone(update: TopicClientIncomingCloneOpts<T, TStatus>): TopicClientIncoming<T, TStatus>;
 
-    protected override cloneOpts(update: TopicClientIncomingCloneOpts<any, TStatus>): TopicClientIncomingOpts {
+    // protected override cloneOpts(update: TopicClientIncomingCloneOpts<any, TStatus>): TopicClientIncomingOpts {
 
-        const init = super.cloneOpts(update) as TopicClientIncomingOpts;
+    //     const init = super.cloneOpts(update) as TopicClientIncomingOpts;
 
-        init.topic = update.topic ?? this.topic;
+    //     init.topic = update.topic ?? this.topic;
 
-        return init;
-    }
+    //     return init;
+    // }
 
-    protected override toRecord(): Record<string, any> {
-        const rcd = super.toRecord();
-        rcd.topic = this.topic;
-        return rcd;
-    }
+    // protected override toRecord(): Record<string, any> {
+    //     const rcd = super.toRecord();
+    //     rcd.topic = this.topic;
+    //     return rcd;
+    // }
 }

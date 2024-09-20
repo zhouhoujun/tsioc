@@ -1,12 +1,13 @@
 import { ArgumentExecption, Injectable, isNumber, isString } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { HeaderAdapter, Message, Packet } from '@tsdi/common';
+import { HeaderAdapter, Packet } from '@tsdi/common';
 import { Observable, Subscriber, filter, map, mergeMap, of, range, throwError } from 'rxjs';
 import { TransportContext } from '../context';
 import { StreamAdapter, isBuffer } from '../StreamAdapter';
 import { IDuplexStream, IReadableStream } from '../stream';
 import { PacketLengthException } from '../execptions';
 import { AbstractIncoming } from '../Incoming';
+import { Serialization } from '../packet';
 
 interface CachePacket {
     packet: Packet<IDuplexStream>;
@@ -16,15 +17,15 @@ interface CachePacket {
 }
 
 @Injectable()
-export class PackageDecodeInterceptor implements Interceptor<Message, Packet<any>, TransportContext> {
+export class PackageDecodeInterceptor implements Interceptor<Serialization, Packet<any>, TransportContext> {
 
     packs: Map<string | number, CachePacket> = new Map();
-    intercept(input: Message, next: Handler<Message, Packet<any>, TransportContext>, context: TransportContext): Observable<Packet<any>> {
+    intercept(input: Serialization, next: Handler<Serialization, Packet<any>, TransportContext>, context: TransportContext): Observable<Packet<any>> {
         const { options, streamAdapter, headerAdapter } = context.session;
         const idLen = options.idLen ?? 2;
         let id: string | number;
-        if (streamAdapter.isReadable(input.data)) {
-            const chunk = input.data.read(idLen);
+        if (streamAdapter.isReadable(input.payload)) {
+            const chunk = input.payload.read(idLen);
             id = idLen > 4 ? chunk.subarray(0, idLen).toString() : chunk.readUIntBE(0, idLen);
             const exist = this.packs.get(id);
             if (exist) input.noHead = true;
@@ -32,13 +33,13 @@ export class PackageDecodeInterceptor implements Interceptor<Message, Packet<any
             if (input.streamLength) {
                 input.streamLength = input.streamLength - idLen;
             }
-        } else if (isBuffer(input.data)) {
-            id = idLen > 4 ? input.data.subarray(0, idLen).toString() : input.data.readUIntBE(0, idLen);
+        } else if (isBuffer(input.payload)) {
+            id = idLen > 4 ? input.payload.subarray(0, idLen).toString() : input.payload.readUIntBE(0, idLen);
             input.id = id;
-            input.data = input.data.subarray(idLen);
-        } else if (isString(input.data)) {
-            id = input.data.slice(0, idLen);
-            input.data = input.data.slice(idLen);
+            input.payload = input.payload.subarray(idLen);
+        } else if (isString(input.payload)) {
+            id = input.payload.slice(0, idLen);
+            input.payload = input.payload.slice(idLen);
         }
         return next.handle(input, context)
             .pipe(
@@ -66,7 +67,7 @@ export class PackageDecodeInterceptor implements Interceptor<Message, Packet<any
                 throw new PacketLengthException('has not content length!');
             }
             const payload = packet.payload;
-            packet = packet.clone({ payload: streamAdapter.createPassThrough() });
+            packet.payload = streamAdapter.createPassThrough();
 
             const cached = {
                 packet,
@@ -111,15 +112,15 @@ export class PackageDecodeInterceptor implements Interceptor<Message, Packet<any
 }
 
 @Injectable()
-export class PackageEncodeInterceptor implements Interceptor<Packet<any>, Message, TransportContext> {
+export class PackageEncodeInterceptor implements Interceptor<Packet<any>, Serialization, TransportContext> {
 
-    intercept(input: Packet<any>, next: Handler<Packet<any>, Message, TransportContext>, context: TransportContext): Observable<Message> {
+    intercept(input: Packet<any>, next: Handler<Packet<any>, Serialization, TransportContext>, context: TransportContext): Observable<Serialization> {
         return next.handle(input, context)
             .pipe(
                 mergeMap(msg => {
                     const { options, streamAdapter } = context.session;
                     const idLen = options.idLen ?? 2;
-                    const data = msg.data;
+                    const data = msg.payload;
                     const packetSize = isBuffer(data) ? Buffer.byteLength(data) : msg.streamLength!;
                     const sizeLimit = options.maxSize! - (options.delimiter ? Buffer.byteLength(options.delimiter) : 0)
                         - ((options.headDelimiter) ? Buffer.byteLength(options.headDelimiter) : 0)
@@ -134,7 +135,7 @@ export class PackageEncodeInterceptor implements Interceptor<Packet<any>, Messag
                         const countLen = options.countLen || 4;
                         if (options.maxSize && packetSize > options.maxSize) {
 
-                            return new Observable((subsr: Subscriber<Message>) => {
+                            return new Observable((subsr: Subscriber<Serialization>) => {
                                 let size = 0;
                                 let stream: IDuplexStream | null;
                                 let total = 0;
@@ -229,9 +230,9 @@ export class PackageEncodeInterceptor implements Interceptor<Packet<any>, Messag
             );
     }
 
-    streamConnectId(streamAdapter: StreamAdapter, msg: Message, idLen: number, delimiter: Buffer, stream: IReadableStream, countLen: number, len: number): Message {
+    streamConnectId(streamAdapter: StreamAdapter, msg: Serialization, idLen: number, delimiter: Buffer, stream: IReadableStream, countLen: number, len: number): Serialization {
         let isFist = true;
-        msg.data = streamAdapter.pipeline(stream, streamAdapter.createPassThrough({
+        msg.payload = streamAdapter.pipeline(stream, streamAdapter.createPassThrough({
             transform: (chunk, encoding, callback) => {
                 if (isFist) {
                     isFist = false;
@@ -258,10 +259,10 @@ export class PackageEncodeInterceptor implements Interceptor<Packet<any>, Messag
         return null;
     }
 
-    connectId(msg: Message, idLen: number, data: Buffer): Message {
+    connectId(msg: Serialization, idLen: number, data: Buffer): Serialization {
         if (msg.id) {
             const idBuff = this.getIdBuffer(msg.id, idLen)!;
-            msg.data = Buffer.concat([idBuff, data], idLen + Buffer.byteLength(data))
+            msg.payload = Buffer.concat([idBuff, data], idLen + Buffer.byteLength(data))
         }
         return msg;
     }

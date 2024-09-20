@@ -1,4 +1,4 @@
-import { Header, HeaderAccess, HeaderAdapter, HeaderMappings, HeadersLike, IHeaders } from '@tsdi/common';
+import { Header, HeaderAccess, HeaderAdapter, HeadersLike, IHeaders } from '@tsdi/common';
 import { Injectable, isArray, isDefined, isNil } from '@tsdi/ioc';
 
 @Injectable()

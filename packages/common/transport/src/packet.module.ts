@@ -1,5 +1,5 @@
 import { Module } from '@tsdi/ioc';
-import { HeaderAdapter, Message, Packet } from '@tsdi/common';
+import { HeaderAdapter, Packet } from '@tsdi/common';
 import { CodingsModule, getDecodeInterceptorsToken, getEncodeInterceptorsToken } from '@tsdi/common/codings';
 import { PacketIdGenerator, PacketNumberIdGenerator } from './PacketId';
 import { TransportDecodingsFactory, TransportEncodingsFactory } from './condings';
@@ -7,9 +7,10 @@ import { PackageDecodeInterceptor, PackageEncodeInterceptor } from './intercepto
 import { BindPacketIdEncodeInterceptor, PacketDecodeInterceptor, PacketEncodeInterceptor } from './interceptors/buffer.packet';
 import { PacketCodingsHandlers } from './packet.codings';
 import { DefaultHeaderAdapter } from './headers';
+import { Serialization } from './packet';
 
 
-const PACKET_DECODE_INTERCEPTORS = getDecodeInterceptorsToken(Message);
+const PACKET_DECODE_INTERCEPTORS = getDecodeInterceptorsToken(Serialization);
 const PACKET_ENCODE_INTERCEPTORS = getEncodeInterceptorsToken(Packet);
 
 @Module({

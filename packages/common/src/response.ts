@@ -1,8 +1,7 @@
 import { Abstract, Injectable, hasOwn, isPlainObject } from '@tsdi/ioc';
 import { HeaderMappings, HeadersLike } from './headers';
-import { CloneOpts, PacketOpts } from './packet';
+import { PacketOpts } from './packet';
 import { Pattern } from './pattern';
-import { Clonable } from './Clonable';
 
 export interface StatusOptions<TStatus = any> {
     /**
@@ -24,9 +23,6 @@ export interface ResponseInitOpts<T = any, TStatus = any> extends PacketOpts<T>,
     pattern?: Pattern;
 }
 
-export interface ResponseCloneOpts<T, TStatus> extends CloneOpts<T>, StatusOptions<TStatus> {
-    pattern?: Pattern;
-}
 
 export abstract class ResponseBase<T, TStatus = any> {
     readonly pattern: Pattern | undefined;
@@ -83,7 +79,7 @@ export abstract class ResponseBase<T, TStatus = any> {
 /**
  * header response.
  */
-export class HeaderResponse<TStatus = any> extends ResponseBase<null, TStatus> implements Clonable<HeaderResponse<TStatus>> {
+export class HeaderResponse<TStatus = any> extends ResponseBase<null, TStatus> {
     constructor(init: {
         url?: string;
         pattern?: Pattern;
@@ -100,30 +96,12 @@ export class HeaderResponse<TStatus = any> extends ResponseBase<null, TStatus> i
         super(init);
     }
 
-    /**
-     * Copy this `HttpHeaderResponse`, overriding its contents with the
-     * given parameter hash.
-     */
-    clone(update: { headers?: HeadersLike; status?: TStatus; statusText?: string; pattern?: Pattern; } = {}):
-        HeaderResponse {
-        // Perform a straightforward initialization of the new HttpHeaderResponse,
-        // overriding the current parameters with new ones if given.
-        return new HeaderResponse({
-            ok: this.ok,
-            headers: update.headers || this.headers,
-            status: update.status !== undefined ? update.status : this.status,
-            statusText: update.statusText || this.statusText,
-            pattern: update.pattern || this.pattern || undefined
-        })
-    }
-
-
 }
 
 /**
  * response packet.
  */
-export class Response<T, TStatus = any> extends ResponseBase<T, TStatus> implements Clonable<Response<T, TStatus>> {
+export class Response<T, TStatus = any> extends ResponseBase<T, TStatus> {
     /**
      * The response body, or `null` if one was not returned.
      */
@@ -150,19 +128,6 @@ export class Response<T, TStatus = any> extends ResponseBase<T, TStatus> impleme
         super(init);
 
         this.body = init.body !== undefined ? init.body : (init.payload ?? null)!
-    }
-
-    clone(): Response<T, TStatus>;
-    clone<V>(update: ResponseCloneOpts<V, TStatus>): Response<V, TStatus>;
-    clone(update: ResponseCloneOpts<T, TStatus>): Response<T, TStatus>;
-    clone(update: ResponseCloneOpts<any, TStatus> = {}): Response<any, TStatus> {
-        return new Response<any>({
-            body: (update.body !== undefined) ? update.body : (update.payload ?? this.body),
-            headers: update.headers || this.headers,
-            status: (update.status !== undefined) ? update.status : this.status,
-            statusText: update.statusText || this.statusText,
-            pattern: update.pattern || this.pattern || undefined
-        })
     }
 }
 
@@ -232,7 +197,6 @@ export abstract class ResponseFactory<TStatus = null> {
 export class DefaultResponseFactory<TStatus = null> {
 
     create<T>(options: ResponseInitOpts): ResponseEvent<T, TStatus> {
-
         if (!options.ok || options.error) {
             if(!options.error){
                 options.error = options.payload;
@@ -240,6 +204,5 @@ export class DefaultResponseFactory<TStatus = null> {
             return new ErrorResponse(options);
         }
         return new Response(options);
-
     }
 }

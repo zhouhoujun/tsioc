@@ -19,7 +19,6 @@ import { HttpExecptionHandlers } from './execption.handlers';
 import { HttpClientIncoming, HttpClientIncomingFactory, HttpClientMessageReader, HttpClientMessageWriter } from './client/transport';
 import { HttpIncomingFactory, HttpServerMessageReader, HttpServerMessagerWriter } from './server/transport';
 import { HttpMesage, HttpMesageFactory } from './message';
-import { promisify } from '@tsdi/ioc';
 
 
 @Configuration()

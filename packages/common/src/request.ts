@@ -1,14 +1,14 @@
 import { InvocationContext, isUndefined } from '@tsdi/ioc';
 import { HeadersLike, HeaderMappings } from './headers';
 import { ParameterCodec, RequestParams, RequestParamsLike } from './params';
-import { CloneOpts, PacketOpts } from './packet';
+import { PacketOpts } from './packet';
 import { Pattern } from './pattern';
 import { Clonable } from './Clonable';
 
 
 
 /**
- * response option for request.
+ * Response option for request.
  */
 export interface ResponseAs {
     /**
@@ -21,6 +21,9 @@ export interface ResponseAs {
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
 }
 
+/**
+ * Request packet options.
+ */
 export interface RequestPacketOpts<T = any> extends PacketOpts<T> {
 
     /**
@@ -60,7 +63,9 @@ export interface RequestPacketOpts<T = any> extends PacketOpts<T> {
 }
 
 
-
+/**
+ * Request init options.
+ */
 export interface RequestInitOpts<T = any> extends RequestPacketOpts<T>, ResponseAs {
     /**
      * request context.
@@ -68,7 +73,14 @@ export interface RequestInitOpts<T = any> extends RequestPacketOpts<T>, Response
     context: InvocationContext;
 }
 
-export interface RequestCloneOpts<T> extends CloneOpts<T> {
+/**
+ * Request clone options.
+ */
+export interface RequestCloneOpts<T> {
+    headers?: HeadersLike;
+    body?: T | null;
+    payload?: T | null;
+    setHeaders?: { [name: string]: string | string[]; };
     params?: RequestParams;
     context?: InvocationContext;
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
@@ -124,7 +136,9 @@ export abstract class AbstractRequest<T> implements Clonable<AbstractRequest<T>>
 
 }
 
-
+/**
+ * Url request clone options.
+ */
 export interface UrlRequestCloneOpts<T> extends RequestCloneOpts<T> {
     url?: string;
 }
@@ -145,11 +159,16 @@ export abstract class UrlRequest<T> extends AbstractRequest<T> {
 }
 
 
-
+/**
+ * topic options
+ */
 export interface TopicOptions {
     topic?: string;
 }
 
+/**
+ * Topic request clone options. 
+ */
 export interface TopicRequestCloneOpts<T> extends RequestCloneOpts<T>, TopicOptions {
 
 }
@@ -167,7 +186,7 @@ export abstract class TopicRequest<T> extends AbstractRequest<T> {
 
 
 /**
- * topic request init options.
+ * Topic request init options.
  */
 export interface TopicRequestInitOpts extends RequestInitOpts, TopicOptions {
 
@@ -216,20 +235,6 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
         this.timeout = init.timeout;
 
     }
-
-    // serialize(ignores?: string[]): Record<string, any> {
-    //     const obj = this.toRecord();
-    //     if (!ignores) return obj;
-
-    //     const record = {} as Record<string, any>;
-    //     for (const n in obj) {
-    //         if (ignores.indexOf(n) < 0
-    //             && !isNil(obj[n])) {
-    //             record[n] = obj[n];
-    //         }
-    //     }
-    //     return record;
-    // }
 
     attachId(id: string | number) {
         this.id = id;
@@ -283,19 +288,6 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
         const context = update.context ?? this.context;
         return { id, headers, params, payload, method, withCredentials, context, timeout };
     }
-
-    // protected toRecord(): Record<string, any> {
-    //     const record = {} as Record<string, any>;
-    //     if (this.id) record.id = this.id;
-    //     // if (this.pattern) record.pattern = this.pattern;
-    //     if (this.headers.size) record.headers = this.headers.getHeaders();
-    //     if (!isNil(this.payload)) record.payload = this.payload;
-    //     if (this.method) record.method = this.method;
-    //     if (!this.queryParams) record.params = this.params.toRecord();
-    //     if (!isNil(this.withCredentials)) record.withCredentials = this.withCredentials;
-    //     if(this.timeout) record.timeout = this.timeout;
-    //     return record;
-    // }
 
 }
 
@@ -361,12 +353,6 @@ export abstract class BaseUrlRequest<T> extends BaseRequest<T> implements UrlReq
         }
         return this.url;
     }
-
-    // protected override toRecord(): Record<string, any> {
-    //     const rcd = super.toRecord();
-    //     rcd.url = this.getUrlWithParams();
-    //     return rcd;
-    // }
 }
 
 export abstract class BaseTopicRequest<T> extends BaseRequest<T> implements TopicRequest<T> {
@@ -385,9 +371,4 @@ export abstract class BaseTopicRequest<T> extends BaseRequest<T> implements Topi
     abstract clone<V>(update: TopicRequestCloneOpts<V>): BaseTopicRequest<V>;
     abstract clone(update: TopicRequestCloneOpts<T>): BaseTopicRequest<T>;
 
-    // protected override toRecord(): Record<string, any> {
-    //     const rcd = super.toRecord();
-    //     rcd.topic = this.topic;
-    //     return rcd;
-    // }
 }

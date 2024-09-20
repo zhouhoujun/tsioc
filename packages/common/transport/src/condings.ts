@@ -1,6 +1,6 @@
 import { EMPTY, Injector, tokenId, toProvider } from '@tsdi/ioc';
 import { CanHandle, ExecptionHandlerFilter, Interceptor, createHandler } from '@tsdi/core';
-import { Message, Packet } from '@tsdi/common';
+import { Packet } from '@tsdi/common';
 import {
     CodingsAapter,
     Decodings, DecodingsBackend, DecodingsConfigableHandler, DecodingsFactory,
@@ -8,6 +8,7 @@ import {
 } from '@tsdi/common/codings';
 import { AbstractTransportSession, TransportOpts } from './TransportSession';
 import { TransportContext } from './context';
+import { Serialization } from './packet';
 
 
 
@@ -15,13 +16,13 @@ import { TransportContext } from './context';
 /**
  * Transport encodings interceptors.
  */
-export const TRANSPORT_ENCODINGS_INTERCEPTORS = tokenId<Interceptor<Packet<any>, Message, TransportContext>[]>('TRANSPORT_ENCODINGS_INTERCEPTORS');
+export const TRANSPORT_ENCODINGS_INTERCEPTORS = tokenId<Interceptor<Packet<any>, Serialization, TransportContext>[]>('TRANSPORT_ENCODINGS_INTERCEPTORS');
 
 
 /**
  *  Transport encodings filters.
  */
-export const TRANSPORT_ENCODINGS_FILTERS = tokenId<Interceptor<Packet<any>, Message, TransportContext>[]>('TRANSPORT_ENCODINGS_FILTERS');
+export const TRANSPORT_ENCODINGS_FILTERS = tokenId<Interceptor<Packet<any>, Serialization, TransportContext>[]>('TRANSPORT_ENCODINGS_FILTERS');
 
 
 /**
@@ -71,12 +72,12 @@ export class TransportEncodingsFactory implements EncodingsFactory {
 /**
  * Transport decodings interceptors.
  */
-export const TRANSPORT_DECODINGS_INTERCEPTORS = tokenId<Interceptor<Message, Packet<any>, TransportContext>[]>('TRANSPORT_DECODINGS_INTERCEPTORS');
+export const TRANSPORT_DECODINGS_INTERCEPTORS = tokenId<Interceptor<Serialization, Packet<any>, TransportContext>[]>('TRANSPORT_DECODINGS_INTERCEPTORS');
 
 /**
  *  Transport decodings filters.
  */
-export const TRANSPORT_DECODINGS_FILTERS = tokenId<Interceptor<Message, Packet<any>, TransportContext>[]>('TRANSPORT_DECODINGS_FILTERS');
+export const TRANSPORT_DECODINGS_FILTERS = tokenId<Interceptor<Serialization, Packet<any>, TransportContext>[]>('TRANSPORT_DECODINGS_FILTERS');
 
 /**
  *  Transport decodings guards.
