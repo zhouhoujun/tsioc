@@ -18,6 +18,10 @@ export abstract class Serialization extends BasePacket<string | Buffer | IReadab
     }
 }
 
+export abstract class SerializationFactory {
+    abstract create(options: SerializationOpts): Serialization;
+}
+
 /**
  * resful serialization packet.
  */

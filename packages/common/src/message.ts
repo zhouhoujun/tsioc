@@ -1,5 +1,161 @@
 import { Header, HeadersLike } from './headers';
+import { PacketOpts } from './packet';
+import { ParameterCodec } from './params';
+import { AbstractRequest } from './request';
+import { StatusOptions } from './response';
 
+
+export abstract class AbstractIncomingFactory<TIcoming = any> {
+    abstract create(options: any): TIcoming;
+}
+
+export interface IncomingInitOpts<T = any> {
+    /**
+     * packet id.
+     */
+    id?: string | number,
+    /**
+     * pattern.
+     */
+    pattern?: string;
+    /**
+     * headers of request.
+     */
+    headers?: HeadersLike;
+    /**
+     * request query params.
+     */
+    params?: Record<string, any>;
+    /**
+     * request query params.
+     */
+    query?: Record<string, any>;
+
+    /**
+     * parameter codec.
+     */
+    encoder?: ParameterCodec;
+    /**
+     * request payload, request body.
+     */
+    payload?: T;
+    /**
+     * request timeout
+     */
+    timeout?: number;
+
+    streamLength?: number;
+}
+
+export interface UrlIncomingOptions<T = any> extends IncomingInitOpts<T> {
+    /**
+     * request url.
+     */
+    url: string;
+    /**
+     * request method.
+     */
+    method?: string;
+    /**
+     * for restful
+     */
+    withCredentials?: boolean;
+
+    defaultMethod?: string;
+}
+
+export interface TopicIncomingOptions<T = any> extends IncomingInitOpts<T> {
+    /**
+     * request url.
+     */
+    topic: string;
+    /**
+     * response topic.
+     */
+    responseTopic?: string;
+}
+
+export interface StreamIncomingOptions<T = any> extends IncomingInitOpts<T> {
+    req: any;
+    res: any;
+}
+
+/**
+ * incoming options
+ */
+export type IncomingOpts<T = any> = UrlIncomingOptions<T> | TopicIncomingOptions<T> | StreamIncomingOptions<T>;
+
+
+/**
+ * Incoming factory.
+ */
+export abstract class IncomingFactory implements AbstractIncomingFactory<Incoming<any>> {
+    abstract create(options: IncomingOpts): Incoming<any>;
+}
+
+/**
+ * client incoming init options
+ */
+export interface UrlClientIncomingOpts<T = any, TStatus = any> extends PacketOpts<T>, StatusOptions<TStatus> {
+    url: string;
+    pattern?: string;
+    method?: string;
+    streamLength?: number;
+}
+
+/**
+ * client incoming init options
+ */
+export interface TopicClientIncomingOpts<T = any, TStatus = any> extends PacketOpts<T>, StatusOptions<TStatus> {
+    topic: string;
+    pattern?: string;
+    streamLength?: number;
+}
+
+/**
+ * client incoming init options
+ */
+export type ClientIncomingOpts<T = any, TStatus = any> = UrlClientIncomingOpts<T, TStatus> | TopicClientIncomingOpts<T, TStatus>;
+
+
+/**
+ * Incoming factory.
+ */
+export abstract class ClientIncomingFactory implements AbstractIncomingFactory<ClientIncoming<any>> {
+    abstract create(options: ClientIncomingOpts): ClientIncoming<any>;
+}
+
+
+/**
+ * Outgoing packet options.
+ */
+export interface OutgoingOpts<T = any, TStatus = any> extends PacketOpts<T>, StatusOptions<TStatus> {
+    pattern?: string;
+}
+
+export abstract class AbstractOutgoingFactory<TInput = any, TOutput = any, TOpts = any> {
+    abstract create(input: TInput, options?: TOpts): TOutput;
+}
+
+/**
+ * Outgoing factory.
+ */
+export abstract class OutgoingFactory implements AbstractOutgoingFactory<Incoming<any>, Outgoing<any>, OutgoingOpts> {
+    abstract create(incoming: Incoming<any>, options?: OutgoingOpts): Outgoing<any>;
+}
+
+
+/**
+ * Outgoing packet options.
+ */
+export interface ClietOutgoingOpts<T = any> extends PacketOpts<T> {
+    pattern?: string;
+}
+
+export abstract class ClientOutgoingFactory implements AbstractOutgoingFactory<AbstractRequest<any>, ClinetOutgoing<any>, ClietOutgoingOpts> {
+    abstract create(request: AbstractRequest<any>, options?: ClietOutgoingOpts): ClinetOutgoing<any>;
+
+}
 
 /**
  * Incoming message
@@ -16,7 +172,7 @@ export interface Incoming<T> {
 
     params?: Record<string, any>;
 
-    query?: Record<string, any>
+    query?: Record<string, any>;
 
     payload?: any;
 
@@ -153,3 +309,5 @@ export interface ClientIncoming<T, TStatus = any> extends Outgoing<T, TStatus> {
 export interface ClinetOutgoing<T> extends Incoming<T> {
 
 }
+
+
