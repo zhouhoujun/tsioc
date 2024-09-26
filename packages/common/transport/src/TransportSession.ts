@@ -1,5 +1,5 @@
 import { Abstract, Injector, ProvdierOf, Token } from '@tsdi/ioc';
-import { HeaderAdapter, HybirdTransport, Message, MessageFactory, Transport } from '@tsdi/common';
+import { HeaderAdapter, HybirdTransport, Transport } from '@tsdi/common';
 import { CodingsAapter, CodingsHandlerOptions } from '@tsdi/common/codings';
 import { Observable } from 'rxjs';
 import { AbstractIncomingFactory, ClientIncoming, Incoming } from './Incoming';
@@ -7,7 +7,7 @@ import { StatusAdapter } from './StatusAdapter';
 import { StreamAdapter } from './StreamAdapter';
 import { TransportDecodingsFactory, TransportEncodingsFactory } from './condings';
 import { IEventEmitter } from './stream';
-import { Outgoing } from './Outgoing';
+import { AbstractOutgoingFactory, ClientOutgoing, Outgoing } from './Outgoing';
 
 
 
@@ -88,7 +88,7 @@ export interface TransportOpts {
      * @param socket 
      * @returns 
      */
-    close?: (socket: any)=> Promise<any>;
+    close?: (socket: any) => Promise<any>;
 
 }
 
@@ -110,13 +110,13 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
      */
     abstract get injector(): Injector;
     /**
-     * message factory.
-     */
-    abstract get messageFactory(): MessageFactory | null;
-    /**
      * incoming message factory.
      */
     abstract get incomingFactory(): AbstractIncomingFactory;
+    /**
+     * outgoing message factory.
+     */
+    abstract get outgoingFactory(): AbstractOutgoingFactory;
     /**
      * stream adapter.
      */
@@ -162,13 +162,13 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
 /**
  * Incoming messages
  */
-export type Incomings = Message | Incoming<any> | ClientIncoming<any>;
+export type Incomings = Incoming<any> | ClientIncoming<any>;
 
 
 /**
  * Outgoing messages
  */
-export type Outgoings = Message | Outgoing<any>;
+export type Outgoings = Outgoing<any> | ClientOutgoing<any>;
 
 
 /**

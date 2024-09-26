@@ -1,7 +1,37 @@
-import { isNil } from '@tsdi/ioc';
-import { BasePacket, Clonable, CloneOpts, Header, HeadersLike, Serializable, PacketOpts, StatusOptions } from '@tsdi/common';
+import { AbstractRequest, BasePacket, Header, HeadersLike, PacketOpts, StatusOptions } from '@tsdi/common';
 import { Incoming } from './Incoming';
 
+
+
+/**
+ * Outgoing packet options.
+ */
+export interface OutgoingOpts<T = any, TStatus = any> extends PacketOpts<T>, StatusOptions<TStatus> {
+    pattern?: string;
+}
+
+export abstract class AbstractOutgoingFactory<TInput = any, TOutput = any, TOpts = any> {
+    abstract create(input: TInput, options?: TOpts): TOutput;
+}
+
+/**
+ * Outgoing factory.
+ */
+export abstract class OutgoingFactory implements AbstractOutgoingFactory<Incoming<any>, Outgoing<any>, OutgoingOpts> {
+    abstract create(incoming: Incoming<any>, options?: OutgoingOpts): Outgoing<any>;
+}
+
+/**
+ * Outgoing packet options.
+ */
+export interface ClietOutgoingOpts<T = any> extends PacketOpts<T> {
+    pattern?: string;
+}
+
+export abstract class ClientOutgoingFactory implements AbstractOutgoingFactory<AbstractRequest<any>, ClientOutgoing<any>, ClietOutgoingOpts> {
+    abstract create(request: AbstractRequest<any>, options?: ClietOutgoingOpts): ClientOutgoing<any>;
+
+}
 
 /**
  * Outgoing message.
@@ -100,6 +130,14 @@ export interface Outgoing<T, TStatus = any> {
 
 }
 
+/**
+ * Client Outgoing message
+ */
+export interface ClientOutgoing<T = any> extends Incoming<T> {
+
+}
+
+
 
 
 /**
@@ -109,7 +147,7 @@ export interface OutgoingOpts<T = any, TStatus = any> extends PacketOpts<T>, Sta
     pattern?: string;
 }
 
-export interface OutgoingCloneOpts<T, TStatus> extends CloneOpts<T>, StatusOptions<TStatus> {
+export interface OutgoingCloneOpts<T, TStatus> extends StatusOptions<TStatus> {
     pattern?: string;
 }
 
@@ -117,7 +155,7 @@ export interface OutgoingCloneOpts<T, TStatus> extends CloneOpts<T>, StatusOptio
 /**
  * Outgoing packet.
  */
-export abstract class AbstractOutgoing<T, TStatus = any> extends BasePacket<T> implements Outgoing<T, TStatus>, Clonable<AbstractOutgoing<T, TStatus>>, Serializable {
+export abstract class AbstractOutgoing<T, TStatus = any> extends BasePacket<T> implements Outgoing<T, TStatus> {
 
     /**
      * Type of the response, narrowed to either the full response or the header.
@@ -200,50 +238,6 @@ export abstract class AbstractOutgoing<T, TStatus = any> extends BasePacket<T> i
         this.headers.removeHeader(field);
     }
 
-
-    abstract clone(): AbstractOutgoing<T, TStatus>;
-    abstract clone<V>(update: OutgoingCloneOpts<V, TStatus>): AbstractOutgoing<V, TStatus>;
-    abstract clone(update: OutgoingCloneOpts<T, TStatus>): AbstractOutgoing<T, TStatus>;
-
-    protected override cloneOpts(update: OutgoingCloneOpts<any, TStatus>): OutgoingOpts {
-        const init = super.cloneOpts(update) as OutgoingOpts;
-        init.pattern = update.pattern ?? this.pattern;
-        init.type = update.type ?? this.type;
-        init.ok = update.ok ?? this.ok;
-        const status = update.status ?? this.statusCode;
-        if (status !== null) {
-            init.status = status;
-        }
-        if (this.error || update.error) {
-            init.error = update.error ?? this.error
-        }
-        init.statusMessage = update.statusMessage ?? update.statusText ?? this.statusMessage;
-        return init
-    }
-
-    protected override toRecord(): Record<string, any> {
-        const rcd = super.toRecord();
-        if (this.pattern) rcd.pattern = this.pattern;
-        if (!isNil(this.type)) rcd.type = this.type;
-        if (!isNil(this.statusCode)) rcd.status = this.statusCode;
-        if (this.statusMessage) rcd.statusMessage = this.statusMessage;
-
-        rcd.ok = this.ok;
-
-        if (this.error) {
-            rcd.error = this.error
-        }
-        return rcd;
-    }
-
-
 }
 
 
-/**
- * Outgoing factory.
- */
-export abstract class OutgoingFactory {
-    abstract create(incoming: Incoming<any>, options?: OutgoingOpts): AbstractOutgoing<any>;
-    abstract create<T, TStatus>(incoming: Incoming<any>, options?: OutgoingOpts<T, TStatus>): AbstractOutgoing<T, TStatus>;
-}
