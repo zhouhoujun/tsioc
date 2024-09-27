@@ -36,7 +36,7 @@ export abstract class ClientOutgoingFactory implements AbstractOutgoingFactory<A
 /**
  * Outgoing message.
  */
-export interface Outgoing<T, TStatus = any> {
+export abstract class Outgoing<T, TStatus = any> {
 
     id?: string | number;
     type?: string | number | null;
@@ -47,7 +47,7 @@ export interface Outgoing<T, TStatus = any> {
 
     error?: any;
 
-    headers: HeadersLike;
+    abstract get headers(): HeadersLike;
 
     /**
      * Get packet status code.
@@ -55,13 +55,13 @@ export interface Outgoing<T, TStatus = any> {
      * @return {TStatus}
      * @api public
      */
-    get statusCode(): TStatus;
+    abstract get statusCode(): TStatus;
     /**
      * Set packet status code.
      *
      * @api public
      */
-    set statusCode(code: TStatus);
+    abstract set statusCode(code: TStatus);
 
     /**
      * Get packet status message.
@@ -69,27 +69,27 @@ export interface Outgoing<T, TStatus = any> {
      * @return {String}
      * @api public
      */
-    get statusMessage(): string;
+    abstract get statusMessage(): string;
     /**
      * Set packet status message
      *
      * @return {TPacket}
      * @api public
      */
-    set statusMessage(statusText: string);
+    abstract set statusMessage(statusText: string);
 
     /**
      * has header in packet or not.
      * @param packet 
      * @param field 
      */
-    hasHeader(field: string): boolean;
+    abstract hasHeader(field: string): boolean;
     /**
      * get header from packet.
      * @param packet 
      * @param field 
      */
-    getHeader(field: string): string | number | string[] | undefined;
+    abstract getHeader(field: string): string | number | string[] | undefined;
     /**
      * Set header `field` to `val` or pass
      * an object of header fields.
@@ -104,14 +104,14 @@ export interface Outgoing<T, TStatus = any> {
      * @param {String} val
      * @api public
      */
-    setHeader(field: string, val: Header): void;
+    abstract setHeader(field: string, val: Header): void;
 
     /**
      * remove header in packet.
      * @param packet 
      * @param field 
      */
-    removeHeader(field: string): void;
+    abstract removeHeader(field: string): void;
 
 
     /**
@@ -133,7 +133,7 @@ export interface Outgoing<T, TStatus = any> {
 /**
  * Client Outgoing message
  */
-export interface ClientOutgoing<T = any> extends Incoming<T> {
+export abstract class ClientOutgoing<T = any> extends Incoming<T> {
 
 }
 
@@ -186,7 +186,7 @@ export abstract class AbstractOutgoing<T, TStatus = any> extends BasePacket<T> i
     set statusCode(code: TStatus) {
         this._status = code;
     }
-    
+
 
     get status(): TStatus {
         return this._status!;
@@ -194,7 +194,7 @@ export abstract class AbstractOutgoing<T, TStatus = any> extends BasePacket<T> i
     set status(code: TStatus) {
         this._status = code;
     }
-    
+
 
     /**
      * Textual description of response status code, defaults to OK.

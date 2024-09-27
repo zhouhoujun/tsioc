@@ -5,7 +5,7 @@ import { BasePacket, HeadersLike, PacketOpts, ParameterCodec, StatusOptions } fr
 /**
  * Incoming message
  */
-export interface Incoming<T> {
+export abstract class Incoming<T> {
 
     id?: number | string;
 
@@ -13,15 +13,14 @@ export interface Incoming<T> {
     pattern?: string;
     method?: string;
 
-    headers: HeadersLike;
+    abstract get headers(): HeadersLike;
 
     params?: Record<string, any>;
 
-    query?: Record<string, any>
+    query?: Record<string, any>;
 
-    payload?: any;
-
-    body?: T | null
+    abstract get body(): T | null;
+    abstract set body(val: T | null);
 
     rawBody?: any;
 
@@ -32,13 +31,13 @@ export interface Incoming<T> {
      * @param packet 
      * @param field 
      */
-    hasHeader?(field: string): boolean;
+    abstract hasHeader?(field: string): boolean;
     /**
      * get header from packet.
      * @param packet 
      * @param field 
      */
-    getHeader?(field: string): string | undefined;
+    abstract getHeader?(field: string): string | undefined;
 
 }
 
@@ -274,7 +273,7 @@ export abstract class TopicIncoming<T> extends AbstractIncoming<T> implements In
 /**
  * Clientincoming message
  */
-export interface ClientIncoming<T = any, TStatus = any> {
+export abstract class ClientIncoming<T = any, TStatus = any> {
     /**
      * event type
      */
@@ -286,7 +285,7 @@ export interface ClientIncoming<T = any, TStatus = any> {
 
     pattern?: string;
 
-    headers: HeadersLike;
+    abstract get headers(): HeadersLike;
 
     body?: T | null
 
@@ -306,13 +305,13 @@ export interface ClientIncoming<T = any, TStatus = any> {
      * @param packet 
      * @param field 
      */
-    hasHeader?(field: string): boolean;
+    abstract hasHeader?(field: string): boolean;
     /**
      * get header from packet.
      * @param packet 
      * @param field 
      */
-    getHeader?(field: string): string | undefined;
+    abstract getHeader?(field: string): string | undefined;
 
 }
 
