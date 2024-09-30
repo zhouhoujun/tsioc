@@ -137,9 +137,6 @@ export abstract class ClientOutgoing<T = any> extends Incoming<T> {
 
 }
 
-
-
-
 /**
  * Outgoing packet options.
  */

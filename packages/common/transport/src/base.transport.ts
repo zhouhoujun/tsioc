@@ -11,7 +11,7 @@ import { IEventEmitter, IReadableStream, IWritableStream } from './stream';
 export class SocketMessageReader implements MessageReader<IReadableStream> {
     read(socket: IReadableStream, channel: IEventEmitter, session: AbstractTransportSession): Observable<Packet<Buffer|string>> {
         return fromEvent(channel ?? socket, ev.DATA, (chunk: Buffer | string) => {
-            return session.messageFactory.create({ data: chunk });
+            return session.incomingFactory.create({ data: chunk });
         })
     }
 }
