@@ -1,10 +1,27 @@
-import { Injectable, promisify } from '@tsdi/ioc';
+import { Abstract, Injectable, promisify } from '@tsdi/ioc';
 import { Packet } from '@tsdi/common';
 import { Decoder, Encoder } from '@tsdi/common/codings';
 import { Observable, Subject, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
-import { AbstractTransportSession, Incomings, MessageReader, MessageWriter, Outgoings } from './TransportSession';
+import { AbstractTransportSession, Incomings, Outgoings } from './TransportSession';
 import { ev } from './consts';
 import { IEventEmitter, IReadableStream, IWritableStream } from './stream';
+
+/**
+ * message reader.
+ */
+@Abstract()
+export abstract class MessageReader<TSocket = any, TChannel extends IEventEmitter = IEventEmitter, TMsg = any, TSession extends AbstractTransportSession = AbstractTransportSession> {
+    abstract read(socket: TSocket, channel: TChannel | null | undefined, session: TSession): Observable<TMsg>
+}
+
+/**
+ * message writer.
+ */
+@Abstract()
+export abstract class MessageWriter<TSocket = any, TChannel extends IEventEmitter = IEventEmitter, TMsg = any, TOrigin = any, TSession extends AbstractTransportSession = AbstractTransportSession> {
+    abstract write(socket: TSocket, channel: TChannel | null | undefined, msg: TMsg, origin: TOrigin, session: TSession): Promise<any>;
+}
+
 
 
 @Injectable()
@@ -30,6 +47,17 @@ export class SocketMessageWriter implements MessageWriter<IWritableStream> {
  * base transport session via codings.
  */
 export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput = any> extends AbstractTransportSession<TSocket, TInput, TOutput> {
+
+    
+    /**
+     * message reader.
+     */
+    abstract get messageReader(): MessageReader;
+
+    /**
+     * message writer.
+     */
+    abstract get messageWriter(): MessageWriter;
 
     /**
      * encodings
@@ -58,7 +86,7 @@ export abstract class BaseTransportSession<TSocket = any, TInput = any, TOutput 
 
     /**
      * receive
-     * @param channel the req channel.
+     * @param incoming the req channel.
      * @param req the message response for.
      */
     receive(channel?: IEventEmitter, req?: TInput): Observable<TOutput> {

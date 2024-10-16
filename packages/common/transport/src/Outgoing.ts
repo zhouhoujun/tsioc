@@ -1,5 +1,4 @@
 import { AbstractRequest, BasePacket, Header, HeadersLike, PacketOpts, StatusOptions } from '@tsdi/common';
-import { Incoming } from './Incoming';
 
 
 
@@ -10,15 +9,15 @@ export interface OutgoingOpts<T = any, TStatus = any> extends PacketOpts<T>, Sta
     pattern?: string;
 }
 
-export abstract class AbstractOutgoingFactory<TInput = any, TOutput = any, TOpts = any> {
-    abstract create(input: TInput, options?: TOpts): TOutput;
+export abstract class AbstractOutgoingFactory<TSocket = any, TOutput = any, TOpts = any> {
+    abstract create(socket: TSocket, options?: TOpts): TOutput;
 }
 
 /**
  * Outgoing factory.
  */
-export abstract class OutgoingFactory implements AbstractOutgoingFactory<Incoming<any>, Outgoing<any>, OutgoingOpts> {
-    abstract create(incoming: Incoming<any>, options?: OutgoingOpts): Outgoing<any>;
+export abstract class OutgoingFactory<TSocket = any> implements AbstractOutgoingFactory<TSocket, Outgoing<any>, OutgoingOpts> {
+    abstract create(socket: TSocket, options?: OutgoingOpts): Outgoing<any>;
 }
 
 /**
@@ -28,9 +27,11 @@ export interface ClietOutgoingOpts<T = any> extends PacketOpts<T> {
     pattern?: string;
 }
 
+/**
+ * client outgoing factory.
+ */
 export abstract class ClientOutgoingFactory implements AbstractOutgoingFactory<AbstractRequest<any>, ClientOutgoing<any>, ClietOutgoingOpts> {
     abstract create(request: AbstractRequest<any>, options?: ClietOutgoingOpts): ClientOutgoing<any>;
-
 }
 
 /**
@@ -128,12 +129,55 @@ export abstract class Outgoing<T, TStatus = any> {
      */
     writable?: boolean;
 
+    abstract write(data: any, cb?: (err?: Error | null) => void): boolean;
+    abstract write(data: any, encoding?: string, cb?: (err?: Error | null) => void): boolean;
+    abstract end(cb?: () => void): this;
+    abstract end(data: any, cb?: () => void): this;
+    abstract end(data: any, encoding?: string, cb?: () => void): this;
+
 }
 
 /**
  * Client Outgoing message
  */
-export abstract class ClientOutgoing<T = any> extends Incoming<T> {
+export abstract class ClientOutgoing<T = any> {
+    id?: number | string;
+
+    url?: string;
+    pattern?: string;
+    method?: string;
+
+    abstract get headers(): HeadersLike;
+
+    params?: Record<string, any>;
+
+    query?: Record<string, any>;
+
+    abstract get body(): T | null;
+    abstract set body(val: T | null);
+
+    rawBody?: any;
+
+    path?: any;
+
+    /**
+     * has header in packet or not.
+     * @param packet 
+     * @param field 
+     */
+    abstract hasHeader?(field: string): boolean;
+    /**
+     * get header from packet.
+     * @param packet 
+     * @param field 
+     */
+    abstract getHeader?(field: string): string | undefined;
+
+    abstract write(data: any, cb?: (err?: Error | null) => void): boolean;
+    abstract write(data: any, encoding?: string, cb?: (err?: Error | null) => void): boolean;
+    abstract end(cb?: () => void): this;
+    abstract end(data: any, cb?: () => void): this;
+    abstract end(data: any, encoding?: string, cb?: () => void): this;
 
 }
 
@@ -234,6 +278,14 @@ export abstract class AbstractOutgoing<T, TStatus = any> extends BasePacket<T> i
     removeHeader(field: string): void {
         this.headers.removeHeader(field);
     }
+
+
+
+    abstract write(data: any, cb?: (err?: Error | null) => void): boolean;
+    abstract write(data: any, encoding?: string, cb?: (err?: Error | null) => void): boolean;
+    abstract end(cb?: () => void): this;
+    abstract end(data: any, cb?: () => void): this;
+    abstract end(data: any, encoding?: string, cb?: () => void): this;
 
 }
 

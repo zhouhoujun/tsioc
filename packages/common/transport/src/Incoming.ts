@@ -39,6 +39,9 @@ export abstract class Incoming<T> {
      */
     abstract getHeader?(field: string): string | undefined;
 
+    
+    abstract push(chunk: any, encoding?: string): boolean;
+
 }
 
 /**
@@ -195,6 +198,9 @@ export abstract class AbstractIncoming<T> extends BasePacket<T> implements Incom
         return this.headers.getHeader(field);
     }
 
+    
+    abstract push(chunk: any, encoding?: string): boolean;
+
 }
 
 
@@ -267,6 +273,8 @@ export abstract class TopicIncoming<T> extends AbstractIncoming<T> implements In
         return this.headers.getHeader(field);
     }
 
+    abstract push(chunk: any, encoding?: string): boolean;
+
 }
 
 
@@ -312,6 +320,8 @@ export abstract class ClientIncoming<T = any, TStatus = any> {
      * @param field 
      */
     abstract getHeader?(field: string): string | undefined;
+
+    abstract push(chunk: any, encoding?: string): boolean;
 
 }
 
@@ -426,6 +436,9 @@ export abstract class AbstractClientIncoming<T, TStatus = any> extends BasePacke
     getHeader(field: string): string | undefined {
         return this.headers.getHeader(field);
     }
+
+    
+    abstract push(chunk: any, encoding?: string): boolean;
 
 }
 

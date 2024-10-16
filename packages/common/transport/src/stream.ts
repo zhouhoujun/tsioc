@@ -343,6 +343,7 @@ export interface IReadableStream extends IStream {
     pipe<T extends IWritableStream>(destination: T, options?: { end?: boolean | undefined; }): T;
     unpipe(destination?: IWritableStream): this;
     unshift(chunk: any, encoding?: string): void;
+    push(chunk: any, encoding?: string): boolean;
     wrap(oldStream: IReadableStream): this;
     destroy?(error?: any): void;
     [Symbol.asyncIterator](): AsyncIterableIterator<any>;

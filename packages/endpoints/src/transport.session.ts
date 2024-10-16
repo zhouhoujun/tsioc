@@ -19,7 +19,7 @@ export abstract class TransportSession<TSocket = any, TOptions extends ServerOpt
     /**
      * outgoing message factory.
      */
-    abstract get outgoingFactory(): OutgoingFactory | null;
+    abstract get outgoingFactory(): OutgoingFactory;
     /**
      * request context factory.
      */
