@@ -23,27 +23,20 @@ export interface PacketOpts<T = any> {
 /**
  * Packet
  */
-export abstract class Packet<T> {
-    id?: string | number;
-    
-    abstract get headers(): HeaderMappings;
-    abstract set headers(val: HeaderMappings);
-
-    abstract get payload(): T | null;
-    abstract set payload(val: T | null);
-
-    abstract attachId(id: string | number): void;
-}
-
-/**
- * base packet.
- */
-export abstract class BasePacket<T> implements Packet<T> {
-
+export class Packet<T> {
+    /**
+     * payload
+     */
     public payload: T | null;
 
+    /**
+     * packet id
+     */
     id?: string | number;
 
+    /**
+     * packet headers.
+     */
     readonly headers: HeaderMappings;
 
     constructor(init?: PacketOpts<T>) {
@@ -56,9 +49,4 @@ export abstract class BasePacket<T> implements Packet<T> {
             this.payload = null;
         }
     }
-
-    attachId(id: string | number) {
-        this.id = id;
-    }
-
 }

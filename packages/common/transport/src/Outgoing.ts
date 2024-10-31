@@ -1,4 +1,4 @@
-import { AbstractRequest, BasePacket, Header, HeadersLike, PacketOpts, StatusOptions } from '@tsdi/common';
+import { AbstractRequest, Header, HeadersLike, PacketOpts, StatusOptions, HeaderMappings } from '@tsdi/common';
 
 
 
@@ -196,7 +196,11 @@ export interface OutgoingCloneOpts<T, TStatus> extends StatusOptions<TStatus> {
 /**
  * Outgoing packet.
  */
-export abstract class AbstractOutgoing<T, TStatus = any> extends BasePacket<T> implements Outgoing<T, TStatus> {
+export abstract class AbstractOutgoing<T, TStatus = any> implements Outgoing<T, TStatus> {
+    /**
+     * packet id
+     */
+    id?: string | number;
 
     /**
      * Type of the response, narrowed to either the full response or the header.
@@ -205,15 +209,15 @@ export abstract class AbstractOutgoing<T, TStatus = any> extends BasePacket<T> i
     readonly pattern?: string;
     readonly error: any | null;
     readonly ok: boolean;
-    public override payload: T | null;
+    readonly headers: HeaderMappings;
 
     protected _status: TStatus | null;
     protected _message: string | undefined;
 
     constructor(init: OutgoingOpts, defaultStatus?: TStatus, defaultStatusText?: string) {
-        super(init);
         this.pattern = init.pattern;
-        this.payload = init.payload ?? null;
+        this.id = init.id;
+        this.headers = new HeaderMappings(init.headers);
         this.ok = init.error ? false : init.ok != false;
         this.error = init.error;
         this.type = init.type;
@@ -278,8 +282,6 @@ export abstract class AbstractOutgoing<T, TStatus = any> extends BasePacket<T> i
     removeHeader(field: string): void {
         this.headers.removeHeader(field);
     }
-
-
 
     abstract write(data: any, cb?: (err?: Error | null) => void): boolean;
     abstract write(data: any, encoding?: string, cb?: (err?: Error | null) => void): boolean;

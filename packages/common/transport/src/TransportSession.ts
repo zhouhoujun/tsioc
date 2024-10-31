@@ -1,11 +1,11 @@
 import { Injector, ProvdierOf, Token } from '@tsdi/ioc';
-import { HeaderAdapter, HybirdTransport, Transport } from '@tsdi/common';
+import { HeaderAdapter, HybirdTransport, Packet, Transport } from '@tsdi/common';
 import { CodingsAapter, CodingsHandlerOptions } from '@tsdi/common/codings';
 import { Observable } from 'rxjs';
-import { AbstractIncomingFactory, ClientIncoming, Incoming } from './Incoming';
 import { StatusAdapter } from './StatusAdapter';
 import { StreamAdapter } from './StreamAdapter';
 import { TransportDecodingsFactory, TransportEncodingsFactory } from './condings';
+import { AbstractIncomingFactory, ClientIncoming, Incoming } from './Incoming';
 import { AbstractOutgoingFactory, ClientOutgoing, Outgoing } from './Outgoing';
 import { IEventEmitter } from './stream';
 
@@ -46,9 +46,13 @@ export interface TransportOpts {
      * microservice or not.
      */
     microservice?: boolean;
-
+    /**
+     * client side or not.
+     */
     client?: boolean;
-
+    /**
+     * default method.
+     */
     defaultMethod?: string;
 
     serializeIgnores?: string[];
@@ -68,7 +72,7 @@ export interface TransportOpts {
      */
     countLen?: number;
     /**
-     * id b
+     * id byte length
      */
     idLen?: number;
     /**
@@ -138,9 +142,8 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
     /**
      * receive
      * @param channel the req channel.
-     * @param req the message response for.
      */
-    abstract receive(channel: IEventEmitter, req?: TInput): Observable<TOutput>;
+    abstract receive(channel: IEventEmitter): Observable<TOutput>;
 
     /**
      * destroy.
@@ -153,12 +156,12 @@ export abstract class AbstractTransportSession<TSocket = any, TInput = any, TOut
 /**
  * Incoming messages
  */
-export type Incomings = Incoming<any> | ClientIncoming<any>;
+export type Incomings = Packet<any> | Incoming<any> | ClientIncoming<any>;
 
 
 /**
  * Outgoing messages
  */
-export type Outgoings = Outgoing<any> | ClientOutgoing<any>;
+export type Outgoings = Packet<any> | Outgoing<any> | ClientOutgoing<any>;
 
 

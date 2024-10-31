@@ -1,4 +1,4 @@
-import { BasePacket, HeadersLike, PacketOpts, ParameterCodec, StatusOptions } from '@tsdi/common';
+import { HeadersLike, Packet, PacketOpts, ParameterCodec, StatusOptions } from '@tsdi/common';
 
 
 
@@ -151,7 +151,7 @@ export type IncomingOpts<T = any> = UrlIncomingOptions<T> | TopicIncomingOptions
 /**
  * Incoming base packet.
  */
-export abstract class AbstractIncoming<T> extends BasePacket<T> implements Incoming<T> {
+export abstract class AbstractIncoming<T> extends Packet<T> implements Incoming<T> {
 
     readonly pattern?: string;
     /**
@@ -361,7 +361,7 @@ export type ClientIncomingOpts<T = any, TStatus = any> = UrlClientIncomingOpts<T
 /**
  * client incoming packet
  */
-export abstract class AbstractClientIncoming<T, TStatus = any> extends BasePacket<T> implements ClientIncoming<T, TStatus> {
+export abstract class AbstractClientIncoming<T, TStatus = any> extends Packet<T> implements ClientIncoming<T, TStatus> {
 
     readonly pattern?: string | undefined;
 
