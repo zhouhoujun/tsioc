@@ -1,6 +1,6 @@
 import { Abstract, EMPTY, Injectable, isNil, isString } from '@tsdi/ioc';
 import { InvalidJsonException } from '@tsdi/core';
-import { HeaderAdapter, HeadersLike, Message, Packet, PacketOpts, RequestParams, isArrayBuffer, isBlob, isFormData } from '@tsdi/common';
+import { HeaderAdapter, HeadersLike, Packet, PacketOpts, RequestParams, isArrayBuffer, isBlob, isFormData } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
 import { TransportContext } from './context';
 import { StreamAdapter, isBuffer, toBuffer } from './StreamAdapter';
