@@ -1,5 +1,5 @@
 import { Abstract, Injector } from '@tsdi/ioc';
-import { BaseTransportSession, FileAdapter, IncomingFactory, MimeAdapter, OutgoingFactory } from '@tsdi/common/transport';
+import { AbstractTransport, FileAdapter, IncomingFactory, MimeAdapter, OutgoingFactory } from '@tsdi/common/transport';
 import { Observable, Subscription, first, merge, mergeMap, takeUntil } from 'rxjs';
 import { AbstractRequestHandler } from './AbstractRequestHandler';
 import { RequestContext, RequestContextFactory } from './RequestContext';
@@ -7,7 +7,7 @@ import { ServerOpts } from './Server';
 import { AcceptsPriority } from './accepts';
 
 @Abstract()
-export abstract class TransportSession<TSocket = any, TOptions extends ServerOpts = ServerOpts> extends BaseTransportSession<TSocket, RequestContext, RequestContext> {
+export abstract class ServerTransport<TSocket = any, TOptions extends ServerOpts = ServerOpts> extends AbstractTransport<TSocket, RequestContext, RequestContext> {
     /**
      * server options.
      */
@@ -55,7 +55,7 @@ export abstract class TransportSessionFactory<TSocket = any> {
      * create transport session.
      * @param options 
      */
-    abstract create(injector: Injector, socket: TSocket, options: ServerOpts): TransportSession<TSocket>;
+    abstract create(injector: Injector, socket: TSocket, options: ServerOpts): ServerTransport<TSocket>;
 }
 
 

@@ -6,7 +6,7 @@ import {
     Decodings, DecodingsBackend, DecodingsConfigableHandler, DecodingsFactory,
     Encodings, EncodingsBackend, EncodingsConfigableHandler, EncodingsFactory
 } from '@tsdi/common/codings';
-import { AbstractTransportSession, TransportOpts } from './TransportSession';
+import { Transport } from './Transport';
 import { TransportContext } from './context';
 import { Serialization } from './packet';
 
@@ -34,7 +34,7 @@ export class TransportEncodings extends Encodings {
     /**
      * transport session
      */
-    session!: AbstractTransportSession;
+    session!: Transport;
 
     protected override createContext(): TransportContext {
         return new TransportContext(this.session, this.options, this.adapter);
@@ -89,7 +89,7 @@ export class TransportDecodings extends Decodings {
     /**
      * transport session
      */
-    session!: AbstractTransportSession;
+    session!: Transport;
 
     protected override createContext(): TransportContext {
         return new TransportContext(this.session, this.options, this.adapter);

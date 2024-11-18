@@ -1,5 +1,5 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { Transport } from '@tsdi/common';
+import { Protocols } from '@tsdi/common';
 import { Router } from './router';
 import { RequestHandler } from '../RequestHandler';
 
@@ -13,7 +13,7 @@ export abstract class MicroRouter<T extends RequestHandler = RequestHandler> ext
     /**
      * protocol
      */
-    abstract get protocol(): Transport;
+    abstract get protocol(): Protocols;
 }
 
 
@@ -33,5 +33,5 @@ export abstract class MicroRouters {
     /**
      * get microservice router
      */
-    abstract get(protocol?: Transport): MicroRouter;
+    abstract get(protocol?: Protocols): MicroRouter;
 }

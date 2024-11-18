@@ -1,15 +1,15 @@
 import { Abstract, Injector, isFunction, promisify } from '@tsdi/ioc';
 import { AbstractRequest, ResponseEvent, ResponseFactory } from '@tsdi/common';
-import { BaseTransportSession, ClientIncomingFactory, IEventEmitter, Redirector } from '@tsdi/common/transport';
+import { AbstractTransport, ClientIncomingFactory, IEventEmitter, Redirector } from '@tsdi/common/transport';
 import { Observable, first, merge, mergeMap, takeUntil } from 'rxjs';
 import { ClientOpts } from './options';
 
 
 /**
- * transport session for client.
+ * transport for client.
  */
 @Abstract()
-export abstract class ClientTransportSession<TSocket = any> extends BaseTransportSession<TSocket, AbstractRequest<any>, ResponseEvent<any>> {
+export abstract class ClientTransport<TSocket = any> extends AbstractTransport<TSocket, AbstractRequest<any>, ResponseEvent<any>> {
     /**
      * client options
      */
@@ -42,13 +42,10 @@ export abstract class ClientTransportSession<TSocket = any> extends BaseTranspor
 
     protected async closeSocket() {
         const socket = this.socket as any;
-        if (socket) {
-            if (this.options.close) {
-                await this.options.close(socket)
-            } else if (isFunction(socket.close)) {
-                await promisify(socket.close, socket)();
-            }
+        if (socket && isFunction(socket.close)) {
+            await promisify(socket.close, socket)();
         }
+
     }
 }
 
@@ -56,10 +53,10 @@ export abstract class ClientTransportSession<TSocket = any> extends BaseTranspor
  * client transport session factory.
  */
 @Abstract()
-export abstract class ClientTransportSessionFactory<TSocket = any, TOptions = ClientOpts> {
+export abstract class ClientTransportFactory<TSocket = any, TOptions = ClientOpts> {
     /**
      * the options to create transport session.
      * @param options 
      */
-    abstract create(injector: Injector, socket: TSocket, options: TOptions): ClientTransportSession<TSocket>;
+    abstract create(injector: Injector, socket: TSocket, options: TOptions): ClientTransport<TSocket>;
 }

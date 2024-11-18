@@ -3,7 +3,7 @@ import {
     ClassMethodDecorator, createParamDecorator, TypeMetadata, Execption, isMetadataObject, DecorDefine
 } from '@tsdi/ioc';
 import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter } from '@tsdi/core';
-import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Transport, HybirdTransport } from '@tsdi/common';
+import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Protocols, HybirdProtocols } from '@tsdi/common';
 import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, ProtocolRouteOptions, RouteMappingMetadata, RouteOptions, Router } from './router/router';
 import { Middleware, MiddlewareFn } from './middleware/middleware';
 import { RouteHandlerFactoryResolver } from './router/route.handler';
@@ -35,7 +35,7 @@ export interface Subscribe {
      * @param {string} topic message match pattern.
      * @param {Record<string, any> & { protocol?: Protocols }} option message match option.
      */
-    (topic: string, protocol?: Transport, option?: RouteOptions): MethodDecorator;
+    (topic: string, protocol?: Protocols, option?: RouteOptions): MethodDecorator;
 }
 
 /**
@@ -46,7 +46,7 @@ export interface Subscribe {
  */
 export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe', {
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
-    props: (route: string, arg1?: Transport | ProtocolRouteOptions, option?: RouteOptions) =>
+    props: (route: string, arg1?: Protocols | ProtocolRouteOptions, option?: RouteOptions) =>
         (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata,
     design: {
         method: (ctx, next) => {
@@ -106,7 +106,7 @@ export interface Handle {
      * @param {Pattern} pattern message match pattern.
      * @param {cmd?: string, pattern?: string } option message match option.
      */
-    (pattern: Pattern, protocol?: Transport, option?: RouteOptions): MethodDecorator;
+    (pattern: Pattern, protocol?: Protocols, option?: RouteOptions): MethodDecorator;
 }
 
 /**
@@ -120,7 +120,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
     isMatadata: (args) => {
         return isMetadataObject(args) && isString(args.route)
     },
-    props: (route: Pattern, arg1?: Transport | ProtocolRouteOptions, option?: RouteOptions) =>
+    props: (route: Pattern, arg1?: Protocols | ProtocolRouteOptions, option?: RouteOptions) =>
         (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata<any>,
     def: {
         class: (ctx, next) => {
@@ -160,7 +160,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             const mapping = ctx.class.getAnnotation<MappingDef>();
             const injector = ctx.injector;
 
-            const router = mapping.router ? injector.get(mapping.router) : injector.get(Routers).get(mapping.protocol as HybirdTransport);
+            const router = mapping.router ? injector.get(mapping.router) : injector.get(Routers).get(mapping.protocol as HybirdProtocols);
             const route = mapping.route!;
             if (!route) throw new Execption(lang.getClassName(ctx.type) + 'has not route!');
             if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
@@ -721,6 +721,6 @@ export interface HandleMetadata<TArg = any> extends TypeMetadata, PatternMetadat
     /**
      * protocol
      */
-    protocol?: Transport;
+    protocol?: Protocols;
 }
 

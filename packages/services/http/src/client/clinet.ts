@@ -5,7 +5,7 @@ import {
     joinPath
 } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
-import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse } from '@tsdi/common/http';
 import { Observable, of } from 'rxjs';
 import * as http from 'http';
@@ -39,7 +39,7 @@ export type HttpReqOptions = HttpRequestOpts & HttpNodeOpts;
 @Injectable()
 export class Http extends AbstractClient<HttpRequest<any>, HttpEvent<any>, HttpClientOpts> {
 
-    private session?: ClientTransportSession<http2.ClientHttp2Session | null> | null;
+    private session?: ClientTransport<http2.ClientHttp2Session | null> | null;
     constructor(readonly handler: HttpHandler) {
         super()
     }
@@ -50,7 +50,7 @@ export class Http extends AbstractClient<HttpRequest<any>, HttpEvent<any>, HttpC
         const injector = this.handler.injector;
         const options = this.getOptions();
         if (!options.authority) {
-            this.session = injector.get(ClientTransportSessionFactory).create(injector, null, options);
+            this.session = injector.get(ClientTransportFactory).create(injector, null, options);
             return of(this.session);
         } else {
 
@@ -65,7 +65,7 @@ export class Http extends AbstractClient<HttpRequest<any>, HttpEvent<any>, HttpC
                 }
                 const onConnect = () => {
 
-                    this.session = injector.get(ClientTransportSessionFactory).create(injector, conn, options);
+                    this.session = injector.get(ClientTransportFactory).create(injector, conn, options);
                     observer.next(this.session);
                     observer.complete();
                 };
@@ -106,7 +106,7 @@ export class Http extends AbstractClient<HttpRequest<any>, HttpEvent<any>, HttpC
 
     protected override initContext(context: InvocationContext<any>): void {
         context.setValue(AbstractClient, this);
-        context.setValue(ClientTransportSession, this.session);
+        context.setValue(ClientTransport, this.session);
     }
 
     protected override createParams(params: string | readonly [string, string | number | boolean][] | Record<string, string | number | boolean | readonly (string | number | boolean)[]>): RequestParams {

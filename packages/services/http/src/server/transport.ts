@@ -1,7 +1,7 @@
 import { Injectable, promisify } from '@tsdi/ioc';
 import { Header } from '@tsdi/common';
 import { ev, MessageReader, IReadableStream, IncomingFactory, Incoming, MessageWriter, IEventEmitter, StreamIncomingOptions } from '@tsdi/common/transport';
-import { TransportSession } from '@tsdi/endpoints';
+import { ServerTransport } from '@tsdi/endpoints';
 import { Server } from 'http';
 import { Server as HttpsServer } from 'https';
 import { Http2Server } from 'http2';
@@ -43,7 +43,7 @@ export class HttpIncomingFactory extends IncomingFactory {
 @Injectable()
 export class HttpServerMessageReader implements MessageReader<Http2Server | HttpsServer | Server, IEventEmitter, HttpIncomings> {
 
-    read(socket: Http2Server | HttpsServer | Server, channel: null, session: TransportSession): Observable<HttpIncomings> {
+    read(socket: Http2Server | HttpsServer | Server, channel: null, session: ServerTransport): Observable<HttpIncomings> {
         return new Observable<HttpIncomings>(subscribe => {
             const onRequest = (req: HttpServRequest, res: HttpServResponse) => subscribe.next(session.incomingFactory.create({ req, res }) as HttpIncomings);
             const onError = (err: any) => err && subscribe.error(err);
@@ -68,7 +68,7 @@ export class HttpServerMessageReader implements MessageReader<Http2Server | Http
 
 @Injectable()
 export class HttpServerMessagerWriter implements MessageWriter<Http2Server | HttpsServer | Server, HttpServResponse> {
-    write(socket: Http2Server | HttpsServer | Server, channel: HttpServResponse, msg: HttpMesage, origin: HttpContext, session: TransportSession): Promise<any> {
+    write(socket: Http2Server | HttpsServer | Server, channel: HttpServResponse, msg: HttpMesage, origin: HttpContext, session: ServerTransport): Promise<any> {
         if (session.streamAdapter.isStream(msg.data)) {
             return session.streamAdapter.pipeTo(msg.data, channel);
         } else {

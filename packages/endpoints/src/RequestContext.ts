@@ -7,7 +7,7 @@ import {
 } from '@tsdi/common/transport';
 import { ServerOpts } from './Server';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
-import { TransportSession } from './transport.session';
+import { ServerTransport } from './transport';
 import { AcceptsPriority } from './accepts';
 
 /**
@@ -32,7 +32,7 @@ export abstract class RequestContext<
     /**
      * transport session
      */
-    abstract get session(): TransportSession<TSocket>;
+    abstract get session(): ServerTransport<TSocket>;
 
     /**
      * mime adapter.
@@ -779,7 +779,7 @@ export abstract class RequestContextFactory<TRequest extends Incoming<any> = Inc
      * @param response 
      * @param options 
      */
-    abstract create(session: TransportSession, message: TRequest, response: TResponse, options?: ServerOpts): RequestContext<TRequest, TResponse, TSocket>;
+    abstract create(session: ServerTransport, message: TRequest, response: TResponse, options?: ServerOpts): RequestContext<TRequest, TResponse, TSocket>;
 }
 
 

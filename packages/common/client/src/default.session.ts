@@ -1,12 +1,12 @@
 import { HeaderAdapter, MessageFactory, ResponseFactory } from '@tsdi/common';
 import { ClientIncomingFactory, IDuplexStream, MessageReader, MessageWriter, Redirector, StatusAdapter, StreamAdapter, TransportDecodings, TransportDecodingsFactory, TransportEncodings, TransportEncodingsFactory, TransportOpts } from '@tsdi/common/transport';
 import { Injectable, Injector } from '@tsdi/ioc';
-import { ClientTransportSession, ClientTransportSessionFactory } from './session';
+import { ClientTransport, ClientTransportFactory } from './transport';
 import { ClientOpts } from './options';
 
 
 
-export class DefaultClientTransportSession extends ClientTransportSession<any> {
+export class DefaultClientTransportSession extends ClientTransport<any> {
 
     private _encodings?: TransportEncodings;
     private _decodings?: TransportDecodings;
@@ -110,7 +110,7 @@ export class DefaultClientTransportSession extends ClientTransportSession<any> {
 
 
 @Injectable()
-export class DefaultClientTransportSessionFactory implements ClientTransportSessionFactory<any> {
+export class DefaultClientTransportSessionFactory implements ClientTransportFactory<any> {
 
     constructor() { }
 

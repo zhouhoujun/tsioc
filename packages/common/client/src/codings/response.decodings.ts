@@ -3,7 +3,7 @@ import { Handler, Interceptor } from '@tsdi/core';
 import { HEAD, ResponseEvent, ResponseJsonParseError, AbstractRequest } from '@tsdi/common';
 import { TransportContext, MimeAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer, AbstractClientIncoming } from '@tsdi/common/transport';
 import { Observable, defer, mergeMap, of, throwError } from 'rxjs';
-import { ClientTransportSession } from '../session';
+import { ClientTransport } from '../transport';
 
 
 @Injectable()
@@ -11,10 +11,10 @@ export class ErrorResponseDecordeInterceptor implements Interceptor<AbstractClie
 
     intercept(input: AbstractClientIncoming<any>, next: Handler<AbstractClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         if (!input.ok || input.error) {
-            const session = context.session as ClientTransportSession;
+            const session = context.transport as ClientTransport;
 
             return defer(async () => {
-                if (context.session.streamAdapter.isReadable(input.payload)) {
+                if (context.transport.streamAdapter.isReadable(input.payload)) {
                     let payload: any = await toBuffer(input.payload);
                     payload = new TextDecoder().decode(payload);
                     return input.clone({ payload })
@@ -33,8 +33,8 @@ export class ErrorResponseDecordeInterceptor implements Interceptor<AbstractClie
 export class EmptyResponseDecordeInterceptor implements Interceptor<AbstractClientIncoming<any>, ResponseEvent<any>, TransportContext> {
 
     intercept(input: AbstractClientIncoming<any>, next: Handler<AbstractClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
-        const len = context.session.headerAdapter.getContentLength(input.headers);
-        const session = context.session as ClientTransportSession;
+        const len = context.transport.headerAdapter.getContentLength(input.headers);
+        const session = context.transport as ClientTransport;
         if (!len || session.statusAdapter?.isEmpty(input.status)) {
             return of(session.responseFactory.create({ ...input.serialize(), payload: null }));
         }
@@ -46,7 +46,7 @@ export class EmptyResponseDecordeInterceptor implements Interceptor<AbstractClie
 export class RedirectDecodeInterceptor implements Interceptor<AbstractClientIncoming<any>, ResponseEvent<any>, TransportContext> {
 
     intercept(input: AbstractClientIncoming<any>, next: Handler<AbstractClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
-        const session = context.session as ClientTransportSession;
+        const session = context.transport as ClientTransport;
         // HTTP fetch step 5
         if (session.redirector) {
             if (session.statusAdapter?.isRedirect(input.status)) {
@@ -67,7 +67,7 @@ export class CompressResponseDecordeInterceptor implements Interceptor<AbstractC
     intercept(input: AbstractClientIncoming<any>, next: Handler<AbstractClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         return defer(async () => {
             const response = input;
-            const session = context.session as ClientTransportSession;
+            const session = context.transport as ClientTransport;
             const codings = session.headerAdapter.getContentEncoding(response.headers);
             const req = context.first() as AbstractRequest<any>;
             const streamAdapter = session.streamAdapter;
@@ -172,7 +172,7 @@ export class ResponseTypeDecodeInterceptor implements Interceptor<AbstractClient
 
     intercept(input: AbstractClientIncoming<any>, next: Handler<AbstractClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         return defer(async () => {
-            const { responseFactory, headerAdapter, streamAdapter } = context.session as ClientTransportSession;
+            const { responseFactory, headerAdapter, streamAdapter } = context.transport as ClientTransport;
 
             const req = context.first() as AbstractRequest<any>;
             let responseType = req.responseType;

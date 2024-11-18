@@ -21,7 +21,7 @@ export class PackageDecodeInterceptor implements Interceptor<Serialization, Pack
 
     packs: Map<string | number, CachePacket> = new Map();
     intercept(input: Serialization, next: Handler<Serialization, Packet<any>, TransportContext>, context: TransportContext): Observable<Packet<any>> {
-        const { options, streamAdapter, headerAdapter } = context.session;
+        const { options, streamAdapter, headerAdapter } = context.transport;
         const idLen = options.idLen ?? 2;
         let id: string | number;
         if (streamAdapter.isReadable(input.payload)) {
@@ -118,7 +118,7 @@ export class PackageEncodeInterceptor implements Interceptor<Packet<any>, Serial
         return next.handle(input, context)
             .pipe(
                 mergeMap(msg => {
-                    const { options, streamAdapter } = context.session;
+                    const { options, streamAdapter } = context.transport;
                     const idLen = options.idLen ?? 2;
                     const data = msg.payload;
                     const packetSize = isBuffer(data) ? Buffer.byteLength(data) : msg.streamLength!;

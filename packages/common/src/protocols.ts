@@ -1,15 +1,11 @@
 
 /**
- * transport types.
+ * protocol types.
  */
-export type Transport = 'tcp' | 'udp' | 'coap' | 'amqp' | 'mqtt' | 'kafka' | 'redis' | 'nats' | 'grpc' | 'modbus' | 'ws';
+export type Protocols = 'tcp' | 'udp' | 'coap' | 'amqp' | 'mqtt' | 'kafka' | 'redis' | 'nats' | 'modbus' | 'http' | 'https' | 'grpc' | 'ws';
 
 /**
- * hybird transport type.
+ * hybird protocol type.
  */
-export type HybirdTransport = 'http' | 'grpc' | 'tcp' | 'coap';
+export type HybirdProtocols = 'http' | 'https' | 'grpc' | 'tcp' | 'coap';
 
-/**
- * protocol types
- */
-export type ProtocolType = Transport | HybirdTransport;

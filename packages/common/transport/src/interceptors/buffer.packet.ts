@@ -31,11 +31,11 @@ export class PacketDecodeInterceptor implements Interceptor<Serialization, Packe
     }
 
     intercept(input: Serialization, next: Handler<Serialization, Packet<any>>, context: TransportContext): Observable<Packet<any>> {
-        if (context.session.streamAdapter.isReadable(input.payload)) return next.handle(input, context);
+        if (context.transport.streamAdapter.isReadable(input.payload)) return next.handle(input, context);
 
         return new Observable((subscriber: Subscriber<Serialization>) => {
 
-            const channel = context.channel ?? context.session.options.transport ?? '';
+            const channel = context.channel ?? context.transport.options.transport ?? '';
 
             let cache = this.channels.get(channel);
             const payload = input.payload as Buffer;
@@ -59,7 +59,7 @@ export class PacketDecodeInterceptor implements Interceptor<Serialization, Packe
     }
 
     protected handleData(channel: string, cache: ChannelCache, data: Buffer, subscriber: Subscriber<Serialization>, context: TransportContext) {
-        const { options, streamAdapter, injector } = context.session;
+        const { options, streamAdapter, injector } = context.transport;
 
         const bLen = Buffer.byteLength(data);
         cache.length += bLen;
@@ -140,7 +140,7 @@ export class BindPacketIdDecodeInterceptor implements Interceptor<Serialization,
         return next.handle(input, context)
             .pipe(
                 filter(packet => {
-                    if (!context.session.options.client) return true;
+                    if (!context.transport.options.client) return true;
                     return packet.id == input.id;
                 })
             );
@@ -151,7 +151,7 @@ export class BindPacketIdDecodeInterceptor implements Interceptor<Serialization,
 export class BindPacketIdEncodeInterceptor implements Interceptor<Packet<any>, Serialization, TransportContext> {
 
     intercept(input: Packet<any>, next: Handler<Packet<any>, Serialization>, context: TransportContext): Observable<Serialization> {
-        const { options, injector, headerAdapter } = context.session;
+        const { options, injector, headerAdapter } = context.transport;
         const length = headerAdapter.getContentLength(input.headers);
         if (length && options.maxSize && length > options.maxSize && !options.headDelimiter && !injector.has(PackageEncodeInterceptor)) {
             const btpipe = injector.get<PipeTransform>('bytes-format');
@@ -172,7 +172,7 @@ export class PacketEncodeInterceptor implements Interceptor<Packet<any>, Seriali
 
         return next.handle(input, context)
             .pipe(map(msg => {
-                const { streamAdapter, options } = context.session;
+                const { streamAdapter, options } = context.transport;
                 const countLen = options.countLen || 4;
                 let buffLen: Buffer;
                 const delimiter = Buffer.from(options.delimiter!);

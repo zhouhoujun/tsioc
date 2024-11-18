@@ -1,4 +1,4 @@
-import { DefaultResponseFactory, HybirdTransport, MessageFactory, ResponseFactory, Transport } from '@tsdi/common';
+import { DefaultResponseFactory, HybirdProtocols, ResponseFactory, Protocols } from '@tsdi/common';
 import { ClientIncomingFactory, MessageReader, MessageWriter, NotImplementedExecption, SocketMessageReader, SocketMessageWriter, StatusAdapter, TransportPacketModule } from '@tsdi/common/transport';
 import { ConfigMissingExecption, createHandler } from '@tsdi/core';
 import {
@@ -20,7 +20,7 @@ import { DefaultClientTransportSessionFactory } from './default.session';
 import { BodyContentInterceptor } from './interceptors/body';
 import { ClientOpts } from './options';
 import { UrlRedirector } from './redirector';
-import { ClientTransportSessionFactory } from './session';
+import { ClientTransportFactory } from './transport';
 
 
 /**
@@ -106,7 +106,7 @@ export interface ClientModuleOpts extends ClientModuleConfig {
     /**
      * transport
      */
-    transport: Transport | HybirdTransport;
+    transport: Protocols | HybirdProtocols;
     /**
      * client type
      */
@@ -138,7 +138,7 @@ export interface ClientModuleOpts extends ClientModuleConfig {
  */
 export interface ClientTokenOpts {
 
-    transport: Transport | HybirdTransport;
+    transport: Protocols;
 
     /**
      * client token.
@@ -232,12 +232,12 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     clientOpts.providers.push(toProvider(ClientIncomingFactory, clientOpts.incomingFactory));
                 }
 
-                if (clientOpts.messageFactory) {
-                    clientOpts.providers.push(toProvider(MessageFactory, clientOpts.messageFactory));
-                }
+                // if (clientOpts.messageFactory) {
+                //     clientOpts.providers.push(toProvider(MessageFactory, clientOpts.messageFactory));
+                // }
 
-                if (clientOpts.sessionFactory !== ClientTransportSessionFactory) {
-                    clientOpts.providers.push(toProvider(ClientTransportSessionFactory, clientOpts.sessionFactory ?? DefaultClientTransportSessionFactory))
+                if (clientOpts.sessionFactory !== ClientTransportFactory) {
+                    clientOpts.providers.push(toProvider(ClientTransportFactory, clientOpts.sessionFactory ?? DefaultClientTransportSessionFactory))
                 }
                 clientOpts.providers.push(toProvider(MessageReader, clientOpts.messageReader ?? SocketMessageReader));
                 clientOpts.providers.push(toProvider(MessageWriter, clientOpts.messageWriter ?? SocketMessageWriter));

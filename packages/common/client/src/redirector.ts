@@ -4,7 +4,7 @@ import { HeaderMappings, UrlRequest, RequestMethod, IHeaders } from '@tsdi/commo
 import { BadRequestExecption, Redirector } from '@tsdi/common/transport';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { AbstractClient } from './AbstractClient';
-import { ClientTransportSession } from './session';
+import { ClientTransport } from './transport';
 
 
 @Injectable()
@@ -14,7 +14,7 @@ export class UrlRedirector implements Redirector {
         return new Observable((observer: Observer<T>) => {
             if (!req.url) return observer.error(new BadRequestExecption());
 
-            const { statusAdapter, streamAdapter, headerAdapter } = req.context.get(ClientTransportSession);
+            const { statusAdapter, streamAdapter, headerAdapter } = req.context.get(ClientTransport);
 
             const rdstatus = req.context.getValueify(RedirectState, () => new RedirectState());
             // HTTP fetch step 5.2

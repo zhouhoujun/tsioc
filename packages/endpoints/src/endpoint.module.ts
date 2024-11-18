@@ -3,7 +3,7 @@ import {
     ProvdierOf, ProviderType, Type, isArray, isNil, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { ConfigMissingExecption, InvocationOptions, TypedRespond } from '@tsdi/core';
-import { HybirdTransport, MessageFactory, Transport } from '@tsdi/common';
+import { HybirdProtocols, Protocols } from '@tsdi/common';
 import {
     IncomingFactory, MessageReader, MessageWriter, NotImplementedExecption, OutgoingFactory,
     SocketMessageReader, SocketMessageWriter, StatusAdapter, TransportPacketModule
@@ -11,7 +11,7 @@ import {
 import { RequestContextFactory } from './RequestContext';
 import { Server, ServerOpts } from './Server';
 import { Session } from './Session';
-import { TransportSessionFactory } from './transport.session';
+import { TransportSessionFactory } from './transport';
 import { EndpointTypedRespond } from './typed.respond';
 import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, LoggerInterceptor } from './interceptors';
 import { MicroServRouterModule, RouteEndpointModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
@@ -97,7 +97,7 @@ export interface HeybirdOpts {
     /**
     * heybird or not.
     */
-    heybird?: boolean | HybirdTransport;
+    heybird?: boolean | HybirdProtocols;
 }
 
 /**
@@ -111,7 +111,7 @@ export interface MicroServiceOpts {
     /**
      * microservice transport.
      */
-    transport: Transport;
+    transport: Protocols;
     /**
      * imports modules
      */
@@ -143,7 +143,7 @@ export interface HeybirdServiceOpts {
      * microservice or not.
      */
     microservice?: false;
-    transport: HybirdTransport;
+    transport: HybirdProtocols;
     /**
      * server options
      */
@@ -302,9 +302,9 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     serverOpts.providers.push(toProvider(OutgoingFactory, serverOpts.outgoingFactory));
                 }
 
-                if (serverOpts.messageFactory) {
-                    serverOpts.providers.push(toProvider(MessageFactory, serverOpts.messageFactory));
-                }
+                // if (serverOpts.messageFactory) {
+                //     serverOpts.providers.push(toProvider(MessageFactory, serverOpts.messageFactory));
+                // }
 
                 if (serverOpts.requestContextFactory) {
                     serverOpts.providers.push(toProvider(RequestContextFactory, serverOpts.requestContextFactory));

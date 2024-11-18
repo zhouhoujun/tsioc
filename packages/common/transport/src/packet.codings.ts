@@ -81,7 +81,7 @@ export class PacketCodingsHandlers {
     @DecodeHandler(Message)
     async messageDecode(context: TransportContext) {
         const msg = context.last<Message>();
-        const { streamAdapter, incomingFactory, options, injector } = context.session;
+        const { streamAdapter, incomingFactory, options, injector } = context.transport;
 
         const data = isString(msg.data) ? Buffer.from(msg.data) : msg.data;
 
@@ -128,7 +128,7 @@ export class PacketCodingsHandlers {
     @EncodeHandler(Packet)
     async packetEncode(context: TransportContext) {
 
-        const { streamAdapter, headerAdapter, injector, messageFactory, options } = context.session;
+        const { streamAdapter, headerAdapter, injector, messageFactory, options } = context.transport;
 
         const pkg = context.last<Packet<any>>();
 

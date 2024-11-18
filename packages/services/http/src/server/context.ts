@@ -1,7 +1,7 @@
 import { Injectable, Injector, isArray, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, HeaderMappings, Response, normalize } from '@tsdi/common';
 import { MessageExecption, InternalServerExecption, Outgoing, append, parseTokenList, Incoming, ENOENT, ctype } from '@tsdi/common/transport';
-import { RestfulRequestContext, RestfulRequestContextFactory, TransportSession, Throwable } from '@tsdi/endpoints';
+import { RestfulRequestContext, RestfulRequestContextFactory, ServerTransport, Throwable } from '@tsdi/endpoints';
 import * as http from 'http';
 import * as http2 from 'http2';
 import * as assert from 'assert';
@@ -27,14 +27,14 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 
     constructor(
         injector: Injector,
-        readonly session: TransportSession,
+        readonly session: ServerTransport,
         readonly request: HttpServRequest,
         readonly response: HttpServResponse,
         readonly serverOptions: HttpServerOpts
     ) {
         super(injector, { ...serverOptions, args: request });
 
-        this.setValue(TransportSession, session);
+        this.setValue(ServerTransport, session);
         const url = this._url = this.originalUrl = normalize(request.url!);
         this.status = HttpStatusCode.NotFound
 
@@ -564,7 +564,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 
 @Injectable()
 export class HttpContextFactory implements RestfulRequestContextFactory<HttpServRequest, HttpServResponse> {
-    create(session: TransportSession, incoming: HttpServRequest, outgoing: HttpServResponse, options: HttpServerOpts): HttpContext {
+    create(session: ServerTransport, incoming: HttpServRequest, outgoing: HttpServResponse, options: HttpServerOpts): HttpContext {
         return new HttpContext(session.injector, session,
             incoming,
             outgoing,

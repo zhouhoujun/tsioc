@@ -4,7 +4,7 @@ import { Incoming, MessageExecption, Outgoing } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
 import { RequestContext, RequestContextFactory } from '../RequestContext';
 import { ServerOpts } from '../Server';
-import { TransportSession } from '../transport.session';
+import { ServerTransport } from '../transport';
 
 
 
@@ -24,14 +24,14 @@ export class UrlRequestContext<TRequest extends Incoming<any> = Incoming<any>, T
 
     constructor(
         injector: Injector,
-        readonly session: TransportSession,
+        readonly session: ServerTransport,
         readonly request: TRequest,
         readonly response: TResponse,
         readonly serverOptions: ServerOpts = EMPTY_OBJ
     ) {
         super(injector, { ...serverOptions, args: request });
 
-        this.setValue(TransportSession, session);
+        this.setValue(ServerTransport, session);
         
         this.originalUrl = this.url = normalize(this.url);
         const searhIdx = this.url.indexOf('?');
@@ -145,14 +145,14 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
 
     constructor(
         injector: Injector,
-        readonly session: TransportSession,
+        readonly session: ServerTransport,
         readonly request: TRequest,
         readonly response: TResponse,
         readonly serverOptions: ServerOpts = EMPTY_OBJ
     ) {
         super(injector, { ...serverOptions, args: request });
 
-        this.setValue(TransportSession, session);
+        this.setValue(ServerTransport, session);
 
         this.originalUrl = this.url = normalize(request.url ?? request.pattern!);
         const searhIdx = this.url.indexOf('?');
@@ -224,7 +224,7 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
 
 @Injectable()
 export class RequestContextFactoryImpl implements RequestContextFactory<Incoming<any>, Outgoing<any>> {
-    create<TSocket = any>(session: TransportSession, request: Incoming<any>, response: Outgoing<any>, options?: ServerOpts<any> | undefined): RequestContext<Incoming<any>, Outgoing<any>, TSocket> {
+    create<TSocket = any>(session: ServerTransport, request: Incoming<any>, response: Outgoing<any>, options?: ServerOpts<any> | undefined): RequestContext<Incoming<any>, Outgoing<any>, TSocket> {
         const injector = session.injector;
         if (request.url) {
             return new UrlRequestContext(injector,

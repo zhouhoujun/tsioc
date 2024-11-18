@@ -6,6 +6,6 @@ export * from './interceptors/body';
 export * from './AbstractClient';
 export * from './client.module';
 export * from './redirector';
-export * from './session';
+export * from './transport';
 export * from './default.session';
 

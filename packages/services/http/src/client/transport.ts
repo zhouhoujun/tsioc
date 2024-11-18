@@ -2,7 +2,7 @@ import { EMPTY_OBJ, Injectable, InvocationContext, isNil, promisify } from '@tsd
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { ClientIncoming, ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, AbstractClientIncoming, MessageReader, MessageWriter, ctype, ev, UrlClientIncomingOpts, UrlClientIncoming } from '@tsdi/common/transport';
 import { HttpRequest } from '@tsdi/common/http';
-import { ClientTransportSession } from '@tsdi/common/client';
+import { ClientTransport } from '@tsdi/common/client';
 import { request as httpRequest, IncomingMessage, ClientRequest } from 'http';
 import { request as httpsRequest } from 'https';
 import { ClientHttp2Session, ClientHttp2Stream, constants, OutgoingHttpHeaders, IncomingHttpHeaders, IncomingHttpStatusHeader, ClientSessionRequestOptions } from 'http2';
@@ -63,9 +63,9 @@ const httptl = /^https?:\/\//i;
 const secureExp = /^https:/;
 
 @Injectable()
-export class HttpClientMessageReader implements MessageReader<ClientHttp2Session | null, ClientHttp2Stream | ClientRequest, ClientIncoming, ClientTransportSession> {
+export class HttpClientMessageReader implements MessageReader<ClientHttp2Session | null, ClientHttp2Stream | ClientRequest, ClientIncoming, ClientTransport> {
 
-    read(socket: ClientHttp2Session | null, channel: ClientHttp2Stream | ClientRequest, session: ClientTransportSession): Observable<ClientIncoming> {
+    read(socket: ClientHttp2Session | null, channel: ClientHttp2Stream | ClientRequest, session: ClientTransport): Observable<ClientIncoming> {
         if (channel instanceof ClientRequest) {
             return new Observable<ClientIncoming>(subscribe => {
                 const onResponse = (resp: IncomingMessage) => subscribe.next(session.incomingFactory.create(resp as UrlClientIncomingOpts));
@@ -92,9 +92,9 @@ export class HttpClientMessageReader implements MessageReader<ClientHttp2Session
 }
 
 @Injectable()
-export class HttpClientMessageWriter implements MessageWriter<ClientHttp2Session | null, any, HttpMesage, HttpRequest<any>, ClientTransportSession> {
+export class HttpClientMessageWriter implements MessageWriter<ClientHttp2Session | null, any, HttpMesage, HttpRequest<any>, ClientTransport> {
 
-    async write(socket: ClientHttp2Session | null, channel: null, msg: HttpMesage, req: HttpRequest<any>, session: ClientTransportSession): Promise<any> {
+    async write(socket: ClientHttp2Session | null, channel: null, msg: HttpMesage, req: HttpRequest<any>, session: ClientTransport): Promise<any> {
         let url = msg.url;
         const clientOpts = session.clientOptions as HttpClientOpts;
         const ac = this.getAbortSignal(req.context);

@@ -1,5 +1,5 @@
 import { Injector, InstanceOf, Module, ModuleWithProviders, ProviderType, ReflectiveFactory, Token, TypeOf, getToken, isFunction, isString, isType, tokenId } from '@tsdi/ioc';
-import { PatternFormatter, patternToPath, normalize, Transport, HybirdTransport } from '@tsdi/common';
+import { PatternFormatter, patternToPath, normalize, Protocols, HybirdProtocols } from '@tsdi/common';
 import { ROUTES, Routes } from './route';
 import { RouteMatcher } from './router';
 import { HybridRouter } from './router.hybrid';
@@ -77,12 +77,12 @@ export class RouterModule {
         }
     }
 
-    static getToken(protocol: HybirdTransport): Token<HybridRouter> {
+    static getToken(protocol: HybirdProtocols): Token<HybridRouter> {
         return getToken(HybridRouter, protocol)
     }
 }
 
-export function createRouteProviders(protocol: HybirdTransport, optsify: InstanceOf<RouteOpts>): ProviderType[] {
+export function createRouteProviders(protocol: HybirdProtocols, optsify: InstanceOf<RouteOpts>): ProviderType[] {
     const token = getToken(HybridRouter, protocol);
     return [
         {
@@ -142,14 +142,14 @@ export class MicroServRouterModule {
      * @return The new Module.
      *
      */
-    static forRoot(protocol: Transport, options?: {
+    static forRoot(protocol: Protocols, options?: {
         matcher?: TypeOf<RouteMatcher>;
         formatter?: TypeOf<PatternFormatter>;
         prefix?: string;
         routes?: Routes;
     }): ModuleWithProviders<MicroServRouterModule>
     static forRoot(options: {
-        protocol: Transport;
+        protocol: Protocols;
         matcher?: TypeOf<RouteMatcher>;
         formatter?: TypeOf<PatternFormatter>;
         prefix?: string;
@@ -170,7 +170,7 @@ export class MicroServRouterModule {
         }
     }
 
-    static getToken(protocol: Transport): Token<MicroRouter> {
+    static getToken(protocol: Protocols): Token<MicroRouter> {
         return getToken(MicroRouter, protocol)
     }
 }
@@ -182,7 +182,7 @@ export interface RouteOpts {
     routes?: Routes;
 }
 
-export function createMicroRouteProviders(protocol: Transport, optsify: InstanceOf<RouteOpts>): ProviderType[] {
+export function createMicroRouteProviders(protocol: Protocols, optsify: InstanceOf<RouteOpts>): ProviderType[] {
     const token = getToken(MicroRouter, protocol);
     return [
         {

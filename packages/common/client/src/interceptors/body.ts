@@ -4,7 +4,7 @@ import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, ResponseEvent, Re
 import { IStream, StreamAdapter } from '@tsdi/common/transport';
 import { defer, mergeMap, Observable } from 'rxjs';
 import { Buffer } from 'buffer';
-import { ClientTransportSession } from '../session';
+import { ClientTransport } from '../transport';
 
 
 /**
@@ -17,7 +17,7 @@ export class BodyContentInterceptor<TRequest extends AbstractRequest<any> = Abst
 
     intercept(req: TRequest & RequestSerialize, next: Handler<TRequest, TResponse>): Observable<TResponse> {
 
-        const session = req.context.get(ClientTransportSession);
+        const session = req.context.get(ClientTransport);
         let body = req.serializeBody ? req.serializeBody(req.body) : this.serializeBody(session.streamAdapter, req.body);
         if (body == null) {
             return next.handle(req);

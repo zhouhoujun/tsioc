@@ -1,5 +1,5 @@
 import { ConfigableHandlerOptions } from '@tsdi/core';
-import { HybirdTransport, Transport } from '@tsdi/common';
+import { HybirdProtocols, Protocols } from '@tsdi/common';
 import { ProvdierOf } from '@tsdi/ioc';
 import { CodingsAapter } from './CodingsAapter';
 
@@ -14,7 +14,7 @@ export interface CodingsOptions {
     /**
      * group of codings.
      */
-    group?: Transport | HybirdTransport | 'runner' | 'events';
+    group?: Protocols | HybirdProtocols | 'runner' | 'events';
     /**
      * subfix of group.
      */

@@ -1,7 +1,7 @@
 import { tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { Handler, InvocationOptions } from '@tsdi/core';
 import { Middleware, MiddlewareFn } from '../middleware/middleware';
-import { Transport } from '@tsdi/common';
+import { Protocols } from '@tsdi/common';
 
 /**
  * Route.
@@ -18,7 +18,7 @@ export interface Route<TArg = any> extends InvocationOptions<TArg> {
     /**
      * protocol
      */
-    protocol?: Transport;
+    protocol?: Protocols;
     /**
      * A URL to redirect to when the path matches.
      *

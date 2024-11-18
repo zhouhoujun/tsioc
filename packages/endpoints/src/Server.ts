@@ -1,4 +1,4 @@
-import { HybirdTransport, MessageFactory, PatternFormatter } from '@tsdi/common';
+import { HybirdProtocols, MessageFactory, PatternFormatter } from '@tsdi/common';
 import { IncomingFactory, MessageReader, MessageWriter, OutgoingFactory, StatusAdapter, TransportOpts } from '@tsdi/common/transport';
 import { ApplicationEvent, CanHandle, Filter, HandlerService, Interceptor, PipeTransform, Runner, Shutdown } from '@tsdi/core';
 import { Abstract, ProvdierOf, StaticProvider, Type } from '@tsdi/ioc';
@@ -7,7 +7,7 @@ import { RequestHandlerOptions, AbstractRequestHandler } from './AbstractRequest
 import { SessionOptions } from './Session';
 import { ContentOptions } from './interceptors/content';
 import { RouteOpts } from './router/router.module';
-import { TransportSessionFactory } from './transport.session';
+import { TransportSessionFactory } from './transport';
 import { RequestHandler } from './RequestHandler';
 
 
@@ -171,7 +171,7 @@ export abstract class Server<TRequest extends RequestContext = RequestContext, T
  */
 export class BindServerEvent<T = any> extends ApplicationEvent {
 
-    constructor(readonly server: T, readonly transport: HybirdTransport, target: any) {
+    constructor(readonly server: T, readonly transport: HybirdProtocols, target: any) {
         super(target)
     }
 

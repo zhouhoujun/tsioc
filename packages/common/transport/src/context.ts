@@ -1,6 +1,6 @@
 import { OnDestroy, Type } from '@tsdi/ioc';
 import { CodingsAapter, CodingsContext, CodingsOptions } from '@tsdi/common/codings';
-import { AbstractTransportSession } from './TransportSession';
+import { Transport } from './Transport';
 
 /**
  * transprot codings context.
@@ -12,7 +12,7 @@ export class TransportContext extends CodingsContext<CodingsOptions> implements 
     channel?: string;
 
     constructor(
-        public session: AbstractTransportSession,
+        public transport: Transport,
         options: CodingsOptions,
         adapter?: CodingsAapter | null
     ) {
@@ -21,7 +21,7 @@ export class TransportContext extends CodingsContext<CodingsOptions> implements 
 
     override onDestroy(): void {
         super.onDestroy();
-        this.session = null!;
+        this.transport = null!;
     }
 }
 
