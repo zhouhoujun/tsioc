@@ -18,7 +18,7 @@ export class AmqpServer extends Server<RequestContext, AmqpMicroServiceOpts> {
     private _connected = false;
     private _conn: amqp.Connection | null = null;
     private _channel: amqp.Channel | null = null;
-    private _session?: ServerTransport<amqp.Channel>;
+    private _transport?: ServerTransport<amqp.Channel>;
 
     constructor(readonly handler: AmqpRequestHandler) {
         super();
@@ -72,7 +72,7 @@ export class AmqpServer extends Server<RequestContext, AmqpMicroServiceOpts> {
         });
 
         const injector = this.handler.injector;
-        const session = this._session = injector.get(ServerTransportFactory).create(injector, channel, transportOpts);
+        const session = this._transport = injector.get(ServerTransportFactory).create(injector, channel, transportOpts);
         session.listen(this.handler)
         // injector.get(RequestHandler).handle(this.endpoint, session, this.logger, options);
 
@@ -94,7 +94,7 @@ export class AmqpServer extends Server<RequestContext, AmqpMicroServiceOpts> {
 
 
     protected async onShutdown(): Promise<any> {
-        await this._session?.destroy();
+        await this._transport?.destroy();
         await this._channel?.close();
         await this._conn?.close();
         this._channel = this._conn = null;

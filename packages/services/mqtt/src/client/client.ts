@@ -21,7 +21,7 @@ export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<a
     private logger?: Logger;
 
     private mqtt?: mqtt.Client | null;
-    private _session?: ClientTransport<mqtt.Client>;
+    private _transport?: ClientTransport<mqtt.Client>;
 
     constructor(readonly handler: MqttHandler) {
         super()
@@ -86,13 +86,13 @@ export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<a
         const conn = (opts.url ? mqtt.connect(opts.url, opts) : mqtt.connect(opts));
 
         const injector = this.handler.injector;
-        this._session = injector.get(ClientTransportFactory).create(injector, conn, options);
+        this._transport = injector.get(ClientTransportFactory).create(injector, conn, options);
         return conn;
     }
 
     protected override initContext(context: InvocationContext<any>): void {
         context.setValue(AbstractClient, this);
-        context.setValue(ClientTransport, this._session);
+        context.setValue(ClientTransport, this._transport);
     }
 
     protected createRequest(pattern: Pattern, options: MqttReqOptions & RequestInitOpts): MqttRequest<any> {
@@ -106,7 +106,7 @@ export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<a
 
     protected override async onShutdown(): Promise<void> {
         if (!this.mqtt) return;
-        await this._session?.destroy();
+        await this._transport?.destroy();
         await promisify(this.mqtt.end, this.mqtt)(true)
             .catch(err => {
                 this.logger?.error(err);

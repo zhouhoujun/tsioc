@@ -1,7 +1,7 @@
 import { Injectable, Inject, isFunction } from '@tsdi/ioc';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { PatternFormatter } from '@tsdi/common';
-import { Server, MircoServRouters, RequestHandler, ServerTransportFactory, RequestContext, EndpointHandler, ServerOpts } from '@tsdi/endpoints';
+import { Server, MicroRouters, RequestHandler, ServerTransportFactory, RequestContext, EndpointHandler, ServerOpts } from '@tsdi/endpoints';
 import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
 import { KafkaServerTransport } from './kafka.session';
 import { DEFAULT_BROKERS, KafkaTransportOpts } from '../const';
@@ -24,7 +24,7 @@ export class KafkaServer extends Server<RequestContext, KafkaServerOptions> {
     protected client?: Kafka | null;
     protected consumer?: Consumer | null;
     protected producer?: Producer | null;
-    private _session?: KafkaServerTransport;
+    private _transport?: KafkaServerTransport;
 
     private destroy$: Subject<void>;
 
@@ -103,7 +103,7 @@ export class KafkaServer extends Server<RequestContext, KafkaServerOptions> {
         const injector = this.handler.injector;
         const options = this.getOptions();
 
-        const router = injector.get(MircoServRouters).get('kafka');
+        const router = injector.get(MicroRouters).get('kafka');
         if (options.content?.prefix) {
             const content = injector.get(PatternFormatter).format(`${options.content.prefix}-**`);
             router.matcher.register(content, true);
@@ -116,7 +116,7 @@ export class KafkaServer extends Server<RequestContext, KafkaServerOptions> {
             serverSide: true
         } as KafkaTransportOpts;
 
-        const session = this._session = injector.get(ServerTransportFactory).create(injector, { consumer, producer }, transportOpts) as KafkaServerTransport;
+        const session = this._transport = injector.get(ServerTransportFactory).create(injector, { consumer, producer }, transportOpts) as KafkaServerTransport;
 
         await session.bindTopics(topics);
 
@@ -136,7 +136,7 @@ export class KafkaServer extends Server<RequestContext, KafkaServerOptions> {
     }
 
     protected async onShutdown(): Promise<any> {
-        this._session?.destroy();
+        this._transport?.destroy();
         this.destroy$.next();
         this.destroy$.complete();
         if (this.consumer) {

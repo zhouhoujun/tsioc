@@ -1,7 +1,7 @@
 import { Inject, Injectable, InvocationContext, isFunction, isString } from '@tsdi/ioc';
 import { Pattern, RequestInitOpts, ResponseEvent, patternToPath } from '@tsdi/common';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
-import { MircoServRouters } from '@tsdi/endpoints';
+import { MicroRouters } from '@tsdi/endpoints';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, Producer, logLevel } from 'kafkajs';
 import { KafkaHandler } from './handler';
@@ -22,7 +22,7 @@ export class KafkaClient extends AbstractClient<KafkaRequest<any>, ResponseEvent
     private client?: Kafka | null;
     private consumer?: Consumer | null;
     private producer?: Producer | null;
-    private _session?: KafkaClientTransport;
+    private _transport?: KafkaClientTransport;
 
     constructor(readonly handler: KafkaHandler) {
         super()
@@ -114,7 +114,7 @@ export class KafkaClient extends AbstractClient<KafkaRequest<any>, ResponseEvent
         this.producer = this.client.producer(options.producer);
         await this.producer.connect();
         const injector = this.handler.injector;
-        this._session = injector.get(ClientTransportFactory).create(injector, {
+        this._transport = injector.get(ClientTransportFactory).create(injector, {
             producer: this.producer,
             consumer: this.consumer!
         }, options) as KafkaClientTransport
@@ -123,8 +123,8 @@ export class KafkaClient extends AbstractClient<KafkaRequest<any>, ResponseEvent
             const topics = options.topics ? options.topics.map(t => {
                 if (t instanceof RegExp) return t;
                 return patternToPath(t);
-            }) : this.handler.injector.get(MircoServRouters).get('kafka').matcher.getPatterns();
-            await this._session.bindTopics(topics.map(t => this.getReplyTopic(t)))
+            }) : this.handler.injector.get(MicroRouters).get('kafka').matcher.getPatterns();
+            await this._transport.bindTopics(topics.map(t => this.getReplyTopic(t)))
         }
 
     }
@@ -144,7 +144,7 @@ export class KafkaClient extends AbstractClient<KafkaRequest<any>, ResponseEvent
 
     protected override initContext(context: InvocationContext<any>): void {
         context.setValue(AbstractClient, this);
-        context.setValue(ClientTransport, this._session)
+        context.setValue(ClientTransport, this._transport)
     }
 
     protected createRequest(pattern: Pattern, options: RequestInitOpts): KafkaRequest<any> {
@@ -160,7 +160,7 @@ export class KafkaClient extends AbstractClient<KafkaRequest<any>, ResponseEvent
         if (this.producer) {
             await this.producer.disconnect();
         }
-        this._session?.destroy();
+        this._transport?.destroy();
         if (this.consumer) {
             await this.consumer.disconnect()
         }

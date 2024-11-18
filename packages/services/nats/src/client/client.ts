@@ -12,7 +12,7 @@ import { NatsRequest } from './request';
 export class NatsClient extends AbstractClient<NatsRequest<any>, ResponseEvent<any>, NatsClientOpts> {
     
     private conn?: NatsConnection;
-    private _session?: ClientTransport<NatsConnection>;
+    private _transport?: ClientTransport<NatsConnection>;
 
     @InjectLog()
     private logger!: Logger;
@@ -27,12 +27,12 @@ export class NatsClient extends AbstractClient<NatsRequest<any>, ResponseEvent<a
         const options = this.getOptions();
         const conn = this.conn = await connect(options.connectOpts);
         
-        this._session = this.handler.injector.get(ClientTransportFactory).create(this.handler.injector, conn, options);
+        this._transport = this.handler.injector.get(ClientTransportFactory).create(this.handler.injector, conn, options);
     }
 
     protected initContext(context: InvocationContext<any>): void {
         context.setValue(AbstractClient, this);
-        context.setValue(ClientTransport, this._session)
+        context.setValue(ClientTransport, this._transport)
     }
 
     protected createRequest(pattern: Pattern, options: RequestInitOpts): NatsRequest<any> {
@@ -44,7 +44,7 @@ export class NatsClient extends AbstractClient<NatsRequest<any>, ResponseEvent<a
     }
 
     protected async onShutdown(): Promise<void> {
-        await this._session?.destroy();
+        await this._transport?.destroy();
         this.conn?.close();
     }
 

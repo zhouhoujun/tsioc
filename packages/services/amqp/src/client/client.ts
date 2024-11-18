@@ -17,7 +17,7 @@ export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<a
     private logger!: Logger;
     private _conn: amqp.Connection | null = null;
     private _channel: amqp.Channel | null = null;
-    private _session?: ClientTransport<amqp.Channel>;
+    private _transport?: ClientTransport<amqp.Channel>;
 
     constructor(readonly handler: AmqpHandler) {
         super()
@@ -77,7 +77,7 @@ export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<a
             ...transportOpts.consumeOpts
         });
 
-        this._session = injector.get(ClientTransportFactory).create(injector, this._channel, transportOpts);
+        this._transport = injector.get(ClientTransportFactory).create(injector, this._channel, transportOpts);
     }
 
     protected async createConnection(retrys: number, retryDelay: number): Promise<amqp.Connection> {
@@ -95,7 +95,7 @@ export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<a
 
     protected override initContext(context: InvocationContext<any>): void {
         context.setValue(AbstractClient, this);
-        context.setValue(ClientTransport, this._session);
+        context.setValue(ClientTransport, this._transport);
     }
 
 
@@ -109,7 +109,7 @@ export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<a
 
 
     protected async onShutdown(): Promise<void> {
-        await this._session?.destroy();
+        await this._transport?.destroy();
         await this._channel?.close();
         await this._conn?.close();
         this._channel = this._conn = null;

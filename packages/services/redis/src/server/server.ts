@@ -1,7 +1,7 @@
 import { Execption, Injectable } from '@tsdi/ioc';
 import { PatternFormatter, LOCALHOST } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { MircoServRouters, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
+import { MicroRouters, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
 import { ev } from '@tsdi/common/transport';
 import Redis from 'ioredis';
 import { RedisRequestHandler } from './handler';
@@ -18,7 +18,7 @@ export class RedisServer extends Server<RequestContext, RedisServerOpts> {
     @InjectLog() logger!: Logger;
 
     private destroy$: Subject<void>;
-    private _session?: ServerTransport<ReidsSocket>;
+    private _transport?: ServerTransport<ReidsSocket>;
 
     private subscriber: Redis | null = null;
     private publisher: Redis | null = null;
@@ -66,12 +66,12 @@ export class RedisServer extends Server<RequestContext, RedisServerOpts> {
         const transportOpts = options.transportOpts!;
 
         const factory = injector.get(ServerTransportFactory);
-        const session = this._session = factory.create(injector, {
+        const session = this._transport = factory.create(injector, {
             subscriber,
             publisher
         }, transportOpts);
 
-        const router = injector.get(MircoServRouters).get('redis');
+        const router = injector.get(MicroRouters).get('redis');
         if (options.content?.prefix) {
             const content = injector.get(PatternFormatter).format(`${options.content.prefix}/**`);
             router.matcher.register(content, true);
@@ -120,7 +120,7 @@ export class RedisServer extends Server<RequestContext, RedisServerOpts> {
     }
 
     protected async onShutdown(): Promise<any> {
-        await this._session?.destroy();
+        await this._transport?.destroy();
         this.destroy$.next();
         this.destroy$.complete();
         

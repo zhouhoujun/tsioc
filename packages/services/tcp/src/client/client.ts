@@ -21,7 +21,7 @@ export class TcpClient extends AbstractClient<TcpRequest<any>> {
     private logger!: Logger;
 
     private connection!: tls.TLSSocket | net.Socket;
-    private _session?: ClientTransport<tls.TLSSocket | net.Socket>;
+    private _transport?: ClientTransport<tls.TLSSocket | net.Socket>;
 
     constructor(readonly handler: TcpHandler) {
         super();
@@ -80,7 +80,7 @@ export class TcpClient extends AbstractClient<TcpRequest<any>> {
     protected override initContext(context: InvocationContext): void {
         context.setValue(AbstractClient, this);
         context.setValue(TcpClient, this);
-        context.setValue(ClientTransport, this._session);
+        context.setValue(ClientTransport, this._transport);
     }
 
     protected override createRequest(pattern: Pattern, options: RequestInitOpts): TcpRequest<any> {
@@ -94,7 +94,7 @@ export class TcpClient extends AbstractClient<TcpRequest<any>> {
 
     protected override async onShutdown(): Promise<void> {
         if (!this.connection || this.connection.destroyed) return;
-        await this._session?.destroy();
+        await this._transport?.destroy();
         await promisify(this.connection.destroy, this.connection)(null!)
             .catch(err => {
                 this.logger?.error(err);
@@ -111,7 +111,7 @@ export class TcpClient extends AbstractClient<TcpRequest<any>> {
         if (opts.keepalive) {
             socket.setKeepAlive(true, opts.keepalive);
         }
-        this._session = this.handler.injector.get(ClientTransportFactory).create(this.handler.injector, socket, opts);
+        this._transport = this.handler.injector.get(ClientTransportFactory).create(this.handler.injector, socket, opts);
         return socket
     }
 

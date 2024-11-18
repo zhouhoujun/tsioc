@@ -19,7 +19,7 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
 
     private subscribes?: string[];
     private mqtt?: Client | null;
-    private _session?: ServerTransport<Client>;
+    private _transport?: ServerTransport<Client>;
 
     constructor(readonly handler: MqttRequestHandler
     ) {
@@ -80,7 +80,7 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
         const transportOpts = options.transportOpts!;
 
         const factory = injector.get(ServerTransportFactory);
-        const session = this._session = factory.create(injector, this.mqtt, transportOpts);
+        const session = this._transport = factory.create(injector, this.mqtt, transportOpts);
         session.listen(this.handler);
         // this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
 
@@ -98,7 +98,7 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
 
     protected override async onShutdown(): Promise<any> {
         if (!this.mqtt) return;
-        this._session?.destroy();
+        this._transport?.destroy();
         if (this.subscribes) await promisify(this.mqtt.unsubscribe, this.mqtt)(this.subscribes);
         await promisify(this.mqtt.end, this.mqtt)(true)
             .catch(err => {

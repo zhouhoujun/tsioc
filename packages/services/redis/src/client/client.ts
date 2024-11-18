@@ -20,7 +20,7 @@ export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent
 
     private subscriber: Redis | null = null;
     private publisher: Redis | null = null;
-    private _session?: ClientTransport<ReidsSocket>;
+    private _transport?: ClientTransport<ReidsSocket>;
 
     constructor(readonly handler: RedisHandler) {
         super();
@@ -54,7 +54,7 @@ export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent
             this.publisher.connect()
         ]);
 
-        this._session = this.handler.injector.get(ClientTransportFactory).create(this.handler.injector, {
+        this._transport = this.handler.injector.get(ClientTransportFactory).create(this.handler.injector, {
             subscriber: this.subscriber,
             publisher: this.publisher
         }, opts)
@@ -63,7 +63,7 @@ export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent
 
     protected override initContext(context: InvocationContext<any>): void {
         context.setValue(AbstractClient, this);
-        context.setValue(ClientTransport, this._session);
+        context.setValue(ClientTransport, this._transport);
     }
 
     protected createRequest(pattern: Pattern, options: RequestInitOpts<any>): RedisRequest<any> {
@@ -87,7 +87,7 @@ export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent
     }
 
     protected async onShutdown(): Promise<void> {
-        await this._session?.destroy();
+        await this._transport?.destroy();
         this.publisher?.quit();
         this.publisher?.removeAllListeners();
         this.subscriber?.quit();
