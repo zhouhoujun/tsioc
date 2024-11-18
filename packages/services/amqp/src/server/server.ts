@@ -1,7 +1,7 @@
 import { Execption, Inject, Injectable, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ev } from '@tsdi/common/transport';
-import { Server, TransportSessionFactory, TransportSession, RequestContext } from '@tsdi/endpoints';
+import { Server, ServerTransportFactory, ServerTransport, RequestContext } from '@tsdi/endpoints';
 import * as amqp from 'amqplib';
 import { AmqpMicroServiceOpts } from './options';
 import { AmqpRequestHandler } from './handler';
@@ -18,7 +18,7 @@ export class AmqpServer extends Server<RequestContext, AmqpMicroServiceOpts> {
     private _connected = false;
     private _conn: amqp.Connection | null = null;
     private _channel: amqp.Channel | null = null;
-    private _session?: TransportSession<amqp.Channel>;
+    private _session?: ServerTransport<amqp.Channel>;
 
     constructor(readonly handler: AmqpRequestHandler) {
         super();
@@ -72,7 +72,7 @@ export class AmqpServer extends Server<RequestContext, AmqpMicroServiceOpts> {
         });
 
         const injector = this.handler.injector;
-        const session = this._session = injector.get(TransportSessionFactory).create(injector, channel, transportOpts);
+        const session = this._session = injector.get(ServerTransportFactory).create(injector, channel, transportOpts);
         session.listen(this.handler)
         // injector.get(RequestHandler).handle(this.endpoint, session, this.logger, options);
 

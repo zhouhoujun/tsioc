@@ -27,7 +27,7 @@ import { MqttConfiguration } from './configuration';
         //                 delimiter: '#',
         //                 maxSize: defaultMaxSize,
         //             },
-        //             // sessionFactory: { useExisting: TopicTransportSessionFactory },
+        //             // sessionFactory: { useExisting: TopicServerTransportFactory },
         //         }
         //     } as ClientModuleOpts,
         //     multi: true
@@ -58,7 +58,7 @@ import { MqttConfiguration } from './configuration';
         //             interceptorsToken: MQTT_SERV_INTERCEPTORS,
         //             filtersToken: MQTT_SERV_FILTERS,
         //             guardsToken: MQTT_SERV_GUARDS,
-        //             // sessionFactory: { useExisting: TopicTransportSessionFactory },
+        //             // sessionFactory: { useExisting: TopicServerTransportFactory },
         //             filters: [
         //                 LoggerInterceptor,
         //                 ExecptionFinalizeFilter,

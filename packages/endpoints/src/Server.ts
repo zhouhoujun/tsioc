@@ -7,7 +7,7 @@ import { RequestHandlerOptions, AbstractRequestHandler } from './AbstractRequest
 import { SessionOptions } from './Session';
 import { ContentOptions } from './interceptors/content';
 import { RouteOpts } from './router/router.module';
-import { TransportSessionFactory } from './transport';
+import { ServerTransportFactory } from './transport';
 import { RequestHandler } from './RequestHandler';
 
 
@@ -75,7 +75,7 @@ export interface ServerOpts<TSerOpts = any> extends RequestHandlerOptions<any> {
     /**
      * service transport session factory.
      */
-    sessionFactory?: ProvdierOf<TransportSessionFactory>;
+    sessionFactory?: ProvdierOf<ServerTransportFactory>;
 
     majorVersion?: number;
     server?: any;

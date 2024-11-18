@@ -1,7 +1,7 @@
 import { Inject, Injectable, isFunction, isNumber, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { BindListenning, LOCALHOST } from '@tsdi/common';
-import { Server, TransportSessionFactory } from '@tsdi/endpoints';
+import { Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Socket, createSocket } from 'dgram';
 import { COAP_SERV_OPTS, CoapServerOpts } from './options';
 import { CoapRequestHandler } from './handler';
@@ -59,7 +59,7 @@ export class CoapServer extends Server implements BindListenning {
         this._server.on(ev.ERROR, (err) => this.logger.error(err));
 
         const injector = this.handler.injector;
-        const factory = injector.get(TransportSessionFactory);
+        const factory = injector.get(ServerTransportFactory);
 
         const isSecure = false;
         if (!this.options.protocol) {

@@ -1,7 +1,7 @@
 import { ArgumentExecption, Injectable, Injector, lang, promisify } from '@tsdi/ioc';
 import { Decoder, Encoder } from '@tsdi/common';
-import { Packet, TransportOpts, TransportSessionFactory, ev } from '@tsdi/common/transport';
-import { EventTransportSession } from '@tsdi/endpoints';
+import { Packet, TransportOpts, ServerTransportFactory, ev } from '@tsdi/common/transport';
+import { EventServerTransport } from '@tsdi/endpoints';
 import { Socket, RemoteInfo } from 'dgram';
 import { parse, generate } from 'coap-packet';
 import { Observable, first, fromEvent, map, merge } from 'rxjs';
@@ -22,7 +22,7 @@ export interface UdpPacket<T = any> extends Packet<T> {
 
 
 @Injectable()
-export class CoapTransportSessionFactory implements TransportSessionFactory<Socket> {
+export class CoapServerTransportFactory implements ServerTransportFactory<Socket> {
 
     constructor(
         readonly injector: Injector,
@@ -31,13 +31,13 @@ export class CoapTransportSessionFactory implements TransportSessionFactory<Sock
 
     }
 
-    create(socket: Socket, options: TransportOpts): CoapTransportSession {
-        return new CoapTransportSession(this.injector, socket, this.encoder, this.decoder, options);
+    create(socket: Socket, options: TransportOpts): CoapServerTransport {
+        return new CoapServerTransport(this.injector, socket, this.encoder, this.decoder, options);
     }
 
 }
 
-export class CoapTransportSession extends EventTransportSession<Socket, UdpMessage> {
+export class CoapServerTransport extends EventServerTransport<Socket, UdpMessage> {
 
     protected message(): Observable<UdpMessage> {
         return fromEvent(this.socket, ev.MESSAGE, (msg: Buffer, rinfo: RemoteInfo) => ({ msg, rinfo, topic: this.toTopic(rinfo) }))

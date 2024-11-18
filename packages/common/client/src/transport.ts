@@ -1,4 +1,4 @@
-import { Abstract, Injector, isFunction, promisify } from '@tsdi/ioc';
+import { Abstract, Injector } from '@tsdi/ioc';
 import { AbstractRequest, ResponseEvent, ResponseFactory } from '@tsdi/common';
 import { AbstractTransport, ClientIncomingFactory, IEventEmitter, Redirector } from '@tsdi/common/transport';
 import { Observable, first, merge, mergeMap, takeUntil } from 'rxjs';
@@ -33,19 +33,6 @@ export abstract class ClientTransport<TSocket = any> extends AbstractTransport<T
                 mergeMap((chl) => this.receive(chl ?? channel, req)),
                 takeUntil(destroy$ ? merge(this.destroy$, destroy$).pipe(first()) : this.destroy$)
             )
-    }
-
-    override async destroy(): Promise<void> {
-        await super.destroy();
-        await this.closeSocket();
-    }
-
-    protected async closeSocket() {
-        const socket = this.socket as any;
-        if (socket && isFunction(socket.close)) {
-            await promisify(socket.close, socket)();
-        }
-
     }
 }
 

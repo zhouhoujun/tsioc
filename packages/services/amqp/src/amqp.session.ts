@@ -1,13 +1,13 @@
 import { Injectable, Injector } from '@tsdi/ioc';
 import { HeaderRecord, Decoder, Encoder } from '@tsdi/common';
-import { BadRequestExecption, HeaderPacket, Packet, ResponsePacket, StreamAdapter, TransportOpts, TransportSessionFactory, ev, hdr } from '@tsdi/common/transport';
-import { PayloadTransportSession } from '@tsdi/endpoints';
+import { BadRequestExecption, HeaderPacket, Packet, ResponsePacket, StreamAdapter, TransportOpts, ServerTransportFactory, ev, hdr } from '@tsdi/common/transport';
+import { PayloadServerTransport } from '@tsdi/endpoints';
 import { Channel, ConsumeMessage } from 'amqplib';
 import { Observable, first, fromEvent, map, merge, of } from 'rxjs';
 import { AmqpSessionOpts } from './options';
 
 
-export class QueueTransportSession extends PayloadTransportSession<Channel, ConsumeMessage> {
+export class QueueServerTransport extends PayloadServerTransport<Channel, ConsumeMessage> {
 
 
     protected concat(msg: ConsumeMessage): Observable<Buffer> {
@@ -88,7 +88,7 @@ export class QueueTransportSession extends PayloadTransportSession<Channel, Cons
 }
 
 @Injectable()
-export class AmqpTransportSessionFactory implements TransportSessionFactory<Channel> {
+export class AmqpServerTransportFactory implements ServerTransportFactory<Channel> {
 
     constructor(
         readonly injector: Injector,
@@ -96,8 +96,8 @@ export class AmqpTransportSessionFactory implements TransportSessionFactory<Chan
         private encoder: Encoder,
         private decoder: Decoder) { }
 
-    create(socket: Channel, options: TransportOpts): QueueTransportSession {
-        return new QueueTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
+    create(socket: Channel, options: TransportOpts): QueueServerTransport {
+        return new QueueServerTransport(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
     }
 
 }

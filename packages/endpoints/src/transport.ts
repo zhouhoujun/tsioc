@@ -47,12 +47,12 @@ export abstract class ServerTransport<TSocket = any, TOptions extends ServerOpts
 }
 
 /**
- * transport session factory.
+ * server transport factory.
  */
 @Abstract()
-export abstract class TransportSessionFactory<TSocket = any> {
+export abstract class ServerTransportFactory<TSocket = any> {
     /**
-     * create transport session.
+     * create server transport.
      * @param options 
      */
     abstract create(injector: Injector, socket: TSocket, options: ServerOpts): ServerTransport<TSocket>;

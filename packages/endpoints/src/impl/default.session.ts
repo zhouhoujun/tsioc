@@ -16,12 +16,12 @@ import {
 } from '@tsdi/common/transport';
 import { Injectable, Injector } from '@tsdi/ioc';
 import { ServerOpts } from '../Server';
-import { ServerTransport, TransportSessionFactory } from '../transport';
+import { ServerTransport, ServerTransportFactory } from '../transport';
 import { RequestContextFactory } from '../RequestContext';
 import { AcceptsPriority } from '../accepts';
 
 
-export class DefaultTransportSession extends ServerTransport<any> {
+export class DefaultServerTransport extends ServerTransport<any> {
 
     private _encodings?: TransportEncodings;
     private _decodings?: TransportDecodings;
@@ -146,12 +146,12 @@ export class DefaultTransportSession extends ServerTransport<any> {
 }
 
 @Injectable()
-export class DefaultTransportSessionFactory implements TransportSessionFactory<any> {
+export class DefaultServerTransportFactory implements ServerTransportFactory<any> {
 
     constructor() { }
 
-    create(injector: Injector, socket: any, options: ServerOpts): DefaultTransportSession {
-        return new DefaultTransportSession(injector, socket, options);
+    create(injector: Injector, socket: any, options: ServerOpts): DefaultServerTransport {
+        return new DefaultServerTransport(injector, socket, options);
     }
 
 }

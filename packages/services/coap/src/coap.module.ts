@@ -10,7 +10,7 @@ import { CoapServer } from './server/server';
 import { COAP_SERV_FILTERS, COAP_SERV_GUARDS, COAP_SERV_INTERCEPTORS, COAP_SERV_OPTS } from './server/options';
 import { CoapRequestHandler } from './server/handler';
 import { CoapStatusVaildator } from './status';
-import { CoapTransportSessionFactory } from './coap.session';
+import { CoapServerTransportFactory } from './coap.session';
 import { CoapExecptionHandlers } from './server/execption.handles';
 
 
@@ -21,7 +21,7 @@ const defaultMaxSize = 1024 * 256;
         CoapClient,
         CoapServer,
         CoapStatusVaildator,
-        CoapTransportSessionFactory,
+        CoapServerTransportFactory,
         {
             provide: CLIENT_MODULES,
             useValue: {
@@ -38,7 +38,7 @@ const defaultMaxSize = 1024 * 256;
                         delimiter: '#',
                         maxSize: defaultMaxSize,
                     },
-                    sessionFactory: { useExisting: CoapTransportSessionFactory },
+                    sessionFactory: { useExisting: CoapServerTransportFactory },
                     providers: [
                         { provide: StatusVaildator, useExisting: CoapStatusVaildator }
                     ]
@@ -71,7 +71,7 @@ const defaultMaxSize = 1024 * 256;
                     filtersToken: COAP_SERV_FILTERS,
                     guardsToken: COAP_SERV_GUARDS,
                     execptionHandlers: CoapExecptionHandlers,
-                    sessionFactory: { useExisting: CoapTransportSessionFactory },
+                    sessionFactory: { useExisting: CoapServerTransportFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,
@@ -107,7 +107,7 @@ const defaultMaxSize = 1024 * 256;
                     filtersToken: COAP_SERV_FILTERS,
                     guardsToken: COAP_SERV_GUARDS,
                     execptionHandlers: CoapExecptionHandlers,
-                    sessionFactory: { useExisting: CoapTransportSessionFactory },
+                    sessionFactory: { useExisting: CoapServerTransportFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,

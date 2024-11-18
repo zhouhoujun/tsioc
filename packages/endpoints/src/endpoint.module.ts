@@ -11,7 +11,7 @@ import {
 import { RequestContextFactory } from './RequestContext';
 import { Server, ServerOpts } from './Server';
 import { Session } from './Session';
-import { TransportSessionFactory } from './transport';
+import { ServerTransportFactory } from './transport';
 import { EndpointTypedRespond } from './typed.respond';
 import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, LoggerInterceptor } from './interceptors';
 import { MicroServRouterModule, RouteEndpointModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
@@ -22,7 +22,7 @@ import { ExecptionFinalizeFilter } from './execption.filter';
 import { DefaultExecptionHandlers } from './execption.handlers';
 import { FinalizeFilter } from './finalize.filter';
 import { createRequestHandler } from './impl/request.handler';
-import { DefaultTransportSessionFactory } from './impl/default.session';
+import { DefaultServerTransportFactory } from './impl/default.session';
 import { RequestContextFactoryImpl } from './impl/request.context';
 import { createMiddlewareEndpoint } from './impl/middleware';
 
@@ -39,7 +39,7 @@ import { createMiddlewareEndpoint } from './impl/middleware';
     ],
     providers: [
         SetupServices,
-        DefaultTransportSessionFactory,
+        DefaultServerTransportFactory,
         ServerEndpointCodingsHanlders,
 
         { provide: TypedRespond, useClass: EndpointTypedRespond, asDefault: true },
@@ -314,8 +314,8 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 serverOpts.providers.push(toProvider(MessageWriter, serverOpts.messageWriter ?? SocketMessageWriter));
 
 
-                if (serverOpts.sessionFactory !== TransportSessionFactory) {
-                    serverOpts.providers.push(toProvider(TransportSessionFactory, serverOpts.sessionFactory ?? DefaultTransportSessionFactory))
+                if (serverOpts.sessionFactory !== ServerTransportFactory) {
+                    serverOpts.providers.push(toProvider(ServerTransportFactory, serverOpts.sessionFactory ?? DefaultServerTransportFactory))
                 }
 
 

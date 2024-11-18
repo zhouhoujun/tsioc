@@ -1,13 +1,13 @@
 import { Execption, Injectable, Injector, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
 import { BadRequestExecption, HeaderPacket, NotFoundExecption, Packet, ResponsePacket, StreamAdapter, TransportOpts, ev, isBuffer } from '@tsdi/common/transport';
-import { TransportSession, TransportSessionFactory } from '@tsdi/endpoints';
+import { ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
 import { Observable, filter, first, fromEvent, merge, of } from 'rxjs';
 import { EachMessagePayload, IHeaders, RemoveInstrumentationEventListener } from 'kafkajs';
 import { KafkaHeaders, KafkaTransport, KafkaTransportOpts } from '../const';
 
 
-export class KafkaTransportSession extends TransportSession<KafkaTransport, EachMessagePayload> {
+export class KafkaServerTransport extends ServerTransport<KafkaTransport, EachMessagePayload> {
 
 
     private regTopics?: RegExp[];
@@ -179,14 +179,14 @@ export class KafkaTransportSession extends TransportSession<KafkaTransport, Each
 }
 
 @Injectable()
-export class KafkaTransportSessionFactory implements TransportSessionFactory<KafkaTransport> {
+export class KafkaServerTransportFactory implements ServerTransportFactory<KafkaTransport> {
 
     constructor(
         readonly injector: Injector,
         private streamAdapter: StreamAdapter) { }
 
-    create(socket: KafkaTransport, options: TransportOpts): KafkaTransportSession {
-        return new KafkaTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
+    create(socket: KafkaTransport, options: TransportOpts): KafkaServerTransport {
+        return new KafkaServerTransport(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
     }
 
 }

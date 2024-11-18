@@ -5,14 +5,14 @@ import { MircoServRouters, RequestContext, Server } from '@tsdi/endpoints';
 import { NatsConnection, connect } from 'nats';
 import { NatsRequestHandler } from './handler';
 import { NatsMicroServOpts } from './options';
-import { NatsTransportSession, NatsTransportSessionFactory } from '../nats.session';
+import { NatsServerTransport, NatsServerTransportFactory } from '../nats.session';
 
 
 
 @Injectable()
 export class NatsServer extends Server<RequestContext, NatsMicroServOpts> {
     private conn?: NatsConnection;
-    private _session?: NatsTransportSession;
+    private _session?: NatsServerTransport;
 
     @InjectLog()
     private logger!: Logger;
@@ -44,7 +44,7 @@ export class NatsServer extends Server<RequestContext, NatsMicroServOpts> {
 
         const transportOpts = options.transportOpts!;
         
-        const session = this._session = injector.get(NatsTransportSessionFactory).create(injector, conn, transportOpts);
+        const session = this._session = injector.get(NatsServerTransportFactory).create(injector, conn, transportOpts);
 
         subs.map(sub => {
             session.subscribe(sub, options.transportOpts?.subscriptionOpts)

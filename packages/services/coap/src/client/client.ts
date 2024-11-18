@@ -1,6 +1,6 @@
 import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
 import { Pattern, RequestInitOpts, ResponseEvent } from '@tsdi/common';
-import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { CoapClientOpts } from './options';
 import { CoapHandler } from './handler';
@@ -14,7 +14,7 @@ import { CoapRequest } from './request';
 @Injectable()
 export class CoapClient extends AbstractClient<CoapRequest<any>, ResponseEvent<any, string>, CoapClientOpts> {
     private socket?: Socket | null;
-    private session?: ClientTransportSession | null;
+    private session?: ClientTransport | null;
 
     constructor(readonly handler: CoapHandler) {
         super();
@@ -34,7 +34,7 @@ export class CoapClient extends AbstractClient<CoapRequest<any>, ResponseEvent<a
                 transportOpts.host = new URL(options.url!).host;
             }
             const injector = this.handler.injector;
-            this.session = this.handler.injector.get(ClientTransportSessionFactory).create(injector, this.socket, options);
+            this.session = this.handler.injector.get(ClientTransportFactory).create(injector, this.socket, options);
         }
     }
 
@@ -45,7 +45,7 @@ export class CoapClient extends AbstractClient<CoapRequest<any>, ResponseEvent<a
 
     protected initContext(context: InvocationContext<any>): void {
         context.setValue(AbstractClient, this);
-        context.setValue(ClientTransportSession, this.session)
+        context.setValue(ClientTransport, this.session)
     }
 
     protected createRequest(pattern: Pattern, options: RequestInitOpts) {

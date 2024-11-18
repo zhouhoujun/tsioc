@@ -1,5 +1,5 @@
 import { Encoder, Decoder, TransportRequest } from '@tsdi/common';
-import { ClientTransportSession } from '@tsdi/common/client';
+import { ClientTransport } from '@tsdi/common/client';
 import { TransportOpts, ev } from '@tsdi/common/transport';
 import { Execption } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
@@ -7,7 +7,7 @@ import { EventEmitter } from 'events';
 import { KafkaTransportOpts } from '../const';
 
 
-export class KafkaClientTransportSession extends ClientTransportSession {
+export class KafkaClientTransport extends ClientTransport {
     private regTopics?: RegExp[];
     private events = new EventEmitter();
     

@@ -2,7 +2,7 @@ import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
 import { LOCALHOST, Pattern, RequestInitOpts, ResponseEvent } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ev } from '@tsdi/common/transport';
-import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import Redis from 'ioredis';
 import { RedisHandler } from './handler';
 import { RedisClientOpts } from './options';
@@ -20,7 +20,7 @@ export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent
 
     private subscriber: Redis | null = null;
     private publisher: Redis | null = null;
-    private _session?: ClientTransportSession<ReidsSocket>;
+    private _session?: ClientTransport<ReidsSocket>;
 
     constructor(readonly handler: RedisHandler) {
         super();
@@ -54,7 +54,7 @@ export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent
             this.publisher.connect()
         ]);
 
-        this._session = this.handler.injector.get(ClientTransportSessionFactory).create(this.handler.injector, {
+        this._session = this.handler.injector.get(ClientTransportFactory).create(this.handler.injector, {
             subscriber: this.subscriber,
             publisher: this.publisher
         }, opts)
@@ -63,7 +63,7 @@ export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent
 
     protected override initContext(context: InvocationContext<any>): void {
         context.setValue(AbstractClient, this);
-        context.setValue(ClientTransportSession, this._session);
+        context.setValue(ClientTransport, this._session);
     }
 
     protected createRequest(pattern: Pattern, options: RequestInitOpts<any>): RedisRequest<any> {

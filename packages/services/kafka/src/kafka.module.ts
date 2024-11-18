@@ -10,7 +10,7 @@ import { KafkaServer } from './server/server';
 import { KAFKA_SERV_FILTERS, KAFKA_SERV_GUARDS, KAFKA_SERV_INTERCEPTORS } from './server/options';
 import { KafkaRequestHandler } from './server/handler';
 import { KafkaPatternFormatter, KafkaRouteMatcher } from './pattern';
-import { KafkaTransportSessionFactory } from './server/kafka.session';
+import { KafkaServerTransportFactory } from './server/kafka.session';
 
 
 const defaultMaxSize = 5242880; //1024 * 1024 * 5;
@@ -21,7 +21,7 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
         KafkaServer,
         KafkaPatternFormatter,
         KafkaRouteMatcher,
-        KafkaTransportSessionFactory,
+        KafkaServerTransportFactory,
         {
             provide: CLIENT_MODULES,
             useValue: {
@@ -36,7 +36,7 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                         delimiter: '#',
                         maxSize: defaultMaxSize,
                     },
-                    // sessionFactory: { useExisting: KafkaTransportSessionFactory },
+                    // sessionFactory: { useExisting: KafkaServerTransportFactory },
                     providers: [{ provide: PatternFormatter, useExisting: KafkaPatternFormatter }]
                 }
             } as ClientModuleOpts,
@@ -64,7 +64,7 @@ const defaultMaxSize = 5242880; //1024 * 1024 * 5;
                     interceptorsToken: KAFKA_SERV_INTERCEPTORS,
                     filtersToken: KAFKA_SERV_FILTERS,
                     guardsToken: KAFKA_SERV_GUARDS,
-                    // sessionFactory: { useExisting: KafkaTransportSessionFactory },
+                    // sessionFactory: { useExisting: KafkaServerTransportFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,

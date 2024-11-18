@@ -1,7 +1,7 @@
 import { Injectable, InvocationContext, isString, promisify } from '@tsdi/ioc';
 import { Pattern, LOCALHOST, RequestInitOpts } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
-import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
 import * as net from 'net';
@@ -21,7 +21,7 @@ export class TcpClient extends AbstractClient<TcpRequest<any>> {
     private logger!: Logger;
 
     private connection!: tls.TLSSocket | net.Socket;
-    private _session?: ClientTransportSession<tls.TLSSocket | net.Socket>;
+    private _session?: ClientTransport<tls.TLSSocket | net.Socket>;
 
     constructor(readonly handler: TcpHandler) {
         super();
@@ -80,7 +80,7 @@ export class TcpClient extends AbstractClient<TcpRequest<any>> {
     protected override initContext(context: InvocationContext): void {
         context.setValue(AbstractClient, this);
         context.setValue(TcpClient, this);
-        context.setValue(ClientTransportSession, this._session);
+        context.setValue(ClientTransport, this._session);
     }
 
     protected override createRequest(pattern: Pattern, options: RequestInitOpts): TcpRequest<any> {
@@ -111,7 +111,7 @@ export class TcpClient extends AbstractClient<TcpRequest<any>> {
         if (opts.keepalive) {
             socket.setKeepAlive(true, opts.keepalive);
         }
-        this._session = this.handler.injector.get(ClientTransportSessionFactory).create(this.handler.injector, socket, opts);
+        this._session = this.handler.injector.get(ClientTransportFactory).create(this.handler.injector, socket, opts);
         return socket
     }
 

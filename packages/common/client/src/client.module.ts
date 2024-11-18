@@ -16,7 +16,7 @@ import { AbstractClient } from './AbstractClient';
 import { ClientBackend } from './backend';
 import { ClientCodingsModule } from './codings/client.codings.module';
 import { ClientEndpointCodingsHanlders } from './codings/codings.handlers';
-import { DefaultClientTransportSessionFactory } from './default.session';
+import { DefaultClientTransportFactory } from './default.session';
 import { BodyContentInterceptor } from './interceptors/body';
 import { ClientOpts } from './options';
 import { UrlRedirector } from './redirector';
@@ -32,7 +32,7 @@ import { ClientTransportFactory } from './transport';
         ClientCodingsModule
     ],
     providers: [
-        DefaultClientTransportSessionFactory,
+        DefaultClientTransportFactory,
         BodyContentInterceptor,
         UrlRedirector
     ]
@@ -237,7 +237,7 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                 // }
 
                 if (clientOpts.sessionFactory !== ClientTransportFactory) {
-                    clientOpts.providers.push(toProvider(ClientTransportFactory, clientOpts.sessionFactory ?? DefaultClientTransportSessionFactory))
+                    clientOpts.providers.push(toProvider(ClientTransportFactory, clientOpts.sessionFactory ?? DefaultClientTransportFactory))
                 }
                 clientOpts.providers.push(toProvider(MessageReader, clientOpts.messageReader ?? SocketMessageReader));
                 clientOpts.providers.push(toProvider(MessageWriter, clientOpts.messageWriter ?? SocketMessageWriter));

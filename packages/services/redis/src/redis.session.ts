@@ -1,6 +1,6 @@
 // import { Injectable, Injector, isString } from '@tsdi/ioc';
 // import { BadRequestExecption, Packet, ResponsePacket, StreamAdapter, TransportOpts, ev } from '@tsdi/common/transport';
-// import { RequestContext, TransportSession, TransportSessionFactory } from '@tsdi/endpoints';
+// import { RequestContext, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
 // import { Observable, filter, first, fromEvent, map, merge } from 'rxjs';
 // import Redis from 'ioredis';
 // import { Encoder, Decoder } from '@tsdi/common';
@@ -13,7 +13,7 @@
 
 // const PATTERN_MSG_BUFFER = 'pmessageBuffer';
 
-// export class RedisTransportSession extends TransportSession<ReidsTransport, TopicMessage> {
+// export class RedisServerTransport extends ServerTransport<ReidsTransport, TopicMessage> {
 //     get socket(): ReidsTransport {
 //         throw new Error('Method not implemented.');
 //     }
@@ -150,7 +150,7 @@
 // }
 
 // @Injectable()
-// export class RedisTransportSessionFactory implements TransportSessionFactory<ReidsTransport> {
+// export class RedisServerTransportFactory implements ServerTransportFactory<ReidsTransport> {
 
 //     constructor(
 //         readonly injector: Injector,
@@ -159,8 +159,8 @@
 //         private decoder: Decoder
 //     ) { }
 
-//     create(socket: ReidsTransport, options: TransportOpts): RedisTransportSession {
-//         return new RedisTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
+//     create(socket: ReidsTransport, options: TransportOpts): RedisServerTransport {
+//         return new RedisServerTransport(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
 //     }
 
 // }

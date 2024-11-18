@@ -1,13 +1,13 @@
 import { Injectable, Injector } from '@tsdi/ioc';
 import { BadRequestExecption, HeaderPacket, OfflineExecption, Packet, ResponsePacket, StreamAdapter, TransportOpts, ev } from '@tsdi/common/transport';
-import { TransportSession, TransportSessionFactory } from '@tsdi/endpoints';
+import { ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
 import { Msg, MsgHdrs, NatsConnection, SubscriptionOptions, headers as createHeaders, Subscription } from 'nats';
 import { Observable, filter, fromEvent, map, of, throwError } from 'rxjs';
 import { NatsSessionOpts } from './options';
 
 
-export class NatsTransportSession extends TransportSession<NatsConnection, Msg> {
+export class NatsServerTransport extends ServerTransport<NatsConnection, Msg> {
 
     private subjects: Set<string> = new Set();
     private events = new EventEmitter();
@@ -130,17 +130,17 @@ export class NatsTransportSession extends TransportSession<NatsConnection, Msg> 
 }
 
 @Injectable()
-export class NatsTransportSessionFactory implements TransportSessionFactory<NatsConnection> {
+export class NatsServerTransportFactory implements ServerTransportFactory<NatsConnection> {
 
     constructor(readonly injector: Injector) { }
 
 
-    create(injector: Injector, socket: NatsConnection, options: TransportOpts): NatsTransportSession<NatsConnection, any> {
+    create(injector: Injector, socket: NatsConnection, options: TransportOpts): NatsServerTransport<NatsConnection, any> {
         throw new Error('Method not implemented.');
     }
 
-    // create(socket: NatsConnection, options: TransportOpts): NatsTransportSession {
-    //     return new NatsTransportSession(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
+    // create(socket: NatsConnection, options: TransportOpts): NatsServerTransport {
+    //     return new NatsServerTransport(this.injector, socket, this.streamAdapter, this.encoder, this.decoder, options);
     // }
 
 }

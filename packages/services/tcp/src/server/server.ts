@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService } from '@tsdi/common';
 import { InternalServerExecption, ev } from '@tsdi/common/transport';
-import { BindServerEvent, DefaultMiddlewareHandler, MiddlewareLike, MiddlewareService, RequestContext, Server, TransportSessionFactory } from '@tsdi/endpoints';
+import { BindServerEvent, DefaultMiddlewareHandler, MiddlewareLike, MiddlewareService, RequestContext, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -112,17 +112,17 @@ export class TcpServer extends Server<RequestContext, TcpServerOpts> implements 
         this.serv.on(ev.CLOSE, () => this.logger.info(options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
         const injector = this.handler.injector;
-        const factory = injector.get(TransportSessionFactory);
+        const factory = injector.get(ServerTransportFactory);
 
         if (this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket) => {
-                const session = factory.create(injector, socket, options);
-                session.listen(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
+                const transport = factory.create(injector, socket, options);
+                transport.listen(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
             })
         } else {
             this.serv.on(ev.CONNECTION, (socket) => {
-                const session = factory.create(injector, socket, options);
-                session.listen(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
+                const transport = factory.create(injector, socket, options);
+                transport.listen(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
             })
         }
 

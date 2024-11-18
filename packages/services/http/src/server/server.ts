@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, ModuleLoader } from '@tsdi/core';
 import { ListenService } from '@tsdi/common';
 import { InternalServerExecption } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { BindServerEvent, CONTENT_DISPOSITION_TOKEN, DefaultMiddlewareHandler, MiddlewareLike, MiddlewareService, Server, TransportSessionFactory } from '@tsdi/endpoints';
+import { BindServerEvent, CONTENT_DISPOSITION_TOKEN, DefaultMiddlewareHandler, MiddlewareLike, MiddlewareService, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Subject, lastValueFrom } from 'rxjs';
 import { ListenOptions } from 'net';
 import * as http from 'http';
@@ -132,7 +132,7 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
         const opts = this.getOptions();
 
         const injector = this.handler.injector;
-        const factory = injector.get(TransportSessionFactory);
+        const factory = injector.get(ServerTransportFactory);
         const session = factory.create(injector, this._server, opts);
         session.listen(this.handler, this.destroy$);
 

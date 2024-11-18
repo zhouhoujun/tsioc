@@ -2,7 +2,7 @@ import { Injectable, InvocationContext, isString, lang } from '@tsdi/ioc';
 import { Pattern, RequestInitOpts, ResponseEvent } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ev } from '@tsdi/common/transport';
-import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import * as amqp from 'amqplib';
 import { AmqpClientOpts } from './options';
 import { AmqpHandler } from './handler';
@@ -17,7 +17,7 @@ export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<a
     private logger!: Logger;
     private _conn: amqp.Connection | null = null;
     private _channel: amqp.Channel | null = null;
-    private _session?: ClientTransportSession<amqp.Channel>;
+    private _session?: ClientTransport<amqp.Channel>;
 
     constructor(readonly handler: AmqpHandler) {
         super()
@@ -77,7 +77,7 @@ export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<a
             ...transportOpts.consumeOpts
         });
 
-        this._session = injector.get(ClientTransportSessionFactory).create(injector, this._channel, transportOpts);
+        this._session = injector.get(ClientTransportFactory).create(injector, this._channel, transportOpts);
     }
 
     protected async createConnection(retrys: number, retryDelay: number): Promise<amqp.Connection> {
@@ -95,7 +95,7 @@ export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<a
 
     protected override initContext(context: InvocationContext<any>): void {
         context.setValue(AbstractClient, this);
-        context.setValue(ClientTransportSession, this._session);
+        context.setValue(ClientTransport, this._session);
     }
 
 

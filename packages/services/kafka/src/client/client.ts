@@ -1,6 +1,6 @@
 import { Inject, Injectable, InvocationContext, isFunction, isString } from '@tsdi/ioc';
 import { Pattern, RequestInitOpts, ResponseEvent, patternToPath } from '@tsdi/common';
-import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { MircoServRouters } from '@tsdi/endpoints';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, Producer, logLevel } from 'kafkajs';
@@ -8,7 +8,7 @@ import { KafkaHandler } from './handler';
 import { KafkaClientOpts } from './options';
 import { DEFAULT_BROKERS, KafkaTransportOpts } from '../const';
 import { KafkaReplyPartitionAssigner } from '../kafka.assigner';
-import { KafkaClientTransportSession } from './session';
+import { KafkaClientTransport } from './session';
 import { KafkaRequest } from './request';
 
 
@@ -22,7 +22,7 @@ export class KafkaClient extends AbstractClient<KafkaRequest<any>, ResponseEvent
     private client?: Kafka | null;
     private consumer?: Consumer | null;
     private producer?: Producer | null;
-    private _session?: KafkaClientTransportSession;
+    private _session?: KafkaClientTransport;
 
     constructor(readonly handler: KafkaHandler) {
         super()
@@ -114,10 +114,10 @@ export class KafkaClient extends AbstractClient<KafkaRequest<any>, ResponseEvent
         this.producer = this.client.producer(options.producer);
         await this.producer.connect();
         const injector = this.handler.injector;
-        this._session = injector.get(ClientTransportSessionFactory).create(injector, {
+        this._session = injector.get(ClientTransportFactory).create(injector, {
             producer: this.producer,
             consumer: this.consumer!
-        }, options) as KafkaClientTransportSession
+        }, options) as KafkaClientTransport
 
         if (!options.producerOnlyMode) {
             const topics = options.topics ? options.topics.map(t => {
@@ -144,7 +144,7 @@ export class KafkaClient extends AbstractClient<KafkaRequest<any>, ResponseEvent
 
     protected override initContext(context: InvocationContext<any>): void {
         context.setValue(AbstractClient, this);
-        context.setValue(ClientTransportSession, this._session)
+        context.setValue(ClientTransport, this._session)
     }
 
     protected createRequest(pattern: Pattern, options: RequestInitOpts): KafkaRequest<any> {

@@ -5,7 +5,7 @@ import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODU
 import { AmqpClient } from './client/client';
 import { AMQP_CLIENT_FILTERS, AMQP_CLIENT_INTERCEPTORS } from './client/options';
 import { AmqpHandler } from './client/handler';
-import { AmqpTransportSessionFactory } from './amqp.session';
+import { AmqpServerTransportFactory } from './amqp.session';
 import { AmqpServer } from './server/server';
 import { AMQP_SERV_FILTERS, AMQP_SERV_GUARDS, AMQP_SERV_INTERCEPTORS } from './server/options';
 import { AmqpRequestHandler } from './server/handler';
@@ -19,7 +19,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
     providers: [
         AmqpClient,
         AmqpServer,
-        AmqpTransportSessionFactory,
+        AmqpServerTransportFactory,
         {
             provide: CLIENT_MODULES,
             useValue: {
@@ -38,7 +38,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                         queueOpts: {},
                         prefetchCount: 0,
                     },
-                    // sessionFactory: { useExisting: AmqpTransportSessionFactory }
+                    // sessionFactory: { useExisting: AmqpServerTransportFactory }
                 }
             } as ClientModuleOpts,
             multi: true
@@ -71,7 +71,7 @@ const defaultMaxSize = 1048576; // 1024 * 1024;
                     interceptorsToken: AMQP_SERV_INTERCEPTORS,
                     filtersToken: AMQP_SERV_FILTERS,
                     guardsToken: AMQP_SERV_GUARDS,
-                    // sessionFactory: { useExisting: AmqpTransportSessionFactory },
+                    // sessionFactory: { useExisting: AmqpServerTransportFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,

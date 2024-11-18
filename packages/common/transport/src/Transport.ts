@@ -142,7 +142,10 @@ export abstract class Transport<TSocket = any, TInput = any, TOutput = any> {
      * @param channel the req channel.
      */
     abstract receive(channel: IEventEmitter): Observable<TOutput>;
-
+    /**
+     * close transport.
+     */
+    abstract close(): Promise<void>;
     /**
      * destroy.
      */

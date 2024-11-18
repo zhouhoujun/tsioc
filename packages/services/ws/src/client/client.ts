@@ -1,7 +1,7 @@
 import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
 import { ResponseEvent, Pattern, RequestInitOpts } from '@tsdi/common';
 import { ServiceUnavailableExecption, ev } from '@tsdi/common/transport';
-import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { Observable } from 'rxjs';
 import { WebSocket, createWebSocketStream } from 'ws';
 import { WsHandler } from './handler';
@@ -15,14 +15,14 @@ import { WsRequest } from './request';
 @Injectable()
 export class WsClient extends AbstractClient<WsRequest<any>, ResponseEvent<any>, WsClientOpts> {
     private socket?: WebSocket | null;
-    private session?: ClientTransportSession | null;
+    private session?: ClientTransport | null;
 
     constructor(readonly handler: WsHandler) {
         super();
     }
 
     protected connect(): Observable<any> {
-        return new Observable<ClientTransportSession>((observer) => {
+        return new Observable<ClientTransport>((observer) => {
             const options = this.getOptions();
             if (!this.socket) {
                 this.session?.destroy();
@@ -33,7 +33,7 @@ export class WsClient extends AbstractClient<WsRequest<any>, ResponseEvent<any>,
             const onOpen = () => {
                 if (!this.session) {
                     const socket = createWebSocketStream(this.socket!);
-                    const factory = this.handler.injector.get(ClientTransportSessionFactory);
+                    const factory = this.handler.injector.get(ClientTransportFactory);
                     this.session = factory.create(this.handler.injector, socket, options);
                 }
                 observer.next(this.session);
@@ -88,7 +88,7 @@ export class WsClient extends AbstractClient<WsRequest<any>, ResponseEvent<any>,
     protected initContext(context: InvocationContext<any>): void {
         context.setValue(AbstractClient, this);
         context.setValue(WsClient, this);
-        context.setValue(ClientTransportSession, this.session);
+        context.setValue(ClientTransport, this.session);
     }
 
 }

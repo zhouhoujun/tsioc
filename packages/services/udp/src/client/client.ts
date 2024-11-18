@@ -1,7 +1,7 @@
 import { Injectable, InvocationContext, isString, promisify } from '@tsdi/ioc';
 import { Pattern, ResponseEvent } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { UdpHandler } from './handler';
 import { UdpClientOpts } from './options';
@@ -16,7 +16,7 @@ export class UdpClient extends AbstractClient<UdpRequest<any>, ResponseEvent<any
     private logger!: Logger;
     
     private socket?: Socket | null;
-    private session?: ClientTransportSession | null;
+    private session?: ClientTransport | null;
 
     constructor(readonly handler: UdpHandler) {
         super();
@@ -33,7 +33,7 @@ export class UdpClient extends AbstractClient<UdpRequest<any>, ResponseEvent<any
             this.socket = createSocket(connectOpts);
 
             const injector = this.handler.injector;
-            this.session = injector.get(ClientTransportSessionFactory).create(injector, this.socket, options);
+            this.session = injector.get(ClientTransportFactory).create(injector, this.socket, options);
         }
     }
 
@@ -51,7 +51,7 @@ export class UdpClient extends AbstractClient<UdpRequest<any>, ResponseEvent<any
     protected initContext(context: InvocationContext<any>): void {
         context.setValue(AbstractClient, this);
         context.setValue(UdpClient, this);
-        context.setValue(ClientTransportSession, this.session)
+        context.setValue(ClientTransport, this.session)
     }
 
     protected createRequest(pattern: Pattern, options: UdpRequestInitOpts<any>): UdpRequest<any> {

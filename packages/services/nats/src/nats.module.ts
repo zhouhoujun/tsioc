@@ -10,7 +10,7 @@ import { NatsServer } from './server/server';
 import { NATS_SERV_FILTERS, NATS_SERV_GUARDS, NATS_SERV_INTERCEPTORS } from './server/options';
 import { NatsRequestHandler } from './server/handler';
 import { NatsPatternFormatter } from './pattern';
-import { NatsTransportSessionFactory } from './nats.session';
+import { NatsServerTransportFactory } from './nats.session';
 
 
 
@@ -22,7 +22,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
         NatsClient,
         NatsServer,
         NatsPatternFormatter,
-        NatsTransportSessionFactory,
+        NatsServerTransportFactory,
         {
             provide: CLIENT_MODULES,
             useValue: {
@@ -37,7 +37,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                         delimiter: '#',
                         maxSize: defaultMaxSize,
                     },
-                    sessionFactory: { useExisting: NatsTransportSessionFactory },
+                    sessionFactory: { useExisting: NatsServerTransportFactory },
                     providers: [{ provide: PatternFormatter, useExisting: NatsPatternFormatter }]
                 }
             } as ClientModuleOpts,
@@ -65,7 +65,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                     interceptorsToken: NATS_SERV_INTERCEPTORS,
                     filtersToken: NATS_SERV_FILTERS,
                     guardsToken: NATS_SERV_GUARDS,
-                    sessionFactory: { useExisting: NatsTransportSessionFactory },
+                    sessionFactory: { useExisting: NatsServerTransportFactory },
                     filters: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,

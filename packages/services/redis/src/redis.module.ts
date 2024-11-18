@@ -10,7 +10,7 @@ import { RedisServer } from './server/server';
 import { REDIS_SERV_FILTERS, REDIS_SERV_GUARDS, REDIS_SERV_INTERCEPTORS } from './server/options';
 import { RedisRequestHandler } from './server/handler';
 import { RedisPatternFormatter } from './pattern';
-// import { RedisTransportSessionFactory } from './redis.session';
+// import { RedisServerTransportFactory } from './redis.session';
 import { RedisMessage, RedisMessageFactory, RedisMessageReader, RedisMessageWriter } from './message';
 import { RedisClientIncoming, RedisClientIncomingFactory, RedisIncoming, RedisIncomingFactory } from './incoming';
 import { RedisOutgoing, RedisOutgoingFactory } from './outgoing';
@@ -26,7 +26,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
         RedisClient,
         RedisServer,
         RedisPatternFormatter,
-        // RedisTransportSessionFactory,
+        // RedisServerTransportFactory,
         {
             provide: CLIENT_MODULES,
             useValue: {
@@ -83,7 +83,7 @@ const defaultMaxSize = 1048576; //1024 * 1024;
                     interceptorsToken: REDIS_SERV_INTERCEPTORS,
                     filtersToken: REDIS_SERV_FILTERS,
                     guardsToken: REDIS_SERV_GUARDS,
-                    // sessionFactory: { useExisting: RedisTransportSessionFactory },
+                    // sessionFactory: { useExisting: RedisServerTransportFactory },
                     interceptors: [
                         LoggerInterceptor,
                         ExecptionFinalizeFilter,

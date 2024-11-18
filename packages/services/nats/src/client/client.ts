@@ -1,6 +1,6 @@
 import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
 import { ResponseEvent, Pattern, RequestInitOpts } from '@tsdi/common';
-import { AbstractClient, ClientTransportSession, ClientTransportSessionFactory } from '@tsdi/common/client';
+import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { NatsConnection, connect } from 'nats';
 import { NatsHandler } from './handler';
@@ -12,7 +12,7 @@ import { NatsRequest } from './request';
 export class NatsClient extends AbstractClient<NatsRequest<any>, ResponseEvent<any>, NatsClientOpts> {
     
     private conn?: NatsConnection;
-    private _session?: ClientTransportSession<NatsConnection>;
+    private _session?: ClientTransport<NatsConnection>;
 
     @InjectLog()
     private logger!: Logger;
@@ -27,12 +27,12 @@ export class NatsClient extends AbstractClient<NatsRequest<any>, ResponseEvent<a
         const options = this.getOptions();
         const conn = this.conn = await connect(options.connectOpts);
         
-        this._session = this.handler.injector.get(ClientTransportSessionFactory).create(this.handler.injector, conn, options);
+        this._session = this.handler.injector.get(ClientTransportFactory).create(this.handler.injector, conn, options);
     }
 
     protected initContext(context: InvocationContext<any>): void {
         context.setValue(AbstractClient, this);
-        context.setValue(ClientTransportSession, this._session)
+        context.setValue(ClientTransport, this._session)
     }
 
     protected createRequest(pattern: Pattern, options: RequestInitOpts): NatsRequest<any> {

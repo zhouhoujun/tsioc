@@ -1,7 +1,7 @@
 import { EMPTY_OBJ, Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { PatternFormatter } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
-import { MicroRouters, RequestContext, Server, TransportSession, TransportSessionFactory } from '@tsdi/endpoints';
+import { MicroRouters, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Client, connect } from 'mqtt';
 import { MqttServiceOpts } from './options';
@@ -19,7 +19,7 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
 
     private subscribes?: string[];
     private mqtt?: Client | null;
-    private _session?: TransportSession<Client>;
+    private _session?: ServerTransport<Client>;
 
     constructor(readonly handler: MqttRequestHandler
     ) {
@@ -79,7 +79,7 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
 
         const transportOpts = options.transportOpts!;
 
-        const factory = injector.get(TransportSessionFactory);
+        const factory = injector.get(ServerTransportFactory);
         const session = this._session = factory.create(injector, this.mqtt, transportOpts);
         session.listen(this.handler);
         // this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));

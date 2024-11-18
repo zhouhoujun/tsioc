@@ -6,7 +6,7 @@ import { ClientOpts } from './options';
 
 
 
-export class DefaultClientTransportSession extends ClientTransport<any> {
+export class DefaultClientTransport extends ClientTransport<any> {
 
     private _encodings?: TransportEncodings;
     private _decodings?: TransportDecodings;
@@ -110,12 +110,12 @@ export class DefaultClientTransportSession extends ClientTransport<any> {
 
 
 @Injectable()
-export class DefaultClientTransportSessionFactory implements ClientTransportFactory<any> {
+export class DefaultClientTransportFactory implements ClientTransportFactory<any> {
 
     constructor() { }
 
-    create(injector: Injector, socket: IDuplexStream, options: ClientOpts): DefaultClientTransportSession {
-        return new DefaultClientTransportSession(injector, socket, options);
+    create(injector: Injector, socket: IDuplexStream, options: ClientOpts): DefaultClientTransport {
+        return new DefaultClientTransport(injector, socket, options);
     }
 
 }
