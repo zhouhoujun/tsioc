@@ -1,7 +1,7 @@
 import { Injectable, Inject, isFunction } from '@tsdi/ioc';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { PatternFormatter } from '@tsdi/common';
-import { Server, MicroRouters, RequestHandler, ServerTransportFactory, RequestContext, EndpointHandler, ServerOpts } from '@tsdi/endpoints';
+import { Server, MicroRouters, RequestHandler, ServerTransportFactory, RequestContext, ServerOpts } from '@tsdi/endpoints';
 import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
 import { KafkaServerTransport } from './kafka.session';
 import { DEFAULT_BROKERS, KafkaTransportOpts } from '../const';
