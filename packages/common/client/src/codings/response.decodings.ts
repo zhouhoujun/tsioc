@@ -11,17 +11,17 @@ export class ErrorResponseDecordeInterceptor implements Interceptor<AbstractClie
 
     intercept(input: AbstractClientIncoming<any>, next: Handler<AbstractClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         if (!input.ok || input.error) {
-            const session = context.transport as ClientTransport;
+            const transport = context.transport as ClientTransport;
 
             return defer(async () => {
                 if (context.transport.streamAdapter.isReadable(input.payload)) {
                     let payload: any = await toBuffer(input.payload);
                     payload = new TextDecoder().decode(payload);
-                    return input.clone({ payload })
+                    input.payload = payload;
                 }
                 return input;
             }).pipe(
-                mergeMap(input => throwError(() => session.responseFactory.create({ ...input.serialize() })))
+                mergeMap(input => throwError(() => transport.responseFactory.create({ ...input.serialize() })))
             );
         }
         return next.handle(input, context);
@@ -34,9 +34,9 @@ export class EmptyResponseDecordeInterceptor implements Interceptor<AbstractClie
 
     intercept(input: AbstractClientIncoming<any>, next: Handler<AbstractClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         const len = context.transport.headerAdapter.getContentLength(input.headers);
-        const session = context.transport as ClientTransport;
-        if (!len || session.statusAdapter?.isEmpty(input.status)) {
-            return of(session.responseFactory.create({ ...input.serialize(), payload: null }));
+        const transport = context.transport as ClientTransport;
+        if (!len || transport.statusAdapter?.isEmpty(input.status)) {
+            return of(transport.responseFactory.create({ ...input.serialize(), payload: null }));
         }
         return next.handle(input, context);
     }
@@ -46,12 +46,12 @@ export class EmptyResponseDecordeInterceptor implements Interceptor<AbstractClie
 export class RedirectDecodeInterceptor implements Interceptor<AbstractClientIncoming<any>, ResponseEvent<any>, TransportContext> {
 
     intercept(input: AbstractClientIncoming<any>, next: Handler<AbstractClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
-        const session = context.transport as ClientTransport;
+        const transport = context.transport as ClientTransport;
         // HTTP fetch step 5
-        if (session.redirector) {
-            if (session.statusAdapter?.isRedirect(input.status)) {
+        if (transport.redirector) {
+            if (transport.statusAdapter?.isRedirect(input.status)) {
                 // HTTP fetch step 5.2
-                return session.redirector.redirect<ResponseEvent<any>>(context.first(), input.status, input.headers.getHeaders());
+                return transport.redirector.redirect<ResponseEvent<any>>(context.first(), input.status, input.headers.getHeaders());
             }
         }
         return next.handle(input, context);
@@ -67,10 +67,10 @@ export class CompressResponseDecordeInterceptor implements Interceptor<AbstractC
     intercept(input: AbstractClientIncoming<any>, next: Handler<AbstractClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         return defer(async () => {
             const response = input;
-            const session = context.transport as ClientTransport;
-            const codings = session.headerAdapter.getContentEncoding(response.headers);
+            const transport = context.transport as ClientTransport;
+            const codings = transport.headerAdapter.getContentEncoding(response.headers);
             const req = context.first() as AbstractRequest<any>;
-            const streamAdapter = session.streamAdapter;
+            const streamAdapter = transport.streamAdapter;
             const rqstatus = req.context.getValueify(RequestStauts, () => new RequestStauts());
             // HTTP-network fetch step 12.1.1.4: handle content codings
             // in following scenarios we ignore compression support
@@ -133,7 +133,7 @@ export class CompressResponseDecordeInterceptor implements Interceptor<AbstractC
                     return response.clone({ body });
 
                 } catch (err) {
-                    throw session.responseFactory.create(response.clone({ error: err }).serialize())
+                    throw transport.responseFactory.create(response.clone({ error: err }).serialize())
                 }
             }
             return response;

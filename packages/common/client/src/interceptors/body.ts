@@ -17,24 +17,24 @@ export class BodyContentInterceptor<TRequest extends AbstractRequest<any> = Abst
 
     intercept(req: TRequest & RequestSerialize, next: Handler<TRequest, TResponse>): Observable<TResponse> {
 
-        const session = req.context.get(ClientTransport);
-        let body = req.serializeBody ? req.serializeBody(req.body) : this.serializeBody(session.streamAdapter, req.body);
+        const transport = req.context.get(ClientTransport);
+        let body = req.serializeBody ? req.serializeBody(req.body) : this.serializeBody(transport.streamAdapter, req.body);
         if (body == null) {
             return next.handle(req);
         }
         return defer(async () => {
             let headers = req.headers;
-            const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader(req.body) : this.detectContentTypeHeader(session.streamAdapter, req.body);
-            if (!session.headerAdapter.hasContentType(headers) && contentType) {
-                headers = session.headerAdapter.setContentType(headers, contentType);
+            const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader(req.body) : this.detectContentTypeHeader(transport.streamAdapter, req.body);
+            if (!transport.headerAdapter.hasContentType(headers) && contentType) {
+                headers = transport.headerAdapter.setContentType(headers, contentType);
             }
-            if (!session.headerAdapter.hasContentLength(headers)) {
+            if (!transport.headerAdapter.hasContentLength(headers)) {
                 if (isBlob(body)) {
                     const arrbuff = await body.arrayBuffer();
                     body = Buffer.from(arrbuff);
-                } else if (session.streamAdapter.isFormDataLike(body)) {
+                } else if (transport.streamAdapter.isFormDataLike(body)) {
                     if (isFormData(body)) {
-                        const form = session.streamAdapter.createFormData();
+                        const form = transport.streamAdapter.createFormData();
                         body.forEach((v, k, parent) => {
                             form.append(k, v);
                         });
@@ -42,7 +42,7 @@ export class BodyContentInterceptor<TRequest extends AbstractRequest<any> = Abst
                     }
                     body = (body as any).getBuffer();
                 }
-                headers = session.headerAdapter.setContentLength(headers, Buffer.byteLength(body as Buffer));
+                headers = transport.headerAdapter.setContentLength(headers, Buffer.byteLength(body as Buffer));
             }
 
             return req.clone({ body, headers }) as TRequest;

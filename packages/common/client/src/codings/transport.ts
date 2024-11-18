@@ -1,8 +1,8 @@
 import { HeaderAdapter, MessageFactory, ResponseFactory } from '@tsdi/common';
 import { ClientIncomingFactory, IDuplexStream, MessageReader, MessageWriter, Redirector, StatusAdapter, StreamAdapter, TransportDecodings, TransportDecodingsFactory, TransportEncodings, TransportEncodingsFactory, TransportOpts } from '@tsdi/common/transport';
 import { Injectable, Injector } from '@tsdi/ioc';
-import { ClientTransport, ClientTransportFactory } from './transport';
-import { ClientOpts } from './options';
+import { ClientTransport, ClientTransportFactory } from '../transport';
+import { ClientOpts } from '../options';
 
 
 
