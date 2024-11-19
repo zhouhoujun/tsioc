@@ -107,18 +107,18 @@ export abstract class Transport<TSocket = any, TInput = any, TOutput = any> {
     //  * transport options.
     //  */
     // abstract get options(): TransportOpts;
-    /**
-     * transport context.
-     */
-    abstract get injector(): Injector;
-    /**
-     * incoming message factory.
-     */
-    abstract get incomingFactory(): AbstractIncomingFactory;
-    /**
-     * outgoing message factory.
-     */
-    abstract get outgoingFactory(): AbstractOutgoingFactory;
+    // /**
+    //  * transport context.
+    //  */
+    // abstract get injector(): Injector;
+    // /**
+    //  * incoming message factory.
+    //  */
+    // abstract get incomingFactory(): AbstractIncomingFactory;
+    // /**
+    //  * outgoing message factory.
+    //  */
+    // abstract get outgoingFactory(): AbstractOutgoingFactory;
     /**
      * stream adapter.
      */

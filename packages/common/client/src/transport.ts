@@ -14,10 +14,10 @@ export abstract class ClientTransport<TSocket = any> extends AbstractTransport<T
      * client options
      */
     abstract get clientOptions(): ClientOpts;
-    /**
-     * client incoming message factory.
-     */
-    abstract get incomingFactory(): ClientIncomingFactory;
+    // /**
+    //  * client incoming message factory.
+    //  */
+    // abstract get incomingFactory(): ClientIncomingFactory;
     /**
      * response factory.
      */

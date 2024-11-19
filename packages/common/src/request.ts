@@ -97,6 +97,10 @@ export interface RequestCloneOpts<T> {
  * Abstract request.
  */
 export abstract class AbstractRequest<T> implements Clonable<AbstractRequest<T>> {
+    /**
+     * request headers.
+     */
+    abstract get  headers(): HeaderMappings;
     abstract get method(): string;
     abstract get params(): RequestParams;
     abstract get context(): InvocationContext;

@@ -1,5 +1,5 @@
 import { Abstract, Injectable, isFunction, promisify } from '@tsdi/ioc';
-import { AbstractRequest } from '@tsdi/common';
+import { AbstractRequest, Packet } from '@tsdi/common';
 import { Decoder, Encoder } from '@tsdi/common/codings';
 import { Observable, Subject, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
 import { Transport, Incomings } from './Transport';
@@ -30,9 +30,13 @@ export class SocketMessageReader implements MessageReader<IReadableStream> {
 
     read(transport: Transport, channel?: IEventEmitter, req?: AbstractRequest<any>): Observable<Incomings> {
         return fromEvent(channel ?? transport.socket, ev.DATA, (chunk: Buffer | string) => {
-            return transport.incomingFactory.create({ data: chunk });
+            return this.createMessage(chunk);
         })
             .pipe(mergeMap(data => this.decodings.decode(data, req)))
+    }
+
+    protected createMessage(payload: Buffer | string) {
+        return new Packet({ payload })
     }
 }
 
