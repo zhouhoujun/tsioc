@@ -1,77 +1,26 @@
-import { Abstract, Injectable, isFunction, promisify } from '@tsdi/ioc';
-import { AbstractRequest, Packet } from '@tsdi/common';
+import { Abstract, isFunction, promisify } from '@tsdi/ioc';
+import { AbstractRequest } from '@tsdi/common';
 import { Decoder, Encoder } from '@tsdi/common/codings';
 import { Observable, Subject, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
-import { Transport, Incomings } from './Transport';
+import { Transport } from './Transport';
 import { ev } from './consts';
 import { IEventEmitter, IReadableStream, IWritableStream } from './stream';
 
 /**
- * message reader.
- */
-@Abstract()
-export abstract class MessageReader<TSocket = any, TChannel extends IEventEmitter = IEventEmitter, TMsg = any> {
-    abstract read(transport: Transport<TSocket>, channel?: TChannel | null, req?: AbstractRequest<any>): Observable<TMsg>
-}
-
-/**
- * message writer.
- */
-@Abstract()
-export abstract class MessageWriter<TSocket = any, TChannel extends IEventEmitter = IEventEmitter, TMsg = any> {
-    abstract write(transport: Transport<TSocket>, msg: TMsg, channel?: TChannel | null): Observable<any>;
-}
-
-
-
-@Injectable()
-export class SocketMessageReader implements MessageReader<IReadableStream> {
-    constructor(readonly decodings: Decoder) { }
-
-    read(transport: Transport, channel?: IEventEmitter, req?: AbstractRequest<any>): Observable<Incomings> {
-        return fromEvent(channel ?? transport.socket, ev.DATA, (chunk: Buffer | string) => {
-            return this.createMessage(chunk);
-        })
-            .pipe(mergeMap(data => this.decodings.decode(data, req)))
-    }
-
-    protected createMessage(payload: Buffer | string) {
-        return new Packet({ payload })
-    }
-}
-
-@Injectable()
-export class SocketMessageWriter<TMsg = any> implements MessageWriter<IWritableStream, IEventEmitter, TMsg> {
-
-    constructor(readonly encodings: Encoder) { }
-
-    write(transport: Transport, data: any, channel?: IEventEmitter): Observable<any> {
-        return this.encodings.encode(data)
-            .pipe(
-                mergeMap(msg => {
-                    const socket = channel ?? transport.socket;
-                    if (transport.streamAdapter.isReadable(msg.payload)) {
-                        return transport.streamAdapter.pipeTo(msg.payload as IReadableStream, socket, { end: false });
-                    }
-                    return promisify<any, void>(socket.write, socket)(msg.payload)
-                }))
-    }
-}
-
-/**
  * Abstract transport.
  */
+@Abstract()
 export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = any> extends Transport<TSocket, TInput, TOutput> {
 
     /**
-     * message reader.
+     * message decodings.
      */
-    abstract get messageReader(): MessageReader;
+    abstract get decodings(): Decoder
 
     /**
-     * message writer.
+     * message encodings.
      */
-    abstract get messageWriter(): MessageWriter;
+    abstract get encodings(): Encoder;
 
 
     protected destroy$ = new Subject<void>;
@@ -81,8 +30,11 @@ export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = a
      * @param data 
      */
     send(data: TInput, channel?: IEventEmitter): Observable<any> {
-        return this.messageWriter.write(this, data, channel)
+        return this.encodings.encode(data)
             .pipe(
+                mergeMap(msg => {
+                    return this.write(msg, channel)
+                }),
                 takeUntil(this.destroy$)
             )
     }
@@ -93,12 +45,17 @@ export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = a
      * @param req the message response for.
      */
     receive(channel?: IEventEmitter, req?: AbstractRequest<any>): Observable<TOutput> {
-        return this.messageReader.read(this, channel, req)
+        return this.read(channel, req)
             .pipe(
                 takeUntil(this.destroy$),
+                mergeMap(data => this.decodings.decode(data, req)),
                 share()
             ) as Observable<any>;
     }
+
+    protected abstract read(channel?: IEventEmitter | null, req?: AbstractRequest<any>): Observable<any>;
+
+    protected abstract write(msg: any, channel?: IEventEmitter | null): Promise<any> | Observable<any>;
 
     /**
      * destroy.
@@ -116,4 +73,21 @@ export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = a
         }
     }
 
+}
+
+@Abstract()
+export abstract class SocketTransport<TSocket extends IWritableStream = IWritableStream, TInput = any, TOutput = any> extends AbstractTransport<TSocket, TInput, TOutput> {
+
+    protected override read(channel?: IEventEmitter | null, req?: AbstractRequest<any>): Observable<any> {
+        return fromEvent(channel ?? this.socket, ev.DATA)
+    }
+
+    protected override write(msg: any, channel?: IWritableStream | null): Promise<any> {
+
+        const socket = channel ?? this.socket;
+        if (this.streamAdapter.isReadable(msg.payload)) {
+            return this.streamAdapter.pipeTo(msg.payload as IReadableStream, socket, { end: false });
+        }
+        return promisify<any, void>(socket.write, socket)(msg.payload)
+    }
 }
