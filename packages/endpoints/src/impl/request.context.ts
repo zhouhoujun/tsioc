@@ -24,14 +24,14 @@ export class UrlRequestContext<TRequest extends Incoming<any> = Incoming<any>, T
 
     constructor(
         injector: Injector,
-        readonly session: ServerTransport,
+        readonly transport: ServerTransport,
         readonly request: TRequest,
         readonly response: TResponse,
         readonly serverOptions: ServerOpts = EMPTY_OBJ
     ) {
         super(injector, { ...serverOptions, args: request });
 
-        this.setValue(ServerTransport, session);
+        this.setValue(ServerTransport, transport);
         
         this.originalUrl = this.url = normalize(this.url);
         const searhIdx = this.url.indexOf('?');
@@ -115,7 +115,7 @@ export class UrlRequestContext<TRequest extends Incoming<any> = Incoming<any>, T
 
     async respond(): Promise<any> {
         if (this.sent) return;
-        await lastValueFrom(this.session.send(this));
+        await lastValueFrom(this.transport.send(this));
     }
 
     async respondExecption(execption: MessageExecption): Promise<void> {
@@ -129,7 +129,7 @@ export class UrlRequestContext<TRequest extends Incoming<any> = Incoming<any>, T
         };
         if (!isNil(execption.status)) this.status = execption.status;
         this.statusMessage = execption.message;
-        await lastValueFrom(this.session.send(this));
+        await lastValueFrom(this.transport.send(this));
     }
 
 }
@@ -145,14 +145,14 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
 
     constructor(
         injector: Injector,
-        readonly session: ServerTransport,
+        readonly transport: ServerTransport,
         readonly request: TRequest,
         readonly response: TResponse,
         readonly serverOptions: ServerOpts = EMPTY_OBJ
     ) {
         super(injector, { ...serverOptions, args: request });
 
-        this.setValue(ServerTransport, session);
+        this.setValue(ServerTransport, transport);
 
         this.originalUrl = this.url = normalize(request.url ?? request.pattern!);
         const searhIdx = this.url.indexOf('?');
@@ -202,7 +202,7 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
 
     async respond(): Promise<any> {
         if (this.sent) return;
-        await lastValueFrom(this.session.send(this));
+        await lastValueFrom(this.transport.send(this));
     }
 
     async respondExecption(execption: MessageExecption): Promise<void> {
@@ -216,7 +216,7 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
         };
         if (!isNil(execption.status)) this.status = execption.status;
         this.statusMessage = execption.message;
-        await lastValueFrom(this.session.send(this));
+        await lastValueFrom(this.transport.send(this));
     }
 }
 

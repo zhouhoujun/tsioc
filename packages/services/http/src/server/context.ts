@@ -27,14 +27,14 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 
     constructor(
         injector: Injector,
-        readonly session: ServerTransport,
+        readonly transport: ServerTransport,
         readonly request: HttpServRequest,
         readonly response: HttpServResponse,
         readonly serverOptions: HttpServerOpts
     ) {
         super(injector, { ...serverOptions, args: request });
 
-        this.setValue(ServerTransport, session);
+        this.setValue(ServerTransport, transport);
         const url = this._url = this.originalUrl = normalize(request.url!);
         this.status = HttpStatusCode.NotFound
 
@@ -379,7 +379,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
             return this.response.end(body)
         }
 
-        await lastValueFrom(this.session.send(this, this.response));
+        await lastValueFrom(this.transport.send(this, this.response));
     }
 
     async respondExecption(err: MessageExecption): Promise<void> {

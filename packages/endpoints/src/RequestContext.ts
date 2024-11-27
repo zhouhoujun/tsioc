@@ -30,45 +30,45 @@ export abstract class RequestContext<
     abstract get serverOptions(): TOptions;
 
     /**
-     * transport session
+     * transport
      */
-    abstract get session(): ServerTransport<TSocket>;
+    abstract get transport(): ServerTransport<TSocket>;
 
     /**
      * mime adapter.
      */
     get mimeAdapter(): MimeAdapter | null {
-        return this.session.mimeAdapter
+        return this.transport.mimeAdapter
     }
     /**
      * mime accepts priority
      */
     get acceptsPriority(): AcceptsPriority | null {
-        return this.session.acceptsPriority
+        return this.transport.acceptsPriority
     }
     /**
      * status adapter.
      */
     get statusAdapter(): StatusAdapter<TStatus> | null {
-        return this.session.statusAdapter
+        return this.transport.statusAdapter
     }
     /**
      * stream adapter
      */
     get headerAdapter(): HeaderAdapter {
-        return this.session.headerAdapter
+        return this.transport.headerAdapter
     }
     /**
      * stream adapter
      */
     get streamAdapter(): StreamAdapter {
-        return this.session.streamAdapter
+        return this.transport.streamAdapter
     }
     /**
      * file adapter
      */
     get fileAdapter(): FileAdapter {
-        return this.session.fileAdapter
+        return this.transport.fileAdapter
     }
 
     /**

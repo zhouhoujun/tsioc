@@ -1,4 +1,4 @@
-import { BasePacket, PacketOpts } from '@tsdi/common';
+import { Packet, PacketOpts } from '@tsdi/common';
 import { IReadableStream } from './stream';
 
 export interface SerializationOpts extends PacketOpts<string | Buffer | IReadableStream> {
@@ -8,7 +8,7 @@ export interface SerializationOpts extends PacketOpts<string | Buffer | IReadabl
 /**
  * Serialization packet.
  */
-export abstract class Serialization extends BasePacket<string | Buffer | IReadableStream> {
+export abstract class Serialization extends Packet<string | Buffer | IReadableStream> {
     streamLength?: number;
     noHead?: boolean;
 

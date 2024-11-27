@@ -1,22 +1,15 @@
-import { DefaultResponseFactory, HybirdProtocols, ResponseFactory, Protocols } from '@tsdi/common';
-import { ClientIncomingFactory, MessageReader, MessageWriter, NotImplementedExecption, SocketMessageReader, SocketMessageWriter, StatusAdapter, TransportPacketModule } from '@tsdi/common/transport';
-import { ConfigMissingExecption, createHandler } from '@tsdi/core';
 import {
-    Arrayify, EMPTY, Injector, Module,
-    ModuleRef,
-    ModuleType,
+    Arrayify, EMPTY, Injector, Module, ModuleRef, ModuleType,
     ModuleWithProviders, ProvdierOf, ProviderType,
-    Token,
-    Type,
-    isArray,
-    isNil,
-    lang, toProvider, tokenId
+    Token, Type, isArray, isNil, lang, toProvider, tokenId
 } from '@tsdi/ioc';
+import { ConfigMissingExecption, createHandler } from '@tsdi/core';
+import { DefaultResponseFactory, HybirdProtocols, ResponseFactory, Protocols } from '@tsdi/common';
+import { ClientIncomingFactory, NotImplementedExecption, StatusAdapter, TransportPacketModule } from '@tsdi/common/transport';
 import { AbstractClient } from './AbstractClient';
 import { ClientBackend } from './backend';
 import { ClientCodingsModule } from './codings/client.codings.module';
 import { ClientEndpointCodingsHanlders } from './codings/codings.handlers';
-import { DefaultClientTransportFactory } from './codings/transport';
 import { BodyContentInterceptor } from './interceptors/body';
 import { ClientOpts } from './options';
 import { UrlRedirector } from './redirector';
@@ -32,7 +25,7 @@ import { ClientTransportFactory } from './transport';
         ClientCodingsModule
     ],
     providers: [
-        DefaultClientTransportFactory,
+        // DefaultClientTransportFactory,
         BodyContentInterceptor,
         UrlRedirector
     ]
@@ -191,17 +184,17 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
 
                 if (!clientOpts.handlerType) throw new ConfigMissingExecption(`Config Missing handlerType`);
 
-                clientOpts.transportOpts = {
-                    name: `${clientOpts.microservice ? ' microservice' : ''} client`,
-                    // group: opts.transport,
-                    subfix: clientOpts.microservice ? '_micro' : '',
-                    microservice: clientOpts.microservice,
-                    timeout: clientOpts.timeout,
-                    transport: opts.transport,
-                    ...opts.defaultOpts?.transportOpts,
-                    ...opts.clientOpts?.transportOpts,
-                    client: true
-                };
+                // clientOpts.transportOpts = {
+                //     name: `${clientOpts.microservice ? ' microservice' : ''} client`,
+                //     // group: opts.transport,
+                //     subfix: clientOpts.microservice ? '_micro' : '',
+                //     microservice: clientOpts.microservice,
+                //     timeout: clientOpts.timeout,
+                //     transport: opts.transport,
+                //     ...opts.defaultOpts?.transportOpts,
+                //     ...opts.clientOpts?.transportOpts,
+                //     client: true
+                // };
 
 
                 if (opts.imports) {
@@ -237,10 +230,10 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                 // }
 
                 if (clientOpts.sessionFactory !== ClientTransportFactory) {
-                    clientOpts.providers.push(toProvider(ClientTransportFactory, clientOpts.sessionFactory ?? DefaultClientTransportFactory))
+                    clientOpts.providers.push(toProvider(ClientTransportFactory, clientOpts.sessionFactory)) // ?? DefaultClientTransportFactory))
                 }
-                clientOpts.providers.push(toProvider(MessageReader, clientOpts.messageReader ?? SocketMessageReader));
-                clientOpts.providers.push(toProvider(MessageWriter, clientOpts.messageWriter ?? SocketMessageWriter));
+                // clientOpts.providers.push(toProvider(MessageReader, clientOpts.messageReader ?? SocketMessageReader));
+                // clientOpts.providers.push(toProvider(MessageWriter, clientOpts.messageWriter ?? SocketMessageWriter));
 
 
                 const providers: ProviderType[] = [];
