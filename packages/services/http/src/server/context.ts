@@ -564,8 +564,8 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 
 @Injectable()
 export class HttpContextFactory implements RestfulRequestContextFactory<HttpServRequest, HttpServResponse> {
-    create(session: ServerTransport, incoming: HttpServRequest, outgoing: HttpServResponse, options: HttpServerOpts): HttpContext {
-        return new HttpContext(session.injector, session,
+    create(transport: ServerTransport, incoming: HttpServRequest, outgoing: HttpServResponse, options: HttpServerOpts): HttpContext {
+        return new HttpContext(transport.injector, transport,
             incoming,
             outgoing,
             options);

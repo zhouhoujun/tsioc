@@ -99,18 +99,14 @@ import { IEventEmitter } from './stream';
  * transport.
  */
 export abstract class Transport<TSocket = any, TInput = any, TOutput = any> {
-    /**
-     * socket.
-     */
-    abstract get socket(): TSocket;
-    // /**
-    //  * transport options.
-    //  */
-    // abstract get options(): TransportOpts;
     // /**
     //  * transport context.
     //  */
     // abstract get injector(): Injector;
+    // /**
+    //  * transport options.
+    //  */
+    // abstract get options(): TransportOpts;
     // /**
     //  * incoming message factory.
     //  */
@@ -119,6 +115,12 @@ export abstract class Transport<TSocket = any, TInput = any, TOutput = any> {
     //  * outgoing message factory.
     //  */
     // abstract get outgoingFactory(): AbstractOutgoingFactory;
+
+    
+    /**
+     * socket.
+     */
+    abstract get socket(): TSocket;
     /**
      * stream adapter.
      */
