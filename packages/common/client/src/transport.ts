@@ -1,6 +1,6 @@
 import { Abstract, Injector } from '@tsdi/ioc';
 import { AbstractRequest, ResponseEvent, ResponseFactory } from '@tsdi/common';
-import { AbstractTransport, IEventEmitter, Redirector } from '@tsdi/common/transport';
+import { AbstractTransport, ClientIncomingFactory, IEventEmitter, Redirector } from '@tsdi/common/transport';
 import { Observable, first, merge, mergeMap, takeUntil } from 'rxjs';
 import { ClientOpts } from './options';
 
@@ -14,10 +14,10 @@ export abstract class ClientTransport<TSocket = any> extends AbstractTransport<T
      * client options
      */
     abstract get clientOptions(): ClientOpts;
-    // /**
-    //  * client incoming message factory.
-    //  */
-    // abstract get incomingFactory(): ClientIncomingFactory;
+    /**
+     * client incoming message factory.
+     */
+    abstract get incomingFactory(): ClientIncomingFactory;
     /**
      * response factory.
      */

@@ -229,8 +229,8 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                 //     clientOpts.providers.push(toProvider(MessageFactory, clientOpts.messageFactory));
                 // }
 
-                if (clientOpts.sessionFactory !== ClientTransportFactory) {
-                    clientOpts.providers.push(toProvider(ClientTransportFactory, clientOpts.sessionFactory)) // ?? DefaultClientTransportFactory))
+                if (clientOpts.transportFactory !== ClientTransportFactory) {
+                    clientOpts.providers.push(toProvider(ClientTransportFactory, clientOpts.transportFactory)) // ?? DefaultClientTransportFactory))
                 }
                 // clientOpts.providers.push(toProvider(MessageReader, clientOpts.messageReader ?? SocketMessageReader));
                 // clientOpts.providers.push(toProvider(MessageWriter, clientOpts.messageWriter ?? SocketMessageWriter));

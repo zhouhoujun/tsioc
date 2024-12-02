@@ -1,6 +1,5 @@
 import { Abstract, Injectable, hasOwn, isPlainObject } from '@tsdi/ioc';
 import { HeaderMappings, HeadersLike } from './headers';
-import { PacketOpts } from './packet';
 import { Pattern } from './pattern';
 
 export interface StatusOptions<TStatus = any> {
@@ -19,8 +18,19 @@ export interface StatusOptions<TStatus = any> {
 /**
  * response packet data.
  */
-export interface ResponseInitOpts<T = any, TStatus = any> extends PacketOpts<T>, StatusOptions<TStatus> {
+export interface ResponseInitOpts<T = any, TStatus = any> extends StatusOptions<TStatus> {
+    /**
+     * response pattern.
+     */
     pattern?: Pattern;
+    /**
+     * headers of packet.
+     */
+    headers?: HeadersLike;
+    /**
+     * payload of packet.
+     */
+    payload?: T | null;
 }
 
 
@@ -198,7 +208,7 @@ export class DefaultResponseFactory<TStatus = null> {
 
     create<T>(options: ResponseInitOpts): ResponseEvent<T, TStatus> {
         if (!options.ok || options.error) {
-            if(!options.error){
+            if (!options.error) {
                 options.error = options.payload;
             }
             return new ErrorResponse(options);

@@ -1,7 +1,6 @@
 import { InvocationContext, isUndefined } from '@tsdi/ioc';
 import { HeadersLike, HeaderMappings } from './headers';
 import { ParameterCodec, RequestParams, RequestParamsLike } from './params';
-import { PacketOpts } from './packet';
 import { Pattern } from './pattern';
 import { Clonable } from './Clonable';
 
@@ -24,7 +23,8 @@ export interface ResponseAs {
 /**
  * Request packet options.
  */
-export interface RequestPacketOpts<T = any> extends PacketOpts<T> {
+export interface RequestPacketOpts<T = any> {
+    id?: any;
 
     /**
      * request method.

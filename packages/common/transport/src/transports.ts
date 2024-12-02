@@ -5,6 +5,8 @@ import { Observable, Subject, fromEvent, mergeMap, share, takeUntil } from 'rxjs
 import { Transport } from './Transport';
 import { ev } from './consts';
 import { IEventEmitter, IReadableStream, IWritableStream } from './stream';
+import { AbstractIncomingFactory } from './Incoming';
+import { AbstractOutgoingFactory } from './Outgoing';
 
 /**
  * Abstract transport.
@@ -21,6 +23,16 @@ export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = a
      * message encodings.
      */
     abstract get encodings(): Encoder;
+
+    /**
+     * incoming message factory.
+     */
+    abstract get incomingFactory(): AbstractIncomingFactory;
+    /**
+     * outgoing message factory.
+     */
+    abstract get outgoingFactory(): AbstractOutgoingFactory;
+
 
 
     protected destroy$ = new Subject<void>;
