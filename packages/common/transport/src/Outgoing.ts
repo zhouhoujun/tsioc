@@ -1,12 +1,14 @@
-import { AbstractRequest, Header, HeadersLike, PacketOpts, StatusOptions, HeaderMappings } from '@tsdi/common';
+import { AbstractRequest, Header, HeadersLike, StatusOptions, HeaderMappings } from '@tsdi/common';
 
 
 
 /**
  * Outgoing packet options.
  */
-export interface OutgoingOpts<T = any, TStatus = any> extends PacketOpts<T>, StatusOptions<TStatus> {
+export interface OutgoingOpts<T = any, TStatus = any> extends StatusOptions<TStatus> {
     pattern?: string;
+    headers?: HeadersLike;
+    payload?: T;
 }
 
 export abstract class AbstractOutgoingFactory<TSocket = any, TOutput = any, TOpts = any> {
@@ -23,8 +25,10 @@ export abstract class OutgoingFactory<TSocket = any> implements AbstractOutgoing
 /**
  * Outgoing packet options.
  */
-export interface ClietOutgoingOpts<T = any> extends PacketOpts<T> {
+export interface ClietOutgoingOpts<T = any> {
     pattern?: string;
+    headers?: HeadersLike;
+    payload?: T;
 }
 
 /**
@@ -184,8 +188,11 @@ export abstract class ClientOutgoing<T = any> {
 /**
  * Outgoing packet options.
  */
-export interface OutgoingOpts<T = any, TStatus = any> extends PacketOpts<T>, StatusOptions<TStatus> {
+export interface OutgoingOpts<T = any, TStatus = any> extends StatusOptions<TStatus> {
+    id?: any;
     pattern?: string;
+    headers?: HeadersLike;
+    payload?: T;
 }
 
 export interface OutgoingCloneOpts<T, TStatus> extends StatusOptions<TStatus> {

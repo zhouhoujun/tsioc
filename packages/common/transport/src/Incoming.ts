@@ -1,11 +1,11 @@
-import { HeadersLike, Packet, PacketOpts, ParameterCodec, StatusOptions } from '@tsdi/common';
+import { HeaderMappings, HeadersLike, ParameterCodec, StatusOptions } from '@tsdi/common';
 
 
 
 /**
  * Incoming message
  */
-export abstract class Incoming<T> {
+export interface Incoming<T> {
 
     id?: number | string;
 
@@ -13,14 +13,14 @@ export abstract class Incoming<T> {
     pattern?: string;
     method?: string;
 
-    abstract get headers(): HeadersLike;
+    get headers(): HeadersLike;
 
     params?: Record<string, any>;
 
     query?: Record<string, any>;
 
-    abstract get body(): T | null;
-    abstract set body(val: T | null);
+    get body(): T | null;
+    set body(val: T | null);
 
     rawBody?: any;
 
@@ -31,16 +31,20 @@ export abstract class Incoming<T> {
      * @param packet 
      * @param field 
      */
-    abstract hasHeader?(field: string): boolean;
+    hasHeader?(field: string): boolean;
     /**
      * get header from packet.
      * @param packet 
      * @param field 
      */
-    abstract getHeader?(field: string): string | undefined;
+    getHeader?(field: string): string | undefined;
 
-    
-    abstract push(chunk: any, encoding?: string): boolean;
+    /**
+     * push chuck.
+     * @param chunk 
+     * @param encoding 
+     */
+    push(chunk: any, encoding?: string): boolean;
 
 }
 
@@ -61,7 +65,7 @@ export abstract class IncomingFactory implements AbstractIncomingFactory<Incomin
 /**
  * incoming options
  */
-export interface BasicIncomingOpts<T = any> extends PacketOpts<T> {
+export interface BasicIncomingOpts<T = any> {
     /**
      * pattern.
      */
@@ -151,9 +155,11 @@ export type IncomingOpts<T = any> = UrlIncomingOptions<T> | TopicIncomingOptions
 /**
  * Incoming base packet.
  */
-export abstract class AbstractIncoming<T> extends Packet<T> implements Incoming<T> {
+export abstract class AbstractIncoming<T> implements Incoming<T> {
 
     readonly pattern?: string;
+
+    readonly headers: HeaderMappings;
     /**
      * client side timeout.
      */
@@ -161,20 +167,17 @@ export abstract class AbstractIncoming<T> extends Packet<T> implements Incoming<
 
     public streamLength?: number;
 
-    get body(): T | null {
-        return this.payload
-    }
+    payload: any;
 
-    set body(data: T | null) {
-        this.payload = data;
-    }
+    body: T | null = null;
+
 
     query: Record<string, any> | undefined;
 
 
     constructor(init: IncomingOpts<T>) {
-        super(init);
         this.pattern = init.pattern;
+        this.headers = new HeaderMappings(init.headers);
         this.payload = init.payload ?? null;
         this.query = init.query ?? init.params;
         this.timeout = init.timeout;
@@ -198,7 +201,7 @@ export abstract class AbstractIncoming<T> extends Packet<T> implements Incoming<
         return this.headers.getHeader(field);
     }
 
-    
+
     abstract push(chunk: any, encoding?: string): boolean;
 
 }
@@ -279,9 +282,9 @@ export abstract class TopicIncoming<T> extends AbstractIncoming<T> implements In
 
 
 /**
- * Clientincoming message
+ * Client incoming message
  */
-export abstract class ClientIncoming<T = any, TStatus = any> {
+export interface ClientIncoming<T = any, TStatus = any> {
     /**
      * event type
      */
@@ -293,9 +296,9 @@ export abstract class ClientIncoming<T = any, TStatus = any> {
 
     pattern?: string;
 
-    abstract get headers(): HeadersLike;
+    get headers(): HeadersLike;
 
-    body?: T | null
+    body?: T | null;
 
     status?: TStatus | null;
 
@@ -313,15 +316,15 @@ export abstract class ClientIncoming<T = any, TStatus = any> {
      * @param packet 
      * @param field 
      */
-    abstract hasHeader?(field: string): boolean;
+    hasHeader?(field: string): boolean;
     /**
      * get header from packet.
      * @param packet 
      * @param field 
      */
-    abstract getHeader?(field: string): string | undefined;
+    getHeader?(field: string): string | undefined;
 
-    abstract push(chunk: any, encoding?: string): boolean;
+    push?(chunk: any, encoding?: string): boolean;
 
 }
 
@@ -336,9 +339,11 @@ export abstract class ClientIncomingFactory implements AbstractIncomingFactory<C
 /**
  * client incoming init options
  */
-export interface UrlClientIncomingOpts<T = any, TStatus = any> extends PacketOpts<T>, StatusOptions<TStatus> {
+export interface UrlClientIncomingOpts<T = any, TStatus = any> extends StatusOptions<TStatus> {
     url: string;
     pattern?: string;
+    headers?: HeadersLike;
+    payload?: T;
     method?: string;
     streamLength?: number;
 }
@@ -346,9 +351,11 @@ export interface UrlClientIncomingOpts<T = any, TStatus = any> extends PacketOpt
 /**
  * client incoming init options
  */
-export interface TopicClientIncomingOpts<T = any, TStatus = any> extends PacketOpts<T>, StatusOptions<TStatus> {
+export interface TopicClientIncomingOpts<T = any, TStatus = any> extends StatusOptions<TStatus> {
     topic: string;
     pattern?: string;
+    headers?: HeadersLike;
+    payload?: T;
     streamLength?: number;
 }
 
@@ -361,21 +368,25 @@ export type ClientIncomingOpts<T = any, TStatus = any> = UrlClientIncomingOpts<T
 /**
  * client incoming packet
  */
-export abstract class AbstractClientIncoming<T, TStatus = any> extends Packet<T> implements ClientIncoming<T, TStatus> {
+export abstract class AbstractClientIncoming<T, TStatus = any> implements ClientIncoming<T, TStatus> {
 
     readonly pattern?: string | undefined;
+
+    readonly headers: HeaderMappings;
 
     public streamLength?: number;
 
     /**
      * Type of the response, narrowed to either the full response or the header.
      */
-    readonly type: number | undefined;
-    readonly error: any | null;
-    readonly ok: boolean;
+    public type: number | undefined;
+    public error: any | null;
+    public ok: boolean;
 
     protected _status: TStatus | null;
     protected _message: string | undefined;
+
+    payload: any;
 
     get statusCode(): TStatus {
         return this._status!;
@@ -392,6 +403,10 @@ export abstract class AbstractClientIncoming<T, TStatus = any> extends Packet<T>
         return this.payload;
     }
 
+    set body(value: T | null) {
+        this.payload = value;
+    }
+
     /**
       * Textual description of response status code, defaults to OK.
       *
@@ -406,8 +421,8 @@ export abstract class AbstractClientIncoming<T, TStatus = any> extends Packet<T>
     }
 
     constructor(init: ClientIncomingOpts, defaultStatus?: TStatus, defaultStatusText?: string) {
-        super(init);
         this.pattern = init.pattern;
+        this.headers = new HeaderMappings(init.headers);
 
         this.error = init.error;
         this.type = init.type;
@@ -437,7 +452,7 @@ export abstract class AbstractClientIncoming<T, TStatus = any> extends Packet<T>
         return this.headers.getHeader(field);
     }
 
-    
+
     abstract push(chunk: any, encoding?: string): boolean;
 
 }

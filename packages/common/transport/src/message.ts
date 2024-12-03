@@ -1,5 +1,5 @@
 
-export abstract class Message<T> {
+export abstract class Message<T = any> {
     /**
      * packet id
      */

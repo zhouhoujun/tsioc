@@ -7,6 +7,7 @@ import { StreamAdapter, isBuffer, toBuffer } from './StreamAdapter';
 import { IReadableStream } from './stream';
 import { ctype } from './consts';
 import { UnsupportedMediaTypeExecption } from './execptions';
+import { Message } from './message';
 
 
 @Abstract()

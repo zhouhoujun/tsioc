@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { AbstractRequest, IHeaders } from '@tsdi/common';
+import { AbstractRequest, HeadersLike } from '@tsdi/common';
 import { Observable } from 'rxjs';
 
 
@@ -8,6 +8,6 @@ export abstract class Redirector<TStatus = any> {
     /**
      * redirect.
      */
-    abstract redirect<T>(req: AbstractRequest<any>, status: TStatus, headers: IHeaders): Observable<T>
+    abstract redirect<T>(req: AbstractRequest<any>, status: TStatus, headers: HeadersLike): Observable<T>
 }
 

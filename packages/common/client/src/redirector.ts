@@ -1,6 +1,6 @@
 /* eslint-disable no-case-declarations */
-import { EMPTY_OBJ, Injectable, TypeExecption } from '@tsdi/ioc';
-import { HeaderMappings, UrlRequest, RequestMethod, IHeaders } from '@tsdi/common';
+import { EMPTY_OBJ, Injectable, isFunction, TypeExecption } from '@tsdi/ioc';
+import { HeaderMappings, UrlRequest, RequestMethod, IHeaders, HeadersLike, HeaderAccess, Header } from '@tsdi/common';
 import { BadRequestExecption, Redirector } from '@tsdi/common/transport';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { AbstractClient } from './AbstractClient';
@@ -10,15 +10,16 @@ import { ClientTransport } from './transport';
 @Injectable()
 export class UrlRedirector implements Redirector {
 
-    redirect<T>(req: UrlRequest<any>, status: any, headers: IHeaders): Observable<T> {
+    redirect<T>(req: UrlRequest<any>, status: any, headers: HeadersLike): Observable<T> {
         return new Observable((observer: Observer<T>) => {
             if (!req.url) return observer.error(new BadRequestExecption());
+
 
             const { statusAdapter, streamAdapter, headerAdapter } = req.context.get(ClientTransport);
 
             const rdstatus = req.context.getValueify(RedirectState, () => new RedirectState());
             // HTTP fetch step 5.2
-            const location = headers['location'] as string;
+            const location = getHeader(headers, 'location') as string;
 
 
             // HTTP fetch step 5.3
@@ -142,8 +143,12 @@ export const referPolicys = new Set([
 
 const splitReg = /[,\s]+/;
 
-export function parseReferrerPolicyFromHeader(headers: IHeaders) {
-    const policyTokens = (headers['referrer-policy'] as string || '').split(splitReg);
+export function getHeader(headers: HeadersLike, header: string): Header {
+    return headers.getHeader ? (headers as HeaderAccess).getHeader(header) : (headers as IHeaders)[header]
+}
+
+export function parseReferrerPolicyFromHeader(headers: HeadersLike) {
+    const policyTokens = (getHeader(headers, 'referrer-policy') as string || '').split(splitReg);
     let policy = '';
     for (const token of policyTokens) {
         if (token && referPolicys.has(token)) {

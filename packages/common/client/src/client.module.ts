@@ -1,7 +1,6 @@
 import {
-    Arrayify, EMPTY, Injector, Module, ModuleRef, ModuleType,
-    ModuleWithProviders, ProvdierOf, ProviderType,
-    Token, Type, isArray, isNil, lang, toProvider, tokenId
+    Arrayify, EMPTY, Injector, Module, ModuleRef, ModuleType, ModuleWithProviders,
+    ProvdierOf, ProviderType, Token, Type, isArray, isNil, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { ConfigMissingExecption, createHandler } from '@tsdi/core';
 import { DefaultResponseFactory, HybirdProtocols, ResponseFactory, Protocols } from '@tsdi/common';

@@ -7,7 +7,7 @@ import { StreamAdapter, isBuffer } from '../StreamAdapter';
 import { IDuplexStream, IReadableStream } from '../stream';
 import { PacketLengthException } from '../execptions';
 import { AbstractIncoming } from '../Incoming';
-import { Serialization } from '../packet';
+import { Message } from '../message';
 
 interface CachePacket {
     packet: Packet<IDuplexStream>;
@@ -17,10 +17,10 @@ interface CachePacket {
 }
 
 @Injectable()
-export class PackageDecodeInterceptor implements Interceptor<Serialization, Packet<any>, TransportContext> {
+export class PackageDecodeInterceptor implements Interceptor<Message, Packet<any>, TransportContext> {
 
     packs: Map<string | number, CachePacket> = new Map();
-    intercept(input: Serialization, next: Handler<Serialization, Packet<any>, TransportContext>, context: TransportContext): Observable<Packet<any>> {
+    intercept(input: Message, next: Handler<Message, Packet<any>, TransportContext>, context: TransportContext): Observable<Packet<any>> {
         const { options, streamAdapter, headerAdapter } = context.transport;
         const idLen = options.idLen ?? 2;
         let id: string | number;
@@ -112,9 +112,9 @@ export class PackageDecodeInterceptor implements Interceptor<Serialization, Pack
 }
 
 @Injectable()
-export class PackageEncodeInterceptor implements Interceptor<Packet<any>, Serialization, TransportContext> {
+export class PackageEncodeInterceptor implements Interceptor<Packet<any>, Message, TransportContext> {
 
-    intercept(input: Packet<any>, next: Handler<Packet<any>, Serialization, TransportContext>, context: TransportContext): Observable<Serialization> {
+    intercept(input: Packet<any>, next: Handler<Packet<any>, Message, TransportContext>, context: TransportContext): Observable<Message> {
         return next.handle(input, context)
             .pipe(
                 mergeMap(msg => {
@@ -135,7 +135,7 @@ export class PackageEncodeInterceptor implements Interceptor<Packet<any>, Serial
                         const countLen = options.countLen || 4;
                         if (options.maxSize && packetSize > options.maxSize) {
 
-                            return new Observable((subsr: Subscriber<Serialization>) => {
+                            return new Observable((subsr: Subscriber<Message>) => {
                                 let size = 0;
                                 let stream: IDuplexStream | null;
                                 let total = 0;
@@ -230,7 +230,7 @@ export class PackageEncodeInterceptor implements Interceptor<Packet<any>, Serial
             );
     }
 
-    streamConnectId(streamAdapter: StreamAdapter, msg: Serialization, idLen: number, delimiter: Buffer, stream: IReadableStream, countLen: number, len: number): Serialization {
+    streamConnectId(streamAdapter: StreamAdapter, msg: Message, idLen: number, delimiter: Buffer, stream: IReadableStream, countLen: number, len: number): Message {
         let isFist = true;
         msg.payload = streamAdapter.pipeline(stream, streamAdapter.createPassThrough({
             transform: (chunk, encoding, callback) => {
@@ -259,7 +259,7 @@ export class PackageEncodeInterceptor implements Interceptor<Packet<any>, Serial
         return null;
     }
 
-    connectId(msg: Serialization, idLen: number, data: Buffer): Serialization {
+    connectId(msg: Message, idLen: number, data: Buffer): Message {
         if (msg.id) {
             const idBuff = this.getIdBuffer(msg.id, idLen)!;
             msg.payload = Buffer.concat([idBuff, data], idLen + Buffer.byteLength(data))
