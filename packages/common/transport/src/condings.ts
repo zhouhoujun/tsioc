@@ -8,7 +8,8 @@ import {
 } from '@tsdi/common/codings';
 import { Transport } from './Transport';
 import { TransportContext } from './context';
-import { Serialization } from './packet';
+import { OutgoingMessage } from './Outgoing';
+import { IncomingMessage } from './Incoming';
 
 
 
@@ -16,13 +17,13 @@ import { Serialization } from './packet';
 /**
  * Transport encodings interceptors.
  */
-export const TRANSPORT_ENCODINGS_INTERCEPTORS = tokenId<Interceptor<Packet<any>, Serialization, TransportContext>[]>('TRANSPORT_ENCODINGS_INTERCEPTORS');
+export const TRANSPORT_ENCODINGS_INTERCEPTORS = tokenId<Interceptor<OutgoingMessage, Packet, TransportContext>[]>('TRANSPORT_ENCODINGS_INTERCEPTORS');
 
 
 /**
  *  Transport encodings filters.
  */
-export const TRANSPORT_ENCODINGS_FILTERS = tokenId<Interceptor<Packet<any>, Serialization, TransportContext>[]>('TRANSPORT_ENCODINGS_FILTERS');
+export const TRANSPORT_ENCODINGS_FILTERS = tokenId<Interceptor<OutgoingMessage, Packet, TransportContext>[]>('TRANSPORT_ENCODINGS_FILTERS');
 
 
 /**
@@ -32,12 +33,12 @@ export const TRANSPORT_ENCODINGS_GUARDS = tokenId<CanHandle[]>('TRANSPORT_ENCODI
 
 export class TransportEncodings extends Encodings {
     /**
-     * transport session
+     * transport
      */
-    session!: Transport;
+    transport!: Transport;
 
     protected override createContext(): TransportContext {
-        return new TransportContext(this.session, this.options, this.adapter);
+        return new TransportContext(this.transport, this.options, this.adapter);
     }
 
 }
@@ -72,12 +73,12 @@ export class TransportEncodingsFactory implements EncodingsFactory {
 /**
  * Transport decodings interceptors.
  */
-export const TRANSPORT_DECODINGS_INTERCEPTORS = tokenId<Interceptor<Serialization, Packet<any>, TransportContext>[]>('TRANSPORT_DECODINGS_INTERCEPTORS');
+export const TRANSPORT_DECODINGS_INTERCEPTORS = tokenId<Interceptor<Packet, IncomingMessage, TransportContext>[]>('TRANSPORT_DECODINGS_INTERCEPTORS');
 
 /**
  *  Transport decodings filters.
  */
-export const TRANSPORT_DECODINGS_FILTERS = tokenId<Interceptor<Serialization, Packet<any>, TransportContext>[]>('TRANSPORT_DECODINGS_FILTERS');
+export const TRANSPORT_DECODINGS_FILTERS = tokenId<Interceptor<Packet, IncomingMessage, TransportContext>[]>('TRANSPORT_DECODINGS_FILTERS');
 
 /**
  *  Transport decodings guards.

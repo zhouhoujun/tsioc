@@ -140,7 +140,7 @@ export class DefaultServerTransport extends ServerTransport<any> {
         readonly serverOptions: ServerOpts,
     ) {
         super()
-        this.encodings.session = this.decodings.session = this;
+        this.encodings.transport = this.decodings.session = this;
     }
 
 }

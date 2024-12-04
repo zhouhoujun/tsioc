@@ -5,7 +5,7 @@ import { HeadersLike } from './headers';
 /**
  * Packet
  */
-export abstract class Packet<T> {
+export interface Packet<T = any> {
     /**
      * packet id
      */
@@ -13,11 +13,11 @@ export abstract class Packet<T> {
     /**
      * packet headers.
      */
-    abstract get headers(): HeadersLike;
+    headers?: HeadersLike;
     /**
      * payload
      */
-    abstract get payload(): T | null;
+    payload?: T | null;
 }
 
 

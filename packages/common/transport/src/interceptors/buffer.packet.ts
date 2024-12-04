@@ -7,7 +7,8 @@ import { TransportContext } from '../context';
 import { PacketIdGenerator } from '../PacketId';
 import { IDuplexStream, IReadableStream } from '../stream';
 import { PackageEncodeInterceptor } from './buffer.package';
-import { Message } from '../message';
+import { IncomingMessage } from '../Incoming';
+import { OutgoingMessage } from '../Outgoing';
 
 
 
@@ -15,14 +16,14 @@ import { Message } from '../message';
  * Channel cache.
  */
 export interface ChannelCache {
-    message: Message;
+    Packet: Packet;
     stream: IDuplexStream | null;
     length: number;
     contentLength: number | null;
 }
 
 @Injectable()
-export class PacketDecodeInterceptor implements Interceptor<Message, Packet<any>, TransportContext> {
+export class PacketDecodeInterceptor implements Interceptor<Packet, IncomingMessage, TransportContext> {
 
     protected channels: Map<string, ChannelCache>;
 
@@ -30,10 +31,10 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet<any>
         this.channels = new Map();
     }
 
-    intercept(input: Message, next: Handler<Message, Packet<any>>, context: TransportContext): Observable<Packet<any>> {
+    intercept(input: Packet, next: Handler<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
         if (context.transport.streamAdapter.isReadable(input.payload)) return next.handle(input, context);
 
-        return new Observable((subscriber: Subscriber<Message>) => {
+        return new Observable((subscriber: Subscriber<Packet>) => {
 
             const channel = context.channel ?? context.transport.options.transport ?? '';
 
@@ -42,7 +43,7 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet<any>
             input.payload = null;
             if (!cache) {
                 cache = {
-                    message: input,
+                    Packet: input,
                     stream: null,
                     length: 0,
                     contentLength: null
@@ -58,7 +59,7 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet<any>
         );
     }
 
-    protected handleData(channel: string, cache: ChannelCache, data: Buffer, subscriber: Subscriber<Message>, context: TransportContext) {
+    protected handleData(channel: string, cache: ChannelCache, data: Buffer, subscriber: Subscriber<Packet>, context: TransportContext) {
         const { options, streamAdapter, injector } = context.transport;
 
         const bLen = Buffer.byteLength(data);
@@ -92,7 +93,7 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet<any>
                 } else {
                     cache.length -= idx;
                     cache.contentLength = rawContentLength;
-                    cache.message.streamLength = rawContentLength;
+                    cache.Packet.streamLength = rawContentLength;
                 }
             }
         }
@@ -117,11 +118,11 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet<any>
         }
     }
 
-    protected handleMessage(channel: string, cache: ChannelCache, subscriber: Subscriber<Message>, clear: boolean) {
+    protected handleMessage(channel: string, cache: ChannelCache, subscriber: Subscriber<Packet>, clear: boolean) {
         const data = cache.stream;
         data?.end();
-        const message = cache.message;
-        message.payload = data;
+        const Packet = cache.Packet;
+        Packet.payload = data;
         cache.stream = null;
         if (clear) {
             this.channels.delete(channel);
@@ -129,14 +130,14 @@ export class PacketDecodeInterceptor implements Interceptor<Message, Packet<any>
             cache.contentLength = null;
             cache.length = 0;
         }
-        subscriber.next(message);
+        subscriber.next(Packet);
     }
 }
 
 @Injectable()
-export class BindPacketIdDecodeInterceptor implements Interceptor<Message, Packet<any>, TransportContext> {
+export class BindPacketIdDecodeInterceptor implements Interceptor<Packet, IncomingMessage, TransportContext> {
 
-    intercept(input: Message, next: Handler<Message, Packet<any>>, context: TransportContext): Observable<Packet<any>> {
+    intercept(input: Packet, next: Handler<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
         return next.handle(input, context)
             .pipe(
                 filter(packet => {
@@ -148,9 +149,9 @@ export class BindPacketIdDecodeInterceptor implements Interceptor<Message, Packe
 }
 
 @Injectable()
-export class BindPacketIdEncodeInterceptor implements Interceptor<Packet<any>, Message, TransportContext> {
+export class BindPacketIdEncodeInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
 
-    intercept(input: Packet<any>, next: Handler<Packet<any>, Message>, context: TransportContext): Observable<Message> {
+    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet>, context: TransportContext): Observable<Packet> {
         const { options, injector, headerAdapter } = context.transport;
         const length = headerAdapter.getContentLength(input.headers);
         if (length && options.maxSize && length > options.maxSize && !options.headDelimiter && !injector.has(PackageEncodeInterceptor)) {
@@ -166,9 +167,9 @@ export class BindPacketIdEncodeInterceptor implements Interceptor<Packet<any>, M
 
 
 @Injectable()
-export class PacketEncodeInterceptor implements Interceptor<Packet<any>, Message, TransportContext> {
+export class PacketEncodeInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
 
-    intercept(input: Packet<any>, next: Handler<Packet<any>, Message, TransportContext>, context: TransportContext): Observable<Message> {
+    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet, TransportContext>, context: TransportContext): Observable<Packet> {
 
         return next.handle(input, context)
             .pipe(map(msg => {

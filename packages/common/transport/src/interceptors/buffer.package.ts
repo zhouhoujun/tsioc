@@ -6,8 +6,8 @@ import { TransportContext } from '../context';
 import { StreamAdapter, isBuffer } from '../StreamAdapter';
 import { IDuplexStream, IReadableStream } from '../stream';
 import { PacketLengthException } from '../execptions';
-import { AbstractIncoming } from '../Incoming';
-import { Message } from '../message';
+import { IncomingMessage } from '../Incoming';
+import { OutgoingMessage } from '../Outgoing';
 
 interface CachePacket {
     packet: Packet<IDuplexStream>;
@@ -17,10 +17,10 @@ interface CachePacket {
 }
 
 @Injectable()
-export class PackageDecodeInterceptor implements Interceptor<Message, Packet<any>, TransportContext> {
+export class PackageDecodeInterceptor implements Interceptor<Packet, IncomingMessage<any>, TransportContext> {
 
     packs: Map<string | number, CachePacket> = new Map();
-    intercept(input: Message, next: Handler<Message, Packet<any>, TransportContext>, context: TransportContext): Observable<Packet<any>> {
+    intercept(input: Packet, next: Handler<Packet, IncomingMessage, TransportContext>, context: TransportContext): Observable<IncomingMessage> {
         const { options, streamAdapter, headerAdapter } = context.transport;
         const idLen = options.idLen ?? 2;
         let id: string | number;
@@ -49,12 +49,12 @@ export class PackageDecodeInterceptor implements Interceptor<Message, Packet<any
             )
     }
 
-    mergePacket(packet: Packet<any>, streamAdapter: StreamAdapter, headerAdapter: HeaderAdapter, noHead?: boolean): CachePacket {
+    mergePacket(packet: IncomingMessage, streamAdapter: StreamAdapter, headerAdapter: HeaderAdapter, noHead?: boolean): CachePacket {
 
-        if (!packet.id || !(isBuffer(packet.payload) || streamAdapter.isReadable(packet.payload)) || (!noHead && headerAdapter.getContentLength(packet.headers) <= 0)) {
+        if (!packet.id || !(isBuffer(packet.body) || streamAdapter.isReadable(packet.body)) || (!noHead && headerAdapter.getContentLength(packet.headers) <= 0)) {
             return { packet, completed: true } as CachePacket;
         }
-        const len = isBuffer(packet.payload) ? Buffer.byteLength(packet.payload) : (packet as AbstractIncoming<any>).streamLength!;
+        const len = isBuffer(packet.body) ? Buffer.byteLength(packet.body) : (packet as AbstractIncoming<any>).streamLength!;
 
         if (!noHead && headerAdapter.getContentLength(packet.headers) <= len) {
             return { packet, completed: true } as CachePacket;
@@ -112,9 +112,9 @@ export class PackageDecodeInterceptor implements Interceptor<Message, Packet<any
 }
 
 @Injectable()
-export class PackageEncodeInterceptor implements Interceptor<Packet<any>, Message, TransportContext> {
+export class PackageEncodeInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
 
-    intercept(input: Packet<any>, next: Handler<Packet<any>, Message, TransportContext>, context: TransportContext): Observable<Message> {
+    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet, TransportContext>, context: TransportContext): Observable<Packet> {
         return next.handle(input, context)
             .pipe(
                 mergeMap(msg => {
@@ -127,7 +127,7 @@ export class PackageEncodeInterceptor implements Interceptor<Packet<any>, Messag
                         - idLen
                         - ((options.delimiter) ? Buffer.byteLength(options.delimiter) : 0)
                         - (options.countLen ?? 4)
-                    // - (isNil(pkg.type) ? 0 : 1); // message type.
+                    // - (isNil(pkg.type) ? 0 : 1); // Packet type.
 
 
                     if (streamAdapter.isReadable(data)) {
@@ -135,7 +135,7 @@ export class PackageEncodeInterceptor implements Interceptor<Packet<any>, Messag
                         const countLen = options.countLen || 4;
                         if (options.maxSize && packetSize > options.maxSize) {
 
-                            return new Observable((subsr: Subscriber<Message>) => {
+                            return new Observable((subsr: Subscriber<Packet>) => {
                                 let size = 0;
                                 let stream: IDuplexStream | null;
                                 let total = 0;
@@ -230,7 +230,7 @@ export class PackageEncodeInterceptor implements Interceptor<Packet<any>, Messag
             );
     }
 
-    streamConnectId(streamAdapter: StreamAdapter, msg: Message, idLen: number, delimiter: Buffer, stream: IReadableStream, countLen: number, len: number): Message {
+    streamConnectId(streamAdapter: StreamAdapter, msg: Packet, idLen: number, delimiter: Buffer, stream: IReadableStream, countLen: number, len: number): Packet {
         let isFist = true;
         msg.payload = streamAdapter.pipeline(stream, streamAdapter.createPassThrough({
             transform: (chunk, encoding, callback) => {
@@ -259,7 +259,7 @@ export class PackageEncodeInterceptor implements Interceptor<Packet<any>, Messag
         return null;
     }
 
-    connectId(msg: Message, idLen: number, data: Buffer): Message {
+    connectId(msg: Packet, idLen: number, data: Buffer): Packet {
         if (msg.id) {
             const idBuff = this.getIdBuffer(msg.id, idLen)!;
             msg.payload = Buffer.concat([idBuff, data], idLen + Buffer.byteLength(data))

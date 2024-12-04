@@ -2,57 +2,48 @@ import { AbstractRequest, Header, HeadersLike, StatusOptions, HeaderMappings } f
 
 
 
-/**
- * Outgoing packet options.
- */
-export interface OutgoingOpts<T = any, TStatus = any> extends StatusOptions<TStatus> {
-    pattern?: string;
-    headers?: HeadersLike;
-    payload?: T;
-}
-
-export abstract class AbstractOutgoingFactory<TSocket = any, TOutput = any, TOpts = any> {
-    abstract create(socket: TSocket, options?: TOpts): TOutput;
-}
 
 /**
- * Outgoing factory.
+ * Outgoing message
  */
-export abstract class OutgoingFactory<TSocket = any> implements AbstractOutgoingFactory<TSocket, Outgoing<any>, OutgoingOpts> {
-    abstract create(socket: TSocket, options?: OutgoingOpts): Outgoing<any>;
-}
-
-/**
- * Outgoing packet options.
- */
-export interface ClietOutgoingOpts<T = any> {
-    pattern?: string;
-    headers?: HeadersLike;
-    payload?: T;
-}
-
-/**
- * client outgoing factory.
- */
-export abstract class ClientOutgoingFactory implements AbstractOutgoingFactory<AbstractRequest<any>, ClientOutgoing<any>, ClietOutgoingOpts> {
-    abstract create(request: AbstractRequest<any>, options?: ClietOutgoingOpts): ClientOutgoing<any>;
-}
-
-/**
- * Outgoing message.
- */
-export abstract class Outgoing<T, TStatus = any> {
-
-    id?: string | number;
-    type?: string | number | null;
+export interface OutgoingMessage<T = any> {
+    id?: number | string;
 
     pattern?: string;
+
+    get headers(): HeadersLike;
 
     body?: T | null;
 
-    error?: any;
 
-    abstract get headers(): HeadersLike;
+    /**
+     * has header in packet or not.
+     * @param packet 
+     * @param field 
+     */
+    hasHeader?(field: string): boolean;
+    /**
+     * get header from packet.
+     * @param packet 
+     * @param field 
+     */
+    getHeader?(field: string): string | undefined;
+
+    write?(data: any, cb?: (err?: Error | null) => void): boolean;
+    write?(data: any, encoding?: string, cb?: (err?: Error | null) => void): boolean;
+    end?(cb?: () => void): this;
+    end?(data: any, cb?: () => void): this;
+    end?(data: any, encoding?: string, cb?: () => void): this;
+}
+
+/**
+ * Server outgoing message.
+ */
+export interface Outgoing<T = any, TStatus = any> extends OutgoingMessage<T> {
+
+    type?: string | number | null;
+
+    error?: any;
 
     /**
      * Get packet status code.
@@ -60,13 +51,13 @@ export abstract class Outgoing<T, TStatus = any> {
      * @return {TStatus}
      * @api public
      */
-    abstract get statusCode(): TStatus;
+    get statusCode(): TStatus;
     /**
      * Set packet status code.
      *
      * @api public
      */
-    abstract set statusCode(code: TStatus);
+    set statusCode(code: TStatus);
 
     /**
      * Get packet status message.
@@ -74,27 +65,27 @@ export abstract class Outgoing<T, TStatus = any> {
      * @return {String}
      * @api public
      */
-    abstract get statusMessage(): string;
+    get statusMessage(): string;
     /**
      * Set packet status message
      *
      * @return {TPacket}
      * @api public
      */
-    abstract set statusMessage(statusText: string);
+    set statusMessage(statusText: string);
 
     /**
      * has header in packet or not.
      * @param packet 
      * @param field 
      */
-    abstract hasHeader(field: string): boolean;
+    hasHeader(field: string): boolean;
     /**
      * get header from packet.
      * @param packet 
      * @param field 
      */
-    abstract getHeader(field: string): string | number | string[] | undefined;
+    getHeader?(field: string): string | undefined;
     /**
      * Set header `field` to `val` or pass
      * an object of header fields.
@@ -109,15 +100,14 @@ export abstract class Outgoing<T, TStatus = any> {
      * @param {String} val
      * @api public
      */
-    abstract setHeader(field: string, val: Header): void;
+    setHeader(field: string, val: Header): void;
 
     /**
      * remove header in packet.
      * @param packet 
      * @param field 
      */
-    abstract removeHeader(field: string): void;
-
+    removeHeader(field: string): void;
 
     /**
      * Check if a header has been written to the socket.
@@ -133,57 +123,95 @@ export abstract class Outgoing<T, TStatus = any> {
      */
     writable?: boolean;
 
-    abstract write(data: any, cb?: (err?: Error | null) => void): boolean;
-    abstract write(data: any, encoding?: string, cb?: (err?: Error | null) => void): boolean;
-    abstract end(cb?: () => void): this;
-    abstract end(data: any, cb?: () => void): this;
-    abstract end(data: any, encoding?: string, cb?: () => void): this;
-
 }
 
 /**
- * Client Outgoing message
+ * Client outgoing message
  */
-export abstract class ClientOutgoing<T = any> {
+export interface ClientOutgoing<T = any> extends OutgoingMessage<T> {
     id?: number | string;
 
     url?: string;
-    pattern?: string;
     method?: string;
-
-    abstract get headers(): HeadersLike;
 
     params?: Record<string, any>;
 
     query?: Record<string, any>;
 
-    abstract get body(): T | null;
-    abstract set body(val: T | null);
-
     rawBody?: any;
 
     path?: any;
 
-    /**
-     * has header in packet or not.
-     * @param packet 
-     * @param field 
-     */
-    abstract hasHeader?(field: string): boolean;
-    /**
-     * get header from packet.
-     * @param packet 
-     * @param field 
-     */
-    abstract getHeader?(field: string): string | undefined;
-
-    abstract write(data: any, cb?: (err?: Error | null) => void): boolean;
-    abstract write(data: any, encoding?: string, cb?: (err?: Error | null) => void): boolean;
-    abstract end(cb?: () => void): this;
-    abstract end(data: any, cb?: () => void): this;
-    abstract end(data: any, encoding?: string, cb?: () => void): this;
-
 }
+
+
+export abstract class AbstractOutgoingFactory<TOutgoing extends OutgoingMessage = OutgoingMessage> {
+    abstract create(options: {
+        socket?: any;
+        pattern?: string;
+        headers?: HeadersLike;
+        payload?: any;
+    }): TOutgoing
+}
+
+/**
+ * Outgoing factory.
+ */
+export abstract class OutgoingFactory implements AbstractOutgoingFactory<Outgoing<any>> {
+    abstract create(options: {
+        socket?: any;
+        pattern?: string;
+        /**
+         * event type
+         */
+        type?: number;
+        status?: any;
+        statusMessage?: string;
+        statusCode?: any;
+        statusText?: string;
+        ok?: boolean;
+        error?: any;
+        headers?: HeadersLike;
+        payload?: any;
+    }): Outgoing
+}
+
+
+/**
+ * client outgoing factory.
+ */
+export abstract class ClientOutgoingFactory implements AbstractOutgoingFactory<ClientOutgoing> {
+    abstract create(options: {
+        request: AbstractRequest<any>;
+        socket?: any;
+        pattern?: string;
+        headers?: HeadersLike;
+        payload?: any;
+    }): ClientOutgoing<any>;
+}
+
+
+/**
+ * Outgoing packet options.
+ */
+export interface OutgoingOpts<T = any, TStatus = any> extends StatusOptions<TStatus> {
+    pattern?: string;
+    headers?: HeadersLike;
+    payload?: T;
+}
+
+
+
+/**
+ * Outgoing packet options.
+ */
+export interface ClietOutgoingOpts<T = any> {
+    pattern?: string;
+    headers?: HeadersLike;
+    payload?: T;
+}
+
+
 
 /**
  * Outgoing packet options.
@@ -279,7 +307,7 @@ export abstract class AbstractOutgoing<T, TStatus = any> implements Outgoing<T, 
         return this.headers.has(field)
     }
 
-    getHeader(field: string): string | number | string[] | undefined {
+    getHeader(field: string): string | undefined {
         return this.headers.getHeader(field)
     }
 

@@ -1,30 +1,20 @@
 import { HeaderMappings, HeadersLike, ParameterCodec, StatusOptions } from '@tsdi/common';
 
 
-
 /**
  * Incoming message
  */
-export interface Incoming<T> {
+export interface IncomingMessage<T = any> {
 
     id?: number | string;
 
     url?: string;
     pattern?: string;
-    method?: string;
 
     get headers(): HeadersLike;
 
-    params?: Record<string, any>;
-
-    query?: Record<string, any>;
-
     get body(): T | null;
     set body(val: T | null);
-
-    rawBody?: any;
-
-    path?: any;
 
     /**
      * has header in packet or not.
@@ -44,23 +34,72 @@ export interface Incoming<T> {
      * @param chunk 
      * @param encoding 
      */
-    push(chunk: any, encoding?: string): boolean;
+    push?(chunk: any, encoding?: string): boolean;
 
 }
+
+
+/**
+ * Server incoming message
+ */
+export interface Incoming<T = any> extends IncomingMessage<T> {
+
+    method?: string;
+
+    params?: Record<string, any>;
+
+    query?: Record<string, any>;
+
+    rawBody?: any;
+
+    path?: any;
+
+}
+
+/**
+ * Client incoming message
+ */
+export interface ClientIncoming<T = any, TStatus = any> extends IncomingMessage<T> {
+    /**
+     * event type
+     */
+    type?: number;
+
+    status?: TStatus | null;
+
+    statusCode?: TStatus | null;
+
+    statusMessage?: string;
+
+    statusText?: string;
+
+    ok?: boolean;
+    error?: any;
+
+}
+
 
 /**
  * Abstract incoming factory.
  */
-export abstract class AbstractIncomingFactory<TIcoming = any> {
+export abstract class AbstractIncomingFactory<TIcoming extends IncomingMessage = IncomingMessage> {
     abstract create(options: any): TIcoming;
 }
 
 /**
- * Incoming factory.
+ * server incoming factory.
  */
 export abstract class IncomingFactory implements AbstractIncomingFactory<Incoming<any>> {
     abstract create(options: IncomingOpts): Incoming<any>;
 }
+
+/**
+ * Client incoming factory.
+ */
+export abstract class ClientIncomingFactory implements AbstractIncomingFactory<ClientIncoming> {
+    abstract create(options: ClientIncomingOpts): ClientIncoming;
+}
+
 
 /**
  * incoming options
@@ -281,60 +320,8 @@ export abstract class TopicIncoming<T> extends AbstractIncoming<T> implements In
 }
 
 
-/**
- * Client incoming message
- */
-export interface ClientIncoming<T = any, TStatus = any> {
-    /**
-     * event type
-     */
-    type?: number;
-
-    id?: number | string;
-
-    url?: string;
-
-    pattern?: string;
-
-    get headers(): HeadersLike;
-
-    body?: T | null;
-
-    status?: TStatus | null;
-
-    statusCode?: TStatus | null;
-
-    statusMessage?: string;
-
-    statusText?: string;
-
-    ok?: boolean;
-    error?: any;
-
-    /**
-     * has header in packet or not.
-     * @param packet 
-     * @param field 
-     */
-    hasHeader?(field: string): boolean;
-    /**
-     * get header from packet.
-     * @param packet 
-     * @param field 
-     */
-    getHeader?(field: string): string | undefined;
-
-    push?(chunk: any, encoding?: string): boolean;
-
-}
 
 
-/**
- * Incoming factory.
- */
-export abstract class ClientIncomingFactory implements AbstractIncomingFactory<ClientIncoming> {
-    abstract create(options: ClientIncomingOpts): ClientIncoming;
-}
 
 /**
  * client incoming init options
