@@ -56,7 +56,7 @@ const tokens = new Map<Token, Map<string, Token>>();
  * @param token token
  * @param alias the alias of token.
  */
-export function getToken<T>(token: Token<T>, alias?: string): Token<T> {
+export function getToken<T>(token: Token, alias?: string): Token<T> {
     if (!alias) return token;
 
     let maps = tokens.get(token);

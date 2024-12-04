@@ -32,12 +32,12 @@ export interface EncodeHandler {
     (encodings: string | Type, option?: CodingsMetadata): MethodDecorator;
 }
 
-export function getEncodeInterceptorsToken(encodings: string | Type): Token<Interceptor<any, any, CodingsContext>[]> {
-    return getToken<Interceptor<any, any, CodingsContext>[]>(encodings, '_ENCODINGS_INTERCEPTORS');
+export function getEncodeInterceptorsToken<TInput, TOutput, TContext extends CodingsContext>(encodings: string | Type<TOutput>): Token<Interceptor<TInput, TOutput, TContext>[]> {
+    return getToken<Interceptor[]>(encodings, '_ENCODINGS_INTERCEPTORS');
 }
 
-export function getEncodeFilterToken(encodings: string | Type): Token<Filter<any, any, CodingsContext>[]> {
-    return getToken<Filter<any, any, CodingsContext>[]>(encodings, '_ENCODINGS_FILTERS');
+export function getEncodeFilterToken<TInput, TOutput, TContext extends CodingsContext>(encodings: string | Type<TOutput>): Token<Filter<TInput, TOutput, TContext>[]> {
+    return getToken<Filter[]>(encodings, '_ENCODINGS_FILTERS');
 }
 
 /**
@@ -110,12 +110,12 @@ export interface DecodeHandler {
     (decodings: string | Type, option?: CodingsMetadata): MethodDecorator;
 }
 
-export function getDecodeInterceptorsToken(encodings: string | Type): Token<Interceptor<any, any, CodingsContext>[]> {
-    return getToken<Interceptor<any, any, CodingsContext>[]>(encodings, '_DECODINGS_INTERCEPTORS');
+export function getDecodeInterceptorsToken<TInput, TOutput, TContext extends CodingsContext>(encodings: string | Type<TInput>): Token<Interceptor<TInput, TOutput, TContext>[]> {
+    return getToken<Interceptor[]>(encodings, '_DECODINGS_INTERCEPTORS');
 }
 
-export function getDecodeFilterToken(encodings: string | Type): Token<Filter<any, any, CodingsContext>[]> {
-    return getToken<Filter<any, any, CodingsContext>[]>(encodings, '_DECODINGS_FILTERS');
+export function getDecodeFilterToken<TInput, TOutput, TContext extends CodingsContext>(encodings: string | Type<TInput>): Token<Filter<TInput, TOutput, TContext>[]> {
+    return getToken<Filter[]>(encodings, '_DECODINGS_FILTERS');
 }
 
 
@@ -158,7 +158,7 @@ export const DecodeHandler: DecodeHandler = createDecorator<DecodingMetadata>('D
                 const handler = factory.create(def.propertyKey, options);
 
                 mappings.addHandler(decodings, handler, order);
-                
+
                 factory.onDestroy(() => mappings.removeHandler(decodings, handler))
 
             });

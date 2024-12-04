@@ -5,19 +5,19 @@ import { HeadersLike } from './headers';
 /**
  * Packet
  */
-export interface Packet<T = any> {
+export abstract class Packet<T = any> {
     /**
      * packet id
      */
-    id?: string | number;
+    abstract id?: string | number;
     /**
      * packet headers.
      */
-    headers?: HeadersLike;
+    abstract headers?: HeadersLike;
     /**
      * payload
      */
-    payload?: T | null;
+    abstract payload?: T | null;
 }
 
 

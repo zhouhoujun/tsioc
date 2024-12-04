@@ -7,7 +7,7 @@ import { StreamAdapter, isBuffer, toBuffer } from './StreamAdapter';
 import { IReadableStream } from './stream';
 import { ctype } from './consts';
 import { UnsupportedMediaTypeExecption } from './execptions';
-import { Message } from './message';
+
 
 
 @Abstract()
@@ -79,9 +79,9 @@ export class PacketCodingsHandlers {
 
     constructor(private payloadEncoder: PayloadEncoder) { }
 
-    @DecodeHandler(Message)
-    async messageDecode(context: TransportContext) {
-        const msg = context.last<Message>();
+    @DecodeHandler(Packet)
+    async packetDecode(context: TransportContext) {
+        const msg = context.last<Packet>();
         const { streamAdapter, incomingFactory, options, injector } = context.transport;
 
         const data = isString(msg.data) ? Buffer.from(msg.data) : msg.data;

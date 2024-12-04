@@ -7,11 +7,13 @@ import { PackageDecodeInterceptor, PackageEncodeInterceptor } from './intercepto
 import { BindPacketIdEncodeInterceptor, PacketDecodeInterceptor, PacketEncodeInterceptor } from './interceptors/buffer.packet';
 import { PacketCodingsHandlers } from './packet.codings';
 import { DefaultHeaderAdapter } from './headers';
-import { Message } from './message';
+import { TransportContext } from './context';
+import { IncomingMessage } from './Incoming';
+import { OutgoingMessage } from './Outgoing';
 
 
-const PACKET_DECODE_INTERCEPTORS = getDecodeInterceptorsToken(Message);
-const PACKET_ENCODE_INTERCEPTORS = getEncodeInterceptorsToken(Packet);
+const PACKET_DECODE_INTERCEPTORS = getDecodeInterceptorsToken<Packet, IncomingMessage, TransportContext>(Packet);
+const PACKET_ENCODE_INTERCEPTORS = getEncodeInterceptorsToken<OutgoingMessage, Packet, TransportContext>(Packet);
 
 @Module({
     imports: [
