@@ -17,7 +17,7 @@ export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = a
     /**
      * message decodings.
      */
-    abstract get decodings(): Decoder
+    abstract get decodings(): Decoder;
 
     /**
      * message encodings.

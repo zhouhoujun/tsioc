@@ -1,125 +1,125 @@
-import { EMPTY, Injector, tokenId, toProvider } from '@tsdi/ioc';
-import { CanHandle, ExecptionHandlerFilter, Interceptor, createHandler } from '@tsdi/core';
-import { Packet } from '@tsdi/common';
-import {
-    CodingsAapter,
-    Decodings, DecodingsBackend, DecodingsConfigableHandler, DecodingsFactory,
-    Encodings, EncodingsBackend, EncodingsConfigableHandler, EncodingsFactory
-} from '@tsdi/common/codings';
-import { Transport } from './Transport';
-import { TransportContext } from './context';
-import { OutgoingMessage } from './Outgoing';
-import { IncomingMessage } from './Incoming';
+// import { EMPTY, Injector, tokenId, toProvider } from '@tsdi/ioc';
+// import { CanHandle, ExecptionHandlerFilter, Interceptor, createHandler } from '@tsdi/core';
+// import { Packet } from '@tsdi/common';
+// import {
+//     CodingsAapter,
+//     Decodings, DecodingsBackend, DecodingsConfigableHandler, DecodingsFactory,
+//     Encodings, EncodingsBackend, EncodingsConfigableHandler, EncodingsFactory
+// } from '@tsdi/common/codings';
+// import { Transport } from './Transport';
+// import { TransportContext } from './context';
+// import { OutgoingMessage } from './Outgoing';
+// import { IncomingMessage } from './Incoming';
 
 
 
 
-/**
- * Transport encodings interceptors.
- */
-export const TRANSPORT_ENCODINGS_INTERCEPTORS = tokenId<Interceptor<OutgoingMessage, Packet, TransportContext>[]>('TRANSPORT_ENCODINGS_INTERCEPTORS');
+// /**
+//  * Transport encodings interceptors.
+//  */
+// export const TRANSPORT_ENCODINGS_INTERCEPTORS = tokenId<Interceptor<OutgoingMessage, Packet, TransportContext>[]>('TRANSPORT_ENCODINGS_INTERCEPTORS');
 
 
-/**
- *  Transport encodings filters.
- */
-export const TRANSPORT_ENCODINGS_FILTERS = tokenId<Interceptor<OutgoingMessage, Packet, TransportContext>[]>('TRANSPORT_ENCODINGS_FILTERS');
+// /**
+//  *  Transport encodings filters.
+//  */
+// export const TRANSPORT_ENCODINGS_FILTERS = tokenId<Interceptor<OutgoingMessage, Packet, TransportContext>[]>('TRANSPORT_ENCODINGS_FILTERS');
 
 
-/**
- *  Transport encodings guards.
- */
-export const TRANSPORT_ENCODINGS_GUARDS = tokenId<CanHandle[]>('TRANSPORT_ENCODINGS_GUARDS');
+// /**
+//  *  Transport encodings guards.
+//  */
+// export const TRANSPORT_ENCODINGS_GUARDS = tokenId<CanHandle[]>('TRANSPORT_ENCODINGS_GUARDS');
 
-export class TransportEncodings extends Encodings {
-    /**
-     * transport
-     */
-    transport!: Transport;
+// export class TransportEncodings extends Encodings {
+//     /**
+//      * transport
+//      */
+//     transport!: Transport;
 
-    protected override createContext(): TransportContext {
-        return new TransportContext(this.transport, this.options, this.adapter);
-    }
+//     protected override createContext(): TransportContext {
+//         return new TransportContext(this.transport, this.options, this.adapter);
+//     }
 
-}
+// }
 
-/**
- * Transport encodings factory.
- */
-export class TransportEncodingsFactory implements EncodingsFactory {
-    create(injector: Injector, options: TransportOpts): TransportEncodings {
-        const { encodings, name, subfix, encodingsAdapter, transport } = options;
-        const { configable, adapter, ...opts } = encodings ?? {};
-        const handler = createHandler(injector, {
-            classType: EncodingsConfigableHandler,
-            interceptorsToken: TRANSPORT_ENCODINGS_INTERCEPTORS,
-            filtersToken: TRANSPORT_ENCODINGS_FILTERS,
-            guardsToken: TRANSPORT_ENCODINGS_GUARDS,
-            backend: EncodingsBackend,
-            ...configable,
-            providers: (adapter ?? encodingsAdapter) ? [
-                ...configable?.providers ?? EMPTY,
-                toProvider(CodingsAapter, adapter ?? encodingsAdapter!)
-            ] : configable?.providers
-        });
+// /**
+//  * Transport encodings factory.
+//  */
+// export class TransportEncodingsFactory implements EncodingsFactory {
+//     create(injector: Injector, options: TransportOpts): TransportEncodings {
+//         const { encodings, name, subfix, encodingsAdapter, transport } = options;
+//         const { configable, adapter, ...opts } = encodings ?? {};
+//         const handler = createHandler(injector, {
+//             classType: EncodingsConfigableHandler,
+//             interceptorsToken: TRANSPORT_ENCODINGS_INTERCEPTORS,
+//             filtersToken: TRANSPORT_ENCODINGS_FILTERS,
+//             guardsToken: TRANSPORT_ENCODINGS_GUARDS,
+//             backend: EncodingsBackend,
+//             ...configable,
+//             providers: (adapter ?? encodingsAdapter) ? [
+//                 ...configable?.providers ?? EMPTY,
+//                 toProvider(CodingsAapter, adapter ?? encodingsAdapter!)
+//             ] : configable?.providers
+//         });
 
-        handler.useFilters(ExecptionHandlerFilter, 0);
+//         handler.useFilters(ExecptionHandlerFilter, 0);
 
-        return new TransportEncodings(handler, { name, subfix, group: transport, ...opts })
-    }
-}
+//         return new TransportEncodings(handler, { name, subfix, group: transport, ...opts })
+//     }
+// }
 
 
-/**
- * Transport decodings interceptors.
- */
-export const TRANSPORT_DECODINGS_INTERCEPTORS = tokenId<Interceptor<Packet, IncomingMessage, TransportContext>[]>('TRANSPORT_DECODINGS_INTERCEPTORS');
+// /**
+//  * Transport decodings interceptors.
+//  */
+// export const TRANSPORT_DECODINGS_INTERCEPTORS = tokenId<Interceptor<Packet, IncomingMessage, TransportContext>[]>('TRANSPORT_DECODINGS_INTERCEPTORS');
 
-/**
- *  Transport decodings filters.
- */
-export const TRANSPORT_DECODINGS_FILTERS = tokenId<Interceptor<Packet, IncomingMessage, TransportContext>[]>('TRANSPORT_DECODINGS_FILTERS');
+// /**
+//  *  Transport decodings filters.
+//  */
+// export const TRANSPORT_DECODINGS_FILTERS = tokenId<Interceptor<Packet, IncomingMessage, TransportContext>[]>('TRANSPORT_DECODINGS_FILTERS');
 
-/**
- *  Transport decodings guards.
- */
-export const TRANSPORT_DECODINGS_GUARDS = tokenId<CanHandle[]>('TRANSPORT_DECODINGS_GUARDS');
+// /**
+//  *  Transport decodings guards.
+//  */
+// export const TRANSPORT_DECODINGS_GUARDS = tokenId<CanHandle[]>('TRANSPORT_DECODINGS_GUARDS');
 
-export class TransportDecodings extends Decodings {
+// export class TransportDecodings extends Decodings {
 
-    /**
-     * transport session
-     */
-    session!: Transport;
+//     /**
+//      * transport session
+//      */
+//     session!: Transport;
 
-    protected override createContext(): TransportContext {
-        return new TransportContext(this.session, this.options, this.adapter);
-    }
-}
+//     protected override createContext(): TransportContext {
+//         return new TransportContext(this.session, this.options, this.adapter);
+//     }
+// }
 
-/**
- * Transport decodings factory.
- */
-export class TransportDecodingsFactory implements DecodingsFactory {
+// /**
+//  * Transport decodings factory.
+//  */
+// export class TransportDecodingsFactory implements DecodingsFactory {
 
-    create(injector: Injector, options: TransportOpts): TransportDecodings {
-        const { decodings, name, subfix, decodingsAdapter, transport } = options;
-        const { configable, adapter, ...opts } = decodings ?? {};
-        const handler = createHandler(injector, {
-            classType: DecodingsConfigableHandler,
-            guardsToken: TRANSPORT_DECODINGS_GUARDS,
-            interceptorsToken: TRANSPORT_DECODINGS_INTERCEPTORS,
-            filtersToken: TRANSPORT_DECODINGS_FILTERS,
-            backend: DecodingsBackend,
-            ...configable,
-            providers: (adapter ?? decodingsAdapter) ? [
-                ...configable?.providers ?? EMPTY,
-                toProvider(CodingsAapter, adapter ?? decodingsAdapter!)
-            ] : configable?.providers
-        });
+//     create(injector: Injector, options: TransportOpts): TransportDecodings {
+//         const { decodings, name, subfix, decodingsAdapter, transport } = options;
+//         const { configable, adapter, ...opts } = decodings ?? {};
+//         const handler = createHandler(injector, {
+//             classType: DecodingsConfigableHandler,
+//             guardsToken: TRANSPORT_DECODINGS_GUARDS,
+//             interceptorsToken: TRANSPORT_DECODINGS_INTERCEPTORS,
+//             filtersToken: TRANSPORT_DECODINGS_FILTERS,
+//             backend: DecodingsBackend,
+//             ...configable,
+//             providers: (adapter ?? decodingsAdapter) ? [
+//                 ...configable?.providers ?? EMPTY,
+//                 toProvider(CodingsAapter, adapter ?? decodingsAdapter!)
+//             ] : configable?.providers
+//         });
 
-        handler.useFilters(ExecptionHandlerFilter, 0);
+//         handler.useFilters(ExecptionHandlerFilter, 0);
 
-        return new TransportDecodings(handler, { name, subfix, group: transport, ...opts })
-    }
-}
+//         return new TransportDecodings(handler, { name, subfix, group: transport, ...opts })
+//     }
+// }

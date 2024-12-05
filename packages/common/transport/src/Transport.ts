@@ -116,7 +116,8 @@ export abstract class Transport<TSocket = any, TInput = any, TOutput = any> {
     //  */
     // abstract get outgoingFactory(): AbstractOutgoingFactory;
 
-    
+    abstract get protocol(): string;
+
     /**
      * socket.
      */
