@@ -1,14 +1,32 @@
 import { Backend } from '@tsdi/core';
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, isString } from '@tsdi/ioc';
 import { DeserializeContext } from './Deserializer';
-import { DeserializeMappings } from './mappings';
-import { catchError, mergeMap, Observable, of } from 'rxjs';
-import { DeserializeNotHandleExecption } from './execptions';
+import { DeserializeMappings, SerializeMappings } from './mappings';
+import { Observable, of } from 'rxjs';
+import { isBuffer } from '../StreamAdapter';
+import { SerializeContext } from './Serializer';
+
+
+/**
+ * Serialize Backend
+ */
+@Injectable()
+export class SerializeBackend<TInput = any, TOutput = any> implements Backend<TInput, TOutput, SerializeContext> {
+
+    constructor(protected mappings: SerializeMappings) { }
+
+    handle(input: TInput, context: SerializeContext): Observable<TOutput> {
+        return this.mappings.serialize(input, context, {
+            canHandle: () => context.transport.streamAdapter.isJson(input),
+            handle: () => of(JSON.stringify(input))
+        })
+    }
+}
 
 
 
 /**
- * Decoding Backend
+ * Deserialize Backend
  */
 @Injectable()
 export class DeserializeBackend<TInput = any, TOutput = any> implements Backend<TInput, TOutput, DeserializeContext> {
@@ -16,16 +34,14 @@ export class DeserializeBackend<TInput = any, TOutput = any> implements Backend<
     constructor(protected mappings: DeserializeMappings) { }
 
     handle(input: TInput, context: DeserializeContext): Observable<TOutput> {
-        return this.mappings.deserialize(input, context)
-            .pipe(
-                catchError((err) => {
-                    if(err instanceof DeserializeNotHandleExecption) {
-                    return 
-                    }
-                })
-            );
+        return this.mappings.deserialize(input, context, {
+            canHandle: () => isBuffer(input) || isString(input),
+            handle: () => of(JSON.parse((input as Buffer).toString()))
+        })
     }
 }
+
+
 
 export class SerializeFactory {
 

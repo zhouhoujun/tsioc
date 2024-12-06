@@ -1,20 +1,21 @@
 import { ActionTypes, DecorDefine, Execption, Token, Type, createDecorator, getToken, lang } from '@tsdi/ioc';
 import { Filter, Interceptor, InvocationFactoryResolver, InvocationOptions } from '@tsdi/core';
-import { CodingsContext } from './context';
-import { CodingMappings } from './mappings';
-import { CodingsOptions } from './options';
+import { SerializeMappings, DeserializeMappings } from './mappings';
+import { SerializeContext } from './Serializer';
+import { DeserializeContext } from './Deserializer';
 
-/**
- * codings options.
- */
-export interface CodingsMetadata extends InvocationOptions, CodingsOptions { }
-
-
-export interface EncodingsMetadata extends CodingsMetadata {
+export interface SerializationOptions extends InvocationOptions {
     /**
-     * codings targe.
+     * the protocol serialization 
      */
-    encodings: string | Type;
+    protocol?: string;
+}
+
+export interface SerializeMetadata extends SerializationOptions {
+    /**
+     * Serialize targe.
+     */
+    target: string | Type;
 }
 
 
@@ -27,16 +28,16 @@ export interface SerializeHandler {
      * Serialize handle. use to handle encoding of target, in class with decorator {@link SerializeHandler}.
      *
      * @param {string|Type} encodings Serialize target.
-     * @param {CodingsMetadata} option Serialize handle invoke option.
+     * @param {SerializationOptions} option Serialize handle invoke option.
      */
-    (encodings: string | Type, option?: CodingsMetadata): MethodDecorator;
+    (target: string | Type, option?: SerializationOptions): MethodDecorator;
 }
 
-export function getSerializeInterceptorsToken<TInput, TOutput, TContext extends CodingsContext>(encodings: string | Type<TOutput>): Token<Interceptor<TInput, TOutput, TContext>[]> {
+export function getSerializeInterceptorsToken<TInput, TOutput, TContext extends SerializeContext>(encodings: string | Type<TOutput>): Token<Interceptor<TInput, TOutput, TContext>[]> {
     return getToken<Interceptor[]>(encodings, '_ENCODINGS_INTERCEPTORS');
 }
 
-export function getSerializeFilterToken<TInput, TOutput, TContext extends CodingsContext>(encodings: string | Type<TOutput>): Token<Filter<TInput, TOutput, TContext>[]> {
+export function getSerializeFilterToken<TInput, TOutput, TContext extends SerializeContext>(encodings: string | Type<TOutput>): Token<Filter<TInput, TOutput, TContext>[]> {
     return getToken<Filter[]>(encodings, '_ENCODINGS_FILTERS');
 }
 
@@ -46,41 +47,41 @@ export function getSerializeFilterToken<TInput, TOutput, TContext extends Coding
  * 
  * @exports {@link SerializeHandler}
  */
-export const SerializeHandler: SerializeHandler = createDecorator<EncodingsMetadata>('SerializeHandler', {
+export const SerializeHandler: SerializeHandler = createDecorator<SerializeMetadata>('SerializeHandler', {
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
-    props: (encodings: string | Type, option?: InvocationOptions) => {
-        const opts = { encodings, ...option };
+    props: (target: string | Type, option?: SerializationOptions) => {
+        const opts = { target, ...option };
         if (!opts.interceptorsToken) {
-            opts.interceptorsToken = getSerializeInterceptorsToken(encodings);
+            opts.interceptorsToken = getSerializeInterceptorsToken(target);
         }
         if (!opts.filtersToken) {
-            opts.filtersToken = getSerializeFilterToken(encodings);
+            opts.filtersToken = getSerializeFilterToken(target);
         }
         return opts;
     },
     design: {
         method: (ctx, next) => {
 
-            const defines = ctx.class.methodDefs.get(ctx.currDecor.toString()) as DecorDefine<EncodingsMetadata>[];
+            const defines = ctx.class.methodDefs.get(ctx.currDecor.toString()) as DecorDefine<SerializeMetadata>[];
             if (!defines || !defines.length) return next();
 
             const injector = ctx.injector;
 
             const factory = injector.get(InvocationFactoryResolver).resolve(ctx.class);
 
-            const codes = injector.get(CodingMappings);
-            if (!codes) throw new Execption(lang.getClassName(CodingMappings) + 'has not registered!');
+            const mapings = injector.get(SerializeMappings);
+            if (!mapings) throw new Execption(lang.getClassName(SerializeMappings) + 'has not registered!');
 
             defines.forEach(def => {
-                const { encodings, order, ...options } = def.metadata;
+                const { target, protocol, order, ...options } = def.metadata;
 
-                const mappings = codes.getEncodings(options);
+                const mappings = mapings.getMappings(protocol);
 
                 const handler = factory.create(def.propertyKey, options);
 
-                mappings.addHandler(encodings, handler, order);
+                mappings.addHandler(target, handler, order);
 
-                factory.onDestroy(() => mappings.removeHandler(encodings, handler))
+                factory.onDestroy(() => mappings.removeHandler(target, handler))
 
             });
 
@@ -91,11 +92,11 @@ export const SerializeHandler: SerializeHandler = createDecorator<EncodingsMetad
 
 
 
-export interface DecodingMetadata extends CodingsMetadata {
+export interface DeserializeMetadata extends SerializationOptions {
     /**
-     * decodings target.
+     * Deserialize target.
      */
-    decodings: string | Type;
+    target: string | Type;
 }
 
 
@@ -104,17 +105,17 @@ export interface DeserializeHandler {
     /**
      * Deserialize handle. use to handle decoding of target, in class with decorator {@link DeserializeHandler}.
      *
-     * @param {string|Type} decodings Serialize target.
-     * @param {CodingsMetadata} option Serialize handle invoke option.
+     * @param {string|Type} target Deserialize target.
+     * @param {SerializationOptions} option Deserialize handle invoke option.
      */
-    (decodings: string | Type, option?: CodingsMetadata): MethodDecorator;
+    (target: string | Type, option?: SerializationOptions): MethodDecorator;
 }
 
-export function getDeserializeInterceptorsToken<TInput, TOutput, TContext extends CodingsContext>(encodings: string | Type<TInput>): Token<Interceptor<TInput, TOutput, TContext>[]> {
+export function getDeserializeInterceptorsToken<TInput, TOutput, TContext extends DeserializeContext>(encodings: string | Type<TInput>): Token<Interceptor<TInput, TOutput, TContext>[]> {
     return getToken<Interceptor[]>(encodings, '_DECODINGS_INTERCEPTORS');
 }
 
-export function getDeserializeFilterToken<TInput, TOutput, TContext extends CodingsContext>(encodings: string | Type<TInput>): Token<Filter<TInput, TOutput, TContext>[]> {
+export function getDeserializeFilterToken<TInput, TOutput, TContext extends DeserializeContext>(encodings: string | Type<TInput>): Token<Filter<TInput, TOutput, TContext>[]> {
     return getToken<Filter[]>(encodings, '_DECODINGS_FILTERS');
 }
 
@@ -125,41 +126,41 @@ export function getDeserializeFilterToken<TInput, TOutput, TContext extends Codi
  * 
  * @exports {@link DeserializeHandler}
  */
-export const DeserializeHandler: DeserializeHandler = createDecorator<DecodingMetadata>('DeserializeHandler', {
+export const DeserializeHandler: DeserializeHandler = createDecorator<DeserializeMetadata>('DeserializeHandler', {
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
-    props: (encodings: string | Type, option?: InvocationOptions) => {
-        const opts = { decodings: encodings, ...option } as DecodingMetadata;
+    props: (target: string | Type, option?: InvocationOptions) => {
+        const opts = { target, ...option } as DeserializeMetadata;
         if (!opts.interceptorsToken) {
-            opts.interceptorsToken = getDeserializeInterceptorsToken(encodings);
+            opts.interceptorsToken = getDeserializeInterceptorsToken(target);
         }
         if (!opts.filtersToken) {
-            opts.filtersToken = getDeserializeFilterToken(encodings);
+            opts.filtersToken = getDeserializeFilterToken(target);
         }
         return opts;
     },
     design: {
         method: (ctx, next) => {
 
-            const defines = ctx.class.methodDefs.get(ctx.currDecor.toString()) as DecorDefine<DecodingMetadata>[];
+            const defines = ctx.class.methodDefs.get(ctx.currDecor.toString()) as DecorDefine<DeserializeMetadata>[];
             if (!defines || !defines.length) return next();
 
             const injector = ctx.injector;
 
             const factory = injector.get(InvocationFactoryResolver).resolve(ctx.class);
 
-            const codes = injector.get(CodingMappings);
-            if (!codes) throw new Execption(lang.getClassName(CodingMappings) + 'has not registered!');
+            const map = injector.get(DeserializeMappings);
+            if (!map) throw new Execption(lang.getClassName(DeserializeMappings) + 'has not registered!');
 
             defines.forEach(def => {
-                const { decodings, order, ...options } = def.metadata;
+                const { protocol, target, order, ...options } = def.metadata;
 
-                const mappings = codes.getDecodings(options);
+                const mappings = map.getMappings(protocol);
 
                 const handler = factory.create(def.propertyKey, options);
 
-                mappings.addHandler(decodings, handler, order);
+                mappings?.addHandler(target, handler, order);
 
-                factory.onDestroy(() => mappings.removeHandler(decodings, handler))
+                factory.onDestroy(() => mappings.removeHandler(target, handler))
 
             });
 

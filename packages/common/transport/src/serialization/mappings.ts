@@ -63,12 +63,24 @@ export class SerializeMappings {
         this.maps = new Map();
     }
 
-    serialize<T>(data: T, context: SerializeContext): Observable<any> {
-        return this.serializeType(getClass(data), data, context);
+    getMappings(protocol?: string) {
+        if(!protocol) {
+            protocol = '_';
+        }
+        let mappings = this.maps.get(protocol);
+        if(!mappings) {
+            mappings = new Mappings();
+            this.maps.set(protocol, mappings);
+        }
+        return mappings;
     }
 
-    serializeType<T>(type: Type<T> | string, data: T, context: SerializeContext): Observable<any> {
-        const handlers = this.getHanlders(context.transport.protocol, type, context.getDefault(type));
+    serialize<T>(data: T, context: SerializeContext, exts?: HanldeExts): Observable<any> {
+        return this.serializeType(getClass(data), data, context, exts);
+    }
+
+    serializeType<T>(type: Type<T> | string, data: T, context: SerializeContext, exts?: HanldeExts): Observable<any> {
+        const handlers = this.getHanlders(type, context.getDefault(type), context.transport.protocol);
 
         if (handlers && handlers.length) {
             return handlers.reduce((obs$, curr) => {
@@ -85,15 +97,21 @@ export class SerializeMappings {
                 );
             }, of(data))
         } else {
+            if (exts?.canHandle()) return exts.handle();
             return throwError(() => new SerializeNotHandleExecption(data, type, context))
         }
     }
 
-    getHanlders(protocol: string, type: Type | string, defaultType?: Type | string) {
-        return this.maps.get(protocol)?.getHanlder(type, defaultType) ?? this.maps.get('_')?.getHanlder(type, defaultType);
+    getHanlders(type: Type | string, defaultType?: Type | string, protocol?: string) {
+        return protocol ? this.getMappings(protocol)?.getHanlder(type, defaultType) ?? this.getMappings()?.getHanlder(type, defaultType)
+            : this.getMappings()?.getHanlder(type, defaultType);
     }
 }
 
+export interface HanldeExts<T = any> {
+    canHandle: () => boolean;
+    handle: () => Observable<T>
+}
 
 
 @Injectable({
@@ -108,12 +126,24 @@ export class DeserializeMappings {
         this.maps = new Map();
     }
 
-    deserialize<T>(data: any, context: DeserializeContext, defaultHandle?: (data:T)=> Observable<T>): Observable<T> {
-        return this.deserializeType(getClass(data), data, context);
+    getMappings(protocol?: string) {
+        if(!protocol) {
+            protocol = '_';
+        }
+        let mappings = this.maps.get(protocol);
+        if(!mappings) {
+            mappings = new Mappings();
+            this.maps.set(protocol, mappings);
+        }
+        return mappings;
     }
 
-    deserializeType<T>(type: Type<T> | string, data: any, context: DeserializeContext, defaultHandle?: (data:T)=> Observable<T>): Observable<T> {
-        const handlers = this.getHanlders(context.transport.protocol, type, context.getDefault(type));
+    deserialize<T>(data: any, context: DeserializeContext, exts?: HanldeExts<T>): Observable<T> {
+        return this.deserializeType(getClass(data), data, context, exts);
+    }
+
+    deserializeType<T>(type: Type<T> | string, data: any, context: DeserializeContext, exts?: HanldeExts<T>): Observable<T> {
+        const handlers = this.getHanlders(type, context.getDefault(type), context.transport.protocol);
 
         if (handlers && handlers.length) {
             return handlers.reduce((obs$, curr) => {
@@ -130,13 +160,14 @@ export class DeserializeMappings {
                 );
             }, of(data))
         } else {
-            if(defaultHandle) return defaultHandle(data)
+            if (exts?.canHandle()) return exts.handle();
             return throwError(() => new DeserializeNotHandleExecption(data, type, context))
         }
     }
 
-    getHanlders(protocol: string, type: Type | string, defaultType?: Type | string) {
-        return this.maps.get(protocol)?.getHanlder(type, defaultType) ?? this.maps.get('_')?.getHanlder(type, defaultType);
+    getHanlders(type: Type | string, defaultType?: Type | string, protocol?: string) {
+        return protocol ? this.getMappings(protocol)?.getHanlder(type, defaultType) ?? this.getMappings()?.getHanlder(type, defaultType)
+            : this.getMappings()?.getHanlder(type, defaultType);
     }
 }
 
