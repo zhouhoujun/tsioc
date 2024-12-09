@@ -1,11 +1,11 @@
 import { Backend, Context } from '@tsdi/core';
 import { Injectable, OnDestroy, Type } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { MappingsAapter } from './adapter';
+import { StatusAdapter } from './adapter';
 import { Transport } from '../Transport';
 
 export abstract class Deserializer {
-    abstract deserialize<T>(input: string | Buffer): Observable<T>;
+    abstract deserialize<T>(input: string | Buffer, context: DeserializeContext): Observable<T>;
 }
 
 
@@ -19,7 +19,7 @@ export class DeserializeContext extends Context implements OnDestroy {
 
 
 
-    constructor(readonly transport: Transport, private adapter?: MappingsAapter | null) {
+    constructor(readonly transport: Transport, readonly req: any, private adapter?: StatusAdapter | null) {
         super()
     }
 
@@ -46,23 +46,3 @@ export class DeserializeContext extends Context implements OnDestroy {
     }
 
 }
-
-
-// /**
-//  * Decoding Backend
-//  */
-// @Injectable()
-// export class DeserializeBackend<TInput = any, TOutput = any> implements Backend<TInput, TOutput, > {
-
-//     constructor(protected mappings: CodingMappings) { }
-
-//     handle(input: TInput, context: CodingsContext): Observable<TOutput> {
-//         return this.mappings.decode(input, context)
-//             .pipe(
-//                 mergeMap(data => {
-//                     if (context.isCompleted(data)) return of(data);
-//                     return this.mappings.decode(data, context)
-//                 })
-//             );
-//     }
-// }

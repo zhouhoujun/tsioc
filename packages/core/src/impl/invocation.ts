@@ -5,7 +5,7 @@ import { InvocationOptions, Respond, TypedRespond, InvocationFactory, Invocation
 import { FnHandler } from '../handlers/handler';
 import { ConfigableHandler } from '../handlers/configable.impl';
 import { ResultValue } from '../handlers/ResultValue';
-import { Context, HandlerContext } from '../handlers/context';
+import { Context, HandleContext } from '../handlers/context';
 import { getResolverToken } from '../handlers/resolver';
 
 
@@ -28,7 +28,7 @@ export class InvocationHandlerImpl<
     }
 
     override handle(input: TInput, context?: TContext): Observable<TOutput> {
-        if ((input as HandlerContext).bootstrap && this.options.bootstrap === false) return of(null) as Observable<TOutput>
+        if ((input as HandleContext).bootstrap && this.options.bootstrap === false) return of(null) as Observable<TOutput>
         if (isNumber(this.limit)) {
             if (this.limit < 1) return of(null) as Observable<TOutput>;
             this.limit -= 1;

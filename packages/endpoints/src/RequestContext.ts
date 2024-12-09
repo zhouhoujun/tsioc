@@ -1,5 +1,5 @@
 import { Abstract, EMPTY, OperationArgumentResolver, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
-import { HandlerContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
+import { HandleContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
 import { HeadersLike, IHeaders, HeaderMappings, Response, HeaderAdapter, HeaderAccess } from '@tsdi/common';
 import {
     FileAdapter, Incoming, InternalServerExecption, MessageExecption, MimeAdapter, Outgoing,
@@ -21,7 +21,7 @@ export abstract class RequestContext<
     TResponse extends Outgoing<any> = Outgoing<any>,
     TSocket = any,
     TOptions extends ServerOpts = ServerOpts,
-    TStatus = any> extends HandlerContext<Incoming<any>> {
+    TStatus = any> extends HandleContext<Incoming<any>> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
         return [...this.injector.get(MODEL_RESOLVERS, EMPTY), ...primitiveResolvers];

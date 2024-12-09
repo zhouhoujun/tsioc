@@ -2,9 +2,9 @@ import { Type } from '@tsdi/ioc';
 
 
 /**
- * Codings adapter.
+ * status adapter.
  */
-export abstract class MappingsAapter {
+export abstract class StatusAdapter {
     abstract getDefault(type: Type | string): Type | string | undefined
     abstract isCompleted(data: any): boolean;
 }

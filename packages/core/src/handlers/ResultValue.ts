@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { HandlerContext } from './context';
+import { HandleContext } from './context';
 
 
 /**
@@ -18,9 +18,9 @@ export abstract class ResultValue {
      * send value.
      *
      * @abstract
-     * @param {HandlerContext} context
+     * @param {HandleContext} context
      * @returns {Promise<any>}
      * @memberof ResultValue
      */
-    abstract sendValue(ctx: HandlerContext): Promise<any>;
+    abstract sendValue(ctx: HandleContext): Promise<any>;
 }

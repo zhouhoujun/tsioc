@@ -97,8 +97,8 @@ export abstract class DefaultClientTransport extends ClientTransport<any> {
     constructor(
         readonly injector: Injector,
         readonly socket: any,
-        readonly encodings: Encoder,
-        readonly decodings: Decoder,
+        readonly serializer: Encoder,
+        readonly deserializer: Decoder,
         readonly clientOptions: ClientOpts
 
     ) {

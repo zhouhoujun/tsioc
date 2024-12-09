@@ -3,20 +3,20 @@ import { getResolverToken } from './resolver';
 import { BehaviorSubject, Observable, Subject, filter, takeUntil } from 'rxjs';
 
 /**
- * handler context options.
+ * handle context options.
  */
-export interface HanlerContextOpts<T = any> extends InvokeArguments<T> {
+export interface HandleContextOpts<T = any> extends InvokeArguments<T> {
     bootstrap?: boolean;
 }
 
 /**
- * invoke handler context.
+ * invoke handle context.
  */
-export class HandlerContext<TInput = any> extends DefaultInvocationContext<TInput> {
+export class HandleContext<TInput = any> extends DefaultInvocationContext<TInput> {
     readonly bootstrap: boolean;
     constructor(
         injector: Injector,
-        options: HanlerContextOpts<TInput> = EMPTY_OBJ) {
+        options: HandleContextOpts<TInput> = EMPTY_OBJ) {
         super(injector, options);
         this.bootstrap = options.bootstrap === true;
         this.setValue(getClass(this), this);

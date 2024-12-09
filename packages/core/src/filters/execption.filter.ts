@@ -2,7 +2,7 @@ import { Abstract, DefaultInvocationContext, Execption, getClass, lang, Injectab
 import { catchError, finalize, isObservable, mergeMap, Observable, of, throwError } from 'rxjs';
 import { Handler } from '../Handler';
 import { Filter, FilterHandlerResolver } from './filter';
-import { HandlerContext } from '../handlers/context';
+import { HandleContext } from '../handlers/context';
 
 
 /**
@@ -94,7 +94,7 @@ export class ExecptionHandlerFilter<TInput, TOutput = any, TContext = any> exten
 
     catchError(input: TInput, err: any, caught: Observable<TOutput>, context?: TContext): Observable<any> {
         let injector: Injector;
-        if (input instanceof HandlerContext) {
+        if (input instanceof HandleContext) {
             injector = input.injector;
             input.execption = err;
         } else {

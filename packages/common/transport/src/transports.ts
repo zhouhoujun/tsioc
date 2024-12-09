@@ -1,12 +1,13 @@
 import { Abstract, isFunction, promisify } from '@tsdi/ioc';
 import { AbstractRequest } from '@tsdi/common';
-import { Decoder, Encoder } from '@tsdi/common/codings';
 import { Observable, Subject, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
 import { Transport } from './Transport';
 import { ev } from './consts';
 import { IEventEmitter, IReadableStream, IWritableStream } from './stream';
 import { AbstractIncomingFactory } from './Incoming';
 import { AbstractOutgoingFactory } from './Outgoing';
+import { DeserializeContext, Deserializer } from './serialization/Deserializer';
+import { SerializeContext, Serializer } from './serialization/Serializer';
 
 /**
  * Abstract transport.
@@ -15,14 +16,14 @@ import { AbstractOutgoingFactory } from './Outgoing';
 export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = any> extends Transport<TSocket, TInput, TOutput> {
 
     /**
-     * message decodings.
+     * message deserializer.
      */
-    abstract get decodings(): Decoder;
+    abstract get deserializer(): Deserializer;
 
     /**
      * message encodings.
      */
-    abstract get encodings(): Encoder;
+    abstract get serializer(): Serializer;
 
     /**
      * incoming message factory.
@@ -42,7 +43,7 @@ export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = a
      * @param data 
      */
     send(data: TInput, channel?: IEventEmitter): Observable<any> {
-        return this.encodings.encode(data)
+        return this.serializer.serialize(data, new SerializeContext(this))
             .pipe(
                 mergeMap(msg => {
                     return this.write(msg, channel)
@@ -60,7 +61,7 @@ export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = a
         return this.read(channel, req)
             .pipe(
                 takeUntil(this.destroy$),
-                mergeMap(data => this.decodings.decode(data, req)),
+                mergeMap(data => this.deserializer.deserialize(data, new DeserializeContext(this, req))),
                 share()
             ) as Observable<any>;
     }

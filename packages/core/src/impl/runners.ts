@@ -15,14 +15,14 @@ import { ExecptionHandlerFilter } from '../filters/execption.filter';
 import { FnHandler } from '../handlers/handler';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
 import { InvocationFactoryResolver, InvocationOptions } from '../invocation';
-import { HandlerContext } from '../handlers/context';
+import { HandleContext } from '../handlers/context';
 import { NotHandleExecption } from '../execptions';
 
 
 /**
  *  Application runner interceptors multi token
  */
-export const APP_RUNNERS_INTERCEPTORS = tokenId<Interceptor<HandlerContext>[]>('APP_RUNNERS_INTERCEPTORS');
+export const APP_RUNNERS_INTERCEPTORS = tokenId<Interceptor<HandleContext>[]>('APP_RUNNERS_INTERCEPTORS');
 
 /**
  *  Application runner filters multi token
@@ -169,13 +169,13 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
 
     run(type?: Type | Type[]): Promise<void> {
         if (type) {
-            return lastValueFrom(this._handler.handle(new HandlerContext(this.injector, { args: { useValue: type } })));
+            return lastValueFrom(this._handler.handle(new HandleContext(this.injector, { args: { useValue: type } })));
         }
         return lastValueFrom(
             this.startup()
                 .pipe(
                     mergeMap(v => this.beforeRun()),
-                    mergeMap(v => this._types?.length ? this._handler.handle(new HandlerContext(this.injector, { bootstrap: true, args: { useValue: this._types } })) : of(v)),
+                    mergeMap(v => this._types?.length ? this._handler.handle(new HandleContext(this.injector, { bootstrap: true, args: { useValue: this._types } })) : of(v)),
                     mergeMap(v => this.afterRun())
                 )
         );
@@ -201,7 +201,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         this._types = null!;
     }
 
-    handle(context: HandlerContext<any>): Observable<any> {
+    handle(context: HandleContext<any>): Observable<any> {
         let handlers: Handler[] | undefined;
         if (isFunction(context.args)) {
             handlers = this._maps.get(context.args)

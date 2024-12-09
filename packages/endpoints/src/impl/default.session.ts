@@ -38,14 +38,14 @@ export class DefaultServerTransport extends ServerTransport<any> {
     private _outgoingFactory?: OutgoingFactory | null;
     private _requestContextFactory?: RequestContextFactory;
 
-    get encodings(): TransportEncodings {
+    get serializer(): TransportEncodings {
         if (!this._encodings) {
             this._encodings = this.injector.get(this.options.encodingsFactory ?? TransportEncodingsFactory)
                 .create(this.injector, this.options)
         }
         return this._encodings;
     }
-    get decodings(): TransportDecodings {
+    get deserializer(): TransportDecodings {
         if (!this._decodings) {
             this._decodings = this.injector.get(this.options.decodingsFactory ?? TransportDecodingsFactory)
                 .create(this.injector, this.options)
@@ -140,7 +140,7 @@ export class DefaultServerTransport extends ServerTransport<any> {
         readonly serverOptions: ServerOpts,
     ) {
         super()
-        this.encodings.transport = this.decodings.session = this;
+        this.serializer.transport = this.deserializer.session = this;
     }
 
 }

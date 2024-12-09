@@ -1,7 +1,7 @@
 import { Context } from '@tsdi/core';
 import { OnDestroy, Type } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { MappingsAapter } from './adapter';
+import { StatusAdapter } from './adapter';
 import { Transport } from '../Transport';
 
 export abstract class Serializer {
@@ -20,7 +20,7 @@ export class SerializeContext extends Context implements OnDestroy {
 
 
 
-    constructor(readonly transport: Transport, private adapter?: MappingsAapter | null) {
+    constructor(readonly transport: Transport, private adapter?: StatusAdapter | null) {
         super()
     }
 
