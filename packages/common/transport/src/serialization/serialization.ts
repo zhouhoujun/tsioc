@@ -18,7 +18,7 @@ export class SerializeBackend<TInput = any, TOutput = any> implements Backend<TI
     handle(input: TInput, context: SerializeContext): Observable<TOutput> {
         return this.mappings.serialize(input, context, {
             canHandle: () => context.transport.streamAdapter.isJson(input),
-            handle: () => of(JSON.stringify(input))
+            handle: () => of(JSON.stringify(input, null, 2))
         })
     }
 }
