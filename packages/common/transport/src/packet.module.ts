@@ -1,27 +1,31 @@
 import { Module } from '@tsdi/ioc';
 import { HeaderAdapter, Packet } from '@tsdi/common';
-import { CodingsModule, getDecodeInterceptorsToken, getEncodeInterceptorsToken } from '@tsdi/common/codings';
+// import { CodingsModule, getDecodeInterceptorsToken, getEncodeInterceptorsToken } from '@tsdi/common/codings';
 import { PacketIdGenerator, PacketNumberIdGenerator } from './PacketId';
-import { TransportDecodingsFactory, TransportEncodingsFactory } from './condings';
+// import { TransportDecodingsFactory, TransportEncodingsFactory } from './condings';
 import { PackageDecodeInterceptor, PackageEncodeInterceptor } from './interceptors/buffer.package';
 import { BindPacketIdEncodeInterceptor, PacketDecodeInterceptor, PacketEncodeInterceptor } from './interceptors/buffer.packet';
 import { PacketCodingsHandlers } from './packet.codings';
 import { DefaultHeaderAdapter } from './headers';
-import { TransportContext } from './context';
+// import { TransportContext } from './context';
 import { IncomingMessage } from './Incoming';
 import { OutgoingMessage } from './Outgoing';
+import { getDeserializeInterceptorsToken, getSerializeInterceptorsToken } from './serialization/metadata';
+import { DeserializeContext } from './serialization/Deserializer';
+import { SerializeContext } from './serialization/Serializer';
+import { SerializationModule } from './serialization/serialization.module';
 
 
-const PACKET_DECODE_INTERCEPTORS = getDecodeInterceptorsToken<Packet, IncomingMessage, TransportContext>(Packet);
-const PACKET_ENCODE_INTERCEPTORS = getEncodeInterceptorsToken<OutgoingMessage, Packet, TransportContext>(Packet);
+const PACKET_DECODE_INTERCEPTORS = getDeserializeInterceptorsToken<Packet, IncomingMessage, DeserializeContext>(Packet);
+const PACKET_ENCODE_INTERCEPTORS = getSerializeInterceptorsToken<OutgoingMessage, Packet, SerializeContext>(Packet);
 
 @Module({
     imports: [
-        CodingsModule
+        SerializationModule
     ],
     providers: [
-        TransportEncodingsFactory,
-        TransportDecodingsFactory,
+        // TransportEncodingsFactory,
+        // TransportDecodingsFactory,
         PacketCodingsHandlers,
         { provide: PacketIdGenerator, useClass: PacketNumberIdGenerator },
         { provide: HeaderAdapter, useClass: DefaultHeaderAdapter, asDefault: true },
@@ -31,7 +35,7 @@ const PACKET_ENCODE_INTERCEPTORS = getEncodeInterceptorsToken<OutgoingMessage, P
         { provide: PACKET_ENCODE_INTERCEPTORS, useClass: PacketEncodeInterceptor, multi: true }
     ],
     exports: [
-        CodingsModule
+        SerializationModule
     ]
 })
 export class TransportPacketModule {

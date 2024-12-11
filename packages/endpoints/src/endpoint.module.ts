@@ -5,8 +5,7 @@ import {
 import { ConfigMissingExecption, InvocationOptions, TypedRespond } from '@tsdi/core';
 import { HybirdProtocols, Protocols } from '@tsdi/common';
 import {
-    IncomingFactory, MessageReader, MessageWriter, NotImplementedExecption, OutgoingFactory,
-    SocketMessageReader, SocketMessageWriter, StatusAdapter, TransportPacketModule
+    IncomingFactory, NotImplementedExecption, OutgoingFactory, SerializationAdapter, TransportPacketModule
 } from '@tsdi/common/transport';
 import { RequestContextFactory } from './RequestContext';
 import { Server, ServerOpts } from './Server';
@@ -22,7 +21,7 @@ import { ExecptionFinalizeFilter } from './execption.filter';
 import { DefaultExecptionHandlers } from './execption.handlers';
 import { FinalizeFilter } from './finalize.filter';
 import { createRequestHandler } from './impl/request.handler';
-import { DefaultServerTransportFactory } from './impl/default.session';
+// import { DefaultServerTransportFactory } from './impl/default.session';
 import { RequestContextFactoryImpl } from './impl/request.context';
 import { createMiddlewareEndpoint } from './impl/middleware';
 
@@ -39,7 +38,7 @@ import { createMiddlewareEndpoint } from './impl/middleware';
     ],
     providers: [
         SetupServices,
-        DefaultServerTransportFactory,
+        // DefaultServerTransportFactory,
         ServerEndpointCodingsHanlders,
 
         { provide: TypedRespond, useClass: EndpointTypedRespond, asDefault: true },
@@ -265,16 +264,16 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     serverOpts.microservice = moduleOpts.microservice;
                 }
 
-                serverOpts.transportOpts = {
-                    name: `${serverOpts.microservice ? ' microservice' : ''}`,
-                    subfix: serverOpts.microservice ? '_micro' : '',
-                    transport: moduleOpts.transport,
-                    timeout: serverOpts.timeout,
-                    microservice: serverOpts.microservice,
-                    ...moduleOpts.defaultOpts?.transportOpts,
-                    ...moduleOpts.serverOpts?.transportOpts,
-                    client: false
-                };
+                // serverOpts.transportOpts = {
+                //     name: `${serverOpts.microservice ? ' microservice' : ''}`,
+                //     subfix: serverOpts.microservice ? '_micro' : '',
+                //     transport: moduleOpts.transport,
+                //     timeout: serverOpts.timeout,
+                //     microservice: serverOpts.microservice,
+                //     ...moduleOpts.defaultOpts?.transportOpts,
+                //     ...moduleOpts.serverOpts?.transportOpts,
+                //     client: false
+                // };
 
 
 
@@ -288,7 +287,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 }
 
                 if (serverOpts.statusAdapter) {
-                    serverOpts.providers.push(toProvider(StatusAdapter, serverOpts.statusAdapter))
+                    serverOpts.providers.push(toProvider(SerializationAdapter, serverOpts.statusAdapter))
                 }
 
                 if (!serverOpts.execptionHandlers) {
@@ -310,12 +309,12 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     serverOpts.providers.push(toProvider(RequestContextFactory, serverOpts.requestContextFactory));
                 }
 
-                serverOpts.providers.push(toProvider(MessageReader, serverOpts.messageReader ?? SocketMessageReader));
-                serverOpts.providers.push(toProvider(MessageWriter, serverOpts.messageWriter ?? SocketMessageWriter));
+                // serverOpts.providers.push(toProvider(MessageReader, serverOpts.messageReader ?? SocketMessageReader));
+                // serverOpts.providers.push(toProvider(MessageWriter, serverOpts.messageWriter ?? SocketMessageWriter));
 
 
                 if (serverOpts.sessionFactory !== ServerTransportFactory) {
-                    serverOpts.providers.push(toProvider(ServerTransportFactory, serverOpts.sessionFactory ?? DefaultServerTransportFactory))
+                    serverOpts.providers.push(toProvider(ServerTransportFactory, serverOpts.sessionFactory))
                 }
 
 

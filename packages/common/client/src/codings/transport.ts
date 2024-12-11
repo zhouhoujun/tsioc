@@ -1,9 +1,7 @@
 import { HeaderAdapter, ResponseFactory } from '@tsdi/common';
-import { ClientIncomingFactory, IDuplexStream, Redirector, StatusAdapter, StreamAdapter } from '@tsdi/common/transport';
-import { Injectable, Injector } from '@tsdi/ioc';
-import { ClientTransport, ClientTransportFactory } from '../transport';
+import { ClientIncomingFactory, ClientOutgoingFactory, Deserializer, Redirector, Serializer, StatusAdapter, StreamAdapter } from '@tsdi/common/transport';
+import { ClientTransport } from '../transport';
 import { ClientOpts } from '../options';
-import { Decoder, Encoder } from '@tsdi/common/codings';
 
 
 
@@ -11,12 +9,12 @@ export abstract class DefaultClientTransport extends ClientTransport<any> {
 
     // private _encodings?: TransportEncodings;
     // private _decodings?: TransportDecodings;
-    private _headerAdapter?: HeaderAdapter;
-    private _streamAdapter?: StreamAdapter;
-    private _statusAdapter?: StatusAdapter | null;
-    private _incomingFactory?: ClientIncomingFactory;
-    private _responseFactory?: ResponseFactory;
-    private _redirector?: Redirector | null;
+    // private _headerAdapter?: HeaderAdapter;
+    // private _streamAdapter?: StreamAdapter;
+    // private _statusAdapter?: StatusAdapter | null;
+    // private _incomingFactory?: ClientIncomingFactory;
+    // private _responseFactory?: ResponseFactory;
+    // private _redirector?: Redirector | null;
 
     // get options(): TransportOpts {
     //     return this.clientOptions.transportOpts!
@@ -37,26 +35,26 @@ export abstract class DefaultClientTransport extends ClientTransport<any> {
     //     return this._decodings;
     // }
 
-    get headerAdapter(): HeaderAdapter {
-        if (!this._headerAdapter) {
-            this._headerAdapter = this.injector.get(HeaderAdapter)
-        }
-        return this._headerAdapter;
-    }
+    // get headerAdapter(): HeaderAdapter {
+    //     if (!this._headerAdapter) {
+    //         this._headerAdapter = this.injector.get(HeaderAdapter)
+    //     }
+    //     return this._headerAdapter;
+    // }
 
-    get streamAdapter(): StreamAdapter {
-        if (!this._streamAdapter) {
-            this._streamAdapter = this.injector.get(StreamAdapter)
-        }
-        return this._streamAdapter;
-    }
+    // get streamAdapter(): StreamAdapter {
+    //     if (!this._streamAdapter) {
+    //         this._streamAdapter = this.injector.get(StreamAdapter)
+    //     }
+    //     return this._streamAdapter;
+    // }
 
-    get statusAdapter(): StatusAdapter | null {
-        if (this._statusAdapter === undefined) {
-            this._statusAdapter = this.injector.get(StatusAdapter, null)
-        }
-        return this._statusAdapter;
-    }
+    // get statusAdapter(): StatusAdapter | null {
+    //     if (this._statusAdapter === undefined) {
+    //         this._statusAdapter = this.injector.get(StatusAdapter, null)
+    //     }
+    //     return this._statusAdapter;
+    // }
     // get messageReader(): MessageReader {
     //     if (!this._messageReader) {
     //         this._messageReader = this.injector.get(MessageReader)
@@ -74,31 +72,37 @@ export abstract class DefaultClientTransport extends ClientTransport<any> {
     //         this._messageFactory = this.injector.get(MessageFactory, null)
     //     }
     //     return this._messageFactory;
+    // // }
+    // get incomingFactory(): ClientIncomingFactory {
+    //     if (!this._incomingFactory) {
+    //         this._incomingFactory = this.injector.get(ClientIncomingFactory)
+    //     }
+    //     return this._incomingFactory;
     // }
-    get incomingFactory(): ClientIncomingFactory {
-        if (!this._incomingFactory) {
-            this._incomingFactory = this.injector.get(ClientIncomingFactory)
-        }
-        return this._incomingFactory;
-    }
-    get responseFactory(): ResponseFactory {
-        if (!this._responseFactory) {
-            this._responseFactory = this.injector.get(ResponseFactory)
-        }
-        return this._responseFactory;
-    }
-    get redirector(): Redirector | null {
-        if (this._redirector === undefined) {
-            this._redirector = this.injector.get(Redirector, null)
-        }
-        return this._redirector;
-    }
+    // get responseFactory(): ResponseFactory {
+    //     if (!this._responseFactory) {
+    //         this._responseFactory = this.injector.get(ResponseFactory)
+    //     }
+    //     return this._responseFactory;
+    // // }
+    // get redirector(): Redirector | null {
+    //     if (this._redirector === undefined) {
+    //         this._redirector = this.injector.get(Redirector, null)
+    //     }
+    //     return this._redirector;
+    // }
 
     constructor(
-        readonly injector: Injector,
         readonly socket: any,
-        readonly serializer: Encoder,
-        readonly deserializer: Decoder,
+        readonly serializer: Serializer,
+        readonly deserializer: Deserializer,
+        readonly headerAdapter: HeaderAdapter,
+        readonly streamAdapter: StreamAdapter,
+        readonly incomingFactory: ClientIncomingFactory,
+        readonly outgoingFactory: ClientOutgoingFactory,
+        readonly responseFactory: ResponseFactory,
+        readonly statusAdapter: StatusAdapter | null,
+        readonly redirector: Redirector | null,
         readonly clientOptions: ClientOpts
 
     ) {

@@ -1,10 +1,11 @@
 import { Abstract, Injector } from '@tsdi/ioc';
-import { AbstractTransport, FileAdapter, IncomingFactory, MimeAdapter, OutgoingFactory } from '@tsdi/common/transport';
+import { AbstractTransport, Deserializer, FileAdapter, IncomingFactory, MimeAdapter, OutgoingFactory, Serializer, StatusAdapter, StreamAdapter } from '@tsdi/common/transport';
 import { Observable, Subscription, first, merge, mergeMap, takeUntil } from 'rxjs';
 import { AbstractRequestHandler } from './AbstractRequestHandler';
 import { RequestContext, RequestContextFactory } from './RequestContext';
 import { ServerOpts } from './Server';
 import { AcceptsPriority } from './accepts';
+import { HeaderAdapter } from '@tsdi/common';
 
 @Abstract()
 export abstract class ServerTransport<TSocket = any, TOptions extends ServerOpts = ServerOpts> extends AbstractTransport<TSocket, RequestContext, RequestContext> {
@@ -59,3 +60,26 @@ export abstract class ServerTransportFactory<TSocket = any> {
 }
 
 
+
+export abstract class DefaultServerTransport extends ServerTransport<any> {
+
+    constructor(
+        readonly socket: any,
+        readonly protocol: string,
+        readonly serializer: Serializer,
+        readonly deserializer: Deserializer,       
+        readonly headerAdapter: HeaderAdapter,
+        readonly streamAdapter: StreamAdapter,
+        readonly fileAdapter: FileAdapter,
+        readonly incomingFactory: IncomingFactory,
+        readonly outgoingFactory: OutgoingFactory,
+        readonly requestContextFactory: RequestContextFactory,
+        readonly statusAdapter: StatusAdapter | null,
+        readonly mimeAdapter: MimeAdapter | null,
+        readonly acceptsPriority: AcceptsPriority | null,
+        readonly serverOptions: ServerOpts,
+    ) {
+        super()
+    }
+
+}

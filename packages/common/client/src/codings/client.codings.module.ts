@@ -1,6 +1,5 @@
 import { Module } from '@tsdi/ioc';
-import { CodingsModule, getDecodeInterceptorsToken } from '@tsdi/common/codings';
-import { AbstractClientIncoming } from '@tsdi/common/transport';
+import { AbstractClientIncoming, getDeserializeInterceptorsToken } from '@tsdi/common/transport';
 import {
     CompressResponseDecordeInterceptor, EmptyResponseDecordeInterceptor, ErrorResponseDecordeInterceptor,
     RedirectDecodeInterceptor, ResponseTypeDecodeInterceptor
@@ -8,13 +7,14 @@ import {
 import { ClientBackend } from '../backend';
 import { ClientTransportBackend } from './transport.backend';
 import { ClientEndpointCodingsHanlders } from './codings.handlers';
+import { SerializationModule } from '@tsdi/common/transport';
 
 
-const CLIENT_INCOMING_DECODE_INTERCEPTORS = getDecodeInterceptorsToken(AbstractClientIncoming);
+const CLIENT_INCOMING_DECODE_INTERCEPTORS = getDeserializeInterceptorsToken(AbstractClientIncoming);
 
 @Module({
     imports: [
-        CodingsModule
+        SerializationModule
     ],
     providers: [
         { provide: ClientBackend, useClass: ClientTransportBackend, asDefault: true },

@@ -1,5 +1,5 @@
-import { HybirdProtocols, MessageFactory, PatternFormatter } from '@tsdi/common';
-import { IncomingFactory, MessageReader, MessageWriter, OutgoingFactory, StatusAdapter, TransportOpts } from '@tsdi/common/transport';
+import { HybirdProtocols, PatternFormatter } from '@tsdi/common';
+import { IncomingFactory, OutgoingFactory, SerializationAdapter } from '@tsdi/common/transport';
 import { ApplicationEvent, CanHandle, Filter, HandlerService, Interceptor, PipeTransform, Runner, Shutdown } from '@tsdi/core';
 import { Abstract, ProvdierOf, StaticProvider, Type } from '@tsdi/ioc';
 import { RequestContext, RequestContextFactory } from './RequestContext';
@@ -39,27 +39,19 @@ export interface ServerOpts<TSerOpts = any> extends RequestHandlerOptions<any> {
     /**
      * status adapter
      */
-    statusAdapter?: ProvdierOf<StatusAdapter>;
-    /**
-     * transport session options.
-     */
-    transportOpts?: TransportOpts;
+    statusAdapter?: ProvdierOf<SerializationAdapter>;
+    // /**
+    //  * transport session options.
+    //  */
+    // transportOpts?: TransportOpts;
     /**
      * pattern formatter
      */
     patternFormatter?: ProvdierOf<PatternFormatter>;
-    /**
-     * message factory.
-     */
-    messageFactory?: ProvdierOf<MessageFactory>;
-    /**
-     * message reader.
-     */
-    readonly messageReader?: ProvdierOf<MessageReader>;
-    /**
-     * message writer.
-     */
-    readonly messageWriter?: ProvdierOf<MessageWriter>;
+    // /**
+    //  * message factory.
+    //  */
+    // messageFactory?: ProvdierOf<MessageFactory>;
     /**
      * incoming factory.
      */

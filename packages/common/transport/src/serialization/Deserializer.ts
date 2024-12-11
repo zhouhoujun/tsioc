@@ -1,7 +1,7 @@
 import { Backend, Context } from '@tsdi/core';
 import { Injectable, OnDestroy, Type } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { StatusAdapter } from './adapter';
+import { SerializationAdapter } from './adapter';
 import { Transport } from '../Transport';
 
 export abstract class Deserializer {
@@ -19,7 +19,7 @@ export class DeserializeContext extends Context implements OnDestroy {
 
 
 
-    constructor(readonly transport: Transport, readonly req: any, private adapter?: StatusAdapter | null) {
+    constructor(readonly transport: Transport, readonly req: any, private adapter?: SerializationAdapter | null) {
         super()
     }
 

@@ -3,12 +3,13 @@ import { Handler, Interceptor, PipeTransform } from '@tsdi/core';
 import { Packet } from '@tsdi/common';
 import { Observable, Subscriber, filter, map, mergeMap, throwError } from 'rxjs';
 import { PacketLengthException } from '../execptions';
-import { TransportContext } from '../context';
 import { PacketIdGenerator } from '../PacketId';
 import { IDuplexStream, IReadableStream } from '../stream';
 import { PackageEncodeInterceptor } from './buffer.package';
 import { IncomingMessage } from '../Incoming';
 import { OutgoingMessage } from '../Outgoing';
+import { DeserializeContext } from '../serialization/Deserializer';
+import { SerializeContext } from '../serialization/Serializer';
 
 
 
@@ -23,7 +24,7 @@ export interface ChannelCache {
 }
 
 @Injectable()
-export class PacketDecodeInterceptor implements Interceptor<Packet, IncomingMessage, TransportContext> {
+export class PacketDecodeInterceptor implements Interceptor<Packet, IncomingMessage, DeserializeContext> {
 
     protected channels: Map<string, ChannelCache>;
 
@@ -31,7 +32,7 @@ export class PacketDecodeInterceptor implements Interceptor<Packet, IncomingMess
         this.channels = new Map();
     }
 
-    intercept(input: Packet, next: Handler<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
+    intercept(input: Packet, next: Handler<Packet, IncomingMessage>, context: DeserializeContext): Observable<IncomingMessage> {
         if (context.transport.streamAdapter.isReadable(input.payload)) return next.handle(input, context);
 
         return new Observable((subscriber: Subscriber<Packet>) => {
@@ -59,7 +60,7 @@ export class PacketDecodeInterceptor implements Interceptor<Packet, IncomingMess
         );
     }
 
-    protected handleData(channel: string, cache: ChannelCache, data: Buffer, subscriber: Subscriber<Packet>, context: TransportContext) {
+    protected handleData(channel: string, cache: ChannelCache, data: Buffer, subscriber: Subscriber<Packet>, context: DeserializeContext) {
         const { options, streamAdapter, injector } = context.transport;
 
         const bLen = Buffer.byteLength(data);
@@ -135,9 +136,9 @@ export class PacketDecodeInterceptor implements Interceptor<Packet, IncomingMess
 }
 
 @Injectable()
-export class BindPacketIdDecodeInterceptor implements Interceptor<Packet, IncomingMessage, TransportContext> {
+export class BindPacketIdDecodeInterceptor implements Interceptor<Packet, IncomingMessage, DeserializeContext> {
 
-    intercept(input: Packet, next: Handler<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
+    intercept(input: Packet, next: Handler<Packet, IncomingMessage>, context: DeserializeContext): Observable<IncomingMessage> {
         return next.handle(input, context)
             .pipe(
                 filter(packet => {
@@ -149,9 +150,9 @@ export class BindPacketIdDecodeInterceptor implements Interceptor<Packet, Incomi
 }
 
 @Injectable()
-export class BindPacketIdEncodeInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
+export class BindPacketIdEncodeInterceptor implements Interceptor<OutgoingMessage, Packet, SerializeContext> {
 
-    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet>, context: TransportContext): Observable<Packet> {
+    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet>, context: SerializeContext): Observable<Packet> {
         const { options, injector, headerAdapter } = context.transport;
         const length = headerAdapter.getContentLength(input.headers);
         if (length && options.maxSize && length > options.maxSize && !options.headDelimiter && !injector.has(PackageEncodeInterceptor)) {
@@ -167,9 +168,9 @@ export class BindPacketIdEncodeInterceptor implements Interceptor<OutgoingMessag
 
 
 @Injectable()
-export class PacketEncodeInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
+export class PacketEncodeInterceptor implements Interceptor<OutgoingMessage, Packet, SerializeContext> {
 
-    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet, TransportContext>, context: TransportContext): Observable<Packet> {
+    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet, SerializeContext>, context: SerializeContext): Observable<Packet> {
 
         return next.handle(input, context)
             .pipe(map(msg => {

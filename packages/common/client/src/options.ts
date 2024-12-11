@@ -1,5 +1,5 @@
 import { AbstractRequest, PatternFormatter, ResponseFactory } from '@tsdi/common';
-import { ClientIncomingFactory, StatusAdapter } from '@tsdi/common/transport';
+import { ClientIncomingFactory, SerializationAdapter } from '@tsdi/common/transport';
 import { ConfigableHandlerOptions } from '@tsdi/core';
 import { ProvdierOf, Token, Type } from '@tsdi/ioc';
 import { ClientBackend } from './backend';
@@ -38,7 +38,7 @@ export interface ClientOpts<TConnOpts = any> extends ConfigableHandlerOptions<Ab
     /**
      * status adapter
      */
-    statusAdapter?: ProvdierOf<StatusAdapter>;
+    statusAdapter?: ProvdierOf<SerializationAdapter>;
     // /**
     //  * transport options.
     //  */

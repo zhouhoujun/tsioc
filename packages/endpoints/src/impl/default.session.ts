@@ -1,157 +1,157 @@
-import { HeaderAdapter, MessageFactory } from '@tsdi/common';
-import {
-    FileAdapter,
-    IncomingFactory,
-    MessageReader,
-    MessageWriter,
-    MimeAdapter,
-    OutgoingFactory,
-    StatusAdapter,
-    StreamAdapter,
-    TransportDecodings,
-    TransportDecodingsFactory,
-    TransportEncodings,
-    TransportEncodingsFactory,
-    TransportOpts
-} from '@tsdi/common/transport';
-import { Injectable, Injector } from '@tsdi/ioc';
-import { ServerOpts } from '../Server';
-import { ServerTransport, ServerTransportFactory } from '../transport';
-import { RequestContextFactory } from '../RequestContext';
-import { AcceptsPriority } from '../accepts';
+// import { AbstractRequest, HeaderAdapter } from '@tsdi/common';
+// import {
+//     Deserializer,
+//     FileAdapter,
+//     IEventEmitter,
+//     IncomingFactory,
+//     // MessageReader,
+//     // MessageWriter,
+//     MimeAdapter,
+//     OutgoingFactory,
+//     Serializer,
+//     StatusAdapter,
+//     StreamAdapter,
+//     // TransportDecodings,
+//     // TransportDecodingsFactory,
+//     // TransportEncodings,
+//     // TransportEncodingsFactory,
+//     // TransportOpts
+// } from '@tsdi/common/transport';
+// import { Injectable, Injector } from '@tsdi/ioc';
+// import { ServerOpts } from '../Server';
+// import { ServerTransport, ServerTransportFactory } from '../transport';
+// import { RequestContextFactory } from '../RequestContext';
+// import { AcceptsPriority } from '../accepts';
+// import { Observable } from 'rxjs';
 
 
-export class DefaultServerTransport extends ServerTransport<any> {
+// export abstract class DefaultServerTransport extends ServerTransport<any> {
 
-    private _encodings?: TransportEncodings;
-    private _decodings?: TransportDecodings;
-    private _headerAdapter?: HeaderAdapter;
-    private _streamAdapter?: StreamAdapter;
-    private _fileAdapter?: FileAdapter;
-    private _mimeAdapter?: MimeAdapter | null;
-    private _acceptsPriority?: AcceptsPriority | null;
-    private _statusAdapter?: StatusAdapter | null;
-    private _messageReader?: MessageReader;
-    private _messageWriter?: MessageWriter;
-    private _messageFactory?: MessageFactory | null;
-    private _incomingFactory?: IncomingFactory;
-    private _outgoingFactory?: OutgoingFactory | null;
-    private _requestContextFactory?: RequestContextFactory;
 
-    get serializer(): TransportEncodings {
-        if (!this._encodings) {
-            this._encodings = this.injector.get(this.options.encodingsFactory ?? TransportEncodingsFactory)
-                .create(this.injector, this.options)
-        }
-        return this._encodings;
-    }
-    get deserializer(): TransportDecodings {
-        if (!this._decodings) {
-            this._decodings = this.injector.get(this.options.decodingsFactory ?? TransportDecodingsFactory)
-                .create(this.injector, this.options)
-        }
-        return this._decodings;
-    }
 
-    get headerAdapter(): HeaderAdapter {
-        if (!this._headerAdapter) {
-            this._headerAdapter = this.injector.get(HeaderAdapter)
-        }
-        return this._headerAdapter;
-    }
+//     // private _headerAdapter?: HeaderAdapter;
+//     // private _streamAdapter?: StreamAdapter;
+//     // private _fileAdapter?: FileAdapter;
+//     // private _mimeAdapter?: MimeAdapter | null;
+//     // private _acceptsPriority?: AcceptsPriority | null;
+//     // private _statusAdapter?: StatusAdapter | null;
+//     // // private _messageReader?: MessageReader;
+//     // // private _messageWriter?: MessageWriter;
+//     // // private _messageFactory?: MessageFactory | null;
+//     // private _incomingFactory?: IncomingFactory;
+//     // private _outgoingFactory?: OutgoingFactory | null;
+//     // private _requestContextFactory?: RequestContextFactory;
 
-    get streamAdapter(): StreamAdapter {
-        if (!this._streamAdapter) {
-            this._streamAdapter = this.injector.get(StreamAdapter)
-        }
-        return this._streamAdapter;
-    }
 
-    get fileAdapter(): FileAdapter {
-        if (!this._fileAdapter) {
-            this._fileAdapter = this.injector.get(FileAdapter)
-        }
-        return this._fileAdapter;
-    }
+//     // get headerAdapter(): HeaderAdapter {
+//     //     if (!this._headerAdapter) {
+//     //         this._headerAdapter = this.injector.get(HeaderAdapter)
+//     //     }
+//     //     return this._headerAdapter;
+//     // }
 
-    get mimeAdapter(): MimeAdapter | null {
-        if (this._mimeAdapter === undefined) {
-            this._mimeAdapter = this.injector.get(MimeAdapter, null)
-        }
-        return this._mimeAdapter;
-    }
+//     // get streamAdapter(): StreamAdapter {
+//     //     if (!this._streamAdapter) {
+//     //         this._streamAdapter = this.injector.get(StreamAdapter)
+//     //     }
+//     //     return this._streamAdapter;
+//     // }
 
-    get acceptsPriority(): AcceptsPriority | null {
-        if (this._acceptsPriority === undefined) {
-            this._acceptsPriority = this.injector.get(AcceptsPriority, null)
-        }
-        return this._acceptsPriority;
-    }
-    get statusAdapter(): StatusAdapter | null {
-        if (this._statusAdapter === undefined) {
-            this._statusAdapter = this.injector.get(StatusAdapter, null)
-        }
-        return this._statusAdapter;
-    }
-    get messageReader(): MessageReader {
-        if (!this._messageReader) {
-            this._messageReader = this.injector.get(MessageReader)
-        }
-        return this._messageReader;
-    }
-    get messageWriter(): MessageWriter {
-        if (!this._messageWriter) {
-            this._messageWriter = this.injector.get(MessageWriter)
-        }
-        return this._messageWriter;
-    }
-    get messageFactory(): MessageFactory | null {
-        if (this._messageFactory === undefined) {
-            this._messageFactory = this.injector.get(MessageFactory, null)
-        }
-        return this._messageFactory;
-    }
-    get incomingFactory(): IncomingFactory {
-        if (!this._incomingFactory) {
-            this._incomingFactory = this.injector.get(IncomingFactory)
-        }
-        return this._incomingFactory;
-    }
-    get outgoingFactory(): OutgoingFactory | null {
-        if (this._outgoingFactory === undefined) {
-            this._outgoingFactory = this.injector.get(OutgoingFactory, null)
-        }
-        return this._outgoingFactory;
-    }
-    get requestContextFactory(): RequestContextFactory {
-        if (!this._requestContextFactory) {
-            this._requestContextFactory = this.injector.get(RequestContextFactory)
-        }
-        return this._requestContextFactory;
-    }
+//     // get fileAdapter(): FileAdapter {
+//     //     if (!this._fileAdapter) {
+//     //         this._fileAdapter = this.injector.get(FileAdapter)
+//     //     }
+//     //     return this._fileAdapter;
+//     // }
 
-    get options(): TransportOpts {
-        return this.serverOptions.transportOpts!
-    }
+//     // get mimeAdapter(): MimeAdapter | null {
+//     //     if (this._mimeAdapter === undefined) {
+//     //         this._mimeAdapter = this.injector.get(MimeAdapter, null)
+//     //     }
+//     //     return this._mimeAdapter;
+//     // }
 
-    constructor(
-        readonly injector: Injector,
-        readonly socket: any,
-        readonly serverOptions: ServerOpts,
-    ) {
-        super()
-        this.serializer.transport = this.deserializer.session = this;
-    }
+//     // get acceptsPriority(): AcceptsPriority | null {
+//     //     if (this._acceptsPriority === undefined) {
+//     //         this._acceptsPriority = this.injector.get(AcceptsPriority, null)
+//     //     }
+//     //     return this._acceptsPriority;
+//     // }
+//     // get statusAdapter(): StatusAdapter | null {
+//     //     if (this._statusAdapter === undefined) {
+//     //         this._statusAdapter = this.injector.get(StatusAdapter, null)
+//     //     }
+//     //     return this._statusAdapter;
+//     // }
+//     // // get messageReader(): MessageReader {
+//     // //     if (!this._messageReader) {
+//     // //         this._messageReader = this.injector.get(MessageReader)
+//     // //     }
+//     // //     return this._messageReader;
+//     // // }
+//     // // get messageWriter(): MessageWriter {
+//     // //     if (!this._messageWriter) {
+//     // //         this._messageWriter = this.injector.get(MessageWriter)
+//     // //     }
+//     // //     return this._messageWriter;
+//     // // }
+//     // // get messageFactory(): MessageFactory | null {
+//     // //     if (this._messageFactory === undefined) {
+//     // //         this._messageFactory = this.injector.get(MessageFactory, null)
+//     // //     }
+//     // //     return this._messageFactory;
+//     // // }
+//     // get incomingFactory(): IncomingFactory {
+//     //     if (!this._incomingFactory) {
+//     //         this._incomingFactory = this.injector.get(IncomingFactory)
+//     //     }
+//     //     return this._incomingFactory;
+//     // }
+//     // // get outgoingFactory(): OutgoingFactory | null {
+//     // //     if (this._outgoingFactory === undefined) {
+//     // //         this._outgoingFactory = this.injector.get(OutgoingFactory, null)
+//     // //     }
+//     // //     return this._outgoingFactory;
+//     // // }
+//     // get requestContextFactory(): RequestContextFactory {
+//     //     if (!this._requestContextFactory) {
+//     //         this._requestContextFactory = this.injector.get(RequestContextFactory)
+//     //     }
+//     //     return this._requestContextFactory;
+//     // }
 
-}
+//     // get options(): TransportOpts {
+//     //     return this.serverOptions.transportOpts!
+//     // }
 
-@Injectable()
-export class DefaultServerTransportFactory implements ServerTransportFactory<any> {
+//     constructor(
+//         readonly socket: any,
+//         readonly protocol: string,
+//         readonly serializer: Serializer,
+//         readonly deserializer: Deserializer,       
+//         readonly headerAdapter: HeaderAdapter,
+//         readonly streamAdapter: StreamAdapter,
+//         readonly fileAdapter: FileAdapter,
+//         readonly incomingFactory: IncomingFactory,
+//         readonly outgoingFactory: OutgoingFactory,
+//         readonly requestContextFactory: RequestContextFactory,
+//         readonly statusAdapter: StatusAdapter | null,
+//         readonly mimeAdapter: MimeAdapter | null,
+//         readonly acceptsPriority: AcceptsPriority | null,
+//         readonly serverOptions: ServerOpts,
+//     ) {
+//         super()
+//     }
 
-    constructor() { }
+// }
 
-    create(injector: Injector, socket: any, options: ServerOpts): DefaultServerTransport {
-        return new DefaultServerTransport(injector, socket, options);
-    }
+// // @Injectable()
+// // export class DefaultServerTransportFactory implements ServerTransportFactory<any> {
 
-}
+// //     constructor() { }
+
+// //     create(injector: Injector, socket: any, options: ServerOpts): DefaultServerTransport {
+// //         return new DefaultServerTransport( socket, options);
+// //     }
+
+// // }

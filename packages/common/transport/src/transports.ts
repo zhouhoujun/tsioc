@@ -79,13 +79,6 @@ export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = a
         await this.close();
     }
 
-    override async close() {
-        const socket = this.socket as any;
-        if (socket && isFunction(socket.close)) {
-            await promisify(socket.close, socket)();
-        }
-    }
-
 }
 
 @Abstract()
@@ -103,4 +96,12 @@ export abstract class SocketTransport<TSocket extends IWritableStream = IWritabl
         }
         return promisify<any, void>(socket.write, socket)(msg.payload)
     }
+
+    override async close() {
+        const socket = this.socket as any;
+        if (socket && isFunction(socket.close)) {
+            await promisify(socket.close, socket)();
+        }
+    }
+
 }

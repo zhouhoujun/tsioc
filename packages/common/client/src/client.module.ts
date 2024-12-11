@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { ConfigMissingExecption, createHandler } from '@tsdi/core';
 import { DefaultResponseFactory, HybirdProtocols, ResponseFactory, Protocols } from '@tsdi/common';
-import { ClientIncomingFactory, NotImplementedExecption, StatusAdapter, TransportPacketModule } from '@tsdi/common/transport';
+import { ClientIncomingFactory, NotImplementedExecption, SerializationAdapter, TransportPacketModule } from '@tsdi/common/transport';
 import { AbstractClient } from './AbstractClient';
 import { ClientBackend } from './backend';
 import { ClientCodingsModule } from './codings/client.codings.module';
@@ -217,7 +217,7 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                 clientOpts.providers.push(toProvider(ResponseFactory, clientOpts.responseFactory || DefaultResponseFactory))
 
                 if (clientOpts.statusAdapter) {
-                    clientOpts.providers.push(toProvider(StatusAdapter, clientOpts.statusAdapter))
+                    clientOpts.providers.push(toProvider(SerializationAdapter, clientOpts.statusAdapter))
                 }
 
                 if (clientOpts.incomingFactory) {
