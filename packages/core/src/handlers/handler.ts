@@ -4,20 +4,6 @@ import { Backend, Handler, HandlerFn } from '../Handler';
 import { InterceptorFn, InterceptorLike } from '../Interceptor';
 
 
-// /**
-//  * Interceptor Handler.
-//  */
-// export class InterceptorHandler<TInput = any, TOutput = any, TContext = any> implements Handler<TInput, TOutput, TContext> {
-
-//     constructor(private next: Handler<TInput, TOutput, TContext>, private interceptor: InterceptorLike<TInput, TOutput, TContext>) { }
-
-//     handle(input: TInput, context?: TContext): Observable<TOutput> {
-//         return isFunction(this.interceptor) ? this.interceptor(input, this.next, context) : this.interceptor.intercept(input, this.next, context)
-//     }
-// }
-
-
-
 /**
  * intercepting hnalder.
  */
@@ -49,7 +35,11 @@ export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> im
     }
 }
 
-
+/**
+ * compose chain interceptor.
+ * @param interceptors 
+ * @returns 
+ */
 export function composeChain(interceptors: InterceptorLike[]): InterceptorFn {
     return interceptors.reduceRight((next, interceptorFn) => chainedInterceptorFn(next as InterceptorFn, interceptorFn), chainEndFn as InterceptorFn) as InterceptorFn;
 }
@@ -60,8 +50,7 @@ function chainEndFn<TInput = any, TOutput = any, TContext = any>(req: TInput, fi
 }
 
 /**
- * Constructs a `ChainedInterceptorFn` which wraps and invokes a functional interceptor in the given
- * injector.
+ * Constructs a `ChainedInterceptorFn` which wraps and invokes a functional interceptor.
  */
 function chainedInterceptorFn(
     chainTailLike: InterceptorLike, interceptorLike: InterceptorLike,
@@ -81,25 +70,21 @@ function chainedInterceptorFn(
         )
 }
 
-
-
-
 /**
- * funcation handler.
+ * handler factory.
+ * @param fn 
+ * @returns 
  */
-export class FnHandler<TInput = any, TOutput = any, TContext = any> implements Handler<TInput, TOutput, TContext> {
-
-    constructor(private dowork: (ctx: TInput, context?: TContext) => TOutput | Observable<TOutput> | Promise<TOutput>) { }
-
-    handle(input: TInput, context?: TContext): Observable<TOutput> {
-        const $res = this.dowork(input, context);
+export function handlerFactory<TInput = any, TOutput = any, TContext = any>(fn: (ctx: TInput, context?: TContext) => TOutput | Observable<TOutput> | Promise<TOutput>) {
+    const handle = (input: TInput, context?: TContext): Observable<TOutput> => {
+        const $res = fn(input, context);
         if (isObservable($res)) {
             return $res;
         }
         return isPromise($res) ? from($res) : of($res);
-    }
+    };
 
-    equals(target: any): boolean {
-        return this.dowork === target?.dowork;
+    return {
+        handle
     }
 }

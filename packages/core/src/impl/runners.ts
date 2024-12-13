@@ -12,7 +12,7 @@ import { Handler } from '../Handler';
 import { Interceptor } from '../Interceptor';
 import { Filter } from '../filters/filter';
 import { ExecptionHandlerFilter } from '../filters/execption.filter';
-import { FnHandler } from '../handlers/handler';
+import { handlerFactory } from '../handlers/handler';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
 import { InvocationFactoryResolver, InvocationOptions } from '../invocation';
 import { HandleContext } from '../handlers/context';
@@ -95,7 +95,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
             const targetRef = this.reflectiveFactory.create(target, options);
             // this.attachEvent(targetRef);
             const hasFactory = target.providers.some(r => (r as StaticProviders).provide === RunnableFactory);
-            const endpoint = new FnHandler((ctx) => hasFactory ? targetRef.resolve(RunnableFactory).create(targetRef).invoke(ctx) : targetRef.resolve(RunnableRef).invoke(ctx));
+            const endpoint = handlerFactory((ctx) => hasFactory ? targetRef.resolve(RunnableFactory).create(targetRef).invoke(ctx) : targetRef.resolve(RunnableRef).invoke(ctx));
             ends.push(endpoint);
             this.attachRef(targetRef, options.order);
             targetRef.onDestroy(() => this.detach(target.type));

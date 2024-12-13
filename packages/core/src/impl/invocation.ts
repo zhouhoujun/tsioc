@@ -1,8 +1,7 @@
 import { Class, EMPTY_OBJ, Injectable, InvocationContext, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, createContext, getClass, isDefined, isFunction, isNumber, isPromise, isString, lang } from '@tsdi/ioc';
-import { Observable, isObservable, lastValueFrom, of } from 'rxjs';
-import { Backend } from '../Handler';
+import { Observable, from, isObservable, lastValueFrom, of } from 'rxjs';
+import { HandlerFn } from '../Handler';
 import { InvocationOptions, Respond, TypedRespond, InvocationFactory, InvocationFactoryResolver, InvocationHandler, } from '../invocation';
-import { FnHandler } from '../handlers/handler';
 import { ConfigableHandler } from '../handlers/configable.impl';
 import { ResultValue } from '../handlers/ResultValue';
 import { Context, HandleContext } from '../handlers/context';
@@ -41,8 +40,8 @@ export class InvocationHandlerImpl<
         return this.invoker.equals(target.invoker);
     }
 
-    protected override getBackend(): Backend<TInput, TOutput> {
-        return new FnHandler(this.respond.bind(this));
+    protected override getBackend(): HandlerFn<TInput, TOutput> {
+        return (input: any, context?: TContext) => from(this.respond(input, context));
     }
 
     /**
