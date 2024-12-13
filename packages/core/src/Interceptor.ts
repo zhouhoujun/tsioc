@@ -1,6 +1,6 @@
 import { getTokenOf, Token, ProvdierOf, TypeOf, tokenId, Abstract, Type } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { Handler } from './Handler';
+import { Handler, HandlerFn } from './Handler';
 
 /**
  * Interceptor is a chainable behavior modifier for `hanlders`.
@@ -33,7 +33,7 @@ export interface Interceptor<TInput = any, TOutput = any, TContext = any> {
  * InterceptorFn is a chainable behavior modifier for `hanlders`.
  * 拦截方法，用于链接多个处理器，组合成处理器串。
  */
-export type InterceptorFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, next: Handler, context?: TContext) => Observable<TOutput>;
+export type InterceptorFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, next: HandlerFn, context?: TContext) => Observable<TOutput>;
 
 export type InterceptorLike<TInput = any, TOutput = any, TContext = any> = Interceptor<TInput, TOutput, TContext> | InterceptorFn<TInput, TOutput, TContext>;
 

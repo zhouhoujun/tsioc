@@ -1,6 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
-import { AbstractIncoming, NotImplementedExecption, AbstractOutgoing, TransportContext } from '@tsdi/common/transport';
+import { AbstractIncoming, NotImplementedExecption, AbstractOutgoing, DeserializeHandler, DeserializeContext, SerializeHandler, SerializeContext } from '@tsdi/common/transport';
 import { RequestContext } from '../RequestContext';
 import { ServerTransport } from '../transport';
 
@@ -10,8 +9,8 @@ import { ServerTransport } from '../transport';
 @Injectable({ static: true })
 export class ServerEndpointCodingsHanlders {
 
-    @DecodeHandler(AbstractIncoming)
-    decodePacket(context: TransportContext) {
+    @DeserializeHandler(AbstractIncoming)
+    decodePacket(context: DeserializeContext) {
         const incoming = context.last<AbstractIncoming<any>>();
         const session = context.transport as ServerTransport;
         if (!session.outgoingFactory) throw new NotImplementedExecption('outgoingFactory');
@@ -20,8 +19,8 @@ export class ServerEndpointCodingsHanlders {
         return session.requestContextFactory.create(session, incoming, outgoing, session.serverOptions);
     }
 
-    @EncodeHandler(RequestContext)
-    encodePacket(context: TransportContext) {
+    @SerializeHandler(RequestContext)
+    encodePacket(context: SerializeContext) {
         const reqContext = context.last<RequestContext>();
         return (reqContext.response as AbstractOutgoing<any>).clone({ payload: reqContext.body });
 

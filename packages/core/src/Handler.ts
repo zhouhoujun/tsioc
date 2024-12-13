@@ -23,7 +23,10 @@ export interface Handler<TInput = any, TOutput = any, TContext = any> {
      */
     equals?(target: any): boolean;
 }
-
+/**
+ * handler fn.
+ */
+export type HandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, context?: TContext) => Observable<TOutput>;
 
 
 /**

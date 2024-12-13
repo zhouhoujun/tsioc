@@ -4,12 +4,12 @@ import {
 } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
-import { INTERCEPTORS_TOKEN, Interceptor, InterceptorLike, InterceptorResolver } from '../Interceptor';
+import { INTERCEPTORS_TOKEN, Interceptor, InterceptorFn, InterceptorLike, InterceptorResolver } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
 import { FILTERS_TOKEN, Filter, FilterLike, FilterResolver } from '../filters/filter';
-import { Backend, Handler } from '../Handler';
+import { Backend, Handler, HandlerFn } from '../Handler';
 import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerOptions, HandlerService, TypeConfigableHandlerOptions } from './configable';
-import { InterceptorHandler } from './handler';
+import { composeChain } from './handler';
 
 
 
@@ -23,8 +23,8 @@ export class ConfigableHandler<
     TContext = any> implements AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
 
     private destroy$ = new Subject<void>();
-    private chain?: Handler<TInput, TOutput, TContext> | null;
-    private chains: Map<Type | string, Handler<TInput, TOutput, TContext> | null>;
+    private chain?: InterceptorFn<TInput, TOutput, TContext> | null;
+    private chains: Map<Type | string, InterceptorFn<TInput, TOutput, TContext> | null>;
 
     private _guards?: GuardLike[] | null;
 
@@ -174,7 +174,9 @@ export class ConfigableHandler<
         if (!this.chain) {
             this.chain = this.compose();
         }
-        return this.getChain(input).handle(input, context);
+        const backend = this.getBackend();
+         
+        return this.getChain(input)(input,  isFunction(backend) ? backend : (req, ctx) => (backend as Backend).handle(req, ctx), context);
     }
 
     /**
@@ -182,7 +184,7 @@ export class ConfigableHandler<
      * @param input 
      * @returns 
      */
-    protected getChain(input: TInput): Handler<TInput, TOutput> {
+    protected getChain(input: TInput): InterceptorFn<TInput, TOutput> {
         return this.getChainOf(getClass(input)) ?? this.chain!;
     }
 
@@ -191,7 +193,7 @@ export class ConfigableHandler<
      * @param type 
      * @returns 
      */
-    protected getChainOf(type: Type | string): Handler<TInput, TOutput> | null {
+    protected getChainOf(type: Type | string): InterceptorFn<TInput, TOutput> | null {
         let chain = this.chains.get(type);
         if (chain === undefined) {
             chain = this.composeTypeChain(type);
@@ -206,12 +208,13 @@ export class ConfigableHandler<
      * @param type 
      * @returns 
      */
-    protected composeTypeChain(type: Type | string): Handler<TInput, TOutput> | null {
+    protected composeTypeChain(type: Type | string): InterceptorFn<TInput, TOutput> | null {
         const filters = this.filterResolver.resolve(type);
         const inteceptors = this.interceptorResolver.resolve(type);
         if (!(filters.length || inteceptors.length)) return null;
-        return [...filters, ...inteceptors].reduceRight(
-            (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.chain!);
+        return composeChain([...filters, ...inteceptors, this.chain!])
+        // .reduceRight(
+        //     (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.chain!);
     }
 
 
@@ -231,15 +234,15 @@ export class ConfigableHandler<
      * compose iterceptors and filters in chain.
      * @returns 
      */
-    protected compose(): Handler<TInput, TOutput> {
+    protected compose(): InterceptorFn<TInput, TOutput> {
         const type = this.getHandlerType();
         const hdlFilters = this.filterResolver.resolve(type) ?? EMPTY;
         const hdlInteceptors = this.interceptorResolver.resolve(type) ?? EMPTY;
 
         const filters = this.getFilters();
         const inteceptors = this.getInterceptors();
-        return [...hdlFilters, ...hdlInteceptors, ...filters, ...inteceptors].reduceRight(
-            (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.getBackend());
+        return  composeChain([...hdlFilters, ...hdlInteceptors, ...filters, ...inteceptors]);
+        //.reduceRight((next, inteceptor) => new InterceptorHandler(next, inteceptor), this.getBackend());
     }
 
     protected getHandlerType(): Type {
@@ -251,7 +254,7 @@ export class ConfigableHandler<
      * get registered backend of the handler.
      * @returns 
      */
-    protected getBackend(): Backend<TInput, TOutput> {
+    protected getBackend(): Backend<TInput, TOutput>| HandlerFn {
         if (!this.options.backend) throw new ArgumentExecption('backend is empty.');
         return isToken(this.options.backend) ? this.injector.get(this.options.backend, this.context) : this.options.backend;
     }
