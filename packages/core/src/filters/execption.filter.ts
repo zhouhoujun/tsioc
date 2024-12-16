@@ -40,7 +40,7 @@ export abstract class ExecptionFilter<TInput = any, TOutput = any, TContext = an
      * @param next The next interceptor in the chain, or the backend
      * @returns any
      */
-    intercept(input: TInput, next: Handler<TInput, TOutput>, context?: TContext): Observable<any> {
+    doFilter(input: TInput, next: Handler<TInput, TOutput>, context?: TContext): Observable<any> {
         return next.handle(input, context)
             .pipe(
                 catchError((err, caught) => {

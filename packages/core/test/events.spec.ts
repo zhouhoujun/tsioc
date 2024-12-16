@@ -5,7 +5,7 @@ import { Application, ApplicationArguments, ApplicationContext, Dispose, Handler
 
 @Injectable()
 export class StringFilter implements Filter  {
-    intercept(event: PayloadApplicationEvent, next: Handler<any, any>): Observable<any> {
+    doFilter(event: PayloadApplicationEvent, next: Handler<any, any>): Observable<any> {
         if(isString(event.payload)){
             return next.handle(event);
         }
@@ -16,7 +16,7 @@ export class StringFilter implements Filter  {
 @Injectable()
 export class JsonFilter implements Filter  {
 
-    intercept(event: PayloadApplicationEvent, next: Handler<any, any>): Observable<any> {
+    doFilter(event: PayloadApplicationEvent, next: Handler<any, any>): Observable<any> {
         if(isPlainObject(event.payload)){
             return next.handle(event);
         }

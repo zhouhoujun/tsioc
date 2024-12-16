@@ -1,7 +1,7 @@
 import { Abstract, getTokenOf, ProvdierOf, Token, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Handler } from '../Handler';
-import { Interceptor, InterceptorFn } from '../Interceptor';
+import { InterceptorFn } from '../Interceptor';
 
 
 /**
@@ -10,7 +10,7 @@ import { Interceptor, InterceptorFn } from '../Interceptor';
  * 处理器过滤器。
  */
 @Abstract()
-export abstract class Filter<TInput = any, TOutput = any, TContext = any> implements Interceptor<TInput, TOutput, TContext> {
+export abstract class Filter<TInput = any, TOutput = any, TContext = any> {
     /**
      * the method to implement interceptor filter.
      * @param input request input data.
@@ -18,7 +18,7 @@ export abstract class Filter<TInput = any, TOutput = any, TContext = any> implem
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    abstract intercept(input: TInput, next: Handler, context?: TContext): Observable<TOutput>;
+    abstract doFilter(input: TInput, next: Handler, context?: TContext): Observable<TOutput>;
 
     /**
      * is this equals to target or not
@@ -69,6 +69,7 @@ const FILTERS = 'FILTERS';
 export function getFiltersToken(type: TypeOf<any>, propertyKey?: string): Token<Filter[]> {
     return getTokenOf(type, FILTERS, propertyKey)
 }
+
 
 
 /**

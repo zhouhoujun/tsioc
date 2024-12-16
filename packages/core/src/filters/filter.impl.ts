@@ -55,7 +55,7 @@ export class DefaultFilterResolver implements FilterResolver {
         const resolver = this.injector.get(FilterResolver, null, InjectFlags.SkipSelf);
 
         resolver?.resolve(target)?.forEach(r => {
-            if (!(filters.indexOf(r) >= 0 || (r as Interceptor).equals ? filters.some(i => (r as Interceptor).equals!(i)) : false)) {
+            if (!(filters.indexOf(r) >= 0 || (r as Filter).equals ? filters.some(i => (r as Filter).equals!(i)) : false)) {
                 filters.push(r);
             }
         });

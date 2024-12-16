@@ -7,9 +7,9 @@ import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
 import { INTERCEPTORS_TOKEN, Interceptor, InterceptorFn, InterceptorLike, InterceptorResolver } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
 import { FILTERS_TOKEN, Filter, FilterLike, FilterResolver } from '../filters/filter';
-import { Backend, Handler, HandlerFn } from '../Handler';
+import { Backend, HandlerFn } from '../Handler';
 import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerOptions, HandlerService, TypeConfigableHandlerOptions } from './configable';
-import { composeChain } from './handler';
+import { composeInterceptors, composeFilters } from './handler';
 
 
 
@@ -175,8 +175,8 @@ export class ConfigableHandler<
             this.chain = this.compose();
         }
         const backend = this.getBackend();
-         
-        return this.getChain(input)(input,  isFunction(backend) ? backend : (req, ctx) => (backend as Backend).handle(req, ctx), context);
+
+        return this.getChain(input)(input, isFunction(backend) ? backend : (req, ctx) => (backend as Backend).handle(req, ctx), context);
     }
 
     /**
@@ -212,9 +212,12 @@ export class ConfigableHandler<
         const filters = this.filterResolver.resolve(type);
         const inteceptors = this.interceptorResolver.resolve(type);
         if (!(filters.length || inteceptors.length)) return null;
-        return composeChain([...filters, ...inteceptors, this.chain!])
-        // .reduceRight(
-        //     (next, inteceptor) => new InterceptorHandler(next, inteceptor), this.chain!);
+
+        const fns = [];
+        if(filters?.length) fns.push(composeFilters(filters));
+        if(inteceptors?.length) fns.push(...inteceptors);
+        if(this.chain) fns.push(this.chain);
+        return composeInterceptors(fns);
     }
 
 
@@ -241,8 +244,12 @@ export class ConfigableHandler<
 
         const filters = this.getFilters();
         const inteceptors = this.getInterceptors();
-        return  composeChain([...hdlFilters, ...hdlInteceptors, ...filters, ...inteceptors]);
-        //.reduceRight((next, inteceptor) => new InterceptorHandler(next, inteceptor), this.getBackend());
+        const fns = [];
+        if(hdlFilters?.length)  fns.push(composeFilters(hdlFilters));
+        if(hdlInteceptors?.length) fns.push(...hdlInteceptors);
+        if(filters?.length) fns.push(composeFilters(filters));
+        if(inteceptors?.length) fns.push(...inteceptors);
+        return composeInterceptors(fns);
     }
 
     protected getHandlerType(): Type {
@@ -254,7 +261,7 @@ export class ConfigableHandler<
      * get registered backend of the handler.
      * @returns 
      */
-    protected getBackend(): Backend<TInput, TOutput>| HandlerFn {
+    protected getBackend(): Backend<TInput, TOutput> | HandlerFn {
         if (!this.options.backend) throw new ArgumentExecption('backend is empty.');
         return isToken(this.options.backend) ? this.injector.get(this.options.backend, this.context) : this.options.backend;
     }
@@ -304,6 +311,8 @@ export class ConfigableHandler<
         this.options = null!;
     }
 }
+
+
 
 
 /**

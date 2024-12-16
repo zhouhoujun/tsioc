@@ -2,6 +2,7 @@ import { isFunction, isPromise } from '@tsdi/ioc';
 import { Observable, isObservable, of, from } from 'rxjs';
 import { Backend, Handler, HandlerFn } from '../Handler';
 import { InterceptorFn, InterceptorLike } from '../Interceptor';
+import { FilterFn, FilterLike } from '../filters/filter';
 
 
 /**
@@ -21,7 +22,7 @@ export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> im
             this.chain = this.compose();
         }
         return this.chain(input,
-            isFunction(this.backend) ? this.backend : (req, ctx) => (this.backend as Backend).handle(req, ctx),
+            isFunction(this.backend) ? this.backend : (req, ctx) => (this.backend as Backend).handle(req, ctx ?? context),
             context
         );
     }
@@ -31,8 +32,39 @@ export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> im
     }
 
     protected compose(): InterceptorFn<TInput, TOutput> {
-        return composeChain(isFunction(this.interceptors) ? this.interceptors() : this.interceptors)
+        return composeInterceptors(isFunction(this.interceptors) ? this.interceptors() : this.interceptors)
     }
+}
+
+
+/**
+ * compose chain filters.
+ * @param filters 
+ * @returns 
+ */
+export function composeFilters(filters: FilterLike[]): FilterFn {
+    return filters.reduceRight((next, filterFn) => chainedFilterFn(next as FilterFn, filterFn), chainEndFn as FilterFn) as FilterFn;
+}
+
+/**
+ * Constructs a `ChainedFilterFn` which wraps and invokes a functional interceptor.
+ */
+function chainedFilterFn(
+    chainTailLike: FilterLike, filterLike: FilterLike,
+): FilterFn {
+
+    const chainTailFn = isFunction(chainTailLike) ? chainTailLike : (req: any, handle: HandlerFn, context?: any) => chainTailLike.doFilter(req, {
+        handle,
+    }, context);
+    const interceptorFn = isFunction(filterLike) ? filterLike : (req: any, handle: HandlerFn, context?: any) => filterLike.doFilter(req, {
+        handle,
+    }, context);
+
+    return (initialRequest, finalHandlerFn) =>
+        interceptorFn(
+            initialRequest,
+            downstreamRequest => chainTailFn(downstreamRequest, finalHandlerFn)
+        )
 }
 
 /**
@@ -40,7 +72,7 @@ export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> im
  * @param interceptors 
  * @returns 
  */
-export function composeChain(interceptors: InterceptorLike[]): InterceptorFn {
+export function composeInterceptors(interceptors: InterceptorLike[]): InterceptorFn {
     return interceptors.reduceRight((next, interceptorFn) => chainedInterceptorFn(next as InterceptorFn, interceptorFn), chainEndFn as InterceptorFn) as InterceptorFn;
 }
 
