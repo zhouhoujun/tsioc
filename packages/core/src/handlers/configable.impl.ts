@@ -9,7 +9,7 @@ import { PipeTransform } from '../pipes/pipe';
 import { FILTERS_TOKEN, Filter, FilterLike, FilterResolver } from '../filters/filter';
 import { Backend, HandlerFn } from '../Handler';
 import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerOptions, HandlerService, TypeConfigableHandlerOptions } from './configable';
-import { composeInterceptors, composeFilters } from './handler';
+import { composeInterceptors, composeFilters, chainFactory } from './handler';
 
 
 
@@ -174,9 +174,7 @@ export class ConfigableHandler<
         if (!this.chain) {
             this.chain = this.compose();
         }
-        const backend = this.getBackend();
-
-        return this.getChain(input)(input, isFunction(backend) ? backend : (req, ctx) => (backend as Backend).handle(req, ctx), context);
+        return this.getChain(input)(input, this.getBackend(), context);
     }
 
     /**
@@ -214,10 +212,10 @@ export class ConfigableHandler<
         if (!(filters.length || inteceptors.length)) return null;
 
         const fns = [];
-        if(filters?.length) fns.push(composeFilters(filters));
-        if(inteceptors?.length) fns.push(...inteceptors);
-        if(this.chain) fns.push(this.chain);
-        return composeInterceptors(fns);
+        if (filters?.length) fns.push(composeFilters(filters));
+        if (inteceptors?.length) fns.push(...inteceptors);
+
+        return chainFactory(composeInterceptors(fns), this.chain!);
     }
 
 
@@ -245,10 +243,10 @@ export class ConfigableHandler<
         const filters = this.getFilters();
         const inteceptors = this.getInterceptors();
         const fns = [];
-        if(hdlFilters?.length)  fns.push(composeFilters(hdlFilters));
-        if(hdlInteceptors?.length) fns.push(...hdlInteceptors);
-        if(filters?.length) fns.push(composeFilters(filters));
-        if(inteceptors?.length) fns.push(...inteceptors);
+        if (hdlFilters?.length) fns.push(composeFilters(hdlFilters));
+        if (hdlInteceptors?.length) fns.push(...hdlInteceptors);
+        if (filters?.length) fns.push(composeFilters(filters));
+        if (inteceptors?.length) fns.push(...inteceptors);
         return composeInterceptors(fns);
     }
 
@@ -257,13 +255,18 @@ export class ConfigableHandler<
     }
 
 
+    private backendFn?: HandlerFn;
     /**
      * get registered backend of the handler.
      * @returns 
      */
-    protected getBackend(): Backend<TInput, TOutput> | HandlerFn {
+    protected getBackend(): HandlerFn {
         if (!this.options.backend) throw new ArgumentExecption('backend is empty.');
-        return isToken(this.options.backend) ? this.injector.get(this.options.backend, this.context) : this.options.backend;
+        if (!this.backendFn) {
+            const backend = isToken(this.options.backend) ? this.injector.get(this.options.backend, this.context) : this.options.backend;
+            this.backendFn = (isFunction(backend) ? backend : (req, ctx) => (backend as Backend).handle(req, ctx)) as HandlerFn;
+        }
+        return this.backendFn;
     }
 
     /**
@@ -304,6 +307,7 @@ export class ConfigableHandler<
         if (this.options.guardsToken) this.injector.unregister(this.options.guardsToken);
         if (this.options.filtersToken) this.injector.unregister(this.options.filtersToken);
         this.chain = undefined;
+        this.backendFn = undefined;
         this.chains?.clear();
         this._filterResolver = undefined;
         this._interceptorResolver = undefined;

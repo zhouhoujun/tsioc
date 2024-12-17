@@ -3,7 +3,8 @@ import {
     Filterable,
     Handler,
     Interceptable,
-    HandlerFn
+    HandlerFn,
+    HandleContext
 } from '../src';
 import { Injectable, Inject, lang, Abstract, Module, Static } from '@tsdi/ioc';
 import { Aspect, Around, Joinpoint } from '@tsdi/aop';
@@ -57,14 +58,14 @@ export class ClassSevice {
 
     state!: string;
 
-    @Filterable(String)
-    filter(intput: any, next: HandlerFn): Observable<any> {
-        return next(intput);
+    @Filterable(HandleContext)
+    filter(intput: any, next: HandlerFn, context?: any): Observable<any> {
+        return next(intput, context);
     }
 
-    @Interceptable(String)
-    intercept(intput: any, next: HandlerFn): Observable<any> {
-        return next(intput);
+    @Interceptable(HandleContext)
+    intercept(intput: any, next: HandlerFn, context?: any): Observable<any> {
+        return next(intput, context);
     }
 
     @Runner()

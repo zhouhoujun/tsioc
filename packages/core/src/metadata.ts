@@ -10,7 +10,7 @@ import {
     ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartupEvent,
     ApplicationStartedEvent, ApplicationStartEvent, PayloadApplicationEvent
 } from './events';
-import { FilterHandlerResolver, FilterResolver } from './filters/filter';
+import { FilterFn, FilterHandlerResolver, FilterResolver } from './filters/filter';
 import { InvocationOptions, InvocationFactoryResolver } from './invocation';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
@@ -514,6 +514,8 @@ export const Interceptable: Interceptable = createDecorator('Interceptable', {
     }
 });
 
+export type FilterDecorator = <T extends FilterFn>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void
+
 /**
  * Filterable
  */
@@ -524,7 +526,7 @@ export interface Filterable {
      * @param {Type} target filter target.
      * @param { Omit<InterceptMetadata, 'filter'>} option filter options.
      */
-    (target: Type | string, option?: Omit<InterceptMetadata, 'target'>): InterceptDecorator;
+    (target: Type | string, option?: Omit<InterceptMetadata, 'target'>): FilterDecorator;
 }
 
 

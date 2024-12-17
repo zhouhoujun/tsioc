@@ -11,20 +11,24 @@ import { FilterFn, FilterLike } from '../filters/filter';
 export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> implements Handler<TInput, TOutput, TContext> {
 
     private chain?: InterceptorFn<TInput, TOutput, TContext> | null;
+    private backend: HandlerFn;
 
     constructor(
-        private backend: Backend<TInput, TOutput, TContext> | HandlerFn,
+        backend: Backend<TInput, TOutput, TContext> | HandlerFn,
         private interceptors: InterceptorLike[] | (() => InterceptorLike[]) = []
-    ) { }
+    ) {
+        if (isFunction(backend)) {
+            this.backend = backend
+        } else {
+            this.backend = (req, ctx) => (backend as Backend).handle(req, ctx ?? context);
+        }
+    }
 
     handle(input: TInput, context?: TContext): Observable<TOutput> {
         if (!this.chain) {
             this.chain = this.compose();
         }
-        return this.chain(input,
-            isFunction(this.backend) ? this.backend : (req, ctx) => (this.backend as Backend).handle(req, ctx ?? context),
-            context
-        );
+        return this.chain(input, this.backend, context);
     }
 
     protected reset() {
@@ -56,15 +60,11 @@ function chainedFilterFn(
     const chainTailFn = isFunction(chainTailLike) ? chainTailLike : (req: any, handle: HandlerFn, context?: any) => chainTailLike.doFilter(req, {
         handle,
     }, context);
-    const interceptorFn = isFunction(filterLike) ? filterLike : (req: any, handle: HandlerFn, context?: any) => filterLike.doFilter(req, {
+    const filterFn = isFunction(filterLike) ? filterLike : (req: any, handle: HandlerFn, context?: any) => filterLike.doFilter(req, {
         handle,
     }, context);
 
-    return (initialRequest, finalHandlerFn) =>
-        interceptorFn(
-            initialRequest,
-            downstreamRequest => chainTailFn(downstreamRequest, finalHandlerFn)
-        )
+    return chainFactory(chainTailFn, filterFn)
 }
 
 /**
@@ -95,10 +95,15 @@ function chainedInterceptorFn(
         handle,
     }, context);
 
-    return (initialRequest, finalHandlerFn) =>
+    return chainFactory(chainTailFn, interceptorFn)
+}
+
+export function chainFactory(chainTailFn: InterceptorFn, interceptorFn: InterceptorFn): InterceptorFn {
+    return (initialRequest, finalHandlerFn, context?: any) =>
         interceptorFn(
             initialRequest,
-            downstreamRequest => chainTailFn(downstreamRequest, finalHandlerFn)
+            (downstreamRequest, ctx?: any) => chainTailFn(downstreamRequest, finalHandlerFn, ctx ?? context),
+            context
         )
 }
 
