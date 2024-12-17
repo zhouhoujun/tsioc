@@ -1,5 +1,5 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
-import { Type, ClassType, EMPTY } from './types';
+import { Type, ClassType } from './types';
 import { ClassProvider, ExistingProvider, FactoryProvider, ModuleType, ProviderType, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
@@ -351,7 +351,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
         options: ProviderType[] | Injector | { providers: ProviderType[], parent?: Injector, scope?: InjectorScope } | undefined,
         parent?: Injector | InjectorScope, scope?: InjectorScope): Injector {
         if (!options) {
-            options = EMPTY
+            options = []
         }
         return isArray(options) ? INJECT_IMPL.create(options, parent as Injector, scope) :
             (isInjector(options) ? INJECT_IMPL.create(undefined, options, parent as InjectorScope) : INJECT_IMPL.create(options.providers, options.parent, options.scope))

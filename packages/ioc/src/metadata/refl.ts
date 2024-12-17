@@ -1,6 +1,6 @@
 import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
-import { AnnotationType, Type, EMPTY_OBJ } from '../types';
+import { AnnotationType, Type } from '../types';
 import { cleanObj, getParentClass } from '../utils/lang';
 import { isBoolean, isFunction } from '../utils/chk';
 import { runChain, Handle } from '../handle';
@@ -258,7 +258,7 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
         }
         if (params) {
             const idx = ctx.define.parameterIndex || 0;
-            const desgmeta = params[idx] || EMPTY_OBJ;
+            const desgmeta = params[idx] || {};
             Object.assign(meta, desgmeta);
             params.splice(idx, 1, meta)
         }

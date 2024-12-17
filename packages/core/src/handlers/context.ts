@@ -1,4 +1,4 @@
-import { DefaultInvocationContext, EMPTY, EMPTY_OBJ, Injector, InvokeArguments, OperationArgumentResolver, getClass } from '@tsdi/ioc';
+import { DefaultInvocationContext, Injector, InvokeArguments, OperationArgumentResolver, getClass } from '@tsdi/ioc';
 import { getResolverToken } from './resolver';
 import { BehaviorSubject, Observable, Subject, filter, takeUntil } from 'rxjs';
 
@@ -16,7 +16,7 @@ export class HandleContext<TInput = any> extends DefaultInvocationContext<TInput
     readonly bootstrap: boolean;
     constructor(
         injector: Injector,
-        options: HandleContextOpts<TInput> = EMPTY_OBJ) {
+        options: HandleContextOpts<TInput> = {}) {
         super(injector, options);
         this.bootstrap = options.bootstrap === true;
         this.setValue(getClass(this), this);
@@ -38,11 +38,11 @@ export class HandleContext<TInput = any> extends DefaultInvocationContext<TInput
 
     protected override getArgumentResolver(): OperationArgumentResolver<any>[] {
         if (!this.args) return this.playloadDefaultResolvers();
-        return [...this.injector.get(getResolverToken(this.args), EMPTY), ...this.playloadDefaultResolvers()];
+        return [...this.injector.get(getResolverToken(this.args), []), ...this.playloadDefaultResolvers()];
     }
 
     protected playloadDefaultResolvers(): OperationArgumentResolver<any>[] {
-        return EMPTY
+        return []
     }
 
     protected override clear(): void {

@@ -1,6 +1,6 @@
 import {
     isUndefined, Type, createDecorator, ProviderType, InjectableMetadata, PropertyMetadata, ActionTypes, InjectFlags,
-    ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments, EMPTY,
+    ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
     isString, Parameter, ProviderMetadata, Decors, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
     ModuleType, ClassType, MutilProvider, ReflectiveRef, Class, Injector,
     ProvidedInMetadata
@@ -268,7 +268,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                 const typeRef = ctx.class;
                 if (typeRef.getAnnotation().static === false && !typeRef.getAnnotation().singleton) return next();
 
-                const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? EMPTY;
+                const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? [];
                 const injector = ctx.injector;
                 const factory = injector.get(InvocationFactoryResolver).resolve(typeRef);
                 const currMulticaster = injector.get(ApplicationEventMulticaster);
@@ -295,7 +295,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                     || typeRef.getAnnotation().singleton
                 )) return next();
 
-                const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? EMPTY;
+                const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? [];
                 const injector = ctx.injector;
                 const factory = injector.get(InvocationFactoryResolver).resolve(typeRef);
                 const currMulticaster = injector.get(ApplicationEventMulticaster);

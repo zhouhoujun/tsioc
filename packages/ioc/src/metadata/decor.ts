@@ -1,4 +1,4 @@
-import { Type, ClassType, EMPTY, EMPTY_OBJ } from '../types';
+import { Type, ClassType } from '../types';
 import { isArray, isString } from '../utils/chk';
 import { Token, getToken, InjectFlags } from '../tokens';
 import {
@@ -46,8 +46,8 @@ export interface Module<T extends ModuleMetadata> {
  * @returns {Module<T>}
  */
 export function createModuleDecorator<T extends ModuleMetadata>(name: string, options?: DecoratorOption<T>): Module<T> {
-    options = options || EMPTY_OBJ;
-    const hd = options.def?.class ?? EMPTY;
+    options = options ?? {};
+    const hd = options.def?.class ?? [];
     const append = options.appendProps;
     return createDecorator<T>(name, {
         ...options,

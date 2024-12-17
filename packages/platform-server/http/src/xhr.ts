@@ -1,5 +1,5 @@
 /* eslint-disable no-useless-escape */
-import { Module, EMPTY_OBJ, Injectable, Injector, ProviderType } from '@tsdi/ioc';
+import { Module, Injectable, Injector, ProviderType } from '@tsdi/ioc';
 import { DOCUMENT, PLATFORM_ID, PLATFORM_SERVER_ID } from '@tsdi/common';
 import { HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, XhrFactory } from '@tsdi/common/http';
 import { XMLHttpRequest2 } from './xhr.request';

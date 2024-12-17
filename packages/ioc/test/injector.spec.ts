@@ -1,4 +1,4 @@
-import { EMPTY, Injectable, InjectFlags, Injector, isNumber, ReflectiveFactory, tokenId } from '@tsdi/ioc';
+import { Injectable, InjectFlags, Injector, isNumber, ReflectiveFactory, tokenId } from '@tsdi/ioc';
 import expect = require('expect');
 import { CollegeStudent, MiddleSchoolStudent, Student } from './debug';
 
@@ -125,15 +125,15 @@ describe('Injector test', () => {
 
         it('resolve self flags', () => {
             const subinj = Injector.create(inj);
-            expect(subinj.get(Students, EMPTY, InjectFlags.Self)).toEqual(EMPTY);
+            expect(subinj.get(Students, [], InjectFlags.Self)).toEqual([]);
             expect(subinj.get(Students, null, InjectFlags.Self)).toBeNull();
             subinj.destroy();
         })
 
         it('resolve skip self flags', () => {
             const subinj = Injector.create(inj);
-            const value = subinj.get(Students, EMPTY, InjectFlags.SkipSelf);
-            expect(value).not.toEqual(EMPTY);
+            const value = subinj.get(Students, [], InjectFlags.SkipSelf);
+            expect(value).not.toEqual([]);
             expect(Array.isArray(value)).toBeTruthy();
             expect(value[0]).toBeInstanceOf(CollegeStudent);
             expect(value[1]).toBeInstanceOf(MiddleSchoolStudent);

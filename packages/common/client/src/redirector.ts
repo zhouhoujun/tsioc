@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { EMPTY_OBJ, Injectable, isFunction, TypeExecption } from '@tsdi/ioc';
+import { Injectable, TypeExecption } from '@tsdi/ioc';
 import { HeaderMappings, UrlRequest, RequestMethod, IHeaders, HeadersLike, HeaderAccess, Header } from '@tsdi/common';
 import { BadRequestExecption, Redirector } from '@tsdi/common/transport';
 import { Observable, Observer, Subscription } from 'rxjs';
@@ -168,7 +168,7 @@ export class RedirectState {
         follow?: number;
         counter?: number;
         redirect?: 'manual' | 'error' | 'follow' | '';
-    } = EMPTY_OBJ) {
+    } = {}) {
         this.follow = init.follow ?? 20;
         this.counter = init.counter ?? 0;
         this.redirect = init.redirect ?? 'follow';

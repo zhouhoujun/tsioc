@@ -4,16 +4,6 @@
 export type Modules<T extends Type = Type> = T | T[] | Record<string, T | Object>;
 
 /**
- * empty array.
- */
-export const EMPTY: any[] = [];
-
-/**
- * empty object.
- */
-export const EMPTY_OBJ: Record<string, any> = {};
-
-/**
  * object map. 
  * 
  * @deprecated use {@link Record} instead.

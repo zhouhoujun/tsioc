@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Type, isString, Injector, EMPTY, isNil, isType, Static, isFunction, Inject, ROOT_INJECTOR } from '@tsdi/ioc';
+import { Type, isString, Injector, isNil, isType, Static, isFunction, Inject, ROOT_INJECTOR } from '@tsdi/ioc';
 import { Startup, PipeTransform, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS, ModuleLoader, Dispose, HandleContext } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS, toPrimitType } from '@tsdi/repository';
@@ -127,7 +127,7 @@ export class TypeormAdapter {
             await options.initDb(dataSource)
         }
 
-        const entities = options.entities ?? EMPTY;
+        const entities = options.entities ?? [];
         const resovler = createModelResolver({
             isModel: (type) => entities.indexOf(type) >= 0,
             getPropertyMeta: (type) => this.getModelPropertyMetadata(type),

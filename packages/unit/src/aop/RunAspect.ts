@@ -1,4 +1,3 @@
-import { EMPTY_OBJ } from '@tsdi/ioc';
 import { LogAspect } from '@tsdi/logger';
 import { Aspect, Around, Joinpoint, JoinpointState, AfterThrowing } from '@tsdi/aop';
 
@@ -60,7 +59,7 @@ export class RunAspect extends LogAspect {
     @Around('execution(*.runCase)')
     logTestCase(joinPoint: Joinpoint) {
         const desc = joinPoint.args?.[0] as ICaseDescribe;
-        const suiteDesc = joinPoint.args && joinPoint.args.length > 1 ? joinPoint.args[1] : EMPTY_OBJ;
+        const suiteDesc = joinPoint.args && joinPoint.args.length > 1 ? joinPoint.args[1] : {};
         const runner = joinPoint.target as SuiteRunner;
         switch (joinPoint.state) {
             case JoinpointState.Before:

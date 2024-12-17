@@ -1,4 +1,4 @@
-import { ClassType, Modules, EMPTY_OBJ, Type } from './types';
+import { ClassType, Modules, Type } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Injector, OptionFlags } from './injector';
 import { isPlainObject } from './utils/obj';
@@ -278,7 +278,7 @@ export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: bool
     isClass?: (type: Function) => boolean,
     onRegistered?: (injector: Injector) => void
 }): StaticProvider<T> {
-    const { isClass, ...options } = (isBoolean(multi) ? { multi } : (multi ?? EMPTY_OBJ)) as {
+    const { isClass, ...options } = (isBoolean(multi) ? { multi } : (multi ?? {})) as {
         multi?: boolean
         multiOrder?: number,
         isClass?: (type: Function) => boolean,
@@ -370,7 +370,7 @@ export function toFactory<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boole
     isClass?: (type: Function) => boolean
 }): FactoryProvider<T> {
 
-    const { init, isClass, ...opts } = (isBoolean(multi) ? { multi } : (multi ?? EMPTY_OBJ)) as {
+    const { init, isClass, ...opts } = (isBoolean(multi) ? { multi } : (multi ?? {})) as {
         multi?: boolean,
         init?: (val: T, injector: Injector) => T,
         onRegistered?: (injector: Injector) => void,

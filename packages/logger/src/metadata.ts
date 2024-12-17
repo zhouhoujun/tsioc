@@ -1,5 +1,5 @@
 import {
-    TypeMetadata, createDecorator, EMPTY_OBJ, OperationArgumentResolver, Type, isString,
+    TypeMetadata, createDecorator, OperationArgumentResolver, Type, isString,
     lang, PropParamDecorator, ArgumentExecption, Decors, ActionTypes, isDefined
 } from '@tsdi/ioc';
 import { Level } from './Level';
@@ -210,7 +210,7 @@ export const InjectLog: Log<LogMetadata> = createDecorator<LogMetadata>('InjectL
                 return { message, ...logname }
             }
         }
-        return EMPTY_OBJ
+        return {}
     }
 });
 

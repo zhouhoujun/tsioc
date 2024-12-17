@@ -1,4 +1,4 @@
-import { Type, ClassType, EMPTY, EMPTY_OBJ } from '../types';
+import { Type, ClassType } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getClassName, getClassChain } from '../utils/lang';
 import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getClass } from '../utils/chk';
@@ -46,7 +46,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     constructor(
         injector: Injector,
-        private options: TargetInvokeArguments<T> = EMPTY_OBJ,
+        private options: TargetInvokeArguments<T> = {},
         private injectorScope: Type | 'static' = 'static'
     ) {
         super();
@@ -91,7 +91,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * @returns 
      */
     protected getArgumentResolver(): OperationArgumentResolver[] {
-        return EMPTY;
+        return [];
     }
 
     private _resolvers?: OperationArgumentResolver[] | null;
@@ -102,11 +102,11 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         if (!this._resolvers && !this.destroyed) {
             this._resolvers = [
                 ...this.getArgumentResolver(),
-                ...(this.options.resolvers ?? EMPTY).map(r => isFunction(r) ? r(this.injector) : r),
+                ...this.options.resolvers?.map(r => isFunction(r) ? (r as Function)(this.injector) : r) ?? [],
                 ...this.getDefaultResolvers()
             ];
         }
-        return this._resolvers ?? EMPTY;
+        return this._resolvers ?? [];
     }
 
     protected getDefaultResolvers(): OperationArgumentResolver[] {
@@ -398,7 +398,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
 }
 
 
-INVOCATION_CONTEXT_IMPL.create = <TArg>(parent: Injector | InvocationContext, options?: TargetInvokeArguments<TArg>, scope?:  Type | 'static') => {
+INVOCATION_CONTEXT_IMPL.create = <TArg>(parent: Injector | InvocationContext, options?: TargetInvokeArguments<TArg>, scope?: Type | 'static') => {
     if (isInjector(parent)) {
         return new DefaultInvocationContext(parent, options, scope)
     } else {

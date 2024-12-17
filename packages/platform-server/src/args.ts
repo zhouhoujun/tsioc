@@ -1,5 +1,5 @@
 import { ApplicationArguments } from '@tsdi/core';
-import { isString, EMPTY } from '@tsdi/ioc';
+import { isString } from '@tsdi/ioc';
 
 
 const isArg = /^--/;
@@ -27,7 +27,7 @@ export class ServerApplicationArguments extends ApplicationArguments {
     }
 
     get cmds() {
-        return this._cmds || EMPTY
+        return this._cmds || []
     }
 
     get signls(): string[] {
@@ -62,7 +62,7 @@ export class ServerApplicationArguments extends ApplicationArguments {
 
     protected tryGetSignls() {
         const sigs = this.env.signls || this._args.signls;
-        return sigs ? (isString(sigs) ? sigs.split(',') : signls) : EMPTY
+        return sigs ? (isString(sigs) ? sigs.split(',') : signls) : []
     }
 }
 

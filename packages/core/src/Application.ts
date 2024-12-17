@@ -1,4 +1,4 @@
-import { isFunction, Type, ClassType, EMPTY, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, ReflectiveFactory } from '@tsdi/ioc';
+import { isFunction, Type, ClassType, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, ReflectiveFactory } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEPENDENCE_PROVIDERS, } from './providers';
 import { ModuleLoader } from './ModuleLoader';
@@ -55,7 +55,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
     }
 
     protected getRootDependencies(): ModuleType[] {
-        return EMPTY;
+        return [];
     }
 
     protected getRootDependenceProviders(): ProviderType[] {
@@ -63,7 +63,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
     }
 
     protected getRootDefaultProviders(): ProviderType[] {
-        return EMPTY;
+        return [];
     }
 
     /**
@@ -135,7 +135,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
     }
 
     get loadTypes(): Type[] {
-        return this._loads ?? EMPTY
+        return this._loads ?? []
     }
 
     protected getDeps(): Modules[] {
@@ -154,9 +154,9 @@ export class Application<T = any, TArg = ApplicationArguments> {
             this.loader = new DefaultModuleLoader();
         }
         option.platformDeps && container.use(...option.platformDeps);
-        option.depProviders = [...this.getRootDependenceProviders(), ...option.depProviders || EMPTY];
-        option.deps = [...this.getRootDependencies(), ...option.deps || EMPTY]
-        option.providers = [...this.getRootDefaultProviders(), ...option.providers || EMPTY];
+        option.depProviders = [...this.getRootDependenceProviders(), ...option.depProviders || []];
+        option.deps = [...this.getRootDependencies(), ...option.deps || []]
+        option.providers = [...this.getRootDefaultProviders(), ...option.providers || []];
         return this.createModuleRef(container, option);
     }
 

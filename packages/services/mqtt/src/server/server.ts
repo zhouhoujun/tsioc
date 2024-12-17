@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
+import { Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
 import { PatternFormatter } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { MicroRouters, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
@@ -28,7 +28,7 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
 
     protected async connect(): Promise<any> {
 
-        const opts = this.getOptions().serverOpts ?? EMPTY_OBJ;
+        const opts = this.getOptions().serverOpts ?? {};
 
         this.mqtt = opts.url ? connect(opts.url, opts) : connect(opts);
         const defer = lang.defer();

@@ -1,4 +1,4 @@
-import { Abstract, EMPTY, isArray, isDefined, Type, ClassType, Parameter, OperationInvoker } from '@tsdi/ioc';
+import { Abstract, isArray, isDefined, Type, ClassType, Parameter, OperationInvoker } from '@tsdi/ioc';
 import { ModelArgumentResolver, HandleContext } from '@tsdi/core';
 import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldExecption, missingPropExecption, ModelFieldResolver, MODEL_FIELD_RESOLVERS } from './field.resolver';
 
@@ -79,7 +79,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
                 (p, ctx, fields) => p.nullable === true
                     || (fields && isDefined(fields[p.name] ?? p.default))
                     || ((ctx as any).method?.toUpperCase() !== 'PUT' && p.primary === true),
-                ...this.resolvers ?? EMPTY,
+                ...this.resolvers ?? [],
                 ...MODEL_FIELD_RESOLVERS)
         }
         return this._resolver
@@ -121,7 +121,7 @@ class ModelResolver<C = any> extends AbstractModelArgumentResolver<C> {
     }
 
     get resolvers(): ModelFieldResolver<C>[] {
-        return this.option.fieldResolvers ?? EMPTY
+        return this.option.fieldResolvers ?? []
     }
     hasModel(type: Type<any>): boolean {
         return this.option.isModel(type)

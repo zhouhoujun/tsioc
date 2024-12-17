@@ -1,4 +1,4 @@
-import { Abstract, isFunction, isToken, isObject, isArray, isNil, EMPTY_OBJ } from '@tsdi/ioc';
+import { Abstract, isFunction, isToken, isObject, isArray, isNil } from '@tsdi/ioc';
 import { Aspect, Joinpoint, JoinpointState, Pointcut } from '@tsdi/aop';
 import { Logger } from './logger';
 import { LogMetadata } from './metadata';
@@ -83,7 +83,7 @@ export abstract class LogAspect extends LogProcess {
     private _formater: JoinpointFormater | undefined;
     getFormater() {
         if (!this._formater) {
-            const config = this.mangers.getConfigure() || (EMPTY_OBJ as LogConfigure);
+            const config = this.mangers.getConfigure() || ({} as LogConfigure);
             let formater: JoinpointFormater | undefined;
             const format = config.format || JoinpointFormater;
             if (isToken(format)) {

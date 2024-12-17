@@ -1,6 +1,6 @@
 import {
     isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, refl, ProvdierOf, getClassName,
-    StaticProviders, ReflectiveFactory, isArray, ArgumentExecption, ReflectiveRef, StaticProvider, EMPTY
+    StaticProviders, ReflectiveFactory, isArray, ArgumentExecption, ReflectiveRef, StaticProvider
 } from '@tsdi/ioc';
 import { finalize, forkJoin, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { ApplicationRunners, RunnableFactory, RunnableRef } from '../ApplicationRunners';
@@ -164,7 +164,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
     }
 
     getRefs<T>(type: Type<T>): ReflectiveRef<T>[] {
-        return this._refs.get(type) ?? EMPTY;
+        return this._refs.get(type) ?? [];
     }
 
     run(type?: Type | Type[]): Promise<void> {
@@ -208,7 +208,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         } else if (isArray(context.args)) {
             handlers = [];
             context.args.forEach(type => {
-                handlers = handlers!.concat(this._maps.get(type) ?? EMPTY);
+                handlers = handlers!.concat(this._maps.get(type) ?? []);
             });
         } else {
             return throwError(() => new ArgumentExecption('input type unknow'))

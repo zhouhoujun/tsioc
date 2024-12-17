@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, EMPTY_OBJ, Execption, InvocationContext, createContext, isNil, isString } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, Execption, InvocationContext, createContext, isNil, isString } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
 import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, PatternFormatter } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
@@ -275,7 +275,7 @@ export abstract class AbstractClient<
             )
     }
 
-    protected request(first: Pattern | TRequest, options: TReqOptions = EMPTY_OBJ as any): Observable<any> {
+    protected request(first: Pattern | TRequest, options: TReqOptions = {} as any): Observable<any> {
         const req = this.buildRequest(first, options);
 
         // Start with an Observable.of() the initial request, and run the handler (which

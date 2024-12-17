@@ -1,4 +1,4 @@
-import { Class, EMPTY_OBJ, Injectable, InvocationContext, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, createContext, getClass, isDefined, isFunction, isNumber, isPromise, isString, lang } from '@tsdi/ioc';
+import { Class, Injectable, InvocationContext, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, createContext, getClass, isDefined, isFunction, isNumber, isPromise, isString, lang } from '@tsdi/ioc';
 import { Observable, from, isObservable, lastValueFrom, of } from 'rxjs';
 import { HandlerFn } from '../Handler';
 import { InvocationOptions, Respond, TypedRespond, InvocationFactory, InvocationFactoryResolver, InvocationHandler, } from '../invocation';
@@ -138,7 +138,7 @@ export class InvocationFactorympl<T = any> extends InvocationFactory<T> {
     }
 
     create<TArg>(propertyKey: string, options?: InvocationOptions<TArg>): InvocationHandler {
-        return new InvocationHandlerImpl(this.typeRef.createInvoker<TArg>(propertyKey, options), options ?? EMPTY_OBJ as any);
+        return new InvocationHandlerImpl(this.typeRef.createInvoker<TArg>(propertyKey, options), options ?? {} as any);
     }
 
 }

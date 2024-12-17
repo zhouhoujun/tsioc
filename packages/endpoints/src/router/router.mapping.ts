@@ -1,12 +1,12 @@
 import {
-    EMPTY, ModuleRef, isFunction, lang, OnDestroy, promiseOf, Injector,
+    ModuleRef, isFunction, lang, OnDestroy, promiseOf, Injector,
     Execption, isArray, isPromise, isObservable, isBoolean
 } from '@tsdi/ioc';
 import {
     Handler, CanHandle, getGuardsToken, getInterceptorsToken,
     getFiltersToken, setHandlerOptions, createHandler
 } from '@tsdi/core';
-import { Pattern, PatternFormatter, ProtocolType, joinPath, normalize } from '@tsdi/common';
+import { Pattern, PatternFormatter, Protocols, joinPath, normalize } from '@tsdi/common';
 import { NotFoundExecption, BadRequestExecption } from '@tsdi/common/transport';
 import { defer, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { RequestHandler } from '../RequestHandler';
@@ -33,7 +33,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
         private injector: Injector,
         readonly matcher: RouteMatcher,
         readonly formatter: PatternFormatter,
-        readonly protocol: ProtocolType | null = null,
+        readonly protocol: Protocols | null = null,
         public prefix: string = '',
         routes?: Routes,
         protected micro = false) {
@@ -401,7 +401,7 @@ export class MappingRoute implements Middleware, RequestHandler {
 
     protected canActive(ctx: RequestContext) {
         if (!this._guards) {
-            this._guards = this.route.guards?.map(g => isFunction(g) ? ctx.resolve(g) : g) ?? EMPTY
+            this._guards = this.route.guards?.map(g => isFunction(g) ? ctx.resolve(g) : g) ?? []
         }
         if (!this._guards.length) return true;
         return lang.some(this._guards.map(guard => () => promiseOf(guard.canHandle(ctx))), vaild => vaild === false)

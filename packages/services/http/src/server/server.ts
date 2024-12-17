@@ -1,4 +1,4 @@
-import { Inject, Injectable, isFunction, lang, EMPTY_OBJ, promisify, isNumber, isString, ModuleRef, ProvdierOf, ArgumentExecption } from '@tsdi/ioc';
+import { Inject, Injectable, isFunction, lang, promisify, isNumber, isString, ModuleRef, ProvdierOf, ArgumentExecption } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, ModuleLoader } from '@tsdi/core';
 import { ListenService } from '@tsdi/common';
 import { InternalServerExecption } from '@tsdi/common/transport';
@@ -109,7 +109,7 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
             await loader.register(injector, opts.controllers);
         }
 
-        const option = opts.serverOpts ?? EMPTY_OBJ;
+        const option = opts.serverOpts ?? {};
         const isSecure = this.isSecure;
         if (!opts.protocol) {
             opts.protocol = this._secure ? 'https' : 'http';

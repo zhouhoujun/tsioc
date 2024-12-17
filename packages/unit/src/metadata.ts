@@ -1,4 +1,4 @@
-import { ActionTypes, ClassMetadata, createDecorator, DecoratorOption, EMPTY_OBJ, TypeDef } from '@tsdi/ioc';
+import { ActionTypes, ClassMetadata, createDecorator, DecoratorOption, TypeDef } from '@tsdi/ioc';
 import { RunnableRef } from '@tsdi/core';
 import { SuiteRunner } from './runner/SuiteRunner';
 
@@ -80,7 +80,7 @@ export interface TestDecorOption<T> extends DecoratorOption<T> {
  * @returns {TestDecorator<T>}
  */
 export function createTestDecorator<T extends TestMetadata>(name: string, options?: TestDecorOption<T>): TestDecorator<T> {
-    options = options || EMPTY_OBJ;
+    options = options ?? {};
     return createDecorator<T>(name, {
         props: (timeout: number, setp?: number) => ({ timeout, setp } as TestMetadata as T),
         ...options

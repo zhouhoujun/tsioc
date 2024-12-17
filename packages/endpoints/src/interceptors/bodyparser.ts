@@ -1,5 +1,5 @@
 /* eslint-disable no-control-regex */
-import { Abstract, EMPTY_OBJ, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
+import { Abstract, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
 import { Handler, Interceptor, InvalidJsonException } from '@tsdi/core';
 import { BadRequestExecption, UnsupportedMediaTypeExecption, IReadableStream, MimeTypes } from '@tsdi/common/transport';
 import { RequestContext, Middleware } from '@tsdi/endpoints';
@@ -72,10 +72,10 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
     intercept(input: RequestContext, next: Handler<RequestContext, any>): Observable<any> {
         if (!isUndefined(input.request.body) && !input.streamAdapter.isReadable(input.request.body)) return next.handle(input);
         if (!input.mimeAdapter) {
-            if (input.streamAdapter.isReadable(input.request.payload) || input.streamAdapter.isReadable(input.request)) {
+            if (input.streamAdapter.isReadable(input.request.body) || input.streamAdapter.isReadable(input.request)) {
                 return from(this.parseJson(input)).pipe(
                     mergeMap(res => {
-                        input.request.body = input.request.payload = res.body ?? {};
+                        input.request.body = input.request.body = res.body ?? {};
                         if (isUndefined(input.request.rawBody)) input.request.rawBody = res.raw;
                         return next.handle(input)
                     })
@@ -86,7 +86,7 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
         return from(this.parseBody(input))
             .pipe(
                 mergeMap(res => {
-                    input.request.body = input.request.payload = res.body ?? {};
+                    input.request.body = input.request.body = res.body ?? {};
                     if (isUndefined(input.request.rawBody)) input.request.rawBody = res.raw;
                     return next.handle(input)
                 })
@@ -96,7 +96,7 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
         if (!isUndefined(ctx.request.body) && !ctx.streamAdapter.isReadable(ctx.request.body)) return await next();
         if (!ctx.mimeAdapter) {
-            if (ctx.streamAdapter.isReadable(ctx.request.payload) || ctx.streamAdapter.isReadable(ctx.request)) {
+            if (ctx.streamAdapter.isReadable(ctx.request.body) || ctx.streamAdapter.isReadable(ctx.request)) {
                 const res = await this.parseJson(ctx);
                 ctx.request.body = res.body ?? {};
                 if (isUndefined(ctx.request.rawBody)) ctx.request.rawBody = res.raw;
@@ -124,7 +124,7 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
             return this.parseText(context)
         }
 
-        return Promise.resolve(EMPTY_OBJ)
+        return Promise.resolve({})
     }
 
     protected async parseJson(context: RequestContext): Promise<{ raw?: any, body?: any }> {
@@ -162,10 +162,10 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
             case 'deflate':
                 break
             case 'identity':
-                if (ctx.streamAdapter.isReadable(ctx.request.payload)) {
-                    return ctx.request.payload
-                } else if (ctx.streamAdapter.isStream(ctx.request.payload)) {
-                    return ctx.request.payload.pipe(ctx.streamAdapter.createPassThrough());
+                if (ctx.streamAdapter.isReadable(ctx.request.body)) {
+                    return ctx.request.body
+                } else if (ctx.streamAdapter.isStream(ctx.request.body)) {
+                    return ctx.request.body.pipe(ctx.streamAdapter.createPassThrough());
                 }
 
                 if (ctx.streamAdapter.isReadable(ctx.request)) {
@@ -178,8 +178,8 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
                 throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
         }
 
-        if (ctx.streamAdapter.isReadable(ctx.request.payload) || ctx.streamAdapter.isStream(ctx.request.payload)) {
-            return ctx.request.payload.pipe(ctx.streamAdapter.createGunzip());
+        if (ctx.streamAdapter.isReadable(ctx.request.body) || ctx.streamAdapter.isStream(ctx.request.body)) {
+            return ctx.request.body.pipe(ctx.streamAdapter.createGunzip());
         }
         if (ctx.streamAdapter.isReadable(ctx.request) || ctx.streamAdapter.isStream(ctx.request)) {
             return ctx.request.pipe(ctx.streamAdapter.createGunzip());
@@ -273,6 +273,6 @@ const defaults = {
         limit: '1mb'
     },
     enableTypes: ['json', 'form'],
-    extendTypes: EMPTY_OBJ
+    extendTypes: {}
 };
 

@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { Type, ClassType, EMPTY } from '../types';
+import { Type, ClassType } from '../types';
 import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { isPlainObject, isTypeObject } from '../utils/obj';
@@ -58,7 +58,7 @@ export class DefaultInjector extends Injector {
         return this._readyDefer.promise
     }
 
-    constructor(providers: ProviderType[] = EMPTY, readonly parent?: Injector, readonly scope?: InjectorScope) {
+    constructor(providers: ProviderType[] = [], readonly parent?: Injector, readonly scope?: InjectorScope) {
         super();
         this.records = new Map();
         if (parent) {
@@ -315,7 +315,7 @@ export class DefaultInjector extends Injector {
                 this.records.set(provider.provide, multiPdr = {
                     fy: FnType.Fac,
                     fn: MUTIL,
-                    value: EMPTY,
+                    value: Empty,
                     deps: []
                 })
             }
@@ -475,7 +475,7 @@ export class DefaultInjector extends Injector {
             const arg0 = args[0];
             if (arg0 instanceof InvocationContext) {
                 context = arg0;
-                providers = EMPTY
+                providers = []
             } else if (isArray(arg0)) {
                 providers = arg0
             } else if (isPlainObject(arg0) && !arg0.provide) {
@@ -830,13 +830,15 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
         return value
     } catch (e) {
         if (rd && rd.value === CIRCULAR) {
-            rd.value = EMPTY
+            rd.value = Empty;
         }
         throw e
     }
 }
 
 const THROW_FLAGE = {};
+
+const Empty: any[] = [];
 
 /**
  * resolve token.
@@ -851,7 +853,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
         if (value === CIRCULAR) {
             throw new CircularDependencyExecption()
         }
-        if (isDefined(rd.value) && value !== EMPTY && (rd.stic || !(flags & InjectFlags.Resolve))) return rd.value;
+        if (isDefined(rd.value) && value !== Empty && (rd.stic || !(flags & InjectFlags.Resolve))) return rd.value;
         const deps = [];
         if (rd.fn === MUTIL) {
             if (parent && !(flags & InjectFlags.Self)) {
@@ -890,7 +892,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
             case FnType.Cotr:
                 return new (rd.fn as ClassType)(...deps)
             case FnType.Fac:
-                if (value === EMPTY) {
+                if (value === Empty) {
                     return rd.value = value = rd.fn?.(...deps)
                 }
                 return rd.fn?.(...deps)

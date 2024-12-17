@@ -1,4 +1,4 @@
-import { Abstract, EMPTY, Injectable, isNil, isString } from '@tsdi/ioc';
+import { Abstract, Injectable, isNil, isString } from '@tsdi/ioc';
 import { InvalidJsonException } from '@tsdi/core';
 import { HeaderAdapter, HeadersLike, Packet, RequestParams, isArrayBuffer, isBlob, isFormData } from '@tsdi/common';
 import { DecodeHandler, EncodeHandler } from '@tsdi/common/codings';
@@ -224,7 +224,7 @@ export class PacketCodingsHandlers {
 
 
     private serializeHeader(packet: Packet<any>, ignores?: string[]): Buffer {
-        const headers = packet.serialize(['payload', ...ignores ?? EMPTY]);
+        const headers = packet.serialize(['payload', ...ignores ?? []]);
         return Buffer.from(JSON.stringify(headers));
     }
 

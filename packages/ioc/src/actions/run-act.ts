@@ -1,4 +1,4 @@
-import { Type, EMPTY } from '../types';
+import { Type } from '../types';
 import { isDefined } from '../utils/chk';
 import { runChain } from '../handle';
 import { ActionSetup } from '../action';
@@ -55,7 +55,7 @@ export const CtorArgsAction = function (ctx: RuntimeContext, next: () => void): 
  * @extends {IocRuntimeAction}
  */
 export const CreateInstanceAction = function (ctx: RuntimeContext, next: () => void): void {
-    ctx.instance = new ctx.type(...ctx.args || EMPTY);
+    ctx.instance = new ctx.type(...ctx.args || []);
     next()
 };
 

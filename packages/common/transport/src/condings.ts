@@ -1,4 +1,4 @@
-// import { EMPTY, Injector, tokenId, toProvider } from '@tsdi/ioc';
+// import { Injector, tokenId, toProvider } from '@tsdi/ioc';
 // import { CanHandle, ExecptionHandlerFilter, Interceptor, createHandler } from '@tsdi/core';
 // import { Packet } from '@tsdi/common';
 // import {
@@ -58,7 +58,7 @@
 //             backend: EncodingsBackend,
 //             ...configable,
 //             providers: (adapter ?? encodingsAdapter) ? [
-//                 ...configable?.providers ?? EMPTY,
+//                 ...configable?.providers ?? [],
 //                 toProvider(CodingsAapter, adapter ?? encodingsAdapter!)
 //             ] : configable?.providers
 //         });
@@ -113,7 +113,7 @@
 //             backend: DecodingsBackend,
 //             ...configable,
 //             providers: (adapter ?? decodingsAdapter) ? [
-//                 ...configable?.providers ?? EMPTY,
+//                 ...configable?.providers ?? [],
 //                 toProvider(CodingsAapter, adapter ?? decodingsAdapter!)
 //             ] : configable?.providers
 //         });

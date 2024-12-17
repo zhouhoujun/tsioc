@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Injectable, isNil, isString, lang } from '@tsdi/ioc';
+import { Injectable, isNil, isString, lang } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { HEAD, ResponseEvent, ResponseJsonParseError, AbstractRequest } from '@tsdi/common';
 import { DeserializeContext, MimeAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer, ClientIncoming } from '@tsdi/common/transport';
@@ -160,7 +160,7 @@ export class RequestStauts {
         insecureParser?: boolean;
         referrerPolicy?: ReferrerPolicy;
         redirect?: 'manual' | 'error' | 'follow' | '';
-    } = EMPTY_OBJ) {
+    } = {}) {
         this.compress = init.compress ?? false;
         this.highWaterMark = init.highWaterMark ?? 16384;
         this.insecureParser = init.insecureParser ?? false;

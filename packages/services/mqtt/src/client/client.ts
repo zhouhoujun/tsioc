@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Injectable, InvocationContext, isString, promisify } from '@tsdi/ioc';
+import { Injectable, InvocationContext, isString, promisify } from '@tsdi/ioc';
 import { DisconnectExecption, OfflineExecption } from '@tsdi/core';
 import { Pattern, RequestInitOpts, ResponseEvent } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
@@ -54,7 +54,7 @@ export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<a
             }
             const onDisConnect = (packet: mqtt.IDisconnectPacket) => {
                 this.logger?.info('mqtt client disconnected!', packet.reasonCode);
-                sbscriber.error(new DisconnectExecption('mqtt client disconnected! ' + packet.reasonCode ?? ''));
+                sbscriber.error(new DisconnectExecption('mqtt client disconnected! ' + (packet?.reasonCode ?? '')));
             };
 
             client.on(ev.ERROR, onError);
@@ -82,7 +82,7 @@ export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<a
 
     protected createConnection() {
         const options = this.getOptions();
-        const opts = options.connectOpts ?? EMPTY_OBJ;
+        const opts = options.connectOpts ?? {};
         const conn = (opts.url ? mqtt.connect(opts.url, opts) : mqtt.connect(opts));
 
         const injector = this.handler.injector;

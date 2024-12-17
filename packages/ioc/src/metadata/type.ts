@@ -1,4 +1,4 @@
-import { Type, ClassType, Annotation, EMPTY } from '../types';
+import { Type, ClassType, Annotation } from '../types';
 import { ModuleWithProviders, ProviderType } from '../providers';
 import {
     PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata,
@@ -349,7 +349,7 @@ export class Class<T = any> {
      * @param context invocation context.
      */
     resolveArguments(method: string, context: InvocationContext): any[] {
-        const parameters = this.getParameters(method) ?? EMPTY;
+        const parameters = this.getParameters(method) ?? [];
         const args = parameters.map(p => context.resolveArgument(p, this.type));
         return args;
     }
@@ -544,15 +544,15 @@ export class Class<T = any> {
         decor = getDectorId(decor);
         switch (type) {
             case Decors.CLASS:
-                return this.classDefs.get(decor) ?? EMPTY;
+                return this.classDefs.get(decor) ?? [];
             case Decors.method:
-                return this.methodDefs.get(decor) ?? EMPTY;
+                return this.methodDefs.get(decor) ?? [];
             case Decors.property:
-                return this.propDefs.get(decor) ?? EMPTY;
+                return this.propDefs.get(decor) ?? [];
             case Decors.parameter:
-                return this.paramDefs.get(decor) ?? EMPTY;
+                return this.paramDefs.get(decor) ?? [];
             default:
-                return EMPTY;
+                return [];
         }
     }
 

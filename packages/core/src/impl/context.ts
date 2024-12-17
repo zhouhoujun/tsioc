@@ -1,6 +1,6 @@
 import {
     Type, Injector, ProviderType, InvokeArguments, DefaultInvocationContext,
-    Class, ModuleDef, ModuleRef, ReflectiveRef, ProvdierOf, EMPTY_OBJ
+    Class, ModuleDef, ModuleRef, ReflectiveRef, ProvdierOf
 } from '@tsdi/ioc';
 import { Logger, LoggerManagers } from '@tsdi/logger';
 import { Observable } from 'rxjs';
@@ -29,7 +29,7 @@ export class DefaultApplicationContext<T = any, TArg = ApplicationArguments> ext
 
     private _runners: ApplicationRunners;
 
-    constructor(readonly injector: ModuleRef, options: EnvironmentOption<TArg> = EMPTY_OBJ) {
+    constructor(readonly injector: ModuleRef, options: EnvironmentOption<TArg> = {}) {
         super(injector, options);
         this._multicaster = injector.get(ApplicationEventMulticaster);
         injector.setValue(ApplicationContext, this);

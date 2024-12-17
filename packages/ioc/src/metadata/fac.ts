@@ -4,7 +4,7 @@ import { DecoratorOption, dispatchMethodDecor, dispatchParamDecor, dispatchPorpD
 import { Decors, ActionTypes, DecoratorType, DecoratorFn } from './type';
 import { isUndefined, isNumber, isString, isArray } from '../utils/chk';
 import { getToken, Token } from '../tokens';
-import { EMPTY, Type } from '../types';
+import { Type } from '../types';
 import { isMetadataObject } from '../utils/obj';
 import { Execption } from '../execption';
 import { Handle } from '../handle';
@@ -63,7 +63,7 @@ function mapToFac(maps: Record<string, Handle | Handle[]>): (type: DecoratorType
         const handle = maps[type];
         isArray(handle) ? rged.push(...handle) : rged.push(handle)
     }
-    return (type: DecoratorType) => mapHd.get(type) ?? EMPTY
+    return (type: DecoratorType) => mapHd.get(type) ?? []
 }
 
 function storeMetadata<T>(decor: DecoratorFn, args: any[], metadata: any, option: MetadataFactory<T>): any {

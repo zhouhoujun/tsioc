@@ -1,5 +1,5 @@
 import {
-    Arrayify, EMPTY, Injector, Module, ModuleRef, ModuleType, ModuleWithProviders,
+    Arrayify, Injector, Module, ModuleRef, ModuleType, ModuleWithProviders,
     ProvdierOf, ProviderType, Token, Type, isArray, isNil, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { ConfigMissingExecption, createHandler } from '@tsdi/core';
@@ -147,17 +147,17 @@ export const CLIENT_MODULES = tokenId<(ClientModuleOpts)[]>('CLIENT_MODULES');
 
 function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: number) {
     return [
-        ...options.providers ?? EMPTY,
+        ...options.providers ?? [],
         {
             provider: async (injector) => {
-                let defts = injector.get(CLIENT_MODULES, EMPTY).find(r => r.transport === options.transport && (isNil(options.microservice) ? (r.asDefault || !r.microservice) : r.microservice == options.microservice));
+                let defts = injector.get(CLIENT_MODULES, []).find(r => r.transport === options.transport && (isNil(options.microservice) ? (r.asDefault || !r.microservice) : r.microservice == options.microservice));
                 if (!defts) {
                     try {
                         const m = await import(`@tsdi/${options.transport}`);
                         const transportModuleName = options.transport.charAt(0).toUpperCase() + options.transport.slice(1) + 'Module';
                         if (m[transportModuleName]) {
                             await injector.get(ModuleRef).import(m[transportModuleName]);
-                            defts = injector.get(CLIENT_MODULES, EMPTY).find(r => r.transport === options.transport && (isNil(options.microservice) ? (r.asDefault || !r.microservice) : r.microservice == options.microservice));
+                            defts = injector.get(CLIENT_MODULES, []).find(r => r.transport === options.transport && (isNil(options.microservice) ? (r.asDefault || !r.microservice) : r.microservice == options.microservice));
                         }
                         if (!defts) {
                             throw new Error(m[transportModuleName] ? 'has not implemented' : 'not found transport module!')
@@ -172,8 +172,8 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     ...opts.defaultOpts,
                     ...opts.clientOpts,
                     providers: [
-                        ...opts.defaultOpts?.providers || EMPTY,
-                        ...opts.clientOpts?.providers || EMPTY
+                        ...opts.defaultOpts?.providers || [],
+                        ...opts.clientOpts?.providers || []
                     ]
                 } as ClientOpts & { providers: ProviderType[] };
 

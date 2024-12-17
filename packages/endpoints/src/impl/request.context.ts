@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Injectable, Injector, isNil } from '@tsdi/ioc';
+import { Injectable, Injector, isNil } from '@tsdi/ioc';
 import { HeaderMappings, LOCALHOST, normalize, Response } from '@tsdi/common';
 import { Incoming, MessageExecption, Outgoing } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
@@ -27,7 +27,7 @@ export class UrlRequestContext<TRequest extends Incoming<any> = Incoming<any>, T
         readonly transport: ServerTransport,
         readonly request: TRequest,
         readonly response: TResponse,
-        readonly serverOptions: ServerOpts = EMPTY_OBJ
+        readonly serverOptions: ServerOpts = {}
     ) {
         super(injector, { ...serverOptions, args: request });
 
@@ -92,7 +92,7 @@ export class UrlRequestContext<TRequest extends Incoming<any> = Incoming<any>, T
         if (abstl.test(url)) {
             return new URL(url);
         } else {
-            const { host, port, path } = this.serverOptions.listenOpts ?? EMPTY_OBJ;
+            const { host, port, path } = this.serverOptions.listenOpts ?? {};
             const protocol = this.serverOptions.protocol;
             let baseUrl: URL;
             try {
@@ -148,7 +148,7 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
         readonly transport: ServerTransport,
         readonly request: TRequest,
         readonly response: TResponse,
-        readonly serverOptions: ServerOpts = EMPTY_OBJ
+        readonly serverOptions: ServerOpts = {}
     ) {
         super(injector, { ...serverOptions, args: request });
 

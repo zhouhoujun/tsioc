@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Injectable, InvocationContext, isNil, promisify } from '@tsdi/ioc';
+import { Injectable, InvocationContext, isNil, promisify } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage } from '@tsdi/common';
 import { ClientIncoming, ClientIncomingCloneOpts, ClientIncomingFactory, ClientIncomingOpts, AbstractClientIncoming, MessageReader, MessageWriter, ctype, ev, UrlClientIncomingOpts, UrlClientIncoming } from '@tsdi/common/transport';
 import { HttpRequest } from '@tsdi/common/http';
@@ -102,7 +102,7 @@ export class HttpClientMessageWriter implements MessageWriter<ClientHttp2Session
         if (clientOpts.authority && socket && (!httptl.test(url) || url.startsWith(clientOpts.authority))) {
             url = url.replace(clientOpts.authority, '');
 
-            const reqHeaders = msg.headers as OutgoingHttpHeaders ?? EMPTY_OBJ;
+            const reqHeaders = msg.headers as OutgoingHttpHeaders ?? {};
 
             if (!reqHeaders[HTTP2_HEADER_ACCEPT]) reqHeaders[HTTP2_HEADER_ACCEPT] = ctype.REQUEST_ACCEPT;
             reqHeaders[HTTP2_HEADER_METHOD] = req.method;

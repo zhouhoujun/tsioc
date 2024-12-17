@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, Inject, Injectable, getClassName, isString, lang, promisify } from '@tsdi/ioc';
+import { Inject, Injectable, getClassName, isString, lang, promisify } from '@tsdi/ioc';
 import { EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST } from '@tsdi/common';
@@ -64,7 +64,7 @@ export class WsServer extends Server<RequestContext, WsServerOpts> {
         });
         const injector = this.handler.injector;
         const factory = injector.get(ServerTransportFactory);
-        const { server, noServer, port, host } = options.serverOpts ?? EMPTY_OBJ;
+        const { server, noServer, port, host } = options.serverOpts ?? {};
         const isSecure = server instanceof tls.Server;
         if (options.protocol) {
             options.protocol = isSecure ? 'wss' : 'ws';

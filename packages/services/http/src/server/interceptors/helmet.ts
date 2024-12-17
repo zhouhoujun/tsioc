@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, EMPTY_OBJ, Injectable, Nullable } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, Injectable, Nullable } from '@tsdi/ioc';
 import { RestfulRequestContext, Middleware } from '@tsdi/endpoints';
 
 
@@ -52,13 +52,13 @@ export class HelmetMiddleware implements Middleware<RestfulRequestContext> {
         ctx.setHeader(X_DOWNLOAD_OPTIONS, 'noopen');
         ctx.setHeader(X_CONTENT_TYPE_OPTIONS, 'nosniff');
 
-        this.setXssProtection(ctx, this.options.xssProtection ?? EMPTY_OBJ);
+        this.setXssProtection(ctx, this.options.xssProtection ?? {});
 
         await next();
     }
 
     protected setXFormOptions(ctx: RestfulRequestContext) {
-        const xFrame = this.options.xFrame ?? EMPTY_OBJ;
+        const xFrame = this.options.xFrame ?? {};
         let action = xFrame.action ?? 'SAMEORIGIN';
         if (action === 'ALLOW-FROM') {
             if (!xFrame.domain) {

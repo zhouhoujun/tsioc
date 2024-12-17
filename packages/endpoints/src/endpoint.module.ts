@@ -1,5 +1,5 @@
 import {
-    Arrayify, EMPTY, EMPTY_OBJ, Injector, Module, ModuleRef, ModuleType, ModuleWithProviders,
+    Arrayify, Injector, Module, ModuleRef, ModuleType, ModuleWithProviders,
     ProvdierOf, ProviderType, Type, isArray, isNil, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { ConfigMissingExecption, InvocationOptions, TypedRespond } from '@tsdi/core';
@@ -217,10 +217,10 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
 
 
     return [
-        ...options.providers ?? EMPTY,
+        ...options.providers ?? [],
         {
             provider: async (injector) => {
-                let mdopts = injector.get(SERVER_MODULES, EMPTY).find(r => r.transport === options.transport && (isNil(options.microservice) ? (r.asDefault || !r.microservice) : r.microservice == options.microservice));
+                let mdopts = injector.get(SERVER_MODULES, []).find(r => r.transport === options.transport && (isNil(options.microservice) ? (r.asDefault || !r.microservice) : r.microservice == options.microservice));
 
                 if (!mdopts) {
                     try {
@@ -229,7 +229,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                         const transportModuleName = options.transport.charAt(0).toUpperCase() + options.transport.slice(1) + 'Module';
                         if (m[transportModuleName]) {
                             await injector.get(ModuleRef).import(m[transportModuleName]);
-                            mdopts = injector.get(SERVER_MODULES, EMPTY).find(r => r.transport === options.transport && (isNil(options.microservice) ? (r.asDefault || !r.microservice) : r.microservice == options.microservice));
+                            mdopts = injector.get(SERVER_MODULES, []).find(r => r.transport === options.transport && (isNil(options.microservice) ? (r.asDefault || !r.microservice) : r.microservice == options.microservice));
                         }
                         if (!mdopts) {
                             throw new Error(m[transportModuleName] ? 'has not implemented' : 'not found this transport module!')
@@ -252,8 +252,8 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                         ...moduleOpts.serverOpts?.routes
                     },
                     providers: [
-                        ...moduleOpts.defaultOpts?.providers || EMPTY,
-                        ...moduleOpts.serverOpts?.providers || EMPTY
+                        ...moduleOpts.defaultOpts?.providers || [],
+                        ...moduleOpts.serverOpts?.providers || []
                     ]
                 } as ServerOpts & { providers: ProviderType[] };
 
@@ -334,7 +334,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 });
 
                 return [
-                    ...moduleOpts.microservice ? createMicroRouteProviders(moduleOpts.transport, serverOpts.routes || EMPTY_OBJ) : createRouteProviders(moduleOpts.transport, serverOpts.routes || EMPTY_OBJ),
+                    ...moduleOpts.microservice ? createMicroRouteProviders(moduleOpts.transport, serverOpts.routes ?? {}) : createRouteProviders(moduleOpts.transport, serverOpts.routes ?? {}),
                     { provide: REGISTER_SERVICES, useValue: { service: moduleOpts.serverType, bootstrap: serverOpts.bootstrap, microservice: serverOpts.microservice, providers }, multi: true }
                 ];
             }

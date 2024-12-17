@@ -1,5 +1,5 @@
 import {
-    EMPTY, InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType, lang, promiseOf, Execption, isFunction, refl,
+    InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType, lang, promiseOf, Execption, isFunction, refl,
     Token, InvocationContext, createContext, isClassType, ArgumentExecption, isToken, isArray, toProvider, Type, getClass
 } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
@@ -237,8 +237,8 @@ export class ConfigableHandler<
      */
     protected compose(): InterceptorFn<TInput, TOutput> {
         const type = this.getHandlerType();
-        const hdlFilters = this.filterResolver.resolve(type) ?? EMPTY;
-        const hdlInteceptors = this.interceptorResolver.resolve(type) ?? EMPTY;
+        const hdlFilters = this.filterResolver.resolve(type) ?? [];
+        const hdlInteceptors = this.interceptorResolver.resolve(type) ?? [];
 
         const filters = this.getFilters();
         const inteceptors = this.getInterceptors();
@@ -261,7 +261,7 @@ export class ConfigableHandler<
      * @returns 
      */
     protected getBackend(): HandlerFn {
-        if (!this.options.backend) throw new ArgumentExecption('backend is empty.');
+        if (!this.options.backend) throw new ArgumentExecption('backend is [].');
         if (!this.backendFn) {
             const backend = isToken(this.options.backend) ? this.injector.get(this.options.backend, this.context) : this.options.backend;
             this.backendFn = (isFunction(backend) ? backend : (req, ctx) => (backend as Backend).handle(req, ctx)) as HandlerFn;
@@ -273,7 +273,7 @@ export class ConfigableHandler<
      *  get filters. 
      */
     protected getFilters(): FilterLike<TInput, TOutput>[] {
-        return this.options.filtersToken ? this.injector.get(this.options.filtersToken, EMPTY) : EMPTY;
+        return this.options.filtersToken ? this.injector.get(this.options.filtersToken, []) : [];
     }
 
     /**
@@ -281,7 +281,7 @@ export class ConfigableHandler<
      * @returns 
      */
     protected getInterceptors(): InterceptorLike<TInput, TOutput>[] {
-        return this.injector.get(this.options.interceptorsToken!, EMPTY);
+        return this.injector.get(this.options.interceptorsToken!, []);
     }
 
 

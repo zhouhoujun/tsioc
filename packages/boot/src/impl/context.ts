@@ -1,4 +1,4 @@
-import { EMPTY_OBJ, InvokeArguments, ModuleDef, ModuleRef, ProvdierOf } from '@tsdi/ioc';
+import { InvokeArguments, ModuleDef, ModuleRef, ProvdierOf } from '@tsdi/ioc';
 import { ApplicationArguments, ApplicationFactory, DefaultApplicationContext, PROCESS_ROOT } from '@tsdi/core';
 import { ApplicationConfiguration, ConfigureManager } from '../configure/config';
 import { BootApplicationContext, BootEnvironmentOption } from '../context';
@@ -7,7 +7,7 @@ import { BootApplicationContext, BootEnvironmentOption } from '../context';
 export class BootApplicationContextImpl<T = any, TArg = ApplicationArguments> extends DefaultApplicationContext<T, TArg> implements BootApplicationContext<T, TArg> {
 
     
-    constructor(readonly injector: ModuleRef, options: BootEnvironmentOption<TArg> = EMPTY_OBJ) {
+    constructor(readonly injector: ModuleRef, options: BootEnvironmentOption<TArg> = {}) {
         super(injector, options);
 
         const mgr = this.getConfigureManager();
