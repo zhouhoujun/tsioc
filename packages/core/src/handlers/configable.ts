@@ -134,9 +134,9 @@ export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends Hand
      */
     handlerType?: Type<Handler>;
     /**
-     * enable input type filters and interceptors for handler.
+     * enable input type filters and interceptors chain for handler.
      */
-    enableInputType?: boolean;
+    enableTypeChain?: boolean;
     /**
      * execption handlers
      */

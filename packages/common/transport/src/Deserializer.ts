@@ -38,7 +38,7 @@ export class DefaultDeserializerFactory implements DeserializerFactory {
             backend: (input: any, context?: TransportContext) => {
                 return of(JSON.parse((input as Buffer).toString()))
             },
-            enableInputType: true, 
+            enableTypeChain: true, 
             ...options 
         });
         handler.useFilters(ExecptionHandlerFilter, 0);

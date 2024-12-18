@@ -169,7 +169,7 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                 const opts = { ...defts, ...options, asDefault: null } as ClientModuleOpts & ClientTokenOpts;
                 const clientOpts = {
                     backend: opts.backend ?? ClientBackend,
-                    enableInputType: true,
+                    enableTypeChain: true,
                     ...opts.defaultOpts,
                     ...opts.clientOpts,
                     providers: [

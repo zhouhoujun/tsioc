@@ -37,7 +37,7 @@ export class DefaultSerializerFactory implements SerializerFactory {
             backend: (input: any, context?: TransportContext)=> {
                 return of(JSON.stringify(input, null, 2))
             },
-            enableInputType: true,
+            enableTypeChain: true,
             ...options
         });
         handler.useFilters(ExecptionHandlerFilter, 0);

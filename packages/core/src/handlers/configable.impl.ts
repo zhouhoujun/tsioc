@@ -183,7 +183,7 @@ export class ConfigableHandler<
      * @returns 
      */
     protected getChain(input: TInput): InterceptorFn<TInput, TOutput> {
-        return this.options.enableInputType ? this.getChainOf(getClass(input)) : this.chain!;
+        return this.options.enableTypeChain ? this.getChainOf(getClass(input)) : this.chain!;
     }
 
     /**
@@ -345,14 +345,14 @@ export function createHandler<TInput, TOutput, TClass extends ConfigableHandler>
      * execption handlers
      */
     execptionHandlers?: ClassType<any> | ClassType[] | null,
-    enableInputType?: boolean
+    enableTypeChain?: boolean
 ): ConfigableHandler<TInput, TOutput>;
 export function createHandler<TInput, TOutput>(context: Injector | InvocationContext, arg: ConfigableHandlerOptions<TInput> | Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>,
     interceptorsToken?: Token<Interceptor<TInput, TOutput>[]>,
     guardsToken?: Token<CanHandle[]>,
     filtersToken?: Token<Filter<TInput, TOutput>[]>,
     execptionHandlers?: ClassType<any> | ClassType[] | null,
-    enableInputType?: boolean
+    enableTypeChain?: boolean
 ): ConfigableHandler<TInput, TOutput> {
     let options: ConfigableHandlerOptions<TInput> & { classType?: ClassType<ConfigableHandler> };
     if (interceptorsToken) {
@@ -362,7 +362,7 @@ export function createHandler<TInput, TOutput>(context: Injector | InvocationCon
             guardsToken,
             filtersToken,
             execptionHandlers,
-            enableInputType
+            enableTypeChain
         }
     } else {
         options = arg as ConfigableHandlerOptions<TInput>;
