@@ -1,27 +1,17 @@
-// import { OnDestroy, Type } from '@tsdi/ioc';
-// import { CodingsAapter, CodingsContext, CodingsOptions } from '@tsdi/common/codings';
-// import { Transport } from './Transport';
+import { OnDestroy } from '@tsdi/ioc';
+import { Context } from '@tsdi/core';
+import { Transport } from './Transport';
 
-// /**
-//  * transprot codings context.
-//  */
-// export class TransportContext extends CodingsContext<CodingsOptions> implements OnDestroy {
-//     /**
-//      * channel
-//      */
-//     channel?: string;
+/**
+ * transprot context.
+ */
+export class TransportContext extends Context implements OnDestroy {
 
-//     constructor(
-//         public transport: Transport,
-//         options: CodingsOptions,
-//         adapter?: CodingsAapter | null
-//     ) {
-//         super(options, adapter)
-//     }
-
-//     override onDestroy(): void {
-//         super.onDestroy();
-//         this.transport = null!;
-//     }
-// }
+    constructor(
+        readonly transport: Transport,
+        init?: any,
+    ) {
+        super(init)
+    }
+}
 

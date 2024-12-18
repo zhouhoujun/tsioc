@@ -5,37 +5,32 @@ import { PacketIdGenerator, PacketNumberIdGenerator } from './PacketId';
 // import { TransportDecodingsFactory, TransportEncodingsFactory } from './condings';
 import { PackageDecodeInterceptor, PackageEncodeInterceptor } from './interceptors/buffer.package';
 import { BindPacketIdEncodeInterceptor, PacketDecodeInterceptor, PacketEncodeInterceptor } from './interceptors/buffer.packet';
-import { PacketCodingsHandlers } from './packet.codings';
+// import { PacketCodingsHandlers } from './packet.codings';
 import { DefaultHeaderAdapter } from './headers';
 // import { TransportContext } from './context';
 import { IncomingMessage } from './Incoming';
 import { OutgoingMessage } from './Outgoing';
-import { getDeserializeInterceptorsToken, getSerializeInterceptorsToken } from './serialization/metadata';
-import { DeserializeContext } from './serialization/Deserializer';
-import { SerializeContext } from './serialization/Serializer';
-import { SerializationModule } from './serialization/serialization.module';
+// import { getDeserializeInterceptorsToken, getSerializeInterceptorsToken } from './serialization/metadata';
+import { DefaultSerializerFactory } from './Serializer';
+import { DefaultDeserializerFactory } from './Deserializer';
+// import { DeserializeContext } from './serialization/Deserializer';
+// import { SerializeContext } from './serialization/Serializer';
+// import { SerializationModule } from './serialization/serialization.module';
 
 
-const PACKET_DECODE_INTERCEPTORS = getDeserializeInterceptorsToken<Packet, IncomingMessage, DeserializeContext>(Packet);
-const PACKET_ENCODE_INTERCEPTORS = getSerializeInterceptorsToken<OutgoingMessage, Packet, SerializeContext>(Packet);
+// const PACKET_DECODE_INTERCEPTORS = getDeserializeInterceptorsToken<Packet, IncomingMessage, DeserializeContext>(Packet);
+// const PACKET_ENCODE_INTERCEPTORS = getSerializeInterceptorsToken<OutgoingMessage, Packet, SerializeContext>(Packet);
 
 @Module({
-    imports: [
-        SerializationModule
-    ],
     providers: [
-        // TransportEncodingsFactory,
-        // TransportDecodingsFactory,
-        PacketCodingsHandlers,
+        DefaultSerializerFactory,
+        DefaultDeserializerFactory,
         { provide: PacketIdGenerator, useClass: PacketNumberIdGenerator },
         { provide: HeaderAdapter, useClass: DefaultHeaderAdapter, asDefault: true },
-        { provide: PACKET_DECODE_INTERCEPTORS, useClass: PacketDecodeInterceptor, multi: true },
+        // { provide: PACKET_DECODE_INTERCEPTORS, useClass: PacketDecodeInterceptor, multi: true },
 
-        { provide: PACKET_ENCODE_INTERCEPTORS, useClass: BindPacketIdEncodeInterceptor, multi: true },
-        { provide: PACKET_ENCODE_INTERCEPTORS, useClass: PacketEncodeInterceptor, multi: true }
-    ],
-    exports: [
-        SerializationModule
+        // { provide: PACKET_ENCODE_INTERCEPTORS, useClass: BindPacketIdEncodeInterceptor, multi: true },
+        // { provide: PACKET_ENCODE_INTERCEPTORS, useClass: PacketEncodeInterceptor, multi: true }
     ]
 })
 export class TransportPacketModule {
@@ -43,13 +38,13 @@ export class TransportPacketModule {
 }
 
 
-@Module({
-    providers: [
-        { provide: PACKET_DECODE_INTERCEPTORS, useClass: PackageDecodeInterceptor, multi: true },
-        { provide: PACKET_ENCODE_INTERCEPTORS, useClass: PackageEncodeInterceptor, multi: true },
-    ]
-})
-export class PackageBufferCodingsModule {
+// @Module({
+//     providers: [
+//         { provide: PACKET_DECODE_INTERCEPTORS, useClass: PackageDecodeInterceptor, multi: true },
+//         { provide: PACKET_ENCODE_INTERCEPTORS, useClass: PackageEncodeInterceptor, multi: true },
+//     ]
+// })
+// export class PackageBufferCodingsModule {
 
-}
+// }
 

@@ -1,10 +1,11 @@
 import { Abstract, Injectable, Injector, InvocationContext } from '@tsdi/ioc';
-import { ConfigableHandlerOptions, Context, createHandler, Handler } from '@tsdi/core';
+import { ConfigableHandlerOptions, createHandler, ExecptionHandlerFilter, Handler } from '@tsdi/core';
 import { Observable, of } from 'rxjs';
+import { TransportContext } from './context';
 
 @Abstract()
 export abstract class Deserializer {
-    abstract deserialize<TIn, TOut>(input: TIn, context: Context): Observable<TOut>;
+    abstract deserialize<TIn, TOut>(input: TIn, context: TransportContext): Observable<TOut>;
 }
 
 export interface DeserializerOpts extends ConfigableHandlerOptions {
@@ -24,7 +25,7 @@ export class DefaultDeserializer implements Deserializer {
         private handler: Handler
     ) { }
 
-    deserialize(input: any, context: Context): Observable<any> {
+    deserialize(input: any, context: TransportContext): Observable<any> {
         return this.handler.handle(input, context);
     }
 
@@ -33,13 +34,15 @@ export class DefaultDeserializer implements Deserializer {
 @Injectable()
 export class DefaultDeserializerFactory implements DeserializerFactory {
     create(context: Injector | InvocationContext, options?: DeserializerOpts): Deserializer {
-        return new DefaultDeserializer(createHandler(context, { 
-            backend: (input: any, context?: Context) => {
+        const handler = createHandler(context, { 
+            backend: (input: any, context?: TransportContext) => {
                 return of(JSON.parse((input as Buffer).toString()))
             },
             enableInputType: true, 
             ...options 
-        }));
+        });
+        handler.useFilters(ExecptionHandlerFilter, 0);
+        return new DefaultDeserializer(handler);
     }
 
 }

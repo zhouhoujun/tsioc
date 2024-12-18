@@ -68,8 +68,11 @@ export class Context {
         return this._inputs;
     }
 
-    constructor() {
+    constructor(input?: any) {
         this._inputs = [];
+        if (input) {
+            this._inputs.push(input);
+        }
         this.changed = this._next$.pipe(
             takeUntil(this.destory$),
             filter(r => r !== null)

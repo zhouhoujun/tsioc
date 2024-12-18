@@ -6,8 +6,9 @@ import { ev } from './consts';
 import { IEventEmitter, IReadableStream, IWritableStream } from './stream';
 import { AbstractIncomingFactory } from './Incoming';
 import { AbstractOutgoingFactory } from './Outgoing';
-import { DeserializeContext, Deserializer } from './serialization/Deserializer';
-import { SerializeContext, Serializer } from './serialization/Serializer';
+import { Deserializer } from './Deserializer';
+import { Serializer } from './Serializer';
+import { TransportContext } from './context';
 
 /**
  * Abstract transport.
@@ -43,7 +44,7 @@ export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = a
      * @param data 
      */
     send(data: TInput, channel?: IEventEmitter): Observable<any> {
-        return this.serializer.serialize(data, new SerializeContext(this))
+        return this.serializer.serialize(data, new TransportContext(this, data))
             .pipe(
                 mergeMap(msg => {
                     return this.write(msg, channel)
@@ -61,7 +62,7 @@ export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = a
         return this.read(channel, req)
             .pipe(
                 takeUntil(this.destroy$),
-                mergeMap(data => this.deserializer.deserialize(data, new DeserializeContext(this, req))),
+                mergeMap(data => this.deserializer.deserialize(data, new TransportContext(this, req))),
                 share()
             ) as Observable<any>;
     }
