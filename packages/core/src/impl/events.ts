@@ -40,7 +40,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         super();
         this.maps = new Map();
         this._children = [];
-        this._handler = createHandler(injector, this, EVENT_MULTICASTER_INTERCEPTORS, EVENT_MULTICASTER_GUARDS, EVENT_MULTICASTER_FILTERS);
+        this._handler = createHandler(injector, this, EVENT_MULTICASTER_INTERCEPTORS, EVENT_MULTICASTER_GUARDS, EVENT_MULTICASTER_FILTERS, null, true);
         this._handler.useFilters(ExecptionHandlerFilter);
         this.parent = this.injector.get(ApplicationEventMulticaster, null, InjectFlags.SkipSelf);
         if (this.parent) {

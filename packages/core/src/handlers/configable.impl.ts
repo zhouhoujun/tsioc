@@ -183,7 +183,7 @@ export class ConfigableHandler<
      * @returns 
      */
     protected getChain(input: TInput): InterceptorFn<TInput, TOutput> {
-        return this.getChainOf(getClass(input)) ?? this.chain!;
+        return this.options.enableInputType ? this.getChainOf(getClass(input)) : this.chain!;
     }
 
     /**
@@ -191,14 +191,14 @@ export class ConfigableHandler<
      * @param type 
      * @returns 
      */
-    protected getChainOf(type: Type | string): InterceptorFn<TInput, TOutput> | null {
+    protected getChainOf(type: Type | string): InterceptorFn<TInput, TOutput> {
         let chain = this.chains.get(type);
         if (chain === undefined) {
             chain = this.composeTypeChain(type);
             this.chains.set(type, chain);
         }
 
-        return chain;
+        return chain ?? this.chain!;
     }
 
     /**
@@ -261,7 +261,7 @@ export class ConfigableHandler<
      * @returns 
      */
     protected getBackend(): HandlerFn {
-        if (!this.options.backend) throw new ArgumentExecption('backend is [].');
+        if (!this.options.backend) throw new ArgumentExecption('backend is Empty.');
         if (!this.backendFn) {
             const backend = isToken(this.options.backend) ? this.injector.get(this.options.backend, this.context) : this.options.backend;
             this.backendFn = (isFunction(backend) ? backend : (req, ctx) => (backend as Backend).handle(req, ctx)) as HandlerFn;
@@ -344,13 +344,15 @@ export function createHandler<TInput, TOutput, TClass extends ConfigableHandler>
     /**
      * execption handlers
      */
-    execptionHandlers?: ClassType<any> | ClassType[]
+    execptionHandlers?: ClassType<any> | ClassType[] | null,
+    enableInputType?: boolean
 ): ConfigableHandler<TInput, TOutput>;
 export function createHandler<TInput, TOutput>(context: Injector | InvocationContext, arg: ConfigableHandlerOptions<TInput> | Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>,
     interceptorsToken?: Token<Interceptor<TInput, TOutput>[]>,
     guardsToken?: Token<CanHandle[]>,
     filtersToken?: Token<Filter<TInput, TOutput>[]>,
-    execptionHandlers?: ClassType<any> | ClassType[],
+    execptionHandlers?: ClassType<any> | ClassType[] | null,
+    enableInputType?: boolean
 ): ConfigableHandler<TInput, TOutput> {
     let options: ConfigableHandlerOptions<TInput> & { classType?: ClassType<ConfigableHandler> };
     if (interceptorsToken) {
@@ -359,7 +361,8 @@ export function createHandler<TInput, TOutput>(context: Injector | InvocationCon
             interceptorsToken,
             guardsToken,
             filtersToken,
-            execptionHandlers
+            execptionHandlers,
+            enableInputType
         }
     } else {
         options = arg as ConfigableHandlerOptions<TInput>;

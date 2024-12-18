@@ -245,6 +245,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
 
                 const serverOpts = {
                     backend: moduleOpts.microservice ? MicroServRouterModule.getToken(moduleOpts.transport) : RouterModule.getToken(moduleOpts.transport),
+                    enableInputType: true,
                     ...moduleOpts.defaultOpts,
                     ...moduleOpts.serverOpts,
                     routes: {

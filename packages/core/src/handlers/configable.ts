@@ -1,13 +1,10 @@
-import {
-    Injector, InvokerOptions, ProvdierOf, StaticProvider, ClassType, Abstract, Token,
-    Type
-} from '@tsdi/ioc';
+import { Injector, InvokerOptions, ProvdierOf, StaticProvider, ClassType, Abstract, Token, Type } from '@tsdi/ioc';
+import { Observable } from 'rxjs';
 import { GuardLike, GuardsService } from '../guard';
 import { InterceptorLike, InterceptorService } from '../Interceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
 import { FilterLike, FilterService } from '../filters/filter';
 import { Backend, Handler } from '../Handler';
-import { Observable } from 'rxjs';
 
 
 
@@ -132,12 +129,18 @@ export interface HandlerOptions<TInput = any, TArg = any> extends InvokerOptions
  * Configable handler options.
  */
 export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends HandlerOptions<TInput, TArg>, GuardHandlerOptions<TInput>, BackendOptions<TInput> {
+    /**
+     * handler type.
+     */
     handlerType?: Type<Handler>;
-
+    /**
+     * enable input type filters and interceptors for handler.
+     */
+    enableInputType?: boolean;
     /**
      * execption handlers
      */
-    execptionHandlers?: ClassType<any> | ClassType[];
+    execptionHandlers?: ClassType<any> | ClassType[] | null;
 }
 
 export interface TypeConfigableHandlerOptions<TClass extends AbstractConfigableHandler, TInput = any, TArg = any> extends ConfigableHandlerOptions<TInput, TArg> {

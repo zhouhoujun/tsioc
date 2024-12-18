@@ -50,7 +50,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         this._types = [];
         this._maps = new Map();
         this._refs = new Map();
-        this._handler = createHandler(injector, this, APP_RUNNERS_INTERCEPTORS, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS);
+        this._handler = createHandler(injector, this, APP_RUNNERS_INTERCEPTORS, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS, null, true);
         this._handler.useFilters(ExecptionHandlerFilter);
     }
 

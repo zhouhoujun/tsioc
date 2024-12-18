@@ -77,7 +77,7 @@ export function composeInterceptors(interceptors: InterceptorLike[]): Intercepto
 }
 
 
-function chainEndFn<TInput = any, TOutput = any, TContext = any>(req: TInput, finalHandlerFn: HandlerFn, context?: TContext): Observable<TContext> {
+function chainEndFn(req: any, finalHandlerFn: HandlerFn, context?: any): Observable<any> {
     return finalHandlerFn(req, context);
 }
 
