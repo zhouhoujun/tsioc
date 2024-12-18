@@ -30,10 +30,11 @@ export class BufferTransport {
             input.payload = null;
             if (!cache) {
                 cache = {
-                    Packet: input,
+                    packet: input,
                     stream: null,
                     length: 0,
-                    contentLength: null
+                    contentLength: null,
+                    streamLength: null,
                 }
                 this.channels.set(channel, cache)
             }
@@ -53,7 +54,7 @@ export class BufferTransport {
 
 
 
-    protected handleData(channel: string, cache: ChannelCache, data: Buffer, subscriber: Subscriber<Packet>, context: DeserializeContext) {
+    protected handleData(channel: string, cache: ChannelCache, data: Buffer, subscriber: Subscriber<Packet>, context: TransportContext) {
         const { options, streamAdapter, injector } = context.transport;
 
         const bLen = Buffer.byteLength(data);
@@ -89,7 +90,7 @@ export class BufferTransport {
                 } else {
                     cache.length -= idx;
                     cache.contentLength = rawContentLength;
-                    cache.Packet.streamLength = rawContentLength;
+                    cache.streamLength = rawContentLength;
                 }
             }
         }
@@ -117,7 +118,7 @@ export class BufferTransport {
     protected handleMessage(channel: string, cache: ChannelCache, subscriber: Subscriber<Packet>, clear: boolean) {
         const data = cache.stream;
         data?.end();
-        const Packet = cache.Packet;
+        const Packet = cache.packet;
         Packet.payload = data;
         cache.stream = null;
         if (clear) {
@@ -134,8 +135,9 @@ export class BufferTransport {
  * Channel cache.
  */
 export interface ChannelCache {
-    Packet: Packet;
+    packet: Packet;
     stream: IDuplexStream | null;
     length: number;
     contentLength: number | null;
+    streamLength: number | null;
 }
