@@ -8,8 +8,14 @@ export abstract class Deserializer {
     abstract deserialize<TIn, TOut>(input: TIn, context: TransportContext): Observable<TOut>;
 }
 
+/**
+ * deserializer options
+ */
 export interface DeserializerOpts extends ConfigableHandlerOptions {
-
+    /**
+     * buffer packet delimiter flag
+     */
+    delimiter?: string;
 }
 
 

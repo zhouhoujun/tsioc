@@ -99,10 +99,10 @@ import { IEventEmitter } from './stream';
  * transport.
  */
 export abstract class Transport<TSocket = any, TInput = any, TOutput = any> {
-    // /**
-    //  * transport context.
-    //  */
-    // abstract get injector(): Injector;
+    /**
+     * transport context injector.
+     */
+    abstract get injector(): Injector;
     // /**
     //  * transport options.
     //  */

@@ -8,9 +8,14 @@ export abstract class Serializer {
     abstract serialize<TIn, TOut>(input: TIn, context: TransportContext): Observable<TOut>;
 }
 
-
+/**
+ * serializer options
+ */
 export interface SerializerOpts extends ConfigableHandlerOptions {
-
+    /**
+     * buffer packet delimiter flag
+     */
+    delimiter?: string;
 }
 
 @Abstract()

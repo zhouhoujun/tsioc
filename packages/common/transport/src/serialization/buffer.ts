@@ -47,10 +47,10 @@ export class BufferTransport {
         );
     }
 
-    @Interceptable(Packet, {order: 0})
-    packet(input: Packet, next: HandlerFn<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
+    // @Interceptable(Packet, {order: 0})
+    // packet(input: Packet, next: HandlerFn<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
 
-    }
+    // }
 
 
 
