@@ -8,8 +8,7 @@ import { IDuplexStream, IReadableStream } from '../stream';
 import { PacketLengthException } from '../execptions';
 import { IncomingMessage } from '../Incoming';
 import { OutgoingMessage } from '../Outgoing';
-import { DeserializeContext } from '../serialization/Deserializer';
-import { SerializeContext } from '../serialization/Serializer';
+import { TransportContext } from '../context';
 
 interface CachePacket {
     packet: Packet<IDuplexStream>;
@@ -19,10 +18,10 @@ interface CachePacket {
 }
 
 @Injectable()
-export class PackageDecodeInterceptor implements Interceptor<Packet, IncomingMessage<any>, DeserializeContext> {
+export class PackageDecodeInterceptor implements Interceptor<Packet, IncomingMessage<any>, TransportContext> {
 
     packs: Map<string | number, CachePacket> = new Map();
-    intercept(input: Packet, next: Handler<Packet, IncomingMessage, DeserializeContext>, context: DeserializeContext): Observable<IncomingMessage> {
+    intercept(input: Packet, next: Handler<Packet, IncomingMessage, TransportContext>, context: TransportContext): Observable<IncomingMessage> {
         const { options, streamAdapter, headerAdapter } = context.transport;
         const idLen = options.idLen ?? 2;
         let id: string | number;
@@ -114,9 +113,9 @@ export class PackageDecodeInterceptor implements Interceptor<Packet, IncomingMes
 }
 
 @Injectable()
-export class PackageEncodeInterceptor implements Interceptor<OutgoingMessage, Packet, SerializeContext> {
+export class PackageEncodeInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
 
-    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet, SerializeContext>, context: SerializeContext): Observable<Packet> {
+    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet, TransportContext>, context: TransportContext): Observable<Packet> {
         return next.handle(input, context)
             .pipe(
                 mergeMap(msg => {

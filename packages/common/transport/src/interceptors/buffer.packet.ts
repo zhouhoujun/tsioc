@@ -8,8 +8,7 @@ import { IDuplexStream, IReadableStream } from '../stream';
 import { PackageEncodeInterceptor } from './buffer.package';
 import { IncomingMessage } from '../Incoming';
 import { OutgoingMessage } from '../Outgoing';
-import { DeserializeContext } from '../serialization/Deserializer';
-import { SerializeContext } from '../serialization/Serializer';
+import { TransportContext } from '../context';
 
 
 
@@ -24,7 +23,7 @@ export interface ChannelCache {
 }
 
 @Injectable()
-export class PacketDecodeInterceptor implements Interceptor<Packet, IncomingMessage, DeserializeContext> {
+export class PacketDecodeInterceptor implements Interceptor<Packet, IncomingMessage, TransportContext> {
 
     protected channels: Map<string, ChannelCache>;
 
@@ -32,7 +31,7 @@ export class PacketDecodeInterceptor implements Interceptor<Packet, IncomingMess
         this.channels = new Map();
     }
 
-    intercept(input: Packet, next: Handler<Packet, IncomingMessage>, context: DeserializeContext): Observable<IncomingMessage> {
+    intercept(input: Packet, next: Handler<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
         if (context.transport.streamAdapter.isReadable(input.payload)) return next.handle(input, context);
 
         return new Observable((subscriber: Subscriber<Packet>) => {
@@ -60,7 +59,7 @@ export class PacketDecodeInterceptor implements Interceptor<Packet, IncomingMess
         );
     }
 
-    protected handleData(channel: string, cache: ChannelCache, data: Buffer, subscriber: Subscriber<Packet>, context: DeserializeContext) {
+    protected handleData(channel: string, cache: ChannelCache, data: Buffer, subscriber: Subscriber<Packet>, context: TransportContext) {
         const { options, streamAdapter, injector } = context.transport;
 
         const bLen = Buffer.byteLength(data);
@@ -136,9 +135,9 @@ export class PacketDecodeInterceptor implements Interceptor<Packet, IncomingMess
 }
 
 @Injectable()
-export class BindPacketIdDecodeInterceptor implements Interceptor<Packet, IncomingMessage, DeserializeContext> {
+export class BindPacketIdDecodeInterceptor implements Interceptor<Packet, IncomingMessage, TransportContext> {
 
-    intercept(input: Packet, next: Handler<Packet, IncomingMessage>, context: DeserializeContext): Observable<IncomingMessage> {
+    intercept(input: Packet, next: Handler<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
         return next.handle(input, context)
             .pipe(
                 filter(packet => {
@@ -150,9 +149,9 @@ export class BindPacketIdDecodeInterceptor implements Interceptor<Packet, Incomi
 }
 
 @Injectable()
-export class BindPacketIdEncodeInterceptor implements Interceptor<OutgoingMessage, Packet, SerializeContext> {
+export class BindPacketIdEncodeInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
 
-    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet>, context: SerializeContext): Observable<Packet> {
+    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet>, context: TransportContext): Observable<Packet> {
         const { options, injector, headerAdapter } = context.transport;
         const length = headerAdapter.getContentLength(input.headers);
         if (length && options.maxSize && length > options.maxSize && !options.headDelimiter && !injector.has(PackageEncodeInterceptor)) {
@@ -168,9 +167,9 @@ export class BindPacketIdEncodeInterceptor implements Interceptor<OutgoingMessag
 
 
 @Injectable()
-export class PacketEncodeInterceptor implements Interceptor<OutgoingMessage, Packet, SerializeContext> {
+export class PacketEncodeInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
 
-    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet, SerializeContext>, context: SerializeContext): Observable<Packet> {
+    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet, TransportContext>, context: TransportContext): Observable<Packet> {
 
         return next.handle(input, context)
             .pipe(map(msg => {
