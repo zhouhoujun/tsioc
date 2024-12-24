@@ -12,10 +12,11 @@ import { ClientOpts } from './options';
  */
 @Abstract()
 export abstract class AbstractClient<
+    TReqOptions extends RequestOptions = RequestOptions,
     TRequest extends AbstractRequest<any> = AbstractRequest<any>,
     TResponse extends ResponseEvent<any> = ResponseEvent<any>,
     TOptions extends ClientOpts = ClientOpts,
-    TReqOptions extends RequestOptions = RequestOptions> {
+> {
 
     /**
      * client handler
@@ -410,7 +411,7 @@ export abstract class AbstractClient<
         return target instanceof AbstractRequest;
     }
 
-    protected abstract createRequest(pattern: Pattern, options: TReqOptions & RequestInitOpts): TRequest;
+    protected abstract createRequest(pattern: Pattern, options: RequestInitOpts<any, TReqOptions>): TRequest;
 
     protected createParams(params: string | ReadonlyArray<[string, string | number | boolean]>
         | Record<string, string | number | boolean | ReadonlyArray<string | number | boolean>>) {

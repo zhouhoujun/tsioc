@@ -1,5 +1,5 @@
 import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
-import { LOCALHOST, Pattern, RequestInitOpts, ResponseEvent } from '@tsdi/common';
+import { LOCALHOST, Pattern, RequestInitOpts, ResponseEvent, TopicRequestOptions } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ev } from '@tsdi/common/transport';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
@@ -13,7 +13,7 @@ import { ReidsSocket } from '../message';
  * Redis Client.
  */
 @Injectable()
-export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent<any>, RedisClientOpts> {
+export class RedisClient extends AbstractClient<TopicRequestOptions, RedisRequest<any>, ResponseEvent<any>, RedisClientOpts> {
 
     @InjectLog()
     private logger!: Logger;
@@ -66,7 +66,7 @@ export class RedisClient extends AbstractClient<RedisRequest<any>, ResponseEvent
         context.setValue(ClientTransport, this._transport);
     }
 
-    protected createRequest(pattern: Pattern, options: RequestInitOpts<any>): RedisRequest<any> {
+    protected createRequest(pattern: Pattern, options: RequestInitOpts<any, TopicRequestOptions>): RedisRequest<any> {
         if (isString(pattern)) {
             return new RedisRequest(pattern, null, options);
         }

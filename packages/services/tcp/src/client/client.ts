@@ -1,5 +1,5 @@
 import { Injectable, InvocationContext, isString, promisify } from '@tsdi/ioc';
-import { Pattern, LOCALHOST, RequestInitOpts } from '@tsdi/common';
+import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
@@ -15,7 +15,7 @@ import { TcpRequest } from './request';
  * TcpClient. client of  `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpClient extends AbstractClient<TcpRequest<any>> {
+export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>> {
 
     @InjectLog()
     private logger!: Logger;
@@ -83,7 +83,7 @@ export class TcpClient extends AbstractClient<TcpRequest<any>> {
         context.setValue(ClientTransport, this._transport);
     }
 
-    protected override createRequest(pattern: Pattern, options: RequestInitOpts): TcpRequest<any> {
+    protected override createRequest(pattern: Pattern, options: RequestInitOpts<any, UrlRequestOptions>): TcpRequest<any> {
         options.withCredentials = this.connection instanceof tls.TLSSocket;
         if (isString(pattern)) {
             return new TcpRequest(pattern, null, options);

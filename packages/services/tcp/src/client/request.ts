@@ -1,10 +1,10 @@
-import { BaseUrlRequest, UrlRequestCloneOpts } from '@tsdi/common';
+import { BaseUrlRequest, RequestCloneOpts, UrlRequestOptions } from '@tsdi/common';
 
-export class TcpRequest<T> extends BaseUrlRequest<T> {
+export class TcpRequest<T> extends BaseUrlRequest<T, UrlRequestOptions> {
     clone(): TcpRequest<T>;
-    clone<V>(update: UrlRequestCloneOpts<V>): TcpRequest<V>;
-    clone(update: UrlRequestCloneOpts<T>): TcpRequest<T>;
-    clone(update: UrlRequestCloneOpts<any> = {}): TcpRequest<any> {
+    clone<V>(update: RequestCloneOpts<V, UrlRequestOptions>): TcpRequest<V>;
+    clone(update: RequestCloneOpts<T, UrlRequestOptions>): TcpRequest<T>;
+    clone(update: RequestCloneOpts<any, UrlRequestOptions> = {}): TcpRequest<any> {
         const opts = this.cloneOpts(update);
         return new TcpRequest(update.url ?? this.url, this.pattern, opts);
     }

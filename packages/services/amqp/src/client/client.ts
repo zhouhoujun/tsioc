@@ -1,5 +1,5 @@
 import { Injectable, InvocationContext, isString, lang } from '@tsdi/ioc';
-import { Pattern, RequestInitOpts, ResponseEvent } from '@tsdi/common';
+import { Pattern, RequestInitOpts, ResponseEvent, TopicRequestOptions } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ev } from '@tsdi/common/transport';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
@@ -11,7 +11,7 @@ import { AmqpRequest } from './request';
 
 
 @Injectable()
-export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<any>, AmqpClientOpts> {
+export class AmqpClient extends AbstractClient<TopicRequestOptions, AmqpRequest<any>, ResponseEvent<any>, AmqpClientOpts> {
 
     @InjectLog()
     private logger!: Logger;
@@ -99,7 +99,7 @@ export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<a
     }
 
 
-    protected createRequest(pattern: Pattern, options: RequestInitOpts): AmqpRequest<any> {
+    protected createRequest(pattern: Pattern, options: RequestInitOpts<any, TopicRequestOptions>): AmqpRequest<any> {
         if (isString(pattern)) {
             return new AmqpRequest(pattern, null, options);
         } else {

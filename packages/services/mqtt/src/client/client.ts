@@ -15,7 +15,7 @@ import { MqttRequest } from './request';
  * mqtt client.
  */
 @Injectable()
-export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<any>, MqttClientOpts, MqttReqOptions> {
+export class MqttClient extends AbstractClient<MqttReqOptions, MqttRequest<any>, ResponseEvent<any>, MqttClientOpts> {
 
     @InjectLog()
     private logger?: Logger;
@@ -95,7 +95,7 @@ export class MqttClient extends AbstractClient<MqttRequest<any>, ResponseEvent<a
         context.setValue(ClientTransport, this._transport);
     }
 
-    protected createRequest(pattern: Pattern, options: MqttReqOptions & RequestInitOpts): MqttRequest<any> {
+    protected createRequest(pattern: Pattern, options: RequestInitOpts<any, MqttReqOptions>): MqttRequest<any> {
         if (isString(pattern)) {
             return new MqttRequest(pattern, null, options);
         } else {

@@ -20,16 +20,30 @@ export interface ResponseAs {
     responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
 }
 
+export interface RequestWithContext {
+
+    /**
+     * request context.
+     */
+    context: InvocationContext;
+}
+
+export interface PayloadOptions<T = any> {
+    /**
+     * request payload, request body.
+     */
+    payload?: T;
+    /**
+     * request body. alias of payload.
+     */
+    body?: T | null;
+}
+
 /**
  * Request packet options.
  */
-export interface RequestPacketOpts<T = any> {
+export interface RequestPacketOpts<T = any> extends PayloadOptions<T> {
     id?: any;
-
-    /**
-     * request method.
-     */
-    method?: string;
     /**
      * headers of request.
      */
@@ -45,13 +59,9 @@ export interface RequestPacketOpts<T = any> {
     encoder?: ParameterCodec;
 
     /**
-     * request payload, request body.
+     * request context.
      */
-    payload?: T;
-    /**
-     * request body. alias of payload.
-     */
-    body?: T | null;
+    context?: InvocationContext;
     /**
      * for restful
      */
@@ -63,45 +73,30 @@ export interface RequestPacketOpts<T = any> {
 }
 
 
-/**
- * Request init options.
- */
-export interface RequestInitOpts<T = any> extends RequestPacketOpts<T>, ResponseAs {
-    /**
-     * request context.
-     */
-    context: InvocationContext;
+export interface CloneExtendOpts {
+    setHeaders?: { [name: string]: string | string[]; };
+    setParams?: { [param: string]: string; };
 }
+
 
 /**
  * Request clone options.
  */
-export interface RequestCloneOpts<T> {
-    headers?: HeadersLike;
-    body?: T | null;
-    payload?: T | null;
-    setHeaders?: { [name: string]: string | string[]; };
-    params?: RequestParams;
-    context?: InvocationContext;
-    responseType?: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
-    method?: string;
-    setParams?: { [param: string]: string; };
-    withCredentials?: boolean;
-    /**
-     * set request timeout times (ms).
-     */
-    timeout?: number;
-}
+export type RequestCloneOpts<T, TOptions extends RequestOptions> = TOptions & PayloadOptions<T> & CloneExtendOpts & ResponseAs;
+
+/**
+ * Request clone options.
+ */
+export type RequestInitOpts<T, TOptions extends RequestOptions> = Required<RequestWithContext> & TOptions & PayloadOptions<T> & CloneExtendOpts & ResponseAs;
 
 /**
  * Abstract request.
  */
-export abstract class AbstractRequest<T> implements Clonable<AbstractRequest<T>> {
+export abstract class AbstractRequest<T, TOptions extends RequestOptions = RequestOptions<T>> implements Clonable<AbstractRequest<T>> {
     /**
      * request headers.
      */
-    abstract get  headers(): HeaderMappings;
-    abstract get method(): string;
+    abstract get headers(): HeaderMappings;
     abstract get params(): RequestParams;
     abstract get context(): InvocationContext;
     /**
@@ -135,26 +130,25 @@ export abstract class AbstractRequest<T> implements Clonable<AbstractRequest<T>>
     abstract get payload(): T | null;
 
     abstract clone(): AbstractRequest<T>;
-    abstract clone<V>(update: RequestCloneOpts<V>): AbstractRequest<V>;
-    abstract clone(update: RequestCloneOpts<T>): AbstractRequest<T>;
+    abstract clone<V>(update: RequestCloneOpts<V, TOptions>): AbstractRequest<V>;
+    abstract clone(update: RequestCloneOpts<T, TOptions>): AbstractRequest<T>;
 
 }
 
-/**
- * Url request clone options.
- */
-export interface UrlRequestCloneOpts<T> extends RequestCloneOpts<T> {
-    url?: string;
-}
 
 /**
  * url request.
  */
-export abstract class UrlRequest<T> extends AbstractRequest<T> {
+export abstract class UrlRequest<T, TOptions extends UrlRequestOptions = UrlRequestOptions<T>> extends AbstractRequest<T, TOptions> {
     /**
      * The outgoing url.
      */
     abstract get url(): string;
+
+    /**
+     * request method.
+     */
+    abstract get method(): string;
 
     /**
      * The outgoing URL with all URL parameters set.
@@ -166,21 +160,15 @@ export abstract class UrlRequest<T> extends AbstractRequest<T> {
 /**
  * topic options
  */
-export interface TopicOptions {
+export interface TopicRequestOptions<T = any> extends RequestOptions<T> {
     topic?: string;
 }
 
-/**
- * Topic request clone options. 
- */
-export interface TopicRequestCloneOpts<T> extends RequestCloneOpts<T>, TopicOptions {
-
-}
 
 /**
  * Topic request
  */
-export abstract class TopicRequest<T> extends AbstractRequest<T> {
+export abstract class TopicRequest<T, TOptions extends TopicRequestOptions = TopicRequestOptions<T>> extends AbstractRequest<T, TOptions> {
     /**
      * the outgoing topic.
      */
@@ -189,20 +177,11 @@ export abstract class TopicRequest<T> extends AbstractRequest<T> {
 
 
 
-/**
- * Topic request init options.
- */
-export interface TopicRequestInitOpts extends RequestInitOpts, TopicOptions {
-
-}
-
-
 
 /**
  * Request packet.
  */
-export abstract class BaseRequest<T> extends AbstractRequest<T> {
-    readonly method: string;
+export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = RequestOptions<T>> extends AbstractRequest<T, TOptions> {
     readonly headers: HeaderMappings;
     readonly params: RequestParams;
     readonly context: InvocationContext;
@@ -224,14 +203,13 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
 
     protected queryParams?: boolean;
 
-    constructor(init: RequestInitOpts, defaultMethod = '') {
+    constructor(init: RequestInitOpts<T, TOptions>, defaultMethod = '') {
         super()
         this.id = init.id;
         this.headers = new HeaderMappings(init.headers);
         this.payload = init.payload ?? null;
         this.payload = init.body ?? init.payload ?? null;
         this.params = new RequestParams(init);
-        this.method = init.method ?? defaultMethod;
         this.context = init.context;
         this.responseType = init.responseType ?? 'json';
         this.observe = init.observe ?? 'body';
@@ -244,7 +222,7 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
         this.id = id;
     }
 
-    protected cloneOpts(update: RequestCloneOpts<any>): RequestInitOpts<any> {
+    protected cloneOpts(update: RequestCloneOpts<any, TOptions>): RequestInitOpts<any, TOptions> {
 
         // The payload is somewhat special - a `null` value in update.payload means
         // whatever current payload is present is being overridden with an empty
@@ -272,9 +250,15 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
                     .reduce((headers, name) => headers.set(name, update.setHeaders![name]), headers)
         }
 
-        const method = update.method ?? this.method;
+
         // `setParams` are used.
-        let params = update.params || this.params;
+
+        let params: RequestParams;
+        if (update.params) {
+            params = update.params instanceof RequestParams ? update.params : new RequestParams(update);
+        } else {
+            params = this.params;
+        }
 
         // Check whether the caller has asked to set params.
         if (update.setParams) {
@@ -290,7 +274,7 @@ export abstract class BaseRequest<T> extends AbstractRequest<T> {
         const timeout = update.timeout ?? this.timeout;
         const id = this.id;
         const context = update.context ?? this.context;
-        return { id, headers, params, payload, method, withCredentials, context, timeout };
+        return { id, headers, params, payload, withCredentials, context, timeout } as RequestInitOpts<any, TOptions>;
     }
 
 }
@@ -330,23 +314,47 @@ export interface RequestOptions<T = any> extends RequestPacketOpts<T> {
      * request context.
      */
     context?: InvocationContext;
+}
+
+export interface UrlRequestOptions<T = any> extends RequestOptions<T> {
+    /**
+     * request url.
+     */
+    url?: string;
+    /**
+     * request method.
+     */
+    method?: string;
     /**
      * for restful
      */
     reportProgress?: boolean;
 }
 
-export abstract class BaseUrlRequest<T> extends BaseRequest<T> implements UrlRequest<T> {
 
-    constructor(readonly url: string, readonly pattern: Pattern | null | undefined, init: RequestInitOpts<T>, defaultMethod = '') {
+
+/**
+ * Base url request
+ */
+export abstract class BaseUrlRequest<T, TOptions extends UrlRequestOptions = UrlRequestOptions<T>> extends BaseRequest<T, TOptions> implements UrlRequest<T, TOptions> {
+
+    readonly method: string;
+    constructor(readonly url: string, readonly pattern: Pattern | null | undefined, init: RequestInitOpts<T, TOptions>, defaultMethod = '') {
         super(init, defaultMethod);
+        this.method = init.method ?? defaultMethod;
         this.queryParams = !!pattern;
     }
 
     abstract clone(): BaseUrlRequest<T>;
-    abstract clone<V>(update: UrlRequestCloneOpts<V>): BaseUrlRequest<V>;
-    abstract clone(update: UrlRequestCloneOpts<T>): BaseUrlRequest<T>;
+    abstract clone<V>(update: RequestCloneOpts<V, TOptions>): BaseUrlRequest<V>;
+    abstract clone(update: RequestCloneOpts<T, TOptions>): BaseUrlRequest<T>;
 
+
+    protected override cloneOpts(update: RequestCloneOpts<any, TOptions>): RequestInitOpts<any, TOptions> {
+        const opts = super.cloneOpts(update) as RequestInitOpts<any, TOptions>;
+        opts.method = update.method ?? this.method;
+        return opts;
+    }
 
     /**
      * The outgoing URL with all URL parameters set.
@@ -359,20 +367,20 @@ export abstract class BaseUrlRequest<T> extends BaseRequest<T> implements UrlReq
     }
 }
 
-export abstract class BaseTopicRequest<T> extends BaseRequest<T> implements TopicRequest<T> {
+export abstract class BaseTopicRequest<T, TOptions extends TopicRequestOptions = TopicRequestOptions<T>> extends BaseRequest<T, TOptions> implements TopicRequest<T, TOptions> {
     readonly replyTopic: string | undefined;
-    constructor(readonly topic: string, readonly pattern: Pattern | null | undefined, init: RequestInitOpts<T>, defaultMethod = '') {
+    constructor(readonly topic: string, readonly pattern: Pattern | null | undefined, init: RequestInitOpts<T, TOptions>, defaultMethod = '') {
         super(init, defaultMethod);
         this.replyTopic = this.getResponseTopic(topic, init);
     }
 
-    protected getResponseTopic(topic: string, options: RequestInitOpts): string {
+    protected getResponseTopic(topic: string, options: RequestInitOpts<T, TOptions>): string {
         return `${topic}\reply`
     }
 
 
     abstract clone(): BaseTopicRequest<T>;
-    abstract clone<V>(update: TopicRequestCloneOpts<V>): BaseTopicRequest<V>;
-    abstract clone(update: TopicRequestCloneOpts<T>): BaseTopicRequest<T>;
+    abstract clone<V>(update: RequestCloneOpts<V, TOptions>): BaseTopicRequest<V, TOptions>;
+    abstract clone(update: RequestCloneOpts<T, TOptions>): BaseTopicRequest<T, TOptions>;
 
 }

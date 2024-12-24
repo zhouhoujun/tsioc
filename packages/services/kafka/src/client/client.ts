@@ -1,5 +1,5 @@
 import { Inject, Injectable, InvocationContext, isFunction, isString } from '@tsdi/ioc';
-import { Pattern, RequestInitOpts, ResponseEvent, patternToPath } from '@tsdi/common';
+import { Pattern, RequestInitOpts, ResponseEvent, TopicRequestOptions, patternToPath } from '@tsdi/common';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { MicroRouters } from '@tsdi/endpoints';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
@@ -14,7 +14,7 @@ import { KafkaRequest } from './request';
 
 
 @Injectable()
-export class KafkaClient extends AbstractClient<KafkaRequest<any>, ResponseEvent<any>, KafkaClientOpts> {
+export class KafkaClient extends AbstractClient<TopicRequestOptions, KafkaRequest<any>, ResponseEvent<any>, KafkaClientOpts> {
 
     @InjectLog()
     private logger!: Logger;
@@ -147,7 +147,7 @@ export class KafkaClient extends AbstractClient<KafkaRequest<any>, ResponseEvent
         context.setValue(ClientTransport, this._transport)
     }
 
-    protected createRequest(pattern: Pattern, options: RequestInitOpts): KafkaRequest<any> {
+    protected createRequest(pattern: Pattern, options: RequestInitOpts<any, TopicRequestOptions>): KafkaRequest<any> {
         if (isString(pattern)) {
             return new KafkaRequest(pattern, null, options);
         } else {

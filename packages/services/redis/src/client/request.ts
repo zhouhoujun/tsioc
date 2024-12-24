@@ -1,11 +1,10 @@
-import { BaseTopicRequest, TopicRequestCloneOpts } from '@tsdi/common';
+import { BaseTopicRequest, TopicRequestOptions, RequestCloneOpts } from '@tsdi/common';
 
-export class RedisRequest<T> extends BaseTopicRequest<T> {
-
+export class RedisRequest<T> extends BaseTopicRequest<T, TopicRequestOptions> {
     clone(): RedisRequest<T>;
-    clone<V>(update: TopicRequestCloneOpts<V>): RedisRequest<V>;
-    clone(update: TopicRequestCloneOpts<T>): RedisRequest<T>;
-    clone(update: TopicRequestCloneOpts<any> = {}): RedisRequest<any> {
+    clone<V>(update: RequestCloneOpts<V, TopicRequestOptions>): RedisRequest<V>;
+    clone(update: RequestCloneOpts<T, TopicRequestOptions>): RedisRequest<T>;
+    clone(update: RequestCloneOpts<any, TopicRequestOptions> = {}): RedisRequest<any> {
         const init = this.cloneOpts(update);
         return new RedisRequest(update.topic ?? this.topic, this.pattern, init);
     }
