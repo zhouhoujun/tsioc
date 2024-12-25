@@ -1,5 +1,5 @@
 import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
-import { ResponseEvent, Pattern, RequestInitOpts } from '@tsdi/common';
+import { ResponseEvent, Pattern, RequestInitOpts, UrlRequestOptions } from '@tsdi/common';
 import { ServiceUnavailableExecption, ev } from '@tsdi/common/transport';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { Observable } from 'rxjs';
@@ -13,7 +13,7 @@ import { WsRequest } from './request';
  * ws client.
  */
 @Injectable()
-export class WsClient extends AbstractClient<WsRequest<any>, ResponseEvent<any>, WsClientOpts> {
+export class WsClient extends AbstractClient<UrlRequestOptions, WsRequest<any>, ResponseEvent<any>, WsClientOpts> {
     private socket?: WebSocket | null;
     private session?: ClientTransport | null;
 
@@ -77,7 +77,7 @@ export class WsClient extends AbstractClient<WsRequest<any>, ResponseEvent<any>,
     }
 
 
-    protected createRequest(pattern: Pattern, options: RequestInitOpts<any>): WsRequest<any> {
+    protected createRequest(pattern: Pattern, options: RequestInitOpts<any, UrlRequestOptions>): WsRequest<any> {
         if (isString(pattern)) {
             return new WsRequest(pattern, null, options);
         } else {

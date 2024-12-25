@@ -3,10 +3,10 @@ import { Application, ApplicationContext, Payload } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ErrorResponse, Response } from '@tsdi/common';
 import { BadRequestExecption } from '@tsdi/common/transport';
-import { ClientModule } from '@tsdi/common/client';
+import { provideClient } from '@tsdi/common/client';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
-import { RequestBody, RequestParam, RequestPath, RouteMapping, Handle, MicroServRouterModule, EndpointModule, ContentInterceptor, JsonInterceptor, BodyparserInterceptor, RedirectResult } from '@tsdi/endpoints';
+import { RequestBody, RequestParam, RequestPath, RouteMapping, Handle, MicroServRouterModule, ContentInterceptor, JsonInterceptor, BodyparserInterceptor, RedirectResult, provideService } from '@tsdi/endpoints';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import * as os from 'os';
 import expect = require('expect');
@@ -101,7 +101,7 @@ if (os.platform() != 'win32') {
             ServerModule,
             LoggerModule,
             ServerEndpointModule,
-            ClientModule.register({
+            provideClient({
                 transport: 'tcp',
                 clientOpts: {
                     connectOpts: {
@@ -110,7 +110,7 @@ if (os.platform() != 'win32') {
                 }
             }),
             MicroServRouterModule.forRoot('tcp'),
-            EndpointModule.register({
+            provideService({
                 transport: 'tcp',
                 serverOpts: {
                     detailError: false,

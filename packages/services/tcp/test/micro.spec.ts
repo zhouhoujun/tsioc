@@ -2,8 +2,8 @@ import { Injectable, Injector, Module, isString, tokenId } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { ErrorResponse } from '@tsdi/common';
 import { TransportPacketModule } from '@tsdi/common/transport';
-import { ClientModule } from '@tsdi/common/client';
-import { EndpointModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
+import { provideClient } from '@tsdi/common/client';
+import { Handle, Payload, provideService, RequestPath, Subscribe } from '@tsdi/endpoints';
 import { TCP_SERV_INTERCEPTORS, TcpClient } from '../src';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -55,7 +55,7 @@ export class TcpService {
         LoggerModule,
         ServerEndpointModule,
         TransportPacketModule,
-        ClientModule.register({
+        provideClient({
             transport: 'tcp',
             microservice: true,
             clientOpts: {
@@ -64,7 +64,7 @@ export class TcpService {
                 }
             }
         }),
-        EndpointModule.register({
+        provideService({
             transport: 'tcp',
             microservice: true,
             serverOpts: {

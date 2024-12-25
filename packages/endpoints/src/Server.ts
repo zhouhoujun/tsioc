@@ -1,7 +1,7 @@
 import { Abstract, ProvdierOf, StaticProvider, Type } from '@tsdi/ioc';
 import { ApplicationEvent, CanHandle, Filter, HandlerService, Interceptor, PipeTransform, Runner, Shutdown } from '@tsdi/core';
 import { HybirdProtocols, PatternFormatter } from '@tsdi/common';
-import { IncomingFactory, OutgoingFactory, SerializationAdapter } from '@tsdi/common/transport';
+import { IncomingFactory, OutgoingFactory, StatusAdapter } from '@tsdi/common/transport';
 import { RequestContext, RequestContextFactory } from './RequestContext';
 import { RequestHandlerOptions, AbstractRequestHandler } from './AbstractRequestHandler';
 import { SessionOptions } from './Session';
@@ -39,19 +39,11 @@ export interface ServerOpts<TSerOpts = any> extends RequestHandlerOptions<any> {
     /**
      * status adapter
      */
-    statusAdapter?: ProvdierOf<SerializationAdapter>;
-    // /**
-    //  * transport session options.
-    //  */
-    // transportOpts?: TransportOpts;
+    statusAdapter?: ProvdierOf<StatusAdapter>;
     /**
      * pattern formatter
      */
     patternFormatter?: ProvdierOf<PatternFormatter>;
-    // /**
-    //  * message factory.
-    //  */
-    // messageFactory?: ProvdierOf<MessageFactory>;
     /**
      * incoming factory.
      */
@@ -65,9 +57,9 @@ export interface ServerOpts<TSerOpts = any> extends RequestHandlerOptions<any> {
      */
     requestContextFactory?: ProvdierOf<RequestContextFactory>;
     /**
-     * service transport session factory.
+     * service transport factory.
      */
-    sessionFactory?: ProvdierOf<ServerTransportFactory>;
+    transportFactory?: ProvdierOf<ServerTransportFactory>;
 
     majorVersion?: number;
     server?: any;

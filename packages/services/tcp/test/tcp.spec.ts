@@ -2,12 +2,12 @@ import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { Application, ApplicationContext, } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
-import { BadRequestExecption, PackageBufferCodingsModule } from '@tsdi/common/transport';
-import { ClientModule } from '@tsdi/common/client';
+import { BadRequestExecption } from '@tsdi/common/transport';
+import { ClientModule, provideClient } from '@tsdi/common/client';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { BodyparserInterceptor, ContentInterceptor, EndpointModule, Handle, JsonInterceptor, MicroServRouterModule, Payload, RedirectResult, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/endpoints';
+import { BodyparserInterceptor, ContentInterceptor, EndpointModule, Handle, JsonInterceptor, MicroServRouterModule, Payload, provideService, RedirectResult, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/endpoints';
 import { TCP_SERV_INTERCEPTORS, TcpClient } from '../src';
 
 import { BigFileInterceptor } from './BigFileInterceptor';
@@ -94,16 +94,16 @@ export class DeviceController {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        ClientModule.register([
+        provideClient([
             {
                 transport: 'tcp',
                 clientOpts: {
                     connectOpts: {
                         port: 2000
                     },
-                    transportOpts: {
-                        headDelimiter: '|'
-                    }
+                    // transportOpts: {
+                    //     headDelimiter: '|'
+                    // }
                 }
             },
             {
@@ -117,7 +117,7 @@ export class DeviceController {
                 }
             }
         ]),
-        EndpointModule.register([
+        provideService([
             {
                 transport: 'tcp',
                 microservice: true,
@@ -136,9 +136,9 @@ export class DeviceController {
                     listenOpts: {
                         port: 2000
                     },
-                    transportOpts: {
-                        headDelimiter: '|'
-                    },
+                    // transportOpts: {
+                    //     headDelimiter: '|'
+                    // },
                     interceptors: [
                         BigFileInterceptor,
                         ContentInterceptor,
@@ -152,7 +152,7 @@ export class DeviceController {
                 ]
             }
         ]),
-        PackageBufferCodingsModule,
+        // PackageBufferCodingsModule,
     ],
     declarations: [
         DeviceController

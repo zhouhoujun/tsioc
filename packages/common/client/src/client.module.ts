@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { ConfigMissingExecption, createHandler } from '@tsdi/core';
 import { DefaultResponseFactory, HybirdProtocols, ResponseFactory, Protocols } from '@tsdi/common';
-import { ClientIncomingFactory, NotImplementedExecption, SerializationAdapter, TransportPacketModule } from '@tsdi/common/transport';
+import { ClientIncomingFactory, ClientOutgoingFactory, NotImplementedExecption, StatusAdapter, TransportPacketModule } from '@tsdi/common/transport';
 import { AbstractClient } from './AbstractClient';
 import { ClientBackend } from './backend';
 import { ClientCodingsModule } from './codings/client.codings.module';
@@ -49,22 +49,43 @@ export class ClientModule {
      * @returns 
      */
     static register(options: Arrayify<ClientModuleConfig & ClientTokenOpts>): ModuleWithProviders<ClientModule> {
-        let providers: ProviderType[];
-        if (isArray(options)) {
-            providers = []
-            options.forEach((op, idx) => {
-                providers.push(...clientProviders(op, idx));
-            })
-        } else {
-            providers = clientProviders(options);
-        }
-
-        return {
-            providers,
-            module: ClientModule
-        }
+        return provideClient(options as any);
     }
 
+}
+
+/**
+ * provide client module with options.
+ * @param options module options.
+ * @returns 
+ */
+export function provideClient(options: ClientModuleConfig & ClientTokenOpts): ModuleWithProviders<ClientModule>;
+/**
+ * provide client module with options.
+ * @param options module options.
+ * @returns 
+ */
+export function provideClient(options: Array<ClientModuleConfig & ClientTokenOpts>): ModuleWithProviders<ClientModule>;
+/**
+ * provide client module with options.
+ * @param options module options.
+ * @returns 
+ */
+export function provideClient(options: Arrayify<ClientModuleConfig & ClientTokenOpts>): ModuleWithProviders<ClientModule> {
+    let providers: ProviderType[];
+    if (isArray(options)) {
+        providers = []
+        options.forEach((op, idx) => {
+            providers.push(...clientProviders(op, idx));
+        })
+    } else {
+        providers = clientProviders(options);
+    }
+
+    return {
+        providers,
+        module: ClientModule
+    }
 }
 
 
@@ -118,7 +139,7 @@ export interface ClientModuleOpts extends ClientModuleConfig {
     /**
      * as default client.
      */
-    asDefault?: boolean;
+    asDefault?: boolean | null;
     /**
      * trnsport backend.
      */
@@ -150,7 +171,7 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
         ...options.providers ?? [],
         {
             provider: async (injector) => {
-                let defts = injector.get(CLIENT_MODULES, []).find(r => r.transport === options.transport && (isNil(options.microservice) ? (r.asDefault || !r.microservice) : r.microservice == options.microservice));
+                let defts = injector.get(CLIENT_MODULES, null)?.find(r => r.transport === options.transport && (isNil(options.microservice) ? (r.asDefault || !r.microservice) : r.microservice == options.microservice));
                 if (!defts) {
                     try {
                         const m = await import(`@tsdi/${options.transport}`);
@@ -184,18 +205,6 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
 
                 if (!clientOpts.handlerType) throw new ConfigMissingExecption(`Config Missing handlerType`);
 
-                // clientOpts.transportOpts = {
-                //     name: `${clientOpts.microservice ? ' microservice' : ''} client`,
-                //     // group: opts.transport,
-                //     subfix: clientOpts.microservice ? '_micro' : '',
-                //     microservice: clientOpts.microservice,
-                //     timeout: clientOpts.timeout,
-                //     transport: opts.transport,
-                //     ...opts.defaultOpts?.transportOpts,
-                //     ...opts.clientOpts?.transportOpts,
-                //     client: true
-                // };
-
 
                 if (opts.imports) {
                     clientOpts.providers.push({
@@ -218,22 +227,20 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                 clientOpts.providers.push(toProvider(ResponseFactory, clientOpts.responseFactory || DefaultResponseFactory))
 
                 if (clientOpts.statusAdapter) {
-                    clientOpts.providers.push(toProvider(SerializationAdapter, clientOpts.statusAdapter))
+                    clientOpts.providers.push(toProvider(StatusAdapter, clientOpts.statusAdapter))
                 }
 
                 if (clientOpts.incomingFactory) {
-                    clientOpts.providers.push(toProvider(ClientIncomingFactory, clientOpts.incomingFactory));
+                    clientOpts.providers.push(toProvider(ClientIncomingFactory, clientOpts.incomingFactory))
                 }
 
-                // if (clientOpts.messageFactory) {
-                //     clientOpts.providers.push(toProvider(MessageFactory, clientOpts.messageFactory));
-                // }
-
-                if (clientOpts.transportFactory !== ClientTransportFactory) {
-                    clientOpts.providers.push(toProvider(ClientTransportFactory, clientOpts.transportFactory)) // ?? DefaultClientTransportFactory))
+                if (clientOpts.outgoingFactory) {
+                    clientOpts.providers.push(toProvider(ClientOutgoingFactory, clientOpts.outgoingFactory))
                 }
-                // clientOpts.providers.push(toProvider(MessageReader, clientOpts.messageReader ?? SocketMessageReader));
-                // clientOpts.providers.push(toProvider(MessageWriter, clientOpts.messageWriter ?? SocketMessageWriter));
+
+                if (clientOpts.transportFactory && clientOpts.transportFactory !== ClientTransportFactory) {
+                    clientOpts.providers.push(toProvider(ClientTransportFactory, clientOpts.transportFactory))
+                }
 
 
                 const providers: ProviderType[] = [];

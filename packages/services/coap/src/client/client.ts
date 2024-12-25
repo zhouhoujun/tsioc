@@ -1,5 +1,5 @@
 import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
-import { Pattern, RequestInitOpts, ResponseEvent } from '@tsdi/common';
+import { Pattern, RequestInitOpts, ResponseEvent, UrlRequestOptions } from '@tsdi/common';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { CoapClientOpts } from './options';
@@ -12,7 +12,7 @@ import { CoapRequest } from './request';
  * COAP Client.
  */
 @Injectable()
-export class CoapClient extends AbstractClient<CoapRequest<any>, ResponseEvent<any, string>, CoapClientOpts> {
+export class CoapClient extends AbstractClient<UrlRequestOptions, CoapRequest<any>, ResponseEvent<any, string>, CoapClientOpts> {
     private socket?: Socket | null;
     private session?: ClientTransport | null;
 
@@ -48,7 +48,7 @@ export class CoapClient extends AbstractClient<CoapRequest<any>, ResponseEvent<a
         context.setValue(ClientTransport, this.session)
     }
 
-    protected createRequest(pattern: Pattern, options: RequestInitOpts) {
+    protected createRequest(pattern: Pattern, options: RequestInitOpts<any, UrlRequestOptions>) {
         if (isString(pattern)) {
             return new CoapRequest(pattern, null, options);
         } else {

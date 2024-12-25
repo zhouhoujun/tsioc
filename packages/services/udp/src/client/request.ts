@@ -1,18 +1,18 @@
-import { BaseUrlRequest, Pattern, RequestInitOpts, UrlRequestCloneOpts } from '@tsdi/common';
+import { BaseUrlRequest, Pattern, RequestCloneOpts, RequestInitOpts, UrlRequestOptions } from '@tsdi/common';
 import { isIPv4 } from '@tsdi/common/transport';
 import { RemoteInfo } from 'dgram';
 import { udpUrl$ } from '../consts';
 
 
-export interface UdpRequestInitOpts<T = any> extends RequestInitOpts<T> {
+export interface UdpRequestOptions<T = any> extends UrlRequestOptions<T> {
     remoteInfo?: RemoteInfo;
     baseUrl?: string;
 }
 
-export class UdpRequest<T> extends BaseUrlRequest<T> {
+export class UdpRequest<T> extends BaseUrlRequest<T, UdpRequestOptions> {
     readonly remoteInfo: RemoteInfo;
 
-    constructor(url: string, pattern: Pattern | null | undefined, init: UdpRequestInitOpts<T>, defaultMethod = '') {
+    constructor(url: string, pattern: Pattern | null | undefined, init: RequestInitOpts<T, UdpRequestOptions>, defaultMethod = '') {
         super(url, pattern, init, defaultMethod);
         if (init.remoteInfo) {
             this.remoteInfo = init.remoteInfo;
@@ -31,25 +31,13 @@ export class UdpRequest<T> extends BaseUrlRequest<T> {
     }
 
     clone(): UdpRequest<T>;
-    clone<V>(update: {
-        remoteInfo?: RemoteInfo;
-    } & UrlRequestCloneOpts<V>): UdpRequest<V>;
-    clone(update: {
-        remoteInfo?: RemoteInfo;
-    } & UrlRequestCloneOpts<T>): UdpRequest<T>;
-    clone(update: {
-        remoteInfo?: RemoteInfo;
-    } & UrlRequestCloneOpts<any> = {}): UdpRequest<any> {
-        const init = this.cloneOpts(update) as UdpRequestInitOpts;
+    clone<V>(update: RequestCloneOpts<V, UdpRequestOptions>): UdpRequest<V>;
+    clone(update: RequestCloneOpts<T, UdpRequestOptions>): UdpRequest<T>;
+    clone(update: RequestCloneOpts<any, UdpRequestOptions> = {}): UdpRequest<any> {
+        const init = this.cloneOpts(update);
         init.remoteInfo = update.remoteInfo ?? this.remoteInfo;
         // Finally, construct the new HttpRequest using the pieces from above.
         return new UdpRequest(update.url ?? this.url, this.pattern, init)
-    }
-
-    protected override toRecord(): Record<string, any> {
-        const rcd = super.toRecord();
-        rcd.remoteInfo = this.remoteInfo;
-        return rcd;
     }
 
 }

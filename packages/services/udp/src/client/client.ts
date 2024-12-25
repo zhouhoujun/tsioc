@@ -1,17 +1,17 @@
 import { Injectable, InvocationContext, isString, promisify } from '@tsdi/ioc';
-import { Pattern, ResponseEvent } from '@tsdi/common';
+import { Pattern, RequestInitOpts, ResponseEvent } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { UdpHandler } from './handler';
 import { UdpClientOpts } from './options';
 import { defaultMaxSize } from '../consts';
-import { UdpRequest, UdpRequestInitOpts } from './request';
+import { UdpRequest, UdpRequestOptions } from './request';
 
 
 
 @Injectable()
-export class UdpClient extends AbstractClient<UdpRequest<any>, ResponseEvent<any>, UdpClientOpts> {
+export class UdpClient extends AbstractClient<UdpRequestOptions, UdpRequest<any>, ResponseEvent<any>, UdpClientOpts> {
     @InjectLog()
     private logger!: Logger;
     
@@ -54,7 +54,7 @@ export class UdpClient extends AbstractClient<UdpRequest<any>, ResponseEvent<any
         context.setValue(ClientTransport, this.session)
     }
 
-    protected createRequest(pattern: Pattern, options: UdpRequestInitOpts<any>): UdpRequest<any> {
+    protected createRequest(pattern: Pattern, options: RequestInitOpts<any, UdpRequestOptions>): UdpRequest<any> {
         options.baseUrl = this.getOptions().url;
         if (isString(pattern)) {
             return new UdpRequest(pattern, null, options);

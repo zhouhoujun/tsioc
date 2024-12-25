@@ -1,11 +1,11 @@
-import { BaseTopicRequest, TopicRequestCloneOpts } from '@tsdi/common';
+import { BaseTopicRequest, TopicRequestOptions, RequestCloneOpts } from '@tsdi/common';
 
-export class NatsRequest<T> extends BaseTopicRequest<T> {
+export class NatsRequest<T> extends BaseTopicRequest<T, TopicRequestOptions> {
 
     clone(): NatsRequest<T>;
-    clone<V>(update: TopicRequestCloneOpts<V>): NatsRequest<V>;
-    clone(update: TopicRequestCloneOpts<T>): NatsRequest<T>;
-    clone(update: TopicRequestCloneOpts<any> = {}): NatsRequest<any> {
+    clone<V>(update: RequestCloneOpts<V, TopicRequestOptions>): NatsRequest<V>;
+    clone(update: RequestCloneOpts<T, TopicRequestOptions>): NatsRequest<T>;
+    clone(update: RequestCloneOpts<any, TopicRequestOptions> = {}): NatsRequest<any> {
         const init = this.cloneOpts(update);
         return new NatsRequest(update.topic ?? this.topic, this.pattern, init);
     }

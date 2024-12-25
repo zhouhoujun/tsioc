@@ -42,7 +42,7 @@ export interface PayloadOptions<T = any> {
 /**
  * Request packet options.
  */
-export interface RequestPacketOpts<T = any> extends PayloadOptions<T> {
+export interface RequestOptions<T = any> extends PayloadOptions<T> {
     id?: any;
     /**
      * headers of request.
@@ -71,6 +71,9 @@ export interface RequestPacketOpts<T = any> extends PayloadOptions<T> {
      */
     timeout?: number;
 }
+
+
+
 
 
 export interface CloneExtendOpts {
@@ -133,6 +136,25 @@ export abstract class AbstractRequest<T, TOptions extends RequestOptions = Reque
     abstract clone<V>(update: RequestCloneOpts<V, TOptions>): AbstractRequest<V>;
     abstract clone(update: RequestCloneOpts<T, TOptions>): AbstractRequest<T>;
 
+}
+
+
+/**
+ * url request options
+ */
+export interface UrlRequestOptions<T = any> extends RequestOptions<T> {
+    /**
+     * request url.
+     */
+    url?: string;
+    /**
+     * request method.
+     */
+    method?: string;
+    /**
+     * for restful
+     */
+    reportProgress?: boolean;
 }
 
 
@@ -304,31 +326,6 @@ export function appendUrlParams(url: string, reqParams: RequestParams) {
         }
 
     }
-}
-
-/**
- * request options
- */
-export interface RequestOptions<T = any> extends RequestPacketOpts<T> {
-    /**
-     * request context.
-     */
-    context?: InvocationContext;
-}
-
-export interface UrlRequestOptions<T = any> extends RequestOptions<T> {
-    /**
-     * request url.
-     */
-    url?: string;
-    /**
-     * request method.
-     */
-    method?: string;
-    /**
-     * for restful
-     */
-    reportProgress?: boolean;
 }
 
 

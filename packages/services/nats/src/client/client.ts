@@ -1,5 +1,5 @@
 import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
-import { ResponseEvent, Pattern, RequestInitOpts } from '@tsdi/common';
+import { ResponseEvent, Pattern, RequestInitOpts, TopicRequestOptions } from '@tsdi/common';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { NatsConnection, connect } from 'nats';
@@ -9,7 +9,7 @@ import { NatsRequest } from './request';
 
 
 @Injectable()
-export class NatsClient extends AbstractClient<NatsRequest<any>, ResponseEvent<any>, NatsClientOpts> {
+export class NatsClient extends AbstractClient<TopicRequestOptions, NatsRequest<any>, ResponseEvent<any>, NatsClientOpts> {
     
     private conn?: NatsConnection;
     private _transport?: ClientTransport<NatsConnection>;
@@ -35,7 +35,7 @@ export class NatsClient extends AbstractClient<NatsRequest<any>, ResponseEvent<a
         context.setValue(ClientTransport, this._transport)
     }
 
-    protected createRequest(pattern: Pattern, options: RequestInitOpts): NatsRequest<any> {
+    protected createRequest(pattern: Pattern, options: RequestInitOpts<any, TopicRequestOptions>): NatsRequest<any> {
         if (isString(pattern)) {
             return new NatsRequest(pattern, null, options);
         } else {

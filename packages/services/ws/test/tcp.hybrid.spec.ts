@@ -2,9 +2,8 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { Injector, Module, isArray } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { ErrorResponse } from '@tsdi/common';
-import { ClientModule } from '@tsdi/common/client';
-import { PackageBufferCodingsModule } from '@tsdi/common/transport';
-import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
+import { ClientModule, provideClient } from '@tsdi/common/client';
+import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor, provideService } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
@@ -21,14 +20,14 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        ClientModule.register([
+        provideClient([
             {
                 transport: 'ws',
-                clientOpts: {
-                    transportOpts: {
-                        headDelimiter: '|'
-                    }
-                }
+                // clientOpts: {
+                //     transportOpts: {
+                //         headDelimiter: '|'
+                //     }
+                // }
             },
             {
                 transport: 'tcp',
@@ -36,22 +35,22 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                     connectOpts: {
                         port: 2000
                     },
-                    transportOpts: {
-                        headDelimiter: '$'
-                    }
+                    // transportOpts: {
+                    //     headDelimiter: '$'
+                    // }
                 }
             }
         ]),
-        EndpointModule.register([
+        provideService([
             {
                 transport: 'tcp',
                 serverOpts: {
                     listenOpts: {
                         port: 2000
                     },
-                    transportOpts: {
-                        headDelimiter: '$'
-                    },
+                    // transportOpts: {
+                    //     headDelimiter: '$'
+                    // },
                     interceptors: [
                         BigFileInterceptor,
                         ContentInterceptor,
@@ -63,10 +62,10 @@ import { BigFileInterceptor } from './BigFileInterceptor';
             {
                 transport: 'ws',
                 microservice: true,
-                serverOpts: {                    
-                    transportOpts: {
-                        headDelimiter: '|'
-                    },
+                serverOpts: {
+                    // transportOpts: {
+                    //     headDelimiter: '|'
+                    // },
                     interceptors: [
                         BigFileInterceptor,
                         ContentInterceptor,
@@ -76,7 +75,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 }
             }
         ]),
-        PackageBufferCodingsModule
+        // PackageBufferCodingsModule
     ],
     declarations: [
         DeviceController

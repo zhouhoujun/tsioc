@@ -5,7 +5,7 @@ import {
 import { ConfigMissingExecption, InvocationOptions, TypedRespond } from '@tsdi/core';
 import { HybirdProtocols, Protocols } from '@tsdi/common';
 import {
-    IncomingFactory, NotImplementedExecption, OutgoingFactory, SerializationAdapter, TransportPacketModule
+    IncomingFactory, NotImplementedExecption, OutgoingFactory, StatusAdapter, TransportPacketModule
 } from '@tsdi/common/transport';
 import { RequestContextFactory } from './RequestContext';
 import { Server, ServerOpts } from './Server';
@@ -21,7 +21,6 @@ import { ExecptionFinalizeFilter } from './execption.filter';
 import { DefaultExecptionHandlers } from './execption.handlers';
 import { FinalizeFilter } from './finalize.filter';
 import { createRequestHandler } from './impl/request.handler';
-// import { DefaultServerTransportFactory } from './impl/default.session';
 import { RequestContextFactoryImpl } from './impl/request.context';
 import { createMiddlewareEndpoint } from './impl/middleware';
 
@@ -69,24 +68,38 @@ export class EndpointModule {
      */
     static register(options: Array<ServiceOpts>): ModuleWithProviders<EndpointModule>;
     static register(options: Arrayify<ServiceOpts>): ModuleWithProviders<EndpointModule> {
-
-        const providers: ProviderType[] = [];
-        if (isArray(options)) {
-            options.forEach((op, idx) => {
-                providers.push(...createServiceProviders(op, idx));
-            })
-        } else {
-            providers.push(...createServiceProviders(options, 0));
-        }
-
-        return {
-            providers,
-            module: EndpointModule
-        }
+        return provideService(options as any);
     }
 }
 
+/**
+ * provide service.
+ * @param options 
+ * @param autoBootstrap default true 
+ */
+export function provideService(options: ServiceOpts): ModuleWithProviders<EndpointModule>;
+/**
+ * provide service.
+ * @param options
+ * @param autoBootstrap default true 
+ */
+export function provideService(options: Array<ServiceOpts>): ModuleWithProviders<EndpointModule>;
+export function provideService(options: Arrayify<ServiceOpts>): ModuleWithProviders<EndpointModule> {
 
+    const providers: ProviderType[] = [];
+    if (isArray(options)) {
+        options.forEach((op, idx) => {
+            providers.push(...createServiceProviders(op, idx));
+        })
+    } else {
+        providers.push(...createServiceProviders(options, 0));
+    }
+
+    return {
+        providers,
+        module: EndpointModule
+    }
+}
 
 
 /**
@@ -192,7 +205,7 @@ export interface MicroServerModuleOpts extends MicroServiceOpts {
     /**
      * as default service.
      */
-    asDefault?: boolean;
+    asDefault?: boolean | null;
     /**
      * server type.
      */
@@ -220,7 +233,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
         ...options.providers ?? [],
         {
             provider: async (injector) => {
-                let mdopts = injector.get(SERVER_MODULES, []).find(r => r.transport === options.transport && (isNil(options.microservice) ? (r.asDefault || !r.microservice) : r.microservice == options.microservice));
+                let mdopts = injector.get(SERVER_MODULES, null)?.find(r => r.transport === options.transport && (isNil(options.microservice) ? (r.asDefault || !r.microservice) : r.microservice == options.microservice));
 
                 if (!mdopts) {
                     try {
@@ -265,19 +278,6 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     serverOpts.microservice = moduleOpts.microservice;
                 }
 
-                // serverOpts.transportOpts = {
-                //     name: `${serverOpts.microservice ? ' microservice' : ''}`,
-                //     subfix: serverOpts.microservice ? '_micro' : '',
-                //     transport: moduleOpts.transport,
-                //     timeout: serverOpts.timeout,
-                //     microservice: serverOpts.microservice,
-                //     ...moduleOpts.defaultOpts?.transportOpts,
-                //     ...moduleOpts.serverOpts?.transportOpts,
-                //     client: false
-                // };
-
-
-
 
                 if (moduleOpts.imports) {
                     serverOpts.providers.push({
@@ -288,7 +288,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 }
 
                 if (serverOpts.statusAdapter) {
-                    serverOpts.providers.push(toProvider(SerializationAdapter, serverOpts.statusAdapter))
+                    serverOpts.providers.push(toProvider(StatusAdapter, serverOpts.statusAdapter))
                 }
 
                 if (!serverOpts.execptionHandlers) {
@@ -302,20 +302,12 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     serverOpts.providers.push(toProvider(OutgoingFactory, serverOpts.outgoingFactory));
                 }
 
-                // if (serverOpts.messageFactory) {
-                //     serverOpts.providers.push(toProvider(MessageFactory, serverOpts.messageFactory));
-                // }
-
                 if (serverOpts.requestContextFactory) {
                     serverOpts.providers.push(toProvider(RequestContextFactory, serverOpts.requestContextFactory));
                 }
 
-                // serverOpts.providers.push(toProvider(MessageReader, serverOpts.messageReader ?? SocketMessageReader));
-                // serverOpts.providers.push(toProvider(MessageWriter, serverOpts.messageWriter ?? SocketMessageWriter));
-
-
-                if (serverOpts.sessionFactory !== ServerTransportFactory) {
-                    serverOpts.providers.push(toProvider(ServerTransportFactory, serverOpts.sessionFactory))
+                if (serverOpts.transportFactory && serverOpts.transportFactory !== ServerTransportFactory) {
+                    serverOpts.providers.push(toProvider(ServerTransportFactory, serverOpts.transportFactory))
                 }
 
 

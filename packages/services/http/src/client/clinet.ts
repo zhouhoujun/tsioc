@@ -2,7 +2,8 @@ import { Injectable, InvocationContext } from '@tsdi/ioc';
 import {
     RequestOptions, HeadersLike, PUT, GET, DELETE, HEAD, JSONP, PATCH, POST,
     RequestParams, Pattern, HttpRequestMethod, RequestInitOpts,
-    joinPath
+    joinPath,
+    UrlRequestOptions
 } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
@@ -37,7 +38,7 @@ export type HttpReqOptions = HttpRequestOpts & HttpNodeOpts;
  * http client for nodejs
  */
 @Injectable()
-export class Http extends AbstractClient<HttpRequest<any>, HttpEvent<any>, HttpClientOpts> {
+export class Http extends AbstractClient<UrlRequestOptions, HttpRequest<any>, HttpEvent<any>, HttpClientOpts> {
 
     private session?: ClientTransport<http2.ClientHttp2Session | null> | null;
     constructor(readonly handler: HttpHandler) {
@@ -113,7 +114,7 @@ export class Http extends AbstractClient<HttpRequest<any>, HttpEvent<any>, HttpC
         return new HttpParams({ params });
     }
 
-    protected override createRequest(pattern: Pattern, options: RequestInitOpts): HttpRequest<any> {
+    protected override createRequest(pattern: Pattern, options: RequestInitOpts<any, UrlRequestOptions>): HttpRequest<any> {
         let url = this.formatter.format(pattern);
         if (!abstUrlExp.test(url)) {
             url = joinPath(this.getOptions().url ?? this.getOptions().authority, url);
