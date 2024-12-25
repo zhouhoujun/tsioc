@@ -1,7 +1,7 @@
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { HttpStatusCode, RequestMethod } from '@tsdi/common';
-import { InternalServerExecption, append, vary } from '@tsdi/common/transport';
+import { InternalServerExecption, Outgoing, append, getHeader } from '@tsdi/common/transport';
 import { Middleware, RestfulRequestContext } from '@tsdi/endpoints';
 import { defer, lastValueFrom, Observable } from 'rxjs';
 
@@ -340,4 +340,25 @@ interface Options {
      * keep headers on error.
      */
     keepHeadersOnError?: boolean;
+}
+
+const VARY = 'vary';
+/**
+* Mark that a request is varied on a header field.
+*
+* @param {Object} res
+* @param {String|Array} field
+* @public
+*/
+export function vary(res: Outgoing<any>, field: string) {
+  // get existing header
+  let val = (res.getHeader ? res.getHeader(VARY) : getHeader(res.headers, VARY, true)) || '';
+  const header = Array.isArray(val)
+    ? val.join(', ')
+    : String(val);
+
+  // set new header
+  if ((val = append(header, field))) {
+    res.setHeader(VARY, val)
+  }
 }

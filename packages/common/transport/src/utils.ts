@@ -1,5 +1,5 @@
-import { ArgumentExecption } from '@tsdi/ioc';
-import { Outgoing } from './Outgoing';
+import { ArgumentExecption, isArray } from '@tsdi/ioc';
+import { HeaderAccess, HeadersLike, IHeaders } from '@tsdi/common';
 
 
 /**
@@ -138,26 +138,21 @@ export function parseTokenList(str: string) {
   return list
 }
 
-const VARY = 'vary';
-const field_name = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 /**
-* Mark that a request is varied on a header field.
-*
-* @param {Object} res
-* @param {String|Array} field
-* @public
-*/
-export function vary(res: Outgoing<any>, field: string) {
-  // get existing header
-  let val = res.getHeader(VARY) || '';
-  const header = Array.isArray(val)
-    ? val.join(', ')
-    : String(val);
-
-  // set new header
-  if ((val = append(header, field))) {
-    res.setHeader(VARY, val)
+ * 
+ * @param headers 
+ * @param header 
+ * @param join 
+ * @returns 
+ */
+export function getHeader(headers: HeadersLike, header: string, join?: boolean): string | undefined {
+  let values: any;
+  if (headers.getHeader) {
+    values = (headers as HeaderAccess).getHeader(header)
+  } else {
+    values = (headers as IHeaders)[header];
   }
+  return isArray(values) ? (join ? values.join(', ') : String(values[0])) : String(values)
 }
 
 /**
@@ -219,6 +214,8 @@ export function append(header: string, field: string) {
   return val
 }
 
+
+const field_name = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 
 const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
 export function isIPv4(ip: string) {

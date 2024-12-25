@@ -1,5 +1,6 @@
 import { Header, HeaderAccess, HeaderAdapter, HeadersLike, IHeaders } from '@tsdi/common';
 import { Injectable, isArray, isDefined, isNil } from '@tsdi/ioc';
+import { getHeader } from './utils';
 
 @Injectable()
 export class DefaultHeaderAdapter implements HeaderAdapter {
@@ -9,13 +10,7 @@ export class DefaultHeaderAdapter implements HeaderAdapter {
     }
 
     getHeader(headers: HeadersLike, header: string): string | undefined {
-        let values: any;
-        if (headers.getHeader) {
-            values = (headers as HeaderAccess).getHeader(header)
-        } else {
-            values = (headers as IHeaders)[header];
-        }
-        return isArray(values) && values.length ? values[0] : values
+        return getHeader(headers, header)
     }
 
     setHeader<T extends HeadersLike>(headers: T, header: string, value: Header): T {
