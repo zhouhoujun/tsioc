@@ -151,6 +151,9 @@ export interface ClientModuleOpts extends ClientModuleConfig {
  */
 export interface ClientTokenOpts {
 
+    /**
+     * transport protocol.
+     */
     transport: Protocols;
 
     /**

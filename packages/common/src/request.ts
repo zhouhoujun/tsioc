@@ -161,7 +161,7 @@ export interface UrlRequestOptions<T = any> extends RequestOptions<T> {
 /**
  * url request.
  */
-export abstract class UrlRequest<T, TOptions extends UrlRequestOptions = UrlRequestOptions<T>> extends AbstractRequest<T, TOptions> {
+export abstract class UrlRequest<T=any, TOptions extends UrlRequestOptions = UrlRequestOptions<T>> extends AbstractRequest<T, TOptions> {
     /**
      * The outgoing url.
      */

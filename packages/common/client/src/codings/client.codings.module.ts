@@ -7,7 +7,7 @@ import {
 } from './response.decodings';
 import { ClientBackend } from '../backend';
 import { ClientTransportBackend } from './transport.backend';
-import { ClientEndpointCodingsHanlders } from './codings.handlers';
+// import { ClientEndpointCodingsHanlders } from './codings.handlers';
 
 
 const CLIENT_INCOMING_DECODE_INTERCEPTORS = getToken<Interceptor[]>(AbstractClientIncoming);
@@ -20,7 +20,7 @@ const CLIENT_INCOMING_DECODE_INTERCEPTORS = getToken<Interceptor[]>(AbstractClie
         { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: EmptyResponseDecordeInterceptor, multi: true },
         { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: CompressResponseDecordeInterceptor, multi: true },
         { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: ResponseTypeDecodeInterceptor, multi: true },
-        ClientEndpointCodingsHanlders
+        // ClientEndpointCodingsHanlders
     ]
 })
 export class ClientCodingsModule {

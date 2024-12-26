@@ -1,6 +1,6 @@
 import { Injectable, isNil, isString, lang } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { HEAD, ResponseEvent, ResponseJsonParseError, AbstractRequest } from '@tsdi/common';
+import { HEAD, ResponseEvent, ResponseJsonParseError, AbstractRequest, UrlRequest } from '@tsdi/common';
 import { MimeAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer, ClientIncoming, TransportContext } from '@tsdi/common/transport';
 import { Observable, defer, mergeMap, of, throwError } from 'rxjs';
 import { ClientTransport } from '../transport';
@@ -80,7 +80,7 @@ export class CompressResponseDecordeInterceptor implements Interceptor<ClientInc
             // 3. no Content-Encoding header
             // 4. no content response (204)
             // 5. content not modified response (304)
-            if (rqstatus.compress && req.method !== HEAD && codings) {
+            if (rqstatus.compress && (req as UrlRequest) .method !== HEAD && codings) {
 
                 let body = response.body;
                 // For Node v6+
