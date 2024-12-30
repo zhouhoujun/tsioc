@@ -2,13 +2,13 @@ import {
     Arrayify, Injector, Module, ModuleRef, ModuleType, ModuleWithProviders,
     ProvdierOf, ProviderType, Token, Type, isArray, isNil, lang, toProvider, tokenId
 } from '@tsdi/ioc';
-import { ConfigMissingExecption, createHandler } from '@tsdi/core';
+import { ConfigMissingExecption, createHandler, ExecptionHandlerFilter } from '@tsdi/core';
 import { DefaultResponseFactory, HybirdProtocols, ResponseFactory, Protocols } from '@tsdi/common';
 import { ClientIncomingFactory, ClientOutgoingFactory, NotImplementedExecption, StatusAdapter, TransportPacketModule } from '@tsdi/common/transport';
 import { AbstractClient } from './AbstractClient';
 import { ClientBackend } from './backend';
 import { ClientCodingsModule } from './codings/client.codings.module';
-import { ClientEndpointCodingsHanlders } from './codings/codings.handlers';
+// import { ClientEndpointCodingsHanlders } from './codings/codings.handlers';
 import { BodyContentInterceptor } from './interceptors/body';
 import { ClientOpts } from './options';
 import { UrlRedirector } from './redirector';
@@ -215,16 +215,6 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                             await injector.useAsync(opts.imports!)
                         }
                     })
-                }
-
-                if (!clientOpts.execptionHandlers) {
-                    clientOpts.execptionHandlers = [ClientEndpointCodingsHanlders]
-                } else {
-                    if (isArray(clientOpts.execptionHandlers)) {
-                        clientOpts.execptionHandlers.push(ClientEndpointCodingsHanlders)
-                    } else {
-                        clientOpts.execptionHandlers = [clientOpts.execptionHandlers, ClientEndpointCodingsHanlders];
-                    }
                 }
 
                 clientOpts.providers.push(toProvider(ResponseFactory, clientOpts.responseFactory || DefaultResponseFactory))
