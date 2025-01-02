@@ -129,7 +129,7 @@ export abstract class Transport<TSocket = any, TInput = any, TOutput = any> {
     /**
      * header adapter.
      */
-    abstract get headerAdapter(): HeaderAdapter;
+    abstract get headerAdapter(): HeaderAdapter | null;
     /**
      * status adapter.
      */

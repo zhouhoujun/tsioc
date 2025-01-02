@@ -33,7 +33,7 @@ export class ErrorResponseDecordeInterceptor implements Interceptor<ClientIncomi
 export class EmptyResponseDecordeInterceptor implements Interceptor<ClientIncoming<any>, ResponseEvent<any>, TransportContext> {
 
     intercept(input: ClientIncoming<any>, next: Handler<ClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
-        const len = context.transport.headerAdapter.getContentLength(input.headers);
+        const len = context.transport.headerAdapter?.getContentLength(input.headers);
         const transport = context.transport as ClientTransport;
         if (!len || transport.statusAdapter?.isEmpty(input.status)) {
             input.body = null;
@@ -69,7 +69,7 @@ export class CompressResponseDecordeInterceptor implements Interceptor<ClientInc
         return defer(async () => {
             const response = input;
             const transport = context.transport as ClientTransport;
-            const codings = transport.headerAdapter.getContentEncoding(response.headers);
+            const codings = transport.headerAdapter?.getContentEncoding(response.headers);
             const req = context.first() as AbstractRequest<any>;
             const streamAdapter = transport.streamAdapter;
             const rqstatus = req.context.getValueify(RequestStauts, () => new RequestStauts());
@@ -179,7 +179,7 @@ export class ResponseTypeDecodeInterceptor implements Interceptor<ClientIncoming
             const req = context.first() as AbstractRequest<any>;
             let responseType = req.responseType;
 
-            const contentType = headerAdapter.getContentType(input.headers);
+            const contentType = headerAdapter?.getContentType(input.headers);
             if (contentType && responseType === 'json') {
                 const mimeAdapter = req.context.get(MimeAdapter);
                 if (mimeAdapter && !mimeAdapter.isJson(contentType)) {
@@ -243,7 +243,7 @@ export class ResponseTypeDecodeInterceptor implements Interceptor<ClientIncoming
 
                     case 'blob':
                         body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
-                            type: headerAdapter.getContentType(input.headers)
+                            type: headerAdapter?.getContentType(input.headers)
                         });
                         break;
 
