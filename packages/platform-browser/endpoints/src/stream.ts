@@ -1,16 +1,17 @@
 import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
 import { global, isFormData  } from '@tsdi/common';
-import { StreamAdapter, BrotliOptions, IDuplexStream, IReadableStream, ITransformStream, IWritableStream, PipeSource, ZipOptions, ev, isBuffer, IEventEmitter } from '@tsdi/common/transport';
+import { StreamAdapter, BrotliOptions, PipeSource, ZipOptions, ev, isBuffer } from '@tsdi/common/transport';
 import { Stream, Writable, Readable, Duplex, PassThrough, Transform, WritableOptions } from 'readable-stream';
+import { EventEmitter } from 'pumpify';
 import * as pumpify from 'pumpify';
-import * as FormData from 'form-data';
+// import * as FormData from 'form-data';
 import * as rawBody from 'raw-body';
 import { JsonStreamStringify } from './stringify';
 
 @Injectable({ static: true })
 export class BrowserStreamAdapter extends StreamAdapter {
 
-    async pipeTo(source: PipeSource | Stream, destination: IWritableStream): Promise<void> {
+    async pipeTo(source: PipeSource | Stream, destination: Writable): Promise<void> {
         if (this.isStream(source) && !this.isReadable(source)) {
             const defer = lang.defer();
             source.once(ev.ERROR, (err) => {
@@ -24,26 +25,26 @@ export class BrowserStreamAdapter extends StreamAdapter {
                 .finally(() => {
                     isFunction((source as any).destroy) && (source as any).destroy();
                 })
-        } else {
-            await pumpify.obj.pipeline(source, destination);
+        } else if(source) {
+            await pumpify.obj.pipeline(source as any, destination);
             if (source instanceof Readable) source.destroy();
         }
     }
 
-    pipeline<T extends IDuplexStream>(source: PipeSource<any>, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
-    pipeline<T extends IDuplexStream>(source: PipeSource<any>, transform: ITransformStream, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
-    pipeline<T extends IDuplexStream>(source: PipeSource<any>, transform: ITransformStream, transform2: ITransformStream, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
-    pipeline<T extends IDuplexStream>(source: PipeSource<any>, transform: ITransformStream, transform2: ITransformStream, transform3: ITransformStream, destination: IWritableStream, callback?: (err: NodeJS.ErrnoException | null) => void): T;
-    pipeline<T extends IDuplexStream>(...args: any[]): T {
+    pipeline<T extends Writable>(source: PipeSource<any>, destination: T, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    pipeline<T extends Writable>(source: PipeSource<any>, transform: Transform, destination: T, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    pipeline<T extends Writable>(source: PipeSource<any>, transform: Transform, transform2: Transform, destination: T, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    pipeline<T extends Writable>(source: PipeSource<any>, transform: Transform, transform2: Transform, transform3: Transform, destination: T, callback?: (err: NodeJS.ErrnoException | null) => void): T;
+    pipeline<T extends Writable>(...args: any[]): T {
         return (pumpify.obj.pipeline as any).apply(pumpify.obj.pipeline, ...args) as T;
     }
 
 
-    jsonSreamify(value: any, replacer?: Function | any[] | undefined, spaces?: string | number | undefined, cycle?: boolean | undefined): IReadableStream {
+    jsonSreamify(value: any, replacer?: Function | any[] | undefined, spaces?: string | number | undefined, cycle?: boolean | undefined): Readable {
         return new JsonStreamStringify(value, replacer, spaces, cycle);
     }
 
-    isEventEmitter(target: any): target is IEventEmitter {
+    isEventEmitter(target: any): target is EventEmitter {
         return target && isFunction(target.once) && isFunction(target.on) && isFunction(target.off) && isFunction(target.addListener)  && isFunction(target.removeListener);
     }
 
@@ -81,12 +82,12 @@ export class BrowserStreamAdapter extends StreamAdapter {
         destroy?(this: Transform, error: Error | null, callback: (error: Error | null) => void): void;
         transform?(this: Transform, chunk: any, encoding: BufferEncoding, callback: (error?: Error | null, data?: any) => void): void;
         flush?(this: Transform, callback: (error?: Error | null, data?: any) => void): void;
-    }): IDuplexStream {
+    }): PassThrough {
         return new PassThrough(options);
     }
 
     
-    createWritable(options?: WritableOptions): IWritableStream {
+    createWritable(options?: WritableOptions): Writable {
         return new Writable(options);
     }
     gzip<T extends Uint8Array>(buff: T): Promise<T> {
@@ -100,35 +101,35 @@ export class BrowserStreamAdapter extends StreamAdapter {
         return {} as T;
     }
 
-    createGzip(options?: ZipOptions): ITransformStream {
+    createGzip(options?: ZipOptions): Transform {
         return new global.CompressionStream('gzip');
         // return zlib.createGzip(options);
     }
-    createGunzip(options?: ZipOptions): ITransformStream {
+    createGunzip(options?: ZipOptions): Transform {
         return new global.DecompressionStream('gzip');
         // return zlib.createGunzip(options);
     }
 
-    createInflate(options?: ZipOptions | undefined): ITransformStream {
+    createInflate(options?: ZipOptions | undefined): Transform {
         return new global.CompressionStream('deflate');
         // return zlib.createInflate(options);
     }
-    createInflateRaw(options?: ZipOptions | undefined): ITransformStream {
+    createInflateRaw(options?: ZipOptions | undefined): Transform {
         return new global.CompressionStream('deflate-raw');
         // return zlib.createInflateRaw(options);
     }
 
-    createBrotliCompress(options?: BrotliOptions | undefined): ITransformStream {
+    createBrotliCompress(options?: BrotliOptions | undefined): Transform {
         return new global.CompressionStream('deflate');
         // return zlib.createBrotliCompress(options);
     }
-    createBrotliDecompress(options?: BrotliOptions | undefined): ITransformStream {
+    createBrotliDecompress(options?: BrotliOptions | undefined): Transform {
         return new global.DecompressionStream('deflate');
         // return zlib.createBrotliDecompress(options);
     }
 
     rawbody(
-        stream: IReadableStream,
+        stream: Readable,
         options: ({
             /**
              * The expected length of the stream.
@@ -149,7 +150,7 @@ export class BrowserStreamAdapter extends StreamAdapter {
         }) | string
     ): Promise<string>;
     rawbody(
-        stream: IReadableStream,
+        stream: Readable,
         options: ({
             /**
              * The expected length of the stream.
@@ -162,19 +163,19 @@ export class BrowserStreamAdapter extends StreamAdapter {
             limit?: number | string | null;
         }) | string
     ): Promise<Buffer>
-    rawbody(stream: IReadableStream, options: string | { length?: string | number | null | undefined; limit?: string | number | null | undefined; encoding?: string | null | undefined; }): Promise<string | Buffer> {
+    rawbody(stream: Readable, options: string | { length?: string | number | null | undefined; limit?: string | number | null | undefined; encoding?: string | null | undefined; }): Promise<string | Buffer> {
         return rawBody(stream as any, options);
     }
 
-    isDuplex(target: any): target is IDuplexStream {
+    isDuplex(target: any): target is Duplex {
         return target instanceof Duplex;
     }
 
     isFormDataLike(target: any): boolean {
         return isFormData(target) || target instanceof FormData;
     }
-    createFormData(options?: { writable?: boolean | undefined; readable?: boolean | undefined; dataSize?: number | undefined; maxDataSize?: number | undefined; pauseStreams?: boolean | undefined; highWaterMark?: number | undefined; encoding?: string | undefined; objectMode?: boolean | undefined; read?(this: IReadableStream, size: number): void; destroy?(this: IReadableStream, error: Error | null, callback: (error: Error | null) => void): void; autoDestroy?: boolean | undefined; } | undefined) {
-        return new FormData(options);
+    createFormData(options?: { writable?: boolean | undefined; readable?: boolean | undefined; dataSize?: number | undefined; maxDataSize?: number | undefined; pauseStreams?: boolean | undefined; highWaterMark?: number | undefined; encoding?: string | undefined; objectMode?: boolean | undefined; read?(this: Readable, size: number): void; destroy?(this: Readable, error: Error | null, callback: (error: Error | null) => void): void; autoDestroy?: boolean | undefined; } | undefined) {
+        return new FormData();
     }
     isJson(target: any): boolean {
         if (!target) return false;

@@ -4,15 +4,15 @@ import { HeaderAdapter, Packet } from '@tsdi/common';
 import { Observable, Subscriber, filter, map, mergeMap, of, range, throwError } from 'rxjs';
 
 import { StreamAdapter, isBuffer } from '../StreamAdapter';
-import { IDuplexStream, IReadableStream } from '../stream';
+import { IDuplex, IReadable } from '../stream';
 import { PacketLengthException } from '../execptions';
 import { IncomingMessage } from '../Incoming';
 import { OutgoingMessage } from '../Outgoing';
 import { TransportContext } from '../context';
 
 interface CachePacket {
-    packet: Packet<IDuplexStream>;
-    streams?: IReadableStream[] | null;
+    packet: Packet<IDuplex>;
+    streams?: IReadable[] | null;
     cacheSize: number;
     completed?: boolean;
 }

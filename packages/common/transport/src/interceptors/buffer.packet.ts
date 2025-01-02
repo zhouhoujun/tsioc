@@ -4,7 +4,7 @@ import { Packet } from '@tsdi/common';
 import { Observable, Subscriber, filter, map, mergeMap, throwError } from 'rxjs';
 import { PacketLengthException } from '../execptions';
 import { PacketIdGenerator } from '../PacketId';
-import { IDuplexStream, IReadableStream } from '../stream';
+import { IDuplex, IReadable } from '../stream';
 import { PackageEncodeInterceptor } from './buffer.package';
 import { IncomingMessage } from '../Incoming';
 import { OutgoingMessage } from '../Outgoing';
@@ -17,7 +17,7 @@ import { TransportContext } from '../context';
  */
 export interface ChannelCache {
     Packet: Packet;
-    stream: IDuplexStream | null;
+    stream: IDuplex | null;
     length: number;
     contentLength: number | null;
 }
@@ -179,7 +179,7 @@ export class PacketEncodeInterceptor implements Interceptor<OutgoingMessage, Pac
                 const delimiter = Buffer.from(options.delimiter!);
                 const delimiterLen = Buffer.byteLength(delimiter);
                 // const headers = msg.headers;
-                let data: IReadableStream | Buffer | string | null = msg.payload;
+                let data: IDuplex | Buffer | string | null = msg.payload;
                 if (streamAdapter.isReadable(data)) {
                     let first = true;
                     let subpacket = false;

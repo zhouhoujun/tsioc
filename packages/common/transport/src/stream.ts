@@ -324,8 +324,11 @@ export interface IEventEmitter {
     eventNames(): Array<string | symbol>;
 }
 
+
+export type IPipeSource<T = any> = Iterable<T> | AsyncIterable<T> | IReadable;
+
 export interface IStream extends IEventEmitter {
-    pipe<T extends IWritableStream>(
+    pipe<T extends IWritable>(
         destination: T,
         options?: {
             end?: boolean | undefined;
@@ -333,25 +336,25 @@ export interface IStream extends IEventEmitter {
     ): T;
 }
 
-export interface IReadableStream extends IStream {
+export interface IReadable extends IEventEmitter {
     readable: boolean;
     read(size?: number): any;
     setEncoding(encoding: string): this;
     pause(): this;
     resume(): this;
     isPaused(): boolean;
-    pipe<T extends IWritableStream>(destination: T, options?: { end?: boolean | undefined; }): T;
-    unpipe(destination?: IWritableStream): this;
+    pipe<T extends IWritable>(destination: T, options?: { end?: boolean | undefined; }): T;
+    unpipe(destination?: IWritable): this;
     unshift(chunk: any, encoding?: string): void;
     push(chunk: any, encoding?: string): boolean;
-    wrap(oldStream: IReadableStream): this;
-    destroy?(error?: any): void;
+    wrap(oldStream: IReadable): this;
+    destroy?(error?: any): any;
     [Symbol.asyncIterator](): AsyncIterableIterator<any>;
 }
 
 export interface IEnd {
     end(cb?: () => void): this;
-    end(data: any, cb?: (err?: Error | null) => void): this;
+    end(data: any, cb?: (err?: Error | null | undefined) => void): this;
     end(data: any, encoding?: string, cb?: () => void): this;
 }
 
@@ -359,20 +362,21 @@ export interface IEndable extends IEventEmitter, IEnd {
 
 }
 
-export interface IWritableStream extends IStream, IEndable {
+export interface IWritable extends IEndable {
     writable: boolean;
-    write(data: any, cb?: (err?: Error | null) => void): boolean;
-    write(data: any, encoding?: string, cb?: (err?: Error | null) => void): boolean;
-    end(cb?: () => void): this;
-    end(data: any, cb?: () => void): this;
-    end(data: any, encoding?: string, cb?: () => void): this;
+    write(data: any, cb?: (err?: Error | null | undefined) => void): boolean;
+    write(data: any, encoding?: string, cb?: (err?: Error | null | undefined) => void): boolean;
 }
 
-export interface IDuplexStream extends IReadableStream, IWritableStream {
+export interface IDuplex extends IReadable, IWritable {
 
 }
 
-export interface ITransformStream extends IDuplexStream {
+export interface ITransform extends IDuplex {
     _transform(chunk: any, encoding: string, callback: (error?: Error | null, data?: any) => void): void;
     _flush(callback: (error?: Error | null, data?: any) => void): void;
+}
+
+export interface IPassThrough extends ITransform {
+
 }

@@ -3,7 +3,7 @@ import { AbstractRequest } from '@tsdi/common';
 import { Observable, Subject, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
 import { Transport } from './Transport';
 import { ev } from './consts';
-import { IEventEmitter, IReadableStream, IWritableStream } from './stream';
+import { IEventEmitter, IReadable, IWritable } from './stream';
 import { AbstractIncomingFactory } from './Incoming';
 import { AbstractOutgoingFactory } from './Outgoing';
 import { Deserializer } from './Deserializer';
@@ -83,17 +83,17 @@ export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = a
 }
 
 @Abstract()
-export abstract class SocketTransport<TSocket extends IWritableStream = IWritableStream, TInput = any, TOutput = any> extends AbstractTransport<TSocket, TInput, TOutput> {
+export abstract class SocketTransport<TSocket extends IWritable = IWritable, TInput = any, TOutput = any> extends AbstractTransport<TSocket, TInput, TOutput> {
 
     protected override read(channel?: IEventEmitter | null, req?: AbstractRequest<any>): Observable<any> {
         return fromEvent(channel ?? this.socket, ev.DATA)
     }
 
-    protected override write(msg: any, channel?: IWritableStream | null): Promise<any> {
+    protected override write(msg: any, channel?: IWritable | null): Promise<any> {
 
         const socket = channel ?? this.socket;
         if (this.streamAdapter.isReadable(msg.payload)) {
-            return this.streamAdapter.pipeTo(msg.payload as IReadableStream, socket, { end: false });
+            return this.streamAdapter.pipeTo(msg.payload as IReadable, socket, { end: false });
         }
         return promisify<any, void>(socket.write, socket)(msg.payload)
     }

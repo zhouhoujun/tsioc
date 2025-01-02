@@ -1,12 +1,9 @@
 import { TypeExecption, isArray } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { ev } from './consts';
-import { IDuplexStream, IEventEmitter, IReadableStream, IStream, ITransformStream, IWritableStream } from './stream';
+import { IDuplex, IEventEmitter, IPassThrough, IReadable, IStream, ITransform, IWritable } from './stream';
 
-/**
- * pipe source.
- */
-export type PipeSource<T = any> = Iterable<T> | AsyncIterable<T> | IReadableStream;
+export type PipeSource<T = any> = Iterable<T> | AsyncIterable<T> | IReadable;
 
 /**
  * isBuffer or not.
@@ -24,7 +21,7 @@ export function isBuffer(target: any): target is Buffer {
  * @param url 
  * @returns 
  */
-export async function toBuffer(body: IReadableStream, limit = 0, url?: string) {
+export async function toBuffer(body: IReadable, limit = 0, url?: string) {
     const data = [];
     let bytes = 0;
 
@@ -46,9 +43,9 @@ export async function toBuffer(body: IReadableStream, limit = 0, url?: string) {
  */
 export abstract class StreamAdapter {
 
-    merge(writable: IWritableStream, ...sources: IStream[]): void;
-    merge(writable: IWritableStream, sources: IStream[]): void;
-    merge(writable: IWritableStream, ...args: any[]): void {
+    merge(writable: IWritable, ...sources: IStream[]): void;
+    merge(writable: IWritable, sources: IStream[]): void;
+    merge(writable: IWritable, ...args: any[]): void {
 
         const sources: IStream[] = (args.length == 1 && isArray(args[0])) ? args[0] : args;
 
@@ -77,13 +74,13 @@ export abstract class StreamAdapter {
      * @param destination
      * @param options 
      */
-    abstract pipeTo(source: PipeSource | IStream, destination: IWritableStream, options?: { end?: boolean, signal?: any }): Promise<void>;
+    abstract pipeTo(source: PipeSource | IStream, destination: IWritable, options?: { end?: boolean, signal?: any }): Promise<void>;
     /**
      * pipe line
      * @param source 
      * @param destination 
      */
-    abstract pipeline<T extends IDuplexStream>(source: PipeSource, destination: IWritableStream, callback?: (err: any) => void): T;
+    abstract pipeline<T extends IWritable>(source: PipeSource, destination: T, callback?: (err: any) => void): T;
     /**
      *  pipe line
      * @param source source stream
@@ -91,7 +88,7 @@ export abstract class StreamAdapter {
      * @param destination destination stream
      * @param callback 
      */
-    abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, destination: IWritableStream, callback?: (err: any) => void): T;
+    abstract pipeline<T extends IWritable>(source: PipeSource, transform: ITransform, destination: T, callback?: (err: any) => void): T;
     /**
      * pipe line
      * @param source source stream
@@ -100,7 +97,7 @@ export abstract class StreamAdapter {
      * @param destination destination stream
      * @param callback 
      */
-    abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, transform2: ITransformStream, destination: IWritableStream, callback?: (err: any) => void): T;
+    abstract pipeline<T extends IWritable>(source: PipeSource, transform: ITransform, transform2: ITransform, destination: T, callback?: (err: any) => void): T;
     /**
      * pipe line
      * @param source source stream
@@ -110,7 +107,7 @@ export abstract class StreamAdapter {
      * @param destination destination stream
      * @param callback 
      */
-    abstract pipeline<T extends IDuplexStream>(source: PipeSource, transform: ITransformStream, transform2: ITransformStream, transform3: ITransformStream, destination: IWritableStream, callback?: (err: any) => void): T;
+    abstract pipeline<T extends IWritable>(source: PipeSource, transform: ITransform, transform2: ITransform, transform3: ITransform, destination: T, callback?: (err: any) => void): T;
 
     /**
      * json streamify
@@ -119,15 +116,15 @@ export abstract class StreamAdapter {
      * @param spaces 
      * @param cycle 
      */
-    abstract jsonSreamify(value: any, replacer?: Function | any[], spaces?: number | string, cycle?: boolean): IReadableStream;
+    abstract jsonSreamify(value: any, replacer?: Function | any[], spaces?: number | string, cycle?: boolean): IReadable;
 
     abstract isStream(target: any): target is IStream;
 
     abstract isEventEmitter(target: any): target is IEventEmitter;
 
-    abstract isReadable(stream: any): stream is IReadableStream;
+    abstract isReadable(stream: any): stream is IReadable;
 
-    abstract isWritable(stream: any): stream is IWritableStream;
+    abstract isWritable(stream: any): stream is IWritable;
 
     /**
      * create writable.
@@ -137,13 +134,13 @@ export abstract class StreamAdapter {
         emitClose?: boolean;
         highWaterMark?: number;
         objectMode?: boolean;
-        destroy?(this: IWritableStream, error: Error | null, callback: (error: Error | null) => void): void;
+        destroy?(this: IWritable, error: Error | null, callback: (error: Error | null) => void): void;
         autoDestroy?: boolean;
         decodeStrings?: boolean;
         defaultEncoding?: string;
-        write?(this: IWritableStream, chunk: any, encoding: string, callback: (error?: Error | null) => void): void;
-        final?(this: IWritableStream, callback: (error?: Error | null) => void): void;
-    }): IWritableStream;
+        write?(this: IWritable, chunk: any, encoding: string, callback: (error?: Error | null) => void): void;
+        final?(this: IWritable, callback: (error?: Error | null) => void): void;
+    }): IWritable;
     /**
      * create PassThrough.
      * @param options 
@@ -156,22 +153,22 @@ export abstract class StreamAdapter {
         readableHighWaterMark?: number;
         writableHighWaterMark?: number;
         writableCorked?: number;
-        construct?(this: ITransformStream, callback: (error?: Error | null) => void): void;
-        read?(this: ITransformStream, size: number): void;
-        write?(this: ITransformStream, chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void;
+        construct?(this: ITransform, callback: (error?: Error | null) => void): void;
+        read?(this: ITransform, size: number): void;
+        write?(this: ITransform, chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void;
         writev?(
-            this: ITransformStream,
+            this: ITransform,
             chunks: Array<{
                 chunk: any;
                 encoding: BufferEncoding;
             }>,
             callback: (error?: Error | null) => void
         ): void;
-        final?(this: ITransformStream, callback: (error?: Error | null) => void): void;
-        destroy?(this: ITransformStream, error: Error | null, callback: (error: Error | null) => void): void;
-        transform?(this: ITransformStream, chunk: any, encoding: BufferEncoding, callback: (error?: Error | null, data?: any) => void): void;
-        flush?(this: ITransformStream, callback: (error?: Error | null, data?: any) => void): void;
-    }): IDuplexStream;
+        final?(this: ITransform, callback: (error?: Error | null) => void): void;
+        destroy?(this: ITransform, error: Error | null, callback: (error: Error | null) => void): void;
+        transform?(this: ITransform, chunk: any, encoding: BufferEncoding, callback: (error?: Error | null, data?: any) => void): void;
+        flush?(this: ITransform, callback: (error?: Error | null, data?: any) => void): void;
+    }): IPassThrough;
 
     abstract getZipConstants<T = any>(): T;
 
@@ -182,40 +179,40 @@ export abstract class StreamAdapter {
      * Creates and returns a new `Gzip` object.
      * @param options 
      */
-    abstract createGzip(options?: ZipOptions): ITransformStream;
+    abstract createGzip(options?: ZipOptions): ITransform;
 
     /**
      * Creates and returns a new `Gunzip` object.
      * @param options 
      */
-    abstract createGunzip(options?: ZipOptions): ITransformStream;
+    abstract createGunzip(options?: ZipOptions): ITransform;
 
     /**
      * Creates and returns a new `Inflate` object.
      * @param options 
      */
-    abstract createInflate(options?: ZipOptions): ITransformStream;
+    abstract createInflate(options?: ZipOptions): ITransform;
     /**
      * Creates and returns a new `InflateRaw` object.
      * @param options 
      */
-    abstract createInflateRaw(options?: ZipOptions): ITransformStream;
+    abstract createInflateRaw(options?: ZipOptions): ITransform;
 
     /**
      * Creates and returns a new `BrotliCompress` object.
      */
-    abstract createBrotliCompress(options?: BrotliOptions): ITransformStream;
+    abstract createBrotliCompress(options?: BrotliOptions): ITransform;
     /**
      * Creates and returns a new `BrotliDecompress` object.
      */
-    abstract createBrotliDecompress(options?: BrotliOptions): ITransformStream;
+    abstract createBrotliDecompress(options?: BrotliOptions): ITransform;
 
-    abstract isDuplex(target: any): target is IDuplexStream;
+    abstract isDuplex(target: any): target is IDuplex;
 
     abstract isFormDataLike(target: any): boolean;
 
     abstract rawbody(
-        stream: IReadableStream,
+        stream: IReadable,
         options: ({
             /**
              * The expected length of the stream.
@@ -236,7 +233,7 @@ export abstract class StreamAdapter {
         }) | string
     ): Promise<string>;
     abstract rawbody(
-        stream: IReadableStream,
+        stream: IReadable,
         options: ({
             /**
              * The expected length of the stream.
@@ -259,10 +256,10 @@ export abstract class StreamAdapter {
         highWaterMark?: number;
         encoding?: string;
         objectMode?: boolean;
-        read?(this: IReadableStream, size: number): void;
-        destroy?(this: IReadableStream, error: Error | null, callback: (error: Error | null) => void): void;
+        read?(this: IReadable, size: number): void;
+        destroy?(this: IReadable, error: Error | null, callback: (error: Error | null) => void): void;
         autoDestroy?: boolean;
-    }): FormData;
+    }): FormData | IFormData;
 
     abstract isJson(target: any): boolean;
 }
@@ -316,7 +313,7 @@ export interface FormDataHeaders {
     [key: string]: any;
 }
 
-export interface FormData extends IReadableStream {
+export interface IFormData extends IReadable {
 
     append(key: string, value: any, options?: {
         header?: string | Headers;
