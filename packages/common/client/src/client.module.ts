@@ -7,7 +7,7 @@ import { DefaultResponseFactory, HybirdProtocols, ResponseFactory, Protocols } f
 import { ClientIncomingFactory, ClientOutgoingFactory, NotImplementedExecption, StatusAdapter, TransportPacketModule } from '@tsdi/common/transport';
 import { AbstractClient } from './AbstractClient';
 import { ClientBackend } from './backend';
-import { ClientCodingsModule } from './codings/client.codings.module';
+import { ClientCodingsModule } from './transport/client.codings.module';
 import { BodyContentInterceptor } from './interceptors/body';
 import { ClientOpts } from './options';
 import { UrlRedirector } from './redirector';

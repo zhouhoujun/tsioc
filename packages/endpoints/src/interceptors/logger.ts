@@ -60,7 +60,11 @@ export class LoggerInterceptor implements Interceptor, Filter {
         this.options = { ...defopts, ...options } as LoggerOptions;
     }
 
-    intercept(ctx: RequestContext, next: Handler): Observable<any> {
+    doFilter(input: any, next: Handler, context?: any): Observable<any> {
+        return this.intercept(input, next, context);
+    }
+
+    intercept(ctx: RequestContext, next: Handler, context?: any): Observable<any> {
         const logger = ctx.get(Logger, InjectFlags.Self) ?? this.logger;
 
         const level = this.options.level;
@@ -71,7 +75,7 @@ export class LoggerInterceptor implements Interceptor, Filter {
         //todo console log and other. need to refactor formater.
         const start = this.formatter.htime.hrtime();
         logger[level](...this.formatter.format(logger, ctx));
-        return next.handle(ctx)
+        return next.handle(ctx, context)
             .pipe(
                 map(res => {
                     logger[level](...this.formatter.format(logger, ctx, this.formatter.htime.hrtime(start)));
@@ -79,6 +83,7 @@ export class LoggerInterceptor implements Interceptor, Filter {
                 })
             )
     }
+    
 
 }
 

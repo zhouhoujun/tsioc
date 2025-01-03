@@ -1,5 +1,5 @@
 import { ArgumentExecption, Injectable, Injector } from '@tsdi/ioc';
-import { ProtocolType } from '@tsdi/common';
+import { Protocols } from '@tsdi/common';
 import { ROUTERS, Routers } from '../router/routers';
 import { HybridRouter } from '../router/router.hybrid';
 
@@ -7,7 +7,7 @@ import { HybridRouter } from '../router/router.hybrid';
 @Injectable()
 export class RoutersImpl implements Routers {
 
-    private defaultProtocol?: ProtocolType | 'default';
+    private defaultProtocol?: Protocols | 'default';
     private _rts?: Map<string, HybridRouter> | null;
     constructor(
         private injector: Injector
@@ -28,7 +28,7 @@ export class RoutersImpl implements Routers {
     }
 
 
-    get(protocol?: ProtocolType): HybridRouter {
+    get(protocol?: Protocols): HybridRouter {
         if (!protocol && this.routers.size > 1) throw new ArgumentExecption('has mutil microservice, protocol param can not empty');
         return this.routers.get(protocol ?? this.defaultProtocol ?? 'default') as HybridRouter;
     }

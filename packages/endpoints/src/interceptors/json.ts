@@ -27,8 +27,8 @@ export class JsonInterceptor implements Middleware<RequestContext>, Interceptor<
         this.paramName = option?.param ?? '';
     }
 
-    intercept(input: RequestContext, next: Handler<RequestContext, any>): Observable<any> {
-        return next.handle(input)
+    intercept(input: RequestContext, next: Handler<RequestContext, any>, context?: any): Observable<any> {
+        return next.handle(input, context)
             .pipe(
                 map(res => {
                     this.streamify(input);

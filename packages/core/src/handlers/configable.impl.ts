@@ -7,7 +7,7 @@ import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
 import { INTERCEPTORS_TOKEN, Interceptor, InterceptorFn, InterceptorLike, InterceptorResolver } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
 import { FILTERS_TOKEN, Filter, FilterLike, FilterResolver } from '../filters/filter';
-import { Backend, HandlerFn } from '../Handler';
+import { Backend, BackendFn } from '../Handler';
 import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerOptions, HandlerService, TypeConfigableHandlerOptions } from './configable';
 import { composeInterceptors, composeFilters, chainFactory } from './handler';
 
@@ -255,16 +255,16 @@ export class ConfigableHandler<
     }
 
 
-    private backendFn?: HandlerFn;
+    private backendFn?: BackendFn;
     /**
      * get registered backend of the handler.
      * @returns 
      */
-    protected getBackend(): HandlerFn {
+    protected getBackend(): BackendFn {
         if (!this.options.backend) throw new ArgumentExecption('backend is Empty.');
         if (!this.backendFn) {
             const backend = isToken(this.options.backend) ? this.injector.get(this.options.backend, this.context) : this.options.backend;
-            this.backendFn = (isFunction(backend) ? backend : (req, ctx) => (backend as Backend).handle(req, ctx)) as HandlerFn;
+            this.backendFn = (isFunction(backend) ? backend : (req, ctx) => (backend as Backend).handle(req, ctx)) as BackendFn;
         }
         return this.backendFn;
     }

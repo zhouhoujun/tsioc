@@ -42,3 +42,8 @@ export interface Backend<TInput = any, TOutput = any, TContext = any> extends Ha
      */
     handle(input: TInput, context?: TContext): Observable<TOutput>;
 }
+
+/**
+ * backend fn.
+ */
+export type BackendFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, context?: TContext) => Observable<TOutput>;

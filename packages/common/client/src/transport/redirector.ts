@@ -1,10 +1,10 @@
 /* eslint-disable no-case-declarations */
-import { Injectable, TypeExecption } from '@tsdi/ioc';
+import { ArgumentExecption, Injectable, TypeExecption } from '@tsdi/ioc';
 import { HeaderMappings, UrlRequest, RequestMethod, IHeaders, HeadersLike, HeaderAccess, Header } from '@tsdi/common';
 import { BadRequestExecption, Redirector } from '@tsdi/common/transport';
 import { Observable, Observer, Subscription } from 'rxjs';
-import { AbstractClient } from './AbstractClient';
 import { ClientTransport } from './transport';
+import { AbstractClient } from '../AbstractClient';
 
 
 @Injectable()
@@ -16,6 +16,8 @@ export class UrlRedirector implements Redirector {
 
 
             const { statusAdapter, streamAdapter, headerAdapter } = req.context.get(ClientTransport);
+
+            if (!headerAdapter) return observer.error(new ArgumentExecption('header adapter missing'));
 
             const rdstatus = req.context.getValueify(RedirectState, () => new RedirectState());
             // HTTP fetch step 5.2

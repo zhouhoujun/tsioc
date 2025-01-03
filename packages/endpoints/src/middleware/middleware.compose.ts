@@ -1,5 +1,5 @@
 import { chain, isFunction } from '@tsdi/ioc';
-import { Backend } from '@tsdi/core';
+import { Backend, BackendFn } from '@tsdi/core';
 import { defer, Observable } from 'rxjs';
 import { MiddlewareFn, MiddlewareLike } from './middleware';
 import { RequestContext } from '../RequestContext';
@@ -30,27 +30,40 @@ export function compose<T extends RequestContext>(middlewares: MiddlewareLike<T>
  */
 export const NEXT = () => Promise.resolve();
 
+export function middlewareBackendFactory<Tx extends RequestContext>(middlewares: MiddlewareLike[]): BackendFn<Tx> {
 
-/**
- * middleware backend.
- */
-export class MiddlewareBackend<Tx extends RequestContext> implements Backend<Tx> {
-
-    private _middleware?: MiddlewareFn<Tx>;
-    constructor(private middlewares: MiddlewareLike<Tx>[]) { }
-
-    handle(context: Tx): Observable<any> {
+    let fn: MiddlewareFn<Tx>;
+    return (reqCtx: Tx) => {
         return defer(async () => {
-            if (!this._middleware) {
-                this._middleware = compose(this.middlewares)
+            if (!fn) {
+                fn = compose(middlewares)
             }
-            await this._middleware(context, NEXT);
-            return context.response.body
+            await fn(reqCtx, NEXT);
+            return reqCtx.response.body
         })
     }
-
-    equals(target: any): boolean {
-        return this.middlewares === target?.middlewares;
-    }
 }
+
+// /**
+//  * middleware backend.
+//  */
+// export class MiddlewareBackend<Tx extends RequestContext> implements Backend<Tx> {
+
+//     private _middleware?: MiddlewareFn<Tx>;
+//     constructor(private middlewares: MiddlewareLike<Tx>[]) { }
+
+//     handle(context: Tx): Observable<any> {
+//         return defer(async () => {
+//             if (!this._middleware) {
+//                 this._middleware = compose(this.middlewares)
+//             }
+//             await this._middleware(context, NEXT);
+//             return context.response.body
+//         })
+//     }
+
+//     equals(target: any): boolean {
+//         return this.middlewares === target?.middlewares;
+//     }
+// }
 

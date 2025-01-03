@@ -1,9 +1,9 @@
 import { Injector, InvocationContext, ProvdierOf, createContext } from '@tsdi/ioc';
-import { HandlerService, Backend, normalizeConfigableHandlerOptions } from '@tsdi/core';
+import { HandlerService, normalizeConfigableHandlerOptions, BackendFn } from '@tsdi/core';
 import { MiddlewareLike } from '../middleware/middleware';
 import { MiddlewareService } from '../middleware/middleware.service';
 import { RequestContext } from '../RequestContext';
-import { MiddlewareBackend } from '../middleware/middleware.compose';
+import { middlewareBackendFactory } from '../middleware/middleware.compose';
 import { MiddlewareHandler, MiddlewareHandlerOptions } from '../middleware/middleware.endpoint';
 import { DefaultRequestHandler } from './request.handler';
 
@@ -23,8 +23,8 @@ export class DefaultMiddlewareHandler<TInput extends RequestContext = any, TOpti
         return this;
     }
 
-    protected override getBackend(): Backend<TInput> {
-        return new MiddlewareBackend(this.getMiddlewares());
+    protected override getBackend(): BackendFn<TInput> {
+        return middlewareBackendFactory(this.getMiddlewares());
     }
 
     protected getMiddlewares() {

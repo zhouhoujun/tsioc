@@ -1,7 +1,7 @@
 /* eslint-disable no-control-regex */
 import { Abstract, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
 import { Handler, Interceptor, InvalidJsonException } from '@tsdi/core';
-import { BadRequestExecption, UnsupportedMediaTypeExecption, IReadableStream, MimeTypes } from '@tsdi/common/transport';
+import { BadRequestExecption, UnsupportedMediaTypeExecption, IReadable, MimeTypes } from '@tsdi/common/transport';
 import { RequestContext, Middleware } from '@tsdi/endpoints';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
@@ -69,26 +69,26 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
         this.enableXml = this.enableType('xml');
     }
 
-    intercept(input: RequestContext, next: Handler<RequestContext, any>): Observable<any> {
-        if (!isUndefined(input.request.body) && !input.streamAdapter.isReadable(input.request.body)) return next.handle(input);
+    intercept(input: RequestContext, next: Handler<RequestContext, any>, context?: any): Observable<any> {
+        if (!isUndefined(input.request.body) && !input.streamAdapter.isReadable(input.request.body)) return next.handle(input, context);
         if (!input.mimeAdapter) {
             if (input.streamAdapter.isReadable(input.request.body) || input.streamAdapter.isReadable(input.request)) {
                 return from(this.parseJson(input)).pipe(
                     mergeMap(res => {
                         input.request.body = input.request.body = res.body ?? {};
                         if (isUndefined(input.request.rawBody)) input.request.rawBody = res.raw;
-                        return next.handle(input)
+                        return next.handle(input, context)
                     })
                 )
             }
-            return next.handle(input);
+            return next.handle(input, context);
         }
         return from(this.parseBody(input))
             .pipe(
                 mergeMap(res => {
                     input.request.body = input.request.body = res.body ?? {};
                     if (isUndefined(input.request.rawBody)) input.request.rawBody = res.raw;
-                    return next.handle(input)
+                    return next.handle(input, context)
                 })
             )
     }
@@ -152,7 +152,7 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
         }
     }
 
-    private getStream(ctx: RequestContext, encoding: string): IReadableStream {
+    private getStream(ctx: RequestContext, encoding: string): IReadable {
         return this.unzipify(ctx, encoding);
     }
 
