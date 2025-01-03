@@ -1,11 +1,11 @@
 import { Abstract, Injector } from '@tsdi/ioc';
+import { HeaderAdapter } from '@tsdi/common';
 import { AbstractTransport, Deserializer, FileAdapter, IncomingFactory, MimeAdapter, OutgoingFactory, Serializer, StatusAdapter, StreamAdapter } from '@tsdi/common/transport';
 import { Observable, Subscription, first, merge, mergeMap, takeUntil } from 'rxjs';
 import { AbstractRequestHandler } from './AbstractRequestHandler';
 import { RequestContext, RequestContextFactory } from './RequestContext';
 import { ServerOpts } from './Server';
 import { AcceptsPriority } from './accepts';
-import { HeaderAdapter } from '@tsdi/common';
 
 @Abstract()
 export abstract class ServerTransport<TSocket = any, TOptions extends ServerOpts = ServerOpts> extends AbstractTransport<TSocket, RequestContext, RequestContext> {
