@@ -1,5 +1,5 @@
 import { Abstract, tokenId } from '@tsdi/ioc';
-import { ProtocolType } from '@tsdi/common';
+import { Protocols } from '@tsdi/common';
 import { HybridRouter } from './router.hybrid';
 
 /**
@@ -18,5 +18,5 @@ export abstract class Routers {
     /**
      * get service router
      */
-    abstract get(protocol?: ProtocolType): HybridRouter;
+    abstract get(protocol?: Protocols): HybridRouter;
 }

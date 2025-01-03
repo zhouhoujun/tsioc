@@ -44,26 +44,26 @@ export function middlewareBackendFactory<Tx extends RequestContext>(middlewares:
     }
 }
 
-// /**
-//  * middleware backend.
-//  */
-// export class MiddlewareBackend<Tx extends RequestContext> implements Backend<Tx> {
+/**
+ * middleware backend.
+ */
+export class MiddlewareBackend<Tx extends RequestContext> implements Backend<Tx> {
 
-//     private _middleware?: MiddlewareFn<Tx>;
-//     constructor(private middlewares: MiddlewareLike<Tx>[]) { }
+    private _middleware?: MiddlewareFn<Tx>;
+    constructor(private middlewares: MiddlewareLike<Tx>[]) { }
 
-//     handle(context: Tx): Observable<any> {
-//         return defer(async () => {
-//             if (!this._middleware) {
-//                 this._middleware = compose(this.middlewares)
-//             }
-//             await this._middleware(context, NEXT);
-//             return context.response.body
-//         })
-//     }
+    handle(context: Tx): Observable<any> {
+        return defer(async () => {
+            if (!this._middleware) {
+                this._middleware = compose(this.middlewares)
+            }
+            await this._middleware(context, NEXT);
+            return context.response.body
+        })
+    }
 
-//     equals(target: any): boolean {
-//         return this.middlewares === target?.middlewares;
-//     }
-// }
+    equals(target: any): boolean {
+        return this.middlewares === target?.middlewares;
+    }
+}
 

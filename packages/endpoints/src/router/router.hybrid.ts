@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { ProtocolType } from '@tsdi/common';
+import { Protocols } from '@tsdi/common';
 import { Router } from './router';
 import { RequestContext } from '../RequestContext';
 import { RequestHandler } from '../RequestHandler';
@@ -20,7 +20,7 @@ export abstract class HybridRouter extends Router<HybridRoute> implements Middle
     /**
      * protocol
      */
-    abstract get protocol(): ProtocolType | null;
+    abstract get protocol(): Protocols | null;
     /**
      * invoke middleware.
      *

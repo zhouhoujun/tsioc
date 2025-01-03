@@ -16,7 +16,7 @@ import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, LoggerInter
 import { MicroServRouterModule, RouteEndpointModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
 import { MiddlewareOpts } from './middleware/middleware.endpoint';
 import { REGISTER_SERVICES, SetupServices } from './SetupServices';
-import { ServerEndpointCodingsHanlders } from './codings/codings.handlers';
+// import { ServerEndpointCodingsHanlders } from './codings/codings.handlers';
 import { ExecptionFinalizeFilter } from './execption.filter';
 import { DefaultExecptionHandlers } from './execption.handlers';
 import { FinalizeFilter } from './finalize.filter';
@@ -38,7 +38,7 @@ import { createMiddlewareEndpoint } from './impl/middleware';
     providers: [
         SetupServices,
         // DefaultServerTransportFactory,
-        ServerEndpointCodingsHanlders,
+        // ServerEndpointCodingsHanlders,
 
         { provide: TypedRespond, useClass: EndpointTypedRespond, asDefault: true },
         { provide: RequestContextFactory, useClass: RequestContextFactoryImpl, asDefault: true },

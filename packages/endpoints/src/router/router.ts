@@ -1,6 +1,6 @@
 import { Abstract, Token, Type, TypeDef } from '@tsdi/ioc';
 import { Interceptor, Backend, Handler, InvocationOptions } from '@tsdi/core';
-import { RequestMethod, Pattern, ProtocolType } from '@tsdi/common';
+import { RequestMethod, Pattern, Protocols } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 import { Route } from './route';
@@ -16,7 +16,7 @@ export abstract class Router<T = RequestHandler> implements Backend<RequestConte
     /**
      * protocol
      */
-    abstract get protocol(): ProtocolType | null;
+    abstract get protocol(): Protocols | null;
 
     abstract handle(input: RequestContext): Observable<any>;
     /**
@@ -188,7 +188,7 @@ export interface ProtocolRouteOptions<TArg = any> extends RouteOptions<TArg> {
     /**
      * transport protocol
      */
-    protocol?: ProtocolType;
+    protocol?: Protocols;
 }
 
 /**

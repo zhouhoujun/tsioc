@@ -56,7 +56,7 @@ export abstract class RequestContext<
      * stream adapter
      */
     get headerAdapter(): HeaderAdapter {
-        return this.transport.headerAdapter
+        return this.transport.headerAdapter!
     }
     /**
      * stream adapter
@@ -127,7 +127,7 @@ export abstract class RequestContext<
         if (this.statusAdapter && !this.statusAdapter.isStatus(code)) throw new InternalServerExecption(`invalid status code: ${code}`)
         this._explicitStatus = true;
         this.response.statusCode = code;
-        if (!isNil(this.body) && this.statusAdapter?.is[](code)) this.body = null;
+        if (!isNil(this.body) && this.statusAdapter?.isEmpty(code)) this.body = null;
         this.afterStatusChanged(code);
     }
 
@@ -199,7 +199,7 @@ export abstract class RequestContext<
 
         // no content
         if (null == val) {
-            if (this.statusAdapter && !this.statusAdapter.is[](this.status)) {
+            if (this.statusAdapter && !this.statusAdapter.isEmpty(this.status)) {
                 this.status = this.statusAdapter.noContent;
             }
             if (val === null) this.onNullBody();
