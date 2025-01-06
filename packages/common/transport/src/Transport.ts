@@ -7,94 +7,6 @@ import { ClientIncoming, Incoming } from './Incoming';
 import { ClientOutgoing, Outgoing } from './Outgoing';
 import { IEventEmitter } from './stream';
 
-
-
-// /**
-//  * transport options.
-//  */
-// export interface TransportOpts {
-//     /**
-//      * the codings action name.
-//      */
-//     name?: string;
-//     /**
-//      * subfix of group.
-//      */
-//     subfix?: string;
-
-//     // encodings?: CodingsHandlerOptions;
-//     // decodings?: CodingsHandlerOptions;
-
-//     // encodingsAdapter?: ProvdierOf<CodingsAapter>;
-//     // decodingsAdapter?: ProvdierOf<CodingsAapter>;
-//     // /**
-//     //  * encodings Factory.
-//     //  */
-//     // encodingsFactory?: Token<TransportEncodingsFactory>;
-//     // /**
-//     //  * decodings Factory.
-//     //  */
-//     // decodingsFactory?: Token<TransportDecodingsFactory>;
-
-//     /**
-//      * transport type.
-//      */
-//     transport?: Protocols;
-//     /**
-//      * microservice or not.
-//      */
-//     microservice?: boolean;
-//     /**
-//      * client side or not.
-//      */
-//     client?: boolean;
-//     /**
-//      * default method.
-//      */
-//     defaultMethod?: string;
-
-//     serializeIgnores?: string[];
-
-//     /**
-//      * packet delimiter flag
-//      */
-//     delimiter?: string;
-
-//     /**
-//      * head delimiter flag
-//      */
-//     headDelimiter?: string;
-
-//     /**
-//      * content count number length.
-//      */
-//     countLen?: number;
-//     /**
-//      * id byte length
-//      */
-//     idLen?: number;
-//     /**
-//      * packet max size limit.
-//      */
-//     maxSize?: number;
-//     /**
-//      * encoding
-//      */
-//     encoding?: string;
-//     /**
-//      * timeout
-//      */
-//     timeout?: number;
-//     /**
-//      * close socket
-//      * @param socket 
-//      * @returns 
-//      */
-//     close?: (socket: any) => Promise<any>;
-
-// }
-
-
 /**
  * transport.
  */
@@ -108,20 +20,10 @@ export abstract class Transport<TSocket = any, TInput = any, TOutput = any> {
      * transport client side or not.
      */
     abstract get client(): boolean;
-
-    // /**
-    //  * transport options.
-    //  */
-    // abstract get options(): TransportOpts;
-    // /**
-    //  * incoming message factory.
-    //  */
-    // abstract get incomingFactory(): AbstractIncomingFactory;
-    // /**
-    //  * outgoing message factory.
-    //  */
-    // abstract get outgoingFactory(): AbstractOutgoingFactory;
-
+    
+    /**
+     * protocol
+     */
     abstract get protocol(): string;
 
     /**

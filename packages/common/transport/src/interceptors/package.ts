@@ -83,7 +83,7 @@ export class PackageDecodeInterceptor implements Interceptor<Packet, IncomingMes
             this.packs.set(packet.id!, cached);
             return cached;
         } else {
-            const cLen = headerAdapter?.getContentLength(cached.packet.headers);
+            const cLen = headerAdapter.getContentLength(cached.packet.headers);
             cached.cacheSize += len;
             if (packet.headers.size) {
                 cached.packet.headers.setHeaders(packet.headers.getHeaders())

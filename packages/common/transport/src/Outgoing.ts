@@ -229,9 +229,9 @@ export interface OutgoingCloneOpts<T, TStatus> extends StatusOptions<TStatus> {
 
 
 /**
- * Outgoing packet.
+ * Server outgoing.
  */
-export abstract class AbstractOutgoing<T, TStatus = any> implements Outgoing<T, TStatus> {
+export abstract class ServerOutgoing<T, TStatus = any> implements Outgoing<T, TStatus> {
     /**
      * packet id
      */

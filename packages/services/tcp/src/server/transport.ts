@@ -1,22 +1,15 @@
 import { Injectable } from '@tsdi/ioc';
 import {
-    UrlIncomingCloneOpts, IncomingFactory, UrlIncomingOptions, UrlIncoming,
-    Incoming, OutgoingCloneOpts, OutgoingFactory, AbstractOutgoing, OutgoingOpts 
+    IncomingFactory, UrlIncomingOptions, UrlIncoming,
+    Incoming, OutgoingFactory, ServerOutgoing, OutgoingOpts 
 } from '@tsdi/common/transport';
 
 
 
 export class TcpIncoming<T> extends UrlIncoming<T> {
-
-    clone(): TcpIncoming<T>;
-    clone<V>(update: UrlIncomingCloneOpts<V>): TcpIncoming<V>;
-    clone(update: UrlIncomingCloneOpts<T>): TcpIncoming<T>;
-    clone(update: UrlIncomingCloneOpts<any> = {}): TcpIncoming<any> {
-        const opts = this.cloneOpts(update);
-        return new TcpIncoming(opts);
-
+    push(chunk: any, encoding?: string): boolean {
+        throw new Error('Method not implemented.');
     }
-
 }
 
 @Injectable()
@@ -28,16 +21,17 @@ export class TcpIncomingFactory implements IncomingFactory {
 
 
 
-export class TcpOutgoing<T, TStatus = null> extends AbstractOutgoing<T, TStatus> {
-
-    clone(): TcpOutgoing<T, TStatus>;
-    clone<V>(update: OutgoingCloneOpts<V, TStatus>): TcpOutgoing<V, TStatus>;
-    clone(update: OutgoingCloneOpts<T, TStatus>): TcpOutgoing<T, TStatus>;
-    clone(update: OutgoingCloneOpts<any, TStatus> = {}): TcpOutgoing<any, TStatus> {
-
-        const opts = this.cloneOpts(update);
-
-        return new TcpOutgoing(opts);
+export class TcpOutgoing<T, TStatus = null> extends ServerOutgoing<T, TStatus> {
+    write(data: any, cb?: (err?: Error | null) => void): boolean;
+    write(data: any, encoding?: string, cb?: (err?: Error | null) => void): boolean;
+    write(data: unknown, encoding?: unknown, cb?: unknown): boolean {
+        throw new Error('Method not implemented.');
+    }
+    end(cb?: () => void): this;
+    end(data: any, cb?: () => void): this;
+    end(data: any, encoding?: string, cb?: () => void): this;
+    end(data?: unknown, encoding?: unknown, cb?: unknown): this {
+        throw new Error('Method not implemented.');
     }
 }
 
