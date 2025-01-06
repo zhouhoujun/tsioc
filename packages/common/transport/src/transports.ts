@@ -82,8 +82,30 @@ export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = a
 
 }
 
+
 @Abstract()
 export abstract class SocketTransport<TSocket extends IWritable = IWritable, TInput = any, TOutput = any> extends AbstractTransport<TSocket, TInput, TOutput> {
+
+    /**
+     * id length
+     */
+    abstract get idLen(): number;
+    /**
+     * head delimiter.
+     */
+    abstract get headDelimiter(): string;
+    /**
+     * delimiter
+     */
+    abstract get delimiter(): string;
+    /**
+     * count length
+     */
+    abstract get countLen(): number;
+    /**
+     * max size
+     */
+    abstract get maxSize(): number;
 
     protected override read(channel?: IEventEmitter | null, req?: AbstractRequest<any>): Observable<any> {
         return fromEvent(channel ?? this.socket, ev.DATA)

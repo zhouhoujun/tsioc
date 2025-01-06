@@ -1,14 +1,15 @@
 import { Injectable, isString } from '@tsdi/ioc';
 import { Handler, Interceptor, PipeTransform } from '@tsdi/core';
-import { Packet } from '@tsdi/common';
+import { BufferPacket, Packet } from '@tsdi/common';
 import { Observable, Subscriber, filter, map, mergeMap, throwError } from 'rxjs';
 import { PacketLengthException } from '../execptions';
 import { PacketIdGenerator } from '../PacketId';
-import { IDuplex, IReadable } from '../stream';
-import { PackageEncodeInterceptor } from './buffer.package';
+import { IDuplex } from '../stream';
+import { PackageEncodeInterceptor } from './package';
 import { IncomingMessage } from '../Incoming';
 import { OutgoingMessage } from '../Outgoing';
 import { TransportContext } from '../context';
+import { SocketTransport } from '../transports';
 
 
 
@@ -16,14 +17,14 @@ import { TransportContext } from '../context';
  * Channel cache.
  */
 export interface ChannelCache {
-    Packet: Packet;
+    Packet: BufferPacket;
     stream: IDuplex | null;
     length: number;
     contentLength: number | null;
 }
 
 @Injectable()
-export class PacketDecodeInterceptor implements Interceptor<Packet, IncomingMessage, TransportContext> {
+export class PacketDeserializeInterceptor implements Interceptor<BufferPacket, IncomingMessage, TransportContext> {
 
     protected channels: Map<string, ChannelCache>;
 
@@ -36,7 +37,7 @@ export class PacketDecodeInterceptor implements Interceptor<Packet, IncomingMess
 
         return new Observable((subscriber: Subscriber<Packet>) => {
 
-            const channel = context.channel ?? context.transport.options.transport ?? '';
+            const channel = context.transport.protocol;
 
             let cache = this.channels.get(channel);
             const payload = input.payload as Buffer;
@@ -60,33 +61,34 @@ export class PacketDecodeInterceptor implements Interceptor<Packet, IncomingMess
     }
 
     protected handleData(channel: string, cache: ChannelCache, data: Buffer, subscriber: Subscriber<Packet>, context: TransportContext) {
-        const { options, streamAdapter, injector } = context.transport;
+
+        const transport = context.transport as SocketTransport;
 
         const bLen = Buffer.byteLength(data);
         cache.length += bLen;
         if (!cache.stream) {
-            cache.stream = streamAdapter.createPassThrough();
+            cache.stream = transport.streamAdapter.createPassThrough();
         }
         if (!cache.contentLength || cache.length <= cache.contentLength) {
             cache.stream.write(data);
         }
 
         if (cache.contentLength == null) {
-            const delimiter = Buffer.from(options.delimiter!);
-            const countLen = options.countLen || 4;
-            const i = data.indexOf(delimiter);
+            const delim = Buffer.from(transport.delimiter);
+            const countLen = transport.countLen || 4;
+            const i = data.indexOf(delim);
             if (i !== -1) {
-                const idx = cache.length - bLen + i + delimiter.length;
+                const idx = cache.length - bLen + i + delim.length;
                 const buffer = cache.stream.read(idx) as Buffer;
-                const rawContentLength = buffer.readUIntBE(idx - countLen - delimiter.length, idx - delimiter.length);
-                if (isNaN(rawContentLength) || (options.maxSize && rawContentLength > options.maxSize)) {
+                const rawContentLength = buffer.readUIntBE(idx - countLen - delim.length, idx - delim.length);
+                if (isNaN(rawContentLength) || (transport.maxSize && rawContentLength > transport.maxSize)) {
                     cache.contentLength = null;
                     cache.length = 0;
                     cache.stream.end();
                     cache.stream = null;
-                    const btpipe = injector.get<PipeTransform>('bytes-format');
+                    const btpipe = transport.injector.get<PipeTransform>('bytes-format');
                     if (rawContentLength) {
-                        throw new PacketLengthException(`Packet length ${btpipe.transform(rawContentLength)} great than max size ${btpipe.transform(options.maxSize)}`);
+                        throw new PacketLengthException(`Packet length ${btpipe.transform(rawContentLength)} great than max size ${btpipe.transform(transport.maxSize)}`);
                     } else {
                         throw new PacketLengthException(`No packet length`);
                     }
@@ -141,7 +143,7 @@ export class BindPacketIdDecodeInterceptor implements Interceptor<Packet, Incomi
         return next.handle(input, context)
             .pipe(
                 filter(packet => {
-                    if (!context.transport.options.client) return true;
+                    if (!context.transport.client) return true;
                     return packet.id == input.id;
                 })
             );
@@ -152,14 +154,14 @@ export class BindPacketIdDecodeInterceptor implements Interceptor<Packet, Incomi
 export class BindPacketIdEncodeInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
 
     intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet>, context: TransportContext): Observable<Packet> {
-        const { options, injector, headerAdapter } = context.transport;
-        const length = headerAdapter.getContentLength(input.headers);
-        if (length && options.maxSize && length > options.maxSize && !options.headDelimiter && !injector.has(PackageEncodeInterceptor)) {
+        const { injector, maxSize, headerAdapter, headDelimiter, client } = context.transport as SocketTransport;
+        const length = headerAdapter?.getContentLength(input.headers);
+        if (length && maxSize && length > maxSize && headDelimiter && !injector.has(PackageEncodeInterceptor)) {
             const btpipe = injector.get<PipeTransform>('bytes-format');
-            return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(options.maxSize)}`));
+            return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(maxSize)}`));
         }
-        if (!input.id && options.client) {
-            input.attachId(injector.get(PacketIdGenerator).getPacketId());
+        if (!input.id && client) {
+            input.id = injector.get(PacketIdGenerator).getPacketId();
         }
         return next.handle(input, context);
     }
@@ -167,23 +169,23 @@ export class BindPacketIdEncodeInterceptor implements Interceptor<OutgoingMessag
 
 
 @Injectable()
-export class PacketEncodeInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
+export class PacketSerializeInterceptor implements Interceptor<OutgoingMessage, BufferPacket, TransportContext> {
 
-    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet, TransportContext>, context: TransportContext): Observable<Packet> {
+    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, BufferPacket, TransportContext>, context: TransportContext): Observable<Packet> {
 
         return next.handle(input, context)
             .pipe(map(msg => {
-                const { streamAdapter, options } = context.transport;
-                const countLen = options.countLen || 4;
+                const transport = context.transport as SocketTransport;
+                const countLen = transport.countLen || 4;
                 let buffLen: Buffer;
-                const delimiter = Buffer.from(options.delimiter!);
+                const delimiter = Buffer.from(transport.delimiter);
                 const delimiterLen = Buffer.byteLength(delimiter);
                 // const headers = msg.headers;
                 let data: IDuplex | Buffer | string | null = msg.payload;
-                if (streamAdapter.isReadable(data)) {
+                if (transport.streamAdapter.isReadable(data)) {
                     let first = true;
                     let subpacket = false;
-                    data = streamAdapter.pipeline(data, streamAdapter.createPassThrough({
+                    data = transport.streamAdapter.pipeline(data, transport.streamAdapter.createPassThrough({
                         transform: (chunk, encoding, callback) => {
                             if (chunk.indexOf(delimiter) >= 0) {
                                 subpacket = true;
@@ -206,7 +208,7 @@ export class PacketEncodeInterceptor implements Interceptor<OutgoingMessage, Pac
                         }
                     }));
                 } else if (isString(data)) {
-                    data = countLen + options.delimiter! + data;
+                    data = countLen + transport.delimiter! + data;
                 } else {
                     if (!data) data = Buffer.alloc(0);
                     buffLen = Buffer.alloc(countLen);

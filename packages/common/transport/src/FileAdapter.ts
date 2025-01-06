@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { IReadableStream } from './stream';
+import { IReadable } from './stream';
 
 /**
  * file adapter
@@ -90,6 +90,6 @@ export abstract class FileAdapter {
      *
      * If `options` is a string, then it specifies the encoding.
      */
-    abstract read(path: string, options?: any): IReadableStream;
+    abstract read(path: string, options?: any): IReadable;
 
 }

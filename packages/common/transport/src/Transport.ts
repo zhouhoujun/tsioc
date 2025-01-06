@@ -103,6 +103,12 @@ export abstract class Transport<TSocket = any, TInput = any, TOutput = any> {
      * transport context injector.
      */
     abstract get injector(): Injector;
+
+    /**
+     * transport client side or not.
+     */
+    abstract get client(): boolean;
+
     // /**
     //  * transport options.
     //  */

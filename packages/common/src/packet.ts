@@ -20,6 +20,15 @@ export abstract class Packet<T = any> {
     abstract payload?: T | null;
 }
 
+/**
+ * Buffer packet.
+ */
+export abstract class BufferPacket<T = any>  extends Packet<T> {
+    
+    streamLength?: number;
+
+    noHead?: boolean;
+}
 
 
 /**

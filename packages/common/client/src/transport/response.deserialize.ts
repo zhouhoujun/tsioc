@@ -3,11 +3,11 @@ import { Handler, Interceptor } from '@tsdi/core';
 import { HEAD, ResponseEvent, ResponseJsonParseError, AbstractRequest, UrlRequest } from '@tsdi/common';
 import { MimeAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer, ClientIncoming, TransportContext } from '@tsdi/common/transport';
 import { Observable, defer, mergeMap, of, throwError } from 'rxjs';
-import { ClientTransport } from '../transport';
+import { ClientTransport } from './transport';
 
 
 @Injectable()
-export class ErrorResponseDecordeInterceptor implements Interceptor<ClientIncoming<any>, ResponseEvent<any>, TransportContext> {
+export class ErrorResponseInterceptor implements Interceptor<ClientIncoming<any>, ResponseEvent<any>, TransportContext> {
 
     intercept(input: ClientIncoming<any>, next: Handler<ClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         if (!input.ok || input.error) {
@@ -30,7 +30,7 @@ export class ErrorResponseDecordeInterceptor implements Interceptor<ClientIncomi
 
 
 @Injectable()
-export class EmptyResponseDecordeInterceptor implements Interceptor<ClientIncoming<any>, ResponseEvent<any>, TransportContext> {
+export class EmptyResponseInterceptor implements Interceptor<ClientIncoming<any>, ResponseEvent<any>, TransportContext> {
 
     intercept(input: ClientIncoming<any>, next: Handler<ClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         const len = context.transport.headerAdapter?.getContentLength(input.headers);
@@ -44,7 +44,7 @@ export class EmptyResponseDecordeInterceptor implements Interceptor<ClientIncomi
 }
 
 @Injectable()
-export class RedirectDecodeInterceptor implements Interceptor<ClientIncoming<any>, ResponseEvent<any>, TransportContext> {
+export class RedirectInterceptor implements Interceptor<ClientIncoming<any>, ResponseEvent<any>, TransportContext> {
 
     intercept(input: ClientIncoming<any>, next: Handler<ClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         const transport = context.transport as ClientTransport;
@@ -62,7 +62,7 @@ export class RedirectDecodeInterceptor implements Interceptor<ClientIncoming<any
 
 
 @Injectable()
-export class CompressResponseDecordeInterceptor implements Interceptor<ClientIncoming<any>, ResponseEvent<any>, TransportContext> {
+export class CompressResponseInterceptor implements Interceptor<ClientIncoming<any>, ResponseEvent<any>, TransportContext> {
 
 
     intercept(input: ClientIncoming<any>, next: Handler<ClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
@@ -170,7 +170,7 @@ export class RequestStauts {
 
 
 @Injectable()
-export class ResponseTypeDecodeInterceptor implements Interceptor<ClientIncoming<any>, ResponseEvent<any>, TransportContext> {
+export class ResponseDeserializeInterceptor implements Interceptor<ClientIncoming<any>, ResponseEvent<any>, TransportContext> {
 
     intercept(input: ClientIncoming<any>, next: Handler<ClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         return defer(async () => {
@@ -283,3 +283,11 @@ export class ResponseTypeDecodeInterceptor implements Interceptor<ClientIncoming
 const jsonType = /json/i;
 const textType = /^text/i;
 const xmlType = /xml$/i;
+
+export const SIMPLE_DESCERIZLIZE_INTERCEPTORS = [
+    ErrorResponseInterceptor,
+    EmptyResponseInterceptor,
+    ResponseDeserializeInterceptor
+];
+
+

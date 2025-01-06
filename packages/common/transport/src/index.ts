@@ -24,7 +24,7 @@ export * from './transports';
 export * from './Deserializer';
 export * from './Serializer';
 
-// export * from './interceptors';
+export * from './interceptors';
 
 
 export * from './packet.module';

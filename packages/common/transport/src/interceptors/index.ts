@@ -1,3 +1,3 @@
-export * from './buffer.package';
-export * from './buffer.packet';
+export * from './package';
+export * from './packet';
 // export * from './typed';
