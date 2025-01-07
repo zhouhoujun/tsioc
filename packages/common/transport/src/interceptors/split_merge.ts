@@ -13,13 +13,12 @@ import { SocketTransport } from '../transports';
 
 interface CachePacket {
     packet: BufferPacket<IDuplex>;
-    streams?: IReadable[] | null;
     cacheSize: number;
     completed?: boolean;
 }
 
 @Injectable()
-export class PackageDecodeInterceptor implements Interceptor<Packet, IncomingMessage<any>, TransportContext> {
+export class MergePacketInterceptor implements Interceptor<BufferPacket, IncomingMessage<any>, TransportContext> {
 
     packs: Map<string | number, CachePacket> = new Map();
     intercept(input: BufferPacket, next: Handler<Packet, IncomingMessage, TransportContext>, context: TransportContext): Observable<IncomingMessage> {
@@ -43,6 +42,7 @@ export class PackageDecodeInterceptor implements Interceptor<Packet, IncomingMes
             id = input.payload.slice(0, idLen);
             input.payload = input.payload.slice(idLen);
         }
+        
         return next.handle(input, context)
             .pipe(
                 map(packet => this.mergePacket(packet, transport.streamAdapter, transport.headerAdapter!, input.noHead)),
@@ -114,7 +114,7 @@ export class PackageDecodeInterceptor implements Interceptor<Packet, IncomingMes
 }
 
 @Injectable()
-export class PackageEncodeInterceptor implements Interceptor<OutgoingMessage, BufferPacket, TransportContext> {
+export class SplitPacketInterceptor implements Interceptor<OutgoingMessage, BufferPacket, TransportContext> {
 
     intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, BufferPacket, TransportContext>, context: TransportContext): Observable<Packet> {
         return next.handle(input, context)

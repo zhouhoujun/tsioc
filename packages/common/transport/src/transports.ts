@@ -35,7 +35,14 @@ export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = a
      */
     abstract get outgoingFactory(): AbstractOutgoingFactory;
 
-
+    /**
+     * max size
+     */
+    abstract get maxSize(): number;
+    /**
+     * split packet delimiter
+     */
+    abstract get splitDelimiter(): string;
 
     protected destroy$ = new Subject<void>;
 
@@ -102,10 +109,6 @@ export abstract class SocketTransport<TSocket extends IWritable = IWritable, TIn
      * count length
      */
     abstract get countLen(): number;
-    /**
-     * max size
-     */
-    abstract get maxSize(): number;
 
     protected override read(channel?: IEventEmitter | null, req?: AbstractRequest<any>): Observable<any> {
         return fromEvent(channel ?? this.socket, ev.DATA)

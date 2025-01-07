@@ -5,7 +5,7 @@ import { Observable, Subscriber, filter, map, mergeMap, throwError } from 'rxjs'
 import { PacketLengthException } from '../execptions';
 import { PacketIdGenerator } from '../PacketId';
 import { IDuplex } from '../stream';
-import { PackageEncodeInterceptor } from './package';
+import { SplitPacketInterceptor } from './split_merge';
 import { IncomingMessage } from '../Incoming';
 import { OutgoingMessage } from '../Outgoing';
 import { TransportContext } from '../context';
@@ -156,7 +156,7 @@ export class BindPacketIdEncodeInterceptor implements Interceptor<OutgoingMessag
     intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet>, context: TransportContext): Observable<Packet> {
         const { injector, maxSize, headerAdapter, headDelimiter, client } = context.transport as SocketTransport;
         const length = headerAdapter?.getContentLength(input.headers);
-        if (length && maxSize && length > maxSize && headDelimiter && !injector.has(PackageEncodeInterceptor)) {
+        if (length && maxSize && length > maxSize && headDelimiter && !injector.has(SplitPacketInterceptor)) {
             const btpipe = injector.get<PipeTransform>('bytes-format');
             return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(maxSize)}`));
         }

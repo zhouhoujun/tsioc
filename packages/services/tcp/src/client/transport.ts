@@ -7,13 +7,6 @@ import {
 
 export class TcpClientIncoming<T, TStatus = null> extends UrlClientIncoming<T, TStatus> {
 
-    clone(): TcpClientIncoming<T, TStatus>;
-    clone<V>(update: UrlClientIncomingOpts<V, TStatus>): TcpClientIncoming<V, TStatus>;
-    clone(update: UrlClientIncomingOpts<T, TStatus>): TcpClientIncoming<T, TStatus>;
-    clone(update: UrlClientIncomingOpts<any, TStatus> = {}): TcpClientIncoming<any, TStatus> {
-        const opts = this.cloneOpts(update);
-        return new TcpClientIncoming(opts);
-    }
 }
 
 @Injectable()

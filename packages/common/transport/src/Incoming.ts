@@ -240,9 +240,6 @@ export abstract class AbstractIncoming<T> implements Incoming<T> {
         return this.headers.getHeader(field);
     }
 
-
-    abstract push(chunk: any, encoding?: string): boolean;
-
 }
 
 
@@ -314,8 +311,6 @@ export abstract class TopicIncoming<T> extends AbstractIncoming<T> implements In
     getHeader(field: string): string | undefined {
         return this.headers.getHeader(field);
     }
-
-    abstract push(chunk: any, encoding?: string): boolean;
 
 }
 
@@ -438,9 +433,6 @@ export abstract class AbstractClientIncoming<T, TStatus = any> implements Client
     getHeader(field: string): string | undefined {
         return this.headers.getHeader(field);
     }
-
-
-    abstract push(chunk: any, encoding?: string): boolean;
 
 }
 
