@@ -96,7 +96,7 @@ export abstract class SocketTransport<TSocket extends IWritable = IWritable, TIn
     /**
      * id length
      */
-    abstract get idLen(): number;
+    abstract get idLen(): number | null;
     /**
      * head delimiter.
      */
@@ -105,17 +105,21 @@ export abstract class SocketTransport<TSocket extends IWritable = IWritable, TIn
      * delimiter
      */
     abstract get delimiter(): string;
+
     /**
      * count length
      */
     abstract get countLen(): number;
 
+    
+    abstract get event(): string | null;
+
+
     protected override read(channel?: IEventEmitter | null, req?: AbstractRequest<any>): Observable<any> {
-        return fromEvent(channel ?? this.socket, ev.DATA)
+        return fromEvent(channel ?? this.socket, this.event ?? ev.DATA)
     }
 
     protected override write(msg: any, channel?: IWritable | null): Promise<any> {
-
         const socket = channel ?? this.socket;
         if (this.streamAdapter.isReadable(msg.payload)) {
             return this.streamAdapter.pipeTo(msg.payload as IReadable, socket, { end: false });

@@ -75,7 +75,7 @@ export class PacketDeserializeInterceptor implements Interceptor<BufferPacket, I
 
         if (cache.contentLength == null) {
             const delim = Buffer.from(transport.delimiter);
-            const countLen = transport.countLen || 4;
+            const countLen = 4;
             const i = data.indexOf(delim);
             if (i !== -1) {
                 const idx = cache.length - bLen + i + delim.length;
@@ -176,7 +176,7 @@ export class PacketSerializeInterceptor implements Interceptor<OutgoingMessage, 
         return next.handle(input, context)
             .pipe(map(msg => {
                 const transport = context.transport as SocketTransport;
-                const countLen = transport.countLen || 4;
+                const countLen = 4;
                 let buffLen: Buffer;
                 const delimiter = Buffer.from(transport.delimiter);
                 const delimiterLen = Buffer.byteLength(delimiter);
