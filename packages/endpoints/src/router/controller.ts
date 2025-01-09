@@ -1,5 +1,5 @@
 import { Class, DecorDefine, Injectable, Injector, isString, OnDestroy, ReflectiveRef, tokenId, Type } from '@tsdi/ioc';
-import { Backend, Handler, CanHandle, Interceptor, Filter, FnHandler, setHandlerOptions, ConfigableHandler } from '@tsdi/core';
+import { Backend, Handler, CanHandle, Interceptor, Filter, setHandlerOptions, ConfigableHandler, BackendFn } from '@tsdi/core';
 import { joinPath, normalize } from '@tsdi/common';
 import { NotFoundExecption, PushDisabledExecption } from '@tsdi/common/transport';
 
@@ -57,8 +57,8 @@ export class ControllerRoute<T> extends ConfigableHandler<RequestContext, any, R
         if (next) await next();
     }
 
-    protected getBackend(): Backend<RequestContext, any> {
-        return new FnHandler((ctx) => {
+    protected getBackend(): BackendFn<RequestContext, any> {
+        return (ctx) => {
             if (ctx.sent) return throwError(() => new PushDisabledExecption());
 
             const method = this.getRouteMetaData(ctx) as DecorDefine<RouteMappingMetadata>;
@@ -76,7 +76,7 @@ export class ControllerRoute<T> extends ConfigableHandler<RequestContext, any, R
 
             }
             return handler.handle(ctx);
-        })
+        };
     }
 
     protected clear() {

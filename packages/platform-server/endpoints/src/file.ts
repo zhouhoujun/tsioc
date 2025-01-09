@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { FileAdapter, IReadableStream } from '@tsdi/common/transport';
+import { FileAdapter, IReadable } from '@tsdi/common/transport';
 import { isAbsolute, resolve, join, normalize, extname, basename } from 'path';
 import { existsSync, createReadStream } from 'fs';
 
@@ -26,7 +26,7 @@ export class NodeFileAdapter extends FileAdapter {
         return existsSync(path)
     }
 
-    read(path: string, options?: any): IReadableStream {
+    read(path: string, options?: any): IReadable {
         return createReadStream(path, options)
     }
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
-import {  normalize, joinPath } from '@tsdi/common';
-import { IReadableStream, FileAdapter } from '@tsdi/common/transport';
+import { normalize, joinPath } from '@tsdi/common';
+import { IReadable, FileAdapter } from '@tsdi/common/transport';
 import { PassThrough } from 'readable-stream';
 
 
@@ -31,7 +31,7 @@ export class BrowserFileAdapter extends FileAdapter {
         return false
     }
 
-    read(path: string, options?: any): IReadableStream {
+    read(path: string, options?: any): IReadable {
 
         const stream = new PassThrough();
 

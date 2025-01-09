@@ -1,10 +1,10 @@
-import { IDuplexStream, IEventEmitter } from './stream';
+import { IDuplex, IEventEmitter } from './stream';
 
 
 /**
  * Socket interface.
  */
-export interface Socket extends IDuplexStream {
+export interface Socket extends IDuplex {
 
     /**
      * Set the encoding for the socket as a `Readable Stream`. See `readable.setEncoding()` for more information.
@@ -75,7 +75,7 @@ export interface Socket extends IDuplexStream {
 /**
  * Connection interface.
  */
-export interface Connection<TSocket extends IEventEmitter = IEventEmitter> extends IDuplexStream {
+export interface Connection<TSocket extends IEventEmitter = IEventEmitter> extends IDuplex {
     /**
      * destroyed or not.
      */
