@@ -1,6 +1,6 @@
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
-import { isResponseEvent, LOCALHOST, Message, Packet } from '@tsdi/common';
-import { CustomCodingsAdapter } from '@tsdi/common/codings';
+import { isResponseEvent, LOCALHOST, Packet } from '@tsdi/common';
+// import { CustomCodingsAdapter } from '@tsdi/common/codings';
 import { AbstractClientIncoming, AbstractIncoming } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
 import {
@@ -11,7 +11,7 @@ import {
 import { TcpClient } from './client/client';
 import { TcpHandler } from './client/handler';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS } from './client/options';
-import { TcpMessage, TcpMessageFactory } from './message';
+// import { TcpMessage, TcpMessageFactory } from './message';
 import { TcpRequest } from './client/request';
 import { TcpServer } from './server/server';
 import { TcpRequestHandler } from './server/handler';
@@ -43,7 +43,7 @@ export class TcpConfiguration {
     @Bean(SERVER_MODULES, { static: true, multi: true })
     microServ(): ServiceModuleOpts {
         const option = this.getServOptions();
-        option.defaultOpts!.transportOpts!.defaultMethod = '*';
+        // option.defaultOpts!.transportOpts!.defaultMethod = '*';
         option.defaultOpts!.content = {
             root: 'public',
             prefix: 'content'
@@ -55,7 +55,7 @@ export class TcpConfiguration {
     @Bean(SERVER_MODULES, { static: true, multi: true })
     serv(): ServiceModuleOpts {
         const option = this.getServOptions() as ServerModuleOpts;
-        option.defaultOpts!.transportOpts!.defaultMethod = 'GET';
+        // option.defaultOpts!.transportOpts!.defaultMethod = 'GET';
         option.defaultOpts!.middlewaresToken = TCP_MIDDLEWARES,
             option.defaultOpts!.content = {
                 root: 'public'
@@ -72,14 +72,14 @@ export class TcpConfiguration {
                 handlerType: TcpHandler,
                 interceptorsToken: TCP_CLIENT_INTERCEPTORS,
                 filtersToken: TCP_CLIENT_FILTERS,
-                messageFactory: TcpMessageFactory,
+                // messageFactory: TcpMessageFactory,
                 incomingFactory: TcpClientIncomingFactory,
-                transportOpts: {
-                    delimiter: '#',
-                    maxSize: defaultMaxSize,
-                    encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof TcpMessage, [[TcpRequest, Packet]]) },
-                    decodingsAdapter: { useValue: new CustomCodingsAdapter(isResponseEvent, [[TcpClientIncoming, AbstractClientIncoming], [TcpMessage, Message]]) },
-                }
+                // transportOpts: {
+                //     delimiter: '#',
+                //     maxSize: defaultMaxSize,
+                //     encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof TcpMessage, [[TcpRequest, Packet]]) },
+                //     decodingsAdapter: { useValue: new CustomCodingsAdapter(isResponseEvent, [[TcpClientIncoming, AbstractClientIncoming], [TcpMessage, Message]]) },
+                // }
             }
         }
     }
@@ -91,17 +91,17 @@ export class TcpConfiguration {
             defaultOpts: {
                 handlerType: TcpRequestHandler,
                 listenOpts: { port: 3000, host: LOCALHOST },
-                transportOpts: {
-                    delimiter: '#',
-                    maxSize: defaultMaxSize,
-                    decodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof RequestContext, [[TcpIncoming, AbstractIncoming], [TcpMessage, Message]]) },
-                    encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof TcpMessage, [[UrlRequestContext, RequestContext], [PatternRequestContext, RequestContext], [TcpOutgoing, Packet]]) },
-                },
+                // transportOpts: {
+                //     delimiter: '#',
+                //     maxSize: defaultMaxSize,
+                //     decodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof RequestContext, [[TcpIncoming, AbstractIncoming], [TcpMessage, Message]]) },
+                //     encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof TcpMessage, [[UrlRequestContext, RequestContext], [PatternRequestContext, RequestContext], [TcpOutgoing, Packet]]) },
+                // },
                 detailError: false,
                 interceptorsToken: TCP_SERV_INTERCEPTORS,
                 filtersToken: TCP_SERV_FILTERS,
                 guardsToken: TCP_SERV_GUARDS,
-                messageFactory: TcpMessageFactory,
+                // messageFactory: TcpMessageFactory,
                 incomingFactory: TcpIncomingFactory,
                 outgoingFactory: TcpOutgoingFactory,
                 filters: [
