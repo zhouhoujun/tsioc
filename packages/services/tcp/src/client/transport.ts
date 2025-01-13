@@ -1,19 +1,26 @@
-import { Injectable } from '@tsdi/ioc';
-import {
-    ClientIncomingFactory, UrlClientIncomingOpts, UrlClientIncoming
-} from '@tsdi/common/transport';
+// import { Injectable } from '@tsdi/ioc';
+// import {
+//     ClientIncomingFactory, UrlClientIncomingOpts, UrlClientIncoming,
+//     StreamAdapter,
+//     parseUrlClientIncoming
+// } from '@tsdi/common/transport';
 
 
 
-export class TcpClientIncoming<T, TStatus = null> extends UrlClientIncoming<T, TStatus> {
+// export class TcpClientIncoming<T, TStatus = null> extends UrlClientIncoming<T, TStatus> {
 
-}
+// }
 
-@Injectable()
-export class TcpClientIncomingFactory implements ClientIncomingFactory {
+// @Injectable()
+// export class TcpClientIncomingFactory implements ClientIncomingFactory {
 
-    create<T = any>(options: UrlClientIncomingOpts<any, any>): TcpClientIncoming<T> {
-        return new TcpClientIncoming(options);
-    }
+//     constructor(private streamAdapter: StreamAdapter){}
 
-}
+//     create<T = any>(options: UrlClientIncomingOpts<any, any>): UrlClientIncoming<T> {
+//         if(this.streamAdapter.isReadable(options.payload)) {
+//             return parseUrlClientIncoming(options);
+//         }
+//         return new TcpClientIncoming(options);
+//     }
+
+// }

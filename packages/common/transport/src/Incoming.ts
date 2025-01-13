@@ -1,4 +1,7 @@
 import { HeaderMappings, HeadersLike, ParameterCodec, StatusOptions } from '@tsdi/common';
+import { IReadable } from './stream';
+import { Injectable } from '@tsdi/ioc';
+import { StreamAdapter } from './StreamAdapter';
 
 
 /**
@@ -8,13 +11,17 @@ export interface IncomingMessage<T = any> {
 
     id?: number | string;
 
-    url?: string;
     pattern?: string;
 
+    /**
+     * incoming headers.
+     */
     get headers(): HeadersLike;
 
-    get body(): T | null;
-    set body(val: T | null);
+    /**
+     * incoming body.
+     */
+    body?: T | null;
 
     /**
      * has header in packet or not.
@@ -28,13 +35,6 @@ export interface IncomingMessage<T = any> {
      * @param field 
      */
     getHeader?(field: string): string | undefined;
-
-    /**
-     * push chuck.
-     * @param chunk 
-     * @param encoding 
-     */
-    push?(chunk: any, encoding?: string): boolean;
 
 }
 
@@ -204,11 +204,7 @@ export abstract class AbstractIncoming<T> implements Incoming<T> {
      */
     readonly timeout?: number;
 
-    public streamLength?: number;
-
-    payload: any;
-
-    body: T | null = null;
+    body?: T | null;
 
 
     query: Record<string, any> | undefined;
@@ -217,10 +213,9 @@ export abstract class AbstractIncoming<T> implements Incoming<T> {
     constructor(init: IncomingOpts<T>) {
         this.pattern = init.pattern;
         this.headers = new HeaderMappings(init.headers);
-        this.payload = init.payload ?? null;
+        this.body = init.body ?? init.payload;
         this.query = init.query ?? init.params;
         this.timeout = init.timeout;
-        this.streamLength = init.streamLength;
     }
 
     /**
@@ -246,7 +241,7 @@ export abstract class AbstractIncoming<T> implements Incoming<T> {
 /**
  * Incoming packet.
  */
-export abstract class UrlIncoming<T> extends AbstractIncoming<T> implements Incoming<T> {
+export class UrlIncoming<T> extends AbstractIncoming<T> implements Incoming<T> {
 
 
     readonly url: string;
@@ -279,10 +274,33 @@ export abstract class UrlIncoming<T> extends AbstractIncoming<T> implements Inco
 }
 
 
+
+export function parseUrlIncoming(init: UrlIncomingOptions<IReadable>): UrlIncoming<any> {
+    const incoming = (init.body ?? init.payload) as any;
+    incoming.url = init.url;
+    incoming.headers = new HeaderMappings(init.headers);
+    incoming.pattern = init.pattern;
+    return incoming as (IReadable & UrlIncoming<any>);
+}
+
+
+@Injectable()
+export class UrlIncomingFactory implements IncomingFactory {
+
+    constructor(private streamAdapter: StreamAdapter) { }
+    create(options: UrlIncomingOptions): UrlIncoming<any> {
+        if (this.streamAdapter.isReadable(options.payload)) {
+            return parseUrlIncoming(options);
+        }
+        return new UrlIncoming(options);
+    }
+}
+
+
 /**
  * Incoming packet.
  */
-export abstract class TopicIncoming<T> extends AbstractIncoming<T> implements Incoming<T> {
+export class TopicIncoming<T> extends AbstractIncoming<T> implements Incoming<T> {
 
 
     readonly topic: string;
@@ -326,8 +344,8 @@ export interface UrlClientIncomingOpts<T = any, TStatus = any> extends StatusOpt
     pattern?: string;
     headers?: HeadersLike;
     payload?: T;
+    body?: T;
     method?: string;
-    streamLength?: number;
 }
 
 /**
@@ -338,7 +356,7 @@ export interface TopicClientIncomingOpts<T = any, TStatus = any> extends StatusO
     pattern?: string;
     headers?: HeadersLike;
     payload?: T;
-    streamLength?: number;
+    body?: T;
 }
 
 /**
@@ -368,7 +386,6 @@ export abstract class AbstractClientIncoming<T, TStatus = any> implements Client
     protected _status: TStatus | null;
     protected _message: string | undefined;
 
-    payload: any;
 
     get statusCode(): TStatus {
         return this._status!;
@@ -381,13 +398,7 @@ export abstract class AbstractClientIncoming<T, TStatus = any> implements Client
     /**
      * body, payload alias name.
      */
-    get body(): T | null {
-        return this.payload;
-    }
-
-    set body(value: T | null) {
-        this.payload = value;
-    }
+    body?: T | null;
 
     /**
       * Textual description of response status code, defaults to OK.
@@ -408,10 +419,10 @@ export abstract class AbstractClientIncoming<T, TStatus = any> implements Client
 
         this.error = init.error;
         this.type = init.type;
+        this.body = init.body ?? init.payload;
         this._status = init.status ?? init.statusCode ?? defaultStatus ?? null;
         this._message = (init.statusMessage || init.statusText) ?? defaultStatusText;
         this.ok = this.isOk(init);
-        this.streamLength = init.streamLength;
     }
 
     protected isOk(init: ClientIncomingOpts) {
@@ -437,7 +448,7 @@ export abstract class AbstractClientIncoming<T, TStatus = any> implements Client
 }
 
 
-export abstract class UrlClientIncoming<T = any, TStatus = any> extends AbstractClientIncoming<T, TStatus> {
+export class UrlClientIncoming<T = any, TStatus = any> extends AbstractClientIncoming<T, TStatus> {
 
     readonly url: string;
     constructor(init: UrlClientIncomingOpts, defaultStatus?: TStatus, defaultStatusText?: string) {
@@ -448,8 +459,31 @@ export abstract class UrlClientIncoming<T = any, TStatus = any> extends Abstract
 
 }
 
+@Injectable()
+export class UrlClientIncomingFactory implements ClientIncomingFactory {
 
-export abstract class TopicClientIncoming<T, TStatus = any> extends AbstractClientIncoming<T, TStatus> {
+    constructor(private streamAdapter: StreamAdapter) { }
+
+    create<T = any>(options: UrlClientIncomingOpts<any, any>): UrlClientIncoming<T> {
+        if (this.streamAdapter.isReadable(options.payload)) {
+            return parseUrlClientIncoming(options);
+        }
+        return new UrlClientIncoming(options);
+    }
+}
+
+export function parseUrlClientIncoming<TStatus>(init: UrlClientIncomingOpts<IReadable>, defaultStatus?: TStatus, defaultStatusText?: string): UrlClientIncoming<any, TStatus> {
+    const incoming = (init.body ?? init.payload) as any;
+    incoming.url = init.url;
+    incoming.headers = new HeaderMappings(init.headers);
+    incoming.pattern = init.pattern;
+    incoming.status = init.status ?? init.statusCode ?? defaultStatus;
+    incoming.statusText = init.statusText ?? init.statusMessage ?? defaultStatusText
+    return incoming as (IReadable & UrlClientIncoming<any, TStatus>);
+}
+
+
+export class TopicClientIncoming<T, TStatus = any> extends AbstractClientIncoming<T, TStatus> {
 
     readonly topic: string;
     constructor(init: TopicClientIncomingOpts, defaultStatus?: TStatus, defaultStatusText?: string) {

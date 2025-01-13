@@ -16,14 +16,14 @@ import { SocketTransport } from '../transports';
  * Channel cache.
  */
 export interface ChannelCache {
-    Packet: BufferPacket;
+    packet: BufferPacket<IDuplex>;
     stream: IDuplex | null;
     length: number;
     contentLength: number | null;
 }
 
 @Injectable()
-export class PacketDeserializeInterceptor implements Interceptor<BufferPacket, IncomingMessage, TransportContext> {
+export class PacketDeserializeInterceptor implements Interceptor<BufferPacket<IDuplex>, IncomingMessage, TransportContext> {
 
     protected channels: Map<string, ChannelCache>;
 
@@ -43,7 +43,7 @@ export class PacketDeserializeInterceptor implements Interceptor<BufferPacket, I
             input.payload = null;
             if (!cache) {
                 cache = {
-                    Packet: input,
+                    packet: input,
                     stream: null,
                     length: 0,
                     contentLength: null
@@ -94,7 +94,7 @@ export class PacketDeserializeInterceptor implements Interceptor<BufferPacket, I
                 } else {
                     cache.length -= idx;
                     cache.contentLength = rawContentLength;
-                    cache.Packet.streamLength = rawContentLength;
+                    cache.packet.streamLength = rawContentLength;
                 }
             }
         }
@@ -122,8 +122,8 @@ export class PacketDeserializeInterceptor implements Interceptor<BufferPacket, I
     protected handleMessage(channel: string, cache: ChannelCache, subscriber: Subscriber<Packet>, clear: boolean) {
         const data = cache.stream;
         data?.end();
-        const Packet = cache.Packet;
-        Packet.payload = data;
+        const packet = cache.packet;
+        packet.payload = data;
         cache.stream = null;
         if (clear) {
             this.channels.delete(channel);
@@ -131,7 +131,7 @@ export class PacketDeserializeInterceptor implements Interceptor<BufferPacket, I
             cache.contentLength = null;
             cache.length = 0;
         }
-        subscriber.next(Packet);
+        subscriber.next(packet);
     }
 }
 

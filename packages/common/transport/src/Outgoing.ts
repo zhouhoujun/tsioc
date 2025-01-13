@@ -29,11 +29,6 @@ export interface OutgoingMessage<T = any> {
      */
     getHeader?(field: string): string | undefined;
 
-    write?(data: any, cb?: (err?: Error | null) => void): boolean;
-    write?(data: any, encoding?: string, cb?: (err?: Error | null) => void): boolean;
-    end?(cb?: () => void): this;
-    end?(data: any, cb?: () => void): this;
-    end?(data: any, encoding?: string, cb?: () => void): this;
 }
 
 /**
@@ -229,9 +224,9 @@ export interface OutgoingCloneOpts<T, TStatus> extends StatusOptions<TStatus> {
 
 
 /**
- * Server outgoing.
+ * abstract server outgoing.
  */
-export abstract class ServerOutgoing<T, TStatus = any> implements Outgoing<T, TStatus> {
+export abstract class AbstractOutgoing<T, TStatus = any> implements Outgoing<T, TStatus> {
     /**
      * packet id
      */
@@ -318,12 +313,29 @@ export abstract class ServerOutgoing<T, TStatus = any> implements Outgoing<T, TS
         this.headers.removeHeader(field);
     }
 
-    abstract write(data: any, cb?: (err?: Error | null) => void): boolean;
-    abstract write(data: any, encoding?: string, cb?: (err?: Error | null) => void): boolean;
-    abstract end(cb?: () => void): this;
-    abstract end(data: any, cb?: () => void): this;
-    abstract end(data: any, encoding?: string, cb?: () => void): this;
-
 }
 
+/**
+ * Url outgoing
+ */
+export interface UrlOutgoing<T = any, TStatus = any> extends Outgoing<T, TStatus> {
+    readonly url: string;
+}
+
+/**
+ * Topic outgoing
+ */
+export interface TopicOutgoing<T = any, TStatus = any> extends Outgoing<T, TStatus> {
+    readonly topic: string;
+}
+
+
+export interface UrlClientOutgoing<T = any> extends ClientOutgoing<T> {
+    readonly url: string;
+}
+
+
+export interface TopicClientOutgoing<T = any> extends ClientOutgoing<T> {
+    readonly topic: string;
+}
 

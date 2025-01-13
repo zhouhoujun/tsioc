@@ -1,23 +1,19 @@
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import { isResponseEvent, LOCALHOST, Packet } from '@tsdi/common';
-// import { CustomCodingsAdapter } from '@tsdi/common/codings';
-import { AbstractClientIncoming, AbstractIncoming } from '@tsdi/common/transport';
+import { UrlClientIncomingFactory, UrlIncomingFactory } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
 import {
-    ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, PatternRequestContext,
-    RequestContext, SERVER_MODULES, ServerModuleOpts, ServiceModuleOpts,
-    UrlRequestContext
+    ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
+    SERVER_MODULES, ServerModuleOpts, ServiceModuleOpts,
+
 } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';
 import { TcpHandler } from './client/handler';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS } from './client/options';
-// import { TcpMessage, TcpMessageFactory } from './message';
 import { TcpRequest } from './client/request';
 import { TcpServer } from './server/server';
 import { TcpRequestHandler } from './server/handler';
 import { TCP_MIDDLEWARES, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS } from './server/options';
-import { TcpClientIncomingFactory, TcpClientIncoming } from './client/transport';
-import { TcpIncoming, TcpIncomingFactory, TcpOutgoing, TcpOutgoingFactory } from './server/transport';
 
 
 // const defaultMaxSize = 65515; //65535 - 20;
@@ -72,8 +68,8 @@ export class TcpConfiguration {
                 handlerType: TcpHandler,
                 interceptorsToken: TCP_CLIENT_INTERCEPTORS,
                 filtersToken: TCP_CLIENT_FILTERS,
+                incomingFactory: UrlClientIncomingFactory,
                 // messageFactory: TcpMessageFactory,
-                incomingFactory: TcpClientIncomingFactory,
                 // transportOpts: {
                 //     delimiter: '#',
                 //     maxSize: defaultMaxSize,
@@ -91,6 +87,7 @@ export class TcpConfiguration {
             defaultOpts: {
                 handlerType: TcpRequestHandler,
                 listenOpts: { port: 3000, host: LOCALHOST },
+                // messageFactory: TcpMessageFactory,
                 // transportOpts: {
                 //     delimiter: '#',
                 //     maxSize: defaultMaxSize,
@@ -101,9 +98,8 @@ export class TcpConfiguration {
                 interceptorsToken: TCP_SERV_INTERCEPTORS,
                 filtersToken: TCP_SERV_FILTERS,
                 guardsToken: TCP_SERV_GUARDS,
-                // messageFactory: TcpMessageFactory,
-                incomingFactory: TcpIncomingFactory,
-                outgoingFactory: TcpOutgoingFactory,
+                incomingFactory: UrlIncomingFactory,
+                outgoingFactory: UrlOutgoingFactory,
                 filters: [
                     LoggerInterceptor,
                     ExecptionFinalizeFilter,
