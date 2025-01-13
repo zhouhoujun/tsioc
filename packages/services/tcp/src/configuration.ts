@@ -1,6 +1,6 @@
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import { isResponseEvent, LOCALHOST, Packet } from '@tsdi/common';
-import { UrlClientIncomingFactory, UrlIncomingFactory } from '@tsdi/common/transport';
+import { UrlClientIncomingFactory, UrlIncomingFactory, UrlOutgoingFactory } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
 import {
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
@@ -39,7 +39,6 @@ export class TcpConfiguration {
     @Bean(SERVER_MODULES, { static: true, multi: true })
     microServ(): ServiceModuleOpts {
         const option = this.getServOptions();
-        // option.defaultOpts!.transportOpts!.defaultMethod = '*';
         option.defaultOpts!.content = {
             root: 'public',
             prefix: 'content'
@@ -51,7 +50,6 @@ export class TcpConfiguration {
     @Bean(SERVER_MODULES, { static: true, multi: true })
     serv(): ServiceModuleOpts {
         const option = this.getServOptions() as ServerModuleOpts;
-        // option.defaultOpts!.transportOpts!.defaultMethod = 'GET';
         option.defaultOpts!.middlewaresToken = TCP_MIDDLEWARES,
             option.defaultOpts!.content = {
                 root: 'public'
@@ -69,7 +67,6 @@ export class TcpConfiguration {
                 interceptorsToken: TCP_CLIENT_INTERCEPTORS,
                 filtersToken: TCP_CLIENT_FILTERS,
                 incomingFactory: UrlClientIncomingFactory,
-                // messageFactory: TcpMessageFactory,
                 // transportOpts: {
                 //     delimiter: '#',
                 //     maxSize: defaultMaxSize,
@@ -87,7 +84,6 @@ export class TcpConfiguration {
             defaultOpts: {
                 handlerType: TcpRequestHandler,
                 listenOpts: { port: 3000, host: LOCALHOST },
-                // messageFactory: TcpMessageFactory,
                 // transportOpts: {
                 //     delimiter: '#',
                 //     maxSize: defaultMaxSize,

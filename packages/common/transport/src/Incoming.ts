@@ -2,6 +2,7 @@ import { HeaderMappings, HeadersLike, ParameterCodec, StatusOptions } from '@tsd
 import { IReadable } from './stream';
 import { Injectable } from '@tsdi/ioc';
 import { StreamAdapter } from './StreamAdapter';
+import { Outgoing } from './Outgoing';
 
 
 /**
@@ -54,6 +55,8 @@ export interface Incoming<T = any> extends IncomingMessage<T> {
 
     path?: any;
 
+    res?: Outgoing;
+
 }
 
 /**
@@ -78,26 +81,28 @@ export interface ClientIncoming<T = any, TStatus = any> extends IncomingMessage<
 
 }
 
+export type TIncoming<T extends Incoming> = T | (T & IReadable);
+
 
 /**
  * Abstract incoming factory.
  */
-export abstract class AbstractIncomingFactory<TIcoming extends IncomingMessage = IncomingMessage> {
-    abstract create(options: any): TIcoming;
+export abstract class AbstractIncomingFactory<T extends IncomingMessage = IncomingMessage> {
+    abstract create(options: any): TIncoming<T>;
 }
 
 /**
  * server incoming factory.
  */
 export abstract class IncomingFactory implements AbstractIncomingFactory<Incoming<any>> {
-    abstract create(options: IncomingOpts): Incoming<any>;
+    abstract create(options: IncomingOpts): TIncoming<Incoming<any>>;
 }
 
 /**
  * Client incoming factory.
  */
 export abstract class ClientIncomingFactory implements AbstractIncomingFactory<ClientIncoming> {
-    abstract create(options: ClientIncomingOpts): ClientIncoming;
+    abstract create(options: ClientIncomingOpts): TIncoming<ClientIncoming>;
 }
 
 
@@ -241,11 +246,11 @@ export abstract class AbstractIncoming<T> implements Incoming<T> {
 /**
  * Incoming packet.
  */
-export class UrlIncoming<T> extends AbstractIncoming<T> implements Incoming<T> {
+export class UrlIncoming<T = any> extends AbstractIncoming<T> implements Incoming<T> {
 
 
-    readonly url: string;
-    readonly method: string;
+    url: string;
+    method: string;
 
 
     constructor(init: UrlIncomingOptions<T>) {
@@ -288,7 +293,7 @@ export function parseUrlIncoming(init: UrlIncomingOptions<IReadable>): UrlIncomi
 export class UrlIncomingFactory implements IncomingFactory {
 
     constructor(private streamAdapter: StreamAdapter) { }
-    create(options: UrlIncomingOptions): UrlIncoming<any> {
+    create(options: UrlIncomingOptions): TIncoming<UrlIncoming> {
         if (this.streamAdapter.isReadable(options.payload)) {
             return parseUrlIncoming(options);
         }
@@ -300,7 +305,7 @@ export class UrlIncomingFactory implements IncomingFactory {
 /**
  * Incoming packet.
  */
-export class TopicIncoming<T> extends AbstractIncoming<T> implements Incoming<T> {
+export class TopicIncoming<T = any> extends AbstractIncoming<T> implements Incoming<T> {
 
 
     readonly topic: string;
@@ -331,6 +336,27 @@ export class TopicIncoming<T> extends AbstractIncoming<T> implements Incoming<T>
     }
 
 }
+
+export function parseTopicIncoming(init: TopicIncomingOptions<IReadable>): TopicIncoming<any> & IReadable {
+    const incoming = (init.body ?? init.payload) as any;
+    incoming.topic = init.topic;
+    incoming.headers = new HeaderMappings(init.headers);
+    incoming.pattern = init.pattern;
+    return incoming as (IReadable & TopicIncoming<any>);
+}
+
+@Injectable()
+export class TopicIncomingFactory implements IncomingFactory {
+
+    constructor(private streamAdapter: StreamAdapter) { }
+    create(options: TopicIncomingOptions): TIncoming<TopicIncoming> {
+        if (this.streamAdapter.isReadable(options.payload)) {
+            return parseTopicIncoming(options);
+        }
+        return new TopicIncoming(options);
+    }
+}
+
 
 
 
@@ -464,7 +490,7 @@ export class UrlClientIncomingFactory implements ClientIncomingFactory {
 
     constructor(private streamAdapter: StreamAdapter) { }
 
-    create<T = any>(options: UrlClientIncomingOpts<any, any>): UrlClientIncoming<T> {
+    create<T = any>(options: UrlClientIncomingOpts<any, any>): TIncoming<UrlClientIncoming<T>> {
         if (this.streamAdapter.isReadable(options.payload)) {
             return parseUrlClientIncoming(options);
         }
@@ -472,7 +498,7 @@ export class UrlClientIncomingFactory implements ClientIncomingFactory {
     }
 }
 
-export function parseUrlClientIncoming<TStatus>(init: UrlClientIncomingOpts<IReadable>, defaultStatus?: TStatus, defaultStatusText?: string): UrlClientIncoming<any, TStatus> {
+export function parseUrlClientIncoming<TStatus>(init: UrlClientIncomingOpts<IReadable>, defaultStatus?: TStatus, defaultStatusText?: string): UrlClientIncoming<any, TStatus> & IReadable {
     const incoming = (init.body ?? init.payload) as any;
     incoming.url = init.url;
     incoming.headers = new HeaderMappings(init.headers);
@@ -492,4 +518,28 @@ export class TopicClientIncoming<T, TStatus = any> extends AbstractClientIncomin
 
     }
 
+}
+
+export function parseTopicClientIncoming<TStatus>(init: TopicClientIncomingOpts<IReadable>, defaultStatus?: TStatus, defaultStatusText?: string): TopicClientIncoming<any, TStatus> & IReadable {
+    const incoming = (init.body ?? init.payload) as any;
+    incoming.topic = init.topic;
+    incoming.headers = new HeaderMappings(init.headers);
+    incoming.pattern = init.pattern;
+    incoming.status = init.status ?? init.statusCode ?? defaultStatus;
+    incoming.statusText = init.statusText ?? init.statusMessage ?? defaultStatusText
+    return incoming as (IReadable & TopicClientIncoming<any, TStatus>);
+}
+
+
+@Injectable()
+export class TopicClientIncomingFactory implements ClientIncomingFactory {
+
+    constructor(private streamAdapter: StreamAdapter) { }
+
+    create<T = any>(options: TopicClientIncomingOpts<any, any>): TIncoming<TopicClientIncoming<T>> {
+        if (this.streamAdapter.isReadable(options.payload)) {
+            return parseTopicClientIncoming(options);
+        }
+        return new TopicClientIncoming(options);
+    }
 }

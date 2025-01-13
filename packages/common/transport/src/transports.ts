@@ -4,7 +4,7 @@ import { Observable, Subject, fromEvent, mergeMap, share, takeUntil } from 'rxjs
 import { Transport } from './Transport';
 import { ev } from './consts';
 import { IEventEmitter, IReadable, IWritable } from './stream';
-import { AbstractIncomingFactory } from './Incoming';
+import { AbstractIncomingFactory, Incoming } from './Incoming';
 import { AbstractOutgoingFactory } from './Outgoing';
 import { Deserializer } from './Deserializer';
 import { Serializer } from './Serializer';
@@ -14,7 +14,7 @@ import { TransportContext } from './context';
  * Abstract transport.
  */
 @Abstract()
-export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = any> extends Transport<TSocket, TInput, TOutput> {
+export abstract class AbstractTransport<TSocket = any, TIncoming extends Incoming = Incoming, TOutgoing = any> extends Transport<TSocket, TIncoming, TOutgoing> {
 
     /**
      * message deserializer.
@@ -50,7 +50,7 @@ export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = a
      * send.
      * @param data 
      */
-    send(data: TInput, channel?: IEventEmitter): Observable<any> {
+    send(data: TOutgoing, channel?: IEventEmitter): Observable<any> {
         return this.serializer.serialize(data, new TransportContext(this, data))
             .pipe(
                 mergeMap(msg => {
@@ -65,7 +65,7 @@ export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = a
      * @param incoming the req channel.
      * @param req the message response for.
      */
-    receive(channel?: IEventEmitter, req?: AbstractRequest<any>): Observable<TOutput> {
+    receive(channel?: IEventEmitter, req?: AbstractRequest<any>): Observable<TIncoming> {
         return this.read(channel, req)
             .pipe(
                 takeUntil(this.destroy$),
@@ -91,7 +91,7 @@ export abstract class AbstractTransport<TSocket = any, TInput = any, TOutput = a
 
 
 @Abstract()
-export abstract class SocketTransport<TSocket extends IWritable = IWritable, TInput = any, TOutput = any> extends AbstractTransport<TSocket, TInput, TOutput> {
+export abstract class SocketTransport<TSocket extends IWritable = IWritable, TIncoming extends Incoming = Incoming, TOutgoing = any> extends AbstractTransport<TSocket, TIncoming, TOutgoing> {
 
     /**
      * id length

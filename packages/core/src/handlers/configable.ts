@@ -4,7 +4,7 @@ import { GuardLike, GuardsService } from '../guard';
 import { InterceptorLike, InterceptorService } from '../Interceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
 import { FilterLike, FilterService } from '../filters/filter';
-import { Backend, Handler } from '../Handler';
+import { Backend, BackendFn, Handler } from '../Handler';
 
 
 
@@ -81,7 +81,7 @@ export abstract class AbstractConfigableHandler<
 
 
 export interface BackendOptions<TInput = any> {
-    backend?: Token<Backend<TInput>> | Backend<TInput>
+    backend?: Token<Backend<TInput>> | Backend<TInput> | BackendFn<TInput>;
 }
 
 export interface GuardHandlerOptions<TInput = any> extends BackendOptions<TInput> {

@@ -1,6 +1,6 @@
 import { Injectable, Injector, isNil } from '@tsdi/ioc';
 import { HeaderMappings, LOCALHOST, normalize, Response } from '@tsdi/common';
-import { Incoming, MessageExecption, Outgoing } from '@tsdi/common/transport';
+import { Incoming, MessageExecption, Outgoing, UrlIncoming } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
 import { RequestContext, RequestContextFactory } from '../RequestContext';
 import { ServerOpts } from '../Server';
@@ -8,7 +8,7 @@ import { ServerTransport } from '../transport';
 
 
 
-export class UrlRequestContext<TRequest extends Incoming<any> = Incoming<any>, TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any> extends RequestContext<TRequest, TResponse, TSocket> {
+export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<any>, TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any> extends RequestContext<TRequest, TResponse, TSocket> {
 
 
     private _URL?: URL;
@@ -32,7 +32,7 @@ export class UrlRequestContext<TRequest extends Incoming<any> = Incoming<any>, T
         super(injector, { ...serverOptions, args: request });
 
         this.setValue(ServerTransport, transport);
-        
+
         this.originalUrl = this.url = normalize(this.url);
         const searhIdx = this.url.indexOf('?');
         if (searhIdx >= 0) {
@@ -87,7 +87,7 @@ export class UrlRequestContext<TRequest extends Incoming<any> = Incoming<any>, T
         }
     }
 
-    protected parseURL(req: Incoming<any>): URL {
+    protected parseURL(req: UrlIncoming<any>): URL {
         const url = req.url ?? '';
         if (abstl.test(url)) {
             return new URL(url);
@@ -154,7 +154,7 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
 
         this.setValue(ServerTransport, transport);
 
-        this.originalUrl = this.url = normalize(request.url ?? request.pattern!);
+        this.originalUrl = this.url = normalize(request.pattern!);
         const searhIdx = this.url.indexOf('?');
         if (!this.request.query || searhIdx > 0) {
             this.request.query = this.query;
@@ -226,10 +226,10 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
 export class RequestContextFactoryImpl implements RequestContextFactory<Incoming<any>, Outgoing<any>> {
     create<TSocket = any>(session: ServerTransport, request: Incoming<any>, response: Outgoing<any>, options?: ServerOpts<any> | undefined): RequestContext<Incoming<any>, Outgoing<any>, TSocket> {
         const injector = session.injector;
-        if (request.url) {
+        if ((request as UrlIncoming).url) {
             return new UrlRequestContext(injector,
                 session,
-                request,
+                request as UrlIncoming,
                 response,
                 options);
         } else {

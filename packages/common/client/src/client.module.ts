@@ -10,7 +10,7 @@ import { ClientBackend } from './backend';
 // import { ClientCodingsModule } from './transport/client.codings.module';
 import { BodyContentInterceptor } from './interceptors/body';
 import { ClientOpts } from './options';
-import { ClientTransportFactory } from './transport';
+import { ClientTransportFactory, DefaultClientTransferFactory } from './transport';
 
 
 /**
@@ -224,9 +224,9 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     clientOpts.providers.push(toProvider(ClientIncomingFactory, clientOpts.incomingFactory))
                 }
 
-                if (clientOpts.outgoingFactory) {
-                    clientOpts.providers.push(toProvider(ClientOutgoingFactory, clientOpts.outgoingFactory))
-                }
+
+                clientOpts.providers.push(toProvider(ClientOutgoingFactory, clientOpts.transferFactory ?? DefaultClientTransferFactory))
+                
 
                 if (clientOpts.transportFactory && clientOpts.transportFactory !== ClientTransportFactory) {
                     clientOpts.providers.push(toProvider(ClientTransportFactory, clientOpts.transportFactory))

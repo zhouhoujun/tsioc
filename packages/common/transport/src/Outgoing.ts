@@ -1,4 +1,7 @@
 import { AbstractRequest, Header, HeadersLike, StatusOptions, HeaderMappings } from '@tsdi/common';
+import { IReadable, IWritable } from './stream';
+import { Injectable } from '@tsdi/ioc';
+import { StreamAdapter } from './StreamAdapter';
 
 
 
@@ -30,6 +33,9 @@ export interface OutgoingMessage<T = any> {
     getHeader?(field: string): string | undefined;
 
 }
+
+
+export type TOutgoing<T extends OutgoingMessage> = T | (T & IWritable);
 
 /**
  * Server outgoing message.
@@ -140,13 +146,14 @@ export interface ClientOutgoing<T = any> extends OutgoingMessage<T> {
 }
 
 
-export abstract class AbstractOutgoingFactory<TOutgoing extends OutgoingMessage = OutgoingMessage> {
+
+export abstract class AbstractOutgoingFactory<T extends OutgoingMessage = OutgoingMessage> {
     abstract create(options: {
         socket?: any;
         pattern?: string;
         headers?: HeadersLike;
         payload?: any;
-    }): TOutgoing
+    }): TOutgoing<T>
 }
 
 /**
@@ -168,7 +175,7 @@ export abstract class OutgoingFactory implements AbstractOutgoingFactory<Outgoin
         error?: any;
         headers?: HeadersLike;
         payload?: any;
-    }): Outgoing
+    }): TOutgoing<Outgoing>
 }
 
 
@@ -182,7 +189,7 @@ export abstract class ClientOutgoingFactory implements AbstractOutgoingFactory<C
         pattern?: string;
         headers?: HeadersLike;
         payload?: any;
-    }): ClientOutgoing<any>;
+    }): TOutgoing<ClientOutgoing>;
 }
 
 
@@ -190,9 +197,11 @@ export abstract class ClientOutgoingFactory implements AbstractOutgoingFactory<C
  * Outgoing packet options.
  */
 export interface OutgoingOpts<T = any, TStatus = any> extends StatusOptions<TStatus> {
+    id?: any;
     pattern?: string;
     headers?: HeadersLike;
     payload?: T;
+    body?: T;
 }
 
 
@@ -204,22 +213,7 @@ export interface ClietOutgoingOpts<T = any> {
     pattern?: string;
     headers?: HeadersLike;
     payload?: T;
-}
-
-
-
-/**
- * Outgoing packet options.
- */
-export interface OutgoingOpts<T = any, TStatus = any> extends StatusOptions<TStatus> {
-    id?: any;
-    pattern?: string;
-    headers?: HeadersLike;
-    payload?: T;
-}
-
-export interface OutgoingCloneOpts<T, TStatus> extends StatusOptions<TStatus> {
-    pattern?: string;
+    body?: T;
 }
 
 
@@ -318,15 +312,73 @@ export abstract class AbstractOutgoing<T, TStatus = any> implements Outgoing<T, 
 /**
  * Url outgoing
  */
-export interface UrlOutgoing<T = any, TStatus = any> extends Outgoing<T, TStatus> {
+export class UrlOutgoing<T = any, TStatus = any> extends AbstractOutgoing<T, TStatus> {
     readonly url: string;
+    constructor(init: OutgoingOpts & { url: string }) {
+        super(init)
+        this.url = init.url;
+    }
+
 }
+
+
+
+export function parseUrlOutgoing(init: OutgoingOpts<IReadable> & { url: string }): UrlOutgoing<any> & IWritable {
+    const incoming = (init.body ?? init.payload) as any;
+    incoming.url = init.url;
+    incoming.headers = new HeaderMappings(init.headers);
+    incoming.pattern = init.pattern;
+    incoming.status = init.status ?? init.statusCode;
+    incoming.statusMessage = init.statusMessage ?? init.statusText;
+    return incoming as (IWritable & UrlOutgoing<any>);
+}
+
+@Injectable()
+export class UrlOutgoingFactory implements OutgoingFactory {
+
+    constructor(private streamAdapter: StreamAdapter) { }
+    create(options: OutgoingOpts & { url: string }): TOutgoing<UrlOutgoing> {
+        if (this.streamAdapter.isReadable(options.payload)) {
+            return parseUrlOutgoing(options);
+        }
+        return new UrlOutgoing(options);
+    }
+}
+
+
 
 /**
  * Topic outgoing
  */
-export interface TopicOutgoing<T = any, TStatus = any> extends Outgoing<T, TStatus> {
+export class TopicOutgoing<T = any, TStatus = any> extends AbstractOutgoing<T, TStatus> {
     readonly topic: string;
+    constructor(init: OutgoingOpts & { topic: string }) {
+        super(init)
+        this.topic = init.topic;
+    }
+}
+
+
+export function parseTopicOutgoing(init: OutgoingOpts<IReadable> & { topic: string }): TopicOutgoing<any> & IWritable {
+    const incoming = (init.body ?? init.payload) as any;
+    incoming.topic = init.topic;
+    incoming.headers = new HeaderMappings(init.headers);
+    incoming.pattern = init.pattern;
+    incoming.status = init.status ?? init.statusCode;
+    incoming.statusMessage = init.statusMessage ?? init.statusText;
+    return incoming as (IWritable & TopicOutgoing<any>);
+}
+
+@Injectable()
+export class TopicOutgoingFactory implements OutgoingFactory {
+
+    constructor(private streamAdapter: StreamAdapter) { }
+    create(options: OutgoingOpts & { topic: string }): TOutgoing<TopicOutgoing> {
+        if (this.streamAdapter.isReadable(options.payload)) {
+            return parseTopicOutgoing(options);
+        }
+        return new TopicOutgoing(options);
+    }
 }
 
 

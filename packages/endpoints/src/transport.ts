@@ -1,6 +1,6 @@
 import { Abstract, Injector } from '@tsdi/ioc';
 import { HeaderAdapter } from '@tsdi/common';
-import { AbstractTransport, Deserializer, FileAdapter, IncomingFactory, MimeAdapter, OutgoingFactory, Serializer, StatusAdapter, StreamAdapter } from '@tsdi/common/transport';
+import { AbstractTransport, Deserializer, FileAdapter, Incoming, IncomingFactory, MimeAdapter, OutgoingFactory, Serializer, StatusAdapter, StreamAdapter, Transfer, TransportContext } from '@tsdi/common/transport';
 import { Observable, Subscription, first, merge, mergeMap, takeUntil } from 'rxjs';
 import { AbstractRequestHandler } from './AbstractRequestHandler';
 import { RequestContext, RequestContextFactory } from './RequestContext';
@@ -8,7 +8,7 @@ import { ServerOpts } from './Server';
 import { AcceptsPriority } from './accepts';
 
 @Abstract()
-export abstract class ServerTransport<TSocket = any, TOptions extends ServerOpts = ServerOpts> extends AbstractTransport<TSocket, RequestContext, RequestContext> {
+export abstract class ServerTransport<TSocket = any, TOptions extends ServerOpts = ServerOpts> extends AbstractTransport<TSocket, Incoming, RequestContext> {
     /**
      * server options.
      */
@@ -22,9 +22,9 @@ export abstract class ServerTransport<TSocket = any, TOptions extends ServerOpts
      */
     abstract get outgoingFactory(): OutgoingFactory;
     /**
-     * request context factory.
+     * incoming transfer
      */
-    abstract get requestContextFactory(): RequestContextFactory;
+    abstract get transfer(): Transfer<Incoming, RequestContext<any>>;
     /**
      * mime adapter.
      */
@@ -41,6 +41,7 @@ export abstract class ServerTransport<TSocket = any, TOptions extends ServerOpts
     listen(handler: AbstractRequestHandler, destroy$?: Observable<any>): Subscription {
         return this.receive().pipe(
             takeUntil(destroy$ ? merge(this.destroy$, destroy$).pipe(first()) : this.destroy$),
+            mergeMap(incoming => this.transfer.transform(incoming, new TransportContext(this, incoming))),
             mergeMap(request => handler.handle(request))
         ).subscribe()
     }
@@ -67,7 +68,7 @@ export abstract class DefaultServerTransport extends ServerTransport<any> {
         readonly socket: any,
         readonly protocol: string,
         readonly serializer: Serializer,
-        readonly deserializer: Deserializer,       
+        readonly deserializer: Deserializer,
         readonly headerAdapter: HeaderAdapter,
         readonly streamAdapter: StreamAdapter,
         readonly fileAdapter: FileAdapter,

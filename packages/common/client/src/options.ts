@@ -1,10 +1,11 @@
 import { AbstractRequest, PatternFormatter, ResponseFactory } from '@tsdi/common';
-import { ClientIncomingFactory, ClientOutgoingFactory, StatusAdapter } from '@tsdi/common/transport';
+import { ClientIncomingFactory, StatusAdapter } from '@tsdi/common/transport';
 import { ConfigableHandlerOptions } from '@tsdi/core';
 import { ProvdierOf, Token, Type } from '@tsdi/ioc';
 import { ClientBackend } from './backend';
-import { ClientTransportFactory } from './transport';
+import { ClientTransportFactory } from './transport/transport';
 import { ClientHandler } from './handler';
+import { ClientTransferFactory } from './transport/transfer';
 
 
 /**
@@ -48,9 +49,9 @@ export interface ClientOpts<TConnOpts = any> extends ConfigableHandlerOptions<Ab
      */
     incomingFactory?: ProvdierOf<ClientIncomingFactory>;
     /**
-     * outgoing factory.
+     * imcoming message transfer factory.
      */
-    outgoingFactory?: ProvdierOf<ClientOutgoingFactory>;
+    transferFactory?: ProvdierOf<ClientTransferFactory>;
     /**
      * response packet factory.
      */

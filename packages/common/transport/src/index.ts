@@ -17,8 +17,9 @@ export * from './Outgoing';
 
 export * from './PacketId';
 
-export  * from './context';
+export * from './context';
 export * from './Transport';
+export * from './Transfer';
 export * from './transports';
 
 export * from './Deserializer';

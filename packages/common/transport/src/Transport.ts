@@ -10,7 +10,7 @@ import { IEventEmitter } from './stream';
 /**
  * transport.
  */
-export abstract class Transport<TSocket = any, TInput = any, TOutput = any> {
+export abstract class Transport<TSocket = any, TIncoming extends Incoming = Incoming, TOutgoing = any> {
     /**
      * transport context injector.
      */
@@ -46,13 +46,13 @@ export abstract class Transport<TSocket = any, TInput = any, TOutput = any> {
      * send.
      * @param data 
      */
-    abstract send(data: TInput, channel?: IEventEmitter): Observable<any>;
+    abstract send(data: TOutgoing, channel?: IEventEmitter): Observable<any>;
 
     /**
      * receive
      * @param channel the req channel.
      */
-    abstract receive(channel: IEventEmitter): Observable<TOutput>;
+    abstract receive(channel: IEventEmitter): Observable<TIncoming>;
     /**
      * close transport.
      */
