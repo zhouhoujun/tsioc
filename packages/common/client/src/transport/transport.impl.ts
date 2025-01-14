@@ -1,5 +1,5 @@
 import { AbstractRequest, HeaderAdapter, PatternFormatter, ResponseFactory } from '@tsdi/common';
-import { ClientIncomingFactory, Deserializer, ev, IEventEmitter, IReadable, IWritable, Redirector, Serializer, StatusAdapter, StreamAdapter } from '@tsdi/common/transport';
+import { ClientIncomingFactory, Deserializer, ev, IEventEmitter, IReadable, IWritable, Redirector, Serializer, StatusAdapter, StreamAdapter, TransportOptions } from '@tsdi/common/transport';
 import { ClientTransfer, ClientTransport, ClientTransportFactory } from '../transport';
 import { ClientOpts } from '../options';
 import { Injector, isFunction, promisify } from '@tsdi/ioc';
@@ -9,18 +9,11 @@ import { fromEvent, Observable } from 'rxjs';
 
 export class SocketClientTransport extends ClientTransport<any> {
 
-
     constructor(
         readonly injector: Injector,
         readonly socket: any,
         readonly protocol: string,
-        readonly headDelimiter: string,
-        readonly delimiter: string,
-        readonly splitDelimiter: string,
-        readonly maxSize: number,
-        readonly idLen: number | null,
-        readonly countLen: number,
-        readonly event: string,
+        readonly options: TransportOptions,
         readonly serializer: Serializer,
         readonly deserializer: Deserializer,
         readonly patternFormatter: PatternFormatter | null,
@@ -40,7 +33,7 @@ export class SocketClientTransport extends ClientTransport<any> {
 
 
     protected override read(channel?: IEventEmitter | null, req?: AbstractRequest<any>): Observable<any> {
-        return fromEvent(channel ?? this.socket, this.event ?? ev.DATA)
+        return fromEvent(channel ?? this.socket, this.options.event ?? ev.DATA)
     }
 
     protected override write(msg: any, channel?: IWritable | null): Promise<any> {

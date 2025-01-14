@@ -183,11 +183,18 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     }
                 }
                 const opts = { ...defts, ...options, asDefault: null } as ClientModuleOpts & ClientTokenOpts;
+
+                const transportOptions = {
+                    ...opts.defaultOpts?.transportOptions,
+                    ...opts.clientOpts?.transportOptions
+                };
+
                 const clientOpts = {
                     backend: opts.backend ?? ClientBackend,
                     enableTypeChain: true,
                     ...opts.defaultOpts,
                     ...opts.clientOpts,
+                    transportOptions,
                     providers: [
                         ...opts.defaultOpts?.providers || [],
                         ...opts.clientOpts?.providers || []
@@ -212,21 +219,8 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                         }
                     })
                 }
+
                 clientOpts.providers.push(toProvider(ClientTransportFactory, clientOpts.transportFactory));
-
-                // clientOpts.providers.push(toProvider(ResponseFactory, clientOpts.responseFactory || DefaultResponseFactory))
-
-                // if (clientOpts.statusAdapter) {
-                //     clientOpts.providers.push(toProvider(StatusAdapter, clientOpts.statusAdapter))
-                // }
-
-                // if (clientOpts.incomingFactory) {
-                //     clientOpts.providers.push(toProvider(ClientIncomingFactory, clientOpts.incomingFactory))
-                // }
-
-                // clientOpts.providers.push(toProvider(ClientOutgoingFactory, clientOpts.transferFactory ?? DefaultClientTransferFactory))
-
-
 
                 const providers: ProviderType[] = [];
 

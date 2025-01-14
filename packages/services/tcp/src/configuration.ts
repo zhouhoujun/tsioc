@@ -1,11 +1,12 @@
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
-import { DefaultResponseFactory, HeaderAdapter, isResponseEvent, LOCALHOST, Packet, PatternFormatter, ResponseFactory } from '@tsdi/common';
-import { DefaultDeserializerFactory, DefaultSerializerFactory, Deserializer, DeserializerFactory, FileAdapter, MimeAdapter, Redirector, Serializer, SerializerFactory, StatusAdapter, StreamAdapter, UrlClientIncomingFactory, UrlIncomingFactory, UrlOutgoingFactory } from '@tsdi/common/transport';
+import { AbstractRequest, BaseRequest, DefaultResponseFactory, HeaderAdapter, isResponseEvent, LOCALHOST, Packet, PatternFormatter, PatternRequest, ResponseFactory, statusMessage, TopicRequest, UrlRequest } from '@tsdi/common';
+import { DefaultDeserializerFactory, DefaultSerializerFactory, Deserializer, DeserializerFactory, FileAdapter, MimeAdapter, Redirector, Serializer, SerializerFactory, StatusAdapter, StreamAdapter, TransportContext, UrlClientIncomingFactory, UrlIncomingFactory, UrlOutgoingFactory } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientModuleOpts, ClientTransfer, ClientTransferFactory, DefaultClientTransferFactory, SocketClientTransport } from '@tsdi/common/client';
 import {
     AcceptsPriority,
     DefaultServerTransferFactory,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
+    RequestContext,
     SERVER_MODULES, ServerModuleOpts, ServiceModuleOpts,
     SocketServerTransport,
 
@@ -19,6 +20,7 @@ import { TcpRequestHandler } from './server/handler';
 import { TCP_MIDDLEWARES, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS } from './server/options';
 import { InjectFlags } from '@tsdi/ioc';
 import { ServerTransfer, ServerTransferFactory } from '@tsdi/endpoints/src/transfer';
+import { of } from 'rxjs';
 
 
 // const defaultMaxSize = 65515; //65535 - 20;
@@ -78,25 +80,20 @@ export class TcpConfiguration {
                         redirector: Redirector | null) => {
                         return {
                             create: (injector, socket, options) => {
+                                const transportOptions = options.transportOptions ?? {};
                                 return new SocketClientTransport(
                                     injector,
                                     socket,
                                     'tcp',
-                                    '$',
-                                    '#',
-                                    '|',
-                                    defaultMaxSize,
-                                    2,
-                                    4,
-                                    'data',
-                                    serializerFactory.create(injector),
-                                    deserializerFactory.create(injector),
+                                    transportOptions,
+                                    serializerFactory.create(injector, transportOptions.serializerConfig),
+                                    deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     formatter,
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
                                     incomingFactory,
-                                    transferFactory.create(injector),
+                                    transferFactory.create(injector, transportOptions.transferConfig),
                                     responseFactory,
                                     redirector,
                                     options
@@ -116,14 +113,30 @@ export class TcpConfiguration {
                         DefaultResponseFactory,
                         [Redirector, InjectFlags.Optional]
                     ]
-                }
-                // incomingFactory: UrlClientIncomingFactory,
-                // transportOpts: {
-                //     delimiter: '#',
-                //     maxSize: defaultMaxSize,
-                //     encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof TcpMessage, [[TcpRequest, Packet]]) },
-                //     decodingsAdapter: { useValue: new CustomCodingsAdapter(isResponseEvent, [[TcpClientIncoming, AbstractClientIncoming], [TcpMessage, Message]]) },
-                // }
+                },
+                transportOptions: {
+                    serializerConfig: {
+                        interceptors: [                            
+                            (input: any, next, context: TransportContext) => {
+                                if (input instanceof AbstractRequest) {
+                                    if ((input as UrlRequest).url) {
+                                        return of(JSON.stringify({ headers: input.headers.getHeaders(), payload: input.body, method: (input as UrlRequest).method, url: (input as UrlRequest).getUrlWithParams() }))
+                                    } else if ((input as TopicRequest).topic) {
+                                        return of(JSON.stringify({ headers: input.headers.getHeaders(), payload: input.body, topic: (input as TopicRequest).topic, params: input.params }))
+                                    } else if (input as PatternRequest) {
+                                        return of(JSON.stringify({ headers: input.headers.getHeaders(), payload: input.body, pattern: (input as PatternRequest).pattern, params: input.params }))
+                                    }
+                                }
+                                return next(input, context);
+                            }
+                        ]
+                    },
+                    deserializerConfig: {
+                        interceptors: [
+
+                        ]
+                    }
+                },
             }
         }
     }
@@ -142,19 +155,14 @@ export class TcpConfiguration {
                         incomingFactory: UrlClientIncomingFactory, outgoingFactory: UrlOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
                             create: (injector, socket, options) => {
+                                const transportOptions = options.transportOptions ?? {};
                                 return new SocketServerTransport(
                                     injector,
                                     socket,
                                     'tcp',
-                                    '$',
-                                    '#',
-                                    '|',
-                                    defaultMaxSize,
-                                    2,
-                                    4,
-                                    'data',
-                                    serializerFactory.create(injector),
-                                    deserializerFactory.create(injector),
+                                    transportOptions,
+                                    serializerFactory.create(injector, transportOptions.serializerConfig),
+                                    deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     formatter,
                                     statusAdapter,
                                     headerAdapter,
@@ -164,7 +172,7 @@ export class TcpConfiguration {
                                     acceptsPriority,
                                     incomingFactory,
                                     outgoingFactory,
-                                    transferFactory.create(injector),
+                                    transferFactory.create(injector, transportOptions.transferConfig),
                                     options
                                 )
                             },
@@ -184,6 +192,25 @@ export class TcpConfiguration {
                         UrlOutgoingFactory,
                         DefaultServerTransferFactory
                     ]
+                },
+                transportOptions: {
+                    serializerConfig: {
+                        interceptors: [
+                            (input: any, next, context: TransportContext) => {
+                                if (input instanceof RequestContext) {
+                                    const reqctx = input as RequestContext;
+                                    const headers = reqctx.headerAdapter.getHeaders(reqctx.response.headers);
+                                    return of(JSON.stringify({ headers, payload: input.body, status: input.status, statusMessage: input.statusMessage }))
+                                }
+                                return next(input, context);
+                            }
+                        ]
+                    },
+                    deserializerConfig: {
+                        interceptors: [
+
+                        ]
+                    }
                 },
                 // transportOpts: {
                 //     delimiter: '#',

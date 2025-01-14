@@ -1,10 +1,9 @@
 import { Injector } from '@tsdi/ioc';
-import { HeaderAdapter, Packet } from '@tsdi/common';
+import { HeaderAdapter } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { StatusAdapter } from './StatusAdapter';
 import { StreamAdapter } from './StreamAdapter';
-import { ClientIncoming, Incoming } from './Incoming';
-import { Outgoing } from './Outgoing';
+import { Incoming } from './Incoming';
 import { IEventEmitter } from './stream';
 
 /**
@@ -63,17 +62,4 @@ export abstract class Transport<TSocket = any, TIncoming extends Incoming = Inco
     abstract destroy(): Promise<void>;
 
 }
-
-
-// /**
-//  * Incoming messages
-//  */
-// export type Incomings = Packet<any> | Incoming<any> | ClientIncoming<any>;
-
-
-// /**
-//  * Outgoing messages
-//  */
-// export type Outgoings = Packet<any> | Outgoing<any> | ClientOutgoing<any>;
-
 

@@ -16,6 +16,7 @@ export interface HeaderAccess<T extends Header = Header> {
     setHeader(header: string, value: T): any;
     removeHeader(header: string): any;
     getHeaderNames(): string[];
+    getHeaders(): IHeaders<T>
 }
 
 /**
@@ -189,6 +190,8 @@ export abstract class HeaderAdapter {
     abstract hasHeader(headers: HeadersLike, header: string): boolean;
 
     abstract getHeader(headers: HeadersLike, header: string): string | undefined;
+    
+    abstract getHeaders(headers: HeadersLike): IHeaders;
 
     abstract setHeader<T extends HeadersLike>(headers: T, header: string, value: Header): T;
 

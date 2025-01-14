@@ -81,7 +81,7 @@ export abstract class AbstractConfigableHandler<
 
 
 export interface BackendOptions<TInput = any> {
-    backend?: Token<Backend<TInput>> | Backend<TInput> | BackendFn<TInput>;
+    backend?: Token<Backend<TInput>> | Token<BackendFn<TInput>> | Backend<TInput> | BackendFn<TInput>;
 }
 
 export interface GuardHandlerOptions<TInput = any> extends BackendOptions<TInput> {

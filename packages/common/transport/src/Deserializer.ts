@@ -1,5 +1,5 @@
-import { Abstract, Injectable, Injector, InvocationContext } from '@tsdi/ioc';
-import { ConfigableHandlerOptions, createHandler, ExecptionHandlerFilter, Handler } from '@tsdi/core';
+import { Abstract, Injectable, Injector, InvocationContext, tokenId } from '@tsdi/ioc';
+import { ConfigableHandlerOptions, createHandler, ExecptionHandlerFilter, FilterLike, Handler, Interceptor, InterceptorLike } from '@tsdi/core';
 import { Observable, of } from 'rxjs';
 import { TransportContext } from './context';
 
@@ -12,10 +12,7 @@ export abstract class Deserializer {
  * deserializer options
  */
 export interface DeserializerOpts extends ConfigableHandlerOptions {
-    /**
-     * buffer packet delimiter flag
-     */
-    delimiter?: string;
+
 }
 
 
@@ -37,15 +34,21 @@ export class DefaultDeserializer implements Deserializer {
 
 }
 
+export const DESERIALIZER_INTERCEPTORS = tokenId<InterceptorLike[]>('DESERIALIZER_INTERCEPTORS');
+export const DESERIALIZER_FILTERS = tokenId<FilterLike[]>('DESERIALIZER_FILTERS');
+
+
 @Injectable()
 export class DefaultDeserializerFactory implements DeserializerFactory {
     create(context: Injector | InvocationContext, options?: DeserializerOpts): Deserializer {
-        const handler = createHandler(context, { 
+        const handler = createHandler(context, {
             backend: (input: any, context?: TransportContext) => {
                 return of(JSON.parse((input as Buffer).toString()))
             },
-            enableTypeChain: true, 
-            ...options 
+            filtersToken: DESERIALIZER_FILTERS,
+            interceptorsToken: DESERIALIZER_INTERCEPTORS,
+            enableTypeChain: true,
+            ...options
         });
         handler.useFilters(ExecptionHandlerFilter, 0);
         return new DefaultDeserializer(handler);

@@ -161,7 +161,7 @@ export interface UrlRequestOptions<T = any> extends RequestOptions<T> {
 /**
  * url request.
  */
-export abstract class UrlRequest<T=any, TOptions extends UrlRequestOptions = UrlRequestOptions<T>> extends AbstractRequest<T, TOptions> {
+export abstract class UrlRequest<T = any, TOptions extends UrlRequestOptions = UrlRequestOptions<T>> extends AbstractRequest<T, TOptions> {
     /**
      * The outgoing url.
      */
@@ -190,13 +190,23 @@ export interface TopicRequestOptions<T = any> extends RequestOptions<T> {
 /**
  * Topic request
  */
-export abstract class TopicRequest<T, TOptions extends TopicRequestOptions = TopicRequestOptions<T>> extends AbstractRequest<T, TOptions> {
+export abstract class TopicRequest<T = any, TOptions extends TopicRequestOptions = TopicRequestOptions<T>> extends AbstractRequest<T, TOptions> {
     /**
      * the outgoing topic.
      */
     abstract get topic(): string;
 }
 
+
+/**
+ * Pattern request
+ */
+export abstract class PatternRequest<T = any, TOptions extends TopicRequestOptions = TopicRequestOptions<T>> extends AbstractRequest<T, TOptions> {
+    /**
+     * the outgoing topic.
+     */
+    abstract get pattern(): Pattern;
+}
 
 
 

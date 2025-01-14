@@ -1,5 +1,5 @@
-import { Abstract, Injectable, Injector, InvocationContext } from '@tsdi/ioc';
-import { ConfigableHandlerOptions, createHandler, ExecptionHandlerFilter, Handler } from '@tsdi/core';
+import { Abstract, Injectable, Injector, InvocationContext, tokenId } from '@tsdi/ioc';
+import { ConfigableHandlerOptions, createHandler, ExecptionHandlerFilter, FilterLike, Handler, InterceptorLike } from '@tsdi/core';
 import { Observable, of } from 'rxjs';
 import { TransportContext } from './context';
 
@@ -12,10 +12,7 @@ export abstract class Serializer {
  * serializer options
  */
 export interface SerializerOpts extends ConfigableHandlerOptions {
-    /**
-     * buffer packet delimiter flag
-     */
-    delimiter?: string;
+
 }
 
 @Abstract()
@@ -35,13 +32,18 @@ export class DefaultSerializer implements Serializer {
 
 }
 
+export const SERIALIZER_INTERCEPTORS = tokenId<InterceptorLike[]>('SERIALIZER_INTERCEPTORS');
+export const SERIALIZER_FILTERS = tokenId<FilterLike[]>('SERIALIZER_FILTERS');
+
 @Injectable()
 export class DefaultSerializerFactory implements SerializerFactory {
     create(context: Injector | InvocationContext, options?: SerializerOpts): Serializer {
         const handler = createHandler(context, {
-            backend: (input: any, context?: TransportContext)=> {
+            backend: (input: any, context?: TransportContext) => {
                 return of(JSON.stringify(input, null, 2))
             },
+            filtersToken: SERIALIZER_FILTERS,
+            interceptorsToken: SERIALIZER_INTERCEPTORS,
             enableTypeChain: true,
             ...options
         });

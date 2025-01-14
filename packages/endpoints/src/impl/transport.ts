@@ -1,6 +1,6 @@
 import { Injector, isFunction, promisify } from '@tsdi/ioc';
 import { ServerTransport } from '../transport';
-import { Deserializer, ev, FileAdapter, IDuplex, IEventEmitter, IncomingFactory, IReadable, IWritable, MimeAdapter, OutgoingFactory, Serializer, StatusAdapter, StreamAdapter } from '@tsdi/common/transport';
+import { Deserializer, ev, FileAdapter, IDuplex, IEventEmitter, IncomingFactory, IReadable, IWritable, MimeAdapter, OutgoingFactory, Serializer, StatusAdapter, StreamAdapter, TransportOptions } from '@tsdi/common/transport';
 import { AbstractRequest, HeaderAdapter, PatternFormatter } from '@tsdi/common';
 import { ServerTransfer } from '../transfer';
 import { ServerOpts } from '../Server';
@@ -13,13 +13,7 @@ export class SocketServerTransport<TSocket extends IDuplex = IDuplex, TOptions e
         readonly injector: Injector,
         readonly socket: TSocket,
         readonly protocol: string,
-        readonly headDelimiter: string,
-        readonly delimiter: string,
-        readonly splitDelimiter: string,
-        readonly maxSize: number,
-        readonly idLen: number | null,
-        readonly countLen: number,
-        readonly event: string,
+        readonly options: TransportOptions,
         readonly serializer: Serializer,
         readonly deserializer: Deserializer,
         readonly patternFormatter: PatternFormatter | null,
@@ -41,7 +35,7 @@ export class SocketServerTransport<TSocket extends IDuplex = IDuplex, TOptions e
 
 
     protected override read(channel?: IEventEmitter | null, req?: AbstractRequest<any>): Observable<any> {
-        return fromEvent(channel ?? this.socket, this.event ?? ev.DATA)
+        return fromEvent(channel ?? this.socket, this.options.event ?? ev.DATA)
     }
 
     protected override write(msg: any, channel?: IWritable | null): Promise<any> {

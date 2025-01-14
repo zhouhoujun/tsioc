@@ -1,13 +1,27 @@
-import { Abstract, isFunction, promisify } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 import { AbstractRequest, PatternFormatter } from '@tsdi/common';
-import { Observable, Subject, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
+import { Observable, Subject, mergeMap, share, takeUntil } from 'rxjs';
 import { Transport } from './Transport';
-import { ev } from './consts';
-import { IEventEmitter, IReadable, IWritable } from './stream';
+import { IEventEmitter } from './stream';
 import { AbstractIncomingFactory, Incoming } from './Incoming';
 import { Deserializer } from './Deserializer';
 import { Serializer } from './Serializer';
 import { TransportContext } from './context';
+import { ConfigableHandlerOptions } from '@tsdi/core';
+
+
+export interface TransportOptions {
+    delimiter?: string;
+    headDelimiter?: string;
+    splitDelimiter?: string;
+    maxSize?: number;
+    idLen?: number;
+    countLen?: number;
+    event?: string;
+    serializerConfig?: ConfigableHandlerOptions;
+    deserializerConfig?: ConfigableHandlerOptions;
+    transferConfig?: ConfigableHandlerOptions;
+}
 
 /**
  * Abstract transport.
@@ -32,13 +46,9 @@ export abstract class AbstractTransport<TSocket = any, TIncoming extends Incomin
      */
     abstract get incomingFactory(): AbstractIncomingFactory;
     /**
-     * max size
+     * transport options
      */
-    abstract get maxSize(): number;
-    /**
-     * split packet delimiter
-     */
-    abstract get splitDelimiter(): string;
+    abstract get options(): TransportOptions;
 
     protected destroy$ = new Subject<void>;
 
@@ -81,53 +91,6 @@ export abstract class AbstractTransport<TSocket = any, TIncoming extends Incomin
         this.destroy$.next();
         this.destroy$.complete();
         await this.close();
-    }
-
-}
-
-
-@Abstract()
-export abstract class SocketTransport<TSocket extends IWritable = IWritable, TIncoming extends Incoming = Incoming, TOutgoing = any> extends AbstractTransport<TSocket, TIncoming, TOutgoing> {
-
-    /**
-     * id length
-     */
-    abstract get idLen(): number | null;
-    /**
-     * head delimiter.
-     */
-    abstract get headDelimiter(): string;
-    /**
-     * delimiter
-     */
-    abstract get delimiter(): string;
-
-    /**
-     * count length
-     */
-    abstract get countLen(): number;
-
-    
-    abstract get event(): string | null;
-
-
-    protected override read(channel?: IEventEmitter | null, req?: AbstractRequest<any>): Observable<any> {
-        return fromEvent(channel ?? this.socket, this.event ?? ev.DATA)
-    }
-
-    protected override write(msg: any, channel?: IWritable | null): Promise<any> {
-        const socket = channel ?? this.socket;
-        if (this.streamAdapter.isReadable(msg.payload)) {
-            return this.streamAdapter.pipeTo(msg.payload as IReadable, socket, { end: false });
-        }
-        return promisify<any, void>(socket.write, socket)(msg.payload)
-    }
-
-    override async close() {
-        const socket = this.socket as any;
-        if (socket && isFunction(socket.close)) {
-            await promisify(socket.close, socket)();
-        }
     }
 
 }

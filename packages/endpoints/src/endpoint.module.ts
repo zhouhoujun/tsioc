@@ -4,12 +4,10 @@ import {
 } from '@tsdi/ioc';
 import { ConfigMissingExecption, InvocationOptions, TypedRespond } from '@tsdi/core';
 import { HybirdProtocols, Protocols } from '@tsdi/common';
-import {
-    IncomingFactory, NotImplementedExecption, OutgoingFactory, StatusAdapter, TransportPacketModule
-} from '@tsdi/common/transport';
+import { NotImplementedExecption,  TransportPacketModule } from '@tsdi/common/transport';
 import { Server, ServerOpts } from './Server';
 import { Session } from './Session';
-import { ServerTransport, ServerTransportFactory } from './transport';
+import { ServerTransportFactory } from './transport';
 import { EndpointTypedRespond } from './typed.respond';
 import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, LoggerInterceptor } from './interceptors';
 import { MicroServRouterModule, RouteEndpointModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
@@ -252,11 +250,17 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
 
                 const moduleOpts = { ...mdopts, ...options, asDefault: null } as ServiceModuleOpts & ServiceOpts;
 
+                const transportOptions = {
+                    ...moduleOpts.defaultOpts?.transportOptions,
+                    ...moduleOpts.serverOpts?.transportOptions
+                };
+
                 const serverOpts = {
                     backend: moduleOpts.microservice ? MicroServRouterModule.getToken(moduleOpts.transport) : RouterModule.getToken(moduleOpts.transport),
                     enableTypeChain: true,
                     ...moduleOpts.defaultOpts,
                     ...moduleOpts.serverOpts,
+                    transportOptions,
                     routes: {
                         ...moduleOpts.defaultOpts?.routes,
                         ...moduleOpts.serverOpts?.routes
@@ -289,19 +293,6 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 if (!serverOpts.execptionHandlers) {
                     serverOpts.execptionHandlers = [DefaultExecptionHandlers]
                 }
-
-                // if (serverOpts.statusAdapter) {
-                //     serverOpts.providers.push(toProvider(StatusAdapter, serverOpts.statusAdapter))
-                // }
-
-                // if (serverOpts.incomingFactory) {
-                //     serverOpts.providers.push(toProvider(IncomingFactory, serverOpts.incomingFactory));
-                // }
-                // if (serverOpts.outgoingFactory) {
-                //     serverOpts.providers.push(toProvider(OutgoingFactory, serverOpts.outgoingFactory));
-                // }
-
-                // serverOpts.providers.push(toProvider(ServerTransferFactory, serverOpts.transferFactory ?? DefaultServerTransferFactory));
 
 
                 const providers: ProviderType[] = [];

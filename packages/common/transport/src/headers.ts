@@ -5,12 +5,17 @@ import { getHeader } from './utils';
 @Injectable()
 export class DefaultHeaderAdapter implements HeaderAdapter {
 
+
     hasHeader(headers: HeadersLike, header: string): boolean {
         return headers.hasHeader ? (headers as HeaderAccess).hasHeader(header) : isDefined((headers as IHeaders)[header]);
     }
 
     getHeader(headers: HeadersLike, header: string): string | undefined {
         return getHeader(headers, header)
+    }
+
+    getHeaders(headers: HeadersLike): IHeaders {
+        return (headers as HeaderAccess).getHeaders ? (headers as HeaderAccess).getHeaders() : headers as IHeaders;
     }
 
     setHeader<T extends HeadersLike>(headers: T, header: string, value: Header): T {

@@ -1,4 +1,4 @@
-import { AbstractRequest, Header, HeadersLike, StatusOptions, HeaderMappings } from '@tsdi/common';
+import { AbstractRequest, Header, HeadersLike, StatusOptions, HeaderMappings, IHeaders } from '@tsdi/common';
 import { IReadable, IWritable } from './stream';
 import { Injectable } from '@tsdi/ioc';
 import { StreamAdapter } from './StreamAdapter';
@@ -109,6 +109,12 @@ export interface Outgoing<T = any, TStatus = any> extends OutgoingMessage<T> {
      * @param field 
      */
     removeHeader(field: string): void;
+
+    
+    /**
+     * get response headers.
+     */
+    getHeaders?(): IHeaders;
 
     /**
      * Check if a header has been written to the socket.
