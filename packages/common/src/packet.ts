@@ -25,47 +25,47 @@ export abstract class Packet<T = any> {
  */
 export abstract class BufferPacket<T = any>  extends Packet<T> {
     
-    streamLength?: number;
+    packetLength?: number;
 
-    noHead?: boolean;
+    headerLenght?: number;
 }
 
 
-/**
- * json packet.
- */
-export class JsonPacket implements Packet<any> {
+// /**
+//  * json packet.
+//  */
+// export class JsonPacket implements Packet<any> {
 
-    id: string | number | undefined;
-    readonly headers: HeadersLike
+//     id: string | number | undefined;
+//     readonly headers: HeadersLike
 
-    constructor(public payload: any, init?: {
-        id?: string | number,
-        headers?: HeadersLike
-    }) {
-        this.id = init?.id;
-        this.headers = init?.headers ?? {};
-    }
+//     constructor(public payload: any, init?: {
+//         id?: string | number,
+//         headers?: HeadersLike
+//     }) {
+//         this.id = init?.id;
+//         this.headers = init?.headers ?? {};
+//     }
 
-}
+// }
 
-/**
- * topic packet.
- */
-export class TopicPacket implements Packet<any> {
+// /**
+//  * topic packet.
+//  */
+// export class TopicPacket implements Packet<any> {
 
-    id: string | number | undefined;
-    readonly headers: HeadersLike
+//     id: string | number | undefined;
+//     readonly headers: HeadersLike
 
-    constructor(readonly topic: string, public payload: any, init?: {
-        id?: string | number,
-        headers?: HeadersLike
-    }) {
-        this.id = init?.id;
-        this.headers = init?.headers ?? {};
-    }
+//     constructor(readonly topic: string, public payload: any, init?: {
+//         id?: string | number,
+//         headers?: HeadersLike
+//     }) {
+//         this.id = init?.id;
+//         this.headers = init?.headers ?? {};
+//     }
 
-}
+// }
 
 
 

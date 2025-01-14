@@ -13,10 +13,20 @@ import { ConfigableHandlerOptions } from '@tsdi/core';
 export interface TransportOptions {
     delimiter?: string;
     headDelimiter?: string;
-    splitDelimiter?: string;
     maxSize?: number;
+    /**
+     * packet id buffer length
+     */
     idLen?: number;
+
+    /**
+     * packet size buffer length
+     */
     countLen?: number;
+    /**
+     * header length.
+     */
+    headLen?: number;
     event?: string;
     serializerConfig?: ConfigableHandlerOptions;
     deserializerConfig?: ConfigableHandlerOptions;

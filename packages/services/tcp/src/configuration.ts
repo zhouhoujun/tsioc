@@ -1,6 +1,6 @@
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import { AbstractRequest, BaseRequest, DefaultResponseFactory, HeaderAdapter, isResponseEvent, LOCALHOST, Packet, PatternFormatter, PatternRequest, ResponseFactory, statusMessage, TopicRequest, UrlRequest } from '@tsdi/common';
-import { DefaultDeserializerFactory, DefaultSerializerFactory, Deserializer, DeserializerFactory, FileAdapter, MimeAdapter, Redirector, Serializer, SerializerFactory, StatusAdapter, StreamAdapter, TransportContext, UrlClientIncomingFactory, UrlIncomingFactory, UrlOutgoingFactory } from '@tsdi/common/transport';
+import { AttachPacketIdInterceptor, DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, Deserializer, DeserializerFactory, FileAdapter, MimeAdapter, PacketDeserializeInterceptor, PacketSerializeInterceptor, Redirector, Serializer, SerializerFactory, StatusAdapter, StreamAdapter, TransportContext, UrlClientIncomingFactory, UrlIncomingFactory, UrlOutgoingFactory } from '@tsdi/common/transport';
 import { CLIENT_MODULES, ClientModuleOpts, ClientTransfer, ClientTransferFactory, DefaultClientTransferFactory, SocketClientTransport } from '@tsdi/common/client';
 import {
     AcceptsPriority,
@@ -14,7 +14,6 @@ import {
 import { TcpClient } from './client/client';
 import { TcpHandler } from './client/handler';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS } from './client/options';
-import { TcpRequest } from './client/request';
 import { TcpServer } from './server/server';
 import { TcpRequestHandler } from './server/handler';
 import { TCP_MIDDLEWARES, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS } from './server/options';
@@ -116,7 +115,8 @@ export class TcpConfiguration {
                 },
                 transportOptions: {
                     serializerConfig: {
-                        interceptors: [                            
+                        interceptors: [       
+                            AttachPacketIdInterceptor,                     
                             (input: any, next, context: TransportContext) => {
                                 if (input instanceof AbstractRequest) {
                                     if ((input as UrlRequest).url) {
@@ -128,12 +128,14 @@ export class TcpConfiguration {
                                     }
                                 }
                                 return next(input, context);
-                            }
+                            },
+                            PacketSerializeInterceptor
                         ]
                     },
                     deserializerConfig: {
                         interceptors: [
-
+                            DeatchPacketIdInterceptor,
+                            PacketDeserializeInterceptor
                         ]
                     }
                 },
@@ -203,27 +205,20 @@ export class TcpConfiguration {
                                     return of(JSON.stringify({ headers, payload: input.body, status: input.status, statusMessage: input.statusMessage }))
                                 }
                                 return next(input, context);
-                            }
+                            },
+                            PacketSerializeInterceptor
                         ]
                     },
                     deserializerConfig: {
                         interceptors: [
-
+                            PacketDeserializeInterceptor
                         ]
                     }
                 },
-                // transportOpts: {
-                //     delimiter: '#',
-                //     maxSize: defaultMaxSize,
-                //     decodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof RequestContext, [[TcpIncoming, AbstractIncoming], [TcpMessage, Message]]) },
-                //     encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof TcpMessage, [[UrlRequestContext, RequestContext], [PatternRequestContext, RequestContext], [TcpOutgoing, Packet]]) },
-                // },
                 detailError: false,
                 interceptorsToken: TCP_SERV_INTERCEPTORS,
                 filtersToken: TCP_SERV_FILTERS,
                 guardsToken: TCP_SERV_GUARDS,
-                // incomingFactory: UrlIncomingFactory,
-                // outgoingFactory: UrlOutgoingFactory,
                 filters: [
                     LoggerInterceptor,
                     ExecptionFinalizeFilter,

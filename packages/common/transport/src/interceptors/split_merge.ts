@@ -31,8 +31,8 @@ export class MergePacketInterceptor implements Interceptor<BufferPacket, Incomin
             const exist = this.packs.get(id);
             if (exist) input.noHead = true;
             input.id = id;
-            if (input.streamLength) {
-                input.streamLength = input.streamLength - idLen;
+            if (input.packetLength) {
+                input.packetLength = input.packetLength - idLen;
             }
         } else if (isBuffer(input.payload)) {
             id = idLen > 4 ? input.payload.subarray(0, idLen).toString() : input.payload.readUIntBE(0, idLen);
@@ -123,7 +123,7 @@ export class SplitPacketInterceptor implements Interceptor<OutgoingMessage, Buff
                     const transport = context.transport as SocketTransport;
                     const idLen = transport.idLen ?? 2;
                     const data = msg.payload;
-                    const packetSize = isBuffer(data) ? Buffer.byteLength(data) : msg.streamLength!;
+                    const packetSize = isBuffer(data) ? Buffer.byteLength(data) : msg.packetLength!;
                     const sizeLimit = transport.maxSize! - (transport.delimiter ? Buffer.byteLength(transport.delimiter) : 0)
                         - ((transport.headDelimiter) ? Buffer.byteLength(transport.headDelimiter) : 0)
                         - idLen

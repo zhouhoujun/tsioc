@@ -95,7 +95,7 @@ export class PacketDeserializeInterceptor implements Interceptor<BufferPacket<ID
                 } else {
                     cache.length -= idx;
                     cache.contentLength = rawContentLength;
-                    cache.packet.streamLength = rawContentLength;
+                    cache.packet.packetLength = rawContentLength;
                 }
             }
         }
@@ -137,7 +137,7 @@ export class PacketDeserializeInterceptor implements Interceptor<BufferPacket<ID
 }
 
 @Injectable()
-export class BindPacketIdDecodeInterceptor implements Interceptor<Packet, IncomingMessage, TransportContext> {
+export class DeatchPacketIdInterceptor implements Interceptor<Packet, IncomingMessage, TransportContext> {
 
     intercept(input: Packet, next: Handler<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
         return next.handle(input, context)
@@ -151,12 +151,12 @@ export class BindPacketIdDecodeInterceptor implements Interceptor<Packet, Incomi
 }
 
 @Injectable()
-export class BindPacketIdEncodeInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
+export class AttachPacketIdInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
 
     intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet>, context: TransportContext): Observable<Packet> {
         const { injector, headerAdapter, options, client } = context.transport as AbstractTransport;
         const length = headerAdapter?.getContentLength(input.headers);
-        if (length && options.maxSize && length > options.maxSize && options.headDelimiter) {
+        if (length && options.maxSize && length > options.maxSize) {
             const btpipe = injector.get<PipeTransform>('bytes-format');
             return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(options.maxSize)}`));
         }
@@ -179,9 +179,11 @@ export class PacketSerializeInterceptor implements Interceptor<OutgoingMessage, 
                 const countLen = 4;
                 let buffLen: Buffer;
                 const delimiterStr = options.delimiter || '#';
+                // const headDelimiterStr = options.delimiter || '|';
+                // const headDelimiter = Buffer.from(headDelimiterStr);
+                // const headLen = msg.headerLenght || 0;
                 const delimiter = Buffer.from(delimiterStr);
                 const delimiterLen = Buffer.byteLength(delimiter);
-                // const headers = msg.headers;
                 let data: IDuplex | Buffer | string | null = msg.payload;
                 if (streamAdapter.isReadable(data)) {
                     let first = true;
@@ -196,7 +198,7 @@ export class PacketSerializeInterceptor implements Interceptor<OutgoingMessage, 
                             } else {
                                 if (!buffLen) {
                                     buffLen = Buffer.alloc(countLen);
-                                    buffLen.writeUIntBE(msg.streamLength!, 0, countLen);
+                                    buffLen.writeUIntBE(msg.packetLength!, 0, countLen);
                                 }
                                 if (first) {
                                     first = false;
