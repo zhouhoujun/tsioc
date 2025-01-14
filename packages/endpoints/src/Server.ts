@@ -2,13 +2,14 @@ import { Abstract, ProvdierOf, StaticProvider, Type } from '@tsdi/ioc';
 import { ApplicationEvent, CanHandle, Filter, HandlerService, Interceptor, PipeTransform, Runner, Shutdown } from '@tsdi/core';
 import { HybirdProtocols, PatternFormatter } from '@tsdi/common';
 import { IncomingFactory, OutgoingFactory, StatusAdapter } from '@tsdi/common/transport';
-import { RequestContext, RequestContextFactory } from './RequestContext';
+import { RequestContext } from './RequestContext';
 import { RequestHandlerOptions, AbstractRequestHandler } from './AbstractRequestHandler';
 import { SessionOptions } from './Session';
 import { ContentOptions } from './interceptors/content';
 import { RouteOpts } from './router/router.module';
-import { ServerTransportFactory } from './transport';
+import { ServerTransport, ServerTransportFactory } from './transport';
 import { RequestHandler } from './RequestHandler';
+import { ServerTransferFactory } from './transfer';
 
 
 export interface ProxyOpts {
@@ -36,26 +37,27 @@ export interface ServerOpts<TSerOpts = any> extends RequestHandlerOptions<any> {
      * server request handler type
      */
     handlerType?: Type<RequestHandler>;
-    /**
-     * status adapter
-     */
-    statusAdapter?: ProvdierOf<StatusAdapter>;
-    /**
-     * pattern formatter
-     */
-    patternFormatter?: ProvdierOf<PatternFormatter>;
-    /**
-     * incoming factory.
-     */
-    incomingFactory?: ProvdierOf<IncomingFactory>;
-    /**
-     * outgoing factory.
-     */
-    outgoingFactory?: ProvdierOf<OutgoingFactory>;
-    /**
-     * request context factory.
-     */
-    requestContextFactory?: ProvdierOf<RequestContextFactory>;
+    // /**
+    //  * status adapter
+    //  */
+    // statusAdapter?: ProvdierOf<StatusAdapter>;
+    // /**
+    //  * pattern formatter
+    //  */
+    // patternFormatter?: ProvdierOf<PatternFormatter>;
+    // /**
+    //  * incoming factory.
+    //  */
+    // incomingFactory?: ProvdierOf<IncomingFactory>;
+    // /**
+    //  * outgoing factory.
+    //  */
+    // outgoingFactory?: ProvdierOf<OutgoingFactory>;
+    // /**
+    //  * incoming message transfer factory.
+    //  */
+    // transferFactory?: ProvdierOf<ServerTransferFactory>;
+    
     /**
      * service transport factory.
      */

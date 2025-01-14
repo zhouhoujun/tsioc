@@ -46,7 +46,8 @@ export * from './impl/middleware';
 // export * from './impl/route.handler';
 export * from './impl/request.context';
 
-// export * from './impl/default.session';
+export * from './impl/transfer';
+export * from './impl/transport';
 
 export * from './SetupServices';
 export * from './endpoint.module';

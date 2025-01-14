@@ -7,22 +7,20 @@ import { HybirdProtocols, Protocols } from '@tsdi/common';
 import {
     IncomingFactory, NotImplementedExecption, OutgoingFactory, StatusAdapter, TransportPacketModule
 } from '@tsdi/common/transport';
-import { RequestContextFactory } from './RequestContext';
 import { Server, ServerOpts } from './Server';
 import { Session } from './Session';
-import { ServerTransportFactory } from './transport';
+import { ServerTransport, ServerTransportFactory } from './transport';
 import { EndpointTypedRespond } from './typed.respond';
 import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, LoggerInterceptor } from './interceptors';
 import { MicroServRouterModule, RouteEndpointModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
 import { MiddlewareOpts } from './middleware/middleware.endpoint';
 import { REGISTER_SERVICES, SetupServices } from './SetupServices';
-// import { ServerEndpointCodingsHanlders } from './codings/codings.handlers';
 import { ExecptionFinalizeFilter } from './execption.filter';
 import { DefaultExecptionHandlers } from './execption.handlers';
 import { FinalizeFilter } from './finalize.filter';
 import { createRequestHandler } from './impl/request.handler';
-import { RequestContextFactoryImpl } from './impl/request.context';
 import { createMiddlewareEndpoint } from './impl/middleware';
+import { DefaultServerTransferFactory } from './impl/transfer';
 
 
 /**
@@ -37,11 +35,9 @@ import { createMiddlewareEndpoint } from './impl/middleware';
     ],
     providers: [
         SetupServices,
-        // DefaultServerTransportFactory,
-        // ServerEndpointCodingsHanlders,
+        DefaultServerTransferFactory,
 
         { provide: TypedRespond, useClass: EndpointTypedRespond, asDefault: true },
-        { provide: RequestContextFactory, useClass: RequestContextFactoryImpl, asDefault: true },
 
         LoggerInterceptor,
         JsonInterceptor,
@@ -273,6 +269,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
 
 
                 if (!serverOpts.handlerType) throw new ConfigMissingExecption(`Config Missing handlerType`);
+                if (!serverOpts.transportFactory || serverOpts.transportFactory === ServerTransportFactory) throw new ConfigMissingExecption(`Config Missing transportFactory`);
 
                 if (moduleOpts.microservice) {
                     serverOpts.microservice = moduleOpts.microservice;
@@ -287,28 +284,24 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     })
                 }
 
-                if (serverOpts.statusAdapter) {
-                    serverOpts.providers.push(toProvider(StatusAdapter, serverOpts.statusAdapter))
-                }
+                serverOpts.providers.push(toProvider(ServerTransportFactory, serverOpts.transportFactory));
 
                 if (!serverOpts.execptionHandlers) {
                     serverOpts.execptionHandlers = [DefaultExecptionHandlers]
                 }
 
-                if (serverOpts.incomingFactory) {
-                    serverOpts.providers.push(toProvider(IncomingFactory, serverOpts.incomingFactory));
-                }
-                if (serverOpts.outgoingFactory) {
-                    serverOpts.providers.push(toProvider(OutgoingFactory, serverOpts.outgoingFactory));
-                }
+                // if (serverOpts.statusAdapter) {
+                //     serverOpts.providers.push(toProvider(StatusAdapter, serverOpts.statusAdapter))
+                // }
 
-                if (serverOpts.requestContextFactory) {
-                    serverOpts.providers.push(toProvider(RequestContextFactory, serverOpts.requestContextFactory));
-                }
+                // if (serverOpts.incomingFactory) {
+                //     serverOpts.providers.push(toProvider(IncomingFactory, serverOpts.incomingFactory));
+                // }
+                // if (serverOpts.outgoingFactory) {
+                //     serverOpts.providers.push(toProvider(OutgoingFactory, serverOpts.outgoingFactory));
+                // }
 
-                if (serverOpts.transportFactory && serverOpts.transportFactory !== ServerTransportFactory) {
-                    serverOpts.providers.push(toProvider(ServerTransportFactory, serverOpts.transportFactory))
-                }
+                // serverOpts.providers.push(toProvider(ServerTransferFactory, serverOpts.transferFactory ?? DefaultServerTransferFactory));
 
 
                 const providers: ProviderType[] = [];

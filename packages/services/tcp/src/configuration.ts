@@ -1,10 +1,13 @@
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
-import { isResponseEvent, LOCALHOST, Packet } from '@tsdi/common';
-import { UrlClientIncomingFactory, UrlIncomingFactory, UrlOutgoingFactory } from '@tsdi/common/transport';
-import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
+import { DefaultResponseFactory, HeaderAdapter, isResponseEvent, LOCALHOST, Packet, PatternFormatter, ResponseFactory } from '@tsdi/common';
+import { DefaultDeserializerFactory, DefaultSerializerFactory, Deserializer, DeserializerFactory, FileAdapter, MimeAdapter, Redirector, Serializer, SerializerFactory, StatusAdapter, StreamAdapter, UrlClientIncomingFactory, UrlIncomingFactory, UrlOutgoingFactory } from '@tsdi/common/transport';
+import { CLIENT_MODULES, ClientModuleOpts, ClientTransfer, ClientTransferFactory, DefaultClientTransferFactory, SocketClientTransport } from '@tsdi/common/client';
 import {
+    AcceptsPriority,
+    DefaultServerTransferFactory,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
     SERVER_MODULES, ServerModuleOpts, ServiceModuleOpts,
+    SocketServerTransport,
 
 } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';
@@ -14,6 +17,8 @@ import { TcpRequest } from './client/request';
 import { TcpServer } from './server/server';
 import { TcpRequestHandler } from './server/handler';
 import { TCP_MIDDLEWARES, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS } from './server/options';
+import { InjectFlags } from '@tsdi/ioc';
+import { ServerTransfer, ServerTransferFactory } from '@tsdi/endpoints/src/transfer';
 
 
 // const defaultMaxSize = 65515; //65535 - 20;
@@ -66,7 +71,53 @@ export class TcpConfiguration {
                 handlerType: TcpHandler,
                 interceptorsToken: TCP_CLIENT_INTERCEPTORS,
                 filtersToken: TCP_CLIENT_FILTERS,
-                incomingFactory: UrlClientIncomingFactory,
+                transportFactory: {
+                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory, formatter: PatternFormatter | null,
+                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
+                        incomingFactory: UrlClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
+                        redirector: Redirector | null) => {
+                        return {
+                            create: (injector, socket, options) => {
+                                return new SocketClientTransport(
+                                    injector,
+                                    socket,
+                                    'tcp',
+                                    '$',
+                                    '#',
+                                    '|',
+                                    defaultMaxSize,
+                                    2,
+                                    4,
+                                    'data',
+                                    serializerFactory.create(injector),
+                                    deserializerFactory.create(injector),
+                                    formatter,
+                                    statusAdapter,
+                                    headerAdapter,
+                                    streamAdapter,
+                                    incomingFactory,
+                                    transferFactory.create(injector),
+                                    responseFactory,
+                                    redirector,
+                                    options
+                                )
+                            },
+                        }
+                    },
+                    deps: [
+                        DefaultSerializerFactory,
+                        DefaultDeserializerFactory,
+                        [PatternFormatter, InjectFlags.Optional],
+                        [StatusAdapter, InjectFlags.Optional],
+                        [HeaderAdapter, InjectFlags.Optional],
+                        StreamAdapter,
+                        UrlClientIncomingFactory,
+                        DefaultClientTransferFactory,
+                        DefaultResponseFactory,
+                        [Redirector, InjectFlags.Optional]
+                    ]
+                }
+                // incomingFactory: UrlClientIncomingFactory,
                 // transportOpts: {
                 //     delimiter: '#',
                 //     maxSize: defaultMaxSize,
@@ -84,6 +135,56 @@ export class TcpConfiguration {
             defaultOpts: {
                 handlerType: TcpRequestHandler,
                 listenOpts: { port: 3000, host: LOCALHOST },
+                transportFactory: {
+                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory, formatter: PatternFormatter | null,
+                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
+                        fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
+                        incomingFactory: UrlClientIncomingFactory, outgoingFactory: UrlOutgoingFactory, transferFactory: ServerTransferFactory) => {
+                        return {
+                            create: (injector, socket, options) => {
+                                return new SocketServerTransport(
+                                    injector,
+                                    socket,
+                                    'tcp',
+                                    '$',
+                                    '#',
+                                    '|',
+                                    defaultMaxSize,
+                                    2,
+                                    4,
+                                    'data',
+                                    serializerFactory.create(injector),
+                                    deserializerFactory.create(injector),
+                                    formatter,
+                                    statusAdapter,
+                                    headerAdapter,
+                                    streamAdapter,
+                                    fileAdapter,
+                                    mimeAdapter,
+                                    acceptsPriority,
+                                    incomingFactory,
+                                    outgoingFactory,
+                                    transferFactory.create(injector),
+                                    options
+                                )
+                            },
+                        }
+                    },
+                    deps: [
+                        DefaultSerializerFactory,
+                        DefaultDeserializerFactory,
+                        [PatternFormatter, InjectFlags.Optional],
+                        [StatusAdapter, InjectFlags.Optional],
+                        [HeaderAdapter, InjectFlags.Optional],
+                        StreamAdapter,
+                        FileAdapter,
+                        [MimeAdapter, InjectFlags.Optional],
+                        [AcceptsPriority, InjectFlags.Optional],
+                        UrlClientIncomingFactory,
+                        UrlOutgoingFactory,
+                        DefaultServerTransferFactory
+                    ]
+                },
                 // transportOpts: {
                 //     delimiter: '#',
                 //     maxSize: defaultMaxSize,
@@ -94,8 +195,8 @@ export class TcpConfiguration {
                 interceptorsToken: TCP_SERV_INTERCEPTORS,
                 filtersToken: TCP_SERV_FILTERS,
                 guardsToken: TCP_SERV_GUARDS,
-                incomingFactory: UrlIncomingFactory,
-                outgoingFactory: UrlOutgoingFactory,
+                // incomingFactory: UrlIncomingFactory,
+                // outgoingFactory: UrlOutgoingFactory,
                 filters: [
                     LoggerInterceptor,
                     ExecptionFinalizeFilter,

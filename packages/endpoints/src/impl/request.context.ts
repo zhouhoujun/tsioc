@@ -1,8 +1,8 @@
-import { Injectable, Injector, isNil } from '@tsdi/ioc';
+import { Injector, isNil } from '@tsdi/ioc';
 import { HeaderMappings, LOCALHOST, normalize, Response } from '@tsdi/common';
 import { Incoming, MessageExecption, Outgoing, UrlIncoming } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
-import { RequestContext, RequestContextFactory } from '../RequestContext';
+import { RequestContext } from '../RequestContext';
 import { ServerOpts } from '../Server';
 import { ServerTransport } from '../transport';
 
@@ -218,27 +218,4 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
         this.statusMessage = execption.message;
         await lastValueFrom(this.transport.send(this));
     }
-}
-
-
-
-@Injectable()
-export class RequestContextFactoryImpl implements RequestContextFactory<Incoming<any>, Outgoing<any>> {
-    create<TSocket = any>(session: ServerTransport, request: Incoming<any>, response: Outgoing<any>, options?: ServerOpts<any> | undefined): RequestContext<Incoming<any>, Outgoing<any>, TSocket> {
-        const injector = session.injector;
-        if ((request as UrlIncoming).url) {
-            return new UrlRequestContext(injector,
-                session,
-                request as UrlIncoming,
-                response,
-                options);
-        } else {
-            return new PatternRequestContext(injector,
-                session,
-                request,
-                response,
-                options);
-        }
-    }
-
 }

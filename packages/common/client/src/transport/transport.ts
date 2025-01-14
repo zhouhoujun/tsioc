@@ -10,6 +10,8 @@ import { ClientOpts } from '../options';
  */
 @Abstract()
 export abstract class ClientTransport<TSocket = any> extends AbstractTransport<TSocket, ClientIncoming, AbstractRequest<any>> {
+    
+    readonly client = true;
     /**
      * client options
      */
@@ -52,3 +54,4 @@ export abstract class ClientTransportFactory<TSocket = any, TOptions = ClientOpt
      */
     abstract create(injector: Injector, socket: TSocket, options: TOptions): ClientTransport<TSocket>;
 }
+

@@ -767,22 +767,6 @@ export abstract class RequestContext<
 }
 
 
-/**
- * request context factory.
- */
-@Abstract()
-export abstract class RequestContextFactory<TRequest extends Incoming<any> = Incoming<any>, TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any> {
-    /**
-     * create request context.
-     * @param session 
-     * @param request 
-     * @param response 
-     * @param options 
-     */
-    abstract create(session: ServerTransport, message: TRequest, response: TResponse, options?: ServerOpts): RequestContext<TRequest, TResponse, TSocket>;
-}
-
-
 export function getScopeValue(req: any, scope: string) {
     switch (scope) {
         case 'body':

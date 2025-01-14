@@ -1,11 +1,10 @@
 import { Abstract, isFunction, promisify } from '@tsdi/ioc';
-import { AbstractRequest } from '@tsdi/common';
+import { AbstractRequest, PatternFormatter } from '@tsdi/common';
 import { Observable, Subject, fromEvent, mergeMap, share, takeUntil } from 'rxjs';
 import { Transport } from './Transport';
 import { ev } from './consts';
 import { IEventEmitter, IReadable, IWritable } from './stream';
 import { AbstractIncomingFactory, Incoming } from './Incoming';
-import { AbstractOutgoingFactory } from './Outgoing';
 import { Deserializer } from './Deserializer';
 import { Serializer } from './Serializer';
 import { TransportContext } from './context';
@@ -26,15 +25,12 @@ export abstract class AbstractTransport<TSocket = any, TIncoming extends Incomin
      */
     abstract get serializer(): Serializer;
 
+    abstract get patternFormatter(): PatternFormatter | null;
+
     /**
      * incoming message factory.
      */
     abstract get incomingFactory(): AbstractIncomingFactory;
-    /**
-     * outgoing message factory.
-     */
-    abstract get outgoingFactory(): AbstractOutgoingFactory;
-
     /**
      * max size
      */

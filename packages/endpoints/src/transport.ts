@@ -3,12 +3,15 @@ import { HeaderAdapter } from '@tsdi/common';
 import { AbstractTransport, Deserializer, FileAdapter, Incoming, IncomingFactory, MimeAdapter, OutgoingFactory, Serializer, StatusAdapter, StreamAdapter, Transfer, TransportContext } from '@tsdi/common/transport';
 import { Observable, Subscription, first, merge, mergeMap, takeUntil } from 'rxjs';
 import { AbstractRequestHandler } from './AbstractRequestHandler';
-import { RequestContext, RequestContextFactory } from './RequestContext';
+import { RequestContext } from './RequestContext';
 import { ServerOpts } from './Server';
 import { AcceptsPriority } from './accepts';
+import { ServerTransfer } from './transfer';
 
 @Abstract()
 export abstract class ServerTransport<TSocket = any, TOptions extends ServerOpts = ServerOpts> extends AbstractTransport<TSocket, Incoming, RequestContext> {
+    
+    readonly client = false;
     /**
      * server options.
      */
@@ -72,9 +75,9 @@ export abstract class DefaultServerTransport extends ServerTransport<any> {
         readonly headerAdapter: HeaderAdapter,
         readonly streamAdapter: StreamAdapter,
         readonly fileAdapter: FileAdapter,
+        readonly transfer: ServerTransfer,
         readonly incomingFactory: IncomingFactory,
         readonly outgoingFactory: OutgoingFactory,
-        readonly requestContextFactory: RequestContextFactory,
         readonly statusAdapter: StatusAdapter | null,
         readonly mimeAdapter: MimeAdapter | null,
         readonly acceptsPriority: AcceptsPriority | null,

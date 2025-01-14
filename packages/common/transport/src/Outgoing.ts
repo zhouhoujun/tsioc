@@ -126,24 +126,24 @@ export interface Outgoing<T = any, TStatus = any> extends OutgoingMessage<T> {
 
 }
 
-/**
- * Client outgoing message
- */
-export interface ClientOutgoing<T = any> extends OutgoingMessage<T> {
-    id?: number | string;
+// /**
+//  * Client outgoing message
+//  */
+// export interface ClientOutgoing<T = any> extends OutgoingMessage<T> {
+//     id?: number | string;
 
-    url?: string;
-    method?: string;
+//     url?: string;
+//     method?: string;
 
-    params?: Record<string, any>;
+//     params?: Record<string, any>;
 
-    query?: Record<string, any>;
+//     query?: Record<string, any>;
 
-    rawBody?: any;
+//     rawBody?: any;
 
-    path?: any;
+//     path?: any;
 
-}
+// }
 
 
 
@@ -179,18 +179,18 @@ export abstract class OutgoingFactory implements AbstractOutgoingFactory<Outgoin
 }
 
 
-/**
- * client outgoing factory.
- */
-export abstract class ClientOutgoingFactory implements AbstractOutgoingFactory<ClientOutgoing> {
-    abstract create(options: {
-        request: AbstractRequest<any>;
-        socket?: any;
-        pattern?: string;
-        headers?: HeadersLike;
-        payload?: any;
-    }): TOutgoing<ClientOutgoing>;
-}
+// /**
+//  * client outgoing factory.
+//  */
+// export abstract class ClientOutgoingFactory implements AbstractOutgoingFactory<ClientOutgoing> {
+//     abstract create(options: {
+//         request: AbstractRequest<any>;
+//         socket?: any;
+//         pattern?: string;
+//         headers?: HeadersLike;
+//         payload?: any;
+//     }): TOutgoing<ClientOutgoing>;
+// }
 
 
 /**
@@ -382,12 +382,12 @@ export class TopicOutgoingFactory implements OutgoingFactory {
 }
 
 
-export interface UrlClientOutgoing<T = any> extends ClientOutgoing<T> {
-    readonly url: string;
-}
+// export interface UrlClientOutgoing<T = any> extends ClientOutgoing<T> {
+//     readonly url: string;
+// }
 
 
-export interface TopicClientOutgoing<T = any> extends ClientOutgoing<T> {
-    readonly topic: string;
-}
+// export interface TopicClientOutgoing<T = any> extends ClientOutgoing<T> {
+//     readonly topic: string;
+// }
 

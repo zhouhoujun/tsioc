@@ -36,26 +36,26 @@ export interface ClientOpts<TConnOpts = any> extends ConfigableHandlerOptions<Ab
      * client handler type.
      */
     handlerType?: Type<ClientHandler>;
-    /**
-     * status adapter
-     */
-    statusAdapter?: ProvdierOf<StatusAdapter>;
-    /**
-     * pattern formatter
-     */
-    patternFormatter?: ProvdierOf<PatternFormatter>;
-    /**
-     * incoming factory.
-     */
-    incomingFactory?: ProvdierOf<ClientIncomingFactory>;
-    /**
-     * imcoming message transfer factory.
-     */
-    transferFactory?: ProvdierOf<ClientTransferFactory>;
-    /**
-     * response packet factory.
-     */
-    responseFactory?: ProvdierOf<ResponseFactory>;
+    // /**
+    //  * status adapter
+    //  */
+    // statusAdapter?: ProvdierOf<StatusAdapter>;
+    // /**
+    //  * pattern formatter
+    //  */
+    // patternFormatter?: ProvdierOf<PatternFormatter>;
+    // /**
+    //  * incoming factory.
+    //  */
+    // incomingFactory?: ProvdierOf<ClientIncomingFactory>;
+    // /**
+    //  * imcoming message transfer factory.
+    //  */
+    // transferFactory?: ProvdierOf<ClientTransferFactory>;
+    // /**
+    //  * response packet factory.
+    //  */
+    // responseFactory?: ProvdierOf<ResponseFactory>;
     /**
      * service transport factory.
      */

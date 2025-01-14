@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { StatusAdapter } from './StatusAdapter';
 import { StreamAdapter } from './StreamAdapter';
 import { ClientIncoming, Incoming } from './Incoming';
-import { ClientOutgoing, Outgoing } from './Outgoing';
+import { Outgoing } from './Outgoing';
 import { IEventEmitter } from './stream';
 
 /**
@@ -65,15 +65,15 @@ export abstract class Transport<TSocket = any, TIncoming extends Incoming = Inco
 }
 
 
-/**
- * Incoming messages
- */
-export type Incomings = Packet<any> | Incoming<any> | ClientIncoming<any>;
+// /**
+//  * Incoming messages
+//  */
+// export type Incomings = Packet<any> | Incoming<any> | ClientIncoming<any>;
 
 
-/**
- * Outgoing messages
- */
-export type Outgoings = Packet<any> | Outgoing<any> | ClientOutgoing<any>;
+// /**
+//  * Outgoing messages
+//  */
+// export type Outgoings = Packet<any> | Outgoing<any> | ClientOutgoing<any>;
 
 
