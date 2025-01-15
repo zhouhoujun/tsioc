@@ -373,7 +373,7 @@ const backenFn = (input: ClientIncoming<any>, context: TransportContext) => {
         if (ok) {
             input.ok = ok;
             input.body = body;
-            return input;
+            return responseFactory.create(input);
         } else {
             input.ok = ok;
             input.body = body;
@@ -388,19 +388,19 @@ const jsonType = /json/i;
 const textType = /^text/i;
 const xmlType = /xml$/i;
 
-export const SIMPLE_DESCERIZLIZE_INTERCEPTORS = [
+export const RESPONSE_TRANSFER_INTERCEPTORS = [
     ErrorResponseInterceptor,
     EmptyResponseInterceptor,
     // ResponseDeserializeInterceptor
 ];
 
-
-//         { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: RedirectInterceptor, multi: true },
-//         { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: ErrorResponseInterceptor, multi: true },
-//         { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: EmptyResponseInterceptor, multi: true },
-//         { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: CompressResponseInterceptor, multi: true },
-//         { provide: CLIENT_INCOMING_DECODE_INTERCEPTORS, useClass: ResponseDeserializeInterceptor, multi: true },
-
+export const STATUS_RESPONSE_TRANSFER_INTERCEPTORS = [
+    RedirectInterceptor,
+    ErrorResponseInterceptor,
+    EmptyResponseInterceptor,
+    CompressResponseInterceptor,
+    // ResponseDeserializeInterceptor
+];
 
 @Injectable()
 export class DefaultClientTransferFactory extends AbstractTransferFactory<ClientIncoming, ResponseEvent<any>, ClientTransfer> implements ClientTransferFactory {

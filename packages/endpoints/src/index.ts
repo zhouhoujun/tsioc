@@ -32,6 +32,7 @@ export * from './Subscriber';
 
 export * from './typed.respond';
 export * from './Server';
+export * from './transfer';
 
 export * from './interceptors';
 
