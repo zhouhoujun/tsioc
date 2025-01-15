@@ -111,14 +111,16 @@ export class PacketDeserializeInterceptor implements Interceptor<Packet, Incomin
     }
 
     protected handleMessage(channel: string, cache: Packet<IDuplex>, subscriber: Subscriber<Packet<IDuplex>>, clear: boolean) {
+        const data = { ...cache };
         cache.packet?.end();
+        cache.packet = null;
         if (clear) {
             this.channels.delete(channel);
         } else {
             cache.contentLength = null;
             cache.length = 0;
         }
-        subscriber.next(cache);
+        subscriber.next(data);
     }
 }
 

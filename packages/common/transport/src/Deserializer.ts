@@ -1,8 +1,8 @@
 import { Abstract, Injectable, Injector, InvocationContext, isString, tokenId } from '@tsdi/ioc';
 import { ConfigableHandlerOptions, createHandler, ExecptionHandlerFilter, FilterLike, Handler, InterceptorLike } from '@tsdi/core';
-import { Observable, of } from 'rxjs';
+import { defer, Observable, of } from 'rxjs';
 import { TransportContext } from './context';
-import { isBuffer } from './StreamAdapter';
+import { isBuffer, toBuffer } from './StreamAdapter';
 
 @Abstract()
 export abstract class Deserializer<TIn = any, TOut = any> {
@@ -43,12 +43,16 @@ export const DESERIALIZER_FILTERS = tokenId<FilterLike[]>('DESERIALIZER_FILTERS'
 export class DefaultDeserializerFactory implements DeserializerFactory {
     create(context: Injector | InvocationContext, options?: DeserializerOpts): Deserializer {
         const handler = createHandler(context, {
-            backend: (input: any, context?: TransportContext) => {
+            backend: (input: any, context: TransportContext) => {
                 let packet = input.packet ?? input;
                 if (isString(packet)) {
                     packet = JSON.parse(packet)
                 } else if (isBuffer(packet)) {
                     packet = JSON.parse(packet.toString())
+                } else if(!input.headers && context.transport.streamAdapter.isReadable(input.packet)) {
+                    return defer(()=> {
+                        return toBuffer(packet).then(buf=> JSON.parse(buf.toString()))
+                    })
                 }
                 return of(packet)
             },
