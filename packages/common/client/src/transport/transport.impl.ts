@@ -1,6 +1,6 @@
 import { AbstractRequest, HeaderAdapter, PatternFormatter, ResponseFactory } from '@tsdi/common';
-import { ClientIncomingFactory, Deserializer, ev, IEventEmitter, IReadable, IWritable, Redirector, Serializer, StatusAdapter, StreamAdapter, TransportOptions } from '@tsdi/common/transport';
-import { ClientTransfer, ClientTransport, ClientTransportFactory } from '../transport';
+import { ClientIncomingFactory, Deserializer, ev, IEventEmitter, IReadable, IWritable, Packet, Redirector, Serializer, StatusAdapter, StreamAdapter, TransportOptions } from '@tsdi/common/transport';
+import { ClientTransfer, ClientTransport } from '../transport';
 import { ClientOpts } from '../options';
 import { Injector, isFunction, promisify } from '@tsdi/ioc';
 import { fromEvent, Observable } from 'rxjs';
@@ -36,12 +36,12 @@ export class SocketClientTransport extends ClientTransport<any> {
         return fromEvent(channel ?? this.socket, this.options.event ?? ev.DATA)
     }
 
-    protected override write(msg: any, channel?: IWritable | null): Promise<any> {
+    protected override write(msg: Packet, channel?: IWritable | null): Promise<any> {
         const socket = channel ?? this.socket;
-        if (this.streamAdapter.isReadable(msg.payload)) {
-            return this.streamAdapter.pipeTo(msg.payload as IReadable, socket, { end: false });
+        if (this.streamAdapter.isReadable(msg.packet)) {
+            return this.streamAdapter.pipeTo(msg.packet as IReadable, socket, { end: false });
         }
-        return promisify<any, void>(socket.write, socket)(msg.payload)
+        return promisify<any, void>(socket.write, socket)(msg.packet)
     }
 
     override async close() {

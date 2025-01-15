@@ -190,10 +190,10 @@ export interface ResponseJsonParseError {
  */
 export type ResponseEvent<T, TStatus = any> = HeaderResponse<TStatus> | Response<T, TStatus> | ResponseEventPacket;
 
-export function isResponseEvent(target: any): target is ResponseEvent<any> {
-    if (!target) return false;
-    return target instanceof ResponseBase || (isPlainObject(target) && hasOwn(target, 'type'));
-}
+// export function isResponseEvent(target: any): target is ResponseEvent<any> {
+//     if (!target) return false;
+//     return target instanceof ResponseBase || (isPlainObject(target) && hasOwn(target, 'type'));
+// }
 
 @Abstract()
 export abstract class ResponseFactory<TStatus = null> {

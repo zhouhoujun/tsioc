@@ -1,11 +1,12 @@
-import { Abstract, Injectable, Injector, InvocationContext, tokenId } from '@tsdi/ioc';
-import { ConfigableHandlerOptions, createHandler, ExecptionHandlerFilter, FilterLike, Handler, Interceptor, InterceptorLike } from '@tsdi/core';
+import { Abstract, Injectable, Injector, InvocationContext, isString, tokenId } from '@tsdi/ioc';
+import { ConfigableHandlerOptions, createHandler, ExecptionHandlerFilter, FilterLike, Handler, InterceptorLike } from '@tsdi/core';
 import { Observable, of } from 'rxjs';
 import { TransportContext } from './context';
+import { isBuffer } from './StreamAdapter';
 
 @Abstract()
-export abstract class Deserializer {
-    abstract deserialize<TIn, TOut>(input: TIn, context: TransportContext): Observable<TOut>;
+export abstract class Deserializer<TIn = any, TOut = any> {
+    abstract deserialize(input: TIn, context: TransportContext): Observable<TOut>;
 }
 
 /**
@@ -23,12 +24,12 @@ export abstract class DeserializerFactory {
 
 
 
-export class DefaultDeserializer implements Deserializer {
+export class DefaultDeserializer<TIn = any, TOut = any> implements Deserializer<TIn, TOut> {
     constructor(
-        private handler: Handler
+        private handler: Handler<TIn, TOut>
     ) { }
 
-    deserialize(input: any, context: TransportContext): Observable<any> {
+    deserialize(input: TIn, context: TransportContext): Observable<TOut> {
         return this.handler.handle(input, context);
     }
 
@@ -43,7 +44,13 @@ export class DefaultDeserializerFactory implements DeserializerFactory {
     create(context: Injector | InvocationContext, options?: DeserializerOpts): Deserializer {
         const handler = createHandler(context, {
             backend: (input: any, context?: TransportContext) => {
-                return of(JSON.parse((input as Buffer).toString()))
+                let packet = input.packet ?? input;
+                if (isString(packet)) {
+                    packet = JSON.parse(packet)
+                } else if (isBuffer(packet)) {
+                    packet = JSON.parse(packet.toString())
+                }
+                return of(packet)
             },
             filtersToken: DESERIALIZER_FILTERS,
             interceptorsToken: DESERIALIZER_INTERCEPTORS,

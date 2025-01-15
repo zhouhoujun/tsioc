@@ -96,6 +96,8 @@ export type RequestInitOpts<T, TOptions extends RequestOptions> = Required<Reque
  * Abstract request.
  */
 export abstract class AbstractRequest<T, TOptions extends RequestOptions = RequestOptions<T>> implements Clonable<AbstractRequest<T>> {
+    
+    id?: string | number;
     /**
      * request headers.
      */
@@ -220,7 +222,6 @@ export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = Reques
     readonly responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
     readonly observe: 'body' | 'events' | 'response' | 'emit' | 'observe';
     readonly withCredentials: boolean | undefined;
-    protected id?: any;
     readonly payload: T | null;
     /**
      * set request timeout times (ms).

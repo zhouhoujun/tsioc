@@ -1,6 +1,5 @@
-import { Injectable, isString } from '@tsdi/ioc';
+import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { Handler, Interceptor, PipeTransform } from '@tsdi/core';
-import { BufferPacket, Packet } from '@tsdi/common';
 import { Observable, Subscriber, filter, map, mergeMap, throwError } from 'rxjs';
 import { PacketLengthException } from '../execptions';
 import { PacketIdGenerator } from '../PacketId';
@@ -9,48 +8,37 @@ import { IncomingMessage } from '../Incoming';
 import { OutgoingMessage } from '../Outgoing';
 import { TransportContext } from '../context';
 import { AbstractTransport } from '../transports';
+import { isBuffer } from '../StreamAdapter';
+import { Packet } from '../socket';
 
 
-
-/**
- * Channel cache.
- */
-export interface ChannelCache {
-    packet: BufferPacket<IDuplex>;
-    stream: IDuplex | null;
-    length: number;
-    contentLength: number | null;
-}
 
 @Injectable()
-export class PacketDeserializeInterceptor implements Interceptor<BufferPacket<IDuplex>, IncomingMessage, TransportContext> {
+export class PacketDeserializeInterceptor implements Interceptor<Packet, IncomingMessage, TransportContext> {
 
-    protected channels: Map<string, ChannelCache>;
+    protected channels: Map<string, Packet<IDuplex>>;
 
     constructor() {
         this.channels = new Map();
     }
 
     intercept(input: Packet, next: Handler<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
-        if (context.transport.streamAdapter.isReadable(input.payload)) return next.handle(input, context);
+        if (!input.packet || context.transport.streamAdapter.isReadable(input.packet)) return next.handle(input, context);
 
-        return new Observable((subscriber: Subscriber<Packet>) => {
+        return new Observable((subscriber: Subscriber<Packet<IDuplex>>) => {
 
             const channel = context.transport.protocol;
 
             let cache = this.channels.get(channel);
-            const payload = input.payload as Buffer;
-            input.payload = null;
+            const packet = input.packet as Buffer;
             if (!cache) {
-                cache = {
-                    packet: input,
-                    stream: null,
-                    length: 0,
-                    contentLength: null
-                }
+                cache = input as Packet<IDuplex>;
+                cache.packet = null;
+                cache.length = 0;
+                cache.contentLength = null;
                 this.channels.set(channel, cache)
             }
-            this.handleData(channel, cache, payload, subscriber, context);
+            this.handleData(channel, cache, packet, subscriber, context);
 
             return subscriber;
 
@@ -59,18 +47,21 @@ export class PacketDeserializeInterceptor implements Interceptor<BufferPacket<ID
         );
     }
 
-    protected handleData(channel: string, cache: ChannelCache, data: Buffer, subscriber: Subscriber<Packet>, context: TransportContext) {
+    protected handleData(channel: string, cache: Packet<IDuplex>, data: Buffer, subscriber: Subscriber<Packet<IDuplex>>, context: TransportContext) {
 
         const transport = context.transport as AbstractTransport;
         const options = transport.options;
 
         const bLen = Buffer.byteLength(data);
+        if (!isNumber(cache.length)) {
+            cache.length = 0;
+        }
         cache.length += bLen;
-        if (!cache.stream) {
-            cache.stream = transport.streamAdapter.createPassThrough();
+        if (!cache.packet) {
+            cache.packet = transport.streamAdapter.createPassThrough();
         }
         if (!cache.contentLength || cache.length <= cache.contentLength) {
-            cache.stream.write(data);
+            cache.packet.write(data);
         }
 
         if (cache.contentLength == null) {
@@ -79,13 +70,13 @@ export class PacketDeserializeInterceptor implements Interceptor<BufferPacket<ID
             const i = data.indexOf(delim);
             if (i !== -1) {
                 const idx = cache.length - bLen + i + delim.length;
-                const buffer = cache.stream.read(idx) as Buffer;
+                const buffer = cache.packet.read(idx) as Buffer;
                 const rawContentLength = buffer.readUIntBE(idx - countLen - delim.length, idx - delim.length);
                 if (isNaN(rawContentLength) || (options.maxSize && rawContentLength > options.maxSize)) {
                     cache.contentLength = null;
                     cache.length = 0;
-                    cache.stream.end();
-                    cache.stream = null;
+                    cache.packet.end();
+                    cache.packet = null;
                     const btpipe = transport.injector.get<PipeTransform>('bytes-format');
                     if (rawContentLength) {
                         throw new PacketLengthException(`Packet length ${btpipe.transform(rawContentLength)} great than max size ${btpipe.transform(options.maxSize)}`);
@@ -95,18 +86,17 @@ export class PacketDeserializeInterceptor implements Interceptor<BufferPacket<ID
                 } else {
                     cache.length -= idx;
                     cache.contentLength = rawContentLength;
-                    cache.packet.packetLength = rawContentLength;
                 }
             }
         }
 
-        if (cache.contentLength !== null) {
+        if (cache.contentLength !== null && cache.contentLength !== undefined) {
             if (cache.length === cache.contentLength) {
                 this.handleMessage(channel, cache, subscriber, true);
                 subscriber.complete();
             } else if (cache.length > cache.contentLength) {
                 const idx = cache.length - cache.contentLength - 1;
-                cache.stream.write(data.subarray(0, idx));
+                cache.packet.write(data.subarray(0, idx));
                 const rest = data.subarray(idx);
                 this.handleMessage(channel, cache, subscriber, !rest.length);
                 if (rest.length) {
@@ -120,21 +110,18 @@ export class PacketDeserializeInterceptor implements Interceptor<BufferPacket<ID
         }
     }
 
-    protected handleMessage(channel: string, cache: ChannelCache, subscriber: Subscriber<Packet>, clear: boolean) {
-        const data = cache.stream;
-        data?.end();
-        const packet = cache.packet;
-        packet.payload = data;
-        cache.stream = null;
+    protected handleMessage(channel: string, cache: Packet<IDuplex>, subscriber: Subscriber<Packet<IDuplex>>, clear: boolean) {
+        cache.packet?.end();
         if (clear) {
             this.channels.delete(channel);
         } else {
             cache.contentLength = null;
             cache.length = 0;
         }
-        subscriber.next(packet);
+        subscriber.next(cache);
     }
 }
+
 
 @Injectable()
 export class DeatchPacketIdInterceptor implements Interceptor<Packet, IncomingMessage, TransportContext> {
@@ -147,6 +134,21 @@ export class DeatchPacketIdInterceptor implements Interceptor<Packet, IncomingMe
                     return packet.id == input.id;
                 })
             );
+    }
+}
+
+
+
+@Injectable()
+export class PacketifyInterceptor implements Interceptor<any, IncomingMessage, TransportContext> {
+
+    intercept(input: any, next: Handler<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
+        if (isString(input)) {
+            input = { packet: Buffer.from(input) };
+        } else if (isBuffer(input) || context.transport.streamAdapter.isReadable(input)) {
+            input = { packet: input };
+        }
+        return next.handle(input, context);
     }
 }
 
@@ -169,9 +171,9 @@ export class AttachPacketIdInterceptor implements Interceptor<OutgoingMessage, P
 
 
 @Injectable()
-export class PacketSerializeInterceptor implements Interceptor<OutgoingMessage, BufferPacket, TransportContext> {
+export class PacketSerializeInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
 
-    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, BufferPacket, TransportContext>, context: TransportContext): Observable<Packet> {
+    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet, TransportContext>, context: TransportContext): Observable<Packet> {
 
         return next.handle(input, context)
             .pipe(map(msg => {
@@ -184,7 +186,7 @@ export class PacketSerializeInterceptor implements Interceptor<OutgoingMessage, 
                 // const headLen = msg.headerLenght || 0;
                 const delimiter = Buffer.from(delimiterStr);
                 const delimiterLen = Buffer.byteLength(delimiter);
-                let data: IDuplex | Buffer | string | null = msg.payload;
+                let data = msg.packet;
                 if (streamAdapter.isReadable(data)) {
                     let first = true;
                     let subpacket = false;
@@ -198,7 +200,7 @@ export class PacketSerializeInterceptor implements Interceptor<OutgoingMessage, 
                             } else {
                                 if (!buffLen) {
                                     buffLen = Buffer.alloc(countLen);
-                                    buffLen.writeUIntBE(msg.packetLength!, 0, countLen);
+                                    buffLen.writeUIntBE(msg.contentLength!, 0, countLen);
                                 }
                                 if (first) {
                                     first = false;
@@ -210,9 +212,10 @@ export class PacketSerializeInterceptor implements Interceptor<OutgoingMessage, 
                             }
                         }
                     }));
-                } else if (isString(data)) {
-                    data = countLen + delimiterStr + data;
                 } else {
+                    if (isString(data)) {
+                        data = Buffer.from(data);
+                    }
                     if (!data) data = Buffer.alloc(0);
                     buffLen = Buffer.alloc(countLen);
                     const dataLen = Buffer.byteLength(data);
@@ -220,7 +223,7 @@ export class PacketSerializeInterceptor implements Interceptor<OutgoingMessage, 
                     const total = countLen + delimiterLen + dataLen;
                     data = Buffer.concat([buffLen, delimiter, data], total);
                 }
-                msg.payload = data;
+                msg.packet = data;
 
                 return msg;
             }))

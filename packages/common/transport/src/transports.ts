@@ -8,6 +8,7 @@ import { Deserializer } from './Deserializer';
 import { Serializer } from './Serializer';
 import { TransportContext } from './context';
 import { ConfigableHandlerOptions } from '@tsdi/core';
+import { Packet } from './socket';
 
 
 export interface TransportOptions {
@@ -42,12 +43,12 @@ export abstract class AbstractTransport<TSocket = any, TIncoming extends Incomin
     /**
      * message deserializer.
      */
-    abstract get deserializer(): Deserializer;
+    abstract get deserializer(): Deserializer<Packet, TIncoming>;
 
     /**
      * message encodings.
      */
-    abstract get serializer(): Serializer;
+    abstract get serializer(): Serializer<TOutgoing, Packet>;
 
     abstract get patternFormatter(): PatternFormatter | null;
 
@@ -92,7 +93,7 @@ export abstract class AbstractTransport<TSocket = any, TIncoming extends Incomin
 
     protected abstract read(channel?: IEventEmitter | null, req?: AbstractRequest<any>): Observable<any>;
 
-    protected abstract write(msg: any, channel?: IEventEmitter | null): Promise<any> | Observable<any>;
+    protected abstract write(msg: Packet, channel?: IEventEmitter | null): Promise<any> | Observable<any>;
 
     /**
      * destroy.

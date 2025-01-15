@@ -1,12 +1,13 @@
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
-import { AbstractRequest, BaseRequest, DefaultResponseFactory, HeaderAdapter, isResponseEvent, LOCALHOST, Packet, PatternFormatter, PatternRequest, ResponseFactory, statusMessage, TopicRequest, UrlRequest } from '@tsdi/common';
-import { AttachPacketIdInterceptor, DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, Deserializer, DeserializerFactory, FileAdapter, MimeAdapter, PacketDeserializeInterceptor, PacketSerializeInterceptor, Redirector, Serializer, SerializerFactory, StatusAdapter, StreamAdapter, TransportContext, UrlClientIncomingFactory, UrlIncomingFactory, UrlOutgoingFactory } from '@tsdi/common/transport';
-import { CLIENT_MODULES, ClientModuleOpts, ClientTransfer, ClientTransferFactory, DefaultClientTransferFactory, SocketClientTransport } from '@tsdi/common/client';
+import { AbstractRequest, DefaultResponseFactory, HeaderAdapter, LOCALHOST, PatternFormatter, PatternRequest, ResponseFactory, TopicRequest, UrlRequest } from '@tsdi/common';
+import { AttachPacketIdInterceptor, DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory, FileAdapter, MimeAdapter, PacketDeserializeInterceptor, PacketifyInterceptor, PacketSerializeInterceptor, Redirector, Serializer, SerializerFactory, StatusAdapter, StreamAdapter, TransportContext, UrlClientIncomingFactory, UrlIncomingFactory, UrlOutgoingFactory } from '@tsdi/common/transport';
+import { CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory, RequestServializeInterceptor, SocketClientTransport } from '@tsdi/common/client';
 import {
     AcceptsPriority,
     DefaultServerTransferFactory,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
     RequestContext,
+    RequestContextServializeInterceptor,
     SERVER_MODULES, ServerModuleOpts, ServiceModuleOpts,
     SocketServerTransport,
 
@@ -18,8 +19,8 @@ import { TcpServer } from './server/server';
 import { TcpRequestHandler } from './server/handler';
 import { TCP_MIDDLEWARES, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS } from './server/options';
 import { InjectFlags } from '@tsdi/ioc';
-import { ServerTransfer, ServerTransferFactory } from '@tsdi/endpoints/src/transfer';
-import { of } from 'rxjs';
+import { ServerTransferFactory } from '@tsdi/endpoints/src/transfer';
+import { map, of } from 'rxjs';
 
 
 // const defaultMaxSize = 65515; //65535 - 20;
@@ -115,25 +116,15 @@ export class TcpConfiguration {
                 },
                 transportOptions: {
                     serializerConfig: {
-                        interceptors: [       
-                            AttachPacketIdInterceptor,                     
-                            (input: any, next, context: TransportContext) => {
-                                if (input instanceof AbstractRequest) {
-                                    if ((input as UrlRequest).url) {
-                                        return of(JSON.stringify({ headers: input.headers.getHeaders(), payload: input.body, method: (input as UrlRequest).method, url: (input as UrlRequest).getUrlWithParams() }))
-                                    } else if ((input as TopicRequest).topic) {
-                                        return of(JSON.stringify({ headers: input.headers.getHeaders(), payload: input.body, topic: (input as TopicRequest).topic, params: input.params }))
-                                    } else if (input as PatternRequest) {
-                                        return of(JSON.stringify({ headers: input.headers.getHeaders(), payload: input.body, pattern: (input as PatternRequest).pattern, params: input.params }))
-                                    }
-                                }
-                                return next(input, context);
-                            },
-                            PacketSerializeInterceptor
+                        interceptors: [
+                            AttachPacketIdInterceptor,
+                            PacketSerializeInterceptor,
+                            RequestServializeInterceptor
                         ]
                     },
                     deserializerConfig: {
                         interceptors: [
+                            PacketifyInterceptor,
                             DeatchPacketIdInterceptor,
                             PacketDeserializeInterceptor
                         ]
@@ -198,19 +189,14 @@ export class TcpConfiguration {
                 transportOptions: {
                     serializerConfig: {
                         interceptors: [
-                            (input: any, next, context: TransportContext) => {
-                                if (input instanceof RequestContext) {
-                                    const reqctx = input as RequestContext;
-                                    const headers = reqctx.headerAdapter.getHeaders(reqctx.response.headers);
-                                    return of(JSON.stringify({ headers, payload: input.body, status: input.status, statusMessage: input.statusMessage }))
-                                }
-                                return next(input, context);
-                            },
-                            PacketSerializeInterceptor
+                            PacketSerializeInterceptor,
+                            RequestContextServializeInterceptor,
                         ]
                     },
                     deserializerConfig: {
                         interceptors: [
+                            PacketifyInterceptor,
+                            DeatchPacketIdInterceptor,
                             PacketDeserializeInterceptor
                         ]
                     }

@@ -4,8 +4,8 @@ import { Observable, of } from 'rxjs';
 import { TransportContext } from './context';
 
 @Abstract()
-export abstract class Serializer {
-    abstract serialize<TIn, TOut>(input: TIn, context: TransportContext): Observable<TOut>;
+export abstract class Serializer<TIn=any, TOut= any> {
+    abstract serialize(input: TIn, context: TransportContext): Observable<TOut>;
 }
 
 /**
@@ -21,12 +21,12 @@ export abstract class SerializerFactory {
 }
 
 
-export class DefaultSerializer implements Serializer {
+export class DefaultSerializer<TIn=any, TOut= any> implements Serializer<TIn, TOut> {
     constructor(
-        private handler: Handler
+        private handler: Handler<TIn, TOut>
     ) { }
 
-    serialize(input: any, context: TransportContext): Observable<any> {
+    serialize(input: TIn, context: TransportContext): Observable<TOut> {
         return this.handler.handle(input, context);
     }
 

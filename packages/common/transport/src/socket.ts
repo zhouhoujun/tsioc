@@ -1,4 +1,5 @@
-import { IDuplex, IEventEmitter } from './stream';
+import { IHeaders } from '@tsdi/common';
+import { IDuplex, IEventEmitter, IReadable } from './stream';
 
 
 /**
@@ -121,12 +122,31 @@ export interface Connection<TSocket extends IEventEmitter = IEventEmitter> exten
 
 
 
-// /**
-//  * incoming packet.
-//  */
-// export interface IncomingPacket<T = any> extends Packet<T> {
-//     req?: Incoming;
-//     res?: Outgoing;
-//     headers?: IncomingHeaders;
-//     originalUrl?: string;
-// }
+
+
+export interface Packet<T extends IReadable | IDuplex | Buffer = IReadable | IDuplex | Buffer> {
+    /**
+     * packet id
+     */
+    id?: string | number;
+
+    /**
+     * packet headers.
+     */
+    headers?: IHeaders;
+
+    /**
+     * packet
+     */
+    packet: T | null;
+
+    /**
+     * cache length
+     */
+    length?: number;
+
+    /**
+     * content lenght
+     */
+    contentLength?: number | null;
+}

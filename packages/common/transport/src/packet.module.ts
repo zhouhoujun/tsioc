@@ -1,5 +1,5 @@
 import { Module } from '@tsdi/ioc';
-import { HeaderAdapter, Packet } from '@tsdi/common';
+import { HeaderAdapter } from '@tsdi/common';
 // import { CodingsModule, getDecodeInterceptorsToken, getEncodeInterceptorsToken } from '@tsdi/common/codings';
 import { PacketIdGenerator, PacketNumberIdGenerator } from './PacketId';
 // import { TransportDecodingsFactory, TransportEncodingsFactory } from './condings';
