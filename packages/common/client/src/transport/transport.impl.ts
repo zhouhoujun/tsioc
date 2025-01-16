@@ -52,26 +52,3 @@ export class SocketClientTransport extends ClientTransport<any> {
     }
 
 }
-
-
-
-// export class DefaultClientTransportFactory implements ClientTransportFactory<any> {
-
-//     constructor(
-//         readonly serializer: Serializer,
-//         readonly deserializer: Deserializer,
-//         readonly headerAdapter: HeaderAdapter,
-//         readonly streamAdapter: StreamAdapter,
-//         readonly incomingFactory: ClientIncomingFactory,
-//         readonly transfer: ClientTransfer,
-//         readonly responseFactory: ResponseFactory,
-//         readonly statusAdapter: StatusAdapter | null,
-//         readonly redirector: Redirector | null,
-//         readonly patternFormatter: PatternFormatter | null,
-//     ) { }
-
-//     create(injector: Injector, socket: any, options: ClientOpts): DefaultClientTransport {
-//         return new DefaultClientTransport(injector, socket, options);
-//     }
-
-// }

@@ -17,11 +17,12 @@ export class RequestContextServializeInterceptor implements Interceptor<RequestC
             return of({
                 id,
                 headers,
+                error: input.response.error,
                 packet: input.body
             })
         }
 
-        const data = { headers, payload: input.body, status: input.status, statusMessage: input.statusMessage };
+        const data = { error: input.response.error, headers, payload: input.body, status: input.status, statusMessage: input.statusMessage };
 
         return next.handle(data, context)
             .pipe(
@@ -32,6 +33,7 @@ export class RequestContextServializeInterceptor implements Interceptor<RequestC
                     return {
                         id,
                         headers,
+                        error: input.response.error,
                         packet
                     };
                 }));
