@@ -14,11 +14,13 @@ export class RequestContextServializeInterceptor implements Interceptor<RequestC
         const headers = input.headerAdapter.getHeaders(input.response.headers);
 
         if (input.streamAdapter.isReadable(input.body)) {
+            const contentLength = input.length;
             return of({
                 id,
                 headers,
                 error: input.response.error,
-                packet: input.body
+                packet: input.body,
+                contentLength
             })
         }
 
