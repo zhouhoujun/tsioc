@@ -20,6 +20,7 @@ export class RequestContextServializeInterceptor implements Interceptor<RequestC
                 headers,
                 error: input.response.error,
                 packet: input.body,
+                head: Buffer.from(JSON.stringify(headers)),
                 contentLength
             })
         }
@@ -36,7 +37,8 @@ export class RequestContextServializeInterceptor implements Interceptor<RequestC
                         id,
                         headers,
                         error: input.response.error,
-                        packet
+                        packet,
+                        contentLength: packet.length
                     };
                 }));
     }

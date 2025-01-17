@@ -3,6 +3,7 @@ import { ConfigableHandlerOptions, createHandler, ExecptionHandlerFilter, Filter
 import { defer, Observable, of } from 'rxjs';
 import { TransportContext } from './context';
 import { isBuffer, toBuffer } from './StreamAdapter';
+import { Packet } from './socket';
 
 @Abstract()
 export abstract class Deserializer<TIn = any, TOut = any> {
@@ -44,12 +45,12 @@ export class DefaultDeserializerFactory implements DeserializerFactory {
     create(context: Injector | InvocationContext, options?: DeserializerOpts): Deserializer {
         const handler = createHandler(context, {
             backend: (input: any, context: TransportContext) => {
-                let packet = input.packet ?? input;
+                let packet = (input as Packet).packet ?? input;
                 if (isString(packet)) {
                     packet = JSON.parse(packet)
                 } else if (isBuffer(packet)) {
                     packet = JSON.parse(packet.toString())
-                } else if(!input.headers && context.transport.streamAdapter.isReadable(input.packet)) {
+                } else if(!input.headers && context.transport.streamAdapter.isReadable((input as Packet).packet)) {
                     return defer(()=> {
                         return toBuffer(packet).then(buf=> JSON.parse(buf.toString()))
                     })

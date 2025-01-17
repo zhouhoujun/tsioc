@@ -136,6 +136,11 @@ export interface Packet<T extends IReadable | IDuplex | Buffer = IReadable | IDu
     headers?: IHeaders;
 
     /**
+     * header packet.
+     */
+    head?: T | null;
+
+    /**
      * packet
      */
     packet: T | null;

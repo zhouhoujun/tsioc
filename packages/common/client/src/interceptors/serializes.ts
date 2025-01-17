@@ -16,6 +16,7 @@ export class RequestServializeInterceptor implements Interceptor<AbstractRequest
             return of({
                 id,
                 headers,
+                head: Buffer.from(JSON.stringify(headers)),
                 packet: input.body
             })
         }
@@ -39,7 +40,8 @@ export class RequestServializeInterceptor implements Interceptor<AbstractRequest
                     return {
                         id,
                         headers,
-                        packet
+                        packet,
+                        contentLength: packet.length
                     };
                 }));
     }

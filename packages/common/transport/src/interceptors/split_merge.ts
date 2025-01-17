@@ -92,14 +92,14 @@ export class MergePacketInterceptor implements Interceptor<Packet, IncomingMessa
                 cached.packet.headers.setHeaders(packet.headers.getHeaders())
             }
 
-            if (streamAdapter.isReadable(packet.payload)) {
+            if (streamAdapter.isReadable(packet.packet)) {
                 if (cached.streams) {
-                    cached.streams.push(packet.payload);
+                    cached.streams.push(packet.packet);
                 } else {
-                    cached.streams = [packet.payload];
+                    cached.streams = [packet.packet];
                 }
             } else {
-                cached.packet.payload!.write(packet.payload);
+                cached.packet.packet!.write(packet.packet);
             }
             if (cached.cacheSize >= cLen) {
                 this.packs.delete(packet.id);
