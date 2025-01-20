@@ -132,6 +132,10 @@ export interface BasicIncomingOpts<T = any> {
      */
     encoder?: ParameterCodec;
     /**
+     * request payload, request body.
+     */
+    payload?: T;
+    /**
      * request body. alias of payload.
      */
     body?: T | null;
@@ -277,7 +281,7 @@ export class UrlIncoming<T = any> extends AbstractIncoming<T> implements Incomin
 
 
 export function parseUrlIncoming(init: UrlIncomingOptions<IReadable>): UrlIncoming<any> {
-    const incoming = init.body as any;
+    const incoming = (init.body ?? init.payload) as any;
     incoming.url = init.url;
     incoming.headers = new HeaderMappings(init.headers);
     incoming.pattern = init.pattern;
@@ -290,7 +294,7 @@ export class UrlIncomingFactory implements IncomingFactory {
 
     constructor(private streamAdapter: StreamAdapter) { }
     create(options: UrlIncomingOptions): TIncoming<UrlIncoming> {
-        if (this.streamAdapter.isReadable(options.body)) {
+        if (this.streamAdapter.isReadable(options.body ?? options.payload)) {
             return parseUrlIncoming(options);
         }
         return new UrlIncoming(options);
@@ -346,7 +350,7 @@ export class TopicIncomingFactory implements IncomingFactory {
 
     constructor(private streamAdapter: StreamAdapter) { }
     create(options: TopicIncomingOptions): TIncoming<TopicIncoming> {
-        if (this.streamAdapter.isReadable(options.body)) {
+        if (this.streamAdapter.isReadable(options.body ?? options.payload)) {
             return parseTopicIncoming(options);
         }
         return new TopicIncoming(options);
@@ -487,7 +491,7 @@ export class UrlClientIncomingFactory implements ClientIncomingFactory {
     constructor(private streamAdapter: StreamAdapter) { }
 
     create<T = any>(options: UrlClientIncomingOpts<any, any>): TIncoming<UrlClientIncoming<T>> {
-        if (this.streamAdapter.isReadable(options.payload)) {
+        if (this.streamAdapter.isReadable(options.body ?? options.payload)) {
             return parseUrlClientIncoming(options);
         }
         return new UrlClientIncoming(options);
@@ -533,7 +537,7 @@ export class TopicClientIncomingFactory implements ClientIncomingFactory {
     constructor(private streamAdapter: StreamAdapter) { }
 
     create<T = any>(options: TopicClientIncomingOpts<any, any>): TIncoming<TopicClientIncoming<T>> {
-        if (this.streamAdapter.isReadable(options.payload)) {
+        if (this.streamAdapter.isReadable(options.body ?? options.payload)) {
             return parseTopicClientIncoming(options);
         }
         return new TopicClientIncoming(options);
