@@ -218,7 +218,7 @@ export abstract class AbstractIncoming<T> implements Incoming<T> {
     constructor(init: IncomingOpts<T>) {
         this.pattern = init.pattern;
         this.headers = new HeaderMappings(init.headers);
-        this.body = init.body;
+        this.body = init.body ?? init.payload;
         this.query = init.query ?? init.params;
         this.timeout = init.timeout;
     }
@@ -338,7 +338,7 @@ export class TopicIncoming<T = any> extends AbstractIncoming<T> implements Incom
 }
 
 export function parseTopicIncoming(init: TopicIncomingOptions<IReadable>): TopicIncoming<any> & IReadable {
-    const incoming = init.body as any;
+    const incoming = (init.body ?? init.payload) as any;
     incoming.topic = init.topic;
     incoming.headers = new HeaderMappings(init.headers);
     incoming.pattern = init.pattern;
