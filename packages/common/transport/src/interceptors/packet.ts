@@ -23,17 +23,17 @@ export class PacketDeserializeInterceptor implements Interceptor<Packet, Incomin
     }
 
     intercept(input: Packet, next: Handler<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
-        if (!input.packet || context.transport.streamAdapter.isReadable(input.packet)) return next.handle(input, context);
+        if (!input.payload || context.transport.streamAdapter.isReadable(input.payload)) return next.handle(input, context);
 
         return new Observable((subscriber: Subscriber<Packet<IDuplex>>) => {
 
             const channel = context.transport.protocol;
 
             let cache = this.channels.get(channel);
-            const packet = input.packet as Buffer;
+            const packet = input.payload as Buffer;
             if (!cache) {
                 cache = input as Packet<IDuplex>;
-                cache.packet = null;
+                cache.payload = null;
                 cache.length = 0;
                 cache.contentLength = null;
                 this.channels.set(channel, cache)
@@ -57,11 +57,11 @@ export class PacketDeserializeInterceptor implements Interceptor<Packet, Incomin
             cache.length = 0;
         }
         cache.length += bLen;
-        if (!cache.packet) {
-            cache.packet = transport.streamAdapter.createPassThrough();
+        if (!cache.payload) {
+            cache.payload = transport.streamAdapter.createPassThrough();
         }
         if (!cache.contentLength || cache.length <= cache.contentLength) {
-            cache.packet.write(data);
+            cache.payload.write(data);
         }
 
         if (cache.contentLength == null) {
@@ -70,13 +70,13 @@ export class PacketDeserializeInterceptor implements Interceptor<Packet, Incomin
             const i = data.indexOf(delim);
             if (i !== -1) {
                 const idx = cache.length - bLen + i + delim.length;
-                const buffer = cache.packet.read(idx) as Buffer;
+                const buffer = cache.payload.read(idx) as Buffer;
                 const rawContentLength = buffer.readUIntBE(idx - countLen - delim.length, idx - delim.length);
                 if (isNaN(rawContentLength) || (options.maxSize && rawContentLength > options.maxSize)) {
                     cache.contentLength = null;
                     cache.length = 0;
-                    cache.packet.end();
-                    cache.packet = null;
+                    cache.payload.end();
+                    cache.payload = null;
                     const btpipe = transport.injector.get<PipeTransform>('bytes-format');
                     if (rawContentLength) {
                         throw new PacketLengthException(`Packet length ${btpipe.transform(rawContentLength)} great than max size ${btpipe.transform(options.maxSize)}`);
@@ -96,7 +96,7 @@ export class PacketDeserializeInterceptor implements Interceptor<Packet, Incomin
                 subscriber.complete();
             } else if (cache.length > cache.contentLength) {
                 const idx = cache.length - cache.contentLength - 1;
-                cache.packet.write(data.subarray(0, idx));
+                cache.payload.write(data.subarray(0, idx));
                 const rest = data.subarray(idx);
                 this.handleMessage(channel, cache, subscriber, !rest.length);
                 if (rest.length) {
@@ -112,8 +112,8 @@ export class PacketDeserializeInterceptor implements Interceptor<Packet, Incomin
 
     protected handleMessage(channel: string, cache: Packet<IDuplex>, subscriber: Subscriber<Packet<IDuplex>>, clear: boolean) {
         const data = { ...cache };
-        cache.packet?.end();
-        cache.packet = null;
+        cache.payload?.end();
+        cache.payload = null;
         if (clear) {
             this.channels.delete(channel);
         } else {
@@ -146,9 +146,9 @@ export class PacketifyInterceptor implements Interceptor<any, IncomingMessage, T
 
     intercept(input: any, next: Handler<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
         if (isString(input)) {
-            input = { packet: Buffer.from(input) };
+            input = { payload: Buffer.from(input) } as Packet;
         } else if (isBuffer(input) || context.transport.streamAdapter.isReadable(input)) {
-            input = { packet: input };
+            input = { payload: input } as Packet;
         }
         return next.handle(input, context);
     }
@@ -188,7 +188,7 @@ export class PacketSerializeInterceptor implements Interceptor<OutgoingMessage, 
                 // const headLen = msg.headerLenght || 0;
                 const delimiter = Buffer.from(delimiterStr);
                 const delimiterLen = Buffer.byteLength(delimiter);
-                let data = msg.packet;
+                let data = msg.payload;
                 if (streamAdapter.isReadable(data)) {
                     let first = true;
                     let subpacket = false;
@@ -225,7 +225,7 @@ export class PacketSerializeInterceptor implements Interceptor<OutgoingMessage, 
                     const total = countLen + delimiterLen + dataLen;
                     data = Buffer.concat([buffLen, delimiter, data], total);
                 }
-                msg.packet = data;
+                msg.payload = data;
 
                 return msg;
             }))

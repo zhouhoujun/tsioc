@@ -45,12 +45,12 @@ export class DefaultDeserializerFactory implements DeserializerFactory {
     create(context: Injector | InvocationContext, options?: DeserializerOpts): Deserializer {
         const handler = createHandler(context, {
             backend: (input: any, context: TransportContext) => {
-                let packet = (input as Packet).packet ?? input;
+                let packet = (input as Packet).payload ?? input;
                 if (isString(packet)) {
                     packet = JSON.parse(packet)
                 } else if (isBuffer(packet)) {
                     packet = JSON.parse(packet.toString())
-                } else if(!input.headers && context.transport.streamAdapter.isReadable((input as Packet).packet)) {
+                } else if(!input.headers && context.transport.streamAdapter.isReadable((input as Packet).payload)) {
                     return defer(()=> {
                         return toBuffer(packet).then(buf=> JSON.parse(buf.toString()))
                     })

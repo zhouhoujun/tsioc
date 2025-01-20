@@ -40,10 +40,10 @@ export class SocketServerTransport<TSocket extends IDuplex = IDuplex, TOptions e
 
     protected override write(msg: Packet, channel?: IWritable | null): Promise<any> {
         const socket = channel ?? this.socket;
-        if (this.streamAdapter.isReadable(msg.packet)) {
-            return this.streamAdapter.pipeTo(msg.packet as IReadable, socket, { end: false });
+        if (this.streamAdapter.isReadable(msg.payload)) {
+            return this.streamAdapter.pipeTo(msg.payload as IReadable, socket, { end: false });
         }
-        return promisify<any, void>(socket.write, socket)(msg.packet)
+        return promisify<any, void>(socket.write, socket)(msg.payload)
     }
 
     override async close() {

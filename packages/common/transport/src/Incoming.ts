@@ -132,10 +132,6 @@ export interface BasicIncomingOpts<T = any> {
      */
     encoder?: ParameterCodec;
     /**
-     * request payload, request body.
-     */
-    payload?: T;
-    /**
      * request body. alias of payload.
      */
     body?: T | null;
@@ -218,7 +214,7 @@ export abstract class AbstractIncoming<T> implements Incoming<T> {
     constructor(init: IncomingOpts<T>) {
         this.pattern = init.pattern;
         this.headers = new HeaderMappings(init.headers);
-        this.body = init.body ?? init.payload;
+        this.body = init.body;
         this.query = init.query ?? init.params;
         this.timeout = init.timeout;
     }
@@ -281,7 +277,7 @@ export class UrlIncoming<T = any> extends AbstractIncoming<T> implements Incomin
 
 
 export function parseUrlIncoming(init: UrlIncomingOptions<IReadable>): UrlIncoming<any> {
-    const incoming = (init.body ?? init.payload) as any;
+    const incoming = init.body as any;
     incoming.url = init.url;
     incoming.headers = new HeaderMappings(init.headers);
     incoming.pattern = init.pattern;
@@ -294,7 +290,7 @@ export class UrlIncomingFactory implements IncomingFactory {
 
     constructor(private streamAdapter: StreamAdapter) { }
     create(options: UrlIncomingOptions): TIncoming<UrlIncoming> {
-        if (this.streamAdapter.isReadable(options.payload)) {
+        if (this.streamAdapter.isReadable(options.body)) {
             return parseUrlIncoming(options);
         }
         return new UrlIncoming(options);
@@ -338,7 +334,7 @@ export class TopicIncoming<T = any> extends AbstractIncoming<T> implements Incom
 }
 
 export function parseTopicIncoming(init: TopicIncomingOptions<IReadable>): TopicIncoming<any> & IReadable {
-    const incoming = (init.body ?? init.payload) as any;
+    const incoming = init.body as any;
     incoming.topic = init.topic;
     incoming.headers = new HeaderMappings(init.headers);
     incoming.pattern = init.pattern;
@@ -350,7 +346,7 @@ export class TopicIncomingFactory implements IncomingFactory {
 
     constructor(private streamAdapter: StreamAdapter) { }
     create(options: TopicIncomingOptions): TIncoming<TopicIncoming> {
-        if (this.streamAdapter.isReadable(options.payload)) {
+        if (this.streamAdapter.isReadable(options.body)) {
             return parseTopicIncoming(options);
         }
         return new TopicIncoming(options);

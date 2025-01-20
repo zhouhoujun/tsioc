@@ -19,26 +19,25 @@ export class RequestContextServializeInterceptor implements Interceptor<RequestC
                 id,
                 headers,
                 error: input.response.error,
-                packet: input.body,
-                head: Buffer.from(JSON.stringify(headers)),
+                payload: input.body,
                 contentLength
             })
         }
 
-        const data = { error: input.response.error, headers, payload: input.body, status: input.status, statusMessage: input.statusMessage };
+        const data = { error: input.response.error, headers, body: input.body, status: input.status, statusMessage: input.statusMessage };
 
         return next.handle(data, context)
             .pipe(
-                map(packet => {
-                    if (typeof packet === 'string') {
-                        packet = Buffer.from(packet);
+                map(payload => {
+                    if (typeof payload === 'string') {
+                        payload = Buffer.from(payload);
                     }
                     return {
                         id,
                         headers,
                         error: input.response.error,
-                        packet,
-                        contentLength: packet.length
+                        payload,
+                        contentLength: payload.length
                     };
                 }));
     }

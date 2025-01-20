@@ -11,37 +11,36 @@ export class RequestServializeInterceptor implements Interceptor<AbstractRequest
 
         const id = input.id;
         const headers = input.headers.getHeaders();
-        
+
         if (context.transport.streamAdapter.isReadable(input.body)) {
             return of({
                 id,
                 headers,
-                head: Buffer.from(JSON.stringify(headers)),
-                packet: input.body
+                payload: input.body
             })
         }
 
         let data: any;
 
         if ((input as UrlRequest).url) {
-            data = { headers, payload: input.body, method: (input as UrlRequest).method, url: (input as UrlRequest).getUrlWithParams() };
+            data = { headers, body: input.body, method: (input as UrlRequest).method, url: (input as UrlRequest).getUrlWithParams() };
         } else if ((input as TopicRequest).topic) {
-            data = { headers, payload: input.body, topic: (input as TopicRequest).topic, params: input.params.toRecord() };
+            data = { headers, body: input.body, topic: (input as TopicRequest).topic, params: input.params.toRecord() };
         } else {
-            data = { headers, payload: input.body, pattern: (input as PatternRequest).pattern, params: input.params.toRecord() };
+            data = { headers, body: input.body, pattern: (input as PatternRequest).pattern, params: input.params.toRecord() };
         }
 
         return next.handle(data, context)
             .pipe(
-                map(packet => {
-                    if (typeof packet === 'string') {
-                        packet = Buffer.from(packet);
+                map(payload => {
+                    if (typeof payload === 'string') {
+                        payload = Buffer.from(payload);
                     }
                     return {
                         id,
                         headers,
-                        packet,
-                        contentLength: packet.length
+                        payload,
+                        contentLength: payload.length
                     };
                 }));
     }

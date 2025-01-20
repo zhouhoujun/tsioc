@@ -27,8 +27,8 @@ export class MergePacketInterceptor implements Interceptor<Packet, IncomingMessa
         const opts = transport.options;
         const idLen = opts.idLen ?? 2;
         let id: string | number;
-        if (transport.streamAdapter.isReadable(input.packet)) {
-            const chunk = input.packet.read(idLen);
+        if (transport.streamAdapter.isReadable(input.payload)) {
+            const chunk = input.payload.read(idLen);
             id = idLen > 4 ? chunk.subarray(0, idLen).toString() : chunk.readUIntBE(0, idLen);
             const exist = this.packs.get(id);
             // if (exist) input.noHead = true;
@@ -36,10 +36,10 @@ export class MergePacketInterceptor implements Interceptor<Packet, IncomingMessa
             if (input.packetLength) {
                 input.packetLength = input.packetLength - idLen;
             }
-        } else if (isBuffer(input.packet)) {
-            id = idLen > 4 ? input.packet.subarray(0, idLen).toString() : input.packet.readUIntBE(0, idLen);
+        } else if (isBuffer(input.payload)) {
+            id = idLen > 4 ? input.payload.subarray(0, idLen).toString() : input.payload.readUIntBE(0, idLen);
             input.id = id;
-            input.packet = input.packet.subarray(idLen);
+            input.payload = input.payload.subarray(idLen);
         } 
         // else if (isString(input.packet)) {
         //     id = input.packet.slice(0, idLen);
@@ -56,10 +56,10 @@ export class MergePacketInterceptor implements Interceptor<Packet, IncomingMessa
 
     mergePacket(packet: Packet, streamAdapter: StreamAdapter, headerAdapter: HeaderAdapter, noHead?: boolean): CachePacket {
 
-        if (!packet.id || !(isBuffer(packet.packet) || streamAdapter.isReadable(packet.packet)) || (!noHead && packet.headers && headerAdapter.getContentLength(packet.headers) <= 0)) {
+        if (!packet.id || !(isBuffer(packet.payload) || streamAdapter.isReadable(packet.payload)) || (!noHead && packet.headers && headerAdapter.getContentLength(packet.headers) <= 0)) {
             return { packet, completed: true } as CachePacket;
         }
-        const len = isBuffer(packet.packet) ? Buffer.byteLength(packet.packet) : packet.contentLength!;
+        const len = isBuffer(packet.payload) ? Buffer.byteLength(packet.payload) : packet.contentLength!;
 
         if (!noHead && packet.headers && headerAdapter.getContentLength(packet.headers) <= len) {
             return { packet, completed: true } as CachePacket;
@@ -71,8 +71,8 @@ export class MergePacketInterceptor implements Interceptor<Packet, IncomingMessa
             if (packet.headers && !headerAdapter?.getContentLength(packet.headers)) {
                 throw new PacketLengthException('has not content length!');
             }
-            const payload = packet.packet;
-            packet.packet = streamAdapter.createPassThrough();
+            const payload = packet.payload;
+            packet.payload = streamAdapter.createPassThrough();
 
             const cached = {
                 packet,
@@ -81,7 +81,7 @@ export class MergePacketInterceptor implements Interceptor<Packet, IncomingMessa
             if (streamAdapter.isReadable(payload)) {
                 cached.streams = [payload];
             } else {
-                packet.packet.write(payload);
+                packet.payload.write(payload);
             }
             this.packs.set(packet.id!, cached);
             return cached;
@@ -92,22 +92,22 @@ export class MergePacketInterceptor implements Interceptor<Packet, IncomingMessa
                 cached.packet.headers.setHeaders(packet.headers.getHeaders())
             }
 
-            if (streamAdapter.isReadable(packet.packet)) {
+            if (streamAdapter.isReadable(packet.payload)) {
                 if (cached.streams) {
-                    cached.streams.push(packet.packet);
+                    cached.streams.push(packet.payload);
                 } else {
-                    cached.streams = [packet.packet];
+                    cached.streams = [packet.payload];
                 }
             } else {
-                cached.packet.packet!.write(packet.packet);
+                cached.packet.payload!.write(packet.payload);
             }
             if (cached.cacheSize >= cLen) {
                 this.packs.delete(packet.id);
                 if (cached.streams) {
-                    streamAdapter.merge(cached.packet.packet!, cached.streams);
+                    streamAdapter.merge(cached.packet.payload!, cached.streams);
                     cached.streams = null;
                 } else {
-                    cached.packet.packet!.end();
+                    cached.packet.payload!.end();
                 }
                 cached.completed = true;
             }
@@ -126,7 +126,7 @@ export class SplitPacketInterceptor implements Interceptor<OutgoingMessage, Pack
                     const transport = context.transport as AbstractTransport;
                     const opts = transport.options;
                     const idLen = opts.idLen ?? 2;
-                    const data = msg.packet;
+                    const data = msg.payload;
                     const packetSize = isBuffer(data) ? Buffer.byteLength(data) : msg.contentLength!;
                     const sizeLimit = opts.maxSize! - (opts.delimiter ? Buffer.byteLength(opts.delimiter) : 0)
                         - ((opts.headDelimiter) ? Buffer.byteLength(opts.headDelimiter) : 0)
@@ -238,7 +238,7 @@ export class SplitPacketInterceptor implements Interceptor<OutgoingMessage, Pack
 
     streamConnectId(streamAdapter: StreamAdapter, msg: Packet, idLen: number, delimiter: Buffer, stream: IReadable, countLen: number, len: number): Packet {
         let isFist = true;
-        msg.packet = streamAdapter.pipeline(stream, streamAdapter.createPassThrough({
+        msg.payload = streamAdapter.pipeline(stream, streamAdapter.createPassThrough({
             transform: (chunk, encoding, callback) => {
                 if (isFist) {
                     isFist = false;
@@ -268,7 +268,7 @@ export class SplitPacketInterceptor implements Interceptor<OutgoingMessage, Pack
     connectId(msg: Packet, idLen: number, data: Buffer): Packet {
         if (msg.id) {
             const idBuff = this.getIdBuffer(msg.id, idLen)!;
-            msg.packet = Buffer.concat([idBuff, data], idLen + Buffer.byteLength(data))
+            msg.payload = Buffer.concat([idBuff, data], idLen + Buffer.byteLength(data))
         }
         return msg;
     }
