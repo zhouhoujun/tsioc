@@ -106,20 +106,15 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
     }
 
 
-    setResponse(packet: Response<any>): void {
-        const { headers, payload, ...pkg } = packet;
-        Object.assign(this.response, pkg);
-        if (headers) this.setHeader(headers);
-        this.body = payload;
-    }
+    // setResponse(packet: Response<any>): void {
+    //     const { headers, payload, ...pkg } = packet;
+    //     Object.assign(this.response, pkg);
+    //     if (headers) this.setHeader(headers);
+    //     this.body = payload;
+    // }
 
-    async respond(): Promise<any> {
-        if (this.sent) return;
-        await lastValueFrom(this.transport.send(this));
-    }
-
-    async respondExecption(execption: MessageExecption): Promise<void> {
-        if (this.sent) return;
+    async throwExecption(execption: MessageExecption): Promise<void> {
+        if (this.headerSent) return;
         this.execption = execption;
         this.body = null;
         this.response.error = {
@@ -193,20 +188,15 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
     }
 
 
-    setResponse(packet: Response<any>): void {
-        const { headers, payload, ...pkg } = packet;
-        Object.assign(this.response, pkg);
-        if (headers) this.setHeader(headers);
-        this.body = payload;
-    }
+    // setResponse(packet: Response<any>): void {
+    //     const { headers, payload, ...pkg } = packet;
+    //     Object.assign(this.response, pkg);
+    //     if (headers) this.setHeader(headers);
+    //     this.body = payload;
+    // }
 
-    async respond(): Promise<any> {
-        if (this.sent) return;
-        await lastValueFrom(this.transport.send(this));
-    }
-
-    async respondExecption(execption: MessageExecption): Promise<void> {
-        if (this.sent) return;
+    async throwExecption(execption: MessageExecption): Promise<void> {
+        if (this.headerSent) return;
         this.execption = execption;
         this.body = null;
         this.response.error = {

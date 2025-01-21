@@ -80,7 +80,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
     }
 
     handle(ctx: RequestContext, noFound?: () => Observable<any>): Observable<any> {
-        if (ctx.sent) return of(ctx)
+        if (ctx.headerSent) return of(ctx)
         const route = this.getRoute(ctx);
         if (route) {
             if (isArray(route)) {
@@ -104,7 +104,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
     }
 
     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.sent) return next()
+        if (ctx.headerSent) return next()
         const route = this.getRoute(ctx);
         if (route) {
             if (isArray(route)) {

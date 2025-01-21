@@ -1,6 +1,6 @@
 import { Abstract, OperationArgumentResolver, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
 import { HandleContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
-import { HeadersLike, IHeaders, HeaderMappings, Response, HeaderAdapter, HeaderAccess } from '@tsdi/common';
+import { HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess } from '@tsdi/common';
 import {
     FileAdapter, Incoming, InternalServerExecption, MessageExecption, MimeAdapter, Outgoing,
     StatusAdapter, StreamAdapter, ctype, isBuffer, xmlRegExp
@@ -122,7 +122,7 @@ export abstract class RequestContext<
      * Set response status, defaults to OK.
      */
     set status(code: TStatus) {
-        if (this.sent) return;
+        if (this.headerSent) return;
         this.beforeStatusChanged(code);
         if (this.statusAdapter && !this.statusAdapter.isStatus(code)) throw new InternalServerExecption(`invalid status code: ${code}`)
         this._explicitStatus = true;
@@ -395,7 +395,7 @@ export abstract class RequestContext<
     setHeader(fields: Record<string, string | number | string[]> | IHeaders): void;
     setHeader(headers: HeadersLike): void;
     setHeader(field: string | HeadersLike, val?: string | number | string[]) {
-        if (this.sent) return;
+        if (this.headerSent) return;
         if (val) {
             this.headerAdapter.setHeader(this.response.headers ?? this.response, field as string, val)
         } else if (field instanceof HeaderMappings) {
@@ -430,7 +430,7 @@ export abstract class RequestContext<
      * @api public
      */
     appendHeader(field: string, val: string | number | string[]) {
-        if (this.sent) return;
+        if (this.headerSent) return;
         const prev = this.headerAdapter.getHeader(this.response.headers ?? this.response, field);
         if (prev) {
             val = Array.isArray(prev)
@@ -448,7 +448,7 @@ export abstract class RequestContext<
     * @api public
     */
     removeHeader(field: string): void {
-        if (this.sent) return;
+        if (this.headerSent) return;
         this.headerAdapter.removeHeader(this.response.headers ?? this.response, field);
     }
 
@@ -458,7 +458,7 @@ export abstract class RequestContext<
      * @api public
      */
     removeHeaders(): void {
-        if (this.sent) return;
+        if (this.headerSent) return;
         this.headerAdapter.removeHeaders(this.response.headers ?? this.response)
     }
 
@@ -578,7 +578,7 @@ export abstract class RequestContext<
      * Set Content-Encoding.
      */
     set contentEncoding(encoding: string | null | undefined) {
-        if (this.sent) return;
+        if (this.headerSent) return;
         this.headerAdapter.setContentEncoding(this.response.headers ?? this.response, encoding)
         // if (isNil(encoding)) {
         //     this.resHeaders.setContentEncoding(encoding)
@@ -597,8 +597,8 @@ export abstract class RequestContext<
      * @return {Boolean}
      * @api public
      */
-    get sent() {
-        return this.response.sent == true;
+    get headerSent() {
+        return this.response.headerSent == true;
     }
 
     /**
@@ -748,21 +748,10 @@ export abstract class RequestContext<
     }
 
     /**
-     * send response to client.
-     */
-    abstract respond(): Promise<any>;
-
-    /**
-     * set response with response packet
-     * @param headers 
-     */
-    abstract setResponse(packet: Response<any>): void;
-
-    /**
-     * send execption to client.
+     * throw execption to client.
      * @param execption 
      */
-    abstract respondExecption(execption: MessageExecption): Promise<void>;
+    abstract throwExecption(execption: MessageExecption): Promise<void>;
 
 }
 

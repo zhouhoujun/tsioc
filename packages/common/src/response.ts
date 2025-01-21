@@ -1,4 +1,4 @@
-import { Abstract, Injectable, hasOwn, isPlainObject } from '@tsdi/ioc';
+import { Abstract, Injectable } from '@tsdi/ioc';
 import { HeaderMappings, HeadersLike } from './headers';
 import { Pattern } from './pattern';
 import { ClientIncoming } from '../transport';

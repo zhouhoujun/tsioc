@@ -102,7 +102,7 @@ export class Cors implements Middleware<RestfulRequestContext>, Interceptor<Rest
 
     intercept(ctx: RestfulRequestContext, next: Handler<RestfulRequestContext, any>): Observable<any> {
         const requestOrigin = ctx.getHeader(ORIGIN);
-        !ctx.sent && vary(ctx.response, ORIGIN);
+        !ctx.headerSent && vary(ctx.response, ORIGIN);
         if (!requestOrigin) {
             return next.handle(ctx)
         }
@@ -203,7 +203,7 @@ export class Cors implements Middleware<RestfulRequestContext>, Interceptor<Rest
 
     async invoke(ctx: RestfulRequestContext, next: () => Promise<void>): Promise<void> {
         const requestOrigin = ctx.getHeader(ORIGIN);
-        !ctx.sent && vary(ctx.response, ORIGIN);
+        !ctx.headerSent && vary(ctx.response, ORIGIN);
         if (!requestOrigin) {
             return await next()
         }

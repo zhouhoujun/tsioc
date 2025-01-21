@@ -282,7 +282,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 
 
     vary(field: string) {
-        if (this.sent) return;
+        if (this.headerSent) return;
         let val = this.response.getHeader(VARY) ?? '';
         const header = Array.isArray(val)
             ? val.join(', ')
@@ -355,7 +355,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         }
 
         if (HEAD === this.method) {
-            if (!this.sent && !this.response.hasHeader(CONTENT_LENGTH)) {
+            if (!this.headerSent && !this.response.hasHeader(CONTENT_LENGTH)) {
                 const length = this.length;
                 if (Number.isInteger(length)) this.length = length
             }
@@ -372,7 +372,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
             }
 
             const body = Buffer.from(this.statusMessage ?? String(this.status));
-            if (!this.sent) {
+            if (!this.headerSent) {
                 this.type = 'text';
                 this.length = Buffer.byteLength(body)
             }
@@ -382,9 +382,9 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         await lastValueFrom(this.transport.send(this, this.response));
     }
 
-    async respondExecption(err: MessageExecption): Promise<void> {
+    async throwExecption(err: MessageExecption): Promise<void> {
         let headerSent = false;
-        if (this.sent || !this.writable) {
+        if (this.headerSent || !this.writable) {
             headerSent = err.headerSent = true
         }
 

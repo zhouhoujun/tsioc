@@ -12,7 +12,7 @@ export class FinalizeFilter extends Filter {
         return next.handle(request, context)
             .pipe(
                 mergeMap(res => {
-                    return request.respond()
+                    return request.transport.send(request);
                 })
             )
     }

@@ -122,7 +122,7 @@ export interface Outgoing<T = any, TStatus = any> extends OutgoingMessage<T> {
      * @return {Boolean}
      * @api public
      */
-    sent?: boolean;
+    headerSent?: boolean;
 
     /**
      * is writable or not.

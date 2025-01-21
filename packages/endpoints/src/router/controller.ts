@@ -59,7 +59,7 @@ export class ControllerRoute<T> extends ConfigableHandler<RequestContext, any, R
 
     protected getBackend(): BackendFn<RequestContext, any> {
         return (ctx) => {
-            if (ctx.sent) return throwError(() => new PushDisabledExecption());
+            if (ctx.headerSent) return throwError(() => new PushDisabledExecption());
 
             const method = this.getRouteMetaData(ctx) as DecorDefine<RouteMappingMetadata>;
             if (!method || !method.propertyKey) {

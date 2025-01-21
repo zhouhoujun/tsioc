@@ -11,7 +11,7 @@ export class ExecptionFinalizeFilter<TInput extends RequestContext, TContext = a
     catchError(reqContext: TInput, err: any, caught: Observable<any>, context?: TContext) {
         const logger = reqContext.get(Logger) ?? console;
         logger.error(err);
-        return reqContext.respondExecption(err)
+        return reqContext.throwExecption(err)
     }
 
 }
