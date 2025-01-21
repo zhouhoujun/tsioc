@@ -146,6 +146,7 @@ export function parseTokenList(str: string) {
  * @returns 
  */
 export function getHeader(headers: HeadersLike, header: string, join?: boolean): string | undefined {
+  if(!headers) return undefined;
   let values: any;
   if (headers.getHeader) {
     values = (headers as HeaderAccess).getHeader(header)
