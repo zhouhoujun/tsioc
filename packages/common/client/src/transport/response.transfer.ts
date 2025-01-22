@@ -280,7 +280,6 @@ const xmlType = /xml$/i;
 export const RESPONSE_TRANSFER_INTERCEPTORS = [
     ErrorResponseInterceptor,
     EmptyResponseInterceptor,
-    // ResponseDeserializeInterceptor
 ];
 
 export const STATUS_RESPONSE_TRANSFER_INTERCEPTORS = [
@@ -288,7 +287,6 @@ export const STATUS_RESPONSE_TRANSFER_INTERCEPTORS = [
     ErrorResponseInterceptor,
     EmptyResponseInterceptor,
     CompressResponseInterceptor,
-    // ResponseDeserializeInterceptor
 ];
 
 @Injectable()

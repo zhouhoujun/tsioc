@@ -14,10 +14,9 @@ import {
 import {
     AcceptsPriority, DefaultServerTransferFactory,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
-    RequestContextServializeInterceptor,
+    RequestContextServializeInterceptor, RequestContextVaildateInterceptor,
     SERVER_MODULES, ServerModuleOpts, ServiceModuleOpts,
     SocketServerTransport, ServerTransferFactory,
-    RequestContextVaildateInterceptor
 } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';
 import { TcpHandler } from './client/handler';
