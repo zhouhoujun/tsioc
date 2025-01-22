@@ -96,7 +96,7 @@ export type RequestInitOpts<T, TOptions extends RequestOptions> = Required<Reque
  * Abstract request.
  */
 export abstract class AbstractRequest<T, TOptions extends RequestOptions = RequestOptions<T>> implements Clonable<AbstractRequest<T>> {
-    
+
     id?: string | number;
     /**
      * request headers.
@@ -251,10 +251,6 @@ export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = Reques
 
     }
 
-    attachId(id: string | number) {
-        this.id = id;
-    }
-
     protected cloneOpts(update: RequestCloneOpts<any, TOptions>): RequestInitOpts<any, TOptions> {
 
         // The payload is somewhat special - a `null` value in update.payload means
@@ -350,7 +346,7 @@ export abstract class BaseUrlRequest<T, TOptions extends UrlRequestOptions = Url
     constructor(readonly url: string, readonly pattern: Pattern | null | undefined, init: RequestInitOpts<T, TOptions>, defaultMethod = '') {
         super(init, defaultMethod);
         this.method = init.method ?? defaultMethod;
-        this.queryParams = !!pattern;
+
     }
 
     abstract clone(): BaseUrlRequest<T>;
@@ -368,10 +364,7 @@ export abstract class BaseUrlRequest<T, TOptions extends UrlRequestOptions = Url
      * The outgoing URL with all URL parameters set.
      */
     getUrlWithParams(): string {
-        if (this.queryParams) {
-            return appendUrlParams(this.url, this.params)
-        }
-        return this.url;
+        return appendUrlParams(this.url, this.params);
     }
 }
 
