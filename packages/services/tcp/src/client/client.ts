@@ -85,10 +85,11 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
 
     protected override createRequest(pattern: Pattern, options: RequestInitOpts<any, UrlRequestOptions>): TcpRequest<any> {
         options.withCredentials = this.connection instanceof tls.TLSSocket;
+        const defaultMethod = this.getOptions().microservice ? undefined : 'GET';
         if (isString(pattern)) {
-            return new TcpRequest(pattern, null, options);
+            return new TcpRequest(pattern, null, options, defaultMethod);
         } else {
-            return new TcpRequest(this.formatter.format(pattern), pattern, options);
+            return new TcpRequest(this.formatter.format(pattern), pattern, options, defaultMethod);
         }
     }
 

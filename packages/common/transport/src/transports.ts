@@ -41,15 +41,16 @@ export interface TransportOptions {
 export abstract class AbstractTransport<TSocket = any, TIncoming extends Incoming = Incoming, TOutgoing = any> extends Transport<TSocket, TIncoming, TOutgoing> {
 
     /**
-     * message deserializer.
-     */
-    abstract get deserializer(): Deserializer<Packet, TIncoming>;
-
-    /**
      * message encodings.
      */
     abstract get serializer(): Serializer<TOutgoing, Packet>;
-
+    /**
+     * message deserializer.
+     */
+    abstract get deserializer(): Deserializer<Packet, TIncoming>;
+    /**
+     * pattern formatter.
+     */
     abstract get patternFormatter(): PatternFormatter | null;
 
     /**

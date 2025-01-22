@@ -101,9 +101,6 @@ export class DeviceController {
                     connectOpts: {
                         port: 2000
                     },
-                    // transportOpts: {
-                    //     headDelimiter: '|'
-                    // }
                 }
             },
             {
@@ -136,9 +133,6 @@ export class DeviceController {
                     listenOpts: {
                         port: 2000
                     },
-                    // transportOpts: {
-                    //     headDelimiter: '|'
-                    // },
                     interceptors: [
                         BigFileInterceptor,
                         ContentInterceptor,
@@ -151,8 +145,7 @@ export class DeviceController {
                     { provide: TCP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
                 ]
             }
-        ]),
-        // PackageBufferCodingsModule,
+        ])
     ],
     declarations: [
         DeviceController

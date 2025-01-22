@@ -106,13 +106,6 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
     }
 
 
-    // setResponse(packet: Response<any>): void {
-    //     const { headers, payload, ...pkg } = packet;
-    //     Object.assign(this.response, pkg);
-    //     if (headers) this.setHeader(headers);
-    //     this.body = payload;
-    // }
-
     async throwExecption(execption: MessageExecption): Promise<void> {
         if (this.headerSent) return;
         this.execption = execption;
@@ -186,14 +179,6 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
         }
         return this._query;
     }
-
-
-    // setResponse(packet: Response<any>): void {
-    //     const { headers, payload, ...pkg } = packet;
-    //     Object.assign(this.response, pkg);
-    //     if (headers) this.setHeader(headers);
-    //     this.body = payload;
-    // }
 
     async throwExecption(execption: MessageExecption): Promise<void> {
         if (this.headerSent) return;
