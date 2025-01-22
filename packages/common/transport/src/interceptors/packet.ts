@@ -155,7 +155,7 @@ export class PacketifyInterceptor implements Interceptor<any, IncomingMessage, T
 }
 
 @Injectable()
-export class AttachPacketIdInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
+export class PacketVaildateInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
 
     intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet>, context: TransportContext): Observable<Packet> {
         const { injector, headerAdapter, options, client } = context.transport as AbstractTransport;

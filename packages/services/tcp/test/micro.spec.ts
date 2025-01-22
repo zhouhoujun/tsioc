@@ -59,15 +59,21 @@ export class TcpService {
             transport: 'tcp',
             microservice: true,
             clientOpts: {
+                transportOptions: {
+                    maxSize: 1024 * 1024 * 20
+                },
                 connectOpts: {
                     port: 2000
-                }
+                },
             }
         }),
         provideService({
             transport: 'tcp',
             microservice: true,
             serverOpts: {
+                transportOptions: {
+                    maxSize: 1024 * 1024 * 20
+                },
                 // timeout: 1000,
                 detailError: false,
                 listenOpts: {

@@ -2,7 +2,7 @@ import { InjectFlags } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import { DefaultResponseFactory, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
-    AttachPacketIdInterceptor, DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory,
+    PacketVaildateInterceptor, DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory,
     DeserializerFactory, FileAdapter, MimeAdapter, PacketDeserializeInterceptor, PacketifyInterceptor,
     PacketSerializeInterceptor, Redirector, SerializerFactory, StatusAdapter, StreamAdapter,
     UrlClientIncomingFactory, UrlOutgoingFactory
@@ -16,7 +16,8 @@ import {
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
     RequestContextServializeInterceptor,
     SERVER_MODULES, ServerModuleOpts, ServiceModuleOpts,
-    SocketServerTransport, ServerTransferFactory
+    SocketServerTransport, ServerTransferFactory,
+    RequestContextVaildateInterceptor
 } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';
 import { TcpHandler } from './client/handler';
@@ -121,7 +122,7 @@ export class TcpConfiguration {
                 transportOptions: {
                     serializerConfig: {
                         interceptors: [
-                            AttachPacketIdInterceptor,
+                            PacketVaildateInterceptor,
                             PacketSerializeInterceptor,
                             RequestServializeInterceptor
                         ]
@@ -193,6 +194,7 @@ export class TcpConfiguration {
                 transportOptions: {
                     serializerConfig: {
                         interceptors: [
+                            RequestContextVaildateInterceptor,
                             PacketSerializeInterceptor,
                             RequestContextServializeInterceptor,
                         ]

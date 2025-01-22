@@ -1,7 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
-import { Handler, Interceptor } from '@tsdi/core';
-import { Packet } from '@tsdi/common/transport';
-import { map, Observable, of } from 'rxjs';
+import { Handler, Interceptor, PipeTransform } from '@tsdi/core';
+import { AbstractTransport, Packet, PacketLengthException } from '@tsdi/common/transport';
+import { map, Observable, of, throwError } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 
 
@@ -43,3 +43,16 @@ export class RequestContextServializeInterceptor implements Interceptor<RequestC
     }
 }
 
+@Injectable()
+export class RequestContextVaildateInterceptor implements Interceptor<RequestContext, Packet> {
+
+    intercept(input: RequestContext, next: Handler<any>, context?: any): Observable<Packet> {
+        const { injector, options } = context.transport as AbstractTransport;
+        const length = input.length;
+        if (length && options.maxSize && length > options.maxSize) {
+            const btpipe = injector.get<PipeTransform>('bytes-format');
+            return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(options.maxSize)}`));
+        }
+        return next.handle(input, context);
+    }
+}
