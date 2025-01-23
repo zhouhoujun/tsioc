@@ -1,7 +1,7 @@
 import { hasProps, Injectable } from '@tsdi/ioc';
 import { Handler, Interceptor, PipeTransform } from '@tsdi/core';
 import { AbstractTransport, Outgoing, Packet, PacketLengthException } from '@tsdi/common/transport';
-import { map, Observable, of, range, throwError } from 'rxjs';
+import { map, Observable, of, throwError } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 
 
@@ -45,7 +45,7 @@ export class RequestContextServializeInterceptor implements Interceptor<RequestC
                 {
                     id,
                     headers,
-                    payload: hasProps(pkg) ? Buffer.from(JSON.stringify(pkg)) : null,
+                    payload: Buffer.from(JSON.stringify(pkg)),
                 },
                 {
                     id,

@@ -51,7 +51,7 @@ export class RequestServializeInterceptor implements Interceptor<AbstractRequest
                 {
                     id,
                     headers,
-                    payload: hasProps(pkg) ? Buffer.from(JSON.stringify(pkg)) : null
+                    payload: Buffer.from(JSON.stringify(pkg))
                 },
                 {
                     id,
