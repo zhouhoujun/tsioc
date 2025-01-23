@@ -1,7 +1,7 @@
 import { hasProps, Injectable } from '@tsdi/ioc';
 import { Handler, Interceptor, PipeTransform } from '@tsdi/core';
 import { AbstractTransport, Outgoing, Packet, PacketLengthException } from '@tsdi/common/transport';
-import { map, Observable, of, throwError } from 'rxjs';
+import { map, Observable, of, range, throwError } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 
 
@@ -29,13 +29,30 @@ export class RequestContextServializeInterceptor implements Interceptor<RequestC
         }
 
         if (input.streamAdapter.isReadable(input.body)) {
-            const contentLength = input.length;
-            return of({
-                id,
-                header: hasProps(pkg) ? Buffer.from(JSON.stringify(pkg)) : null,
-                payload: input.body,
-                contentLength
-            })
+            let contentLength = input.length || 0;
+            if (id) {
+                const idLen = input.transport.options.idLen ?? 2;
+                const idBuff = Buffer.alloc(idLen);
+                if (idLen > 4) {
+                    idBuff.write(id.toString());
+                } else {
+                    idBuff.writeUIntBE(id as number, 0, idLen);
+                }
+                input.body.unshift(idBuff);
+                contentLength += idLen;
+            }
+            return of(
+                {
+                    id,
+                    headers,
+                    payload: hasProps(pkg) ? Buffer.from(JSON.stringify(pkg)) : null,
+                },
+                {
+                    id,
+                    headers,
+                    payload: input.body,
+                    contentLength
+                })
         }
 
         pkg.body = input.body;

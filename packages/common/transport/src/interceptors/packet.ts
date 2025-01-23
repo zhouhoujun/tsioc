@@ -271,32 +271,11 @@ export class PacketSerializeInterceptor implements Interceptor<OutgoingMessage, 
                             } else {
                                 if (first) {
                                     first = false;
-                                    let data: Buffer;
-                                    // if (msg.header && msg.id) {
-                                    //     const headLen = Buffer.alloc(countLen);
-                                    //     const headLenght = Buffer.byteLength(msg.header);
-                                    //     headLen.writeUIntBE(headLenght, 0, countLen);
+                                    buffLen = Buffer.alloc(countLen);
+                                    buffLen.writeUIntBE(msg.contentLength!, 0, countLen);
+                                    const total = countLen + delimiterLen + Buffer.byteLength(chunk);
+                                    const data = Buffer.concat([buffLen, delimiter, chunk], total)
 
-                                    //     const idLen = options.idLen ?? 2;
-                                    //     const idBuff = Buffer.alloc(idLen);
-                                    //     if (idLen > 4) {
-                                    //         idBuff.write(msg.id.toString());
-                                    //     } else {
-                                    //         idBuff.writeUIntBE(msg.id as number, 0, idLen);
-                                    //     }
-
-                                    //     buffLen = Buffer.alloc(countLen);
-                                    //     buffLen.writeUIntBE(msg.contentLength! + idLen, 0, countLen);
-
-                                    //     const total = countLen + delimiterLen + headLenght + countLen + delimiterLen + idLen + Buffer.byteLength(chunk);
-
-                                    //     data = Buffer.concat([headLen, delimiter, msg.header, buffLen, delimiter, idBuff, chunk], total)
-                                    // } else {
-                                        buffLen = Buffer.alloc(countLen);
-                                        buffLen.writeUIntBE(msg.contentLength!, 0, countLen);
-                                        const total = countLen + delimiterLen + Buffer.byteLength(chunk);
-                                        data = Buffer.concat([buffLen, delimiter, chunk], total)
-                                    // }
                                     callback(null, data);
                                 } else {
                                     callback(null, chunk)

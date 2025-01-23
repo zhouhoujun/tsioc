@@ -1,7 +1,7 @@
 import { hasProps, Injectable } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { AbstractRequest, PatternRequest, TopicRequest, UrlRequest } from '@tsdi/common';
-import { ClientOutgoing, Packet, TopicClientOutgoing, TransportContext, UrlClientOutgoing } from '@tsdi/common/transport';
+import { AbstractTransport, ClientOutgoing, Packet, TopicClientOutgoing, TransportContext, UrlClientOutgoing } from '@tsdi/common/transport';
 import { map, Observable, of } from 'rxjs';
 
 @Injectable()
@@ -19,6 +19,8 @@ export class RequestServializeInterceptor implements Interceptor<AbstractRequest
             pkg.headers = headers;
         }
 
+        const transport = context.transport as AbstractTransport;
+
         if ((input as UrlRequest).url) {
             (pkg as UrlClientOutgoing).url = (input as UrlRequest).getUrlWithParams();
             (pkg as UrlClientOutgoing).method = (input as UrlRequest).method;
@@ -26,17 +28,38 @@ export class RequestServializeInterceptor implements Interceptor<AbstractRequest
             (pkg as TopicClientOutgoing).topic = (input as TopicRequest).topic;
             (pkg as TopicClientOutgoing).params = (input as TopicRequest).params.toRecord();
         } else {
-            (pkg as ClientOutgoing).pattern = context.transport.patternFormatter?.format((input as PatternRequest).pattern);
+            (pkg as ClientOutgoing).pattern = transport.patternFormatter?.format((input as PatternRequest).pattern);
             (pkg as ClientOutgoing).params = (input as PatternRequest).params.toRecord();
         }
 
-        if (context.transport.streamAdapter.isReadable(input.body)) {
-            return of({
-                id,
-                headers,
-                header: hasProps(pkg) ? Buffer.from(JSON.stringify(pkg)) : null,
-                payload: input.body
-            })
+        if (transport.streamAdapter.isReadable(input.body)) {
+            
+            let contentLength = transport.headerAdapter?.getContentLength(headers) ?? 0;
+            
+            if(id) {
+                const idLen = transport.options.idLen ?? 2;
+                const idBuff = Buffer.alloc(idLen);
+                if (idLen > 4) {
+                    idBuff.write(id.toString());
+                } else {
+                    idBuff.writeUIntBE(id as number, 0, idLen);
+                }
+                input.body.unshift(idBuff);
+                contentLength += idLen;
+            }
+            return of(
+                {
+                    id,
+                    headers,
+                    payload: hasProps(pkg) ? Buffer.from(JSON.stringify(pkg)) : null
+                },
+                {
+                    id,
+                    headers,
+                    payload: input.body,
+                    contentLength
+                }
+            )
         }
 
         pkg.body = input.body;
