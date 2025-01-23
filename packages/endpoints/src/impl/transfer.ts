@@ -13,7 +13,7 @@ import { PatternRequestContext, UrlRequestContext } from './request.context';
 const backenFn = (input: Incoming<any>, context: TransportContext) => {
     return defer(async () => {
         const transport = context.transport as ServerTransport;
-        const { injector, outgoingFactory, headerAdapter, streamAdapter, serverOptions } = transport;
+        const { injector, outgoingFactory, serverOptions } = transport;
         if ((input as UrlIncoming).url) {
             return new UrlRequestContext(injector,
                 transport,

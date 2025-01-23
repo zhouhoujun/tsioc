@@ -1,6 +1,7 @@
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { Handler, Interceptor, PipeTransform } from '@tsdi/core';
-import { Observable, Subscriber, filter, map, mergeMap, throwError } from 'rxjs';
+import { AbstractRequest } from '@tsdi/common';
+import { Observable, Subscriber, defer, filter, map, mergeMap, throwError } from 'rxjs';
 import { PacketLengthException } from '../execptions';
 import { PacketIdGenerator } from '../PacketId';
 import { IDuplex } from '../stream';
@@ -124,16 +125,84 @@ export class PacketDeserializeInterceptor implements Interceptor<Packet, Incomin
     }
 }
 
+@Injectable()
+export class PayloadDeserializeInterceptor implements Interceptor<Packet, IncomingMessage, TransportContext> {
 
+    protected msgs: Map<string | number, IncomingMessage<IDuplex> & { contentLength: number }>;
+
+    constructor() {
+        this.msgs = new Map();
+    }
+
+    intercept(input: Packet<IDuplex>, next: Handler<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
+        if (!input.payload) return next.handle(input, context);
+
+        const transport = context.transport as AbstractTransport;
+        const { options, streamAdapter, headerAdapter } = transport;
+        const idLen = options.idLen ?? 2;
+        let id: string | number;
+        let payload = input.payload;
+
+        if (streamAdapter.isReadable(payload)) {
+            const chunk = payload.read(idLen);
+            id = idLen > 4 ? chunk.subarray(0, idLen).toString() : chunk.readUIntBE(0, idLen);
+            if (this.msgs.has(id)) {
+                const msg = this.msgs.get(id)!;
+                return defer(async () => {
+                    if (!msg.body) {
+                        msg.body = streamAdapter.createPassThrough();
+                    }
+                    streamAdapter.pipeTo(payload, msg.body);
+                    const contentLength = headerAdapter?.getContentLength(msg.headers);
+                    msg.contentLength += input.contentLength || 0;
+                    if (contentLength === msg.contentLength) {
+                        this.msgs.delete(id);
+                        msg.body.end();
+                        return msg;
+                    }
+                    return null
+                }).pipe(
+                    filter(msg => msg !== null)
+                ) as Observable<IncomingMessage>;
+            } else {
+                payload.unshift(chunk);
+            }
+        }
+
+
+
+        return next.handle(input, context)
+            .pipe(
+                filter(msg => {
+                    const incoming = msg as IncomingMessage<IDuplex> & { contentLength: number };
+                    const contentLength = headerAdapter?.getContentLength(incoming.headers);
+                    if (contentLength && incoming.id && !incoming.body) {
+                        incoming.contentLength = 0;
+                        this.msgs.set(incoming.id, incoming);
+                        return false;
+                    }
+                    return true;
+                }))
+
+    }
+
+}
+
+/**
+ * for client only.
+ */
 @Injectable()
 export class DeatchPacketIdInterceptor implements Interceptor<Packet, IncomingMessage, TransportContext> {
 
     intercept(input: Packet, next: Handler<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
+        if (!context.transport.client) return next.handle(input, context);
+
         return next.handle(input, context)
             .pipe(
                 filter(packet => {
-                    if (!context.transport.client) return true;
-                    return packet.id == input.id;
+                    if (!packet.id) return true;
+                    const req = context.first() as AbstractRequest<any>;
+                    return packet.id == req?.id;
                 })
             );
     }
@@ -200,14 +269,35 @@ export class PacketSerializeInterceptor implements Interceptor<OutgoingMessage, 
                             if (subpacket) {
                                 callback(null, chunk);
                             } else {
-                                if (!buffLen) {
-                                    buffLen = Buffer.alloc(countLen);
-                                    buffLen.writeUIntBE(msg.contentLength!, 0, countLen);
-                                }
                                 if (first) {
                                     first = false;
-                                    const total = countLen + delimiterLen + Buffer.byteLength(chunk);
-                                    callback(null, Buffer.concat([buffLen, delimiter, chunk], total))
+                                    let data: Buffer;
+                                    // if (msg.header && msg.id) {
+                                    //     const headLen = Buffer.alloc(countLen);
+                                    //     const headLenght = Buffer.byteLength(msg.header);
+                                    //     headLen.writeUIntBE(headLenght, 0, countLen);
+
+                                    //     const idLen = options.idLen ?? 2;
+                                    //     const idBuff = Buffer.alloc(idLen);
+                                    //     if (idLen > 4) {
+                                    //         idBuff.write(msg.id.toString());
+                                    //     } else {
+                                    //         idBuff.writeUIntBE(msg.id as number, 0, idLen);
+                                    //     }
+
+                                    //     buffLen = Buffer.alloc(countLen);
+                                    //     buffLen.writeUIntBE(msg.contentLength! + idLen, 0, countLen);
+
+                                    //     const total = countLen + delimiterLen + headLenght + countLen + delimiterLen + idLen + Buffer.byteLength(chunk);
+
+                                    //     data = Buffer.concat([headLen, delimiter, msg.header, buffLen, delimiter, idBuff, chunk], total)
+                                    // } else {
+                                        buffLen = Buffer.alloc(countLen);
+                                        buffLen.writeUIntBE(msg.contentLength!, 0, countLen);
+                                        const total = countLen + delimiterLen + Buffer.byteLength(chunk);
+                                        data = Buffer.concat([buffLen, delimiter, chunk], total)
+                                    // }
+                                    callback(null, data);
                                 } else {
                                     callback(null, chunk)
                                 }

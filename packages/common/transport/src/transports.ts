@@ -48,10 +48,6 @@ export abstract class AbstractTransport<TSocket = any, TIncoming extends Incomin
      * message deserializer.
      */
     abstract get deserializer(): Deserializer<Packet, TIncoming>;
-    /**
-     * pattern formatter.
-     */
-    abstract get patternFormatter(): PatternFormatter | null;
 
     /**
      * incoming message factory.

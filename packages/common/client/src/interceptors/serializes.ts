@@ -1,7 +1,7 @@
-import { Injectable } from '@tsdi/ioc';
+import { hasProps, Injectable } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { AbstractRequest, PatternRequest, TopicRequest, UrlRequest } from '@tsdi/common';
-import { Packet, TransportContext } from '@tsdi/common/transport';
+import { ClientOutgoing, Packet, TopicClientOutgoing, TransportContext, UrlClientOutgoing } from '@tsdi/common/transport';
 import { map, Observable, of } from 'rxjs';
 
 @Injectable()
@@ -11,26 +11,36 @@ export class RequestServializeInterceptor implements Interceptor<AbstractRequest
 
         const id = input.id;
         const headers = input.headers.getHeaders();
+        let pkg = {
+            id
+        } as ClientOutgoing;
+
+        if (hasProps(headers)) {
+            pkg.headers = headers;
+        }
+
+        if ((input as UrlRequest).url) {
+            (pkg as UrlClientOutgoing).url = (input as UrlRequest).getUrlWithParams();
+            (pkg as UrlClientOutgoing).method = (input as UrlRequest).method;
+        } else if ((input as TopicRequest).topic) {
+            (pkg as TopicClientOutgoing).topic = (input as TopicRequest).topic;
+            (pkg as TopicClientOutgoing).params = (input as TopicRequest).params.toRecord();
+        } else {
+            (pkg as ClientOutgoing).pattern = context.transport.patternFormatter?.format((input as PatternRequest).pattern);
+            (pkg as ClientOutgoing).params = (input as PatternRequest).params.toRecord();
+        }
 
         if (context.transport.streamAdapter.isReadable(input.body)) {
             return of({
                 id,
                 headers,
+                header: hasProps(pkg) ? Buffer.from(JSON.stringify(pkg)) : null,
                 payload: input.body
             })
         }
 
-        let data: any;
-
-        if ((input as UrlRequest).url) {
-            data = { headers, body: input.body, method: (input as UrlRequest).method, url: (input as UrlRequest).getUrlWithParams() };
-        } else if ((input as TopicRequest).topic) {
-            data = { headers, body: input.body, topic: (input as TopicRequest).topic, params: input.params.toRecord() };
-        } else {
-            data = { headers, body: input.body, pattern: (input as PatternRequest).pattern, params: input.params.toRecord() };
-        }
-
-        return next.handle(data, context)
+        pkg.body = input.body;
+        return next.handle(pkg, context)
             .pipe(
                 map(payload => {
                     if (typeof payload === 'string') {

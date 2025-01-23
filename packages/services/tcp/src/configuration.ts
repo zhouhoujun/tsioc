@@ -5,7 +5,8 @@ import {
     PacketVaildateInterceptor, DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory,
     DeserializerFactory, FileAdapter, MimeAdapter, PacketDeserializeInterceptor, PacketifyInterceptor,
     PacketSerializeInterceptor, Redirector, SerializerFactory, StatusAdapter, StreamAdapter,
-    UrlClientIncomingFactory, UrlOutgoingFactory
+    UrlClientIncomingFactory, UrlOutgoingFactory,
+    PayloadDeserializeInterceptor
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
@@ -130,7 +131,8 @@ export class TcpConfiguration {
                         interceptors: [
                             PacketifyInterceptor,
                             DeatchPacketIdInterceptor,
-                            PacketDeserializeInterceptor
+                            PacketDeserializeInterceptor,
+                            PayloadDeserializeInterceptor
                         ]
                     }
                 },
@@ -201,8 +203,8 @@ export class TcpConfiguration {
                     deserializerConfig: {
                         interceptors: [
                             PacketifyInterceptor,
-                            DeatchPacketIdInterceptor,
-                            PacketDeserializeInterceptor
+                            PacketDeserializeInterceptor,
+                            PayloadDeserializeInterceptor
                         ]
                     }
                 },

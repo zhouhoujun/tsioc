@@ -17,7 +17,7 @@ export interface IncomingMessage<T = any> {
     /**
      * incoming headers.
      */
-    get headers(): HeadersLike;
+    headers: HeadersLike;
 
     /**
      * incoming body.
@@ -110,6 +110,7 @@ export abstract class ClientIncomingFactory implements AbstractIncomingFactory<C
  * incoming options
  */
 export interface BasicIncomingOpts<T = any> {
+    id?: any;
     /**
      * pattern.
      */
@@ -201,6 +202,8 @@ export type IncomingOpts<T = any> = UrlIncomingOptions<T> | TopicIncomingOptions
  */
 export abstract class AbstractIncoming<T> implements Incoming<T> {
 
+    readonly id?: any;
+
     readonly pattern?: string;
 
     readonly headers: HeaderMappings;
@@ -216,6 +219,7 @@ export abstract class AbstractIncoming<T> implements Incoming<T> {
 
 
     constructor(init: IncomingOpts<T>) {
+        this.id = init.id;
         this.pattern = init.pattern;
         this.headers = new HeaderMappings(init.headers);
         this.body = init.body ?? init.payload;
@@ -282,6 +286,7 @@ export class UrlIncoming<T = any> extends AbstractIncoming<T> implements Incomin
 
 export function parseUrlIncoming(init: UrlIncomingOptions<IReadable>): UrlIncoming<any> {
     const incoming = (init.body ?? init.payload) as any;
+    incoming.id = init.id;
     incoming.url = init.url;
     incoming.headers = new HeaderMappings(init.headers);
     incoming.pattern = init.pattern;
@@ -339,6 +344,7 @@ export class TopicIncoming<T = any> extends AbstractIncoming<T> implements Incom
 
 export function parseTopicIncoming(init: TopicIncomingOptions<IReadable>): TopicIncoming<any> & IReadable {
     const incoming = (init.body ?? init.payload) as any;
+    incoming.id = init.id;
     incoming.topic = init.topic;
     incoming.headers = new HeaderMappings(init.headers);
     incoming.pattern = init.pattern;
@@ -379,6 +385,7 @@ export interface UrlClientIncomingOpts<T = any, TStatus = any> extends StatusOpt
  */
 export interface TopicClientIncomingOpts<T = any, TStatus = any> extends StatusOptions<TStatus> {
     topic: string;
+    params?: any;
     pattern?: string;
     headers?: HeadersLike;
     payload?: T;

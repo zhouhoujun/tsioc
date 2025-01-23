@@ -1,6 +1,6 @@
-import { Injectable } from '@tsdi/ioc';
+import { hasProps, Injectable } from '@tsdi/ioc';
 import { Handler, Interceptor, PipeTransform } from '@tsdi/core';
-import { AbstractTransport, Packet, PacketLengthException } from '@tsdi/common/transport';
+import { AbstractTransport, Outgoing, Packet, PacketLengthException } from '@tsdi/common/transport';
 import { map, Observable, of, throwError } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 
@@ -12,21 +12,34 @@ export class RequestContextServializeInterceptor implements Interceptor<RequestC
 
         const id = input.response.id ?? input.request.id;
         const headers = input.headerAdapter.getHeaders(input.response.headers);
+        const pkg = {
+            id
+        } as Outgoing;
+        if (input.status) {
+            pkg.statusCode = input.status;
+        }
+        if (input.statusMessage) {
+            pkg.statusMessage = input.statusMessage;
+        }
+        if (input.response.error) {
+            pkg.error = input.response.error;
+        }
+        if (hasProps(headers)) {
+            pkg.headers = headers;
+        }
 
         if (input.streamAdapter.isReadable(input.body)) {
             const contentLength = input.length;
             return of({
                 id,
-                headers,
-                error: input.response.error,
+                header: hasProps(pkg) ? Buffer.from(JSON.stringify(pkg)) : null,
                 payload: input.body,
                 contentLength
             })
         }
 
-        const data = { error: input.response.error, headers, body: input.body, status: input.status, statusMessage: input.statusMessage };
-
-        return next.handle(data, context)
+        pkg.body = input.body;
+        return next.handle(pkg, context)
             .pipe(
                 map(payload => {
                     if (typeof payload === 'string') {
@@ -35,7 +48,6 @@ export class RequestContextServializeInterceptor implements Interceptor<RequestC
                     return {
                         id,
                         headers,
-                        error: input.response.error,
                         payload,
                         contentLength: payload.length
                     };

@@ -14,7 +14,7 @@ export interface OutgoingMessage<T = any> {
 
     pattern?: string;
 
-    get headers(): HeadersLike;
+    headers: HeadersLike;
 
     body?: T | null;
 
@@ -132,24 +132,24 @@ export interface Outgoing<T = any, TStatus = any> extends OutgoingMessage<T> {
 
 }
 
-// /**
-//  * Client outgoing message
-//  */
-// export interface ClientOutgoing<T = any> extends OutgoingMessage<T> {
-//     id?: number | string;
+/**
+ * Client outgoing message
+ */
+export interface ClientOutgoing<T = any> extends OutgoingMessage<T> {
+    id?: number | string;
 
-//     url?: string;
-//     method?: string;
+    url?: string;
+    method?: string;
 
-//     params?: Record<string, any>;
+    params?: Record<string, any>;
 
-//     query?: Record<string, any>;
+    query?: Record<string, any>;
 
-//     rawBody?: any;
+    rawBody?: any;
 
-//     path?: any;
+    path?: any;
 
-// }
+}
 
 
 
@@ -212,15 +212,15 @@ export interface OutgoingOpts<T = any, TStatus = any> extends StatusOptions<TSta
 
 
 
-/**
- * Outgoing packet options.
- */
-export interface ClietOutgoingOpts<T = any> {
-    pattern?: string;
-    headers?: HeadersLike;
-    payload?: T;
-    body?: T;
-}
+// /**
+//  * Outgoing packet options.
+//  */
+// export interface ClietOutgoingOpts<T = any> {
+//     pattern?: string;
+//     headers?: HeadersLike;
+//     payload?: T;
+//     body?: T;
+// }
 
 
 /**
@@ -330,13 +330,14 @@ export class UrlOutgoing<T = any, TStatus = any> extends AbstractOutgoing<T, TSt
 
 
 export function parseUrlOutgoing(init: OutgoingOpts<IReadable> & { url: string }): UrlOutgoing<any> & IWritable {
-    const incoming = (init.body ?? init.payload) as any;
-    incoming.url = init.url;
-    incoming.headers = new HeaderMappings(init.headers);
-    incoming.pattern = init.pattern;
-    incoming.status = init.status ?? init.statusCode;
-    incoming.statusMessage = init.statusMessage ?? init.statusText;
-    return incoming as (IWritable & UrlOutgoing<any>);
+    const outgoing = (init.body ?? init.payload) as any;
+    outgoing.id = init.id;
+    outgoing.url = init.url;
+    outgoing.headers = new HeaderMappings(init.headers);
+    outgoing.pattern = init.pattern;
+    outgoing.status = init.status ?? init.statusCode;
+    outgoing.statusMessage = init.statusMessage ?? init.statusText;
+    return outgoing as (IWritable & UrlOutgoing<any>);
 }
 
 @Injectable()
@@ -366,13 +367,14 @@ export class TopicOutgoing<T = any, TStatus = any> extends AbstractOutgoing<T, T
 
 
 export function parseTopicOutgoing(init: OutgoingOpts<IReadable> & { topic: string }): TopicOutgoing<any> & IWritable {
-    const incoming = (init.body ?? init.payload) as any;
-    incoming.topic = init.topic;
-    incoming.headers = new HeaderMappings(init.headers);
-    incoming.pattern = init.pattern;
-    incoming.status = init.status ?? init.statusCode;
-    incoming.statusMessage = init.statusMessage ?? init.statusText;
-    return incoming as (IWritable & TopicOutgoing<any>);
+    const outgoing = (init.body ?? init.payload) as any;
+    outgoing.id = init.id;
+    outgoing.topic = init.topic;
+    outgoing.headers = new HeaderMappings(init.headers);
+    outgoing.pattern = init.pattern;
+    outgoing.status = init.status ?? init.statusCode;
+    outgoing.statusMessage = init.statusMessage ?? init.statusText;
+    return outgoing as (IWritable & TopicOutgoing<any>);
 }
 
 @Injectable()
@@ -388,12 +390,12 @@ export class TopicOutgoingFactory implements OutgoingFactory {
 }
 
 
-// export interface UrlClientOutgoing<T = any> extends ClientOutgoing<T> {
-//     readonly url: string;
-// }
+export interface UrlClientOutgoing<T = any> extends ClientOutgoing<T> {
+    url: string;
+}
 
 
-// export interface TopicClientOutgoing<T = any> extends ClientOutgoing<T> {
-//     readonly topic: string;
-// }
+export interface TopicClientOutgoing<T = any> extends ClientOutgoing<T> {
+    topic: string;
+}
 
