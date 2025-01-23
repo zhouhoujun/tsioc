@@ -166,7 +166,7 @@ export class PayloadDeserializeInterceptor implements Interceptor<Packet, Incomi
 
                         }),
                         filter(msg => msg !== null)
-                    )
+                    ) as Observable<IncomingMessage>
 
                 // return defer(async () => {
                 //     if (!msg.body) {
