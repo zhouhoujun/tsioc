@@ -1,7 +1,7 @@
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { Handler, Interceptor, PipeTransform } from '@tsdi/core';
 import { AbstractRequest, IHeaders } from '@tsdi/common';
-import { Observable, Subscriber, defer, filter, map, mergeMap, throwError } from 'rxjs';
+import { Observable, Subscriber, filter, map, mergeMap, throwError } from 'rxjs';
 import { PacketLengthException } from '../execptions';
 import { PacketIdGenerator } from '../PacketId';
 import { IDuplex } from '../stream';
@@ -9,7 +9,7 @@ import { IncomingMessage } from '../Incoming';
 import { OutgoingMessage } from '../Outgoing';
 import { TransportContext } from '../context';
 import { AbstractTransport } from '../transports';
-import { isBuffer, PipeSource } from '../StreamAdapter';
+import { isBuffer } from '../StreamAdapter';
 import { Packet } from '../socket';
 
 
@@ -65,14 +65,14 @@ export class PacketDeserializeInterceptor implements Interceptor<Packet, Incomin
             cache.payload.write(data);
         }
 
-        if (cache.contentLength == null) {
-            const delim = Buffer.from(options.delimiter || '#');
+        if (cache.contentLength == null) {            
+            const delimiter = options.delimiter ?? Buffer.from('#');
             const countLen = 4;
-            const i = data.indexOf(delim);
+            const i = data.indexOf(delimiter);
             if (i !== -1) {
-                const idx = cache.length - bLen + i + delim.length;
+                const idx = cache.length - bLen + i + delimiter.length;
                 const buffer = cache.payload.read(idx) as Buffer;
-                const rawContentLength = buffer.readUIntBE(idx - countLen - delim.length, idx - delim.length);
+                const rawContentLength = buffer.readUIntBE(idx - countLen - delimiter.length, idx - delimiter.length);
                 if (isNaN(rawContentLength) || (options.maxSize && rawContentLength > options.maxSize)) {
                     cache.contentLength = null;
                     cache.length = 0;
@@ -151,7 +151,7 @@ export class PayloadDeserializeInterceptor implements Interceptor<Packet, Incomi
                 if (!msg.body) {
                     msg.body = streamAdapter.createPassThrough();
                 }
-                return next.handle({ id, headers: msg.headers as IHeaders, ...input }, context)
+                return next.handle({ id, headers: (msg.headers ?? {}) as IHeaders, ...input }, context)
                     .pipe(
                         mergeMap(async buff => {
                             await streamAdapter.pipeTo(buff as any, msg.body!);
@@ -271,8 +271,7 @@ export class PacketSerializeInterceptor implements Interceptor<OutgoingMessage, 
                 const { streamAdapter, options } = context.transport as AbstractTransport;
                 const countLen = 4;
                 let buffLen: Buffer;
-                const delimiterStr = options.delimiter || '#';
-                const delimiter = Buffer.from(delimiterStr);
+                const delimiter = options.delimiter ?? Buffer.from('#');
                 const delimiterLen = Buffer.byteLength(delimiter);
                 let data = msg.payload;
                 if (streamAdapter.isReadable(data)) {
@@ -306,6 +305,7 @@ export class PacketSerializeInterceptor implements Interceptor<OutgoingMessage, 
                     //         }
                     //     }
                     // }));
+                    
                 } else {
                     if (isString(data)) {
                         data = Buffer.from(data);

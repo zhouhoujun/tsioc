@@ -30,8 +30,10 @@ import { TCP_MIDDLEWARES, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTO
 
 // const defaultMaxSize = 65515; //65535 - 20;
 // const defaultMaxSize = 1048576; // 1024 * 1024;
-const defaultMaxSize = 5242880; //1024 * 1024 * 5;
+// const defaultMaxSize = 5242880; //1024 * 1024 * 5;
 // const defaultMaxSize = 10485760; //1024 * 1024 * 10;
+
+const delimiter = Buffer.from('#');
 
 @Configuration()
 export class TcpConfiguration {
@@ -120,6 +122,7 @@ export class TcpConfiguration {
                     ]
                 },
                 transportOptions: {
+                    delimiter,
                     serializerConfig: {
                         interceptors: [
                             PacketVaildateInterceptor,
@@ -193,6 +196,7 @@ export class TcpConfiguration {
                     ]
                 },
                 transportOptions: {
+                    delimiter,
                     serializerConfig: {
                         interceptors: [
                             RequestContextVaildateInterceptor,

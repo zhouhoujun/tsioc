@@ -12,8 +12,7 @@ import { Packet } from './socket';
 
 
 export interface TransportOptions {
-    delimiter?: string;
-    headDelimiter?: string;
+    delimiter?: Buffer;
     maxSize?: number;
     /**
      * packet id buffer length
