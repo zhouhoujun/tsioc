@@ -53,26 +53,32 @@ export class PacketDeserializeInterceptor implements Interceptor<Packet, Incomin
         const transport = context.transport as AbstractTransport;
         const options = transport.options;
 
-        const bLen = Buffer.byteLength(data);
         if (!isNumber(cache.length)) {
             cache.length = 0;
         }
-        cache.length += bLen;
         if (!cache.payload) {
             cache.payload = transport.streamAdapter.createPassThrough();
         }
-        if (!cache.contentLength || cache.length <= cache.contentLength) {
-            cache.payload.write(data);
-        }
 
-        if (cache.contentLength == null) {            
+        if (cache.contentLength == null) {
             const delimiter = options.delimiter ?? Buffer.from('#');
             const countLen = 4;
             const i = data.indexOf(delimiter);
             if (i !== -1) {
-                const idx = cache.length - bLen + i + delimiter.length;
-                const buffer = cache.payload.read(idx) as Buffer;
-                const rawContentLength = buffer.readUIntBE(idx - countLen - delimiter.length, idx - delimiter.length);
+                let buffer: Buffer;
+                if (i < countLen) {
+                    const idx = cache.length + i;
+                    cache.payload.write(data.subarray(0, i));
+                    data = data.subarray(i + 1);
+                    buffer = cache.payload.read(idx);
+                    if (buffer.length > countLen) {
+                        buffer = buffer.subarray(buffer.length - countLen);
+                    }
+                } else {
+                    buffer = data.subarray(i - countLen, i);
+                    data = data.subarray(i + 1);
+                }
+                const rawContentLength = buffer.readUIntBE(0, countLen);
                 if (isNaN(rawContentLength) || (options.maxSize && rawContentLength > options.maxSize)) {
                     cache.contentLength = null;
                     cache.length = 0;
@@ -85,18 +91,21 @@ export class PacketDeserializeInterceptor implements Interceptor<Packet, Incomin
                         throw new PacketLengthException(`No packet length`);
                     }
                 } else {
-                    cache.length -= idx;
+                    cache.length = 0;
                     cache.contentLength = rawContentLength;
                 }
             }
         }
 
         if (cache.contentLength !== null && cache.contentLength !== undefined) {
-            if (cache.length === cache.contentLength) {
+            const total = cache.length + data.length;
+            if (total === cache.contentLength) {
+                cache.length = total;
+                cache.payload.write(data);
                 this.handleMessage(channel, cache, subscriber, true);
                 subscriber.complete();
-            } else if (cache.length > cache.contentLength) {
-                const idx = cache.length - cache.contentLength - 1;
+            } else if (total > cache.contentLength) {
+                const idx = data.length - (total - cache.contentLength);
                 cache.payload.write(data.subarray(0, idx));
                 const rest = data.subarray(idx);
                 this.handleMessage(channel, cache, subscriber, !rest.length);
@@ -104,9 +113,13 @@ export class PacketDeserializeInterceptor implements Interceptor<Packet, Incomin
                     this.handleData(channel, cache, rest, subscriber, context);
                 }
             } else {
+                cache.payload.write(data);
+                cache.length = total;
                 subscriber.complete();
             }
         } else {
+            cache.payload.write(data);
+            cache.length += data.length;
             subscriber.complete();
         }
     }
@@ -154,12 +167,12 @@ export class PayloadDeserializeInterceptor implements Interceptor<Packet, Incomi
                 return next.handle({ id, headers: (msg.headers ?? {}) as IHeaders, ...input }, context)
                     .pipe(
                         mergeMap(async buff => {
-                            await streamAdapter.pipeTo(buff as any, msg.body!);
-                            const contentLength = headerAdapter?.getContentLength(msg.headers);
+                            streamAdapter.pipeTo(buff as any, msg.body!);
+                            const contentLength = headerAdapter?.getContentLength(msg.headers) || 0;
                             msg.contentLength += input.contentLength || 0;
-                            if (contentLength === msg.contentLength) {
+                            if ((contentLength + idLen) === msg.contentLength) {
                                 this.msgs.delete(id);
-                                msg.body!.end();
+                                // msg.body!.end();
                                 return msg;
                             }
                             return null;
@@ -305,7 +318,7 @@ export class PacketSerializeInterceptor implements Interceptor<OutgoingMessage, 
                     //         }
                     //     }
                     // }));
-                    
+
                 } else {
                     if (isString(data)) {
                         data = Buffer.from(data);

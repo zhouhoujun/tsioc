@@ -338,7 +338,7 @@ export interface IStream extends IEventEmitter {
 
 export interface IReadable extends IEventEmitter {
     readable: boolean;
-    read(size?: number): any;
+    read(size?: number): Buffer;
     setEncoding(encoding: string): this;
     pause(): this;
     resume(): this;

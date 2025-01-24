@@ -57,10 +57,10 @@ export class DefaultDeserializerFactory implements DeserializerFactory {
                         const buf = await toBuffer(packet);
                         jsonSrc = buf.toString()
                     }
-                    
+
                     if (jsonSrc) {
-                        jsonSrc = jsonSrc.replace(XSSI_PREFIX, '');
                         try {
+                            jsonSrc = jsonSrc.replace(XSSI_PREFIX, '');
                             packet = JSON.parse(jsonSrc)
                         } catch (err) {
                             throw new InvalidJsonException(err, jsonSrc);
