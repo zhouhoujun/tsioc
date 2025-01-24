@@ -23,21 +23,13 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         provideClient([
             {
                 transport: 'ws',
-                // clientOpts: {
-                //     transportOpts: {
-                //         headDelimiter: '|'
-                //     }
-                // }
             },
             {
                 transport: 'tcp',
                 clientOpts: {
                     connectOpts: {
                         port: 2000
-                    },
-                    // transportOpts: {
-                    //     headDelimiter: '$'
-                    // }
+                    }
                 }
             }
         ]),
@@ -48,9 +40,6 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                     listenOpts: {
                         port: 2000
                     },
-                    // transportOpts: {
-                    //     headDelimiter: '$'
-                    // },
                     interceptors: [
                         BigFileInterceptor,
                         ContentInterceptor,
@@ -63,9 +52,6 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 transport: 'ws',
                 microservice: true,
                 serverOpts: {
-                    // transportOpts: {
-                    //     headDelimiter: '|'
-                    // },
                     interceptors: [
                         BigFileInterceptor,
                         ContentInterceptor,
@@ -75,7 +61,6 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 }
             }
         ]),
-        // PackageBufferCodingsModule
     ],
     declarations: [
         DeviceController
@@ -103,7 +88,7 @@ describe('Ws hybrid Tcp Server & Ws Client & TcpClient', () => {
 
 
     it('fetch json', async () => {
-        const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
+        const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET', responseType: 'json' })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
@@ -115,7 +100,7 @@ describe('Ws hybrid Tcp Server & Ws Client & TcpClient', () => {
     })
 
     it('ws client fetch json', async () => {
-        const res: any = await lastValueFrom(wsClient.send('content/510100_full.json')
+        const res: any = await lastValueFrom(wsClient.send('content/510100_full.json', { responseType: 'json' })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);
