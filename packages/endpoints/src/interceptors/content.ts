@@ -1,6 +1,6 @@
 import { Abstract, Injectable } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
-import { GET, HEAD, MESSAGE } from '@tsdi/common';
+import { GET, HEAD } from '@tsdi/common';
 import { NotFoundExecption } from '@tsdi/common/transport';
 import { Observable, from, mergeMap, of, throwError } from 'rxjs';
 import { Middleware } from '../middleware/middleware';
@@ -19,7 +19,7 @@ export class ContentInterceptor implements Middleware<RequestContext>, Intercept
     constructor() { }
 
     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
-        if (!(!ctx.method || ctx.method === HEAD || ctx.method === GET || ctx.method === MESSAGE || ctx.method === '*')
+        if (!(!ctx.method || ctx.method === HEAD || ctx.method === GET  || ctx.method === '*')
             || !ctx.originalUrl) {
             return next();
         }
@@ -43,7 +43,7 @@ export class ContentInterceptor implements Middleware<RequestContext>, Intercept
     }
 
     intercept(input: RequestContext, next: Handler<RequestContext, any>): Observable<any> {
-        if (!(!input.method || input.method === HEAD || input.method === GET || input.method === MESSAGE || input.method === '*')
+        if (!(!input.method || input.method === HEAD || input.method === GET || input.method === '*')
             || !input.originalUrl) {
             return next.handle(input);
         }
