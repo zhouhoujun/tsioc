@@ -106,9 +106,9 @@ export abstract class AbstractRequest<T, TOptions extends RequestOptions = Reque
     abstract get context(): InvocationContext;
 
     /**
-     * force parse response type when custom set responseType.
+     * force parse response type as Json or not.
      */
-    abstract get forceType(): boolean;
+    abstract get forceJson(): boolean;
     /**
      * The expected response type of the server.
      *
@@ -228,7 +228,7 @@ export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = Reques
     readonly observe: 'body' | 'events' | 'response' | 'emit' | 'observe';
     readonly withCredentials: boolean | undefined;
     readonly payload: T | null;
-    readonly forceType: boolean;
+    readonly forceJson: boolean;
     /**
      * set request timeout times (ms).
      */
@@ -251,7 +251,7 @@ export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = Reques
         this.params = new RequestParams(init);
         this.context = init.context;
         this.responseType = init.responseType ?? 'json';
-        this.forceType = !!init.responseType;
+        this.forceJson = init.responseType === 'json';
         this.observe = init.observe ?? 'body';
         this.withCredentials = !!init.withCredentials;
         this.timeout = init.timeout;
@@ -303,7 +303,7 @@ export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = Reques
                 .reduce((params, param) => params.set(param, update.setParams![param]), params)
         }
 
-        const responseType = update.responseType ?? (this.forceType? this.responseType : undefined);
+        const responseType = update.responseType ?? (this.forceJson? this.responseType : undefined);
         // Carefully handle the boolean options to differentiate between
         // `false` and `undefined` in the update args.
         const withCredentials =

@@ -94,7 +94,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
 
     readonly observe: 'body' | 'events' | 'response' | 'observe' | 'emit';
 
-    readonly forceType: boolean;
+    readonly forceJson: boolean;
     /**
      * The expected response type of the server.
      *
@@ -198,29 +198,29 @@ export class HttpRequest<T> implements UrlRequest<T> {
 
         this.observe = options.observe || 'body';
         this.context = options.context!;
-        this.forceType = !!options?.responseType;
+        this.forceJson = options.responseType === 'json';
         // If options have been passed, interpret them.
-        if (options) {
-            // Normalize reportProgress and withCredentials.
-            this.reportProgress = !!options.reportProgress;
-            this.withCredentials = !!options.withCredentials;
+        // if (options) {
+        // Normalize reportProgress and withCredentials.
+        this.reportProgress = !!options.reportProgress;
+        this.withCredentials = !!options.withCredentials;
 
-            // Override default response type of 'json' if one is provided.
-            if (options.responseType) {
-                this.responseType = options.responseType
-            }
-
-            // Override headers if they're provided.
-            if (options.headers) {
-                this.headers = new HeaderMappings(options.headers)
-            }
-
-            if (options.params) {
-                this.params = options.params
-            }
-
-            this.timeout = options.timeout;
+        // Override default response type of 'json' if one is provided.
+        if (options.responseType) {
+            this.responseType = options.responseType
         }
+
+        // Override headers if they're provided.
+        if (options.headers) {
+            this.headers = new HeaderMappings(options.headers)
+        }
+
+        if (options.params) {
+            this.params = options.params
+        }
+
+        this.timeout = options.timeout;
+        // }
 
         // If no headers have been passed in, construct a new HeadersLike instance.
         if (!this.headers) {
@@ -390,7 +390,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
         setHeaders?: { [name: string]: string | string[] },
         setParams?: { [param: string]: string };
     }): HttpRequestInit {
-        const responseType = update.responseType ?? (this.forceType ? this.responseType : undefined);
+        const responseType = update.responseType ?? (this.forceJson ? this.responseType : undefined);
         // Carefully handle the boolean options to differentiate between
         // `false` and `undefined` in the update args.
         const withCredentials =
