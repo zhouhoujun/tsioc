@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { Handler, Filter } from '@tsdi/core';
-import { mergeMap, Observable } from 'rxjs';
+import { lastValueFrom, mergeMap, Observable } from 'rxjs';
 import { RequestContext } from './RequestContext';
 
 
@@ -12,7 +12,7 @@ export class FinalizeFilter extends Filter {
         return next.handle(request, context)
             .pipe(
                 mergeMap(res => {
-                    return request.transport.send(request);
+                    return lastValueFrom(request.transport.send(request));
                 })
             )
     }
