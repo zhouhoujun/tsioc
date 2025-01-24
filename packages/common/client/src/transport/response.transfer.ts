@@ -178,7 +178,7 @@ const backenFn = (input: ClientIncoming<any>, context: TransportContext) => {
         let responseType = req.responseType;
 
         const contentType = headerAdapter?.getContentType(input.headers);
-        if (contentType && responseType === 'json') {
+        if (contentType && !req.forceType && responseType === 'json') {
             const mimeAdapter = req.context.get(MimeAdapter);
             if (mimeAdapter && !mimeAdapter.isJson(contentType)) {
                 if (mimeAdapter.isXml(contentType) || mimeAdapter.isText(contentType)) {

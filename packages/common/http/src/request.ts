@@ -94,6 +94,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
 
     readonly observe: 'body' | 'events' | 'response' | 'observe' | 'emit';
 
+    readonly forceType: boolean;
     /**
      * The expected response type of the server.
      *
@@ -197,6 +198,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
 
         this.observe = options.observe || 'body';
         this.context = options.context!;
+        this.forceType = !!options?.responseType;
         // If options have been passed, interpret them.
         if (options) {
             // Normalize reportProgress and withCredentials.
@@ -388,14 +390,14 @@ export class HttpRequest<T> implements UrlRequest<T> {
         setHeaders?: { [name: string]: string | string[] },
         setParams?: { [param: string]: string };
     }): HttpRequestInit {
-        const responseType = update.responseType || this.responseType;
-
+        const responseType = update.responseType ?? (this.forceType ? this.responseType : undefined);
         // Carefully handle the boolean options to differentiate between
         // `false` and `undefined` in the update args.
         const withCredentials =
             (update.withCredentials !== undefined) ? update.withCredentials : this.withCredentials;
         const reportProgress =
             (update.reportProgress !== undefined) ? update.reportProgress : this.reportProgress;
+
 
         const context = update.context ?? this.context!;
         // Headers and params may be appended to if `setHeaders` or

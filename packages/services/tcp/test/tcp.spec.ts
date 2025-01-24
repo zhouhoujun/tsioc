@@ -170,7 +170,7 @@ describe('TCP Server & TCP Client', () => {
 
 
     it('fetch json', async () => {
-        const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
+        const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET', responseType: 'json' })
             .pipe(
                 catchError((err, ct) => {
                    //  ctx.getLogger().error(err);

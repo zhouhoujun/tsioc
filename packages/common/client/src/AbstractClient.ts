@@ -394,7 +394,7 @@ export abstract class AbstractClient<
                 params,
                 payload: options.payload ?? null,
                 // By default, JSON is assumed to be returned for all calls.
-                responseType: options.responseType || 'json'
+                responseType: options.responseType
             })
         }
         return req;

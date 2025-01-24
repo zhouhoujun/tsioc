@@ -104,6 +104,11 @@ export abstract class AbstractRequest<T, TOptions extends RequestOptions = Reque
     abstract get headers(): HeaderMappings;
     abstract get params(): RequestParams;
     abstract get context(): InvocationContext;
+
+    /**
+     * force parse response type when custom set responseType.
+     */
+    abstract get forceType(): boolean;
     /**
      * The expected response type of the server.
      *
@@ -223,6 +228,7 @@ export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = Reques
     readonly observe: 'body' | 'events' | 'response' | 'emit' | 'observe';
     readonly withCredentials: boolean | undefined;
     readonly payload: T | null;
+    readonly forceType: boolean;
     /**
      * set request timeout times (ms).
      */
@@ -245,6 +251,7 @@ export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = Reques
         this.params = new RequestParams(init);
         this.context = init.context;
         this.responseType = init.responseType ?? 'json';
+        this.forceType = !!init.responseType;
         this.observe = init.observe ?? 'body';
         this.withCredentials = !!init.withCredentials;
         this.timeout = init.timeout;
@@ -296,6 +303,7 @@ export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = Reques
                 .reduce((params, param) => params.set(param, update.setParams![param]), params)
         }
 
+        const responseType = update.responseType ?? (this.forceType? this.responseType : undefined);
         // Carefully handle the boolean options to differentiate between
         // `false` and `undefined` in the update args.
         const withCredentials =
@@ -303,7 +311,8 @@ export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = Reques
         const timeout = update.timeout ?? this.timeout;
         const id = this.id;
         const context = update.context ?? this.context;
-        return { id, headers, params, payload, withCredentials, context, timeout } as RequestInitOpts<any, TOptions>;
+        const observe = update.observe ?? this.observe;
+        return { id, headers, params, payload, withCredentials, context, timeout, responseType, observe } as RequestInitOpts<any, TOptions>;
     }
 
 }
