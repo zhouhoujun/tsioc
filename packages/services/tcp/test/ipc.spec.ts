@@ -106,7 +106,10 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
                 clientOpts: {
                     connectOpts: {
                         path: ipcpath
-                    }
+                    },
+                    transportOptions: {
+                        maxSize: 1024 * 1024 * 20
+                    },
                 }
             }),
             MicroServRouterModule.forRoot('tcp'),
@@ -117,6 +120,9 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
                     // timeout: 1000,
                     listenOpts: {
                         path: ipcpath
+                    },
+                    transportOptions: {
+                        maxSize: 1024 * 1024 * 20
                     },
                     interceptors: [
                         BigFileInterceptor,
@@ -155,7 +161,7 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
 
 
         it('fetch json', async () => {
-            const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
+            const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET', responseType: 'json' })
                 .pipe(
                     catchError((err, ct) => {
                         // ctx.getLogger().error(err);
@@ -177,7 +183,7 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
             // expect(res).toBeDefined();
             // expect(isArray(res.features)).toBeTruthy();
             expect(res instanceof ErrorResponse).toBeDefined();
-            expect(res.statusMessage).toContain('Packet length 23.74mb great than max size 5mb');
+            expect(res.statusMessage).toContain('Packet length 23.74mb great than max size');
         })
 
         it('query all', async () => {

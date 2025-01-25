@@ -34,7 +34,7 @@ export class NodeStreamAdapter extends StreamAdapter {
                     isFunction((source as any).destroy) && (source as any).destroy();
                 })
         } else {
-            await pmPipeline(source as PipelineSource<any>, destination, options)
+            await pmPipeline(source as PipelineSource<any>, destination, options as any)
                 .finally(() => {
                     (source as Readable).removeAllListeners?.();
                     isFunction((source as any).destroy) && (source as any).destroy();
