@@ -1,0 +1,215 @@
+import { InjectFlags } from '@tsdi/ioc';
+import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
+import {
+    DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
+    FileAdapter, MimeAdapter, PacketDeserializeInterceptor, PacketifyInterceptor, PacketSerializeInterceptor,
+    PacketVaildateInterceptor, PayloadDeserializeInterceptor, Redirector, SerializerFactory, StatusAdapter,
+    StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory, UrlClientIncomingFactory, UrlOutgoingFactory
+} from '@tsdi/common/transport';
+import {
+    CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
+    RequestServializeInterceptor, SocketClientTransport
+} from '@tsdi/common/client';
+import {
+    AcceptsPriority,  DefaultServerTransferFactory,
+    ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
+    RequestContextServializeInterceptor, RequestContextVaildateInterceptor, SERVER_MODULES,
+    ServerTransferFactory, ServiceModuleOpts,  SocketServerTransport
+} from '@tsdi/endpoints';
+import { RedisClient } from './client/client';
+import { REDIS_CLIENT_FILTERS, REDIS_CLIENT_INTERCEPTORS } from './client/options';
+import { RedisHandler } from './client/handler';
+import { RedisServer } from './server/server';
+import { REDIS_SERV_FILTERS, REDIS_SERV_GUARDS, REDIS_SERV_INTERCEPTORS } from './server/options';
+import { RedisRequestHandler } from './server/handler';
+import { DefaultResponseFactory, HeaderAdapter, PatternFormatter, ResponseFactory } from '@tsdi/common';
+
+
+
+
+// const defaultMaxSize = 65515; //1024 * 64 - 20;
+const defaultMaxSize = 1048576; //1024 * 1024;
+// const defaultMaxSize = 5242880; //1024 * 1024 * 5;
+// const defaultMaxSize = 10485760; //1024 * 1024 * 10;
+
+
+
+const delimiter = Buffer.from('#');
+
+@Configuration()
+export class RedisConfiguration {
+
+    @Bean(CLIENT_MODULES, { static: true, multi: true })
+    microClient(): ClientModuleOpts {
+        return this.getClientOptions();
+    }
+
+
+    @Bean(SERVER_MODULES, { static: true, multi: true })
+    microServ(): ServiceModuleOpts {
+        return this.getServOptions();
+    }
+
+
+    private getClientOptions(): ClientModuleOpts {
+        return {
+            transport: 'redis',
+            microservice: true,
+            asDefault: true,
+            clientType: RedisClient,
+            defaultOpts: {
+                handlerType: RedisHandler,
+                url: 'redis://localhost:6379',
+                interceptorsToken: REDIS_CLIENT_INTERCEPTORS,
+                filtersToken: REDIS_CLIENT_FILTERS,
+                transportFactory: {
+                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory, formatter: PatternFormatter | null,
+                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
+                        incomingFactory: TopicClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
+                        redirector: Redirector | null) => {
+                        return {
+                            create: (injector, socket, options) => {
+                                const transportOptions = options.transportOptions ?? {};
+                                return new SocketClientTransport(
+                                    injector,
+                                    socket,
+                                    'redis',
+                                    transportOptions,
+                                    serializerFactory.create(injector, transportOptions.serializerConfig),
+                                    deserializerFactory.create(injector, transportOptions.deserializerConfig),
+                                    formatter,
+                                    statusAdapter,
+                                    headerAdapter,
+                                    streamAdapter,
+                                    incomingFactory,
+                                    transferFactory.create(injector, transportOptions.transferConfig),
+                                    responseFactory,
+                                    redirector,
+                                    options
+                                )
+                            },
+                        }
+                    },
+                    deps: [
+                        DefaultSerializerFactory,
+                        DefaultDeserializerFactory,
+                        [PatternFormatter, InjectFlags.Optional],
+                        [StatusAdapter, InjectFlags.Optional],
+                        [HeaderAdapter, InjectFlags.Optional],
+                        StreamAdapter,
+                        TopicClientIncomingFactory,
+                        DefaultClientTransferFactory,
+                        DefaultResponseFactory,
+                        [Redirector, InjectFlags.Optional]
+                    ]
+                },
+                transportOptions: {
+                    delimiter,
+                    serializerConfig: {
+                        interceptors: [
+                            PacketVaildateInterceptor,
+                            PacketSerializeInterceptor,
+                            RequestServializeInterceptor
+                        ]
+                    },
+                    deserializerConfig: {
+                        interceptors: [
+                            PacketifyInterceptor,
+                            DeatchPacketIdInterceptor,
+                            PacketDeserializeInterceptor,
+                            PayloadDeserializeInterceptor
+                        ]
+                    }
+                },
+            }
+        }
+    }
+
+    private getServOptions(): ServiceModuleOpts {
+        return {
+            transport: 'ws',
+            microservice: true,
+            asDefault: true,
+            serverType: RedisServer,
+            defaultOpts: {
+                handlerType: RedisRequestHandler,
+                transportFactory: {
+                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory, formatter: PatternFormatter | null,
+                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
+                        fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
+                        incomingFactory: TopicClientIncomingFactory, outgoingFactory: TopicOutgoingFactory, transferFactory: ServerTransferFactory) => {
+                        return {
+                            create: (injector, socket, options) => {
+                                const transportOptions = options.transportOptions ?? {};
+                                return new SocketServerTransport(
+                                    injector,
+                                    socket,
+                                    'redis',
+                                    transportOptions,
+                                    serializerFactory.create(injector, transportOptions.serializerConfig),
+                                    deserializerFactory.create(injector, transportOptions.deserializerConfig),
+                                    formatter,
+                                    statusAdapter,
+                                    headerAdapter,
+                                    streamAdapter,
+                                    fileAdapter,
+                                    mimeAdapter,
+                                    acceptsPriority,
+                                    incomingFactory,
+                                    outgoingFactory,
+                                    transferFactory.create(injector, transportOptions.transferConfig),
+                                    options
+                                )
+                            },
+                        }
+                    },
+                    deps: [
+                        DefaultSerializerFactory,
+                        DefaultDeserializerFactory,
+                        [PatternFormatter, InjectFlags.Optional],
+                        [StatusAdapter, InjectFlags.Optional],
+                        [HeaderAdapter, InjectFlags.Optional],
+                        StreamAdapter,
+                        FileAdapter,
+                        [MimeAdapter, InjectFlags.Optional],
+                        [AcceptsPriority, InjectFlags.Optional],
+                        TopicClientIncomingFactory,
+                        TopicOutgoingFactory,
+                        DefaultServerTransferFactory
+                    ]
+                },
+                content: {
+                    root: 'public',
+                    prefix: 'content'
+                },
+                transportOptions: {
+                    delimiter,
+                    serializerConfig: {
+                        interceptors: [
+                            RequestContextVaildateInterceptor,
+                            PacketSerializeInterceptor,
+                            RequestContextServializeInterceptor,
+                        ]
+                    },
+                    deserializerConfig: {
+                        interceptors: [
+                            PacketifyInterceptor,
+                            PacketDeserializeInterceptor,
+                            PayloadDeserializeInterceptor
+                        ]
+                    }
+                },
+                detailError: false,
+                interceptorsToken: REDIS_SERV_INTERCEPTORS,
+                filtersToken: REDIS_SERV_FILTERS,
+                guardsToken: REDIS_SERV_GUARDS,
+                filters: [
+                    LoggerInterceptor,
+                    ExecptionFinalizeFilter,
+                    ExecptionHandlerFilter,
+                    FinalizeFilter
+                ]
+            }
+        }
+    }
+}

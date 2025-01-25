@@ -30,8 +30,14 @@ export class RedisClient extends AbstractClient<TopicRequestOptions, RedisReques
         if (this.subscriber) return;
 
         const opts = this.getOptions();
+
         const retryStrategy = opts.connectOpts?.retryStrategy ?? this.createRetryStrategy(opts);
-        this.subscriber = new Redis({
+
+        this.subscriber = opts.url ? new Redis(opts.url, {
+            retryStrategy,
+            ...opts.connectOpts,
+            lazyConnect: true
+        }) : new Redis({
             host: LOCALHOST,
             port: 6379,
             retryStrategy,
@@ -40,7 +46,11 @@ export class RedisClient extends AbstractClient<TopicRequestOptions, RedisReques
         });
         this.subscriber.on(ev.ERROR, (err) => this.logger.error(err));
 
-        this.publisher = new Redis({
+        this.publisher = opts.url ? new Redis(opts.url, {
+            retryStrategy,
+            ...opts.connectOpts,
+            lazyConnect: true
+        }) : new Redis({
             host: LOCALHOST,
             port: 6379,
             retryStrategy,
