@@ -1,11 +1,23 @@
+import { InjectFlags } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
-import { LOCALHOST, Message, Packet, isResponseEvent } from '@tsdi/common';
-import { CustomCodingsAdapter } from '@tsdi/common/codings';
-import { AbstractClientIncoming, AbstractIncoming } from '@tsdi/common/transport';
-import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
+import { DefaultResponseFactory, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
+    DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
+    FileAdapter, MimeAdapter, PacketDeserializeInterceptor, PacketifyInterceptor, PacketSerializeInterceptor,
+    PacketVaildateInterceptor, PayloadDeserializeInterceptor, Redirector, SerializerFactory, StatusAdapter,
+    StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory
+} from '@tsdi/common/transport';
+import {
+    CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
+    RequestServializeInterceptor, SocketClientTransport
+} from '@tsdi/common/client';
+import {
+    AcceptsPriority,
+    DefaultServerTransferFactory,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, PatternRequestContext,
-    RequestContext, SERVER_MODULES, ServiceModuleOpts
+    RequestContext, RequestContextServializeInterceptor, RequestContextVaildateInterceptor,
+    SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
+    SocketServerTransport
 } from '@tsdi/endpoints';
 import { MqttClient } from './client/client';
 import { MQTT_CLIENT_FILTERS, MQTT_CLIENT_INTERCEPTORS } from './client/options';
@@ -19,7 +31,8 @@ import { MqttClientIncoming, MqttClientIncomingFactory } from './client/transpor
 import { MqttIncoming, MqttIncomingFactory, MqttOutgoing, MqttOutgoingFactory } from './server/transport';
 
 
-const defaultMaxSize = 1048576; // 1024 * 1024;
+
+const sizeLimit = 1048576; // 1024 * 1024;
 // const defaultMaxSize = 524288; //1024 * 512;
 
 
@@ -50,15 +63,65 @@ export class MqttConfiguration {
                 url: 'mqtt://localhost:1883',
                 interceptorsToken: MQTT_CLIENT_INTERCEPTORS,
                 filtersToken: MQTT_CLIENT_FILTERS,
-                messageReader: MqttMessageReader,
-                messageWriter: MqttMessageWriter,
-                messageFactory: MqttMessageFactory,
-                incomingFactory: MqttClientIncomingFactory,
-                transportOpts: {
-                    delimiter: '#',
-                    maxSize: defaultMaxSize,
-                    encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof MqttMessage, [[MqttRequest, Packet]]) },
-                    decodingsAdapter: { useValue: new CustomCodingsAdapter(isResponseEvent, [[MqttClientIncoming, AbstractClientIncoming], [MqttMessage, Message]]) },
+                transportFactory: {
+                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory, formatter: PatternFormatter | null,
+                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
+                        incomingFactory: TopicClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
+                        redirector: Redirector | null) => {
+                        return {
+                            create: (injector, socket, options) => {
+                                const transportOptions = options.transportOptions ?? {};
+                                return new SocketClientTransport(
+                                    injector,
+                                    socket,
+                                    'mqtt',
+                                    transportOptions,
+                                    serializerFactory.create(injector, transportOptions.serializerConfig),
+                                    deserializerFactory.create(injector, transportOptions.deserializerConfig),
+                                    formatter,
+                                    statusAdapter,
+                                    headerAdapter,
+                                    streamAdapter,
+                                    incomingFactory,
+                                    transferFactory.create(injector, transportOptions.transferConfig),
+                                    responseFactory,
+                                    redirector,
+                                    options
+                                )
+                            },
+                        }
+                    },
+                    deps: [
+                        DefaultSerializerFactory,
+                        DefaultDeserializerFactory,
+                        [PatternFormatter, InjectFlags.Optional],
+                        [StatusAdapter, InjectFlags.Optional],
+                        [HeaderAdapter, InjectFlags.Optional],
+                        StreamAdapter,
+                        TopicClientIncomingFactory,
+                        DefaultClientTransferFactory,
+                        DefaultResponseFactory,
+                        [Redirector, InjectFlags.Optional]
+                    ]
+                },
+                transportOptions: {
+                    // delimiter: '#',
+                    limit: sizeLimit,
+                    serializerConfig: {
+                        interceptors: [
+                            PacketVaildateInterceptor,
+                            PacketSerializeInterceptor,
+                            RequestServializeInterceptor
+                        ]
+                    },
+                    deserializerConfig: {
+                        interceptors: [
+                            PacketifyInterceptor,
+                            DeatchPacketIdInterceptor,
+                            PacketDeserializeInterceptor,
+                            PayloadDeserializeInterceptor
+                        ]
+                    }
                 }
             }
         }
@@ -72,12 +135,69 @@ export class MqttConfiguration {
             serverType: MqttServer,
             defaultOpts: {
                 handlerType: MqttRequestHandler,
-                transportOpts: {
-                    delimiter: '#',
-                    defaultMethod: '*',
-                    maxSize: defaultMaxSize,
-                    decodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof RequestContext, [[MqttIncoming, AbstractIncoming], [MqttMessage, Message]]) },
-                    encodingsAdapter: { useValue: new CustomCodingsAdapter(data => data instanceof MqttMessage, [[PatternRequestContext, RequestContext], [MqttOutgoing, Packet]]) },
+                transportFactory: {
+                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory, formatter: PatternFormatter | null,
+                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
+                        fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
+                        incomingFactory: TopicClientIncomingFactory, outgoingFactory: TopicOutgoingFactory, transferFactory: ServerTransferFactory) => {
+                        return {
+                            create: (injector, socket, options) => {
+                                const transportOptions = options.transportOptions ?? {};
+                                return new SocketServerTransport(
+                                    injector,
+                                    socket,
+                                    'mqtt',
+                                    transportOptions,
+                                    serializerFactory.create(injector, transportOptions.serializerConfig),
+                                    deserializerFactory.create(injector, transportOptions.deserializerConfig),
+                                    formatter,
+                                    statusAdapter,
+                                    headerAdapter,
+                                    streamAdapter,
+                                    fileAdapter,
+                                    mimeAdapter,
+                                    acceptsPriority,
+                                    incomingFactory,
+                                    outgoingFactory,
+                                    transferFactory.create(injector, transportOptions.transferConfig),
+                                    options
+                                )
+                            },
+                        }
+                    },
+                    deps: [
+                        DefaultSerializerFactory,
+                        DefaultDeserializerFactory,
+                        [PatternFormatter, InjectFlags.Optional],
+                        [StatusAdapter, InjectFlags.Optional],
+                        [HeaderAdapter, InjectFlags.Optional],
+                        StreamAdapter,
+                        FileAdapter,
+                        [MimeAdapter, InjectFlags.Optional],
+                        [AcceptsPriority, InjectFlags.Optional],
+                        TopicClientIncomingFactory,
+                        TopicOutgoingFactory,
+                        DefaultServerTransferFactory
+                    ]
+                },
+                transportOptions: {
+                    // delimiter: '#',
+                    // defaultMethod: '*',
+                    limit: sizeLimit,
+                    serializerConfig: {
+                        interceptors: [
+                            RequestContextVaildateInterceptor,
+                            PacketSerializeInterceptor,
+                            RequestContextServializeInterceptor,
+                        ]
+                    },
+                    deserializerConfig: {
+                        interceptors: [
+                            PacketifyInterceptor,
+                            PacketDeserializeInterceptor,
+                            PayloadDeserializeInterceptor
+                        ]
+                    }
                 },
                 content: {
                     root: 'public',
@@ -92,9 +212,6 @@ export class MqttConfiguration {
                 interceptorsToken: MQTT_SERV_INTERCEPTORS,
                 filtersToken: MQTT_SERV_FILTERS,
                 guardsToken: MQTT_SERV_GUARDS,
-                messageFactory: MqttMessageFactory,
-                incomingFactory: MqttIncomingFactory,
-                outgoingFactory: MqttOutgoingFactory,
                 filters: [
                     LoggerInterceptor,
                     ExecptionFinalizeFilter,

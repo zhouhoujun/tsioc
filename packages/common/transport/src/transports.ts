@@ -13,12 +13,18 @@ import { Packet } from './socket';
 
 export interface TransportOptions {
     delimiter?: Buffer;
+    /**
+     * message max size limit
+     */
     maxSize?: number;
+    /**
+     * packet size limit.
+     */
+    limit?: number;
     /**
      * packet id buffer length
      */
     idLen?: number;
-
     /**
      * packet size buffer length
      */

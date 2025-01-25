@@ -63,13 +63,11 @@ export class RedisServer extends Server<RequestContext, RedisServerOpts> {
 
         const injector = this.handler.injector;
 
-        const transportOpts = options.transportOpts!;
-
         const factory = injector.get(ServerTransportFactory);
         const session = this._transport = factory.create(injector, {
             subscriber,
             publisher
-        }, transportOpts);
+        }, options);
 
         const router = injector.get(MicroRouters).get('redis');
         if (options.content?.prefix) {
