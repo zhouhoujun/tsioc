@@ -1,4 +1,4 @@
-import { Injector, isFunction, promisify } from '@tsdi/ioc';
+import { Injector } from '@tsdi/ioc';
 import { AbstractRequest, HeaderAdapter, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import { ClientIncomingFactory, Deserializer, ev, IDuplex, IEventEmitter, IWritable, Packet, Redirector, Serializer, StatusAdapter, StreamAdapter, writePacket } from '@tsdi/common/transport';
 import { ClientTransfer, ClientTransport } from '../transport';
@@ -26,7 +26,7 @@ export class DefaultClientTransport<TSocket = any, TOptions extends ClientOpts =
         readonly clientOptions: TOptions,        
         private _read: (socket: TSocket, channel?: IEventEmitter | null, req?: AbstractRequest<any>) => Observable<any>,
         private _write: (socket: TSocket, msg: Packet, channel?: IEventEmitter | null) => Promise<any>,
-        private _close: (socket: TSocket) => Promise<any>
+        private _close?: (socket: TSocket) => Promise<any>
 
     ) {
         super()
@@ -41,8 +41,10 @@ export class DefaultClientTransport<TSocket = any, TOptions extends ClientOpts =
         return this._write(this.socket, msg, channel)
     }
 
-    override close() {
-        return this._close(this.socket)
+    override async close() {
+        if(this._close) {
+            await this._close(this.socket)
+        }
     }
 
 }
@@ -65,7 +67,8 @@ export class SocketClientTransport<TSocket extends IDuplex = IDuplex, TOptions e
         readonly responseFactory: ResponseFactory,
         readonly redirector: Redirector | null,
         readonly clientOptions: TOptions,
-        readonly eventName: string = ev.DATA
+        readonly eventName: string = ev.DATA,
+        private _close?: (socket: TSocket) => Promise<any>
 
     ) {
         super()
@@ -81,9 +84,8 @@ export class SocketClientTransport<TSocket extends IDuplex = IDuplex, TOptions e
     }
 
     override async close() {
-        const socket = this.socket as any;
-        if (socket && isFunction(socket.close)) {
-            await promisify(socket.close, socket)();
+        if(this._close) {
+            await this._close(this.socket)
         }
     }
 

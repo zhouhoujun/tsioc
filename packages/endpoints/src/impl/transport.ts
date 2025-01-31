@@ -1,6 +1,6 @@
-import { Injector, isFunction, promisify } from '@tsdi/ioc';
+import { Injector } from '@tsdi/ioc';
 import { ServerTransport } from '../transport';
-import { Deserializer, ev, FileAdapter, IDuplex, IEventEmitter, IncomingFactory, IReadable, IWritable, MimeAdapter, OutgoingFactory, Packet, Serializer, StatusAdapter, StreamAdapter, TransportOptions, writePacket } from '@tsdi/common/transport';
+import { Deserializer, ev, FileAdapter, IDuplex, IEventEmitter, IncomingFactory, IWritable, MimeAdapter, OutgoingFactory, Packet, Serializer, StatusAdapter, StreamAdapter, TransportOptions, writePacket } from '@tsdi/common/transport';
 import { AbstractRequest, HeaderAdapter } from '@tsdi/common';
 import { ServerTransfer } from '../transfer';
 import { ServerOpts } from '../Server';
@@ -9,8 +9,6 @@ import { AcceptsPriority } from '../accepts';
 
 
 export class DefaultServerTransport<TSocket = any, TOptions extends ServerOpts = ServerOpts> extends ServerTransport<TSocket, TOptions> {
-
-
 
     constructor(
         readonly injector: Injector,
@@ -30,7 +28,7 @@ export class DefaultServerTransport<TSocket = any, TOptions extends ServerOpts =
         readonly serverOptions: TOptions,
         private _read: (socket: TSocket, channel?: IEventEmitter | null, req?: AbstractRequest<any>) => Observable<any>,
         private _write: (socket: TSocket, msg: Packet, channel?: IEventEmitter | null) => Promise<any>,
-        private _close: (socket: TSocket) => Promise<any>
+        private _close?: (socket: TSocket) => Promise<any>
 
     ) {
         super()
@@ -45,8 +43,10 @@ export class DefaultServerTransport<TSocket = any, TOptions extends ServerOpts =
         return this._write(this.socket, msg, channel)
     }
 
-    override close() {
-        return this._close(this.socket)
+    override async close() {
+        if(this._close) {
+            await this._close(this.socket)
+        }
     }
 
 }
@@ -69,7 +69,8 @@ export class SocketServerTransport<TSocket extends IDuplex = IDuplex, TOptions e
         readonly outgoingFactory: OutgoingFactory,
         readonly transfer: ServerTransfer,
         readonly serverOptions: TOptions,
-        readonly eventName: string = ev.DATA
+        readonly eventName: string = ev.DATA,
+        private _close?: (socket: TSocket) => Promise<any>
 
     ) {
         super()
@@ -86,9 +87,8 @@ export class SocketServerTransport<TSocket extends IDuplex = IDuplex, TOptions e
     }
 
     override async close() {
-        const socket = this.socket as any;
-        if (socket && isFunction(socket.close)) {
-            await promisify(socket.close, socket)();
+        if(this._close) {
+            await this._close(this.socket)
         }
     }
 

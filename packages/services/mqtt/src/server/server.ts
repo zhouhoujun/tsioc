@@ -77,12 +77,9 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
             });
 
 
-        const transportOpts = options.transportOpts!;
-
         const factory = injector.get(ServerTransportFactory);
-        const session = this._transport = factory.create(injector, this.mqtt, transportOpts);
+        const session = this._transport = factory.create(injector, this.mqtt, options);
         session.listen(this.handler);
-        // this.subs.add(injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options));
 
         this.logger.info(
             `Subscribed successfully! This server is currently subscribed topics.`,

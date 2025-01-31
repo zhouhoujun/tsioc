@@ -74,7 +74,6 @@ export class RedisConfiguration {
                                     injector,
                                     socket,
                                     'redis',
-                                    transportOptions,
                                     serializerFactory.create(injector, transportOptions.serializerConfig),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     formatter,
@@ -134,7 +133,7 @@ export class RedisConfiguration {
             defaultOpts: {
                 handlerType: RedisRequestHandler,
                 transportFactory: {
-                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory, formatter: PatternFormatter | null,
+                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
                         statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
                         fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
                         incomingFactory: TopicClientIncomingFactory, outgoingFactory: TopicOutgoingFactory, transferFactory: ServerTransferFactory) => {
@@ -145,10 +144,8 @@ export class RedisConfiguration {
                                     injector,
                                     socket,
                                     'redis',
-                                    transportOptions,
                                     serializerFactory.create(injector, transportOptions.serializerConfig),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
-                                    formatter,
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
