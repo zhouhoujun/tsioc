@@ -71,7 +71,6 @@ export class WsConfiguration {
                                     injector,
                                     socket,
                                     'tcp',
-                                    transportOptions,
                                     serializerFactory.create(injector, transportOptions.serializerConfig),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     formatter,
@@ -131,7 +130,7 @@ export class WsConfiguration {
             defaultOpts: {
                 handlerType: WsRequestHandler,
                 transportFactory: {
-                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory, formatter: PatternFormatter | null,
+                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
                         statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
                         fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
                         incomingFactory: UrlClientIncomingFactory, outgoingFactory: UrlOutgoingFactory, transferFactory: ServerTransferFactory) => {
@@ -142,10 +141,8 @@ export class WsConfiguration {
                                     injector,
                                     socket,
                                     'tcp',
-                                    transportOptions,
                                     serializerFactory.create(injector, transportOptions.serializerConfig),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
-                                    formatter,
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
@@ -163,7 +160,6 @@ export class WsConfiguration {
                     deps: [
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
-                        [PatternFormatter, InjectFlags.Optional],
                         [StatusAdapter, InjectFlags.Optional],
                         [HeaderAdapter, InjectFlags.Optional],
                         StreamAdapter,

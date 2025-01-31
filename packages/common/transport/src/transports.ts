@@ -1,14 +1,15 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, promisify } from '@tsdi/ioc';
 import { AbstractRequest, PatternFormatter } from '@tsdi/common';
 import { Observable, Subject, mergeMap, share, takeUntil } from 'rxjs';
 import { Transport } from './Transport';
-import { IEventEmitter } from './stream';
+import { IEventEmitter, IReadable, IWritable } from './stream';
 import { AbstractIncomingFactory, Incoming } from './Incoming';
 import { Deserializer } from './Deserializer';
 import { Serializer } from './Serializer';
 import { TransportContext } from './context';
 import { ConfigableHandlerOptions } from '@tsdi/core';
 import { Packet } from './socket';
+import { StreamAdapter } from './StreamAdapter';
 
 
 export interface TransportOptions {
@@ -33,7 +34,6 @@ export interface TransportOptions {
      * header length.
      */
     headLen?: number;
-    event?: string;
     serializerConfig?: ConfigableHandlerOptions;
     deserializerConfig?: ConfigableHandlerOptions;
     transferConfig?: ConfigableHandlerOptions;
@@ -106,4 +106,11 @@ export abstract class AbstractTransport<TSocket = any, TIncoming extends Incomin
         await this.close();
     }
 
+}
+
+export function writePacket(socket: IWritable, msg: Packet, streamAdapter: StreamAdapter): Promise<void> {
+    if (streamAdapter.isReadable(msg.payload)) {
+        return streamAdapter.pipeTo(msg.payload as IReadable, socket, { end: false });
+    }
+    return promisify<any, void>(socket.write, socket)(msg.payload)
 }

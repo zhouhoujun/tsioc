@@ -154,7 +154,7 @@ export class PayloadDeserializeInterceptor implements Interceptor<Packet, Incomi
         const { options, streamAdapter, headerAdapter } = transport;
         const idLen = options.idLen ?? 2;
         let id: string | number;
-        let payload = input.payload;
+        const payload = input.payload;
 
         if (streamAdapter.isReadable(payload)) {
             const chunk = payload.read(idLen);

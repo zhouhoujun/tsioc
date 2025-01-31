@@ -1,5 +1,5 @@
 import { Abstract, Injector } from '@tsdi/ioc';
-import { AbstractRequest, ResponseEvent, ResponseFactory } from '@tsdi/common';
+import { AbstractRequest, PatternFormatter, ResponseEvent, ResponseFactory } from '@tsdi/common';
 import { AbstractTransport, ClientIncoming, ClientIncomingFactory, IEventEmitter, Redirector, Transfer, TransportContext } from '@tsdi/common/transport';
 import { Observable, first, merge, mergeMap, takeUntil } from 'rxjs';
 import { ClientOpts } from '../options';
@@ -9,13 +9,13 @@ import { ClientOpts } from '../options';
  * transport for client.
  */
 @Abstract()
-export abstract class ClientTransport<TSocket = any> extends AbstractTransport<TSocket, ClientIncoming, AbstractRequest<any>> {
+export abstract class ClientTransport<TSocket = any, TOptions extends ClientOpts = ClientOpts> extends AbstractTransport<TSocket, ClientIncoming, AbstractRequest<any>> {
     
     readonly client = true;
     /**
      * client options
      */
-    abstract get clientOptions(): ClientOpts;
+    abstract get clientOptions(): TOptions;
     /**
      * client incoming message factory.
      */
@@ -23,7 +23,11 @@ export abstract class ClientTransport<TSocket = any> extends AbstractTransport<T
     /**
      * response factory.
      */
-    abstract get responseFactory(): ResponseFactory;
+    abstract get responseFactory(): ResponseFactory;    
+    /**
+     * pattern formatter.
+     */
+    abstract get patternFormatter(): PatternFormatter | null;
     /**
      * incoming transfer
      */
@@ -32,6 +36,13 @@ export abstract class ClientTransport<TSocket = any> extends AbstractTransport<T
      * redirector.
      */
     abstract get redirector(): Redirector | null;
+
+    get options() {
+        if (!this.clientOptions.transportOptions) {
+            this.clientOptions.transportOptions = {};
+        }
+        return this.clientOptions.transportOptions
+    }
 
     request(req: AbstractRequest<any>, destroy$?: Observable<any>, channel?: IEventEmitter): Observable<ResponseEvent<any>> {
         return this.send(req, channel)

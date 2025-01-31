@@ -1,8 +1,9 @@
 import { hasProps, Injectable } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { AbstractRequest, PatternRequest, TopicRequest, UrlRequest } from '@tsdi/common';
-import { AbstractTransport, ClientOutgoing, Packet, TopicClientOutgoing, TransportContext, UrlClientOutgoing } from '@tsdi/common/transport';
+import { ClientOutgoing, Packet, TopicClientOutgoing, TransportContext, UrlClientOutgoing } from '@tsdi/common/transport';
 import { map, Observable, of } from 'rxjs';
+import { ClientTransport } from '../transport';
 
 @Injectable()
 export class RequestServializeInterceptor implements Interceptor<AbstractRequest<any>, Packet> {
@@ -11,7 +12,7 @@ export class RequestServializeInterceptor implements Interceptor<AbstractRequest
 
         const id = input.id;
         const headers = input.headers.getHeaders();
-        let pkg = {
+        const pkg = {
             id
         } as ClientOutgoing;
 
@@ -19,7 +20,7 @@ export class RequestServializeInterceptor implements Interceptor<AbstractRequest
             pkg.headers = headers;
         }
 
-        const transport = context.transport as AbstractTransport;
+        const transport = context.transport as ClientTransport;
 
         if ((input as UrlRequest).url) {
             (pkg as UrlClientOutgoing).url = (input as UrlRequest).getUrlWithParams();

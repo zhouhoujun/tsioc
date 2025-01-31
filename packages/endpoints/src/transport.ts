@@ -1,12 +1,10 @@
 import { Abstract, Injector } from '@tsdi/ioc';
-import { HeaderAdapter } from '@tsdi/common';
-import { AbstractTransport, Deserializer, FileAdapter, Incoming, IncomingFactory, MimeAdapter, OutgoingFactory, Serializer, StatusAdapter, StreamAdapter, Transfer, TransportContext } from '@tsdi/common/transport';
+import { AbstractTransport, FileAdapter, Incoming, IncomingFactory, MimeAdapter, OutgoingFactory, Transfer, TransportContext } from '@tsdi/common/transport';
 import { Observable, Subscription, first, merge, mergeMap, takeUntil } from 'rxjs';
 import { AbstractRequestHandler } from './AbstractRequestHandler';
 import { RequestContext } from './RequestContext';
 import { ServerOpts } from './Server';
 import { AcceptsPriority } from './accepts';
-import { ServerTransfer } from './transfer';
 
 @Abstract()
 export abstract class ServerTransport<TSocket = any, TOptions extends ServerOpts = ServerOpts> extends AbstractTransport<TSocket, Incoming, RequestContext> {
@@ -41,6 +39,14 @@ export abstract class ServerTransport<TSocket = any, TOptions extends ServerOpts
      */
     abstract get fileAdapter(): FileAdapter;
 
+    get options() {
+        if (!this.serverOptions.transportOptions) {
+            this.serverOptions.transportOptions = {};
+        }
+        return this.serverOptions.transportOptions
+    }
+
+
     listen(handler: AbstractRequestHandler, destroy$?: Observable<any>): Subscription {
         return this.receive().pipe(
             takeUntil(destroy$ ? merge(this.destroy$, destroy$).pipe(first()) : this.destroy$),
@@ -63,27 +69,3 @@ export abstract class ServerTransportFactory<TSocket = any> {
     abstract create(injector: Injector, socket: TSocket, options: ServerOpts): ServerTransport<TSocket>;
 }
 
-
-
-export abstract class DefaultServerTransport extends ServerTransport<any> {
-
-    constructor(
-        readonly socket: any,
-        readonly protocol: string,
-        readonly serializer: Serializer,
-        readonly deserializer: Deserializer,
-        readonly headerAdapter: HeaderAdapter,
-        readonly streamAdapter: StreamAdapter,
-        readonly fileAdapter: FileAdapter,
-        readonly transfer: ServerTransfer,
-        readonly incomingFactory: IncomingFactory,
-        readonly outgoingFactory: OutgoingFactory,
-        readonly statusAdapter: StatusAdapter | null,
-        readonly mimeAdapter: MimeAdapter | null,
-        readonly acceptsPriority: AcceptsPriority | null,
-        readonly serverOptions: ServerOpts,
-    ) {
-        super()
-    }
-
-}

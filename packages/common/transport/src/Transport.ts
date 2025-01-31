@@ -1,5 +1,5 @@
 import { Injector } from '@tsdi/ioc';
-import { HeaderAdapter, PatternFormatter } from '@tsdi/common';
+import { HeaderAdapter } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { StatusAdapter } from './StatusAdapter';
 import { StreamAdapter } from './StreamAdapter';
@@ -41,10 +41,6 @@ export abstract class Transport<TSocket = any, TIncoming extends Incoming = Inco
      * status adapter.
      */
     abstract get statusAdapter(): StatusAdapter | null;
-    /**
-     * pattern formatter.
-     */
-    abstract get patternFormatter(): PatternFormatter | null;
     /**
      * send.
      * @param data 
