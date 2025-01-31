@@ -129,6 +129,8 @@ export interface Packet<T extends IReadable | IDuplex | Buffer = IReadable | IDu
      */
     id?: string | number;
 
+    topic?: string;
+
     /**
      * packet headers.
      */

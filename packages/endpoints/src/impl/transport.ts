@@ -30,7 +30,7 @@ export class DefaultServerTransport<TSocket = any, TOptions extends ServerOpts =
         readonly serverOptions: TOptions,
         private _read: (socket: TSocket, channel?: IEventEmitter | null, req?: AbstractRequest<any>) => Observable<any>,
         private _write: (socket: TSocket, msg: Packet, channel?: IEventEmitter | null) => Promise<any>,
-        private _close: (socket: TSocket) => Promise<void>
+        private _close: (socket: TSocket) => Promise<any>
 
     ) {
         super()

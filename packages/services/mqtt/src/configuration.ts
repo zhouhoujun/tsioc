@@ -1,34 +1,35 @@
-import { InjectFlags } from '@tsdi/ioc';
+import { InjectFlags, promisify } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import { DefaultResponseFactory, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
     DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
-    FileAdapter, MimeAdapter, PacketDeserializeInterceptor, PacketifyInterceptor, PacketSerializeInterceptor,
+    ev,
+    FileAdapter, MimeAdapter, NotSupportedExecption, PacketDeserializeInterceptor, PacketifyInterceptor, PacketSerializeInterceptor,
     PacketVaildateInterceptor, PayloadDeserializeInterceptor, Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    RequestServializeInterceptor, SocketClientTransport
+    RequestServializeInterceptor, DefaultClientTransport
 } from '@tsdi/common/client';
 import {
     AcceptsPriority,
     DefaultServerTransferFactory,
+    DefaultServerTransport,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, PatternRequestContext,
     RequestContext, RequestContextServializeInterceptor, RequestContextVaildateInterceptor,
     SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
     SocketServerTransport
 } from '@tsdi/endpoints';
+import * as mqtt from 'mqtt';
 import { MqttClient } from './client/client';
 import { MQTT_CLIENT_FILTERS, MQTT_CLIENT_INTERCEPTORS } from './client/options';
 import { MqttHandler } from './client/handler';
 import { MqttServer } from './server/server';
 import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS } from './server/options';
 import { MqttRequestHandler } from './server/handler';
-import { MqttMessage, MqttMessageFactory } from './message';
 import { MqttRequest } from './client/request';
-import { MqttClientIncoming, MqttClientIncomingFactory } from './client/transport';
-import { MqttIncoming, MqttIncomingFactory, MqttOutgoing, MqttOutgoingFactory } from './server/transport';
+import { from, fromEvent } from 'rxjs';
 
 
 
@@ -71,11 +72,10 @@ export class MqttConfiguration {
                         return {
                             create: (injector, socket, options) => {
                                 const transportOptions = options.transportOptions ?? {};
-                                return new SocketClientTransport(
+                                return new DefaultClientTransport<mqtt.Client>(
                                     injector,
                                     socket,
                                     'mqtt',
-                                    transportOptions,
                                     serializerFactory.create(injector, transportOptions.serializerConfig),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     formatter,
@@ -86,7 +86,15 @@ export class MqttConfiguration {
                                     transferFactory.create(injector, transportOptions.transferConfig),
                                     responseFactory,
                                     redirector,
-                                    options
+                                    options,
+                                    (mqtt) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
+                                        return { topic, payload }
+                                    }),
+                                    (mqtt, msg) => {
+                                        if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
+                                        return promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(msg.topic!, msg.payload ?? Buffer.alloc(0), { qos: 1 })
+                                    },
+                                    (mqtt) => promisify(mqtt.end, mqtt)(true)
                                 )
                             },
                         }
@@ -105,7 +113,6 @@ export class MqttConfiguration {
                     ]
                 },
                 transportOptions: {
-                    // delimiter: '#',
                     limit: sizeLimit,
                     serializerConfig: {
                         interceptors: [
@@ -143,11 +150,10 @@ export class MqttConfiguration {
                         return {
                             create: (injector, socket, options) => {
                                 const transportOptions = options.transportOptions ?? {};
-                                return new SocketServerTransport(
+                                return new DefaultServerTransport<mqtt.Client>(
                                     injector,
                                     socket,
                                     'mqtt',
-                                    transportOptions,
                                     serializerFactory.create(injector, transportOptions.serializerConfig),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     statusAdapter,
@@ -159,7 +165,15 @@ export class MqttConfiguration {
                                     incomingFactory,
                                     outgoingFactory,
                                     transferFactory.create(injector, transportOptions.transferConfig),
-                                    options
+                                    options,
+                                    (mqtt) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
+                                        return { topic, payload }
+                                    }),
+                                    (mqtt, msg) => {
+                                        if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
+                                        return promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(msg.topic!, msg.payload ?? Buffer.alloc(0), { qos: 1 })
+                                    },
+                                    (mqtt) => promisify(mqtt.end, mqtt)(true)
                                 )
                             },
                         }

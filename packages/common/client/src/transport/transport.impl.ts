@@ -7,7 +7,7 @@ import { fromEvent, Observable } from 'rxjs';
 
 
 
-export class DefaultlientTransport<TSocket = any, TOptions extends ClientOpts = ClientOpts> extends ClientTransport<TSocket, TOptions> {
+export class DefaultClientTransport<TSocket = any, TOptions extends ClientOpts = ClientOpts> extends ClientTransport<TSocket, TOptions> {
 
     constructor(
         readonly injector: Injector,
@@ -26,7 +26,7 @@ export class DefaultlientTransport<TSocket = any, TOptions extends ClientOpts = 
         readonly clientOptions: TOptions,        
         private _read: (socket: TSocket, channel?: IEventEmitter | null, req?: AbstractRequest<any>) => Observable<any>,
         private _write: (socket: TSocket, msg: Packet, channel?: IEventEmitter | null) => Promise<any>,
-        private _close: (socket: TSocket) => Promise<void>
+        private _close: (socket: TSocket) => Promise<any>
 
     ) {
         super()
