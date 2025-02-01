@@ -97,6 +97,7 @@ export class DeviceController {
         provideClient([
             {
                 transport: 'tcp',
+                microservice: false,
                 clientOpts: {
                     connectOpts: {
                         port: 2000
@@ -127,6 +128,7 @@ export class DeviceController {
             },
             {
                 transport: 'tcp',
+                microservice: false,
                 serverOpts: {
                     // timeout: 1000,
                     detailError: false,

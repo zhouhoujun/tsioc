@@ -1,15 +1,15 @@
 import {
-    Arrayify, Injector, Module, ModuleRef, ModuleType, ModuleWithProviders,
-    ProvdierOf, ProviderType, Token, Type, isArray, isNil, lang, toProvider, tokenId
+    Arrayify, Injector, Module, ModuleRef, ModuleWithProviders,
+    ProviderType, isArray, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { ConfigMissingExecption, createHandler } from '@tsdi/core';
-import { DefaultResponseFactory, CommonProtocols, ResponseFactory, Protocols } from '@tsdi/common';
-import { ClientIncomingFactory, NotImplementedExecption, StatusAdapter, TransportPacketModule } from '@tsdi/common/transport';
-import { AbstractClient } from './AbstractClient';
+import { DefaultResponseFactory } from '@tsdi/common';
+import { isMicroTransport, NotImplementedExecption, TransportPacketModule } from '@tsdi/common/transport';
 import { ClientBackend } from './backend';
 import { BodyContentInterceptor } from './interceptors/body';
-import { ClientOpts } from './options';
 import { ClientTransportBackend, ClientTransportFactory, DefaultClientTransferFactory } from './transport';
+import { ClientOpts } from './options';
+import { ClientConfigs, ClientModuleOpts } from './client.options';
 
 
 /**
@@ -32,19 +32,19 @@ export class ClientModule {
      * @param options module options.
      * @returns 
      */
-    static register(options: ClientModuleConfig & ClientTokenOpts): ModuleWithProviders<ClientModule>;
+    static register(options: ClientConfigs): ModuleWithProviders<ClientModule>;
     /**
      * import client module with options.
      * @param options module options.
      * @returns 
      */
-    static register(options: Array<ClientModuleConfig & ClientTokenOpts>): ModuleWithProviders<ClientModule>;
+    static register(options: Array<ClientConfigs>): ModuleWithProviders<ClientModule>;
     /**
      * import client module with options.
      * @param options module options.
      * @returns 
      */
-    static register(options: Arrayify<ClientModuleConfig & ClientTokenOpts>): ModuleWithProviders<ClientModule> {
+    static register(options: Arrayify<ClientConfigs>): ModuleWithProviders<ClientModule> {
         return provideClient(options as any);
     }
 
@@ -55,19 +55,19 @@ export class ClientModule {
  * @param options module options.
  * @returns 
  */
-export function provideClient(options: ClientModuleConfig & ClientTokenOpts): ModuleWithProviders<ClientModule>;
+export function provideClient(options: ClientConfigs): ModuleWithProviders<ClientModule>;
 /**
  * provide client module with options.
  * @param options module options.
  * @returns 
  */
-export function provideClient(options: Array<ClientModuleConfig & ClientTokenOpts>): ModuleWithProviders<ClientModule>;
+export function provideClient(options: Array<ClientConfigs>): ModuleWithProviders<ClientModule>;
 /**
  * provide client module with options.
  * @param options module options.
  * @returns 
  */
-export function provideClient(options: Arrayify<ClientModuleConfig & ClientTokenOpts>): ModuleWithProviders<ClientModule> {
+export function provideClient(options: Arrayify<ClientConfigs>): ModuleWithProviders<ClientModule> {
     let providers: ProviderType[];
     if (isArray(options)) {
         providers = []
@@ -86,103 +86,34 @@ export function provideClient(options: Arrayify<ClientModuleConfig & ClientToken
 
 
 /**
- * Client module config.
- */
-export interface ClientModuleConfig {
-    /**
-     * imports modules
-     */
-    imports?: ModuleType[];
-    /**
-     * client options.
-     */
-    clientOpts?: ClientOpts;
-    /**
-     * custom provider with module.
-     */
-    providers?: ProviderType[];
-
-    /**
-     * is microservice client or not.
-     */
-    microservice?: boolean;
-}
-
-/**
- * Client module options.
- */
-export interface ClientModuleOpts extends ClientModuleConfig {
-    /**
-     * transport
-     */
-    transport: Protocols | CommonProtocols;
-    /**
-     * client type
-     */
-    clientType: Type<AbstractClient>;
-    /**
-     * client provider
-     */
-    clientProvider?: ProvdierOf<AbstractClient>;
-    /**
-     * client default options
-     */
-    defaultOpts?: ClientOpts;
-    /**
-     * as default client.
-     */
-    asDefault?: boolean | null;
-    /**
-     * trnsport backend.
-     */
-    backend?: ProvdierOf<ClientBackend>;
-}
-
-/**
- * Client token options.
- */
-export interface ClientTokenOpts {
-
-    /**
-     * transport protocol.
-     */
-    transport: Protocols;
-
-    /**
-     * client token.
-     */
-    client?: Token<AbstractClient>;
-}
-
-
-/**
  * global register client modules.
  */
 export const CLIENT_MODULES = tokenId<(ClientModuleOpts)[]>('CLIENT_MODULES');
 
 
-function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: number) {
+function clientProviders(options: ClientConfigs, idx?: number) {
+    const microservice = isMicroTransport(options);
     return [
         ...options.providers ?? [],
         {
             provider: async (injector) => {
-                let defts = injector.get(CLIENT_MODULES, null)?.find(r => r.transport === options.transport && (isNil(options.microservice) ? (r.asDefault || !r.microservice) : r.microservice == options.microservice));
+                let defts = injector.get(CLIENT_MODULES, null)?.find(r => r.transport === options.transport && (microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r))));
                 if (!defts) {
                     try {
                         const m = await import(`@tsdi/${options.transport}`);
                         const transportModuleName = options.transport.charAt(0).toUpperCase() + options.transport.slice(1) + 'Module';
                         if (m[transportModuleName]) {
                             await injector.get(ModuleRef).import(m[transportModuleName]);
-                            defts = injector.get(CLIENT_MODULES, []).find(r => r.transport === options.transport && (isNil(options.microservice) ? (r.asDefault || !r.microservice) : r.microservice == options.microservice));
+                            defts = injector.get(CLIENT_MODULES, []).find(r => r.transport === options.transport && (microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r))));
                         }
                         if (!defts) {
                             throw new Error(m[transportModuleName] ? 'has not implemented' : 'not found transport module!')
                         }
                     } catch (err: any) {
-                        throw new NotImplementedExecption(`${options.transport} ${options.microservice ? 'microservice client' : 'client'} ${err.message ?? 'has not implemented'}`);
+                        throw new NotImplementedExecption(`${options.transport} ${microservice ? 'microservice client' : 'client'} ${err.message ?? 'has not implemented'}`);
                     }
                 }
-                const opts = { ...defts, ...options, asDefault: null } as ClientModuleOpts & ClientTokenOpts;
+                const opts = { ...defts, ...options, asDefault: null } as ClientModuleOpts & ClientConfigs;
 
                 const transportOptions = {
                     ...opts.defaultOpts?.transportOptions,
@@ -201,8 +132,8 @@ function clientProviders(options: ClientModuleConfig & ClientTokenOpts, idx?: nu
                     ]
                 } as ClientOpts & { providers: ProviderType[] };
 
-                if (opts.microservice) {
-                    clientOpts.microservice = opts.microservice;
+                if (microservice) {
+                    clientOpts.microservice = microservice;
                 }
 
                 if (!opts.backend) {

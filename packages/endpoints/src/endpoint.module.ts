@@ -1,11 +1,11 @@
 import {
-    Arrayify, Injector, Module, ModuleRef, ModuleType, ModuleWithProviders,
-    ProvdierOf, ProviderType, Type, isArray, isNil, lang, toProvider, tokenId
+    Arrayify, Injector, Module, ModuleRef, ModuleWithProviders,
+    ProviderType, isArray, lang, toProvider, tokenId
 } from '@tsdi/ioc';
-import { ConfigMissingExecption, InvocationOptions, TypedRespond } from '@tsdi/core';
-import { CommonProtocols, Protocols } from '@tsdi/common';
-import { NotImplementedExecption,  TransportPacketModule } from '@tsdi/common/transport';
-import { Server, ServerOpts } from './Server';
+import { ConfigMissingExecption, TypedRespond } from '@tsdi/core';
+import { CommonProtocols } from '@tsdi/common';
+import { isMicroTransport, NotImplementedExecption, TransportPacketModule } from '@tsdi/common/transport';
+import { ServerOpts } from './server.options';
 import { Session } from './Session';
 import { ServerTransportFactory } from './transport';
 import { EndpointTypedRespond } from './typed.respond';
@@ -19,6 +19,7 @@ import { FinalizeFilter } from './finalize.filter';
 import { createRequestHandler } from './impl/request.handler';
 import { createMiddlewareEndpoint } from './impl/middleware';
 import { DefaultServerTransferFactory } from './impl/transfer';
+import { ServiceModuleOpts, ServiceOpts } from './endpoint.options';
 
 
 /**
@@ -96,125 +97,125 @@ export function provideService(options: Arrayify<ServiceOpts>): ModuleWithProvid
 }
 
 
-/**
- * heybird options.
- */
-export interface HeybirdOpts {
-    /**
-    * heybird or not.
-    */
-    heybird?: boolean | CommonProtocols;
-}
+// /**
+//  * heybird options.
+//  */
+// export interface HeybirdOpts {
+//     /**
+//     * heybird or not.
+//     */
+//     heybird?: boolean | CommonProtocols;
+// }
 
-/**
- * microservice options.
- */
-export interface MicroServiceOpts {
-    /**
-     * microservice or not.
-     */
-    microservice: true;
-    /**
-     * microservice transport.
-     */
-    transport: Protocols;
-    /**
-     * imports modules
-     */
-    imports?: ModuleType[];
-    /**
-     * auto bootstrap or not. default true.
-     */
-    bootstrap?: boolean;
-    /**
-     * server provdier.
-     */
-    server?: ProvdierOf<Server>;
-    /**
-     * start.
-     */
-    start?: InvocationOptions;
-    /**
-     * server options
-     */
-    serverOpts?: ServerOpts & HeybirdOpts;
-    /**
-     * custom provider with module.
-     */
-    providers?: ProviderType[];
-}
+// /**
+//  * microservice options.
+//  */
+// export interface MicroServiceOpts {
+//     /**
+//      * microservice or not.
+//      */
+//     microservice: true;
+//     /**
+//      * microservice transport.
+//      */
+//     transport: Protocols;
+//     /**
+//      * imports modules
+//      */
+//     imports?: ModuleType[];
+//     /**
+//      * auto bootstrap or not. default true.
+//      */
+//     bootstrap?: boolean;
+//     /**
+//      * server provdier.
+//      */
+//     server?: ProvdierOf<Server>;
+//     /**
+//      * start.
+//      */
+//     start?: InvocationOptions;
+//     /**
+//      * server options
+//      */
+//     serverOpts?: ServerOpts & HeybirdOpts;
+//     /**
+//      * custom provider with module.
+//      */
+//     providers?: ProviderType[];
+// }
 
-export interface CommonServiceOpts {
+// export interface CommonServiceOpts {
 
-    /**
-     * microservice or not.
-     */
-    microservice?: false;
-    
-    transport: CommonProtocols;
-    /**
-     * server options
-     */
-    serverOpts?: ServerOpts & MiddlewareOpts;
-    /**
-     * imports modules
-     */
-    imports?: ModuleType[];
-    /**
-     * auto bootstrap or not. default true.
-     */
-    bootstrap?: boolean;
-    /**
-     * server provdier.
-     */
-    server?: ProvdierOf<Server>;
-    /**
-     * start.
-     */
-    start?: InvocationOptions;
-    /**
-     * custom provider with module.
-     */
-    providers?: ProviderType[];
+//     /**
+//      * microservice or not.
+//      */
+//     microservice?: false;
 
-}
+//     transport: CommonProtocols;
+//     /**
+//      * server options
+//      */
+//     serverOpts?: ServerOpts & MiddlewareOpts;
+//     /**
+//      * imports modules
+//      */
+//     imports?: ModuleType[];
+//     /**
+//      * auto bootstrap or not. default true.
+//      */
+//     bootstrap?: boolean;
+//     /**
+//      * server provdier.
+//      */
+//     server?: ProvdierOf<Server>;
+//     /**
+//      * start.
+//      */
+//     start?: InvocationOptions;
+//     /**
+//      * custom provider with module.
+//      */
+//     providers?: ProviderType[];
 
-export type ServiceOpts = CommonServiceOpts | MicroServiceOpts;
+// }
 
-
-export interface ServerModuleOpts extends CommonServiceOpts {
-    /**
-     * as default service.
-     */
-    asDefault?: boolean;
-    /**
-     * server type.
-     */
-    serverType: Type<Server>;
-    /**
-     * server default options.
-     */
-    defaultOpts?: ServerOpts & MiddlewareOpts;
-}
-
-export interface MicroServerModuleOpts extends MicroServiceOpts {
-    /**
-     * as default service.
-     */
-    asDefault?: boolean | null;
-    /**
-     * server type.
-     */
-    serverType: Type<Server>;
-    /**
-     * server default options.
-     */
-    defaultOpts?: ServerOpts;
-}
+// export type ServiceOpts = CommonServiceOpts | MicroServiceOpts;
 
 
+// export interface ServerModuleOpts extends CommonServiceOpts {
+//     /**
+//      * as default service.
+//      */
+//     asDefault?: boolean;
+//     /**
+//      * server type.
+//      */
+//     serverType: Type<Server>;
+//     /**
+//      * server default options.
+//      */
+//     defaultOpts?: ServerOpts & MiddlewareOpts;
+// }
 
-export type ServiceModuleOpts = MicroServerModuleOpts | ServerModuleOpts;
+// export interface MicroServerModuleOpts extends MicroServiceOpts {
+//     /**
+//      * as default service.
+//      */
+//     asDefault?: boolean | null;
+//     /**
+//      * server type.
+//      */
+//     serverType: Type<Server>;
+//     /**
+//      * server default options.
+//      */
+//     defaultOpts?: ServerOpts;
+// }
+
+
+
+// export type ServiceModuleOpts = MicroServerModuleOpts | ServerModuleOpts;
 
 /**
  * global registered server modules
@@ -224,12 +225,12 @@ export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
 
 function createServiceProviders(options: ServiceOpts, idx: number) {
 
-
+    const microservice = isMicroTransport(options);
     return [
         ...options.providers ?? [],
         {
             provider: async (injector) => {
-                let mdopts = injector.get(SERVER_MODULES, null)?.find(r => r.transport === options.transport && (isNil(options.microservice) ? (r.asDefault || !r.microservice) : r.microservice == options.microservice));
+                let mdopts = injector.get(SERVER_MODULES, null)?.find(r => r.transport === options.transport && (microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r))));
 
                 if (!mdopts) {
                     try {
@@ -238,14 +239,14 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                         const transportModuleName = options.transport.charAt(0).toUpperCase() + options.transport.slice(1) + 'Module';
                         if (m[transportModuleName]) {
                             await injector.get(ModuleRef).import(m[transportModuleName]);
-                            mdopts = injector.get(SERVER_MODULES, []).find(r => r.transport === options.transport && (isNil(options.microservice) ? (r.asDefault || !r.microservice) : r.microservice == options.microservice));
+                            mdopts = injector.get(SERVER_MODULES, []).find(r => r.transport === options.transport && ((microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r)))));
                         }
                         if (!mdopts) {
                             throw new Error(m[transportModuleName] ? 'has not implemented' : 'not found this transport module!')
                         }
                     } catch (err: any) {
 
-                        throw new NotImplementedExecption(`${options.transport} ${options.microservice ? 'microservice' : 'server'} ${err.message ?? 'has not implemented'}`);
+                        throw new NotImplementedExecption(`${options.transport} ${microservice ? 'microservice' : 'server'} ${err.message ?? 'has not implemented'}`);
                     }
 
                 }
@@ -258,7 +259,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 };
 
                 const serverOpts = {
-                    backend: moduleOpts.microservice ? MicroServRouterModule.getToken(moduleOpts.transport) : RouterModule.getToken(moduleOpts.transport),
+                    backend: microservice ? MicroServRouterModule.getToken(moduleOpts.transport) : RouterModule.getToken(moduleOpts.transport as CommonProtocols),
                     enableTypeChain: true,
                     ...moduleOpts.defaultOpts,
                     ...moduleOpts.serverOpts,
@@ -277,8 +278,8 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 if (!serverOpts.handlerType) throw new ConfigMissingExecption(`Config Missing handlerType`);
                 if (!serverOpts.transportFactory || serverOpts.transportFactory === ServerTransportFactory) throw new ConfigMissingExecption(`Config Missing transportFactory`);
 
-                if (moduleOpts.microservice) {
-                    serverOpts.microservice = moduleOpts.microservice;
+                if (microservice) {
+                    serverOpts.microservice = microservice;
                 }
 
 
@@ -307,13 +308,13 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                     provide: serverOpts.handlerType,
                     useFactory: (injector: Injector) => {
                         const opts = lang.deepClone(serverOpts) as ServerOpts & MiddlewareOpts;
-                        return (!moduleOpts.microservice && opts.middlewaresToken && opts.middlewares) ? createMiddlewareEndpoint(injector, opts) : createRequestHandler(injector, opts)
+                        return (!microservice && opts.middlewaresToken && opts.middlewares) ? createMiddlewareEndpoint(injector, opts) : createRequestHandler(injector, opts)
                     },
                     deps: [Injector]
                 });
 
                 return [
-                    ...moduleOpts.microservice ? createMicroRouteProviders(moduleOpts.transport, serverOpts.routes ?? {}) : createRouteProviders(moduleOpts.transport, serverOpts.routes ?? {}),
+                    ...microservice ? createMicroRouteProviders(moduleOpts.transport, serverOpts.routes ?? {}) : createRouteProviders(moduleOpts.transport as CommonProtocols, serverOpts.routes ?? {}),
                     { provide: REGISTER_SERVICES, useValue: { service: moduleOpts.serverType, bootstrap: serverOpts.bootstrap, microservice: serverOpts.microservice, providers }, multi: true }
                 ];
             }

@@ -24,7 +24,6 @@ import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS } from './client/options';
 import { TcpServer } from './server/server';
 import { TcpRequestHandler } from './server/handler';
 import { TCP_MIDDLEWARES, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS } from './server/options';
-import { fromEvent } from 'rxjs';
 
 
 
@@ -40,30 +39,30 @@ export class TcpConfiguration {
 
     @Bean(CLIENT_MODULES, { static: true, multi: true })
     microClient(): ClientModuleOpts {
-        const options = this.getClientOptions();
-        options.microservice = true;
+        const options = this.getClientOptions(true);
+        // options.microservice = true;
         return options;
     }
 
     @Bean(CLIENT_MODULES, { static: true, multi: true })
     client(): ClientModuleOpts {
-        return this.getClientOptions();
+        return this.getClientOptions(false);
     }
 
     @Bean(SERVER_MODULES, { static: true, multi: true })
     microServ(): ServiceModuleOpts {
-        const option = this.getServOptions();
+        const option = this.getServOptions(true);
         option.defaultOpts!.content = {
             root: 'public',
             prefix: 'content'
         };
-        option.microservice = true;
+        // option.microservice = true;
         return option;
     }
 
     @Bean(SERVER_MODULES, { static: true, multi: true })
     serv(): ServiceModuleOpts {
-        const option = this.getServOptions() as ServerModuleOpts;
+        const option = this.getServOptions(false) as ServerModuleOpts;
         option.defaultOpts!.middlewaresToken = TCP_MIDDLEWARES,
             option.defaultOpts!.content = {
                 root: 'public'
@@ -72,10 +71,11 @@ export class TcpConfiguration {
     }
 
 
-    private getClientOptions(): ClientModuleOpts {
+    private getClientOptions(microservice: boolean): ClientModuleOpts {
         return {
             transport: 'tcp',
             clientType: TcpClient,
+            microservice,
             defaultOpts: {
                 handlerType: TcpHandler,
                 interceptorsToken: TCP_CLIENT_INTERCEPTORS,
@@ -142,10 +142,11 @@ export class TcpConfiguration {
         }
     }
 
-    private getServOptions(): ServiceModuleOpts {
+    private getServOptions(microservice: boolean): ServiceModuleOpts {
         return {
             transport: 'tcp',
             serverType: TcpServer,
+            microservice,
             defaultOpts: {
                 handlerType: TcpRequestHandler,
                 listenOpts: { port: 3000, host: LOCALHOST },

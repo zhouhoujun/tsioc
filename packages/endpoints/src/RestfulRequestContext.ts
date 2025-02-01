@@ -1,7 +1,7 @@
 import { Abstract } from '@tsdi/ioc';
 import { Incoming, Outgoing, encodeUrl, escapeHtml, ctype, NotSupportedExecption } from '@tsdi/common/transport';
 import { RequestContext } from './RequestContext';
-import { ServerOpts } from './Server';
+import { ServerOpts } from './server.options';
 
 /**
  * abstract Restful request context.

@@ -3,7 +3,7 @@ import { AbstractTransport, FileAdapter, Incoming, IncomingFactory, MimeAdapter,
 import { Observable, Subscription, first, merge, mergeMap, takeUntil } from 'rxjs';
 import { AbstractRequestHandler } from './AbstractRequestHandler';
 import { RequestContext } from './RequestContext';
-import { ServerOpts } from './Server';
+import { ServerOpts } from './server.options';
 import { AcceptsPriority } from './accepts';
 
 @Abstract()

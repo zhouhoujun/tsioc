@@ -3,7 +3,7 @@ import { ServerTransport } from '../transport';
 import { Deserializer, ev, FileAdapter, IDuplex, IEventEmitter, IncomingFactory, IWritable, MimeAdapter, OutgoingFactory, Packet, Serializer, StatusAdapter, StreamAdapter, writePacket } from '@tsdi/common/transport';
 import { HeaderAdapter } from '@tsdi/common';
 import { ServerTransfer } from '../transfer';
-import { ServerOpts } from '../Server';
+import { ServerOpts } from '../server.options';
 import { fromEvent, Observable } from 'rxjs';
 import { AcceptsPriority } from '../accepts';
 import { RequestContext } from '../RequestContext';

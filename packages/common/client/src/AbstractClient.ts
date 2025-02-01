@@ -431,4 +431,3 @@ export abstract class AbstractClient<
     protected abstract onShutdown(): Promise<void>;
 
 }
-

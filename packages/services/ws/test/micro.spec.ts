@@ -87,7 +87,6 @@ export class WsService {
         ]),
         EndpointModule.register({
             transport: 'ws',
-            microservice: true,
             serverOpts: {
                 transportOptions: {
                     maxSize: 1024 * 1024 * 20

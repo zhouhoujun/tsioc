@@ -31,6 +31,7 @@ export * from './Publisher';
 export * from './Subscriber';
 
 export * from './typed.respond';
+export * from './server.options';
 export * from './Server';
 export * from './transfer';
 
@@ -51,6 +52,7 @@ export * from './impl/transfer';
 export * from './impl/transport';
 
 export * from './SetupServices';
+export * from './endpoint.options';
 export * from './endpoint.module';
 export * from './mime.module';
 

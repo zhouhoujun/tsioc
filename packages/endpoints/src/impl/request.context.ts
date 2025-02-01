@@ -1,9 +1,9 @@
 import { Injector, isNil } from '@tsdi/ioc';
-import { HeaderMappings, LOCALHOST, normalize, Response } from '@tsdi/common';
+import { HeaderMappings, LOCALHOST, normalize } from '@tsdi/common';
 import { Incoming, MessageExecption, Outgoing, TopicIncoming, UrlIncoming } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
 import { RequestContext } from '../RequestContext';
-import { ServerOpts } from '../Server';
+import { ServerOpts } from '../server.options';
 import { ServerTransport } from '../transport';
 
 

@@ -1,7 +1,8 @@
-import { CommonProtocols, Protocols } from '@tsdi/common';
 import { ModuleType, ProvdierOf, ProviderType, Type } from '@tsdi/ioc';
-import { Server, ServerOpts } from './Server';
 import { InvocationOptions } from '@tsdi/core';
+import { CommonProtocols, Protocols } from '@tsdi/common';
+import { ServerOpts } from './server.options';
+import { Server } from './Server';
 import { MiddlewareOpts } from './middleware/middleware.endpoint';
 
 
@@ -47,33 +48,33 @@ export interface BasicServiceOpts {
 }
 
 export interface MqttServiceOpts<TSerOpts = any> extends BasicServiceOpts {
-    transport: 'mqtt';
-    serverOpts: ServerOpts<TSerOpts>
+    transport: 'mqtt'|'mqtts';
+    serverOpts?: ServerOpts<TSerOpts>
 }
 
 export interface RedisServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'redis';
-    serverOpts: ServerOpts<TSerOpts>
+    serverOpts?: ServerOpts<TSerOpts>
 }
 
 export interface KafkaServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'kafka';
-    serverOpts: ServerOpts<TSerOpts>
+    serverOpts?: ServerOpts<TSerOpts>
 }
 
 export interface NatsServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'nats';
-    serverOpts: ServerOpts<TSerOpts>
+    serverOpts?: ServerOpts<TSerOpts>
 }
 
 export interface AmqpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'amqp';
-    serverOpts: ServerOpts<TSerOpts>
+    serverOpts?: ServerOpts<TSerOpts>
 }
 
 export interface WsServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'ws' | 'wss';
-    serverOpts: ServerOpts<TSerOpts>
+    serverOpts?: ServerOpts<TSerOpts>
 }
 
 export interface TcpMicroServiceOpts<TSerOpts = any> extends BasicServiceOpts {
@@ -82,7 +83,7 @@ export interface TcpMicroServiceOpts<TSerOpts = any> extends BasicServiceOpts {
      * microservice or not.
      */
     microservice: true;
-    serverOpts: ServerOpts<TSerOpts> & HeybirdOpts
+    serverOpts?: ServerOpts<TSerOpts> & HeybirdOpts
 }
 
 
@@ -97,8 +98,8 @@ export interface TcpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     /**
      * microservice or not.
      */
-    microservice?: false;
-    serverOpts: ServerOpts<TSerOpts> & MiddlewareOpts;
+    microservice: false;
+    serverOpts?: ServerOpts<TSerOpts> & MiddlewareOpts;
 }
 
 export interface HttpServiceOpts<TSerOpts = any> extends BasicServiceOpts {

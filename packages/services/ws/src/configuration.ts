@@ -51,7 +51,6 @@ export class WsConfiguration {
     private getClientOptions(): ClientModuleOpts {
         return {
             transport: 'ws',
-            microservice: true,
             asDefault: true,
             clientType: WsClient,
             defaultOpts: {
@@ -124,7 +123,6 @@ export class WsConfiguration {
     private getServOptions(): ServiceModuleOpts {
         return {
             transport: 'ws',
-            microservice: true,
             asDefault: true,
             serverType: WsServer,
             defaultOpts: {

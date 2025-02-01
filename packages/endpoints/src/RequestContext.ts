@@ -5,7 +5,7 @@ import {
     FileAdapter, Incoming, InternalServerExecption, MessageExecption, MimeAdapter, Outgoing,
     StatusAdapter, StreamAdapter, ctype, isBuffer, xmlRegExp
 } from '@tsdi/common/transport';
-import { ServerOpts } from './Server';
+import { ServerOpts } from './server.options';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
 import { ServerTransport } from './transport';
 import { AcceptsPriority } from './accepts';

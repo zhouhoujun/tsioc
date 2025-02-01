@@ -9,6 +9,7 @@ import { TransportContext } from './context';
 import { ConfigableHandlerOptions } from '@tsdi/core';
 import { Packet } from './socket';
 import { StreamAdapter } from './StreamAdapter';
+import { Protocols } from '@tsdi/common';
 
 
 export interface TransportOptions {
@@ -112,4 +113,20 @@ export function writePacket(socket: IWritable, msg: Packet, streamAdapter: Strea
         return streamAdapter.pipeTo(msg.payload as IReadable, socket, { end: false });
     }
     return promisify<any, void>(socket.write, socket)(msg.payload)
+}
+
+
+const microservices = {
+    mqtt: true,
+    mqtts: true,
+    redis: true,
+    kafka: true,
+    nats: true,
+    amqp: true,
+    ws: true,
+    wss: true
+} as Record<Protocols, boolean>;
+
+export function isMicroTransport(options: {transport: Protocols, microservice?: boolean }) {
+    return microservices[options.transport] || (options.transport == 'tcp' && options.microservice)
 }

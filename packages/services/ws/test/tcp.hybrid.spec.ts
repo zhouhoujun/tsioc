@@ -26,6 +26,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
             },
             {
                 transport: 'tcp',
+                microservice: false,
                 clientOpts: {
                     connectOpts: {
                         port: 2000
@@ -36,6 +37,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         provideService([
             {
                 transport: 'tcp',
+                microservice: false,
                 serverOpts: {
                     listenOpts: {
                         port: 2000
@@ -50,7 +52,6 @@ import { BigFileInterceptor } from './BigFileInterceptor';
             },
             {
                 transport: 'ws',
-                microservice: true,
                 serverOpts: {
                     interceptors: [
                         BigFileInterceptor,

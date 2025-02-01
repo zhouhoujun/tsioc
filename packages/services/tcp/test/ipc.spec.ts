@@ -103,6 +103,7 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
             ServerEndpointModule,
             provideClient({
                 transport: 'tcp',
+                microservice: true,
                 clientOpts: {
                     connectOpts: {
                         path: ipcpath
@@ -115,6 +116,7 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
             MicroServRouterModule.forRoot('tcp'),
             provideService({
                 transport: 'tcp',
+                microservice: false,
                 serverOpts: {
                     detailError: false,
                     // timeout: 1000,
