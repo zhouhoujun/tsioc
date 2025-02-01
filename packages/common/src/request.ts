@@ -385,7 +385,7 @@ export abstract class BaseTopicRequest<T, TOptions extends TopicRequestOptions =
     }
 
     protected getResponseTopic(topic: string, options: RequestInitOpts<T, TOptions>): string {
-        return `${topic}\reply`
+        return `${topic}/reply`
     }
 
 

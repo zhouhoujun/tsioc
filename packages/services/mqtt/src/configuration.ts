@@ -1,6 +1,6 @@
 import { InjectFlags, promisify } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
-import { DefaultResponseFactory, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
+import { DefaultResponseFactory, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory, TopicRequest } from '@tsdi/common';
 import {
     DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
     ev,
@@ -69,7 +69,8 @@ export class MqttConfiguration {
                         return {
                             create: (injector, socket, options) => {
                                 const transportOptions = options.transportOptions ?? {};
-                                return new DefaultClientTransport<mqtt.Client>(
+                                const subscribes = new Set<string>();
+                                return new DefaultClientTransport<mqtt.Client, MqttRequest<any>>(
                                     injector,
                                     socket,
                                     'mqtt',
@@ -84,14 +85,17 @@ export class MqttConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (mqtt) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
+                                    (mqtt, channel, req) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
                                         return { topic, payload }
                                     }),
-                                    (mqtt, msg) => {
+                                    async (mqtt, msg, req) => {
+                                        if(req.replyTopic && !subscribes.has(req.replyTopic)){
+                                           await promisify(mqtt.subscribe, mqtt)(req.replyTopic);
+                                        }
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
-                                        return promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(msg.topic!, msg.payload ?? Buffer.alloc(0), { qos: 1 })
+                                        return await promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(req.topic, msg.payload ?? Buffer.alloc(0), { qos: 1 })
                                     },
-                                    (mqtt) => promisify(mqtt.end, mqtt)(true)
+                                    (mqtt) => promisify(mqtt.unsubscribe, mqtt)(Array.from(subscribes.values()))
                                 )
                             },
                         }
@@ -166,11 +170,10 @@ export class MqttConfiguration {
                                     (mqtt) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
                                         return { topic, payload }
                                     }),
-                                    (mqtt, msg) => {
+                                    (mqtt, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
-                                        return promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(msg.topic!, msg.payload ?? Buffer.alloc(0), { qos: 1 })
-                                    },
-                                    (mqtt) => promisify(mqtt.end, mqtt)(true)
+                                        return promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(requestContext.r, msg.payload ?? Buffer.alloc(0), { qos: 1 })
+                                    }
                                 )
                             },
                         }

@@ -1,5 +1,4 @@
 import { Abstract, promisify } from '@tsdi/ioc';
-import { AbstractRequest, PatternFormatter } from '@tsdi/common';
 import { Observable, Subject, mergeMap, share, takeUntil } from 'rxjs';
 import { Transport } from './Transport';
 import { IEventEmitter, IReadable, IWritable } from './stream';
@@ -73,7 +72,7 @@ export abstract class AbstractTransport<TSocket = any, TIncoming extends Incomin
         return this.serializer.serialize(data, new TransportContext(this, data))
             .pipe(
                 mergeMap(msg => {
-                    return this.write(msg, channel)
+                    return this.write(msg, data, channel)
                 }),
                 takeUntil(this.destroy$)
             )
@@ -81,21 +80,21 @@ export abstract class AbstractTransport<TSocket = any, TIncoming extends Incomin
 
     /**
      * receive
-     * @param incoming the req channel.
-     * @param req the message response for.
+     * @param incoming the channel.
+     * @param origin the origin message.
      */
-    receive(channel?: IEventEmitter, req?: AbstractRequest<any>): Observable<TIncoming> {
-        return this.read(channel, req)
+    receive(channel?: IEventEmitter, origin?: TOutgoing): Observable<TIncoming> {
+        return this.read(channel, origin)
             .pipe(
                 takeUntil(this.destroy$),
-                mergeMap(data => this.deserializer.deserialize(data, new TransportContext(this, req))),
+                mergeMap(data => this.deserializer.deserialize(data, new TransportContext(this, origin))),
                 share()
             ) as Observable<any>;
     }
 
-    protected abstract read(channel?: IEventEmitter | null, req?: AbstractRequest<any>): Observable<any>;
+    protected abstract read(channel?: IEventEmitter | null, origin?: TOutgoing): Observable<any>;
 
-    protected abstract write(msg: Packet, channel?: IEventEmitter | null): Promise<any> | Observable<any>;
+    protected abstract write(msg: Packet, origin:TOutgoing, channel?: IEventEmitter | null): Promise<any> | Observable<any>;
 
     /**
      * destroy.

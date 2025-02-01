@@ -1,7 +1,7 @@
 import { Injectable, Injector, isArray, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, HeaderMappings, Response, normalize } from '@tsdi/common';
 import { MessageExecption, InternalServerExecption, Outgoing, append, parseTokenList, Incoming, ENOENT, ctype } from '@tsdi/common/transport';
-import { RestfulRequestContext, RestfulRequestContextFactory, ServerTransport, Throwable } from '@tsdi/endpoints';
+import { RestfulRequestContext, ServerTransport, Throwable } from '@tsdi/endpoints';
 import * as http from 'http';
 import * as http2 from 'http2';
 import * as assert from 'assert';
@@ -562,16 +562,6 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 
 }
 
-@Injectable()
-export class HttpContextFactory implements RestfulRequestContextFactory<HttpServRequest, HttpServResponse> {
-    create(transport: ServerTransport, incoming: HttpServRequest, outgoing: HttpServResponse, options: HttpServerOpts): HttpContext {
-        return new HttpContext(transport.injector, transport,
-            incoming,
-            outgoing,
-            options);
-    }
-
-}
 
 const CONTENT_TYPE = 'content-type';
 const CONTENT_ENCODING = 'content-encoding';

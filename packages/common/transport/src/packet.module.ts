@@ -13,8 +13,8 @@ import { DefaultHeaderAdapter } from './headers';
 // import { getDeserializeInterceptorsToken, getSerializeInterceptorsToken } from './serialization/metadata';
 import { DefaultSerializerFactory } from './Serializer';
 import { DefaultDeserializerFactory } from './Deserializer';
-import { TopicClientIncomingFactory, UrlClientIncomingFactory, UrlIncomingFactory } from './Incoming';
-import { UrlOutgoingFactory } from './Outgoing';
+import { TopicClientIncomingFactory, TopicIncomingFactory, UrlClientIncomingFactory, UrlIncomingFactory } from './Incoming';
+import { TopicOutgoingFactory, UrlOutgoingFactory } from './Outgoing';
 // import { DeserializeContext } from './serialization/Deserializer';
 // import { SerializeContext } from './serialization/Serializer';
 // import { SerializationModule } from './serialization/serialization.module';
@@ -31,6 +31,8 @@ import { UrlOutgoingFactory } from './Outgoing';
         TopicClientIncomingFactory,
         UrlOutgoingFactory,
         UrlIncomingFactory,
+        TopicOutgoingFactory,
+        TopicIncomingFactory,
         { provide: PacketIdGenerator, useClass: PacketNumberIdGenerator },
         { provide: HeaderAdapter, useClass: DefaultHeaderAdapter, asDefault: true },
         // { provide: PACKET_DECODE_INTERCEPTORS, useClass: PacketDecodeInterceptor, multi: true },

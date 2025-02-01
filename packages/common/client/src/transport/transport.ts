@@ -9,7 +9,7 @@ import { ClientOpts } from '../options';
  * transport for client.
  */
 @Abstract()
-export abstract class ClientTransport<TSocket = any, TOptions extends ClientOpts = ClientOpts> extends AbstractTransport<TSocket, ClientIncoming, AbstractRequest<any>> {
+export abstract class ClientTransport<TSocket = any, TRequest extends AbstractRequest<any> = AbstractRequest<any>, TOptions extends ClientOpts = ClientOpts> extends AbstractTransport<TSocket, ClientIncoming, TRequest> {
     
     readonly client = true;
     /**
@@ -44,7 +44,7 @@ export abstract class ClientTransport<TSocket = any, TOptions extends ClientOpts
         return this.clientOptions.transportOptions
     }
 
-    request(req: AbstractRequest<any>, destroy$?: Observable<any>, channel?: IEventEmitter): Observable<ResponseEvent<any>> {
+    request(req: TRequest, destroy$?: Observable<any>, channel?: IEventEmitter): Observable<ResponseEvent<any>> {
         return this.send(req, channel)
             .pipe(
                 mergeMap((chl) => this.receive(chl ?? channel, req)),

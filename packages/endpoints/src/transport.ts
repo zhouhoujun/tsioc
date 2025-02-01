@@ -7,7 +7,7 @@ import { ServerOpts } from './Server';
 import { AcceptsPriority } from './accepts';
 
 @Abstract()
-export abstract class ServerTransport<TSocket = any, TOptions extends ServerOpts = ServerOpts> extends AbstractTransport<TSocket, Incoming, RequestContext> {
+export abstract class ServerTransport<TSocket = any, TContext extends RequestContext = RequestContext, TOptions extends ServerOpts = ServerOpts> extends AbstractTransport<TSocket, Incoming, TContext> {
     
     readonly client = false;
     /**

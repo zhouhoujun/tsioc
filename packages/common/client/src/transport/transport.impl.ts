@@ -7,7 +7,7 @@ import { fromEvent, Observable } from 'rxjs';
 
 
 
-export class DefaultClientTransport<TSocket = any, TOptions extends ClientOpts = ClientOpts> extends ClientTransport<TSocket, TOptions> {
+export class DefaultClientTransport<TSocket = any, TRequest extends AbstractRequest<any> = AbstractRequest<any>, TOptions extends ClientOpts = ClientOpts> extends ClientTransport<TSocket, TRequest, TOptions> {
 
     constructor(
         readonly injector: Injector,
@@ -23,9 +23,9 @@ export class DefaultClientTransport<TSocket = any, TOptions extends ClientOpts =
         readonly transfer: ClientTransfer,
         readonly responseFactory: ResponseFactory,
         readonly redirector: Redirector | null,
-        readonly clientOptions: TOptions,        
-        private _read: (socket: TSocket, channel?: IEventEmitter | null, req?: AbstractRequest<any>) => Observable<any>,
-        private _write: (socket: TSocket, msg: Packet, channel?: IEventEmitter | null) => Promise<any>,
+        readonly clientOptions: TOptions,
+        private _read: (socket: TSocket, channel?: IEventEmitter | null, req?: TRequest) => Observable<any>,
+        private _write: (socket: TSocket, msg: Packet, request: TRequest, channel?: IEventEmitter | null) => Promise<any>,
         private _close?: (socket: TSocket) => Promise<any>
 
     ) {
@@ -33,16 +33,16 @@ export class DefaultClientTransport<TSocket = any, TOptions extends ClientOpts =
     }
 
 
-    protected override read(channel?: IEventEmitter | null, req?: AbstractRequest<any>): Observable<any> {
+    protected override read(channel?: IEventEmitter | null, req?: TRequest): Observable<any> {
         return this._read(this.socket, channel, req)
     }
 
-    protected override write(msg: Packet, channel?: IWritable | null): Promise<any> {
-        return this._write(this.socket, msg, channel)
+    protected override write(msg: Packet, request: TRequest, channel?: IWritable | null): Promise<any> {
+        return this._write(this.socket, msg, request, channel)
     }
 
     override async close() {
-        if(this._close) {
+        if (this._close) {
             await this._close(this.socket)
         }
     }
@@ -50,7 +50,7 @@ export class DefaultClientTransport<TSocket = any, TOptions extends ClientOpts =
 }
 
 
-export class SocketClientTransport<TSocket extends IDuplex = IDuplex, TOptions extends ClientOpts = ClientOpts> extends ClientTransport<TSocket, TOptions> {
+export class SocketClientTransport<TSocket extends IDuplex = IDuplex, TRequest extends AbstractRequest<any> = AbstractRequest<any>, TOptions extends ClientOpts = ClientOpts> extends ClientTransport<TSocket, TRequest, TOptions> {
 
     constructor(
         readonly injector: Injector,
@@ -79,12 +79,12 @@ export class SocketClientTransport<TSocket extends IDuplex = IDuplex, TOptions e
         return fromEvent(channel ?? this.socket, this.eventName)
     }
 
-    protected override write(msg: Packet, channel?: IWritable | null): Promise<any> {
-        return writePacket(channel?? this.socket, msg, this.streamAdapter)
+    protected override write(msg: Packet, request: TRequest, channel?: IWritable | null): Promise<any> {
+        return writePacket(channel ?? this.socket, msg, this.streamAdapter)
     }
 
     override async close() {
-        if(this._close) {
+        if (this._close) {
             await this._close(this.socket)
         }
     }
