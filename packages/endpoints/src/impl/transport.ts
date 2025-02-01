@@ -1,7 +1,7 @@
 import { Injector } from '@tsdi/ioc';
 import { ServerTransport } from '../transport';
 import { Deserializer, ev, FileAdapter, IDuplex, IEventEmitter, IncomingFactory, IWritable, MimeAdapter, OutgoingFactory, Packet, Serializer, StatusAdapter, StreamAdapter, writePacket } from '@tsdi/common/transport';
-import { AbstractRequest, HeaderAdapter } from '@tsdi/common';
+import { HeaderAdapter } from '@tsdi/common';
 import { ServerTransfer } from '../transfer';
 import { ServerOpts } from '../Server';
 import { fromEvent, Observable } from 'rxjs';

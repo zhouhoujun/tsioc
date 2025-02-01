@@ -2,10 +2,10 @@
 /**
  * protocol types.
  */
-export type Protocols = 'tcp' | 'udp' | 'coap' | 'amqp' | 'mqtt' | 'kafka' | 'redis' | 'nats' | 'modbus' | 'http' | 'https' | 'grpc' | 'ws';
+export type Protocols = 'tcp' | 'udp' | 'coap' | 'amqp' | 'mqtt' | 'kafka' | 'redis' | 'nats' | 'modbus' | 'http' | 'https' | 'grpc' | 'ws' | 'wss';
 
 /**
- * hybird protocol type.
+ * Common protocol type.
  */
-export type HybirdProtocols = 'http' | 'https' | 'grpc' | 'tcp' | 'coap';
+export type CommonProtocols = 'http' | 'https' | 'grpc' | 'tcp' | 'coap';
 

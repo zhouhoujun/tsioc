@@ -3,7 +3,7 @@ import {
     ClassMethodDecorator, createParamDecorator, TypeMetadata, Execption, isMetadataObject, DecorDefine
 } from '@tsdi/ioc';
 import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter } from '@tsdi/core';
-import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Protocols, HybirdProtocols } from '@tsdi/common';
+import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Protocols, CommonProtocols } from '@tsdi/common';
 import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, ProtocolRouteOptions, RouteMappingMetadata, RouteOptions, Router } from './router/router';
 import { Middleware, MiddlewareFn } from './middleware/middleware';
 import { RouteHandlerFactoryResolver } from './router/route.handler';
@@ -160,7 +160,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             const mapping = ctx.class.getAnnotation<MappingDef>();
             const injector = ctx.injector;
 
-            const router = mapping.router ? injector.get(mapping.router) : injector.get(Routers).get(mapping.protocol as HybirdProtocols);
+            const router = mapping.router ? injector.get(mapping.router) : injector.get(Routers).get(mapping.protocol as CommonProtocols);
             const route = mapping.route!;
             if (!route) throw new Execption(lang.getClassName(ctx.type) + 'has not route!');
             if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');

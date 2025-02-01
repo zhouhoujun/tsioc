@@ -1,5 +1,5 @@
 import { Injector, InstanceOf, Module, ModuleWithProviders, ProviderType, ReflectiveFactory, Token, TypeOf, getToken, isFunction, isString, isType, tokenId } from '@tsdi/ioc';
-import { PatternFormatter, patternToPath, normalize, Protocols, HybirdProtocols } from '@tsdi/common';
+import { PatternFormatter, patternToPath, normalize, Protocols, CommonProtocols } from '@tsdi/common';
 import { ROUTES, Routes } from './route';
 import { RouteMatcher } from './router';
 import { HybridRouter } from './router.hybrid';
@@ -77,12 +77,12 @@ export class RouterModule {
         }
     }
 
-    static getToken(protocol: HybirdProtocols): Token<HybridRouter> {
+    static getToken(protocol: CommonProtocols): Token<HybridRouter> {
         return getToken(HybridRouter, protocol)
     }
 }
 
-export function createRouteProviders(protocol: HybirdProtocols, optsify: InstanceOf<RouteOpts>): ProviderType[] {
+export function createRouteProviders(protocol: CommonProtocols, optsify: InstanceOf<RouteOpts>): ProviderType[] {
     const token = getToken(HybridRouter, protocol);
     return [
         {

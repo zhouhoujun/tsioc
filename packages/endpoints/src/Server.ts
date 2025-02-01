@@ -1,6 +1,6 @@
 import { Abstract, ProvdierOf, StaticProvider, Type } from '@tsdi/ioc';
 import { ApplicationEvent, CanHandle, Filter, HandlerService, Interceptor, PipeTransform, Runner, Shutdown } from '@tsdi/core';
-import { HybirdProtocols } from '@tsdi/common';
+import { CommonProtocols } from '@tsdi/common';
 import { TransportOptions } from '@tsdi/common/transport';
 import { RequestContext } from './RequestContext';
 import { RequestHandlerOptions, AbstractRequestHandler } from './AbstractRequestHandler';
@@ -65,6 +65,8 @@ export interface ServerOpts<TSerOpts = any> extends RequestHandlerOptions<any> {
 
     secure?: boolean;
 }
+
+
 
 /**
  * microservice.
@@ -140,7 +142,7 @@ export abstract class Server<TRequest extends RequestContext = RequestContext, T
  */
 export class BindServerEvent<T = any> extends ApplicationEvent {
 
-    constructor(readonly server: T, readonly transport: HybirdProtocols, target: any) {
+    constructor(readonly server: T, readonly transport: CommonProtocols, target: any) {
         super(target)
     }
 

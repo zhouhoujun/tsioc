@@ -201,6 +201,7 @@ export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicInco
 
     url: string;
 
+    readonly topic: string;
     readonly responseTopic: string;
 
     constructor(
@@ -214,7 +215,7 @@ export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicInco
 
         this.setValue(ServerTransport, transport);
 
-        this.originalUrl = this.url = normalize(request.topic);
+        this.originalUrl = this.url = this.topic = normalize(request.topic);
         this.responseTopic = request.responseTopic ?? `${request.topic}/reply`;
         const searhIdx = this.url.indexOf('?');
         if (!this.request.query || searhIdx > 0) {

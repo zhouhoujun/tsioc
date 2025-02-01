@@ -3,7 +3,7 @@ import {
     ProvdierOf, ProviderType, Type, isArray, isNil, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { ConfigMissingExecption, InvocationOptions, TypedRespond } from '@tsdi/core';
-import { HybirdProtocols, Protocols } from '@tsdi/common';
+import { CommonProtocols, Protocols } from '@tsdi/common';
 import { NotImplementedExecption,  TransportPacketModule } from '@tsdi/common/transport';
 import { Server, ServerOpts } from './Server';
 import { Session } from './Session';
@@ -103,7 +103,7 @@ export interface HeybirdOpts {
     /**
     * heybird or not.
     */
-    heybird?: boolean | HybirdProtocols;
+    heybird?: boolean | CommonProtocols;
 }
 
 /**
@@ -144,12 +144,14 @@ export interface MicroServiceOpts {
     providers?: ProviderType[];
 }
 
-export interface HeybirdServiceOpts {
+export interface CommonServiceOpts {
+
     /**
      * microservice or not.
      */
     microservice?: false;
-    transport: HybirdProtocols;
+    
+    transport: CommonProtocols;
     /**
      * server options
      */
@@ -177,10 +179,10 @@ export interface HeybirdServiceOpts {
 
 }
 
-export type ServiceOpts = HeybirdServiceOpts | MicroServiceOpts;
+export type ServiceOpts = CommonServiceOpts | MicroServiceOpts;
 
 
-export interface ServerModuleOpts extends HeybirdServiceOpts {
+export interface ServerModuleOpts extends CommonServiceOpts {
     /**
      * as default service.
      */

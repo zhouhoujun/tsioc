@@ -3,7 +3,7 @@ import {
     ProvdierOf, ProviderType, Token, Type, isArray, isNil, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { ConfigMissingExecption, createHandler } from '@tsdi/core';
-import { DefaultResponseFactory, HybirdProtocols, ResponseFactory, Protocols } from '@tsdi/common';
+import { DefaultResponseFactory, CommonProtocols, ResponseFactory, Protocols } from '@tsdi/common';
 import { ClientIncomingFactory, NotImplementedExecption, StatusAdapter, TransportPacketModule } from '@tsdi/common/transport';
 import { AbstractClient } from './AbstractClient';
 import { ClientBackend } from './backend';
@@ -115,7 +115,7 @@ export interface ClientModuleOpts extends ClientModuleConfig {
     /**
      * transport
      */
-    transport: Protocols | HybirdProtocols;
+    transport: Protocols | CommonProtocols;
     /**
      * client type
      */
