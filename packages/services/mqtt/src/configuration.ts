@@ -16,7 +16,8 @@ import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
     RequestContextServializeInterceptor, RequestContextVaildateInterceptor,
-    SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts
+    SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
+    TopicRequestContext
 } from '@tsdi/endpoints';
 import * as mqtt from 'mqtt';
 import { MqttClient } from './client/client';
@@ -151,7 +152,7 @@ export class MqttConfiguration {
                         return {
                             create: (injector, socket, options) => {
                                 const transportOptions = options.transportOptions ?? {};
-                                return new DefaultServerTransport<mqtt.Client>(
+                                return new DefaultServerTransport<mqtt.Client, TopicRequestContext>(
                                     injector,
                                     socket,
                                     'mqtt',
@@ -172,7 +173,7 @@ export class MqttConfiguration {
                                     }),
                                     (mqtt, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
-                                        return promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(requestContext.r, msg.payload ?? Buffer.alloc(0), { qos: 1 })
+                                        return promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(requestContext.responseTopic, msg.payload ?? Buffer.alloc(0), { qos: 1 })
                                     }
                                 )
                             },

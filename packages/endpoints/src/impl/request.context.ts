@@ -1,6 +1,6 @@
 import { Injector, isNil } from '@tsdi/ioc';
 import { HeaderMappings, LOCALHOST, normalize, Response } from '@tsdi/common';
-import { Incoming, MessageExecption, Outgoing, UrlIncoming } from '@tsdi/common/transport';
+import { Incoming, MessageExecption, Outgoing, TopicIncoming, UrlIncoming } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 import { ServerOpts } from '../Server';
@@ -194,3 +194,77 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
         await lastValueFrom(this.transport.send(this));
     }
 }
+
+export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicIncoming<any>, TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any> extends RequestContext<TRequest, TResponse, TSocket> {
+
+    readonly originalUrl: string;
+
+    url: string;
+
+    readonly responseTopic: string;
+
+    constructor(
+        injector: Injector,
+        readonly transport: ServerTransport,
+        readonly request: TRequest,
+        readonly response: TResponse,
+        readonly serverOptions: ServerOpts = {}
+    ) {
+        super(injector, { ...serverOptions, args: request });
+
+        this.setValue(ServerTransport, transport);
+
+        this.originalUrl = this.url = normalize(request.topic);
+        this.responseTopic = request.responseTopic ?? `${request.topic}/reply`;
+        const searhIdx = this.url.indexOf('?');
+        if (!this.request.query || searhIdx > 0) {
+            this.request.query = this.query;
+        }
+    }
+
+    private _query: Record<string, any> | undefined;
+    get query(): Record<string, any> {
+        if (!this._query) {
+            let urlParams: Record<string, any> = null!;
+            const url = this.url;
+            const idx = url.indexOf('?');
+            if (idx > 0) {
+                urlParams = {};
+                const params = url.slice(idx + 1).split('&');
+                params.forEach(p => {
+                    const [key, value] = p.split('=');
+                    if (value) {
+                        urlParams[decodeURIComponent(key)] = decodeURIComponent(value);
+                    }
+                })
+
+                if (this.request.query) {
+                    this.request.query = { ...urlParams, ...this.request.query ?? {} }
+                } else {
+                    this.request.query = urlParams;
+                }
+            }
+            if (!this.request.query) {
+                this.request.query = {};
+            }
+            this._query = this.request.query;
+
+        }
+        return this._query;
+    }
+
+    async throwExecption(execption: MessageExecption): Promise<void> {
+        if (this.headerSent) return;
+        this.execption = execption;
+        this.body = null;
+        this.response.error = {
+            name: execption.name,
+            message: execption.message,
+            status: execption.status ?? execption.statusCode
+        };
+        if (!isNil(execption.status)) this.status = execption.status;
+        this.statusMessage = execption.message;
+        await lastValueFrom(this.transport.send(this));
+    }
+}
+

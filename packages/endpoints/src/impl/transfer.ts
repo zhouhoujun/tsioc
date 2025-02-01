@@ -1,11 +1,11 @@
 import { Injectable } from '@tsdi/ioc';
 import { Handler } from '@tsdi/core';
-import { AbstractTransferFactory, Incoming, TransferOpts, TransportContext, UrlIncoming } from '@tsdi/common/transport';
+import { AbstractTransferFactory, Incoming, TopicIncoming, TransferOpts, TransportContext, UrlIncoming } from '@tsdi/common/transport';
 import { RequestContext } from '../RequestContext';
 import { ServerTransfer, ServerTransferFactory } from '../transfer';
 import { defer } from 'rxjs';
 import { ServerTransport } from '../transport';
-import { PatternRequestContext, UrlRequestContext } from './request.context';
+import { PatternRequestContext, TopicRequestContext, UrlRequestContext } from './request.context';
 
 
 
@@ -18,6 +18,12 @@ const backenFn = (input: Incoming<any>, context: TransportContext) => {
             return new UrlRequestContext(injector,
                 transport,
                 input as UrlIncoming,
+                input.res ?? outgoingFactory.create(input),
+                serverOptions);
+        } else if((input as TopicIncoming).topic) {
+            return new TopicRequestContext(injector,
+                transport,
+                input as TopicIncoming,                
                 input.res ?? outgoingFactory.create(input),
                 serverOptions);
         } else {
