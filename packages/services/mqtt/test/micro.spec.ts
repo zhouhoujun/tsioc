@@ -72,7 +72,6 @@ export class MqttService {
             }
         }),
         EndpointModule.register({
-            microservice: true,
             transport: 'mqtt'
         })
     ],

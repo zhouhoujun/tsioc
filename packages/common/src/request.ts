@@ -202,6 +202,8 @@ export abstract class TopicRequest<T = any, TOptions extends TopicRequestOptions
      * the outgoing topic.
      */
     abstract get topic(): string;
+
+    abstract get replyTopic(): string;
 }
 
 
@@ -378,7 +380,7 @@ export abstract class BaseUrlRequest<T, TOptions extends UrlRequestOptions = Url
 }
 
 export abstract class BaseTopicRequest<T, TOptions extends TopicRequestOptions = TopicRequestOptions<T>> extends BaseRequest<T, TOptions> implements TopicRequest<T, TOptions> {
-    readonly replyTopic: string | undefined;
+    readonly replyTopic: string;
     constructor(readonly topic: string, readonly pattern: Pattern | null | undefined, init: RequestInitOpts<T, TOptions>, defaultMethod = '') {
         super(init, defaultMethod);
         this.replyTopic = this.getResponseTopic(topic, init);

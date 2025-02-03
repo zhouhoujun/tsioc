@@ -21,7 +21,8 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         ServerEndpointModule,
         ClientModule.register([
             {
-                transport: 'tcp'
+                transport: 'tcp',
+                microservice: false,
             },
             {
                 transport: 'mqtt'
@@ -29,7 +30,6 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         ]),
         EndpointModule.register([
             {
-                microservice: true,
                 transport: 'mqtt',
                 serverOpts: {
                     interceptors: [
@@ -42,6 +42,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
             },
             {
                 transport: 'tcp',
+                microservice: false,
                 serverOpts: {
                     interceptors: [
                         BigFileInterceptor,
@@ -79,7 +80,7 @@ describe('Mqtt hybrid Tcp Server & Mqtt Client & TcpClient', () => {
 
 
     it('fetch json', async () => {
-        const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET' })
+        const res: any = await lastValueFrom(client.send('510100_full.json', { method: 'GET', responseType: 'json' })
             .pipe(
                 catchError((err, ct) => {
                     ctx.getLogger().error(err);

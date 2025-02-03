@@ -202,7 +202,7 @@ export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicInco
     url: string;
 
     readonly topic: string;
-    readonly responseTopic: string;
+    readonly replyTopic: string;
 
     constructor(
         injector: Injector,
@@ -216,7 +216,7 @@ export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicInco
         this.setValue(ServerTransport, transport);
 
         this.originalUrl = this.url = this.topic = normalize(request.topic);
-        this.responseTopic = request.responseTopic ?? `${request.topic}/reply`;
+        this.replyTopic = request.replyTopic ?? `${request.topic}/reply`;
         const searhIdx = this.url.indexOf('?');
         if (!this.request.query || searhIdx > 0) {
             this.request.query = this.query;

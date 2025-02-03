@@ -54,7 +54,6 @@ export class RedisConfiguration {
     private getClientOptions(): ClientModuleOpts {
         return {
             transport: 'redis',
-            microservice: true,
             asDefault: true,
             clientType: RedisClient,
             defaultOpts: {
@@ -127,7 +126,6 @@ export class RedisConfiguration {
     private getServOptions(): ServiceModuleOpts {
         return {
             transport: 'ws',
-            microservice: true,
             asDefault: true,
             serverType: RedisServer,
             defaultOpts: {

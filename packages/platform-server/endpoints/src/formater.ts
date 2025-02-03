@@ -22,7 +22,7 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
             const sizeStr = this.formatSize(ctx.length ?? 0);
             return [
                 withColor ? chalk.gray(this.outgoing) : this.outgoing,
-                withColor ? chalk.cyan(ctx.method) : ctx.method,
+                withColor ? chalk.cyan(ctx.method ?? '') : ctx.method ?? '',
                 ctx.url,
                 status?.toString() ?? '',
                 withColor ? chalk.gray(hrtimeStr) : hrtimeStr,
@@ -32,7 +32,7 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
         } else {
             return [
                 withColor ? chalk.gray(this.incoming) : this.incoming,
-                withColor ? chalk.cyan(ctx.method) : ctx.method,
+                withColor ? chalk.cyan(ctx.method ?? '') : ctx.method ?? '',
                 ctx.url
             ]
         }

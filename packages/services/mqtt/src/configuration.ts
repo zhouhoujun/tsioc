@@ -54,7 +54,6 @@ export class MqttConfiguration {
     private getClientOptions(): ClientModuleOpts {
         return {
             transport: 'mqtt',
-            microservice: true,
             asDefault: true,
             clientType: MqttClient,
             defaultOpts: {
@@ -90,13 +89,18 @@ export class MqttConfiguration {
                                         return { topic, payload }
                                     }),
                                     async (mqtt, msg, req) => {
-                                        if(req.replyTopic && !subscribes.has(req.replyTopic)){
-                                           await promisify(mqtt.subscribe, mqtt)(req.replyTopic);
+                                        if (req.replyTopic && !subscribes.has(req.replyTopic)) {
+                                            subscribes.add(req.replyTopic);
+                                            await promisify(mqtt.subscribe, mqtt)(req.replyTopic);
                                         }
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
                                         return await promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(req.topic, msg.payload ?? Buffer.alloc(0), { qos: 1 })
                                     },
-                                    (mqtt) => promisify(mqtt.unsubscribe, mqtt)(Array.from(subscribes.values()))
+                                    async (mqtt) => {
+                                        if (subscribes.size) {
+                                            await promisify(mqtt.unsubscribe, mqtt)(Array.from(subscribes.values()))
+                                        }
+                                    }
                                 )
                             },
                         }
@@ -119,7 +123,7 @@ export class MqttConfiguration {
                     serializerConfig: {
                         interceptors: [
                             PacketVaildateInterceptor,
-                            PacketSerializeInterceptor,
+                            // PacketSerializeInterceptor,
                             RequestServializeInterceptor
                         ]
                     },
@@ -127,8 +131,8 @@ export class MqttConfiguration {
                         interceptors: [
                             PacketifyInterceptor,
                             DeatchPacketIdInterceptor,
-                            PacketDeserializeInterceptor,
-                            PayloadDeserializeInterceptor
+                            // PacketDeserializeInterceptor,
+                            // PayloadDeserializeInterceptor
                         ]
                     }
                 }
@@ -139,7 +143,6 @@ export class MqttConfiguration {
     private getServOptions(): ServiceModuleOpts {
         return {
             transport: 'mqtt',
-            microservice: true,
             asDefault: true,
             serverType: MqttServer,
             defaultOpts: {
@@ -173,7 +176,7 @@ export class MqttConfiguration {
                                     }),
                                     (mqtt, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
-                                        return promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(requestContext.responseTopic, msg.payload ?? Buffer.alloc(0), { qos: 1 })
+                                        return promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(requestContext.replyTopic, msg.payload ?? Buffer.alloc(0), { qos: 1 })
                                     }
                                 )
                             },
@@ -200,15 +203,15 @@ export class MqttConfiguration {
                     serializerConfig: {
                         interceptors: [
                             RequestContextVaildateInterceptor,
-                            PacketSerializeInterceptor,
+                            // PacketSerializeInterceptor,
                             RequestContextServializeInterceptor,
                         ]
                     },
                     deserializerConfig: {
                         interceptors: [
                             PacketifyInterceptor,
-                            PacketDeserializeInterceptor,
-                            PayloadDeserializeInterceptor
+                            // PacketDeserializeInterceptor,
+                            // PayloadDeserializeInterceptor
                         ]
                     }
                 },
@@ -220,7 +223,6 @@ export class MqttConfiguration {
                     host: LOCALHOST,
                     port: 1883
                 },
-
                 detailError: false,
                 interceptorsToken: MQTT_SERV_INTERCEPTORS,
                 filtersToken: MQTT_SERV_FILTERS,

@@ -1,6 +1,7 @@
 import { tokenId } from '@tsdi/ioc';
 import { GuardLike, Filter, Interceptor } from '@tsdi/core';
 import { ServerOpts } from '@tsdi/endpoints';
+import { IClientSubscribeOptions } from 'mqtt';
 import { MqttConnectOpts } from '../connect';
 
 
@@ -8,6 +9,8 @@ import { MqttConnectOpts } from '../connect';
 export interface MqttServiceOpts extends ServerOpts<MqttConnectOpts> {
     detailError?: boolean;
     retryDelay?: number;
+    subscribeOptions?: IClientSubscribeOptions
+    
 }
 
 

@@ -3,7 +3,7 @@ import { PatternFormatter } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { MicroRouters, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { Client, connect } from 'mqtt';
+import { Client, connect, IClientSubscribeOptions } from 'mqtt';
 import { MqttServiceOpts } from './options';
 import { MqttRequestHandler } from './handler';
 
@@ -21,7 +21,8 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
     private mqtt?: Client | null;
     private _transport?: ServerTransport<Client>;
 
-    constructor(readonly handler: MqttRequestHandler
+    constructor(
+        readonly handler: MqttRequestHandler
     ) {
         super();
     }
@@ -68,7 +69,8 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
 
         const subscribes = this.subscribes = router.matcher.getPatterns();
 
-        await promisify(this.mqtt.subscribe, this.mqtt)(subscribes)
+        await (options.subscribeOptions ? promisify<string | string[], IClientSubscribeOptions>(this.mqtt.subscribe, this.mqtt)(subscribes, options.subscribeOptions)
+            : promisify(this.mqtt.subscribe, this.mqtt)(subscribes))
             .catch(err => {
                 // Just like other commands, subscribe() can fail for some reasons,
                 // ex network issues.
@@ -96,7 +98,7 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
     protected override async onShutdown(): Promise<any> {
         if (!this.mqtt) return;
         this._transport?.destroy();
-        if (this.subscribes) await promisify(this.mqtt.unsubscribe, this.mqtt)(this.subscribes);
+        if (this.subscribes?.length) await promisify(this.mqtt.unsubscribe, this.mqtt)(this.subscribes);
         await promisify(this.mqtt.end, this.mqtt)(true)
             .catch(err => {
                 this.logger?.error(err);

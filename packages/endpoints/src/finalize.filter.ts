@@ -11,9 +11,7 @@ export class FinalizeFilter extends Filter {
     doFilter(request: RequestContext, next: Handler, context?: any): Observable<any> {
         return next.handle(request, context)
             .pipe(
-                mergeMap(res => {
-                    return lastValueFrom(request.transport.send(request));
-                })
+                mergeMap(res => lastValueFrom(request.transport.send(request)))
             )
     }
 }

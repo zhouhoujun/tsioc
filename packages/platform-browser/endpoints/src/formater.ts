@@ -13,7 +13,7 @@ export class BrowserResponseStatusFormater extends ResponseStatusFormater {
         const [status, message] = this.formatStatus(ctx);
         return hrtime ? [
             this.outgoing,
-            ctx.method,
+            ctx.method ?? '',
             ctx.url,
             status,
             this.htime.format(hrtime),
@@ -21,7 +21,7 @@ export class BrowserResponseStatusFormater extends ResponseStatusFormater {
             message
         ] : [
             this.incoming,
-            ctx.method,
+            ctx.method ?? '',
             ctx.url
         ]
     }

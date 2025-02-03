@@ -397,5 +397,6 @@ export interface UrlClientOutgoing<T = any> extends ClientOutgoing<T> {
 
 export interface TopicClientOutgoing<T = any> extends ClientOutgoing<T> {
     topic: string;
+    replyTopic: string;
 }
 
