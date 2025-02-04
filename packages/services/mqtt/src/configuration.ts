@@ -27,7 +27,7 @@ import { MqttServer } from './server/server';
 import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS } from './server/options';
 import { MqttRequestHandler } from './server/handler';
 import { MqttRequest } from './client/request';
-import { from, fromEvent } from 'rxjs';
+import { filter, from, fromEvent } from 'rxjs';
 
 
 
@@ -173,7 +173,9 @@ export class MqttConfiguration {
                                     options,
                                     (mqtt) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
                                         return { topic, payload }
-                                    }),
+                                    }).pipe(
+                                        filter(m => !m.topic.endsWith('/reply'))
+                                    ),
                                     (mqtt, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
                                         return promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(requestContext.replyTopic, msg.payload ?? Buffer.alloc(0), { qos: 1 })
