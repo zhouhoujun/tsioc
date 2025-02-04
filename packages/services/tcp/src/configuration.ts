@@ -5,11 +5,11 @@ import {
     PacketVaildateInterceptor, DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory,
     DeserializerFactory, FileAdapter, MimeAdapter, PacketDeserializeInterceptor, PacketifyInterceptor,
     PacketSerializeInterceptor, Redirector, SerializerFactory, StatusAdapter, StreamAdapter,
-    UrlClientIncomingFactory, UrlOutgoingFactory, PayloadDeserializeInterceptor, ev
+    UrlClientIncomingFactory, UrlOutgoingFactory, PayloadDeserializeInterceptor
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    RequestServializeInterceptor, SocketClientTransport
+    RequestServializeInterceptor, RequestTimeoutInterceptor, SocketClientTransport
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory,
@@ -138,6 +138,9 @@ export class TcpConfiguration {
                         ]
                     }
                 },
+                interceptors:[
+                    RequestTimeoutInterceptor
+                ]
             }
         }
     }

@@ -8,7 +8,5 @@ export * from './server/options';
 export * from './server/server';
 
 export * from './message';
-export * from './incoming';
-export * from './outgoing';
 
 export * from './redis.module';

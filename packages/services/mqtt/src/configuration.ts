@@ -10,7 +10,8 @@ import {
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    RequestServializeInterceptor, DefaultClientTransport
+    RequestServializeInterceptor, DefaultClientTransport,
+    RequestTimeoutInterceptor
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
@@ -135,7 +136,10 @@ export class MqttConfiguration {
                             // PayloadDeserializeInterceptor
                         ]
                     }
-                }
+                },
+                interceptors:[
+                    RequestTimeoutInterceptor
+                ]
             }
         }
     }

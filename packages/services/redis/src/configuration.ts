@@ -8,7 +8,7 @@ import {
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    RequestServializeInterceptor, SocketClientTransport
+    RequestServializeInterceptor, RequestTimeoutInterceptor, SocketClientTransport
 } from '@tsdi/common/client';
 import {
     AcceptsPriority,  DefaultServerTransferFactory,
@@ -119,6 +119,9 @@ export class RedisConfiguration {
                         ]
                     }
                 },
+                interceptors:[
+                    RequestTimeoutInterceptor
+                ]
             }
         }
     }
