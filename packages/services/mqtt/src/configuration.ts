@@ -88,11 +88,11 @@ export class MqttConfiguration {
                                     options,
                                     (mqtt, channel, req) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
                                         return { topic, payload }
-                                    }),
+                                    }).pipe(filter(msg => msg.topic === req?.responseTopic)),
                                     async (mqtt, msg, req) => {
-                                        if (req.replyTopic && !subscribes.has(req.replyTopic)) {
-                                            subscribes.add(req.replyTopic);
-                                            await promisify(mqtt.subscribe, mqtt)(req.replyTopic);
+                                        if (req.responseTopic && !subscribes.has(req.responseTopic)) {
+                                            subscribes.add(req.responseTopic);
+                                            await promisify(mqtt.subscribe, mqtt)(req.responseTopic);
                                         }
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
                                         return await promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(req.topic, msg.payload ?? Buffer.alloc(0), { qos: 1 })
@@ -137,7 +137,7 @@ export class MqttConfiguration {
                         ]
                     }
                 },
-                interceptors:[
+                interceptors: [
                     RequestTimeoutInterceptor
                 ]
             }
@@ -176,13 +176,14 @@ export class MqttConfiguration {
                                     transferFactory.create(injector, transportOptions.transferConfig),
                                     options,
                                     (mqtt) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
-                                        return { topic, payload }
+                                        return { topic, responseTopic: packet.properties?.responseTopic, payload }
                                     }).pipe(
-                                        filter(m => !m.topic.endsWith('/reply'))
+                                        filter(m => !!m.responseTopic || !m.topic.endsWith('/reply'))
                                     ),
                                     (mqtt, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
-                                        return promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(requestContext.replyTopic, msg.payload ?? Buffer.alloc(0), { qos: 1 })
+                                        if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
+                                        return promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(requestContext.responseTopic, msg.payload ?? Buffer.alloc(0), { qos: 1 })
                                     }
                                 )
                             },
@@ -212,6 +213,9 @@ export class MqttConfiguration {
                             // PacketSerializeInterceptor,
                             RequestContextServializeInterceptor,
                         ]
+                    },
+                    getResponseTopic(topic) {
+                        return `${topic}/reply`
                     },
                     deserializerConfig: {
                         interceptors: [

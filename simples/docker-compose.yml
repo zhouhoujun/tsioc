@@ -28,7 +28,7 @@ services:
 
   redis:
     container_name: test_redis
-    image: redis:6.2.5
+    image: redis
     ports:
       - "6379:6379"
     volumes:

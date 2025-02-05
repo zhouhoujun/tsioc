@@ -49,7 +49,7 @@ export enum KafkaHeaders {
     RECEIVED_TOPIC = 'kafka_receivedTopic',
     RECORD_METADATA = 'kafka_recordMetadata',
     REPLY_PARTITION = 'kafka_replyPartition',
-    REPLY_TOPIC = 'kafka_replyTopic',
+    REPLY_TOPIC = 'kafka_responseTopic',
     TIMESTAMP = 'kafka_timestamp',
     TIMESTAMP_TYPE = 'kafka_timestampType',
     TOPIC = 'kafka_topic',

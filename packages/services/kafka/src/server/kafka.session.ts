@@ -51,12 +51,12 @@ export class KafkaServerTransport extends ServerTransport<KafkaTransport, EachMe
                 packet.partition = packet.headers?.[KafkaHeaders.REPLY_PARTITION]
             } else {
                 const opts = this.options as KafkaTransportOpts;
-                const replyTopic = this.getReply(packet);
-                headers[KafkaHeaders.REPLY_TOPIC] = Buffer.from(replyTopic);
-                if (opts.consumerAssignments && !isNil(opts.consumerAssignments[replyTopic])) {
-                    headers[KafkaHeaders.REPLY_PARTITION] = Buffer.from(opts.consumerAssignments[replyTopic].toString());
-                } else if (!this.regTopics?.some(i => i.test(replyTopic))) {
-                    throw new NotFoundExecption(replyTopic + ' has not registered.', this.socket.vaildator?.notFound);
+                const responseTopic = this.getReply(packet);
+                headers[KafkaHeaders.REPLY_TOPIC] = Buffer.from(responseTopic);
+                if (opts.consumerAssignments && !isNil(opts.consumerAssignments[responseTopic])) {
+                    headers[KafkaHeaders.REPLY_PARTITION] = Buffer.from(opts.consumerAssignments[responseTopic].toString());
+                } else if (!this.regTopics?.some(i => i.test(responseTopic))) {
+                    throw new NotFoundExecption(responseTopic + ' has not registered.', this.socket.vaildator?.notFound);
                 }
             }
         }

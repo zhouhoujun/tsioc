@@ -27,7 +27,7 @@ export class RequestServializeInterceptor implements Interceptor<AbstractRequest
             (pkg as UrlClientOutgoing).method = (input as UrlRequest).method;
         } else if ((input as TopicRequest).topic) {
             (pkg as TopicClientOutgoing).topic = (input as TopicRequest).topic;
-            (pkg as TopicClientOutgoing).replyTopic = (input as TopicRequest).replyTopic;
+            // (pkg as TopicClientOutgoing).responseTopic = (input as TopicRequest).responseTopic;
             (pkg as TopicClientOutgoing).params = (input as TopicRequest).params.toRecord();
         } else {
             (pkg as ClientOutgoing).pattern = transport.patternFormatter?.format((input as PatternRequest).pattern);

@@ -179,7 +179,7 @@ export interface TopicIncomingOptions<T = any> extends BasicIncomingOpts<T> {
     /**
      * response topic.
      */
-    replyTopic?: string;
+    responseTopic?: string;
 }
 
 /**
@@ -314,13 +314,13 @@ export class TopicIncoming<T = any> extends AbstractIncoming<T> implements Incom
 
 
     readonly topic: string;
-    readonly replyTopic: string | undefined;
+    readonly responseTopic: string | undefined;
 
 
     constructor(init: TopicIncomingOptions<T>) {
         super(init);
         this.topic = init.topic;
-        this.replyTopic = init.replyTopic;
+        this.responseTopic = init.responseTopic;
     }
 
     /**

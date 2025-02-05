@@ -100,11 +100,11 @@ export class RedisConfiguration {
                                         fromEvent(socket.subscriber, 'pmessageBuffer', (pattern: string, topic: string | Buffer, payload: string | Buffer) => {
                                             return { topic: isString(topic) ? topic : new TextDecoder().decode(topic), payload }
                                         })
-                                    ),
+                                    ).pipe(filter(msg=> msg.topic === req?.responseTopic)),
                                     async (socket, msg, req) => {
-                                        if (req.replyTopic && !subscribes.has(req.replyTopic)) {
-                                            subscribes.add(req.replyTopic);
-                                            await promisify<string>(socket.subscriber.subscribe, socket.subscriber)(req.replyTopic);
+                                        if (req.responseTopic && !subscribes.has(req.responseTopic)) {
+                                            subscribes.add(req.responseTopic);
+                                            await promisify<string>(socket.subscriber.subscribe, socket.subscriber)(req.responseTopic);
                                         }
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
                                         return await promisify<string, Buffer | string>(socket.publisher.publish, socket.publisher)(req.topic, msg.payload ?? Buffer.alloc(0))
@@ -202,7 +202,8 @@ export class RedisConfiguration {
                                     ),
                                     (socket, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
-                                        return promisify<string, Buffer | string>(socket.publisher.publish, socket.publisher)(requestContext.replyTopic, msg.payload ?? Buffer.alloc(0))
+                                        if(!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
+                                        return promisify<string, Buffer | string>(socket.publisher.publish, socket.publisher)(requestContext.responseTopic, msg.payload ?? Buffer.alloc(0))
                                     }
                                 )
                             },
@@ -226,6 +227,9 @@ export class RedisConfiguration {
                     // delimiter: '#',
                     // defaultMethod: '*',
                     limit: sizeLimit,
+                    getResponseTopic(topic) {
+                        return `${topic}.reply`
+                    },
                     serializerConfig: {
                         interceptors: [
                             RequestContextVaildateInterceptor,

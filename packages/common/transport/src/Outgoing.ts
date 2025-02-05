@@ -1,4 +1,4 @@
-import { AbstractRequest, Header, HeadersLike, StatusOptions, HeaderMappings, IHeaders } from '@tsdi/common';
+import { Header, HeadersLike, StatusOptions, HeaderMappings, IHeaders } from '@tsdi/common';
 import { IReadable, IWritable } from './stream';
 import { Injectable } from '@tsdi/ioc';
 import { StreamAdapter } from './StreamAdapter';
@@ -397,6 +397,6 @@ export interface UrlClientOutgoing<T = any> extends ClientOutgoing<T> {
 
 export interface TopicClientOutgoing<T = any> extends ClientOutgoing<T> {
     topic: string;
-    replyTopic: string;
+    responseTopic: string;
 }
 

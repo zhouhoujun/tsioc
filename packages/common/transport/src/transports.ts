@@ -37,6 +37,8 @@ export interface TransportOptions {
     serializerConfig?: ConfigableHandlerOptions;
     deserializerConfig?: ConfigableHandlerOptions;
     transferConfig?: ConfigableHandlerOptions;
+
+    getResponseTopic?(topic: string): string;
 }
 
 /**
