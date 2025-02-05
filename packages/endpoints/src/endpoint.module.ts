@@ -193,6 +193,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 });
 
                 return [
+                    ...moduleOpts.providers ?? [],
                     ...microservice ? createMicroRouteProviders(moduleOpts.transport, serverOpts.routes ?? {}) : createRouteProviders(moduleOpts.transport as CommonProtocols, serverOpts.routes ?? {}),
                     { provide: REGISTER_SERVICES, useValue: { service: moduleOpts.serverType, bootstrap: serverOpts.bootstrap, microservice: serverOpts.microservice, providers }, multi: true }
                 ];

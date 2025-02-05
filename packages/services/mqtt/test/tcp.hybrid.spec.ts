@@ -149,6 +149,7 @@ describe('Mqtt hybrid Tcp Server & Mqtt Client & TcpClient', () => {
                     return of(err)
                 })
             ));
+        // expect(a.status).toEqual(404);
         expect(a.statusText).toEqual('Not Found');
     });
 
@@ -290,7 +291,7 @@ describe('Mqtt hybrid Tcp Server & Mqtt Client & TcpClient', () => {
         const result = 'reload';
         const r = await lastValueFrom(client.send('/device/status', { observe: 'response', params: { redirect: 'reload' }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
-               //  ctx.getLogger().error(err);
+                //  ctx.getLogger().error(err);
                 return of(err);
             })));
         // expect(r.status).toEqual(200);

@@ -26,7 +26,7 @@ const defaultFormatter: PatternFormatter = {
 @Module({
     providers: [
         { provide: RouteHandlerFactoryResolver, useFactory: (factory) => new RouteHandlerFactoryResolverImpl(factory), deps: [ReflectiveFactory] },
-        { provide: PatternFormatter, useValue: defaultFormatter, asDefault: true }
+        // { provide: PatternFormatter, useValue: defaultFormatter, asDefault: true }
     ]
 })
 export class RouteEndpointModule {
@@ -91,7 +91,7 @@ export function createRouteProviders(protocol: CommonProtocols, optsify: Instanc
                 const opts = isFunction(optsify) ? optsify(injector) : optsify;
                 return new MappingRouter(injector,
                     opts.matcher ? (isType(opts.matcher) ? injector.get(opts.matcher) : opts.matcher) : new DefaultRouteMatcher(),
-                    opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter),
+                    opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter, defaultFormatter),
                     protocol,
                     opts.prefix,
                     opts.routes)
@@ -191,7 +191,7 @@ export function createMicroRouteProviders(protocol: Protocols, optsify: Instance
                 const opts = isFunction(optsify) ? optsify(injector) : optsify;
                 return new MappingRouter(injector,
                     opts.matcher ? (isType(opts.matcher) ? injector.get(opts.matcher) : opts.matcher) : new DefaultRouteMatcher(),
-                    opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter),
+                    opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter, defaultFormatter),
                     protocol,
                     opts.prefix,
                     opts.routes,

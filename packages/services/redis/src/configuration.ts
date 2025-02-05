@@ -3,22 +3,19 @@ import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import {
     DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
     ev,
-    FileAdapter, MimeAdapter, NotSupportedExecption, PacketDeserializeInterceptor, PacketifyInterceptor, PacketSerializeInterceptor,
-    PacketVaildateInterceptor, PayloadDeserializeInterceptor, Redirector, SerializerFactory, StatusAdapter,
-    StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory, UrlClientIncomingFactory, UrlOutgoingFactory
+    FileAdapter, MimeAdapter, NotSupportedExecption, PacketifyInterceptor,
+    PacketVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
+    StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    DefaultClientTransport,
-    RequestServializeInterceptor, RequestTimeoutInterceptor, SocketClientTransport
+    DefaultClientTransport, RequestServializeInterceptor, RequestTimeoutInterceptor
 } from '@tsdi/common/client';
 import {
-    AcceptsPriority, DefaultServerTransferFactory,
-    DefaultServerTransport,
+    AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
     RequestContextServializeInterceptor, RequestContextVaildateInterceptor, SERVER_MODULES,
-    ServerTransferFactory, ServiceModuleOpts, SocketServerTransport,
-    TopicRequestContext
+    ServerTransferFactory, ServiceModuleOpts, TopicRequestContext
 } from '@tsdi/endpoints';
 import { RedisClient } from './client/client';
 import { REDIS_CLIENT_FILTERS, REDIS_CLIENT_INTERCEPTORS } from './client/options';
@@ -151,11 +148,11 @@ export class RedisConfiguration {
                 },
                 interceptors: [
                     RequestTimeoutInterceptor
-                ],
-                providers: [
-                    { provide: PatternFormatter, useClass: RedisPatternFormatter }
                 ]
-            }
+            },
+            providers: [
+                { provide: PatternFormatter, useClass: RedisPatternFormatter }
+            ]
         }
     }
 
@@ -262,11 +259,11 @@ export class RedisConfiguration {
                     ExecptionFinalizeFilter,
                     ExecptionHandlerFilter,
                     FinalizeFilter
-                ],
-                providers: [
-                    { provide: PatternFormatter, useClass: RedisPatternFormatter }
                 ]
-            }
+            },
+            providers: [
+                { provide: PatternFormatter, useClass: RedisPatternFormatter }
+            ]
         }
     }
 }
