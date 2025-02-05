@@ -5,7 +5,8 @@ import {
     PacketVaildateInterceptor, DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory,
     DeserializerFactory, FileAdapter, MimeAdapter, PacketDeserializeInterceptor, PacketifyInterceptor,
     PacketSerializeInterceptor, Redirector, SerializerFactory, StatusAdapter, StreamAdapter,
-    UrlClientIncomingFactory, UrlOutgoingFactory, PayloadDeserializeInterceptor
+    UrlClientIncomingFactory, UrlOutgoingFactory, PayloadDeserializeInterceptor,
+    UrlIncomingFactory
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
@@ -157,7 +158,7 @@ export class TcpConfiguration {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
                         statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
                         fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
-                        incomingFactory: UrlClientIncomingFactory, outgoingFactory: UrlOutgoingFactory, transferFactory: ServerTransferFactory) => {
+                        incomingFactory: UrlIncomingFactory, outgoingFactory: UrlOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
                             create: (injector, socket, options) => {
                                 const transportOptions = options.transportOptions ?? {};
@@ -190,7 +191,7 @@ export class TcpConfiguration {
                         FileAdapter,
                         [MimeAdapter, InjectFlags.Optional],
                         [AcceptsPriority, InjectFlags.Optional],
-                        UrlClientIncomingFactory,
+                        UrlIncomingFactory,
                         UrlOutgoingFactory,
                         DefaultServerTransferFactory
                     ]

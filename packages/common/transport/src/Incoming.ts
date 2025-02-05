@@ -288,6 +288,7 @@ export function parseUrlIncoming(init: UrlIncomingOptions<IReadable>): UrlIncomi
     const incoming = (init.body ?? init.payload) as any;
     incoming.id = init.id;
     incoming.url = init.url;
+    incoming.method = init.method ?? init.defaultMethod ?? '';
     incoming.headers = new HeaderMappings(init.headers);
     incoming.pattern = init.pattern;
     return incoming as (IReadable & UrlIncoming<any>);

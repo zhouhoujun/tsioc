@@ -103,7 +103,7 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
             ServerEndpointModule,
             provideClient({
                 transport: 'tcp',
-                microservice: true,
+                microservice: false,
                 clientOpts: {
                     connectOpts: {
                         path: ipcpath

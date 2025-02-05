@@ -24,7 +24,9 @@ export class RequestServializeInterceptor implements Interceptor<AbstractRequest
 
         if ((input as UrlRequest).url) {
             (pkg as UrlClientOutgoing).url = (input as UrlRequest).getUrlWithParams();
-            (pkg as UrlClientOutgoing).method = (input as UrlRequest).method;
+            if ((input as UrlRequest).method) {
+                (pkg as UrlClientOutgoing).method = (input as UrlRequest).method;
+            }
         } else if ((input as TopicRequest).topic) {
             (pkg as TopicClientOutgoing).topic = (input as TopicRequest).topic;
             // (pkg as TopicClientOutgoing).responseTopic = (input as TopicRequest).responseTopic;
@@ -35,10 +37,10 @@ export class RequestServializeInterceptor implements Interceptor<AbstractRequest
         }
 
         if (transport.streamAdapter.isReadable(input.body)) {
-            
+
             let contentLength = transport.headerAdapter?.getContentLength(headers) ?? 0;
-            
-            if(id) {
+
+            if (id) {
                 const idLen = transport.options.idLen ?? 2;
                 const idBuff = Buffer.alloc(idLen);
                 if (idLen > 4) {
