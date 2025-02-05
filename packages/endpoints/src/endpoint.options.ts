@@ -104,17 +104,17 @@ export interface TcpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
 
 export interface HttpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'http' | 'https';
-    serverOpts: ServerOpts<TSerOpts> & MiddlewareOpts;
+    serverOpts?: ServerOpts<TSerOpts> & MiddlewareOpts;
 }
 
 export interface CoapServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'coap';
-    serverOpts: ServerOpts<TSerOpts> & MiddlewareOpts;
+    serverOpts?: ServerOpts<TSerOpts> & MiddlewareOpts;
 }
 
 export interface GrpcServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'grpc';
-    serverOpts: ServerOpts<TSerOpts> & MiddlewareOpts;
+    serverOpts?: ServerOpts<TSerOpts> & MiddlewareOpts;
 }
 
 

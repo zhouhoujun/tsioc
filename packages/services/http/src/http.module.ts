@@ -1,11 +1,11 @@
 import { Module } from '@tsdi/ioc';
 import { Http } from './client/clinet';
 import { HttpServer } from './server/server';
-import { HttpContextFactory } from './server/context';
+// import { HttpContextFactory } from './server/context';
 import { HttpStatusAdapter } from './status';
 import { HttpResponseEventFactory } from './client/response.factory';
-import { HttpClientCodingsHandlers } from './client/codings.hanlders';
-import { HttpCodingsHandlers } from './server/codings.handlers';
+// import { HttpClientCodingsHandlers } from './client/codings.hanlders';
+// import { HttpCodingsHandlers } from './server/codings.handlers';
 import { HttpConfiguration } from './configuration';
 
 
@@ -15,9 +15,9 @@ import { HttpConfiguration } from './configuration';
         HttpServer,
         HttpStatusAdapter,
         HttpResponseEventFactory,
-        HttpClientCodingsHandlers,
-        HttpCodingsHandlers,
-        HttpContextFactory,
+        // HttpClientCodingsHandlers,
+        // HttpCodingsHandlers,
+        // HttpContextFactory,
         HttpConfiguration
     ]
 })
