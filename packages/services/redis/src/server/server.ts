@@ -7,7 +7,7 @@ import Redis from 'ioredis';
 import { RedisRequestHandler } from './handler';
 import { RedisServerOpts } from './options';
 import { Subject, first, fromEvent, merge } from 'rxjs';
-import { ReidsSocket } from '../message';
+import { ReidsSocket } from '../socket';
 
 /**
  * Redis Server.
@@ -79,33 +79,38 @@ export class RedisServer extends Server<RequestContext, RedisServerOpts> {
         const subscribes: string[] = [];
         const psubscribes: string[] = [];
         routes.forEach(r => router.matcher.isPattern(r) ? psubscribes.push(r) : subscribes.push(r));
-        await this.subscriber.subscribe(...subscribes, (err, count) => {
-            if (err) {
-                // Just like other commands, subscribe() can fail for some reasons,
-                // ex network issues.
-                this.logger.error("Failed to subscribe: %s", err.message);
-            } else {
-                // `count` represents the number of channels this server are currently subscribed to.
-                this.logger.info(
-                    `Subscribed successfully! This server is currently subscribed to ${count} channels.`,
-                    subscribes
-                );
-            }
-        });
 
-        await this.subscriber.psubscribe(...psubscribes, (err, count) => {
-            if (err) {
-                // Just like other commands, subscribe() can fail for some reasons,
-                // ex network issues.
-                this.logger.error("Failed to subscribe: %s", err.message);
-            } else {
-                // `count` represents the number of channels this server are currently subscribed to.
-                this.logger.info(
-                    `Subscribed successfully! This server is currently subscribed to ${count} pattern channels.\n`,
-                    psubscribes
-                );
-            }
-        });
+        if (subscribes.length) {
+            await this.subscriber.subscribe(...subscribes, (err, count) => {
+                if (err) {
+                    // Just like other commands, subscribe() can fail for some reasons,
+                    // ex network issues.
+                    this.logger.error("Failed to subscribe: %s", err.message);
+                } else {
+                    // `count` represents the number of channels this server are currently subscribed to.
+                    this.logger.info(
+                        `Subscribed successfully! This server is currently subscribed to ${count} channels.`,
+                        subscribes
+                    );
+                }
+            });
+        }
+
+        if (psubscribes.length) {
+            await this.subscriber.psubscribe(...psubscribes, (err, count) => {
+                if (err) {
+                    // Just like other commands, subscribe() can fail for some reasons,
+                    // ex network issues.
+                    this.logger.error("Failed to subscribe: %s", err.message);
+                } else {
+                    // `count` represents the number of channels this server are currently subscribed to.
+                    this.logger.info(
+                        `Subscribed successfully! This server is currently subscribed to ${count} pattern channels.\n`,
+                        psubscribes
+                    );
+                }
+            });
+        }
 
         session.listen(this.handler, merge(this.destroy$, fromEvent(this.subscriber, ev.ERROR)).pipe(first()))
         // injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options);
@@ -121,12 +126,12 @@ export class RedisServer extends Server<RequestContext, RedisServerOpts> {
         await this._transport?.destroy();
         this.destroy$.next();
         this.destroy$.complete();
-        
+
         this.publisher?.quit();
         this.publisher?.removeAllListeners();
         this.subscriber?.quit();
         this.subscriber?.removeAllListeners();
-        
+
         this.publisher = this.subscriber = null;
         this.logger.info(`Redis microservice closed!`);
     }

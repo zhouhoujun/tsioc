@@ -72,7 +72,6 @@ export class RedisService {
             }
         }),
         EndpointModule.register({
-            microservice: true,
             transport: 'redis'
             
         })

@@ -1,4 +1,4 @@
-import { BaseTopicRequest, TopicRequestOptions, RequestCloneOpts } from '@tsdi/common';
+import { BaseTopicRequest, TopicRequestOptions, RequestCloneOpts, RequestInitOpts } from '@tsdi/common';
 
 export class RedisRequest<T> extends BaseTopicRequest<T, TopicRequestOptions> {
     clone(): RedisRequest<T>;
@@ -7,6 +7,10 @@ export class RedisRequest<T> extends BaseTopicRequest<T, TopicRequestOptions> {
     clone(update: RequestCloneOpts<any, TopicRequestOptions> = {}): RedisRequest<any> {
         const init = this.cloneOpts(update);
         return new RedisRequest(update.topic ?? this.topic, this.pattern, init);
+    }
+
+    protected getResponseTopic(topic: string, options: RequestInitOpts<T, TopicRequestOptions>): string {
+        return `${topic}.reply`
     }
 
 }

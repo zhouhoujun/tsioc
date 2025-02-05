@@ -7,7 +7,7 @@ import Redis from 'ioredis';
 import { RedisHandler } from './handler';
 import { RedisClientOpts } from './options';
 import { RedisRequest } from './request';
-import { ReidsSocket } from '../message';
+import { ReidsSocket } from '../socket';
 
 /**
  * Redis Client.

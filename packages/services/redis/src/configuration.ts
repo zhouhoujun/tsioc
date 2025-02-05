@@ -1,20 +1,24 @@
-import { InjectFlags } from '@tsdi/ioc';
+import { InjectFlags, isString, promisify } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import {
     DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
-    FileAdapter, MimeAdapter, PacketDeserializeInterceptor, PacketifyInterceptor, PacketSerializeInterceptor,
+    ev,
+    FileAdapter, MimeAdapter, NotSupportedExecption, PacketDeserializeInterceptor, PacketifyInterceptor, PacketSerializeInterceptor,
     PacketVaildateInterceptor, PayloadDeserializeInterceptor, Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory, UrlClientIncomingFactory, UrlOutgoingFactory
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
+    DefaultClientTransport,
     RequestServializeInterceptor, RequestTimeoutInterceptor, SocketClientTransport
 } from '@tsdi/common/client';
 import {
-    AcceptsPriority,  DefaultServerTransferFactory,
+    AcceptsPriority, DefaultServerTransferFactory,
+    DefaultServerTransport,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
     RequestContextServializeInterceptor, RequestContextVaildateInterceptor, SERVER_MODULES,
-    ServerTransferFactory, ServiceModuleOpts,  SocketServerTransport
+    ServerTransferFactory, ServiceModuleOpts, SocketServerTransport,
+    TopicRequestContext
 } from '@tsdi/endpoints';
 import { RedisClient } from './client/client';
 import { REDIS_CLIENT_FILTERS, REDIS_CLIENT_INTERCEPTORS } from './client/options';
@@ -22,13 +26,17 @@ import { RedisHandler } from './client/handler';
 import { RedisServer } from './server/server';
 import { REDIS_SERV_FILTERS, REDIS_SERV_GUARDS, REDIS_SERV_INTERCEPTORS } from './server/options';
 import { RedisRequestHandler } from './server/handler';
-import { DefaultResponseFactory, HeaderAdapter, PatternFormatter, ResponseFactory } from '@tsdi/common';
+import { DefaultResponseFactory, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
+import { RedisPatternFormatter } from './pattern';
+import { ReidsSocket } from './socket';
+import { filter, fromEvent, merge } from 'rxjs';
+import { RedisRequest } from './client/request';
 
 
 
 
 // const defaultMaxSize = 65515; //1024 * 64 - 20;
-const defaultMaxSize = 1048576; //1024 * 1024;
+const sizeLimit = 1048576; //1024 * 1024;
 // const defaultMaxSize = 5242880; //1024 * 1024 * 5;
 // const defaultMaxSize = 10485760; //1024 * 1024 * 10;
 
@@ -69,7 +77,8 @@ export class RedisConfiguration {
                         return {
                             create: (injector, socket, options) => {
                                 const transportOptions = options.transportOptions ?? {};
-                                return new SocketClientTransport(
+                                const subscribes = new Set<string>();
+                                return new DefaultClientTransport<ReidsSocket, RedisRequest<any>>(
                                     injector,
                                     socket,
                                     'redis',
@@ -83,7 +92,28 @@ export class RedisConfiguration {
                                     transferFactory.create(injector, transportOptions.transferConfig),
                                     responseFactory,
                                     redirector,
-                                    options
+                                    options,
+                                    (socket, channel, req) => merge(
+                                        fromEvent(socket.subscriber, ev.MESSAGE_BUFFER, (topic: string | Buffer, payload: string | Buffer) => {
+                                            return { topic: isString(topic) ? topic : new TextDecoder().decode(topic), payload }
+                                        }),
+                                        fromEvent(socket.subscriber, 'pmessageBuffer', (pattern: string, topic: string | Buffer, payload: string | Buffer) => {
+                                            return { topic: isString(topic) ? topic : new TextDecoder().decode(topic), payload }
+                                        })
+                                    ),
+                                    async (socket, msg, req) => {
+                                        if (req.replyTopic && !subscribes.has(req.replyTopic)) {
+                                            subscribes.add(req.replyTopic);
+                                            await promisify<string>(socket.subscriber.subscribe, socket.subscriber)(req.replyTopic);
+                                        }
+                                        if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
+                                        return await promisify<string, Buffer | string>(socket.publisher.publish, socket.publisher)(req.topic, msg.payload ?? Buffer.alloc(0))
+                                    },
+                                    async (socket) => {
+                                        if (subscribes.size) {
+                                            await promisify(socket.subscriber.unsubscribe, socket.subscriber)()
+                                        }
+                                    }
                                 )
                             },
                         }
@@ -102,11 +132,11 @@ export class RedisConfiguration {
                     ]
                 },
                 transportOptions: {
-                    delimiter,
+                    limit: sizeLimit,
                     serializerConfig: {
                         interceptors: [
                             PacketVaildateInterceptor,
-                            PacketSerializeInterceptor,
+                            // PacketSerializeInterceptor,
                             RequestServializeInterceptor
                         ]
                     },
@@ -114,13 +144,16 @@ export class RedisConfiguration {
                         interceptors: [
                             PacketifyInterceptor,
                             DeatchPacketIdInterceptor,
-                            PacketDeserializeInterceptor,
-                            PayloadDeserializeInterceptor
+                            // PacketDeserializeInterceptor,
+                            // PayloadDeserializeInterceptor
                         ]
                     }
                 },
-                interceptors:[
+                interceptors: [
                     RequestTimeoutInterceptor
+                ],
+                providers: [
+                    { provide: PatternFormatter, useClass: RedisPatternFormatter }
                 ]
             }
         }
@@ -128,7 +161,7 @@ export class RedisConfiguration {
 
     private getServOptions(): ServiceModuleOpts {
         return {
-            transport: 'ws',
+            transport: 'redis',
             asDefault: true,
             serverType: RedisServer,
             defaultOpts: {
@@ -141,7 +174,7 @@ export class RedisConfiguration {
                         return {
                             create: (injector, socket, options) => {
                                 const transportOptions = options.transportOptions ?? {};
-                                return new SocketServerTransport(
+                                return new DefaultServerTransport<ReidsSocket, TopicRequestContext>(
                                     injector,
                                     socket,
                                     'redis',
@@ -156,7 +189,21 @@ export class RedisConfiguration {
                                     incomingFactory,
                                     outgoingFactory,
                                     transferFactory.create(injector, transportOptions.transferConfig),
-                                    options
+                                    options,
+                                    (socket) => merge(
+                                        fromEvent(socket.subscriber, ev.MESSAGE_BUFFER, (topic: string | Buffer, payload: string | Buffer) => {
+                                            return { topic: isString(topic) ? topic : new TextDecoder().decode(topic), payload }
+                                        }),
+                                        fromEvent(socket.subscriber, 'pmessageBuffer', (pattern: string, topic: string | Buffer, payload: string | Buffer) => {
+                                            return { topic: isString(topic) ? topic : new TextDecoder().decode(topic), payload }
+                                        })
+                                    ).pipe(
+                                        filter(m => !m.topic.endsWith('.reply'))
+                                    ),
+                                    (socket, msg, requestContext) => {
+                                        if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
+                                        return promisify<string, Buffer | string>(socket.publisher.publish, socket.publisher)(requestContext.replyTopic, msg.payload ?? Buffer.alloc(0))
+                                    }
                                 )
                             },
                         }
@@ -164,7 +211,6 @@ export class RedisConfiguration {
                     deps: [
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
-                        [PatternFormatter, InjectFlags.Optional],
                         [StatusAdapter, InjectFlags.Optional],
                         [HeaderAdapter, InjectFlags.Optional],
                         StreamAdapter,
@@ -176,26 +222,32 @@ export class RedisConfiguration {
                         DefaultServerTransferFactory
                     ]
                 },
-                content: {
-                    root: 'public',
-                    prefix: 'content'
-                },
                 transportOptions: {
-                    delimiter,
+                    // delimiter: '#',
+                    // defaultMethod: '*',
+                    limit: sizeLimit,
                     serializerConfig: {
                         interceptors: [
                             RequestContextVaildateInterceptor,
-                            PacketSerializeInterceptor,
+                            // PacketSerializeInterceptor,
                             RequestContextServializeInterceptor,
                         ]
                     },
                     deserializerConfig: {
                         interceptors: [
                             PacketifyInterceptor,
-                            PacketDeserializeInterceptor,
-                            PayloadDeserializeInterceptor
+                            // PacketDeserializeInterceptor,
+                            // PayloadDeserializeInterceptor
                         ]
                     }
+                },
+                content: {
+                    root: 'public',
+                    prefix: 'content'
+                },
+                serverOpts: {
+                    host: LOCALHOST,
+                    port: 6379
                 },
                 detailError: false,
                 interceptorsToken: REDIS_SERV_INTERCEPTORS,
@@ -206,6 +258,9 @@ export class RedisConfiguration {
                     ExecptionFinalizeFilter,
                     ExecptionHandlerFilter,
                     FinalizeFilter
+                ],
+                providers: [
+                    { provide: PatternFormatter, useClass: RedisPatternFormatter }
                 ]
             }
         }
