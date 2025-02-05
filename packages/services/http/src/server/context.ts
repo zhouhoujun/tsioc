@@ -1,6 +1,6 @@
-import { Injectable, Injector, isArray, isNumber, isString, lang, promisify } from '@tsdi/ioc';
-import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, HeaderMappings, Response, normalize } from '@tsdi/common';
-import { MessageExecption, InternalServerExecption, Outgoing, append, parseTokenList, Incoming, ENOENT, ctype } from '@tsdi/common/transport';
+import { Injector, isArray, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, Response, normalize } from '@tsdi/common';
+import { MessageExecption, InternalServerExecption, Outgoing, append, parseTokenList, Incoming, ENOENT } from '@tsdi/common/transport';
 import { RestfulRequestContext, ServerTransport, Throwable } from '@tsdi/endpoints';
 import * as http from 'http';
 import * as http2 from 'http2';
@@ -513,52 +513,52 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
     //     return this.statusMessage ?? String(status);
     // }
 
-    // async respondExecption(err: MessageExecption): Promise<void> {
-    //     let headerSent = false;
-    //     if (this.sent || !this.writable) {
-    //         headerSent = err.headerSent = true
-    //     }
+    async respondExecption(err: MessageExecption): Promise<void> {
+        let headerSent = false;
+        if (this.headerSent || !this.writable) {
+            headerSent = err.headerSent = true
+        }
 
-    //     // nothing we can do here other
-    //     // than delegate to the app-level
-    //     // handler and log.
-    //     if (headerSent) {
-    //         return
-    //     }
+        // nothing we can do here other
+        // than delegate to the app-level
+        // handler and log.
+        if (headerSent) {
+            return
+        }
 
-    //     const res = this.response;
+        const res = this.response;
 
-    //     // first unset all headers
-    //     this.removeHeaders();
+        // first unset all headers
+        this.removeHeaders();
 
-    //     // then set those specified
-    //     if (err.headers) this.setHeader(err.headers);
+        // then set those specified
+        if (err.headers) this.setHeader(err.headers);
 
-    //     const statusAdapter = this.statusAdapter!;
-    //     let status: number = err.status || err.statusCode;
-    //     // ENOENT support
-    //     if (ENOENT === err.code) status = statusAdapter.notFound;
+        const statusAdapter = this.statusAdapter!;
+        let status: number = err.status || err.statusCode;
+        // ENOENT support
+        if (ENOENT === err.code) status = statusAdapter.notFound;
 
-    //     // default to serverError
-    //     if (!statusAdapter.isStatus(status)) status = statusAdapter.serverError;
+        // default to serverError
+        if (!statusAdapter.isStatus(status)) status = statusAdapter.serverError;
 
-    //     this.status = status;
-    //     // empty response.
-    //     if (statusAdapter.isEmptyExecption(status)) {
-    //         await promisify<void>(res.end, res)();
-    //         return;
-    //     }
+        this.status = status;
+        // empty response.
+        if (statusAdapter.isEmptyExecption(status)) {
+            await promisify<void>(res.end, res)();
+            return;
+        }
 
-    //     // respond
-    //     let msg: any;
-    //     msg = err.message;
+        // respond
+        let msg: any;
+        msg = err.message;
 
-    //     // force text/plain
-    //     this.type = 'text';
-    //     msg = Buffer.from(msg ?? this.statusMessage ?? '');
-    //     this.length = Buffer.byteLength(msg);
-    //     await promisify<any, void>(res.end, res)(msg);
-    // }
+        // force text/plain
+        this.type = 'text';
+        msg = Buffer.from(msg ?? this.statusMessage ?? '');
+        this.length = Buffer.byteLength(msg);
+        await promisify<any, void>(res.end, res)(msg);
+    }
 
 }
 
