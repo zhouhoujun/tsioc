@@ -1,5 +1,5 @@
 import { Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
-import { PatternFormatter } from '@tsdi/common';
+import { defaultFormatter, PatternFormatter } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { MicroRouters, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
 import { InjectLog, Logger } from '@tsdi/logger';
@@ -63,7 +63,7 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
         const injector = this.handler.injector;
         const router = injector.get(MicroRouters).get('mqtt');
         if (options.content?.prefix) {
-            const content = injector.get(PatternFormatter).format(`${options.content.prefix}/#`);
+            const content = injector.get(PatternFormatter, defaultFormatter).format(`${options.content.prefix}/#`);
             router.matcher.register(content, true);
         }
 

@@ -1,5 +1,5 @@
-import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
-import { global, isFormData  } from '@tsdi/common';
+import { Injectable, isFunction, isString, lang, promisify } from '@tsdi/ioc';
+import { global, isFormData } from '@tsdi/common';
 import { StreamAdapter, BrotliOptions, PipeSource, ZipOptions, ev, isBuffer } from '@tsdi/common/transport';
 import { Stream, Writable, Readable, Duplex, PassThrough, Transform, WritableOptions } from 'readable-stream';
 import { EventEmitter } from 'pumpify';
@@ -11,24 +11,17 @@ import { JsonStreamStringify } from './stringify';
 @Injectable({ static: true })
 export class BrowserStreamAdapter extends StreamAdapter {
 
-    async pipeTo(source: PipeSource | Stream, destination: Writable): Promise<void> {
-        if (this.isStream(source) && !this.isReadable(source)) {
-            const defer = lang.defer();
-            source.once(ev.ERROR, (err) => {
-                defer.reject(err)
+    async pipeTo(source: PipeSource | Stream, destination: Writable, options: { end?: boolean } = { end: true }): Promise<void> {
+        await promisify<PipeSource, Writable>(pumpify.pipeline, promisify)(source as PipeSource, destination)
+            .then(r => {
+                if (options.end && !destination.writableEnded) return promisify(destination.end, destination)();
+                return r;
+            })
+            .finally(() => {
+                (source as Readable).removeAllListeners?.();
+                isFunction((source as any).destroy) && (source as any).destroy();
             });
-            source.once(ev.END, () => {
-                defer.resolve()
-            });
-            source.pipe(destination);
-            return await defer.promise
-                .finally(() => {
-                    isFunction((source as any).destroy) && (source as any).destroy();
-                })
-        } else if(source) {
-            await pumpify.obj.pipeline(source as any, destination);
-            if (source instanceof Readable) source.destroy();
-        }
+
     }
 
     pipeline<T extends Writable>(source: PipeSource<any>, destination: T, callback?: (err: NodeJS.ErrnoException | null) => void): T;
@@ -36,7 +29,7 @@ export class BrowserStreamAdapter extends StreamAdapter {
     pipeline<T extends Writable>(source: PipeSource<any>, transform: Transform, transform2: Transform, destination: T, callback?: (err: NodeJS.ErrnoException | null) => void): T;
     pipeline<T extends Writable>(source: PipeSource<any>, transform: Transform, transform2: Transform, transform3: Transform, destination: T, callback?: (err: NodeJS.ErrnoException | null) => void): T;
     pipeline<T extends Writable>(...args: any[]): T {
-        return (pumpify.obj.pipeline as any).apply(pumpify.obj.pipeline, ...args) as T;
+        return (pumpify.pipeline as any).apply(pumpify.pipeline, ...args) as T;
     }
 
 
@@ -45,7 +38,7 @@ export class BrowserStreamAdapter extends StreamAdapter {
     }
 
     isEventEmitter(target: any): target is EventEmitter {
-        return target && isFunction(target.once) && isFunction(target.on) && isFunction(target.off) && isFunction(target.addListener)  && isFunction(target.removeListener);
+        return target && isFunction(target.once) && isFunction(target.on) && isFunction(target.off) && isFunction(target.addListener) && isFunction(target.removeListener);
     }
 
     isStream(target: any): target is Stream {
@@ -59,7 +52,7 @@ export class BrowserStreamAdapter extends StreamAdapter {
         return stream instanceof Writable;
     }
 
-    
+
     createPassThrough(options?: {
         allowHalfOpen?: boolean | undefined;
         readableObjectMode?: boolean | undefined;
@@ -86,7 +79,7 @@ export class BrowserStreamAdapter extends StreamAdapter {
         return new PassThrough(options);
     }
 
-    
+
     createWritable(options?: WritableOptions): Writable {
         return new Writable(options);
     }

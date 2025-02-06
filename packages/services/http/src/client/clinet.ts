@@ -40,19 +40,19 @@ export type HttpReqOptions = HttpRequestOpts & HttpNodeOpts;
 @Injectable()
 export class Http extends AbstractClient<UrlRequestOptions, HttpRequest<any>, HttpEvent<any>, HttpClientOpts> {
 
-    private session?: ClientTransport<http2.ClientHttp2Session | null> | null;
+    private transport?: ClientTransport<http2.ClientHttp2Session | null> | null;
     constructor(readonly handler: HttpHandler) {
         super()
     }
 
 
     protected connect(): Observable<any> {
-        if (this.session) return of(this.session);
+        if (this.transport) return of(this.transport);
         const injector = this.handler.injector;
         const options = this.getOptions();
         if (!options.authority) {
-            this.session = injector.get(ClientTransportFactory).create(injector, null, options);
-            return of(this.session);
+            this.transport = injector.get(ClientTransportFactory).create(injector, null, options);
+            return of(this.transport);
         } else {
 
             return new Observable((observer) => {
@@ -66,8 +66,8 @@ export class Http extends AbstractClient<UrlRequestOptions, HttpRequest<any>, Ht
                 }
                 const onConnect = () => {
 
-                    this.session = injector.get(ClientTransportFactory).create(injector, conn, options);
-                    observer.next(this.session);
+                    this.transport = injector.get(ClientTransportFactory).create(injector, conn, options);
+                    observer.next(this.transport);
                     observer.complete();
                 };
                 const onClose = () => {
@@ -107,7 +107,7 @@ export class Http extends AbstractClient<UrlRequestOptions, HttpRequest<any>, Ht
 
     protected override initContext(context: InvocationContext<any>): void {
         context.setValue(AbstractClient, this);
-        context.setValue(ClientTransport, this.session);
+        context.setValue(ClientTransport, this.transport);
     }
 
     protected override createParams(params: string | readonly [string, string | number | boolean][] | Record<string, string | number | boolean | readonly (string | number | boolean)[]>): RequestParams {
@@ -2358,7 +2358,7 @@ export class Http extends AbstractClient<UrlRequestOptions, HttpRequest<any>, Ht
     }
 
     protected override async onShutdown(): Promise<void> {
-        await this.session?.destroy();
+        await this.transport?.destroy();
     }
 
 }

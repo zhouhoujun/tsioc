@@ -122,7 +122,7 @@ export abstract class RequestContext<
      * Set response status, defaults to OK.
      */
     set status(code: TStatus) {
-        if (this.headerSent) return;
+        if (this.headersSent) return;
         this.beforeStatusChanged(code);
         if (this.statusAdapter && !this.statusAdapter.isStatus(code)) throw new InternalServerExecption(`invalid status code: ${code}`)
         this._explicitStatus = true;
@@ -395,7 +395,7 @@ export abstract class RequestContext<
     setHeader(fields: Record<string, string | number | string[]> | IHeaders): void;
     setHeader(headers: HeadersLike): void;
     setHeader(field: string | HeadersLike, val?: string | number | string[]) {
-        if (this.headerSent) return;
+        if (this.headersSent) return;
         if (val) {
             this.headerAdapter.setHeader(this.response.headers ?? this.response, field as string, val)
         } else if (field instanceof HeaderMappings) {
@@ -430,7 +430,7 @@ export abstract class RequestContext<
      * @api public
      */
     appendHeader(field: string, val: string | number | string[]) {
-        if (this.headerSent) return;
+        if (this.headersSent) return;
         const prev = this.headerAdapter.getHeader(this.response.headers ?? this.response, field);
         if (prev) {
             val = Array.isArray(prev)
@@ -448,7 +448,7 @@ export abstract class RequestContext<
     * @api public
     */
     removeHeader(field: string): void {
-        if (this.headerSent) return;
+        if (this.headersSent) return;
         this.headerAdapter.removeHeader(this.response.headers ?? this.response, field);
     }
 
@@ -458,7 +458,7 @@ export abstract class RequestContext<
      * @api public
      */
     removeHeaders(): void {
-        if (this.headerSent) return;
+        if (this.headersSent) return;
         this.headerAdapter.removeHeaders(this.response.headers ?? this.response)
     }
 
@@ -578,7 +578,7 @@ export abstract class RequestContext<
      * Set Content-Encoding.
      */
     set contentEncoding(encoding: string | null | undefined) {
-        if (this.headerSent) return;
+        if (this.headersSent) return;
         this.headerAdapter.setContentEncoding(this.response.headers ?? this.response, encoding)
         // if (isNil(encoding)) {
         //     this.resHeaders.setContentEncoding(encoding)
@@ -597,8 +597,8 @@ export abstract class RequestContext<
      * @return {Boolean}
      * @api public
      */
-    get headerSent() {
-        return this.response.headerSent == true;
+    get headersSent() {
+        return this.response.headersSent == true;
     }
 
     /**

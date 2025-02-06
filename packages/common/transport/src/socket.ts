@@ -123,7 +123,7 @@ export interface Connection<TSocket extends IEventEmitter = IEventEmitter> exten
 
 
 
-export interface Packet<T extends IReadable | IDuplex | Buffer = IReadable | IDuplex | Buffer> {
+export interface Packet<T extends IReadable | IDuplex | Buffer | string = IReadable | IDuplex | Buffer | string> {
     /**
      * packet id
      */

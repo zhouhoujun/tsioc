@@ -107,7 +107,7 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
 
 
     async throwExecption(execption: MessageExecption): Promise<void> {
-        if (this.headerSent) return;
+        if (this.headersSent) return;
         this.execption = execption;
         this.body = null;
         this.response.error = {
@@ -181,7 +181,7 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
     }
 
     async throwExecption(execption: MessageExecption): Promise<void> {
-        if (this.headerSent) return;
+        if (this.headersSent) return;
         this.execption = execption;
         this.body = null;
         this.response.error = {
@@ -255,7 +255,7 @@ export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicInco
     }
 
     async throwExecption(execption: MessageExecption): Promise<void> {
-        if (this.headerSent) return;
+        if (this.headersSent) return;
         this.execption = execption;
         this.body = null;
         this.response.error = {

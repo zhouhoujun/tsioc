@@ -35,8 +35,8 @@
 //                 transport: 'http',
 //                 serverOpts: {
 //                     interceptors: [
-//                         ContentInterceptor,
 //                         JsonInterceptor,
+//                         ContentInterceptor,
 //                         BodyparserInterceptor
 //                     ]
 //                 }

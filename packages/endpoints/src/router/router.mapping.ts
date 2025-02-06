@@ -6,7 +6,7 @@ import {
     Handler, CanHandle, getGuardsToken, getInterceptorsToken,
     getFiltersToken, setHandlerOptions, createHandler
 } from '@tsdi/core';
-import { Pattern, PatternFormatter, Protocols, joinPath, normalize } from '@tsdi/common';
+import { Pattern, PatternFormatter, Protocols, defaultFormatter, joinPath, normalize } from '@tsdi/common';
 import { NotFoundExecption, BadRequestExecption } from '@tsdi/common/transport';
 import { defer, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { RequestHandler } from '../RequestHandler';
@@ -80,7 +80,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
     }
 
     handle(ctx: RequestContext, noFound?: () => Observable<any>): Observable<any> {
-        if (ctx.headerSent) return of(ctx)
+        if (ctx.headersSent) return of(ctx)
         const route = this.getRoute(ctx);
         if (route) {
             if (isArray(route)) {
@@ -104,7 +104,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
     }
 
     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.headerSent) return next()
+        if (ctx.headersSent) return next()
         const route = this.getRoute(ctx);
         if (route) {
             if (isArray(route)) {
@@ -420,7 +420,7 @@ export class MappingRoute implements Middleware, RequestHandler {
         } else if (route.controller) {
             return this.injector.get(ControllerRouteFactory).create(route.controller, this.injector, route.path);
         } else if (route.children) {
-            const router = new MappingRouter(this.injector, new DefaultRouteMatcher(), this.injector.get(PatternFormatter), route.protocol, route.path);
+            const router = new MappingRouter(this.injector, new DefaultRouteMatcher(), this.injector.get(PatternFormatter, defaultFormatter), route.protocol, route.path);
             route.children.forEach(route => router.use(route));
             return router
         } else if (route.loadChildren) {

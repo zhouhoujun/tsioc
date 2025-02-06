@@ -74,7 +74,7 @@ export interface AmqpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
 
 export interface WsServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'ws' | 'wss';
-    serverOpts?: ServerOpts<TSerOpts>
+    serverOpts?: ServerOpts<TSerOpts> & HeybirdOpts
 }
 
 export interface TcpMicroServiceOpts<TSerOpts = any> extends BasicServiceOpts {

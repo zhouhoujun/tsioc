@@ -11,7 +11,7 @@ import { ClientTransfer, ClientTransferFactory } from './transfer';
 export class ErrorResponseInterceptor implements Interceptor<ClientIncoming<any>, ResponseEvent<any>, TransportContext> {
 
     intercept(input: ClientIncoming<any>, next: Handler<ClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
-        if (!input.ok || input.error) {
+        if (!(input.ok || context.transport.statusAdapter?.isOk(input.status ?? input.statusCode)) || input.error) {
             const transport = context.transport as ClientTransport;
 
             return defer(async () => {

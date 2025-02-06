@@ -282,7 +282,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 
 
     vary(field: string) {
-        if (this.headerSent) return;
+        if (this.headersSent) return;
         let val = this.response.getHeader(VARY) ?? '';
         const header = Array.isArray(val)
             ? val.join(', ')
@@ -355,7 +355,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         }
 
         if (HEAD === this.method) {
-            if (!this.headerSent && !this.response.hasHeader(CONTENT_LENGTH)) {
+            if (!this.headersSent && !this.response.hasHeader(CONTENT_LENGTH)) {
                 const length = this.length;
                 if (Number.isInteger(length)) this.length = length
             }
@@ -372,7 +372,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
             }
 
             const body = Buffer.from(this.statusMessage ?? String(this.status));
-            if (!this.headerSent) {
+            if (!this.headersSent) {
                 this.type = 'text';
                 this.length = Buffer.byteLength(body)
             }
@@ -384,7 +384,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 
     async throwExecption(err: MessageExecption): Promise<void> {
         let headerSent = false;
-        if (this.headerSent || !this.writable) {
+        if (this.headersSent || !this.writable) {
             headerSent = err.headerSent = true
         }
 
@@ -515,7 +515,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 
     async respondExecption(err: MessageExecption): Promise<void> {
         let headerSent = false;
-        if (this.headerSent || !this.writable) {
+        if (this.headersSent || !this.writable) {
             headerSent = err.headerSent = true
         }
 
@@ -563,19 +563,19 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 }
 
 
-const CONTENT_TYPE = 'content-type';
-const CONTENT_ENCODING = 'content-encoding';
-const CONTENT_LENGTH = 'content-length';
-const TRANSFER_ENCODING = 'transfer-encoding';
+export const CONTENT_TYPE = 'content-type';
+export const CONTENT_ENCODING = 'content-encoding';
+export const CONTENT_LENGTH = 'content-length';
+export const TRANSFER_ENCODING = 'transfer-encoding';
 
-const X_FORWARDED_PROTO = 'x-forwarded-proto';
-const X_FORWARDED_HOST = 'x-forwarded-host';
-const HOST = 'host';
-const IF_MODIFIED_SINCE = 'if-modified-since';
-const IF_NONE_MATCH = 'if-none-match';
-const LAST_MODIFIED = 'last-modified'
-const CACHE_CONTROL = 'cache-control';
-const VARY = 'vary';
+export const X_FORWARDED_PROTO = 'x-forwarded-proto';
+export const X_FORWARDED_HOST = 'x-forwarded-host';
+export const HOST = 'host';
+export const IF_MODIFIED_SINCE = 'if-modified-since';
+export const IF_NONE_MATCH = 'if-none-match';
+export const LAST_MODIFIED = 'last-modified'
+export const CACHE_CONTROL = 'cache-control';
+export const VARY = 'vary';
 
 const AUTHORITY = http2.constants?.HTTP2_HEADER_AUTHORITY ?? ':authority';
 const httpsPtl = 'https';

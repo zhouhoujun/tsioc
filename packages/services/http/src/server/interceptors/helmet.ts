@@ -59,12 +59,12 @@ export class HelmetMiddleware implements Middleware<RestfulRequestContext> {
 
     protected setXFormOptions(ctx: RestfulRequestContext) {
         const xFrame = this.options.xFrame ?? {};
-        let action = xFrame.action ?? 'SAMEORIGIN';
+        let action: string = xFrame.action ?? 'SAMEORIGIN';
         if (action === 'ALLOW-FROM') {
             if (!xFrame.domain) {
                 throw new ArgumentExecption('ALLOW-FROM action requires a string domain parameter.');
             }
-            action = action + ' ' + xFrame;
+            action = action + ' ' + xFrame.domain;
         }
         ctx.setHeader(X_FRAME_OPTIONS, action);
     }

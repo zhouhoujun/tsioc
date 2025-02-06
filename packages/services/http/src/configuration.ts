@@ -1,13 +1,14 @@
-import { Injectable, InjectFlags, InvocationContext, isNil, promisify } from '@tsdi/ioc';
+import { Injectable, InjectFlags, InvocationContext, isNil, isString, promisify } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import { Header, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
     ClientIncoming, ctype, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory, ev,
     FileAdapter, IEventEmitter, Incoming, IncomingFactory, IncomingOpts, IReadable, MimeAdapter, Packet,
-    Redirector, SerializerFactory, StatusAdapter, StreamAdapter, StreamIncomingOptions, UrlClientIncomingFactory,
+    Redirector, SerializerFactory, StatusAdapter, StreamAdapter, StreamIncomingOptions, TransportContext, UrlClientIncomingFactory,
     UrlClientIncomingOpts, UrlOutgoingFactory
 } from '@tsdi/common/transport';
 import {
+    BodyServializetInterceptor,
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
     DefaultClientTransport, STATUS_RESPONSE_TRANSFER_INTERCEPTORS, UrlRedirector
 } from '@tsdi/common/client';
@@ -15,25 +16,26 @@ import { HttpRequest, isHttpEvent } from '@tsdi/common/http';
 import {
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts,
     MimeModule, ServiceModuleOpts, JsonInterceptor, BodyparserInterceptor, AcceptsPriority, ServerTransferFactory,
-    DefaultServerTransferFactory, DefaultServerTransport
+    DefaultServerTransferFactory, DefaultServerTransport, ServerTransport
 } from '@tsdi/endpoints';
 import { request as httpRequest, IncomingMessage, ClientRequest, Server } from 'http';
 import { request as httpsRequest, Server as HttpsServer } from 'https';
 import {
     ClientHttp2Session, ClientHttp2Stream, constants, OutgoingHttpHeaders,
-    IncomingHttpHeaders, IncomingHttpStatusHeader, ClientSessionRequestOptions, Http2Server
+    ClientSessionRequestOptions, Http2Server
 } from 'http2';
-import { fromEvent, Observable } from 'rxjs';
+import { fromEvent, Observable, of } from 'rxjs';
 import { Http } from './client/clinet';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HttpClientOpts } from './client/options';
 import { HttpHandler } from './client/handler';
-import { HTTP_MIDDLEWARES, HTTP_SERV_FILTERS, HTTP_SERV_GUARDS, HTTP_SERV_INTERCEPTORS } from './server/options';
+import { HTTP_MIDDLEWARES, HTTP_SERV_FILTERS, HTTP_SERV_GUARDS, HTTP_SERV_INTERCEPTORS, HttpServerOpts } from './server/options';
 import { HttpRequestHandler } from './server/handler';
 import { HttpServer } from './server/server';
 import { HttpStatusAdapter } from './status';
 import { HttpResponseEventFactory } from './client/response.factory';
 import { HttpExecptionHandlers } from './execption.handlers';
 import { HttpContext, HttpServRequest, HttpServResponse } from './server/context';
+import { EmptyStatusSerializeInterceptor, HeadMethodSerializeInterceptor, LengthLimitSerializeInterceptor, NoBodySerializeInterceptor } from './server/interceptors/serializes';
 
 
 @Configuration()
@@ -85,8 +87,18 @@ export class HttpConfiguration {
                                     injector,
                                     socket,
                                     'http',
-                                    serializerFactory.create(injector, transportOptions.serializerConfig),
-                                    deserializerFactory.create(injector, transportOptions.deserializerConfig),
+                                    serializerFactory.create(injector, {
+                                        backend: (input: HttpRequest<any>, context?: TransportContext) => {
+                                            return of(input)
+                                        },
+                                        ...transportOptions.serializerConfig
+                                    }),
+                                    deserializerFactory.create(injector, {
+                                        backend: (input: any, context: TransportContext) => {
+                                            return of(input)
+                                        },
+                                        ...transportOptions.deserializerConfig
+                                    }),
                                     formatter,
                                     statusAdapter,
                                     headerAdapter,
@@ -99,7 +111,10 @@ export class HttpConfiguration {
                                     (socket: ClientHttp2Session | null, channel?: ClientHttp2Stream | ClientRequest | IEventEmitter | null, req?: HttpRequest<any>) => {
                                         if (channel instanceof ClientRequest) {
                                             return new Observable<ClientIncoming>(subscribe => {
-                                                const onResponse = (resp: IncomingMessage) => subscribe.next(incomingFactory.create(resp as UrlClientIncomingOpts));
+                                                const onResponse = (resp: IncomingMessage) => {
+                                                    (resp as ClientIncoming).body = resp;
+                                                    subscribe.next(resp);
+                                                };
                                                 const onError = (err: any) => err && subscribe.error(err);
                                                 channel.on(ev.CLOSE, onError);
                                                 channel.on(ev.ERROR, onError);
@@ -158,10 +173,15 @@ export class HttpConfiguration {
                                         if (isNil(msg.payload)) {
                                             await promisify(stream.end, stream)();
                                         } else {
-                                            await streamAdapter.pipeTo(msg.payload, stream);
+                                            await streamAdapter.pipeTo(msg.payload, stream, { end: true });
                                         }
                                         return stream;
 
+                                    },
+                                    async (socket) => {
+                                        if (socket) {
+                                            socket.destroy();
+                                        }
                                     }
                                 )
                             },
@@ -179,6 +199,16 @@ export class HttpConfiguration {
                         HttpResponseEventFactory,
                         [UrlRedirector, InjectFlags.Optional]
                     ]
+                },
+                transportOptions: {
+                    transferConfig: {
+                        interceptors: STATUS_RESPONSE_TRANSFER_INTERCEPTORS
+                    },
+                    serializerConfig: {
+                        interceptors: [
+                            BodyServializetInterceptor
+                        ]
+                    }
                 }
             }
         }
@@ -207,8 +237,29 @@ export class HttpConfiguration {
                                     injector,
                                     socket,
                                     'http',
-                                    serializerFactory.create(injector, transportOptions.serializerConfig),
-                                    deserializerFactory.create(injector, transportOptions.deserializerConfig),
+                                    serializerFactory.create(injector, {
+                                        backend: (input: HttpContext, context?: TransportContext) => {
+                                            let payload = input.body;
+                                            let packet: Packet;
+                                            if (Buffer.isBuffer(payload) || isString(payload) || streamAdapter.isReadable(payload)) {
+                                                packet = { payload }
+                                            } else {
+                                                payload = JSON.stringify(payload);
+                                                if (!input.headersSent) {
+                                                    input.length = Buffer.byteLength(payload)
+                                                }
+                                                packet = { payload };
+                                            }
+                                            return of(packet)
+                                        },
+                                        ...transportOptions.serializerConfig
+                                    }),
+                                    deserializerFactory.create(injector, {
+                                        backend: (input, context) => {
+                                            return of(input)
+                                        },
+                                        ...transportOptions.deserializerConfig
+                                    }),
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
@@ -217,7 +268,14 @@ export class HttpConfiguration {
                                     acceptsPriority,
                                     incomingFactory,
                                     outgoingFactory,
-                                    transferFactory.create(injector, transportOptions.transferConfig),
+                                    transferFactory.create(injector, {
+                                        backend: (input: HttpIncomings, context: TransportContext) => {
+                                            const transport = context.transport as ServerTransport;
+                                            const { injector, serverOptions } = transport;
+                                            return of(new HttpContext(injector, transport, input.req, input.res, serverOptions as HttpServerOpts))
+                                        },
+                                        ...transportOptions.transferConfig
+                                    }),
                                     options,
                                     (socket: Http2Server | HttpsServer | Server, channel?: IEventEmitter | null) => {
                                         return new Observable<HttpIncomings>(subscribe => {
@@ -240,13 +298,14 @@ export class HttpConfiguration {
                                         })
                                     },
                                     (socket: Http2Server | HttpsServer | Server, msg: Packet, context: HttpContext, channel?: IEventEmitter | null) => {
-                                        if (streamAdapter.isStream(msg.payload)) {
-                                            return streamAdapter.pipeTo(msg.payload, context.response);
+                                        if (isNil(msg.payload)) {
+                                            return promisify(context.response.end, context.response)();
+                                        } else if (streamAdapter.isStream(msg.payload)) {
+                                            return streamAdapter.pipeTo(msg.payload, context.response, { end: true });
                                         } else {
                                             return promisify<any, void>(context.response.end, context.response)(msg.payload);
                                         }
                                     }
-
                                 )
                             },
                         }
@@ -266,18 +325,15 @@ export class HttpConfiguration {
                     ]
                 },
                 transportOptions: {
-                    transferConfig: {
-                        interceptors: STATUS_RESPONSE_TRANSFER_INTERCEPTORS
-                    },
                     serializerConfig: {
                         interceptors: [
-
+                            EmptyStatusSerializeInterceptor,
+                            HeadMethodSerializeInterceptor,
+                            NoBodySerializeInterceptor,
+                            LengthLimitSerializeInterceptor
                         ]
                     },
                     deserializerConfig: {
-                        interceptors: [
-
-                        ]
                     }
                 },
 

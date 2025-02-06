@@ -1,45 +1,32 @@
-import { Injectable, isFunction, isString, lang } from '@tsdi/ioc';
+import { Injectable, isFunction, isString, promisify } from '@tsdi/ioc';
 import { isFormData } from '@tsdi/common';
 import { StreamAdapter, ev, isBuffer, BrotliOptions, PipeSource, ZipOptions, IStream, IReadable, IWritable, IDuplex, IPassThrough } from '@tsdi/common/transport';
 import { EventEmitter } from 'events';
 import { Stream, Writable, WritableOptions, Readable, Duplex, PassThrough, Transform, PipelineSource, isReadable, TransformCallback, pipeline } from 'stream';
 import * as rstm from 'readable-stream'
 import { pipeline as pmPipeline } from 'stream/promises';
-import { promisify } from 'util';
 import * as zlib from 'zlib';
 import * as FormData from 'form-data';
 import * as rawBody from 'raw-body';
 import { JsonStreamStringify } from './stringify';
 
 
-const gzip = promisify(zlib.gzip);
-const gunzip = promisify(zlib.gunzip);
+const gzip = promisify(zlib.gzip, zlib);
+const gunzip = promisify(zlib.gunzip, zlib);
 
 @Injectable({ static: true })
 export class NodeStreamAdapter extends StreamAdapter {
 
     async pipeTo(source: PipeSource | IStream, destination: Writable, options: { end?: boolean, signal?: any } = { end: true }): Promise<void> {
-        if (this.isStream(source) && !this.isReadable(source)) {
-            const defer = lang.defer();
-            source.once(ev.ERROR, (err) => {
-                defer.reject(err)
+        await pmPipeline(source as PipelineSource<any>, destination, options)
+            .then(r => {
+                if (options.end && !destination.writableEnded) return promisify(destination.end, destination)();
+                return r;
+            })
+            .finally(() => {
+                (source as Readable).removeAllListeners?.();
+                isFunction((source as any).destroy) && (source as any).destroy();
             });
-            source.once(ev.END, () => {
-                defer.resolve()
-            });
-            source.pipe(destination, options);
-            return await defer.promise
-                .finally(() => {
-                    source.removeAllListeners();
-                    isFunction((source as any).destroy) && (source as any).destroy();
-                })
-        } else {
-            await pmPipeline(source as PipelineSource<any>, destination, options as any)
-                .finally(() => {
-                    (source as Readable).removeAllListeners?.();
-                    isFunction((source as any).destroy) && (source as any).destroy();
-                });
-        }
     }
 
     pipeline<T extends Writable>(source: PipeSource<any>, destination: T, callback?: (err: NodeJS.ErrnoException | null) => void): T;

@@ -1,7 +1,7 @@
 import { Injectable, isNil, isString } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
-import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, ResponseEvent, RequestParams, AbstractRequest, HeaderAdapter } from '@tsdi/common';
-import { IStream, StreamAdapter } from '@tsdi/common/transport';
+import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, RequestParams, AbstractRequest } from '@tsdi/common';
+import { IStream, Packet, StreamAdapter } from '@tsdi/common/transport';
 import { defer, mergeMap, Observable } from 'rxjs';
 import { Buffer } from 'buffer';
 import { ClientTransport } from '../transport';
@@ -11,11 +11,11 @@ import { ClientTransport } from '../transport';
  * request body content interceptor.
  */
 @Injectable()
-export class BodyContentInterceptor<TRequest extends AbstractRequest<any> = AbstractRequest<any>, TResponse = ResponseEvent<any>> implements Interceptor<TRequest, TResponse> {
+export class BodyServializetInterceptor<TRequest extends AbstractRequest<any> = AbstractRequest<any>> implements Interceptor<TRequest, Packet> {
 
     constructor() { }
 
-    intercept(req: TRequest & RequestSerialize, next: Handler<TRequest, TResponse>): Observable<TResponse> {
+    intercept(req: TRequest & RequestSerialize, next: Handler<TRequest, Packet>): Observable<Packet> {
 
         const transport = req.context.get(ClientTransport);
         let body = req.serializeBody ? req.serializeBody(req.body) : this.serializeBody(transport.streamAdapter, req.body);

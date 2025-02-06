@@ -1,4 +1,5 @@
 import { Abstract, isNumber, isPlainObject, isString } from '@tsdi/ioc';
+import { normalize } from './utils';
 
 
 
@@ -46,6 +47,10 @@ export abstract class PatternFormatter {
      * @param pattern 
      */
     abstract format(pattern: Pattern): string;
+}
+
+export const defaultFormatter: PatternFormatter = {
+    format: (pattern) => normalize(patternToPath(pattern))
 }
 
 /**

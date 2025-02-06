@@ -1,5 +1,5 @@
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
-import { PatternFormatter } from '@tsdi/common';
+import { defaultFormatter, PatternFormatter } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { MicroRouters, RequestContext, Server } from '@tsdi/endpoints';
 import { NatsConnection, connect } from 'nats';
@@ -34,7 +34,7 @@ export class NatsServer extends Server<RequestContext, NatsMicroServOpts> {
         const injector = this.handler.injector;
         const router = injector.get(MicroRouters).get('nats');
         if (options.content?.prefix) {
-            const content = injector.get(PatternFormatter).format(`${options.content.prefix}.>`);
+            const content = injector.get(PatternFormatter, defaultFormatter).format(`${options.content.prefix}.>`);
             router.matcher.register(content, true);
         }
 

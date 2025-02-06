@@ -36,8 +36,8 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 serverOpts: {
                     interceptors: [
                         BigFileInterceptor,
-                        ContentInterceptor,
                         JsonInterceptor,
+                        ContentInterceptor,
                         BodyparserInterceptor
                     ]
                 }
@@ -47,8 +47,8 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 serverOpts: {
                     interceptors: [
                         BigFileInterceptor,
-                        ContentInterceptor,
                         JsonInterceptor,
+                        ContentInterceptor,
                         BodyparserInterceptor
                     ]
                 }

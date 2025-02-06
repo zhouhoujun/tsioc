@@ -53,7 +53,7 @@ export class JsonInterceptor implements Middleware<RequestContext>, Interceptor<
 
         const pretty = this.pretty || hasOwn(ctx.query, this.paramName);
 
-        if (strm) {
+        if (strm && ctx.accepts('json')) {
             ctx.contentType = ctype.APPL_JSON;
             ctx.body = ctx.streamAdapter.jsonSreamify(body, undefined, pretty ? this.spaces : 2) // new JsonStreamStringify(body, undefined, pretty ? this.spaces : 2);
         } else if (json && pretty) {

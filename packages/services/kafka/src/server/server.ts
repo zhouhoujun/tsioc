@@ -1,6 +1,6 @@
 import { Injectable, Inject, isFunction } from '@tsdi/ioc';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
-import { PatternFormatter } from '@tsdi/common';
+import { defaultFormatter, PatternFormatter } from '@tsdi/common';
 import { Server, MicroRouters, RequestHandler, ServerTransportFactory, RequestContext, ServerOpts } from '@tsdi/endpoints';
 import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
 import { KafkaServerTransport } from './kafka.session';
@@ -105,7 +105,7 @@ export class KafkaServer extends Server<RequestContext, KafkaServerOptions> {
 
         const router = injector.get(MicroRouters).get('kafka');
         if (options.content?.prefix) {
-            const content = injector.get(PatternFormatter).format(`${options.content.prefix}-**`);
+            const content = injector.get(PatternFormatter, defaultFormatter).format(`${options.content.prefix}-**`);
             router.matcher.register(content, true);
         }
         const topics = router.matcher.getPatterns<string | RegExp>();

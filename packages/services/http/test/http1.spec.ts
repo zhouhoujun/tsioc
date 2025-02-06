@@ -36,7 +36,6 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         ]),
         EndpointModule.register([
             {
-                microservice: true,
                 transport: 'ws',
                 serverOpts: {
                     heybird: true
@@ -51,8 +50,8 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                     },
                     interceptors: [
                         BigFileInterceptor,
-                        ContentInterceptor,
                         JsonInterceptor,
+                        ContentInterceptor,
                         BodyparserInterceptor
                     ]
                 }

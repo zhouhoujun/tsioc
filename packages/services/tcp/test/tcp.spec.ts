@@ -137,8 +137,8 @@ export class DeviceController {
                     },
                     interceptors: [
                         BigFileInterceptor,
-                        ContentInterceptor,
                         JsonInterceptor,
+                        ContentInterceptor,
                         BodyparserInterceptor,
                         { useExisting: MicroServRouterModule.getToken('tcp') }
                     ]

@@ -1,5 +1,5 @@
 import { Injector, InstanceOf, Module, ModuleWithProviders, ProviderType, ReflectiveFactory, Token, TypeOf, getToken, isFunction, isString, isType, tokenId } from '@tsdi/ioc';
-import { PatternFormatter, patternToPath, normalize, Protocols, CommonProtocols } from '@tsdi/common';
+import { PatternFormatter, Protocols, CommonProtocols, defaultFormatter } from '@tsdi/common';
 import { ROUTES, Routes } from './route';
 import { RouteMatcher } from './router';
 import { HybridRouter } from './router.hybrid';
@@ -19,9 +19,7 @@ import { RoutersImpl } from '../impl/routers';
  */
 export const ROUTER_PREFIX = tokenId<string>('ROUTER_PREFIX');
 
-const defaultFormatter: PatternFormatter = {
-    format: (pattern) => normalize(patternToPath(pattern))
-}
+
 
 @Module({
     providers: [

@@ -6,8 +6,8 @@ import { ConfigMissingExecption, createHandler } from '@tsdi/core';
 import { DefaultResponseFactory } from '@tsdi/common';
 import { isMicroTransport, NotImplementedExecption, TransportPacketModule } from '@tsdi/common/transport';
 import { ClientBackend } from './backend';
-import { BodyContentInterceptor } from './interceptors/body';
-import { ClientTransportBackend, ClientTransportFactory, DefaultClientTransferFactory } from './transport';
+import { BodyServializetInterceptor } from './interceptors/body';
+import { ClientTransportBackend, ClientTransportFactory, DefaultClientTransferFactory, UrlRedirector } from './transport';
 import { ClientOpts } from './options';
 import { ClientConfigs, ClientModuleOpts } from './client.options';
 
@@ -22,7 +22,8 @@ import { ClientConfigs, ClientModuleOpts } from './client.options';
     providers: [
         DefaultResponseFactory,
         DefaultClientTransferFactory,
-        BodyContentInterceptor,
+        BodyServializetInterceptor,
+        UrlRedirector
     ]
 })
 export class ClientModule {

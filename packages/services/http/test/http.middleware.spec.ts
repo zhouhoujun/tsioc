@@ -48,14 +48,13 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
         ]),
         EndpointModule.register([
             {
-                microservice: true,
                 bootstrap: false,
                 transport: 'ws',
                 serverOpts: {
                     heybird: true,
                     interceptors:[
-                        ContentInterceptor,
                         JsonInterceptor,
+                        ContentInterceptor,
                         BodyparserInterceptor
                     ]
                 }

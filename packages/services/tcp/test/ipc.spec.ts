@@ -128,8 +128,8 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
                     },
                     interceptors: [
                         BigFileInterceptor,
-                        ContentInterceptor,
                         JsonInterceptor,
+                        ContentInterceptor,
                         BodyparserInterceptor,
                         { useExisting: MicroServRouterModule.getToken('tcp') }
                     ]

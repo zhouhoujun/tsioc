@@ -36,7 +36,6 @@ import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModu
         ]),
         EndpointModule.register([
             {
-                microservice: true,
                 transport: 'ws',
                 serverOpts: {
                     heybird: true
