@@ -512,7 +512,8 @@ export function parseUrlClientIncoming<TStatus>(init: UrlClientIncomingOpts<IRea
     incoming.headers = new HeaderMappings(init.headers);
     incoming.pattern = init.pattern;
     incoming.status = init.status ?? init.statusCode ?? defaultStatus;
-    incoming.statusText = init.statusText ?? init.statusMessage ?? defaultStatusText
+    incoming.statusText = init.statusText ?? init.statusMessage ?? defaultStatusText;
+    incoming.body = incoming;
     return incoming as (IReadable & UrlClientIncoming<any, TStatus>);
 }
 
@@ -534,7 +535,8 @@ export function parseTopicClientIncoming<TStatus>(init: TopicClientIncomingOpts<
     incoming.headers = new HeaderMappings(init.headers);
     incoming.pattern = init.pattern;
     incoming.status = init.status ?? init.statusCode ?? defaultStatus;
-    incoming.statusText = init.statusText ?? init.statusMessage ?? defaultStatusText
+    incoming.statusText = init.statusText ?? init.statusMessage ?? defaultStatusText;
+    incoming.body = incoming;
     return incoming as (IReadable & TopicClientIncoming<any, TStatus>);
 }
 

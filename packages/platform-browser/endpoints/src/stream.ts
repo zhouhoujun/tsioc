@@ -1,6 +1,6 @@
-import { Injectable, isFunction, isString, lang, promisify } from '@tsdi/ioc';
+import { Injectable, isFunction, isString, promisify } from '@tsdi/ioc';
 import { global, isFormData } from '@tsdi/common';
-import { StreamAdapter, BrotliOptions, PipeSource, ZipOptions, ev, isBuffer } from '@tsdi/common/transport';
+import { StreamAdapter, BrotliOptions, PipeSource, ZipOptions, isBuffer } from '@tsdi/common/transport';
 import { Stream, Writable, Readable, Duplex, PassThrough, Transform, WritableOptions } from 'readable-stream';
 import { EventEmitter } from 'pumpify';
 import * as pumpify from 'pumpify';
@@ -12,7 +12,7 @@ import { JsonStreamStringify } from './stringify';
 export class BrowserStreamAdapter extends StreamAdapter {
 
     async pipeTo(source: PipeSource | Stream, destination: Writable, options: { end?: boolean } = { end: true }): Promise<void> {
-        await promisify<PipeSource, Writable>(pumpify.pipeline, promisify)(source as PipeSource, destination)
+        await promisify<PipeSource, Writable, any, void>(pumpify.pipeline, pumpify)(source as PipeSource, destination, options)
             .then(r => {
                 if (options.end && !destination.writableEnded) return promisify(destination.end, destination)();
                 return r;

@@ -1,4 +1,4 @@
-import { ArgumentExecption, isArray } from '@tsdi/ioc';
+import { ArgumentExecption, isArray, isNil } from '@tsdi/ioc';
 import { HeaderAccess, HeadersLike, IHeaders } from '@tsdi/common';
 
 
@@ -146,13 +146,14 @@ export function parseTokenList(str: string) {
  * @returns 
  */
 export function getHeader(headers: HeadersLike, header: string, join?: boolean): string | undefined {
-  if(!headers) return undefined;
+  if (!headers) return undefined;
   let values: any;
   if (headers.getHeader) {
     values = (headers as HeaderAccess).getHeader(header)
   } else {
     values = (headers as IHeaders)[header];
   }
+  if (isNil(values)) return undefined;
   return isArray(values) ? (join ? values.join(', ') : String(values[0])) : String(values)
 }
 

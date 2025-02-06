@@ -18,7 +18,7 @@ const gunzip = promisify(zlib.gunzip, zlib);
 export class NodeStreamAdapter extends StreamAdapter {
 
     async pipeTo(source: PipeSource | IStream, destination: Writable, options: { end?: boolean, signal?: any } = { end: true }): Promise<void> {
-        await pmPipeline(source as PipelineSource<any>, destination, options)
+        await pmPipeline(source as PipelineSource<any>, destination, options as any)
             .then(r => {
                 if (options.end && !destination.writableEnded) return promisify(destination.end, destination)();
                 return r;

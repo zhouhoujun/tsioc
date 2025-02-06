@@ -36,7 +36,7 @@ export class EmptyResponseInterceptor implements Interceptor<ClientIncoming<any>
     intercept(input: ClientIncoming<any>, next: Handler<ClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         const len = context.transport.headerAdapter?.getContentLength(input.headers);
         const transport = context.transport as ClientTransport;
-        if (!len || transport.statusAdapter?.isEmpty(input.status)) {
+        if (!len || transport.statusAdapter?.isEmpty(input.status ?? input.statusCode)) {
             input.body = null;
             return of(transport.responseFactory.create(input));
         }
@@ -51,9 +51,9 @@ export class RedirectInterceptor implements Interceptor<ClientIncoming<any>, Res
         const transport = context.transport as ClientTransport;
         // HTTP fetch step 5
         if (transport.redirector) {
-            if (transport.statusAdapter?.isRedirect(input.status)) {
+            if (transport.statusAdapter?.isRedirect(input.status ?? input.statusCode)) {
                 // HTTP fetch step 5.2
-                return transport.redirector.redirect<ResponseEvent<any>>(context.first(), input.status, input.headers);
+                return transport.redirector.redirect<ResponseEvent<any>>(context.first(), input.status ?? input.statusCode, input.headers, context.transport.protocol);
             }
         }
         return next.handle(input, context);
@@ -172,7 +172,7 @@ export class RequestStauts {
 
 const backenFn = (input: ClientIncoming<any>, context: TransportContext) => {
     return defer(async () => {
-        const { responseFactory, headerAdapter, streamAdapter } = context.transport as ClientTransport;
+        const { responseFactory, headerAdapter, streamAdapter, statusAdapter } = context.transport as ClientTransport;
 
         const req = context.first() as AbstractRequest<any>;
         let responseType = req.responseType;
@@ -203,7 +203,7 @@ const backenFn = (input: ClientIncoming<any>, context: TransportContext) => {
         }
 
         let error = input.error;
-        let ok = input.ok ?? !error;
+        let ok = statusAdapter?.isOk(input.status ?? input.statusCode) ?? input.ok ?? !error;
         if (!isNil(body)) {
             switch (responseType) {
                 case 'json':

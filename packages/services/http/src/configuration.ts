@@ -12,13 +12,13 @@ import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
     DefaultClientTransport, STATUS_RESPONSE_TRANSFER_INTERCEPTORS, UrlRedirector
 } from '@tsdi/common/client';
-import { HttpRequest, isHttpEvent } from '@tsdi/common/http';
+import { HttpRequest } from '@tsdi/common/http';
 import {
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts,
     MimeModule, ServiceModuleOpts, JsonInterceptor, BodyparserInterceptor, AcceptsPriority, ServerTransferFactory,
     DefaultServerTransferFactory, DefaultServerTransport, ServerTransport
 } from '@tsdi/endpoints';
-import { request as httpRequest, IncomingMessage, ClientRequest, Server } from 'http';
+import { request as httpRequest, IncomingMessage, ClientRequest, Server, STATUS_CODES } from 'http';
 import { request as httpsRequest, Server as HttpsServer } from 'https';
 import {
     ClientHttp2Session, ClientHttp2Stream, constants, OutgoingHttpHeaders,
@@ -107,7 +107,8 @@ export class HttpConfiguration {
                                         if (channel instanceof ClientRequest) {
                                             return new Observable<ClientIncoming>(subscribe => {
                                                 const onResponse = (resp: IncomingMessage) => {
-                                                    (resp as ClientIncoming).body = resp;
+                                                    (resp as ClientIncoming).body = resp;                                                    
+                                                    (resp as ClientIncoming).status = resp.statusCode;
                                                     subscribe.next(resp);
                                                 };
                                                 const onError = (err: any) => err && subscribe.error(err);
@@ -127,7 +128,7 @@ export class HttpConfiguration {
                                                 }
                                             })
                                         } else {
-                                            return fromEvent(channel!, ev.RESPONSE, (headers) => incomingFactory.create({ headers, payload: channel } as UrlClientIncomingOpts));
+                                            return fromEvent(channel!, ev.RESPONSE, (headers) => incomingFactory.create({ status: headers[':status'], headers, payload: channel } as UrlClientIncomingOpts));
                                         }
 
                                     },
@@ -139,7 +140,7 @@ export class HttpConfiguration {
                                         if (clientOpts.authority && socket && (!httptl.test(url) || url.startsWith(clientOpts.authority))) {
                                             url = url.replace(clientOpts.authority, '');
 
-                                            const reqHeaders = msg.headers as OutgoingHttpHeaders ?? {};
+                                            const reqHeaders = headerAdapter?.getHeaders(msg.headers ?? {}) as OutgoingHttpHeaders;
 
                                             if (!reqHeaders[HTTP2_HEADER_ACCEPT]) reqHeaders[HTTP2_HEADER_ACCEPT] = ctype.REQUEST_ACCEPT;
                                             reqHeaders[HTTP2_HEADER_METHOD] = req.method;
@@ -148,8 +149,7 @@ export class HttpConfiguration {
                                             stream = socket.request(reqHeaders, { abort: ac?.signal, ...clientOpts.requestOptions } as ClientSessionRequestOptions);
 
                                         } else {
-                                            const headers = msg.headers ?? {};
-
+                                            const headers = headerAdapter?.getHeaders(msg.headers ?? {});
 
                                             const option = {
                                                 method: req.method,

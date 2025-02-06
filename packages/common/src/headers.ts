@@ -181,7 +181,7 @@ export class HeaderMappings<T extends Header = Header> implements HeaderAccess<T
 /**
  * Header like
  */
-export type HeadersLike<T extends Header = Header> = HeaderMappings<T> | IHeaders<T> | HeaderAccess<T>;
+export type HeadersLike<T extends Header = Header> = IHeaders<T> | HeaderAccess<T> | HeaderMappings<T>;
 
 
 @Abstract()

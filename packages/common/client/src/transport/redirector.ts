@@ -10,7 +10,7 @@ import { AbstractClient } from '../AbstractClient';
 @Injectable()
 export class UrlRedirector implements Redirector {
 
-    redirect<T>(req: UrlRequest<any>, status: any, headers: HeadersLike): Observable<T> {
+    redirect<T>(req: UrlRequest<any>, status: any, headers: HeadersLike, protocol: string): Observable<T> {
         return new Observable((observer: Observer<T>) => {
             if (!req.url) return observer.error(new BadRequestExecption());
 
@@ -66,6 +66,8 @@ export class UrlRedirector implements Redirector {
                     let reqhdrs = req.headers instanceof HeaderMappings ? req.headers : new HeaderMappings(req.headers);
                     let method = req.method as RequestMethod;
                     let body = req.body;
+
+                    if(protocol === 'http') reqhdrs.delete(':status');
 
                     // when forwarding sensitive headers like "Authorization",
                     // "WWW-Authenticate", and "Cookie" to untrusted targets,
