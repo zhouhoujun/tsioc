@@ -63,7 +63,11 @@ export class RedisConfiguration {
             clientType: RedisClient,
             defaultOpts: {
                 handlerType: RedisHandler,
-                url: 'redis://localhost:6379',
+                // url: 'redis://localhost:6379',
+                connectOpts:{
+                    host: LOCALHOST,
+                    port: 6379,
+                },
                 interceptorsToken: REDIS_CLIENT_INTERCEPTORS,
                 filtersToken: REDIS_CLIENT_FILTERS,
                 transportFactory: {
