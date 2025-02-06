@@ -41,11 +41,6 @@ import { EmptyStatusSerializeInterceptor, HeadMethodSerializeInterceptor, Length
 @Configuration()
 export class HttpConfiguration {
 
-    @Bean(CLIENT_MODULES, { static: true, multi: true })
-    microClient(): ClientModuleOpts {
-        const options = this.getClientOptions();
-        return options;
-    }
 
     @Bean(CLIENT_MODULES, { static: true, multi: true })
     client(): ClientModuleOpts {
