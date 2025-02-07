@@ -31,6 +31,10 @@ export interface ResponseInitOpts<T = any, TStatus = any> extends StatusOptions<
     /**
      * payload of packet.
      */
+    body?: T | null;
+    /**
+     * payload of packet.
+     */
     payload?: T | null;
 }
 
@@ -210,7 +214,7 @@ export class DefaultResponseFactory<TStatus = null> {
     create<T>(options: ResponseInitOpts): ResponseEvent<T, TStatus> {
         if (!options.ok || options.error) {
             if (!options.error) {
-                options.error = options.payload;
+                options.error = options?.body ?? options.payload;
             }
             return new ErrorResponse(options);
         }

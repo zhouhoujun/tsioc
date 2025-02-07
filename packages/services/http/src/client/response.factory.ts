@@ -8,7 +8,7 @@ export class HttpResponseEventFactory implements ResponseFactory<number> {
     create<T>(options: ResponseInitOpts): HttpEvent<any> | HttpErrorResponse {
         if (options.ok === false || options.error) {
             if(!options.error){
-                options.error = options.payload;
+                options.error = options.body ?? options.payload;
             }
             return new HttpErrorResponse(options);
         } else {

@@ -11,11 +11,11 @@ import { ClientTransfer, ClientTransferFactory } from './transfer';
 export class ErrorResponseInterceptor implements Interceptor<ClientIncoming<any>, ResponseEvent<any>, TransportContext> {
 
     intercept(input: ClientIncoming<any>, next: Handler<ClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
-        if (!(input.ok || context.transport.statusAdapter?.isOk(input.status ?? input.statusCode)) || input.error) {
+        if (!(input.ok || (context.transport.statusAdapter ? context.transport.statusAdapter.isOk(input.status ?? input.statusCode) : true)) || input.error) {
             const transport = context.transport as ClientTransport;
-
+            input.ok = false;
             return defer(async () => {
-                if (context.transport.streamAdapter.isReadable(input.body)) {
+                if (transport.streamAdapter.isReadable(input.body)) {
                     let body: any = await toBuffer(input.body);
                     body = new TextDecoder().decode(body);
                     input.body = body;
@@ -36,7 +36,7 @@ export class EmptyResponseInterceptor implements Interceptor<ClientIncoming<any>
     intercept(input: ClientIncoming<any>, next: Handler<ClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext): Observable<ResponseEvent<any>> {
         const len = context.transport.headerAdapter?.getContentLength(input.headers);
         const transport = context.transport as ClientTransport;
-        if (!len || transport.statusAdapter?.isEmpty(input.status ?? input.statusCode)) {
+        if (input.ok !== false && !input.error && (!len || transport.statusAdapter?.isEmpty(input.status ?? input.statusCode))) {
             input.body = null;
             return of(transport.responseFactory.create(input));
         }
@@ -278,14 +278,14 @@ const textType = /^text/i;
 const xmlType = /xml$/i;
 
 export const RESPONSE_TRANSFER_INTERCEPTORS = [
-    ErrorResponseInterceptor,
     EmptyResponseInterceptor,
+    ErrorResponseInterceptor,
 ];
 
 export const STATUS_RESPONSE_TRANSFER_INTERCEPTORS = [
     RedirectInterceptor,
-    ErrorResponseInterceptor,
     EmptyResponseInterceptor,
+    ErrorResponseInterceptor,
     CompressResponseInterceptor,
 ];
 

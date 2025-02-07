@@ -20,7 +20,7 @@ export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> im
         if (isFunction(backend)) {
             this.backend = backend
         } else {
-            this.backend = (req, ctx) => (backend as Backend).handle(req, ctx ?? context);
+            this.backend = (req, ctx) => (backend as Backend).handle(req, ctx);
         }
     }
 
