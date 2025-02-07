@@ -3,11 +3,12 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { BadRequestExecption } from '@tsdi/common/transport';
 import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
-    Middleware, RestfulRequestContext, compose, NEXT, MicroServRouterModule, EndpointModule,
+    Middleware, RestfulRequestContext, compose, NEXT, EndpointModule,
     RedirectResult,
     ContentInterceptor,
     JsonInterceptor,
-    BodyparserInterceptor
+    BodyparserInterceptor,
+    RouterModule
 } from '@tsdi/endpoints';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -210,7 +211,7 @@ class DeviceAModule {
                 ]
             }
         }),
-        MicroServRouterModule.forRoot('tcp'),
+        RouterModule.forRoot('tcp', { microservice: true }),
         ServerHttpClientModule,
         DeviceManageModule,
         DeviceAModule
