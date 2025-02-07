@@ -182,7 +182,7 @@ export class MockTransBootTest {
             }
         }),
         EndpointModule.register({
-            transport: 'http',
+            transport: 'https',
             serverOpts: {
                 majorVersion: 2,
                 secure: true,

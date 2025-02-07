@@ -35,7 +35,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
                 clientOpts: {
                     authority: 'http://localhost:3200',
                     connectOpts: {
-                        ca: cert
+                        // ca: cert
                     }
                 },
             }
@@ -51,11 +51,10 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
                 transport: 'http',
                 serverOpts: {
                     majorVersion: 2,
-                    protocol: 'http',
                     serverOpts: {
-                        allowHTTP1: true,
-                        key,
-                        cert
+                        // allowHTTP1: true,
+                        // key,
+                        // cert
                     },
                     interceptors: [
                         JsonInterceptor,

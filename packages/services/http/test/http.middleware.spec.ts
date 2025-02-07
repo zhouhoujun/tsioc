@@ -60,7 +60,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
                 }
             },
             {
-                transport: 'http',
+                transport: 'https',
                 bootstrap: false,
                 serverOpts: {
                     middlewares: [

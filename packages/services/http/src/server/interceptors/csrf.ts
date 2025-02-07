@@ -2,14 +2,14 @@ import { Abstract, Inject, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import { Handler, Interceptor } from '@tsdi/core';
 import { GET, HEAD, OPTIONS } from '@tsdi/common';
 import { ForbiddenExecption } from '@tsdi/common/transport';
-import { RestfulRequestContext, Middleware, SessionAdapter } from '@tsdi/endpoints';
+import { RestfulRequestContext, Middleware, SessionAdapter, CsrfOps } from '@tsdi/endpoints';
 import { Observable, throwError } from 'rxjs';
 import * as CSRFTokens from 'csrf';
 
 
 
 @Abstract()
-export abstract class CsrfOptions {
+export abstract class CsrfOptions implements CsrfOps {
     invalidTokenMessage?: string | ((ctx: RestfulRequestContext) => string);
     excludedMethods?: string[];
     disableQuery?: boolean;

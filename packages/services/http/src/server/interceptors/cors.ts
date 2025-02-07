@@ -2,7 +2,7 @@ import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '
 import { Handler, Interceptor } from '@tsdi/core';
 import { HttpStatusCode, RequestMethod } from '@tsdi/common';
 import { InternalServerExecption, Outgoing, append, getHeader } from '@tsdi/common/transport';
-import { Middleware, RestfulRequestContext } from '@tsdi/endpoints';
+import { CorsOpts, Middleware, RestfulRequestContext } from '@tsdi/endpoints';
 import { defer, lastValueFrom, Observable } from 'rxjs';
 
 
@@ -12,7 +12,7 @@ import { defer, lastValueFrom, Observable } from 'rxjs';
  * cors options.
  */
 @Abstract()
-export abstract class CorsOptions {
+export abstract class CorsOptions implements CorsOpts {
     /**
      * origin.
      *

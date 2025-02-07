@@ -3,8 +3,8 @@ import {
     ProviderType, isArray, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { ConfigMissingExecption, TypedRespond } from '@tsdi/core';
-import { CommonProtocols } from '@tsdi/common';
-import { isMicroTransport, NotImplementedExecption, TransportPacketModule } from '@tsdi/common/transport';
+import { CommonProtocols, Protocols } from '@tsdi/common';
+import { isMicroTransport, NotImplementedExecption, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
 import { ServerOpts } from './server.options';
 import { Session } from './Session';
 import { ServerTransportFactory } from './transport';
@@ -109,16 +109,17 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
         ...options.providers ?? [],
         {
             provider: async (injector) => {
-                let mdopts = injector.get(SERVER_MODULES, null)?.find(r => r.transport === options.transport && (microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r))));
+                const transportName = toTransportModuleName(options.transport);
+                let mdopts = injector.get(SERVER_MODULES, null)?.find(r => (r.transport === options.transport || r.transport == transportName) && (microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r))));
 
                 if (!mdopts) {
                     try {
-                        const m = await import(`@tsdi/${options.transport}`);
+                        const m = await import(`@tsdi/${transportName}`);
 
-                        const transportModuleName = options.transport.charAt(0).toUpperCase() + options.transport.slice(1) + 'Module';
+                        const transportModuleName = transportName.charAt(0).toUpperCase() + transportName.slice(1) + 'Module';
                         if (m[transportModuleName]) {
                             await injector.get(ModuleRef).import(m[transportModuleName]);
-                            mdopts = injector.get(SERVER_MODULES, []).find(r => r.transport === options.transport && ((microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r)))));
+                            mdopts = injector.get(SERVER_MODULES, []).find(r => (r.transport === options.transport || r.transport == transportName) && ((microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r)))));
                         }
                         if (!mdopts) {
                             throw new Error(m[transportModuleName] ? 'has not implemented' : 'not found this transport module!')

@@ -102,7 +102,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
         TransactionModule,
         TypeOrmModule.withConnection(connections),
         EndpointModule.register({
-            transport: 'http',
+            transport: 'https',
             serverOpts: {
                 majorVersion: 2,
                 serverOpts: {

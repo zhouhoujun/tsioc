@@ -16,7 +16,8 @@ import { HttpRequest } from '@tsdi/common/http';
 import {
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts,
     MimeModule, ServiceModuleOpts, JsonInterceptor, BodyparserInterceptor, AcceptsPriority, ServerTransferFactory,
-    DefaultServerTransferFactory, DefaultServerTransport, ServerTransport
+    DefaultServerTransferFactory, DefaultServerTransport, ServerTransport,
+    HttpServerOpts
 } from '@tsdi/endpoints';
 import { request as httpRequest, IncomingMessage, ClientRequest, Server, STATUS_CODES } from 'http';
 import { request as httpsRequest, Server as HttpsServer } from 'https';
@@ -28,7 +29,7 @@ import { fromEvent, Observable, of } from 'rxjs';
 import { Http } from './client/clinet';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HttpClientOpts } from './client/options';
 import { HttpHandler } from './client/handler';
-import { HTTP_MIDDLEWARES, HTTP_SERV_FILTERS, HTTP_SERV_GUARDS, HTTP_SERV_INTERCEPTORS, HttpServerOpts } from './server/options';
+import { HTTP_MIDDLEWARES, HTTP_SERV_FILTERS, HTTP_SERV_GUARDS, HTTP_SERV_INTERCEPTORS } from './server/options';
 import { HttpRequestHandler } from './server/handler';
 import { HttpServer } from './server/server';
 import { HttpStatusAdapter } from './status';

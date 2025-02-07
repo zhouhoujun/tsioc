@@ -117,6 +117,14 @@ export function writePacket(socket: IWritable, msg: Packet, streamAdapter: Strea
     return promisify<any, void>(socket.write, socket)(msg.payload)
 }
 
+export function toTransportModuleName(transport: Protocols) {
+    if (/^(https|mqtts|wss)$/.test(transport)) {
+        return transport.slice(0, transport.length - 1);
+    }
+    return transport;
+}
+
+
 
 const microservices = {
     mqtt: true,

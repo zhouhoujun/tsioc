@@ -1,13 +1,12 @@
 import { Injector, isArray, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, Response, normalize } from '@tsdi/common';
 import { MessageExecption, InternalServerExecption, Outgoing, append, parseTokenList, Incoming, ENOENT } from '@tsdi/common/transport';
-import { RestfulRequestContext, ServerTransport, Throwable } from '@tsdi/endpoints';
+import { HttpServerOpts, RestfulRequestContext, ServerTransport, Throwable } from '@tsdi/endpoints';
 import * as http from 'http';
 import * as http2 from 'http2';
 import * as assert from 'assert';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
-import { HttpServerOpts } from './options';
 import { lastValueFrom } from 'rxjs';
 
 

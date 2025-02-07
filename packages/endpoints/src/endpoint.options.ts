@@ -1,7 +1,7 @@
 import { ModuleType, ProvdierOf, ProviderType, Type } from '@tsdi/ioc';
 import { InvocationOptions } from '@tsdi/core';
 import { CommonProtocols, Protocols } from '@tsdi/common';
-import { ServerOpts } from './server.options';
+import { Http1ServerOpts, Http2SecureServerOpts, Http2ServerOpts, HttpServerOpts, HttpsServerOpts, ServerOpts } from './server.options';
 import { Server } from './Server';
 import { MiddlewareOpts } from './middleware/middleware.endpoint';
 
@@ -48,7 +48,7 @@ export interface BasicServiceOpts {
 }
 
 export interface MqttServiceOpts<TSerOpts = any> extends BasicServiceOpts {
-    transport: 'mqtt'|'mqtts';
+    transport: 'mqtt' | 'mqtts';
     serverOpts?: ServerOpts<TSerOpts>
 }
 
@@ -102,9 +102,14 @@ export interface TcpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     serverOpts?: ServerOpts<TSerOpts> & MiddlewareOpts;
 }
 
-export interface HttpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
-    transport: 'http' | 'https';
-    serverOpts?: ServerOpts<TSerOpts> & MiddlewareOpts;
+export interface HttpServiceOpts extends BasicServiceOpts {
+    transport: 'http'
+    serverOpts?: Http1ServerOpts | Http2ServerOpts;
+}
+
+export interface HttpsServiceOpts extends BasicServiceOpts {
+    transport: 'https';
+    serverOpts?: HttpsServerOpts | Http2SecureServerOpts;
 }
 
 export interface CoapServiceOpts<TSerOpts = any> extends BasicServiceOpts {
@@ -119,7 +124,7 @@ export interface GrpcServiceOpts<TSerOpts = any> extends BasicServiceOpts {
 
 
 
-export type CommonServiceOpts = TcpServiceOpts | HttpServiceOpts | CoapServiceOpts | GrpcServiceOpts;
+export type CommonServiceOpts = TcpServiceOpts | HttpServiceOpts | HttpsServiceOpts | CoapServiceOpts | GrpcServiceOpts;
 
 
 export type ServiceOpts = CommonServiceOpts | MicroServiceOpts;

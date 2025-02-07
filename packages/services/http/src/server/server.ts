@@ -1,16 +1,15 @@
-import { Inject, Injectable, isFunction, lang, promisify, isNumber, isString, ModuleRef, ProvdierOf, ArgumentExecption } from '@tsdi/ioc';
+import { Injectable, isFunction, lang, promisify, isNumber, isString, ProvdierOf, ArgumentExecption } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, ModuleLoader } from '@tsdi/core';
 import { ListenService } from '@tsdi/common';
 import { InternalServerExecption } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { BindServerEvent, CONTENT_DISPOSITION_TOKEN, DefaultMiddlewareHandler, MiddlewareLike, MiddlewareService, Server, ServerTransportFactory } from '@tsdi/endpoints';
+import { BindServerEvent, CONTENT_DISPOSITION_TOKEN, DefaultMiddlewareHandler, HttpServerOpts, MiddlewareLike, MiddlewareService, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Subject, lastValueFrom } from 'rxjs';
 import { ListenOptions } from 'net';
 import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import * as assert from 'assert';
-import { HttpServerOpts } from './options';
 import { HttpRequestHandler } from './handler';
 import { HttpContext } from './context';
 
@@ -114,7 +113,7 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
         if (!opts.protocol) {
             opts.protocol = this._secure ? 'https' : 'http';
         }
-        if (opts.majorVersion >= 2) {
+        if ((opts.majorVersion ?? 1) >= 2) {
             this._server = isSecure ? http2.createSecureServer(option as http2.SecureServerOptions)
                 : http2.createServer(option as http2.ServerOptions);
 
