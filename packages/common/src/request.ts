@@ -306,7 +306,7 @@ export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = Reques
                 .reduce((params, param) => params.set(param, update.setParams![param]), params)
         }
 
-        const responseType = update.responseType ?? (this.forceJson? this.responseType : undefined);
+        const responseType = update.responseType ?? ((!this.forceJson && this.responseType == 'json') ? undefined : this.responseType);
         // Carefully handle the boolean options to differentiate between
         // `false` and `undefined` in the update args.
         const withCredentials =

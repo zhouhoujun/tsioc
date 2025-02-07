@@ -30,7 +30,6 @@ export class RouteEndpointModule {
  */
 @Module({
     providers: [
-        // { provide: Routers, useClass: RoutersImpl },
         ControllerRouteFactory
     ]
 })
@@ -119,7 +118,7 @@ export class RouterModule {
         return {
             module: RouterModule,
             providers: [
-                { provide: microservice? MESSAGE_ROUTERS : ROUTES, multi: true, useValue: routes }
+                { provide: microservice ? MESSAGE_ROUTERS : ROUTES, multi: true, useValue: routes }
             ]
         }
     }
@@ -129,7 +128,7 @@ export class RouterModule {
     }
 }
 
-export function createRouteProviders(protocol: Protocols, microservice: boolean, optsify: InstanceOf<RouteOpts>): ProviderType[] {
+export function createRouteProviders(protocol: Protocols, microservice: boolean, optsify: InstanceOf<RouteOpts>, asDefault?: boolean): ProviderType[] {
     const token = getToken(microservice ? 'MicroServiceRouter' : Router, protocol);
     return [
         {
@@ -141,7 +140,9 @@ export function createRouteProviders(protocol: Protocols, microservice: boolean,
                     opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter, defaultFormatter),
                     protocol,
                     opts.prefix,
-                    opts.routes)
+                    opts.routes,
+                    microservice,
+                    asDefault)
             },
             deps: [Injector]
         },

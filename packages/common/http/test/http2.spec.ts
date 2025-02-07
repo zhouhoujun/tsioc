@@ -1,17 +1,19 @@
-// import { Injector, Injectable, lang, tokenId, isArray } from '@tsdi/ioc';
+// import { Injector, Injectable, lang, tokenId, isArray, Module } from '@tsdi/ioc';
 // import { catchError, lastValueFrom, of } from 'rxjs';
-// import { RedirectResult } from '@tsdi/endpoints';
-// import { HttpModule, HttpServer } from '@tsdi/http';
+// import { compose, Handle, Middleware, NEXT, provideService, RedirectResult, RequestBody, RequestContext, RequestParam, RequestPath, RouteMapping, RouterModule } from '@tsdi/endpoints';
+// import { HttpServer } from '@tsdi/http';
 // import { ServerModule } from '@tsdi/platform-server';
-// import { ServerHttpClientModule } from '@tsdi/platform-server-common';
 // import expect = require('expect');
 // import * as fs from 'fs';
 // import * as path from 'path';
 // import {
-//     Application, RouteMapping, ApplicationContext, Handle, RequestBody, RequestParam, RequestPath, Module,
-//     ConnectionContext, LoggerModule, Middleware, Chain, BadRequestError
+//     Application, ApplicationContext
 // } from '@tsdi/core';
 // import { HttpClient, HttpClientModule } from '../src';
+// import { BadRequestExecption } from '@tsdi/common/transport';
+// import { LoggerModule } from '@tsdi/logger';
+// import { ServerHttpClientModule } from '@tsdi/platform-server/http';
+// import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 
 // @RouteMapping('/device')
 // class DeviceController {
@@ -38,7 +40,7 @@
 //     resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
 //         console.log('age1:', age1);
 //         if (age1 <= 0) {
-//             throw new BadRequestError();
+//             throw new BadRequestExecption();
 //         }
 //         return age1;
 //     }
@@ -99,10 +101,12 @@
 
 // // }
 
-// @Handle('/hdevice')
+// @Handle({
+//     route: '/hdevice'
+// })
 // class DeviceQueue implements Middleware {
 
-//     async invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void> {
+//     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
 
 //         console.log('device msg start.');
 //         ctx.setValue('device', 'device data')
@@ -110,7 +114,7 @@
 
 //         console.log('device msg start.');
 //         ctx.setValue('device', 'device data')
-//         await new Chain(ctx.resolve(DEVICE_MIDDLEWARES)).invoke(ctx);
+//         await compose(ctx.injector.get(DEVICE_MIDDLEWARES))(ctx, NEXT);
 //         ctx.setValue('device', 'device next');
 
 //         const device = ctx.get('device');
@@ -132,10 +136,10 @@
 // @Injectable()
 // class DeviceStartupHandle implements Middleware {
 
-//     invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void> {
+//     invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
 
-//         console.log('DeviceStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
-//         if (ctx.payload.type === 'startup') {
+//         console.log('DeviceStartupHandle.', 'resp:', ctx.body?.type, 'req:', ctx.request.body.type)
+//         if (ctx.request.body.type === 'startup') {
 //             // todo sth.
 //             const ret = ctx.injector.get(MyService).dosth();
 //             ctx.setValue('deviceB_state', ret);
@@ -147,9 +151,9 @@
 // @Injectable()
 // class DeviceAStartupHandle implements Middleware {
 
-//     invoke(ctx: ConnectionContext, next: () => Promise<void>): Promise<void> {
-//         console.log('DeviceAStartupHandle.', 'resp:', ctx.payload.type, 'req:', ctx.payload.type)
-//         if (ctx.payload.type === 'startup') {
+//     invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
+//         console.log('DeviceAStartupHandle.', 'resp:', ctx.body?.type, 'req:', ctx.request.body.type)
+//         if (ctx.request.body.type === 'startup') {
 //             // todo sth.
 //             const ret = ctx.get(MyService).dosth();
 //             ctx.setValue('deviceA_state', ret);
@@ -190,8 +194,8 @@
 // }
 
 
-// const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
-// const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.pem'));
+// const key = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-privkey.pem'));
+// const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-cert.pem'));
 
 
 // @Module({
@@ -199,17 +203,24 @@
 //     imports: [
 //         ServerModule,
 //         LoggerModule,
-//         // TcpModule,
-//         HttpModule.withOption({
-//             majorVersion: 2,
-//             options: {
-//                 allowHTTP1: true,
-//                 key,
-//                 cert
-//             }
-//         }),
+//         ServerEndpointModule,
 //         HttpClientModule,
 //         ServerHttpClientModule,
+//         // TcpModule,
+//         provideService(
+//             {
+//                 transport: 'https',
+//                 serverOpts: {
+//                     majorVersion: 2,
+//                     serverOpts: {
+//                         allowHTTP1: true,
+//                         key,
+//                         cert
+//                     }
+//                 }
+//             }
+//         ),
+//         RouterModule.forRoot('tcp', { microservice: true }),
 //         DeviceManageModule,
 //         DeviceAModule
 //     ],
@@ -219,8 +230,7 @@
 //     ],
 //     declarations: [
 //         DeviceController
-//     ],
-//     bootstrap: HttpServer
+//     ]
 // })
 // class MainApp {
 

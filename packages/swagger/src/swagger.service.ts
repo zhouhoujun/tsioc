@@ -3,7 +3,7 @@ import { Execption, InjectFlags, Injectable, Type, getClassName, isFunction, isN
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, joinPath } from '@tsdi/common';
 import { ctype } from '@tsdi/common/transport';
-import { ControllerRoute, HybridRouter, RouteMappingMetadata, Router, ContentInterceptor, Routers } from '@tsdi/endpoints';
+import { ControllerRoute,  RouteMappingMetadata, Router, ContentInterceptor, getRouter } from '@tsdi/endpoints';
 import { DBPropertyMetadata, MissingModelFieldExecption } from '@tsdi/repository';
 import { HttpServer } from '@tsdi/http'
 import { of } from 'rxjs';
@@ -27,7 +27,7 @@ export class SwaggerService {
         const moduleRef = ctx.injector;
         const opts = moduleRef.get(SWAGGER_SETUP_OPTIONS, {} as SwaggerSetupOptions);
 
-        const router = moduleRef.get(Routers).get();
+        const router = getRouter(moduleRef); //moduleRef.get(Routers).get();
 
         const models = moduleRef.get(MODEL_RESOLVERS);
 
@@ -91,7 +91,7 @@ export class SwaggerService {
     }
 
 
-    buildDoc(router: Router | HybridRouter, jsonDoc: OpenAPIObject, modelResolver: (type: any) => ModelArgumentResolver | undefined, prefix?: string) {
+    buildDoc(router: Router, jsonDoc: OpenAPIObject, modelResolver: (type: any) => ModelArgumentResolver | undefined, prefix?: string) {
         router.routes.forEach((v, route) => {
             if (route.endsWith('**')) route = route.substring(0, route.length - 2);
             if (v instanceof ControllerRoute) {

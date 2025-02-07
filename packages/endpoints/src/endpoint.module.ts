@@ -16,7 +16,7 @@ import { DefaultExecptionHandlers } from './execption.handlers';
 import { FinalizeFilter } from './finalize.filter';
 import { createRequestHandler } from './impl/request.handler';
 import { DefaultServerTransferFactory } from './impl/transfer';
-import { ServiceModuleOpts, ServiceOpts } from './endpoint.options';
+import { ServiceModuleOpts, ServiceOptions } from './endpoint.options';
 
 
 /**
@@ -51,14 +51,14 @@ export class EndpointModule {
      * @param options 
      * @param autoBootstrap default true 
      */
-    static register(options: ServiceOpts): ModuleWithProviders<EndpointModule>;
+    static register(options: ServiceOptions): ModuleWithProviders<EndpointModule>;
     /**
      * register service.
      * @param options
      * @param autoBootstrap default true 
      */
-    static register(options: Array<ServiceOpts>): ModuleWithProviders<EndpointModule>;
-    static register(options: Arrayify<ServiceOpts>): ModuleWithProviders<EndpointModule> {
+    static register(options: Array<ServiceOptions>): ModuleWithProviders<EndpointModule>;
+    static register(options: Arrayify<ServiceOptions>): ModuleWithProviders<EndpointModule> {
         return provideService(options as any);
     }
 }
@@ -68,14 +68,14 @@ export class EndpointModule {
  * @param options 
  * @param autoBootstrap default true 
  */
-export function provideService(options: ServiceOpts): ModuleWithProviders<EndpointModule>;
+export function provideService(options: ServiceOptions): ModuleWithProviders<EndpointModule>;
 /**
  * provide service.
  * @param options
  * @param autoBootstrap default true 
  */
-export function provideService(options: Array<ServiceOpts>): ModuleWithProviders<EndpointModule>;
-export function provideService(options: Arrayify<ServiceOpts>): ModuleWithProviders<EndpointModule> {
+export function provideService(options: Array<ServiceOptions>): ModuleWithProviders<EndpointModule>;
+export function provideService(options: Arrayify<ServiceOptions>): ModuleWithProviders<EndpointModule> {
 
     const providers: ProviderType[] = [];
     if (isArray(options)) {
@@ -98,7 +98,7 @@ export function provideService(options: Arrayify<ServiceOpts>): ModuleWithProvid
 export const SERVER_MODULES = tokenId<ServiceModuleOpts[]>('SERVER_MODULES');
 
 
-function createServiceProviders(options: ServiceOpts, idx: number) {
+function createServiceProviders(options: ServiceOptions, idx: number) {
 
     const microservice = isMicroTransport(options);
     return [
@@ -127,7 +127,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
 
                 }
 
-                const moduleOpts = { ...mdopts, ...options, asDefault: null } as ServiceModuleOpts & ServiceOpts;
+                const moduleOpts = { ...mdopts, ...options, asDefault: null } as ServiceModuleOpts & ServiceOptions;
 
                 const transportOptions = {
                     ...moduleOpts.defaultOpts?.transportOptions,

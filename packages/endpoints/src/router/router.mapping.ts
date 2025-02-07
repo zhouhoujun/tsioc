@@ -13,25 +13,21 @@ import { RequestHandler } from '../RequestHandler';
 import { Route, Routes } from './route';
 import { Middleware, MiddlewareFn, MiddlewareLike } from '../middleware/middleware';
 import { MiddlewareBackend, NEXT } from '../middleware/middleware.compose';
-import { RouteMatcher, Router } from './router';
+import { RouteHanlder, RouteMatcher, Router } from './router';
 import { ControllerRoute, ControllerRouteFactory } from './controller';
 import { RequestContext } from '../RequestContext';
 import { RouteHandler } from './route.handler';
 import { RestfulRequestContext } from '../RestfulRequestContext';
 
-/**
- * route.
- */
-export type HybridRoute = RequestHandler | MiddlewareLike | Array<RequestHandler | MiddlewareLike>;
 
 
 
 /**
  * Mapping router.
  */
-export class MappingRouter extends Router<HybridRoute> implements Middleware, OnDestroy {
+export class MappingRouter extends Router<RouteHanlder> implements Middleware, OnDestroy {
 
-    readonly routes: Map<string, HybridRoute>;
+    readonly routes: Map<string, RouteHanlder>;
 
     constructor(
         private injector: Injector,
@@ -40,7 +36,8 @@ export class MappingRouter extends Router<HybridRoute> implements Middleware, On
         readonly protocol: Protocols | null = null,
         public prefix: string = '',
         routes?: Routes,
-        protected micro = false) {
+        protected micro = false,
+        readonly asDefault?: boolean) {
         super()
         this.routes = new Map<string, MiddlewareFn>();
         if (routes) {
@@ -54,8 +51,8 @@ export class MappingRouter extends Router<HybridRoute> implements Middleware, On
     }
 
     use(route: Route): this;
-    use(route: Pattern, middleware: HybridRoute, callback?: (route: string, regExp?: RegExp) => void): this;
-    use(route: Route | Pattern, handler?: HybridRoute, callback?: (route: string, regExp?: RegExp) => void): this {
+    use(route: Pattern, middleware: RouteHanlder, callback?: (route: string, regExp?: RegExp) => void): this;
+    use(route: Route | Pattern, handler?: RouteHanlder, callback?: (route: string, regExp?: RegExp) => void): this {
         if (handler) {
             this.addHandler(route as Pattern, handler, callback);
             return this;
@@ -128,7 +125,7 @@ export class MappingRouter extends Router<HybridRoute> implements Middleware, On
     }
 
 
-    protected getRoute(ctx: RequestContext): HybridRoute | undefined {
+    protected getRoute(ctx: RequestContext): RouteHanlder | undefined {
         let url: string;
         if (this.prefix) {
             if (!ctx.url.startsWith(this.prefix)) return;
@@ -141,7 +138,7 @@ export class MappingRouter extends Router<HybridRoute> implements Middleware, On
         return route
     }
 
-    protected findRoute(url: string): HybridRoute | undefined {
+    protected findRoute(url: string): RouteHanlder | undefined {
         let route = this.routes.get(url);
         if (!route) {
             const exp = this.matcher.match(url);
@@ -152,7 +149,7 @@ export class MappingRouter extends Router<HybridRoute> implements Middleware, On
         return route;
     }
 
-    protected addHandler(route: Pattern, handler: HybridRoute, callback?: (route: string) => void) {
+    protected addHandler(route: Pattern, handler: RouteHanlder, callback?: (route: string) => void) {
         route = this.formatter.format(route);
         const redpt = handler as RouteHandler;
         if (redpt.injector && redpt.options && redpt.options.paths) {

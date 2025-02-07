@@ -6,6 +6,13 @@ import { RequestContext } from '../RequestContext';
 import { Route } from './route';
 import { RequestHandler } from '../RequestHandler';
 import { InternalServerExecption } from '@tsdi/common/transport';
+import { MiddlewareLike } from '../middleware/middleware';
+
+/**
+ * route.
+ */
+export type RouteHanlder = RequestHandler | MiddlewareLike | Array<RequestHandler | MiddlewareLike>;
+
 
 /**
  * router
@@ -13,7 +20,7 @@ import { InternalServerExecption } from '@tsdi/common/transport';
  * public api for global router
  */
 @Abstract()
-export abstract class Router<T = RequestHandler> implements Backend<RequestContext>, Interceptor<RequestContext> {
+export abstract class Router<T = RouteHanlder> implements Backend<RequestContext>, Interceptor<RequestContext> {
     /**
      * protocol
      */
@@ -77,10 +84,10 @@ export const ROUTERS = tokenId<Router[]>('ROUTERS');
 
 export function getRouter(injector: Injector, protocol?: Protocols, microservice?: boolean): Router {
     const routers = injector.get(microservice ? MESSAGE_ROUTERS : ROUTERS, null);
-    if (!routers) throw new InternalServerExecption(`${protocol} ${microservice ? 'micro' : ''}service router has not register.`);
+    if (!routers) throw new InternalServerExecption(`${protocol ?? ''} ${microservice ? 'micro' : ''}service router has not register.`);
     if (!protocol && routers.length > 1) throw new InternalServerExecption(`has mutil ${microservice ? 'micro' : ''}service, protocol param can not empty`);
     const router = routers.find(r => r.protocol == protocol) ?? routers.find(r => r.asDefault) ?? routers[0];
-    if (!router) throw new InternalServerExecption(`${protocol} ${microservice ? 'micro' : ''}service router has not register.`);
+    if (!router) throw new InternalServerExecption(`${protocol ?? ''} ${microservice ? 'micro' : ''}service router has not register.`);
     return router;
 }
 

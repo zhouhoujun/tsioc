@@ -390,7 +390,7 @@ export class HttpRequest<T> implements UrlRequest<T> {
         setHeaders?: { [name: string]: string | string[] },
         setParams?: { [param: string]: string };
     }): HttpRequestInit {
-        const responseType = update.responseType ?? (this.forceJson ? this.responseType : undefined);
+        const responseType = update.responseType ?? ((!this.forceJson && this.responseType == 'json') ? undefined : this.responseType);
         // Carefully handle the boolean options to differentiate between
         // `false` and `undefined` in the update args.
         const withCredentials =

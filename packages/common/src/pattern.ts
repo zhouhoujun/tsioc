@@ -1,4 +1,4 @@
-import { Abstract, isNumber, isPlainObject, isString } from '@tsdi/ioc';
+import { Abstract, isNumber, isPlainObject, isRegExp, isString } from '@tsdi/ioc';
 import { normalize } from './utils';
 
 
@@ -29,7 +29,7 @@ export interface TopicPattern {
 /**
  * Request pattern.
  */
-export type Pattern = string | number | CommandPattern | TopicPattern | ObjectPattern;
+export type Pattern = string | number | CommandPattern | TopicPattern | ObjectPattern | RegExp;
 
 /**
  * pattern formatter.
@@ -73,6 +73,9 @@ export function patternToPath(pattern: Pattern | undefined, joinby = '/', keyVal
     }
     if (isNumber(pattern)) {
         return `${pattern}`;
+    }
+    if(isRegExp(pattern)) {
+        return pattern.source
     }
     if (!isPlainObject(pattern)) {
         return pattern;

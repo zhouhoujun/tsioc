@@ -127,7 +127,7 @@ export interface GrpcServiceOpts<TSerOpts = any> extends BasicServiceOpts {
 export type CommonServiceOpts = TcpServiceOpts | HttpServiceOpts | HttpsServiceOpts | CoapServiceOpts | GrpcServiceOpts;
 
 
-export type ServiceOpts = CommonServiceOpts | MicroServiceOpts;
+export type ServiceOptions = CommonServiceOpts | MicroServiceOpts;
 
 
 export type ServerModuleOpts = CommonServiceOpts & {
