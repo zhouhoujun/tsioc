@@ -1,9 +1,9 @@
-import { ArgumentExecption, Injectable, ProvdierOf, isFunction, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService } from '@tsdi/common';
 import { InternalServerExecption, ev } from '@tsdi/common/transport';
-import { BindServerEvent, DefaultMiddlewareHandler, MiddlewareLike, MiddlewareService, RequestContext, Server, ServerTransportFactory } from '@tsdi/endpoints';
+import { BindServerEvent, MiddlewareService, RequestContext, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -33,16 +33,6 @@ export class TcpServer extends Server<RequestContext, TcpServerOpts> implements 
 
         this.destroy$ = new Subject();
         this.isSecure = !!(this.getOptions().serverOpts as tls.TlsOptions)?.cert;
-    }
-
-    use(middlewares: ProvdierOf<MiddlewareLike> | ProvdierOf<MiddlewareLike>[], order?: number | undefined): this {
-        const endpoint = this.handler as DefaultMiddlewareHandler;
-        if (isFunction(endpoint.use)) {
-            endpoint.use(middlewares, order);
-        } else {
-            throw new ArgumentExecption('Not support middlewares');
-        }
-        return this;
     }
 
     listen(options: ListenOpts, listeningListener?: () => void): this;

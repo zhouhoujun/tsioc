@@ -11,7 +11,7 @@ import { RestfulRequestContext } from './RestfulRequestContext';
 import { ServerOptions as Http1ServerOptions } from 'http';
 import { ServerOptions as HttsServerOptions } from 'https';
 import { ServerOptions as Http2ServerOptions, SecureServerOptions } from 'http2';
-import { MiddlewareOpts } from './middleware/middleware.endpoint';
+import { MiddlewareOpts } from './middleware/middleware';
 
 
 export interface ProxyOpts {

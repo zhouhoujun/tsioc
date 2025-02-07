@@ -1,4 +1,4 @@
-import { Handle } from '@tsdi/ioc';
+import { Handle, ProvdierOf, Token } from '@tsdi/ioc';
 import { RequestContext } from '../RequestContext';
 
 
@@ -31,3 +31,11 @@ export type MiddlewareFn<T extends RequestContext = RequestContext> = Handle<T, 
  */
 export type MiddlewareLike<T extends RequestContext = RequestContext> = Middleware<T> | MiddlewareFn<T>;
 
+
+/**
+ * middleware options.
+ */
+export interface MiddlewareOpts<T extends RequestContext = any> {
+    middlewaresToken?: Token<MiddlewareLike<T>[]>;
+    middlewares?: ProvdierOf<MiddlewareLike<T>>[];
+}

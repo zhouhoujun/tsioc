@@ -14,18 +14,22 @@ import { Route, Routes } from './route';
 import { Middleware, MiddlewareFn, MiddlewareLike } from '../middleware/middleware';
 import { MiddlewareBackend, NEXT } from '../middleware/middleware.compose';
 import { RouteMatcher, Router } from './router';
-import { HybridRoute, HybridRouter } from './router.hybrid';
 import { ControllerRoute, ControllerRouteFactory } from './controller';
 import { RequestContext } from '../RequestContext';
 import { RouteHandler } from './route.handler';
 import { RestfulRequestContext } from '../RestfulRequestContext';
+
+/**
+ * route.
+ */
+export type HybridRoute = RequestHandler | MiddlewareLike | Array<RequestHandler | MiddlewareLike>;
 
 
 
 /**
  * Mapping router.
  */
-export class MappingRouter extends HybridRouter implements Middleware, OnDestroy {
+export class MappingRouter extends Router<HybridRoute> implements Middleware, OnDestroy {
 
     readonly routes: Map<string, HybridRoute>;
 
@@ -80,7 +84,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
     }
 
     handle(ctx: RequestContext, noFound?: () => Observable<any>): Observable<any> {
-        if (ctx.headersSent) return of(ctx)
+        if (ctx.headersSent || (ctx.status && ctx.statusAdapter && !ctx.statusAdapter.isNotFound(ctx.status))) return of(ctx)
         const route = this.getRoute(ctx);
         if (route) {
             if (isArray(route)) {
@@ -104,7 +108,7 @@ export class MappingRouter extends HybridRouter implements Middleware, OnDestroy
     }
 
     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.headersSent) return next()
+        if (ctx.headersSent || (ctx.status && ctx.statusAdapter && !ctx.statusAdapter.isNotFound(ctx.status))) return next()
         const route = this.getRoute(ctx);
         if (route) {
             if (isArray(route)) {

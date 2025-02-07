@@ -39,7 +39,7 @@ export function middlewareBackendFactory<Tx extends RequestContext>(middlewares:
                 fn = compose(middlewares)
             }
             await fn(reqCtx, NEXT);
-            return reqCtx.response.body
+            return reqCtx.response
         })
     }
 }

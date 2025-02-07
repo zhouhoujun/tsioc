@@ -3,21 +3,18 @@ import {
     ProviderType, isArray, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { ConfigMissingExecption, TypedRespond } from '@tsdi/core';
-import { CommonProtocols, Protocols } from '@tsdi/common';
 import { isMicroTransport, NotImplementedExecption, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
 import { ServerOpts } from './server.options';
 import { Session } from './Session';
 import { ServerTransportFactory } from './transport';
 import { EndpointTypedRespond } from './typed.respond';
 import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, LoggerInterceptor } from './interceptors';
-import { MicroServRouterModule, RouteEndpointModule, RouterModule, createMicroRouteProviders, createRouteProviders } from './router/router.module';
-import { MiddlewareOpts } from './middleware/middleware.endpoint';
+import { RouteEndpointModule, RouterModule, createRouteProviders } from './router/router.module';
 import { REGISTER_SERVICES, SetupServices } from './SetupServices';
 import { ExecptionFinalizeFilter } from './execption.filter';
 import { DefaultExecptionHandlers } from './execption.handlers';
 import { FinalizeFilter } from './finalize.filter';
 import { createRequestHandler } from './impl/request.handler';
-import { createMiddlewareEndpoint } from './impl/middleware';
 import { DefaultServerTransferFactory } from './impl/transfer';
 import { ServiceModuleOpts, ServiceOpts } from './endpoint.options';
 
@@ -29,7 +26,6 @@ import { ServiceModuleOpts, ServiceOpts } from './endpoint.options';
     imports: [
         TransportPacketModule,
         RouteEndpointModule,
-        MicroServRouterModule,
         RouterModule
     ],
     providers: [
@@ -139,7 +135,7 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 };
 
                 const serverOpts = {
-                    backend: microservice ? MicroServRouterModule.getToken(moduleOpts.transport) : RouterModule.getToken(moduleOpts.transport as CommonProtocols),
+                    backend: RouterModule.getToken(moduleOpts.transport, microservice),
                     enableTypeChain: true,
                     ...moduleOpts.defaultOpts,
                     ...moduleOpts.serverOpts,
@@ -187,15 +183,15 @@ function createServiceProviders(options: ServiceOpts, idx: number) {
                 providers.push({
                     provide: serverOpts.handlerType,
                     useFactory: (injector: Injector) => {
-                        const opts = lang.deepClone(serverOpts) as ServerOpts & MiddlewareOpts;
-                        return (!microservice && opts.middlewaresToken && opts.middlewares) ? createMiddlewareEndpoint(injector, opts) : createRequestHandler(injector, opts)
+                        const opts = lang.deepClone(serverOpts) as ServerOpts;
+                        return createRequestHandler(injector, opts)
                     },
                     deps: [Injector]
                 });
 
                 return [
                     ...moduleOpts.providers ?? [],
-                    ...microservice ? createMicroRouteProviders(moduleOpts.transport, serverOpts.routes ?? {}) : createRouteProviders(moduleOpts.transport as CommonProtocols, serverOpts.routes ?? {}),
+                    ...createRouteProviders(moduleOpts.transport, microservice, serverOpts.routes ?? {}),
                     { provide: REGISTER_SERVICES, useValue: { service: moduleOpts.serverType, bootstrap: serverOpts.bootstrap, microservice: serverOpts.microservice, providers }, multi: true }
                 ];
             }

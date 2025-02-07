@@ -102,7 +102,7 @@ describe('middleware', () => {
         ctx = await Application.run(ModuleB);
         const runable = ctx.runners.getRef(HttpServer);
 
-        runable.getInstance().use((ctx, next) => {
+        runable.getInstance().use(async (ctx, next) => {
             console.log('ctx.url:', ctx.url);
             if (ctx.url.startsWith('/test')) {
                 console.log('message queue test: ' + ctx.query);
@@ -110,7 +110,7 @@ describe('middleware', () => {
 
             ctx.body = ctx.query.hi;
             console.log(ctx.body, ctx.query);
-            return next();
+            await next();
         }, 0);
 
         //run services

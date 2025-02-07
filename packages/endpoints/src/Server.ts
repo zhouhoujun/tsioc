@@ -5,6 +5,8 @@ import { RequestContext } from './RequestContext';
 import { AbstractRequestHandler } from './AbstractRequestHandler';
 import { RequestHandler } from './RequestHandler';
 import { ServerOpts } from './server.options';
+import { MiddlewareLike } from './middleware/middleware';
+import { MiddlewareService } from './middleware/middleware.service';
 
 
 /**
@@ -43,7 +45,7 @@ export abstract class MicroService<TRequest extends RequestContext = RequestCont
  * 微服务
  */
 @Abstract()
-export abstract class Server<TRequest extends RequestContext = RequestContext, TOptions extends ServerOpts = ServerOpts> extends MicroService implements HandlerService {
+export abstract class Server<TRequest extends RequestContext = RequestContext, TOptions extends ServerOpts = ServerOpts> extends MicroService implements HandlerService, MiddlewareService {
 
     /**
      * service request handler.
@@ -54,10 +56,18 @@ export abstract class Server<TRequest extends RequestContext = RequestContext, T
         return this.handler.getOptions()
     }
 
+
+    use(middlewares: ProvdierOf<MiddlewareLike> | ProvdierOf<MiddlewareLike>[], order?: number | undefined): this {
+        this.handler.use(middlewares, order);
+        return this;
+    }
+
+
     useGuards(guards: ProvdierOf<CanHandle> | ProvdierOf<CanHandle>[], order?: number | undefined): this {
         this.handler.useGuards(guards, order);
         return this;
     }
+
 
     useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
         this.handler.useFilters(filter, order);

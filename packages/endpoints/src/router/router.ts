@@ -1,10 +1,11 @@
-import { Abstract, Token, Type, TypeDef } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, Injector, Token, tokenId, Type, TypeDef } from '@tsdi/ioc';
 import { Interceptor, Backend, Handler, InvocationOptions } from '@tsdi/core';
 import { RequestMethod, Pattern, Protocols } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 import { Route } from './route';
 import { RequestHandler } from '../RequestHandler';
+import { InternalServerExecption } from '@tsdi/common/transport';
 
 /**
  * router
@@ -17,6 +18,8 @@ export abstract class Router<T = RequestHandler> implements Backend<RequestConte
      * protocol
      */
     abstract get protocol(): Protocols | null;
+
+    asDefault?: boolean;
 
     abstract handle(input: RequestContext): Observable<any>;
     /**
@@ -59,6 +62,26 @@ export abstract class Router<T = RequestHandler> implements Backend<RequestConte
      */
     abstract intercept(input: RequestContext, next: Handler): Observable<any>;
 
+}
+
+/**
+ * microservice message routers.
+ */
+export const MESSAGE_ROUTERS = tokenId<Router[]>('MESSAGE_ROUTERS');
+
+
+/**
+ *  service routers.
+ */
+export const ROUTERS = tokenId<Router[]>('ROUTERS');
+
+export function getRouter(injector: Injector, protocol?: Protocols, microservice?: boolean): Router {
+    const routers = injector.get(microservice ? MESSAGE_ROUTERS : ROUTERS, null);
+    if (!routers) throw new InternalServerExecption(`${protocol} ${microservice ? 'micro' : ''}service router has not register.`);
+    if (!protocol && routers.length > 1) throw new InternalServerExecption(`has mutil ${microservice ? 'micro' : ''}service, protocol param can not empty`);
+    const router = routers.find(r => r.protocol == protocol) ?? routers.find(r => r.asDefault) ?? routers[0];
+    if (!router) throw new InternalServerExecption(`${protocol} ${microservice ? 'micro' : ''}service router has not register.`);
+    return router;
 }
 
 

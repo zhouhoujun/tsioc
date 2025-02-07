@@ -1,9 +1,9 @@
 import { ModuleType, ProvdierOf, ProviderType, Type } from '@tsdi/ioc';
 import { InvocationOptions } from '@tsdi/core';
 import { CommonProtocols, Protocols } from '@tsdi/common';
-import { Http1ServerOpts, Http2SecureServerOpts, Http2ServerOpts, HttpServerOpts, HttpsServerOpts, ServerOpts } from './server.options';
+import { Http1ServerOpts, Http2SecureServerOpts, Http2ServerOpts, HttpsServerOpts, ServerOpts } from './server.options';
 import { Server } from './Server';
-import { MiddlewareOpts } from './middleware/middleware.endpoint';
+import { MiddlewareOpts } from './middleware/middleware';
 
 
 /**

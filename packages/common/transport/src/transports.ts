@@ -138,5 +138,5 @@ const microservices = {
 } as Record<Protocols, boolean>;
 
 export function isMicroTransport(options: {transport: Protocols, microservice?: boolean }) {
-    return microservices[options.transport] || (options.transport == 'tcp' && options.microservice)
+    return microservices[options.transport] || (options.transport == 'tcp' && options.microservice === true)
 }

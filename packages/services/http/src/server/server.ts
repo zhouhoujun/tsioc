@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, ModuleLoader } from '@tsdi/core';
 import { ListenService } from '@tsdi/common';
 import { InternalServerExecption } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { BindServerEvent, CONTENT_DISPOSITION_TOKEN, DefaultMiddlewareHandler, HttpServerOpts, MiddlewareLike, MiddlewareService, Server, ServerTransportFactory } from '@tsdi/endpoints';
+import { BindServerEvent, CONTENT_DISPOSITION_TOKEN, HttpServerOpts, MiddlewareLike, MiddlewareService, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Subject, lastValueFrom } from 'rxjs';
 import { ListenOptions } from 'net';
 import * as http from 'http';
@@ -34,17 +34,6 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
     }
 
     _server?: http2.Http2Server | http.Server | https.Server | null;
-
-    use(middlewares: ProvdierOf<MiddlewareLike> | ProvdierOf<MiddlewareLike>[], order?: number | undefined): this {
-        const endpoint = this.handler as DefaultMiddlewareHandler<HttpContext, HttpServerOpts>;
-        if (isFunction(endpoint.use)) {
-            endpoint.use(middlewares, order);
-        } else {
-            throw new ArgumentExecption('Not support middlewares');
-        }
-        return this;
-    }
-
 
     listen(options: ListenOptions, listeningListener?: () => void): this;
     listen(port: number, host?: string, listeningListener?: () => void): this;
