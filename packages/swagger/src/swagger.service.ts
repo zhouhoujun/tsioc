@@ -3,7 +3,7 @@ import { Execption, InjectFlags, Injectable, Type, getClassName, isFunction, isN
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, joinPath } from '@tsdi/common';
 import { ctype } from '@tsdi/common/transport';
-import { ControllerRoute,  RouteMappingMetadata, Router, ContentInterceptor, getRouter } from '@tsdi/endpoints';
+import { ControllerRoute, RouteMappingMetadata, Router, ContentInterceptor, getRouter } from '@tsdi/endpoints';
 import { DBPropertyMetadata, MissingModelFieldExecption } from '@tsdi/repository';
 import { HttpServer } from '@tsdi/http'
 import { of } from 'rxjs';
@@ -122,12 +122,14 @@ export class SwaggerService {
                         returnTypeName = getClassName(returnType);
                     }
 
+                    const paramMatedatas = v.ctrlRef.class.getParameters(df.propertyKey) as TransportParameter[]
                     api[method] = {
                         "x-swagger-router-controller": v.ctrlRef.class.className,
                         description: v.ctrlRef.class.getAnnotation<any>().description ?? '',
                         operationId: df.propertyKey,
                         tags: [v.ctrlRef.class.className],
-                        parameters: v.ctrlRef.class.getParameters(df.propertyKey)?.filter(p => (p.flags && (p.flags & InjectFlags.Request)) || (!p.provider && modelResolver(p.type)))?.map(p => this.toParamObject(jsonDoc, p as TransportParameter, modelResolver)),
+                        parameters: paramMatedatas?.filter(p => ((!p.scope || p.scope == 'query' || p.scope == 'path') && p.flags && (p.flags & InjectFlags.Request)) || (!p.provider && modelResolver(p.type)))?.map(p => this.toParamObject(jsonDoc, p as TransportParameter, modelResolver)),
+                        requestBody: paramMatedatas?.filter(p => (p.scope == 'body' || p.scope == 'payload') || (!p.provider && modelResolver(p.type)))?.slice(0, 1)?.map(p => this.toBodyObject(jsonDoc, p as TransportParameter, modelResolver))?.at(0),
                         responses: df.metadata.responses ?? {
                             '200': {
                                 description: "Success",
@@ -165,6 +167,33 @@ export class SwaggerService {
                 this.buildDoc(v, jsonDoc, modelResolver, route);
             }
         })
+    }
+
+    toBodyObject(jsonDoc: OpenAPIObject, p: TransportParameter & ApiParamMetadata, getModelResolver: (type: any) => ModelArgumentResolver | undefined): any {
+        const name = p.name;
+        const type = p.dataType ?? this.toDocType(p.type);
+        const required = isNil(p.required) ? !(p.nullable || (p.flags && (p.flags & InjectFlags.Optional))) : p.required;
+        let schema: any;
+        if (type === 'array') {
+            schema = this.toArraySchema(p.provider as Type, getModelResolver)
+        }
+        if (type === 'object' && p.type !== Object) {
+            schema = this.toModelSchema(jsonDoc, p.type!, getModelResolver);
+        }
+        const bodyObj: Record<string, any> = {
+            name,
+            description: p.description,
+            required,
+            content: {
+                'application/json': {
+                    schema,
+                    example: p.example
+                }
+            }
+        };
+
+
+        return bodyObj;
     }
 
     toParamObject(jsonDoc: OpenAPIObject, p: TransportParameter & ApiParamMetadata, getModelResolver: (type: any) => ModelArgumentResolver | undefined): any {
@@ -266,14 +295,14 @@ export class SwaggerService {
     }
 
     toDocIn(p: TransportParameter) {
-        if (!p.scope) return (!p.provider && p.type) ? 'formData' : 'query';
+        if (!p.scope) return (!p.provider && p.type) ? 'body' : 'query';
         switch (p.scope) {
             case 'headers':
                 return 'header';
 
             case 'body':
             case 'payload':
-                return 'formData';
+                return 'body';
 
             default:
                 return p.scope;

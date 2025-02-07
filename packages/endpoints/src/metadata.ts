@@ -8,8 +8,6 @@ import { getRouter, MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappi
 import { Middleware, MiddlewareFn } from './middleware/middleware';
 import { RouteHandlerFactoryResolver } from './router/route.handler';
 import { ControllerRouteFactory } from './router/controller';
-// import { MicroRouters } from './router/routers.micro';
-// import { Routers } from './router/routers';
 
 
 export { Topic, Payload } from '@tsdi/core';
