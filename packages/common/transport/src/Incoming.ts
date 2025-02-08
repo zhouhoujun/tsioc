@@ -204,9 +204,11 @@ export abstract class AbstractIncoming<T> implements Incoming<T> {
 
     readonly id?: any;
 
-    readonly pattern?: any;
+    readonly pattern?: string;
 
     readonly headers: HeaderMappings;
+
+    readonly properties?: Record<string, any>;
     /**
      * client side timeout.
      */

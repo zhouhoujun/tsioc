@@ -1,19 +1,29 @@
 import { InjectFlags, promisify } from '@tsdi/ioc';
 import { DefaultResponseFactory, HeaderAdapter, PatternFormatter, ResponseFactory } from '@tsdi/common';
-import { CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory, DefaultClientTransport, RequestServializeInterceptor } from '@tsdi/common/client';
-import { AbstractClientIncoming, AbstractIncoming, DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory, ev, FileAdapter, MimeAdapter, NotSupportedExecption, PacketifyInterceptor, PacketVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter, StreamAdapter, UrlClientIncomingFactory, UrlOutgoingFactory } from '@tsdi/common/transport';
+import {
+    CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
+    DefaultClientTransport, RequestServializeInterceptor
+} from '@tsdi/common/client';
+import {
+    DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory,
+    DeserializerFactory, ev, FileAdapter, MimeAdapter, NotSupportedExecption, PacketifyInterceptor,
+    PacketVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter, StreamAdapter,
+    UrlClientIncomingFactory, UrlOutgoingFactory
+} from '@tsdi/common/transport';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import {
     AcceptsPriority,
     DefaultServerTransferFactory,
     DefaultServerTransport,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
-    PatternRequestContext, RequestContext, RequestContextServializeInterceptor, RequestContextVaildateInterceptor, SERVER_MODULES,
+    RequestContextServializeInterceptor, RequestContextVaildateInterceptor, SERVER_MODULES,
     ServerTransferFactory,
     ServiceModuleOpts,
     UrlRequestContext
 } from '@tsdi/endpoints';
+import { filter, fromEvent } from 'rxjs';
 import { RemoteInfo, Socket } from 'dgram';
+
 import { UdpClient } from './client/client';
 import { UdpHandler } from './client/handler';
 import { UDP_CLIENT_FILTERS, UDP_CLIENT_INTERCEPTORS } from './client/options';
@@ -23,7 +33,6 @@ import { sizeLimit } from './consts';
 import { UdpRequestHandler } from './server/handler';
 import { UDP_SERV_FILTERS, UDP_SERV_GUARDS, UDP_SERV_INTERCEPTORS } from './server/options';
 import { UdpServer } from './server/server';
-import { filter, fromEvent } from 'rxjs';
 
 
 
@@ -153,11 +162,11 @@ export class UdpConfiguration {
                                     transferFactory.create(injector, transportOptions.transferConfig),
                                     options,
                                     (socket) => fromEvent(socket, ev.MESSAGE, (payload: Buffer, rinfo: RemoteInfo) => {
-                                        return { payload, pattern: rinfo }
+                                        return { payload, properties: rinfo }
                                     }),
                                     (socket, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
-                                        const rinfo = requestContext.request.pattern as RemoteInfo;
+                                        const rinfo = requestContext.request.properties as RemoteInfo;
                                         if (!rinfo) throw new NotSupportedExecption('No remote response to');
                                         return promisify<Buffer | string, number, string>(socket.send, socket)(msg.payload ?? Buffer.alloc(0), rinfo.port, rinfo.address);
                                     }

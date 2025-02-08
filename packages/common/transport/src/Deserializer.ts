@@ -45,15 +45,15 @@ export const DESERIALIZER_FILTERS = tokenId<FilterLike[]>('DESERIALIZER_FILTERS'
 export class DefaultDeserializerFactory implements DeserializerFactory {
     create(context: Injector | InvocationContext, options?: DeserializerOpts): Deserializer {
         const handler = createHandler(context, {
-            backend: (input: any, context: TransportContext) => {
+            backend: (input: Packet, context: TransportContext) => {
                 return defer(async () => {
-                    let packet = (input as Packet).payload ?? input;
+                    let packet: any = input.payload;
                     let jsonSrc: string | undefined;
                     if (isString(packet)) {
                         jsonSrc = packet
                     } else if (isBuffer(packet)) {
                         jsonSrc = packet.toString()
-                    } else if (!input.headers && context.transport.streamAdapter.isReadable((input as Packet).payload)) {
+                    } else if (!input.headers && context.transport.streamAdapter.isReadable(packet)) {
                         const buf = await toBuffer(packet);
                         jsonSrc = buf.toString()
                     }
@@ -66,8 +66,8 @@ export class DefaultDeserializerFactory implements DeserializerFactory {
                             throw new InvalidJsonException(err, jsonSrc);
                         }
                     }
-                    if(input.pattern) {
-                        packet.pattern = input.pattern;
+                    if(input.properties) {
+                        packet.properties = input.properties;
                     }
                     return packet;
                 })

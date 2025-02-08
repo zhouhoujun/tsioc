@@ -130,9 +130,9 @@ export interface Packet<T extends IReadable | IDuplex | Buffer | string = IReada
     id?: string | number;
 
     /**
-     * pattern
+     * properties
      */
-    pattern?: Pattern;
+    properties?: Record<string, any>;
 
     /**
      * packet headers.
