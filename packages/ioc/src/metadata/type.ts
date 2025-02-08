@@ -427,11 +427,13 @@ export class Class<T = any> {
     }
 
     addDefine(define: DecorDefine) {
+        let unshift = false;
         switch (define.decorType) {
             case Decors.CLASS:
                 if (this.classDecors.indexOf(define.decor) < 0) {
                     this.classDecors.push(define.decor);
                 }
+                unshift = true;
                 // this.setToMap(this.classDefs, define.decor.toString(), define, true);
                 break;
             case Decors.method:
@@ -450,10 +452,11 @@ export class Class<T = any> {
                 if (this.paramDecors.indexOf(define.decor) < 0) {
                     this.paramDecors.push(define.decor);
                 }
+                unshift = true;
                 // this.setToMap(this.paramDefs, define.decor.toString(), define, true);
                 break;
         }
-        this.defs.unshift(define)
+        unshift? this.defs.unshift(define) : this.defs.push(define);
     }
 
     private setToMap(maps: Map<string, DecorDefine[]>, decorName: string, define: DecorDefine, unshift?: boolean) {
@@ -765,13 +768,13 @@ interface DefineDescriptor<T = any> extends TypedPropertyDescriptor<T> {
     __name: string;
 }
 
-function cloneMap(map: Map<string, any>) {
-    const cloned = new Map<string, any>();
-    map.forEach((v, k) => {
-        cloned.set(k, isArray(v) ? v.slice(0) : v);
-    });
-    return cloned;
-}
+// function cloneMap(map: Map<string, any>) {
+//     const cloned = new Map<string, any>();
+//     map.forEach((v, k) => {
+//         cloned.set(k, isArray(v) ? v.slice(0) : v);
+//     });
+//     return cloned;
+// }
 
 function getParamNames(func: Function) {
     if (!isFunction(func)) {
