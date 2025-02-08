@@ -173,17 +173,17 @@ export class SwaggerService {
                     const returnType = v.ctrlRef.class.getMethodMetadata(undefined, df.propertyKey, r => isType(r.metadata.response))?.response ?? df.metadata.returnType ?? df.metadata.type;
                     let returnTypeName = '';
                     if (returnType && returnType != Object && returnType != Promise) {
+                        returnTypeName = getClassName(returnType);
                         if (!jsonDoc.components.schemas[returnTypeName]) {
                             this.regSchema(jsonDoc, returnType, modelResolver);
                         }
-                        returnTypeName = getClassName(returnType);
                     }
 
                     const paramMatedatas = v.ctrlRef.class.getParameters(df.propertyKey) as TransportParameter[]
                     api[method] = {
                         "x-swagger-router-controller": v.ctrlRef.class.className,
-                        summary: (v.ctrlRef.class.getMethodDefines(undefined, df.propertyKey)?.find(r => r.metadata.summary) as any)?.summary ?? '',
-                        description: (v.ctrlRef.class.getMethodDefines(undefined, df.propertyKey)?.find(r => r.metadata.description) as any)?.description ?? '',
+                        summary: (v.ctrlRef.class.getMethodMetadata(undefined, df.propertyKey, r => r.metadata.summary) as any)?.summary ?? '',
+                        description: (v.ctrlRef.class.getMethodMetadata(undefined, df.propertyKey, r => r.metadata.description) as any)?.description ?? '',
                         operationId: df.propertyKey,
                         tags: [v.ctrlRef.class.className],
                         parameters: paramMatedatas?.filter(p => ((!p.scope || p.scope == 'query' || p.scope == 'path') && p.flags && (p.flags & InjectFlags.Request)))?.map(p => this.toParamObject(jsonDoc, p as TransportParameter, modelResolver)),
