@@ -139,6 +139,7 @@ export interface ListenOpts {
      * When provided the corresponding `AbortController` can be used to cancel an asynchronous action.
      */
     signal?: AbortSignal | undefined;
+    url?: string;
 }
 
 export interface CsrfOps {

@@ -50,8 +50,9 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
                     options.listenOpts = { host, port };
                 }
                 // moduleRef.setValue(HTTP_LISTEN_OPTS, options.listenOpts);
+                const url = options.listenOpts!.url = `http${isSecure ? 's' : ''}://${host}:${port}`;
                 this._server.listen(port, host, () => {
-                    this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://${host}:${port}`, '!');
+                    this.logger.info(lang.getClassName(this), url, '!');
                     listeningListener?.();
                 });
             } else {
@@ -60,8 +61,9 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
                     options.listenOpts = { port };
                 }
                 // moduleRef.setValue(HTTP_LISTEN_OPTS, options.listenOpts);
+                const url = options.listenOpts!.url = `http${isSecure ? 's' : ''}://localhost:${port}`;
                 this._server.listen(port, () => {
-                    this.logger.info(lang.getClassName(this), 'access with url:', `http${isSecure ? 's' : ''}://localhost:${port}`, '!');
+                    this.logger.info(lang.getClassName(this), 'access with url:', url, '!');
                     listeningListener?.();
                 });
             }
@@ -71,8 +73,9 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
                 options.listenOpts = opts;
             }
             // moduleRef.setValue(HTTP_LISTEN_OPTS, options.listenOpts);
+            const url = options.listenOpts!.url = `http${isSecure ? 's' : ''}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`;
             this._server.listen(opts, () => {
-                this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `http${isSecure ? 's' : ''}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
+                this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', url, '!');
                 listeningListener?.();
             });
         }

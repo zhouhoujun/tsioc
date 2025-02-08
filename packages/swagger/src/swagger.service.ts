@@ -3,13 +3,14 @@ import { Execption, InjectFlags, Injectable, Type, getClassName, isFunction, isN
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, joinPath } from '@tsdi/common';
 import { ctype } from '@tsdi/common/transport';
-import { ControllerRoute, RouteMappingMetadata, Router, ContentInterceptor, getRouter } from '@tsdi/endpoints';
+import { ControllerRoute, RouteMappingMetadata, Router, ContentInterceptor, getRouter, SetupServices } from '@tsdi/endpoints';
 import { DBPropertyMetadata, MissingModelFieldExecption } from '@tsdi/repository';
 import { HttpServer } from '@tsdi/http'
 import { of } from 'rxjs';
 import { getAbsoluteFSPath } from 'swagger-ui-dist';
 import { SWAGGER_SETUP_OPTIONS, SWAGGER_DOCUMENT, OpenAPIObject, SwaggerOptions, SwaggerUiOptions, SwaggerSetupOptions } from './swagger.config';
 import { ApiModelPropertyMetadata, ApiParamMetadata } from './metadata';
+
 
 
 
@@ -27,7 +28,7 @@ export class SwaggerService {
         const moduleRef = ctx.injector;
         const opts = moduleRef.get(SWAGGER_SETUP_OPTIONS, {} as SwaggerSetupOptions);
 
-        const router = getRouter(moduleRef); //moduleRef.get(Routers).get();
+        const router = getRouter(moduleRef);
 
         const models = moduleRef.get(MODEL_RESOLVERS);
 
@@ -35,6 +36,14 @@ export class SwaggerService {
             if (!target || !isType(target)) return undefined;
             return models.find(m => m.hasModel(target))
         }
+
+        const servers = moduleRef.get(SetupServices).getServices().map(r => r.getInstance()).filter(r => /^http(s)?$/.test(r.getOptions().protocol || ''))
+            .map(r => {
+                const url = r.getOptions().listenOpts?.url ?? '';
+                return {
+                    url
+                }
+            })
 
         const doc = {
             openapi: '3.0.0',
@@ -47,10 +56,45 @@ export class SwaggerService {
                 license: opts.license,
                 termsOfService: opts.termsOfService
             },
+            servers,
             components: {
+                securitySchemes: {
+                    api_key: {
+                        type: "apiKey",
+                        name: "X-API-Key",
+                        in: "header"
+                    },
+                    basicAuth: {
+                        type: "http",
+                        scheme: "basic"
+                    },
+                    oauth2: {
+                        type: "oauth2",
+                        flows: {
+                            password: {
+                                tokenUrl: "https://example.com/api/oauth/token",
+                                scopes: {
+                                    "read:pets": "Grants read access",
+                                    "write:pets": "Grants write access"
+                                }
+                            }
+                        }
+                    }
+                },
                 schemas: {}
             },
             paths: {},
+            security: [
+                {
+                    api_key: []
+                },
+                {
+                    basicAuth: []
+                },
+                {
+                    oauth2: ["read:pets", "write:pets"]
+                }
+            ],
             ...moduleRef.get(SWAGGER_DOCUMENT, null),
         } as OpenAPIObject;
 
@@ -128,8 +172,8 @@ export class SwaggerService {
                         description: v.ctrlRef.class.getAnnotation<any>().description ?? '',
                         operationId: df.propertyKey,
                         tags: [v.ctrlRef.class.className],
-                        parameters: paramMatedatas?.filter(p => ((!p.scope || p.scope == 'query' || p.scope == 'path') && p.flags && (p.flags & InjectFlags.Request)) || (!p.provider && modelResolver(p.type)))?.map(p => this.toParamObject(jsonDoc, p as TransportParameter, modelResolver)),
-                        requestBody: paramMatedatas?.filter(p => (p.scope == 'body' || p.scope == 'payload') || (!p.provider && modelResolver(p.type)))?.slice(0, 1)?.map(p => this.toBodyObject(jsonDoc, p as TransportParameter, modelResolver))?.at(0),
+                        parameters: paramMatedatas?.filter(p => ((!p.scope || p.scope == 'query' || p.scope == 'path') && p.flags && (p.flags & InjectFlags.Request)))?.map(p => this.toParamObject(jsonDoc, p as TransportParameter, modelResolver)),
+                        requestBody: this.toBodyObject(jsonDoc, paramMatedatas?.filter(p => (p.scope == 'body' || p.scope == 'payload') || (!p.provider && modelResolver(p.type))), modelResolver),
                         responses: df.metadata.responses ?? {
                             '200': {
                                 description: "Success",
@@ -169,31 +213,74 @@ export class SwaggerService {
         })
     }
 
-    toBodyObject(jsonDoc: OpenAPIObject, p: TransportParameter & ApiParamMetadata, getModelResolver: (type: any) => ModelArgumentResolver | undefined): any {
-        const name = p.name;
-        const type = p.dataType ?? this.toDocType(p.type);
-        const required = isNil(p.required) ? !(p.nullable || (p.flags && (p.flags & InjectFlags.Optional))) : p.required;
-        let schema: any;
-        if (type === 'array') {
-            schema = this.toArraySchema(p.provider as Type, getModelResolver)
-        }
-        if (type === 'object' && p.type !== Object) {
-            schema = this.toModelSchema(jsonDoc, p.type!, getModelResolver);
-        }
-        const bodyObj: Record<string, any> = {
-            name,
-            description: p.description,
-            required,
-            content: {
-                'application/json': {
-                    schema,
-                    example: p.example
+    toBodyObject(jsonDoc: OpenAPIObject, parameters: (TransportParameter & ApiParamMetadata)[], getModelResolver: (type: any) => ModelArgumentResolver | undefined): any {
+        if (!parameters?.length) return undefined;
+
+        if (parameters.length == 1) {
+            const p = parameters[0];
+            const name = p.name;
+            const type = p.dataType ?? this.toDocType(p.type);
+            const required = isNil(p.required) ? !(p.nullable || (p.flags && (p.flags & InjectFlags.Optional))) : p.required;
+            let schema: any;
+            if (type === 'array') {
+                schema = this.toArraySchema(p.provider as Type, getModelResolver)
+            }
+            if (type === 'object' && p.type !== Object) {
+                schema = this.toModelSchema(jsonDoc, p.type!, getModelResolver);
+            }
+            const bodyObj: Record<string, any> = {
+                name,
+                description: p.description,
+                required,
+                content: {}
+            };
+
+            bodyObj.content[type == 'binary' ? 'multipart/form-data' : 'application/json'] = {
+                schema,
+                example: p.example
+            }
+            return bodyObj;
+        } else {
+
+            const required: string[] = [];
+            const properties: Record<string, any> = {};
+            let hasBinary = false;
+
+            parameters.forEach(p => {
+                const name = p.name!;
+                const type = p.dataType ?? this.toDocType(p.type);
+                if (type == 'binary') hasBinary = true;
+                if (isNil(p.required) ? !(p.nullable || (p.flags && (p.flags & InjectFlags.Optional))) : p.required) {
+                    required.push(name);
+                }
+                let schema: any;
+                if (type === 'array') {
+                    schema = this.toArraySchema(p.provider as Type, getModelResolver)
+                }
+                if (type === 'object' && p.type !== Object) {
+                    schema = this.toModelSchema(jsonDoc, p.type!, getModelResolver);
+                }
+                properties[name] = {
+                    type: schema ?? type
+                }
+            })
+
+            const bodyObj: Record<string, any> = {
+                required: true,
+                content: {}
+            };
+            bodyObj.content[hasBinary ? 'multipart/form-data' : 'application/json'] = {
+                schema: {
+                    type: 'object',
+                    properties,
+                    required
                 }
             }
-        };
+            return bodyObj;
+
+        }
 
 
-        return bodyObj;
     }
 
     toParamObject(jsonDoc: OpenAPIObject, p: TransportParameter & ApiParamMetadata, getModelResolver: (type: any) => ModelArgumentResolver | undefined): any {
@@ -291,6 +378,7 @@ export class SwaggerService {
         if (type === Date) return 'date-time';
         if (type === Boolean) return 'boolean';
         if (type === Array) return 'array';
+        if (type === ArrayBuffer || type === File || type === Blob) return 'binary';
         return 'object';
     }
 
@@ -499,6 +587,8 @@ window.onload = function() {
 
   if (customOptions.oauth) {
     ui.initOAuth(customOptions.oauth)
+  } else if (customOptions.oauth2) {
+    ui.initOAuth(customOptions.oauth2)
   }
 
   if (customOptions.preauthorizeApiKey) {
