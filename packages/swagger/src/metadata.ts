@@ -20,12 +20,12 @@ export const Api: Api = createDecorator('Api', {
  * api Operation decorator for swagger.
  */
 export interface ApiOperation {
-    (summary: string, response: Type, description?: string): MethodDecorator;
+    (summary: string, response?: Type, description?: string): MethodDecorator;
 }
 
 export const ApiOperation: ApiOperation = createDecorator('ApiOperation', {
 
-    props(summary: string, response: Type,  description?: string) {
+    props(summary: string, response?: Type,  description?: string) {
         return {
             summary,
             response,

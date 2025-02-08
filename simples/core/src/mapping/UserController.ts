@@ -16,11 +16,13 @@ export class UserController {
 
     }
 
+    @ApiOperation('query users')
     @Get('/')
     search(@RequestParam({ nullable: true }) name: string) {
         return this.usrService.search(name);
     }
 
+    @ApiOperation('get user by name', User)
     @Get('/:name')
     getUser(@RequestPath() name: string) {
         this.logger.log('name:', name);
