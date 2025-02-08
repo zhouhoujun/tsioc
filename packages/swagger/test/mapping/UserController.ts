@@ -15,7 +15,7 @@ export class UserController {
 
     @ApiOperation('get users.')
     @RouteMapping('/:name', 'GET')
-    getUser(@ApiParam({ name: 'name', required: true}) name: string) {
+    getUser(@ApiParam({ name: 'name', description: 'user name' ,required: true}) name: string) {
         console.log('name:', name);
         return this.usrRep.findByAccount(name);
     }

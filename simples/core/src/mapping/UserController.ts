@@ -6,7 +6,7 @@ import { Repository, Transactional } from '@tsdi/repository';
 import { Repository as TypeormRepository } from 'typeorm';
 import { User } from '../models/User';
 import { UserService } from './user.service';
-import { Api, ApiOperation } from '@tsdi/swagger';
+import { Api, ApiOperation, ApiParam } from '@tsdi/swagger';
 
 @Api('user manager')
 @Controller('/users')
@@ -24,7 +24,8 @@ export class UserController {
 
     @ApiOperation('get user by name', User)
     @Get('/:name')
-    getUser(@RequestPath() name: string) {
+    getUser(
+        @ApiParam({ name: 'name', description: 'user name', required: true }) @RequestPath() name: string) {
         this.logger.log('name:', name);
         if (name == 'error') {
             throw new InternalServerExecption('error');
@@ -32,6 +33,7 @@ export class UserController {
         return this.usrService.findByAccount(name);
     }
 
+    @ApiOperation('save user with transactional in control', User)
     @Post('/')
     @Put('/')
     async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
@@ -41,6 +43,7 @@ export class UserController {
         return val;
     }
 
+    @ApiOperation('save user with transactional in method', User)
     @Transactional()
     @Post('/save')
     @Put('/save')

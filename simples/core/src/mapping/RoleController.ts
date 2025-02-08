@@ -3,7 +3,10 @@ import { Log, Logger } from '@tsdi/logger';
 import { InjectRepository, Transactional } from '@tsdi/repository';
 import { Repository } from 'typeorm';
 import { Role } from '../models/Role';
+import { Api, ApiOperation } from '@tsdi/swagger';
 
+
+@Api('role manager')
 @RouteMapping('/roles')
 export class RoleController {
 
@@ -11,6 +14,7 @@ export class RoleController {
 
     }
 
+    @ApiOperation('save role with transactional in control', Role)
     @Transactional()
     @RouteMapping('/', 'POST')
     @RouteMapping('/', 'PUT')
@@ -23,6 +27,7 @@ export class RoleController {
         return value;
     }
 
+    @ApiOperation('save role with transactional in method', Role)
     @Transactional()
     @RouteMapping('/save2', 'POST')
     @RouteMapping('/save2', 'PUT')
@@ -35,7 +40,7 @@ export class RoleController {
         return value;
     }
 
-
+    @ApiOperation('get role by name', Role)
     @RouteMapping('/:name', 'GET')
     async getRole(@RequestPath() name: string) {
         this.logger.log('name:', name);
