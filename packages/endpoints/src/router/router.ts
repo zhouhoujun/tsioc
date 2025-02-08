@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, Injector, ProvidedInMetadata, Token, tokenId, Type, TypeDef } from '@tsdi/ioc';
+import { Abstract, Injector, ProvidedInMetadata, Token, tokenId, Type, TypeDef } from '@tsdi/ioc';
 import { Interceptor, Backend, Handler, InvocationOptions } from '@tsdi/core';
 import { RequestMethod, Pattern, Protocols } from '@tsdi/common';
 import { Observable } from 'rxjs';
@@ -82,7 +82,9 @@ export const MESSAGE_ROUTERS = tokenId<Router[]>('MESSAGE_ROUTERS');
  */
 export const ROUTERS = tokenId<Router[]>('ROUTERS');
 
-export function getRouter(injector: Injector, protocol?: Protocols, microservice?: boolean): Router {
+export function getRouter(injector: Injector, protocol?: Protocols, microservice?: boolean): Router;
+export function getRouter(injector: Injector, protocol?: string, microservice?: boolean): Router;
+export function getRouter(injector: Injector, protocol?: string, microservice?: boolean): Router {
     const routers = injector.get(microservice ? MESSAGE_ROUTERS : ROUTERS, null);
     if (!routers) throw new InternalServerExecption(`${protocol ?? ''} ${microservice ? 'micro' : ''}service router has not register.`);
     if (!protocol && routers.length > 1) throw new InternalServerExecption(`has mutil ${microservice ? 'micro' : ''}service, protocol param can not empty`);

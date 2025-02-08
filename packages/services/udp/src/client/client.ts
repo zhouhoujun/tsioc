@@ -5,7 +5,7 @@ import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/c
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { UdpHandler } from './handler';
 import { UdpClientOpts } from './options';
-import { defaultMaxSize } from '../consts';
+import { sizeLimit } from '../consts';
 import { UdpRequest, UdpRequestOptions } from './request';
 
 
@@ -27,7 +27,7 @@ export class UdpClient extends AbstractClient<UdpRequestOptions, UdpRequest<any>
             const options = this.getOptions();
             const connectOpts = {
                 type: 'udp4',
-                sendBufferSize: options.transportOpts?.maxSize ?? defaultMaxSize,
+                sendBufferSize: options.transportOpts?.limit ?? sizeLimit,
                 ...options.connectOpts
             } as SocketOptions;
             this.socket = createSocket(connectOpts);

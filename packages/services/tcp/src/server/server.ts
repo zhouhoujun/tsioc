@@ -94,9 +94,12 @@ export class TcpServer extends Server<RequestContext, TcpServerOpts> implements 
         const options = this.getOptions();
         if (options.heybird && !bindServer) return;
 
-        if (!bindServer) {
+        if (bindServer) {
+            this.serv = bindServer;
+        } else {
             await this.setup();
         }
+        
         if (!this.serv) throw new InternalServerExecption();
 
         this.serv.on(ev.CLOSE, () => this.logger.info(options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));

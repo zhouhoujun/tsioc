@@ -86,11 +86,17 @@ export interface TcpMicroServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     serverOpts?: ServerOpts<TSerOpts> & HeybirdOpts
 }
 
+export interface UdpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
+    transport: 'udp';
+    serverOpts?: ServerOpts<TSerOpts>
+}
+
+
 
 /**
  * microservice options.
  */
-export type MicroServiceOpts = MqttServiceOpts | RedisServiceOpts | KafkaServiceOpts | NatsServiceOpts | AmqpServiceOpts | WsServiceOpts | TcpMicroServiceOpts;
+export type MicroServiceOpts = MqttServiceOpts | RedisServiceOpts | KafkaServiceOpts | NatsServiceOpts | AmqpServiceOpts | WsServiceOpts | TcpMicroServiceOpts | UdpServiceOpts;
 
 
 export interface TcpServiceOpts<TSerOpts = any> extends BasicServiceOpts {

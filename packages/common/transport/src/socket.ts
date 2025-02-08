@@ -1,4 +1,4 @@
-import { IHeaders } from '@tsdi/common';
+import { IHeaders, Pattern } from '@tsdi/common';
 import { IDuplex, IEventEmitter, IReadable } from './stream';
 
 
@@ -128,6 +128,11 @@ export interface Packet<T extends IReadable | IDuplex | Buffer | string = IReada
      * packet id
      */
     id?: string | number;
+
+    /**
+     * pattern
+     */
+    pattern?: Pattern;
 
     /**
      * packet headers.

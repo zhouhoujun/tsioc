@@ -72,7 +72,7 @@ export class AmqpServer extends Server<RequestContext, AmqpMicroServiceOpts> {
         });
 
         const injector = this.handler.injector;
-        const session = this._transport = injector.get(ServerTransportFactory).create(injector, channel, transportOpts);
+        const session = this._transport = injector.get(ServerTransportFactory).create(injector, channel, options);
         session.listen(this.handler)
         // injector.get(RequestHandler).handle(this.endpoint, session, this.logger, options);
 

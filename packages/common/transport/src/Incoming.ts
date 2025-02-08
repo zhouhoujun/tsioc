@@ -204,7 +204,7 @@ export abstract class AbstractIncoming<T> implements Incoming<T> {
 
     readonly id?: any;
 
-    readonly pattern?: string;
+    readonly pattern?: any;
 
     readonly headers: HeaderMappings;
     /**

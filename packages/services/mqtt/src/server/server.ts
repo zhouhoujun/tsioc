@@ -1,7 +1,7 @@
-import { Execption, Inject, Injectable, lang, promisify } from '@tsdi/ioc';
+import { Execption, Injectable, lang, promisify } from '@tsdi/ioc';
 import { defaultFormatter, PatternFormatter } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
-import { MicroRouters, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
+import { getRouter, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Client, connect, IClientSubscribeOptions } from 'mqtt';
 import { MqttServiceOpts } from './options';
@@ -61,7 +61,7 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
 
         const options = this.getOptions();
         const injector = this.handler.injector;
-        const router = injector.get(MicroRouters).get('mqtt');
+        const router = getRouter(injector, options.protocol ?? 'mqtt', true);
         if (options.content?.prefix) {
             const content = injector.get(PatternFormatter, defaultFormatter).format(`${options.content.prefix}/#`);
             router.matcher.register(content, true);

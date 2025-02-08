@@ -1,7 +1,7 @@
 import { Execption, Inject, Injectable } from '@tsdi/ioc';
 import { defaultFormatter, PatternFormatter } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { MicroRouters, RequestContext, Server } from '@tsdi/endpoints';
+import { getRouter, RequestContext, Server } from '@tsdi/endpoints';
 import { NatsConnection, connect } from 'nats';
 import { NatsRequestHandler } from './handler';
 import { NatsMicroServOpts } from './options';
@@ -32,7 +32,7 @@ export class NatsServer extends Server<RequestContext, NatsMicroServOpts> {
         const options = this.getOptions();
 
         const injector = this.handler.injector;
-        const router = injector.get(MicroRouters).get('nats');
+        const router = getRouter(injector, options.protocol ?? 'nats', true);
         if (options.content?.prefix) {
             const content = injector.get(PatternFormatter, defaultFormatter).format(`${options.content.prefix}.>`);
             router.matcher.register(content, true);
@@ -41,10 +41,8 @@ export class NatsServer extends Server<RequestContext, NatsMicroServOpts> {
 
         const conn = this.conn;
         const subs = router.matcher.getPatterns();
-
-        const transportOpts = options.transportOpts!;
         
-        const session = this._transport = injector.get(NatsServerTransportFactory).create(injector, conn, transportOpts);
+        const session = this._transport = injector.get(NatsServerTransportFactory).create(injector, conn, options);
 
         subs.map(sub => {
             session.subscribe(sub, options.transportOpts?.subscriptionOpts)

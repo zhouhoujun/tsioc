@@ -66,6 +66,9 @@ export class DefaultDeserializerFactory implements DeserializerFactory {
                             throw new InvalidJsonException(err, jsonSrc);
                         }
                     }
+                    if(input.pattern) {
+                        packet.pattern = input.pattern;
+                    }
                     return packet;
                 })
             },

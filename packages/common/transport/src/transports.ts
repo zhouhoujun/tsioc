@@ -134,7 +134,8 @@ const microservices = {
     nats: true,
     amqp: true,
     ws: true,
-    wss: true
+    wss: true,
+    udp: true
 } as Record<Protocols, boolean>;
 
 export function isMicroTransport(options: {transport: Protocols, microservice?: boolean }) {

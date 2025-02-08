@@ -459,14 +459,14 @@ export class Class<T = any> {
         unshift? this.defs.unshift(define) : this.defs.push(define);
     }
 
-    private setToMap(maps: Map<string, DecorDefine[]>, decorName: string, define: DecorDefine, unshift?: boolean) {
-        let lst = maps.get(decorName);
-        if (!lst) {
-            lst = [];
-            maps.set(decorName, lst)
-        }
-        unshift ? lst.unshift(define) : lst.push(define);
-    }
+    // private setToMap(maps: Map<string, DecorDefine[]>, decorName: string, define: DecorDefine, unshift?: boolean) {
+    //     let lst = maps.get(decorName);
+    //     if (!lst) {
+    //         lst = [];
+    //         maps.set(decorName, lst)
+    //     }
+    //     unshift ? lst.unshift(define) : lst.push(define);
+    // }
 
     /**
      * has decorator metadata.

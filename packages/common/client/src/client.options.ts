@@ -85,7 +85,16 @@ export interface TcpMicroClientConfig extends BasicClientConfig {
     clientOpts?: ClientOpts;
 }
 
-export type MicroClientConfig = MqttClientConfig | RedisClientConfig | KafkaClientConfig | NatsClientConfig | AmqpClientConfig | WsClientConfig | TcpMicroClientConfig;
+export interface UdpClientConfig extends BasicClientConfig {
+    transport: 'udp';
+    /**
+     * client options.
+     */
+    clientOpts?: ClientOpts;
+}
+
+
+export type MicroClientConfig = MqttClientConfig | RedisClientConfig | KafkaClientConfig | NatsClientConfig | AmqpClientConfig | WsClientConfig | TcpMicroClientConfig | UdpClientConfig;
 
 
 export interface TcpClientConfig extends BasicClientConfig {

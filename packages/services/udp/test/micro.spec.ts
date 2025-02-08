@@ -64,7 +64,6 @@ export class UdpService {
         ServerEndpointModule,
         ClientModule.register({
             transport: 'udp',
-            microservice: true,
             clientOpts: {
                 // connectOpts: {
                 //     port: 6379
@@ -73,7 +72,6 @@ export class UdpService {
             }
         }),
         EndpointModule.register({
-            microservice: true,
             transport: 'udp'
         })
     ],

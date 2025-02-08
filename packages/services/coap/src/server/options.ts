@@ -1,6 +1,6 @@
 import { tokenId } from '@tsdi/ioc';
-import { ExecptionFilter, Interceptor, GuardLike } from '@tsdi/core';
-import { ServerOpts } from '@tsdi/endpoints';
+import { ExecptionFilter, Interceptor, GuardLike, Filter } from '@tsdi/core';
+import { BindServerEvent, ServerOpts } from '@tsdi/endpoints';
 import { CoapServerOptions } from 'coap';
 
 
@@ -10,6 +10,10 @@ import { CoapServerOptions } from 'coap';
 export interface CoapServerOpts extends ServerOpts<CoapServerOptions> {
     listenOpts?: number | { host?: string, port?: number, listener?: () => void };
     detailError?: boolean;
+    /**
+     * heybird or not.
+     */
+    heybird?: boolean;
 }
 
 /**
@@ -31,4 +35,17 @@ export const COAP_SERV_FILTERS = tokenId<ExecptionFilter[]>('COAP_SERV_FILTERS')
 export const COAP_SERV_GUARDS = tokenId<GuardLike[]>('COAP_SERV_GUARDS');
 
 
+
+/**
+ * Token of coap bind server interceptors.
+ */
+export const COAP_BIND_INTERCEPTORS = tokenId<Interceptor<BindServerEvent>[]>('COAP_BIND_INTERCEPTORS');
+/**
+ * Token of tcp bind server filters.
+ */
+export const COAP_BIND_FILTERS = tokenId<Filter<BindServerEvent>[]>('COAP_BIND_FILTERS');
+/**
+ * Token of tcp bind server Guards.
+ */
+export const COAP_BIND_GUARDS = tokenId<GuardLike<BindServerEvent>[]>('COAP_BIND_GUARDS');
 

@@ -1,17 +1,19 @@
-import { Inject, Injectable, isFunction, isNumber, lang, promisify } from '@tsdi/ioc';
+import { Inject, Injectable, isFunction, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { BindListenning, LOCALHOST } from '@tsdi/common';
-import { Server, ServerTransportFactory } from '@tsdi/endpoints';
+import { LOCALHOST } from '@tsdi/common';
+import { BindServerEvent, RequestContext, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Socket, createSocket } from 'dgram';
-import { COAP_SERV_OPTS, CoapServerOpts } from './options';
+import { COAP_BIND_FILTERS, COAP_BIND_GUARDS, COAP_BIND_INTERCEPTORS, COAP_SERV_OPTS, CoapServerOpts } from './options';
 import { CoapRequestHandler } from './handler';
 import { InternalServerExecption, ev } from '@tsdi/common/transport';
+import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
+import { lastValueFrom } from 'rxjs';
 
 /**
  * CoAP server.
  */
 @Injectable()
-export class CoapServer extends Server implements BindListenning {
+export class CoapServer extends Server<RequestContext, CoapServerOpts> {
 
     @InjectLog() logger!: Logger;
     protected isSecure = false;
@@ -44,16 +46,34 @@ export class CoapServer extends Server implements BindListenning {
         return this;
     }
 
+    @EventHandler(BindServerEvent, {
+        interceptorsToken: COAP_BIND_INTERCEPTORS,
+        filtersToken: COAP_BIND_FILTERS,
+        guardsToken: COAP_BIND_GUARDS
+    })
+    async bind(event: BindServerEvent<any>) {
+        const options = this.getOptions();
+        if (this._server || (isString(options.heybird) && event.transport !== options.heybird)) return;
+        await this.onStart(event.server);
+    }
+
     protected async setup(): Promise<any> {
         this._server = createSocket(this.options.serverOpts?.type ?? 'udp4');
     }
 
-    protected async onStart(): Promise<any> {
-        await this.setup();
+    protected async onStart(bindServer?: any): Promise<any> {
+        const options = this.getOptions();
+        if (options.heybird && !bindServer) return;
+        if (bindServer) {
+            this._server = bindServer;
+        } else {
+            await this.setup();
+
+        }
         if (!this._server) throw new InternalServerExecption();
 
         this._server.on(ev.CLOSE, (err?: any) => {
-            this.logger.info(`Coap ${this.options?.microservice ? 'microservice' : 'server'} closed!`);
+            this.logger.info(`Coap ${options?.microservice ? 'microservice' : 'server'} closed!`);
             if (err) this.logger.error(err);
         });
         this._server.on(ev.ERROR, (err) => this.logger.error(err));
@@ -62,14 +82,19 @@ export class CoapServer extends Server implements BindListenning {
         const factory = injector.get(ServerTransportFactory);
 
         const isSecure = false;
-        if (!this.options.protocol) {
-            this.options.protocol = isSecure ? 'udps' : 'udp';
+        if (!options.protocol) {
+            options.protocol = isSecure ? 'udps' : 'udp';
         }
 
-        const session = factory.create(injector, this._server, this.options.transportOpts!);
+        const session = factory.create(injector, this._server, options);
         session.listen(this.handler);
 
-        this.listen(this.options.listenOpts as any);
+        if (!options.microservice && !bindServer) {
+            // notify hybrid service to bind http server.
+            await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this._server, 'tcp', this)));
+        }
+
+        if (options.listenOpts && !bindServer) this.listen(options.listenOpts as any);
 
     }
     protected async onShutdown(): Promise<any> {

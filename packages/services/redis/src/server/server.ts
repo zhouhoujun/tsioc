@@ -1,7 +1,7 @@
 import { Execption, Injectable } from '@tsdi/ioc';
 import { PatternFormatter, LOCALHOST, defaultFormatter } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { MicroRouters, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
+import { getRouter, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
 import { ev } from '@tsdi/common/transport';
 import Redis from 'ioredis';
 import { RedisRequestHandler } from './handler';
@@ -69,7 +69,7 @@ export class RedisServer extends Server<RequestContext, RedisServerOpts> {
             publisher
         }, options);
 
-        const router = injector.get(MicroRouters).get('redis');
+        const router = getRouter(injector, options.protocol ?? 'redis', true);
         if (options.content?.prefix) {
             const content = injector.get(PatternFormatter, defaultFormatter).format(`${options.content.prefix}/**`);
             router.matcher.register(content, true);

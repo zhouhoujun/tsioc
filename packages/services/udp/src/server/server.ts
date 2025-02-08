@@ -7,7 +7,7 @@ import { Socket, createSocket, SocketOptions } from 'dgram';
 import { Subject, first, fromEvent, merge } from 'rxjs';
 import { UdpServerOpts } from './options';
 import { UdpRequestHandler } from './handler';
-import { defaultMaxSize } from '../consts';
+import { sizeLimit } from '../consts';
 
 
 @Injectable()
@@ -29,7 +29,7 @@ export class UdpServer extends Server<RequestContext, UdpServerOpts> {
         const options = this.getOptions();
         const serverOpts = {
             type: 'udp4',
-            sendBufferSize: options.transportOpts?.maxSize ?? defaultMaxSize,
+            sendBufferSize: options.transportOptions?.limit ?? sizeLimit,
             ...options.serverOpts
         } as SocketOptions;
         this.serv = createSocket(serverOpts);

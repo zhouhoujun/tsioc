@@ -1,7 +1,6 @@
 import { ErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { PackageBufferCodingsModule } from '@tsdi/common/transport';
 import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
 import { Injector, Module, isArray } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
@@ -23,20 +22,15 @@ import expect = require('expect');
         ServerEndpointModule,
         ClientModule.register([
             {
-                microservice: true,
                 transport: 'udp',
                 clientOpts: {
-                    transportOpts: {
-                        headDelimiter: '|'
-                    }
+
                 }
             },
             {
                 transport: 'tcp',
+                microservice: false,
                 clientOpts: {
-                    transportOpts: {
-                        headDelimiter: '|'
-                    },
                     connectOpts: {
                         port: 2000
                     }
@@ -46,11 +40,9 @@ import expect = require('expect');
         EndpointModule.register([
             {
                 transport: 'tcp',
+                microservice: false,
                 serverOpts: {
                     detailError: false,
-                    transportOpts: {
-                        headDelimiter: '|'
-                    },
                     listenOpts: {
                         port: 2000
                     },
@@ -63,13 +55,9 @@ import expect = require('expect');
                 }
             },
             {
-                microservice: true,
                 transport: 'udp',
                 serverOpts: {
                     detailError: false,
-                    transportOpts: {
-                        headDelimiter: '|'
-                    },
                     interceptors: [
                         BigFileInterceptor,
                         ContentInterceptor,
@@ -78,8 +66,7 @@ import expect = require('expect');
                     ]
                 }
             }
-        ]),
-        PackageBufferCodingsModule
+        ])
     ],
     declarations: [
         DeviceController

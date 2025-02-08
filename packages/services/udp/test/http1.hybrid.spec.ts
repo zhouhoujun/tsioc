@@ -20,7 +20,7 @@ import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonIntercep
         LoggerModule,
         ServerEndpointModule,
         ClientModule.register([
-            { transport: 'udp', microservice: true },
+            { transport: 'udp' },
             {
                 transport: 'http',
                 clientOpts: {
@@ -30,7 +30,6 @@ import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonIntercep
         ]),
         EndpointModule.register([
             {
-                microservice: true,
                 transport: 'udp'
             },
             {
