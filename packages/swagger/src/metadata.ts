@@ -3,12 +3,35 @@ import { Type, createDecorator, createParamDecorator } from '@tsdi/ioc';
 /**
  * api Operation decorator for swagger.
  */
+export interface Api {
+    (description: string): ClassDecorator;
+}
+
+export const Api: Api = createDecorator('Api', {
+
+    props(description: string) {
+        return {
+            description
+        }
+    },
+});
+
+/**
+ * api Operation decorator for swagger.
+ */
 export interface ApiOperation {
-    (summary: string, notes?: string): PropertyDecorator;
+    (summary: string, response: Type, description?: string): MethodDecorator;
 }
 
 export const ApiOperation: ApiOperation = createDecorator('ApiOperation', {
 
+    props(summary: string, response: Type,  description?: string) {
+        return {
+            summary,
+            response,
+            description
+        }
+    },
 });
 
 export interface ApiParamMetadata {
@@ -98,11 +121,15 @@ export const ApiBody: ApiBody = createParamDecorator<ParameterObject>('ApiBody',
  * api model decorator for swagger.
  */
 export interface ApiModel {
-    (summary?: string): ClassDecorator;
+    (description: string): ClassDecorator;
 }
 
 export const ApiModel: ApiModel = createDecorator('ApiModel', {
-
+    props(description: string) {
+        return {
+            description
+        }
+    },
 });
 
 

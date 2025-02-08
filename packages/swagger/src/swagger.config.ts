@@ -18,6 +18,7 @@ export interface OpenAPIObject {
 
 export interface TagObject {
   name: string;
+  summary?: string;
   description?: string;
   externalDocs?: ExternalDocumentationObject;
 }

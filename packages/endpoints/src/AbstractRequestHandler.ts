@@ -29,7 +29,7 @@ export abstract class AbstractRequestHandler<TInput extends RequestContext = Req
  * 
  * 传输节点配置
  */
-export interface RequestHandlerOptions<T extends RequestContext = RequestContext, TArg = any> extends InvocationOptions<T, TArg>, MiddlewareOpts {
+export interface RequestHandlerOptions<T extends RequestContext = RequestContext> extends InvocationOptions<T>, MiddlewareOpts {
     classType?: ClassType<RequestHandler>;
 
     /**

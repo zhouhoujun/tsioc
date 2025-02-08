@@ -4,7 +4,7 @@ import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
 import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
 import { Injector, MethodType } from './injector';
-import { InvocationContext, InvokeArguments } from './context';
+import { InvocationContext, InvokeArguments, InvokeParentContext } from './context';
 import { OperationInvoker } from './operation';
 
 
@@ -135,12 +135,14 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
     abstract onDestroy(callback?: DestroyCallback): void | Promise<void>;
 }
 
-export interface InvokerOptions<T = any, TArg = any> extends InvokeArguments<TArg> {
+export interface InvokeInstance<T = any> {
     /**
      * instance or instance factory of target type.
      */
     instance?: T | (() => T)
 }
+
+export interface InvokerOptions<T = any, TArg = any> extends InvokeInstance<T>, InvokeParentContext, InvokeArguments<TArg> { }
 
 /**
  * ReflectiveRef factory.

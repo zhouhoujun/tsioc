@@ -2,7 +2,7 @@ import { Type, ClassType, Annotation } from '../types';
 import { ModuleWithProviders, ProviderType } from '../providers';
 import {
     PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata,
-    PropertyMetadata, ParameterMetadata, MethodMetadata
+    PropertyMetadata, ParameterMetadata
 } from './meta';
 import { InvocationContext, InvokeArguments } from '../context';
 import { Token } from '../tokens';
@@ -175,7 +175,7 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
     /**
      * the module bootstraps.
      */
-    bootstrap?: Type[]|null;
+    bootstrap?: Type[] | null;
     /**
     * module extends providers.
     */
@@ -202,28 +202,28 @@ export class Class<T = any> {
      * all decorator defines.
      */
     readonly defs: DecorDefine[];
-    /**
-     * class decorator defs
-     * keys is decoator name toString()
-     */
-    readonly classDefs: Map<string, DecorDefine[]>;
-    /**
-     * property decorator defs
-     * keys is decoator name toString()
-     */
-    readonly propDefs: Map<string, DecorDefine<PropertyMetadata>[]>;
+    // /**
+    //  * class decorator defs
+    //  * keys is decoator name toString()
+    //  */
+    // readonly classDefs: Map<string, DecorDefine[]>;
+    // /**
+    //  * property decorator defs
+    //  * keys is decoator name toString()
+    //  */
+    // readonly propDefs: Map<string, DecorDefine<PropertyMetadata>[]>;
 
-    /**
-     * method decorator defs
-     * keys is decoator name toString()
-     */
-    readonly methodDefs: Map<string, DecorDefine<MethodMetadata>[]>;
+    // /**
+    //  * method decorator defs
+    //  * keys is decoator name toString()
+    //  */
+    // readonly methodDefs: Map<string, DecorDefine<MethodMetadata>[]>;
 
-    /**
-     * Parameter decorator defs
-     * keys is decoator name toString()
-     */
-    readonly paramDefs: Map<string, DecorDefine<ParameterMetadata>[]>;
+    // /**
+    //  * Parameter decorator defs
+    //  * keys is decoator name toString()
+    //  */
+    // readonly paramDefs: Map<string, DecorDefine<ParameterMetadata>[]>;
 
     readonly classDecors: DecoratorFn[];
     readonly propDecors: DecoratorFn[];
@@ -278,21 +278,21 @@ export class Class<T = any> {
     constructor(public readonly type: Type<T>, annotation: TypeDef<T>, private parent?: Class) {
         this.annotation = annotation ?? getClassAnnotation(type)! ?? {};
         this.className = this.annotation?.name || type.name;
-        this.classDefs = new Map();
+        // this.classDefs = new Map();
         this.classDecors = [];
         if (parent) {
             this.defs = parent.defs.filter(d => d.decorType !== 'class');
-            this.propDefs = cloneMap(parent.propDefs);
-            this.methodDefs = cloneMap(parent.methodDefs);
-            this.paramDefs = cloneMap(parent.paramDefs);
+            // this.propDefs = cloneMap(parent.propDefs);
+            // this.methodDefs = cloneMap(parent.methodDefs);
+            // this.paramDefs = cloneMap(parent.paramDefs);
             this.propDecors = parent.propDecors.slice(0);
             this.methodDecors = parent.methodDecors.slice(0);
             this.paramDecors = parent.paramDecors.slice(0)
         } else {
             this.defs = [];
-            this.propDefs = new Map();
-            this.methodDefs = new Map();
-            this.paramDefs = new Map();
+            // this.propDefs = new Map();
+            // this.methodDefs = new Map();
+            // this.paramDefs = new Map();
             this.propDecors = [];
             this.methodDecors = [];
             this.paramDecors = []
@@ -432,25 +432,25 @@ export class Class<T = any> {
                 if (this.classDecors.indexOf(define.decor) < 0) {
                     this.classDecors.push(define.decor);
                 }
-                this.setToMap(this.classDefs, define.decor.toString(), define, true);
+                // this.setToMap(this.classDefs, define.decor.toString(), define, true);
                 break;
             case Decors.method:
                 if (this.methodDecors.indexOf(define.decor) < 0) {
                     this.methodDecors.push(define.decor);
                 }
-                this.setToMap(this.methodDefs, define.decor.toString(), define);
+                // this.setToMap(this.methodDefs, define.decor.toString(), define);
                 break;
             case Decors.property:
                 if (this.propDecors.indexOf(define.decor) < 0) {
                     this.propDecors.push(define.decor);
                 }
-                this.setToMap(this.propDefs, define.decor.toString(), define);
+                // this.setToMap(this.propDefs, define.decor.toString(), define);
                 break;
             case Decors.parameter:
                 if (this.paramDecors.indexOf(define.decor) < 0) {
                     this.paramDecors.push(define.decor);
                 }
-                this.setToMap(this.paramDefs, define.decor.toString(), define, true);
+                // this.setToMap(this.paramDefs, define.decor.toString(), define, true);
                 break;
         }
         this.defs.unshift(define)
@@ -476,116 +476,189 @@ export class Class<T = any> {
      * @param decor
      * @param type
      */
-    hasMetadata(decor: string | DecoratorFn, type: DecoratorType, propertyKey?: string): boolean;
-    hasMetadata(decor: string | DecoratorFn, type?: DecoratorType, propertyKey?: string): boolean {
-        type = type || Decors.CLASS;
+    hasMetadata(decor: string | DecoratorFn, type: DecoratorType | null, propertyKey?: string): boolean;
+    hasMetadata(decor: string | DecoratorFn, type?: DecoratorType | null, propertyKey?: string): boolean {
+        type = (type === null) ? null : (type ?? Decors.CLASS);
         decor = getDectorId(decor);
-        switch (type) {
-            case Decors.CLASS:
-                return this.classDefs.has(decor)
-            case Decors.method:
-                if (!this.methodDefs.has(decor)) return false;
-                if (!propertyKey) return true;
-                return this.methodDefs.get(decor)!.some(d => d.propertyKey === propertyKey);
-            case Decors.property:
-                if (!this.propDefs.has(decor)) return false;
-                if (!propertyKey) return true;
-                return this.propDefs.get(decor)!.some(d => d.propertyKey === propertyKey);
-            case Decors.parameter:
-                if (!this.paramDefs.has(decor)) return false;
-                if (!propertyKey) return true;
-                return this.paramDefs.get(decor)!.some(d => d.propertyKey === propertyKey);
-            default:
-                return false
-        }
+        return this.defs.some(d => getDectorId(d.decor) == decor && (type ? d.decorType == type : true) && (propertyKey ? d.propertyKey == propertyKey : true));
+        // switch (type) {
+        //     case Decors.CLASS:
+        //         return this.classDefs.has(decor)
+        //     case Decors.method:
+        //         if (!this.methodDefs.has(decor)) return false;
+        //         if (!propertyKey) return true;
+        //         return this.methodDefs.get(decor)!.some(d => d.propertyKey === propertyKey);
+        //     case Decors.property:
+        //         if (!this.propDefs.has(decor)) return false;
+        //         if (!propertyKey) return true;
+        //         return this.propDefs.get(decor)!.some(d => d.propertyKey === propertyKey);
+        //     case Decors.parameter:
+        //         if (!this.paramDefs.has(decor)) return false;
+        //         if (!propertyKey) return true;
+        //         return this.paramDefs.get(decor)!.some(d => d.propertyKey === propertyKey);
+        //     default:
+        //         return false
+        // }
     }
 
-    getDecorDefine<T = any>(decor: string | DecoratorFn): DecorDefine<T> | undefined;
-    getDecorDefine<T = any>(decor: string | DecoratorFn, type: DecorMemberType): DecorDefine<T> | undefined;
-    getDecorDefine<T = any>(decor: string | DecoratorFn, propertyKey: string, type: DecorMemberType): DecorDefine<T> | undefined;
-    getDecorDefine(decor: string | DecoratorFn, type?: DecoratorType | string, propertyKey?: string | DecorMemberType): DecorDefine | undefined {
-        type = type || Decors.CLASS;
-        decor = getDectorId(decor);
-        let ds: DecorDefine[] | undefined;
-        switch (type) {
-            case Decors.CLASS:
-                return this.classDefs.get(decor)?.[0]
-            case Decors.method:
-                ds = this.methodDefs.get(decor);
-                if (!ds) return undefined;
-                return propertyKey ? ds.find(d => d.propertyKey = propertyKey) : ds[0]
-            case Decors.property:
-                ds = this.propDefs.get(decor);
-                if (!ds) return undefined;
-                return propertyKey ? ds.find(d => d.propertyKey = propertyKey) : ds[0]
-            case Decors.parameter:
-                ds = this.paramDefs.get(decor);
-                if (!ds) return undefined;
-                return propertyKey ? ds.find(d => d.propertyKey = propertyKey) : ds[0]
-
-            default:
-                return
+    getDecorDefine<T = any>(decor: string | DecoratorFn | undefined, vaild?: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
+    getDecorDefine<T = any>(decor: string | DecoratorFn | undefined, type: DecoratorType, vaild?: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
+    getDecorDefine<T = any>(decor: string | DecoratorFn | undefined, type: DecorMemberType | null, propertyKey: string, vaild?: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
+    getDecorDefine(decor?: string | DecoratorFn, typeOrVaild?: DecoratorType | null | ((d: DecorDefine<T>) => boolean), propertyKeyOrVaild?: string | ((d: DecorDefine<T>) => boolean), vaild?: (d: DecorDefine<T>) => boolean): DecorDefine | undefined {
+        if (decor) {
+            decor = getDectorId(decor)
         }
+        let type: DecoratorType | null | undefined;
+        if (isFunction(typeOrVaild)) {
+            vaild = typeOrVaild;
+            typeOrVaild = undefined;
+        }
+        if (typeOrVaild !== null) {
+            type = typeOrVaild ?? Decors.CLASS;
+        }
+        let propertyKey: string | undefined;
+        if (isFunction(propertyKeyOrVaild)) {
+            vaild = propertyKeyOrVaild
+        } else {
+            propertyKey = propertyKeyOrVaild;
+        }
+        return this.defs.find(d => (decor ? getDectorId(d.decor) == decor : true) && (type ? d.decorType == type : true) && (propertyKey ? d.propertyKey == propertyKey : true) && (vaild ? vaild(d) : true))
+        // let ds: DecorDefine[] | undefined;
+        // switch (type) {
+        //     case Decors.CLASS:
+        //         return this.classDefs.get(decor)?.[0]
+        //     case Decors.method:
+        //         ds = this.methodDefs.get(decor);
+        //         if (!ds) return undefined;
+        //         return propertyKey ? ds.find(d => d.propertyKey = propertyKey) : ds[0]
+        //     case Decors.property:
+        //         ds = this.propDefs.get(decor);
+        //         if (!ds) return undefined;
+        //         return propertyKey ? ds.find(d => d.propertyKey = propertyKey) : ds[0]
+        //     case Decors.parameter:
+        //         ds = this.paramDefs.get(decor);
+        //         if (!ds) return undefined;
+        //         return propertyKey ? ds.find(d => d.propertyKey = propertyKey) : ds[0]
+
+        //     default:
+        //         return
+        // }
     }
 
     /**
      * get all class decorator defines.
      * @param decor
      */
-    getDecorDefines(decor: string | DecoratorFn): DecorDefine[];
+    getDecorDefines(decor?: string | DecoratorFn, filter?: (d: DecorDefine<T>) => boolean): DecorDefine[];
     /**
      * get all decorator defines.
      * @param decor decorator.
      * @param type  decorator type.
      */
-    getDecorDefines<T = any>(decor: string | DecoratorFn, type: DecorMemberType): DecorDefine<T>[];
-    getDecorDefines(decor: string | DecoratorFn, type?: DecoratorType): DecorDefine[] {
-        type = type || Decors.CLASS;
-        decor = getDectorId(decor);
-        switch (type) {
-            case Decors.CLASS:
-                return this.classDefs.get(decor) ?? [];
-            case Decors.method:
-                return this.methodDefs.get(decor) ?? [];
-            case Decors.property:
-                return this.propDefs.get(decor) ?? [];
-            case Decors.parameter:
-                return this.paramDefs.get(decor) ?? [];
-            default:
-                return [];
+    getDecorDefines<T = any>(decor: string | DecoratorFn | undefined, type?: DecoratorType | null, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
+    /**
+     * get all decorator defines.
+     * @param decor decorator.
+     * @param type  decorator type.
+     */
+    getDecorDefines<T = any>(decor: string | DecoratorFn | undefined, type: DecorMemberType | null, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
+    getDecorDefines(decor?: string | DecoratorFn, typeOrFilter?: DecoratorType | null | ((d: DecorDefine<T>) => boolean), propertyKeyOrFilter?: string | ((d: DecorDefine<T>) => boolean), filter?: (d: DecorDefine<T>) => boolean): DecorDefine[] {
+        if (decor) {
+            decor = getDectorId(decor)
         }
+        let type: DecoratorType | null | undefined;
+        if (isFunction(typeOrFilter)) {
+            filter = typeOrFilter;
+            typeOrFilter = undefined;
+        }
+        if (typeOrFilter !== null) {
+            type = typeOrFilter ?? Decors.CLASS;
+        }
+        let propertyKey: string | undefined;
+        if (isFunction(propertyKeyOrFilter)) {
+            filter = propertyKeyOrFilter
+        } else {
+            propertyKey = propertyKeyOrFilter;
+        }
+        return this.defs.filter(d => (decor ? getDectorId(d.decor) == decor : true) && (type ? d.decorType == type : true) && (propertyKey ? d.propertyKey == propertyKey : true) && (filter ? filter(d) : true))
+        // switch (type) {
+        //     case Decors.CLASS:
+        //         return this.classDefs.get(decor) ?? [];
+        //     case Decors.method:
+        //         return this.methodDefs.get(decor) ?? [];
+        //     case Decors.property:
+        //         return this.propDefs.get(decor) ?? [];
+        //     case Decors.parameter:
+        //         return this.paramDefs.get(decor) ?? [];
+        //     default:
+        //         return [];
+        // }
     }
 
+    getClassdDefines(decor?: string | DecoratorFn) {
+        return this.getDecorDefines(decor, Decors.CLASS)
+    }
+
+    getMethodDefines(decor?: string | DecoratorFn, propertyKey?: string) {
+        return this.getDecorDefines(decor, Decors.method, propertyKey)
+    }
+
+
+    getPropDefines(decor?: string | DecoratorFn, propertyKey?: string) {
+        return this.getDecorDefines(decor, Decors.property, propertyKey)
+    }
+
+    getParamDefines(decor?: string | DecoratorFn, propertyKey?: string) {
+        return this.getDecorDefines(decor, Decors.parameter, propertyKey)
+    }
     /**
      * get class metadata.
      * @param decor decoractor or decoractor name.
      */
-    getMetadata<T = any>(decor: string | DecoratorFn): T;
+    getMetadata<T = any>(decor: string | DecoratorFn | undefined, vaild?: (d: DecorDefine<T>) => boolean): T;
+    /**
+     * get property or method metadta.
+     * @param decor decoractor or decoractor name.
+     * @param propertyKey property name.
+     */
+    getMetadata<T = any>(decor: string | DecoratorFn | undefined, type: DecoratorType, vaild?: (d: DecorDefine<T>) => boolean): T;
     /**
      * get property or method metadta.
      * @param decor decoractor or decoractor name.
      * @param propertyKey property name.
      * @param type decoractor type.
      */
-    getMetadata<T = any>(decor: string | DecoratorFn, propertyKey: string, type: DecorMemberType): T;
-    getMetadata<T = any>(decor: string | DecoratorFn, propertyKey?: string, type?: DecorMemberType): T {
-        return this.getDecorDefine(decor, propertyKey!, type!)?.metadata
+    getMetadata<T = any>(decor: string | DecoratorFn | undefined, type: DecorMemberType | null, propertyKey: string | undefined, vaild?: (d: DecorDefine<T>) => boolean): T;
+    getMetadata(...args: any[]) {
+        return (this.getDecorDefine as Function).apply(this, args)?.metadata;
     }
 
-    /**
-     * get all metadata of class decorator.
-     * @param decor the class decorator.
-     */
-    getMetadatas<T = any>(decor: string | DecoratorFn): T[];
-    /**
-     * get all metadata of the decorator.
-     * @param decor the decorator.
-     * @param type decorator type.
-     */
-    getMetadatas<T = any>(decor: string | DecoratorFn, type: DecorMemberType): T[];
-    getMetadatas<T = any>(decor: string | DecoratorFn, type?: DecorMemberType): T[] {
-        return this.getDecorDefines(decor, type!).map(d => d.metadata).filter(d => d)
+    getMethodMetadata(decor?: string | DecoratorFn, propertyKey?: string, vaild?: (d: DecorDefine<T>) => boolean) {
+        return this.getMetadata(decor, Decors.method, propertyKey, vaild)
     }
+
+    getPropMetadata(decor?: string | DecoratorFn, propertyKey?: string, vaild?: (d: DecorDefine<T>) => boolean) {
+        return this.getMetadata(decor, Decors.property, propertyKey, vaild)
+    }
+
+    getParamMetadata(decor?: string | DecoratorFn, propertyKey?: string, vaild?: (d: DecorDefine<T>) => boolean) {
+        return this.getMetadata(decor, Decors.parameter, propertyKey, vaild)
+    }
+
+    // /**
+    //  * get all metadata of class decorator.
+    //  * @param decor the class decorator.
+    //  */
+    // getMetadatas<T = any>(decor: string | DecoratorFn): T[];
+    // /**
+    //  * get all metadata of the decorator.
+    //  * @param decor the decorator.
+    //  * @param type decorator type.
+    //  */
+    // getMetadatas<T = any>(decor: string | DecoratorFn, type: DecorMemberType): T[];
+    // getMetadatas<T = any>(decor: string | DecoratorFn, type?: DecorMemberType): T[] {
+    //     return this.getDecorDefines(decor, type!).map(d => d.metadata).filter(d => d)
+    // }
 
     private _extends!: Type[];
     get extendTypes(): Type[] {

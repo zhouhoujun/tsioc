@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, Injector, Token, tokenId, Type, TypeDef } from '@tsdi/ioc';
+import { Abstract, ArgumentExecption, Injector, ProvidedInMetadata, Token, tokenId, Type, TypeDef } from '@tsdi/ioc';
 import { Interceptor, Backend, Handler, InvocationOptions } from '@tsdi/core';
 import { RequestMethod, Pattern, Protocols } from '@tsdi/common';
 import { Observable } from 'rxjs';
@@ -172,7 +172,7 @@ export abstract class RouteMatcher {
 /**
  * route options
  */
-export interface RouteOptions<TArg = any> extends InvocationOptions<TArg> {
+export interface RouteOptions<T = any> extends InvocationOptions<T> {
     /**
      * pipe extends args.
      */
@@ -186,7 +186,7 @@ export interface RouteOptions<TArg = any> extends InvocationOptions<TArg> {
 /**
  * route mapping metadata.
  */
-export interface RouteMappingMetadata<TArg = any> extends RouteOptions<TArg> {
+export interface RouteMappingMetadata<T = any> extends RouteOptions<T> {
     /**
      * route.
      *
@@ -214,7 +214,7 @@ export interface RouteMappingMetadata<TArg = any> extends RouteOptions<TArg> {
 /**
  * Protocol route options.
  */
-export interface ProtocolRouteOptions<TArg = any> extends RouteOptions<TArg> {
+export interface ProtocolRouteOptions<T = any> extends RouteOptions<T> {
     /**
      * transport protocol
      */
@@ -224,7 +224,7 @@ export interface ProtocolRouteOptions<TArg = any> extends RouteOptions<TArg> {
 /**
  * Protocol route mapping options.
  */
-export interface ProtocolRouteMappingOptions<TArg = any> extends ProtocolRouteOptions<TArg> {
+export interface ProtocolRouteMappingOptions<T = any> extends ProtocolRouteOptions<T> {
     /**
      * parent router.
      * default register in root handle queue.
@@ -244,7 +244,7 @@ export interface ProtocolRouteMappingOptions<TArg = any> extends ProtocolRouteOp
 /**
  * protocol route mapping metadata.
  */
-export interface ProtocolRouteMappingMetadata<TArg = any> extends ProtocolRouteMappingOptions<TArg> {
+export interface ProtocolRouteMappingMetadata<T = any> extends ProtocolRouteMappingOptions<T>, ProvidedInMetadata {
     /**
      * route.
      *

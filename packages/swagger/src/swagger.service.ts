@@ -56,6 +56,7 @@ export class SwaggerService {
                 license: opts.license,
                 termsOfService: opts.termsOfService
             },
+            tags: [],
             servers,
             components: {
                 securitySchemes: {
@@ -139,8 +140,20 @@ export class SwaggerService {
         router.routes.forEach((v, route) => {
             if (route.endsWith('**')) route = route.substring(0, route.length - 2);
             if (v instanceof ControllerRoute) {
+
                 v.ctrlRef.class.defs.forEach(df => {
+                    if (df.decorType == 'class' && isString((df.metadata as RouteMappingMetadata).route)) {
+                        const description = v.ctrlRef.class.getMetadata(undefined, d => !!d.metadata?.description)?.description;
+
+                        jsonDoc.tags?.push({
+                            name: v.ctrlRef.class.className,
+                            description
+                        })
+                        return;
+                    }
+
                     if (df.decorType !== 'method' || !isString((df.metadata as RouteMappingMetadata).route)) return;
+
                     let path = joinPath(prefix, route, df.metadata.route as string);
                     if (!absReg.test(path)) {
                         path = '/' + path;
@@ -157,7 +170,7 @@ export class SwaggerService {
                     const method = df.metadata.method?.toLowerCase() ?? 'get';
                     if (api[method]) throw new Execption(`has mutil route address ${path}, with same method ${method}`);
 
-                    const returnType = df.metadata.returnType ?? df.metadata.type;
+                    const returnType = v.ctrlRef.class.getMethodMetadata(undefined, df.propertyKey, r => isType(r.metadata.response))?.response ?? df.metadata.returnType ?? df.metadata.type;
                     let returnTypeName = '';
                     if (returnType && returnType != Object && returnType != Promise) {
                         if (!jsonDoc.components.schemas[returnTypeName]) {
@@ -169,7 +182,8 @@ export class SwaggerService {
                     const paramMatedatas = v.ctrlRef.class.getParameters(df.propertyKey) as TransportParameter[]
                     api[method] = {
                         "x-swagger-router-controller": v.ctrlRef.class.className,
-                        description: v.ctrlRef.class.getAnnotation<any>().description ?? '',
+                        summary: (v.ctrlRef.class.getMethodDefines(undefined, df.propertyKey)?.find(r => r.metadata.summary) as any)?.summary ?? '',
+                        description: (v.ctrlRef.class.getMethodDefines(undefined, df.propertyKey)?.find(r => r.metadata.description) as any)?.description ?? '',
                         operationId: df.propertyKey,
                         tags: [v.ctrlRef.class.className],
                         parameters: paramMatedatas?.filter(p => ((!p.scope || p.scope == 'query' || p.scope == 'path') && p.flags && (p.flags & InjectFlags.Request)))?.map(p => this.toParamObject(jsonDoc, p as TransportParameter, modelResolver)),
@@ -245,10 +259,14 @@ export class SwaggerService {
             const required: string[] = [];
             const properties: Record<string, any> = {};
             let hasBinary = false;
+            let description = ''
 
             parameters.forEach(p => {
                 const name = p.name!;
                 const type = p.dataType ?? this.toDocType(p.type);
+                if (p.description) {
+                    description += ('\n' + p.description)
+                }
                 if (type == 'binary') hasBinary = true;
                 if (isNil(p.required) ? !(p.nullable || (p.flags && (p.flags & InjectFlags.Optional))) : p.required) {
                     required.push(name);
@@ -267,6 +285,7 @@ export class SwaggerService {
 
             const bodyObj: Record<string, any> = {
                 required: true,
+                description,
                 content: {}
             };
             bodyObj.content[hasBinary ? 'multipart/form-data' : 'application/json'] = {
@@ -291,6 +310,7 @@ export class SwaggerService {
             name,
             description: p.description,
             example: p.example,
+            enum: p.enum,
             in: this.toDocIn(p),
             required
         };
@@ -300,6 +320,11 @@ export class SwaggerService {
         }
         if (type === 'object' && p.type !== Object) {
             paramObj.schema = this.toModelSchema(jsonDoc, p.type!, getModelResolver);
+        }
+        if (!paramObj.schema) {
+            paramObj.schema = {
+                type
+            }
         }
         return paramObj;
     }

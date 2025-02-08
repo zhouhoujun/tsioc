@@ -268,7 +268,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                 const typeRef = ctx.class;
                 if (typeRef.getAnnotation().static === false && !typeRef.getAnnotation().singleton) return next();
 
-                const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? [];
+                const decors = typeRef.getMethodDefines(ctx.currDecor) ?? [];
                 const injector = ctx.injector;
                 const factory = injector.get(InvocationFactoryResolver).resolve(typeRef);
                 const currMulticaster = injector.get(ApplicationEventMulticaster);
@@ -295,7 +295,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                     || typeRef.getAnnotation().singleton
                 )) return next();
 
-                const decors = typeRef.methodDefs.get(ctx.currDecor.toString()) ?? [];
+                const decors = typeRef.getMethodDefines(ctx.currDecor) ?? [];
                 const injector = ctx.injector;
                 const factory = injector.get(InvocationFactoryResolver).resolve(typeRef);
                 const currMulticaster = injector.get(ApplicationEventMulticaster);

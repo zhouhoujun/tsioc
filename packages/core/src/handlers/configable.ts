@@ -1,4 +1,4 @@
-import { Injector, InvokerOptions, ProvdierOf, StaticProvider, ClassType, Abstract, Token, Type } from '@tsdi/ioc';
+import { Injector, InvokerOptions, ProvdierOf, StaticProvider, ClassType, Abstract, Token, Type, InvokeProviders } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { GuardLike, GuardsService } from '../guard';
 import { InterceptorLike, InterceptorService } from '../Interceptor';
@@ -103,7 +103,7 @@ export interface GuardHandlerOptions<TInput = any> extends BackendOptions<TInput
 /**
  * handler service options.
  */
-export interface HandlerOptions<TInput = any, TArg = any> extends InvokerOptions<any, TArg> {
+export interface HandlerOptions<TInput = any> extends InvokeProviders {
     /**
      * An array of dependency-injection tokens used to look up `GuardLike()`
      * handlers, in order to determine if the current user is allowed to
@@ -128,7 +128,7 @@ export interface HandlerOptions<TInput = any, TArg = any> extends InvokerOptions
 /**
  * Configable handler options.
  */
-export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends HandlerOptions<TInput, TArg>, GuardHandlerOptions<TInput>, BackendOptions<TInput> {
+export interface ConfigableHandlerOptions<TInput = any> extends HandlerOptions<TInput>, GuardHandlerOptions<TInput>, BackendOptions<TInput> {
     /**
      * handler type.
      */
@@ -143,6 +143,6 @@ export interface ConfigableHandlerOptions<TInput = any, TArg = any> extends Hand
     execptionHandlers?: ClassType<any> | ClassType[] | null;
 }
 
-export interface TypeConfigableHandlerOptions<TClass extends AbstractConfigableHandler, TInput = any, TArg = any> extends ConfigableHandlerOptions<TInput, TArg> {
+export interface TypeConfigableHandlerOptions<TClass extends AbstractConfigableHandler, TInput = any> extends ConfigableHandlerOptions<TInput> {
     classType: ClassType<TClass>;
 }

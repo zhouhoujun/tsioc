@@ -1,9 +1,10 @@
 import {
     isArray, isString, lang, Type, TypeOf, createDecorator, ActionTypes, PatternMetadata, InjectFlags,
-    ClassMethodDecorator, createParamDecorator, TypeMetadata, Execption, isMetadataObject, DecorDefine
+    ClassMethodDecorator, createParamDecorator, TypeMetadata, Execption, isMetadataObject, DecorDefine,
+    ProvidedInMetadata
 } from '@tsdi/ioc';
-import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter } from '@tsdi/core';
-import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Protocols, CommonProtocols } from '@tsdi/common';
+import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike } from '@tsdi/core';
+import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Protocols } from '@tsdi/common';
 import { getRouter, MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, ProtocolRouteOptions, RouteMappingMetadata, RouteOptions, Router } from './router/router';
 import { Middleware, MiddlewareFn } from './middleware/middleware';
 import { RouteHandlerFactoryResolver } from './router/route.handler';
@@ -49,7 +50,7 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
     design: {
         method: (ctx, next) => {
 
-            const defines = ctx.class.methodDefs.get(ctx.currDecor.toString()) as DecorDefine<HandleMetadata>[];
+            const defines = ctx.class.getMethodDefines(ctx.currDecor) as DecorDefine<HandleMetadata>[];
             if (!defines || !defines.length) return next();
 
             const injector = ctx.injector;
@@ -129,7 +130,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
     design: {
         method: (ctx, next) => {
 
-            const defines = ctx.class.methodDefs.get(ctx.currDecor.toString()) as DecorDefine<HandleMetadata>[];
+            const defines = ctx.class.getMethodDefines(ctx.currDecor) as DecorDefine<HandleMetadata>[];
             if (!defines || !defines.length) return next();
 
             const injector = ctx.injector;
@@ -203,7 +204,7 @@ export interface RouteMapping {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: ProtocolRouteMappingOptions): ClassDecorator;
+    (route: string, options: ProtocolRouteMappingOptions & ProvidedInMetadata): ClassDecorator;
     /**
      * route decorator. define the controller method as an route.
      *
@@ -373,14 +374,14 @@ export interface Controller {
      * @param {string} route route sub path.
      * @param {TypeOf<Router>} [parent] the middlewares for the route.
      */
-    (route?: string, parent?: TypeOf<Router>): ClassDecorator;
+    (route?: string, parent?: Type<Router>): ClassDecorator;
     /**
      * controller decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {TypeOf<CanHandle>[]} [guards] the guards for the route.
+     * @param {TypeOf<GuardLike>[]} [guards] the guards for the route.
      */
-    (route?: string, guards?: TypeOf<CanHandle>[]): ClassMethodDecorator;
+    (route?: string, guards?: TypeOf<GuardLike>[]): ClassMethodDecorator;
 
     /**
      * controller decorator. define the controller method as an route.
@@ -388,13 +389,13 @@ export interface Controller {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: ProtocolRouteMappingOptions): ClassDecorator;
+    (route: string, options: Omit<Omit<ProtocolRouteMappingOptions, 'route'>, 'response'>): ClassDecorator;
     /**
      * controller decorator. define the controller method as an route.
      *
      * @param {RouteMetadata} [metadata] route metadata.
      */
-    (metadata: ProtocolRouteMappingMetadata): ClassMethodDecorator;
+    (metadata: Omit<ProtocolRouteMappingOptions, 'response'>): ClassMethodDecorator;
 }
 
 

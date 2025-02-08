@@ -164,15 +164,9 @@ export const INVOCATION_CONTEXT_IMPL = {
 export type TokenValue<T = any> = [Token<T>, T];
 
 /**
- * invoke options.
- * 
- * 调用接口配置项
+ * invoke providers.
  */
-export interface InvokeOptions {
-    /**
-     * is resolve context or not.
-     */
-    isResolve?: boolean;
+export interface InvokeProviders {    
     /**
      * token values.
      * 
@@ -194,24 +188,41 @@ export interface InvokeOptions {
 }
 
 
-/**
- * invoke arguments.
- * 
- * 调用接口配置项及负载
- */
-export interface InvokeArguments<TArg = any> extends InvokeOptions {
-    /**
-     * invocation arguments.
-     * 
-     * 调用接口负载对象
-     */
-    args?: ProvdierOf<TArg>;
+export interface InvokeParentContext {
     /**
      * parent InvocationContext,
      * 
      * 上级上下文
      */
     parent?: InvocationContext;
+
+}
+
+/**
+ * invoke options.
+ * 
+ * 调用接口配置项
+ */
+export interface InvokeOptions extends InvokeProviders {
+    /**
+     * is resolve context or not.
+     */
+    isResolve?: boolean;
+}
+
+
+/**
+ * invoke arguments.
+ * 
+ * 调用接口配置项及负载
+ */
+export interface InvokeArguments<TArg = any> extends InvokeOptions, InvokeParentContext {
+    /**
+     * invocation arguments.
+     * 
+     * 调用接口负载对象
+     */
+    args?: ProvdierOf<TArg>;
 }
 
 /**

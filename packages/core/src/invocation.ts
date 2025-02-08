@@ -1,4 +1,4 @@
-import { Abstract, Type, OperationInvoker, OnDestroy, Destroyable, ReflectiveRef, DestroyCallback, Injector, Class, ProvidedInMetadata } from '@tsdi/ioc';
+import { Abstract, Type, OperationInvoker, OnDestroy, Destroyable, ReflectiveRef, DestroyCallback, Class, ProvidedInMetadata, InvokeInstance } from '@tsdi/ioc';
 import { AbstractConfigableHandler, ConfigableHandlerOptions } from './handlers/configable';
 
 
@@ -32,7 +32,7 @@ export abstract class InvocationFactory<T> implements OnDestroy, Destroyable {
 
     abstract get typeRef(): ReflectiveRef<T>;
 
-    abstract create<TArg>(propertyKey: string, options?: InvocationOptions<TArg>): InvocationHandler;
+    abstract create<TArg>(propertyKey: string, options?: InvokeInstance<T> & InvocationOptions<TArg>): InvocationHandler;
 
 
     destroy(): void {
@@ -105,7 +105,7 @@ export abstract class TypedRespond<TInput = any> {
  * 
  * 终结点配置
  */
-export interface InvocationOptions<T = any, TArg = any> extends ConfigableHandlerOptions<T, TArg>, ProvidedInMetadata {
+export interface InvocationOptions<T = any> extends ConfigableHandlerOptions<T>, ProvidedInMetadata {
     /**
      * the endpoint run times limit. 
      */

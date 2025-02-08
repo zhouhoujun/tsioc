@@ -6,7 +6,9 @@ import { Repository, Transactional } from '@tsdi/repository';
 import { Repository as TypeormRepository } from 'typeorm';
 import { User } from '../models/User';
 import { UserService } from './user.service';
+import { Api, ApiOperation } from '@tsdi/swagger';
 
+@Api('user manager')
 @Controller('/users')
 export class UserController {
 
