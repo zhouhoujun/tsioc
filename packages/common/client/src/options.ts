@@ -32,6 +32,10 @@ export interface ClientOpts<TConnOpts = any> extends ConfigableHandlerOptions<Ab
      */
     microservice?: boolean;
     /**
+     * protocol
+     */
+    protocol?: string;
+    /**
      * client handler type.
      */
     handlerType?: Type<ClientHandler>;

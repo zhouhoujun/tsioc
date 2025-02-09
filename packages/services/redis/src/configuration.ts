@@ -82,7 +82,6 @@ export class RedisConfiguration {
                                 return new DefaultClientTransport<ReidsSocket, RedisRequest<any>>(
                                     injector,
                                     socket,
-                                    'redis',
                                     serializerFactory.create(injector, transportOptions.serializerConfig),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     formatter,
@@ -178,7 +177,6 @@ export class RedisConfiguration {
                                 return new DefaultServerTransport<ReidsSocket, TopicRequestContext>(
                                     injector,
                                     socket,
-                                    'redis',
                                     serializerFactory.create(injector, transportOptions.serializerConfig),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     statusAdapter,
@@ -225,8 +223,6 @@ export class RedisConfiguration {
                     ]
                 },
                 transportOptions: {
-                    // delimiter: '#',
-                    // defaultMethod: '*',
                     limit: sizeLimit,
                     getResponseTopic(topic) {
                         return `${topic}.reply`
@@ -234,15 +230,12 @@ export class RedisConfiguration {
                     serializerConfig: {
                         interceptors: [
                             RequestContextVaildateInterceptor,
-                            // PacketSerializeInterceptor,
                             RequestContextServializeInterceptor,
                         ]
                     },
                     deserializerConfig: {
                         interceptors: [
-                            PacketifyInterceptor,
-                            // PacketDeserializeInterceptor,
-                            // PayloadDeserializeInterceptor
+                            PacketifyInterceptor
                         ]
                     }
                 },

@@ -74,7 +74,6 @@ export class MqttConfiguration {
                                 return new DefaultClientTransport<mqtt.Client, MqttRequest<any>>(
                                     injector,
                                     socket,
-                                    'mqtt',
                                     serializerFactory.create(injector, transportOptions.serializerConfig),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     formatter,
@@ -124,16 +123,13 @@ export class MqttConfiguration {
                     serializerConfig: {
                         interceptors: [
                             PacketVaildateInterceptor,
-                            // PacketSerializeInterceptor,
                             RequestServializeInterceptor
                         ]
                     },
                     deserializerConfig: {
                         interceptors: [
                             PacketifyInterceptor,
-                            DeatchPacketIdInterceptor,
-                            // PacketDeserializeInterceptor,
-                            // PayloadDeserializeInterceptor
+                            DeatchPacketIdInterceptor
                         ]
                     }
                 },
@@ -162,7 +158,6 @@ export class MqttConfiguration {
                                 return new DefaultServerTransport<mqtt.Client, TopicRequestContext>(
                                     injector,
                                     socket,
-                                    'mqtt',
                                     serializerFactory.create(injector, transportOptions.serializerConfig),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     statusAdapter,
@@ -204,13 +199,10 @@ export class MqttConfiguration {
                     ]
                 },
                 transportOptions: {
-                    // delimiter: '#',
-                    // defaultMethod: '*',
                     limit: sizeLimit,
                     serializerConfig: {
                         interceptors: [
                             RequestContextVaildateInterceptor,
-                            // PacketSerializeInterceptor,
                             RequestContextServializeInterceptor,
                         ]
                     },
@@ -219,9 +211,7 @@ export class MqttConfiguration {
                     },
                     deserializerConfig: {
                         interceptors: [
-                            PacketifyInterceptor,
-                            // PacketDeserializeInterceptor,
-                            // PayloadDeserializeInterceptor
+                            PacketifyInterceptor
                         ]
                     }
                 },

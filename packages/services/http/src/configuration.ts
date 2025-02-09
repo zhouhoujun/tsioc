@@ -3,7 +3,7 @@ import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import { Header, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
     ClientIncoming, ctype, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory, ev,
-    FileAdapter, IEventEmitter, Incoming, IncomingFactory, IncomingOpts, IReadable, MimeAdapter, Packet,
+    FileAdapter, IEventEmitter, Incoming, IncomingFactory, IReadable, MimeAdapter, Packet,
     Redirector, SerializerFactory, StatusAdapter, StreamAdapter, StreamIncomingOptions, TransportContext, UrlClientIncomingFactory,
     UrlClientIncomingOpts, UrlOutgoingFactory
 } from '@tsdi/common/transport';
@@ -19,7 +19,7 @@ import {
     DefaultServerTransferFactory, DefaultServerTransport, ServerTransport,
     HttpServerOpts
 } from '@tsdi/endpoints';
-import { request as httpRequest, IncomingMessage, ClientRequest, Server, STATUS_CODES } from 'http';
+import { request as httpRequest, IncomingMessage, ClientRequest, Server } from 'http';
 import { request as httpsRequest, Server as HttpsServer } from 'https';
 import {
     ClientHttp2Session, ClientHttp2Stream, constants, OutgoingHttpHeaders,
@@ -82,7 +82,6 @@ export class HttpConfiguration {
                                 return new DefaultClientTransport<ClientHttp2Session | null, HttpRequest<any>>(
                                     injector,
                                     socket,
-                                    'http',
                                     serializerFactory.create(injector, {
                                         backend: (input: HttpRequest<any>, context?: TransportContext) => {
                                             return of(input)
@@ -108,7 +107,7 @@ export class HttpConfiguration {
                                         if (channel instanceof ClientRequest) {
                                             return new Observable<ClientIncoming>(subscribe => {
                                                 const onResponse = (resp: IncomingMessage) => {
-                                                    (resp as ClientIncoming).body = resp;                                                    
+                                                    (resp as ClientIncoming).body = resp;
                                                     (resp as ClientIncoming).status = resp.statusCode;
                                                     subscribe.next(resp);
                                                 };
@@ -232,7 +231,6 @@ export class HttpConfiguration {
                                 return new DefaultServerTransport<Http2Server | HttpsServer | Server, HttpContext>(
                                     injector,
                                     socket,
-                                    'http',
                                     serializerFactory.create(injector, {
                                         backend: (input: HttpContext, context?: TransportContext) => {
                                             let payload = input.body;

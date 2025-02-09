@@ -64,11 +64,9 @@ export class UdpConfiguration {
                         return {
                             create: (injector, socket, options) => {
                                 const transportOptions = options.transportOptions ?? {};
-                                const subscribes = new Set<string>();
                                 return new DefaultClientTransport<Socket, UdpRequest<any>>(
                                     injector,
                                     socket,
-                                    'udp',
                                     serializerFactory.create(injector, transportOptions.serializerConfig),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     formatter,
@@ -144,7 +142,6 @@ export class UdpConfiguration {
                                 return new DefaultServerTransport<Socket, UrlRequestContext>(
                                     injector,
                                     socket,
-                                    'mqtt',
                                     serializerFactory.create(injector, transportOptions.serializerConfig),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     statusAdapter,

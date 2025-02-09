@@ -20,6 +20,8 @@ import {
     SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
     TopicRequestContext
 } from '@tsdi/endpoints';
+import { filter, fromEvent } from 'rxjs';
+import { Msg, MsgHdrs, NatsConnection, SubscriptionOptions, headers as createHeaders, Subscription } from 'nats';
 import { NatsClient } from './client/client';
 import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS } from './client/options';
 import { NatsHandler } from './client/handler';
@@ -27,7 +29,6 @@ import { NatsServer } from './server/server';
 import { NATS_SERV_FILTERS, NATS_SERV_GUARDS, NATS_SERV_INTERCEPTORS } from './server/options';
 import { NatsRequestHandler } from './server/handler';
 import { NatsRequest } from './client/request';
-import { filter, fromEvent } from 'rxjs';
 
 
 
@@ -70,10 +71,9 @@ export class NatsConfiguration {
                             create: (injector, socket, options) => {
                                 const transportOptions = options.transportOptions ?? {};
                                 const subscribes = new Set<string>();
-                                return new DefaultClientTransport<mqtt.Client, NatsRequest<any>>(
+                                return new DefaultClientTransport<NatsConnection, NatsRequest<any>>(
                                     injector,
                                     socket,
-                                    'mqtt',
                                     serializerFactory.create(injector, transportOptions.serializerConfig),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     formatter,
@@ -85,14 +85,15 @@ export class NatsConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (mqtt, channel, req) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
+                                    (socket, channel, req) => fromEvent(socket, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
                                         return { topic, payload }
                                     }).pipe(filter(msg => msg.topic === req?.responseTopic)),
                                     async (mqtt, msg, req) => {
-                                        if (req.responseTopic && !subscribes.has(req.responseTopic)) {
-                                            subscribes.add(req.responseTopic);
-                                            await promisify(mqtt.subscribe, mqtt)(req.responseTopic);
-                                        }
+                                        
+                                        const headers = createHeaders();
+                                        options.publishOpts?.headers && options.publishOpts.headers.keys().forEach(k => {
+                                            headers.set(k, options.publishOpts?.headers?.get(k) ?? '')
+                                        })
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
                                         return await promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(req.topic, msg.payload ?? Buffer.alloc(0), { qos: 1 })
                                     },
@@ -158,10 +159,9 @@ export class NatsConfiguration {
                         return {
                             create: (injector, socket, options) => {
                                 const transportOptions = options.transportOptions ?? {};
-                                return new DefaultServerTransport<mqtt.Client, TopicRequestContext>(
+                                return new DefaultServerTransport<NatsConnection, TopicRequestContext>(
                                     injector,
                                     socket,
-                                    'mqtt',
                                     serializerFactory.create(injector, transportOptions.serializerConfig),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     statusAdapter,
@@ -174,15 +174,15 @@ export class NatsConfiguration {
                                     outgoingFactory,
                                     transferFactory.create(injector, transportOptions.transferConfig),
                                     options,
-                                    (mqtt) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
+                                    (conn) => fromEvent(conn, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
                                         return { topic, responseTopic: packet.properties?.responseTopic, payload }
                                     }).pipe(
                                         filter(m => !!m.responseTopic || !m.topic.endsWith('/reply'))
                                     ),
-                                    (mqtt, msg, requestContext) => {
+                                    (conn, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
                                         if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
-                                        return promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(requestContext.responseTopic, msg.payload ?? Buffer.alloc(0), { qos: 1 })
+                                        return promisify<string, Buffer | string, mqtt.IClientPublishOptions>(conn.publish, conn)(requestContext.responseTopic, msg.payload ?? Buffer.alloc(0), { qos: 1 })
                                     }
                                 )
                             },
@@ -203,13 +203,10 @@ export class NatsConfiguration {
                     ]
                 },
                 transportOptions: {
-                    // delimiter: '#',
-                    // defaultMethod: '*',
                     limit: sizeLimit,
                     serializerConfig: {
                         interceptors: [
                             RequestContextVaildateInterceptor,
-                            // PacketSerializeInterceptor,
                             RequestContextServializeInterceptor,
                         ]
                     },

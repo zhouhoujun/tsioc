@@ -44,6 +44,10 @@ export abstract class ClientTransport<TSocket = any, TRequest extends AbstractRe
         return this.clientOptions.transportOptions
     }
 
+    get protocol(): string {
+        return this.clientOptions.protocol ?? '';
+    }
+
     request(req: TRequest, destroy$?: Observable<any>, channel?: IEventEmitter): Observable<ResponseEvent<any>> {
         return this.send(req, channel)
             .pipe(

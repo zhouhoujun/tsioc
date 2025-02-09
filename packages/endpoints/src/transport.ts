@@ -46,6 +46,11 @@ export abstract class ServerTransport<TSocket = any, TContext extends RequestCon
         return this.serverOptions.transportOptions
     }
 
+    get protocol(): string {
+        return this.serverOptions.protocol ?? '';
+    }
+
+
 
     listen(handler: AbstractRequestHandler, destroy$?: Observable<any>): Subscription {
         return this.receive().pipe(

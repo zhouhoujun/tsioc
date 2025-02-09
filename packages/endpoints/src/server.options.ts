@@ -34,6 +34,10 @@ export interface ServerOpts<TSerOpts = any> extends RequestHandlerOptions<any> {
      * is microservice or not.
      */
     microservice?: boolean;
+    /**
+     * transport protocol
+     */
+    protocol?: string;
 
     /**
      * server request handler type
@@ -62,8 +66,6 @@ export interface ServerOpts<TSerOpts = any> extends RequestHandlerOptions<any> {
     routes?: RouteOpts;
 
     proxy?: ProxyOpts;
-
-    protocol?: string;
 
     secure?: boolean;
 }

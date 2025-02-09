@@ -12,7 +12,6 @@ export class DefaultClientTransport<TSocket = any, TRequest extends AbstractRequ
     constructor(
         readonly injector: Injector,
         readonly socket: TSocket,
-        readonly protocol: string,
         readonly serializer: Serializer,
         readonly deserializer: Deserializer,
         readonly patternFormatter: PatternFormatter | null,
@@ -54,7 +53,6 @@ export class TopicClientTransport<TSocket = any, TRequest extends AbstractReques
     constructor(
         readonly injector: Injector,
         readonly socket: TSocket,
-        readonly protocol: string,
         readonly serializer: Serializer,
         readonly deserializer: Deserializer,
         readonly patternFormatter: PatternFormatter | null,
@@ -102,7 +100,6 @@ export class SocketClientTransport<TSocket extends IDuplex = IDuplex, TRequest e
     constructor(
         readonly injector: Injector,
         readonly socket: TSocket,
-        readonly protocol: string,
         readonly serializer: Serializer,
         readonly deserializer: Deserializer,
         readonly patternFormatter: PatternFormatter | null,

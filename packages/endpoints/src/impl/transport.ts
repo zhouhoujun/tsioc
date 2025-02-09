@@ -14,7 +14,6 @@ export class DefaultServerTransport<TSocket = any, TContext extends RequestConte
     constructor(
         readonly injector: Injector,
         readonly socket: TSocket,
-        readonly protocol: string,
         readonly serializer: Serializer,
         readonly deserializer: Deserializer,
         readonly statusAdapter: StatusAdapter | null,
@@ -57,7 +56,6 @@ export class SocketServerTransport<TSocket extends IDuplex = IDuplex, TContext e
     constructor(
         readonly injector: Injector,
         readonly socket: TSocket,
-        readonly protocol: string,
         readonly serializer: Serializer,
         readonly deserializer: Deserializer,
         readonly statusAdapter: StatusAdapter | null,

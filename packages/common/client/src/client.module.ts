@@ -137,6 +137,10 @@ function clientProviders(options: ClientConfigs, idx?: number) {
                 if (microservice) {
                     clientOpts.microservice = microservice;
                 }
+                if (clientOpts.protocol) {
+                    clientOpts.protocol = options.transport
+                }
+
 
                 if (!opts.backend) {
                     clientOpts.providers.push({ provide: ClientBackend, useClass: ClientTransportBackend });

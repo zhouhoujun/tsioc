@@ -92,7 +92,6 @@ export class TcpConfiguration {
                                 return new SocketClientTransport(
                                     injector,
                                     socket,
-                                    'tcp',
                                     serializerFactory.create(injector, transportOptions.serializerConfig),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     formatter,
@@ -165,7 +164,6 @@ export class TcpConfiguration {
                                 return new SocketServerTransport(
                                     injector,
                                     socket,
-                                    'tcp',
                                     serializerFactory.create(injector, transportOptions.serializerConfig),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     statusAdapter,
