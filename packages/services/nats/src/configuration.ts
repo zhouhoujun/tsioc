@@ -1,39 +1,43 @@
 import { InjectFlags, promisify } from '@tsdi/ioc';
-import { DefaultResponseFactory, HeaderAdapter, PatternFormatter, ResponseFactory } from '@tsdi/common';
+import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
+import { DefaultResponseFactory, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
+import {
+    DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
+    ev,
+    FileAdapter, MimeAdapter, NotSupportedExecption, PacketifyInterceptor,
+    PacketVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
+    StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory
+} from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    DefaultClientTransport, RequestServializeInterceptor
+    RequestServializeInterceptor, DefaultClientTransport,
+    RequestTimeoutInterceptor
 } from '@tsdi/common/client';
-import {
-    DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory,
-    DeserializerFactory, ev, FileAdapter, MimeAdapter, NotSupportedExecption, PacketifyInterceptor,
-    PacketVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter, StreamAdapter,
-    UrlClientIncomingFactory, UrlOutgoingFactory
-} from '@tsdi/common/transport';
-import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
-    RequestContextServializeInterceptor, RequestContextVaildateInterceptor, SERVER_MODULES,
-    ServerTransferFactory, ServiceModuleOpts, UrlRequestContext
+    RequestContextServializeInterceptor, RequestContextVaildateInterceptor,
+    SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
+    TopicRequestContext
 } from '@tsdi/endpoints';
+import { NatsClient } from './client/client';
+import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS } from './client/options';
+import { NatsHandler } from './client/handler';
+import { NatsServer } from './server/server';
+import { NATS_SERV_FILTERS, NATS_SERV_GUARDS, NATS_SERV_INTERCEPTORS } from './server/options';
+import { NatsRequestHandler } from './server/handler';
+import { NatsRequest } from './client/request';
 import { filter, fromEvent } from 'rxjs';
-import { RemoteInfo, Socket } from 'dgram';
 
-import { UdpClient } from './client/client';
-import { UdpHandler } from './client/handler';
-import { UDP_CLIENT_FILTERS, UDP_CLIENT_INTERCEPTORS } from './client/options';
-import { UdpRequest } from './client/request';
-import { sizeLimit } from './consts';
 
-import { UdpRequestHandler } from './server/handler';
-import { UDP_SERV_FILTERS, UDP_SERV_GUARDS, UDP_SERV_INTERCEPTORS } from './server/options';
-import { UdpServer } from './server/server';
+
+const sizeLimit = 1048576; // 1024 * 1024;
+// const defaultMaxSize = 524288; //1024 * 512;
 
 
 
 @Configuration()
-export class UdpConfiguration {
+export class NatsConfiguration {
 
     @Bean(CLIENT_MODULES, { static: true, multi: true })
     microClient(): ClientModuleOpts {
@@ -49,26 +53,27 @@ export class UdpConfiguration {
 
     private getClientOptions(): ClientModuleOpts {
         return {
-            transport: 'udp',
-            clientType: UdpClient,
+            transport: 'mqtt',
+            asDefault: true,
+            clientType: NatsClient,
             defaultOpts: {
-                handlerType: UdpHandler,
-                url: 'udp://localhost:3000',
-                interceptorsToken: UDP_CLIENT_INTERCEPTORS,
-                filtersToken: UDP_CLIENT_FILTERS,
+                handlerType: NatsHandler,
+                url: 'mqtt://localhost:1883',
+                interceptorsToken: NATS_CLIENT_INTERCEPTORS,
+                filtersToken: NATS_CLIENT_FILTERS,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory, formatter: PatternFormatter | null,
                         statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
-                        incomingFactory: UrlClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
+                        incomingFactory: TopicClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
                         redirector: Redirector | null) => {
                         return {
                             create: (injector, socket, options) => {
                                 const transportOptions = options.transportOptions ?? {};
                                 const subscribes = new Set<string>();
-                                return new DefaultClientTransport<Socket, UdpRequest<any>>(
+                                return new DefaultClientTransport<mqtt.Client, NatsRequest<any>>(
                                     injector,
                                     socket,
-                                    'udp',
+                                    'mqtt',
                                     serializerFactory.create(injector, transportOptions.serializerConfig),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     formatter,
@@ -80,13 +85,21 @@ export class UdpConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (socket, channel, req) => fromEvent(socket, ev.MESSAGE, (payload: Buffer, rinfo: RemoteInfo) => {
-                                        // if (req?.remoteInfo.address !== rinfo.address || req.remoteInfo.port !== rinfo.port) return null;
-                                        return { payload }
-                                    }).pipe(filter(r => r !== null)),
-                                    async (socket, msg, req) => {
+                                    (mqtt, channel, req) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
+                                        return { topic, payload }
+                                    }).pipe(filter(msg => msg.topic === req?.responseTopic)),
+                                    async (mqtt, msg, req) => {
+                                        if (req.responseTopic && !subscribes.has(req.responseTopic)) {
+                                            subscribes.add(req.responseTopic);
+                                            await promisify(mqtt.subscribe, mqtt)(req.responseTopic);
+                                        }
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
-                                        return await promisify<Buffer | string, number, string>(socket.send, socket)(msg.payload ?? Buffer.alloc(0), req.remoteInfo.port, req.remoteInfo.address)
+                                        return await promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(req.topic, msg.payload ?? Buffer.alloc(0), { qos: 1 })
+                                    },
+                                    async (mqtt) => {
+                                        if (subscribes.size) {
+                                            await promisify(mqtt.unsubscribe, mqtt)(Array.from(subscribes.values()))
+                                        }
                                     }
                                 )
                             },
@@ -99,7 +112,7 @@ export class UdpConfiguration {
                         [StatusAdapter, InjectFlags.Optional],
                         [HeaderAdapter, InjectFlags.Optional],
                         StreamAdapter,
-                        UrlClientIncomingFactory,
+                        TopicClientIncomingFactory,
                         DefaultClientTransferFactory,
                         DefaultResponseFactory,
                         [Redirector, InjectFlags.Optional]
@@ -110,6 +123,7 @@ export class UdpConfiguration {
                     serializerConfig: {
                         interceptors: [
                             PacketVaildateInterceptor,
+                            // PacketSerializeInterceptor,
                             RequestServializeInterceptor
                         ]
                     },
@@ -117,31 +131,34 @@ export class UdpConfiguration {
                         interceptors: [
                             PacketifyInterceptor,
                             DeatchPacketIdInterceptor,
+                            // PacketDeserializeInterceptor,
+                            // PayloadDeserializeInterceptor
                         ]
                     }
                 },
+                interceptors: [
+                    RequestTimeoutInterceptor
+                ]
             }
         }
     }
 
     private getServOptions(): ServiceModuleOpts {
         return {
-            transport: 'udp',
-            serverType: UdpServer,
+            transport: 'mqtt',
+            asDefault: true,
+            serverType: NatsServer,
             defaultOpts: {
-                handlerType: UdpRequestHandler,
-                interceptorsToken: UDP_SERV_INTERCEPTORS,
-                filtersToken: UDP_SERV_FILTERS,
-                guardsToken: UDP_SERV_GUARDS,
+                handlerType: NatsRequestHandler,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
                         statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
                         fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
-                        incomingFactory: UrlClientIncomingFactory, outgoingFactory: UrlOutgoingFactory, transferFactory: ServerTransferFactory) => {
+                        incomingFactory: TopicClientIncomingFactory, outgoingFactory: TopicOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
                             create: (injector, socket, options) => {
                                 const transportOptions = options.transportOptions ?? {};
-                                return new DefaultServerTransport<Socket, UrlRequestContext>(
+                                return new DefaultServerTransport<mqtt.Client, TopicRequestContext>(
                                     injector,
                                     socket,
                                     'mqtt',
@@ -157,14 +174,15 @@ export class UdpConfiguration {
                                     outgoingFactory,
                                     transferFactory.create(injector, transportOptions.transferConfig),
                                     options,
-                                    (socket) => fromEvent(socket, ev.MESSAGE, (payload: Buffer, rinfo: RemoteInfo) => {
-                                        return { payload, properties: rinfo }
-                                    }),
-                                    (socket, msg, requestContext) => {
+                                    (mqtt) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
+                                        return { topic, responseTopic: packet.properties?.responseTopic, payload }
+                                    }).pipe(
+                                        filter(m => !!m.responseTopic || !m.topic.endsWith('/reply'))
+                                    ),
+                                    (mqtt, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
-                                        const rinfo = requestContext.request.properties as RemoteInfo;
-                                        if (!rinfo) throw new NotSupportedExecption('No remote response to');
-                                        return promisify<Buffer | string, number, string>(socket.send, socket)(msg.payload ?? Buffer.alloc(0), rinfo.port, rinfo.address);
+                                        if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
+                                        return promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(requestContext.responseTopic, msg.payload ?? Buffer.alloc(0), { qos: 1 })
                                     }
                                 )
                             },
@@ -179,8 +197,8 @@ export class UdpConfiguration {
                         FileAdapter,
                         [MimeAdapter, InjectFlags.Optional],
                         [AcceptsPriority, InjectFlags.Optional],
-                        UrlClientIncomingFactory,
-                        UrlOutgoingFactory,
+                        TopicClientIncomingFactory,
+                        TopicOutgoingFactory,
                         DefaultServerTransferFactory
                     ]
                 },
@@ -210,7 +228,14 @@ export class UdpConfiguration {
                     root: 'public',
                     prefix: 'content'
                 },
+                serverOpts: {
+                    host: LOCALHOST,
+                    port: 1883
+                },
                 detailError: false,
+                interceptorsToken: NATS_SERV_INTERCEPTORS,
+                filtersToken: NATS_SERV_FILTERS,
+                guardsToken: NATS_SERV_GUARDS,
                 filters: [
                     LoggerInterceptor,
                     ExecptionFinalizeFilter,

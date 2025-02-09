@@ -1,18 +1,21 @@
-import { Execption, Inject, Injectable } from '@tsdi/ioc';
+import { Execption, Injectable } from '@tsdi/ioc';
 import { defaultFormatter, PatternFormatter } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { getRouter, RequestContext, Server } from '@tsdi/endpoints';
-import { NatsConnection, connect } from 'nats';
+import { getRouter, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
+import { NatsConnection, Subscription, SubscriptionOptions, connect } from 'nats';
 import { NatsRequestHandler } from './handler';
 import { NatsMicroServOpts } from './options';
-import { NatsServerTransport, NatsServerTransportFactory } from '../nats.session';
 
 
 
 @Injectable()
 export class NatsServer extends Server<RequestContext, NatsMicroServOpts> {
     private conn?: NatsConnection;
-    private _transport?: NatsServerTransport;
+    private _transport?: ServerTransport;
+
+    private subjects: Set<string> = new Set();
+    private subscribes: Subscription[] | null = [];
+    // private events = new EventEmitter();
 
     @InjectLog()
     private logger!: Logger;
@@ -41,11 +44,11 @@ export class NatsServer extends Server<RequestContext, NatsMicroServOpts> {
 
         const conn = this.conn;
         const subs = router.matcher.getPatterns();
-        
-        const session = this._transport = injector.get(NatsServerTransportFactory).create(injector, conn, options);
 
+        const transport = this._transport = injector.get(ServerTransportFactory).create(injector, conn, options);
+        
         subs.map(sub => {
-            session.subscribe(sub, options.transportOpts?.subscriptionOpts)
+            session.subscribe(sub, options.subscriptionOpts)
         });
 
         this.logger.info(
@@ -54,6 +57,19 @@ export class NatsServer extends Server<RequestContext, NatsMicroServOpts> {
         );
 
     }
+
+    protected subscribe(subject: string, opts?: SubscriptionOptions) {
+        if (this.conn && subject && !this.subjects.has(subject)) {
+            this.subjects.add(subject);
+            this.conn.subscribe(subject, {
+                ...opts,
+                callback: (err: any, msg: Msg) => {
+                    this.events.emit(ev.MESSAGE, err, msg);
+                }
+            });
+        }
+    }
+
 
     protected async onShutdown(): Promise<any> {
         if (!this.conn) return;

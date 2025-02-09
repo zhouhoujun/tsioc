@@ -2,8 +2,7 @@ import { Interceptor, Filter } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ResponseEvent } from '@tsdi/common';
 import { ClientOpts } from '@tsdi/common/client';
-import { ConnectionOptions, SubscriptionOptions } from 'nats';
-import { NatsSessionOpts } from '../options';
+import { ConnectionOptions, PublishOptions, SubscriptionOptions } from 'nats';
 import { NatsRequest } from './request';
 
 
@@ -16,9 +15,9 @@ export interface NatsClientOpts extends ClientOpts<ConnectionOptions> {
      */
     keepalive?: number;
     /**
-     * transport session options.
+     * publish options
      */
-    transportOpts?: NatsSessionOpts;
+    publishOpts?: PublishOptions;
     /**
      * subscription options.
      */

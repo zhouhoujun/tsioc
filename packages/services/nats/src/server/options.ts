@@ -1,16 +1,21 @@
 import { Interceptor, Filter, GuardLike } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ServerOpts } from '@tsdi/endpoints';
-import { ConnectionOptions } from 'nats';
-import { NatsSessionOpts } from '../options';
+import { ConnectionOptions, PublishOptions, SubscriptionOptions } from 'nats';
 
 
 
 export interface NatsMicroServOpts extends ServerOpts<ConnectionOptions> {
+
     /**
-     * transport session options.
+     * publish options
      */
-    transportOpts?: NatsSessionOpts;
+    publishOpts?: PublishOptions;
+    /**
+     * subscription options.
+     */
+    subscriptionOpts?: SubscriptionOptions;
+
     detailError?: boolean;
     timeout?: number;
     retryAttempts?: number;

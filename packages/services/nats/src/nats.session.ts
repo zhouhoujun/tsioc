@@ -4,7 +4,7 @@ import { ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
 import { EventEmitter } from 'events';
 import { Msg, MsgHdrs, NatsConnection, SubscriptionOptions, headers as createHeaders, Subscription } from 'nats';
 import { Observable, filter, fromEvent, map, of, throwError } from 'rxjs';
-import { NatsSessionOpts } from './options';
+import { NatsSessionOptions } from './options';
 
 
 export class NatsServerTransport extends ServerTransport<NatsConnection, Msg> {
@@ -15,7 +15,7 @@ export class NatsServerTransport extends ServerTransport<NatsConnection, Msg> {
 
     protected async write(data: Buffer, packet: Packet & { natsheaders: MsgHdrs }): Promise<void> {
 
-        const opts = this.options as NatsSessionOpts;
+        const opts = this.options as NatsSessionOptions;
         const topic = opts.serverSide ? this.getReply(packet) : packet.topic;
         if (!topic) throw new BadRequestExecption();
         // if (!packet.natsheaders) {
@@ -48,7 +48,7 @@ export class NatsServerTransport extends ServerTransport<NatsConnection, Msg> {
     protected override async beforeRequest(packet: RequestPacket<any>): Promise<void> {
         if (!this.options.serverSide) {
             const rtopic = packet.replyTo = this.getReply(packet);
-            this.subscribe(rtopic, (this.options as NatsSessionOpts).subscriptionOpts)
+            this.subscribe(rtopic, (this.options as NatsSessionOptions).subscriptionOpts)
         }
     }
 
