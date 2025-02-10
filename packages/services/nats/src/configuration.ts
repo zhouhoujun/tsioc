@@ -81,18 +81,18 @@ export class NatsConfiguration {
                                         backend: (input: NatsRequest<any>, context?: TransportContext) => {
                                             return defer(async () => {
                                                 let payload: any = input.body;
-                                                if (payload == null || isString(payload) || isBuffer(payload)) return payload;
-                                                if (streamAdapter.isReadable(payload)) {
-                                                    return await toBuffer(payload);
-                                                }
-                                                return JSON.stringify(payload)
+                                                if (payload == null || isString(payload) || isBuffer(payload)) return { payload };
+                                                if (streamAdapter.isReadable(payload)) throw new NotSupportedExecption('Not supported stream payload');
+                                                // if (streamAdapter.isReadable(payload)) {
+                                                //     return await toBuffer(payload);
+                                                // }
+                                                return { payload: JSON.stringify(payload) }
                                             })
                                         },
                                         ...transportOptions.serializerConfig
                                     }),
                                     deserializerFactory.create(injector, {
                                         backend: (input: Packet, context: TransportContext) => {
-                                            
                                             return of(input);
                                         },
                                         ...transportOptions.deserializerConfig,
@@ -178,8 +178,26 @@ export class NatsConfiguration {
                                 return new DefaultServerTransport<NatsSocket, TopicRequestContext>(
                                     injector,
                                     socket,
-                                    serializerFactory.create(injector, transportOptions.serializerConfig),
-                                    deserializerFactory.create(injector, transportOptions.deserializerConfig),
+                                    serializerFactory.create(injector, {
+                                        backend: (input: TopicRequestContext, context?: TransportContext) => {
+                                            return defer(async () => {
+                                                let payload: any = input.body;
+                                                if (payload == null || isString(payload) || isBuffer(payload)) return { payload };
+                                                if (streamAdapter.isReadable(payload)) throw new NotSupportedExecption('Not supported stream payload');
+                                                // if (streamAdapter.isReadable(payload)) {
+                                                //     return await toBuffer(payload);
+                                                // }
+                                                return { payload: JSON.stringify(payload) }
+                                            })
+                                        },
+                                        ...transportOptions.serializerConfig
+                                    }),
+                                    deserializerFactory.create(injector, {
+                                        backend: (input: Packet, context: TransportContext) => {
+                                            return of(input);
+                                        },
+                                        ...transportOptions.deserializerConfig
+                                    }),
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,

@@ -35,6 +35,7 @@ export class NatsSocket {
                 const id = r.headers?.get('identity')
                 return {
                     id,
+                    topic: r.subject,
                     headers,
                     payload: r.data
                 }
