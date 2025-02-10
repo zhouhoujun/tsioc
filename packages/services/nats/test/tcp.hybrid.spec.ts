@@ -24,12 +24,14 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 transport: 'nats',
             },
             {
-                transport: 'tcp'
+                transport: 'tcp',
+                microservice: false
             }
         ]),
         EndpointModule.register([
             {
                 transport: 'tcp',
+                microservice: false,
                 serverOpts: {
                     interceptors: [
                         BigFileInterceptor,
@@ -40,7 +42,6 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 }
             },
             {
-                microservice: true,
                 transport: 'nats',
                 serverOpts: {
                     interceptors: [

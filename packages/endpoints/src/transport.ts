@@ -50,9 +50,10 @@ export abstract class ServerTransport<TSocket = any, TContext extends RequestCon
         return this.serverOptions.protocol ?? '';
     }
 
-
-
-    listen(handler: AbstractRequestHandler, destroy$?: Observable<any>): Subscription {
+    /**
+     * handle message.
+     */
+    handle(handler: AbstractRequestHandler, destroy$?: Observable<any>): Subscription {
         return this.receive().pipe(
             takeUntil(destroy$ ? merge(this.destroy$, destroy$).pipe(first()) : this.destroy$),
             mergeMap(incoming => this.transfer.transform(incoming, new TransportContext(this, incoming))),

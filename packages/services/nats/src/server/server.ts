@@ -2,35 +2,38 @@ import { Execption, Injectable } from '@tsdi/ioc';
 import { defaultFormatter, PatternFormatter } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { getRouter, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
-import { NatsConnection, Subscription, SubscriptionOptions, connect } from 'nats';
+import { connect } from 'nats';
 import { NatsRequestHandler } from './handler';
 import { NatsMicroServOpts } from './options';
+import { Subject } from 'rxjs';
+import { NatsSocket } from '../socket';
 
 
 
 @Injectable()
 export class NatsServer extends Server<RequestContext, NatsMicroServOpts> {
-    private conn?: NatsConnection;
-    private _transport?: ServerTransport;
+    private socket?: NatsSocket;
+    private _transport?: ServerTransport<NatsSocket>;
 
     private subjects: Set<string> = new Set();
-    private subscribes: Subscription[] | null = [];
-    // private events = new EventEmitter();
+    private destroy$: Subject<void>;
 
     @InjectLog()
     private logger!: Logger;
 
     constructor(readonly handler: NatsRequestHandler) {
         super()
+        this.destroy$ = new Subject();
     }
 
     protected async connect(): Promise<any> {
-        this.conn = await connect(this.getOptions().serverOpts);
+        const conn = await connect(this.getOptions().serverOpts);
+        this.socket = new NatsSocket(conn);
     }
 
     protected async onStart(): Promise<any> {
         await this.connect();
-        if (!this.conn) throw new Execption('Nats connection cannot be null');
+        if (!this.socket) throw new Execption('Nats connection cannot be null');
 
         const options = this.getOptions();
 
@@ -42,14 +45,16 @@ export class NatsServer extends Server<RequestContext, NatsMicroServOpts> {
         }
 
 
-        const conn = this.conn;
+        const socket = this.socket;
         const subs = router.matcher.getPatterns();
 
-        const transport = this._transport = injector.get(ServerTransportFactory).create(injector, conn, options);
-        
+        const transport = this._transport = injector.get(ServerTransportFactory).create(injector, socket, options);
+
         subs.map(sub => {
-            session.subscribe(sub, options.subscriptionOpts)
+            socket.subscribe(sub, options.subscriptionOpts)
         });
+
+        transport.handle(this.handler, this.destroy$);
 
         this.logger.info(
             `Subscribed successfully! This server is currently subscribed topics.`,
@@ -58,24 +63,14 @@ export class NatsServer extends Server<RequestContext, NatsMicroServOpts> {
 
     }
 
-    protected subscribe(subject: string, opts?: SubscriptionOptions) {
-        if (this.conn && subject && !this.subjects.has(subject)) {
-            this.subjects.add(subject);
-            this.conn.subscribe(subject, {
-                ...opts,
-                callback: (err: any, msg: Msg) => {
-                    this.events.emit(ev.MESSAGE, err, msg);
-                }
-            });
-        }
-    }
-
 
     protected async onShutdown(): Promise<any> {
-        if (!this.conn) return;
+        if (!this.socket) return;
+        this.destroy$.next();
+        this.destroy$.complete();
         await this._transport?.destroy();
-        if (this.conn) await this.conn.close();
+        if (this.socket) await this.socket.close();
         this.logger.info(`Nats microservice closed!`);
-        this.conn = null!;
+        this.socket = null!;
     }
 }

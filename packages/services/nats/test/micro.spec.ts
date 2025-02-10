@@ -72,7 +72,6 @@ export class NatsService {
             }
         }),
         EndpointModule.register({
-            microservice: true,
             transport: 'nats'
         })
     ],

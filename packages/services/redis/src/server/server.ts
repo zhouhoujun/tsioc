@@ -64,7 +64,7 @@ export class RedisServer extends Server<RequestContext, RedisServerOpts> {
         const injector = this.handler.injector;
 
         const factory = injector.get(ServerTransportFactory);
-        const session = this._transport = factory.create(injector, {
+        const transport = this._transport = factory.create(injector, {
             subscriber,
             publisher
         }, options);
@@ -112,8 +112,7 @@ export class RedisServer extends Server<RequestContext, RedisServerOpts> {
             });
         }
 
-        session.listen(this.handler, merge(this.destroy$, fromEvent(this.subscriber, ev.ERROR)).pipe(first()))
-        // injector.get(RequestHandler).handle(this.handler, session, this.logger, this.options);
+        transport.handle(this.handler, merge(this.destroy$, fromEvent(this.subscriber, ev.ERROR)).pipe(first()))
 
         router.matcher.eachPattern((topic, pattern) => {
             if (topic !== pattern) {

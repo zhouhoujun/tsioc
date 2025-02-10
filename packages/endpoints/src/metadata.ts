@@ -56,16 +56,12 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
 
-            // const routers = injector.get(MicroRouters);
-            // if (!routers) throw new Execption('has no router!');
-
             const prefix = joinPath(mapping.prefix, mapping.version, mapping.route);
             const factory = injector.get(RouteHandlerFactoryResolver).resolve(ctx.class);
 
             defines.forEach(def => {
                 const metadata = def.metadata;
                 const router = getRouter(injector, metadata.protocol, true);
-                // if (!router || !(router instanceof Router)) throw new Execption(metadata.protocol + ' microservice router has not register.');
                 const endpoint = factory.create(def.propertyKey, { ...metadata, prefix });
                 router.use(metadata.route!, endpoint, (r) => {
                     factory.onDestroy(() => router.unuse(r, endpoint));
@@ -136,9 +132,6 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
 
-            // const routers = injector.get(MicroRouters);
-            // if (!routers) throw new Execption(lang.getClassName(MicroRouters) + 'has not registered!');
-
             const prefix = joinPath(mapping.prefix, mapping.version, mapping.route);
             const factory = injector.get(RouteHandlerFactoryResolver).resolve(ctx.class);
 
@@ -159,7 +152,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             const mapping = ctx.class.getAnnotation<MappingDef>();
             const injector = ctx.injector;
 
-            const router = mapping.router ? injector.get(mapping.router) : getRouter(injector, mapping.protocol) //injector.get(Routers).get(mapping.protocol as CommonProtocols);
+            const router = mapping.router ? injector.get(mapping.router) : getRouter(injector, mapping.protocol);
             const route = mapping.route!;
             if (!route) throw new Execption(lang.getClassName(ctx.type) + 'has not route!');
             if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
@@ -268,7 +261,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 const injector = ctx.injector;
                 const mapping = ctx.class.getAnnotation<MappingDef>();
 
-                const router = mapping.router ? injector.get(mapping.router) : getRouter(injector, mapping.protocol); // injector.get(Routers).get(mapping.protocol);
+                const router = mapping.router ? injector.get(mapping.router) : getRouter(injector, mapping.protocol);
                 if (!router) throw new Execption(lang.getClassName(parent) + 'has not registered!');
                 if (!(router instanceof Router)) throw new Execption(lang.getClassName(router) + 'is not router!');
 

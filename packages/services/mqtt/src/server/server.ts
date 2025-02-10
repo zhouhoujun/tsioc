@@ -6,6 +6,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import { Client, connect, IClientSubscribeOptions } from 'mqtt';
 import { MqttServiceOpts } from './options';
 import { MqttRequestHandler } from './handler';
+import { Subject } from 'rxjs';
 
 
 /**
@@ -17,6 +18,7 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
     @InjectLog()
     private logger!: Logger;
 
+    private destroy$: Subject<void>;
     private subscribes?: string[];
     private mqtt?: Client | null;
     private _transport?: ServerTransport<Client>;
@@ -25,6 +27,7 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
         readonly handler: MqttRequestHandler
     ) {
         super();
+        this.destroy$ = new Subject();
     }
 
     protected async connect(): Promise<any> {
@@ -81,7 +84,7 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
 
         const factory = injector.get(ServerTransportFactory);
         const session = this._transport = factory.create(injector, this.mqtt, options);
-        session.listen(this.handler);
+        session.handle(this.handler, this.destroy$);
 
         this.logger.info(
             `Subscribed successfully! This server is currently subscribed topics.`,
@@ -97,6 +100,8 @@ export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
 
     protected override async onShutdown(): Promise<any> {
         if (!this.mqtt) return;
+        this.destroy$.next();
+        this.destroy$.complete();
         this._transport?.destroy();
         if (this.subscribes?.length) await promisify(this.mqtt.unsubscribe, this.mqtt)(this.subscribes);
         await promisify(this.mqtt.end, this.mqtt)(true)

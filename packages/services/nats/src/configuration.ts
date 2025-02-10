@@ -1,12 +1,13 @@
-import { InjectFlags, promisify } from '@tsdi/ioc';
+import { InjectFlags, isString, promisify } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import { DefaultResponseFactory, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
     DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
     ev,
-    FileAdapter, MimeAdapter, NotSupportedExecption, PacketifyInterceptor,
+    FileAdapter, isBuffer, MimeAdapter, NotSupportedExecption, Packet, PacketifyInterceptor,
     PacketVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
-    StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory
+    StreamAdapter, toBuffer, TopicClientIncomingFactory, TopicOutgoingFactory,
+    TransportContext
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
@@ -20,15 +21,16 @@ import {
     SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
     TopicRequestContext
 } from '@tsdi/endpoints';
-import { filter, fromEvent } from 'rxjs';
-import { Msg, MsgHdrs, NatsConnection, SubscriptionOptions, headers as createHeaders, Subscription } from 'nats';
+import { defer, filter, map, of } from 'rxjs';
 import { NatsClient } from './client/client';
-import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS } from './client/options';
+import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS, NatsClientOpts } from './client/options';
 import { NatsHandler } from './client/handler';
 import { NatsServer } from './server/server';
-import { NATS_SERV_FILTERS, NATS_SERV_GUARDS, NATS_SERV_INTERCEPTORS } from './server/options';
+import { NATS_SERV_FILTERS, NATS_SERV_GUARDS, NATS_SERV_INTERCEPTORS, NatsMicroServOpts } from './server/options';
 import { NatsRequestHandler } from './server/handler';
 import { NatsRequest } from './client/request';
+import { NatsSocket } from './socket';
+import { NatsPatternFormatter } from './pattern';
 
 
 
@@ -54,28 +56,47 @@ export class NatsConfiguration {
 
     private getClientOptions(): ClientModuleOpts {
         return {
-            transport: 'mqtt',
+            transport: 'nats',
             asDefault: true,
             clientType: NatsClient,
             defaultOpts: {
                 handlerType: NatsHandler,
-                url: 'mqtt://localhost:1883',
                 interceptorsToken: NATS_CLIENT_INTERCEPTORS,
                 filtersToken: NATS_CLIENT_FILTERS,
+                connectOpts: {
+                    servers: `${LOCALHOST}:4222`
+                },
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory, formatter: PatternFormatter | null,
                         statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
                         incomingFactory: TopicClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
                         redirector: Redirector | null) => {
                         return {
-                            create: (injector, socket, options) => {
+                            create: (injector, socket, options: NatsClientOpts) => {
                                 const transportOptions = options.transportOptions ?? {};
-                                const subscribes = new Set<string>();
-                                return new DefaultClientTransport<NatsConnection, NatsRequest<any>>(
+                                return new DefaultClientTransport<NatsSocket, NatsRequest<any>, NatsClientOpts>(
                                     injector,
                                     socket,
-                                    serializerFactory.create(injector, transportOptions.serializerConfig),
-                                    deserializerFactory.create(injector, transportOptions.deserializerConfig),
+                                    serializerFactory.create(injector, {
+                                        backend: (input: NatsRequest<any>, context?: TransportContext) => {
+                                            return defer(async () => {
+                                                let payload: any = input.body;
+                                                if (payload == null || isString(payload) || isBuffer(payload)) return payload;
+                                                if (streamAdapter.isReadable(payload)) {
+                                                    return await toBuffer(payload);
+                                                }
+                                                return JSON.stringify(payload)
+                                            })
+                                        },
+                                        ...transportOptions.serializerConfig
+                                    }),
+                                    deserializerFactory.create(injector, {
+                                        backend: (input: Packet, context: TransportContext) => {
+                                            
+                                            return of(input);
+                                        },
+                                        ...transportOptions.deserializerConfig,
+                                    }),
                                     formatter,
                                     statusAdapter,
                                     headerAdapter,
@@ -85,22 +106,19 @@ export class NatsConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (socket, channel, req) => fromEvent(socket, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
-                                        return { topic, payload }
-                                    }).pipe(filter(msg => msg.topic === req?.responseTopic)),
-                                    async (mqtt, msg, req) => {
-                                        
-                                        const headers = createHeaders();
-                                        options.publishOpts?.headers && options.publishOpts.headers.keys().forEach(k => {
-                                            headers.set(k, options.publishOpts?.headers?.get(k) ?? '')
-                                        })
-                                        if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
-                                        return await promisify<string, Buffer | string, mqtt.IClientPublishOptions>(mqtt.publish, mqtt)(req.topic, msg.payload ?? Buffer.alloc(0), { qos: 1 })
+                                    (socket, channel, req) => {
+                                        socket.subscribe(req!.responseTopic, options.subscriptionOpts);
+                                        return socket.getPacket(r => r.subject == req!.responseTopic)
                                     },
-                                    async (mqtt) => {
-                                        if (subscribes.size) {
-                                            await promisify(mqtt.unsubscribe, mqtt)(Array.from(subscribes.values()))
-                                        }
+                                    async (socket, msg, req) => {
+                                        const headers = socket.mergeHeaders(req.headers, options.publishOpts?.headers);
+                                        req.id && headers.set('identity', String(req.id));
+                                        if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
+                                        return socket.publish(req.topic, msg.payload, {
+                                            ...options.publishOpts,
+                                            reply: req.responseTopic,
+                                            headers
+                                        })
                                     }
                                 )
                             },
@@ -123,22 +141,20 @@ export class NatsConfiguration {
                     limit: sizeLimit,
                     serializerConfig: {
                         interceptors: [
-                            PacketVaildateInterceptor,
-                            // PacketSerializeInterceptor,
-                            RequestServializeInterceptor
+                            PacketVaildateInterceptor
                         ]
                     },
                     deserializerConfig: {
                         interceptors: [
-                            PacketifyInterceptor,
-                            DeatchPacketIdInterceptor,
-                            // PacketDeserializeInterceptor,
-                            // PayloadDeserializeInterceptor
+                            DeatchPacketIdInterceptor
                         ]
                     }
                 },
                 interceptors: [
                     RequestTimeoutInterceptor
+                ],
+                providers: [
+                    { provide: PatternFormatter, useClass: NatsPatternFormatter }
                 ]
             }
         }
@@ -146,7 +162,7 @@ export class NatsConfiguration {
 
     private getServOptions(): ServiceModuleOpts {
         return {
-            transport: 'mqtt',
+            transport: 'nats',
             asDefault: true,
             serverType: NatsServer,
             defaultOpts: {
@@ -157,9 +173,9 @@ export class NatsConfiguration {
                         fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
                         incomingFactory: TopicClientIncomingFactory, outgoingFactory: TopicOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
-                            create: (injector, socket, options) => {
+                            create: (injector, socket, options: NatsMicroServOpts) => {
                                 const transportOptions = options.transportOptions ?? {};
-                                return new DefaultServerTransport<NatsConnection, TopicRequestContext>(
+                                return new DefaultServerTransport<NatsSocket, TopicRequestContext>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, transportOptions.serializerConfig),
@@ -174,15 +190,16 @@ export class NatsConfiguration {
                                     outgoingFactory,
                                     transferFactory.create(injector, transportOptions.transferConfig),
                                     options,
-                                    (conn) => fromEvent(conn, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
-                                        return { topic, responseTopic: packet.properties?.responseTopic, payload }
-                                    }).pipe(
-                                        filter(m => !!m.responseTopic || !m.topic.endsWith('/reply'))
-                                    ),
-                                    (conn, msg, requestContext) => {
+                                    (socket) => socket.getPacket(m => !m.subject.endsWith('.reply')),
+                                    (socket, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
                                         if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
-                                        return promisify<string, Buffer | string, mqtt.IClientPublishOptions>(conn.publish, conn)(requestContext.responseTopic, msg.payload ?? Buffer.alloc(0), { qos: 1 })
+
+                                        const headers = socket.mergeHeaders(requestContext.response.headers, options.publishOpts?.headers);
+                                        return socket.publish(requestContext.responseTopic, msg.payload, {
+                                            ...options.publishOpts,
+                                            headers
+                                        })
                                     }
                                 )
                             },
@@ -211,13 +228,10 @@ export class NatsConfiguration {
                         ]
                     },
                     getResponseTopic(topic) {
-                        return `${topic}/reply`
+                        return `${topic}.reply`
                     },
                     deserializerConfig: {
                         interceptors: [
-                            PacketifyInterceptor,
-                            // PacketDeserializeInterceptor,
-                            // PayloadDeserializeInterceptor
                         ]
                     }
                 },
@@ -226,8 +240,7 @@ export class NatsConfiguration {
                     prefix: 'content'
                 },
                 serverOpts: {
-                    host: LOCALHOST,
-                    port: 1883
+                    servers: `${LOCALHOST}:4222`
                 },
                 detailError: false,
                 interceptorsToken: NATS_SERV_INTERCEPTORS,
@@ -238,6 +251,9 @@ export class NatsConfiguration {
                     ExecptionFinalizeFilter,
                     ExecptionHandlerFilter,
                     FinalizeFilter
+                ],
+                providers: [
+                    { provide: PatternFormatter, useClass: NatsPatternFormatter }
                 ]
             }
         }

@@ -72,8 +72,8 @@ export class WsServer extends Server<RequestContext, WsServerOpts> {
 
         this.serv.on(ev.CONNECTION, (socket) => {
             const stream = createWebSocketStream(socket);
-            const session = factory.create(injector, stream, options);            
-            session.listen(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
+            const trasnport = factory.create(injector, stream, options);            
+            trasnport.handle(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
         });
 
 
