@@ -2,26 +2,25 @@ import { InjectFlags, isString, promisify } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import { DefaultResponseFactory, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
+    ClientIncoming,
     DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
-    ev,
-    FileAdapter, isBuffer, MimeAdapter, NotSupportedExecption, Packet, PacketifyInterceptor,
+    FileAdapter, Incoming, isBuffer, MimeAdapter, NotSupportedExecption, Packet,
     PacketVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, toBuffer, TopicClientIncomingFactory, TopicOutgoingFactory,
     TransportContext
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    RequestServializeInterceptor, DefaultClientTransport,
-    RequestTimeoutInterceptor
+    DefaultClientTransport, RequestTimeoutInterceptor
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
-    RequestContextServializeInterceptor, RequestContextVaildateInterceptor,
+    RequestContextVaildateInterceptor,
     SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
     TopicRequestContext
 } from '@tsdi/endpoints';
-import { defer, filter, map, of } from 'rxjs';
+import { defer, of } from 'rxjs';
 import { NatsClient } from './client/client';
 import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS, NatsClientOpts } from './client/options';
 import { NatsHandler } from './client/handler';
@@ -64,7 +63,7 @@ export class NatsConfiguration {
                 interceptorsToken: NATS_CLIENT_INTERCEPTORS,
                 filtersToken: NATS_CLIENT_FILTERS,
                 connectOpts: {
-                    servers: `${LOCALHOST}:4222`
+                    servers: `nats://${LOCALHOST}:4222`
                 },
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory, formatter: PatternFormatter | null,
@@ -82,6 +81,7 @@ export class NatsConfiguration {
                                             return defer(async () => {
                                                 let payload: any = input.body;
                                                 if (payload == null || isString(payload) || isBuffer(payload)) return { payload };
+                                                if (payload instanceof Uint8Array) return { payload: Buffer.from(payload) };
                                                 if (streamAdapter.isReadable(payload)) throw new NotSupportedExecption('Not supported stream payload');
                                                 // if (streamAdapter.isReadable(payload)) {
                                                 //     return await toBuffer(payload);
@@ -93,6 +93,7 @@ export class NatsConfiguration {
                                     }),
                                     deserializerFactory.create(injector, {
                                         backend: (input: Packet, context: TransportContext) => {
+                                            const incoming = {...input } as ClientIncoming;
                                             return of(input);
                                         },
                                         ...transportOptions.deserializerConfig,
@@ -110,11 +111,13 @@ export class NatsConfiguration {
                                         socket.subscribe(req!.responseTopic, options.subscriptionOpts);
                                         return socket.getPacket(r => r.subject == req!.responseTopic)
                                     },
-                                    async (socket, msg, req) => {
+
+                                    (socket, msg, req) => {
                                         const headers = socket.mergeHeaders(req.headers, options.publishOpts?.headers);
                                         req.id && headers.set('identity', String(req.id));
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
-                                        return socket.publish(req.topic, msg.payload, {
+
+                                        return socket.publish(req.topic, msg.payload ?? Buffer.alloc(0), {
                                             ...options.publishOpts,
                                             reply: req.responseTopic,
                                             headers
@@ -152,11 +155,11 @@ export class NatsConfiguration {
                 },
                 interceptors: [
                     RequestTimeoutInterceptor
-                ],
-                providers: [
-                    { provide: PatternFormatter, useClass: NatsPatternFormatter }
                 ]
-            }
+            },
+            providers: [
+                { provide: PatternFormatter, useClass: NatsPatternFormatter }
+            ]
         }
     }
 
@@ -183,6 +186,7 @@ export class NatsConfiguration {
                                             return defer(async () => {
                                                 let payload: any = input.body;
                                                 if (payload == null || isString(payload) || isBuffer(payload)) return { payload };
+                                                if (payload instanceof Uint8Array) return { payload: Buffer.from(payload) };
                                                 if (streamAdapter.isReadable(payload)) throw new NotSupportedExecption('Not supported stream payload');
                                                 // if (streamAdapter.isReadable(payload)) {
                                                 //     return await toBuffer(payload);
@@ -212,9 +216,16 @@ export class NatsConfiguration {
                                     (socket, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
                                         if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
-
                                         const headers = socket.mergeHeaders(requestContext.response.headers, options.publishOpts?.headers);
-                                        return socket.publish(requestContext.responseTopic, msg.payload, {
+                                        requestContext.request.id && headers.set('identity', String(requestContext.request.id));
+                                        if(requestContext.execption) {
+                                            headers.hasError = true;
+                                        }           
+                                        headers.code = requestContext.status;
+                                        headers.status = requestContext.statusMessage; 
+                                        headers.description = requestContext.statusMessage;                                        
+
+                                        return socket.publish(requestContext.responseTopic, msg.payload ?? Buffer.alloc(0), {
                                             ...options.publishOpts,
                                             headers
                                         })
@@ -241,8 +252,7 @@ export class NatsConfiguration {
                     limit: sizeLimit,
                     serializerConfig: {
                         interceptors: [
-                            RequestContextVaildateInterceptor,
-                            RequestContextServializeInterceptor,
+                            RequestContextVaildateInterceptor
                         ]
                     },
                     getResponseTopic(topic) {
@@ -258,7 +268,7 @@ export class NatsConfiguration {
                     prefix: 'content'
                 },
                 serverOpts: {
-                    servers: `${LOCALHOST}:4222`
+                    servers: `nats://${LOCALHOST}:4222`
                 },
                 detailError: false,
                 interceptorsToken: NATS_SERV_INTERCEPTORS,
@@ -269,11 +279,11 @@ export class NatsConfiguration {
                     ExecptionFinalizeFilter,
                     ExecptionHandlerFilter,
                     FinalizeFilter
-                ],
-                providers: [
-                    { provide: PatternFormatter, useClass: NatsPatternFormatter }
                 ]
-            }
+            },
+            providers: [
+                { provide: PatternFormatter, useClass: NatsPatternFormatter }
+            ]
         }
     }
 

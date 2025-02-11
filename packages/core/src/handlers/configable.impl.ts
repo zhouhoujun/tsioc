@@ -293,12 +293,12 @@ export class ConfigableHandler<
         return this.options.guardsToken ? this.injector.get(this.options.guardsToken, null) : null;
     }
 
-    protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], multiOrder?: number, isClass: (type: Function) => boolean = type => refl.getDef(type).abstract !== true) {
+    protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], multiOrder?: number) {
         const multi = true;
         if (isArray(providers)) {
-            this.injector.inject(providers.map((r, i) => toProvider(token, r, { multi, multiOrder, isClass })))
+            this.injector.inject(providers.map((r, i) => toProvider(token, r, { multi, multiOrder })))
         } else {
-            this.injector.inject(toProvider(token, providers, { multi, multiOrder, isClass }));
+            this.injector.inject(toProvider(token, providers, { multi, multiOrder }));
         }
     }
 

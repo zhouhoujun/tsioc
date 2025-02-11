@@ -32,12 +32,12 @@ export class NatsSocket {
                 r.headers?.keys().forEach(key => {
                     headers[key] = r.headers?.get(key);
                 });
-                const id = r.headers?.get('identity')
+                const id = r.headers?.get('identity');
                 return {
                     id,
                     topic: r.subject,
                     headers,
-                    payload: r.data
+                    payload: Buffer.from(r.data)
                 }
             })
         )

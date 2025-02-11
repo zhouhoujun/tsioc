@@ -64,7 +64,7 @@ export class RedisConfiguration {
             defaultOpts: {
                 handlerType: RedisHandler,
                 // url: 'redis://localhost:6379',
-                connectOpts:{
+                connectOpts: {
                     host: LOCALHOST,
                     port: 6379,
                 },
@@ -100,7 +100,7 @@ export class RedisConfiguration {
                                         fromEvent(socket.subscriber, 'pmessageBuffer', (pattern: string, topic: string | Buffer, payload: string | Buffer) => {
                                             return { topic: isString(topic) ? topic : new TextDecoder().decode(topic), payload }
                                         })
-                                    ).pipe(filter(msg=> msg.topic === req?.responseTopic)),
+                                    ).pipe(filter(msg => msg.topic === req?.responseTopic)),
                                     async (socket, msg, req) => {
                                         if (req.responseTopic && !subscribes.has(req.responseTopic)) {
                                             subscribes.add(req.responseTopic);
@@ -136,26 +136,23 @@ export class RedisConfiguration {
                     serializerConfig: {
                         interceptors: [
                             PacketVaildateInterceptor,
-                            // PacketSerializeInterceptor,
                             RequestServializeInterceptor
                         ]
                     },
                     deserializerConfig: {
                         interceptors: [
                             PacketifyInterceptor,
-                            DeatchPacketIdInterceptor,
-                            // PacketDeserializeInterceptor,
-                            // PayloadDeserializeInterceptor
+                            DeatchPacketIdInterceptor
                         ]
                     }
                 },
                 interceptors: [
                     RequestTimeoutInterceptor
+                ],
+                providers: [
+                    { provide: PatternFormatter, useClass: RedisPatternFormatter }
                 ]
-            },
-            providers: [
-                { provide: PatternFormatter, useClass: RedisPatternFormatter }
-            ]
+            }
         }
     }
 
@@ -201,7 +198,7 @@ export class RedisConfiguration {
                                     ),
                                     (socket, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
-                                        if(!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
+                                        if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
                                         return promisify<string, Buffer | string>(socket.publisher.publish, socket.publisher)(requestContext.responseTopic, msg.payload ?? Buffer.alloc(0))
                                     }
                                 )

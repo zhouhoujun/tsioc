@@ -5,6 +5,7 @@ import { isPlainObject } from './utils/obj';
 import { isArray, isBoolean, isDefined, isType } from './utils/chk';
 import { ArgumentExecption } from './execption';
 import { getClassName } from './utils/lang';
+import { isClass } from './utils/token';
 
 /**
  * provide for {@link Injector }.
@@ -268,24 +269,21 @@ export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, options?: {
     multi?: boolean,
     static?: boolean,
     multiOrder?: number,
-    isClass?: (type: Function) => boolean,
     onRegistered?: (injector: Injector) => void
 }): StaticProvider<T>;
 
 export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boolean | {
     multi?: boolean
     multiOrder?: number,
-    isClass?: (type: Function) => boolean,
     onRegistered?: (injector: Injector) => void
 }): StaticProvider<T> {
-    const { isClass, ...options } = (isBoolean(multi) ? { multi } : (multi ?? {})) as {
+    const options = (isBoolean(multi) ? { multi } : (multi ?? {})) as {
         multi?: boolean
         multiOrder?: number,
-        isClass?: (type: Function) => boolean,
         onRegistered?: (injector: Injector) => void
     };
 
-    if (isType(useOf) && (isClass ? isClass(useOf) : !!useOf.name)) {
+    if (isType(useOf) && isClass(useOf)) {
         if (provide == useOf) throw new ArgumentExecption(getClassName(provide) + ': provide is equals to provider')
         return { ...options, provide, useClass: useOf as ClassType };
     } else if (isPlainObject(useOf) && (isDefined((useOf as UseClass<T>).useClass)
@@ -311,14 +309,12 @@ export function toProviders<T>(provide: Token, useOf: ProvdierOf<T>[], options?:
     multi?: boolean,
     static?: boolean,
     multiOrder?: number,
-    isClass?: (type: Function) => boolean,
     onRegistered?: (injector: Injector) => void
 }): StaticProvider<T>[];
 
 export function toProviders<T>(provide: Token, useOf: ProvdierOf<T>[], multi?: boolean | {
     multi?: boolean
     multiOrder?: number,
-    isClass?: (type: Function) => boolean,
     onRegistered?: (injector: Injector) => void
 }): StaticProvider<T>[] {
     return useOf.map(r => toProvider(provide, r, multi as any));
@@ -352,8 +348,7 @@ export function toFactory<T>(provide: Token, useOf: ProvdierOf<T>, options?: {
      */
     init?: (val: T, injector: Injector) => T,
     onRegistered?: (injector: Injector) => void,
-    multiOrder?: number,
-    isClass?: (type: Function) => boolean
+    multiOrder?: number
 }): FactoryProvider<T>;
 
 export function toFactory<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boolean | {
@@ -367,15 +362,13 @@ export function toFactory<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boole
     init?: (val: T, injector: Injector) => T,
     onRegistered?: (injector: Injector) => void,
     multiOrder?: number,
-    isClass?: (type: Function) => boolean
 }): FactoryProvider<T> {
 
-    const { init, isClass, ...opts } = (isBoolean(multi) ? { multi } : (multi ?? {})) as {
+    const { init, ...opts } = (isBoolean(multi) ? { multi } : (multi ?? {})) as {
         multi?: boolean,
         init?: (val: T, injector: Injector) => T,
         onRegistered?: (injector: Injector) => void,
-        multiOrder?: number,
-        isClass?: (type: Function) => boolean
+        multiOrder?: number
     }
 
     const deps: any[] = [];
@@ -420,7 +413,7 @@ export function toFactory<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boole
             const val = injector.get(useExisting);
             return init ? init(val, injector) : val;
         }
-    } else if (isType(useOf) && (isClass ? isClass(useOf) : true)) {
+    } else if (isType(useOf) && isClass(useOf)) {
         deps.push(Injector);
         useFactory = (injector: Injector) => {
             const val = injector.get(useOf);

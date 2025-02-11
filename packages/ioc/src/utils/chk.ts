@@ -9,29 +9,29 @@ declare let process: any;
  * check target is function or not.
  *
  * @export
- * @param {*} target
+ * @param {*} t
  * @returns
  */
-export function isFunction(target: any): target is Function {
-    return typeof target === 'function'
+export function isFunction(t: any): t is Function {
+    return typeof t === 'function'
 }
 
 /**
  * is type or not.
- * @param v 
+ * @param t 
  * @returns 
  */
-export function isType(v: any): v is Type<any> {
-    return isFunction(v) && typeof v.prototype === 'object';
+export function isType(t: any): t is Type<any> {
+    return typeof t === 'function' && t.prototype && t.prototype.constructor === t;
 }
 
 /**
  * is class type or not.
- * @param v 
+ * @param t 
  * @returns 
  */
-export function isClassType(v: any): v is ClassType<any> {
-    return isType(v) && !isPrimit(v)
+export function isClassType(t: any): t is ClassType<any> {
+    return isType(t) && !isPrimit(t)
 }
 
 
