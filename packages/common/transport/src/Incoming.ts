@@ -8,9 +8,14 @@ import { Outgoing } from './Outgoing';
 /**
  * Incoming message
  */
-export interface IncomingMessage<T = any> {
+export interface IncomingMessage<T = any, TMsg = any> {
 
     id?: number | string;
+
+    /**
+     * origin req message.
+     */
+    origin?: TMsg;
 
     pattern?: string;
 
@@ -43,7 +48,7 @@ export interface IncomingMessage<T = any> {
 /**
  * Server incoming message
  */
-export interface Incoming<T = any> extends IncomingMessage<T> {
+export interface Incoming<T = any, TMsg = any> extends IncomingMessage<T, TMsg> {
 
     method?: string;
 
@@ -62,7 +67,7 @@ export interface Incoming<T = any> extends IncomingMessage<T> {
 /**
  * Client incoming message
  */
-export interface ClientIncoming<T = any, TStatus = any> extends IncomingMessage<T> {
+export interface ClientIncoming<T = any, TStatus = any, TMsg = any> extends IncomingMessage<T, TMsg> {
     /**
      * event type
      */

@@ -72,7 +72,7 @@ export abstract class AbstractTransport<TSocket = any, TIncoming extends Incomin
      * @param data 
      */
     send(data: TOutgoing, channel?: IEventEmitter): Observable<any> {
-        return this.serializer.serialize(data, new TransportContext(this, data))
+        return this.serializer.serialize(data, TransportContext.create(this, data))
             .pipe(
                 mergeMap(msg => {
                     return this.write(msg, data, channel)

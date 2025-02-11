@@ -1,4 +1,4 @@
-import { OnDestroy } from '@tsdi/ioc';
+import { OnDestroy, Token } from '@tsdi/ioc';
 import { Context } from '@tsdi/core';
 import { Transport } from './Transport';
 
@@ -9,9 +9,18 @@ export class TransportContext extends Context implements OnDestroy {
 
     constructor(
         readonly transport: Transport,
-        init?: any,
+        readonly origin: any,
+        entries?: readonly (readonly [Token, any])[] | null
     ) {
-        super(init)
+        super()
+    }
+
+    first() {
+        return this.origin
+    }
+
+    static create(transport: Transport, origin: any, entries?: readonly (readonly [Token, any])[] | null) {
+        return new TransportContext(transport, origin, entries);
     }
 }
 

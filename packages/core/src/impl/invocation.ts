@@ -93,7 +93,7 @@ export class InvocationHandlerImpl<
 
     protected attchContext(input: InvocationContext, context: TContext, nextData?: any) {
         if (context instanceof Context) {
-            isDefined(nextData) && context.next(nextData);
+            // isDefined(nextData) && context.next(nextData);
             input.setValue(Context, context);
         }
         input.setValue(getClass(context), context);
