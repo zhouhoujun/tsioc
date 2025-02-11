@@ -16,13 +16,39 @@ export function isFunction(t: any): t is Function {
     return typeof t === 'function'
 }
 
+const fnc$ = /^function\s+\(|^function\s+anonymous\(/;
+const class$ = /^[\s\S]*class\s+/;
+const fncallErr = `cannot be invoked without 'new'`;
+/**
+ * this fn is class or not.
+ * @param fn 
+ * @returns 
+ */
+export function isClass(fn: Function) {
+    if (!fn.prototype || fn.prototype.constructor !== fn) return false;
+    if (typeof Symbol !== 'undefined' && typeof Symbol.hasInstance !== 'undefined') {
+        return fn[Symbol.hasInstance] ? true : false;
+    }
+    const str = String(fn);
+    if (class$.test(str)) return true;
+    if (fnc$.test(str)) return false;
+
+    try {
+        fn();
+        return false;
+    } catch (err: any) {
+        if (err.toString().indexOf(fncallErr) > 0) return true;
+        return false;
+    }
+}
+
 /**
  * is type or not.
  * @param t 
  * @returns 
  */
 export function isType(t: any): t is Type<any> {
-    return typeof t === 'function' && t.prototype && t.prototype.constructor === t;
+    return typeof t === 'function' && isClass(t) //&& t.prototype && t.prototype.constructor === t;
 }
 
 /**

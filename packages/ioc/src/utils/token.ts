@@ -1,4 +1,5 @@
 import { isInjectToken, Token } from '../tokens';
+import { isClass } from './chk';
 
 
 /**
@@ -15,7 +16,7 @@ export function isToken(target: any): target is Token {
     const type = typeof target;
     switch (type) {
         case 'function':
-            return target.prototype && target.prototype.constructor === target && isClass(target);
+            return isClass(target);
         case 'string':
             return true
         case 'symbol':
@@ -23,19 +24,4 @@ export function isToken(target: any): target is Token {
     }
 
     return isInjectToken(target)
-}
-
-/**
- * this fn is class or not.
- * @param fn 
- * @returns 
- */
-export function isClass(fn: Function) {
-    try {
-        fn();
-        return false;
-    } catch (err: any) {
-        if (err.toString().indexOf(`cannot be invoked without 'new'`) > 0) return true;
-        return false;
-    }
 }

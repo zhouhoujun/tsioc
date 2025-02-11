@@ -5,7 +5,6 @@ import { isPlainObject } from './utils/obj';
 import { isArray, isBoolean, isDefined, isType } from './utils/chk';
 import { ArgumentExecption } from './execption';
 import { getClassName } from './utils/lang';
-import { isClass } from './utils/token';
 
 /**
  * provide for {@link Injector }.
@@ -283,7 +282,7 @@ export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: bool
         onRegistered?: (injector: Injector) => void
     };
 
-    if (isType(useOf) && isClass(useOf)) {
+    if (isType(useOf)) {
         if (provide == useOf) throw new ArgumentExecption(getClassName(provide) + ': provide is equals to provider')
         return { ...options, provide, useClass: useOf as ClassType };
     } else if (isPlainObject(useOf) && (isDefined((useOf as UseClass<T>).useClass)
@@ -413,7 +412,7 @@ export function toFactory<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boole
             const val = injector.get(useExisting);
             return init ? init(val, injector) : val;
         }
-    } else if (isType(useOf) && isClass(useOf)) {
+    } else if (isType(useOf)) {
         deps.push(Injector);
         useFactory = (injector: Injector) => {
             const val = injector.get(useOf);
