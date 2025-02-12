@@ -79,7 +79,7 @@ export class NatsConfiguration {
                                     serializerFactory.create(injector, {
                                         backend: (input: NatsRequest<any>, context?: TransportContext) => {
                                             return defer(async () => {
-                                                let payload: any = input.body;
+                                                const payload: any = input.body;
                                                 if (payload == null || isString(payload) || isBuffer(payload)) return { payload };
                                                 if (payload instanceof Uint8Array) return { payload: Buffer.from(payload) };
                                                 if (streamAdapter.isReadable(payload)) throw new NotSupportedExecption('Not supported stream payload');
@@ -184,7 +184,7 @@ export class NatsConfiguration {
                                     serializerFactory.create(injector, {
                                         backend: (input: TopicRequestContext, context?: TransportContext) => {
                                             return defer(async () => {
-                                                let payload: any = input.body;
+                                                const payload: any = input.body;
                                                 if (payload == null || isString(payload) || isBuffer(payload)) return { payload };
                                                 if (payload instanceof Uint8Array) return { payload: Buffer.from(payload) };
                                                 if (streamAdapter.isReadable(payload)) throw new NotSupportedExecption('Not supported stream payload');
@@ -218,12 +218,12 @@ export class NatsConfiguration {
                                         if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
                                         const headers = socket.mergeHeaders(requestContext.response.headers, options.publishOpts?.headers);
                                         requestContext.request.id && headers.set('identity', String(requestContext.request.id));
-                                        if(requestContext.execption) {
-                                            headers.hasError = true;
-                                        }           
-                                        headers.code = requestContext.status;
-                                        headers.status = requestContext.statusMessage; 
-                                        headers.description = requestContext.statusMessage;                                        
+                                        // if(requestContext.execption) {
+                                        //     headers.hasError = true;
+                                        // }           
+                                        // headers.code = requestContext.status;
+                                        // headers.status = requestContext.statusMessage; 
+                                        // headers.description = requestContext.statusMessage;                                        
 
                                         return socket.publish(requestContext.responseTopic, msg.payload ?? Buffer.alloc(0), {
                                             ...options.publishOpts,

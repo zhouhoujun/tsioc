@@ -85,9 +85,9 @@ export class MqttConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (mqtt, channel, req) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
+                                    (mqtt, req, context) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
                                         return { topic, payload }
-                                    }).pipe(filter(msg => msg.topic === req?.responseTopic)),
+                                    }).pipe(filter(msg => msg.topic === req.responseTopic)),
                                     async (mqtt, msg, req) => {
                                         if (req.responseTopic && !subscribes.has(req.responseTopic)) {
                                             subscribes.add(req.responseTopic);

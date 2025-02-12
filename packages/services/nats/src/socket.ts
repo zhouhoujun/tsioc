@@ -32,6 +32,9 @@ export class NatsSocket {
                 r.headers?.keys().forEach(key => {
                     headers[key] = r.headers?.get(key);
                 });
+                // if(r.headers?.hasError) {
+                    
+                // }
                 const id = r.headers?.get('identity');
                 return {
                     id,
