@@ -78,9 +78,10 @@ export class RequestContextVaildateInterceptor implements Interceptor<RequestCon
     intercept(input: RequestContext, next: Handler<any>, context?: any): Observable<Packet> {
         const { injector, options } = context.transport as AbstractTransport;
         const length = input.length;
-        if (length && options.maxSize && length > options.maxSize) {
+        const sizeLimit = options.maxSize ?? options.limit;
+        if (length && sizeLimit && length > sizeLimit) {
             const btpipe = injector.get<PipeTransform>('bytes-format');
-            return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(options.maxSize)}`));
+            return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(sizeLimit)}`));
         }
         return next.handle(input, context);
     }

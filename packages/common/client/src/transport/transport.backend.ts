@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { ResponseEvent, AbstractRequest } from '@tsdi/common';
-import { first, Observable, timeout } from 'rxjs';
+import { first, Observable } from 'rxjs';
 import { ClientBackend } from '../backend';
 import { ClientTransport } from './transport';
 

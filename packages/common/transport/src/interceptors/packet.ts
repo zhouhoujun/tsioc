@@ -262,9 +262,10 @@ export class PacketVaildateInterceptor implements Interceptor<OutgoingMessage, P
     intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet>, context: TransportContext): Observable<Packet> {
         const { injector, headerAdapter, options, client } = context.transport as AbstractTransport;
         const length = headerAdapter?.getContentLength(input.headers);
-        if (length && options.maxSize && length > options.maxSize) {
+        const sizeLimit = options.maxSize ?? options.limit;
+        if (length && sizeLimit && length > sizeLimit) {
             const btpipe = injector.get<PipeTransform>('bytes-format');
-            return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(options.maxSize)}`));
+            return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(sizeLimit)}`));
         }
         if (!input.id && client) {
             input.id = injector.get(PacketIdGenerator).getPacketId();

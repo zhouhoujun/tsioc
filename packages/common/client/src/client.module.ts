@@ -159,6 +159,11 @@ function clientProviders(options: ClientConfigs, idx?: number) {
 
                 clientOpts.providers.push(toProvider(ClientTransportFactory, clientOpts.transportFactory));
 
+                // if (!clientOpts.execptionHandlers) {
+                //     clientOpts.execptionHandlers = [DefaultExecptionHandlers]
+                // }
+
+
                 const providers: ProviderType[] = [];
 
                 if (opts.clientProvider) {
