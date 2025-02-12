@@ -1,7 +1,7 @@
-import { Abstract, ArgumentExecption, Execption, InvocationContext, createContext, isNil, isString } from '@tsdi/ioc';
-import { Shutdown } from '@tsdi/core';
+import { Abstract, ArgumentExecption, Execption, isNil, isString } from '@tsdi/ioc';
+import { Context, Shutdown } from '@tsdi/core';
 import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, PatternFormatter, defaultFormatter } from '@tsdi/common';
-import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
+import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, fromEventPattern } from 'rxjs';
 import { ClientHandler } from './handler';
 import { ClientOpts } from './options';
 
@@ -286,7 +286,7 @@ export abstract class AbstractClient<
         const events$: Observable<ResponseEvent<any>> =
             of(req).pipe(
                 concatMap((req: TRequest) => this.handler.handle(req)),
-                finalize(() => req.context?.destroy())
+                finalize(() => req.context.onDestroy())
             );
 
         // If coming via the API signature which accepts a previously constructed HttpRequest,
@@ -383,7 +383,9 @@ export abstract class AbstractClient<
                 }
             }
 
-            const context = options.context || createContext(this.handler.injector);
+            const context = options.context || new Context();
+            context.set(AbstractClient, this);
+            context.set(PatternFormatter, this.formatter);
             this.initContext(context);
             // Construct the request.
             req = this.createRequest(first, {
@@ -426,7 +428,7 @@ export abstract class AbstractClient<
      * init request context.
      * @param context 
      */
-    protected abstract initContext(context: InvocationContext): void;
+    protected abstract initContext(context: Context): void;
 
     protected abstract onShutdown(): Promise<void>;
 

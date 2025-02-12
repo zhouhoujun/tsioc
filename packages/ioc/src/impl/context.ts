@@ -158,27 +158,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return this._args!;
     }
 
-
     get used(): boolean {
         return this._injected
-    }
-
-    /**
-     * get value ify create by factory and register the value for the token.
-     * 
-     * 获取上下文中标记指令的值，如果没有注入，则根据工厂函数注入该标记指令，并返回值。
-     * @param token the token to get value.
-     * @param factory the factory to create value for token.
-     * @returns the instance of token.
-     */
-    getValueify<T>(token: Token<T>, factory: () => T): T {
-        this.assertNotDestroyed();
-        let value = this.get(token);
-        if (isNil(value)) {
-            value = factory();
-            this.setValue(token, value);
-        }
-        return value;
     }
 
     /**

@@ -1,4 +1,5 @@
-import { Injectable, InvocationContext, isString, promisify } from '@tsdi/ioc';
+import { Injectable, isString, promisify } from '@tsdi/ioc';
+import { Context } from '@tsdi/core';
 import { Pattern, LOCALHOST, RequestInitOpts, UrlRequestOptions } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
@@ -77,10 +78,9 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
         });
     }
 
-    protected override initContext(context: InvocationContext): void {
-        context.setValue(AbstractClient, this);
-        context.setValue(TcpClient, this);
-        context.setValue(ClientTransport, this._transport);
+    protected override initContext(context: Context): void {
+        context.set(TcpClient, this);
+        context.set(ClientTransport, this._transport);
     }
 
     protected override createRequest(pattern: Pattern, options: RequestInitOpts<any, UrlRequestOptions>): TcpRequest<any> {

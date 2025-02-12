@@ -5,6 +5,7 @@ import { BadRequestExecption, Redirector } from '@tsdi/common/transport';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { ClientTransport } from './transport';
 import { AbstractClient } from '../AbstractClient';
+import { ContextToken } from '@tsdi/core';
 
 
 @Injectable()
@@ -15,11 +16,11 @@ export class UrlRedirector implements Redirector {
             if (!req.url) return observer.error(new BadRequestExecption());
 
 
-            const { statusAdapter, streamAdapter, headerAdapter } = req.context.get(ClientTransport);
+            const { statusAdapter, streamAdapter, headerAdapter } = req.context.get(ClientTransport)!;
 
             if (!headerAdapter) return observer.error(new ArgumentExecption('header adapter missing'));
 
-            const rdstatus = req.context.getValueify(RedirectState, () => new RedirectState());
+            const rdstatus = req.context.get(REDIRECT_STATE);
             // HTTP fetch step 5.2
             const location = getHeader(headers, 'location') as string;
 
@@ -101,7 +102,7 @@ export class UrlRedirector implements Redirector {
                         reqhdrs = reqhdrs.set('referrer-policy', responseReferrerPolicy);
                     }
                     // HTTP-redirect fetch step 15
-                    sub = req.context.get(AbstractClient).send(locationURL, {
+                    sub = req.context.get(AbstractClient)!.send(locationURL, {
                         method,
                         headers: reqhdrs,
                         body,
@@ -178,3 +179,5 @@ export class RedirectState {
         this.redirect = init.redirect ?? 'follow';
     }
 }
+
+export const REDIRECT_STATE = new ContextToken(() => new RedirectState());

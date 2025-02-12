@@ -8,7 +8,7 @@ import { ClientTransport } from './transport';
 export class ClientTransportBackend extends ClientBackend {
 
     handle(req: AbstractRequest<any>): Observable<ResponseEvent<any>> {
-        const transport = req.context.get(ClientTransport);
+        const transport = req.context.get(ClientTransport)!;
 
         let obs$: Observable<ResponseEvent<any>>;
         switch (req.observe) {

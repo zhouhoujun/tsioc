@@ -1,4 +1,5 @@
 import { Injectable, InvocationContext } from '@tsdi/ioc';
+import { Context } from '@tsdi/core';
 import {
     RequestOptions, HeadersLike, PUT, GET, DELETE, HEAD, JSONP, PATCH, POST,
     RequestParams, Pattern, HttpRequestMethod, RequestInitOpts,
@@ -105,9 +106,8 @@ export class Http extends AbstractClient<UrlRequestOptions, HttpRequest<any>, Ht
         return target instanceof HttpRequest
     }
 
-    protected override initContext(context: InvocationContext<any>): void {
-        context.setValue(AbstractClient, this);
-        context.setValue(ClientTransport, this.transport);
+    protected override initContext(context: Context): void {        
+        context.set(ClientTransport, this.transport);
     }
 
     protected override createParams(params: string | readonly [string, string | number | boolean][] | Record<string, string | number | boolean | readonly (string | number | boolean)[]>): RequestParams {

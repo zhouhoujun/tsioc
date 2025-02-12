@@ -1,7 +1,8 @@
 import { Abstract, promisify } from '@tsdi/ioc';
+import { Protocols } from '@tsdi/common';
 import { Observable, Subject, mergeMap, share, takeUntil } from 'rxjs';
 import { Transport } from './Transport';
-import { IEventEmitter, IReadable, IWritable } from './stream';
+import { IReadable, IWritable } from './stream';
 import { AbstractIncomingFactory, Incoming } from './Incoming';
 import { Deserializer } from './Deserializer';
 import { Serializer } from './Serializer';
@@ -9,7 +10,6 @@ import { TransportContext } from './context';
 import { ConfigableHandlerOptions } from '@tsdi/core';
 import { Packet } from './socket';
 import { StreamAdapter } from './StreamAdapter';
-import { Protocols } from '@tsdi/common';
 
 
 export interface TransportOptions {
@@ -71,33 +71,51 @@ export abstract class AbstractTransport<TSocket = any, TIncoming extends Incomin
      * send.
      * @param data 
      */
-    send(data: TOutgoing, channel?: IEventEmitter): Observable<any> {
-        return this.serializer.serialize(data, TransportContext.create(this, data))
+    send(data: TOutgoing, context?: TransportContext): Observable<any> {
+        if (!context) {
+            context = TransportContext.create(this)
+        }
+        this.initSendContext(context, data);
+        return this.serializer.serialize(data, context)
             .pipe(
                 mergeMap(msg => {
-                    return this.write(msg, data, channel)
+                    return this.write(msg, data, context!)
                 }),
                 takeUntil(this.destroy$)
             )
     }
+
+    
 
     /**
      * receive
      * @param incoming the channel.
      * @param origin the origin message.
      */
-    receive(channel?: IEventEmitter, origin?: TOutgoing): Observable<TIncoming> {
-        return this.read(channel, origin)
+    receive(context?: TransportContext): Observable<TIncoming> {
+        if (!context) {
+            context = TransportContext.create(this)
+        }
+        this.initReceiveContext(context)
+        return this.read(context)
             .pipe(
                 takeUntil(this.destroy$),
-                mergeMap(data => this.deserializer.deserialize(data, new TransportContext(this, origin))),
+                mergeMap(data => this.deserializer.deserialize(data, context!)),
                 share()
             ) as Observable<any>;
     }
 
-    protected abstract read(channel?: IEventEmitter | null, origin?: TOutgoing): Observable<any>;
+    protected abstract read(context: TransportContext): Observable<any>;
 
-    protected abstract write(msg: Packet, origin:TOutgoing, channel?: IEventEmitter | null): Promise<any> | Observable<any>;
+    protected abstract write(msg: Packet, origin: TOutgoing, context: TransportContext): Promise<any> | Observable<any>;
+
+    protected initSendContext(context: TransportContext, data: TOutgoing): void {
+
+    }
+
+    protected initReceiveContext(context: TransportContext): void {
+
+    }
 
     /**
      * destroy.
@@ -138,6 +156,6 @@ const microservices = {
     udp: true
 } as Record<Protocols, boolean>;
 
-export function isMicroTransport(options: {transport: Protocols, microservice?: boolean }) {
+export function isMicroTransport(options: { transport: Protocols, microservice?: boolean }) {
     return microservices[options.transport] || (options.transport == 'tcp' && options.microservice === true)
 }

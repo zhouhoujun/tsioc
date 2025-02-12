@@ -47,7 +47,7 @@ export class PacketUUIdGenerator implements PacketIdGenerator {
     }
 
     readId(raw: Buffer): string | number {
-        return new TextDecoder().decode(raw.subarray(0, this.idLenght));
+        return raw.subarray(0, this.idLenght).toString();
     }
 
 }

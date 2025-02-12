@@ -1,6 +1,6 @@
 import { Abstract, Injector } from '@tsdi/ioc';
 import { AbstractRequest, PatternFormatter, ResponseEvent, ResponseFactory } from '@tsdi/common';
-import { AbstractTransport, ClientIncoming, ClientIncomingFactory, IEventEmitter, Redirector, Transfer, TransportContext } from '@tsdi/common/transport';
+import { AbstractTransport, ClientIncoming, ClientIncomingFactory, Redirector, Transfer, TransportContext } from '@tsdi/common/transport';
 import { Observable, first, merge, mergeMap, takeUntil } from 'rxjs';
 import { ClientOpts } from '../options';
 
@@ -10,7 +10,7 @@ import { ClientOpts } from '../options';
  */
 @Abstract()
 export abstract class ClientTransport<TSocket = any, TRequest extends AbstractRequest<any> = AbstractRequest<any>, TOptions extends ClientOpts = ClientOpts> extends AbstractTransport<TSocket, ClientIncoming, TRequest> {
-    
+
     readonly client = true;
     /**
      * client options
@@ -23,7 +23,7 @@ export abstract class ClientTransport<TSocket = any, TRequest extends AbstractRe
     /**
      * response factory.
      */
-    abstract get responseFactory(): ResponseFactory;    
+    abstract get responseFactory(): ResponseFactory;
     /**
      * pattern formatter.
      */
@@ -48,11 +48,18 @@ export abstract class ClientTransport<TSocket = any, TRequest extends AbstractRe
         return this.clientOptions.protocol ?? '';
     }
 
-    request(req: TRequest, destroy$?: Observable<any>, channel?: IEventEmitter): Observable<ResponseEvent<any>> {
-        return this.send(req, channel)
+    protected override initSendContext(context: TransportContext, data: TRequest): void {
+        context.set(AbstractRequest, data);
+    }
+
+    request(req: TRequest, destroy$?: Observable<any>, context?: TransportContext): Observable<ResponseEvent<any>> {
+        if (!context) {
+            context = TransportContext.create(this)
+        }
+        return this.send(req, context)
             .pipe(
-                mergeMap((chl) => this.receive(chl ?? channel, req)),
-                mergeMap(incoming => this.transfer.transform(incoming, new TransportContext(this, req))),
+                mergeMap((chl) => this.receive(context!)),
+                mergeMap(incoming => this.transfer.transform(incoming, context!)),
                 takeUntil(destroy$ ? merge(this.destroy$, destroy$).pipe(first()) : this.destroy$)
             )
     }

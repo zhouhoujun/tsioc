@@ -1,9 +1,9 @@
-import { Injectable, InjectFlags, InvocationContext, isNil, isString, promisify } from '@tsdi/ioc';
-import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
+import { Injectable, InjectFlags, isNil, isString, promisify, tokenId } from '@tsdi/ioc';
+import { Bean, Configuration, ContextToken, ExecptionHandlerFilter } from '@tsdi/core';
 import { Header, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
     ClientIncoming, ctype, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory, ev,
-    FileAdapter, IEventEmitter, Incoming, IncomingFactory, IReadable, MimeAdapter, Packet,
+    FileAdapter, Incoming, IncomingFactory, IReadable, MimeAdapter, Packet,
     Redirector, SerializerFactory, StatusAdapter, StreamAdapter, StreamIncomingOptions, TransportContext, UrlClientIncomingFactory,
     UrlClientIncomingOpts, UrlOutgoingFactory
 } from '@tsdi/common/transport';
@@ -37,6 +37,7 @@ import { HttpResponseEventFactory } from './client/response.factory';
 import { HttpExecptionHandlers } from './execption.handlers';
 import { HttpContext, HttpServRequest, HttpServResponse } from './server/context';
 import { EmptyStatusSerializeInterceptor, HeadMethodSerializeInterceptor, LengthLimitSerializeInterceptor, NoBodySerializeInterceptor } from './server/interceptors/serializes';
+
 
 
 @Configuration()
@@ -103,7 +104,8 @@ export class HttpConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (socket: ClientHttp2Session | null, channel?: ClientHttp2Stream | ClientRequest | IEventEmitter | null, req?: HttpRequest<any>) => {
+                                    (socket: ClientHttp2Session | null, req, context) => {
+                                        const channel = context.get(REQUEST_STREAM);
                                         if (channel instanceof ClientRequest) {
                                             return new Observable<ClientIncoming>(subscribe => {
                                                 const onResponse = (resp: IncomingMessage) => {
@@ -132,10 +134,10 @@ export class HttpConfiguration {
                                         }
 
                                     },
-                                    async (socket: ClientHttp2Session | null, msg: Packet, req: HttpRequest<any>, channel?: IEventEmitter | null) => {
+                                    async (socket: ClientHttp2Session | null, msg: Packet, req: HttpRequest<any>, context) => {
                                         let url = req.urlWithParams;
                                         const clientOpts = options as HttpClientOpts;
-                                        const ac = getAbortSignal(req.context);
+                                        const ac = req.context.get(ABORT_CONTROLLER);
                                         let stream: ClientHttp2Stream | ClientRequest;
                                         if (clientOpts.authority && socket && (!httptl.test(url) || url.startsWith(clientOpts.authority))) {
                                             url = url.replace(clientOpts.authority, '');
@@ -147,6 +149,7 @@ export class HttpConfiguration {
                                             reqHeaders[HTTP2_HEADER_PATH] = url;
 
                                             stream = socket.request(reqHeaders, { abort: ac?.signal, ...clientOpts.requestOptions } as ClientSessionRequestOptions);
+                                            
 
                                         } else {
                                             const headers = headerAdapter?.getHeaders(msg.headers ?? {});
@@ -161,16 +164,16 @@ export class HttpConfiguration {
                                             };
 
                                             stream = secureExp.test(url) ? httpsRequest(url, option) : httpRequest(url, option);
-
                                         }
 
+                                        context.set(REQUEST_STREAM, stream);
 
                                         if (isNil(msg.payload)) {
                                             await promisify(stream.end, stream)();
                                         } else {
                                             await streamAdapter.pipeTo(msg.payload, stream, { end: true });
                                         }
-                                        return stream;
+                                        // return stream;
 
                                     },
                                     async (socket) => {
@@ -271,7 +274,7 @@ export class HttpConfiguration {
                                         ...transportOptions.transferConfig
                                     }),
                                     options,
-                                    (socket: Http2Server | HttpsServer | Server, channel?: IEventEmitter | null) => {
+                                    (socket: Http2Server | HttpsServer | Server, context) => {
                                         return new Observable<HttpIncomings>(subscribe => {
                                             const onRequest = (req: HttpServRequest, res: HttpServResponse) => subscribe.next(incomingFactory.create({ req, res }));
                                             const onError = (err: any) => err && subscribe.error(err);
@@ -291,13 +294,13 @@ export class HttpConfiguration {
                                             }
                                         })
                                     },
-                                    (socket: Http2Server | HttpsServer | Server, msg: Packet, context: HttpContext, channel?: IEventEmitter | null) => {
+                                    (socket: Http2Server | HttpsServer | Server, msg: Packet, reqContext: HttpContext, context: TransportContext) => {
                                         if (isNil(msg.payload)) {
-                                            return promisify(context.response.end, context.response)();
+                                            return promisify(reqContext.response.end, reqContext.response)();
                                         } else if (streamAdapter.isStream(msg.payload)) {
-                                            return streamAdapter.pipeTo(msg.payload, context.response, { end: true });
+                                            return streamAdapter.pipeTo(msg.payload, reqContext.response, { end: true });
                                         } else {
-                                            return promisify<any, void>(context.response.end, context.response)(msg.payload);
+                                            return promisify<any, void>(reqContext.response.end, reqContext.response)(msg.payload);
                                         }
                                     }
                                 )
@@ -392,7 +395,8 @@ const {
 const httptl = /^https?:\/\//i;
 const secureExp = /^https:/;
 
-function getAbortSignal(ctx?: InvocationContext): AbortController {
-    return (!ctx || typeof AbortController === 'undefined') ? null! : ctx.getValueify(AbortController, () => new AbortController());
-}
+const REQUEST_STREAM = tokenId<ClientHttp2Stream | ClientRequest>('REQUEST_STREAM');
+
+const ABORT_CONTROLLER = new ContextToken(() => new AbortController());
+
 

@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { StatusAdapter } from './StatusAdapter';
 import { StreamAdapter } from './StreamAdapter';
 import { Incoming } from './Incoming';
-import { IEventEmitter } from './stream';
+import { TransportContext } from './context';
 
 /**
  * transport.
@@ -43,15 +43,16 @@ export abstract class Transport<TSocket = any, TIncoming extends Incoming = Inco
     abstract get statusAdapter(): StatusAdapter | null;
     /**
      * send.
-     * @param data 
+     * @param data
+     * @param context transport context 
      */
-    abstract send(data: TOutgoing, channel?: IEventEmitter): Observable<any>;
+    abstract send(data: TOutgoing, context?: TransportContext): Observable<any>;
 
     /**
      * receive
-     * @param channel the req channel.
+     * @param context transport context 
      */
-    abstract receive(channel: IEventEmitter): Observable<TIncoming>;
+    abstract receive(context?: TransportContext): Observable<TIncoming>;
     /**
      * close transport.
      */

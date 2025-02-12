@@ -1,4 +1,5 @@
-import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
+import { Injectable, isString } from '@tsdi/ioc';
+import { Context } from '@tsdi/core';
 import { ResponseEvent, Pattern, RequestInitOpts, UrlRequestOptions } from '@tsdi/common';
 import { ServiceUnavailableExecption, ev } from '@tsdi/common/transport';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
@@ -85,10 +86,9 @@ export class WsClient extends AbstractClient<UrlRequestOptions, WsRequest<any>, 
         }
     }
 
-    protected initContext(context: InvocationContext<any>): void {
-        context.setValue(AbstractClient, this);
-        context.setValue(WsClient, this);
-        context.setValue(ClientTransport, this.session);
+    protected initContext(context: Context): void {
+        context.set(WsClient, this);
+        context.set(ClientTransport, this.session);
     }
 
 }

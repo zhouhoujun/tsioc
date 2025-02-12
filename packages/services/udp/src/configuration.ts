@@ -1,4 +1,4 @@
-import { InjectFlags, promisify } from '@tsdi/ioc';
+import { InjectFlags, promisify, tokenId } from '@tsdi/ioc';
 import { DefaultResponseFactory, HeaderAdapter, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
@@ -30,7 +30,7 @@ import { UdpRequestHandler } from './server/handler';
 import { UDP_SERV_FILTERS, UDP_SERV_GUARDS, UDP_SERV_INTERCEPTORS } from './server/options';
 import { UdpServer } from './server/server';
 
-
+const REMOTE_INFO = tokenId<RemoteInfo>('REMOTE_INFO');
 
 @Configuration()
 export class UdpConfiguration {
@@ -78,8 +78,9 @@ export class UdpConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (socket, channel, req) => fromEvent(socket, ev.MESSAGE, (payload: Buffer, rinfo: RemoteInfo) => {
+                                    (socket, req, context) => fromEvent(socket, ev.MESSAGE, (payload: Buffer, rinfo: RemoteInfo) => {
                                         // if (req?.remoteInfo.address !== rinfo.address || req.remoteInfo.port !== rinfo.port) return null;
+                                        context.set(REMOTE_INFO, rinfo);
                                         return { payload }
                                     }).pipe(filter(r => r !== null)),
                                     async (socket, msg, req) => {
@@ -154,12 +155,14 @@ export class UdpConfiguration {
                                     outgoingFactory,
                                     transferFactory.create(injector, transportOptions.transferConfig),
                                     options,
-                                    (socket) => fromEvent(socket, ev.MESSAGE, (payload: Buffer, rinfo: RemoteInfo) => {
+                                    (socket, context) => fromEvent(socket, ev.MESSAGE, (payload: Buffer, rinfo: RemoteInfo) => {
+                                        context.set(REMOTE_INFO, rinfo);
                                         return { payload, properties: rinfo }
                                     }),
                                     (socket, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
                                         const rinfo = requestContext.request.properties as RemoteInfo;
+
                                         if (!rinfo) throw new NotSupportedExecption('No remote response to');
                                         return promisify<Buffer | string, number, string>(socket.send, socket)(msg.payload ?? Buffer.alloc(0), rinfo.port, rinfo.address);
                                     }

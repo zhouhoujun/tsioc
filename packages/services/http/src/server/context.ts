@@ -344,42 +344,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         this.body = payload;
     }
 
-    async respond(): Promise<any> {
-        if (this.destroyed || !this.writable) return;
-        // ignore body
-        if (this.statusAdapter?.isEmpty(this.status)) {
-            // strip headers
-            this.body = null;
-            return this.response.end()
-        }
 
-        if (HEAD === this.method) {
-            if (!this.headersSent && !this.response.hasHeader(CONTENT_LENGTH)) {
-                const length = this.length;
-                if (Number.isInteger(length)) this.length = length
-            }
-            return this.response.end()
-        }
-
-        // status body
-        if (null == this.body) {
-            if (this._explicitNullBody) {
-                this.response.removeHeader(CONTENT_TYPE);
-                this.response.removeHeader(CONTENT_LENGTH);
-                this.response.removeHeader(TRANSFER_ENCODING);
-                return this.response.end()
-            }
-
-            const body = Buffer.from(this.statusMessage ?? String(this.status));
-            if (!this.headersSent) {
-                this.type = 'text';
-                this.length = Buffer.byteLength(body)
-            }
-            return this.response.end(body)
-        }
-
-        await lastValueFrom(this.transport.send(this, this.response));
-    }
 
     async throwExecption(err: MessageExecption): Promise<void> {
         let headerSent = false;
@@ -427,6 +392,43 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         this.length = Buffer.byteLength(msg);
         await promisify<any, void>(res.end, res)(msg);
     }
+
+    // async respond(): Promise<any> {
+    //     if (this.destroyed || !this.writable) return;
+    //     // ignore body
+    //     if (this.statusAdapter?.isEmpty(this.status)) {
+    //         // strip headers
+    //         this.body = null;
+    //         return this.response.end()
+    //     }
+
+    //     if (HEAD === this.method) {
+    //         if (!this.headersSent && !this.response.hasHeader(CONTENT_LENGTH)) {
+    //             const length = this.length;
+    //             if (Number.isInteger(length)) this.length = length
+    //         }
+    //         return this.response.end()
+    //     }
+
+    //     // status body
+    //     if (null == this.body) {
+    //         if (this._explicitNullBody) {
+    //             this.response.removeHeader(CONTENT_TYPE);
+    //             this.response.removeHeader(CONTENT_LENGTH);
+    //             this.response.removeHeader(TRANSFER_ENCODING);
+    //             return this.response.end()
+    //         }
+
+    //         const body = Buffer.from(this.statusMessage ?? String(this.status));
+    //         if (!this.headersSent) {
+    //             this.type = 'text';
+    //             this.length = Buffer.byteLength(body)
+    //         }
+    //         return this.response.end(body)
+    //     }
+
+    //     await lastValueFrom(this.transport.send(this));
+    // }
 
 
     // async respond(): Promise<any> {

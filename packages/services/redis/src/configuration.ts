@@ -75,6 +75,7 @@ export class RedisConfiguration {
                         statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
                         incomingFactory: TopicClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
                         redirector: Redirector | null) => {
+                        const decoder = new TextDecoder();
                         return {
                             create: (injector, socket, options) => {
                                 const transportOptions = options.transportOptions ?? {};
@@ -93,14 +94,14 @@ export class RedisConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (socket, channel, req) => merge(
+                                    (socket, req, context) => merge(
                                         fromEvent(socket.subscriber, ev.MESSAGE_BUFFER, (topic: string | Buffer, payload: string | Buffer) => {
-                                            return { topic: isString(topic) ? topic : new TextDecoder().decode(topic), payload }
+                                            return { topic: isString(topic) ? topic : decoder.decode(topic), payload }
                                         }),
                                         fromEvent(socket.subscriber, 'pmessageBuffer', (pattern: string, topic: string | Buffer, payload: string | Buffer) => {
-                                            return { topic: isString(topic) ? topic : new TextDecoder().decode(topic), payload }
+                                            return { pattern, topic: isString(topic) ? topic : decoder.decode(topic), payload }
                                         })
-                                    ).pipe(filter(msg => msg.topic === req?.responseTopic)),
+                                    ).pipe(filter(msg => msg.topic === req.responseTopic)),
                                     async (socket, msg, req) => {
                                         if (req.responseTopic && !subscribes.has(req.responseTopic)) {
                                             subscribes.add(req.responseTopic);
@@ -168,6 +169,7 @@ export class RedisConfiguration {
                         statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
                         fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
                         incomingFactory: TopicClientIncomingFactory, outgoingFactory: TopicOutgoingFactory, transferFactory: ServerTransferFactory) => {
+                        const decoder = new TextDecoder();
                         return {
                             create: (injector, socket, options) => {
                                 const transportOptions = options.transportOptions ?? {};
@@ -188,10 +190,10 @@ export class RedisConfiguration {
                                     options,
                                     (socket) => merge(
                                         fromEvent(socket.subscriber, ev.MESSAGE_BUFFER, (topic: string | Buffer, payload: string | Buffer) => {
-                                            return { topic: isString(topic) ? topic : new TextDecoder().decode(topic), payload }
+                                            return { topic: isString(topic) ? topic : decoder.decode(topic), payload }
                                         }),
                                         fromEvent(socket.subscriber, 'pmessageBuffer', (pattern: string, topic: string | Buffer, payload: string | Buffer) => {
-                                            return { topic: isString(topic) ? topic : new TextDecoder().decode(topic), payload }
+                                            return { pattern, topic: isString(topic) ? topic : decoder.decode(topic), payload }
                                         })
                                     ).pipe(
                                         filter(m => !m.topic.endsWith('.reply'))

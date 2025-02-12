@@ -17,7 +17,7 @@ export class BodyServializetInterceptor<TRequest extends AbstractRequest<any> = 
 
     intercept(req: TRequest & RequestSerialize, next: Handler<TRequest, Packet>): Observable<Packet> {
 
-        const transport = req.context.get(ClientTransport);
+        const transport = req.context.get(ClientTransport)!;
         let body = req.serializeBody ? req.serializeBody(req.body) : this.serializeBody(transport.streamAdapter, req.body);
         if (body == null || !transport.headerAdapter) {
             return next.handle(req);

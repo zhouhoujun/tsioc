@@ -1,4 +1,5 @@
-import { Injectable, InvocationContext, isString, promisify } from '@tsdi/ioc';
+import { Injectable, isString, promisify } from '@tsdi/ioc';
+import { Context } from '@tsdi/core';
 import { Pattern, RequestInitOpts, ResponseEvent } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
@@ -48,10 +49,9 @@ export class UdpClient extends AbstractClient<UdpRequestOptions, UdpRequest<any>
     
     }
 
-    protected initContext(context: InvocationContext<any>): void {
-        context.setValue(AbstractClient, this);
-        context.setValue(UdpClient, this);
-        context.setValue(ClientTransport, this.session)
+    protected initContext(context: Context): void {
+        context.set(UdpClient, this);
+        context.set(ClientTransport, this.session)
     }
 
     protected createRequest(pattern: Pattern, options: RequestInitOpts<any, UdpRequestOptions>): UdpRequest<any> {

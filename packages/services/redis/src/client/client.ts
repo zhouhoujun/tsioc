@@ -8,6 +8,7 @@ import { RedisHandler } from './handler';
 import { RedisClientOpts } from './options';
 import { RedisRequest } from './request';
 import { ReidsSocket } from '../socket';
+import { Context } from '@tsdi/core';
 
 /**
  * Redis Client.
@@ -71,9 +72,9 @@ export class RedisClient extends AbstractClient<TopicRequestOptions, RedisReques
 
     }
 
-    protected override initContext(context: InvocationContext<any>): void {
-        context.setValue(AbstractClient, this);
-        context.setValue(ClientTransport, this._transport);
+    protected override initContext(context: Context): void {
+        context.set(RedisClient, this);
+        context.set(ClientTransport, this._transport);
     }
 
     protected createRequest(pattern: Pattern, options: RequestInitOpts<any, TopicRequestOptions>): RedisRequest<any> {

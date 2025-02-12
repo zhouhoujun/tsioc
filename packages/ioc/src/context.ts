@@ -56,15 +56,6 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      */
     abstract get args(): T;
     /**
-     * get value ify create by factory and register the value for the token.
-     * 
-     * 获取上下文中标记指令的值，如果没有注入，则根据工厂函数注入该标记指令，并返回值。
-     * @param token the token to get value.
-     * @param factory the factory to create value for token.
-     * @returns the instance of token.
-     */
-    abstract getValueify<T>(token: Token<T>, factory: () => T): T;
-    /**
      * has token in the context or not.
      * 
      * 上下文中是否有注入该标记指令

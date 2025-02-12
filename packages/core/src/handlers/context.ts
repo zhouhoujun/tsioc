@@ -51,6 +51,12 @@ export class HandleContext<TInput = any> extends DefaultInvocationContext<TInput
 
 }
 
+/**
+ * context token.
+ */
+export class ContextToken<T = any> {
+    constructor(readonly defaultValue: () => T) { }
+}
 
 
 /**
@@ -58,26 +64,10 @@ export class HandleContext<TInput = any> extends DefaultInvocationContext<TInput
  */
 export class Context {
 
-    private map: Map<Token, any>;
-    // private destory$ = new Subject<void>();
-    // private _next$ = new BehaviorSubject<any>(null);
-    // private _inputs: any[];
-    // readonly changed: Observable<any>;
+    private map: Map<Token | ContextToken, any>;
 
-    // get inputs(): any[] {
-    //     return this._inputs;
-    // }
-
-    constructor(entries?: readonly (readonly [Token, any])[] | null) {
+    constructor(entries?: readonly (readonly [Token | ContextToken, any])[] | null) {
         this.map = new Map(entries);
-        // this._inputs = [];
-        // if (input) {
-        //     this._inputs.push(input);
-        // }
-        // this.changed = this._next$.pipe(
-        //     takeUntil(this.destory$),
-        //     filter(r => r !== null)
-        // )
     }
 
     /**
@@ -88,7 +78,7 @@ export class Context {
      *
      * @returns A reference to itself for easy chaining.
      */
-    set<T>(token: Token<T>, value: T) {
+    set<T>(token: Token<T> | ContextToken<T>, value: T) {
         this.map.set(token, value);
         return this;
     }
@@ -99,8 +89,27 @@ export class Context {
      *
      * @returns The stored value or default if one is defined.
      */
-    get<T>(token: Token<T>): T {
-        return this.map.get(token);
+    get<T>(token: ContextToken<T>): T;
+    /**
+     * Retrieve the value associated with the given token.
+     *
+     * @param token The reference to an instance of `Token`.
+     *
+     * @returns The stored value or default if one is defined.
+     */
+    get<T>(token: Token<T>): T | null;
+    /**
+     * Retrieve the value associated with the given token.
+     *
+     * @param token The reference to an instance of `Token`.
+     *
+     * @returns The stored value or default if one is defined.
+     */
+    get<T>(token: Token<T> | ContextToken<T>): T | null {
+        if (token instanceof ContextToken && !this.map.has(token)) {
+            this.map.set(token, token.defaultValue());
+        }
+        return this.map.get(token) ?? null;
     }
     /**
      * Delete the value associated with the given token.
@@ -109,7 +118,7 @@ export class Context {
      *
      * @returns A reference to itself for easy chaining.
      */
-    delete<T>(token: Token<T>) {
+    delete<T>(token: Token<T> | ContextToken<T>) {
         this.map.delete(token);
         return this;
     }
@@ -120,13 +129,13 @@ export class Context {
      *
      * @returns True if the token exists, false otherwise.
      */
-    has<T>(token: Token<T>): boolean {
+    has<T>(token: Token<T> | ContextToken<T>): boolean {
         return this.map.has(token);
     }
     /**
      * @returns a list of tokens currently stored in the context.
      */
-    keys(): Iterator<Token> {
+    keys(): Iterator<Token | ContextToken> {
         return this.map.keys();
     }
 
@@ -134,30 +143,4 @@ export class Context {
         this.map.clear();
     }
 
-    // next<TInput>(input: TInput): this {
-    //     if (this._inputs[0] != input) {
-    //         this._inputs.unshift(input);
-    //         this.onNext(input);
-    //     }
-    //     return this;
-    // }
-
-    // protected onNext(data: any) {
-    //     this._next$.next(data);
-    // }
-
-    // first<TInput>(): TInput {
-    //     return this._inputs[this._inputs.length - 1]
-    // }
-
-    // last<TInput>(): TInput {
-    //     return this._inputs[0];
-    // }
-
-    // onDestroy(): void {
-    //     this._inputs = [];
-    //     this.destory$.next();
-    //     this.destory$.complete();
-
-    // }
 }

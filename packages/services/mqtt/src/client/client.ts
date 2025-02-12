@@ -1,5 +1,5 @@
-import { Injectable, InvocationContext, isString, promisify } from '@tsdi/ioc';
-import { DisconnectExecption, OfflineExecption } from '@tsdi/core';
+import { Injectable, isString, promisify } from '@tsdi/ioc';
+import { Context, DisconnectExecption, OfflineExecption } from '@tsdi/core';
 import { Pattern, RequestInitOpts, ResponseEvent } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
@@ -90,9 +90,9 @@ export class MqttClient extends AbstractClient<MqttReqOptions, MqttRequest<any>,
         return conn;
     }
 
-    protected override initContext(context: InvocationContext<any>): void {
-        context.setValue(AbstractClient, this);
-        context.setValue(ClientTransport, this._transport);
+    protected override initContext(context: Context): void {
+        context.set(MqttClient, this);
+        context.set(ClientTransport, this._transport);
     }
 
     protected createRequest(pattern: Pattern, options: RequestInitOpts<any, MqttReqOptions>): MqttRequest<any> {

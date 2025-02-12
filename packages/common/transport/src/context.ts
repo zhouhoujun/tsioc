@@ -1,6 +1,7 @@
 import { OnDestroy, Token } from '@tsdi/ioc';
-import { Context } from '@tsdi/core';
+import { Context, ContextToken } from '@tsdi/core';
 import { Transport } from './Transport';
+
 
 /**
  * transprot context.
@@ -9,18 +10,19 @@ export class TransportContext extends Context implements OnDestroy {
 
     constructor(
         readonly transport: Transport,
-        readonly origin: any,
+        // readonly origin: any,
         entries?: readonly (readonly [Token, any])[] | null
     ) {
-        super()
+        super(entries)
     }
 
-    first() {
-        return this.origin
-    }
+    // first() {
+    //     return this.origin
+    // }
 
-    static create(transport: Transport, origin: any, entries?: readonly (readonly [Token, any])[] | null) {
-        return new TransportContext(transport, origin, entries);
+    static create(transport: Transport, entries?: readonly (readonly [Token, any])[] | null) {
+        return new TransportContext(transport, entries);
     }
 }
 
+export const TEXT_DECODER = new ContextToken(()=> new TextDecoder());

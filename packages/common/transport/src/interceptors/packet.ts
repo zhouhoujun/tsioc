@@ -234,7 +234,7 @@ export class DeatchPacketIdInterceptor implements Interceptor<Packet, IncomingMe
             .pipe(
                 filter(packet => {
                     if (!packet.id) return true;
-                    const req = context.first() as AbstractRequest<any>;
+                    const req = context.get(AbstractRequest);
                     return packet.id == req?.id;
                 })
             );

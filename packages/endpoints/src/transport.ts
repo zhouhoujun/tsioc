@@ -8,7 +8,7 @@ import { AcceptsPriority } from './accepts';
 
 @Abstract()
 export abstract class ServerTransport<TSocket = any, TContext extends RequestContext = RequestContext, TOptions extends ServerOpts = ServerOpts> extends AbstractTransport<TSocket, Incoming, TContext> {
-    
+
     readonly client = false;
     /**
      * server options.
@@ -50,13 +50,17 @@ export abstract class ServerTransport<TSocket = any, TContext extends RequestCon
         return this.serverOptions.protocol ?? '';
     }
 
+    protected override initSendContext(context: TransportContext, outgoing: TContext): void {
+        context.set(RequestContext, outgoing);
+    }
     /**
      * handle message.
      */
     handle(handler: AbstractRequestHandler, destroy$?: Observable<any>): Subscription {
-        return this.receive().pipe(
+        const context = TransportContext.create(this);
+        return this.receive(context).pipe(
             takeUntil(destroy$ ? merge(this.destroy$, destroy$).pipe(first()) : this.destroy$),
-            mergeMap(incoming => this.transfer.transform(incoming, new TransportContext(this, incoming))),
+            mergeMap(incoming => this.transfer.transform(incoming, context)),
             mergeMap(request => handler.handle(request))
         ).subscribe()
     }

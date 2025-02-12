@@ -1,4 +1,5 @@
-import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
+import { Context } from '@tsdi/core';
 import { ResponseEvent, Pattern, RequestInitOpts, TopicRequestOptions } from '@tsdi/common';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { InjectLog, Logger } from '@tsdi/logger';
@@ -32,9 +33,9 @@ export class NatsClient extends AbstractClient<TopicRequestOptions, NatsRequest<
         this._transport = this.handler.injector.get(ClientTransportFactory).create(this.handler.injector, this.socket, options);
     }
 
-    protected initContext(context: InvocationContext<any>): void {
-        context.setValue(AbstractClient, this);
-        context.setValue(ClientTransport, this._transport)
+    protected initContext(context: Context): void {
+        context.set(NatsClient, this);
+        context.set(ClientTransport, this._transport)
     }
 
     protected createRequest(pattern: Pattern, options: RequestInitOpts<any, TopicRequestOptions>): NatsRequest<any> {
