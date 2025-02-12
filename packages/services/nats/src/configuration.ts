@@ -107,7 +107,7 @@ export class NatsConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (socket, channel, req) => {
+                                    (socket, req, context) => {
                                         socket.subscribe(req!.responseTopic, options.subscriptionOpts);
                                         return socket.getPacket(r => r.subject == req!.responseTopic)
                                     },

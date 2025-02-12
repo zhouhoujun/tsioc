@@ -184,7 +184,7 @@ export class SwaggerService {
                         "x-swagger-router-controller": v.ctrlRef.class.className,
                         summary: (v.ctrlRef.class.getMethodMetadata(undefined, df.propertyKey, r => r.metadata.summary) as any)?.summary ?? '',
                         description: (v.ctrlRef.class.getMethodMetadata(undefined, df.propertyKey, r => r.metadata.description) as any)?.description ?? '',
-                        operationId: df.propertyKey,
+                        operationId: df.propertyKey + ' ' + method,
                         tags: [v.ctrlRef.class.className],
                         parameters: paramMatedatas?.filter(p => ((!p.scope || p.scope == 'query' || p.scope == 'path') && p.flags && (p.flags & InjectFlags.Request)))?.map(p => this.toParamObject(jsonDoc, p as TransportParameter, modelResolver)),
                         requestBody: this.toBodyObject(jsonDoc, paramMatedatas?.filter(p => (p.scope == 'body' || p.scope == 'payload') || (!p.provider && modelResolver(p.type))), modelResolver),
