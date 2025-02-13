@@ -72,9 +72,7 @@ export const execptionSerializeInterceptor: InterceptorFn<RequestContext> = (inp
 export const emptyStatusSerializeInterceptor: InterceptorFn<RequestContext> = (input: RequestContext, next: HandlerFn<RequestContext, Packet>, context: TransportContext) => {
     if (input.statusAdapter?.isEmpty(input.status)) {
         const payload = input.body = null;
-        return of({
-            payload
-        })
+        return of(payload)
     }
     return next(input, context)
 }
@@ -85,9 +83,7 @@ export const headMethodSerializeInterceptor: InterceptorFn<RequestContext> = (in
             const length = input.length;
             if (Number.isInteger(length)) input.length = length
         }
-        return of({
-            payload: null
-        })
+        return of(null)
     }
     return next(input, context)
 }
@@ -101,9 +97,7 @@ export const noBodySerializeInterceptor: InterceptorFn<RequestContext> = (input:
             input.headerAdapter.setContentLength(headers, null);
             input.headerAdapter.setContentEncoding(headers, null);
             input.headerAdapter.setTransferEncoding(headers, null);
-            return of({
-                payload: null
-            })
+            return of(null)
         }
 
         const payload = Buffer.from(input.statusMessage ?? String(input.status));
@@ -111,9 +105,7 @@ export const noBodySerializeInterceptor: InterceptorFn<RequestContext> = (input:
             input.type = 'text';
             input.length = Buffer.byteLength(payload)
         }
-        return of({
-            payload
-        })
+        return of(payload)
 
     }
     return next(input, context)

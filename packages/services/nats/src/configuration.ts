@@ -7,7 +7,8 @@ import {
     FileAdapter, isBuffer, MimeAdapter, NotSupportedExecption, Packet,
     messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory,
-    TransportContext
+    TransportContext,
+    IReadable
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
@@ -18,7 +19,8 @@ import {
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
     execptionSerializeInterceptor, lengthLimitSerializeInterceptor,
     SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
-    TopicRequestContext
+    TopicRequestContext,
+    requestContextSerializeBodyOnlyBackend
 } from '@tsdi/endpoints';
 import { defer, of } from 'rxjs';
 import { NatsClient } from './client/client';
@@ -73,27 +75,28 @@ export class NatsConfiguration {
                         return {
                             create: (injector, socket, options: NatsClientOpts) => {
                                 const transportOptions = options.transportOptions ?? {};
-                                return new DefaultClientTransport<NatsSocket, NatsRequest<any>, NatsClientOpts>(
+                                return new DefaultClientTransport<NatsSocket, NatsRequest<any>, Buffer | string | IReadable, NatsClientOpts>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
-                                        backend: (input: NatsRequest<any>, context?: TransportContext) => {
-                                            return defer(async () => {
-                                                const payload: any = input.body;
-                                                if (payload == null || isString(payload) || isBuffer(payload)) return { payload };
-                                                if (payload instanceof Uint8Array) return { payload: Buffer.from(payload) };
-                                                if (streamAdapter.isReadable(payload)) throw new NotSupportedExecption('Not supported stream payload');
-                                                // if (streamAdapter.isReadable(payload)) {
-                                                //     return await toBuffer(payload);
-                                                // }
-                                                return { payload: JSON.stringify(payload) }
-                                            })
-                                        },
+                                        // backend: (input: NatsRequest<any>, context?: TransportContext) => {
+                                        //     return defer(async () => {
+                                        //         const payload: any = input.body;
+                                        //         if (payload == null || isString(payload) || isBuffer(payload)) return { payload };
+                                        //         if (payload instanceof Uint8Array) return { payload: Buffer.from(payload) };
+                                        //         if (streamAdapter.isReadable(payload)) throw new NotSupportedExecption('Not supported stream payload');
+                                        //         // if (streamAdapter.isReadable(payload)) {
+                                        //         //     return await toBuffer(payload);
+                                        //         // }
+                                        //         return { payload: JSON.stringify(payload) }
+                                        //     })
+                                        // },
+                                        backend: requestContextSerializeBodyOnlyBackend,
                                         ...transportOptions.serializerConfig
                                     }),
                                     deserializerFactory.create(injector, {
                                         backend: (input: Packet, context: TransportContext) => {
-                                            const incoming = {...input } as ClientIncoming;
+                                            const incoming = { ...input } as ClientIncoming;
                                             return of(input);
                                         },
                                         ...transportOptions.deserializerConfig,
@@ -115,9 +118,9 @@ export class NatsConfiguration {
                                     (socket, msg, req) => {
                                         const headers = socket.mergeHeaders(req.headers, options.publishOpts?.headers);
                                         req.id && headers.set('identity', String(req.id));
-                                        if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
+                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
 
-                                        return socket.publish(req.topic, msg.payload ?? Buffer.alloc(0), {
+                                        return socket.publish(req.topic, msg ?? Buffer.alloc(0), {
                                             ...options.publishOpts,
                                             reply: req.responseTopic,
                                             headers
@@ -178,22 +181,23 @@ export class NatsConfiguration {
                         return {
                             create: (injector, socket, options: NatsMicroServOpts) => {
                                 const transportOptions = options.transportOptions ?? {};
-                                return new DefaultServerTransport<NatsSocket, TopicRequestContext>(
+                                return new DefaultServerTransport<NatsSocket, TopicRequestContext, Buffer | string | IReadable>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
-                                        backend: (input: TopicRequestContext, context?: TransportContext) => {
-                                            return defer(async () => {
-                                                const payload: any = input.body;
-                                                if (payload == null || isString(payload) || isBuffer(payload)) return { payload };
-                                                if (payload instanceof Uint8Array) return { payload: Buffer.from(payload) };
-                                                if (streamAdapter.isReadable(payload)) throw new NotSupportedExecption('Not supported stream payload');
-                                                // if (streamAdapter.isReadable(payload)) {
-                                                //     return await toBuffer(payload);
-                                                // }
-                                                return { payload: JSON.stringify(payload) }
-                                            })
-                                        },
+                                        backend: requestContextSerializeBodyOnlyBackend,
+                                        // backend: (input: TopicRequestContext, context?: TransportContext) => {
+                                        //     return defer(async () => {
+                                        //         const payload: any = input.body;
+                                        //         if (payload == null || isString(payload) || isBuffer(payload)) return { payload };
+                                        //         if (payload instanceof Uint8Array) return { payload: Buffer.from(payload) };
+                                        //         if (streamAdapter.isReadable(payload)) throw new NotSupportedExecption('Not supported stream payload');
+                                        //         // if (streamAdapter.isReadable(payload)) {
+                                        //         //     return await toBuffer(payload);
+                                        //         // }
+                                        //         return { payload: JSON.stringify(payload) }
+                                        //     })
+                                        // },
                                         ...transportOptions.serializerConfig
                                     }),
                                     deserializerFactory.create(injector, {
@@ -214,14 +218,14 @@ export class NatsConfiguration {
                                     options,
                                     (socket) => socket.getPacket(m => !m.subject.endsWith('.reply')),
                                     (socket, msg, requestContext) => {
-                                        if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
+                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
                                         if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
                                         const headers = socket.mergeHeaders(requestContext.response.headers, options.publishOpts?.headers);
                                         requestContext.request.id && headers.set('identity', String(requestContext.request.id));
                                         // headers.set('status', requestContext.status);
                                         // headers.set('statusMessage', requestContext.statusMessage);                                      
 
-                                        return socket.publish(requestContext.responseTopic, msg.payload ?? Buffer.alloc(0), {
+                                        return socket.publish(requestContext.responseTopic, msg ?? Buffer.alloc(0), {
                                             ...options.publishOpts,
                                             headers
                                         })

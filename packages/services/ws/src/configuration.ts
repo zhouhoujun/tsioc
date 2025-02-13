@@ -1,3 +1,4 @@
+import { InjectFlags } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
@@ -23,7 +24,7 @@ import { WsServer } from './server/server';
 import { WS_SERV_FILTERS, WS_SERV_GUARDS, WS_SERV_INTERCEPTORS } from './server/options';
 import { WsRequestHandler } from './server/handler';
 import { DefaultResponseFactory, HeaderAdapter, PatternFormatter, ResponseFactory } from '@tsdi/common';
-import { InjectFlags } from '@tsdi/ioc';
+
 
 
 

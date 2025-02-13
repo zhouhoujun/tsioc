@@ -9,7 +9,11 @@ import { ClientOpts } from '../options';
  * transport for client.
  */
 @Abstract()
-export abstract class ClientTransport<TSocket = any, TRequest extends AbstractRequest<any> = AbstractRequest<any>, TOptions extends ClientOpts = ClientOpts> extends AbstractTransport<TSocket, ClientIncoming, TRequest> {
+export abstract class ClientTransport<
+    TSocket = any,
+    TRequest extends AbstractRequest<any> = AbstractRequest<any>,
+    TMsg = any,
+    TOptions extends ClientOpts = ClientOpts> extends AbstractTransport<TSocket, ClientIncoming, TRequest, TMsg> {
 
     readonly client = true;
     /**

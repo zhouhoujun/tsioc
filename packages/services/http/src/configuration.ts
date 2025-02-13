@@ -10,7 +10,7 @@ import {
 import {
     bodyServializeInterceptor,
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    DefaultClientTransport, STATUS_RESPONSE_TRANSFER_INTERCEPTORS, UrlRedirector
+    DefaultClientTransport, requestServializeBodyOnlyBackend, STATUS_RESPONSE_TRANSFER_INTERCEPTORS, UrlRedirector
 } from '@tsdi/common/client';
 import { HttpRequest } from '@tsdi/common/http';
 import {
@@ -18,7 +18,8 @@ import {
     MimeModule, ServiceModuleOpts, JsonInterceptor, BodyparserInterceptor, AcceptsPriority, ServerTransferFactory,
     DefaultServerTransferFactory, DefaultServerTransport, ServerTransport,
     HttpServerOpts, LoggerFilter, emptyStatusSerializeInterceptor,
-    headMethodSerializeInterceptor, noBodySerializeInterceptor, lengthLimitSerializeInterceptor
+    headMethodSerializeInterceptor, noBodySerializeInterceptor, lengthLimitSerializeInterceptor,
+    requestContextSerializeBodyOnlyBackend
 } from '@tsdi/endpoints';
 import { request as httpRequest, IncomingMessage, ClientRequest, Server } from 'http';
 import { request as httpsRequest, Server as HttpsServer } from 'https';
@@ -81,13 +82,11 @@ export class HttpConfiguration {
                         return {
                             create: (injector, socket, options) => {
                                 const transportOptions = options.transportOptions ?? {};
-                                return new DefaultClientTransport<ClientHttp2Session | null, HttpRequest<any>>(
+                                return new DefaultClientTransport<ClientHttp2Session | null, HttpRequest<any>, Buffer | string | IReadable>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
-                                        backend: (input: HttpRequest<any>, context?: TransportContext) => {
-                                            return of(input)
-                                        },
+                                        backend: requestServializeBodyOnlyBackend,
                                         ...transportOptions.serializerConfig
                                     }),
                                     deserializerFactory.create(injector, {
@@ -135,7 +134,7 @@ export class HttpConfiguration {
                                         }
 
                                     },
-                                    async (socket: ClientHttp2Session | null, msg: Packet, req: HttpRequest<any>, context) => {
+                                    async (socket: ClientHttp2Session | null, msg: Buffer | string | IReadable, req: HttpRequest<any>, context) => {
                                         let url = req.urlWithParams;
                                         const clientOpts = options as HttpClientOpts;
                                         const ac = req.context.get(ABORT_CONTROLLER);
@@ -143,18 +142,17 @@ export class HttpConfiguration {
                                         if (clientOpts.authority && socket && (!httptl.test(url) || url.startsWith(clientOpts.authority))) {
                                             url = url.replace(clientOpts.authority, '');
 
-                                            const reqHeaders = headerAdapter?.getHeaders(msg.headers ?? {}) as OutgoingHttpHeaders;
+                                            const reqHeaders = req.headers.getHeaders() as OutgoingHttpHeaders;
 
                                             if (!reqHeaders[HTTP2_HEADER_ACCEPT]) reqHeaders[HTTP2_HEADER_ACCEPT] = ctype.REQUEST_ACCEPT;
                                             reqHeaders[HTTP2_HEADER_METHOD] = req.method;
                                             reqHeaders[HTTP2_HEADER_PATH] = url;
 
                                             stream = socket.request(reqHeaders, { abort: ac?.signal, ...clientOpts.requestOptions } as ClientSessionRequestOptions);
-                                            
+
 
                                         } else {
-                                            const headers = headerAdapter?.getHeaders(msg.headers ?? {});
-
+                                            const headers = req.headers.getHeaders();
                                             const option = {
                                                 method: req.method,
                                                 headers: {
@@ -169,10 +167,10 @@ export class HttpConfiguration {
 
                                         context.set(REQUEST_STREAM, stream);
 
-                                        if (isNil(msg.payload)) {
+                                        if (isNil(msg)) {
                                             await promisify(stream.end, stream)();
                                         } else {
-                                            await streamAdapter.pipeTo(msg.payload, stream, { end: true });
+                                            await streamAdapter.pipeTo(msg, stream, { end: true });
                                         }
                                         // return stream;
 
@@ -232,24 +230,11 @@ export class HttpConfiguration {
                         return {
                             create: (injector, socket, options) => {
                                 const transportOptions = options.transportOptions ?? {};
-                                return new DefaultServerTransport<Http2Server | HttpsServer | Server, HttpContext>(
+                                return new DefaultServerTransport<Http2Server | HttpsServer | Server, HttpContext, Buffer | string | IReadable>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
-                                        backend: (input: HttpContext, context?: TransportContext) => {
-                                            let payload = input.body;
-                                            let packet: Packet;
-                                            if (Buffer.isBuffer(payload) || isString(payload) || streamAdapter.isReadable(payload)) {
-                                                packet = { payload }
-                                            } else {
-                                                payload = JSON.stringify(payload);
-                                                if (!input.headersSent) {
-                                                    input.length = Buffer.byteLength(payload)
-                                                }
-                                                packet = { payload };
-                                            }
-                                            return of(packet)
-                                        },
+                                        backend: requestContextSerializeBodyOnlyBackend,
                                         ...transportOptions.serializerConfig
                                     }),
                                     deserializerFactory.create(injector, {
@@ -295,13 +280,13 @@ export class HttpConfiguration {
                                             }
                                         })
                                     },
-                                    (socket: Http2Server | HttpsServer | Server, msg: Packet, reqContext: HttpContext, context: TransportContext) => {
-                                        if (isNil(msg.payload)) {
+                                    (socket: Http2Server | HttpsServer | Server, msg: Buffer | string | IReadable, reqContext: HttpContext, context: TransportContext) => {
+                                        if (isNil(msg)) {
                                             return promisify(reqContext.response.end, reqContext.response)();
-                                        } else if (streamAdapter.isStream(msg.payload)) {
-                                            return streamAdapter.pipeTo(msg.payload, reqContext.response, { end: true });
+                                        } else if (streamAdapter.isStream(msg)) {
+                                            return streamAdapter.pipeTo(msg, reqContext.response, { end: true });
                                         } else {
-                                            return promisify<any, void>(reqContext.response.end, reqContext.response)(msg.payload);
+                                            return promisify<any, void>(reqContext.response.end, reqContext.response)(msg);
                                         }
                                     }
                                 )
@@ -325,7 +310,7 @@ export class HttpConfiguration {
                 transportOptions: {
                     serializerConfig: {
                         interceptors: [
-                            // httpExecptionSerializeInterceptor,
+                            httpExecptionSerializeInterceptor,
                             emptyStatusSerializeInterceptor,
                             headMethodSerializeInterceptor,
                             noBodySerializeInterceptor,

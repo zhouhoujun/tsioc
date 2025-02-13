@@ -45,16 +45,20 @@ export interface TransportOptions {
  * Abstract transport.
  */
 @Abstract()
-export abstract class AbstractTransport<TSocket = any, TIncoming extends Incoming = Incoming, TOutgoing = any> extends Transport<TSocket, TIncoming, TOutgoing> {
+export abstract class AbstractTransport<
+    TSocket = any,
+    TIncoming extends Incoming = Incoming,
+    TOutgoing = any,
+    TMsg = any> extends Transport<TSocket, TIncoming, TOutgoing> {
 
     /**
      * message encodings.
      */
-    abstract get serializer(): Serializer<TOutgoing, Packet>;
+    abstract get serializer(): Serializer<TOutgoing, TMsg>;
     /**
      * message deserializer.
      */
-    abstract get deserializer(): Deserializer<Packet, TIncoming>;
+    abstract get deserializer(): Deserializer<TMsg, TIncoming>;
 
     /**
      * incoming message factory.
@@ -85,7 +89,7 @@ export abstract class AbstractTransport<TSocket = any, TIncoming extends Incomin
             )
     }
 
-    
+
 
     /**
      * receive
@@ -107,7 +111,7 @@ export abstract class AbstractTransport<TSocket = any, TIncoming extends Incomin
 
     protected abstract read(context: TransportContext): Observable<any>;
 
-    protected abstract write(msg: Packet, origin: TOutgoing, context: TransportContext): Promise<any> | Observable<any>;
+    protected abstract write(msg: TMsg, origin: TOutgoing, context: TransportContext): Promise<any> | Observable<any>;
 
     protected initSendContext(context: TransportContext, data: TOutgoing): void {
 

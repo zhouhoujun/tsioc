@@ -28,7 +28,7 @@ export const httpExecptionSerializeInterceptor: InterceptorFn<HttpContext> = (in
         input.status = status;
         // empty response.
         if (statusAdapter.isEmptyExecption(status)) {
-            return of({ payload: null });
+            return of(null);
         }
 
         // respond
@@ -39,7 +39,7 @@ export const httpExecptionSerializeInterceptor: InterceptorFn<HttpContext> = (in
         input.type = 'text';
         msg = Buffer.from(msg ?? input.statusMessage ?? '');
         input.length = Buffer.byteLength(msg);
-        return of({ payload: msg });
+        return of(msg);
     }
     return next(input, context)
 }

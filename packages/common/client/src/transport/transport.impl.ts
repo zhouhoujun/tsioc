@@ -1,13 +1,20 @@
 import { Injector } from '@tsdi/ioc';
 import { AbstractRequest, HeaderAdapter, PatternFormatter, ResponseFactory } from '@tsdi/common';
-import { ClientIncomingFactory, Deserializer, ev, IDuplex, Packet, Redirector, Serializer, StatusAdapter, StreamAdapter, TransportContext, writePacket } from '@tsdi/common/transport';
+import {
+    ClientIncomingFactory, Deserializer, ev, IDuplex, Packet, Redirector, Serializer,
+    StatusAdapter, StreamAdapter, TransportContext, writePacket
+} from '@tsdi/common/transport';
 import { ClientTransfer, ClientTransport } from '../transport';
 import { ClientOpts } from '../options';
 import { fromEvent, Observable } from 'rxjs';
 
 
 
-export class DefaultClientTransport<TSocket = any, TRequest extends AbstractRequest<any> = AbstractRequest<any>, TOptions extends ClientOpts = ClientOpts> extends ClientTransport<TSocket, TRequest, TOptions> {
+export class DefaultClientTransport<
+    TSocket = any,
+    TRequest extends AbstractRequest<any> = AbstractRequest<any>,
+    TMsg = any,
+    TOptions extends ClientOpts = ClientOpts> extends ClientTransport<TSocket, TRequest, TMsg, TOptions> {
 
     constructor(
         readonly injector: Injector,
@@ -24,7 +31,7 @@ export class DefaultClientTransport<TSocket = any, TRequest extends AbstractRequ
         readonly redirector: Redirector | null,
         readonly clientOptions: TOptions,
         private _read: (socket: TSocket, req: TRequest, context: TransportContext) => Observable<any>,
-        private _write: (socket: TSocket, msg: Packet, req: TRequest, context: TransportContext) => Promise<any>,
+        private _write: (socket: TSocket, msg: TMsg, req: TRequest, context: TransportContext) => Promise<any>,
         private _close?: (socket: TSocket) => Promise<any>
 
     ) {
@@ -36,7 +43,7 @@ export class DefaultClientTransport<TSocket = any, TRequest extends AbstractRequ
         return this._read(this.socket, context.get(AbstractRequest) as TRequest, context)
     }
 
-    protected override write(msg: Packet, req: TRequest, context: TransportContext): Promise<any> {
+    protected override write(msg: TMsg, req: TRequest, context: TransportContext): Promise<any> {
         return this._write(this.socket, msg, req, context)
     }
 
@@ -49,7 +56,11 @@ export class DefaultClientTransport<TSocket = any, TRequest extends AbstractRequ
 }
 
 
-export class SocketClientTransport<TSocket extends IDuplex = IDuplex, TRequest extends AbstractRequest<any> = AbstractRequest<any>, TOptions extends ClientOpts = ClientOpts> extends ClientTransport<TSocket, TRequest, TOptions> {
+export class SocketClientTransport<
+    TSocket extends IDuplex = IDuplex,
+    TRequest extends AbstractRequest<any> = AbstractRequest<any>,
+    TMsg extends Packet = Packet,
+    TOptions extends ClientOpts = ClientOpts> extends ClientTransport<TSocket, TRequest, TMsg, TOptions> {
 
     constructor(
         readonly injector: Injector,
@@ -77,7 +88,7 @@ export class SocketClientTransport<TSocket extends IDuplex = IDuplex, TRequest e
         return fromEvent(this.socket, this.eventName)
     }
 
-    protected override write(msg: Packet, req: TRequest, context: TransportContext): Promise<any> {
+    protected override write(msg: TMsg, req: TRequest, context: TransportContext): Promise<any> {
         return writePacket(this.socket, msg, this.streamAdapter)
     }
 
