@@ -1,32 +1,33 @@
-import { hasProps, isNil, isString } from '@tsdi/ioc';
-import { HandlerFn, InterceptorFn, PipeTransform } from '@tsdi/core';
+import { hasProps, isNil, isString, isUndefined } from '@tsdi/ioc';
+import { BackendFn, HandlerFn, InterceptorFn, PipeTransform } from '@tsdi/core';
 import { HEAD } from '@tsdi/common';
-import { AbstractTransport, isBuffer, Outgoing, Packet, PacketLengthException, TransportContext } from '@tsdi/common/transport';
+import { AbstractTransport, Outgoing, Packet, PacketLengthException, TransportContext } from '@tsdi/common/transport';
 import { map, of, throwError } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 
 
-// export const bufferIfySerializeInterceptor: InterceptorFn<RequestContext> = (input: RequestContext, next: HandlerFn<RequestContext>, context: TransportContext) => {
-//     return next(input, context)
-//         .pipe(
-//             map(pkg => {
-//                 let payload: any;
-//                 if (isString(pkg) || isBuffer(pkg)) {
-//                     payload = pkg;
-//                     pkg = {};
-//                 } else {
-//                     payload = pkg.payload;
-//                 }
-//                 if (isString(payload)) {
-//                     pkg.payload = payload = Buffer.from(payload);
-//                 }
-//                 if (isNil(pkg.contentLength)) {
-//                     pkg.contentLength = Buffer.byteLength(payload)
-//                 }
-//                 return pkg;
-//             })
-//         )
-// }
+export const packetIfySerializeInterceptor: InterceptorFn<RequestContext> = (input: RequestContext, next: HandlerFn<RequestContext>, context: TransportContext) => {
+    return next(input, context)
+        .pipe(
+            map(pkg => {
+                let payload: any;
+                if (isUndefined(pkg.payload)) {
+                    const id = input.response.id ?? input.request.id;
+                    payload = pkg;
+                    pkg = { id };
+                } else {
+                    payload = pkg.payload;
+                }
+                if (isString(payload)) {
+                    pkg.payload = payload = Buffer.from(payload);
+                }
+                if (isNil(pkg.contentLength)) {
+                    pkg.contentLength = Buffer.byteLength(payload)
+                }
+                return pkg;
+            })
+        )
+}
 
 /**
  * execption serialize
@@ -52,7 +53,7 @@ export const execptionSerializeInterceptor: InterceptorFn<RequestContext> = (inp
         //     message: execption.message,
         // }
         // return of({ payload: JSON.stringify(pkg) })
-        
+
 
         input.body = null;
         input.response.error = {
@@ -137,6 +138,81 @@ export const lengthLimitSerializeInterceptor: InterceptorFn<RequestContext> = (i
     return next(input, context);
 }
 
+/**
+ * request context servializ
+ * @param input 
+ * @param next 
+ * @param context 
+ * @returns 
+ */
+export const requestContextSerializeBackend: BackendFn<RequestContext> = (input: RequestContext, context: TransportContext) => {
+
+    const id = input.response.id ?? input.request.id;
+    const headers = input.headerAdapter.getHeaders(input.response.headers);
+    const pkg = {
+        id
+    } as Outgoing;
+    if (input.status) {
+        pkg.statusCode = input.status;
+    }
+    if (input.statusMessage) {
+        pkg.statusMessage = input.statusMessage;
+    }
+
+    if (hasProps(headers)) {
+        pkg.headers = headers;
+    }
+
+    if (input.streamAdapter.isReadable(input.body)) {
+        let contentLength = input.length || 0;
+        if (id) {
+            const idLen = input.transport.options.idLen ?? 2;
+            const idBuff = Buffer.alloc(idLen);
+            if (idLen > 4) {
+                idBuff.write(id.toString());
+            } else {
+                idBuff.writeUIntBE(id as number, 0, idLen);
+            }
+            input.body.unshift(idBuff);
+            contentLength += idLen;
+        }
+        return of(
+            {
+                id,
+                headers,
+                payload: Buffer.from(JSON.stringify(pkg)),
+            },
+            {
+                id,
+                payload: input.body,
+                contentLength
+            })
+    } else {
+        const payload = JSON.stringify(pkg);
+        if (!input.headersSent) {
+            input.length = Buffer.byteLength(payload);
+        }
+        return of(payload);
+    }
+}
+
+/**
+ * request context servialize body only
+ * @param input 
+ * @param next 
+ * @param context 
+ * @returns 
+ */
+export const requestContextSerializeBodyOnlyBackend: BackendFn<RequestContext> = (input: RequestContext, context: TransportContext) => {
+    if (input.streamAdapter.isJson(input.body)) {
+        const body = JSON.stringify(input.body);
+        if (!input.headersSent) {
+            input.length = Buffer.byteLength(body);
+        }
+        return of(body)
+    }
+    return of(input.body)
+}
 
 
 /**
