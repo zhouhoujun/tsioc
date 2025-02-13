@@ -227,16 +227,17 @@ export abstract class HeaderAdapter {
     abstract setContentType<T extends HeadersLike>(headers: T, type: string | null | undefined): T;
 
     abstract hasContentLength(headers: HeadersLike): boolean;
-
     abstract setContentLength<T extends HeadersLike>(headers: T, len: number | null | undefined): T;
-
     abstract getContentLength(headers: HeadersLike): number;
 
     abstract hasContentEncoding(headers: HeadersLike): boolean;
-
     abstract getContentEncoding(headers: HeadersLike): string | undefined;
-
     abstract setContentEncoding<T extends HeadersLike>(headers: T, encoding: string | null | undefined): T;
+
+    abstract hasTransferEncoding(headers: HeadersLike): boolean;
+    abstract getTransferEncoding(headers: HeadersLike): string | undefined;
+    abstract setTransferEncoding<T extends HeadersLike>(headers: T, encoding: string | null | undefined): T;
+
 
     abstract getContentDisposition(headers: HeadersLike): string | undefined;
     abstract setContentDisposition<T extends HeadersLike>(headers: T, disposition: string): T;

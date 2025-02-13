@@ -2,22 +2,22 @@ import { InjectFlags } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import { DefaultResponseFactory, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
-    PacketVaildateInterceptor, DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory,
-    DeserializerFactory, FileAdapter, MimeAdapter, PacketDeserializeInterceptor, PacketifyInterceptor,
-    PacketSerializeInterceptor, Redirector, SerializerFactory, StatusAdapter, StreamAdapter,
+    messageVaildateInterceptor, deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory,
+    DeserializerFactory, FileAdapter, MimeAdapter, PacketDeserializeInterceptor, packetifyInterceptor,
+    messageSerializeInterceptor, Redirector, SerializerFactory, StatusAdapter, StreamAdapter,
     UrlClientIncomingFactory, UrlOutgoingFactory, PayloadDeserializeInterceptor,
     UrlIncomingFactory
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    RequestServializeInterceptor, RequestTimeoutInterceptor, SocketClientTransport
+    requestServializeInterceptor, requestTimeoutInterceptor, SocketClientTransport
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory,
-    ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
-    RequestContextServializeInterceptor, RequestContextVaildateInterceptor,
+    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
+    requestContextServializeInterceptor, lengthLimitSerializeInterceptor,
     SERVER_MODULES, ServerModuleOpts, ServiceModuleOpts,
-    ServerTransferFactory, SocketServerTransport,
+    ServerTransferFactory, SocketServerTransport
 } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';
 import { TcpHandler } from './client/handler';
@@ -124,22 +124,22 @@ export class TcpConfiguration {
                     delimiter,
                     serializerConfig: {
                         interceptors: [
-                            PacketVaildateInterceptor,
-                            PacketSerializeInterceptor,
-                            RequestServializeInterceptor
+                            messageVaildateInterceptor,
+                            messageSerializeInterceptor,
+                            requestServializeInterceptor
                         ]
                     },
                     deserializerConfig: {
                         interceptors: [
-                            PacketifyInterceptor,
-                            DeatchPacketIdInterceptor,
+                            packetifyInterceptor,
+                            deatchPacketIdInterceptor,
                             PacketDeserializeInterceptor,
                             PayloadDeserializeInterceptor
                         ]
                     }
                 },
                 interceptors:[
-                    RequestTimeoutInterceptor
+                    requestTimeoutInterceptor
                 ]
             }
         }
@@ -198,14 +198,14 @@ export class TcpConfiguration {
                     delimiter,
                     serializerConfig: {
                         interceptors: [
-                            RequestContextVaildateInterceptor,
-                            PacketSerializeInterceptor,
-                            RequestContextServializeInterceptor,
+                            lengthLimitSerializeInterceptor,
+                            messageSerializeInterceptor,
+                            requestContextServializeInterceptor,
                         ]
                     },
                     deserializerConfig: {
                         interceptors: [
-                            PacketifyInterceptor,
+                            packetifyInterceptor,
                             PacketDeserializeInterceptor,
                             PayloadDeserializeInterceptor
                         ]
@@ -216,7 +216,7 @@ export class TcpConfiguration {
                 filtersToken: TCP_SERV_FILTERS,
                 guardsToken: TCP_SERV_GUARDS,
                 filters: [
-                    LoggerInterceptor,
+                    LoggerFilter,
                     ExecptionFinalizeFilter,
                     ExecptionHandlerFilter,
                     FinalizeFilter

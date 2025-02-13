@@ -45,33 +45,7 @@ export const DESERIALIZER_FILTERS = tokenId<FilterLike[]>('DESERIALIZER_FILTERS'
 export class DefaultDeserializerFactory implements DeserializerFactory {
     create(context: Injector | InvocationContext, options?: DeserializerOpts): Deserializer {
         const handler = createHandler(context, {
-            backend: (input: Packet, context: TransportContext) => {
-                return defer(async () => {
-                    let packet: any = input.payload;
-                    let jsonSrc: string | undefined;
-                    if (isString(packet)) {
-                        jsonSrc = packet
-                    } else if (isBuffer(packet)) {
-                        jsonSrc = packet.toString()
-                    } else if (!input.headers && context.transport.streamAdapter.isReadable(packet)) {
-                        const buf = await toBuffer(packet);
-                        jsonSrc = buf.toString()
-                    }
-
-                    if (jsonSrc) {
-                        try {
-                            jsonSrc = jsonSrc.replace(XSSI_PREFIX, '');
-                            packet = JSON.parse(jsonSrc)
-                        } catch (err) {
-                            throw new InvalidJsonException(err, jsonSrc);
-                        }
-                    }
-                    if(input.properties) {
-                        packet.properties = input.properties;
-                    }
-                    return packet;
-                })
-            },
+            backend: packetDeserializeBackend,
             filtersToken: DESERIALIZER_FILTERS,
             interceptorsToken: DESERIALIZER_INTERCEPTORS,
             enableTypeChain: true,
@@ -80,5 +54,32 @@ export class DefaultDeserializerFactory implements DeserializerFactory {
         handler.useFilters(ExecptionHandlerFilter, 0);
         return new DefaultDeserializer(handler);
     }
-
 }
+
+export const packetDeserializeBackend = (input: Packet, context: TransportContext) => {
+    return defer(async () => {
+        let packet: any = input.payload;
+        let jsonSrc: string | undefined;
+        if (isString(packet)) {
+            jsonSrc = packet
+        } else if (isBuffer(packet)) {
+            jsonSrc = packet.toString()
+        } else if (!input.headers && context.transport.streamAdapter.isReadable(packet)) {
+            const buf = await toBuffer(packet);
+            jsonSrc = buf.toString()
+        }
+
+        if (jsonSrc) {
+            try {
+                jsonSrc = jsonSrc.replace(XSSI_PREFIX, '');
+                packet = JSON.parse(jsonSrc)
+            } catch (err) {
+                throw new InvalidJsonException(err, jsonSrc);
+            }
+        }
+        if (input.properties) {
+            packet.properties = input.properties;
+        }
+        return packet;
+    })
+};

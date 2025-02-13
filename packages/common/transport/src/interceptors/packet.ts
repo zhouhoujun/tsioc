@@ -1,5 +1,5 @@
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
-import { Handler, Interceptor, PipeTransform } from '@tsdi/core';
+import { Handler, HandlerFn, Interceptor, InterceptorFn, PipeTransform } from '@tsdi/core';
 import { AbstractRequest, IHeaders } from '@tsdi/common';
 import { Observable, Subscriber, filter, map, mergeMap, throwError } from 'rxjs';
 import { PacketLengthException } from '../execptions';
@@ -224,117 +224,121 @@ export class PayloadDeserializeInterceptor implements Interceptor<Packet, Incomi
 /**
  * for client only.
  */
-@Injectable()
-export class DeatchPacketIdInterceptor implements Interceptor<Packet, IncomingMessage, TransportContext> {
+export const deatchPacketIdInterceptor: InterceptorFn<Packet, IncomingMessage> = (input: Packet, next: HandlerFn, context: TransportContext) => {
+    if (!context.transport.client) return next(input, context);
 
-    intercept(input: Packet, next: Handler<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
-        if (!context.transport.client) return next.handle(input, context);
+    return next(input, context)
+        .pipe(
+            filter(packet => {
+                if (!packet.id) return true;
+                const req = context.get(AbstractRequest);
+                return packet.id == req?.id;
+            })
+        );
+}
 
-        return next.handle(input, context)
-            .pipe(
-                filter(packet => {
-                    if (!packet.id) return true;
-                    const req = context.get(AbstractRequest);
-                    return packet.id == req?.id;
-                })
-            );
+
+/**
+ * parse message to packet
+ * @param input 
+ * @param next 
+ * @param context 
+ * @returns 
+ */
+export const packetifyInterceptor: InterceptorFn<Packet, IncomingMessage> = (input: any, next: HandlerFn, context: TransportContext) => {
+    if (isString(input)) {
+        input = { payload: Buffer.from(input) } as Packet;
+    } else if (isBuffer(input) || context.transport.streamAdapter.isReadable(input)) {
+        input = { payload: input } as Packet;
     }
+    return next(input, context);
 }
 
 
 
-@Injectable()
-export class PacketifyInterceptor implements Interceptor<any, IncomingMessage, TransportContext> {
-
-    intercept(input: any, next: Handler<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
-        if (isString(input)) {
-            input = { payload: Buffer.from(input) } as Packet;
-        } else if (isBuffer(input) || context.transport.streamAdapter.isReadable(input)) {
-            input = { payload: input } as Packet;
-        }
-        return next.handle(input, context);
+/**
+ * vaildate outing message.
+ * @param input 
+ * @param next 
+ * @param context 
+ * @returns 
+ */
+export const messageVaildateInterceptor: InterceptorFn<OutgoingMessage, Packet> = (input: OutgoingMessage, next: HandlerFn, context: TransportContext) => {
+    const { injector, headerAdapter, options, client } = context.transport as AbstractTransport;
+    const length = headerAdapter?.getContentLength(input.headers);
+    const sizeLimit = options.maxSize ?? options.limit;
+    if (length && sizeLimit && length > sizeLimit) {
+        const btpipe = injector.get<PipeTransform>('bytes-format');
+        return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(sizeLimit)}`));
     }
+    if (!input.id && client) {
+        input.id = injector.get(PacketIdGenerator).getPacketId();
+    }
+    return next(input, context);
 }
 
-@Injectable()
-export class PacketVaildateInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
+/**
+ * serialize outgoing message to stream or buffers with delimiter.
+ * @param input 
+ * @param next 
+ * @param context 
+ * @returns 
+ */
+export const messageSerializeInterceptor: InterceptorFn<OutgoingMessage, Packet> = (input: OutgoingMessage, next: HandlerFn, context: TransportContext) => {
 
-    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet>, context: TransportContext): Observable<Packet> {
-        const { injector, headerAdapter, options, client } = context.transport as AbstractTransport;
-        const length = headerAdapter?.getContentLength(input.headers);
-        const sizeLimit = options.maxSize ?? options.limit;
-        if (length && sizeLimit && length > sizeLimit) {
-            const btpipe = injector.get<PipeTransform>('bytes-format');
-            return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(sizeLimit)}`));
-        }
-        if (!input.id && client) {
-            input.id = injector.get(PacketIdGenerator).getPacketId();
-        }
-        return next.handle(input, context);
-    }
-}
+    return next(input, context)
+        .pipe(map(msg => {
+            const { streamAdapter, options } = context.transport as AbstractTransport;
+            const countLen = 4;
+            let buffLen: Buffer;
+            const delimiter = options.delimiter ?? Buffer.from('#');
+            const delimiterLen = Buffer.byteLength(delimiter);
+            let data = msg.payload;
+            if (streamAdapter.isReadable(data)) {
+                buffLen = Buffer.alloc(countLen);
+                buffLen.writeUIntBE(msg.contentLength!, 0, countLen);
+                const total = countLen + delimiterLen;
+                const prfix = Buffer.concat([buffLen, delimiter], total);
+                data.unshift(prfix);
 
+                // let first = true;
+                // let subpacket = false;
+                // data = streamAdapter.pipeline(data, streamAdapter.createPassThrough({
+                //     transform: (chunk, encoding, callback) => {
+                //         if (chunk.indexOf(delimiter) >= 0) {
+                //             subpacket = true;
+                //         }
+                //         if (subpacket) {
+                //             callback(null, chunk);
+                //         } else {
+                //             if (first) {
+                //                 first = false;
+                //                 buffLen = Buffer.alloc(countLen);
+                //                 buffLen.writeUIntBE(msg.contentLength!, 0, countLen);
+                //                 const total = countLen + delimiterLen + Buffer.byteLength(chunk);
+                //                 const data = Buffer.concat([buffLen, delimiter, chunk], total)
 
-@Injectable()
-export class PacketSerializeInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
+                //                 callback(null, data);
+                //             } else {
+                //                 callback(null, chunk)
+                //             }
+                //         }
+                //     }
+                // }));
 
-    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet, TransportContext>, context: TransportContext): Observable<Packet> {
-
-        return next.handle(input, context)
-            .pipe(map(msg => {
-                const { streamAdapter, options } = context.transport as AbstractTransport;
-                const countLen = 4;
-                let buffLen: Buffer;
-                const delimiter = options.delimiter ?? Buffer.from('#');
-                const delimiterLen = Buffer.byteLength(delimiter);
-                let data = msg.payload;
-                if (streamAdapter.isReadable(data)) {
-                    buffLen = Buffer.alloc(countLen);
-                    buffLen.writeUIntBE(msg.contentLength!, 0, countLen);
-                    const total = countLen + delimiterLen;
-                    const prfix = Buffer.concat([buffLen, delimiter], total);
-                    data.unshift(prfix);
-
-                    // let first = true;
-                    // let subpacket = false;
-                    // data = streamAdapter.pipeline(data, streamAdapter.createPassThrough({
-                    //     transform: (chunk, encoding, callback) => {
-                    //         if (chunk.indexOf(delimiter) >= 0) {
-                    //             subpacket = true;
-                    //         }
-                    //         if (subpacket) {
-                    //             callback(null, chunk);
-                    //         } else {
-                    //             if (first) {
-                    //                 first = false;
-                    //                 buffLen = Buffer.alloc(countLen);
-                    //                 buffLen.writeUIntBE(msg.contentLength!, 0, countLen);
-                    //                 const total = countLen + delimiterLen + Buffer.byteLength(chunk);
-                    //                 const data = Buffer.concat([buffLen, delimiter, chunk], total)
-
-                    //                 callback(null, data);
-                    //             } else {
-                    //                 callback(null, chunk)
-                    //             }
-                    //         }
-                    //     }
-                    // }));
-
-                } else {
-                    if (isString(data)) {
-                        data = Buffer.from(data);
-                    }
-                    if (!data) data = Buffer.alloc(0);
-                    buffLen = Buffer.alloc(countLen);
-                    const dataLen = Buffer.byteLength(data);
-                    buffLen.writeUIntBE(dataLen, 0, countLen);
-                    const total = countLen + delimiterLen + dataLen;
-                    data = Buffer.concat([buffLen, delimiter, data], total);
+            } else {
+                if (isString(data)) {
+                    data = Buffer.from(data);
                 }
-                msg.payload = data;
+                if (!data) data = Buffer.alloc(0);
+                buffLen = Buffer.alloc(countLen);
+                const dataLen = Buffer.byteLength(data);
+                buffLen.writeUIntBE(dataLen, 0, countLen);
+                const total = countLen + delimiterLen + dataLen;
+                data = Buffer.concat([buffLen, delimiter, data], total);
+            }
+            msg.payload = data;
 
-                return msg;
-            }))
-    }
-
+            return msg;
+        }))
 }

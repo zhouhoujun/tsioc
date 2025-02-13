@@ -2,19 +2,19 @@ import { InjectFlags, promisify, tokenId } from '@tsdi/ioc';
 import { DefaultResponseFactory, HeaderAdapter, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    DefaultClientTransport, RequestServializeInterceptor
+    DefaultClientTransport, requestServializeInterceptor
 } from '@tsdi/common/client';
 import {
-    DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory,
-    DeserializerFactory, ev, FileAdapter, MimeAdapter, NotSupportedExecption, PacketifyInterceptor,
-    PacketVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter, StreamAdapter,
+    deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory,
+    DeserializerFactory, ev, FileAdapter, MimeAdapter, NotSupportedExecption, packetifyInterceptor,
+    messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter, StreamAdapter,
     UrlClientIncomingFactory, UrlOutgoingFactory
 } from '@tsdi/common/transport';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
-    ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
-    RequestContextServializeInterceptor, RequestContextVaildateInterceptor, SERVER_MODULES,
+    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
+    requestContextServializeInterceptor, lengthLimitSerializeInterceptor, SERVER_MODULES,
     ServerTransferFactory, ServiceModuleOpts, UrlRequestContext
 } from '@tsdi/endpoints';
 import { filter, fromEvent } from 'rxjs';
@@ -108,14 +108,14 @@ export class UdpConfiguration {
                     limit: sizeLimit,
                     serializerConfig: {
                         interceptors: [
-                            PacketVaildateInterceptor,
-                            RequestServializeInterceptor
+                            messageVaildateInterceptor,
+                            requestServializeInterceptor
                         ]
                     },
                     deserializerConfig: {
                         interceptors: [
-                            PacketifyInterceptor,
-                            DeatchPacketIdInterceptor,
+                            packetifyInterceptor,
+                            deatchPacketIdInterceptor,
                         ]
                     }
                 },
@@ -185,24 +185,16 @@ export class UdpConfiguration {
                     ]
                 },
                 transportOptions: {
-                    // delimiter: '#',
-                    // defaultMethod: '*',
                     limit: sizeLimit,
                     serializerConfig: {
                         interceptors: [
-                            RequestContextVaildateInterceptor,
-                            // PacketSerializeInterceptor,
-                            RequestContextServializeInterceptor,
+                            lengthLimitSerializeInterceptor,
+                            requestContextServializeInterceptor,
                         ]
-                    },
-                    getResponseTopic(topic) {
-                        return `${topic}/reply`
                     },
                     deserializerConfig: {
                         interceptors: [
-                            PacketifyInterceptor,
-                            // PacketDeserializeInterceptor,
-                            // PayloadDeserializeInterceptor
+                            packetifyInterceptor
                         ]
                     }
                 },
@@ -212,7 +204,7 @@ export class UdpConfiguration {
                 },
                 detailError: false,
                 filters: [
-                    LoggerInterceptor,
+                    LoggerFilter,
                     ExecptionFinalizeFilter,
                     ExecptionHandlerFilter,
                     FinalizeFilter

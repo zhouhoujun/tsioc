@@ -48,7 +48,7 @@ export abstract class ExecptionFilter<TInput = any, TOutput = any, TContext = an
                     try {
                         res = this.catchError(input, err, caught, context);
                     } catch (err) {
-                        return throwError(() => res);
+                        return throwError(() => err);
                     }
                     if (isObservable(res)) {
                         return res.pipe(

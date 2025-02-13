@@ -1,22 +1,22 @@
-import { InjectFlags, isString, promisify } from '@tsdi/ioc';
+import { InjectFlags, isString } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import { DefaultResponseFactory, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
     ClientIncoming,
-    DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
-    FileAdapter, Incoming, isBuffer, MimeAdapter, NotSupportedExecption, Packet,
-    PacketVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
-    StreamAdapter, toBuffer, TopicClientIncomingFactory, TopicOutgoingFactory,
+    deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
+    FileAdapter, isBuffer, MimeAdapter, NotSupportedExecption, Packet,
+    messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
+    StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory,
     TransportContext
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    DefaultClientTransport, RequestTimeoutInterceptor
+    DefaultClientTransport, requestTimeoutInterceptor
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
-    ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
-    RequestContextVaildateInterceptor,
+    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
+    lengthLimitSerializeInterceptor,
     SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
     TopicRequestContext
 } from '@tsdi/endpoints';
@@ -144,17 +144,17 @@ export class NatsConfiguration {
                     limit: sizeLimit,
                     serializerConfig: {
                         interceptors: [
-                            PacketVaildateInterceptor
+                            messageVaildateInterceptor
                         ]
                     },
                     deserializerConfig: {
                         interceptors: [
-                            DeatchPacketIdInterceptor
+                            deatchPacketIdInterceptor
                         ]
                     }
                 },
                 interceptors: [
-                    RequestTimeoutInterceptor
+                    requestTimeoutInterceptor
                 ]
             },
             providers: [
@@ -218,12 +218,8 @@ export class NatsConfiguration {
                                         if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
                                         const headers = socket.mergeHeaders(requestContext.response.headers, options.publishOpts?.headers);
                                         requestContext.request.id && headers.set('identity', String(requestContext.request.id));
-                                        // if(requestContext.execption) {
-                                        //     headers.hasError = true;
-                                        // }           
-                                        // headers.code = requestContext.status;
-                                        // headers.status = requestContext.statusMessage; 
-                                        // headers.description = requestContext.statusMessage;                                        
+                                        // headers.set('status', requestContext.status);
+                                        // headers.set('statusMessage', requestContext.statusMessage);                                      
 
                                         return socket.publish(requestContext.responseTopic, msg.payload ?? Buffer.alloc(0), {
                                             ...options.publishOpts,
@@ -252,7 +248,7 @@ export class NatsConfiguration {
                     limit: sizeLimit,
                     serializerConfig: {
                         interceptors: [
-                            RequestContextVaildateInterceptor
+                            lengthLimitSerializeInterceptor
                         ]
                     },
                     getResponseTopic(topic) {
@@ -275,7 +271,7 @@ export class NatsConfiguration {
                 filtersToken: NATS_SERV_FILTERS,
                 guardsToken: NATS_SERV_GUARDS,
                 filters: [
-                    LoggerInterceptor,
+                    LoggerFilter,
                     ExecptionFinalizeFilter,
                     ExecptionHandlerFilter,
                     FinalizeFilter

@@ -1,5 +1,5 @@
 import { Header, HeaderAccess, HeaderAdapter, HeadersLike, IHeaders } from '@tsdi/common';
-import { Injectable, isArray, isDefined, isNil } from '@tsdi/ioc';
+import { Injectable, isDefined, isNil } from '@tsdi/ioc';
 import { getHeader } from './utils';
 
 @Injectable()
@@ -97,6 +97,16 @@ export class DefaultHeaderAdapter implements HeaderAdapter {
     setContentDisposition<T extends HeadersLike>(headers: T, disposition: string | null): T {
         return this.setHeader(headers, 'content-disposition', disposition)
     }
+    hasTransferEncoding(headers: HeadersLike): boolean {
+        return this.hasHeader(headers, 'transfer-encoding')
+    }
+    getTransferEncoding(headers: HeadersLike): string | undefined {
+        return this.getHeader(headers, 'transfer-encoding')
+    }
+    setTransferEncoding<T extends HeadersLike>(headers: T, encoding: string | null | undefined): T {
+        return this.setHeader(headers, 'transfer-encoding', encoding)
+    }
+
     getIdentity(headers: HeadersLike): string | number | undefined {
         return this.getHeader(headers, 'identity')
     }

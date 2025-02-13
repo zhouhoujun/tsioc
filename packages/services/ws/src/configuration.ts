@@ -1,18 +1,18 @@
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import {
-    DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
-    FileAdapter, MimeAdapter, PacketDeserializeInterceptor, PacketifyInterceptor, PacketSerializeInterceptor,
-    PacketVaildateInterceptor, PayloadDeserializeInterceptor, Redirector, SerializerFactory, StatusAdapter,
+    deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
+    FileAdapter, MimeAdapter, PacketDeserializeInterceptor, packetifyInterceptor, messageSerializeInterceptor,
+    messageVaildateInterceptor, PayloadDeserializeInterceptor, Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, UrlClientIncomingFactory, UrlOutgoingFactory
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    RequestServializeInterceptor, RequestTimeoutInterceptor, SocketClientTransport
+    requestServializeInterceptor, requestTimeoutInterceptor, SocketClientTransport
 } from '@tsdi/common/client';
 import {
     AcceptsPriority,  DefaultServerTransferFactory,
-    ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
-    RequestContextServializeInterceptor, RequestContextVaildateInterceptor, SERVER_MODULES,
+    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
+    requestContextServializeInterceptor, lengthLimitSerializeInterceptor, SERVER_MODULES,
     ServerTransferFactory, ServiceModuleOpts,  SocketServerTransport
 } from '@tsdi/endpoints';
 import { WsClient } from './client/client';
@@ -101,22 +101,22 @@ export class WsConfiguration {
                     delimiter,
                     serializerConfig: {
                         interceptors: [
-                            PacketVaildateInterceptor,
-                            PacketSerializeInterceptor,
-                            RequestServializeInterceptor
+                            messageVaildateInterceptor,
+                            messageSerializeInterceptor,
+                            requestServializeInterceptor
                         ]
                     },
                     deserializerConfig: {
                         interceptors: [
-                            PacketifyInterceptor,
-                            DeatchPacketIdInterceptor,
+                            packetifyInterceptor,
+                            deatchPacketIdInterceptor,
                             PacketDeserializeInterceptor,
                             PayloadDeserializeInterceptor
                         ]
                     }
                 },
                 interceptors:[
-                    RequestTimeoutInterceptor
+                    requestTimeoutInterceptor
                 ]
             }
         }
@@ -178,14 +178,14 @@ export class WsConfiguration {
                     delimiter,
                     serializerConfig: {
                         interceptors: [
-                            RequestContextVaildateInterceptor,
-                            PacketSerializeInterceptor,
-                            RequestContextServializeInterceptor,
+                            lengthLimitSerializeInterceptor,
+                            messageSerializeInterceptor,
+                            requestContextServializeInterceptor,
                         ]
                     },
                     deserializerConfig: {
                         interceptors: [
-                            PacketifyInterceptor,
+                            packetifyInterceptor,
                             PacketDeserializeInterceptor,
                             PayloadDeserializeInterceptor
                         ]
@@ -196,7 +196,7 @@ export class WsConfiguration {
                 filtersToken: WS_SERV_FILTERS,
                 guardsToken: WS_SERV_GUARDS,
                 filters: [
-                    LoggerInterceptor,
+                    LoggerFilter,
                     ExecptionFinalizeFilter,
                     ExecptionHandlerFilter,
                     FinalizeFilter

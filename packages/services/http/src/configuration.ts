@@ -8,16 +8,17 @@ import {
     UrlClientIncomingOpts, UrlOutgoingFactory
 } from '@tsdi/common/transport';
 import {
-    BodyServializetInterceptor,
+    bodyServializeInterceptor,
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
     DefaultClientTransport, STATUS_RESPONSE_TRANSFER_INTERCEPTORS, UrlRedirector
 } from '@tsdi/common/client';
 import { HttpRequest } from '@tsdi/common/http';
 import {
-    ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts,
+    ExecptionFinalizeFilter, FinalizeFilter, SERVER_MODULES, ServerModuleOpts,
     MimeModule, ServiceModuleOpts, JsonInterceptor, BodyparserInterceptor, AcceptsPriority, ServerTransferFactory,
     DefaultServerTransferFactory, DefaultServerTransport, ServerTransport,
-    HttpServerOpts
+    HttpServerOpts, LoggerFilter, emptyStatusSerializeInterceptor,
+    headMethodSerializeInterceptor, noBodySerializeInterceptor, lengthLimitSerializeInterceptor
 } from '@tsdi/endpoints';
 import { request as httpRequest, IncomingMessage, ClientRequest, Server } from 'http';
 import { request as httpsRequest, Server as HttpsServer } from 'https';
@@ -36,7 +37,6 @@ import { HttpStatusAdapter } from './status';
 import { HttpResponseEventFactory } from './client/response.factory';
 import { HttpExecptionHandlers } from './execption.handlers';
 import { HttpContext, HttpServRequest, HttpServResponse } from './server/context';
-import { EmptyStatusSerializeInterceptor, HeadMethodSerializeInterceptor, LengthLimitSerializeInterceptor, NoBodySerializeInterceptor } from './server/interceptors/serializes';
 
 
 
@@ -204,7 +204,7 @@ export class HttpConfiguration {
                     },
                     serializerConfig: {
                         interceptors: [
-                            BodyServializetInterceptor
+                            bodyServializeInterceptor
                         ]
                     }
                 }
@@ -324,10 +324,10 @@ export class HttpConfiguration {
                 transportOptions: {
                     serializerConfig: {
                         interceptors: [
-                            EmptyStatusSerializeInterceptor,
-                            HeadMethodSerializeInterceptor,
-                            NoBodySerializeInterceptor,
-                            LengthLimitSerializeInterceptor
+                            emptyStatusSerializeInterceptor,
+                            headMethodSerializeInterceptor,
+                            noBodySerializeInterceptor,
+                            lengthLimitSerializeInterceptor
                         ]
                     },
                     deserializerConfig: {
@@ -339,7 +339,7 @@ export class HttpConfiguration {
                 filtersToken: HTTP_SERV_FILTERS,
                 guardsToken: HTTP_SERV_GUARDS,
                 filters: [
-                    LoggerInterceptor,
+                    LoggerFilter,
                     ExecptionFinalizeFilter,
                     ExecptionHandlerFilter,
                     FinalizeFilter

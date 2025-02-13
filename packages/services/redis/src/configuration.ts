@@ -1,20 +1,20 @@
 import { InjectFlags, isString, promisify } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import {
-    DeatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
+    deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
     ev,
-    FileAdapter, MimeAdapter, NotSupportedExecption, PacketifyInterceptor,
-    PacketVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
+    FileAdapter, MimeAdapter, NotSupportedExecption, packetifyInterceptor,
+    messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    DefaultClientTransport, RequestServializeInterceptor, RequestTimeoutInterceptor
+    DefaultClientTransport, requestServializeInterceptor, requestTimeoutInterceptor
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
-    ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor,
-    RequestContextServializeInterceptor, RequestContextVaildateInterceptor, SERVER_MODULES,
+    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
+    requestContextServializeInterceptor, lengthLimitSerializeInterceptor, SERVER_MODULES,
     ServerTransferFactory, ServiceModuleOpts, TopicRequestContext
 } from '@tsdi/endpoints';
 import { RedisClient } from './client/client';
@@ -136,19 +136,19 @@ export class RedisConfiguration {
                     limit: sizeLimit,
                     serializerConfig: {
                         interceptors: [
-                            PacketVaildateInterceptor,
-                            RequestServializeInterceptor
+                            messageVaildateInterceptor,
+                            requestServializeInterceptor
                         ]
                     },
                     deserializerConfig: {
                         interceptors: [
-                            PacketifyInterceptor,
-                            DeatchPacketIdInterceptor
+                            packetifyInterceptor,
+                            deatchPacketIdInterceptor
                         ]
                     }
                 },
                 interceptors: [
-                    RequestTimeoutInterceptor
+                    requestTimeoutInterceptor
                 ],
                 providers: [
                     { provide: PatternFormatter, useClass: RedisPatternFormatter }
@@ -228,13 +228,13 @@ export class RedisConfiguration {
                     },
                     serializerConfig: {
                         interceptors: [
-                            RequestContextVaildateInterceptor,
-                            RequestContextServializeInterceptor,
+                            lengthLimitSerializeInterceptor,
+                            requestContextServializeInterceptor,
                         ]
                     },
                     deserializerConfig: {
                         interceptors: [
-                            PacketifyInterceptor
+                            packetifyInterceptor
                         ]
                     }
                 },
@@ -251,7 +251,7 @@ export class RedisConfiguration {
                 filtersToken: REDIS_SERV_FILTERS,
                 guardsToken: REDIS_SERV_GUARDS,
                 filters: [
-                    LoggerInterceptor,
+                    LoggerFilter,
                     ExecptionFinalizeFilter,
                     ExecptionHandlerFilter,
                     FinalizeFilter
