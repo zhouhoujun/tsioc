@@ -325,7 +325,7 @@ export class HttpConfiguration {
                 transportOptions: {
                     serializerConfig: {
                         interceptors: [
-                            httpExecptionSerializeInterceptor,
+                            // httpExecptionSerializeInterceptor,
                             emptyStatusSerializeInterceptor,
                             headMethodSerializeInterceptor,
                             noBodySerializeInterceptor,
