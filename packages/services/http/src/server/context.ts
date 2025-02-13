@@ -1,12 +1,13 @@
-import { Injector, isArray, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { Injector, isArray, isNumber, isString, lang } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, Response, normalize } from '@tsdi/common';
-import { MessageExecption, InternalServerExecption, Outgoing, append, parseTokenList, Incoming, ENOENT } from '@tsdi/common/transport';
+import { MessageExecption, InternalServerExecption, Outgoing, append, parseTokenList, Incoming } from '@tsdi/common/transport';
 import { HttpServerOpts, RestfulRequestContext, ServerTransport, Throwable } from '@tsdi/endpoints';
 import * as http from 'http';
 import * as http2 from 'http2';
 import * as assert from 'assert';
 import { Socket } from 'net';
 import { TLSSocket } from 'tls';
+import { lastValueFrom } from 'rxjs';
 
 
 export type HttpServRequest = (http.IncomingMessage | http2.Http2ServerRequest) & Incoming<any>;
@@ -358,38 +359,8 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
             return
         }
 
-        const res = this.response;
 
-        // first unset all headers
-        this.removeHeaders();
-
-        // then set those specified
-        if (err.headers) this.setHeader(err.headers);
-
-        const statusAdapter = this.statusAdapter!;
-        let status: number = err.status || err.statusCode;
-        // ENOENT support
-        if (ENOENT === err.code) status = statusAdapter.notFound;
-
-        // default to serverError
-        if (!statusAdapter.isStatus(status)) status = statusAdapter.serverError;
-
-        this.status = status;
-        // empty response.
-        if (statusAdapter.isEmptyExecption(status)) {
-            await promisify<void>(res.end, res)();
-            return;
-        }
-
-        // respond
-        let msg: any;
-        msg = err.message;
-
-        // force text/plain
-        this.type = 'text';
-        msg = Buffer.from(msg ?? this.statusMessage ?? '');
-        this.length = Buffer.byteLength(msg);
-        await promisify<any, void>(res.end, res)(msg);
+        await lastValueFrom(this.transport.send(this));
     }
 
 }

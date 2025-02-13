@@ -37,6 +37,7 @@ import { HttpStatusAdapter } from './status';
 import { HttpResponseEventFactory } from './client/response.factory';
 import { HttpExecptionHandlers } from './execption.handlers';
 import { HttpContext, HttpServRequest, HttpServResponse } from './server/context';
+import { httpExecptionSerializeInterceptor } from './server/interceptors/serializes';
 
 
 
@@ -324,6 +325,7 @@ export class HttpConfiguration {
                 transportOptions: {
                     serializerConfig: {
                         interceptors: [
+                            httpExecptionSerializeInterceptor,
                             emptyStatusSerializeInterceptor,
                             headMethodSerializeInterceptor,
                             noBodySerializeInterceptor,
@@ -375,6 +377,7 @@ export class HttpIncomings<T = any> implements Incoming<T> {
 
     }
 }
+
 
 @Injectable()
 export class HttpIncomingFactory implements IncomingFactory {

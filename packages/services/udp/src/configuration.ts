@@ -13,7 +13,7 @@ import {
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
-    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
+    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter, execptionSerializeInterceptor,
     requestContextServializeInterceptor, lengthLimitSerializeInterceptor, SERVER_MODULES,
     ServerTransferFactory, ServiceModuleOpts, UrlRequestContext
 } from '@tsdi/endpoints';
@@ -188,6 +188,7 @@ export class UdpConfiguration {
                     limit: sizeLimit,
                     serializerConfig: {
                         interceptors: [
+                            execptionSerializeInterceptor,
                             lengthLimitSerializeInterceptor,
                             requestContextServializeInterceptor,
                         ]

@@ -13,10 +13,9 @@ import {
     requestServializeInterceptor, requestTimeoutInterceptor, SocketClientTransport
 } from '@tsdi/common/client';
 import {
-    AcceptsPriority, DefaultServerTransferFactory,
+    AcceptsPriority, DefaultServerTransferFactory, SERVER_MODULES, ServerModuleOpts, ServiceModuleOpts,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
-    requestContextServializeInterceptor, lengthLimitSerializeInterceptor,
-    SERVER_MODULES, ServerModuleOpts, ServiceModuleOpts,
+    execptionSerializeInterceptor, requestContextServializeInterceptor, lengthLimitSerializeInterceptor,
     ServerTransferFactory, SocketServerTransport
 } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';
@@ -198,9 +197,10 @@ export class TcpConfiguration {
                     delimiter,
                     serializerConfig: {
                         interceptors: [
+                            execptionSerializeInterceptor,
                             lengthLimitSerializeInterceptor,
                             messageSerializeInterceptor,
-                            requestContextServializeInterceptor,
+                            requestContextServializeInterceptor
                         ]
                     },
                     deserializerConfig: {

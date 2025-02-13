@@ -10,10 +10,11 @@ import {
     requestServializeInterceptor, requestTimeoutInterceptor, SocketClientTransport
 } from '@tsdi/common/client';
 import {
-    AcceptsPriority,  DefaultServerTransferFactory,
+    AcceptsPriority, DefaultServerTransferFactory,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
     requestContextServializeInterceptor, lengthLimitSerializeInterceptor, SERVER_MODULES,
-    ServerTransferFactory, ServiceModuleOpts,  SocketServerTransport
+    ServerTransferFactory, ServiceModuleOpts, SocketServerTransport,
+    execptionSerializeInterceptor
 } from '@tsdi/endpoints';
 import { WsClient } from './client/client';
 import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS } from './client/options';
@@ -115,7 +116,7 @@ export class WsConfiguration {
                         ]
                     }
                 },
-                interceptors:[
+                interceptors: [
                     requestTimeoutInterceptor
                 ]
             }
@@ -178,9 +179,10 @@ export class WsConfiguration {
                     delimiter,
                     serializerConfig: {
                         interceptors: [
+                            execptionSerializeInterceptor,
                             lengthLimitSerializeInterceptor,
                             messageSerializeInterceptor,
-                            requestContextServializeInterceptor,
+                            requestContextServializeInterceptor
                         ]
                     },
                     deserializerConfig: {

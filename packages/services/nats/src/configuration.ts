@@ -16,7 +16,7 @@ import {
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
-    lengthLimitSerializeInterceptor,
+    execptionSerializeInterceptor, lengthLimitSerializeInterceptor,
     SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
     TopicRequestContext
 } from '@tsdi/endpoints';
@@ -248,6 +248,7 @@ export class NatsConfiguration {
                     limit: sizeLimit,
                     serializerConfig: {
                         interceptors: [
+                            execptionSerializeInterceptor,
                             lengthLimitSerializeInterceptor
                         ]
                     },

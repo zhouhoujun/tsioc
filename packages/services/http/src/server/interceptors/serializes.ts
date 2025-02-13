@@ -1,79 +1,45 @@
-// import { Injectable } from '@tsdi/ioc';
-// import { HandlerFn, InterceptorFn, Handler, Interceptor, PipeTransform } from '@tsdi/core';
-// import { HEAD } from '@tsdi/common';
-// import { Packet, PacketLengthException, TransportContext } from '@tsdi/common/transport';
-// import { Observable, of, throwError } from 'rxjs';
-// import { CONTENT_LENGTH, CONTENT_TYPE, HttpContext, TRANSFER_ENCODING } from '../context';
+import { HandlerFn, InterceptorFn } from '@tsdi/core';
+import { ENOENT,  TransportContext } from '@tsdi/common/transport';
+import { of } from 'rxjs';
+import { HttpContext } from '../context';
 
 
+/**
+ * http execption serialize
+ */
+export const httpExecptionSerializeInterceptor: InterceptorFn<HttpContext> = (input: HttpContext, next: HandlerFn, context: TransportContext) => {
+    if (input.execption) {
+        const err = input.execption;
 
+        // first unset all headers
+        input.removeHeaders();
 
-// @Injectable()
-// export class EmptyStatusSerializeInterceptor implements Interceptor<HttpContext, Packet> {
+        // then set those specified
+        if (err.headers) input.setHeader(err.headers);
 
-//     intercept(input: HttpContext, next: Handler, context: TransportContext): Observable<Packet> {
-//         if (input.statusAdapter?.isEmpty(input.status)) {
-//             const payload = input.body = null;
-//             return of({
-//                 payload
-//             })
-//         }
-//         return next.handle(input, context)
-//     }
-// }
+        const statusAdapter = input.statusAdapter!;
+        let status: number = err.status || err.statusCode;
+        // ENOENT support
+        if (ENOENT === err.code) status = statusAdapter.notFound;
 
-// @Injectable()
-// export class HeadMethodSerializeInterceptor implements Interceptor<HttpContext, Packet> {
-//     intercept(input: HttpContext, next: Handler, context: TransportContext): Observable<Packet> {
-//         if (input.method == HEAD) {
-//             if (!input.headersSent && !input.response.hasHeader(CONTENT_LENGTH)) {
-//                 const length = input.length;
-//                 if (Number.isInteger(length)) input.length = length
-//             }
-//             return of({
-//                 payload: null
-//             })
-//         }
-//         return next.handle(input, context)
-//     }
-// }
+        // default to serverError
+        if (!statusAdapter.isStatus(status)) status = statusAdapter.serverError;
 
-// @Injectable()
-// export class NoBodySerializeInterceptor implements Interceptor<HttpContext, Packet> {
-//     intercept(input: HttpContext, next: Handler, context: TransportContext): Observable<Packet> {
-//         if (input.body === null) {
-//             if (input.explicitNullBody) {
-//                 input.response.removeHeader(CONTENT_TYPE);
-//                 input.response.removeHeader(CONTENT_LENGTH);
-//                 input.response.removeHeader(TRANSFER_ENCODING);
-//                 return of({
-//                     payload: null
-//                 })
-//             }
+        input.status = status;
+        // empty response.
+        if (statusAdapter.isEmptyExecption(status)) {
+            return of({ payload: null });
+        }
 
-//             const payload = Buffer.from(input.statusMessage ?? String(input.status));
-//             if (!input.headersSent) {
-//                 input.type = 'text';
-//                 input.length = Buffer.byteLength(payload)
-//             }
-//             return of({
-//                 payload
-//             })
+        // respond
+        let msg: any;
+        msg = err.message;
 
-//         }
-//         return next.handle(input, context)
-//     }
-// }
-
-// @Injectable()
-// export class LengthLimitSerializeInterceptor implements Interceptor<HttpContext, Packet> {
-//     intercept(input: HttpContext, next: Handler, context: TransportContext): Observable<Packet> {
-//         const len = input.length ?? 0;
-//         const opts = input.serverOptions.transportOptions;
-//         if (opts?.maxSize && len > opts.maxSize) {
-//             const btpipe = input.get<PipeTransform>('bytes-format');
-//             return throwError(()=> new PacketLengthException(`Packet length ${btpipe.transform(len)} great than max size ${btpipe.transform(opts.maxSize)}`));
-//         }
-//         return next.handle(input, context)
-//     }
-// }
+        // force text/plain
+        input.type = 'text';
+        msg = Buffer.from(msg ?? input.statusMessage ?? '');
+        input.length = Buffer.byteLength(msg);
+        return of({ payload: msg });
+    }
+    return next(input, context)
+}

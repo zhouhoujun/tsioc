@@ -14,7 +14,7 @@ import {
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
-    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
+    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter, execptionSerializeInterceptor,
     requestContextServializeInterceptor, lengthLimitSerializeInterceptor,
     SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
     TopicRequestContext
@@ -27,7 +27,7 @@ import { MqttServer } from './server/server';
 import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS } from './server/options';
 import { MqttRequestHandler } from './server/handler';
 import { MqttRequest } from './client/request';
-import { filter, from, fromEvent } from 'rxjs';
+import { filter, fromEvent } from 'rxjs';
 
 
 
@@ -201,6 +201,7 @@ export class MqttConfiguration {
                     limit: sizeLimit,
                     serializerConfig: {
                         interceptors: [
+                            execptionSerializeInterceptor,
                             lengthLimitSerializeInterceptor,
                             requestContextServializeInterceptor,
                         ]

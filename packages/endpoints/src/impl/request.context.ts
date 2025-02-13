@@ -109,14 +109,7 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
     async throwExecption(execption: MessageExecption): Promise<void> {
         if (this.headersSent) return;
         this.execption = execption;
-        this.body = null;
-        this.response.error = {
-            name: execption.name,
-            message: execption.message,
-            status: execption.status ?? execption.statusCode
-        };
-        if (!isNil(execption.status)) this.status = execption.status;
-        this.statusMessage = execption.message;
+
         await lastValueFrom(this.transport.send(this));
     }
 
@@ -183,14 +176,7 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
     async throwExecption(execption: MessageExecption): Promise<void> {
         if (this.headersSent) return;
         this.execption = execption;
-        this.body = null;
-        this.response.error = {
-            name: execption.name,
-            message: execption.message,
-            status: execption.status ?? execption.statusCode
-        };
-        if (!isNil(execption.status)) this.status = execption.status;
-        this.statusMessage = execption.message;
+
         await lastValueFrom(this.transport.send(this));
     }
 }
@@ -257,14 +243,7 @@ export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicInco
     async throwExecption(execption: MessageExecption): Promise<void> {
         if (this.headersSent) return;
         this.execption = execption;
-        this.body = null;
-        this.response.error = {
-            name: execption.name,
-            message: execption.message,
-            status: execption.status ?? execption.statusCode
-        };
-        if (!isNil(execption.status)) this.status = execption.status;
-        this.statusMessage = execption.message;
+
         await lastValueFrom(this.transport.send(this));
     }
 }

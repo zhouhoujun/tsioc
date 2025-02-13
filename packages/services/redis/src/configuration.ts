@@ -13,7 +13,7 @@ import {
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
-    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
+    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter, execptionSerializeInterceptor,
     requestContextServializeInterceptor, lengthLimitSerializeInterceptor, SERVER_MODULES,
     ServerTransferFactory, ServiceModuleOpts, TopicRequestContext
 } from '@tsdi/endpoints';
@@ -228,6 +228,7 @@ export class RedisConfiguration {
                     },
                     serializerConfig: {
                         interceptors: [
+                            execptionSerializeInterceptor,
                             lengthLimitSerializeInterceptor,
                             requestContextServializeInterceptor,
                         ]
