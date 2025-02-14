@@ -9,17 +9,17 @@ import {
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    requestServializeInterceptor, DefaultClientTransport,
-    requestTimeoutInterceptor
+    DefaultClientTransport, requestPacketIfySerializeInterceptor, requestSerializeBackend, requestTimeoutInterceptor
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter, execptionSerializeInterceptor,
-    requestContextServializeInterceptor, lengthLimitSerializeInterceptor,
+    lengthLimitSerializeInterceptor, packetIfySerializeInterceptor, contextSerializeBackend,
     SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
     TopicRequestContext
 } from '@tsdi/endpoints';
 import * as mqtt from 'mqtt';
+import { filter, fromEvent } from 'rxjs';
 import { MqttClient } from './client/client';
 import { MQTT_CLIENT_FILTERS, MQTT_CLIENT_INTERCEPTORS } from './client/options';
 import { MqttHandler } from './client/handler';
@@ -27,7 +27,6 @@ import { MqttServer } from './server/server';
 import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS } from './server/options';
 import { MqttRequestHandler } from './server/handler';
 import { MqttRequest } from './client/request';
-import { filter, fromEvent } from 'rxjs';
 
 
 
@@ -73,8 +72,10 @@ export class MqttConfiguration {
                                 return new DefaultClientTransport<mqtt.Client, MqttRequest<any>>(
                                     injector,
                                     socket,
-                                    serializerFactory.create(injector, transportOptions.serializerConfig),
-                                    deserializerFactory.create(injector, transportOptions.deserializerConfig),
+                                    serializerFactory.create(injector, {
+                                        backend: requestSerializeBackend,
+                                        ...transportOptions.serializerConfig
+                                    }),deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     formatter,
                                     statusAdapter,
                                     headerAdapter,
@@ -122,7 +123,7 @@ export class MqttConfiguration {
                     serializerConfig: {
                         interceptors: [
                             messageVaildateInterceptor,
-                            requestServializeInterceptor
+                            requestPacketIfySerializeInterceptor
                         ]
                     },
                     deserializerConfig: {
@@ -157,7 +158,10 @@ export class MqttConfiguration {
                                 return new DefaultServerTransport<mqtt.Client, TopicRequestContext>(
                                     injector,
                                     socket,
-                                    serializerFactory.create(injector, transportOptions.serializerConfig),
+                                    serializerFactory.create(injector, {
+                                        backend: contextSerializeBackend,
+                                        ...transportOptions.serializerConfig
+                                    }),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     statusAdapter,
                                     headerAdapter,
@@ -201,9 +205,9 @@ export class MqttConfiguration {
                     limit: sizeLimit,
                     serializerConfig: {
                         interceptors: [
-                            execptionSerializeInterceptor,
                             lengthLimitSerializeInterceptor,
-                            requestContextServializeInterceptor,
+                            execptionSerializeInterceptor,
+                            packetIfySerializeInterceptor,
                         ]
                     },
                     getResponseTopic(topic) {

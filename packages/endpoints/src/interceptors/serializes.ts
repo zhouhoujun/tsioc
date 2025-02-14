@@ -1,7 +1,7 @@
-import { hasProps, isNil, isString, isUndefined } from '@tsdi/ioc';
+import { hasProps, isString, isUndefined } from '@tsdi/ioc';
 import { BackendFn, HandlerFn, InterceptorFn, PipeTransform } from '@tsdi/core';
 import { HEAD } from '@tsdi/common';
-import { AbstractTransport, Outgoing, Packet, PacketLengthException, TransportContext } from '@tsdi/common/transport';
+import { AbstractTransport, ENOENT, Outgoing, Packet, PacketLengthException, TransportContext } from '@tsdi/common/transport';
 import { map, of, throwError } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 
@@ -21,9 +21,9 @@ export const packetIfySerializeInterceptor: InterceptorFn<RequestContext> = (inp
                 if (isString(payload)) {
                     pkg.payload = payload = Buffer.from(payload);
                 }
-                if (isNil(pkg.contentLength)) {
-                    pkg.contentLength = Buffer.byteLength(payload)
-                }
+                // if (payload && isNil(pkg.contentLength)) {
+                //     pkg.contentLength = Buffer.byteLength(payload)
+                // }
                 return pkg;
             })
         )
@@ -32,35 +32,114 @@ export const packetIfySerializeInterceptor: InterceptorFn<RequestContext> = (inp
 /**
  * execption serialize
  */
+export const execptionMessageSerializeInterceptor: InterceptorFn<RequestContext> = (input: RequestContext, next: HandlerFn, context: TransportContext) => {
+    if (input.execption) {
+        const err = input.execption;
+
+        // first unset all headers
+        input.removeHeaders();
+
+        // then set those specified
+        if (err.headers) input.setHeader(err.headers);
+
+        let status: number = err.status || err.statusCode;
+
+        const statusAdapter = input.statusAdapter;
+        if (statusAdapter) {
+            // ENOENT support
+            if (ENOENT === err.code) status = statusAdapter.notFound;
+
+            // default to serverError
+            if (!statusAdapter.isStatus(status)) status = statusAdapter.serverError;
+        }
+
+        input.status = status;
+        // empty response.
+        if (statusAdapter?.isEmptyExecption(status)) {
+            return of(null);
+        }
+
+        // respond
+        let msg: any;
+        msg = err.message;
+
+        // force text/plain
+        input.type = 'text';
+        msg = msg ?? input.statusMessage ?? '';
+        if (!input.headersSent) {
+            input.length = Buffer.byteLength(msg);
+        }
+        return of(msg);
+    }
+    return next(input, context)
+}
+
+/**
+ * execption serialize
+ */
 export const execptionSerializeInterceptor: InterceptorFn<RequestContext> = (input: RequestContext, next: HandlerFn<RequestContext, Packet>, context: TransportContext) => {
     if (input.execption) {
-        const execption = input.execption;
-        if (!isNil(execption.status)) input.status = execption.status;
-        input.statusMessage = execption.message;
-        // const id = input.response.id ?? input.request.id;
-        // const pkg = {
-        //     id
-        // } as Outgoing;
-        // if (input.status) {
-        //     pkg.statusCode = input.status;
-        // }
-        // if (input.statusMessage) {
-        //     pkg.statusMessage = input.statusMessage;
-        // }
-        // pkg.error = {
-        //     name: execption.name,
-        //     status: input.status,
-        //     message: execption.message,
-        // }
-        // return of({ payload: JSON.stringify(pkg) })
 
+        const err = input.execption;
 
+        // first unset all headers
+        input.removeHeaders();
         input.body = null;
-        input.response.error = {
-            name: execption.name,
-            status: input.status,
-            message: execption.message,
-        };
+
+        // then set those specified
+        if (err.headers) input.setHeader(err.headers);
+
+        let status: number = err.status || err.statusCode;
+
+
+        const statusAdapter = input.statusAdapter;
+        if (statusAdapter) {
+            // ENOENT support
+            if (ENOENT === err.code) status = statusAdapter.notFound;
+
+            // default to serverError
+            if (!statusAdapter.isStatus(status)) status = statusAdapter.serverError;
+        }
+
+        input.status = status;
+        input.statusMessage = err.message;
+
+        const id = input.response.id ?? input.request.id!;
+        const pkg = {
+            id
+        } as any;
+
+        if (status) {
+            pkg.statusCode = status;
+        }
+        // respond
+        // force text/plain
+        // input.type = 'text';
+        const message = err.message ?? input.statusMessage;
+        // input.length = Buffer.byteLength(message);
+        if (message) {
+            pkg.statusMessage = message;
+        }
+        // // empty response.
+        // if (statusAdapter?.isEmptyExecption(status)) {
+        //     // pkg.statusCode = status;
+        //     // pkg.statusMessage = input.statusMessage ?? '';
+        //     pkg.body = null;
+        // } else {
+        //     pkg.body = message;
+        // }
+
+        pkg.error = {
+            name: err.name,
+            status,
+            message
+        }
+
+        const msg = JSON.stringify(pkg, null, 2);
+        if (!input.headersSent) {
+            input.length = Buffer.byteLength(msg);
+        }
+        return of(msg);
 
     }
     return next(input, context)
@@ -100,7 +179,7 @@ export const noBodySerializeInterceptor: InterceptorFn<RequestContext> = (input:
             return of(null)
         }
 
-        const payload = Buffer.from(input.statusMessage ?? String(input.status));
+        const payload = input.statusMessage ?? String(input.status);
         if (!input.headersSent) {
             input.type = 'text';
             input.length = Buffer.byteLength(payload)
@@ -120,12 +199,14 @@ export const noBodySerializeInterceptor: InterceptorFn<RequestContext> = (input:
  * @returns 
  */
 export const lengthLimitSerializeInterceptor: InterceptorFn<RequestContext> = (input: RequestContext, next: HandlerFn<RequestContext, Packet>, context: TransportContext) => {
-    const { injector, options } = context.transport as AbstractTransport;
-    const length = input.length;
-    const sizeLimit = options.maxSize ?? options.limit;
-    if (length && sizeLimit && length > sizeLimit) {
-        const btpipe = injector.get<PipeTransform>('bytes-format');
-        return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(sizeLimit)}`));
+    if (!input.execption) {
+        const { injector, options } = context.transport as AbstractTransport;
+        const length = input.length;
+        const sizeLimit = options.maxSize ?? options.limit;
+        if (length && sizeLimit && length > sizeLimit) {
+            const btpipe = injector.get<PipeTransform>('bytes-format');
+            return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(sizeLimit)}`));
+        }
     }
     return next(input, context);
 }
@@ -137,10 +218,10 @@ export const lengthLimitSerializeInterceptor: InterceptorFn<RequestContext> = (i
  * @param context 
  * @returns 
  */
-export const requestContextSerializeBackend: BackendFn<RequestContext> = (input: RequestContext, context: TransportContext) => {
+export const contextSerializeBackend: BackendFn<RequestContext> = (input: RequestContext, context: TransportContext) => {
 
     const id = input.response.id ?? input.request.id;
-    const headers = input.headerAdapter.getHeaders(input.response.headers);
+    const headers = input.headerAdapter.getHeaders(input.response.headers ?? input.response);
     const pkg = {
         id
     } as Outgoing;
@@ -172,88 +253,7 @@ export const requestContextSerializeBackend: BackendFn<RequestContext> = (input:
             {
                 id,
                 headers,
-                payload: Buffer.from(JSON.stringify(pkg)),
-            },
-            {
-                id,
-                payload: input.body,
-                contentLength
-            })
-    } else {
-        const payload = JSON.stringify(pkg);
-        if (!input.headersSent) {
-            input.length = Buffer.byteLength(payload);
-        }
-        return of(payload);
-    }
-}
-
-/**
- * request context servialize body only
- * @param input 
- * @param next 
- * @param context 
- * @returns 
- */
-export const requestContextSerializeBodyOnlyBackend: BackendFn<RequestContext> = (input: RequestContext, context: TransportContext) => {
-    if (input.streamAdapter.isJson(input.body)) {
-        const body = JSON.stringify(input.body);
-        if (!input.headersSent) {
-            input.length = Buffer.byteLength(body);
-        }
-        return of(body)
-    }
-    return of(input.body)
-}
-
-
-/**
- * request context servializ
- * @param input 
- * @param next 
- * @param context 
- * @returns 
- */
-export const requestContextServializeInterceptor: InterceptorFn<RequestContext> = (input: RequestContext, next: HandlerFn, context: TransportContext) => {
-
-    const id = input.response.id ?? input.request.id;
-    const headers = input.headerAdapter.getHeaders(input.response.headers);
-    const pkg = {
-        id
-    } as Outgoing;
-    if (input.status) {
-        pkg.statusCode = input.status;
-    }
-    if (input.statusMessage) {
-        pkg.statusMessage = input.statusMessage;
-    }
-
-    if (input.response.error) {
-        pkg.error = input.response.error;
-    }
-
-    if (hasProps(headers)) {
-        pkg.headers = headers;
-    }
-
-    if (input.streamAdapter.isReadable(input.body)) {
-        let contentLength = input.length || 0;
-        if (id) {
-            const idLen = input.transport.options.idLen ?? 2;
-            const idBuff = Buffer.alloc(idLen);
-            if (idLen > 4) {
-                idBuff.write(id.toString());
-            } else {
-                idBuff.writeUIntBE(id as number, 0, idLen);
-            }
-            input.body.unshift(idBuff);
-            contentLength += idLen;
-        }
-        return of(
-            {
-                id,
-                headers,
-                payload: Buffer.from(JSON.stringify(pkg)),
+                payload: JSON.stringify(pkg),
             },
             {
                 id,
@@ -264,18 +264,30 @@ export const requestContextServializeInterceptor: InterceptorFn<RequestContext> 
     }
 
     pkg.body = input.body;
-    return next(pkg, context)
-        .pipe(
-            map(payload => {
-                if (typeof payload === 'string') {
-                    payload = Buffer.from(payload);
-                }
-                return {
-                    id,
-                    headers,
-                    payload,
-                    contentLength: payload.length
-                };
-            }));
+    const payload = JSON.stringify(pkg, null, 2);
+    if (!input.headersSent) {
+        input.length = Buffer.byteLength(payload);
+    }
+    return of(payload);
+
 }
+
+/**
+ * request context servialize body only
+ * @param input 
+ * @param next 
+ * @param context 
+ * @returns 
+ */
+export const contextBodySerializeBackend: BackendFn<RequestContext> = (input: RequestContext, context: TransportContext) => {
+    if (input.streamAdapter.isJson(input.body)) {
+        const body = JSON.stringify(input.body);
+        if (!input.headersSent) {
+            input.length = Buffer.byteLength(body);
+        }
+        return of(body)
+    }
+    return of(input.body)
+}
+
 

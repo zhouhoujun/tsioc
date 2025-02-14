@@ -8,14 +8,16 @@ import {
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    requestServializeInterceptor, requestTimeoutInterceptor, SocketClientTransport
+    requestPacketIfySerializeInterceptor,
+    requestSerializeBackend, requestTimeoutInterceptor, SocketClientTransport
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
-    requestContextServializeInterceptor, lengthLimitSerializeInterceptor, SERVER_MODULES,
+    contextSerializeBackend, lengthLimitSerializeInterceptor, SERVER_MODULES,
     ServerTransferFactory, ServiceModuleOpts, SocketServerTransport,
-    execptionSerializeInterceptor
+    execptionSerializeInterceptor,
+    packetIfySerializeInterceptor
 } from '@tsdi/endpoints';
 import { WsClient } from './client/client';
 import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS } from './client/options';
@@ -71,7 +73,10 @@ export class WsConfiguration {
                                 return new SocketClientTransport(
                                     injector,
                                     socket,
-                                    serializerFactory.create(injector, transportOptions.serializerConfig),
+                                    serializerFactory.create(injector, {
+                                        backend: requestSerializeBackend,
+                                        ...transportOptions.serializerConfig
+                                    }),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     formatter,
                                     statusAdapter,
@@ -105,7 +110,7 @@ export class WsConfiguration {
                         interceptors: [
                             messageVaildateInterceptor,
                             messageSerializeInterceptor,
-                            requestServializeInterceptor
+                            requestPacketIfySerializeInterceptor
                         ]
                     },
                     deserializerConfig: {
@@ -142,7 +147,10 @@ export class WsConfiguration {
                                 return new SocketServerTransport(
                                     injector,
                                     socket,
-                                    serializerFactory.create(injector, transportOptions.serializerConfig),
+                                    serializerFactory.create(injector, {
+                                        backend: contextSerializeBackend,
+                                        ...transportOptions.serializerConfig
+                                    }),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     statusAdapter,
                                     headerAdapter,
@@ -180,10 +188,10 @@ export class WsConfiguration {
                     delimiter,
                     serializerConfig: {
                         interceptors: [
-                            execptionSerializeInterceptor,
                             lengthLimitSerializeInterceptor,
                             messageSerializeInterceptor,
-                            requestContextServializeInterceptor
+                            packetIfySerializeInterceptor,
+                            execptionSerializeInterceptor
                         ]
                     },
                     deserializerConfig: {

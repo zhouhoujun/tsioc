@@ -10,13 +10,14 @@ import {
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    requestServializeInterceptor, requestTimeoutInterceptor, SocketClientTransport
+    requestPacketIfySerializeInterceptor, requestSerializeBackend, requestTimeoutInterceptor, SocketClientTransport
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, SERVER_MODULES, ServerModuleOpts, ServiceModuleOpts,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
-    execptionSerializeInterceptor, requestContextServializeInterceptor, lengthLimitSerializeInterceptor,
-    ServerTransferFactory, SocketServerTransport
+    execptionSerializeInterceptor, contextSerializeBackend, lengthLimitSerializeInterceptor,
+    ServerTransferFactory, SocketServerTransport,
+    packetIfySerializeInterceptor
 } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';
 import { TcpHandler } from './client/handler';
@@ -91,7 +92,10 @@ export class TcpConfiguration {
                                 return new SocketClientTransport(
                                     injector,
                                     socket,
-                                    serializerFactory.create(injector, transportOptions.serializerConfig),
+                                    serializerFactory.create(injector, {
+                                        backend: requestSerializeBackend,
+                                        ...transportOptions.serializerConfig
+                                    }),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     formatter,
                                     statusAdapter,
@@ -125,7 +129,7 @@ export class TcpConfiguration {
                         interceptors: [
                             messageVaildateInterceptor,
                             messageSerializeInterceptor,
-                            requestServializeInterceptor
+                            requestPacketIfySerializeInterceptor
                         ]
                     },
                     deserializerConfig: {
@@ -163,7 +167,10 @@ export class TcpConfiguration {
                                 return new SocketServerTransport(
                                     injector,
                                     socket,
-                                    serializerFactory.create(injector, transportOptions.serializerConfig),
+                                    serializerFactory.create(injector, {
+                                        backend: contextSerializeBackend,
+                                        ...transportOptions.serializerConfig
+                                    }),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     statusAdapter,
                                     headerAdapter,
@@ -197,10 +204,10 @@ export class TcpConfiguration {
                     delimiter,
                     serializerConfig: {
                         interceptors: [
-                            execptionSerializeInterceptor,
                             lengthLimitSerializeInterceptor,
                             messageSerializeInterceptor,
-                            requestContextServializeInterceptor
+                            packetIfySerializeInterceptor,
+                            execptionSerializeInterceptor
                         ]
                     },
                     deserializerConfig: {

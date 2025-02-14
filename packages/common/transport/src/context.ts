@@ -10,15 +10,11 @@ export class TransportContext extends Context implements OnDestroy {
 
     constructor(
         readonly transport: Transport,
-        // readonly origin: any,
         entries?: readonly (readonly [Token, any])[] | null
     ) {
         super(entries)
     }
 
-    // first() {
-    //     return this.origin
-    // }
 
     static create(transport: Transport, entries?: readonly (readonly [Token, any])[] | null) {
         return new TransportContext(transport, entries);

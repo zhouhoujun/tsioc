@@ -9,13 +9,14 @@ import {
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    DefaultClientTransport, requestServializeInterceptor, requestTimeoutInterceptor
+    DefaultClientTransport, requestPacketIfySerializeInterceptor, requestSerializeBackend, requestTimeoutInterceptor
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter, execptionSerializeInterceptor,
-    requestContextServializeInterceptor, lengthLimitSerializeInterceptor, SERVER_MODULES,
-    ServerTransferFactory, ServiceModuleOpts, TopicRequestContext
+    lengthLimitSerializeInterceptor, SERVER_MODULES,
+    ServerTransferFactory, ServiceModuleOpts, TopicRequestContext,
+    contextSerializeBackend, packetIfySerializeInterceptor
 } from '@tsdi/endpoints';
 import { RedisClient } from './client/client';
 import { REDIS_CLIENT_FILTERS, REDIS_CLIENT_INTERCEPTORS } from './client/options';
@@ -83,7 +84,10 @@ export class RedisConfiguration {
                                 return new DefaultClientTransport<ReidsSocket, RedisRequest<any>>(
                                     injector,
                                     socket,
-                                    serializerFactory.create(injector, transportOptions.serializerConfig),
+                                    serializerFactory.create(injector, {
+                                        backend: requestSerializeBackend,
+                                        ...transportOptions.serializerConfig
+                                    }),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     formatter,
                                     statusAdapter,
@@ -137,7 +141,7 @@ export class RedisConfiguration {
                     serializerConfig: {
                         interceptors: [
                             messageVaildateInterceptor,
-                            requestServializeInterceptor
+                            requestPacketIfySerializeInterceptor
                         ]
                     },
                     deserializerConfig: {
@@ -176,7 +180,10 @@ export class RedisConfiguration {
                                 return new DefaultServerTransport<ReidsSocket, TopicRequestContext>(
                                     injector,
                                     socket,
-                                    serializerFactory.create(injector, transportOptions.serializerConfig),
+                                    serializerFactory.create(injector, {
+                                        backend: contextSerializeBackend,
+                                        ...transportOptions.serializerConfig
+                                    }),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     statusAdapter,
                                     headerAdapter,
@@ -228,9 +235,9 @@ export class RedisConfiguration {
                     },
                     serializerConfig: {
                         interceptors: [
-                            execptionSerializeInterceptor,
                             lengthLimitSerializeInterceptor,
-                            requestContextServializeInterceptor,
+                            execptionSerializeInterceptor,
+                            packetIfySerializeInterceptor,
                         ]
                     },
                     deserializerConfig: {

@@ -3,14 +3,14 @@ import { Bean, Configuration, ContextToken, ExecptionHandlerFilter } from '@tsdi
 import { Header, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
     ClientIncoming, ctype, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory, ev,
-    FileAdapter, Incoming, IncomingFactory, IReadable, MimeAdapter, Packet,
+    FileAdapter, Incoming, IncomingFactory, IReadable, MimeAdapter,
     Redirector, SerializerFactory, StatusAdapter, StreamAdapter, StreamIncomingOptions, TransportContext, UrlClientIncomingFactory,
     UrlClientIncomingOpts, UrlOutgoingFactory
 } from '@tsdi/common/transport';
 import {
     bodyServializeInterceptor,
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    DefaultClientTransport, requestServializeBodyOnlyBackend, STATUS_RESPONSE_TRANSFER_INTERCEPTORS, UrlRedirector
+    DefaultClientTransport, requestBodySerializeBackend, STATUS_RESPONSE_TRANSFER_INTERCEPTORS, UrlRedirector
 } from '@tsdi/common/client';
 import { HttpRequest } from '@tsdi/common/http';
 import {
@@ -19,7 +19,7 @@ import {
     DefaultServerTransferFactory, DefaultServerTransport, ServerTransport,
     HttpServerOpts, LoggerFilter, emptyStatusSerializeInterceptor,
     headMethodSerializeInterceptor, noBodySerializeInterceptor, lengthLimitSerializeInterceptor,
-    requestContextSerializeBodyOnlyBackend
+    contextBodySerializeBackend, execptionMessageSerializeInterceptor
 } from '@tsdi/endpoints';
 import { request as httpRequest, IncomingMessage, ClientRequest, Server } from 'http';
 import { request as httpsRequest, Server as HttpsServer } from 'https';
@@ -38,7 +38,6 @@ import { HttpStatusAdapter } from './status';
 import { HttpResponseEventFactory } from './client/response.factory';
 import { HttpExecptionHandlers } from './execption.handlers';
 import { HttpContext, HttpServRequest, HttpServResponse } from './server/context';
-import { httpExecptionSerializeInterceptor } from './server/interceptors/serializes';
 
 
 
@@ -86,7 +85,7 @@ export class HttpConfiguration {
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
-                                        backend: requestServializeBodyOnlyBackend,
+                                        backend: requestBodySerializeBackend,
                                         ...transportOptions.serializerConfig
                                     }),
                                     deserializerFactory.create(injector, {
@@ -234,7 +233,7 @@ export class HttpConfiguration {
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
-                                        backend: requestContextSerializeBodyOnlyBackend,
+                                        backend: contextBodySerializeBackend,
                                         ...transportOptions.serializerConfig
                                     }),
                                     deserializerFactory.create(injector, {
@@ -310,7 +309,7 @@ export class HttpConfiguration {
                 transportOptions: {
                     serializerConfig: {
                         interceptors: [
-                            httpExecptionSerializeInterceptor,
+                            execptionMessageSerializeInterceptor,
                             emptyStatusSerializeInterceptor,
                             headMethodSerializeInterceptor,
                             noBodySerializeInterceptor,

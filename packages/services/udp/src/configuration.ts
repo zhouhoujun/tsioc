@@ -2,20 +2,22 @@ import { InjectFlags, promisify, tokenId } from '@tsdi/ioc';
 import { DefaultResponseFactory, HeaderAdapter, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    DefaultClientTransport, requestServializeInterceptor
+    DefaultClientTransport, requestPacketIfySerializeInterceptor, requestSerializeBackend
 } from '@tsdi/common/client';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory,
     DeserializerFactory, ev, FileAdapter, MimeAdapter, NotSupportedExecption, packetifyInterceptor,
     messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter, StreamAdapter,
-    UrlClientIncomingFactory, UrlOutgoingFactory
+    UrlClientIncomingFactory, UrlOutgoingFactory,
+    IReadable
 } from '@tsdi/common/transport';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter, execptionSerializeInterceptor,
-    requestContextServializeInterceptor, lengthLimitSerializeInterceptor, SERVER_MODULES,
-    ServerTransferFactory, ServiceModuleOpts, UrlRequestContext
+    lengthLimitSerializeInterceptor, SERVER_MODULES,
+    ServerTransferFactory, ServiceModuleOpts, UrlRequestContext,
+    contextSerializeBackend, packetIfySerializeInterceptor
 } from '@tsdi/endpoints';
 import { filter, fromEvent } from 'rxjs';
 import { RemoteInfo, Socket } from 'dgram';
@@ -64,10 +66,13 @@ export class UdpConfiguration {
                         return {
                             create: (injector, socket, options) => {
                                 const transportOptions = options.transportOptions ?? {};
-                                return new DefaultClientTransport<Socket, UdpRequest<any>>(
+                                return new DefaultClientTransport<Socket, UdpRequest<any>, Buffer|string|IReadable>(
                                     injector,
-                                    socket,
-                                    serializerFactory.create(injector, transportOptions.serializerConfig),
+                                    socket,                                    
+                                    serializerFactory.create(injector, {
+                                        backend: requestSerializeBackend,
+                                        ...transportOptions.serializerConfig
+                                    }),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     formatter,
                                     statusAdapter,
@@ -84,8 +89,8 @@ export class UdpConfiguration {
                                         return { payload }
                                     }).pipe(filter(r => r !== null)),
                                     async (socket, msg, req) => {
-                                        if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
-                                        return await promisify<Buffer | string, number, string>(socket.send, socket)(msg.payload ?? Buffer.alloc(0), req.remoteInfo.port, req.remoteInfo.address)
+                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
+                                        return await promisify<Buffer | string, number, string>(socket.send, socket)(msg ?? Buffer.alloc(0), req.remoteInfo.port, req.remoteInfo.address)
                                     }
                                 )
                             },
@@ -108,8 +113,7 @@ export class UdpConfiguration {
                     limit: sizeLimit,
                     serializerConfig: {
                         interceptors: [
-                            messageVaildateInterceptor,
-                            requestServializeInterceptor
+                            messageVaildateInterceptor
                         ]
                     },
                     deserializerConfig: {
@@ -140,10 +144,13 @@ export class UdpConfiguration {
                         return {
                             create: (injector, socket, options) => {
                                 const transportOptions = options.transportOptions ?? {};
-                                return new DefaultServerTransport<Socket, UrlRequestContext>(
+                                return new DefaultServerTransport<Socket, UrlRequestContext, Buffer|string|IReadable>(
                                     injector,
                                     socket,
-                                    serializerFactory.create(injector, transportOptions.serializerConfig),
+                                    serializerFactory.create(injector, {
+                                        backend: contextSerializeBackend,
+                                        ...transportOptions.serializerConfig
+                                    }),
                                     deserializerFactory.create(injector, transportOptions.deserializerConfig),
                                     statusAdapter,
                                     headerAdapter,
@@ -160,11 +167,11 @@ export class UdpConfiguration {
                                         return { payload, properties: rinfo }
                                     }),
                                     (socket, msg, requestContext) => {
-                                        if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
+                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
                                         const rinfo = requestContext.request.properties as RemoteInfo;
 
                                         if (!rinfo) throw new NotSupportedExecption('No remote response to');
-                                        return promisify<Buffer | string, number, string>(socket.send, socket)(msg.payload ?? Buffer.alloc(0), rinfo.port, rinfo.address);
+                                        return promisify<Buffer | string, number, string>(socket.send, socket)(msg ?? Buffer.alloc(0), rinfo.port, rinfo.address);
                                     }
                                 )
                             },
@@ -188,9 +195,8 @@ export class UdpConfiguration {
                     limit: sizeLimit,
                     serializerConfig: {
                         interceptors: [
-                            execptionSerializeInterceptor,
                             lengthLimitSerializeInterceptor,
-                            requestContextServializeInterceptor,
+                            execptionSerializeInterceptor
                         ]
                     },
                     deserializerConfig: {

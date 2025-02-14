@@ -12,7 +12,7 @@ import {
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    DefaultClientTransport, requestTimeoutInterceptor
+    DefaultClientTransport, requestBodyServializeBackend, requestTimeoutInterceptor
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
@@ -20,7 +20,7 @@ import {
     execptionSerializeInterceptor, lengthLimitSerializeInterceptor,
     SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
     TopicRequestContext,
-    requestContextSerializeBodyOnlyBackend
+    contextBodySerializeBackend
 } from '@tsdi/endpoints';
 import { defer, of } from 'rxjs';
 import { NatsClient } from './client/client';
@@ -79,24 +79,11 @@ export class NatsConfiguration {
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
-                                        // backend: (input: NatsRequest<any>, context?: TransportContext) => {
-                                        //     return defer(async () => {
-                                        //         const payload: any = input.body;
-                                        //         if (payload == null || isString(payload) || isBuffer(payload)) return { payload };
-                                        //         if (payload instanceof Uint8Array) return { payload: Buffer.from(payload) };
-                                        //         if (streamAdapter.isReadable(payload)) throw new NotSupportedExecption('Not supported stream payload');
-                                        //         // if (streamAdapter.isReadable(payload)) {
-                                        //         //     return await toBuffer(payload);
-                                        //         // }
-                                        //         return { payload: JSON.stringify(payload) }
-                                        //     })
-                                        // },
-                                        backend: requestContextSerializeBodyOnlyBackend,
+                                        backend: requestBodyServializeBackend,
                                         ...transportOptions.serializerConfig
                                     }),
                                     deserializerFactory.create(injector, {
                                         backend: (input: Packet, context: TransportContext) => {
-                                            const incoming = { ...input } as ClientIncoming;
                                             return of(input);
                                         },
                                         ...transportOptions.deserializerConfig,
@@ -112,7 +99,7 @@ export class NatsConfiguration {
                                     options,
                                     (socket, req, context) => {
                                         socket.subscribe(req!.responseTopic, options.subscriptionOpts);
-                                        return socket.getPacket(r => r.subject == req!.responseTopic)
+                                        return socket.getPacket(context, r => r.subject == req!.responseTopic)
                                     },
 
                                     (socket, msg, req) => {
@@ -185,19 +172,7 @@ export class NatsConfiguration {
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
-                                        backend: requestContextSerializeBodyOnlyBackend,
-                                        // backend: (input: TopicRequestContext, context?: TransportContext) => {
-                                        //     return defer(async () => {
-                                        //         const payload: any = input.body;
-                                        //         if (payload == null || isString(payload) || isBuffer(payload)) return { payload };
-                                        //         if (payload instanceof Uint8Array) return { payload: Buffer.from(payload) };
-                                        //         if (streamAdapter.isReadable(payload)) throw new NotSupportedExecption('Not supported stream payload');
-                                        //         // if (streamAdapter.isReadable(payload)) {
-                                        //         //     return await toBuffer(payload);
-                                        //         // }
-                                        //         return { payload: JSON.stringify(payload) }
-                                        //     })
-                                        // },
+                                        backend: contextBodySerializeBackend,
                                         ...transportOptions.serializerConfig
                                     }),
                                     deserializerFactory.create(injector, {
@@ -216,14 +191,14 @@ export class NatsConfiguration {
                                     outgoingFactory,
                                     transferFactory.create(injector, transportOptions.transferConfig),
                                     options,
-                                    (socket) => socket.getPacket(m => !m.subject.endsWith('.reply')),
+                                    (socket, context) => socket.getPacket(context, m => !m.subject.endsWith('.reply')),
                                     (socket, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
                                         if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
                                         const headers = socket.mergeHeaders(requestContext.response.headers, options.publishOpts?.headers);
                                         requestContext.request.id && headers.set('identity', String(requestContext.request.id));
-                                        // headers.set('status', requestContext.status);
-                                        // headers.set('statusMessage', requestContext.statusMessage);                                      
+                                        requestContext.status && headers.set('status', requestContext.status);
+                                        requestContext.statusMessage && headers.set('statusMessage', requestContext.statusMessage);                                      
 
                                         return socket.publish(requestContext.responseTopic, msg ?? Buffer.alloc(0), {
                                             ...options.publishOpts,
