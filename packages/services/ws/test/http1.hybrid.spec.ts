@@ -33,6 +33,7 @@ import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
             {
                 transport: 'http',
                 serverOpts: {
+                    timeout: 0,
                     interceptors: [
                         JsonInterceptor,
                         ContentInterceptor,

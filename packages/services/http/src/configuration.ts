@@ -311,7 +311,6 @@ export class HttpConfiguration {
                         lengthLimitSerializeInterceptor
                     ]
                 },
-                
                 detailError: true,
                 interceptorsToken: HTTP_SERV_INTERCEPTORS,
                 filtersToken: HTTP_SERV_FILTERS,

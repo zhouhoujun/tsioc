@@ -1,4 +1,4 @@
-import { InjectFlags, promisify } from '@tsdi/ioc';
+import { InjectFlags, isString, promisify } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
@@ -6,7 +6,8 @@ import {
     messageVaildateInterceptor, PayloadDeserializeInterceptor, Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, UrlClientIncomingFactory, UrlOutgoingFactory,
     ev,
-    NotSupportedExecption
+    NotSupportedExecption,
+    isBuffer
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
@@ -93,7 +94,9 @@ export class WsConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (socket, req, context) => fromEvent(socket, options.enableStream ? ev.DATA : ev.MESSAGE),
+                                    (socket, req, context) => fromEvent(socket, options.enableStream ? ev.DATA : ev.MESSAGE, (payload: any) => {
+                                        return isString(payload) || isBuffer(payload) ? payload : payload.data
+                                    }),
                                     async (socket, msg, req) => {
                                         const payload = msg.payload ?? msg;
                                         if (streamAdapter.isReadable(payload)) {
@@ -192,7 +195,9 @@ export class WsConfiguration {
                                     outgoingFactory,
                                     transferFactory.create(injector, options.enableStream ? options.streamTransport?.transferConfig : options.transferConfig),
                                     options,
-                                    (socket, context) => fromEvent(socket, options.enableStream ? ev.DATA : ev.MESSAGE),
+                                    (socket, context) => fromEvent(socket, options.enableStream ? ev.DATA : ev.MESSAGE, (payload: any) => {
+                                        return isString(payload) || isBuffer(payload) ? payload : payload.data
+                                    }),
                                     async (socket, msg, requestContext) => {
                                         const payload = msg.payload ?? msg;
                                         if (streamAdapter.isReadable(payload)) {
@@ -221,14 +226,11 @@ export class WsConfiguration {
                 },
                 serializerConfig: {
                     interceptors: [
-                        messageVaildateInterceptor
+                        lengthLimitSerializeInterceptor,
+                        execptionSerializeInterceptor
                     ]
                 },
-                deserializerConfig: {
-                    interceptors: [
-                        deatchPacketIdInterceptor,
-                    ]
-                },
+                deserializerConfig: {},
                 transportOptions: {
                     limit: sizeLimit
                 },

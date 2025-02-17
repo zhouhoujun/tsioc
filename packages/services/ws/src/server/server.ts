@@ -5,7 +5,7 @@ import { LOCALHOST } from '@tsdi/common';
 import { InternalServerExecption, ev } from '@tsdi/common/transport';
 import { BindServerEvent, RequestContext, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { WebSocketServer, createWebSocketStream } from 'ws';
-import { Subject, Subscription, first, fromEvent, merge } from 'rxjs';
+import { Subject, finalize, first, fromEvent, merge } from 'rxjs';
 import * as tls from 'tls';
 import { WS_BIND_FILTERS, WS_BIND_GUARDS, WS_BIND_INTERCEPTORS, WsServerOpts } from './options';
 import { WsRequestHandler } from './handler';
@@ -41,15 +41,18 @@ export class WsServer extends Server<RequestContext, WsServerOpts> {
     }
 
     protected async setup(bindServer?: any): Promise<any> {
-        const serverOpts = {
-            ...this.getOptions().serverOpts
-        };
+        const options = this.getOptions();
+        if (!options.serverOpts) {
+            options.serverOpts = {};
+        }
+        const serverOpts = options.serverOpts;
         if (bindServer) {
             serverOpts.server = bindServer;
         } else if (!serverOpts.server && !serverOpts.port) {
             serverOpts.port = 3000;
         }
         this.serv = new WebSocketServer(serverOpts);
+
     }
 
     protected async onStart(bindServer?: any): Promise<any> {
@@ -73,7 +76,9 @@ export class WsServer extends Server<RequestContext, WsServerOpts> {
         this.serv.on(ev.CONNECTION, (socket) => {
             const stream = options.enableStream ? createWebSocketStream(socket) : socket;
             const trasnport = factory.create(injector, stream, options);
-            trasnport.handle(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
+            trasnport.handle(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE)).pipe(
+                first()
+            ));
         });
 
 

@@ -26,9 +26,7 @@ export class WsClient extends AbstractClient<UrlRequestOptions, WsRequest<any>, 
         return new Observable<ClientTransport>((observer) => {
             const options = this.getOptions();
             if (!this.socket) {
-                this.session?.destroy();
                 this.socket = new WebSocket(options.url!, options.connectOpts);
-                this.session = null;
             }
 
             const onOpen = () => {
@@ -50,12 +48,13 @@ export class WsClient extends AbstractClient<UrlRequestOptions, WsRequest<any>, 
                 .on(ev.CLOSE, onClose)
                 .on(ev.ERROR, onError);
 
-            if (this.socket.isPaused) {
-                // this.session?.destroy();
-                // this.session = null;
-                this.socket.resume();
-            } else if (!this.session) {
-                onOpen();
+            if (this.socket.readyState == this.socket.OPEN) {
+                if (this.session) {
+                    observer.next(this.session);
+                    observer.complete();
+                }
+            } else if (this.socket.readyState != this.socket.CONNECTING) {
+                this.socket.resume()
             }
 
             return () => {
@@ -71,7 +70,7 @@ export class WsClient extends AbstractClient<UrlRequestOptions, WsRequest<any>, 
     protected async onShutdown(): Promise<void> {
         if (!this.socket) return;
         await this.session?.destroy?.();
-        this.socket.terminate();
+        this.socket.close();
         this.socket.removeAllListeners();
         this.socket = null;
     }

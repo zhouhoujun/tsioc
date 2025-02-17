@@ -1,4 +1,4 @@
-import { Injectable, isFunction, lang, promisify, isNumber, isString, ProvdierOf, ArgumentExecption } from '@tsdi/ioc';
+import { Injectable, isFunction, lang, promisify, isNumber, isString, ProvdierOf, ArgumentExecption, isNil } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, ModuleLoader } from '@tsdi/core';
 import { ListenService } from '@tsdi/common';
 import { InternalServerExecption } from '@tsdi/common/transport';
@@ -100,7 +100,7 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
             await loader.register(injector, opts.controllers);
         }
 
-        const option = opts.serverOpts ?? {};
+        const option = opts.serverOpts;
         const isSecure = this.isSecure;
         if (!opts.protocol) {
             opts.protocol = this._secure ? 'https' : 'http';
@@ -113,6 +113,8 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
             this._server = isSecure ? https.createServer(option as http.ServerOptions)
                 : http.createServer(option as https.ServerOptions);
         }
+
+        if (!isNil(opts.timeout)) this._server.setTimeout(opts.timeout);
 
         return this._server;
     }
