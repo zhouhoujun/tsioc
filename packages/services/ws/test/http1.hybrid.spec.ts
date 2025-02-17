@@ -20,14 +20,14 @@ import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
         LoggerModule,
         ServerEndpointModule,
         ClientModule.register([
-            { transport: 'ws', clientOpts: {} },
+            { transport: 'ws', clientOpts: { } },
             { transport: 'http', clientOpts: {url: 'http://localhost:3000'} }
         ]),
         EndpointModule.register([
             {
                 transport: 'ws',
                 serverOpts: {
-                    heybird: true,
+                    heybird: true
                 }
             },
             {

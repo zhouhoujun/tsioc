@@ -1,37 +1,42 @@
-import { InjectFlags } from '@tsdi/ioc';
+import { InjectFlags, promisify } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
     FileAdapter, MimeAdapter, PacketDeserializeInterceptor, packetifyInterceptor, messageSerializeInterceptor,
     messageVaildateInterceptor, PayloadDeserializeInterceptor, Redirector, SerializerFactory, StatusAdapter,
-    StreamAdapter, UrlClientIncomingFactory, UrlOutgoingFactory
+    StreamAdapter, UrlClientIncomingFactory, UrlOutgoingFactory,
+    ev,
+    NotSupportedExecption
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
+    DefaultClientTransport,
     requestPacketIfySerializeInterceptor,
-    requestSerializeBackend, requestTimeoutInterceptor, SocketClientTransport
+    requestSerializeBackend, requestTimeoutInterceptor
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
     contextSerializeBackend, lengthLimitSerializeInterceptor, SERVER_MODULES,
-    ServerTransferFactory, ServiceModuleOpts, SocketServerTransport,
+    ServerTransferFactory, ServiceModuleOpts,
     execptionSerializeInterceptor,
-    packetIfySerializeInterceptor
+    packetIfySerializeInterceptor,
+    DefaultServerTransport
 } from '@tsdi/endpoints';
 import { WsClient } from './client/client';
-import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS } from './client/options';
+import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS, WsClientOpts } from './client/options';
 import { WsHandler } from './client/handler';
 import { WsServer } from './server/server';
-import { WS_SERV_FILTERS, WS_SERV_GUARDS, WS_SERV_INTERCEPTORS } from './server/options';
+import { WS_SERV_FILTERS, WS_SERV_GUARDS, WS_SERV_INTERCEPTORS, WsServerOpts } from './server/options';
 import { WsRequestHandler } from './server/handler';
 import { DefaultResponseFactory, HeaderAdapter, PatternFormatter, ResponseFactory } from '@tsdi/common';
+import { fromEvent } from 'rxjs';
 
 
 
 
 // const defaultMaxSize = 65515; //1024 * 64 - 20;
-// const defaultMaxSize = 1048576; //1024 * 1024;
+const sizeLimit = 1048576; //1024 * 1024;
 // const defaultMaxSize = 5242880; //1024 * 1024 * 5;
 // const defaultMaxSize = 10485760; //1024 * 1024 * 10;
 
@@ -68,24 +73,35 @@ export class WsConfiguration {
                         incomingFactory: UrlClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
                         redirector: Redirector | null) => {
                         return {
-                            create: (injector, socket, options) => {
-                                return new SocketClientTransport(
+                            create: (injector, socket, options: WsClientOpts) => {
+                                options.transportOptions = options.enableStream ? options.streamTransport?.transportOptions : options.transportOptions;
+
+                                return new DefaultClientTransport(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
                                         backend: requestSerializeBackend,
-                                        ...options.serializerConfig
+                                        ...(options.enableStream ? options.streamTransport?.serializerConfig : options.serializerConfig)
                                     }),
-                                    deserializerFactory.create(injector, options.deserializerConfig),
+                                    deserializerFactory.create(injector, options.enableStream ? options.streamTransport?.deserializerConfig : options.deserializerConfig),
                                     formatter,
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
                                     incomingFactory,
-                                    transferFactory.create(injector, options.transferConfig),
+                                    transferFactory.create(injector, options.enableStream ? options.streamTransport?.transferConfig : options.transferConfig),
                                     responseFactory,
                                     redirector,
-                                    options
+                                    options,
+                                    (socket, req, context) => fromEvent(socket, options.enableStream ? ev.DATA : ev.MESSAGE),
+                                    async (socket, msg, req) => {
+                                        const payload = msg.payload ?? msg;
+                                        if (streamAdapter.isReadable(payload)) {
+                                            if (!options.enableStream) throw new NotSupportedExecption('Not supported stream payload');
+                                            return streamAdapter.pipeTo(payload, socket, { end: false });
+                                        }
+                                        return promisify<any, void>(options.enableStream ? socket.write : socket.send, socket)(payload)
+                                    }
                                 )
                             },
                         }
@@ -105,26 +121,41 @@ export class WsConfiguration {
                 },
                 serializerConfig: {
                     interceptors: [
-                        messageVaildateInterceptor,
-                        messageSerializeInterceptor,
-                        requestPacketIfySerializeInterceptor
+                        messageVaildateInterceptor
                     ]
                 },
                 deserializerConfig: {
                     interceptors: [
-                        packetifyInterceptor,
                         deatchPacketIdInterceptor,
-                        PacketDeserializeInterceptor,
-                        PayloadDeserializeInterceptor
                     ]
                 },
                 transportOptions: {
-                    delimiter
+                    limit: sizeLimit
+                },
+                streamTransport: {
+                    serializerConfig: {
+                        interceptors: [
+                            messageVaildateInterceptor,
+                            messageSerializeInterceptor,
+                            requestPacketIfySerializeInterceptor
+                        ]
+                    },
+                    deserializerConfig: {
+                        interceptors: [
+                            packetifyInterceptor,
+                            deatchPacketIdInterceptor,
+                            PacketDeserializeInterceptor,
+                            PayloadDeserializeInterceptor
+                        ]
+                    },
+                    transportOptions: {
+                        delimiter
+                    },
                 },
                 interceptors: [
                     requestTimeoutInterceptor
                 ]
-            }
+            } as WsClientOpts
         }
     }
 
@@ -141,15 +172,16 @@ export class WsConfiguration {
                         fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
                         incomingFactory: UrlClientIncomingFactory, outgoingFactory: UrlOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
-                            create: (injector, socket, options) => {
-                                return new SocketServerTransport(
+                            create: (injector, socket, options: WsServerOpts) => {
+                                options.transportOptions = options.enableStream ? options.streamTransport?.transportOptions : options.transportOptions;
+                                return new DefaultServerTransport(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
                                         backend: contextSerializeBackend,
-                                        ...options.serializerConfig
+                                        ...(options.enableStream ? options.streamTransport?.serializerConfig : options.serializerConfig)
                                     }),
-                                    deserializerFactory.create(injector, options.deserializerConfig),
+                                    deserializerFactory.create(injector, options.enableStream ? options.streamTransport?.deserializerConfig : options.deserializerConfig),
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
@@ -158,8 +190,17 @@ export class WsConfiguration {
                                     acceptsPriority,
                                     incomingFactory,
                                     outgoingFactory,
-                                    transferFactory.create(injector, options.transferConfig),
-                                    options
+                                    transferFactory.create(injector, options.enableStream ? options.streamTransport?.transferConfig : options.transferConfig),
+                                    options,
+                                    (socket, context) => fromEvent(socket, options.enableStream ? ev.DATA : ev.MESSAGE),
+                                    async (socket, msg, requestContext) => {
+                                        const payload = msg.payload ?? msg;
+                                        if (streamAdapter.isReadable(payload)) {
+                                            if (!options.enableStream) throw new NotSupportedExecption('Not supported stream payload');
+                                            return streamAdapter.pipeTo(payload, socket, { end: false });
+                                        }
+                                        return promisify<any, void>(options.enableStream ? socket.write : socket.send, socket)(payload)
+                                    }
                                 )
                             },
                         }
@@ -180,21 +221,36 @@ export class WsConfiguration {
                 },
                 serializerConfig: {
                     interceptors: [
-                        lengthLimitSerializeInterceptor,
-                        messageSerializeInterceptor,
-                        packetIfySerializeInterceptor,
-                        execptionSerializeInterceptor
+                        messageVaildateInterceptor
                     ]
                 },
                 deserializerConfig: {
                     interceptors: [
-                        packetifyInterceptor,
-                        PacketDeserializeInterceptor,
-                        PayloadDeserializeInterceptor
+                        deatchPacketIdInterceptor,
                     ]
                 },
                 transportOptions: {
-                    delimiter
+                    limit: sizeLimit
+                },
+                streamTransport: {
+                    serializerConfig: {
+                        interceptors: [
+                            lengthLimitSerializeInterceptor,
+                            messageSerializeInterceptor,
+                            packetIfySerializeInterceptor,
+                            execptionSerializeInterceptor
+                        ]
+                    },
+                    deserializerConfig: {
+                        interceptors: [
+                            packetifyInterceptor,
+                            PacketDeserializeInterceptor,
+                            PayloadDeserializeInterceptor
+                        ]
+                    },
+                    transportOptions: {
+                        delimiter
+                    },
                 },
 
                 content: {
@@ -211,7 +267,7 @@ export class WsConfiguration {
                     ExecptionHandlerFilter,
                     FinalizeFilter
                 ]
-            }
+            } as WsServerOpts
         }
     }
 }

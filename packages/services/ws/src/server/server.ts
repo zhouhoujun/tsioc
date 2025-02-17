@@ -4,7 +4,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST } from '@tsdi/common';
 import { InternalServerExecption, ev } from '@tsdi/common/transport';
 import { BindServerEvent, RequestContext, Server, ServerTransportFactory } from '@tsdi/endpoints';
-import { Server as SocketServer, WebSocketServer, createWebSocketStream } from 'ws';
+import { WebSocketServer, createWebSocketStream } from 'ws';
 import { Subject, Subscription, first, fromEvent, merge } from 'rxjs';
 import * as tls from 'tls';
 import { WS_BIND_FILTERS, WS_BIND_GUARDS, WS_BIND_INTERCEPTORS, WsServerOpts } from './options';
@@ -17,7 +17,7 @@ import { WsRequestHandler } from './handler';
 @Injectable()
 export class WsServer extends Server<RequestContext, WsServerOpts> {
 
-    private serv?: SocketServer | null;
+    private serv?: WebSocketServer | null;
 
     @InjectLog()
     private logger!: Logger;
@@ -49,7 +49,7 @@ export class WsServer extends Server<RequestContext, WsServerOpts> {
         } else if (!serverOpts.server && !serverOpts.port) {
             serverOpts.port = 3000;
         }
-        this.serv = serverOpts.noServer || serverOpts.server ? new WebSocketServer(serverOpts) : new SocketServer(serverOpts);
+        this.serv = new WebSocketServer(serverOpts);
     }
 
     protected async onStart(bindServer?: any): Promise<any> {
@@ -71,8 +71,8 @@ export class WsServer extends Server<RequestContext, WsServerOpts> {
         }
 
         this.serv.on(ev.CONNECTION, (socket) => {
-            const stream = createWebSocketStream(socket);
-            const trasnport = factory.create(injector, stream, options);            
+            const stream = options.enableStream ? createWebSocketStream(socket) : socket;
+            const trasnport = factory.create(injector, stream, options);
             trasnport.handle(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
         });
 

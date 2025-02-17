@@ -33,7 +33,7 @@ export class WsClient extends AbstractClient<UrlRequestOptions, WsRequest<any>, 
 
             const onOpen = () => {
                 if (!this.session) {
-                    const socket = createWebSocketStream(this.socket!);
+                    const socket = options.enableStream ? createWebSocketStream(this.socket!) : this.socket;
                     const factory = this.handler.injector.get(ClientTransportFactory);
                     this.session = factory.create(this.handler.injector, socket, options);
                 }
@@ -50,12 +50,11 @@ export class WsClient extends AbstractClient<UrlRequestOptions, WsRequest<any>, 
                 .on(ev.CLOSE, onClose)
                 .on(ev.ERROR, onError);
 
-
             if (this.socket.isPaused) {
                 // this.session?.destroy();
                 // this.session = null;
                 this.socket.resume();
-            } else if (this.socket.OPEN) {
+            } else if (!this.session) {
                 onOpen();
             }
 

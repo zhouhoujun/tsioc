@@ -3,6 +3,7 @@ import { ModuleType, ProvdierOf, ProviderType, Token, Type } from '@tsdi/ioc';
 import { ClientBackend } from './backend';
 import { ClientOpts } from './options';
 import { AbstractClient } from './AbstractClient';
+import { TransportConfigure } from '@tsdi/common/transport';
 
 
 /**
@@ -25,7 +26,7 @@ export interface BasicClientConfig {
 }
 
 export interface MqttClientConfig extends BasicClientConfig {
-    transport: 'mqtt'|'mqtts';
+    transport: 'mqtt' | 'mqtts';
     /**
      * client options.
      */
@@ -70,7 +71,10 @@ export interface WsClientConfig extends BasicClientConfig {
     /**
      * client options.
      */
-    clientOpts?: ClientOpts;
+    clientOpts?: ClientOpts & {
+        enableStream?: boolean;
+        streamTransport?: TransportConfigure;
+    };
 }
 
 export interface TcpMicroClientConfig extends BasicClientConfig {
@@ -110,7 +114,7 @@ export interface TcpClientConfig extends BasicClientConfig {
 }
 
 export interface HttpClientConfig extends BasicClientConfig {
-    transport: 'http' | 'https';    
+    transport: 'http' | 'https';
     /**
      * client options.
      */
@@ -124,7 +128,7 @@ export interface HttpClientConfig extends BasicClientConfig {
 }
 
 export interface CoapClientConfig extends BasicClientConfig {
-    transport: 'coap';    
+    transport: 'coap';
     /**
      * client options.
      */
@@ -132,7 +136,7 @@ export interface CoapClientConfig extends BasicClientConfig {
 }
 
 export interface GrpcClientConfig extends BasicClientConfig {
-    transport: 'grpc';    
+    transport: 'grpc';
     /**
      * client options.
      */
@@ -142,7 +146,7 @@ export interface GrpcClientConfig extends BasicClientConfig {
 
 export type ClientConfig = MicroClientConfig | TcpClientConfig | HttpClientConfig | CoapClientConfig | GrpcClientConfig;
 
-export type ClientConfigs =  ClientConfig & {
+export type ClientConfigs = ClientConfig & {
 
     /**
      * client token.

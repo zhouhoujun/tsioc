@@ -23,6 +23,9 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         provideClient([
             {
                 transport: 'ws',
+                clientOpts: {
+                    enableStream: true
+                }
             },
             {
                 transport: 'tcp',
@@ -53,6 +56,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
             {
                 transport: 'ws',
                 serverOpts: {
+                    enableStream: true,
                     interceptors: [
                         BigFileInterceptor,
                         JsonInterceptor,

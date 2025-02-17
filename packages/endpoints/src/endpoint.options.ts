@@ -4,6 +4,7 @@ import { CommonProtocols, Protocols } from '@tsdi/common';
 import { Http1ServerOpts, Http2SecureServerOpts, Http2ServerOpts, HttpsServerOpts, ServerOpts } from './server.options';
 import { Server } from './Server';
 import { MiddlewareOpts } from './middleware/middleware';
+import { TransportConfigure } from '@tsdi/common/transport';
 
 
 /**
@@ -74,7 +75,10 @@ export interface AmqpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
 
 export interface WsServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'ws' | 'wss';
-    serverOpts?: ServerOpts<TSerOpts> & HeybirdOpts
+    serverOpts?: ServerOpts<TSerOpts> & HeybirdOpts & {
+        enableStream?: boolean;
+        streamTransport?: TransportConfigure;
+    }
 }
 
 export interface TcpMicroServiceOpts<TSerOpts = any> extends BasicServiceOpts {

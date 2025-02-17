@@ -66,8 +66,11 @@ export class WsService {
                 transport: 'ws',
                 client: 'ws1',
                 clientOpts: {
-                    transportOptions: {
-                        maxSize: 1024 * 1024 * 20
+                    enableStream: true,
+                    streamTransport: {
+                        transportOptions: {
+                            maxSize: 1024 * 1024 * 20
+                        }
                     }
                     // connectOpts: {
                     //     port: 6379
@@ -79,8 +82,11 @@ export class WsService {
                 transport: 'ws',
                 client: 'ws2',
                 clientOpts: {
-                    transportOptions: {
-                        maxSize: 1024 * 1024 * 20
+                    enableStream: true,
+                    streamTransport: {
+                        transportOptions: {
+                            maxSize: 1024 * 1024 * 20
+                        }
                     }
                 }
             }
@@ -88,8 +94,11 @@ export class WsService {
         EndpointModule.register({
             transport: 'ws',
             serverOpts: {
-                transportOptions: {
-                    maxSize: 1024 * 1024 * 20
+                enableStream: true,
+                streamTransport: {
+                    transportOptions: {
+                        maxSize: 1024 * 1024 * 20
+                    }
                 }
             }
         })

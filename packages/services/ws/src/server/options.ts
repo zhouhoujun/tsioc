@@ -1,5 +1,6 @@
 import { tokenId } from '@tsdi/ioc';
 import { GuardLike, Filter, Interceptor } from '@tsdi/core';
+import { TransportConfigure } from '@tsdi/common/transport';
 import { BindServerEvent, ServerOpts } from '@tsdi/endpoints';
 import { ServerOptions } from 'ws';
 
@@ -13,6 +14,9 @@ export interface WsServerOpts extends ServerOpts<ServerOptions> {
      * heybird or not.
      */
     heybird?: boolean;
+    enableStream?: boolean;
+    streamTransport?: TransportConfigure;
+
 }
 
 /**
