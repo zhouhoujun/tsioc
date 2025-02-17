@@ -157,7 +157,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
                 if (microservice) {
                     serverOpts.microservice = microservice;
                 }
-                if (serverOpts.protocol) {
+                if (!serverOpts.protocol) {
                     serverOpts.protocol = options.transport
                 }
 

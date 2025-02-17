@@ -246,20 +246,24 @@ export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = Reques
 
     protected queryParams?: boolean;
 
-    constructor(init: RequestInitOpts<T, TOptions>, defaultMethod = '') {
+    constructor(protected initOptions: RequestInitOpts<T, TOptions>, defaultMethod = '') {
         super()
-        this.id = init.id;
-        this.headers = new HeaderMappings(init.headers);
-        this.payload = init.payload ?? null;
-        this.payload = init.body ?? init.payload ?? null;
-        this.params = new RequestParams(init);
-        this.context = init.context;
-        this.responseType = init.responseType ?? 'json';
-        this.forceJson = init.responseType === 'json';
-        this.observe = init.observe ?? 'body';
-        this.withCredentials = !!init.withCredentials;
-        this.timeout = init.timeout;
+        this.id = initOptions.id;
+        this.headers = new HeaderMappings(initOptions.headers);
+        this.payload = initOptions.payload ?? null;
+        this.payload = initOptions.body ?? initOptions.payload ?? null;
+        this.params = new RequestParams(initOptions);
+        this.context = initOptions.context;
+        this.responseType = initOptions.responseType ?? 'json';
+        this.forceJson = initOptions.responseType === 'json';
+        this.observe = initOptions.observe ?? 'body';
+        this.withCredentials = !!initOptions.withCredentials;
+        this.timeout = initOptions.timeout;
 
+    }
+
+    getExtentOptions(): any {
+        return this.initOptions
     }
 
     protected cloneOpts(update: RequestCloneOpts<any, TOptions>): RequestInitOpts<any, TOptions> {

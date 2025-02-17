@@ -1,10 +1,9 @@
-import { InjectFlags, isString } from '@tsdi/ioc';
-import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
-import { DefaultResponseFactory, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
+import { InjectFlags } from '@tsdi/ioc';
+import { Bean, Configuration, ExecptionHandlerFilter, HandlerFn, InterceptorFn } from '@tsdi/core';
+import { DefaultResponseFactory, HeaderAdapter, IHeaders, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
-    ClientIncoming,
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
-    FileAdapter, isBuffer, MimeAdapter, NotSupportedExecption, Packet,
+    FileAdapter, MimeAdapter, NotSupportedExecption, Packet,
     messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory,
     TransportContext,
@@ -22,7 +21,7 @@ import {
     TopicRequestContext,
     contextBodySerializeBackend
 } from '@tsdi/endpoints';
-import { defer, of } from 'rxjs';
+import { defer, map, of } from 'rxjs';
 import { NatsClient } from './client/client';
 import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS, NatsClientOpts } from './client/options';
 import { NatsHandler } from './client/handler';
@@ -30,7 +29,7 @@ import { NatsServer } from './server/server';
 import { NATS_SERV_FILTERS, NATS_SERV_GUARDS, NATS_SERV_INTERCEPTORS, NatsMicroServOpts } from './server/options';
 import { NatsRequestHandler } from './server/handler';
 import { NatsRequest } from './client/request';
-import { NatsSocket } from './socket';
+import { NatsSocket, NATS_MESSAGE } from './socket';
 import { NatsPatternFormatter } from './pattern';
 
 
@@ -38,6 +37,24 @@ import { NatsPatternFormatter } from './pattern';
 const sizeLimit = 1048576; // 1024 * 1024;
 // const defaultMaxSize = 524288; //1024 * 512;
 
+const attachHeaders: InterceptorFn = (input: any, next: HandlerFn, context: TransportContext) => {
+    return next(input, context)
+        .pipe(
+            map(body => {
+                const pkg: any = { body };
+                const msg = context.get(NATS_MESSAGE)!;
+                pkg.topic = msg.subject;
+                pkg.id = msg.headers?.get('identity');
+                const headers = {} as IHeaders;
+                msg.headers?.keys().forEach(key => {
+                    headers[key] = msg.headers?.get(key);
+                });
+                pkg.headers = headers;
+
+                return pkg;
+            })
+        )
+}
 
 
 @Configuration()
@@ -81,12 +98,7 @@ export class NatsConfiguration {
                                         backend: requestBodySerializeBackend,
                                         ...options.serializerConfig
                                     }),
-                                    deserializerFactory.create(injector, {
-                                        backend: (input: Packet, context: TransportContext) => {
-                                            return of(input);
-                                        },
-                                        ...options.deserializerConfig,
-                                    }),
+                                    deserializerFactory.create(injector, options.deserializerConfig),
                                     formatter,
                                     statusAdapter,
                                     headerAdapter,
@@ -136,7 +148,8 @@ export class NatsConfiguration {
                 },
                 deserializerConfig: {
                     interceptors: [
-                        deatchPacketIdInterceptor
+                        deatchPacketIdInterceptor,
+                        attachHeaders
                     ]
                 },
                 transportOptions: {
@@ -173,12 +186,7 @@ export class NatsConfiguration {
                                         backend: contextBodySerializeBackend,
                                         ...options.serializerConfig
                                     }),
-                                    deserializerFactory.create(injector, {
-                                        backend: (input: Packet, context: TransportContext) => {
-                                            return of(input);
-                                        },
-                                        ...options.deserializerConfig
-                                    }),
+                                    deserializerFactory.create(injector, options.deserializerConfig),
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
@@ -228,7 +236,9 @@ export class NatsConfiguration {
                     ]
                 },
                 deserializerConfig: {
-                    interceptors: []
+                    interceptors: [
+                        attachHeaders
+                    ]
                 },
                 transportOptions: {
                     limit: sizeLimit,

@@ -5,7 +5,7 @@ import { Msg, MsgHdrs, NatsConnection, Payload, PublishOptions, Subscription, Su
 import { Observable, BehaviorSubject, filter, map } from 'rxjs';
 
 
-const NATS_MESSAGE = tokenId<Msg>('NATS_MESSAGE');
+export const NATS_MESSAGE = tokenId<Msg>('NATS_MESSAGE');
 
 export class NatsSocket {
 
@@ -26,22 +26,12 @@ export class NatsSocket {
         return this.subj$.pipe(filter(r => !!r))
     }
 
-    getPacket(context: TransportContext, filterFn: (msg: Msg) => boolean): Observable<Packet> {
+    getPacket(context: TransportContext, filterFn: (msg: Msg) => boolean): Observable<Buffer> {
         return this.subj$.pipe(
             filter(r => !!r && filterFn(r)),
             map(r => {
                 context.set(NATS_MESSAGE, r);
-                const headers = {} as IHeaders;
-                r.headers?.keys().forEach(key => {
-                    headers[key] = r.headers?.get(key);
-                });
-                const id = r.headers?.get('identity');
-                return {
-                    id,
-                    topic: r.subject,
-                    headers,
-                    payload: Buffer.from(r.data)
-                }
+                return Buffer.from(r.data)
             })
         )
     }

@@ -1,22 +1,24 @@
-import { InjectFlags, isString, promisify } from '@tsdi/ioc';
+import { InjectFlags, isString, promisify, tokenId } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
     ev,
-    FileAdapter, MimeAdapter, NotSupportedExecption, packetifyInterceptor,
+    FileAdapter, MimeAdapter, NotSupportedExecption,
     messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
-    StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory
+    StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory,
+    IReadable,
+    TEXT_DECODER
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    DefaultClientTransport, requestPacketIfySerializeInterceptor, requestSerializeBackend, requestTimeoutInterceptor
+    DefaultClientTransport, requestSerializeBackend, requestTimeoutInterceptor
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter, execptionSerializeInterceptor,
     lengthLimitSerializeInterceptor, SERVER_MODULES,
     ServerTransferFactory, ServiceModuleOpts, TopicRequestContext,
-    contextSerializeBackend, packetIfySerializeInterceptor
+    contextSerializeBackend
 } from '@tsdi/endpoints';
 import { RedisClient } from './client/client';
 import { REDIS_CLIENT_FILTERS, REDIS_CLIENT_INTERCEPTORS } from './client/options';
@@ -38,9 +40,7 @@ const sizeLimit = 1048576; //1024 * 1024;
 // const defaultMaxSize = 5242880; //1024 * 1024 * 5;
 // const defaultMaxSize = 10485760; //1024 * 1024 * 10;
 
-
-
-const delimiter = Buffer.from('#');
+export const REDIS_PATTERN = tokenId<string>('REDIS_PATTERN');
 
 @Configuration()
 export class RedisConfiguration {
@@ -79,40 +79,44 @@ export class RedisConfiguration {
                         const decoder = new TextDecoder();
                         return {
                             create: (injector, socket, options) => {
-                                const transportOptions = options.transportOptions ?? {};
                                 const subscribes = new Set<string>();
-                                return new DefaultClientTransport<ReidsSocket, RedisRequest<any>>(
+                                return new DefaultClientTransport<ReidsSocket, RedisRequest<any>, string | Buffer | IReadable>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
                                         backend: requestSerializeBackend,
-                                        ...transportOptions.serializerConfig
+                                        ...options.serializerConfig
                                     }),
-                                    deserializerFactory.create(injector, transportOptions.deserializerConfig),
+                                    deserializerFactory.create(injector, options.deserializerConfig),
                                     formatter,
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
                                     incomingFactory,
-                                    transferFactory.create(injector, transportOptions.transferConfig),
+                                    transferFactory.create(injector, options.transferConfig),
                                     responseFactory,
                                     redirector,
                                     options,
                                     (socket, req, context) => merge(
                                         fromEvent(socket.subscriber, ev.MESSAGE_BUFFER, (topic: string | Buffer, payload: string | Buffer) => {
-                                            return { topic: isString(topic) ? topic : decoder.decode(topic), payload }
+                                            const topicStr = isString(topic) ? topic : context.get(TEXT_DECODER).decode(topic);
+                                            if(topicStr !== req.responseTopic) return null;
+                                            return payload 
                                         }),
                                         fromEvent(socket.subscriber, 'pmessageBuffer', (pattern: string, topic: string | Buffer, payload: string | Buffer) => {
-                                            return { pattern, topic: isString(topic) ? topic : decoder.decode(topic), payload }
+                                            const topicStr = isString(topic) ? topic : context.get(TEXT_DECODER).decode(topic);
+                                            if(topicStr !== req.responseTopic) return null;
+                                            context.set(REDIS_PATTERN, pattern);
+                                            return  payload
                                         })
-                                    ).pipe(filter(msg => msg.topic === req.responseTopic)),
+                                    ).pipe(filter(msg => !!msg)),
                                     async (socket, msg, req) => {
                                         if (req.responseTopic && !subscribes.has(req.responseTopic)) {
                                             subscribes.add(req.responseTopic);
                                             await promisify<string>(socket.subscriber.subscribe, socket.subscriber)(req.responseTopic);
                                         }
-                                        if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
-                                        return await promisify<string, Buffer | string>(socket.publisher.publish, socket.publisher)(req.topic, msg.payload ?? Buffer.alloc(0))
+                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
+                                        return await promisify<string, Buffer | string>(socket.publisher.publish, socket.publisher)(req.topic, msg ?? Buffer.alloc(0))
                                     },
                                     async (socket) => {
                                         if (subscribes.size) {
@@ -136,19 +140,18 @@ export class RedisConfiguration {
                         [Redirector, InjectFlags.Optional]
                     ]
                 },
+                serializerConfig: {
+                    interceptors: [
+                        messageVaildateInterceptor
+                    ]
+                },
+                deserializerConfig: {
+                    interceptors: [
+                        deatchPacketIdInterceptor
+                    ]
+                },
                 transportOptions: {
                     limit: sizeLimit,
-                    serializerConfig: {
-                        interceptors: [
-                            messageVaildateInterceptor,
-                            requestPacketIfySerializeInterceptor
-                        ]
-                    },
-                    deserializerConfig: {
-                        interceptors: [
-                            deatchPacketIdInterceptor
-                        ]
-                    }
                 },
                 interceptors: [
                     requestTimeoutInterceptor
@@ -175,15 +178,14 @@ export class RedisConfiguration {
                         const decoder = new TextDecoder();
                         return {
                             create: (injector, socket, options) => {
-                                const transportOptions = options.transportOptions ?? {};
-                                return new DefaultServerTransport<ReidsSocket, TopicRequestContext>(
+                                return new DefaultServerTransport<ReidsSocket, TopicRequestContext, string | Buffer | IReadable>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
                                         backend: contextSerializeBackend,
-                                        ...transportOptions.serializerConfig
+                                        ...options.serializerConfig
                                     }),
-                                    deserializerFactory.create(injector, transportOptions.deserializerConfig),
+                                    deserializerFactory.create(injector, options.deserializerConfig),
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
@@ -192,22 +194,27 @@ export class RedisConfiguration {
                                     acceptsPriority,
                                     incomingFactory,
                                     outgoingFactory,
-                                    transferFactory.create(injector, transportOptions.transferConfig),
+                                    transferFactory.create(injector, options.transferConfig),
                                     options,
-                                    (socket) => merge(
+                                    (socket, context) => merge(
                                         fromEvent(socket.subscriber, ev.MESSAGE_BUFFER, (topic: string | Buffer, payload: string | Buffer) => {
-                                            return { topic: isString(topic) ? topic : decoder.decode(topic), payload }
+                                            const topicStr = isString(topic) ? topic : context.get(TEXT_DECODER).decode(topic);
+                                            if (topicStr.endsWith('.reply')) return null;
+                                            return payload
                                         }),
                                         fromEvent(socket.subscriber, 'pmessageBuffer', (pattern: string, topic: string | Buffer, payload: string | Buffer) => {
-                                            return { pattern, topic: isString(topic) ? topic : decoder.decode(topic), payload }
+                                            const topicStr = isString(topic) ? topic : context.get(TEXT_DECODER).decode(topic);
+                                            if (topicStr.endsWith('.reply')) return null;
+                                            context.set(REDIS_PATTERN, pattern);
+                                            return payload
                                         })
                                     ).pipe(
-                                        filter(m => !m.topic.endsWith('.reply'))
+                                        filter(m => !!m)
                                     ),
                                     (socket, msg, requestContext) => {
-                                        if (streamAdapter.isReadable(msg.payload)) throw new NotSupportedExecption('Not supported stream payload');
+                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
                                         if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
-                                        return promisify<string, Buffer | string>(socket.publisher.publish, socket.publisher)(requestContext.responseTopic, msg.payload ?? Buffer.alloc(0))
+                                        return promisify<string, Buffer | string>(socket.publisher.publish, socket.publisher)(requestContext.responseTopic, msg ?? Buffer.alloc(0))
                                     }
                                 )
                             },
@@ -227,19 +234,18 @@ export class RedisConfiguration {
                         DefaultServerTransferFactory
                     ]
                 },
+                serializerConfig: {
+                    interceptors: [
+                        lengthLimitSerializeInterceptor,
+                        execptionSerializeInterceptor
+                    ]
+                },
+                deserializerConfig: {},
                 transportOptions: {
                     limit: sizeLimit,
                     getResponseTopic(topic) {
                         return `${topic}.reply`
-                    },
-                    serializerConfig: {
-                        interceptors: [
-                            lengthLimitSerializeInterceptor,
-                            execptionSerializeInterceptor,
-                            packetIfySerializeInterceptor,
-                        ]
-                    },
-                    deserializerConfig: {}
+                    }
                 },
                 content: {
                     root: 'public',
