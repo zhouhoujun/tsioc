@@ -1,9 +1,8 @@
 import { Abstract, Injectable, Injector, InvocationContext, isString, tokenId } from '@tsdi/ioc';
 import { ConfigableHandlerOptions, createHandler, ExecptionHandlerFilter, FilterLike, Handler, InterceptorLike, InvalidJsonException } from '@tsdi/core';
-import { defer, Observable, of } from 'rxjs';
-import { TransportContext } from './context';
+import { defer, Observable } from 'rxjs';
+import { TEXT_DECODER, TransportContext } from './context';
 import { isBuffer, toBuffer } from './StreamAdapter';
-import { Packet } from './socket';
 import { XSSI_PREFIX } from './utils';
 
 @Abstract()
@@ -45,7 +44,7 @@ export const DESERIALIZER_FILTERS = tokenId<FilterLike[]>('DESERIALIZER_FILTERS'
 export class DefaultDeserializerFactory implements DeserializerFactory {
     create(context: Injector | InvocationContext, options?: DeserializerOpts): Deserializer {
         const handler = createHandler(context, {
-            backend: packetDeserializeBackend,
+            backend: jsonDeserializeBackend,
             filtersToken: DESERIALIZER_FILTERS,
             interceptorsToken: DESERIALIZER_INTERCEPTORS,
             enableTypeChain: true,
@@ -56,30 +55,27 @@ export class DefaultDeserializerFactory implements DeserializerFactory {
     }
 }
 
-export const packetDeserializeBackend = (input: Packet, context: TransportContext) => {
+export const jsonDeserializeBackend = (input: any, context: TransportContext) => {
     return defer(async () => {
-        let packet: any = input.payload;
         let jsonSrc: string | undefined;
-        if (isString(packet)) {
-            jsonSrc = packet
-        } else if (isBuffer(packet)) {
-            jsonSrc = packet.toString()
-        } else if (!input.headers && context.transport.streamAdapter.isReadable(packet)) {
-            const buf = await toBuffer(packet);
-            jsonSrc = buf.toString()
+        let pkg: any;
+        if (isString(input)) {
+            jsonSrc = input
+        } else if (isBuffer(input)) {
+            jsonSrc = context.get(TEXT_DECODER).decode(input);
+        } else if (context.transport.streamAdapter.isReadable(input)) {
+            input = await toBuffer(input);
+            jsonSrc = context.get(TEXT_DECODER).decode(input);
         }
 
         if (jsonSrc) {
             try {
                 jsonSrc = jsonSrc.replace(XSSI_PREFIX, '');
-                packet = JSON.parse(jsonSrc)
+                pkg = JSON.parse(jsonSrc)
             } catch (err) {
                 throw new InvalidJsonException(err, jsonSrc);
             }
         }
-        if (input.properties) {
-            packet.properties = input.properties;
-        }
-        return packet;
+        return pkg;
     })
 };

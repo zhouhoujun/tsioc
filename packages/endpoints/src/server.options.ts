@@ -1,6 +1,6 @@
 import { ProvdierOf, Type } from '@tsdi/ioc';
 import { RequestMethod } from '@tsdi/common';
-import { MimeSource, TransportOptions } from '@tsdi/common/transport';
+import { MimeSource, TransportConfigure } from '@tsdi/common/transport';
 import { RequestHandlerOptions } from './AbstractRequestHandler';
 import { SessionOptions } from './Session';
 import { ContentOptions } from './interceptors/content';
@@ -22,7 +22,7 @@ export interface ProxyOpts {
 /**
  * server options
  */
-export interface ServerOpts<TSerOpts = any> extends RequestHandlerOptions<any> {
+export interface ServerOpts<TSerOpts = any> extends RequestHandlerOptions<any>, TransportConfigure {
     /**
      * request timeout.
      */
@@ -43,15 +43,11 @@ export interface ServerOpts<TSerOpts = any> extends RequestHandlerOptions<any> {
      * server request handler type
      */
     handlerType?: Type<RequestHandler>;
-
+    
     /**
      * service transport factory.
      */
     transportFactory?: ProvdierOf<ServerTransportFactory>;
-    /**
-     * transport options.
-     */
-    transportOptions?: TransportOptions,
 
     server?: any;
     /**

@@ -12,7 +12,7 @@ import {
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    DefaultClientTransport, requestBodyServializeBackend, requestTimeoutInterceptor
+    DefaultClientTransport, requestBodySerializeBackend, requestTimeoutInterceptor
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
@@ -74,26 +74,25 @@ export class NatsConfiguration {
                         redirector: Redirector | null) => {
                         return {
                             create: (injector, socket, options: NatsClientOpts) => {
-                                const transportOptions = options.transportOptions ?? {};
                                 return new DefaultClientTransport<NatsSocket, NatsRequest<any>, Buffer | string | IReadable, NatsClientOpts>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
-                                        backend: requestBodyServializeBackend,
-                                        ...transportOptions.serializerConfig
+                                        backend: requestBodySerializeBackend,
+                                        ...options.serializerConfig
                                     }),
                                     deserializerFactory.create(injector, {
                                         backend: (input: Packet, context: TransportContext) => {
                                             return of(input);
                                         },
-                                        ...transportOptions.deserializerConfig,
+                                        ...options.deserializerConfig,
                                     }),
                                     formatter,
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
                                     incomingFactory,
-                                    transferFactory.create(injector, transportOptions.transferConfig),
+                                    transferFactory.create(injector, options.transferConfig),
                                     responseFactory,
                                     redirector,
                                     options,
@@ -130,18 +129,18 @@ export class NatsConfiguration {
                         [Redirector, InjectFlags.Optional]
                     ]
                 },
+                serializerConfig: {
+                    interceptors: [
+                        messageVaildateInterceptor
+                    ]
+                },
+                deserializerConfig: {
+                    interceptors: [
+                        deatchPacketIdInterceptor
+                    ]
+                },
                 transportOptions: {
-                    limit: sizeLimit,
-                    serializerConfig: {
-                        interceptors: [
-                            messageVaildateInterceptor
-                        ]
-                    },
-                    deserializerConfig: {
-                        interceptors: [
-                            deatchPacketIdInterceptor
-                        ]
-                    }
+                    limit: sizeLimit
                 },
                 interceptors: [
                     requestTimeoutInterceptor
@@ -167,19 +166,18 @@ export class NatsConfiguration {
                         incomingFactory: TopicClientIncomingFactory, outgoingFactory: TopicOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
                             create: (injector, socket, options: NatsMicroServOpts) => {
-                                const transportOptions = options.transportOptions ?? {};
                                 return new DefaultServerTransport<NatsSocket, TopicRequestContext, Buffer | string | IReadable>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
                                         backend: contextBodySerializeBackend,
-                                        ...transportOptions.serializerConfig
+                                        ...options.serializerConfig
                                     }),
                                     deserializerFactory.create(injector, {
                                         backend: (input: Packet, context: TransportContext) => {
                                             return of(input);
                                         },
-                                        ...transportOptions.deserializerConfig
+                                        ...options.deserializerConfig
                                     }),
                                     statusAdapter,
                                     headerAdapter,
@@ -189,7 +187,7 @@ export class NatsConfiguration {
                                     acceptsPriority,
                                     incomingFactory,
                                     outgoingFactory,
-                                    transferFactory.create(injector, transportOptions.transferConfig),
+                                    transferFactory.create(injector, options.transferConfig),
                                     options,
                                     (socket, context) => socket.getPacket(context, m => !m.subject.endsWith('.reply')),
                                     (socket, msg, requestContext) => {
@@ -198,7 +196,7 @@ export class NatsConfiguration {
                                         const headers = socket.mergeHeaders(requestContext.response.headers, options.publishOpts?.headers);
                                         requestContext.request.id && headers.set('identity', String(requestContext.request.id));
                                         requestContext.status && headers.set('status', requestContext.status);
-                                        requestContext.statusMessage && headers.set('statusMessage', requestContext.statusMessage);                                      
+                                        requestContext.statusMessage && headers.set('statusMessage', requestContext.statusMessage);
 
                                         return socket.publish(requestContext.responseTopic, msg ?? Buffer.alloc(0), {
                                             ...options.publishOpts,
@@ -223,20 +221,19 @@ export class NatsConfiguration {
                         DefaultServerTransferFactory
                     ]
                 },
+                serializerConfig: {
+                    interceptors: [
+                        execptionSerializeInterceptor,
+                        lengthLimitSerializeInterceptor
+                    ]
+                },
+                deserializerConfig: {
+                    interceptors: []
+                },
                 transportOptions: {
                     limit: sizeLimit,
-                    serializerConfig: {
-                        interceptors: [
-                            execptionSerializeInterceptor,
-                            lengthLimitSerializeInterceptor
-                        ]
-                    },
                     getResponseTopic(topic) {
                         return `${topic}.reply`
-                    },
-                    deserializerConfig: {
-                        interceptors: [
-                        ]
                     }
                 },
                 content: {

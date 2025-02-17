@@ -80,26 +80,25 @@ export class HttpConfiguration {
                         redirector: Redirector | null) => {
                         return {
                             create: (injector, socket, options) => {
-                                const transportOptions = options.transportOptions ?? {};
                                 return new DefaultClientTransport<ClientHttp2Session | null, HttpRequest<any>, Buffer | string | IReadable>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
                                         backend: requestBodySerializeBackend,
-                                        ...transportOptions.serializerConfig
+                                        ...options.serializerConfig
                                     }),
                                     deserializerFactory.create(injector, {
                                         backend: (input: any, context: TransportContext) => {
                                             return of(input)
                                         },
-                                        ...transportOptions.deserializerConfig
+                                        ...options.deserializerConfig
                                     }),
                                     formatter,
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
                                     incomingFactory,
-                                    transferFactory.create(injector, transportOptions.transferConfig),
+                                    transferFactory.create(injector, options.transferConfig),
                                     responseFactory,
                                     redirector,
                                     options,
@@ -196,15 +195,13 @@ export class HttpConfiguration {
                         [UrlRedirector, InjectFlags.Optional]
                     ]
                 },
-                transportOptions: {
-                    transferConfig: {
-                        interceptors: STATUS_RESPONSE_TRANSFER_INTERCEPTORS
-                    },
-                    serializerConfig: {
-                        interceptors: [
-                            bodyServializeInterceptor
-                        ]
-                    }
+                transferConfig: {
+                    interceptors: STATUS_RESPONSE_TRANSFER_INTERCEPTORS
+                },
+                serializerConfig: {
+                    interceptors: [
+                        bodyServializeInterceptor
+                    ]
                 }
             }
         }
@@ -228,19 +225,18 @@ export class HttpConfiguration {
                         incomingFactory: HttpIncomingFactory, outgoingFactory: UrlOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
                             create: (injector, socket, options) => {
-                                const transportOptions = options.transportOptions ?? {};
                                 return new DefaultServerTransport<Http2Server | HttpsServer | Server, HttpContext, Buffer | string | IReadable>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
                                         backend: contextBodySerializeBackend,
-                                        ...transportOptions.serializerConfig
+                                        ...options.serializerConfig
                                     }),
                                     deserializerFactory.create(injector, {
                                         backend: (input, context) => {
                                             return of(input)
                                         },
-                                        ...transportOptions.deserializerConfig
+                                        ...options.deserializerConfig
                                     }),
                                     statusAdapter,
                                     headerAdapter,
@@ -256,7 +252,7 @@ export class HttpConfiguration {
                                             const { injector, serverOptions } = transport;
                                             return of(new HttpContext(injector, transport, input.req, input.res, serverOptions as HttpServerOpts))
                                         },
-                                        ...transportOptions.transferConfig
+                                        ...options.transferConfig
                                     }),
                                     options,
                                     (socket: Http2Server | HttpsServer | Server, context) => {
@@ -306,20 +302,16 @@ export class HttpConfiguration {
                         DefaultServerTransferFactory
                     ]
                 },
-                transportOptions: {
-                    serializerConfig: {
-                        interceptors: [
-                            execptionMessageSerializeInterceptor,
-                            emptyStatusSerializeInterceptor,
-                            headMethodSerializeInterceptor,
-                            noBodySerializeInterceptor,
-                            lengthLimitSerializeInterceptor
-                        ]
-                    },
-                    deserializerConfig: {
-                    }
+                serializerConfig: {
+                    interceptors: [
+                        execptionMessageSerializeInterceptor,
+                        emptyStatusSerializeInterceptor,
+                        headMethodSerializeInterceptor,
+                        noBodySerializeInterceptor,
+                        lengthLimitSerializeInterceptor
+                    ]
                 },
-
+                
                 detailError: true,
                 interceptorsToken: HTTP_SERV_INTERCEPTORS,
                 filtersToken: HTTP_SERV_FILTERS,

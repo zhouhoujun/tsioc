@@ -1,6 +1,6 @@
 import { Abstract, promisify } from '@tsdi/ioc';
 import { Protocols } from '@tsdi/common';
-import { Observable, Subject, mergeMap, share, takeUntil } from 'rxjs';
+import { Observable, Subject, map, mergeMap, share, takeUntil } from 'rxjs';
 import { Transport } from './Transport';
 import { IReadable, IWritable } from './stream';
 import { AbstractIncomingFactory, Incoming } from './Incoming';
@@ -12,7 +12,11 @@ import { Packet } from './socket';
 import { StreamAdapter } from './StreamAdapter';
 
 
+
 export interface TransportOptions {
+    /**
+     * for custom unpacking and packing
+     */
     delimiter?: Buffer;
     /**
      * message max size limit
@@ -34,11 +38,31 @@ export interface TransportOptions {
      * header length.
      */
     headLen?: number;
-    serializerConfig?: ConfigableHandlerOptions;
-    deserializerConfig?: ConfigableHandlerOptions;
-    transferConfig?: ConfigableHandlerOptions;
 
     getResponseTopic?(topic: string): string;
+}
+
+/**
+ * transport configure.
+ */
+export interface TransportConfigure {
+    
+    /**
+     * transport options.
+     */
+    transportOptions?: TransportOptions;
+    /**
+     * serialize config.
+     */    
+    serializerConfig?: ConfigableHandlerOptions;
+    /**
+     * deserialize config.
+     */
+    deserializerConfig?: ConfigableHandlerOptions;
+    /**
+     * transfer config.
+     */
+    transferConfig?: ConfigableHandlerOptions;
 }
 
 /**
@@ -105,6 +129,10 @@ export abstract class AbstractTransport<
             .pipe(
                 takeUntil(this.destroy$),
                 mergeMap(data => this.deserializer.deserialize(data, context!)),
+                map(incoming => {
+                    incoming.context = context;
+                    return incoming;
+                }),
                 share()
             ) as Observable<any>;
     }

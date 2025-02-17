@@ -94,15 +94,15 @@ export class TcpConfiguration {
                                     socket,
                                     serializerFactory.create(injector, {
                                         backend: requestSerializeBackend,
-                                        ...transportOptions.serializerConfig
+                                        ...options.serializerConfig
                                     }),
-                                    deserializerFactory.create(injector, transportOptions.deserializerConfig),
+                                    deserializerFactory.create(injector, options.deserializerConfig),
                                     formatter,
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
                                     incomingFactory,
-                                    transferFactory.create(injector, transportOptions.transferConfig),
+                                    transferFactory.create(injector, options.transferConfig),
                                     responseFactory,
                                     redirector,
                                     options
@@ -123,25 +123,25 @@ export class TcpConfiguration {
                         [Redirector, InjectFlags.Optional]
                     ]
                 },
-                transportOptions: {
-                    delimiter,
-                    serializerConfig: {
-                        interceptors: [
-                            messageVaildateInterceptor,
-                            messageSerializeInterceptor,
-                            requestPacketIfySerializeInterceptor
-                        ]
-                    },
-                    deserializerConfig: {
-                        interceptors: [
-                            packetifyInterceptor,
-                            deatchPacketIdInterceptor,
-                            PacketDeserializeInterceptor,
-                            PayloadDeserializeInterceptor
-                        ]
-                    }
+                serializerConfig: {
+                    interceptors: [
+                        messageVaildateInterceptor,
+                        messageSerializeInterceptor,
+                        requestPacketIfySerializeInterceptor
+                    ]
                 },
-                interceptors:[
+                deserializerConfig: {
+                    interceptors: [
+                        packetifyInterceptor,
+                        deatchPacketIdInterceptor,
+                        PacketDeserializeInterceptor,
+                        PayloadDeserializeInterceptor
+                    ]
+                },
+                transportOptions: {
+                    delimiter
+                },
+                interceptors: [
                     requestTimeoutInterceptor
                 ]
             }
@@ -163,15 +163,14 @@ export class TcpConfiguration {
                         incomingFactory: UrlIncomingFactory, outgoingFactory: UrlOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
                             create: (injector, socket, options) => {
-                                const transportOptions = options.transportOptions ?? {};
                                 return new SocketServerTransport(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
                                         backend: contextSerializeBackend,
-                                        ...transportOptions.serializerConfig
+                                        ...options.serializerConfig
                                     }),
-                                    deserializerFactory.create(injector, transportOptions.deserializerConfig),
+                                    deserializerFactory.create(injector, options.deserializerConfig),
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
@@ -180,7 +179,7 @@ export class TcpConfiguration {
                                     acceptsPriority,
                                     incomingFactory,
                                     outgoingFactory,
-                                    transferFactory.create(injector, transportOptions.transferConfig),
+                                    transferFactory.create(injector, options.transferConfig),
                                     options
                                 )
                             },
@@ -200,23 +199,23 @@ export class TcpConfiguration {
                         DefaultServerTransferFactory
                     ]
                 },
+                serializerConfig: {
+                    interceptors: [
+                        lengthLimitSerializeInterceptor,
+                        messageSerializeInterceptor,
+                        packetIfySerializeInterceptor,
+                        execptionSerializeInterceptor
+                    ]
+                },
+                deserializerConfig: {
+                    interceptors: [
+                        packetifyInterceptor,
+                        PacketDeserializeInterceptor,
+                        PayloadDeserializeInterceptor
+                    ]
+                },
                 transportOptions: {
-                    delimiter,
-                    serializerConfig: {
-                        interceptors: [
-                            lengthLimitSerializeInterceptor,
-                            messageSerializeInterceptor,
-                            packetIfySerializeInterceptor,
-                            execptionSerializeInterceptor
-                        ]
-                    },
-                    deserializerConfig: {
-                        interceptors: [
-                            packetifyInterceptor,
-                            PacketDeserializeInterceptor,
-                            PayloadDeserializeInterceptor
-                        ]
-                    }
+                    delimiter
                 },
                 detailError: false,
                 interceptorsToken: TCP_SERV_INTERCEPTORS,

@@ -1,7 +1,7 @@
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { Handler, HandlerFn, Interceptor, InterceptorFn, PipeTransform } from '@tsdi/core';
-import { AbstractRequest, IHeaders } from '@tsdi/common';
-import { Observable, Subscriber, filter, map, mergeMap, throwError } from 'rxjs';
+import { AbstractRequest } from '@tsdi/common';
+import { Observable, Subscriber, defer, filter, map, mergeMap, throwError } from 'rxjs';
 import { PacketLengthException } from '../execptions';
 import { PacketIdGenerator } from '../PacketId';
 import { IDuplex } from '../stream';
@@ -147,7 +147,7 @@ export class PayloadDeserializeInterceptor implements Interceptor<Packet, Incomi
         this.msgs = new Map();
     }
 
-    intercept(input: Packet<IDuplex>, next: Handler<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
+    intercept(input: Packet<IDuplex>, next: Handler<any, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
         if (!input.payload) return next.handle(input, context);
 
         const transport = context.transport as AbstractTransport;
@@ -164,47 +164,27 @@ export class PayloadDeserializeInterceptor implements Interceptor<Packet, Incomi
                 if (!msg.body) {
                     msg.body = streamAdapter.createPassThrough();
                 }
-                return next.handle({ id, headers: (msg.headers ?? {}) as IHeaders, ...input }, context)
-                    .pipe(
-                        mergeMap(async buff => {
-                            streamAdapter.pipeTo(buff as any, msg.body!);
-                            const contentLength = headerAdapter?.getContentLength(msg.headers) || 0;
-                            msg.contentLength += input.contentLength || 0;
-                            if ((contentLength + idLen) === msg.contentLength) {
-                                this.msgs.delete(id);
-                                // msg.body!.end();
-                                return msg;
-                            }
-                            return null;
+                return defer(async () => {
+                    streamAdapter.pipeTo(payload, msg.body!);
+                    const contentLength = headerAdapter?.getContentLength(msg.headers) || 0;
+                    msg.contentLength += input.contentLength || 0;
+                    if ((contentLength + idLen) === msg.contentLength) {
+                        this.msgs.delete(id);
+                        // msg.body!.end();
+                        return msg;
+                    }
+                    return null;
 
-                        }),
-                        filter(msg => msg !== null)
-                    ) as Observable<IncomingMessage>
-
-                // return defer(async () => {
-                //     if (!msg.body) {
-                //         msg.body = streamAdapter.createPassThrough();
-                //     }
-                //     streamAdapter.pipeTo(payload, msg.body);
-                //     const contentLength = headerAdapter?.getContentLength(msg.headers);
-                //     msg.contentLength += input.contentLength || 0;
-                //     if (contentLength === msg.contentLength) {
-                //         this.msgs.delete(id);
-                //         msg.body.end();
-                //         return msg;
-                //     }
-                //     return null
-                // }).pipe(
-                //     filter(msg => msg !== null)
-                // ) as Observable<IncomingMessage>;
+                }).pipe(
+                    filter(msg => msg !== null)
+                ) as Observable<IncomingMessage>
             } else {
                 payload.unshift(chunk);
             }
         }
 
 
-
-        return next.handle(input, context)
+        return next.handle(payload, context)
             .pipe(
                 filter(msg => {
                     const incoming = msg as IncomingMessage<IDuplex> & { contentLength: number };
@@ -224,15 +204,15 @@ export class PayloadDeserializeInterceptor implements Interceptor<Packet, Incomi
 /**
  * for client only.
  */
-export const deatchPacketIdInterceptor: InterceptorFn<Packet, IncomingMessage> = (input: Packet, next: HandlerFn, context: TransportContext) => {
+export const deatchPacketIdInterceptor: InterceptorFn<any, IncomingMessage> = (input: any, next: HandlerFn<any, IncomingMessage> , context: TransportContext) => {
     if (!context.transport.client) return next(input, context);
 
     return next(input, context)
         .pipe(
-            filter(packet => {
-                if (!packet.id) return true;
+            filter(msg => {
                 const req = context.get(AbstractRequest);
-                return packet.id == req?.id;
+                if (!req?.id) return true;
+                return msg.id == req?.id;
             })
         );
 }
@@ -300,32 +280,6 @@ export const messageSerializeInterceptor: InterceptorFn<OutgoingMessage, Packet>
                 const total = countLen + delimiterLen;
                 const prfix = Buffer.concat([buffLen, delimiter], total);
                 data.unshift(prfix);
-
-                // let first = true;
-                // let subpacket = false;
-                // data = streamAdapter.pipeline(data, streamAdapter.createPassThrough({
-                //     transform: (chunk, encoding, callback) => {
-                //         if (chunk.indexOf(delimiter) >= 0) {
-                //             subpacket = true;
-                //         }
-                //         if (subpacket) {
-                //             callback(null, chunk);
-                //         } else {
-                //             if (first) {
-                //                 first = false;
-                //                 buffLen = Buffer.alloc(countLen);
-                //                 buffLen.writeUIntBE(msg.contentLength!, 0, countLen);
-                //                 const total = countLen + delimiterLen + Buffer.byteLength(chunk);
-                //                 const data = Buffer.concat([buffLen, delimiter, chunk], total)
-
-                //                 callback(null, data);
-                //             } else {
-                //                 callback(null, chunk)
-                //             }
-                //         }
-                //     }
-                // }));
-
             } else {
                 if (isString(data)) {
                     data = Buffer.from(data);

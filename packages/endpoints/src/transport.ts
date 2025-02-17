@@ -57,14 +57,17 @@ export abstract class ServerTransport<
     protected override initSendContext(context: TransportContext, outgoing: TContext): void {
         context.set(RequestContext, outgoing);
     }
+
+    override send(data: TContext, context?: TransportContext): Observable<any> {
+        return super.send(data, context ?? data.request.context);
+    }
     /**
      * handle message.
      */
     handle(handler: AbstractRequestHandler, destroy$?: Observable<any>): Subscription {
-        const context = TransportContext.create(this);
-        return this.receive(context).pipe(
+        return this.receive().pipe(
             takeUntil(destroy$ ? merge(this.destroy$, destroy$).pipe(first()) : this.destroy$),
-            mergeMap(incoming => this.transfer.transform(incoming, context)),
+            mergeMap(incoming => this.transfer.transform(incoming, incoming.context!)),
             mergeMap(request => handler.handle(request))
         ).subscribe()
     }

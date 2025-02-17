@@ -3,6 +3,7 @@ import { IReadable } from './stream';
 import { Injectable } from '@tsdi/ioc';
 import { StreamAdapter } from './StreamAdapter';
 import { Outgoing } from './Outgoing';
+import { TransportContext } from './context';
 
 
 /**
@@ -55,6 +56,8 @@ export interface Incoming<T = any, TMsg = any> extends IncomingMessage<T, TMsg> 
     params?: Record<string, any>;
 
     query?: Record<string, any>;
+
+    context?: TransportContext;
 
     rawBody?: any;
 

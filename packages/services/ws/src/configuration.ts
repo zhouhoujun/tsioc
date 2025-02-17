@@ -32,7 +32,7 @@ import { DefaultResponseFactory, HeaderAdapter, PatternFormatter, ResponseFactor
 
 // const defaultMaxSize = 65515; //1024 * 64 - 20;
 // const defaultMaxSize = 1048576; //1024 * 1024;
-const defaultMaxSize = 5242880; //1024 * 1024 * 5;
+// const defaultMaxSize = 5242880; //1024 * 1024 * 5;
 // const defaultMaxSize = 10485760; //1024 * 1024 * 10;
 
 const delimiter = Buffer.from('#');
@@ -69,21 +69,20 @@ export class WsConfiguration {
                         redirector: Redirector | null) => {
                         return {
                             create: (injector, socket, options) => {
-                                const transportOptions = options.transportOptions ?? {};
                                 return new SocketClientTransport(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
                                         backend: requestSerializeBackend,
-                                        ...transportOptions.serializerConfig
+                                        ...options.serializerConfig
                                     }),
-                                    deserializerFactory.create(injector, transportOptions.deserializerConfig),
+                                    deserializerFactory.create(injector, options.deserializerConfig),
                                     formatter,
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
                                     incomingFactory,
-                                    transferFactory.create(injector, transportOptions.transferConfig),
+                                    transferFactory.create(injector, options.transferConfig),
                                     responseFactory,
                                     redirector,
                                     options
@@ -104,23 +103,23 @@ export class WsConfiguration {
                         [Redirector, InjectFlags.Optional]
                     ]
                 },
+                serializerConfig: {
+                    interceptors: [
+                        messageVaildateInterceptor,
+                        messageSerializeInterceptor,
+                        requestPacketIfySerializeInterceptor
+                    ]
+                },
+                deserializerConfig: {
+                    interceptors: [
+                        packetifyInterceptor,
+                        deatchPacketIdInterceptor,
+                        PacketDeserializeInterceptor,
+                        PayloadDeserializeInterceptor
+                    ]
+                },
                 transportOptions: {
-                    delimiter,
-                    serializerConfig: {
-                        interceptors: [
-                            messageVaildateInterceptor,
-                            messageSerializeInterceptor,
-                            requestPacketIfySerializeInterceptor
-                        ]
-                    },
-                    deserializerConfig: {
-                        interceptors: [
-                            packetifyInterceptor,
-                            deatchPacketIdInterceptor,
-                            PacketDeserializeInterceptor,
-                            PayloadDeserializeInterceptor
-                        ]
-                    }
+                    delimiter
                 },
                 interceptors: [
                     requestTimeoutInterceptor
@@ -143,15 +142,14 @@ export class WsConfiguration {
                         incomingFactory: UrlClientIncomingFactory, outgoingFactory: UrlOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
                             create: (injector, socket, options) => {
-                                const transportOptions = options.transportOptions ?? {};
                                 return new SocketServerTransport(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
                                         backend: contextSerializeBackend,
-                                        ...transportOptions.serializerConfig
+                                        ...options.serializerConfig
                                     }),
-                                    deserializerFactory.create(injector, transportOptions.deserializerConfig),
+                                    deserializerFactory.create(injector, options.deserializerConfig),
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
@@ -160,7 +158,7 @@ export class WsConfiguration {
                                     acceptsPriority,
                                     incomingFactory,
                                     outgoingFactory,
-                                    transferFactory.create(injector, transportOptions.transferConfig),
+                                    transferFactory.create(injector, options.transferConfig),
                                     options
                                 )
                             },
@@ -180,27 +178,28 @@ export class WsConfiguration {
                         DefaultServerTransferFactory
                     ]
                 },
+                serializerConfig: {
+                    interceptors: [
+                        lengthLimitSerializeInterceptor,
+                        messageSerializeInterceptor,
+                        packetIfySerializeInterceptor,
+                        execptionSerializeInterceptor
+                    ]
+                },
+                deserializerConfig: {
+                    interceptors: [
+                        packetifyInterceptor,
+                        PacketDeserializeInterceptor,
+                        PayloadDeserializeInterceptor
+                    ]
+                },
+                transportOptions: {
+                    delimiter
+                },
+
                 content: {
                     root: 'public',
                     prefix: 'content'
-                },
-                transportOptions: {
-                    delimiter,
-                    serializerConfig: {
-                        interceptors: [
-                            lengthLimitSerializeInterceptor,
-                            messageSerializeInterceptor,
-                            packetIfySerializeInterceptor,
-                            execptionSerializeInterceptor
-                        ]
-                    },
-                    deserializerConfig: {
-                        interceptors: [
-                            packetifyInterceptor,
-                            PacketDeserializeInterceptor,
-                            PayloadDeserializeInterceptor
-                        ]
-                    }
                 },
                 detailError: false,
                 interceptorsToken: WS_SERV_INTERCEPTORS,

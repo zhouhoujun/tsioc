@@ -1,5 +1,5 @@
 import { AbstractRequest } from '@tsdi/common';
-import { TransportOptions } from '@tsdi/common/transport';
+import { TransportConfigure } from '@tsdi/common/transport';
 import { ConfigableHandlerOptions } from '@tsdi/core';
 import { ProvdierOf, Token, Type } from '@tsdi/ioc';
 import { ClientBackend } from './backend';
@@ -10,7 +10,7 @@ import { ClientHandler } from './handler';
 /**
  * Client options.
  */
-export interface ClientOpts<TConnOpts = any> extends ConfigableHandlerOptions<AbstractRequest<any>> {
+export interface ClientOpts<TConnOpts = any> extends ConfigableHandlerOptions<AbstractRequest<any>>, TransportConfigure {
     /**
      * url
      */
@@ -39,15 +39,10 @@ export interface ClientOpts<TConnOpts = any> extends ConfigableHandlerOptions<Ab
      * client handler type.
      */
     handlerType?: Type<ClientHandler>;
-    
     /**
      * service transport factory.
      */
     transportFactory?: ProvdierOf<ClientTransportFactory>;
-    /**
-     * transport options.
-     */
-    transportOptions?: TransportOptions,
 
     /**
      * transport backend.

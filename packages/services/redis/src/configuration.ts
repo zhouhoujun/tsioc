@@ -146,7 +146,6 @@ export class RedisConfiguration {
                     },
                     deserializerConfig: {
                         interceptors: [
-                            packetifyInterceptor,
                             deatchPacketIdInterceptor
                         ]
                     }
@@ -240,11 +239,7 @@ export class RedisConfiguration {
                             packetIfySerializeInterceptor,
                         ]
                     },
-                    deserializerConfig: {
-                        interceptors: [
-                            packetifyInterceptor
-                        ]
-                    }
+                    deserializerConfig: {}
                 },
                 content: {
                     root: 'public',

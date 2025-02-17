@@ -67,21 +67,20 @@ export class MqttConfiguration {
                         redirector: Redirector | null) => {
                         return {
                             create: (injector, socket, options) => {
-                                const transportOptions = options.transportOptions ?? {};
                                 const subscribes = new Set<string>();
                                 return new DefaultClientTransport<mqtt.Client, MqttRequest<any>>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
                                         backend: requestSerializeBackend,
-                                        ...transportOptions.serializerConfig
-                                    }),deserializerFactory.create(injector, transportOptions.deserializerConfig),
+                                        ...options.serializerConfig
+                                    }), deserializerFactory.create(injector, options.deserializerConfig),
                                     formatter,
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
                                     incomingFactory,
-                                    transferFactory.create(injector, transportOptions.transferConfig),
+                                    transferFactory.create(injector, options.transferConfig),
                                     responseFactory,
                                     redirector,
                                     options,
@@ -118,20 +117,20 @@ export class MqttConfiguration {
                         [Redirector, InjectFlags.Optional]
                     ]
                 },
+                serializerConfig: {
+                    interceptors: [
+                        messageVaildateInterceptor,
+                        requestPacketIfySerializeInterceptor
+                    ]
+                },
+                deserializerConfig: {
+                    interceptors: [
+                        packetifyInterceptor,
+                        deatchPacketIdInterceptor
+                    ]
+                },
                 transportOptions: {
-                    limit: sizeLimit,
-                    serializerConfig: {
-                        interceptors: [
-                            messageVaildateInterceptor,
-                            requestPacketIfySerializeInterceptor
-                        ]
-                    },
-                    deserializerConfig: {
-                        interceptors: [
-                            packetifyInterceptor,
-                            deatchPacketIdInterceptor
-                        ]
-                    }
+                    limit: sizeLimit
                 },
                 interceptors: [
                     requestTimeoutInterceptor
@@ -154,15 +153,14 @@ export class MqttConfiguration {
                         incomingFactory: TopicClientIncomingFactory, outgoingFactory: TopicOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
                             create: (injector, socket, options) => {
-                                const transportOptions = options.transportOptions ?? {};
                                 return new DefaultServerTransport<mqtt.Client, TopicRequestContext>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
                                         backend: contextSerializeBackend,
-                                        ...transportOptions.serializerConfig
+                                        ...options.serializerConfig
                                     }),
-                                    deserializerFactory.create(injector, transportOptions.deserializerConfig),
+                                    deserializerFactory.create(injector, options.deserializerConfig),
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
@@ -171,7 +169,7 @@ export class MqttConfiguration {
                                     acceptsPriority,
                                     incomingFactory,
                                     outgoingFactory,
-                                    transferFactory.create(injector, transportOptions.transferConfig),
+                                    transferFactory.create(injector, options.transferConfig),
                                     options,
                                     (mqtt) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
                                         return { topic, responseTopic: packet.properties?.responseTopic, payload }
@@ -201,22 +199,22 @@ export class MqttConfiguration {
                         DefaultServerTransferFactory
                     ]
                 },
+                serializerConfig: {
+                    interceptors: [
+                        lengthLimitSerializeInterceptor,
+                        execptionSerializeInterceptor,
+                        packetIfySerializeInterceptor,
+                    ]
+                },
+                deserializerConfig: {
+                    interceptors: [
+                        packetifyInterceptor
+                    ]
+                },
                 transportOptions: {
                     limit: sizeLimit,
-                    serializerConfig: {
-                        interceptors: [
-                            lengthLimitSerializeInterceptor,
-                            execptionSerializeInterceptor,
-                            packetIfySerializeInterceptor,
-                        ]
-                    },
                     getResponseTopic(topic) {
                         return `${topic}/reply`
-                    },
-                    deserializerConfig: {
-                        interceptors: [
-                            packetifyInterceptor
-                        ]
                     }
                 },
                 content: {
