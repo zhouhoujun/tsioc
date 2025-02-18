@@ -1,13 +1,13 @@
-import { TransportOpts } from '@tsdi/common/transport';
+// import { TransportOpts } from '@tsdi/common/transport';
 
 import { Consumer, ConsumerRunConfig, ConsumerSubscribeTopics, Producer, ProducerRecord } from 'kafkajs';
 
-export interface KafkaTransportOpts extends TransportOpts, ConsumerRunConfig {
-    subscribe?: Omit<ConsumerSubscribeTopics, 'topic'>;
-    run?: Omit<ConsumerRunConfig, 'eachBatch' | 'eachMessage'>;
-    send?: Omit<ProducerRecord, 'topic' | 'messages'>;
-    consumerAssignments?: { [key: string]: number };
-}
+// export interface KafkaTransportOpts extends TransportOpts, ConsumerRunConfig {
+//     subscribe?: Omit<ConsumerSubscribeTopics, 'topic'>;
+//     run?: Omit<ConsumerRunConfig, 'eachBatch' | 'eachMessage'>;
+//     send?: Omit<ProducerRecord, 'topic' | 'messages'>;
+//     consumerAssignments?: { [key: string]: number };
+// }
 
 
 export interface KafkaTransport {

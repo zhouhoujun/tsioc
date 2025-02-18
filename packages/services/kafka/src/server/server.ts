@@ -1,14 +1,14 @@
-import { Injectable, Inject, isFunction } from '@tsdi/ioc';
+import { Injectable, isFunction } from '@tsdi/ioc';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { defaultFormatter, PatternFormatter } from '@tsdi/common';
-import { Server, MicroRouters, RequestHandler, ServerTransportFactory, RequestContext, ServerOpts } from '@tsdi/endpoints';
+import { Server, ServerTransportFactory, RequestContext, getRouter, ServerTransport } from '@tsdi/endpoints';
 import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
-import { KafkaServerTransport } from './kafka.session';
-import { DEFAULT_BROKERS, KafkaTransportOpts } from '../const';
+import { DEFAULT_BROKERS } from '../const';
 import { KafkaServerOptions } from './options';
 import { KafkaRequestHandler } from './handler';
 import { ServiceUnavailableExecption } from '@tsdi/common/transport';
 import { Subject, fromEvent, merge } from 'rxjs';
+import { KafkaSocket } from '../socket';
 
 
 
@@ -22,9 +22,10 @@ export class KafkaServer extends Server<RequestContext, KafkaServerOptions> {
     private logger!: Logger;
 
     protected client?: Kafka | null;
-    protected consumer?: Consumer | null;
-    protected producer?: Producer | null;
-    private _transport?: KafkaServerTransport;
+    private socket?: KafkaSocket;
+    // protected consumer?: Consumer | null;
+    // protected producer?: Producer | null;
+    private _transport?: ServerTransport;
 
     private destroy$: Subject<void>;
 
@@ -87,41 +88,34 @@ export class KafkaServer extends Server<RequestContext, KafkaServerOptions> {
         };
 
 
-        this.consumer = client.consumer(consumeOpts);
-        this.producer = client.producer(options.producer);
+        const consumer = client.consumer(consumeOpts);
+        const producer = client.producer(options.producer);
 
-        await this.consumer.connect();
-        await this.producer.connect();
+        await consumer.connect();
+        await producer.connect();
+        this.socket = new KafkaSocket(consumer, producer, { ...options.runConfig });
+
     }
 
 
     protected async onStart(): Promise<any> {
         await this.connnect();
-        if (!this.consumer || !this.producer) throw new ServiceUnavailableExecption();
-        const consumer = this.consumer;
-        const producer = this.producer;
+        if (!this.socket) throw new ServiceUnavailableExecption();
         const injector = this.handler.injector;
         const options = this.getOptions();
 
-        const router = injector.get(MicroRouters).get('kafka');
+        const router = getRouter(injector, options.protocol ?? 'kafka', true);
         if (options.content?.prefix) {
             const content = injector.get(PatternFormatter, defaultFormatter).format(`${options.content.prefix}-**`);
             router.matcher.register(content, true);
         }
         const topics = router.matcher.getPatterns<string | RegExp>();
 
-        const transportOpts = options.transportOpts = {
-            transport: 'kafka',
-            ...options.transportOpts,
-            serverSide: true
-        } as KafkaTransportOpts;
+        const transport = this._transport = injector.get(ServerTransportFactory).create(injector, this.socket, options);
 
-        const session = this._transport = injector.get(ServerTransportFactory).create(injector, { consumer, producer }, transportOpts) as KafkaServerTransport;
+        await this.socket.subscribe(topics, { fromBeginning: options.fromBeginning });
 
-        await session.bindTopics(topics);
-
-        session.listen(this.handler, this.destroy$);
-        // injector.get(RequestHandler).handle(this.endpoint, session, this.logger, this.options);
+        transport.handle(this.handler, this.destroy$);
 
         this.logger.info(
             `Subscribed successfully! This server is currently subscribed topics.`,
@@ -139,16 +133,11 @@ export class KafkaServer extends Server<RequestContext, KafkaServerOptions> {
         this._transport?.destroy();
         this.destroy$.next();
         this.destroy$.complete();
-        if (this.consumer) {
-            await this.consumer.disconnect()
+        if (this.socket) {
+            await this.socket.disconnect()
         }
-        if (this.producer) {
-            await this.producer.disconnect();
-        }
-
         this.logger.info(`Kafka microservice closed!`);
-        this.consumer = null!;
-        this.producer = null!;
+        this.socket = null!;
         this.client = null!;
     }
 

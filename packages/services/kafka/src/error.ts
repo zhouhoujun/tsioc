@@ -1,4 +1,4 @@
-import { MessageExecption } from '@tsdi/common';
+import { MessageExecption } from '@tsdi/common/transport';
 
 
 export class InvalidKafkaClientTopicError extends MessageExecption {

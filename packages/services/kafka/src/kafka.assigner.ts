@@ -1,6 +1,6 @@
 import { isUndefined } from '@tsdi/ioc';
-import { AssignerProtocol, Cluster, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata } from 'kafkajs';
-import { KafkaTransportOpts } from './const';
+import { AssignerProtocol, Assignment, Cluster, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata } from 'kafkajs';
+// import { KafkaTransportOpts } from './const';
 
 
 export class KafkaReplyPartitionAssigner {
@@ -8,7 +8,7 @@ export class KafkaReplyPartitionAssigner {
     readonly version = 1;
 
     constructor(
-        readonly transportOpts: KafkaTransportOpts,
+        readonly consumerAssignments: Assignment,
         private readonly config: {
             cluster: Cluster;
         }
@@ -156,7 +156,7 @@ export class KafkaReplyPartitionAssigner {
         userData: Buffer;
     }): GroupState {
         const stringifiedUserData = JSON.stringify({
-            previousAssignment: this.transportOpts.consumerAssignments,
+            previousAssignment: this.consumerAssignments,
         });
         subscription.userData = Buffer.from(stringifiedUserData);
 
