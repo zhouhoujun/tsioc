@@ -1,7 +1,7 @@
 // use core-js in browser.
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
 import { Type, Modules } from '../types';
-import { getClass, isArray, isFunction, isNil, isObject, isPrimitive, isPromise, isType } from './chk';
+import { getClass, isArray, isFunction, isNil, isObject, isPrimitive, isPromise, isType, isUndefined } from './chk';
 import { isPlainObject } from './obj';
 import { getClassAnnotation } from './util';
 
@@ -119,7 +119,7 @@ export function deepClone<T>(input: T, defaultValue?: any, mergeArray?: (name: s
     return Object.entries(input).reduce((result, [key, value]) => {
         if (isPlainObject(value)) {
             result[key] = deepClone(value, defaultValue?.[key], mergeArray);
-        } else {
+        } else if (!isUndefined(value)) {
             if (mergeArray && Array.isArray(value) && Array.isArray(defaultValue?.[key])) {
                 value = mergeArray(key, value, defaultValue[key])
             }

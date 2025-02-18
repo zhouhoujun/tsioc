@@ -154,7 +154,6 @@ export class TcpConfiguration {
             microservice,
             defaultOpts: {
                 handlerType: TcpRequestHandler,
-                listenOpts: { port: 3000, host: LOCALHOST },
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
                         statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,

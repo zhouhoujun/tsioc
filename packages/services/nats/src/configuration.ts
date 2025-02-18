@@ -21,7 +21,7 @@ import {
     TopicRequestContext,
     contextBodySerializeBackend
 } from '@tsdi/endpoints';
-import { defer, map, of } from 'rxjs';
+import { map } from 'rxjs';
 import { NatsClient } from './client/client';
 import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS, NatsClientOpts } from './client/options';
 import { NatsHandler } from './client/handler';

@@ -113,8 +113,8 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
                     return of(err);
                 })));
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
+        expect(res).toBeInstanceOf(ErrorResponse);
+        expect((res as ErrorResponse).statusMessage).toContain('great than max size');
     })
 
     it('udp client fetch big json', async () => {
@@ -125,8 +125,9 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
                     return of(err);
                 })));
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
+
+        expect(res).toBeInstanceOf(ErrorResponse);
+        expect((res as ErrorResponse).statusMessage).toContain('great than max size');
     })
 
     it('query all', async () => {
