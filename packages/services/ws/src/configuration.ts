@@ -36,10 +36,7 @@ import { fromEvent } from 'rxjs';
 
 
 
-// const defaultMaxSize = 65515; //1024 * 64 - 20;
-const sizeLimit = 1048576; //1024 * 1024;
-// const defaultMaxSize = 5242880; //1024 * 1024 * 5;
-// const defaultMaxSize = 10485760; //1024 * 1024 * 10;
+const sizeLimit = 10485760; //1024 * 1024 * 10;
 
 const delimiter = Buffer.from('#');
 
@@ -66,6 +63,9 @@ export class WsConfiguration {
             defaultOpts: {
                 handlerType: WsHandler,
                 url: 'ws://localhost:3000',
+                connectOpts: {
+                    maxPayload: sizeLimit
+                },
                 interceptorsToken: WS_CLIENT_INTERCEPTORS,
                 filtersToken: WS_CLIENT_FILTERS,
                 transportFactory: {
@@ -252,7 +252,9 @@ export class WsConfiguration {
                         delimiter
                     },
                 },
-
+                serverOpts: {
+                    maxPayload: sizeLimit
+                },
                 content: {
                     root: 'public',
                     prefix: 'content'
