@@ -99,7 +99,7 @@ export class TcpServer extends Server<RequestContext, TcpServerOpts> implements 
         } else {
             await this.setup();
         }
-        
+
         if (!this.serv) throw new InternalServerExecption();
 
         this.serv.on(ev.CLOSE, () => this.logger.info(options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
@@ -124,7 +124,10 @@ export class TcpServer extends Server<RequestContext, TcpServerOpts> implements 
             await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this.serv, 'tcp', this)));
         }
 
-        if (options.listenOpts && !bindServer) {
+        if (!bindServer) {
+            if (!options.listenOpts) {
+                options.listenOpts = { host: LOCALHOST, port: 3000 };
+            }
             this.listen(options.listenOpts)
         }
     }

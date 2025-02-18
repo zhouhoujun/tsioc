@@ -30,9 +30,15 @@ import { MqttRequestHandler } from './server/handler';
 import { MqttRequest } from './client/request';
 
 
-
+/**
+ * Eclipse Mosquitto：默认消息大小限制为256 MB。
+ * EMQX：默认消息大小限制为1 MB。
+ * HiveMQ：默认消息大小限制为256 MB。
+ * 如果需要调整这些限制，可以查阅具体实现的文档并进行配置。
+ * 
+ * 总结来说，虽然MQTT协议理论上支持最大256 MB的数据包，但实际应用中需要根据网络环境和具体实现进行合理调整。
+ */
 const sizeLimit = 1048576; // 1024 * 1024;
-// const defaultMaxSize = 524288; //1024 * 512;
 
 const MQTT_PUBLISH_PACKET = tokenId<mqtt.IPublishPacket>('MQTT_PUBLISH_PACKET')
 

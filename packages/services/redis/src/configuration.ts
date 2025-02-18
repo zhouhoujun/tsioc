@@ -35,10 +35,10 @@ import { RedisRequest } from './client/request';
 
 
 
-// const defaultMaxSize = 65515; //1024 * 64 - 20;
-const sizeLimit = 1048576; //1024 * 1024;
-// const defaultMaxSize = 5242880; //1024 * 1024 * 5;
-// const defaultMaxSize = 10485760; //1024 * 1024 * 10;
+// const sizeLimit = 65515; //1024 * 64 - 20;
+// const sizeLimit = 1048576; //1024 * 1024;
+const sizeLimit = 5242880; //1024 * 1024 * 5;
+// const sizeLimit = 10485760; //1024 * 1024 * 10;
 
 export const REDIS_PATTERN = tokenId<string>('REDIS_PATTERN');
 
