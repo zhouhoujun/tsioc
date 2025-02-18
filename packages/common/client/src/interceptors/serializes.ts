@@ -1,4 +1,4 @@
-import { hasProps, isString, isUndefined } from '@tsdi/ioc';
+import { hasProps, isNil, isString, isUndefined } from '@tsdi/ioc';
 import { BackendFn, HandlerFn, InterceptorFn } from '@tsdi/core';
 import { AbstractRequest, PatternRequest, TopicRequest, UrlRequest } from '@tsdi/common';
 import { ClientOutgoing, TopicClientOutgoing, TransportContext, UrlClientOutgoing } from '@tsdi/common/transport';
@@ -21,9 +21,9 @@ export const requestPacketIfySerializeInterceptor: InterceptorFn<AbstractRequest
                 if (isString(payload)) {
                     pkg.payload = payload = Buffer.from(payload);
                 }
-                // if (payload && isNil(pkg.contentLength)) {
-                //     pkg.contentLength = Buffer.byteLength(payload)
-                // }
+                if (payload && isNil(pkg.contentLength)) {
+                    pkg.contentLength = Buffer.byteLength(payload)
+                }
                 return pkg;
             })
         )

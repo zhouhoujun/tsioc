@@ -115,22 +115,22 @@ function clientProviders(options: ClientConfigs, idx?: number) {
                 }
                 const opts = { ...defts, ...options, asDefault: null } as ClientModuleOpts & ClientConfigs;
 
-                const transportOptions = {
-                    ...opts.defaultOpts?.transportOptions,
-                    ...opts.clientOpts?.transportOptions
-                };
 
+                const cloneOpts = lang.deepClone(opts.clientOpts, opts.defaultOpts, (n, value, deft) => {
+                    if (n == 'providers') {
+                        return [...value, ...deft];
+                    }
+                    return value;
+                });
                 const clientOpts = {
                     backend: opts.backend ?? ClientBackend,
                     enableTypeChain: true,
-                    ...opts.defaultOpts,
-                    ...opts.clientOpts,
-                    transportOptions,
-                    providers: [
-                        ...opts.defaultOpts?.providers || [],
-                        ...opts.clientOpts?.providers || []
-                    ]
+                    ...cloneOpts
                 } as ClientOpts & { providers: ProviderType[] };
+
+                if (!clientOpts.providers) {
+                    clientOpts.providers = [];
+                }
 
                 if (microservice) {
                     clientOpts.microservice = microservice;

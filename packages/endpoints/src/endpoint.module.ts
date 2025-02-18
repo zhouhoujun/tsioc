@@ -129,27 +129,22 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
 
                 const moduleOpts = { ...mdopts, ...options, asDefault: null } as ServiceModuleOpts & ServiceOptions;
 
-                const transportOptions = {
-                    ...moduleOpts.defaultOpts?.transportOptions,
-                    ...moduleOpts.serverOpts?.transportOptions
-                };
+                const cloneOpts = lang.deepClone(moduleOpts.serverOpts, moduleOpts.defaultOpts, (n, value, deft) => {
+                    if (n == 'providers' || n === 'routes') {
+                        return [...value, ...deft];
+                    }
+                    return value;
+                });
 
                 const serverOpts = {
                     backend: RouterModule.getToken(moduleOpts.transport, microservice),
                     enableTypeChain: true,
-                    ...moduleOpts.defaultOpts,
-                    ...moduleOpts.serverOpts,
-                    transportOptions,
-                    routes: {
-                        ...moduleOpts.defaultOpts?.routes,
-                        ...moduleOpts.serverOpts?.routes
-                    },
-                    providers: [
-                        ...moduleOpts.defaultOpts?.providers || [],
-                        ...moduleOpts.serverOpts?.providers || []
-                    ]
+                    ...cloneOpts
                 } as ServerOpts & { providers: ProviderType[] };
 
+                if (!serverOpts.providers) {
+                    serverOpts.providers = [];
+                }
 
                 if (!serverOpts.handlerType) throw new ConfigMissingExecption(`Config Missing handlerType`);
                 if (!serverOpts.transportFactory || serverOpts.transportFactory === ServerTransportFactory) throw new ConfigMissingExecption(`Config Missing transportFactory`);

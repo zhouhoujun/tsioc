@@ -3,7 +3,7 @@ import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import { DefaultResponseFactory, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
     messageVaildateInterceptor, deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory,
-    DeserializerFactory, FileAdapter, MimeAdapter, PacketDeserializeInterceptor, packetifyInterceptor,
+    DeserializerFactory, FileAdapter, MimeAdapter, PacketDeserializeInterceptor,
     messageSerializeInterceptor, Redirector, SerializerFactory, StatusAdapter, StreamAdapter,
     UrlClientIncomingFactory, UrlOutgoingFactory, PayloadDeserializeInterceptor,
     UrlIncomingFactory
@@ -132,7 +132,6 @@ export class TcpConfiguration {
                 },
                 deserializerConfig: {
                     interceptors: [
-                        packetifyInterceptor,
                         deatchPacketIdInterceptor,
                         PacketDeserializeInterceptor,
                         PayloadDeserializeInterceptor
@@ -209,7 +208,6 @@ export class TcpConfiguration {
                 },
                 deserializerConfig: {
                     interceptors: [
-                        packetifyInterceptor,
                         PacketDeserializeInterceptor,
                         PayloadDeserializeInterceptor
                     ]

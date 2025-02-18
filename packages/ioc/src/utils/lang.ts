@@ -114,16 +114,19 @@ export function deepForEach<T>(
  * @param input 
  * @returns 
  */
-export function deepClone<T>(input: T): T {
-    if (!isObject(input)) return null!;
+export function deepClone<T>(input: T, defaultValue?: any, mergeArray?: (name: string, value: Array<any>, defaultArray: Array<any>) => Array<any>): T {
+    if (!isObject(input)) return defaultValue ? deepClone(defaultValue) : null!;
     return Object.entries(input).reduce((result, [key, value]) => {
         if (isPlainObject(value)) {
-            result[key] = deepClone(value);
+            result[key] = deepClone(value, defaultValue?.[key], mergeArray);
         } else {
+            if (mergeArray && Array.isArray(value) && Array.isArray(defaultValue?.[key])) {
+                value = mergeArray(key, value, defaultValue[key])
+            }
             result[key] = value;
         }
         return result;
-    }, {} as any);
+    }, { ...defaultValue } as any);
 
 }
 

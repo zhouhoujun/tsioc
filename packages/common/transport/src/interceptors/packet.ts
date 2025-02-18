@@ -4,18 +4,17 @@ import { AbstractRequest } from '@tsdi/common';
 import { Observable, Subscriber, defer, filter, map, mergeMap, throwError } from 'rxjs';
 import { PacketLengthException } from '../execptions';
 import { PacketIdGenerator } from '../PacketId';
-import { IDuplex } from '../stream';
+import { IDuplex, IReadable } from '../stream';
 import { IncomingMessage } from '../Incoming';
 import { OutgoingMessage } from '../Outgoing';
 import { TransportContext } from '../context';
 import { AbstractTransport } from '../transports';
-import { isBuffer } from '../StreamAdapter';
 import { Packet } from '../socket';
 
 
 
 @Injectable()
-export class PacketDeserializeInterceptor implements Interceptor<Packet, IncomingMessage, TransportContext> {
+export class PacketDeserializeInterceptor implements Interceptor<string | Buffer | IReadable, IncomingMessage, TransportContext> {
 
     protected channels: Map<string, Packet<IDuplex>>;
 
@@ -23,17 +22,17 @@ export class PacketDeserializeInterceptor implements Interceptor<Packet, Incomin
         this.channels = new Map();
     }
 
-    intercept(input: Packet, next: Handler<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
-        if (!input.payload || context.transport.streamAdapter.isReadable(input.payload)) return next.handle(input, context);
+    intercept(input: string | Buffer | IReadable, next: Handler<any, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
+        if (!input || context.transport.streamAdapter.isReadable(input)) return next.handle(input, context);
 
         return new Observable((subscriber: Subscriber<Packet<IDuplex>>) => {
 
             const channel = context.transport.protocol;
 
             let cache = this.channels.get(channel);
-            const packet = input.payload as Buffer;
+            const packet = input as Buffer;
             if (!cache) {
-                cache = input as Packet<IDuplex>;
+                cache = {} as Packet<IDuplex>;
                 cache.payload = null;
                 cache.length = 0;
                 cache.contentLength = null;
@@ -204,7 +203,7 @@ export class PayloadDeserializeInterceptor implements Interceptor<Packet, Incomi
 /**
  * for client only.
  */
-export const deatchPacketIdInterceptor: InterceptorFn<any, IncomingMessage> = (input: any, next: HandlerFn<any, IncomingMessage> , context: TransportContext) => {
+export const deatchPacketIdInterceptor: InterceptorFn<any, IncomingMessage> = (input: any, next: HandlerFn<any, IncomingMessage>, context: TransportContext) => {
     if (!context.transport.client) return next(input, context);
 
     return next(input, context)
@@ -215,23 +214,6 @@ export const deatchPacketIdInterceptor: InterceptorFn<any, IncomingMessage> = (i
                 return msg.id == req?.id;
             })
         );
-}
-
-
-/**
- * parse message to packet
- * @param input 
- * @param next 
- * @param context 
- * @returns 
- */
-export const packetifyInterceptor: InterceptorFn<Packet, IncomingMessage> = (input: any, next: HandlerFn, context: TransportContext) => {
-    if (isString(input)) {
-        input = { payload: Buffer.from(input) } as Packet;
-    } else if (isBuffer(input) || context.transport.streamAdapter.isReadable(input)) {
-        input = { payload: input } as Packet;
-    }
-    return next(input, context);
 }
 
 

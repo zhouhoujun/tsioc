@@ -2,7 +2,7 @@ import { InjectFlags, isString, promisify } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
-    FileAdapter, MimeAdapter, PacketDeserializeInterceptor, packetifyInterceptor, messageSerializeInterceptor,
+    FileAdapter, MimeAdapter, PacketDeserializeInterceptor, messageSerializeInterceptor,
     messageVaildateInterceptor, PayloadDeserializeInterceptor, Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, UrlClientIncomingFactory, UrlOutgoingFactory,
     ev,
@@ -145,7 +145,6 @@ export class WsConfiguration {
                     },
                     deserializerConfig: {
                         interceptors: [
-                            packetifyInterceptor,
                             deatchPacketIdInterceptor,
                             PacketDeserializeInterceptor,
                             PayloadDeserializeInterceptor
@@ -245,7 +244,6 @@ export class WsConfiguration {
                     },
                     deserializerConfig: {
                         interceptors: [
-                            packetifyInterceptor,
                             PacketDeserializeInterceptor,
                             PayloadDeserializeInterceptor
                         ]
