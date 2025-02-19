@@ -1,6 +1,5 @@
 import { isUndefined } from '@tsdi/ioc';
-import { AssignerProtocol, Assignment, Cluster, GroupMember, GroupMemberAssignment, GroupState, MemberMetadata } from 'kafkajs';
-// import { KafkaTransportOpts } from './const';
+import { AssignerProtocol, Assignment, Cluster, GroupMember, GroupMemberAssignment, GroupState, Logger, MemberMetadata } from 'kafkajs';
 
 
 export class KafkaReplyPartitionAssigner {
@@ -8,9 +7,11 @@ export class KafkaReplyPartitionAssigner {
     readonly version = 1;
 
     constructor(
-        readonly consumerAssignments: Assignment,
+        readonly consumerAssignments: Record<string, number>,
         private readonly config: {
-            cluster: Cluster;
+          cluster: Cluster
+          groupId?: string
+          logger?: Logger
         }
     ) {
 

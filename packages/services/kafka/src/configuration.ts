@@ -22,15 +22,16 @@ import {
     contextBodySerializeBackend
 } from '@tsdi/endpoints';
 import { map } from 'rxjs';
-import { NatsClient } from './client/client';
-import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS, NatsClientOpts } from './client/options';
-import { NatsHandler } from './client/handler';
-import { NatsServer } from './server/server';
-import { NATS_SERV_FILTERS, NATS_SERV_GUARDS, NATS_SERV_INTERCEPTORS, NatsMicroServOpts } from './server/options';
-import { NatsRequestHandler } from './server/handler';
-import { NatsRequest } from './client/request';
-import { NatsSocket, NATS_MESSAGE } from './socket';
-import { NatsPatternFormatter } from './pattern';
+import { KafkaClient } from './client/client';
+import { KAFKA_CLIENT_FILTERS, KAFKA_CLIENT_INTERCEPTORS, KafkaClientOpts } from './client/options';
+import { KafkaHandler } from './client/handler';
+import { KafkaServer } from './server/server';
+import { KAFKA_SERV_FILTERS, KAFKA_SERV_GUARDS, KAFKA_SERV_INTERCEPTORS, KafkaServerOptions } from './server/options';
+import { KafkaRequestHandler } from './server/handler';
+import { KafkaRequest } from './client/request';
+import { KafkaSocket, KAFKA_MESSAGE } from './socket';
+import { KafkaPatternFormatter } from './pattern';
+import { DEFAULT_BROKERS, KafkaHeaders, parseHead } from './const';
 
 
 
@@ -42,12 +43,13 @@ const attachHeaders: InterceptorFn = (input: any, next: HandlerFn, context: Tran
         .pipe(
             map(body => {
                 const pkg: any = { body };
-                const msg = context.get(NATS_MESSAGE)!;
-                pkg.topic = msg.subject;
-                pkg.id = msg.headers?.get('identity');
+                const msg = context.get(KAFKA_MESSAGE)!;
+                pkg.topic = msg.topic;
+                const kHeaders = msg.message.headers ?? {};
+                pkg.id = kHeaders[KafkaHeaders.CORRELATION_ID]
                 const headers = {} as IHeaders;
-                msg.headers?.keys().forEach(key => {
-                    headers[key] = msg.headers?.get(key);
+                Object.keys(kHeaders).forEach(key => {
+                    headers[key] = parseHead(kHeaders[key]);
                 });
                 pkg.headers = headers;
 
@@ -58,7 +60,7 @@ const attachHeaders: InterceptorFn = (input: any, next: HandlerFn, context: Tran
 
 
 @Configuration()
-export class NatsConfiguration {
+export class KafkaConfiguration {
 
     @Bean(CLIENT_MODULES, { static: true, multi: true })
     microClient(): ClientModuleOpts {
@@ -74,15 +76,15 @@ export class NatsConfiguration {
 
     private getClientOptions(): ClientModuleOpts {
         return {
-            transport: 'nats',
+            transport: 'kafka',
             asDefault: true,
-            clientType: NatsClient,
+            clientType: KafkaClient,
             defaultOpts: {
-                handlerType: NatsHandler,
-                interceptorsToken: NATS_CLIENT_INTERCEPTORS,
-                filtersToken: NATS_CLIENT_FILTERS,
+                handlerType: KafkaHandler,
+                interceptorsToken: KAFKA_CLIENT_INTERCEPTORS,
+                filtersToken: KAFKA_CLIENT_FILTERS,
                 connectOpts: {
-                    servers: `nats://${LOCALHOST}:4222`
+                    brokers: DEFAULT_BROKERS
                 },
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory, formatter: PatternFormatter | null,
@@ -90,8 +92,8 @@ export class NatsConfiguration {
                         incomingFactory: TopicClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
                         redirector: Redirector | null) => {
                         return {
-                            create: (injector, socket, options: NatsClientOpts) => {
-                                return new DefaultClientTransport<NatsSocket, NatsRequest<any>, Buffer | string | IReadable, NatsClientOpts>(
+                            create: (injector, socket, options: KafkaClientOpts) => {
+                                return new DefaultClientTransport<KafkaSocket, KafkaRequest<any>, Buffer | string | IReadable, KafkaClientOpts>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
@@ -109,8 +111,8 @@ export class NatsConfiguration {
                                     redirector,
                                     options,
                                     (socket, req, context) => {
-                                        socket.subscribe(req.responseTopic, options.subscriptionOpts);
-                                        return socket.getPacket(context, r => r.subject == req.responseTopic)
+                                        socket.subscribe([req.responseTopic], options);
+                                        return socket.getPacket(context, r => r.topic == req.responseTopic)
                                     },
 
                                     (socket, msg, req) => {
@@ -160,26 +162,26 @@ export class NatsConfiguration {
                 ]
             },
             providers: [
-                { provide: PatternFormatter, useClass: NatsPatternFormatter }
+                { provide: PatternFormatter, useClass: KafkaPatternFormatter }
             ]
         }
     }
 
     private getServOptions(): ServiceModuleOpts {
         return {
-            transport: 'nats',
+            transport: 'kafka',
             asDefault: true,
-            serverType: NatsServer,
+            serverType: KafkaServer,
             defaultOpts: {
-                handlerType: NatsRequestHandler,
+                handlerType: KafkaRequestHandler,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
                         statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
                         fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
                         incomingFactory: TopicClientIncomingFactory, outgoingFactory: TopicOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
-                            create: (injector, socket, options: NatsMicroServOpts) => {
-                                return new DefaultServerTransport<NatsSocket, TopicRequestContext, Buffer | string | IReadable>(
+                            create: (injector, socket, options: KafkaServerOptions) => {
+                                return new DefaultServerTransport<KafkaSocket, TopicRequestContext, Buffer | string | IReadable>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
@@ -251,12 +253,12 @@ export class NatsConfiguration {
                     prefix: 'content'
                 },
                 serverOpts: {
-                    servers: `nats://${LOCALHOST}:4222`
+                    brokers: DEFAULT_BROKERS
                 },
                 detailError: false,
-                interceptorsToken: NATS_SERV_INTERCEPTORS,
-                filtersToken: NATS_SERV_FILTERS,
-                guardsToken: NATS_SERV_GUARDS,
+                interceptorsToken: KAFKA_SERV_INTERCEPTORS,
+                filtersToken: KAFKA_SERV_FILTERS,
+                guardsToken: KAFKA_SERV_GUARDS,
                 filters: [
                     LoggerFilter,
                     ExecptionFinalizeFilter,
@@ -265,7 +267,7 @@ export class NatsConfiguration {
                 ]
             },
             providers: [
-                { provide: PatternFormatter, useClass: NatsPatternFormatter }
+                { provide: PatternFormatter, useClass: KafkaPatternFormatter }
             ]
         }
     }

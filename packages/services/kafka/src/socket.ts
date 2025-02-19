@@ -1,8 +1,15 @@
-import { Consumer, Producer, ConsumerSubscribeTopics, ConsumerRunConfig } from 'kafkajs';
+import { BadRequestExecption, TransportContext } from '@tsdi/common/transport';
+import { ContextToken } from '@tsdi/core';
+import { Consumer, Producer, ConsumerSubscribeTopics, ConsumerRunConfig, EachMessagePayload, CompressionTypes } from 'kafkajs';
+import { BehaviorSubject, filter, map, Observable } from 'rxjs';
+
+
+export const KAFKA_MESSAGE = new ContextToken<EachMessagePayload>(() => null!);
 
 export class KafkaSocket {
 
     private regTopics?: RegExp[];
+    private subj$ = new BehaviorSubject<EachMessagePayload>(null!);
     constructor(readonly consumer: Consumer, readonly producer: Producer, private runOptions: ConsumerRunConfig) {
 
     }
@@ -16,18 +23,52 @@ export class KafkaSocket {
 
         this.regTopics = topics.filter(t => t instanceof RegExp) as RegExp[];
 
-        await consumer.run(this.runOptions);
-        // await consumer.run({
-        //     // autoCommit: true,
-        //     // autoCommitInterval: 5000,
-        //     // autoCommitThreshold: 100,
-        //     ...this.runOptions,
-        //     eachMessage: async (payload) => {
-        //         if (this.options.serverSide && payload.topic.endsWith('.reply')) return;
-        //         this.events.emit(ev.MESSAGE, payload);
-        //     }
-        // })
+        const originEach = this.runOptions?.eachMessage;
+        await consumer.run({
+            ...this.runOptions,
+            eachMessage: async (payload) => {
+                if (originEach) await originEach(payload);
+                this.subj$.next(payload);
+            }
+
+        });
+
     }
+
+    getMessage() {
+        return this.subj$.pipe(filter(r => !!r))
+    }
+
+    getPacket(context: TransportContext, filterFn: (msg: EachMessagePayload) => boolean): Observable<Buffer | null> {
+        return this.subj$.pipe(
+            filter(r => !!r && filterFn(r)),
+            map(r => {
+                context.set(KAFKA_MESSAGE, r);
+                return r.message.value
+            })
+        )
+    }
+
+    async publish(topic: string, payload: Buffer | null, options?: {
+          acks?: number
+          timeout?: number
+          compression?: CompressionTypes
+    }) {
+
+        if (!topic) throw new BadRequestExecption();
+
+        this.producer.send({
+            topic,
+            ...options,
+            messages: [
+                {
+                    value: payload ?? Buffer.alloc(0),
+                    // options
+                }
+            ]
+        })
+    }
+
 
     async disconnect() {
         if (this.consumer) {

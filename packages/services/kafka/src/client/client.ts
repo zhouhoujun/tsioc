@@ -1,14 +1,16 @@
-import { Inject, Injectable, InvocationContext, isFunction, isString } from '@tsdi/ioc';
+import { Injectable, isFunction, isString } from '@tsdi/ioc';
+import { Context } from '@tsdi/core';
+import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { Pattern, RequestInitOpts, ResponseEvent, TopicRequestOptions, patternToPath } from '@tsdi/common';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
-import { InjectLog, Level, Logger } from '@tsdi/logger';
-import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, Producer, logLevel } from 'kafkajs';
+import { getRouter } from '@tsdi/endpoints';
+import { Cluster, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, logLevel } from 'kafkajs';
 import { KafkaHandler } from './handler';
 import { KafkaClientOpts } from './options';
-import { DEFAULT_BROKERS, KafkaTransportOpts } from '../const';
+import { DEFAULT_BROKERS } from '../const';
 import { KafkaReplyPartitionAssigner } from '../kafka.assigner';
-import { KafkaClientTransport } from './session';
 import { KafkaRequest } from './request';
+import { KafkaSocket } from '../socket';
 
 
 
@@ -19,9 +21,8 @@ export class KafkaClient extends AbstractClient<TopicRequestOptions, KafkaReques
     private logger!: Logger;
 
     private client?: Kafka | null;
-    private consumer?: Consumer | null;
-    private producer?: Producer | null;
-    private _transport?: KafkaClientTransport;
+    private socket?: KafkaSocket | null;
+    private _transport?: ClientTransport;
 
     constructor(readonly handler: KafkaHandler) {
         super()
@@ -78,11 +79,14 @@ export class KafkaClient extends AbstractClient<TopicRequestOptions, KafkaReques
         }
         this.client = new Kafka(connectOpts);
 
-        const transportOpts = options.transportOpts = { transport: 'kafka', ...options.transportOpts } as KafkaTransportOpts;
+        if (!options.consumerAssignments) {
+            options.consumerAssignments = {};
+        }
 
+        let consumer: any;
         if (!options.producerOnlyMode) {
             const partitionAssigners = [
-                (config: { cluster: Cluster }) => new KafkaReplyPartitionAssigner(transportOpts, config),
+                (config: { cluster: Cluster }) => new KafkaReplyPartitionAssigner(options.consumerAssignments!, config),
             ] as PartitionAssigner[];
 
             const consumeOpts = {
@@ -92,38 +96,40 @@ export class KafkaClient extends AbstractClient<TopicRequestOptions, KafkaReques
             };
 
 
-            this.consumer = this.client.consumer(consumeOpts);
+            consumer = this.client.consumer(consumeOpts);
 
-            this.consumer.on(
-                this.consumer.events.GROUP_JOIN,
+            consumer.on(
+                consumer.events.GROUP_JOIN,
                 (data: ConsumerGroupJoinEvent) => {
-                    const consumerAssignments: Record<string, number> = {};
+                    const consumerAssignments = options.consumerAssignments!;
                     Object.keys(data.payload.memberAssignment).forEach(memberId => {
                         const minimumPartition = Math.min(
                             ...data.payload.memberAssignment[memberId],
                         );
                         consumerAssignments[memberId] = minimumPartition;
                     });
-                    transportOpts.consumerAssignments = consumerAssignments;
                 });
 
-            await this.consumer.connect();
+            await consumer.connect();
         }
 
-        this.producer = this.client.producer(options.producer);
-        await this.producer.connect();
+        const producer = this.client.producer(options.producer);
+        await producer.connect();
+
+        if (!options.runConfig) {
+            options.runConfig = {};
+        }
+        this.socket = new KafkaSocket(consumer, producer, options.runConfig);
         const injector = this.handler.injector;
-        this._transport = injector.get(ClientTransportFactory).create(injector, {
-            producer: this.producer,
-            consumer: this.consumer!
-        }, options) as KafkaClientTransport
+        this._transport = injector.get(ClientTransportFactory).create(injector, this.socket, options);
 
         if (!options.producerOnlyMode) {
             const topics = options.topics ? options.topics.map(t => {
                 if (t instanceof RegExp) return t;
                 return patternToPath(t);
-            }) : this.handler.injector.get(MicroRouters).get('kafka').matcher.getPatterns();
-            await this._transport.bindTopics(topics.map(t => this.getReplyTopic(t)))
+            }) : getRouter(injector, 'kafka', true).matcher.getPatterns();
+
+            await this.socket.subscribe(topics.map(t => this.getReplyTopic(t)), options)
         }
 
     }
@@ -141,9 +147,8 @@ export class KafkaClient extends AbstractClient<TopicRequestOptions, KafkaReques
         return topic + '.reply'
     }
 
-    protected override initContext(context: InvocationContext<any>): void {
-        context.setValue(AbstractClient, this);
-        context.setValue(ClientTransport, this._transport)
+    protected override initContext(context: Context): void {
+        context.set(ClientTransport, this._transport)
     }
 
     protected createRequest(pattern: Pattern, options: RequestInitOpts<any, TopicRequestOptions>): KafkaRequest<any> {
@@ -156,15 +161,9 @@ export class KafkaClient extends AbstractClient<TopicRequestOptions, KafkaReques
 
 
     protected async onShutdown(): Promise<void> {
-        if (this.producer) {
-            await this.producer.disconnect();
-        }
+        this.socket?.disconnect();
         this._transport?.destroy();
-        if (this.consumer) {
-            await this.consumer.disconnect()
-        }
-        this.producer = null;
-        this.consumer = null;
+        this.socket = null;
         this.client = null;
     }
 

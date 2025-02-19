@@ -2,7 +2,7 @@ import { Injectable, isFunction } from '@tsdi/ioc';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { defaultFormatter, PatternFormatter } from '@tsdi/common';
 import { Server, ServerTransportFactory, RequestContext, getRouter, ServerTransport } from '@tsdi/endpoints';
-import { Consumer, Kafka, LogEntry, logLevel, Producer } from 'kafkajs';
+import { Kafka, LogEntry, logLevel } from 'kafkajs';
 import { DEFAULT_BROKERS } from '../const';
 import { KafkaServerOptions } from './options';
 import { KafkaRequestHandler } from './handler';
@@ -22,9 +22,7 @@ export class KafkaServer extends Server<RequestContext, KafkaServerOptions> {
     private logger!: Logger;
 
     protected client?: Kafka | null;
-    private socket?: KafkaSocket;
-    // protected consumer?: Consumer | null;
-    // protected producer?: Producer | null;
+    private socket?: KafkaSocket | null;
     private _transport?: ServerTransport;
 
     private destroy$: Subject<void>;
@@ -137,8 +135,8 @@ export class KafkaServer extends Server<RequestContext, KafkaServerOptions> {
             await this.socket.disconnect()
         }
         this.logger.info(`Kafka microservice closed!`);
-        this.socket = null!;
-        this.client = null!;
+        this.socket = null;
+        this.client = null;
     }
 
 

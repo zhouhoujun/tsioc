@@ -1,11 +1,12 @@
 import { HeadersLike, IHeaders } from '@tsdi/common';
 import { BadRequestExecption, Packet, TransportContext } from '@tsdi/common/transport';
-import { isFunction, tokenId } from '@tsdi/ioc';
+import { ContextToken } from '@tsdi/core';
+import { isFunction } from '@tsdi/ioc';
 import { Msg, MsgHdrs, NatsConnection, Payload, PublishOptions, Subscription, SubscriptionOptions, headers as createHeaders } from 'nats';
 import { Observable, BehaviorSubject, filter, map } from 'rxjs';
 
 
-export const NATS_MESSAGE = tokenId<Msg>('NATS_MESSAGE');
+export const NATS_MESSAGE = new ContextToken<Msg>(() => null!);
 
 export class NatsSocket {
 

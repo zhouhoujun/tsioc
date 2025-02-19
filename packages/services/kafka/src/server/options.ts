@@ -1,8 +1,8 @@
 import { GuardLike, Filter, Interceptor } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ServerOpts } from '@tsdi/endpoints';
-import { ConsumerConfig, KafkaConfig, ProducerConfig, ConsumerRunConfig, ConsumerSubscribeTopics } from 'kafkajs';
-// import { KafkaTransportOpts } from '../const';
+import { ConsumerConfig, KafkaConfig, ProducerConfig, ConsumerRunConfig } from 'kafkajs';
+
 
 
 
@@ -12,6 +12,7 @@ export interface KafkaServerOptions extends ServerOpts<KafkaConfig> {
     producer?: ProducerConfig;
     runConfig?:ConsumerRunConfig;
     fromBeginning?: boolean;
+    
     keepBinary?: boolean;
     detailError?: boolean;
     timeout?: number;
