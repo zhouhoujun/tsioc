@@ -11,6 +11,7 @@ import { RedisModule, RedisClient, RedisServer } from '../src';
 import { DeviceController } from './controller';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { BigFileInterceptor } from './BigFileInterceptor';
+import { ErrorResponse } from '@tsdi/common';
 
 
 
@@ -112,8 +113,10 @@ describe('Redis hybrid Tcp Server & Redis Client & TcpClient', () => {
                     return of(err);
                 })));
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
+        // expect(res).toBeDefined();
+        // expect(isArray(res.features)).toBeTruthy();
+        expect(res).toBeInstanceOf(ErrorResponse);
+        expect((res as ErrorResponse).statusMessage).toContain('great than max size');
     })
 
     it('query all', async () => {

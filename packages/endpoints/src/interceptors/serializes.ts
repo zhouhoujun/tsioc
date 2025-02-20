@@ -1,8 +1,8 @@
 import { hasProps, isNil, isString, isUndefined } from '@tsdi/ioc';
 import { BackendFn, HandlerFn, InterceptorFn, PipeTransform } from '@tsdi/core';
 import { HEAD } from '@tsdi/common';
-import { AbstractTransport, ENOENT, Outgoing, Packet, PacketLengthException, TransportContext } from '@tsdi/common/transport';
-import { map, of, throwError } from 'rxjs';
+import { AbstractTransport, ENOENT, Outgoing, Packet, PacketLengthException, TEXT_DECODER, toBuffer, TransportContext } from '@tsdi/common/transport';
+import { defer, map, of, throwError } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 
 
@@ -211,20 +211,13 @@ export const lengthLimitSerializeInterceptor: InterceptorFn<RequestContext> = (i
     return next(input, context);
 }
 
-/**
- * request context servializ
- * @param input 
- * @param next 
- * @param context 
- * @returns 
- */
-export const contextSerializeBackend: BackendFn<RequestContext> = (input: RequestContext, context: TransportContext) => {
-
+function parseToOutgoing(input: RequestContext): Outgoing {
     const id = input.response.id ?? input.request.id;
     const headers = input.headerAdapter.getHeaders(input.response.headers ?? input.response);
     const pkg = {
         id
     } as Outgoing;
+    
     if (input.status) {
         pkg.statusCode = input.status;
     }
@@ -236,8 +229,15 @@ export const contextSerializeBackend: BackendFn<RequestContext> = (input: Reques
         pkg.headers = headers;
     }
 
+    return pkg;
+}
+
+export const headersReadableBodyInterceptor: InterceptorFn<RequestContext> = (input: RequestContext, next: HandlerFn<RequestContext, Packet>, context: TransportContext) => {
     if (input.streamAdapter.isReadable(input.body)) {
         let contentLength = input.length || 0;
+        const pkg = parseToOutgoing(input);
+        const id = pkg.id;
+
         if (id) {
             const idLen = input.transport.options.idLen ?? 2;
             const idBuff = Buffer.alloc(idLen);
@@ -252,23 +252,45 @@ export const contextSerializeBackend: BackendFn<RequestContext> = (input: Reques
         return of(
             {
                 id,
-                headers,
+                // headers,
                 payload: JSON.stringify(pkg),
             },
             {
                 id,
-                headers,
+                // headers,
                 payload: input.body,
                 contentLength
             })
     }
+    return next(input, context);
+}
 
-    pkg.body = input.body;
-    const payload = JSON.stringify(pkg, null, 2);
-    if (!input.headersSent) {
-        input.length = Buffer.byteLength(payload);
-    }
-    return of(payload);
+/**
+ * request context servializ
+ * @param input 
+ * @param next 
+ * @param context 
+ * @returns 
+ */
+export const contextSerializeBackend: BackendFn<RequestContext> = (input: RequestContext, context: TransportContext) => {
+
+    return defer(async () => {
+        const pkg = parseToOutgoing(input);
+
+        let body = input.body;
+        if (input.streamAdapter.isReadable(body)) {
+            body = await toBuffer(body);
+            body = context.get(TEXT_DECODER).decode(body);
+        }
+
+        pkg.body = body;
+        const payload = JSON.stringify(pkg, null, 2);
+        if (!input.headersSent) {
+            input.length = Buffer.byteLength(payload);
+        }
+        return payload;
+
+    });
 
 }
 

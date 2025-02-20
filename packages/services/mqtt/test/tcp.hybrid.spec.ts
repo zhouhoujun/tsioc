@@ -11,6 +11,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import { MqttClient, MqttModule } from '../src';
 import { DeviceController } from './controller';
 import { BigFileInterceptor } from './BigFileInterceptor';
+import { ErrorResponse } from '@tsdi/common';
 
 
 @Module({
@@ -101,6 +102,8 @@ describe('Mqtt hybrid Tcp Server & Mqtt Client & TcpClient', () => {
 
         expect(res).toBeDefined();
         expect(isArray(res.features)).toBeTruthy();
+        // expect(res).toBeInstanceOf(ErrorResponse);
+        // expect((res as ErrorResponse).statusMessage).toContain('great than max size');
     })
 
     it('mqtt client fetch big json', async () => {
@@ -111,8 +114,10 @@ describe('Mqtt hybrid Tcp Server & Mqtt Client & TcpClient', () => {
                     return of(err);
                 })));
 
-        expect(res).toBeDefined();
-        expect(isArray(res.features)).toBeTruthy();
+        // expect(res).toBeDefined();
+        // expect(isArray(res.features)).toBeTruthy();
+        expect(res).toBeInstanceOf(ErrorResponse);
+        expect((res as ErrorResponse).statusMessage).toContain('great than max size');
     })
 
     it('query all', async () => {

@@ -17,7 +17,8 @@ import {
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
     execptionSerializeInterceptor, contextSerializeBackend, lengthLimitSerializeInterceptor,
     ServerTransferFactory, SocketServerTransport,
-    packetIfySerializeInterceptor
+    packetIfySerializeInterceptor,
+    headersReadableBodyInterceptor
 } from '@tsdi/endpoints';
 import { TcpClient } from './client/client';
 import { TcpHandler } from './client/handler';
@@ -201,7 +202,8 @@ export class TcpConfiguration {
                         lengthLimitSerializeInterceptor,
                         messageSerializeInterceptor,
                         packetIfySerializeInterceptor,
-                        execptionSerializeInterceptor
+                        execptionSerializeInterceptor,
+                        headersReadableBodyInterceptor
                     ]
                 },
                 deserializerConfig: {

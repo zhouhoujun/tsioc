@@ -22,7 +22,8 @@ import {
     ServerTransferFactory, ServiceModuleOpts,
     execptionSerializeInterceptor,
     packetIfySerializeInterceptor,
-    DefaultServerTransport
+    DefaultServerTransport,
+    headersReadableBodyInterceptor
 } from '@tsdi/endpoints';
 import { WsClient } from './client/client';
 import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS, WsClientOpts } from './client/options';
@@ -239,7 +240,8 @@ export class WsConfiguration {
                             lengthLimitSerializeInterceptor,
                             messageSerializeInterceptor,
                             packetIfySerializeInterceptor,
-                            execptionSerializeInterceptor
+                            execptionSerializeInterceptor,
+                            headersReadableBodyInterceptor
                         ]
                     },
                     deserializerConfig: {
