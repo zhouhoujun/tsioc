@@ -30,7 +30,7 @@ export class DefaultServerTransport<
         readonly outgoingFactory: OutgoingFactory,
         readonly transfer: ServerTransfer,
         readonly serverOptions: TOptions,
-        private _read: (socket: TSocket, getContext: () => TransportContext) => Observable<TransportContext | any>,
+        private _read: (socket: TSocket, factory: () => TransportContext, instance?: TransportContext) => Observable<TransportContext | any>,
         private _write: (socket: TSocket, msg: TMsg, requestContext: TContext, context: TransportContext) => Promise<any>,
         private _close?: (socket: TSocket) => Promise<any>
 
@@ -40,10 +40,7 @@ export class DefaultServerTransport<
 
 
     protected override read(context?: TransportContext): Observable<TransportContext> {
-        return this._read(this.socket, () => {
-            if (context) return context;
-            return TransportContext.create(this);;
-        });
+        return this._read(this.socket, () => TransportContext.create(this), context);
 
     }
 

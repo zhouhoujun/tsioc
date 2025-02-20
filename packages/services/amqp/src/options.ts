@@ -1,8 +1,8 @@
-import { TransportOpts } from '@tsdi/common/transport';
+
 import { Options } from 'amqplib';
 
 
-export interface AmqpSessionOpts extends TransportOpts {
+export interface AmqpSessionOpts {
     /**
     * queue name
     */

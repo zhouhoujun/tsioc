@@ -108,11 +108,10 @@ export class NatsConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (socket, getContext) => {
-                                        const context = getContext();
-                                        const req = context.get(NatsRequest);
+                                    (socket, factory, context) => {
+                                        const req = context?.get(NatsRequest);
                                         req && socket.subscribe(req.responseTopic, options.subscriptionOpts);
-                                        return socket.getPacket(getContext, r => req ? r.subject == req.responseTopic : true)
+                                        return socket.getPacket(factory, r => req ? r.subject == req.responseTopic : true, context)
                                     },
 
                                     (socket, msg, req) => {
@@ -199,7 +198,7 @@ export class NatsConfiguration {
                                     outgoingFactory,
                                     transferFactory.create(injector, options.transferConfig),
                                     options,
-                                    (socket, context) => socket.getPacket(context, m => !m.subject.endsWith('.reply')),
+                                    (socket, factory, context) => socket.getPacket(factory, m => !m.subject.endsWith('.reply'), context),
                                     (socket, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
                                         if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');

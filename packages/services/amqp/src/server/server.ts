@@ -5,6 +5,7 @@ import { Server, ServerTransportFactory, ServerTransport, RequestContext } from 
 import * as amqp from 'amqplib';
 import { AmqpMicroServiceOpts } from './options';
 import { AmqpRequestHandler } from './handler';
+import { Subject } from 'rxjs';
 
 
 
@@ -14,7 +15,8 @@ export class AmqpServer extends Server<RequestContext, AmqpMicroServiceOpts> {
 
     @InjectLog()
     private logger!: Logger;
-
+    private destroy$: Subject<void>;
+    
     private _connected = false;
     private _conn: amqp.Connection | null = null;
     private _channel: amqp.Channel | null = null;
@@ -22,6 +24,7 @@ export class AmqpServer extends Server<RequestContext, AmqpMicroServiceOpts> {
 
     constructor(readonly handler: AmqpRequestHandler) {
         super();
+        this.destroy$ = new Subject();
     }
 
     protected async connect(): Promise<any> {
@@ -73,7 +76,7 @@ export class AmqpServer extends Server<RequestContext, AmqpMicroServiceOpts> {
 
         const injector = this.handler.injector;
         const session = this._transport = injector.get(ServerTransportFactory).create(injector, channel, options);
-        session.listen(this.handler)
+        session.handle(this.handler, this.destroy$)
         // injector.get(RequestHandler).handle(this.endpoint, session, this.logger, options);
 
     }
@@ -94,6 +97,11 @@ export class AmqpServer extends Server<RequestContext, AmqpMicroServiceOpts> {
 
 
     protected async onShutdown(): Promise<any> {
+        if(!this._conn) return;
+
+        this.destroy$.next();
+        this.destroy$.complete();
+        
         await this._transport?.destroy();
         await this._channel?.close();
         await this._conn?.close();

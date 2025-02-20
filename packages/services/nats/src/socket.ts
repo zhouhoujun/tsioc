@@ -27,11 +27,11 @@ export class NatsSocket {
         return this.subj$.pipe(filter(r => !!r))
     }
 
-    getPacket(getContext: () => TransportContext, filterFn: (msg: Msg) => boolean): Observable<TransportContext> {
+    getPacket(factory: () => TransportContext, filterFn: (msg: Msg) => boolean, instance?: TransportContext): Observable<TransportContext> {
         return this.subj$.pipe(
             filter(r => !!r && filterFn(r)),
             map(r => {
-                const context = getContext()
+                const context = instance ?? factory()
                 context.set(NATS_MESSAGE, r);
                 context.incoming =  Buffer.from(r.data);
                 return context;

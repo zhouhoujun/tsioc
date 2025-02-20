@@ -82,8 +82,8 @@ export class UdpConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (socket, getContext) => fromEvent(socket, ev.MESSAGE, (payload: Buffer, rinfo: RemoteInfo) => {
-                                        const context = getContext();
+                                    (socket, factory, instance) => fromEvent(socket, ev.MESSAGE, (payload: Buffer, rinfo: RemoteInfo) => {
+                                        const context = instance ?? factory()
                                         context.set(REMOTE_INFO, rinfo);
                                         context.incoming = payload;
                                         return context;
@@ -160,8 +160,8 @@ export class UdpConfiguration {
                                     outgoingFactory,
                                     transferFactory.create(injector, options.transferConfig),
                                     options,
-                                    (socket, getContext) => fromEvent(socket, ev.MESSAGE, (payload: Buffer, rinfo: RemoteInfo) => {
-                                        const context = getContext();
+                                    (socket, factory, instance) => fromEvent(socket, ev.MESSAGE, (payload: Buffer, rinfo: RemoteInfo) => {
+                                        const context = instance ?? factory()
                                         context.set(REMOTE_INFO, rinfo);
                                         context.incoming = payload;
                                         return context;

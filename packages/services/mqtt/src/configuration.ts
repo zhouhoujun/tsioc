@@ -91,15 +91,21 @@ export class MqttConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (mqtt, getContext) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
-                                        const context = getContext();
-                                        const req = context.get(MqttRequest);
-                                        if (req?.responseTopic == topic) {
-                                            context.set(MQTT_PUBLISH_PACKET, packet);
-                                            context.incoming = payload;
-                                            return context
+                                    (mqtt, factory, context) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
+                                        if (context) {
+                                            const req = context.get(MqttRequest);
+                                            if (req?.responseTopic == topic) {
+                                                context.set(MQTT_PUBLISH_PACKET, packet);
+                                                context.incoming = payload;
+                                                return context
+                                            }
+                                            return null
+                                        } else {
+                                            const ctx = factory();
+                                            ctx.set(MQTT_PUBLISH_PACKET, packet);
+                                            ctx.incoming = payload;
+                                            return ctx
                                         }
-                                        return null
                                     }).pipe(filter(p => !!p)),
                                     async (mqtt, msg, req) => {
                                         if (req.responseTopic && !subscribes.has(req.responseTopic)) {
@@ -183,9 +189,9 @@ export class MqttConfiguration {
                                     outgoingFactory,
                                     transferFactory.create(injector, options.transferConfig),
                                     options,
-                                    (mqtt, getContext) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
+                                    (mqtt, factory, instance) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
                                         if (topic.endsWith('/reply')) return null;
-                                        const context = getContext();
+                                        const context = instance ?? factory();
                                         context.set(MQTT_PUBLISH_PACKET, packet);
                                         context.incoming = payload;
                                         return context

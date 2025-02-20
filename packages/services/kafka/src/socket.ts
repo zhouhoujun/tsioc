@@ -39,11 +39,11 @@ export class KafkaSocket {
         return this.subj$.pipe(filter(r => !!r))
     }
 
-    getPacket(getContext: ()=> TransportContext, filterFn: (msg: EachMessagePayload) => boolean): Observable<TransportContext> {
+    getPacket(factory: ()=> TransportContext, filterFn: (msg: EachMessagePayload) => boolean, instance?: TransportContext): Observable<TransportContext> {
         return this.subj$.pipe(
             filter(r => !!r && filterFn(r)),
             map(r => {
-                const context = getContext();
+                const context = instance ?? factory();
                 context.set(KAFKA_MESSAGE, r);
                 context.incoming= r.message.value;
                 return context

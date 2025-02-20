@@ -110,11 +110,10 @@ export class KafkaConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (socket, getContext) => {
-                                        const context = getContext();
-                                        const req = context.get(KafkaRequest);
+                                    (socket, factory, instance) => {
+                                        const req = instance?.get(KafkaRequest);
                                         req && socket.subscribe([req.responseTopic], options);
-                                        return socket.getPacket(getContext, r => req? r.topic == req.responseTopic: true)
+                                        return socket.getPacket(factory, r => req ? r.topic == req.responseTopic : true, instance)
                                     },
 
                                     (socket, msg, req) => {
@@ -201,7 +200,7 @@ export class KafkaConfiguration {
                                     outgoingFactory,
                                     transferFactory.create(injector, options.transferConfig),
                                     options,
-                                    (socket, getContext) => socket.getPacket(getContext, m => !m.topic.endsWith('.reply')),
+                                    (socket, factory, instance) => socket.getPacket(factory, m => !m.topic.endsWith('.reply'), instance),
                                     (socket, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
                                         if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');

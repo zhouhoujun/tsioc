@@ -26,7 +26,7 @@ import { RedisHandler } from './client/handler';
 import { RedisServer } from './server/server';
 import { REDIS_SERV_FILTERS, REDIS_SERV_GUARDS, REDIS_SERV_INTERCEPTORS } from './server/options';
 import { RedisRequestHandler } from './server/handler';
-import { AbstractRequest, DefaultResponseFactory, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
+import { DefaultResponseFactory, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import { RedisPatternFormatter } from './pattern';
 import { ReidsSocket } from './socket';
 import { filter, fromEvent, merge } from 'rxjs';
@@ -97,9 +97,9 @@ export class RedisConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (socket, getContext) => merge(
+                                    (socket, factory, instance) => merge(
                                         fromEvent(socket.subscriber, ev.MESSAGE_BUFFER, (topic: string | Buffer, payload: string | Buffer) => {
-                                            const context = getContext();
+                                            const context = instance ?? factory()
                                             const req = context.get(RedisRequest);
                                             const topicStr = isString(topic) ? topic : context.get(TEXT_DECODER).decode(topic);
                                             if(topicStr !== req?.responseTopic) return null;
@@ -107,7 +107,7 @@ export class RedisConfiguration {
                                             return context;
                                         }),
                                         fromEvent(socket.subscriber, 'pmessageBuffer', (pattern: string, topic: string | Buffer, payload: string | Buffer) => {
-                                            const context = getContext();
+                                            const context = instance ?? factory()
                                             const req = context.get(RedisRequest);
                                             const topicStr = isString(topic) ? topic : context.get(TEXT_DECODER).decode(topic);
                                             if(topicStr !== req?.responseTopic) return null;
@@ -202,16 +202,16 @@ export class RedisConfiguration {
                                     outgoingFactory,
                                     transferFactory.create(injector, options.transferConfig),
                                     options,
-                                    (socket, getContext) => merge(
+                                    (socket, factory, instance) => merge(
                                         fromEvent(socket.subscriber, ev.MESSAGE_BUFFER, (topic: string | Buffer, payload: string | Buffer) => {
-                                            const context = getContext();
+                                            const context = instance ?? factory()
                                             const topicStr = isString(topic) ? topic : context.get(TEXT_DECODER).decode(topic);
                                             if (topicStr.endsWith('.reply')) return null;
                                             context.incoming = payload;
                                             return context;
                                         }),
                                         fromEvent(socket.subscriber, 'pmessageBuffer', (pattern: string, topic: string | Buffer, payload: string | Buffer) => {
-                                            const context = getContext();
+                                            const context = instance ?? factory()
                                             const topicStr = isString(topic) ? topic : context.get(TEXT_DECODER).decode(topic);
                                             if (topicStr.endsWith('.reply')) return null;
                                             context.set(REDIS_PATTERN, pattern);
