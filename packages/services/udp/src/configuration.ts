@@ -82,11 +82,12 @@ export class UdpConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (socket, req, context) => fromEvent(socket, ev.MESSAGE, (payload: Buffer, rinfo: RemoteInfo) => {
-                                        // if (req?.remoteInfo.address !== rinfo.address || req.remoteInfo.port !== rinfo.port) return null;
+                                    (socket, getContext) => fromEvent(socket, ev.MESSAGE, (payload: Buffer, rinfo: RemoteInfo) => {
+                                        const context = getContext();
                                         context.set(REMOTE_INFO, rinfo);
-                                        return payload
-                                    }).pipe(filter(r => r !== null)),
+                                        context.incoming = payload;
+                                        return context;
+                                    }),
                                     async (socket, msg, req) => {
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
                                         return await promisify<Buffer | string, number, string>(socket.send, socket)(msg ?? Buffer.alloc(0), req.remoteInfo.port, req.remoteInfo.address)
@@ -159,9 +160,11 @@ export class UdpConfiguration {
                                     outgoingFactory,
                                     transferFactory.create(injector, options.transferConfig),
                                     options,
-                                    (socket, context) => fromEvent(socket, ev.MESSAGE, (payload: Buffer, rinfo: RemoteInfo) => {
+                                    (socket, getContext) => fromEvent(socket, ev.MESSAGE, (payload: Buffer, rinfo: RemoteInfo) => {
+                                        const context = getContext();
                                         context.set(REMOTE_INFO, rinfo);
-                                        return payload
+                                        context.incoming = payload;
+                                        return context;
                                     }),
                                     (socket, msg, requestContext, context) => {
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');

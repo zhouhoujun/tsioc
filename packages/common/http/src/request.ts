@@ -2,8 +2,7 @@ import { isString, isUndefined, isNil } from '@tsdi/ioc';
 import { Context } from '@tsdi/core';
 import {
     DELETE, GET, HEAD, isArrayBuffer, isBlob, isFormData, isUrlSearchParams, JSONP, OPTIONS,
-    HeadersLike, HeaderMappings, RequestParams, UrlRequest,
-    appendUrlParams
+    HeadersLike, HeaderMappings, RequestParams, UrlRequest, appendUrlParams,
 } from '@tsdi/common';
 import { HttpParams } from './params';
 

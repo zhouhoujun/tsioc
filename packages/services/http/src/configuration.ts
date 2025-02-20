@@ -102,7 +102,8 @@ export class HttpConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (socket: ClientHttp2Session | null, req, context) => {
+                                    (socket: ClientHttp2Session | null, getContext) => {
+                                        const context = getContext();
                                         const channel = context.get(REQUEST_STREAM);
                                         if (channel instanceof ClientRequest) {
                                             return new Observable<ClientIncoming>(subscribe => {
@@ -255,7 +256,7 @@ export class HttpConfiguration {
                                         ...options.transferConfig
                                     }),
                                     options,
-                                    (socket: Http2Server | HttpsServer | Server, context) => {
+                                    (socket: Http2Server | HttpsServer | Server, getContext) => {
                                         return new Observable<HttpIncomings>(subscribe => {
                                             const onRequest = (req: HttpServRequest, res: HttpServResponse) => subscribe.next(incomingFactory.create({ req, res }));
                                             const onError = (err: any) => err && subscribe.error(err);

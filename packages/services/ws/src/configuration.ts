@@ -94,8 +94,8 @@ export class WsConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (socket, req, context) => fromEvent(socket, options.enableStream ? ev.DATA : ev.MESSAGE, (payload: any) => {
-                                        return isString(payload) || isBuffer(payload) ? payload : payload.data
+                                    (socket, getContext) => fromEvent(socket, options.enableStream ? ev.DATA : ev.MESSAGE, (payload: any) => {
+                                        return isString(payload) || isBuffer(payload) ? payload : payload.data;
                                     }),
                                     async (socket, msg, req) => {
                                         const payload = msg.payload ?? msg;
@@ -194,8 +194,8 @@ export class WsConfiguration {
                                     outgoingFactory,
                                     transferFactory.create(injector, options.enableStream ? options.streamTransport?.transferConfig : options.transferConfig),
                                     options,
-                                    (socket, context) => fromEvent(socket, options.enableStream ? ev.DATA : ev.MESSAGE, (payload: any) => {
-                                        return isString(payload) || isBuffer(payload) ? payload : payload.data
+                                    (socket, getContext) => fromEvent(socket, options.enableStream ? ev.DATA : ev.MESSAGE, (payload: any) => {
+                                        return isString(payload) || isBuffer(payload) ? payload : payload.data;
                                     }),
                                     async (socket, msg, requestContext) => {
                                         const payload = msg.payload ?? msg;

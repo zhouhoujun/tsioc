@@ -110,14 +110,16 @@ export class KafkaConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (socket, req, context) => {
-                                        socket.subscribe([req.responseTopic], options);
-                                        return socket.getPacket(context, r => r.topic == req.responseTopic)
+                                    (socket, getContext) => {
+                                        const context = getContext();
+                                        const req = context.get(KafkaRequest);
+                                        req && socket.subscribe([req.responseTopic], options);
+                                        return socket.getPacket(getContext, r => req? r.topic == req.responseTopic: true)
                                     },
 
                                     (socket, msg, req) => {
-                                        const headers = socket.mergeHeaders(req.headers, options.publishOpts?.headers);
-                                        req.id && headers.set('identity', String(req.id));
+                                        // const headers = socket.mergeHeaders(req.headers, options.publishOpts?.headers);
+                                        // req?.id && headers.set('identity', String(req.id));
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
 
                                         return socket.publish(req.topic, msg ?? Buffer.alloc(0), {
@@ -199,7 +201,7 @@ export class KafkaConfiguration {
                                     outgoingFactory,
                                     transferFactory.create(injector, options.transferConfig),
                                     options,
-                                    (socket, context) => socket.getPacket(context, m => !m.subject.endsWith('.reply')),
+                                    (socket, getContext) => socket.getPacket(getContext, m => !m.topic.endsWith('.reply')),
                                     (socket, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
                                         if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');

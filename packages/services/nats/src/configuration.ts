@@ -108,9 +108,11 @@ export class NatsConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (socket, req, context) => {
-                                        socket.subscribe(req.responseTopic, options.subscriptionOpts);
-                                        return socket.getPacket(context, r => r.subject == req.responseTopic)
+                                    (socket, getContext) => {
+                                        const context = getContext();
+                                        const req = context.get(NatsRequest);
+                                        req && socket.subscribe(req.responseTopic, options.subscriptionOpts);
+                                        return socket.getPacket(getContext, r => req ? r.subject == req.responseTopic : true)
                                     },
 
                                     (socket, msg, req) => {

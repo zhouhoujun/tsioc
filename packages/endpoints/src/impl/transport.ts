@@ -1,10 +1,10 @@
-import { Injector } from '@tsdi/ioc';
+import { Injector, isUndefined } from '@tsdi/ioc';
 import { ServerTransport } from '../transport';
 import { Deserializer, ev, FileAdapter, IDuplex, IncomingFactory, MimeAdapter, OutgoingFactory, Packet, Serializer, StatusAdapter, StreamAdapter, TransportContext, writePacket } from '@tsdi/common/transport';
 import { HeaderAdapter } from '@tsdi/common';
 import { ServerTransfer } from '../transfer';
 import { ServerOpts } from '../server.options';
-import { fromEvent, Observable } from 'rxjs';
+import { fromEvent, map, Observable, Subscriber } from 'rxjs';
 import { AcceptsPriority } from '../accepts';
 import { RequestContext } from '../RequestContext';
 
@@ -30,7 +30,7 @@ export class DefaultServerTransport<
         readonly outgoingFactory: OutgoingFactory,
         readonly transfer: ServerTransfer,
         readonly serverOptions: TOptions,
-        private _read: (socket: TSocket, context: TransportContext) => Observable<any>,
+        private _read: (socket: TSocket, getContext: () => TransportContext) => Observable<TransportContext | any>,
         private _write: (socket: TSocket, msg: TMsg, requestContext: TContext, context: TransportContext) => Promise<any>,
         private _close?: (socket: TSocket) => Promise<any>
 
@@ -39,8 +39,12 @@ export class DefaultServerTransport<
     }
 
 
-    protected override read(context: TransportContext): Observable<any> {
-        return this._read(this.socket, context)
+    protected override read(context?: TransportContext): Observable<TransportContext> {
+        return this._read(this.socket, () => {
+            if (context) return context;
+            return TransportContext.create(this);;
+        });
+
     }
 
     protected override write(msg: TMsg, requestContext: TContext, context: TransportContext): Promise<any> {
@@ -85,7 +89,7 @@ export class SocketServerTransport<
 
 
 
-    protected override read(context: TransportContext): Observable<any> {
+    protected override read(context?: TransportContext): Observable<any> {
         return fromEvent(this.socket, this.eventName)
     }
 

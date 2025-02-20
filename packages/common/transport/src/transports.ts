@@ -46,14 +46,14 @@ export interface TransportOptions {
  * transport configure.
  */
 export interface TransportConfigure {
-    
+
     /**
      * transport options.
      */
     transportOptions?: TransportOptions;
     /**
      * serialize config.
-     */    
+     */
     serializerConfig?: ConfigableHandlerOptions;
     /**
      * deserialize config.
@@ -121,31 +121,33 @@ export abstract class AbstractTransport<
      * @param origin the origin message.
      */
     receive(context?: TransportContext): Observable<TIncoming> {
-        if (!context) {
-            context = TransportContext.create(this)
-        }
-        this.initReceiveContext(context)
         return this.read(context)
             .pipe(
                 takeUntil(this.destroy$),
-                mergeMap(data => this.deserializer.deserialize(data, context!)),
-                map(incoming => {
-                    incoming.context = context;
-                    return incoming;
+                mergeMap(data => {
+                    let incoming: any, ctx: TransportContext;
+                    if (data instanceof TransportContext) {
+                        incoming = data.incoming;
+                        ctx = data;
+                    } else {
+                        incoming = data;
+                        ctx = context ?? TransportContext.create(this);
+                    }
+                    return this.deserializer.deserialize(incoming, ctx).pipe(
+                        map(incoming => {
+                            incoming.context = ctx;
+                            return incoming;
+                        }))
                 }),
                 share()
             ) as Observable<any>;
     }
 
-    protected abstract read(context: TransportContext): Observable<any>;
+    protected abstract read(context?: TransportContext): Observable<any>;
 
     protected abstract write(msg: TMsg, origin: TOutgoing, context: TransportContext): Promise<any> | Observable<any>;
 
     protected initSendContext(context: TransportContext, data: TOutgoing): void {
-
-    }
-
-    protected initReceiveContext(context: TransportContext): void {
 
     }
 

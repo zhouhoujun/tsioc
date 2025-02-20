@@ -1,4 +1,4 @@
-import { Injector } from '@tsdi/ioc';
+import { Injector, isUndefined } from '@tsdi/ioc';
 import { AbstractRequest, HeaderAdapter, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
     ClientIncomingFactory, Deserializer, ev, IDuplex, Packet, Redirector, Serializer,
@@ -6,7 +6,7 @@ import {
 } from '@tsdi/common/transport';
 import { ClientTransfer, ClientTransport } from '../transport';
 import { ClientOpts } from '../options';
-import { fromEvent, Observable } from 'rxjs';
+import { fromEvent, map, Observable } from 'rxjs';
 
 
 
@@ -30,7 +30,7 @@ export class DefaultClientTransport<
         readonly responseFactory: ResponseFactory,
         readonly redirector: Redirector | null,
         readonly clientOptions: TOptions,
-        private _read: (socket: TSocket, req: TRequest, context: TransportContext) => Observable<any>,
+        private _read: (socket: TSocket, getContext: () => TransportContext) => Observable<TransportContext | any>,
         private _write: (socket: TSocket, msg: TMsg, req: TRequest, context: TransportContext) => Promise<any>,
         private _close?: (socket: TSocket) => Promise<any>
 
@@ -40,7 +40,11 @@ export class DefaultClientTransport<
 
 
     protected override read(context: TransportContext): Observable<any> {
-        return this._read(this.socket, context.get(AbstractRequest) as TRequest, context)
+        return this._read(this.socket, () => {
+            if (context) return context;
+            return TransportContext.create(this);;
+        });
+
     }
 
     protected override write(msg: TMsg, req: TRequest, context: TransportContext): Promise<any> {
@@ -84,7 +88,7 @@ export class SocketClientTransport<
     }
 
 
-    protected override read(context: TransportContext): Observable<any> {
+    protected override read(context?: TransportContext): Observable<any> {
         return fromEvent(this.socket, this.eventName)
     }
 

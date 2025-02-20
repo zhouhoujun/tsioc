@@ -8,6 +8,7 @@ import { Transport } from './Transport';
  */
 export class TransportContext extends Context implements OnDestroy {
 
+    public incoming: any;
     constructor(
         readonly transport: Transport,
         entries?: readonly (readonly [Token, any])[] | null

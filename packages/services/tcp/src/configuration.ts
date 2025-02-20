@@ -88,7 +88,6 @@ export class TcpConfiguration {
                         redirector: Redirector | null) => {
                         return {
                             create: (injector, socket, options) => {
-                                const transportOptions = options.transportOptions ?? {};
                                 return new SocketClientTransport(
                                     injector,
                                     socket,

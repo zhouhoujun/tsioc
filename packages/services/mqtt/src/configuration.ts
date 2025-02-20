@@ -91,10 +91,13 @@ export class MqttConfiguration {
                                     responseFactory,
                                     redirector,
                                     options,
-                                    (mqtt, req, context) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
-                                        if (req.responseTopic == topic) {
+                                    (mqtt, getContext) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
+                                        const context = getContext();
+                                        const req = context.get(MqttRequest);
+                                        if (req?.responseTopic == topic) {
                                             context.set(MQTT_PUBLISH_PACKET, packet);
-                                            return payload;
+                                            context.incoming = payload;
+                                            return context
                                         }
                                         return null
                                     }).pipe(filter(p => !!p)),
@@ -180,10 +183,12 @@ export class MqttConfiguration {
                                     outgoingFactory,
                                     transferFactory.create(injector, options.transferConfig),
                                     options,
-                                    (mqtt, context) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
+                                    (mqtt, getContext) => fromEvent(mqtt, ev.MESSAGE, (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
                                         if (topic.endsWith('/reply')) return null;
+                                        const context = getContext();
                                         context.set(MQTT_PUBLISH_PACKET, packet);
-                                        return payload
+                                        context.incoming = payload;
+                                        return context
                                     }).pipe(
                                         filter(m => !!m)
                                     ),
