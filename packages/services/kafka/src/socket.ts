@@ -1,6 +1,7 @@
-import { BadRequestExecption, TransportContext } from '@tsdi/common/transport';
+import { isArray, isNumber, isString } from '@tsdi/ioc';
 import { ContextToken } from '@tsdi/core';
-import { Consumer, Producer, ConsumerSubscribeTopics, ConsumerRunConfig, EachMessagePayload, CompressionTypes } from 'kafkajs';
+import { isBuffer, BadRequestExecption, TransportContext } from '@tsdi/common/transport';
+import { IHeaders, Consumer, Producer, ConsumerSubscribeTopics, ConsumerRunConfig, EachMessagePayload, CompressionTypes } from 'kafkajs';
 import { BehaviorSubject, filter, map, Observable } from 'rxjs';
 
 
@@ -39,22 +40,22 @@ export class KafkaSocket {
         return this.subj$.pipe(filter(r => !!r))
     }
 
-    getPacket(factory: ()=> TransportContext, filterFn: (msg: EachMessagePayload) => boolean, instance?: TransportContext): Observable<TransportContext> {
+    getPacket(factory: () => TransportContext, filterFn: (msg: EachMessagePayload) => boolean, instance?: TransportContext): Observable<TransportContext> {
         return this.subj$.pipe(
             filter(r => !!r && filterFn(r)),
             map(r => {
                 const context = instance ?? factory();
                 context.set(KAFKA_MESSAGE, r);
-                context.incoming= r.message.value;
+                context.incoming = r.message.value;
                 return context
             })
         )
     }
 
-    async publish(topic: string, payload: Buffer | null, options?: {
-          acks?: number
-          timeout?: number
-          compression?: CompressionTypes
+    async publish(topic: string, payload: string | Buffer | null, options?: {
+        acks?: number
+        timeout?: number
+        compression?: CompressionTypes
     }) {
 
         if (!topic) throw new BadRequestExecption();
@@ -80,4 +81,18 @@ export class KafkaSocket {
             await this.producer.disconnect();
         }
     }
+}
+
+
+export function parseHead(val: Buffer | string | (Buffer | string)[] | undefined): string | string[] | undefined {
+    if (isString(val)) return val;
+    if (isBuffer(val)) return val.toString();
+    if (isArray(val)) return val.map(v => isString(v) ? v : v.toString());
+    return `${val}`;
+}
+
+export function generHead(head: string | number | readonly string[] | undefined | null): Buffer | string | (Buffer | string)[] | undefined {
+    if (isNumber(head)) return Buffer.from(head.toString());
+    if (isArray(head)) return head.map(v => v.toString())
+    return Buffer.from(`${head}`);
 }

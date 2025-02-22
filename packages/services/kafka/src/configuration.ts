@@ -1,6 +1,6 @@
 import { InjectFlags } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter, HandlerFn, InterceptorFn } from '@tsdi/core';
-import { DefaultResponseFactory, HeaderAdapter, IHeaders, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
+import { DefaultResponseFactory, HeaderAdapter, IHeaders as Headers, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
     FileAdapter, MimeAdapter, NotSupportedExecption, Packet,
@@ -29,9 +29,10 @@ import { KafkaServer } from './server/server';
 import { KAFKA_SERV_FILTERS, KAFKA_SERV_GUARDS, KAFKA_SERV_INTERCEPTORS, KafkaServConfig } from './server/options';
 import { KafkaRequestHandler } from './server/handler';
 import { KafkaRequest } from './client/request';
-import { KafkaSocket, KAFKA_MESSAGE } from './socket';
+import { KafkaSocket, KAFKA_MESSAGE, parseHead, generHead } from './socket';
 import { KafkaPatternFormatter } from './pattern';
-import { DEFAULT_BROKERS, KafkaHeaders, parseHead } from './const';
+import { DEFAULT_BROKERS, KafkaHeaders } from './const';
+import { IHeaders } from 'kafkajs';
 
 
 
@@ -47,7 +48,7 @@ const attachHeaders: InterceptorFn = (input: any, next: HandlerFn, context: Tran
                 pkg.topic = msg.topic;
                 const kHeaders = msg.message.headers ?? {};
                 pkg.id = kHeaders[KafkaHeaders.CORRELATION_ID]
-                const headers = {} as IHeaders;
+                const headers = {} as Headers;
                 Object.keys(kHeaders).forEach(key => {
                     headers[key] = parseHead(kHeaders[key]);
                 });
@@ -120,9 +121,13 @@ export class KafkaConfiguration {
                                         // const headers = socket.mergeHeaders(req.headers, options.publishOpts?.headers);
                                         // req?.id && headers.set('identity', String(req.id));
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
-
+                                        const headers = {} as IHeaders;
+                                        req.headers.forEach((n, v) => {
+                                            headers[n] = generHead(v);
+                                        })
+                                        if(req.id) headers[KafkaHeaders.CORRELATION_ID] = generHead(req.id);
                                         return socket.publish(req.topic, msg ?? Buffer.alloc(0), {
-                                            ...options.publishOpts,
+                                            // ...options.publishOpts,
                                             reply: req.responseTopic,
                                             headers
                                         })
@@ -204,10 +209,13 @@ export class KafkaConfiguration {
                                     (socket, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
                                         if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
-                                        const headers = socket.mergeHeaders(requestContext.response.headers, options.publishOpts?.headers);
-                                        requestContext.request.id && headers.set('identity', String(requestContext.request.id));
-                                        requestContext.status && headers.set('status', requestContext.status);
-                                        requestContext.statusMessage && headers.set('statusMessage', requestContext.statusMessage);
+                                        const headers = {} as IHeaders;
+                                        requestContext.request.headers.forEach((n, v) => {
+                                            headers[n] = generHead(v);
+                                        });
+                                        if(requestContext.request.id) headers[KafkaHeaders.CORRELATION_ID] = String(requestContext.request.id);
+                                        if(requestContext.status) headers['status']= requestContext.status;
+                                        if(requestContext.statusMessage) headers['statusMessage'] = requestContext.statusMessage;
 
                                         return socket.publish(requestContext.responseTopic, msg ?? Buffer.alloc(0), {
                                             ...options.publishOpts,

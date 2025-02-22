@@ -1,5 +1,3 @@
-import { isBuffer } from "@tsdi/common/transport";
-import { isArray, isNumber, isString } from "@tsdi/ioc";
 
 
 
@@ -46,16 +44,3 @@ export enum KafkaHeaders {
     NEST_IS_DISPOSED = 'kafka_nest-is-disposed',
 }
 
-
-export function parseHead(val: Buffer | string | (Buffer | string)[] | undefined): string | string[] | undefined {
-    if (isString(val)) return val;
-    if (isBuffer(val)) return val.toString();
-    if (isArray(val)) return val.map(v => isString(v) ? v : v.toString());
-    return `${val}`;
-}
-
-export function generHead(head: string | number | readonly string[] | undefined): Buffer | string | (Buffer | string)[] | undefined {
-    if (isNumber(head)) return Buffer.from(head.toString());
-    if (isArray(head)) return head.map(v => v.toString())
-    return Buffer.from(`${head}`);
-}
