@@ -7,7 +7,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
-import { TcpClientOpts } from './options';
+import { TcpClientConfig } from './options';
 import { TcpHandler } from './handler';
 import { TcpRequest } from './request';
 
@@ -107,7 +107,7 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
         return !connection.destroyed && connection.closed !== true
     }
 
-    protected createConnection(opts: TcpClientOpts): tls.TLSSocket | net.Socket {
+    protected createConnection(opts: TcpClientConfig): tls.TLSSocket | net.Socket {
         const socket = (opts.connectOpts as tls.ConnectionOptions).cert ? tls.connect(opts.connectOpts as tls.ConnectionOptions) : net.connect(opts.connectOpts as net.NetConnectOpts);
         if (opts.keepalive) {
             socket.setKeepAlive(true, opts.keepalive);

@@ -2,7 +2,7 @@ import { Abstract, getClass, Injector } from '@tsdi/ioc';
 import { AbstractRequest, PatternFormatter, ResponseEvent, ResponseFactory } from '@tsdi/common';
 import { AbstractTransport, ClientIncoming, ClientIncomingFactory, Redirector, Transfer, TransportContext } from '@tsdi/common/transport';
 import { Observable, first, merge, mergeMap, takeUntil } from 'rxjs';
-import { ClientOpts } from '../options';
+import { ClientConfig } from '../options';
 
 
 /**
@@ -13,7 +13,7 @@ export abstract class ClientTransport<
     TSocket = any,
     TRequest extends AbstractRequest<any> = AbstractRequest<any>,
     TMsg = any,
-    TOptions extends ClientOpts = ClientOpts> extends AbstractTransport<TSocket, ClientIncoming, TRequest, TMsg> {
+    TOptions extends ClientConfig = ClientConfig> extends AbstractTransport<TSocket, ClientIncoming, TRequest, TMsg> {
 
     readonly client = true;
     /**
@@ -74,7 +74,7 @@ export abstract class ClientTransport<
  * client transport session factory.
  */
 @Abstract()
-export abstract class ClientTransportFactory<TSocket = any, TOptions = ClientOpts> {
+export abstract class ClientTransportFactory<TSocket = any, TOptions = ClientConfig> {
     /**
      * the options to create transport session.
      * @param options 

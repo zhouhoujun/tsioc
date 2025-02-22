@@ -23,10 +23,10 @@ import {
 } from '@tsdi/endpoints';
 import { map } from 'rxjs';
 import { KafkaClient } from './client/client';
-import { KAFKA_CLIENT_FILTERS, KAFKA_CLIENT_INTERCEPTORS, KafkaClientOpts } from './client/options';
+import { KAFKA_CLIENT_FILTERS, KAFKA_CLIENT_INTERCEPTORS, KafkaClientConfig } from './client/options';
 import { KafkaHandler } from './client/handler';
 import { KafkaServer } from './server/server';
-import { KAFKA_SERV_FILTERS, KAFKA_SERV_GUARDS, KAFKA_SERV_INTERCEPTORS, KafkaServerOptions } from './server/options';
+import { KAFKA_SERV_FILTERS, KAFKA_SERV_GUARDS, KAFKA_SERV_INTERCEPTORS, KafkaServConfig } from './server/options';
 import { KafkaRequestHandler } from './server/handler';
 import { KafkaRequest } from './client/request';
 import { KafkaSocket, KAFKA_MESSAGE } from './socket';
@@ -79,7 +79,7 @@ export class KafkaConfiguration {
             transport: 'kafka',
             asDefault: true,
             clientType: KafkaClient,
-            defaultOpts: {
+            defaultConfig: {
                 handlerType: KafkaHandler,
                 interceptorsToken: KAFKA_CLIENT_INTERCEPTORS,
                 filtersToken: KAFKA_CLIENT_FILTERS,
@@ -92,8 +92,8 @@ export class KafkaConfiguration {
                         incomingFactory: TopicClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
                         redirector: Redirector | null) => {
                         return {
-                            create: (injector, socket, options: KafkaClientOpts) => {
-                                return new DefaultClientTransport<KafkaSocket, KafkaRequest<any>, Buffer | string | IReadable, KafkaClientOpts>(
+                            create: (injector, socket, options: KafkaClientConfig) => {
+                                return new DefaultClientTransport<KafkaSocket, KafkaRequest<any>, Buffer | string | IReadable, KafkaClientConfig>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
@@ -173,7 +173,7 @@ export class KafkaConfiguration {
             transport: 'kafka',
             asDefault: true,
             serverType: KafkaServer,
-            defaultOpts: {
+            defaultConfig: {
                 handlerType: KafkaRequestHandler,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
@@ -181,7 +181,7 @@ export class KafkaConfiguration {
                         fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
                         incomingFactory: TopicClientIncomingFactory, outgoingFactory: TopicOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
-                            create: (injector, socket, options: KafkaServerOptions) => {
+                            create: (injector, socket, options: KafkaServConfig) => {
                                 return new DefaultServerTransport<KafkaSocket, TopicRequestContext, Buffer | string | IReadable>(
                                     injector,
                                     socket,

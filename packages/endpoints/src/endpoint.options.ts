@@ -1,10 +1,10 @@
 import { ModuleType, ProvdierOf, ProviderType, Type } from '@tsdi/ioc';
 import { InvocationOptions } from '@tsdi/core';
 import { CommonProtocols, Protocols } from '@tsdi/common';
-import { Http1ServerOpts, Http2SecureServerOpts, Http2ServerOpts, HttpsServerOpts, ServerOpts } from './server.options';
+import { TransportConfigure } from '@tsdi/common/transport';
+import { Http1ServConfig, Http2SecureServConfig, Http2ServConfig, HttpsServConfig, ServiceConfig } from './server.options';
 import { Server } from './Server';
 import { MiddlewareOpts } from './middleware/middleware';
-import { TransportConfigure } from '@tsdi/common/transport';
 
 
 /**
@@ -50,32 +50,32 @@ export interface BasicServiceOpts {
 
 export interface MqttServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'mqtt' | 'mqtts';
-    serverOpts?: ServerOpts<TSerOpts>
+    config?: ServiceConfig<TSerOpts>
 }
 
 export interface RedisServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'redis';
-    serverOpts?: ServerOpts<TSerOpts>
+    config?: ServiceConfig<TSerOpts>
 }
 
 export interface KafkaServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'kafka';
-    serverOpts?: ServerOpts<TSerOpts>
+    config?: ServiceConfig<TSerOpts>
 }
 
 export interface NatsServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'nats';
-    serverOpts?: ServerOpts<TSerOpts>
+    config?: ServiceConfig<TSerOpts>
 }
 
 export interface AmqpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'amqp';
-    serverOpts?: ServerOpts<TSerOpts>
+    config?: ServiceConfig<TSerOpts>
 }
 
 export interface WsServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'ws' | 'wss';
-    serverOpts?: ServerOpts<TSerOpts> & HeybirdOpts & {
+    config?: ServiceConfig<TSerOpts> & HeybirdOpts & {
         enableStream?: boolean;
         streamTransport?: TransportConfigure;
     }
@@ -87,12 +87,12 @@ export interface TcpMicroServiceOpts<TSerOpts = any> extends BasicServiceOpts {
      * microservice or not.
      */
     microservice: true;
-    serverOpts?: ServerOpts<TSerOpts> & HeybirdOpts
+    config?: ServiceConfig<TSerOpts> & HeybirdOpts
 }
 
 export interface UdpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'udp';
-    serverOpts?: ServerOpts<TSerOpts>
+    config?: ServiceConfig<TSerOpts>
 }
 
 
@@ -109,27 +109,27 @@ export interface TcpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
      * microservice or not.
      */
     microservice: false;
-    serverOpts?: ServerOpts<TSerOpts> & MiddlewareOpts;
+    config?: ServiceConfig<TSerOpts> & MiddlewareOpts;
 }
 
 export interface HttpServiceOpts extends BasicServiceOpts {
     transport: 'http'
-    serverOpts?: Http1ServerOpts | Http2ServerOpts;
+    config?: Http1ServConfig | Http2ServConfig;
 }
 
 export interface HttpsServiceOpts extends BasicServiceOpts {
     transport: 'https';
-    serverOpts?: HttpsServerOpts | Http2SecureServerOpts;
+    config?: HttpsServConfig | Http2SecureServConfig;
 }
 
 export interface CoapServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'coap';
-    serverOpts?: ServerOpts<TSerOpts> & MiddlewareOpts;
+    config?: ServiceConfig<TSerOpts> & MiddlewareOpts;
 }
 
 export interface GrpcServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'grpc';
-    serverOpts?: ServerOpts<TSerOpts> & MiddlewareOpts;
+    config?: ServiceConfig<TSerOpts> & MiddlewareOpts;
 }
 
 
@@ -150,9 +150,9 @@ export type ServerModuleOpts = CommonServiceOpts & {
      */
     serverType: Type<Server>;
     /**
-     * server default options.
+     * server default config.
      */
-    defaultOpts?: ServerOpts & MiddlewareOpts;
+    defaultConfig?: ServiceConfig & MiddlewareOpts;
 }
 
 export type MicroServerModuleOpts = MicroServiceOpts & {
@@ -167,7 +167,7 @@ export type MicroServerModuleOpts = MicroServiceOpts & {
     /**
      * server default options.
      */
-    defaultOpts?: ServerOpts;
+    defaultConfig?: ServiceConfig;
 }
 
 

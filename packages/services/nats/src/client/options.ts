@@ -1,15 +1,15 @@
 import { Interceptor, Filter } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ResponseEvent } from '@tsdi/common';
-import { ClientOpts } from '@tsdi/common/client';
+import { ClientConfig } from '@tsdi/common/client';
 import { ConnectionOptions, PublishOptions, SubscriptionOptions } from 'nats';
 import { NatsRequest } from './request';
 
 
 /**
- * NATS client options.
+ * NATS client config.
  */
-export interface NatsClientOpts extends ClientOpts<ConnectionOptions> {
+export interface NatsClientConfig extends ClientConfig<ConnectionOptions> {
     /**
      * keep alive
      */

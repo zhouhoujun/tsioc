@@ -5,13 +5,13 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import { RequestContext, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { Subject, first, fromEvent, merge } from 'rxjs';
-import { UdpServerOpts } from './options';
+import { UdpServConfig } from './options';
 import { UdpRequestHandler } from './handler';
 import { sizeLimit } from '../consts';
 
 
 @Injectable()
-export class UdpServer extends Server<RequestContext, UdpServerOpts> {
+export class UdpServer extends Server<RequestContext, UdpServConfig> {
 
     private serv?: Socket | null;
 

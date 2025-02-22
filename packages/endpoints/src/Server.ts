@@ -4,7 +4,7 @@ import { CommonProtocols } from '@tsdi/common';
 import { RequestContext } from './RequestContext';
 import { AbstractRequestHandler } from './AbstractRequestHandler';
 import { RequestHandler } from './RequestHandler';
-import { ServerOpts } from './server.options';
+import { ServiceConfig } from './server.options';
 import { MiddlewareLike } from './middleware/middleware';
 import { MiddlewareService } from './middleware/middleware.service';
 
@@ -45,7 +45,7 @@ export abstract class MicroService<TRequest extends RequestContext = RequestCont
  * 微服务
  */
 @Abstract()
-export abstract class Server<TRequest extends RequestContext = RequestContext, TOptions extends ServerOpts = ServerOpts> extends MicroService implements HandlerService, MiddlewareService {
+export abstract class Server<TRequest extends RequestContext = RequestContext, TOptions extends ServiceConfig = ServiceConfig> extends MicroService implements HandlerService, MiddlewareService {
 
     /**
      * service request handler.

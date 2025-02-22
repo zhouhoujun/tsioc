@@ -6,7 +6,7 @@ import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/c
 import { Observable } from 'rxjs';
 import { WebSocket, createWebSocketStream } from 'ws';
 import { WsHandler } from './handler';
-import { WsClientOpts } from './options';
+import { WsClientConfig } from './options';
 import { WsRequest } from './request';
 
 
@@ -14,7 +14,7 @@ import { WsRequest } from './request';
  * ws client.
  */
 @Injectable()
-export class WsClient extends AbstractClient<UrlRequestOptions, WsRequest<any>, ResponseEvent<any>, WsClientOpts> {
+export class WsClient extends AbstractClient<UrlRequestOptions, WsRequest<any>, ResponseEvent<any>, WsClientConfig> {
     private socket?: WebSocket | null;
     private session?: ClientTransport | null;
 

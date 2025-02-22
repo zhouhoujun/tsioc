@@ -1,7 +1,7 @@
 import { Token, tokenId } from '@tsdi/ioc';
 import { Filter, Interceptor } from '@tsdi/core';
 import { HttpEvent, HttpRequest } from '@tsdi/common/http';
-import { AbstractClient, ClientOpts } from '@tsdi/common/client';
+import { AbstractClient, ClientConfig } from '@tsdi/common/client';
 import { ClientSessionOptions, SecureClientSessionOptions, ClientSessionRequestOptions } from 'http2';
 
 /**
@@ -14,7 +14,7 @@ export type HttpSessionOpts = ClientSessionOptions | SecureClientSessionOptions;
  * http client options.
  */
 
-export interface HttpClientOpts extends ClientOpts<HttpSessionOpts> {
+export interface HttpClientConfig extends ClientConfig<HttpSessionOpts> {
     /**
      * http2 authority.
      */
@@ -25,7 +25,7 @@ export interface HttpClientOpts extends ClientOpts<HttpSessionOpts> {
     requestOptions?: ClientSessionRequestOptions;
 }
 
-export interface HttpClientsOpts extends HttpClientOpts {
+export interface HttpClientsConfig extends HttpClientConfig {
     /**
      * client token.
      */

@@ -10,7 +10,7 @@ import { ClientHandler } from './handler';
 /**
  * Client options.
  */
-export interface ClientOpts<TConnOpts = any> extends ConfigableHandlerOptions<AbstractRequest<any>>, TransportConfigure {
+export interface ClientConfig<TConnOpts = any> extends ConfigableHandlerOptions<AbstractRequest<any>>, TransportConfigure {
     /**
      * url
      */

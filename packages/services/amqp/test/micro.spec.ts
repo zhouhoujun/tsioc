@@ -1,6 +1,5 @@
 import { Application, ApplicationContext, Payload } from '@tsdi/core';
 import { Injectable, Injector, Module, isString, tokenId } from '@tsdi/ioc';
-import { TransportErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointModule, Handle, RequestPath, Subscribe } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
@@ -10,6 +9,7 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
 import { AmqpModule, AMQP_SERV_INTERCEPTORS, AmqpClient } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
+import { ErrorResponse } from '@tsdi/common';
 
 
 const SENSORS = tokenId<string[]>('SENSORS');
@@ -66,7 +66,6 @@ export class AmqpService {
             transport: 'amqp'
         }),
         EndpointModule.register({
-            microservice: true,
             transport: 'amqp'
         })
     ],
@@ -107,7 +106,7 @@ describe('Amqp Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res instanceof ErrorResponse).toBeDefined();
         expect(res.statusMessage).toEqual('Not Found');
     })
 
@@ -119,7 +118,7 @@ describe('Amqp Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res instanceof ErrorResponse).toBeDefined();
         expect(res.statusMessage.indexOf('max size')).toBeGreaterThan(0);
     })
 
@@ -131,7 +130,7 @@ describe('Amqp Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(res instanceof TransportErrorResponse).toBeDefined();
+        expect(res instanceof ErrorResponse).toBeDefined();
         expect(res.statusMessage).toEqual('Not Found');
     })
 
@@ -163,7 +162,7 @@ describe('Amqp Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         expect(a.status).toEqual(404);
     });
 
@@ -195,7 +194,7 @@ describe('Amqp Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         expect(a.status).toEqual(404);
     });
 
@@ -260,7 +259,7 @@ describe('Amqp Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         expect(a.status).toEqual(404);
     });
 

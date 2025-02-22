@@ -32,7 +32,7 @@ import { ErrorResponse } from '@tsdi/common';
         EndpointModule.register([
             {
                 transport: 'mqtt',
-                serverOpts: {
+                config: {
                     interceptors: [
                         BigFileInterceptor,
                         JsonInterceptor,
@@ -44,7 +44,7 @@ import { ErrorResponse } from '@tsdi/common';
             {
                 transport: 'tcp',
                 microservice: false,
-                serverOpts: {
+                config: {
                     interceptors: [
                         BigFileInterceptor,
                         JsonInterceptor,

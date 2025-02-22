@@ -3,7 +3,7 @@ import { AbstractTransport, FileAdapter, Incoming, IncomingFactory, MimeAdapter,
 import { Observable, Subscription, first, merge, mergeMap, takeUntil } from 'rxjs';
 import { AbstractRequestHandler } from './AbstractRequestHandler';
 import { RequestContext } from './RequestContext';
-import { ServerOpts } from './server.options';
+import { ServiceConfig } from './server.options';
 import { AcceptsPriority } from './accepts';
 
 @Abstract()
@@ -11,7 +11,7 @@ export abstract class ServerTransport<
     TSocket = any,
     TContext extends RequestContext = RequestContext,
     TMsg = any,
-    TOptions extends ServerOpts = ServerOpts> extends AbstractTransport<TSocket, Incoming, TContext, TMsg> {
+    TOptions extends ServiceConfig = ServiceConfig> extends AbstractTransport<TSocket, Incoming, TContext, TMsg> {
 
     readonly client = false;
     /**
@@ -83,6 +83,6 @@ export abstract class ServerTransportFactory<TSocket = any> {
      * create server transport.
      * @param options 
      */
-    abstract create(injector: Injector, socket: TSocket, options: ServerOpts): ServerTransport<TSocket>;
+    abstract create(injector: Injector, socket: TSocket, options: ServiceConfig): ServerTransport<TSocket>;
 }
 

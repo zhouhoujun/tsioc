@@ -64,7 +64,7 @@ export class UdpService {
         ServerEndpointModule,
         ClientModule.register({
             transport: 'udp',
-            clientOpts: {
+            config: {
                 // connectOpts: {
                 //     port: 6379
                 // },

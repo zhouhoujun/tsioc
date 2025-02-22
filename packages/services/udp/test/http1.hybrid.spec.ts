@@ -23,7 +23,7 @@ import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonIntercep
             { transport: 'udp' },
             {
                 transport: 'http',
-                clientOpts: {
+                config: {
                     url: 'http:/localhost:3000'
                 }
             }
@@ -34,7 +34,7 @@ import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonIntercep
             },
             {
                 transport: 'http',
-                serverOpts: {
+                config: {
                     interceptors: [
                         ContentInterceptor,
                         JsonInterceptor,

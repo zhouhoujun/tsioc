@@ -4,7 +4,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import { ev, TransportContext } from '@tsdi/common/transport';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import * as amqp from 'amqplib';
-import { AmqpClientOpts } from './options';
+import { AmqpClientConfig } from './options';
 import { AmqpHandler } from './handler';
 import { AmqpRequest } from './request';
 import { Context } from 'mocha';
@@ -12,7 +12,7 @@ import { Context } from 'mocha';
 
 
 @Injectable()
-export class AmqpClient extends AbstractClient<TopicRequestOptions, AmqpRequest<any>, ResponseEvent<any>, AmqpClientOpts> {
+export class AmqpClient extends AbstractClient<TopicRequestOptions, AmqpRequest<any>, ResponseEvent<any>, AmqpClientConfig> {
 
     @InjectLog()
     private logger!: Logger;

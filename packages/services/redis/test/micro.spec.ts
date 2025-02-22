@@ -64,7 +64,7 @@ export class RedisService {
         ServerEndpointModule,
         ClientModule.register({
             transport: 'redis',
-            clientOpts: {
+            config: {
                 // connectOpts: {
                 //     port: 6379
                 // },

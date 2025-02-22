@@ -20,18 +20,18 @@ import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
         LoggerModule,
         ServerEndpointModule,
         ClientModule.register([
-            { transport: 'mqtt', clientOpts: {} },
-            { transport: 'http', clientOpts: { url: 'http://localhost:3000' } }
+            { transport: 'mqtt', config: {} },
+            { transport: 'http', config: { url: 'http://localhost:3000' } }
         ]),
         EndpointModule.register([
             {
                 transport: 'mqtt',
-                serverOpts: {
+                config: {
                 }
             },
             {
                 transport: 'http',
-                serverOpts: {
+                config: {
                     interceptors: [
                         JsonInterceptor,
                         ContentInterceptor,

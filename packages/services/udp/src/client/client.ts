@@ -5,14 +5,14 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { Socket, createSocket, SocketOptions } from 'dgram';
 import { UdpHandler } from './handler';
-import { UdpClientOpts } from './options';
+import { UdpClientConfig } from './options';
 import { sizeLimit } from '../consts';
 import { UdpRequest, UdpRequestOptions } from './request';
 
 
 
 @Injectable()
-export class UdpClient extends AbstractClient<UdpRequestOptions, UdpRequest<any>, ResponseEvent<any>, UdpClientOpts> {
+export class UdpClient extends AbstractClient<UdpRequestOptions, UdpRequest<any>, ResponseEvent<any>, UdpClientConfig> {
     @InjectLog()
     private logger!: Logger;
     

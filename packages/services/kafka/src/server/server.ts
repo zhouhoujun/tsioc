@@ -4,7 +4,7 @@ import { defaultFormatter, PatternFormatter } from '@tsdi/common';
 import { Server, ServerTransportFactory, RequestContext, getRouter, ServerTransport } from '@tsdi/endpoints';
 import { Kafka, LogEntry, logLevel } from 'kafkajs';
 import { DEFAULT_BROKERS } from '../const';
-import { KafkaServerOptions } from './options';
+import { KafkaServConfig } from './options';
 import { KafkaRequestHandler } from './handler';
 import { ServiceUnavailableExecption } from '@tsdi/common/transport';
 import { Subject, fromEvent, merge } from 'rxjs';
@@ -16,7 +16,7 @@ import { KafkaSocket } from '../socket';
  * Kafka server.
  */
 @Injectable()
-export class KafkaServer extends Server<RequestContext, KafkaServerOptions> {
+export class KafkaServer extends Server<RequestContext, KafkaServConfig> {
 
     @InjectLog()
     private logger!: Logger;

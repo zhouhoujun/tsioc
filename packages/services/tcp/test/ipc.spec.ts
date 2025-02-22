@@ -104,7 +104,7 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
             provideClient({
                 transport: 'tcp',
                 microservice: false,
-                clientOpts: {
+                config: {
                     connectOpts: {
                         path: ipcpath
                     },
@@ -117,7 +117,7 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
             provideService({
                 transport: 'tcp',
                 microservice: false,
-                serverOpts: {
+                config: {
                     detailError: false,
                     // timeout: 1000,
                     listenOpts: {

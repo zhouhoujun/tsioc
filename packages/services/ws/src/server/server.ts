@@ -7,7 +7,7 @@ import { BindServerEvent, RequestContext, Server, ServerTransportFactory } from 
 import { WebSocketServer, createWebSocketStream } from 'ws';
 import { Subject, finalize, first, fromEvent, merge } from 'rxjs';
 import * as tls from 'tls';
-import { WS_BIND_FILTERS, WS_BIND_GUARDS, WS_BIND_INTERCEPTORS, WsServerOpts } from './options';
+import { WS_BIND_FILTERS, WS_BIND_GUARDS, WS_BIND_INTERCEPTORS, WsServConfig } from './options';
 import { WsRequestHandler } from './handler';
 
 
@@ -15,7 +15,7 @@ import { WsRequestHandler } from './handler';
  * ws server.
  */
 @Injectable()
-export class WsServer extends Server<RequestContext, WsServerOpts> {
+export class WsServer extends Server<RequestContext, WsServConfig> {
 
     private serv?: WebSocketServer | null;
 

@@ -25,7 +25,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         RouterModule.forRoot('coap', { microservice: true }),
         EndpointModule.register({
             transport: 'coap',
-            serverOpts: {
+            config: {
                 interceptors: [
                     ContentInterceptor,
                     JsonInterceptor,

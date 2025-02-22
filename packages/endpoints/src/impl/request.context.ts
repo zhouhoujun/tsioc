@@ -3,7 +3,7 @@ import { HeaderMappings, LOCALHOST, normalize } from '@tsdi/common';
 import { Incoming, MessageExecption, Outgoing, TopicIncoming, UrlIncoming } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
 import { RequestContext } from '../RequestContext';
-import { ServerOpts } from '../server.options';
+import { ServiceConfig } from '../server.options';
 import { ServerTransport } from '../transport';
 
 
@@ -27,7 +27,7 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
         readonly transport: ServerTransport,
         readonly request: TRequest,
         readonly response: TResponse,
-        readonly serverOptions: ServerOpts = {}
+        readonly serverOptions: ServiceConfig = {}
     ) {
         super(injector, { ...serverOptions, args: request });
 
@@ -129,7 +129,7 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
         readonly transport: ServerTransport,
         readonly request: TRequest,
         readonly response: TResponse,
-        readonly serverOptions: ServerOpts = {}
+        readonly serverOptions: ServiceConfig = {}
     ) {
         super(injector, { ...serverOptions, args: request });
 
@@ -195,7 +195,7 @@ export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicInco
         readonly transport: ServerTransport,
         readonly request: TRequest,
         readonly response: TResponse,
-        readonly serverOptions: ServerOpts = {}
+        readonly serverOptions: ServiceConfig = {}
     ) {
         super(injector, { ...serverOptions, args: request });
 

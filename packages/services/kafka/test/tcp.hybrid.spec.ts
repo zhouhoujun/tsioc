@@ -25,13 +25,15 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 transport: 'kafka'
             },
             {
-                transport: 'tcp'
+                transport: 'tcp',
+                microservice: false
             }
         ]),
         EndpointModule.register([
             {
                 transport: 'tcp',
-                serverOpts: {
+                microservice: false,
+                config: {
                     interceptors: [
                         BigFileInterceptor,
                         ContentInterceptor,
@@ -41,9 +43,8 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 }
             },
             {
-                microservice: true,
                 transport: 'kafka',
-                serverOpts: {
+                config: {
                     interceptors: [
                         BigFileInterceptor,
                         ContentInterceptor,

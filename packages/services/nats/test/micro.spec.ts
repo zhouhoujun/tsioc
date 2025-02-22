@@ -64,7 +64,7 @@ export class NatsService {
         ServerEndpointModule,
         ClientModule.register({
             transport: 'nats',
-            clientOpts: {
+            config: {
                 // connectOpts: {
                 //     port: 6379
                 // },

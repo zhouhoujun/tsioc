@@ -1,13 +1,15 @@
 import { Interceptor, Filter, GuardLike } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
-import { ServerOpts } from '@tsdi/endpoints';
+import { ServiceConfig } from '@tsdi/endpoints';
 import * as amqp from 'amqplib';
 import { AmqpSessionOpts } from '../options';
 
 export type amqpURL = string | amqp.Options.Connect;
 
-
-export interface AmqpMicroServiceOpts extends ServerOpts<string | amqp.Options.Connect> {
+/**
+ * amqp service config.
+ */
+export interface AmqpServConfig extends ServiceConfig<string | amqp.Options.Connect> {
 
     detailError?: boolean;
     timeout?: number;

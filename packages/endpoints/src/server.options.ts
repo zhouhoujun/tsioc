@@ -20,9 +20,9 @@ export interface ProxyOpts {
 }
 
 /**
- * server options
+ * service config.
  */
-export interface ServerOpts<TSerOpts = any> extends RequestHandlerOptions<any>, TransportConfigure {
+export interface ServiceConfig<TSerOpts = any> extends RequestHandlerOptions<any>, TransportConfigure {
     /**
      * request timeout.
      */
@@ -154,7 +154,7 @@ export interface CsrfOps {
     secretLength?: number;
 }
 
-export interface HttpBasiceOpts extends ServerOpts, MiddlewareOpts {
+export interface HttpBasicServConfig<TSerOpts> extends ServiceConfig<TSerOpts>, MiddlewareOpts {
     proxy?: ProxyOpts;
     cors?: boolean | CorsOpts;
     mimeDb?: Record<string, MimeSource>;
@@ -167,38 +167,34 @@ export interface HttpBasiceOpts extends ServerOpts, MiddlewareOpts {
 /**
  * http options.
  */
-export interface Http1ServerOpts extends HttpBasiceOpts {
+export interface Http1ServConfig extends HttpBasicServConfig<Http1ServerOptions> {
     majorVersion?: 1,
     protocol?: 'http';
-    serverOpts?: Http1ServerOptions;
 }
 
 /**
  * https options.
  */
-export interface HttpsServerOpts extends HttpBasiceOpts {
+export interface HttpsServConfig extends HttpBasicServConfig<HttsServerOptions> {
     majorVersion?: 1,
     protocol?: 'https';
-    serverOpts?: HttsServerOptions;
 }
 
 /**
  * http2 options.
  */
-export interface Http2ServerOpts extends HttpBasiceOpts {
+export interface Http2ServConfig extends HttpBasicServConfig<Http2ServerOptions> {
     majorVersion: 2,
     protocol?: 'http';
-    serverOpts?: Http2ServerOptions;
 }
 
 /**
  * http2 options.
  */
-export interface Http2SecureServerOpts extends HttpBasiceOpts {
+export interface Http2SecureServConfig extends HttpBasicServConfig<SecureServerOptions> {
     majorVersion: 2,
     protocol?: 'https';
-    serverOpts?: SecureServerOptions;
 }
 
 
-export type HttpServerOpts = Http1ServerOpts | HttpsServerOpts | Http2ServerOpts | Http2SecureServerOpts;
+export type HttpServConfig = Http1ServConfig | HttpsServConfig | Http2ServConfig | Http2SecureServConfig;

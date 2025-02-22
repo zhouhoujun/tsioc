@@ -5,7 +5,7 @@ import { ev } from '@tsdi/common/transport';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import Redis from 'ioredis';
 import { RedisHandler } from './handler';
-import { RedisClientOpts } from './options';
+import { RedisClientConfig } from './options';
 import { RedisRequest } from './request';
 import { ReidsSocket } from '../socket';
 import { Context } from '@tsdi/core';
@@ -14,7 +14,7 @@ import { Context } from '@tsdi/core';
  * Redis Client.
  */
 @Injectable()
-export class RedisClient extends AbstractClient<TopicRequestOptions, RedisRequest<any>, ResponseEvent<any>, RedisClientOpts> {
+export class RedisClient extends AbstractClient<TopicRequestOptions, RedisRequest<any>, ResponseEvent<any>, RedisClientConfig> {
 
     @InjectLog()
     private logger!: Logger;
@@ -85,7 +85,7 @@ export class RedisClient extends AbstractClient<TopicRequestOptions, RedisReques
     }
 
 
-    protected createRetryStrategy(options: RedisClientOpts): (times: number) => undefined | number {
+    protected createRetryStrategy(options: RedisClientConfig): (times: number) => undefined | number {
         return (times: number) => {
             const retryAttempts = options.retryAttempts;
             if (!retryAttempts || times > retryAttempts) {

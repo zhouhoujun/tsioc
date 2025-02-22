@@ -1,12 +1,14 @@
 import { Token, tokenId } from '@tsdi/ioc';
 import { Filter, Interceptor } from '@tsdi/core';
 import { Pattern, ResponseEvent } from '@tsdi/common';
-import { ClientOpts } from '@tsdi/common/client';
+import { ClientConfig } from '@tsdi/common/client';
 import { ConsumerConfig, ConsumerRunConfig, KafkaConfig, ProducerConfig } from 'kafkajs';
 import { KafkaRequest } from './request';
 
-
-export interface KafkaClientOpts extends ClientOpts<KafkaConfig> {
+/**
+ * Kafka client config.
+ */
+export interface KafkaClientConfig extends ClientConfig<KafkaConfig> {
     postfixId?: string;
     topics?: (Pattern | RegExp)[];
     consumer?: ConsumerConfig;

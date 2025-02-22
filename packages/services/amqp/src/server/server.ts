@@ -3,7 +3,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import { ev } from '@tsdi/common/transport';
 import { Server, ServerTransportFactory, ServerTransport, RequestContext } from '@tsdi/endpoints';
 import * as amqp from 'amqplib';
-import { AmqpMicroServiceOpts } from './options';
+import { AmqpServConfig } from './options';
 import { AmqpRequestHandler } from './handler';
 import { Subject } from 'rxjs';
 
@@ -11,7 +11,7 @@ import { Subject } from 'rxjs';
 
 
 @Injectable()
-export class AmqpServer extends Server<RequestContext, AmqpMicroServiceOpts> {
+export class AmqpServer extends Server<RequestContext, AmqpServConfig> {
 
     @InjectLog()
     private logger!: Logger;

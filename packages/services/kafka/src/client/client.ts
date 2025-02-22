@@ -6,7 +6,7 @@ import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/c
 import { getRouter } from '@tsdi/endpoints';
 import { Cluster, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, logLevel } from 'kafkajs';
 import { KafkaHandler } from './handler';
-import { KafkaClientOpts } from './options';
+import { KafkaClientConfig } from './options';
 import { DEFAULT_BROKERS } from '../const';
 import { KafkaReplyPartitionAssigner } from '../kafka.assigner';
 import { KafkaRequest } from './request';
@@ -15,7 +15,7 @@ import { KafkaSocket } from '../socket';
 
 
 @Injectable()
-export class KafkaClient extends AbstractClient<TopicRequestOptions, KafkaRequest<any>, ResponseEvent<any>, KafkaClientOpts> {
+export class KafkaClient extends AbstractClient<TopicRequestOptions, KafkaRequest<any>, ResponseEvent<any>, KafkaClientConfig> {
 
     @InjectLog()
     private logger!: Logger;

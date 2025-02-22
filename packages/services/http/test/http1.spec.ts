@@ -29,7 +29,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
             },
             {
                 transport: 'http',
-                clientOpts: {
+                config: {
                     url: 'http://localhost:3200'
                 }
             }
@@ -37,13 +37,13 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         EndpointModule.register([
             {
                 transport: 'ws',
-                serverOpts: {
+                config: {
                     heybird: true
                 }
             },
             {
                 transport: 'http',
-                serverOpts: {
+                config: {
                     majorVersion: 1,
                     listenOpts: {
                         port: 3200

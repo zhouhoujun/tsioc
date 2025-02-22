@@ -5,7 +5,7 @@ import { getRouter, RequestContext, Server, ServerTransport, ServerTransportFact
 import { ev } from '@tsdi/common/transport';
 import Redis from 'ioredis';
 import { RedisRequestHandler } from './handler';
-import { RedisServerOpts } from './options';
+import { RedisServConfig } from './options';
 import { Subject, first, fromEvent, merge } from 'rxjs';
 import { ReidsSocket } from '../socket';
 
@@ -13,7 +13,7 @@ import { ReidsSocket } from '../socket';
  * Redis Server.
  */
 @Injectable()
-export class RedisServer extends Server<RequestContext, RedisServerOpts> {
+export class RedisServer extends Server<RequestContext, RedisServConfig> {
 
     @InjectLog() logger!: Logger;
 
@@ -135,7 +135,7 @@ export class RedisServer extends Server<RequestContext, RedisServerOpts> {
         this.logger.info(`Redis microservice closed!`);
     }
 
-    protected createRetryStrategy(options: RedisServerOpts): (times: number) => undefined | number {
+    protected createRetryStrategy(options: RedisServConfig): (times: number) => undefined | number {
         return (times: number) => {
             const retryAttempts = options.retryAttempts;
             if (!retryAttempts || times > retryAttempts) {

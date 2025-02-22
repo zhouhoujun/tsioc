@@ -3,7 +3,7 @@ import { Context, Shutdown } from '@tsdi/core';
 import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, PatternFormatter, defaultFormatter } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, fromEventPattern } from 'rxjs';
 import { ClientHandler } from './handler';
-import { ClientOpts } from './options';
+import { ClientConfig } from './options';
 
 
 
@@ -15,7 +15,7 @@ export abstract class AbstractClient<
     TReqOptions extends RequestOptions = RequestOptions,
     TRequest extends AbstractRequest<any> = AbstractRequest<any>,
     TResponse extends ResponseEvent<any> = ResponseEvent<any>,
-    TOptions extends ClientOpts = ClientOpts,
+    TOptions extends ClientConfig = ClientConfig,
 > {
 
     /**

@@ -64,7 +64,7 @@ export class MqttService {
         ServerEndpointModule,
         ClientModule.register({
             transport: 'mqtt',
-            clientOpts: {
+            config: {
                 // connectOpts: {
                 //     port: 6379
                 // },

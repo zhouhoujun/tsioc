@@ -1,7 +1,7 @@
 import { tokenId } from '@tsdi/ioc';
 import { Interceptor, Filter } from '@tsdi/core';
 import { ResponseEvent } from '@tsdi/common';
-import { ClientOpts } from '@tsdi/common/client';
+import { ClientConfig } from '@tsdi/common/client';
 import * as amqp from 'amqplib';
 import { AmqpSessionOpts } from '../options';
 import { AmqpRequest } from './request';
@@ -9,9 +9,9 @@ import { AmqpRequest } from './request';
 
 
 /**
- * AMQP client options.
+ * AMQP client config.
  */
-export interface AmqpClientOpts extends ClientOpts<string | amqp.Options.Connect> {
+export interface AmqpClientConfig extends ClientConfig<string | amqp.Options.Connect> {
 
     /**
      * keep alive

@@ -1,10 +1,12 @@
 import { tokenId } from '@tsdi/ioc';
 import { GuardLike, Filter, Interceptor } from '@tsdi/core';
-import { ServerOpts } from '@tsdi/endpoints';
+import { ServiceConfig } from '@tsdi/endpoints';
 import { RedisOptions } from 'ioredis';
 
-
-export interface RedisServerOpts extends ServerOpts<RedisOptions> {
+/**
+ * redis service options.
+ */
+export interface RedisServConfig extends ServiceConfig<RedisOptions> {
     detailError?: boolean;
     timeout?: number;
     retryAttempts?: number;

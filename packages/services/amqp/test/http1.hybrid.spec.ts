@@ -29,9 +29,8 @@ import { DeviceController } from './controller';
         ]),
         EndpointModule.register([
             {
-                microservice: true,
                 transport: 'amqp',
-                serverOpts: {
+                config: {
                     interceptors: [
                         BodyparserInterceptor
                     ]
@@ -39,7 +38,7 @@ import { DeviceController } from './controller';
             },
             {
                 transport: 'http',
-                serverOpts: {
+                config: {
                     interceptors: [
                         ContentInterceptor,
                         JsonInterceptor,

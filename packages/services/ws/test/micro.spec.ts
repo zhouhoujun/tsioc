@@ -65,7 +65,7 @@ export class WsService {
             {
                 transport: 'ws',
                 client: 'ws1',
-                clientOpts: {
+                config: {
                     enableStream: true,
                     streamTransport: {
                         transportOptions: {
@@ -81,7 +81,7 @@ export class WsService {
             {
                 transport: 'ws',
                 client: 'ws2',
-                clientOpts: {
+                config: {
                     enableStream: true,
                     streamTransport: {
                         transportOptions: {
@@ -93,7 +93,7 @@ export class WsService {
         ]),
         EndpointModule.register({
             transport: 'ws',
-            serverOpts: {
+            config: {
                 enableStream: true,
                 streamTransport: {
                     transportOptions: {

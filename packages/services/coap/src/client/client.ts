@@ -2,7 +2,7 @@ import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
 import { Pattern, RequestInitOpts, ResponseEvent, UrlRequestOptions } from '@tsdi/common';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { Socket, createSocket, SocketOptions } from 'dgram';
-import { CoapClientOpts } from './options';
+import { CoapClientConfig } from './options';
 import { CoapHandler } from './handler';
 import { defaultMaxSize } from '../trans';
 import { CoapRequest } from './request';
@@ -12,7 +12,7 @@ import { CoapRequest } from './request';
  * COAP Client.
  */
 @Injectable()
-export class CoapClient extends AbstractClient<UrlRequestOptions, CoapRequest<any>, ResponseEvent<any, string>, CoapClientOpts> {
+export class CoapClient extends AbstractClient<UrlRequestOptions, CoapRequest<any>, ResponseEvent<any, string>, CoapClientConfig> {
     private socket?: Socket | null;
     private session?: ClientTransport | null;
 

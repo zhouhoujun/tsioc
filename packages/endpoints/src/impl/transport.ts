@@ -3,7 +3,7 @@ import { ServerTransport } from '../transport';
 import { Deserializer, ev, FileAdapter, IDuplex, IncomingFactory, MimeAdapter, OutgoingFactory, Packet, Serializer, StatusAdapter, StreamAdapter, TransportContext, writePacket } from '@tsdi/common/transport';
 import { HeaderAdapter } from '@tsdi/common';
 import { ServerTransfer } from '../transfer';
-import { ServerOpts } from '../server.options';
+import { ServiceConfig } from '../server.options';
 import { fromEvent, map, Observable, Subscriber } from 'rxjs';
 import { AcceptsPriority } from '../accepts';
 import { RequestContext } from '../RequestContext';
@@ -13,7 +13,7 @@ export class DefaultServerTransport<
     TSocket = any,
     TContext extends RequestContext = RequestContext,
     TMsg = any,
-    TOptions extends ServerOpts = ServerOpts> extends ServerTransport<TSocket, TContext, TMsg, TOptions> {
+    TOptions extends ServiceConfig = ServiceConfig> extends ServerTransport<TSocket, TContext, TMsg, TOptions> {
 
     constructor(
         readonly injector: Injector,
@@ -60,7 +60,7 @@ export class SocketServerTransport<
     TSocket extends IDuplex = IDuplex,
     TContext extends RequestContext = RequestContext,
     TMsg extends Packet = any,
-    TOptions extends ServerOpts = ServerOpts> extends ServerTransport<TSocket, TContext, TMsg, TOptions> {
+    TOptions extends ServiceConfig = ServiceConfig> extends ServerTransport<TSocket, TContext, TMsg, TOptions> {
 
     constructor(
         readonly injector: Injector,

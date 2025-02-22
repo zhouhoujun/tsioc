@@ -23,14 +23,14 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         provideClient([
             {
                 transport: 'ws',
-                clientOpts: {
+                config: {
                     enableStream: true
                 }
             },
             {
                 transport: 'tcp',
                 microservice: false,
-                clientOpts: {
+                config: {
                     connectOpts: {
                         port: 2000
                     }
@@ -41,7 +41,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
             {
                 transport: 'tcp',
                 microservice: false,
-                serverOpts: {
+                config: {
                     listenOpts: {
                         port: 2000
                     },
@@ -55,7 +55,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
             },
             {
                 transport: 'ws',
-                serverOpts: {
+                config: {
                     enableStream: true,
                     interceptors: [
                         BigFileInterceptor,

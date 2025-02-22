@@ -7,8 +7,8 @@ import { DefaultResponseFactory } from '@tsdi/common';
 import { isMicroTransport, NotImplementedExecption, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
 import { ClientBackend } from './backend';
 import { ClientTransportBackend, ClientTransportFactory, DefaultClientTransferFactory, UrlRedirector } from './transport';
-import { ClientOpts } from './options';
-import { ClientConfigs, ClientModuleOpts } from './client.options';
+import { ClientConfig } from './options';
+import { ClientOptions, ClientModuleOpts } from './client.options';
 
 
 /**
@@ -31,19 +31,19 @@ export class ClientModule {
      * @param options module options.
      * @returns 
      */
-    static register(options: ClientConfigs): ModuleWithProviders<ClientModule>;
+    static register(options: ClientOptions): ModuleWithProviders<ClientModule>;
     /**
      * import client module with options.
      * @param options module options.
      * @returns 
      */
-    static register(options: Array<ClientConfigs>): ModuleWithProviders<ClientModule>;
+    static register(options: Array<ClientOptions>): ModuleWithProviders<ClientModule>;
     /**
      * import client module with options.
      * @param options module options.
      * @returns 
      */
-    static register(options: Arrayify<ClientConfigs>): ModuleWithProviders<ClientModule> {
+    static register(options: Arrayify<ClientOptions>): ModuleWithProviders<ClientModule> {
         return provideClient(options as any);
     }
 
@@ -54,19 +54,19 @@ export class ClientModule {
  * @param options module options.
  * @returns 
  */
-export function provideClient(options: ClientConfigs): ModuleWithProviders<ClientModule>;
+export function provideClient(options: ClientOptions): ModuleWithProviders<ClientModule>;
 /**
  * provide client module with options.
  * @param options module options.
  * @returns 
  */
-export function provideClient(options: Array<ClientConfigs>): ModuleWithProviders<ClientModule>;
+export function provideClient(options: Array<ClientOptions>): ModuleWithProviders<ClientModule>;
 /**
  * provide client module with options.
  * @param options module options.
  * @returns 
  */
-export function provideClient(options: Arrayify<ClientConfigs>): ModuleWithProviders<ClientModule> {
+export function provideClient(options: Arrayify<ClientOptions>): ModuleWithProviders<ClientModule> {
     let providers: ProviderType[];
     if (isArray(options)) {
         providers = []
@@ -90,7 +90,7 @@ export function provideClient(options: Arrayify<ClientConfigs>): ModuleWithProvi
 export const CLIENT_MODULES = tokenId<(ClientModuleOpts)[]>('CLIENT_MODULES');
 
 
-function clientProviders(options: ClientConfigs, idx?: number) {
+function clientProviders(options: ClientOptions, idx?: number) {
     const microservice = isMicroTransport(options);
     return [
         ...options.providers ?? [],
@@ -113,10 +113,10 @@ function clientProviders(options: ClientConfigs, idx?: number) {
                         throw new NotImplementedExecption(`${options.transport} ${microservice ? 'microservice client' : 'client'} ${err.message ?? 'has not implemented'}`);
                     }
                 }
-                const opts = { ...defts, ...options, asDefault: null } as ClientModuleOpts & ClientConfigs;
+                const opts = { ...defts, ...options, asDefault: null } as ClientModuleOpts & ClientOptions;
 
 
-                const cloneOpts = lang.deepClone(opts.clientOpts, opts.defaultOpts, (n, value, deft) => {
+                const cloneOpts = lang.deepClone(opts.config, opts.defaultConfig, (n, value, deft) => {
                     if (n == 'providers') {
                         return [...value, ...deft];
                     }
@@ -126,7 +126,7 @@ function clientProviders(options: ClientConfigs, idx?: number) {
                     backend: opts.backend ?? ClientBackend,
                     enableTypeChain: true,
                     ...cloneOpts
-                } as ClientOpts & { providers: ProviderType[] };
+                } as ClientConfig & { providers: ProviderType[] };
 
                 if (!clientOpts.providers) {
                     clientOpts.providers = [];

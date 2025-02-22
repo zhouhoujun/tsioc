@@ -58,7 +58,7 @@ export const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhos
         ServerHttpClientModule,
         EndpointModule.register({
             transport: 'http',
-            serverOpts: {
+            config: {
                 majorVersion: 1,
                 interceptors: [
                     ContentInterceptor,
@@ -96,7 +96,7 @@ export class MockBootTest {
         ServerEndpointModule,
         EndpointModule.register({
             transport: 'http',
-            serverOpts: {
+            config: {
                 majorVersion: 1,
                 interceptors: [
                     ContentInterceptor,
@@ -133,7 +133,7 @@ export class MockBootLoadTest {
         ServerEndpointModule,
         EndpointModule.register({
             transport: 'http',
-            serverOpts: {
+            config: {
                 majorVersion: 1,
                 interceptors: [
                     ContentInterceptor,
@@ -174,7 +174,7 @@ export class MockTransBootTest {
         }),
         ClientModule.register({
             transport: 'http',
-            clientOpts: {
+            config: {
                 authority: 'https://localhost:3000',
                 connectOpts: {
                     ca: cert
@@ -183,7 +183,7 @@ export class MockTransBootTest {
         }),
         EndpointModule.register({
             transport: 'https',
-            serverOpts: {
+            config: {
                 majorVersion: 2,
                 secure: true,
                 serverOpts: {

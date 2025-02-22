@@ -1,6 +1,6 @@
 import { Injectable, Injector, Module, isString, tokenId } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { TransportErrorResponse } from '@tsdi/common';
+import { ErrorResponse } from '@tsdi/common';
 import { LoggerModule } from '@tsdi/logger';
 import { ClientModule } from '@tsdi/common/client';
 import { EndpointModule, Handle, Payload, RequestPath, Subscribe } from '@tsdi/endpoints';
@@ -59,8 +59,8 @@ export class CoapService {
         ServerEndpointModule,
         ClientModule.register({
             transport: 'coap',
-            clientOpts: {
-                transportOpts: {
+            config: {
+                transportOptions: {
                     // agent: 
                 }
                 // timeout: 1000
@@ -68,7 +68,6 @@ export class CoapService {
         }),
         
         EndpointModule.register({
-            microservice: true,
             transport: 'coap'
         })
     ],
@@ -165,7 +164,7 @@ describe('Coap Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         expect(a.status).toEqual('4.04');
     });
 
@@ -197,7 +196,7 @@ describe('Coap Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         expect(a.status).toEqual('4.04');
     });
 
@@ -245,7 +244,7 @@ describe('Coap Micro Service', () => {
                     return of(err);
                 })));
 
-        expect(a).toBeInstanceOf(TransportErrorResponse);
+        expect(a).toBeInstanceOf(ErrorResponse);
         expect(a.status).toEqual('4.04');
     });
 

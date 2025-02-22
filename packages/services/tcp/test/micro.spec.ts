@@ -58,7 +58,7 @@ export class TcpService {
         provideClient({
             transport: 'tcp',
             microservice: true,
-            clientOpts: {
+            config: {
                 transportOptions: {
                     maxSize: 1024 * 1024 * 20
                 },
@@ -70,7 +70,7 @@ export class TcpService {
         provideService({
             transport: 'tcp',
             microservice: true,
-            serverOpts: {
+            config: {
                 transportOptions: {
                     maxSize: 1024 * 1024 * 20
                 },

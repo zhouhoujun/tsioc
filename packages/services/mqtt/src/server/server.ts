@@ -4,7 +4,7 @@ import { ev } from '@tsdi/common/transport';
 import { getRouter, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { Client, connect, IClientSubscribeOptions } from 'mqtt';
-import { MqttServiceOpts } from './options';
+import { MqttServConfig } from './options';
 import { MqttRequestHandler } from './handler';
 import { Subject } from 'rxjs';
 
@@ -13,7 +13,7 @@ import { Subject } from 'rxjs';
  * Mqtt Server
  */
 @Injectable()
-export class MqttServer extends Server<RequestContext, MqttServiceOpts> {
+export class MqttServer extends Server<RequestContext, MqttServConfig> {
 
     @InjectLog()
     private logger!: Logger;

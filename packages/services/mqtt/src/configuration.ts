@@ -25,7 +25,7 @@ import { MqttClient } from './client/client';
 import { MQTT_CLIENT_FILTERS, MQTT_CLIENT_INTERCEPTORS } from './client/options';
 import { MqttHandler } from './client/handler';
 import { MqttServer } from './server/server';
-import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS, MqttServiceOpts } from './server/options';
+import { MQTT_SERV_FILTERS, MQTT_SERV_GUARDS, MQTT_SERV_INTERCEPTORS, MqttServConfig } from './server/options';
 import { MqttRequestHandler } from './server/handler';
 import { MqttRequest } from './client/request';
 
@@ -62,7 +62,7 @@ export class MqttConfiguration {
             transport: 'mqtt',
             asDefault: true,
             clientType: MqttClient,
-            defaultOpts: {
+            defaultConfig: {
                 handlerType: MqttHandler,
                 url: 'mqtt://localhost:1883',
                 interceptorsToken: MQTT_CLIENT_INTERCEPTORS,
@@ -162,7 +162,7 @@ export class MqttConfiguration {
             transport: 'mqtt',
             asDefault: true,
             serverType: MqttServer,
-            defaultOpts: {
+            defaultConfig: {
                 handlerType: MqttRequestHandler,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
@@ -170,7 +170,7 @@ export class MqttConfiguration {
                         fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
                         incomingFactory: TopicClientIncomingFactory, outgoingFactory: TopicOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
-                            create: (injector, socket, options: MqttServiceOpts) => {
+                            create: (injector, socket, options: MqttServConfig) => {
                                 return new DefaultServerTransport<mqtt.Client, TopicRequestContext, string | Buffer | IReadable>(
                                     injector,
                                     socket,

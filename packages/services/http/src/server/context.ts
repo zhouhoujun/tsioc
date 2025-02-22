@@ -1,7 +1,7 @@
 import { Injector, isArray, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, Response, normalize } from '@tsdi/common';
 import { MessageExecption, InternalServerExecption, Outgoing, append, parseTokenList, Incoming, ENOENT } from '@tsdi/common/transport';
-import { HttpServerOpts, RestfulRequestContext, ServerTransport, Throwable } from '@tsdi/endpoints';
+import { HttpServConfig, RestfulRequestContext, ServerTransport, Throwable } from '@tsdi/endpoints';
 import * as http from 'http';
 import * as http2 from 'http2';
 import * as assert from 'assert';
@@ -17,7 +17,7 @@ export type HttpServResponse = (http.ServerResponse | http2.Http2ServerResponse)
 /**
  * http context for `HttpServer`.
  */
-export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServResponse, TLSSocket | Socket, HttpServerOpts, number> implements Throwable {
+export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServResponse, TLSSocket | Socket, HttpServConfig, number> implements Throwable {
 
 
     private _URL?: URL;
@@ -29,7 +29,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         readonly transport: ServerTransport,
         readonly request: HttpServRequest,
         readonly response: HttpServResponse,
-        readonly serverOptions: HttpServerOpts
+        readonly serverOptions: HttpServConfig
     ) {
         super(injector, { ...serverOptions, args: request });
 

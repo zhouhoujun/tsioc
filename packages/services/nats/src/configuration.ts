@@ -23,10 +23,10 @@ import {
 } from '@tsdi/endpoints';
 import { map } from 'rxjs';
 import { NatsClient } from './client/client';
-import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS, NatsClientOpts } from './client/options';
+import { NATS_CLIENT_FILTERS, NATS_CLIENT_INTERCEPTORS, NatsClientConfig } from './client/options';
 import { NatsHandler } from './client/handler';
 import { NatsServer } from './server/server';
-import { NATS_SERV_FILTERS, NATS_SERV_GUARDS, NATS_SERV_INTERCEPTORS, NatsMicroServOpts } from './server/options';
+import { NATS_SERV_FILTERS, NATS_SERV_GUARDS, NATS_SERV_INTERCEPTORS, NatsServConfig } from './server/options';
 import { NatsRequestHandler } from './server/handler';
 import { NatsRequest } from './client/request';
 import { NatsSocket, NATS_MESSAGE } from './socket';
@@ -77,7 +77,7 @@ export class NatsConfiguration {
             transport: 'nats',
             asDefault: true,
             clientType: NatsClient,
-            defaultOpts: {
+            defaultConfig: {
                 handlerType: NatsHandler,
                 interceptorsToken: NATS_CLIENT_INTERCEPTORS,
                 filtersToken: NATS_CLIENT_FILTERS,
@@ -90,8 +90,8 @@ export class NatsConfiguration {
                         incomingFactory: TopicClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
                         redirector: Redirector | null) => {
                         return {
-                            create: (injector, socket, options: NatsClientOpts) => {
-                                return new DefaultClientTransport<NatsSocket, NatsRequest<any>, Buffer | string | IReadable, NatsClientOpts>(
+                            create: (injector, socket, options: NatsClientConfig) => {
+                                return new DefaultClientTransport<NatsSocket, NatsRequest<any>, Buffer | string | IReadable, NatsClientConfig>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
@@ -171,7 +171,7 @@ export class NatsConfiguration {
             transport: 'nats',
             asDefault: true,
             serverType: NatsServer,
-            defaultOpts: {
+            defaultConfig: {
                 handlerType: NatsRequestHandler,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
@@ -179,7 +179,7 @@ export class NatsConfiguration {
                         fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
                         incomingFactory: TopicClientIncomingFactory, outgoingFactory: TopicOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
-                            create: (injector, socket, options: NatsMicroServOpts) => {
+                            create: (injector, socket, options: NatsServConfig) => {
                                 return new DefaultServerTransport<NatsSocket, TopicRequestContext, Buffer | string | IReadable>(
                                     injector,
                                     socket,

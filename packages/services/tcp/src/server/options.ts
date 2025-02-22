@@ -1,15 +1,15 @@
 import { tokenId } from '@tsdi/ioc';
 import { Interceptor, Filter, GuardLike } from '@tsdi/core';
-import { BindServerEvent, MiddlewareLike, ServerOpts } from '@tsdi/endpoints';
+import { BindServerEvent, MiddlewareLike, ServiceConfig } from '@tsdi/endpoints';
 
 import * as net from 'net';
 import * as tls from 'tls';
 
 
 /**
- * TCP server options.
+ * TCP service config.
  */
-export interface TcpServerOpts extends ServerOpts<net.ServerOpts | tls.TlsOptions> {
+export interface TcpServConfig extends ServiceConfig<net.ServerOpts | tls.TlsOptions> {
     maxConnections?: number;
     listenOpts?: net.ListenOptions;
     /**

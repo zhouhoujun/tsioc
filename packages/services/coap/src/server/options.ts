@@ -1,13 +1,13 @@
 import { tokenId } from '@tsdi/ioc';
 import { ExecptionFilter, Interceptor, GuardLike, Filter } from '@tsdi/core';
-import { BindServerEvent, ServerOpts } from '@tsdi/endpoints';
+import { BindServerEvent, ServiceConfig } from '@tsdi/endpoints';
 import { CoapServerOptions } from 'coap';
 
 
 /**
- * Coap server options.
+ * Coap service config.
  */
-export interface CoapServerOpts extends ServerOpts<CoapServerOptions> {
+export interface CoapServConfig extends ServiceConfig<CoapServerOptions> {
     listenOpts?: number | { host?: string, port?: number, listener?: () => void };
     detailError?: boolean;
     /**
@@ -17,9 +17,9 @@ export interface CoapServerOpts extends ServerOpts<CoapServerOptions> {
 }
 
 /**
- * CoAP server options
+ * CoAP server config token.
  */
-export const COAP_SERV_OPTS = tokenId<CoapServerOpts>('COAP_SERV_OPTS');
+export const COAP_SERV_OPTS = tokenId<CoapServConfig>('COAP_SERV_OPTS');
 
 /**
  * CoAP server interceptors.

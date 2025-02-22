@@ -7,7 +7,7 @@ import { BindServerEvent, MiddlewareService, RequestContext, Server, ServerTrans
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
-import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TcpServerOpts } from './options';
+import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TcpServConfig } from './options';
 import { TcpRequestHandler } from './handler';
 
 
@@ -16,7 +16,7 @@ import { TcpRequestHandler } from './handler';
  * tcp server of `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpServer extends Server<RequestContext, TcpServerOpts> implements ListenService, MiddlewareService {
+export class TcpServer extends Server<RequestContext, TcpServConfig> implements ListenService, MiddlewareService {
 
     protected serv?: net.Server | tls.Server | null;
 
@@ -144,7 +144,7 @@ export class TcpServer extends Server<RequestContext, TcpServerOpts> implements 
 
     }
 
-    protected createServer(opts: TcpServerOpts): net.Server | tls.Server {
+    protected createServer(opts: TcpServConfig): net.Server | tls.Server {
         return this.isSecure ? tls.createServer(opts.serverOpts as tls.TlsOptions) : net.createServer(opts.serverOpts as net.ServerOpts);
     }
 

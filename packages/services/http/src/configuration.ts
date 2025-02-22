@@ -17,7 +17,7 @@ import {
     ExecptionFinalizeFilter, FinalizeFilter, SERVER_MODULES, ServerModuleOpts,
     MimeModule, ServiceModuleOpts, JsonInterceptor, BodyparserInterceptor, AcceptsPriority, ServerTransferFactory,
     DefaultServerTransferFactory, DefaultServerTransport, ServerTransport,
-    HttpServerOpts, LoggerFilter, emptyStatusSerializeInterceptor,
+    HttpServConfig, LoggerFilter, emptyStatusSerializeInterceptor,
     headMethodSerializeInterceptor, noBodySerializeInterceptor, lengthLimitSerializeInterceptor,
     contextBodySerializeBackend, execptionMessageSerializeInterceptor
 } from '@tsdi/endpoints';
@@ -29,7 +29,7 @@ import {
 } from 'http2';
 import { fromEvent, Observable, of } from 'rxjs';
 import { Http } from './client/clinet';
-import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HttpClientOpts } from './client/options';
+import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HttpClientConfig } from './client/options';
 import { HttpHandler } from './client/handler';
 import { HTTP_MIDDLEWARES, HTTP_SERV_FILTERS, HTTP_SERV_GUARDS, HTTP_SERV_INTERCEPTORS } from './server/options';
 import { HttpRequestHandler } from './server/handler';
@@ -54,8 +54,8 @@ export class HttpConfiguration {
     @Bean(SERVER_MODULES, { static: true, multi: true })
     serv(): ServiceModuleOpts {
         const option = this.getServOptions() as ServerModuleOpts;
-        option.defaultOpts!.middlewaresToken = HTTP_MIDDLEWARES,
-            option.defaultOpts!.content = {
+        option.defaultConfig!.middlewaresToken = HTTP_MIDDLEWARES,
+            option.defaultConfig!.content = {
                 root: 'public'
             };
         return option;
@@ -69,7 +69,7 @@ export class HttpConfiguration {
             imports: [
                 MimeModule,
             ],
-            defaultOpts: {
+            defaultConfig: {
                 handlerType: HttpHandler,
                 interceptorsToken: HTTP_CLIENT_INTERCEPTORS,
                 filtersToken: HTTP_CLIENT_FILTERS,
@@ -135,7 +135,7 @@ export class HttpConfiguration {
                                     },
                                     async (socket: ClientHttp2Session | null, msg: Buffer | string | IReadable, req: HttpRequest<any>, context) => {
                                         let url = req.urlWithParams;
-                                        const clientOpts = options as HttpClientOpts;
+                                        const clientOpts = options as HttpClientConfig;
                                         const ac = req.context.get(ABORT_CONTROLLER);
                                         let stream: ClientHttp2Stream | ClientRequest;
                                         if (clientOpts.authority && socket && (!httptl.test(url) || url.startsWith(clientOpts.authority))) {
@@ -215,7 +215,7 @@ export class HttpConfiguration {
             imports: [
                 MimeModule
             ],
-            defaultOpts: {
+            defaultConfig: {
                 handlerType: HttpRequestHandler,
                 listenOpts: { port: 3000, host: LOCALHOST },
                 execptionHandlers: HttpExecptionHandlers,
@@ -251,7 +251,7 @@ export class HttpConfiguration {
                                         backend: (input: HttpIncomings, context: TransportContext) => {
                                             const transport = context.transport as ServerTransport;
                                             const { injector, serverOptions } = transport;
-                                            return of(new HttpContext(injector, transport, input.req, input.res, serverOptions as HttpServerOpts))
+                                            return of(new HttpContext(injector, transport, input.req, input.res, serverOptions as HttpServConfig))
                                         },
                                         ...options.transferConfig
                                     }),

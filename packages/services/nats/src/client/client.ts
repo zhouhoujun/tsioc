@@ -5,13 +5,13 @@ import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/c
 import { InjectLog, Logger } from '@tsdi/logger';
 import { connect } from 'nats';
 import { NatsHandler } from './handler';
-import { NatsClientOpts } from './options';
+import { NatsClientConfig } from './options';
 import { NatsRequest } from './request';
 import { NatsSocket } from '../socket';
 
 
 @Injectable()
-export class NatsClient extends AbstractClient<TopicRequestOptions, NatsRequest<any>, ResponseEvent<any>, NatsClientOpts> {
+export class NatsClient extends AbstractClient<TopicRequestOptions, NatsRequest<any>, ResponseEvent<any>, NatsClientConfig> {
 
     private socket?: NatsSocket;
     private _transport?: ClientTransport<NatsSocket>;

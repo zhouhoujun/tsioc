@@ -1,13 +1,16 @@
 import { tokenId } from '@tsdi/ioc';
 import { Interceptor, Filter } from '@tsdi/core';
 import { ResponseEvent, TopicRequestOptions } from '@tsdi/common';
-import { ClientOpts } from '@tsdi/common/client';
+import { ClientConfig } from '@tsdi/common/client';
 import { QoS, UserProperties } from 'mqtt';
 import { MqttConnectOpts } from '../connect';
 import { MqttRequest } from './request';
 
 
-export interface MqttClientOpts extends ClientOpts<MqttConnectOpts> {
+/**
+ * Mqtt client config.
+ */
+export interface MqttClientConfig extends ClientConfig<MqttConnectOpts> {
     
 }
 

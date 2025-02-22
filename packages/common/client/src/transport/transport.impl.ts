@@ -5,7 +5,7 @@ import {
     StatusAdapter, StreamAdapter, TransportContext, writePacket
 } from '@tsdi/common/transport';
 import { ClientTransfer, ClientTransport } from '../transport';
-import { ClientOpts } from '../options';
+import { ClientConfig } from '../options';
 import { fromEvent, map, Observable } from 'rxjs';
 
 
@@ -14,7 +14,7 @@ export class DefaultClientTransport<
     TSocket = any,
     TRequest extends AbstractRequest<any> = AbstractRequest<any>,
     TMsg = any,
-    TOptions extends ClientOpts = ClientOpts> extends ClientTransport<TSocket, TRequest, TMsg, TOptions> {
+    TOptions extends ClientConfig = ClientConfig> extends ClientTransport<TSocket, TRequest, TMsg, TOptions> {
 
     constructor(
         readonly injector: Injector,
@@ -61,7 +61,7 @@ export class SocketClientTransport<
     TSocket extends IDuplex = IDuplex,
     TRequest extends AbstractRequest<any> = AbstractRequest<any>,
     TMsg extends Packet = Packet,
-    TOptions extends ClientOpts = ClientOpts> extends ClientTransport<TSocket, TRequest, TMsg, TOptions> {
+    TOptions extends ClientConfig = ClientConfig> extends ClientTransport<TSocket, TRequest, TMsg, TOptions> {
 
     constructor(
         readonly injector: Injector,

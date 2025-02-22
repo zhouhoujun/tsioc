@@ -54,7 +54,7 @@ export class TcpConfiguration {
     @Bean(SERVER_MODULES, { static: true, multi: true })
     microServ(): ServiceModuleOpts {
         const option = this.getServOptions(true);
-        option.defaultOpts!.content = {
+        option.defaultConfig!.content = {
             root: 'public',
             prefix: 'content'
         };
@@ -65,8 +65,8 @@ export class TcpConfiguration {
     @Bean(SERVER_MODULES, { static: true, multi: true })
     serv(): ServiceModuleOpts {
         const option = this.getServOptions(false) as ServerModuleOpts;
-        option.defaultOpts!.middlewaresToken = TCP_MIDDLEWARES,
-            option.defaultOpts!.content = {
+        option.defaultConfig!.middlewaresToken = TCP_MIDDLEWARES,
+            option.defaultConfig!.content = {
                 root: 'public'
             };
         return option;
@@ -78,7 +78,7 @@ export class TcpConfiguration {
             transport: 'tcp',
             clientType: TcpClient,
             microservice,
-            defaultOpts: {
+            defaultConfig: {
                 handlerType: TcpHandler,
                 interceptorsToken: TCP_CLIENT_INTERCEPTORS,
                 filtersToken: TCP_CLIENT_FILTERS,
@@ -152,7 +152,7 @@ export class TcpConfiguration {
             transport: 'tcp',
             serverType: TcpServer,
             microservice,
-            defaultOpts: {
+            defaultConfig: {
                 handlerType: TcpRequestHandler,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,

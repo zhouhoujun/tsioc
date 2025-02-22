@@ -23,14 +23,14 @@ import expect = require('expect');
         ClientModule.register([
             {
                 transport: 'udp',
-                clientOpts: {
+                config: {
 
                 }
             },
             {
                 transport: 'tcp',
                 microservice: false,
-                clientOpts: {
+                config: {
                     connectOpts: {
                         port: 2000
                     }
@@ -41,7 +41,7 @@ import expect = require('expect');
             {
                 transport: 'tcp',
                 microservice: false,
-                serverOpts: {
+                config: {
                     detailError: false,
                     listenOpts: {
                         port: 2000
@@ -56,7 +56,7 @@ import expect = require('expect');
             },
             {
                 transport: 'udp',
-                serverOpts: {
+                config: {
                     detailError: false,
                     interceptors: [
                         BigFileInterceptor,

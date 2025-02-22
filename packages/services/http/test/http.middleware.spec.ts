@@ -6,7 +6,7 @@ import { ClientModule } from '@tsdi/common/client';
 import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor, SetupServices } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
-import { WsClient, WsClientOpts } from '@tsdi/ws';
+import { WsClient, WsClientConfig } from '@tsdi/ws';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 import * as net from 'net';
@@ -28,17 +28,17 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
         ClientModule.register([
             {
                 transport: 'ws',
-                clientOpts: {
+                config: {
                     url: 'wss://localhost:3200',
                     // host: 'localhost:3200',
                     connectOpts: {
                         ca: cert
                     }
-                } as WsClientOpts      
+                } as WsClientConfig      
             },
             {
                 transport: 'http',
-                clientOpts: {
+                config: {
                     authority: 'https://localhost:3200',
                     connectOpts: {
                         ca: cert
@@ -50,7 +50,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
             {
                 bootstrap: false,
                 transport: 'ws',
-                serverOpts: {
+                config: {
                     heybird: true,
                     interceptors:[
                         JsonInterceptor,
@@ -62,7 +62,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
             {
                 transport: 'https',
                 bootstrap: false,
-                serverOpts: {
+                config: {
                     middlewares: [
 
                     ],

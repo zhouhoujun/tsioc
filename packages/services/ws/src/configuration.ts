@@ -26,10 +26,10 @@ import {
     headersReadableBodyInterceptor
 } from '@tsdi/endpoints';
 import { WsClient } from './client/client';
-import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS, WsClientOpts } from './client/options';
+import { WS_CLIENT_FILTERS, WS_CLIENT_INTERCEPTORS, WsClientConfig } from './client/options';
 import { WsHandler } from './client/handler';
 import { WsServer } from './server/server';
-import { WS_SERV_FILTERS, WS_SERV_GUARDS, WS_SERV_INTERCEPTORS, WsServerOpts } from './server/options';
+import { WS_SERV_FILTERS, WS_SERV_GUARDS, WS_SERV_INTERCEPTORS, WsServConfig } from './server/options';
 import { WsRequestHandler } from './server/handler';
 import { DefaultResponseFactory, HeaderAdapter, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import { fromEvent } from 'rxjs';
@@ -61,7 +61,7 @@ export class WsConfiguration {
             transport: 'ws',
             asDefault: true,
             clientType: WsClient,
-            defaultOpts: {
+            defaultConfig: {
                 handlerType: WsHandler,
                 url: 'ws://localhost:3000',
                 connectOpts: {
@@ -75,7 +75,7 @@ export class WsConfiguration {
                         incomingFactory: UrlClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
                         redirector: Redirector | null) => {
                         return {
-                            create: (injector, socket, options: WsClientOpts) => {
+                            create: (injector, socket, options: WsClientConfig) => {
                                 options.transportOptions = options.enableStream ? options.streamTransport?.transportOptions : options.transportOptions;
 
                                 return new DefaultClientTransport(
@@ -158,7 +158,7 @@ export class WsConfiguration {
                 interceptors: [
                     requestTimeoutInterceptor
                 ]
-            } as WsClientOpts
+            } as WsClientConfig
         }
     }
 
@@ -167,7 +167,7 @@ export class WsConfiguration {
             transport: 'ws',
             asDefault: true,
             serverType: WsServer,
-            defaultOpts: {
+            defaultConfig: {
                 handlerType: WsRequestHandler,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
@@ -175,7 +175,7 @@ export class WsConfiguration {
                         fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
                         incomingFactory: UrlClientIncomingFactory, outgoingFactory: UrlOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
-                            create: (injector, socket, options: WsServerOpts) => {
+                            create: (injector, socket, options: WsServConfig) => {
                                 options.transportOptions = options.enableStream ? options.streamTransport?.transportOptions : options.transportOptions;
                                 return new DefaultServerTransport(
                                     injector,
@@ -271,7 +271,7 @@ export class WsConfiguration {
                     ExecptionHandlerFilter,
                     FinalizeFilter
                 ]
-            } as WsServerOpts
+            } as WsServConfig
         }
     }
 }

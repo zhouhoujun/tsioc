@@ -20,19 +20,19 @@ import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
         LoggerModule,
         ServerEndpointModule,
         ClientModule.register([
-            { transport: 'ws', clientOpts: { } },
-            { transport: 'http', clientOpts: {url: 'http://localhost:3000'} }
+            { transport: 'ws', config: { } },
+            { transport: 'http', config: {url: 'http://localhost:3000'} }
         ]),
         EndpointModule.register([
             {
                 transport: 'ws',
-                serverOpts: {
+                config: {
                     heybird: true
                 }
             },
             {
                 transport: 'http',
-                serverOpts: {
+                config: {
                     timeout: 0,
                     interceptors: [
                         JsonInterceptor,

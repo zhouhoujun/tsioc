@@ -2,7 +2,7 @@ import { Filter, Interceptor } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ResponseEvent } from '@tsdi/common';
 import { TransportOptions } from '@tsdi/common/transport';
-import { ClientOpts } from '@tsdi/common/client';
+import { ClientConfig } from '@tsdi/common/client';
 import { SocketOptions } from 'dgram';
 import { UdpRequest } from './request';
 
@@ -11,7 +11,7 @@ export interface UdpClientTransportOpts extends TransportOptions {
     host?: string;
 }
 
-export interface UdpClientOpts extends ClientOpts<SocketOptions> {
+export interface UdpClientConfig extends ClientConfig<SocketOptions> {
     /**
      * url
      * etg.` wss://webscocket.com/`

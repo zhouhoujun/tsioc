@@ -3,7 +3,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST } from '@tsdi/common';
 import { BindServerEvent, RequestContext, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Socket, createSocket } from 'dgram';
-import { COAP_BIND_FILTERS, COAP_BIND_GUARDS, COAP_BIND_INTERCEPTORS, COAP_SERV_OPTS, CoapServerOpts } from './options';
+import { COAP_BIND_FILTERS, COAP_BIND_GUARDS, COAP_BIND_INTERCEPTORS, COAP_SERV_OPTS, CoapServConfig } from './options';
 import { CoapRequestHandler } from './handler';
 import { InternalServerExecption, ev } from '@tsdi/common/transport';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
@@ -13,13 +13,13 @@ import { lastValueFrom } from 'rxjs';
  * CoAP server.
  */
 @Injectable()
-export class CoapServer extends Server<RequestContext, CoapServerOpts> {
+export class CoapServer extends Server<RequestContext, CoapServConfig> {
 
     @InjectLog() logger!: Logger;
     protected isSecure = false;
     constructor(
         readonly handler: CoapRequestHandler,
-        @Inject(COAP_SERV_OPTS) protected options: CoapServerOpts) {
+        @Inject(COAP_SERV_OPTS) protected options: CoapServConfig) {
         super()
     }
 

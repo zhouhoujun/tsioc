@@ -34,7 +34,7 @@ import { ErrorResponse } from '@tsdi/common';
             {
                 transport: 'tcp',
                 microservice: false,
-                serverOpts: {
+                config: {
                     interceptors: [
                         BigFileInterceptor,
                         JsonInterceptor,
@@ -45,7 +45,7 @@ import { ErrorResponse } from '@tsdi/common';
             },
             {
                 transport: 'redis',
-                serverOpts: {
+                config: {
                     interceptors: [
                         BigFileInterceptor,
                         JsonInterceptor,

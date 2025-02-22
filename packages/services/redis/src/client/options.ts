@@ -1,14 +1,14 @@
 import { tokenId } from '@tsdi/ioc';
 import { Filter, Interceptor } from '@tsdi/core';
 import { ResponseEvent } from '@tsdi/common';
-import { ClientOpts } from '@tsdi/common/client';
+import { ClientConfig } from '@tsdi/common/client';
 import { RedisOptions } from 'ioredis';
 import { RedisRequest } from './request';
 
 /**
  * Redis client options.
  */
-export interface RedisClientOpts extends ClientOpts<RedisOptions> {
+export interface RedisClientConfig extends ClientConfig<RedisOptions> {
 
     retryAttempts?: number;
     retryDelay?: number;

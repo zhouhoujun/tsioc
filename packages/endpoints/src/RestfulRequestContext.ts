@@ -1,7 +1,7 @@
 import { Abstract } from '@tsdi/ioc';
 import { Incoming, Outgoing, encodeUrl, escapeHtml, ctype, NotSupportedExecption } from '@tsdi/common/transport';
 import { RequestContext } from './RequestContext';
-import { ServerOpts } from './server.options';
+import { ServiceConfig } from './server.options';
 
 /**
  * abstract Restful request context.
@@ -12,7 +12,7 @@ import { ServerOpts } from './server.options';
 export abstract class RestfulRequestContext<
     TRequest extends Incoming<any> = Incoming<any>,
     TResponse extends Outgoing<any> = Outgoing<any>, TSocket = any,
-    TOptions extends ServerOpts = ServerOpts,
+    TOptions extends ServiceConfig = ServiceConfig,
     TStatus = any> extends RequestContext<TRequest, TResponse, TSocket, TOptions, TStatus> {
 
     abstract get socket(): TSocket;

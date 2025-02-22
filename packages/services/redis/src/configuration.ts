@@ -62,7 +62,7 @@ export class RedisConfiguration {
             transport: 'redis',
             asDefault: true,
             clientType: RedisClient,
-            defaultOpts: {
+            defaultConfig: {
                 handlerType: RedisHandler,
                 // url: 'redis://localhost:6379',
                 connectOpts: {
@@ -174,7 +174,7 @@ export class RedisConfiguration {
             transport: 'redis',
             asDefault: true,
             serverType: RedisServer,
-            defaultOpts: {
+            defaultConfig: {
                 handlerType: RedisRequestHandler,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,

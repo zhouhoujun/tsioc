@@ -21,7 +21,8 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         ServerEndpointModule,
         ClientModule.register([
             {
-                transport: 'tcp'
+                transport: 'tcp',
+                microservice: false
             },
             {
                 transport: 'amqp'
@@ -30,7 +31,8 @@ import { BigFileInterceptor } from './BigFileInterceptor';
         EndpointModule.register([
             {
                 transport: 'tcp',
-                serverOpts: {
+                microservice: false,
+                config: {
                     interceptors: [
                         BigFileInterceptor,
                         ContentInterceptor,
@@ -40,9 +42,8 @@ import { BigFileInterceptor } from './BigFileInterceptor';
                 }
             },
             {
-                microservice: true,
                 transport: 'amqp',
-                serverOpts: {
+                config: {
                     interceptors: [
                         BigFileInterceptor,
                         ContentInterceptor,

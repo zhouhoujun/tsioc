@@ -4,14 +4,14 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import { getRouter, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
 import { connect } from 'nats';
 import { NatsRequestHandler } from './handler';
-import { NatsMicroServOpts } from './options';
+import { NatsServConfig } from './options';
 import { Subject } from 'rxjs';
 import { NatsSocket } from '../socket';
 
 
 
 @Injectable()
-export class NatsServer extends Server<RequestContext, NatsMicroServOpts> {
+export class NatsServer extends Server<RequestContext, NatsServConfig> {
     private socket?: NatsSocket;
     private _transport?: ServerTransport<NatsSocket>;
 

@@ -4,7 +4,7 @@ import {
 } from '@tsdi/ioc';
 import { ConfigMissingExecption, TypedRespond } from '@tsdi/core';
 import { isMicroTransport, NotImplementedExecption, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
-import { ServerOpts } from './server.options';
+import { ServiceConfig } from './server.options';
 import { Session } from './Session';
 import { ServerTransportFactory } from './transport';
 import { EndpointTypedRespond } from './typed.respond';
@@ -129,7 +129,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
 
                 const moduleOpts = { ...mdopts, ...options, asDefault: null } as ServiceModuleOpts & ServiceOptions;
 
-                const cloneOpts = lang.deepClone(moduleOpts.serverOpts, moduleOpts.defaultOpts, (n, value, deft) => {
+                const cloneOpts = lang.deepClone(moduleOpts.config, moduleOpts.defaultConfig, (n, value, deft) => {
                     if (n == 'providers' || n === 'routes') {
                         return [...value, ...deft];
                     }
@@ -140,7 +140,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
                     backend: RouterModule.getToken(moduleOpts.transport, microservice),
                     enableTypeChain: true,
                     ...cloneOpts
-                } as ServerOpts & { providers: ProviderType[] };
+                } as ServiceConfig & { providers: ProviderType[] };
 
                 if (!serverOpts.providers) {
                     serverOpts.providers = [];
@@ -181,7 +181,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
                 providers.push({
                     provide: serverOpts.handlerType,
                     useFactory: (injector: Injector) => {
-                        const opts = lang.deepClone(serverOpts) as ServerOpts;
+                        const opts = lang.deepClone(serverOpts) as ServiceConfig;
                         return createRequestHandler(injector, opts)
                     },
                     deps: [Injector]

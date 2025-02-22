@@ -1,11 +1,12 @@
 import { Interceptor, Filter, GuardLike } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
-import { ServerOpts } from '@tsdi/endpoints';
+import { ServiceConfig } from '@tsdi/endpoints';
 import { ConnectionOptions, PublishOptions, SubscriptionOptions } from 'nats';
 
-
-
-export interface NatsMicroServOpts extends ServerOpts<ConnectionOptions> {
+/**
+ * nats service config.
+ */
+export interface NatsServConfig extends ServiceConfig<ConnectionOptions> {
 
     /**
      * publish options

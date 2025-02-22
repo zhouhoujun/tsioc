@@ -1,12 +1,14 @@
 import { GuardLike, Filter, Interceptor } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
-import { ServerOpts } from '@tsdi/endpoints';
+import { ServiceConfig } from '@tsdi/endpoints';
 import { ConsumerConfig, KafkaConfig, ProducerConfig, ConsumerRunConfig } from 'kafkajs';
 
 
 
-
-export interface KafkaServerOptions extends ServerOpts<KafkaConfig> {
+/**
+ * kafka service config.
+ */
+export interface KafkaServConfig extends ServiceConfig<KafkaConfig> {
     postfixId?: string;
     consumer?: ConsumerConfig;
     producer?: ProducerConfig;

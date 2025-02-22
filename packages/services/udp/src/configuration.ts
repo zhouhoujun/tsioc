@@ -53,7 +53,7 @@ export class UdpConfiguration {
         return {
             transport: 'udp',
             clientType: UdpClient,
-            defaultOpts: {
+            defaultConfig: {
                 handlerType: UdpHandler,
                 url: 'udp://localhost:3000',
                 interceptorsToken: UDP_CLIENT_INTERCEPTORS,
@@ -130,7 +130,7 @@ export class UdpConfiguration {
         return {
             transport: 'udp',
             serverType: UdpServer,
-            defaultOpts: {
+            defaultConfig: {
                 handlerType: UdpRequestHandler,
                 interceptorsToken: UDP_SERV_INTERCEPTORS,
                 filtersToken: UDP_SERV_FILTERS,

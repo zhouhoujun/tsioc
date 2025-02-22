@@ -29,7 +29,7 @@ import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModu
             },
             {
                 transport: 'http',
-                clientOpts: {
+                config: {
                     url: 'http://localhost:3200'
                 }
             }
@@ -37,13 +37,13 @@ import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModu
         EndpointModule.register([
             {
                 transport: 'ws',
-                serverOpts: {
+                config: {
                     heybird: true
                 }
             },
             {
                 transport: 'http',
-                serverOpts: {
+                config: {
                     majorVersion: 1,
                     // middlewares: [],
                     listenOpts: {

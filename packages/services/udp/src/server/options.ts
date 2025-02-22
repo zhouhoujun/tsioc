@@ -1,12 +1,14 @@
 import { tokenId } from '@tsdi/ioc';
 import { GuardLike, Filter, Interceptor } from '@tsdi/core';
-import { ServerOpts } from '@tsdi/endpoints';
+import { ServiceConfig } from '@tsdi/endpoints';
 import { SocketOptions, BindOptions } from 'dgram';
 
 
 
-
-export interface UdpServerOpts extends ServerOpts<SocketOptions> {
+/**
+ * udp service config.
+ */
+export interface UdpServConfig extends ServiceConfig<SocketOptions> {
     /**
      * socket timeout.
      */

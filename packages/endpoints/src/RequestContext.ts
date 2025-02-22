@@ -5,7 +5,7 @@ import {
     FileAdapter, Incoming, InternalServerExecption, MessageExecption, MimeAdapter, Outgoing,
     StatusAdapter, StreamAdapter, ctype, isBuffer, xmlRegExp
 } from '@tsdi/common/transport';
-import { ServerOpts } from './server.options';
+import { ServiceConfig } from './server.options';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
 import { ServerTransport } from './transport';
 import { AcceptsPriority } from './accepts';
@@ -20,7 +20,7 @@ export abstract class RequestContext<
     TRequest extends Incoming<any> = Incoming<any>,
     TResponse extends Outgoing<any> = Outgoing<any>,
     TSocket = any,
-    TOptions extends ServerOpts = ServerOpts,
+    TOptions extends ServiceConfig = ServiceConfig,
     TStatus = any> extends HandleContext<Incoming<any>> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {

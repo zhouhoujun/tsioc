@@ -1,15 +1,15 @@
 import { Protocols } from '@tsdi/common';
 import { ModuleType, ProvdierOf, ProviderType, Token, Type } from '@tsdi/ioc';
 import { ClientBackend } from './backend';
-import { ClientOpts } from './options';
+import { ClientConfig } from './options';
 import { AbstractClient } from './AbstractClient';
 import { TransportConfigure } from '@tsdi/common/transport';
 
 
 /**
- * Client module config.
+ * Client module options.
  */
-export interface BasicClientConfig {
+export interface BasicClientOpts {
     /**
      * transport
      */
@@ -25,59 +25,59 @@ export interface BasicClientConfig {
 
 }
 
-export interface MqttClientConfig extends BasicClientConfig {
+export interface MqttClientOpts extends BasicClientOpts {
     transport: 'mqtt' | 'mqtts';
     /**
      * client options.
      */
-    clientOpts?: ClientOpts;
+    config?: ClientConfig;
 }
 
-export interface RedisClientConfig extends BasicClientConfig {
+export interface RedisClientOpts extends BasicClientOpts {
     transport: 'redis';
     /**
      * client options.
      */
-    clientOpts?: ClientOpts;
+    config?: ClientConfig;
 }
 
-export interface KafkaClientConfig extends BasicClientConfig {
+export interface KafkaClientOpts extends BasicClientOpts {
     transport: 'kafka';
     /**
      * client options.
      */
-    clientOpts?: ClientOpts;
+    config?: ClientConfig;
 }
 
 
-export interface NatsClientConfig extends BasicClientConfig {
+export interface NatsClientOpts extends BasicClientOpts {
     transport: 'nats';
     /**
      * client options.
      */
-    clientOpts?: ClientOpts;
+    config?: ClientConfig;
 }
 
-export interface AmqpClientConfig extends BasicClientConfig {
+export interface AmqpClientOpts extends BasicClientOpts {
     transport: 'amqp';
     /**
      * client options.
      */
-    clientOpts?: ClientOpts;
+    config?: ClientConfig;
 }
 
-export interface WsClientConfig extends BasicClientConfig {
+export interface WsClientOpts extends BasicClientOpts {
     transport: 'ws' | 'wss';
     /**
      * client options.
      */
-    clientOpts?: ClientOpts & {
+    config?: ClientConfig & {
         enableStream?: boolean;
         streamTransport?: TransportConfigure;
     };
 }
 
-export interface TcpMicroClientConfig extends BasicClientConfig {
+export interface TcpMicroClientOpts extends BasicClientOpts {
     transport: 'tcp';
     /**
      * is microservice client or not.
@@ -86,22 +86,22 @@ export interface TcpMicroClientConfig extends BasicClientConfig {
     /**
      * client options.
      */
-    clientOpts?: ClientOpts;
+    config?: ClientConfig;
 }
 
-export interface UdpClientConfig extends BasicClientConfig {
+export interface UdpClientOpts extends BasicClientOpts {
     transport: 'udp';
     /**
      * client options.
      */
-    clientOpts?: ClientOpts;
+    config?: ClientConfig;
 }
 
 
-export type MicroClientConfig = MqttClientConfig | RedisClientConfig | KafkaClientConfig | NatsClientConfig | AmqpClientConfig | WsClientConfig | TcpMicroClientConfig | UdpClientConfig;
+export type MicroClientOpts = MqttClientOpts | RedisClientOpts | KafkaClientOpts | NatsClientOpts | AmqpClientOpts | WsClientOpts | TcpMicroClientOpts | UdpClientOpts;
 
 
-export interface TcpClientConfig extends BasicClientConfig {
+export interface TcpClientOpts extends BasicClientOpts {
     transport: 'tcp';
     /**
      * is microservice client or not.
@@ -110,15 +110,15 @@ export interface TcpClientConfig extends BasicClientConfig {
     /**
      * client options.
      */
-    clientOpts?: ClientOpts;
+    config?: ClientConfig;
 }
 
-export interface HttpClientConfig extends BasicClientConfig {
+export interface HttpClientOpts extends BasicClientOpts {
     transport: 'http' | 'https';
     /**
      * client options.
      */
-    clientOpts?: ClientOpts;
+    config?: ClientConfig;
 
     /**
      * authority base url.
@@ -127,26 +127,26 @@ export interface HttpClientConfig extends BasicClientConfig {
 
 }
 
-export interface CoapClientConfig extends BasicClientConfig {
+export interface CoapClientOpts extends BasicClientOpts {
     transport: 'coap';
     /**
      * client options.
      */
-    clientOpts?: ClientOpts;
+    config?: ClientConfig;
 }
 
-export interface GrpcClientConfig extends BasicClientConfig {
+export interface GrpcClientOpts extends BasicClientOpts {
     transport: 'grpc';
     /**
      * client options.
      */
-    clientOpts?: ClientOpts;
+    config?: ClientConfig;
 }
 
 
-export type ClientConfig = MicroClientConfig | TcpClientConfig | HttpClientConfig | CoapClientConfig | GrpcClientConfig;
+export type ClientOpts = MicroClientOpts | TcpClientOpts | HttpClientOpts | CoapClientOpts | GrpcClientOpts;
 
-export type ClientConfigs = ClientConfig & {
+export type ClientOptions = ClientOpts & {
 
     /**
      * client token.
@@ -157,7 +157,7 @@ export type ClientConfigs = ClientConfig & {
 /**
  * Client module options.
  */
-export type ClientModuleOpts = ClientConfig & {
+export type ClientModuleOpts = ClientOpts & {
     /**
      * client type
      */
@@ -169,7 +169,7 @@ export type ClientModuleOpts = ClientConfig & {
     /**
      * client default options
      */
-    defaultOpts?: ClientOpts;
+    defaultConfig?: ClientConfig;
     /**
      * as default client.
      */

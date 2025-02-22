@@ -46,7 +46,7 @@ export const option = <ConnectionOptions>{
         HttpClientModule,
         EndpointModule.register({
             transport: 'http',
-            serverOpts: {
+            config: {
                 majorVersion: 2,
                 interceptors: [
                     ContentInterceptor,

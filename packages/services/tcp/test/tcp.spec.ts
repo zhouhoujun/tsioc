@@ -98,7 +98,7 @@ export class DeviceController {
             {
                 transport: 'tcp',
                 microservice: false,
-                clientOpts: {
+                config: {
                     connectOpts: {
                         port: 2000
                     },
@@ -108,7 +108,7 @@ export class DeviceController {
                 transport: 'tcp',
                 client: 'micro-client',
                 microservice: true,
-                clientOpts: {
+                config: {
                     connectOpts: {
                         port: 3000
                     }
@@ -119,7 +119,7 @@ export class DeviceController {
             {
                 transport: 'tcp',
                 microservice: true,
-                serverOpts: {
+                config: {
                     detailError: false,
                     listenOpts: {
                         port: 3000
@@ -129,7 +129,7 @@ export class DeviceController {
             {
                 transport: 'tcp',
                 microservice: false,
-                serverOpts: {
+                config: {
                     // timeout: 1000,
                     detailError: false,
                     listenOpts: {

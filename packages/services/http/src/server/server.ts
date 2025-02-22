@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, ModuleLoader } from '@tsdi/core';
 import { ListenService } from '@tsdi/common';
 import { InternalServerExecption } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { BindServerEvent, CONTENT_DISPOSITION_TOKEN, HttpServerOpts, MiddlewareLike, MiddlewareService, Server, ServerTransportFactory } from '@tsdi/endpoints';
+import { BindServerEvent, CONTENT_DISPOSITION_TOKEN, HttpServConfig, MiddlewareLike, MiddlewareService, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Subject, lastValueFrom } from 'rxjs';
 import { ListenOptions } from 'net';
 import * as http from 'http';
@@ -17,7 +17,7 @@ import { HttpContext } from './context';
  * http server.
  */
 @Injectable()
-export class HttpServer extends Server<HttpContext, HttpServerOpts> implements ListenService<ListenOptions>, MiddlewareService {
+export class HttpServer extends Server<HttpContext, HttpServConfig> implements ListenService<ListenOptions>, MiddlewareService {
 
     @InjectLog() logger!: Logger;
     private destroy$: Subject<void>;
@@ -155,7 +155,7 @@ export class HttpServer extends Server<HttpContext, HttpServerOpts> implements L
             })
     }
 
-    protected validOptions(opts: HttpServerOpts) {
+    protected validOptions(opts: HttpServConfig) {
         const withCredentials = this._secure = opts.protocol !== 'http' && !!(opts.serverOpts as any)?.cert;
         opts.listenOpts = { ...opts.listenOpts!, withCredentials, majorVersion: opts.majorVersion } as ListenOptions;
     }

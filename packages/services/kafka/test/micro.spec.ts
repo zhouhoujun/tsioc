@@ -64,7 +64,7 @@ export class KafkaService {
         ServerEndpointModule,
         ClientModule.register({
             transport: 'kafka',
-            clientOpts: {
+            config: {
                 // connectOpts: {
                 //     port: 6379
                 // },
@@ -72,7 +72,6 @@ export class KafkaService {
             }
         }),
         EndpointModule.register({
-            microservice: true,
             transport: 'kafka'
         }),
         // KafkaMicroServiceModule.withOption({

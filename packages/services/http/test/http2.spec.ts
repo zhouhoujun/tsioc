@@ -32,7 +32,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
             },
             {
                 transport: 'http',
-                clientOpts: {
+                config: {
                     authority: 'http://localhost:3200',
                     connectOpts: {
                         // ca: cert
@@ -43,13 +43,13 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
         EndpointModule.register([
             {
                 transport: 'ws',
-                serverOpts: {
+                config: {
                     heybird: true
                 }
             },
             {
                 transport: 'http',
-                serverOpts: {
+                config: {
                     majorVersion: 2,
                     serverOpts: {
                         // allowHTTP1: true,

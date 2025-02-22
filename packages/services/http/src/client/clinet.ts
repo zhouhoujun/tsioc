@@ -14,7 +14,7 @@ import * as http from 'http';
 import * as https from 'https';
 import * as http2 from 'http2';
 import { HttpHandler } from './handler';
-import { HttpClientOpts } from './options';
+import { HttpClientConfig } from './options';
 
 
 
@@ -39,7 +39,7 @@ export type HttpReqOptions = HttpRequestOpts & HttpNodeOpts;
  * http client for nodejs
  */
 @Injectable()
-export class Http extends AbstractClient<UrlRequestOptions, HttpRequest<any>, HttpEvent<any>, HttpClientOpts> {
+export class Http extends AbstractClient<UrlRequestOptions, HttpRequest<any>, HttpEvent<any>, HttpClientConfig> {
 
     private transport?: ClientTransport<http2.ClientHttp2Session | null> | null;
     constructor(readonly handler: HttpHandler) {
@@ -98,7 +98,7 @@ export class Http extends AbstractClient<UrlRequestOptions, HttpRequest<any>, Ht
         return !connection.closed && !connection.destroyed;
     }
 
-    protected createConnection(opts: HttpClientOpts): http2.ClientHttp2Session {
+    protected createConnection(opts: HttpClientConfig): http2.ClientHttp2Session {
         return http2.connect(opts.authority!, opts.connectOpts);
     }
 

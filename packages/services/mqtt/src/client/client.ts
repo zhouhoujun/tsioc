@@ -7,7 +7,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import * as mqtt from 'mqtt';
 import { Observable } from 'rxjs';
 import { MqttHandler } from './handler';
-import { MqttClientOpts, MqttReqOptions } from './options';
+import { MqttClientConfig, MqttReqOptions } from './options';
 import { MqttRequest } from './request';
 
 
@@ -15,7 +15,7 @@ import { MqttRequest } from './request';
  * mqtt client.
  */
 @Injectable()
-export class MqttClient extends AbstractClient<MqttReqOptions, MqttRequest<any>, ResponseEvent<any>, MqttClientOpts> {
+export class MqttClient extends AbstractClient<MqttReqOptions, MqttRequest<any>, ResponseEvent<any>, MqttClientConfig> {
 
     @InjectLog()
     private logger?: Logger;

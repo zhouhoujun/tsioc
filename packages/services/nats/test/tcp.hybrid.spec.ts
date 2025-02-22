@@ -32,7 +32,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
             {
                 transport: 'tcp',
                 microservice: false,
-                serverOpts: {
+                config: {
                     interceptors: [
                         BigFileInterceptor,
                         ContentInterceptor,
@@ -43,7 +43,7 @@ import { BigFileInterceptor } from './BigFileInterceptor';
             },
             {
                 transport: 'nats',
-                serverOpts: {
+                config: {
                     interceptors: [
                         BigFileInterceptor,
                         ContentInterceptor,
