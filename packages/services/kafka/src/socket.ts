@@ -1,7 +1,7 @@
 import { isArray, isNumber, isString } from '@tsdi/ioc';
 import { ContextToken } from '@tsdi/core';
 import { isBuffer, BadRequestExecption, TransportContext } from '@tsdi/common/transport';
-import { IHeaders, Consumer, Producer, ConsumerSubscribeTopics, ConsumerRunConfig, EachMessagePayload, CompressionTypes } from 'kafkajs';
+import { IHeaders, Consumer, Producer, ConsumerSubscribeTopics, ConsumerRunConfig, EachMessagePayload, CompressionTypes, Message, ProducerRecord } from 'kafkajs';
 import { BehaviorSubject, filter, map, Observable } from 'rxjs';
 
 
@@ -52,23 +52,14 @@ export class KafkaSocket {
         )
     }
 
-    async publish(topic: string, payload: string | Buffer | null, options?: {
-        acks?: number
-        timeout?: number
-        compression?: CompressionTypes
-    }) {
+    async publish(topic: string, messages: Message[], options?: Omit<ProducerRecord, 'topic' | 'messages'>) {
 
         if (!topic) throw new BadRequestExecption();
 
         this.producer.send({
-            topic,
             ...options,
-            messages: [
-                {
-                    value: payload ?? Buffer.alloc(0),
-                    // options
-                }
-            ]
+            topic,
+            messages
         })
     }
 

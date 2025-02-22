@@ -2,7 +2,7 @@ import { Token, tokenId } from '@tsdi/ioc';
 import { Filter, Interceptor } from '@tsdi/core';
 import { Pattern, ResponseEvent } from '@tsdi/common';
 import { ClientConfig } from '@tsdi/common/client';
-import { ConsumerConfig, ConsumerRunConfig, KafkaConfig, ProducerConfig } from 'kafkajs';
+import { ConsumerConfig, ConsumerRunConfig, KafkaConfig, ProducerConfig, ProducerRecord } from 'kafkajs';
 import { KafkaRequest } from './request';
 
 /**
@@ -14,9 +14,11 @@ export interface KafkaClientConfig extends ClientConfig<KafkaConfig> {
     consumer?: ConsumerConfig;
     producer?: ProducerConfig;
     consumerAssignments?: Record<string, number>;
-    runConfig?:ConsumerRunConfig;
+    runConfig?: ConsumerRunConfig;
     fromBeginning?: boolean;
-    
+
+    publishOpts?: Omit<ProducerRecord, 'topic' | 'messages'>;
+
     keepBinary?: boolean;
     producerOnlyMode?: boolean;
 

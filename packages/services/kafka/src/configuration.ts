@@ -19,8 +19,10 @@ import {
     execptionSerializeInterceptor, lengthLimitSerializeInterceptor,
     SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
     TopicRequestContext,
-    contextBodySerializeBackend
+    contextBodySerializeBackend,
+    RouteMatcher
 } from '@tsdi/endpoints';
+import { IHeaders } from 'kafkajs';
 import { map } from 'rxjs';
 import { KafkaClient } from './client/client';
 import { KAFKA_CLIENT_FILTERS, KAFKA_CLIENT_INTERCEPTORS, KafkaClientConfig } from './client/options';
@@ -30,16 +32,15 @@ import { KAFKA_SERV_FILTERS, KAFKA_SERV_GUARDS, KAFKA_SERV_INTERCEPTORS, KafkaSe
 import { KafkaRequestHandler } from './server/handler';
 import { KafkaRequest } from './client/request';
 import { KafkaSocket, KAFKA_MESSAGE, parseHead, generHead } from './socket';
-import { KafkaPatternFormatter } from './pattern';
+import { KafkaPatternFormatter, KafkaRouteMatcher } from './pattern';
 import { DEFAULT_BROKERS, KafkaHeaders } from './const';
-import { IHeaders } from 'kafkajs';
 
 
 
-const sizeLimit = 1048576; // 1024 * 1024;
-// const defaultMaxSize = 524288; //1024 * 512;
+// const sizeLimit = 1048576; // 1024 * 1024;
+const sizeLimit = 5242880; //1024 * 1024 * 5;
 
-const attachHeaders: InterceptorFn = (input: any, next: HandlerFn, context: TransportContext) => {
+const attachIncomingHeaders: InterceptorFn = (input: any, next: HandlerFn, context: TransportContext) => {
     return next(input, context)
         .pipe(
             map(body => {
@@ -124,13 +125,16 @@ export class KafkaConfiguration {
                                         const headers = {} as IHeaders;
                                         req.headers.forEach((n, v) => {
                                             headers[n] = generHead(v);
-                                        })
-                                        if(req.id) headers[KafkaHeaders.CORRELATION_ID] = generHead(req.id);
-                                        return socket.publish(req.topic, msg ?? Buffer.alloc(0), {
-                                            // ...options.publishOpts,
-                                            reply: req.responseTopic,
-                                            headers
-                                        })
+                                        });
+                                        if (req.id) headers[KafkaHeaders.CORRELATION_ID] = generHead(req.id);
+                                        return socket.publish(req.topic, [
+                                            {
+                                                value: msg ?? Buffer.alloc(0),
+                                                headers
+                                            }
+                                        ],
+                                            options.publishOpts
+                                        )
                                     }
                                 )
                             },
@@ -157,7 +161,7 @@ export class KafkaConfiguration {
                 deserializerConfig: {
                     interceptors: [
                         deatchPacketIdInterceptor,
-                        attachHeaders
+                        attachIncomingHeaders
                     ]
                 },
                 transportOptions: {
@@ -168,7 +172,8 @@ export class KafkaConfiguration {
                 ]
             },
             providers: [
-                { provide: PatternFormatter, useClass: KafkaPatternFormatter }
+                { provide: PatternFormatter, useClass: KafkaPatternFormatter },
+                { provide: RouteMatcher, useClass: KafkaRouteMatcher }
             ]
         }
     }
@@ -213,13 +218,18 @@ export class KafkaConfiguration {
                                         requestContext.request.headers.forEach((n, v) => {
                                             headers[n] = generHead(v);
                                         });
-                                        if(requestContext.request.id) headers[KafkaHeaders.CORRELATION_ID] = String(requestContext.request.id);
-                                        if(requestContext.status) headers['status']= requestContext.status;
-                                        if(requestContext.statusMessage) headers['statusMessage'] = requestContext.statusMessage;
+                                        if (requestContext.request.id) headers[KafkaHeaders.CORRELATION_ID] = String(requestContext.request.id);
+                                        if (requestContext.status) headers['status'] = requestContext.status;
+                                        if (requestContext.statusMessage) headers['statusMessage'] = requestContext.statusMessage;
 
-                                        return socket.publish(requestContext.responseTopic, msg ?? Buffer.alloc(0), {
-                                            ...options.publishOpts,
-                                            headers
+                                        return socket.publish(requestContext.responseTopic,
+                                            [
+                                                {
+                                                    value: msg ?? Buffer.alloc(0),
+                                                    headers
+                                                }
+                                            ], {
+                                            ...options.publishOpts
                                         })
                                     }
                                 )
@@ -248,7 +258,7 @@ export class KafkaConfiguration {
                 },
                 deserializerConfig: {
                     interceptors: [
-                        attachHeaders
+                        attachIncomingHeaders
                     ]
                 },
                 transportOptions: {
@@ -276,7 +286,8 @@ export class KafkaConfiguration {
                 ]
             },
             providers: [
-                { provide: PatternFormatter, useClass: KafkaPatternFormatter }
+                { provide: PatternFormatter, useClass: KafkaPatternFormatter },
+                { provide: RouteMatcher, useClass: KafkaRouteMatcher }
             ]
         }
     }

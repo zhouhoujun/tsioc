@@ -1,7 +1,7 @@
 import { GuardLike, Filter, Interceptor } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ServiceConfig } from '@tsdi/endpoints';
-import { ConsumerConfig, KafkaConfig, ProducerConfig, ConsumerRunConfig } from 'kafkajs';
+import { ConsumerConfig, KafkaConfig, ProducerConfig, ConsumerRunConfig, ProducerRecord } from 'kafkajs';
 
 
 
@@ -14,6 +14,8 @@ export interface KafkaServConfig extends ServiceConfig<KafkaConfig> {
     producer?: ProducerConfig;
     runConfig?:ConsumerRunConfig;
     fromBeginning?: boolean;
+
+    publishOpts?: Omit<ProducerRecord, 'topic' | 'messages'>;
     
     keepBinary?: boolean;
     detailError?: boolean;
