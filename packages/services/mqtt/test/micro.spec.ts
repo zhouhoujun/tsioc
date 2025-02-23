@@ -168,8 +168,8 @@ describe('Mqtt Micro Service', () => {
                     return of(err);
                 })));
 
-        // expect(a).toBeInstanceOf(ErrorResponse);
-        expect(a.message).toEqual('Timeout has occurred');
+        expect(a).toBeInstanceOf(ErrorResponse);
+        expect(a.statusMessage).toEqual('Timeout has occurred');
     });
 
     it('sensor.message/+ message', async () => {
@@ -200,8 +200,8 @@ describe('Mqtt Micro Service', () => {
                     return of(err);
                 })));
 
-        // expect(a).toBeInstanceOf(ErrorResponse);
-        expect(a.message).toEqual('Timeout has occurred');
+        expect(a).toBeInstanceOf(ErrorResponse);
+        expect(a.statusMessage).toEqual('Timeout has occurred');
     });
 
     it('sensor/message/+ message', async () => {
@@ -264,8 +264,8 @@ describe('Mqtt Micro Service', () => {
                     return of(err);
                 })));
 
-        // expect(a).toBeInstanceOf(ErrorResponse);
-        expect(a.message).toEqual('Timeout has occurred');
+        expect(a).toBeInstanceOf(ErrorResponse);
+        expect(a.statusMessage).toEqual('Timeout has occurred');
     });
 
 

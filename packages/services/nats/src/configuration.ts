@@ -3,7 +3,7 @@ import { Bean, Configuration, ExecptionHandlerFilter, HandlerFn, InterceptorFn }
 import { DefaultResponseFactory, HeaderAdapter, IHeaders, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
-    FileAdapter, MimeAdapter, NotSupportedExecption, Packet,
+    FileAdapter, MimeAdapter, NotSupportedExecption, Packet, bodyDesrializeBackend,
     messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory,
     TransportContext,
@@ -99,7 +99,10 @@ export class NatsConfiguration {
                                         backend: requestBodySerializeBackend,
                                         ...options.serializerConfig
                                     }),
-                                    deserializerFactory.create(injector, options.deserializerConfig),
+                                    deserializerFactory.create(injector, {
+                                        backend: bodyDesrializeBackend,
+                                        ...options.deserializerConfig
+                                    }),
                                     formatter,
                                     statusAdapter,
                                     headerAdapter,
@@ -185,7 +188,10 @@ export class NatsConfiguration {
                                         backend: contextBodySerializeBackend,
                                         ...options.serializerConfig
                                     }),
-                                    deserializerFactory.create(injector, options.deserializerConfig),
+                                    deserializerFactory.create(injector, {
+                                        backend: bodyDesrializeBackend,
+                                        ...options.deserializerConfig
+                                    }),
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,

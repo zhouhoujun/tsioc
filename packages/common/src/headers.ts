@@ -75,6 +75,7 @@ export class HeaderMappings<T extends Header = Header> implements HeaderAccess<T
     }
 
     setHeaders(headers: HeadersLike): void {
+        if(!headers) return;
         if (headers.getHeaderNames) {
             (headers as HeaderAccess).getHeaderNames().forEach(n => this.set(n, (headers as HeaderAccess).getHeader(n) as T))
         } else {

@@ -7,6 +7,7 @@ export class DefaultHeaderAdapter implements HeaderAdapter {
 
 
     hasHeader(headers: HeadersLike, header: string): boolean {
+        if (!headers) return false;
         return headers.hasHeader ? (headers as HeaderAccess).hasHeader(header) : isDefined((headers as IHeaders)[header]);
     }
 
@@ -15,10 +16,12 @@ export class DefaultHeaderAdapter implements HeaderAdapter {
     }
 
     getHeaders(headers: HeadersLike): IHeaders {
+        if (!headers) return null!;
         return (headers as HeaderAccess).getHeaders ? (headers as HeaderAccess).getHeaders() : headers as IHeaders;
     }
 
     setHeader<T extends HeadersLike>(headers: T, header: string, value: Header): T {
+        if (!headers) return headers;
         if (headers.setHeader) {
             let res: any;
             if (isNil(value)) {
@@ -40,6 +43,7 @@ export class DefaultHeaderAdapter implements HeaderAdapter {
     }
 
     removeHeader<T extends HeadersLike>(headers: T, header: string): T {
+        if (!headers) return headers;
         if (headers.removeHeader) {
             const res = (headers as HeaderAccess).removeHeader(header);
             if (res) {
@@ -52,6 +56,7 @@ export class DefaultHeaderAdapter implements HeaderAdapter {
     }
 
     removeHeaders<T extends HeadersLike>(headers: T): T {
+        if (!headers) return headers;
         if (headers.getHeaderNames) {
             (headers as HeaderAccess).getHeaderNames().forEach(n => (headers as HeaderAccess).removeHeader(n))
         } else {

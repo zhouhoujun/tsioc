@@ -1,4 +1,5 @@
 import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
+import { Context } from '@tsdi/core';
 import { LOCALHOST, Pattern, RequestInitOpts, ResponseEvent, TopicRequestOptions } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ev } from '@tsdi/common/transport';
@@ -8,7 +9,6 @@ import { RedisHandler } from './handler';
 import { RedisClientConfig } from './options';
 import { RedisRequest } from './request';
 import { ReidsSocket } from '../socket';
-import { Context } from '@tsdi/core';
 
 /**
  * Redis Client.

@@ -165,7 +165,7 @@ export class PayloadDeserializeInterceptor implements Interceptor<Packet, Incomi
                 }
                 return defer(async () => {
                     streamAdapter.pipeTo(payload, msg.body!);
-                    const contentLength = headerAdapter?.getContentLength(msg.headers) || 0;
+                    const contentLength = headerAdapter?.getContentLength(msg.headers ?? msg) || 0;
                     msg.contentLength += input.contentLength || 0;
                     if ((contentLength + idLen) === msg.contentLength) {
                         this.msgs.delete(id);
@@ -187,7 +187,7 @@ export class PayloadDeserializeInterceptor implements Interceptor<Packet, Incomi
             .pipe(
                 filter(msg => {
                     const incoming = msg as IncomingMessage<IDuplex> & { contentLength: number };
-                    const contentLength = headerAdapter?.getContentLength(incoming.headers);
+                    const contentLength = headerAdapter?.getContentLength(incoming.headers ?? incoming);
                     if (contentLength && incoming.id && !incoming.body) {
                         incoming.contentLength = 0;
                         this.msgs.set(incoming.id, incoming);

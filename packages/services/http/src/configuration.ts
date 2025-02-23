@@ -2,6 +2,7 @@ import { Injectable, InjectFlags, isNil, isString, promisify, tokenId } from '@t
 import { Bean, Configuration, ContextToken, ExecptionHandlerFilter } from '@tsdi/core';
 import { Header, HeaderAdapter, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
+    bodyDesrializeBackend,
     ClientIncoming, ctype, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory, ev,
     FileAdapter, Incoming, IncomingFactory, IReadable, MimeAdapter,
     Redirector, SerializerFactory, StatusAdapter, StreamAdapter, StreamIncomingOptions, TransportContext, UrlClientIncomingFactory,
@@ -88,9 +89,7 @@ export class HttpConfiguration {
                                         ...options.serializerConfig
                                     }),
                                     deserializerFactory.create(injector, {
-                                        backend: (input: any, context: TransportContext) => {
-                                            return of(input)
-                                        },
+                                        backend: bodyDesrializeBackend,
                                         ...options.deserializerConfig
                                     }),
                                     formatter,
@@ -234,9 +233,7 @@ export class HttpConfiguration {
                                         ...options.serializerConfig
                                     }),
                                     deserializerFactory.create(injector, {
-                                        backend: (input, context) => {
-                                            return of(input)
-                                        },
+                                        backend: bodyDesrializeBackend,
                                         ...options.deserializerConfig
                                     }),
                                     statusAdapter,
