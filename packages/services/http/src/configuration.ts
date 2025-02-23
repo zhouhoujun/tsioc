@@ -75,7 +75,7 @@ export class HttpConfiguration {
                 interceptorsToken: HTTP_CLIENT_INTERCEPTORS,
                 filtersToken: HTTP_CLIENT_FILTERS,
                 transportFactory: {
-                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory, formatter: PatternFormatter | null,
+                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
                         statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
                         incomingFactory: UrlClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
                         redirector: Redirector | null) => {
@@ -92,7 +92,6 @@ export class HttpConfiguration {
                                         backend: bodyDesrializeBackend,
                                         ...options.deserializerConfig
                                     }),
-                                    formatter,
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
@@ -185,7 +184,6 @@ export class HttpConfiguration {
                     deps: [
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
-                        [PatternFormatter, InjectFlags.Optional],
                         [HttpStatusAdapter, InjectFlags.Optional],
                         [HeaderAdapter, InjectFlags.Optional],
                         StreamAdapter,

@@ -1,13 +1,14 @@
 import { InjectFlags } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter, HandlerFn, InterceptorFn } from '@tsdi/core';
-import { DefaultResponseFactory, HeaderAdapter, IHeaders as Headers, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
+import { DefaultResponseFactory, HeaderAdapter, IHeaders as Headers, ResponseFactory } from '@tsdi/common';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
     FileAdapter, MimeAdapter, NotSupportedExecption, Packet,
     messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory,
     TransportContext,
-    IReadable
+    IReadable,
+    bodyDesrializeBackend
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
@@ -87,7 +88,7 @@ export class KafkaConfiguration {
                     brokers: DEFAULT_BROKERS
                 },
                 transportFactory: {
-                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory, formatter: PatternFormatter | null,
+                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
                         statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
                         incomingFactory: TopicClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
                         redirector: Redirector | null) => {
@@ -100,8 +101,10 @@ export class KafkaConfiguration {
                                         backend: requestBodySerializeBackend,
                                         ...options.serializerConfig
                                     }),
-                                    deserializerFactory.create(injector, options.deserializerConfig),
-                                    formatter,
+                                    deserializerFactory.create(injector, {
+                                        backend: bodyDesrializeBackend,
+                                        ...options.deserializerConfig
+                                    }),
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
@@ -141,7 +144,6 @@ export class KafkaConfiguration {
                     deps: [
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
-                        [PatternFormatter, InjectFlags.Optional],
                         [StatusAdapter, InjectFlags.Optional],
                         [HeaderAdapter, InjectFlags.Optional],
                         StreamAdapter,
@@ -194,7 +196,10 @@ export class KafkaConfiguration {
                                         backend: contextBodySerializeBackend,
                                         ...options.serializerConfig
                                     }),
-                                    deserializerFactory.create(injector, options.deserializerConfig),
+                                    deserializerFactory.create(injector, {
+                                        backend: bodyDesrializeBackend,
+                                        ...options.deserializerConfig
+                                    }),
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,

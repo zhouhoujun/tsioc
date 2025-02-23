@@ -70,7 +70,7 @@ export class WsConfiguration {
                 interceptorsToken: WS_CLIENT_INTERCEPTORS,
                 filtersToken: WS_CLIENT_FILTERS,
                 transportFactory: {
-                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory, formatter: PatternFormatter | null,
+                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
                         statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
                         incomingFactory: UrlClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
                         redirector: Redirector | null) => {
@@ -86,7 +86,6 @@ export class WsConfiguration {
                                         ...(options.enableStream ? options.streamTransport?.serializerConfig : options.serializerConfig)
                                     }),
                                     deserializerFactory.create(injector, options.enableStream ? options.streamTransport?.deserializerConfig : options.deserializerConfig),
-                                    formatter,
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
@@ -113,7 +112,6 @@ export class WsConfiguration {
                     deps: [
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
-                        [PatternFormatter, InjectFlags.Optional],
                         [StatusAdapter, InjectFlags.Optional],
                         [HeaderAdapter, InjectFlags.Optional],
                         StreamAdapter,

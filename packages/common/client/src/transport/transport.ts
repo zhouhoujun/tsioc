@@ -29,10 +29,6 @@ export abstract class ClientTransport<
      */
     abstract get responseFactory(): ResponseFactory;
     /**
-     * pattern formatter.
-     */
-    abstract get patternFormatter(): PatternFormatter | null;
-    /**
      * incoming transfer
      */
     abstract get transfer(): Transfer<ClientIncoming, ResponseEvent<any>>;

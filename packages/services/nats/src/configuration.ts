@@ -86,7 +86,7 @@ export class NatsConfiguration {
                     servers: `nats://${LOCALHOST}:4222`
                 },
                 transportFactory: {
-                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory, formatter: PatternFormatter | null,
+                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
                         statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
                         incomingFactory: TopicClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
                         redirector: Redirector | null) => {
@@ -103,7 +103,6 @@ export class NatsConfiguration {
                                         backend: bodyDesrializeBackend,
                                         ...options.deserializerConfig
                                     }),
-                                    formatter,
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
@@ -136,7 +135,6 @@ export class NatsConfiguration {
                     deps: [
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
-                        [PatternFormatter, InjectFlags.Optional],
                         [StatusAdapter, InjectFlags.Optional],
                         [HeaderAdapter, InjectFlags.Optional],
                         StreamAdapter,

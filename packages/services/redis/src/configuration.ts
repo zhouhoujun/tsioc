@@ -73,7 +73,7 @@ export class RedisConfiguration {
                 filtersToken: REDIS_CLIENT_FILTERS,
                 formatter: RedisPatternFormatter,
                 transportFactory: {
-                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory, formatter: PatternFormatter | null,
+                    useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
                         statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
                         incomingFactory: TopicClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
                         redirector: Redirector | null) => {
@@ -89,7 +89,6 @@ export class RedisConfiguration {
                                         ...options.serializerConfig
                                     }),
                                     deserializerFactory.create(injector, options.deserializerConfig),
-                                    formatter,
                                     statusAdapter,
                                     headerAdapter,
                                     streamAdapter,
@@ -137,7 +136,6 @@ export class RedisConfiguration {
                     deps: [
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
-                        [PatternFormatter, InjectFlags.Optional],
                         [StatusAdapter, InjectFlags.Optional],
                         [HeaderAdapter, InjectFlags.Optional],
                         StreamAdapter,
