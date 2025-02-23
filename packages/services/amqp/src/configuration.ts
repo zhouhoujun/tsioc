@@ -1,6 +1,6 @@
 import { InjectFlags, isString } from '@tsdi/ioc';
 import { Bean, Configuration, ContextToken, ExecptionHandlerFilter, HandlerFn, InterceptorFn } from '@tsdi/core';
-import { DefaultResponseFactory, HeaderAdapter, HeaderMappings, IHeaders, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
+import { DefaultResponseFactory, HeaderAdapter, HeaderMappings, IHeaders, PatternFormatter, ResponseFactory } from '@tsdi/common';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
     FileAdapter, MimeAdapter, NotSupportedExecption, Packet, bodyDesrializeBackend,
@@ -19,10 +19,9 @@ import {
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
     execptionSerializeInterceptor, lengthLimitSerializeInterceptor,
     SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
-    TopicRequestContext,
-    contextBodySerializeBackend
+    TopicRequestContext, contextBodySerializeBackend
 } from '@tsdi/endpoints';
-import { filter, map } from 'rxjs';
+import { filter, fromEvent, map } from 'rxjs';
 import { AmqpClient } from './client/client';
 import { AMQP_CLIENT_FILTERS, AMQP_CLIENT_INTERCEPTORS, AmqpClientConfig } from './client/options';
 import { AmqpHandler } from './client/handler';
@@ -87,7 +86,7 @@ export class AmqpConfiguration {
                 handlerType: AmqpHandler,
                 interceptorsToken: AMQP_CLIENT_INTERCEPTORS,
                 filtersToken: AMQP_CLIENT_FILTERS,
-                connectOpts: `amqp://${LOCALHOST}`,
+                connectOpts: 'amqp://localhost',
                 queue: 'amqp.queue',
                 replyQueue: 'amqp.queue.reply',
                 transportFactory: {
@@ -119,7 +118,7 @@ export class AmqpConfiguration {
                                     options,
                                     (socket, factory, instance) => {
                                         const req = instance?.get(AmqpRequest);
-                                        return formEvent(socket, ev.MESSAGE, (queue: string, message: ConsumeMessage) => message)
+                                        return fromEvent(socket, ev.MESSAGE, (queue: string, message: ConsumeMessage) => message)
                                             .pipe(
                                                 map((m: ConsumeMessage) => {
                                                     if (m && m.properties.replyTo == options.replyQueue && req?.topic == m.properties.messageId && m.properties.correlationId == req?.id) {
@@ -224,7 +223,7 @@ export class AmqpConfiguration {
                                     options,
                                     (socket, factory, instance) => {
                                         const req = instance?.get(AmqpRequest);
-                                        return formEvent(socket, ev.MESSAGE, (queue: string, message: ConsumeMessage) => message)
+                                        return fromEvent(socket, ev.MESSAGE, (queue: string, message: ConsumeMessage) => message)
                                             .pipe(
                                                 map((m: ConsumeMessage) => {
                                                     if (m && m.properties.replyTo == options.replyQueue && req?.topic == m.fields.routingKey && m.properties.correlationId == req?.id) {
@@ -311,8 +310,5 @@ export class AmqpConfiguration {
         }
     }
 
-}
-function formEvent(socket: Channel, MESSAGE: string, arg2: (queue: string, message: ConsumeMessage) => ConsumeMessage): import("rxjs").Observable<any> {
-    throw new Error('Function not implemented.');
 }
 

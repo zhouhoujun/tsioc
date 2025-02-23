@@ -135,7 +135,7 @@ function clientProviders(options: ClientOptions, idx?: number) {
                 if (microservice) {
                     clientOpts.microservice = microservice;
                 }
-                if (clientOpts.protocol) {
+                if (!clientOpts.protocol) {
                     clientOpts.protocol = options.transport
                 }
 

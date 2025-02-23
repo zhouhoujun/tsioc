@@ -7,8 +7,6 @@ import * as amqp from 'amqplib';
 import { AmqpClientConfig } from './options';
 import { AmqpHandler } from './handler';
 import { AmqpRequest } from './request';
-import { Context } from 'mocha';
-
 
 
 @Injectable()

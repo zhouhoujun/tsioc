@@ -106,7 +106,7 @@ export class Http extends AbstractClient<UrlRequestOptions, HttpRequest<any>, Ht
         return target instanceof HttpRequest
     }
 
-    protected override initContext(context: Context): void {        
+    protected override initContext(context: Context): void {
         context.set(ClientTransport, this.transport);
     }
 
@@ -117,7 +117,8 @@ export class Http extends AbstractClient<UrlRequestOptions, HttpRequest<any>, Ht
     protected override createRequest(pattern: Pattern, options: RequestInitOpts<any, UrlRequestOptions>): HttpRequest<any> {
         let url = this.formatter.format(pattern);
         if (!abstUrlExp.test(url)) {
-            url = joinPath(this.getOptions().url ?? this.getOptions().authority, url);
+            const opts = this.getOptions();
+            url = joinPath(opts.url ?? opts.authority ?? `${opts.protocol}://localhost:3000`, url);
         }
         return new HttpRequest(options.method ?? GET, url, options.body ?? options.payload ?? null, options as any);
     }
