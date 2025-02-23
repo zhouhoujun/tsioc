@@ -71,6 +71,7 @@ export class RedisConfiguration {
                 },
                 interceptorsToken: REDIS_CLIENT_INTERCEPTORS,
                 filtersToken: REDIS_CLIENT_FILTERS,
+                formatter: RedisPatternFormatter,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory, formatter: PatternFormatter | null,
                         statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
@@ -161,9 +162,6 @@ export class RedisConfiguration {
                 },
                 interceptors: [
                     requestTimeoutInterceptor
-                ],
-                providers: [
-                    { provide: PatternFormatter, useClass: RedisPatternFormatter }
                 ]
             }
         }
@@ -274,11 +272,11 @@ export class RedisConfiguration {
                     ExecptionFinalizeFilter,
                     ExecptionHandlerFilter,
                     FinalizeFilter
-                ]
-            },
-            providers: [
-                { provide: PatternFormatter, useClass: RedisPatternFormatter }
-            ]
+                ],
+                routes: {
+                    formatter: RedisPatternFormatter
+                }
+            }
         }
     }
 }

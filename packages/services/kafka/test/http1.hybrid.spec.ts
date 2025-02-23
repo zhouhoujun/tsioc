@@ -24,7 +24,8 @@ import { DeviceController } from './controller';
                 transport: 'kafka'
             },
             {
-                transport: 'http'
+                transport: 'http',
+                config: { url: 'http://localhost:3000' }
             }
         ]),
         EndpointModule.register([

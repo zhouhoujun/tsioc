@@ -81,6 +81,7 @@ export class NatsConfiguration {
                 handlerType: NatsHandler,
                 interceptorsToken: NATS_CLIENT_INTERCEPTORS,
                 filtersToken: NATS_CLIENT_FILTERS,
+                formatter: NatsPatternFormatter,
                 connectOpts: {
                     servers: `nats://${LOCALHOST}:4222`
                 },
@@ -159,10 +160,7 @@ export class NatsConfiguration {
                 interceptors: [
                     requestTimeoutInterceptor
                 ]
-            },
-            providers: [
-                { provide: PatternFormatter, useClass: NatsPatternFormatter }
-            ]
+            }
         }
     }
 
@@ -263,11 +261,11 @@ export class NatsConfiguration {
                     ExecptionFinalizeFilter,
                     ExecptionHandlerFilter,
                     FinalizeFilter
-                ]
-            },
-            providers: [
-                { provide: PatternFormatter, useClass: NatsPatternFormatter }
-            ]
+                ],
+                routes: {
+                    formatter: NatsPatternFormatter
+                }
+            }
         }
     }
 

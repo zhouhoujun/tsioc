@@ -18,9 +18,7 @@ import {
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
     execptionSerializeInterceptor, lengthLimitSerializeInterceptor,
     SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
-    TopicRequestContext,
-    contextBodySerializeBackend,
-    RouteMatcher
+    TopicRequestContext, contextBodySerializeBackend
 } from '@tsdi/endpoints';
 import { IHeaders } from 'kafkajs';
 import { map } from 'rxjs';
@@ -114,7 +112,7 @@ export class KafkaConfiguration {
                                     options,
                                     (socket, factory, instance) => {
                                         const req = instance?.get(KafkaRequest);
-                                        req && socket.subscribe([req.responseTopic], options);
+                                        // req && socket.subscribe([req.responseTopic], options);
                                         return socket.getPacket(factory, r => req ? r.topic == req.responseTopic : true, instance)
                                     },
 
@@ -169,12 +167,9 @@ export class KafkaConfiguration {
                 },
                 interceptors: [
                     requestTimeoutInterceptor
-                ]
-            },
-            providers: [
-                { provide: PatternFormatter, useClass: KafkaPatternFormatter },
-                { provide: RouteMatcher, useClass: KafkaRouteMatcher }
-            ]
+                ],
+                formatter: KafkaPatternFormatter
+            }
         }
     }
 
@@ -215,8 +210,9 @@ export class KafkaConfiguration {
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
                                         if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
                                         const headers = {} as IHeaders;
-                                        requestContext.request.headers.forEach((n, v) => {
-                                            headers[n] = generHead(v);
+                                        const reshed = requestContext.headerAdapter.getHeaders(requestContext.response.headers ?? requestContext.response);
+                                        Object.keys(reshed).forEach(n => {
+                                            headers[n] = generHead(reshed[n]);
                                         });
                                         if (requestContext.request.id) headers[KafkaHeaders.CORRELATION_ID] = String(requestContext.request.id);
                                         if (requestContext.status) headers['status'] = requestContext.status;
@@ -283,12 +279,12 @@ export class KafkaConfiguration {
                     ExecptionFinalizeFilter,
                     ExecptionHandlerFilter,
                     FinalizeFilter
-                ]
-            },
-            providers: [
-                { provide: PatternFormatter, useClass: KafkaPatternFormatter },
-                { provide: RouteMatcher, useClass: KafkaRouteMatcher }
-            ]
+                ],
+                routes: {
+                    formatter: KafkaPatternFormatter,
+                    matcher: KafkaRouteMatcher
+                }
+            }
         }
     }
 
