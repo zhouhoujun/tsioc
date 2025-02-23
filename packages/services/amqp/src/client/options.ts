@@ -11,16 +11,12 @@ import { AmqpRequest } from './request';
 /**
  * AMQP client config.
  */
-export interface AmqpClientConfig extends ClientConfig<string | amqp.Options.Connect> {
+export interface AmqpClientConfig extends ClientConfig<string | amqp.Options.Connect>, AmqpSessionOpts {
 
     /**
      * keep alive
      */
     keepalive?: number;
-    /**
-     * transport session options.
-     */
-    transportOpts?: AmqpSessionOpts;
     /**
      * request timeout.
      */

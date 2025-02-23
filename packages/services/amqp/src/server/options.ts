@@ -9,13 +9,12 @@ export type amqpURL = string | amqp.Options.Connect;
 /**
  * amqp service config.
  */
-export interface AmqpServConfig extends ServiceConfig<string | amqp.Options.Connect> {
+export interface AmqpServConfig extends ServiceConfig<string | amqp.Options.Connect>, AmqpSessionOpts {
 
     detailError?: boolean;
     timeout?: number;
     retryAttempts?: number;
     retryDelay?: number;
-    transportOpts?: AmqpSessionOpts & { maxSize?: number};
 }
 
 /**

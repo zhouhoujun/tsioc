@@ -37,7 +37,7 @@ import { NatsPatternFormatter } from './pattern';
 const sizeLimit = 1048576; // 1024 * 1024;
 // const defaultMaxSize = 524288; //1024 * 512;
 
-const attachHeaders: InterceptorFn = (input: any, next: HandlerFn, context: TransportContext) => {
+const attachIncomingHeaders: InterceptorFn = (input: any, next: HandlerFn, context: TransportContext) => {
     return next(input, context)
         .pipe(
             map(body => {
@@ -154,7 +154,7 @@ export class NatsConfiguration {
                 deserializerConfig: {
                     interceptors: [
                         deatchPacketIdInterceptor,
-                        attachHeaders
+                        attachIncomingHeaders
                     ]
                 },
                 transportOptions: {
@@ -242,7 +242,7 @@ export class NatsConfiguration {
                 },
                 deserializerConfig: {
                     interceptors: [
-                        attachHeaders
+                        attachIncomingHeaders
                     ]
                 },
                 transportOptions: {

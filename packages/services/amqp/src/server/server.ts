@@ -3,9 +3,9 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import { ev } from '@tsdi/common/transport';
 import { Server, ServerTransportFactory, ServerTransport, RequestContext } from '@tsdi/endpoints';
 import * as amqp from 'amqplib';
+import { Subject } from 'rxjs';
 import { AmqpServConfig } from './options';
 import { AmqpRequestHandler } from './handler';
-import { Subject } from 'rxjs';
 
 
 
@@ -59,25 +59,22 @@ export class AmqpServer extends Server<RequestContext, AmqpServConfig> {
 
         const channel = this._channel = await this._conn.createChannel();
 
-        const transportOpts = options.transportOpts!;
-
-        if (!transportOpts.noAssert) {
-            await channel.assertQueue(transportOpts.queue!, transportOpts.queueOpts)
+        if (!options.noAssert) {
+            await channel.assertQueue(options.queue!, options.queueOpts)
         }
-        await channel.prefetch(transportOpts.prefetchCount || 0, transportOpts.prefetchGlobal);
+        await channel.prefetch(options.prefetchCount || 0, options.prefetchGlobal);
 
-        await channel.consume(transportOpts.queue!, msg => {
+        await channel.consume(options.queue!, msg => {
             if (!msg) return;
-            channel.emit(ev.MESSAGE, transportOpts.queue, msg)
+            channel.emit(ev.MESSAGE, options.queue, msg)
         }, {
             noAck: true,
-            ...transportOpts.consumeOpts
+            ...options.consumeOpts
         });
 
         const injector = this.handler.injector;
         const session = this._transport = injector.get(ServerTransportFactory).create(injector, channel, options);
-        session.handle(this.handler, this.destroy$)
-        // injector.get(RequestHandler).handle(this.endpoint, session, this.logger, options);
+        session.handle(this.handler, this.destroy$);
 
     }
 

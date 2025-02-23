@@ -60,25 +60,24 @@ export class AmqpClient extends AbstractClient<TopicRequestOptions, AmqpRequest<
     protected async setupChancel(conn: amqp.Connection) {
         this._channel = await conn.createChannel();
         const options = this.getOptions();
-        const transportOpts = options.transportOpts!;
 
         const injector = this.handler.injector;
 
-        if (!transportOpts.noAssert) {
+        if (!options.noAssert) {
             // await chl.assertQueue(transportOpts.queue, transportOpts.queueOpts);
-            await this._channel.assertQueue(transportOpts.replyQueue!, transportOpts.queueOpts)
+            await this._channel.assertQueue(options.replyQueue!, options.queueOpts)
         }
-        await this._channel.prefetch(transportOpts.prefetchCount || 0, transportOpts.prefetchGlobal);
+        await this._channel.prefetch(options.prefetchCount || 0, options.prefetchGlobal);
 
-        await this._channel.consume(transportOpts.replyQueue!, msg => {
+        await this._channel.consume(options.replyQueue!, msg => {
             if (!msg || !this._channel) return;
-            this._channel.emit(ev.MESSAGE, transportOpts.replyQueue, msg)
+            this._channel.emit(ev.MESSAGE, options.replyQueue, msg)
         }, {
             noAck: true,
-            ...transportOpts.consumeOpts
+            ...options.consumeOpts
         });
 
-        this._transport = injector.get(ClientTransportFactory).create(injector, this._channel, transportOpts);
+        this._transport = injector.get(ClientTransportFactory).create(injector, this._channel, options);
     }
 
     protected async createConnection(retrys: number, retryDelay: number): Promise<amqp.Connection> {
