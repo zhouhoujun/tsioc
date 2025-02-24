@@ -9,8 +9,8 @@ export class DefaultHeaderAdapter implements HeaderAdapter {
         return hasHeader(headers, header)
     }
 
-    getHeader(headers: HeadersLike, header: string): string | undefined {
-        return getHeader(headers, header)
+    getHeader<T = number | string>(headers: HeadersLike, header: string, join?: boolean): T | undefined {
+        return getHeader(headers, header, join) as T;
     }
 
     getHeaders(headers: HeadersLike): IHeaders {
@@ -32,16 +32,16 @@ export class DefaultHeaderAdapter implements HeaderAdapter {
         } else if ((headers as HeaderAccess).headers) {
             const hdrs = (headers as HeaderAccess).headers!;
             if (isNil(value)) {
-                if(hdrs.removeHeader) {
+                if (hdrs.removeHeader) {
                     (hdrs as HeaderAccess).removeHeader?.(header);
                 } else {
-                    delete (headers as IHeaders)[header.toLowerCase()];
+                    delete (hdrs as IHeaders)[header.toLowerCase()];
                 }
             } else {
                 if (hdrs.setHeader) {
                     (hdrs as HeaderAccess).setHeader?.(header, value);
                 } else {
-                    (headers as IHeaders)[header.toLowerCase()] = value;
+                    (hdrs as IHeaders)[header.toLowerCase()] = value;
                 }
             }
         } else {
@@ -84,7 +84,7 @@ export class DefaultHeaderAdapter implements HeaderAdapter {
                 (hdrs as HeaderAccess).removeHeaders?.();
             } else {
                 Object.keys(headers).forEach(n => {
-                    delete (headers as IHeaders)[n];
+                    delete (hdrs as IHeaders)[n];
                 })
             }
         } else if (headers.getHeaderNames) {

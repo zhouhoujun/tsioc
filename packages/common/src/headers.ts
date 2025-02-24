@@ -193,7 +193,7 @@ export abstract class HeaderAdapter {
 
     abstract hasHeader(headers: HeadersLike, header: string): boolean;
 
-    abstract getHeader(headers: HeadersLike, header: string, join?: boolean): string | undefined;
+    abstract getHeader<T = number | string>(headers: HeadersLike, header: string, join?: boolean): T | undefined
 
     abstract getHeaders(headers: HeadersLike): IHeaders;
 
@@ -291,7 +291,7 @@ export function hasHeader(headers: HeadersLike | undefined, header: string): boo
     if (headers.hasHeader) return (headers as HeaderAccess).hasHeader?.(header) === true;
     if ((headers as HeaderAccess).headers) {
         const hdrs = (headers as HeaderAccess).headers!;
-        return hdrs.hasHeader ? (hdrs as HeaderMappings).hasHeader(header) : isDefined((headers as IHeaders)[header]);
+        return hdrs.hasHeader ? (hdrs as HeaderMappings).hasHeader(header) : isDefined((hdrs as IHeaders)[header]);
     }
 
     return isDefined((headers as IHeaders)[header])
@@ -304,19 +304,19 @@ export function hasHeader(headers: HeadersLike | undefined, header: string): boo
  * @param join 
  * @returns 
  */
-export function getHeader(headers: HeadersLike | undefined, header: string, join?: boolean): string | undefined {
+export function getHeader(headers: HeadersLike | undefined, header: string, join?: boolean): string | number | undefined {
     if (!headers) return undefined;
     let values: any;
     if (headers.getHeader) {
         values = (headers as HeaderAccess).getHeader!(header)
     } else if ((headers as HeaderAccess).headers) {
         const hdrs = (headers as HeaderAccess).headers!;
-        values = hdrs.getHeader ? (hdrs as HeaderMappings).getHeader(header) : (headers as IHeaders)[header];
+        values = hdrs.getHeader ? (hdrs as HeaderMappings).getHeader(header) : (hdrs as IHeaders)[header];
     } else {
         values = (headers as IHeaders)[header];
     }
     if (isNil(values)) return undefined;
-    return isArray(values) ? (join ? values.join(', ') : String(values[0])) : String(values)
+    return isArray(values) ? (join ? values.join(', ') : String(values[0])) : values
 }
 
 /**
@@ -325,8 +325,8 @@ export function getHeader(headers: HeadersLike | undefined, header: string, join
  * @returns 
  */
 export function getHeaders<T extends Header = Header>(headers: HeadersLike<T> | undefined): IHeaders<T> | undefined {
-    if(!headers) return headers;
-    if(headers.getHeaders) return (headers as HeaderAccess).getHeaders?.() as IHeaders<T>;
+    if (!headers) return headers;
+    if (headers.getHeaders) return (headers as HeaderAccess).getHeaders?.() as IHeaders<T>;
     if ((headers as HeaderAccess).headers) {
         const hdrs = (headers as HeaderAccess).headers!;
         return hdrs.getHeaders ? (hdrs as HeaderMappings).getHeaders() : hdrs as IHeaders<T>;

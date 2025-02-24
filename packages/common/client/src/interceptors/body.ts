@@ -17,16 +17,16 @@ export const bodyServializeInterceptor: InterceptorFn<AbstractRequest<any> & Req
 
     const transport = req.context.get(ClientTransport)!;
     let body = req.serializeBody ? req.serializeBody(req.body) : serializeBody(transport.streamAdapter, req.body);
-    if (body == null || !transport.headerAdapter) {
+    if (body == null) {
         return next(req, context);
     }
     return defer(async () => {
         let headers = req.headers;
         const contentType = req.detectContentTypeHeader ? req.detectContentTypeHeader(req.body) : detectContentTypeHeader(transport.streamAdapter, req.body);
-        if (!transport.headerAdapter!.hasContentType(headers) && contentType) {
-            headers = transport.headerAdapter!.setContentType(headers, contentType);
+        if (!transport.headerAdapter.hasContentType(headers) && contentType) {
+            headers = transport.headerAdapter.setContentType(headers, contentType);
         }
-        if (!transport.headerAdapter!.hasContentLength(headers)) {
+        if (!transport.headerAdapter.hasContentLength(headers)) {
             if (isBlob(body)) {
                 const arrbuff = await body.arrayBuffer();
                 body = Buffer.from(arrbuff);
@@ -40,7 +40,7 @@ export const bodyServializeInterceptor: InterceptorFn<AbstractRequest<any> & Req
                 }
                 body = (body as any).getBuffer();
             }
-            headers = transport.headerAdapter!.setContentLength(headers, Buffer.byteLength(body as Buffer));
+            headers = transport.headerAdapter.setContentLength(headers, Buffer.byteLength(body as Buffer));
         }
 
         return req.clone({ body, headers });

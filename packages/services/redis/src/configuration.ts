@@ -74,7 +74,7 @@ export class RedisConfiguration {
                 formatter: RedisPatternFormatter,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
-                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
+                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter, streamAdapter: StreamAdapter,
                         incomingFactory: TopicClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
                         redirector: Redirector | null) => {
                         const decoder = new TextDecoder();
@@ -137,7 +137,7 @@ export class RedisConfiguration {
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
                         [StatusAdapter, InjectFlags.Optional],
-                        [HeaderAdapter, InjectFlags.Optional],
+                        HeaderAdapter,
                         StreamAdapter,
                         TopicClientIncomingFactory,
                         DefaultClientTransferFactory,
@@ -174,7 +174,7 @@ export class RedisConfiguration {
                 handlerType: RedisRequestHandler,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
-                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
+                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter, streamAdapter: StreamAdapter,
                         fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
                         incomingFactory: TopicClientIncomingFactory, outgoingFactory: TopicOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         const decoder = new TextDecoder();
@@ -230,7 +230,7 @@ export class RedisConfiguration {
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
                         [StatusAdapter, InjectFlags.Optional],
-                        [HeaderAdapter, InjectFlags.Optional],
+                        HeaderAdapter,
                         StreamAdapter,
                         FileAdapter,
                         [MimeAdapter, InjectFlags.Optional],

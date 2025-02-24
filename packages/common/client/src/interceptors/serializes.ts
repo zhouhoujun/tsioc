@@ -60,7 +60,7 @@ export const requestSerializeBackend: BackendFn<AbstractRequest<any>> = (input: 
 
     if (transport.streamAdapter.isReadable(input.body)) {
 
-        let contentLength = transport.headerAdapter?.getContentLength(headers) ?? 0;
+        let contentLength = transport.headerAdapter.getContentLength(headers) ?? 0;
 
         if (id) {
             const idLen = transport.options.idLen ?? 2;

@@ -68,7 +68,7 @@ export class MergePacketInterceptor implements Interceptor<Packet, IncomingMessa
         const cached = this.packs.get(packet.id);
 
         if (!cached) {
-            if (packet.headers && !headerAdapter?.getContentLength(packet.headers)) {
+            if (packet.headers && !headerAdapter.getContentLength(packet.headers)) {
                 throw new PacketLengthException('has not content length!');
             }
             const payload = packet.payload;

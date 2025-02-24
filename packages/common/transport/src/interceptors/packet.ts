@@ -165,7 +165,7 @@ export class PayloadDeserializeInterceptor implements Interceptor<Packet, Incomi
                 }
                 return defer(async () => {
                     streamAdapter.pipeTo(payload, msg.body!);
-                    const contentLength = headerAdapter?.getContentLength(msg) || 0;
+                    const contentLength = headerAdapter.getContentLength(msg) || 0;
                     msg.contentLength += input.contentLength || 0;
                     if ((contentLength + idLen) === msg.contentLength) {
                         this.msgs.delete(id);
@@ -187,7 +187,7 @@ export class PayloadDeserializeInterceptor implements Interceptor<Packet, Incomi
             .pipe(
                 filter(msg => {
                     const incoming = msg as IncomingMessage<IDuplex> & { contentLength: number };
-                    const contentLength = headerAdapter?.getContentLength(incoming);
+                    const contentLength = headerAdapter.getContentLength(incoming);
                     if (contentLength && incoming.id && !incoming.body) {
                         incoming.contentLength = 0;
                         this.msgs.set(incoming.id, incoming);
@@ -227,7 +227,7 @@ export const deatchPacketIdInterceptor: InterceptorFn<any, IncomingMessage> = (i
  */
 export const messageVaildateInterceptor: InterceptorFn<OutgoingMessage, Packet> = (input: OutgoingMessage, next: HandlerFn, context: TransportContext) => {
     const { injector, headerAdapter, options, client } = context.transport as AbstractTransport;
-    const length = headerAdapter?.getContentLength(input);
+    const length = headerAdapter.getContentLength(input);
     const sizeLimit = options.maxSize ?? options.limit;
     if (length && sizeLimit && length > sizeLimit) {
         const btpipe = injector.get<PipeTransform>('bytes-format');

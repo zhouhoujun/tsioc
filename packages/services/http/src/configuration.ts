@@ -76,7 +76,7 @@ export class HttpConfiguration {
                 filtersToken: HTTP_CLIENT_FILTERS,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
-                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
+                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter, streamAdapter: StreamAdapter,
                         incomingFactory: UrlClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
                         redirector: Redirector | null) => {
                         return {
@@ -185,7 +185,7 @@ export class HttpConfiguration {
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
                         [HttpStatusAdapter, InjectFlags.Optional],
-                        [HeaderAdapter, InjectFlags.Optional],
+                        HeaderAdapter,
                         StreamAdapter,
                         UrlClientIncomingFactory,
                         DefaultClientTransferFactory,
@@ -218,7 +218,7 @@ export class HttpConfiguration {
                 execptionHandlers: HttpExecptionHandlers,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
-                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
+                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter, streamAdapter: StreamAdapter,
                         fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
                         incomingFactory: HttpIncomingFactory, outgoingFactory: UrlOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
@@ -288,7 +288,7 @@ export class HttpConfiguration {
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
                         [HttpStatusAdapter, InjectFlags.Optional],
-                        [HeaderAdapter, InjectFlags.Optional],
+                        HeaderAdapter,
                         StreamAdapter,
                         FileAdapter,
                         [MimeAdapter, InjectFlags.Optional],

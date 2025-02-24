@@ -60,7 +60,7 @@ export class UdpConfiguration {
                 filtersToken: UDP_CLIENT_FILTERS,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
-                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
+                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter, streamAdapter: StreamAdapter,
                         incomingFactory: UrlClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
                         redirector: Redirector | null) => {
                         return {
@@ -99,7 +99,7 @@ export class UdpConfiguration {
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
                         [StatusAdapter, InjectFlags.Optional],
-                        [HeaderAdapter, InjectFlags.Optional],
+                        HeaderAdapter,
                         StreamAdapter,
                         UrlClientIncomingFactory,
                         DefaultClientTransferFactory,
@@ -135,7 +135,7 @@ export class UdpConfiguration {
                 guardsToken: UDP_SERV_GUARDS,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
-                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
+                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter, streamAdapter: StreamAdapter,
                         fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
                         incomingFactory: UrlClientIncomingFactory, outgoingFactory: UrlOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
@@ -179,7 +179,7 @@ export class UdpConfiguration {
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
                         [StatusAdapter, InjectFlags.Optional],
-                        [HeaderAdapter, InjectFlags.Optional],
+                        HeaderAdapter,
                         StreamAdapter,
                         FileAdapter,
                         [MimeAdapter, InjectFlags.Optional],

@@ -87,7 +87,7 @@ export class NatsConfiguration {
                 },
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
-                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
+                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter, streamAdapter: StreamAdapter,
                         incomingFactory: TopicClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
                         redirector: Redirector | null) => {
                         return {
@@ -136,7 +136,7 @@ export class NatsConfiguration {
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
                         [StatusAdapter, InjectFlags.Optional],
-                        [HeaderAdapter, InjectFlags.Optional],
+                        HeaderAdapter,
                         StreamAdapter,
                         TopicClientIncomingFactory,
                         DefaultClientTransferFactory,
@@ -174,7 +174,7 @@ export class NatsConfiguration {
                 handlerType: NatsRequestHandler,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
-                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
+                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter, streamAdapter: StreamAdapter,
                         fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
                         incomingFactory: TopicClientIncomingFactory, outgoingFactory: TopicOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
@@ -222,7 +222,7 @@ export class NatsConfiguration {
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
                         [StatusAdapter, InjectFlags.Optional],
-                        [HeaderAdapter, InjectFlags.Optional],
+                        HeaderAdapter,
                         StreamAdapter,
                         FileAdapter,
                         [MimeAdapter, InjectFlags.Optional],

@@ -84,7 +84,7 @@ export class TcpConfiguration {
                 filtersToken: TCP_CLIENT_FILTERS,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
-                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
+                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter, streamAdapter: StreamAdapter,
                         incomingFactory: UrlClientIncomingFactory, transferFactory: ClientTransferFactory, responseFactory: ResponseFactory,
                         redirector: Redirector | null) => {
                         return {
@@ -113,7 +113,7 @@ export class TcpConfiguration {
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
                         [StatusAdapter, InjectFlags.Optional],
-                        [HeaderAdapter, InjectFlags.Optional],
+                        HeaderAdapter,
                         StreamAdapter,
                         UrlClientIncomingFactory,
                         DefaultClientTransferFactory,
@@ -154,7 +154,7 @@ export class TcpConfiguration {
                 handlerType: TcpRequestHandler,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
-                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter | null, streamAdapter: StreamAdapter,
+                        statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter, streamAdapter: StreamAdapter,
                         fileAdapter: FileAdapter, mimeAdapter: MimeAdapter | null, acceptsPriority: AcceptsPriority | null,
                         incomingFactory: UrlIncomingFactory, outgoingFactory: UrlOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
@@ -185,7 +185,7 @@ export class TcpConfiguration {
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
                         [StatusAdapter, InjectFlags.Optional],
-                        [HeaderAdapter, InjectFlags.Optional],
+                        HeaderAdapter,
                         StreamAdapter,
                         FileAdapter,
                         [MimeAdapter, InjectFlags.Optional],

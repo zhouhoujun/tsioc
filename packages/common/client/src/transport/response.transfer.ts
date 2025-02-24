@@ -29,7 +29,7 @@ export const errorResponseInterceptor: InterceptorFn<ClientIncoming<any>, Respon
 
 
 export const emptyResponseInterceptor: InterceptorFn<ClientIncoming<any>, ResponseEvent<any>> = (input: ClientIncoming<any>, next: HandlerFn, context: TransportContext) => {
-    const len = context.transport.headerAdapter?.getContentLength(input);
+    const len = context.transport.headerAdapter.getContentLength(input);
     const transport = context.transport as ClientTransport;
     if (input.ok !== false && !input.error && (!len || transport.statusAdapter?.isEmpty(input.status ?? input.statusCode))) {
         input.body = null;
@@ -45,7 +45,7 @@ export const redirectInterceptor: InterceptorFn<ClientIncoming<any>, ResponseEve
     if (transport.redirector) {
         if (transport.statusAdapter?.isRedirect(input.status ?? input.statusCode)) {
             // HTTP fetch step 5.2
-            return transport.redirector.redirect<ResponseEvent<any>>(context.get(AbstractRequest)!, input.status ?? input.statusCode, context.transport.headerAdapter?.getHeaders(input) ?? input.headers!, context.transport.protocol);
+            return transport.redirector.redirect<ResponseEvent<any>>(context.get(AbstractRequest)!, input.status ?? input.statusCode, context.transport.headerAdapter.getHeaders(input) ?? input.headers!, context.transport.protocol);
         }
     }
     return next(input, context);
@@ -56,7 +56,7 @@ export const compressResponseInterceptor: InterceptorFn<ClientIncoming<any>, Res
     return defer(async () => {
         const response = input;
         const transport = context.transport as ClientTransport;
-        const codings = transport.headerAdapter?.getContentEncoding(response);
+        const codings = transport.headerAdapter.getContentEncoding(response);
         const req = context.get(AbstractRequest)!;
         const streamAdapter = transport.streamAdapter;
         const rqstatus = req.context.get(REQUEST_STAUTS);
@@ -165,7 +165,7 @@ const backenFn = (input: ClientIncoming<any>, context: TransportContext) => {
         const req = context.get(AbstractRequest)!;
         let responseType = req.responseType;
 
-        const contentType = headerAdapter?.getContentType(input);
+        const contentType = headerAdapter.getContentType(input);
         if (contentType && !req.forceJson && responseType === 'json') {
             const mimeAdapter = req.context.get(MimeAdapter);
             if (mimeAdapter && !mimeAdapter.isJson(contentType)) {
@@ -229,7 +229,7 @@ const backenFn = (input: ClientIncoming<any>, context: TransportContext) => {
 
                 case 'blob':
                     body = new Blob([body.subarray(body.byteOffset, body.byteOffset + body.byteLength)], {
-                        type: headerAdapter?.getContentType(input)
+                        type: headerAdapter.getContentType(input)
                     });
                     break;
 

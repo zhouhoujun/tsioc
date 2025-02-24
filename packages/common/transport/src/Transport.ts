@@ -36,7 +36,7 @@ export abstract class Transport<TSocket = any, TIncoming extends Incoming = Inco
     /**
      * header adapter.
      */
-    abstract get headerAdapter(): HeaderAdapter | null;
+    abstract get headerAdapter(): HeaderAdapter;
     /**
      * status adapter.
      */

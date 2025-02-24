@@ -158,7 +158,7 @@ export const emptyStatusSerializeInterceptor: InterceptorFn<RequestContext> = (i
 
 export const headMethodSerializeInterceptor: InterceptorFn<RequestContext> = (input: RequestContext, next: HandlerFn<RequestContext, Packet>, context: TransportContext) => {
     if (input.method?.toUpperCase() == HEAD) {
-        if (!input.headersSent && !input.headerAdapter?.hasContentLength(input.response)) {
+        if (!input.headersSent && !input.headerAdapter.hasContentLength(input.response)) {
             const length = input.length;
             if (Number.isInteger(length)) input.length = length
         }
