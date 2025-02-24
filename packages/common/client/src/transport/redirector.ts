@@ -1,6 +1,6 @@
 /* eslint-disable no-case-declarations */
 import { ArgumentExecption, Injectable, TypeExecption } from '@tsdi/ioc';
-import { HeaderMappings, UrlRequest, RequestMethod, IHeaders, HeadersLike, HeaderAccess, Header } from '@tsdi/common';
+import { HeaderMappings, UrlRequest, RequestMethod, HeadersLike, getHeader } from '@tsdi/common';
 import { BadRequestExecption, Redirector } from '@tsdi/common/transport';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { ClientTransport } from './transport';
@@ -148,9 +148,6 @@ export const referPolicys = new Set([
 
 const splitReg = /[,\s]+/;
 
-export function getHeader(headers: HeadersLike, header: string): Header {
-    return headers.getHeader ? (headers as HeaderAccess).getHeader(header) : (headers as IHeaders)[header]
-}
 
 export function parseReferrerPolicyFromHeader(headers: HeadersLike) {
     const policyTokens = (getHeader(headers, 'referrer-policy') as string || '').split(splitReg);

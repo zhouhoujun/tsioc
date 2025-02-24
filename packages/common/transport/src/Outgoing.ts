@@ -1,4 +1,4 @@
-import { Header, HeadersLike, StatusOptions, HeaderMappings, IHeaders } from '@tsdi/common';
+import { Header, HeadersLike, StatusOptions, HeaderMappings, IHeaders, HeaderAccess } from '@tsdi/common';
 import { IReadable, IWritable } from './stream';
 import { Injectable } from '@tsdi/ioc';
 import { StreamAdapter } from './StreamAdapter';
@@ -9,28 +9,28 @@ import { StreamAdapter } from './StreamAdapter';
 /**
  * Outgoing message
  */
-export interface OutgoingMessage<T = any> {
+export interface OutgoingMessage<T = any, THead extends Header = Header> extends HeaderAccess<THead> {
     id?: number | string;
 
     pattern?: string;
 
-    headers: HeadersLike;
+    // headers: HeadersLike;
 
     body?: T | null;
 
 
-    /**
-     * has header in packet or not.
-     * @param packet 
-     * @param field 
-     */
-    hasHeader?(field: string): boolean;
-    /**
-     * get header from packet.
-     * @param packet 
-     * @param field 
-     */
-    getHeader?(field: string): string | undefined;
+    // /**
+    //  * has header in packet or not.
+    //  * @param packet 
+    //  * @param field 
+    //  */
+    // hasHeader?(field: string): boolean;
+    // /**
+    //  * get header from packet.
+    //  * @param packet 
+    //  * @param field 
+    //  */
+    // getHeader?(field: string): string | undefined;
 
 }
 
@@ -110,7 +110,7 @@ export interface Outgoing<T = any, TStatus = any> extends OutgoingMessage<T> {
      */
     removeHeader(field: string): void;
 
-    
+
     /**
      * get response headers.
      */

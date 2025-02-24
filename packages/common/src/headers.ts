@@ -1,4 +1,4 @@
-import { Abstract, isArray, isNil, isString } from '@tsdi/ioc';
+import { Abstract, isArray, isDefined, isNil, isString } from '@tsdi/ioc';
 
 /**
  * header.
@@ -9,16 +9,6 @@ export type Header = string | readonly string[] | number | undefined | null;
 export interface IHeaders<T extends Header = Header> extends Record<string, T> {
 
 }
-
-export interface HeaderAccess<T extends Header = Header> {
-    hasHeader(header: string): boolean;
-    getHeader(header: string): T;
-    setHeader(header: string, value: T): any;
-    removeHeader(header: string): any;
-    getHeaderNames(): string[];
-    getHeaders(): IHeaders<T>
-}
-
 /**
  * header mappings.
  */
@@ -32,7 +22,7 @@ export class HeaderMappings<T extends Header = Header> implements HeaderAccess<T
      * create headers map.
      * @param headers 
      */
-    constructor(headers?: string | HeadersLike<T>) {
+    constructor(headers?: string | HeadersLike<T> | HeaderAccess<T>) {
 
         this._hdrs = new Map();
         this._normal = new Map();
@@ -74,10 +64,10 @@ export class HeaderMappings<T extends Header = Header> implements HeaderAccess<T
         return this._rcd as IHeaders<any>;
     }
 
-    setHeaders(headers: HeadersLike): void {
-        if(!headers) return;
-        if (headers.getHeaderNames) {
-            (headers as HeaderAccess).getHeaderNames().forEach(n => this.set(n, (headers as HeaderAccess).getHeader(n) as T))
+    setHeaders(headers: HeadersLike | HeaderAccess): void {
+        if (!headers) return;
+        if ((headers as HeaderAccess).getHeaderNames) {
+            (headers as HeaderAccess).getHeaderNames?.().forEach(n => this.set(n, (headers as HeaderAccess).getHeader?.(n) as T))
         } else {
             for (const f in headers) {
                 this.set(f, (headers as IHeaders)[f] as T);
@@ -178,11 +168,24 @@ export class HeaderMappings<T extends Header = Header> implements HeaderAccess<T
 }
 
 
-
 /**
  * Header like
  */
 export type HeadersLike<T extends Header = Header> = IHeaders<T> | HeaderAccess<T> | HeaderMappings<T>;
+
+/**
+ * headr access.
+ */
+export interface HeaderAccess<T extends Header = Header> {
+    headers?: IHeaders<T> | HeaderMappings<T>;
+    hasHeader?(header: string): boolean;
+    getHeader?(header: string): T;
+    setHeader?(header: string, value: T): any;
+    removeHeader?(header: string): any;
+    removeHeaders?(): any;
+    getHeaderNames?(): string[];
+    getHeaders?(): IHeaders<T>
+}
 
 
 @Abstract()
@@ -190,13 +193,13 @@ export abstract class HeaderAdapter {
 
     abstract hasHeader(headers: HeadersLike, header: string): boolean;
 
-    abstract getHeader(headers: HeadersLike, header: string): string | undefined;
-    
+    abstract getHeader(headers: HeadersLike, header: string, join?: boolean): string | undefined;
+
     abstract getHeaders(headers: HeadersLike): IHeaders;
 
-    abstract setHeader<T extends HeadersLike>(headers: T, header: string, value: Header): T;
+    abstract setHeader<T extends HeadersLike>(access: T, header: string, value: Header): T;
 
-    abstract removeHeader<T extends HeadersLike>(headers: T, header: string): T;
+    abstract removeHeader<T extends HeadersLike>(access: T, header: string): T;
 
     abstract removeHeaders<T extends HeadersLike>(headers: T): T;
     /**
@@ -280,3 +283,53 @@ export abstract class HeaderAdapter {
     abstract setLocation<T extends HeadersLike>(headers: T, location: string | undefined): T;
 }
 
+/**
+ * has header.
+ */
+export function hasHeader(headers: HeadersLike | undefined, header: string): boolean {
+    if (!headers) return false;
+    if (headers.hasHeader) return (headers as HeaderAccess).hasHeader?.(header) === true;
+    if ((headers as HeaderAccess).headers) {
+        const hdrs = (headers as HeaderAccess).headers!;
+        return hdrs.hasHeader ? (hdrs as HeaderMappings).hasHeader(header) : isDefined((headers as IHeaders)[header]);
+    }
+
+    return isDefined((headers as IHeaders)[header])
+}
+
+/**
+ * 
+ * @param headers 
+ * @param header 
+ * @param join 
+ * @returns 
+ */
+export function getHeader(headers: HeadersLike | undefined, header: string, join?: boolean): string | undefined {
+    if (!headers) return undefined;
+    let values: any;
+    if (headers.getHeader) {
+        values = (headers as HeaderAccess).getHeader!(header)
+    } else if ((headers as HeaderAccess).headers) {
+        const hdrs = (headers as HeaderAccess).headers!;
+        values = hdrs.getHeader ? (hdrs as HeaderMappings).getHeader(header) : (headers as IHeaders)[header];
+    } else {
+        values = (headers as IHeaders)[header];
+    }
+    if (isNil(values)) return undefined;
+    return isArray(values) ? (join ? values.join(', ') : String(values[0])) : String(values)
+}
+
+/**
+ * get headers
+ * @param headers 
+ * @returns 
+ */
+export function getHeaders<T extends Header = Header>(headers: HeadersLike<T> | undefined): IHeaders<T> | undefined {
+    if(!headers) return headers;
+    if(headers.getHeaders) return (headers as HeaderAccess).getHeaders?.() as IHeaders<T>;
+    if ((headers as HeaderAccess).headers) {
+        const hdrs = (headers as HeaderAccess).headers!;
+        return hdrs.getHeaders ? (hdrs as HeaderMappings).getHeaders() : hdrs as IHeaders<T>;
+    }
+    return headers as IHeaders<T>;
+}

@@ -87,10 +87,10 @@ export abstract class RequestContext<
      * @api public
      */
     set length(n: number | null) {
-        if (!this.headerAdapter.hasContentEncoding(this.response.headers ?? this.response)) {
-            this.headerAdapter.setContentLength(this.response.headers ?? this.response, n)
+        if (!this.headerAdapter.hasContentEncoding(this.response)) {
+            this.headerAdapter.setContentLength(this.response, n)
         } else {
-            this.headerAdapter.setContentLength(this.response.headers ?? this.response, null)
+            this.headerAdapter.setContentLength(this.response, null)
         }
     }
     /**
@@ -100,8 +100,8 @@ export abstract class RequestContext<
      * @api public
      */
     get length(): number | null {
-        if (this.headerAdapter.hasContentLength(this.response.headers ?? this.response)) {
-            return this.headerAdapter.getContentLength(this.response.headers ?? this.response)
+        if (this.headerAdapter.hasContentLength(this.response)) {
+            return this.headerAdapter.getContentLength(this.response)
         }
 
         if (isNil(this.body) || this.streamAdapter.isStream(this.body)) return null
@@ -214,7 +214,7 @@ export abstract class RequestContext<
 
 
         // set the content-type only if not yet set
-        const setType = !this.headerAdapter.hasContentType(this.response.headers ?? this.response);
+        const setType = !this.headerAdapter.hasContentType(this.response);
 
         // string
         if (isString(val)) {
@@ -234,7 +234,7 @@ export abstract class RequestContext<
         if (this.streamAdapter.isStream(val)) {
             if (original != val) {
                 // overwriting
-                if (null != original) this.headerAdapter.setContentLength(this.response.headers ?? this.response, null)
+                if (null != original) this.headerAdapter.setContentLength(this.response, null)
             }
 
             if (setType) this.contentType = ctype.OCTET_STREAM;
@@ -242,7 +242,7 @@ export abstract class RequestContext<
         }
 
         // json
-        this.headerAdapter.setContentLength(this.response.headers ?? this.response, null);
+        this.headerAdapter.setContentLength(this.response, null);
         this.contentType = ctype.APPL_JSON;
     }
 
@@ -290,14 +290,14 @@ export abstract class RequestContext<
      * @returns 
      */
     getContentEncoding() {
-        return this.headerAdapter.getContentEncoding(this.request.headers ?? this.request);
+        return this.headerAdapter.getContentEncoding(this.request);
     }
     /**
      * get request content type
      * @param type 
      */
     getContentType(type: string | null | undefined): string {
-        return this.headerAdapter.getContentType(this.request.headers ?? this.request);
+        return this.headerAdapter.getContentType(this.request);
     }
 
     /**
@@ -305,7 +305,7 @@ export abstract class RequestContext<
      * @param len 
      */
     getContentLength(): number {
-        return this.headerAdapter.getContentLength(this.request.headers ?? this.request);
+        return this.headerAdapter.getContentLength(this.request);
     }
 
     /**
@@ -313,21 +313,21 @@ export abstract class RequestContext<
      * @param len 
      */
     setContentLength(len: number | null) {
-        this.headerAdapter.setContentLength(this.response.headers ?? this.response, len);
+        this.headerAdapter.setContentLength(this.response, len);
     }
     /**
      * set response content encoding.
      * @param encoding 
      */
     setContentEncoding(encoding: string | null) {
-        this.headerAdapter.setContentEncoding(this.response.headers ?? this.response, encoding);
+        this.headerAdapter.setContentEncoding(this.response, encoding);
     }
     /**
      * set response content type
      * @param type 
      */
     setContentType(type: string | null | undefined) {
-        this.headerAdapter.setContentType(this.response.headers ?? this.response, type);
+        this.headerAdapter.setContentType(this.response, type);
     }
 
 
@@ -353,7 +353,7 @@ export abstract class RequestContext<
      * @api public
      */
     getHeader(field: string): string | undefined {
-        return this.headerAdapter.getHeader(this.request.headers ?? this.request, field);
+        return this.headerAdapter.getHeader(this.request, field);
     }
 
 
@@ -362,7 +362,7 @@ export abstract class RequestContext<
      * @param field 
      */
     hasHeader(field: string): boolean {
-        return this.headerAdapter.hasHeader(this.response.headers ?? this.response, field);
+        return this.headerAdapter.hasHeader(this.response, field);
     }
 
     /**
@@ -397,19 +397,26 @@ export abstract class RequestContext<
     setHeader(field: string | HeadersLike, val?: string | number | string[]) {
         if (this.headersSent) return;
         if (val) {
-            this.headerAdapter.setHeader(this.response.headers ?? this.response, field as string, val)
+            this.headerAdapter.setHeader(this.response, field as string, val)
         } else if (field instanceof HeaderMappings) {
             field.forEach((name, values) => {
-                this.headerAdapter.setHeader(this.response.headers ?? this.response, name, values);
+                this.headerAdapter.setHeader(this.response, name, values);
             })
+        } else if ((field as HeaderAccess).getHeaders) {
+            const headers = (field as HeaderAccess).getHeaders?.();
+            if (headers) {
+                for (const key in headers) {
+                    this.headerAdapter.setHeader(this.response, key, headers[key])
+                }
+            }
         } else if ((field as HeaderAccess).getHeaderNames) {
-            (field as HeaderAccess).getHeaderNames().forEach(name => {
-                this.headerAdapter.setHeader(this.response.headers ?? this.response, name, (field as HeaderAccess).getHeader(name));
+            (field as HeaderAccess).getHeaderNames?.().forEach(name => {
+                this.headerAdapter.setHeader(this.response, name, (field as HeaderAccess).getHeader?.(name));
             })
         } else {
             const fields = field as Record<string, string | number | string[]>;
             for (const key in fields) {
-                this.headerAdapter.setHeader(this.response.headers ?? this.response, key, fields[key])
+                this.headerAdapter.setHeader(this.response, key, fields[key])
             }
         }
     }
@@ -431,7 +438,7 @@ export abstract class RequestContext<
      */
     appendHeader(field: string, val: string | number | string[]) {
         if (this.headersSent) return;
-        const prev = this.headerAdapter.getHeader(this.response.headers ?? this.response, field);
+        const prev = this.headerAdapter.getHeader(this.response, field);
         if (prev) {
             val = Array.isArray(prev)
                 ? prev.concat(Array.isArray(val) ? val : String(val))
@@ -449,7 +456,7 @@ export abstract class RequestContext<
     */
     removeHeader(field: string): void {
         if (this.headersSent) return;
-        this.headerAdapter.removeHeader(this.response.headers ?? this.response, field);
+        this.headerAdapter.removeHeader(this.response, field);
     }
 
     /**
@@ -459,7 +466,7 @@ export abstract class RequestContext<
      */
     removeHeaders(): void {
         if (this.headersSent) return;
-        this.headerAdapter.removeHeaders(this.response.headers ?? this.response)
+        this.headerAdapter.removeHeaders(this.response)
     }
 
     /**
@@ -488,13 +495,13 @@ export abstract class RequestContext<
         if (!adapter) return null;
 
         //no body
-        const encoding = this.headerAdapter.getContentEncoding(this.request.headers ?? this.request);
-        const len = this.headerAdapter.getContentLength(this.request.headers ?? this.request);
+        const encoding = this.headerAdapter.getContentEncoding(this.request);
+        const len = this.headerAdapter.getContentLength(this.request);
 
         if (encoding && !len) {
             return null
         }
-        const ctype = this.headerAdapter.getContentType(this.request.headers ?? this.request);
+        const ctype = this.headerAdapter.getContentType(this.request);
         if (!ctype) return false;
         const normaled = adapter.normalize(ctype);
         if (!normaled) return false;
@@ -507,7 +514,7 @@ export abstract class RequestContext<
      * content type.
      */
     get contentType(): string {
-        const ctype = this.headerAdapter.getContentType(this.response.headers ?? this.response);
+        const ctype = this.headerAdapter.getContentType(this.response);
         return (isArray(ctype) ? lang.first(ctype) : ctype) as string ?? ''
     }
     /**
@@ -529,7 +536,7 @@ export abstract class RequestContext<
      * @api public
      */
     set contentType(type: string) {
-        this.headerAdapter.setContentType(this.response.headers ?? this.response, type);
+        this.headerAdapter.setContentType(this.response, type);
     }
 
     /**
@@ -572,14 +579,14 @@ export abstract class RequestContext<
      * @param packet
      */
     get contentEncoding(): string | undefined {
-        return this.headerAdapter.getContentEncoding(this.response.headers ?? this.response)
+        return this.headerAdapter.getContentEncoding(this.response)
     }
     /**
      * Set Content-Encoding.
      */
     set contentEncoding(encoding: string | null | undefined) {
         if (this.headersSent) return;
-        this.headerAdapter.setContentEncoding(this.response.headers ?? this.response, encoding)
+        this.headerAdapter.setContentEncoding(this.response, encoding)
         // if (isNil(encoding)) {
         //     this.resHeaders.setContentEncoding(encoding)
         // } else {
@@ -643,7 +650,7 @@ export abstract class RequestContext<
 
     accepts(...args: string[]): string | string[] | false {
         if (!this.acceptsPriority) return '*';
-        const accepts = this.headerAdapter.getAccept(this.request.headers ?? this.request) ?? '*';
+        const accepts = this.headerAdapter.getAccept(this.request) ?? '*';
         if (!args.length) {
             return accepts ?? false
         }
@@ -665,7 +672,7 @@ export abstract class RequestContext<
     */
     acceptsEncodings(...encodings: string[]): string | string[] | false {
         if (!this.acceptsPriority) return '*';
-        const accepts = this.headerAdapter.getAcceptEncoding(this.request.headers ?? this.request) ?? '*';
+        const accepts = this.headerAdapter.getAcceptEncoding(this.request) ?? '*';
         if (!encodings.length) {
             return accepts
         }
@@ -685,7 +692,7 @@ export abstract class RequestContext<
      */
     acceptsCharsets(...charsets: string[]): string | string[] | false {
         if (!this.acceptsPriority) return '*';
-        const accepts = this.headerAdapter.getAcceptCharset(this.request.headers ?? this.request) ?? '*';
+        const accepts = this.headerAdapter.getAcceptCharset(this.request) ?? '*';
         if (!charsets.length) {
             return accepts
         }
@@ -706,7 +713,7 @@ export abstract class RequestContext<
      */
     acceptsLanguages(...langs: string[]): string | string[] {
         if (!this.acceptsPriority) return '*';
-        const accepts = this.headerAdapter.getAcceptLanguage(this.request.headers ?? this.request) ?? '*';
+        const accepts = this.headerAdapter.getAcceptLanguage(this.request) ?? '*';
         if (!langs.length) {
             return accepts
         }
@@ -744,7 +751,7 @@ export abstract class RequestContext<
             this.type = this.fileAdapter.extname(filename);
         }
         const func = this.get(CONTENT_DISPOSITION_TOKEN);
-        this.headerAdapter.setContentDisposition(this.response.headers ?? this.response, func(filename, options))
+        this.headerAdapter.setContentDisposition(this.response, func(filename, options))
     }
 
     /**

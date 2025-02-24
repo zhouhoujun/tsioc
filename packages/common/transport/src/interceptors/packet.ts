@@ -227,7 +227,7 @@ export const deatchPacketIdInterceptor: InterceptorFn<any, IncomingMessage> = (i
  */
 export const messageVaildateInterceptor: InterceptorFn<OutgoingMessage, Packet> = (input: OutgoingMessage, next: HandlerFn, context: TransportContext) => {
     const { injector, headerAdapter, options, client } = context.transport as AbstractTransport;
-    const length = headerAdapter?.getContentLength(input.headers);
+    const length = headerAdapter?.getContentLength(input);
     const sizeLimit = options.maxSize ?? options.limit;
     if (length && sizeLimit && length > sizeLimit) {
         const btpipe = injector.get<PipeTransform>('bytes-format');

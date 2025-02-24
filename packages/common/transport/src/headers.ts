@@ -1,14 +1,12 @@
-import { Header, HeaderAccess, HeaderAdapter, HeadersLike, IHeaders } from '@tsdi/common';
-import { Injectable, isDefined, isNil } from '@tsdi/ioc';
-import { getHeader } from './utils';
+import { Header, HeaderAccess, HeaderAdapter, HeadersLike, IHeaders, hasHeader, getHeader, getHeaders } from '@tsdi/common';
+import { Injectable, isNil, isTypeObject } from '@tsdi/ioc';
 
 @Injectable()
 export class DefaultHeaderAdapter implements HeaderAdapter {
 
 
     hasHeader(headers: HeadersLike, header: string): boolean {
-        if (!headers) return false;
-        return headers.hasHeader ? (headers as HeaderAccess).hasHeader(header) : isDefined((headers as IHeaders)[header]);
+        return hasHeader(headers, header)
     }
 
     getHeader(headers: HeadersLike, header: string): string | undefined {
@@ -16,8 +14,7 @@ export class DefaultHeaderAdapter implements HeaderAdapter {
     }
 
     getHeaders(headers: HeadersLike): IHeaders {
-        if (!headers) return null!;
-        return (headers as HeaderAccess).getHeaders ? (headers as HeaderAccess).getHeaders() : headers as IHeaders;
+        return getHeaders(headers) as IHeaders;
     }
 
     setHeader<T extends HeadersLike>(headers: T, header: string, value: Header): T {
@@ -25,12 +22,27 @@ export class DefaultHeaderAdapter implements HeaderAdapter {
         if (headers.setHeader) {
             let res: any;
             if (isNil(value)) {
-                res = (headers as HeaderAccess).removeHeader(header);
+                res = this.removeHeader(headers, header);
             } else {
-                res = (headers as HeaderAccess).setHeader(header, value);
+                res = (headers as HeaderAccess).setHeader?.(header, value);
             }
-            if (res) {
+            if (isTypeObject(res)) {
                 headers = res;
+            }
+        } else if ((headers as HeaderAccess).headers) {
+            const hdrs = (headers as HeaderAccess).headers!;
+            if (isNil(value)) {
+                if(hdrs.removeHeader) {
+                    (hdrs as HeaderAccess).removeHeader?.(header);
+                } else {
+                    delete (headers as IHeaders)[header.toLowerCase()];
+                }
+            } else {
+                if (hdrs.setHeader) {
+                    (hdrs as HeaderAccess).setHeader?.(header, value);
+                } else {
+                    (headers as IHeaders)[header.toLowerCase()] = value;
+                }
             }
         } else {
             if (isNil(value)) {
@@ -45,9 +57,16 @@ export class DefaultHeaderAdapter implements HeaderAdapter {
     removeHeader<T extends HeadersLike>(headers: T, header: string): T {
         if (!headers) return headers;
         if (headers.removeHeader) {
-            const res = (headers as HeaderAccess).removeHeader(header);
-            if (res) {
+            const res = (headers as HeaderAccess).removeHeader?.(header);
+            if (isTypeObject(res)) {
                 headers = res;
+            }
+        } else if ((headers as HeaderAccess).headers) {
+            const hdrs = (headers as HeaderAccess).headers!;
+            if (hdrs.removeHeader) {
+                (hdrs as HeaderAccess).removeHeader?.(header);
+            } else {
+                delete (hdrs as IHeaders)[header.toLowerCase()];
             }
         } else {
             delete (headers as IHeaders)[header.toLowerCase()];
@@ -57,8 +76,19 @@ export class DefaultHeaderAdapter implements HeaderAdapter {
 
     removeHeaders<T extends HeadersLike>(headers: T): T {
         if (!headers) return headers;
-        if (headers.getHeaderNames) {
-            (headers as HeaderAccess).getHeaderNames().forEach(n => (headers as HeaderAccess).removeHeader(n))
+        if (headers.removeHeaders) {
+            (headers as HeaderAccess).removeHeaders?.();
+        } else if ((headers as HeaderAccess).headers) {
+            const hdrs = (headers as HeaderAccess).headers!;
+            if (hdrs.removeHeaders) {
+                (hdrs as HeaderAccess).removeHeaders?.();
+            } else {
+                Object.keys(headers).forEach(n => {
+                    delete (headers as IHeaders)[n];
+                })
+            }
+        } else if (headers.getHeaderNames) {
+            (headers as HeaderAccess).getHeaderNames?.().forEach(n => this.removeHeader(headers, n))
         } else {
             Object.keys(headers).forEach(n => {
                 delete (headers as IHeaders)[n];

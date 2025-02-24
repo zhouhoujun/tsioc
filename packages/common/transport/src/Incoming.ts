@@ -1,4 +1,4 @@
-import { HeaderMappings, HeadersLike, ParameterCodec, StatusOptions } from '@tsdi/common';
+import { Header, HeaderAccess, HeaderMappings, HeadersLike, ParameterCodec, StatusOptions } from '@tsdi/common';
 import { IReadable } from './stream';
 import { Injectable } from '@tsdi/ioc';
 import { StreamAdapter } from './StreamAdapter';
@@ -9,7 +9,7 @@ import { TransportContext } from './context';
 /**
  * Incoming message
  */
-export interface IncomingMessage<T = any, TMsg = any> {
+export interface IncomingMessage<T = any, TMsg = any, THead extends Header = Header> extends HeaderAccess<THead> {
 
     id?: number | string;
 
@@ -20,28 +20,28 @@ export interface IncomingMessage<T = any, TMsg = any> {
 
     pattern?: string;
 
-    /**
-     * incoming headers.
-     */
-    headers: HeadersLike;
+    // /**
+    //  * incoming headers.
+    //  */
+    // headers: HeadersLike;
 
     /**
      * incoming body.
      */
     body?: T | null;
 
-    /**
-     * has header in packet or not.
-     * @param packet 
-     * @param field 
-     */
-    hasHeader?(field: string): boolean;
-    /**
-     * get header from packet.
-     * @param packet 
-     * @param field 
-     */
-    getHeader?(field: string): string | undefined;
+    // /**
+    //  * has header in packet or not.
+    //  * @param packet 
+    //  * @param field 
+    //  */
+    // hasHeader?(field: string): boolean;
+    // /**
+    //  * get header from packet.
+    //  * @param packet 
+    //  * @param field 
+    //  */
+    // getHeader?(field: string): string | undefined;
 
 }
 
