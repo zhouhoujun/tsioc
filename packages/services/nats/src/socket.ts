@@ -1,4 +1,4 @@
-import { HeadersLike, IHeaders } from '@tsdi/common';
+import { getHeaders, HeadersLike, IHeaders } from '@tsdi/common';
 import { BadRequestExecption, TransportContext } from '@tsdi/common/transport';
 import { ContextToken } from '@tsdi/core';
 import { isFunction } from '@tsdi/ioc';
@@ -55,7 +55,7 @@ export class NatsSocket {
         msgHdrs?.keys().forEach(k => {
             headers.set(k, msgHdrs?.get(k) ?? '')
         });
-        const hdmap = isFunction(hdrs.getHeaders) ? hdrs.getHeaders() : hdrs as IHeaders;
+        const hdmap = getHeaders(hdrs) ?? {};
         Object.keys(hdmap).forEach(k => {
             headers.set(k, String(hdmap[k] ?? ''))
         });

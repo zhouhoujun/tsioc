@@ -4,7 +4,7 @@ import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { Pattern, RequestInitOpts, ResponseEvent, TopicRequestOptions, patternToPath } from '@tsdi/common';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { getRouter } from '@tsdi/endpoints';
-import { Cluster, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, logLevel } from 'kafkajs';
+import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, logLevel } from 'kafkajs';
 import { KafkaHandler } from './handler';
 import { KafkaClientConfig } from './options';
 import { DEFAULT_BROKERS } from '../const';
@@ -83,7 +83,7 @@ export class KafkaClient extends AbstractClient<TopicRequestOptions, KafkaReques
             options.consumerAssignments = {};
         }
 
-        let consumer: any;
+        let consumer: Consumer | null = null;
         if (!options.producerOnlyMode) {
             const partitionAssigners = [
                 (config: { cluster: Cluster }) => new KafkaReplyPartitionAssigner(options.consumerAssignments!, config),

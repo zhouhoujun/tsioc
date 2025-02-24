@@ -11,13 +11,15 @@ export class KafkaSocket {
 
     private regTopics?: RegExp[];
     private subj$ = new BehaviorSubject<EachMessagePayload>(null!);
-    constructor(readonly consumer: Consumer, readonly producer: Producer, private runOptions: ConsumerRunConfig) {
+    constructor(readonly consumer: Consumer|null, readonly producer: Producer, private runOptions: ConsumerRunConfig) {
 
     }
 
     async subscribe(topics: (string | RegExp)[], options: Omit<ConsumerSubscribeTopics, 'topics'>) {
-        const consumer = this.consumer;
-        await consumer.subscribe({
+        if (!this.consumer) {
+            return;
+        }
+        await this.consumer.subscribe({
             topics,
             ...options,
         });
@@ -25,7 +27,7 @@ export class KafkaSocket {
         this.regTopics = topics.filter(t => t instanceof RegExp) as RegExp[];
 
         const originEach = this.runOptions?.eachMessage;
-        await consumer.run({
+        await this.consumer.run({
             ...this.runOptions,
             eachMessage: async (payload) => {
                 if (originEach) await originEach(payload);

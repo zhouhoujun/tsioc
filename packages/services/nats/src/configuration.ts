@@ -1,9 +1,9 @@
 import { InjectFlags } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter, HandlerFn, InterceptorFn } from '@tsdi/core';
-import { DefaultResponseFactory, HeaderAdapter, IHeaders, LOCALHOST, PatternFormatter, ResponseFactory } from '@tsdi/common';
+import { DefaultResponseFactory, HeaderAdapter, IHeaders, LOCALHOST, ResponseFactory } from '@tsdi/common';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
-    FileAdapter, MimeAdapter, NotSupportedExecption, Packet, bodyDesrializeBackend,
+    FileAdapter, MimeAdapter, NotSupportedExecption, bodyDesrializeBackend,
     messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory,
     TransportContext,
@@ -204,7 +204,7 @@ export class NatsConfiguration {
                                     (socket, msg, requestContext) => {
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
                                         if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
-                                        const headers = socket.mergeHeaders(requestContext.response.headers, options.publishOpts?.headers);
+                                        const headers = socket.mergeHeaders(requestContext.response, options.publishOpts?.headers);
                                         requestContext.request.id && headers.set('identity', String(requestContext.request.id));
                                         requestContext.status && headers.set('status', requestContext.status);
                                         requestContext.statusMessage && headers.set('statusMessage', requestContext.statusMessage);
