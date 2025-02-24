@@ -158,7 +158,7 @@ export const emptyStatusSerializeInterceptor: InterceptorFn<RequestContext> = (i
 
 export const headMethodSerializeInterceptor: InterceptorFn<RequestContext> = (input: RequestContext, next: HandlerFn<RequestContext, Packet>, context: TransportContext) => {
     if (input.method?.toUpperCase() == HEAD) {
-        if (!input.headersSent && !input.headerAdapter?.hasContentLength(input.response.headers ?? input.response)) {
+        if (!input.headersSent && !input.headerAdapter?.hasContentLength(input.response)) {
             const length = input.length;
             if (Number.isInteger(length)) input.length = length
         }
@@ -171,11 +171,10 @@ export const headMethodSerializeInterceptor: InterceptorFn<RequestContext> = (in
 export const noBodySerializeInterceptor: InterceptorFn<RequestContext> = (input: RequestContext, next: HandlerFn<RequestContext, Packet>, context: TransportContext) => {
     if (input.body === null) {
         if (input.explicitNullBody) {
-            const headers = input.response.headers ?? input.response;
-            input.headerAdapter.setContentType(headers, null);
-            input.headerAdapter.setContentLength(headers, null);
-            input.headerAdapter.setContentEncoding(headers, null);
-            input.headerAdapter.setTransferEncoding(headers, null);
+            input.headerAdapter.setContentType(input.response, null);
+            input.headerAdapter.setContentLength(input.response, null);
+            input.headerAdapter.setContentEncoding(input.response, null);
+            input.headerAdapter.setTransferEncoding(input.response, null);
             return of(null)
         }
 
@@ -213,7 +212,7 @@ export const lengthLimitSerializeInterceptor: InterceptorFn<RequestContext> = (i
 
 function parseToOutgoing(input: RequestContext): Outgoing {
     const id = input.response.id ?? input.request.id;
-    const headers = input.headerAdapter.getHeaders(input.response.headers ?? input.response);
+    const headers = input.headerAdapter.getHeaders(input.response);
     const pkg = {
         id
     } as Outgoing;

@@ -98,14 +98,14 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
         if (opts.setHeaders) opts.setHeaders(ctx, filename, stats);
 
         ctx.length = stats.size;
-        if (!ctx.headerAdapter.getLastModified(ctx.response.headers ?? ctx.response)) ctx.headerAdapter.setLastModified(ctx.response.headers ?? ctx.response, stats.mtime.toUTCString())
-        if (!ctx.headerAdapter.getCacheControl(ctx.response.headers ?? ctx.response)) {
+        if (!ctx.headerAdapter.getLastModified(ctx.response)) ctx.headerAdapter.setLastModified(ctx.response, stats.mtime.toUTCString())
+        if (!ctx.headerAdapter.getCacheControl(ctx.response)) {
             const maxAge = opts.maxAge ?? 0;
             const directives = [`max-age=${(maxAge / 1000 | 0)}`];
             if (opts.immutable) {
                 directives.push('immutable')
             }
-            ctx.headerAdapter.setCacheControl(ctx.response.headers ?? ctx.response, directives.join(','))
+            ctx.headerAdapter.setCacheControl(ctx.response, directives.join(','))
         }
         if (!ctx.type) ctx.type = this.getExtname(filename, encodingExt);
         ctx.body = createReadStream(filename);
