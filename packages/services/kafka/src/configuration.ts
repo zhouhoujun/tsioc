@@ -215,7 +215,7 @@ export class KafkaConfiguration {
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
                                         if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
                                         const headers = {} as IHeaders;
-                                        const reshed = requestContext.headerAdapter.getHeaders(requestContext.response.headers ?? requestContext.response);
+                                        const reshed = requestContext.headerAdapter.getHeaders(requestContext.response);
                                         Object.keys(reshed).forEach(n => {
                                             headers[n] = generHead(reshed[n]);
                                         });
