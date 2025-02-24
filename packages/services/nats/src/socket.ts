@@ -1,5 +1,5 @@
 import { HeadersLike, IHeaders } from '@tsdi/common';
-import { BadRequestExecption, Packet, TransportContext } from '@tsdi/common/transport';
+import { BadRequestExecption, TransportContext } from '@tsdi/common/transport';
 import { ContextToken } from '@tsdi/core';
 import { isFunction } from '@tsdi/ioc';
 import { Msg, MsgHdrs, NatsConnection, Payload, PublishOptions, Subscription, SubscriptionOptions, headers as createHeaders } from 'nats';
