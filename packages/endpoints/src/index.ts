@@ -37,9 +37,11 @@ export * from './finalize.filter';
 
 export * from './execption.filter';
 
+export * from './impl/status';
 export * from './impl/request.handler';
-
 export * from './impl/request.context';
+export * from './impl/execption.handlers';
+
 
 export * from './impl/transfer';
 export * from './impl/transport';

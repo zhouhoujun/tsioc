@@ -1,6 +1,6 @@
 import { InjectFlags } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter, HandlerFn, InterceptorFn } from '@tsdi/core';
-import { DefaultResponseFactory, HeaderAdapter, IHeaders, LOCALHOST, ResponseFactory } from '@tsdi/common';
+import { DefaultResponseFactory, HeaderAdapter, IHeaders, LOCALHOST, parseQueryString, ResponseFactory } from '@tsdi/common';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
     FileAdapter, MimeAdapter, NotSupportedExecption, bodyDesrializeBackend,
@@ -10,16 +10,18 @@ import {
     IReadable
 } from '@tsdi/common/transport';
 import {
+    bodyServializeInterceptor,
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    DefaultClientTransport, requestBodySerializeBackend, requestTimeoutInterceptor
+    DefaultClientTransport, requestBodySerializeBackend, requestTimeoutInterceptor,
+    STATUS_RESPONSE_TRANSFER_INTERCEPTORS
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
-    execptionSerializeInterceptor, lengthLimitSerializeInterceptor,
-    SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
-    TopicRequestContext,
-    contextBodySerializeBackend
+    SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts, TopicRequestContext,
+    lengthLimitSerializeInterceptor, contextBodySerializeBackend,
+    execptionMessageSerializeInterceptor, emptyStatusSerializeInterceptor,
+    HttpExecptionHandlers, HttpStatusAdapter, noBodySerializeInterceptor
 } from '@tsdi/endpoints';
 import { map } from 'rxjs';
 import { NatsClient } from './client/client';
@@ -46,9 +48,22 @@ const attachIncomingHeaders: InterceptorFn = (input: any, next: HandlerFn, conte
                 pkg.topic = msg.subject;
                 pkg.id = msg.headers?.get('identity');
                 const headers = {} as IHeaders;
-                msg.headers?.keys().forEach(key => {
-                    headers[key] = msg.headers?.get(key);
-                });
+                if (msg.headers) {
+                    const msgHdrs = msg.headers;
+                    msgHdrs.keys().forEach(key => {
+                        headers[key] = msgHdrs.get(key);
+                    });
+                    if (msgHdrs.has('params')) {
+                        const urlParams = parseQueryString(msgHdrs.get('params'));
+                        pkg.params = urlParams;
+                    }
+                    if (msgHdrs.has('status')) {
+                        pkg.status = ~~msgHdrs.get('status');
+                    }
+                    if (msgHdrs.has('statusMessage')) {
+                        pkg.statusMessage = msgHdrs.get('statusMessage');
+                    }
+                }
                 pkg.headers = headers;
 
                 return pkg;
@@ -121,7 +136,9 @@ export class NatsConfiguration {
                                         const headers = socket.mergeHeaders(req.headers, options.publishOpts?.headers);
                                         req.id && headers.set('identity', String(req.id));
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
-
+                                        if(req.params.size){
+                                            headers.set('params', req.params.toString())
+                                        }
                                         return socket.publish(req.topic, msg ?? Buffer.alloc(0), {
                                             ...options.publishOpts,
                                             reply: req.responseTopic,
@@ -135,7 +152,7 @@ export class NatsConfiguration {
                     deps: [
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
-                        [StatusAdapter, InjectFlags.Optional],
+                        [HttpStatusAdapter, InjectFlags.Optional],
                         HeaderAdapter,
                         StreamAdapter,
                         TopicClientIncomingFactory,
@@ -144,9 +161,13 @@ export class NatsConfiguration {
                         [Redirector, InjectFlags.Optional]
                     ]
                 },
+                transferConfig: {
+                    interceptors: STATUS_RESPONSE_TRANSFER_INTERCEPTORS
+                },
                 serializerConfig: {
                     interceptors: [
-                        messageVaildateInterceptor
+                        messageVaildateInterceptor,
+                        bodyServializeInterceptor
                     ]
                 },
                 deserializerConfig: {
@@ -206,7 +227,7 @@ export class NatsConfiguration {
                                         if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
                                         const headers = socket.mergeHeaders(requestContext.response, options.publishOpts?.headers);
                                         requestContext.request.id && headers.set('identity', String(requestContext.request.id));
-                                        requestContext.status && headers.set('status', requestContext.status);
+                                        requestContext.status && headers.set('status', String(requestContext.status));
                                         requestContext.statusMessage && headers.set('statusMessage', requestContext.statusMessage);
 
                                         return socket.publish(requestContext.responseTopic, msg ?? Buffer.alloc(0), {
@@ -221,7 +242,7 @@ export class NatsConfiguration {
                     deps: [
                         DefaultSerializerFactory,
                         DefaultDeserializerFactory,
-                        [StatusAdapter, InjectFlags.Optional],
+                        [HttpStatusAdapter, InjectFlags.Optional],
                         HeaderAdapter,
                         StreamAdapter,
                         FileAdapter,
@@ -234,7 +255,9 @@ export class NatsConfiguration {
                 },
                 serializerConfig: {
                     interceptors: [
-                        execptionSerializeInterceptor,
+                        execptionMessageSerializeInterceptor,
+                        emptyStatusSerializeInterceptor,
+                        noBodySerializeInterceptor,
                         lengthLimitSerializeInterceptor
                     ]
                 },
@@ -256,6 +279,7 @@ export class NatsConfiguration {
                 serverOpts: {
                     servers: `nats://${LOCALHOST}:4222`
                 },
+                execptionHandlers: HttpExecptionHandlers,
                 detailError: false,
                 interceptorsToken: NATS_SERV_INTERCEPTORS,
                 filtersToken: NATS_SERV_FILTERS,

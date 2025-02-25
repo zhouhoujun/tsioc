@@ -17,6 +17,7 @@ import { FinalizeFilter } from './finalize.filter';
 import { createRequestHandler } from './impl/request.handler';
 import { DefaultServerTransferFactory } from './impl/transfer';
 import { ServiceModuleOpts, ServiceOptions } from './endpoint.options';
+import { HttpStatusAdapter } from './impl/status';
 
 
 /**
@@ -31,6 +32,7 @@ import { ServiceModuleOpts, ServiceOptions } from './endpoint.options';
     providers: [
         SetupServices,
         DefaultServerTransferFactory,
+        HttpStatusAdapter,
 
         { provide: TypedRespond, useClass: EndpointTypedRespond, asDefault: true },
 

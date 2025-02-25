@@ -1,7 +1,6 @@
-import { getHeaders, HeadersLike, IHeaders } from '@tsdi/common';
-import { BadRequestExecption, TransportContext } from '@tsdi/common/transport';
+import { getHeaders, HeadersLike } from '@tsdi/common';
+import { TransportContext } from '@tsdi/common/transport';
 import { ContextToken } from '@tsdi/core';
-import { isFunction } from '@tsdi/ioc';
 import { Msg, MsgHdrs, NatsConnection, Payload, PublishOptions, Subscription, SubscriptionOptions, headers as createHeaders } from 'nats';
 import { Observable, BehaviorSubject, filter, map } from 'rxjs';
 
@@ -40,9 +39,6 @@ export class NatsSocket {
     }
 
     async publish(topic: string, payload: Payload | null, options?: PublishOptions) {
-
-        if (!topic) throw new BadRequestExecption();
-
         this.conn.publish(
             topic,
             payload ?? Buffer.alloc(0),

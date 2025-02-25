@@ -1,5 +1,6 @@
 import { isArray, isNil, isPlainObject, isString } from '@tsdi/ioc';
 
+
 /**
  * Parameter Codec
  */
@@ -27,6 +28,22 @@ export const EMPTY_CODER = {
     },
     decodeValue(value: string): string {
         return value
+    }
+} as ParameterCodec;
+
+export const URI_COMPONENT_CODER = {
+    encodeKey(key: string): string {
+        return key
+    },
+    encodeValue(value: string): string {
+        return encodeURIComponent(value)
+    },
+
+    decodeKey(key: string): string {
+        return key
+    },
+    decodeValue(value: string): string {
+        return decodeURIComponent(value)
     }
 } as ParameterCodec;
 
@@ -214,20 +231,34 @@ export class RequestParams {
 
     protected parse(rawParams: string) {
         const map = this.map;
-        if (rawParams.length > 0) {
-            const params = rawParams.replace(/^\?/, '').split('&');
-            params.forEach((param: string) => {
-                const eqIdx = param.indexOf('=');
-                const [key, val]: string[] = eqIdx == -1 ?
-                    [this.encoder.decodeKey(param), ''] :
-                    [this.encoder.decodeKey(param.slice(0, eqIdx)), this.encoder.decodeValue(param.slice(eqIdx + 1))];
-                const list = map.get(key) ?? [];
-                list.push(val);
-                map.set(key, list)
-            })
-        }
+        eachRawParams(rawParams, (key, val) => {
+            const list = map.get(key) ?? [];
+            list.push(val);
+            map.set(key, list);
+        }, this.encoder)
     }
 
+}
+
+export function eachRawParams(rawParams: string, each: (key: string, value: string) => void, encoder: ParameterCodec = URI_COMPONENT_CODER): void {
+    if (rawParams.length > 0) {
+        const params = rawParams.replace(/^\?/, '').split('&');
+        params.forEach((param: string) => {
+            const eqIdx = param.indexOf('=');
+            const [key, val]: string[] = eqIdx == -1 ?
+                [encoder.decodeKey(param), ''] :
+                [encoder.decodeKey(param.slice(0, eqIdx)), encoder.decodeValue(param.slice(eqIdx + 1))];
+            each(key, val);
+        })
+    }
+}
+
+export function parseQueryString(rawParams: string, encoder?: ParameterCodec): Record<string, string> {
+    const query: Record<string, string> = {};
+    eachRawParams(rawParams, (key, val) => {
+        query[key] = val;
+    }, encoder)
+    return query;
 }
 
 function parseString(value: string | number | boolean): string {

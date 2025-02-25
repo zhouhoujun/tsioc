@@ -1,5 +1,5 @@
-import { Injector, isNil } from '@tsdi/ioc';
-import { HeaderMappings, LOCALHOST, normalize } from '@tsdi/common';
+import { Injector } from '@tsdi/ioc';
+import { HeaderMappings, LOCALHOST, normalize, parseQueryString } from '@tsdi/common';
 import { Incoming, MessageExecption, Outgoing, TopicIncoming, UrlIncoming } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
 import { RequestContext } from '../RequestContext';
@@ -145,18 +145,10 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
     private _query: Record<string, any> | undefined;
     get query(): Record<string, any> {
         if (!this._query) {
-            let urlParams: Record<string, any> = null!;
             const url = this.url;
             const idx = url.indexOf('?');
             if (idx > 0) {
-                urlParams = {};
-                const params = url.slice(idx + 1).split('&');
-                params.forEach(p => {
-                    const [key, value] = p.split('=');
-                    if (value) {
-                        urlParams[decodeURIComponent(key)] = decodeURIComponent(value);
-                    }
-                })
+                const urlParams = parseQueryString(url.slice(idx + 1));
 
                 if (this.request.query) {
                     this.request.query = { ...urlParams, ...this.request.query ?? {} }
@@ -212,18 +204,10 @@ export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicInco
     private _query: Record<string, any> | undefined;
     get query(): Record<string, any> {
         if (!this._query) {
-            let urlParams: Record<string, any> = null!;
             const url = this.url;
             const idx = url.indexOf('?');
-            if (idx > 0) {
-                urlParams = {};
-                const params = url.slice(idx + 1).split('&');
-                params.forEach(p => {
-                    const [key, value] = p.split('=');
-                    if (value) {
-                        urlParams[decodeURIComponent(key)] = decodeURIComponent(value);
-                    }
-                })
+            if (idx > 0) {                
+                const urlParams = parseQueryString(url.slice(idx + 1));
 
                 if (this.request.query) {
                     this.request.query = { ...urlParams, ...this.request.query ?? {} }
