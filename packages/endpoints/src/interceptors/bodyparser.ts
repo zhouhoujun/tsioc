@@ -1,7 +1,7 @@
 /* eslint-disable no-control-regex */
 import { Abstract, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
 import { Handler, Interceptor, InvalidJsonException } from '@tsdi/core';
-import { BadRequestExecption, UnsupportedMediaTypeExecption, IReadable, MimeTypes } from '@tsdi/common/transport';
+import { BadRequestExecption, UnsupportedMediaTypeExecption, IReadable, MimeTypes, isBuffer } from '@tsdi/common/transport';
 import { RequestContext, Middleware } from '@tsdi/endpoints';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
@@ -69,20 +69,14 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
         this.enableXml = this.enableType('xml');
     }
 
+    protected canHanlde(input: RequestContext): boolean {
+        return (isUndefined(input.request.body) && input.streamAdapter.isReadable(input.request))
+            || input.streamAdapter.isReadable(input.request.body)
+            || isBuffer(input.request.body);
+    }
+
     intercept(input: RequestContext, next: Handler<RequestContext, any>, context?: any): Observable<any> {
-        if (!isUndefined(input.request.body) && !input.streamAdapter.isReadable(input.request.body)) return next.handle(input, context);
-        if (!input.mimeAdapter) {
-            if (input.streamAdapter.isReadable(input.request.body) || input.streamAdapter.isReadable(input.request)) {
-                return from(this.parseJson(input)).pipe(
-                    mergeMap(res => {
-                        input.request.body  = res.body ?? {};
-                        if (isUndefined(input.request.rawBody)) input.request.rawBody = res.raw;
-                        return next.handle(input, context)
-                    })
-                )
-            }
-            return next.handle(input, context);
-        }
+        if (!this.canHanlde(input)) return next.handle(input, context);
         return from(this.parseBody(input))
             .pipe(
                 mergeMap(res => {
@@ -94,15 +88,7 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
     }
 
     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
-        if (!isUndefined(ctx.request.body) && !ctx.streamAdapter.isReadable(ctx.request.body)) return await next();
-        if (!ctx.mimeAdapter) {
-            if (ctx.streamAdapter.isReadable(ctx.request.body) || ctx.streamAdapter.isReadable(ctx.request)) {
-                const res = await this.parseJson(ctx);
-                ctx.request.body = res.body ?? {};
-                if (isUndefined(ctx.request.rawBody)) ctx.request.rawBody = res.raw;
-            }
-            return await next();
-        }
+        if (!this.canHanlde(ctx)) return await next();
         const res = await this.parseBody(ctx);
         ctx.request.body = res.body ?? {};
         if (isUndefined(ctx.request.rawBody)) ctx.request.rawBody = res.raw;
@@ -111,16 +97,16 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
 
     private parseBody(context: RequestContext): Promise<{ raw?: any, body?: any }> {
         const types = context.get(MimeTypes);
-        if (this.enableJson && context.is(types.json)) {
+        if (this.enableJson && context.is(types?.json ?? 'json')) {
             return this.parseJson(context)
         }
-        if (this.enableForm && context.is(types.form)) {
+        if (this.enableForm && context.is(types?.form ?? 'form')) {
             return this.parseForm(context)
         }
-        if (this.enableText && context.is(types.text)) {
+        if (this.enableText && context.is(types?.text ?? 'text')) {
             return this.parseText(context)
         }
-        if (this.enableXml && context.is(types.xml)) {
+        if (this.enableXml && context.is(types?.xml ?? 'xml')) {
             return this.parseText(context)
         }
 
@@ -136,7 +122,7 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
         }
         const { limit, strict, encoding } = this.options.json;
 
-        const str = await context.streamAdapter.rawbody(this.getStream(context, hdrcode), {
+        const str = isBuffer(context.request.body)? context.request.body.toString() : await context.streamAdapter.rawbody(this.getStream(context, hdrcode), {
             encoding,
             limit,
             length
@@ -212,7 +198,7 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
             qs = qslib
         }
 
-        const str = await ctx.streamAdapter.rawbody(this.getStream(ctx, hdrcode), {
+        const str = isBuffer(ctx.request.body)? ctx.request.body.toString() : await ctx.streamAdapter.rawbody(this.getStream(ctx, hdrcode), {
             encoding,
             limit,
             length
@@ -237,7 +223,7 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
             length = ~~len
         }
         const { limit, encoding } = this.options.text;
-        const str = await ctx.streamAdapter.rawbody(this.getStream(ctx, hdrcode), {
+        const str = isBuffer(ctx.request.body)? ctx.request.body.toString() : await ctx.streamAdapter.rawbody(this.getStream(ctx, hdrcode), {
             encoding,
             limit,
             length

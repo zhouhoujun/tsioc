@@ -491,23 +491,28 @@ export abstract class RequestContext<
      *     this.is('html'); // => false
      */
     is(type: string | string[]): string | null | false {
-        const adapter = this.mimeAdapter;
-        if (!adapter) return null;
 
-        //no body
         const encoding = this.headerAdapter.getContentEncoding(this.request);
         const len = this.headerAdapter.getContentLength(this.request);
-
+        //no body
         if (encoding && !len) {
             return null
         }
+
         const ctype = this.headerAdapter.getContentType(this.request);
         if (!ctype) return false;
-        const normaled = adapter.normalize(ctype);
+        if (!this.mimeAdapter) {
+            const itype = isArray(type) ? type[0] : type;
+            if (ctype.indexOf(itype) >= 0 || itype.indexOf(ctype) >= 0) {
+                return itype;
+            }
+            return false;
+        }
+        const normaled = this.mimeAdapter.normalize(ctype);
         if (!normaled) return false;
 
         const types = isArray(type) ? type : [type];
-        return adapter.match(types, normaled)
+        return this.mimeAdapter.match(types, normaled)
     }
 
     /**

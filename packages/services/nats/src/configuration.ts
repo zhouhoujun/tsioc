@@ -10,10 +10,9 @@ import {
     IReadable
 } from '@tsdi/common/transport';
 import {
-    bodyServializeInterceptor,
+    RESPONSE_TRANSFER_INTERCEPTORS, bodyServializeInterceptor,
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
-    DefaultClientTransport, requestBodySerializeBackend, requestTimeoutInterceptor,
-    STATUS_RESPONSE_TRANSFER_INTERCEPTORS
+    DefaultClientTransport, requestBodySerializeBackend, requestTimeoutInterceptor
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
@@ -21,7 +20,9 @@ import {
     SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts, TopicRequestContext,
     lengthLimitSerializeInterceptor, contextBodySerializeBackend,
     execptionMessageSerializeInterceptor, emptyStatusSerializeInterceptor,
-    HttpExecptionHandlers, HttpStatusAdapter, noBodySerializeInterceptor
+    HttpExecptionHandlers, HttpStatusAdapter, noBodySerializeInterceptor,
+    JsonInterceptor,
+    BodyparserInterceptor
 } from '@tsdi/endpoints';
 import { map } from 'rxjs';
 import { NatsClient } from './client/client';
@@ -46,9 +47,9 @@ const attachIncomingHeaders: InterceptorFn = (input: any, next: HandlerFn, conte
                 const pkg: any = { body };
                 const msg = context.get(NATS_MESSAGE)!;
                 pkg.topic = msg.subject;
-                pkg.id = msg.headers?.get('identity');
                 const headers = {} as IHeaders;
                 if (msg.headers) {
+                    pkg.id = msg.headers?.get('identity');
                     const msgHdrs = msg.headers;
                     msgHdrs.keys().forEach(key => {
                         headers[key] = msgHdrs.get(key);
@@ -136,7 +137,7 @@ export class NatsConfiguration {
                                         const headers = socket.mergeHeaders(req.headers, options.publishOpts?.headers);
                                         req.id && headers.set('identity', String(req.id));
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
-                                        if(req.params.size){
+                                        if (req.params.size) {
                                             headers.set('params', req.params.toString())
                                         }
                                         return socket.publish(req.topic, msg ?? Buffer.alloc(0), {
@@ -162,7 +163,7 @@ export class NatsConfiguration {
                     ]
                 },
                 transferConfig: {
-                    interceptors: STATUS_RESPONSE_TRANSFER_INTERCEPTORS
+                    interceptors: RESPONSE_TRANSFER_INTERCEPTORS
                 },
                 serializerConfig: {
                     interceptors: [
@@ -289,6 +290,10 @@ export class NatsConfiguration {
                     ExecptionFinalizeFilter,
                     ExecptionHandlerFilter,
                     FinalizeFilter
+                ],
+                interceptors: [
+                    JsonInterceptor,
+                    BodyparserInterceptor
                 ],
                 routes: {
                     formatter: NatsPatternFormatter

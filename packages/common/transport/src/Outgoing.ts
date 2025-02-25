@@ -2,6 +2,7 @@ import { Header, HeadersLike, StatusOptions, HeaderMappings, IHeaders, HeaderAcc
 import { IReadable, IWritable } from './stream';
 import { Injectable } from '@tsdi/ioc';
 import { StreamAdapter } from './StreamAdapter';
+import { Incoming } from './Incoming';
 
 
 
@@ -167,6 +168,8 @@ export abstract class AbstractOutgoingFactory<T extends OutgoingMessage = Outgoi
  */
 export abstract class OutgoingFactory implements AbstractOutgoingFactory<Outgoing<any>> {
     abstract create(options: {
+        incoming?: Incoming;
+        id?: any;
         socket?: any;
         pattern?: string;
         /**
@@ -185,20 +188,6 @@ export abstract class OutgoingFactory implements AbstractOutgoingFactory<Outgoin
 }
 
 
-// /**
-//  * client outgoing factory.
-//  */
-// export abstract class ClientOutgoingFactory implements AbstractOutgoingFactory<ClientOutgoing> {
-//     abstract create(options: {
-//         request: AbstractRequest<any>;
-//         socket?: any;
-//         pattern?: string;
-//         headers?: HeadersLike;
-//         payload?: any;
-//     }): TOutgoing<ClientOutgoing>;
-// }
-
-
 /**
  * Outgoing packet options.
  */
@@ -209,18 +198,6 @@ export interface OutgoingOpts<T = any, TStatus = any> extends StatusOptions<TSta
     payload?: T;
     body?: T;
 }
-
-
-
-// /**
-//  * Outgoing packet options.
-//  */
-// export interface ClietOutgoingOpts<T = any> {
-//     pattern?: string;
-//     headers?: HeadersLike;
-//     payload?: T;
-//     body?: T;
-// }
 
 
 /**

@@ -18,19 +18,19 @@ const backenFn = (input: Incoming<any>, context: TransportContext) => {
             return new UrlRequestContext(injector,
                 transport,
                 input as UrlIncoming,
-                input.res ?? outgoingFactory.create(input),
+                input.res ?? outgoingFactory.create({ incoming: input, pattern: input.pattern, id: input.id }),
                 serverOptions);
-        } else if((input as TopicIncoming).topic) {
+        } else if ((input as TopicIncoming).topic) {
             return new TopicRequestContext(injector,
                 transport,
-                input as TopicIncoming,                
-                input.res ?? outgoingFactory.create(input),
+                input as TopicIncoming,
+                input.res ?? outgoingFactory.create({ incoming: input, pattern: input.pattern, id: input.id }),
                 serverOptions);
         } else {
             return new PatternRequestContext(injector,
                 transport,
                 input,
-                input.res ?? outgoingFactory.create(input),
+                input.res ?? outgoingFactory.create({ incoming: input, pattern: input.pattern, id: input.id }),
                 serverOptions);
         }
 
