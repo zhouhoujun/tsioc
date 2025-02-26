@@ -1,6 +1,6 @@
 import { InjectFlags, isString } from '@tsdi/ioc';
 import { Bean, Configuration, ContextToken, ExecptionHandlerFilter, HandlerFn, InterceptorFn } from '@tsdi/core';
-import { DefaultResponseFactory, HeaderAdapter, HeaderMappings, IHeaders, ResponseFactory } from '@tsdi/common';
+import { DefaultResponseFactory, HeaderAdapter, IHeaders, parseQueryString, ResponseFactory } from '@tsdi/common';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
     FileAdapter, MimeAdapter, NotSupportedExecption, bodyDesrializeBackend,
@@ -17,9 +17,11 @@ import {
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
-    execptionSerializeInterceptor, lengthLimitSerializeInterceptor,
+    lengthLimitSerializeInterceptor,
     SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
-    TopicRequestContext, contextBodySerializeBackend
+    TopicRequestContext, contextBodySerializeBackend,
+    execptionMessageSerializeInterceptor,
+    execptionSerializeInterceptor
 } from '@tsdi/endpoints';
 import { filter, fromEvent, map } from 'rxjs';
 import { AmqpClient } from './client/client';
@@ -53,6 +55,18 @@ const attachIncomingHeaders: InterceptorFn = (input: any, next: HandlerFn, conte
                 msg.properties.headers && Object.keys(msg.properties.headers).forEach(key => {
                     headers[key] = msg.properties.headers?.[key];
                 });
+                if (headers['params']) {
+                    pkg.params = parseQueryString(headers['params'] as string);
+                }
+                if (headers['status']) {
+                    pkg.status = headers['status']
+                }
+                if (headers['statusMessage']) {
+                    pkg.statusMessage = headers['statusMessage']
+                }
+                if (headers['error']) {
+                    pkg.error = headers['error'];
+                }
                 pkg.headers = headers;
                 pkg.responseTopic = msg.properties.replyTo;
 
@@ -121,15 +135,15 @@ export class AmqpConfiguration {
                                             .pipe(
                                                 map((m: ConsumeMessage) => {
                                                     if (m && m.properties.replyTo == options.replyQueue && req?.topic == m.properties.messageId && m.properties.correlationId == req?.id) {
-                                                        const context= instance ?? factory();
+                                                        const context = instance ?? factory();
                                                         context.set(AMQP_MESSAGE, m);
-                                                       
+
                                                         context.incoming = m.content;
                                                         return context;
                                                     }
                                                     return null;
                                                 }),
-                                                filter(r=>  !!r)
+                                                filter(r => !!r)
                                             )
                                     },
 
@@ -137,7 +151,12 @@ export class AmqpConfiguration {
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
 
                                         const headers = req.headers.getHeaders();
-                                        socket.sendToQueue(options.queue!, isString(msg)? Buffer.from(msg) : msg ?? Buffer.alloc(0), {
+
+                                        if(req.params.size){
+                                            headers['params'] = req.params.toString();
+                                        }
+
+                                        socket.sendToQueue(options.queue!, isString(msg) ? Buffer.from(msg) : msg ?? Buffer.alloc(0), {
                                             ...options.publishOpts,
                                             messageId: req.topic,
                                             correlationId: String(req.id),
@@ -225,24 +244,34 @@ export class AmqpConfiguration {
                                             .pipe(
                                                 map((m: ConsumeMessage) => {
                                                     if (m && m.properties.replyTo == options.replyQueue && req?.topic == m.fields.routingKey && m.properties.correlationId == req?.id) {
-                                                        const context= instance ?? factory();
+                                                        const context = instance ?? factory();
                                                         context.set(AMQP_MESSAGE, m);
-                                                       
+
                                                         context.incoming = m.content;
                                                         return context;
                                                     }
                                                     return null;
                                                 }),
-                                                filter(r=>  !!r)
+                                                filter(r => !!r)
                                             )
                                     },
 
                                     async (socket, msg, reqContext) => {
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
 
-                                        const headers = ((reqContext.response.headers instanceof HeaderMappings)? reqContext.response.headers.getHeaders(): reqContext.response.headers) as IHeaders ?? reqContext.response.getHeaders?.();
-                    
-                                        socket.sendToQueue(options.queue!, isString(msg)? Buffer.from(msg) : msg ?? Buffer.alloc(0), {
+                                        const headers = reqContext.headerAdapter.getHeaders(reqContext.response) as Record<string, any>;
+
+                                        if (reqContext.status) headers['status'] = reqContext.status;
+                                        if (reqContext.statusMessage) headers['statusMessage'] = reqContext.statusMessage;
+                                        if (reqContext.execption) {
+                                            headers['error'] = {
+                                                name: reqContext.execption.name,
+                                                message: reqContext.execption.message,
+                                                status: reqContext.execption.status
+                                            };
+                                        }
+
+                                        socket.sendToQueue(options.queue!, isString(msg) ? Buffer.from(msg) : msg ?? Buffer.alloc(0), {
                                             ...options.publishOpts,
                                             messageId: reqContext.request.topic,
                                             correlationId: String(reqContext.response.id ?? reqContext.request.id),
