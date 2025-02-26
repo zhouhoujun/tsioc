@@ -1,4 +1,4 @@
-import { Abstract, Injectable } from '@tsdi/ioc';
+import { Abstract, Injectable, isString } from '@tsdi/ioc';
 import { HeaderMappings, HeadersLike } from './headers';
 import { Pattern } from './pattern';
 import { ClientIncoming } from '../transport';
@@ -165,7 +165,7 @@ export class ErrorResponse<TStatus = any> extends ResponseBase<null, TStatus> {
         statusMessage?: string;
         statusText?: string;
     }) {
-        super(init, null!, init.error?.message ?? 'Unknown Error');
+        super(init, null!, init.error?.message ?? (isString(init.error)? init.error : 'Unknown Error'));
         this.error = init.error || null;
     }
 }
@@ -194,10 +194,6 @@ export interface ResponseJsonParseError {
  */
 export type ResponseEvent<T, TStatus = any> = HeaderResponse<TStatus> | Response<T, TStatus> | ResponseEventPacket;
 
-// export function isResponseEvent(target: any): target is ResponseEvent<any> {
-//     if (!target) return false;
-//     return target instanceof ResponseBase || (isPlainObject(target) && hasOwn(target, 'type'));
-// }
 
 @Abstract()
 export abstract class ResponseFactory<TStatus = null> {
@@ -215,9 +211,6 @@ export class DefaultResponseFactory<TStatus = null> {
         if (!options.ok || options.error) {
             if (!options.error) {
                 options.error = options?.body ?? options.payload;
-            }
-            if (!options.statusMessage && !options.statusText) {
-                options.statusText = options.error;
             }
             return new ErrorResponse(options);
         }

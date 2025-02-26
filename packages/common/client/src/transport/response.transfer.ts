@@ -22,6 +22,7 @@ export const errorResponseInterceptor: InterceptorFn<ClientIncoming<any>, Respon
                 body = context.get(TEXT_DECODER).decode(body);
             }
             input.body = body;
+            if(!input.statusText && !input.statusMessage) input.statusText = body;
             return input;
         }).pipe(
             mergeMap(input => throwError(() => transport.responseFactory.create(input)))

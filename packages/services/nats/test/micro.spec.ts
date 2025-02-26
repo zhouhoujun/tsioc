@@ -68,7 +68,7 @@ export class NatsService {
                 // connectOpts: {
                 //     port: 6379
                 // },
-                // timeout: 200
+                timeout: 200
             }
         }),
         EndpointModule.register({
