@@ -32,8 +32,9 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
         super(injector, { ...serverOptions, args: request });
 
         this.setValue(ServerTransport, transport);
-
-        this.originalUrl = this.url = normalize(this.url);
+        
+        this.url = normalize(this.url);
+        this.originalUrl = request.pattern? normalize(request.pattern) : this.url;
         const searhIdx = this.url.indexOf('?');
         if (searhIdx >= 0) {
             this.request.query = this.query;
@@ -193,7 +194,8 @@ export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicInco
 
         this.setValue(ServerTransport, transport);
 
-        this.originalUrl = this.url = this.topic = normalize(request.topic);
+        this.url = this.topic = normalize(request.topic);
+        this.originalUrl = request.pattern? normalize(request.pattern) : this.url;
         this.responseTopic = request.responseTopic ?? transport.options.getResponseTopic?.(request.topic);
         const searhIdx = this.url.indexOf('?');
         if (!this.request.query || searhIdx > 0) {

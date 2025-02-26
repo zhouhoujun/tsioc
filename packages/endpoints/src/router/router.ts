@@ -1,6 +1,6 @@
 import { Abstract, Injector, ProvidedInMetadata, Token, tokenId, Type, TypeDef } from '@tsdi/ioc';
 import { Interceptor, Backend, Handler, InvocationOptions } from '@tsdi/core';
-import { RequestMethod, Pattern, Protocols } from '@tsdi/common';
+import { RequestMethod, Pattern, Protocols, PatternFormatter } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 import { Route } from './route';
@@ -35,6 +35,10 @@ export abstract class Router<T = RouteHanlder> implements Backend<RequestContext
     abstract get prefix(): string;
 
     abstract get routes(): Map<string, T>;
+    /**
+     * pattern formatter.
+     */
+    abstract get formatter(): PatternFormatter;
     /**
     * route matcher.
     */

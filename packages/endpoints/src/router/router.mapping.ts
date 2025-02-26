@@ -57,7 +57,7 @@ export class MappingRouter extends Router<RouteHanlder> implements Middleware, O
             this.addHandler(route as Pattern, handler, callback);
             return this;
         } else {
-            this.addHandler((route as Route).path, new MappingRoute(this.injector, route as Route));
+            this.addHandler((route as Route).path, new MappingRoute(this.injector, route as Route, this));
         }
         return this
     }
@@ -372,7 +372,9 @@ export class MappingRoute implements Middleware, RequestHandler {
 
     constructor(
         protected injector: Injector,
-        private route: Route) {
+        private route: Route,
+        private root: Router
+    ) {
 
     }
 
@@ -421,7 +423,7 @@ export class MappingRoute implements Middleware, RequestHandler {
         } else if (route.controller) {
             return this.injector.get(ControllerRouteFactory).create(route.controller, this.injector, route.path);
         } else if (route.children) {
-            const router = new MappingRouter(this.injector, new DefaultRouteMatcher(), this.injector.get(PatternFormatter, defaultFormatter), route.protocol, route.path);
+            const router = new MappingRouter(this.injector, route.router?.matcher ?? this.root.matcher, route.router?.formatter ?? this.root.formatter, route.protocol, route.path);
             route.children.forEach(route => router.use(route));
             return router
         } else if (route.loadChildren) {

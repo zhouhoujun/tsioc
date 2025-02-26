@@ -12,7 +12,6 @@ import { TransportContext } from './context';
 export interface IncomingMessage<T = any, TMsg = any, THead extends Header = Header> extends HeaderAccess<THead> {
 
     id?: number | string;
-
     /**
      * origin req message.
      */
@@ -20,28 +19,10 @@ export interface IncomingMessage<T = any, TMsg = any, THead extends Header = Hea
 
     pattern?: string;
 
-    // /**
-    //  * incoming headers.
-    //  */
-    // headers: HeadersLike;
-
     /**
      * incoming body.
      */
     body?: T | null;
-
-    // /**
-    //  * has header in packet or not.
-    //  * @param packet 
-    //  * @param field 
-    //  */
-    // hasHeader?(field: string): boolean;
-    // /**
-    //  * get header from packet.
-    //  * @param packet 
-    //  * @param field 
-    //  */
-    // getHeader?(field: string): string | undefined;
 
 }
 

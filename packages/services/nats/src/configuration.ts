@@ -1,4 +1,4 @@
-import { InjectFlags } from '@tsdi/ioc';
+import { InjectFlags, isString } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter, HandlerFn, InterceptorFn } from '@tsdi/core';
 import { DefaultResponseFactory, HeaderAdapter, IHeaders, LOCALHOST, parseQueryString, ResponseFactory } from '@tsdi/common';
 import {
@@ -54,6 +54,9 @@ const attachIncomingHeaders: InterceptorFn = (input: any, next: HandlerFn, conte
                     msgHdrs.keys().forEach(key => {
                         headers[key] = msgHdrs.get(key);
                     });
+                    if(msgHdrs.has('path')) {
+                        pkg.pattern = msgHdrs.get('path');
+                    }
                     if (msgHdrs.has('params')) {
                         const urlParams = parseQueryString(msgHdrs.get('params'));
                         pkg.params = urlParams;
@@ -136,6 +139,7 @@ export class NatsConfiguration {
                                     (socket, msg, req) => {
                                         const headers = socket.mergeHeaders(req.headers, options.publishOpts?.headers);
                                         req.id && headers.set('identity', String(req.id));
+                                        if(isString(req.pattern)) headers.set('path', req.pattern);
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
                                         if (req.params.size) {
                                             headers.set('params', req.params.toString())

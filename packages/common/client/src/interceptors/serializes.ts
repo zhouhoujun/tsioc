@@ -45,11 +45,13 @@ export const requestSerializeBackend: BackendFn<AbstractRequest<any>> = (input: 
     const transport = context.transport as ClientTransport;
 
     if ((input as UrlRequest).url) {
+        if(isString((input as UrlRequest).pattern)) pkg.pattern = (input as UrlRequest).pattern as string;
         (pkg as UrlClientOutgoing).url = (input as UrlRequest).getUrlWithParams();
         if ((input as UrlRequest).method) {
             (pkg as UrlClientOutgoing).method = (input as UrlRequest).method;
         }
     } else if ((input as TopicRequest).topic) {
+        if(isString((input as TopicRequest).pattern)) pkg.pattern = (input as TopicRequest).pattern as string;
         (pkg as TopicClientOutgoing).topic = (input as TopicRequest).topic;
         // (pkg as TopicClientOutgoing).responseTopic = (input as TopicRequest).responseTopic;
         (pkg as TopicClientOutgoing).params = (input as TopicRequest).params.toRecord();

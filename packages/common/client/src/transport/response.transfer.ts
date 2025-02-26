@@ -14,11 +14,14 @@ export const errorResponseInterceptor: InterceptorFn<ClientIncoming<any>, Respon
         const transport = context.transport as ClientTransport;
         input.ok = false;
         return defer(async () => {
-            if (transport.streamAdapter.isReadable(input.body)) {
-                let body: any = await toBuffer(input.body);
-                body = context.get(TEXT_DECODER).decode(body);
-                input.body = body;
+            let body = input.body;
+            if (transport.streamAdapter.isReadable(body)) {
+                body = await toBuffer(body);
             }
+            if(isBuffer(body)) {                
+                body = context.get(TEXT_DECODER).decode(body);
+            }
+            input.body = body;
             return input;
         }).pipe(
             mergeMap(input => throwError(() => transport.responseFactory.create(input)))

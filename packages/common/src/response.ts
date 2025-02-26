@@ -216,6 +216,9 @@ export class DefaultResponseFactory<TStatus = null> {
             if (!options.error) {
                 options.error = options?.body ?? options.payload;
             }
+            if (!options.statusMessage && !options.statusText) {
+                options.statusText = options.error;
+            }
             return new ErrorResponse(options);
         }
         return new Response(options);

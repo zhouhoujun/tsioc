@@ -15,24 +15,7 @@ export interface OutgoingMessage<T = any, THead extends Header = Header> extends
 
     pattern?: string;
 
-    // headers: HeadersLike;
-
     body?: T | null;
-
-
-    // /**
-    //  * has header in packet or not.
-    //  * @param packet 
-    //  * @param field 
-    //  */
-    // hasHeader?(field: string): boolean;
-    // /**
-    //  * get header from packet.
-    //  * @param packet 
-    //  * @param field 
-    //  */
-    // getHeader?(field: string): string | undefined;
-
 }
 
 
