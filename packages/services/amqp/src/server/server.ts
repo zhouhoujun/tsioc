@@ -31,7 +31,7 @@ export class AmqpServer extends Server<RequestContext, AmqpServConfig> {
 
         const options = this.getOptions();
 
-        const conn = this._conn = await this.createConnection(options.retryAttempts || 3, options.retryDelay ?? 3000);
+        const conn = this._conn = await this.createConnection(options, options.retryAttempts || 3, options.retryDelay ?? 3000);
         this._connected = true;
         conn.on(ev.CONNECT, () => {
             this._connected = true;
@@ -47,7 +47,7 @@ export class AmqpServer extends Server<RequestContext, AmqpServConfig> {
             this._connected = false;
             this.logger.error('Disconnected from rmq. Try to reconnect.');
             this.logger.error(err);
-            this._conn = await this.createConnection(options.retryAttempts || 3, options.retryDelay ?? 3000);
+            this._conn = await this.createConnection(options, options.retryAttempts || 3, options.retryDelay ?? 3000);
             this.onStart();
         });
     }
@@ -78,15 +78,15 @@ export class AmqpServer extends Server<RequestContext, AmqpServConfig> {
 
     }
 
-    protected async createConnection(retrys: number, retryDelay: number): Promise<amqp.Connection> {
+    protected async createConnection(options: AmqpServConfig, retrys: number, retryDelay: number): Promise<amqp.Connection> {
         try {
             if (retrys) {
-                const conn = await amqp.connect(this.getOptions().serverOpts!);
+                const conn = await amqp.connect(options.serverOpts!);
                 this._connected = true;
                 return conn;
             }
         } catch (err) {
-            if (retrys) return await lang.delay(retryDelay).then(() => this.createConnection(retrys - 1, retryDelay));
+            if (retrys) return await lang.delay(retryDelay).then(() => this.createConnection(options, retrys - 1, retryDelay));
             throw err;
         }
         return null!

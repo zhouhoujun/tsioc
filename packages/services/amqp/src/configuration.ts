@@ -16,12 +16,9 @@ import {
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
-    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
-    lengthLimitSerializeInterceptor,
-    SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
-    TopicRequestContext, contextBodySerializeBackend,
-    execptionMessageSerializeInterceptor,
-    execptionSerializeInterceptor
+    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter, TopicRequestContext,
+    lengthLimitSerializeInterceptor, SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
+    contextBodySerializeBackend, execptionMessageSerializeInterceptor,
 } from '@tsdi/endpoints';
 import { filter, fromEvent, map } from 'rxjs';
 import { AmqpClient } from './client/client';
@@ -65,7 +62,7 @@ const attachIncomingHeaders: InterceptorFn = (input: any, next: HandlerFn, conte
                     pkg.statusMessage = headers['statusMessage']
                 }
                 if (headers['error']) {
-                    pkg.error = headers['error'];
+                    pkg.error = JSON.parse(headers['error'] as string);
                 }
                 pkg.headers = headers;
                 pkg.responseTopic = msg.properties.replyTo;
@@ -152,7 +149,7 @@ export class AmqpConfiguration {
 
                                         const headers = req.headers.getHeaders();
 
-                                        if(req.params.size){
+                                        if (req.params.size) {
                                             headers['params'] = req.params.toString();
                                         }
 
@@ -264,11 +261,11 @@ export class AmqpConfiguration {
                                         if (reqContext.status) headers['status'] = reqContext.status;
                                         if (reqContext.statusMessage) headers['statusMessage'] = reqContext.statusMessage;
                                         if (reqContext.execption) {
-                                            headers['error'] = {
+                                            headers['error'] = JSON.stringify({
                                                 name: reqContext.execption.name,
                                                 message: reqContext.execption.message,
                                                 status: reqContext.execption.status
-                                            };
+                                            });
                                         }
 
                                         socket.sendToQueue(options.queue!, isString(msg) ? Buffer.from(msg) : msg ?? Buffer.alloc(0), {
@@ -301,7 +298,7 @@ export class AmqpConfiguration {
                 },
                 serializerConfig: {
                     interceptors: [
-                        execptionSerializeInterceptor,
+                        execptionMessageSerializeInterceptor,
                         lengthLimitSerializeInterceptor
                     ]
                 },

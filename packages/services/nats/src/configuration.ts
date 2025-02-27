@@ -54,7 +54,7 @@ const attachIncomingHeaders: InterceptorFn = (input: any, next: HandlerFn, conte
                     msgHdrs.keys().forEach(key => {
                         headers[key] = msgHdrs.get(key);
                     });
-                    if(msgHdrs.has('path')) {
+                    if (msgHdrs.has('path')) {
                         pkg.pattern = msgHdrs.get('path');
                     }
                     if (msgHdrs.has('params')) {
@@ -66,6 +66,9 @@ const attachIncomingHeaders: InterceptorFn = (input: any, next: HandlerFn, conte
                     }
                     if (msgHdrs.has('statusMessage')) {
                         pkg.statusMessage = msgHdrs.get('statusMessage');
+                    }
+                    if (msgHdrs.has('error')) {
+                        pkg.error = JSON.parse(msgHdrs.get('error'));
                     }
                 }
                 pkg.headers = headers;
@@ -139,7 +142,7 @@ export class NatsConfiguration {
                                     (socket, msg, req) => {
                                         const headers = socket.mergeHeaders(req.headers, options.publishOpts?.headers);
                                         req.id && headers.set('identity', String(req.id));
-                                        if(isString(req.pattern)) headers.set('path', req.pattern);
+                                        if (isString(req.pattern)) headers.set('path', req.pattern);
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
                                         if (req.params.size) {
                                             headers.set('params', req.params.toString())
@@ -234,6 +237,13 @@ export class NatsConfiguration {
                                         requestContext.request.id && headers.set('identity', String(requestContext.request.id));
                                         requestContext.status && headers.set('status', String(requestContext.status));
                                         requestContext.statusMessage && headers.set('statusMessage', requestContext.statusMessage);
+                                        if (requestContext.execption) {
+                                            headers.set('error', JSON.stringify({
+                                                name: requestContext.execption.name,
+                                                message: requestContext.execption.message,
+                                                status: requestContext.execption.status ?? requestContext.execption.statusCode
+                                            }))
+                                        }
 
                                         return socket.publish(requestContext.responseTopic, msg ?? Buffer.alloc(0), {
                                             ...options.publishOpts,
