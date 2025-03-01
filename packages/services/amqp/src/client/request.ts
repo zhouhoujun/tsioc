@@ -1,4 +1,4 @@
-import { BaseTopicRequest, TopicRequestOptions, RequestCloneOpts } from '@tsdi/common';
+import { BaseTopicRequest, TopicRequestOptions, RequestCloneOpts, RequestInitOpts } from '@tsdi/common';
 
 export class AmqpRequest<T> extends BaseTopicRequest<T, TopicRequestOptions> {
 
@@ -8,6 +8,10 @@ export class AmqpRequest<T> extends BaseTopicRequest<T, TopicRequestOptions> {
     clone(update: RequestCloneOpts<any, TopicRequestOptions> = {}): AmqpRequest<any> {
         const init = this.cloneOpts(update);
         return new AmqpRequest(update.topic ?? this.topic, this.pattern, init);
+    }
+
+    protected override getResponseTopic(topic: string, options: RequestInitOpts<T, TopicRequestOptions<any>>): string {
+        return `${topic}.reply`
     }
 
 }

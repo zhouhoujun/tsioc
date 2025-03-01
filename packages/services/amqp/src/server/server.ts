@@ -1,7 +1,7 @@
 import { Execption, Inject, Injectable, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ev } from '@tsdi/common/transport';
-import { Server, ServerTransportFactory, ServerTransport, RequestContext } from '@tsdi/endpoints';
+import { Server, ServerTransportFactory, ServerTransport, RequestContext, getRouter } from '@tsdi/endpoints';
 import * as amqp from 'amqplib';
 import { Subject } from 'rxjs';
 import { AmqpServConfig } from './options';
@@ -73,9 +73,15 @@ export class AmqpServer extends Server<RequestContext, AmqpServConfig> {
         });
 
         const injector = this.handler.injector;
+        const router = getRouter(injector, options.protocol ?? 'amqp', true);
+
         const session = this._transport = injector.get(ServerTransportFactory).create(injector, channel, options);
         session.handle(this.handler, this.destroy$);
 
+        this.logger.info(
+            `Subscribed successfully! This server is currently subscribed topics.`,
+            router.matcher.getPatterns()
+        );
     }
 
     protected async createConnection(options: AmqpServConfig, retrys: number, retryDelay: number): Promise<amqp.Connection> {

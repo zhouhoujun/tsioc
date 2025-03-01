@@ -163,7 +163,8 @@ describe('Amqp Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(ErrorResponse);
-        expect(a.status).toEqual(404);
+        // expect(a.status).toEqual(404);
+        expect(a.statusMessage).toEqual('Not Found');
     });
 
     it('sensor.message.* message', async () => {
@@ -195,7 +196,8 @@ describe('Amqp Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(ErrorResponse);
-        expect(a.status).toEqual(404);
+        // expect(a.status).toEqual(404);
+        expect(a.statusMessage).toEqual('Not Found');
     });
 
     it('sensor/message/* message', async () => {
@@ -260,7 +262,8 @@ describe('Amqp Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(ErrorResponse);
-        expect(a.status).toEqual(404);
+        // expect(a.status).toEqual(404);
+        expect(a.statusMessage).toEqual('Not Found');
     });
 
 

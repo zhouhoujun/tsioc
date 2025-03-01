@@ -7,7 +7,7 @@ import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
-import { KAFKA_SERV_INTERCEPTORS, KafkaClient, KafkaModule, KafkaServer } from '../src';
+import { KAFKA_SERV_INTERCEPTORS, KafkaClient } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
 import { ClientModule } from '@tsdi/common/client';
 

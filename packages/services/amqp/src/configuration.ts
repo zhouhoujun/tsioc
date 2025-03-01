@@ -6,9 +6,7 @@ import {
     FileAdapter, MimeAdapter, NotSupportedExecption, bodyDesrializeBackend,
     messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory,
-    TransportContext,
-    IReadable,
-    ev
+    TransportContext, IReadable, ev
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
@@ -65,7 +63,7 @@ const attachIncomingHeaders: InterceptorFn = (input: any, next: HandlerFn, conte
                     pkg.error = JSON.parse(headers['error'] as string);
                 }
                 pkg.headers = headers;
-                pkg.responseTopic = msg.properties.replyTo;
+                // pkg.responseTopic = msg.properties.replyTo;
 
                 return pkg;
             })
@@ -131,7 +129,7 @@ export class AmqpConfiguration {
                                         return fromEvent(socket, ev.MESSAGE, (queue: string, message: ConsumeMessage) => message)
                                             .pipe(
                                                 map((m: ConsumeMessage) => {
-                                                    if (m && m.properties.replyTo == options.replyQueue && req?.topic == m.properties.messageId && m.properties.correlationId == req?.id) {
+                                                    if (req?.responseTopic == m.properties.messageId && m.properties.correlationId == req?.id) {
                                                         const context = instance ?? factory();
                                                         context.set(AMQP_MESSAGE, m);
 
@@ -236,11 +234,10 @@ export class AmqpConfiguration {
                                     transferFactory.create(injector, options.transferConfig),
                                     options,
                                     (socket, factory, instance) => {
-                                        const req = instance?.get(AmqpRequest);
                                         return fromEvent(socket, ev.MESSAGE, (queue: string, message: ConsumeMessage) => message)
                                             .pipe(
                                                 map((m: ConsumeMessage) => {
-                                                    if (m && m.properties.replyTo == options.replyQueue && req?.topic == m.fields.routingKey && m.properties.correlationId == req?.id) {
+                                                    if (m && m.properties.replyTo == options.replyQueue && !/\.reply$/.test(m.properties.messageId)) {
                                                         const context = instance ?? factory();
                                                         context.set(AMQP_MESSAGE, m);
 
@@ -253,7 +250,7 @@ export class AmqpConfiguration {
                                             )
                                     },
 
-                                    async (socket, msg, reqContext) => {
+                                    async (socket, msg, reqContext, context) => {
                                         if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
 
                                         const headers = reqContext.headerAdapter.getHeaders(reqContext.response) as Record<string, any>;
@@ -268,11 +265,12 @@ export class AmqpConfiguration {
                                             });
                                         }
 
-                                        socket.sendToQueue(options.queue!, isString(msg) ? Buffer.from(msg) : msg ?? Buffer.alloc(0), {
+                                        const amqpmsg = context.get(AMQP_MESSAGE);
+
+                                        socket.sendToQueue(amqpmsg?.properties?.replyTo ?? options.replyQueue, isString(msg) ? Buffer.from(msg) : msg ?? Buffer.alloc(0), {
                                             ...options.publishOpts,
-                                            messageId: reqContext.request.topic,
+                                            messageId: reqContext.responseTopic,
                                             correlationId: String(reqContext.response.id ?? reqContext.request.id),
-                                            replyTo: reqContext.responseTopic ?? options.replyQueue,
                                             headers,
                                             contentType: headers?.['content-type'] as string,
                                             contentEncoding: headers?.['content-endcoding'] as string,
