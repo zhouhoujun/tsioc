@@ -2,6 +2,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { Injector, Module, isArray } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
+import { ErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
 import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -11,8 +12,6 @@ import { catchError, lastValueFrom, of } from 'rxjs';
 import { NatsModule, NatsClient } from '../src';
 import { DeviceController } from './controller';
 import { BigFileInterceptor } from './BigFileInterceptor';
-import { ErrorResponse } from '@tsdi/common';
-
 
 @Module({
     baseURL: __dirname,
@@ -312,9 +311,9 @@ describe('Nats hybrid Tcp Server & Nats Client & TcpClient', () => {
                 return of(err);
             })));
         // expect(r.status).toEqual(200);
-        // expect(r.ok).toBeTruthy();
-        // expect(r.body).toEqual(result);
-        expect(r.statusText).toEqual('Not Supported')
+        expect(r.ok).toBeTruthy();
+        expect(r.body).toEqual(result);
+        // expect(r.statusText).toEqual('Not Supported')
     })
 
     it('dd micro message', async () => {

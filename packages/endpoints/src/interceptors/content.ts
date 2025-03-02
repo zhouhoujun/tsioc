@@ -1,4 +1,4 @@
-import { Abstract, Injectable } from '@tsdi/ioc';
+import { Abstract, Injectable, isDefined } from '@tsdi/ioc';
 import { Interceptor, Handler } from '@tsdi/core';
 import { GET, HEAD } from '@tsdi/common';
 import { NotFoundExecption } from '@tsdi/common/transport';
@@ -19,7 +19,7 @@ export class ContentInterceptor implements Middleware<RequestContext>, Intercept
     constructor() { }
 
     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
-        if (!(!ctx.method || ctx.method === HEAD || ctx.method === GET  || ctx.method === '*')
+        if (!(!ctx.method || ctx.method === HEAD || ctx.method === GET || ctx.method === '*')
             || !ctx.originalUrl) {
             return next();
         }
@@ -72,7 +72,7 @@ export class ContentInterceptor implements Middleware<RequestContext>, Intercept
 
     protected async send(ctx: RequestContext, options: ContentOptions) {
         let file = '';
-        if (ctx.statusAdapter && !ctx.statusAdapter.isNotFound(ctx.status)) return file;
+        if (ctx.statusAdapter && (isDefined(ctx.status) && !ctx.statusAdapter.isNotFound(ctx.status))) return file;
 
         const sender = ctx.injector.get(ContentSendAdapter);
 
