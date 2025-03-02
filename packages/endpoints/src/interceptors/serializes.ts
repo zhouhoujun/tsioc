@@ -210,13 +210,25 @@ export const lengthLimitSerializeInterceptor: InterceptorFn<RequestContext> = (i
     return next(input, context);
 }
 
+export const limitedReadableSerializeInterceptor: InterceptorFn<RequestContext> = (input: RequestContext, next: HandlerFn<RequestContext, Packet>, context: TransportContext) => {
+    if (input.streamAdapter.isReadable(input.body)) {
+        return defer(async () => {
+            const body = await toBuffer(input.body);
+            return body;
+        })
+    }
+    return next(input, context);
+}
+
+
+
 function parseToOutgoing(input: RequestContext): Outgoing {
     const id = input.response.id ?? input.request.id;
     const headers = input.headerAdapter.getHeaders(input.response);
     const pkg = {
         id
     } as Outgoing;
-    
+
     if (input.status) {
         pkg.statusCode = input.status;
     }

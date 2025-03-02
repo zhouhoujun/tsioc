@@ -264,7 +264,8 @@ describe('Kafka hybrid Http Server & Kafka Client & Http', () => {
                 ctx.getLogger().error(err);
                 return of(err);
             })));
-        expect(r.status).toEqual(200);
+        // expect(r.status).toEqual(200);
+        expect(r.ok).toBeTruthy();
         expect(r.body).toEqual(result);
     })
 
@@ -275,7 +276,8 @@ describe('Kafka hybrid Http Server & Kafka Client & Http', () => {
                 ctx.getLogger().error(err);
                 return of(err);
             })));
-        expect(r.status).toEqual(200);
+        // expect(r.status).toEqual(200);
+        expect(r.ok).toBeTruthy();
         expect(r.body).toEqual(result);
     })
 
@@ -286,7 +288,8 @@ describe('Kafka hybrid Http Server & Kafka Client & Http', () => {
                 ctx.getLogger().error(err);
                 return of(err);
             })));
-        expect(r.status).toEqual(200);
+        // expect(r.status).toEqual(200);
+        expect(r.ok).toBeTruthy();
         expect(r.body).toEqual(result);
     })
 

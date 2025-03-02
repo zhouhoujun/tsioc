@@ -9,6 +9,7 @@ import {
     TransportContext, IReadable, ev
 } from '@tsdi/common/transport';
 import {
+    bodyServializeInterceptor,
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
     DefaultClientTransport, requestBodySerializeBackend, requestTimeoutInterceptor
 } from '@tsdi/common/client';
@@ -17,6 +18,9 @@ import {
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter, TopicRequestContext,
     lengthLimitSerializeInterceptor, SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
     contextBodySerializeBackend, execptionMessageSerializeInterceptor,
+    JsonInterceptor,
+    BodyparserInterceptor,
+    limitedReadableSerializeInterceptor,
 } from '@tsdi/endpoints';
 import { filter, fromEvent, map } from 'rxjs';
 import { AmqpClient } from './client/client';
@@ -179,7 +183,8 @@ export class AmqpConfiguration {
                 },
                 serializerConfig: {
                     interceptors: [
-                        messageVaildateInterceptor
+                        messageVaildateInterceptor,
+                        bodyServializeInterceptor
                     ]
                 },
                 deserializerConfig: {
@@ -297,7 +302,8 @@ export class AmqpConfiguration {
                 serializerConfig: {
                     interceptors: [
                         execptionMessageSerializeInterceptor,
-                        lengthLimitSerializeInterceptor
+                        lengthLimitSerializeInterceptor,
+                        limitedReadableSerializeInterceptor
                     ]
                 },
                 deserializerConfig: {
@@ -327,6 +333,10 @@ export class AmqpConfiguration {
                     ExecptionFinalizeFilter,
                     ExecptionHandlerFilter,
                     FinalizeFilter
+                ],
+                interceptors: [
+                    JsonInterceptor,
+                    BodyparserInterceptor
                 ]
             } as AmqpServConfig
         }

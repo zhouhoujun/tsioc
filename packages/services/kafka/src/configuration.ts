@@ -1,6 +1,6 @@
-import { InjectFlags } from '@tsdi/ioc';
+import { InjectFlags, isString } from '@tsdi/ioc';
 import { Bean, Configuration, ExecptionHandlerFilter, HandlerFn, InterceptorFn } from '@tsdi/core';
-import { DefaultResponseFactory, HeaderAdapter, IHeaders as Headers, ResponseFactory } from '@tsdi/common';
+import { DefaultResponseFactory, HeaderAdapter, IHeaders as Headers, parseQueryString, ResponseFactory } from '@tsdi/common';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
     FileAdapter, MimeAdapter, NotSupportedExecption, Packet,
@@ -11,15 +11,20 @@ import {
     bodyDesrializeBackend
 } from '@tsdi/common/transport';
 import {
+    bodyServializeInterceptor,
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
     DefaultClientTransport, requestBodySerializeBackend, requestTimeoutInterceptor
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
-    execptionSerializeInterceptor, lengthLimitSerializeInterceptor,
+    execptionMessageSerializeInterceptor, lengthLimitSerializeInterceptor,
     SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
-    TopicRequestContext, contextBodySerializeBackend
+    TopicRequestContext, contextBodySerializeBackend,
+    JsonInterceptor, BodyparserInterceptor,
+    noBodySerializeInterceptor,
+    limitedReadableSerializeInterceptor
+    
 } from '@tsdi/endpoints';
 import { IHeaders } from 'kafkajs';
 import { map } from 'rxjs';
@@ -52,6 +57,21 @@ const attachIncomingHeaders: InterceptorFn = (input: any, next: HandlerFn, conte
                 Object.keys(kHeaders).forEach(key => {
                     headers[key] = parseHead(kHeaders[key]);
                 });
+                if (headers['path']) {
+                    pkg.pattern = headers['path'];
+                }
+                if (headers['params']) {
+                    pkg.params = parseQueryString(headers['params'] as string);
+                }
+                if (headers['status']) {
+                    pkg.status = headers['status']
+                }
+                if (headers['statusMessage']) {
+                    pkg.statusMessage = headers['statusMessage']
+                }
+                if (headers['error']) {
+                    pkg.error = JSON.parse(headers['error'] as string);
+                }
                 pkg.headers = headers;
 
                 return pkg;
@@ -127,6 +147,10 @@ export class KafkaConfiguration {
                                         req.headers.forEach((n, v) => {
                                             headers[n] = generHead(v);
                                         });
+                                        if (req.params.size) {
+                                            headers['params'] = req.params.toString();
+                                        }                                        
+                                        if (isString(req.pattern)) headers['path'] = req.pattern;
                                         if (req.id) headers[KafkaHeaders.CORRELATION_ID] = generHead(req.id);
                                         return socket.publish(req.topic, [
                                             {
@@ -155,7 +179,8 @@ export class KafkaConfiguration {
                 },
                 serializerConfig: {
                     interceptors: [
-                        messageVaildateInterceptor
+                        messageVaildateInterceptor,
+                        bodyServializeInterceptor
                     ]
                 },
                 deserializerConfig: {
@@ -222,7 +247,13 @@ export class KafkaConfiguration {
                                         if (requestContext.request.id) headers[KafkaHeaders.CORRELATION_ID] = String(requestContext.request.id);
                                         if (requestContext.status) headers['status'] = requestContext.status;
                                         if (requestContext.statusMessage) headers['statusMessage'] = requestContext.statusMessage;
-
+                                        if (requestContext.execption) {
+                                            headers['error'] = JSON.stringify({
+                                                name: requestContext.execption.name,
+                                                message: requestContext.execption.message,
+                                                status: requestContext.execption.status
+                                            });
+                                        }
                                         return socket.publish(requestContext.responseTopic,
                                             [
                                                 {
@@ -253,8 +284,10 @@ export class KafkaConfiguration {
                 },
                 serializerConfig: {
                     interceptors: [
-                        execptionSerializeInterceptor,
-                        lengthLimitSerializeInterceptor
+                        execptionMessageSerializeInterceptor,
+                        noBodySerializeInterceptor,
+                        lengthLimitSerializeInterceptor,
+                        limitedReadableSerializeInterceptor
                     ]
                 },
                 deserializerConfig: {
@@ -284,6 +317,10 @@ export class KafkaConfiguration {
                     ExecptionFinalizeFilter,
                     ExecptionHandlerFilter,
                     FinalizeFilter
+                ],
+                interceptors: [
+                    JsonInterceptor,
+                    BodyparserInterceptor
                 ],
                 routes: {
                     formatter: KafkaPatternFormatter,

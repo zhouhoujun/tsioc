@@ -22,7 +22,8 @@ import {
     execptionMessageSerializeInterceptor, emptyStatusSerializeInterceptor,
     HttpExecptionHandlers, HttpStatusAdapter, noBodySerializeInterceptor,
     JsonInterceptor,
-    BodyparserInterceptor
+    BodyparserInterceptor,
+    limitedReadableSerializeInterceptor
 } from '@tsdi/endpoints';
 import { map } from 'rxjs';
 import { NatsClient } from './client/client';
@@ -273,7 +274,8 @@ export class NatsConfiguration {
                         execptionMessageSerializeInterceptor,
                         emptyStatusSerializeInterceptor,
                         noBodySerializeInterceptor,
-                        lengthLimitSerializeInterceptor
+                        lengthLimitSerializeInterceptor,
+                        limitedReadableSerializeInterceptor
                     ]
                 },
                 deserializerConfig: {

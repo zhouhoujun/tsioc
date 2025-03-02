@@ -126,10 +126,12 @@ export class KafkaClient extends AbstractClient<TopicRequestOptions, KafkaReques
         if (!options.producerOnlyMode) {
             const topics = options.topics ? options.topics.map(t => {
                 if (t instanceof RegExp) return t;
-                return patternToPath(t);
-            }) : getRouter(injector, 'kafka', true).matcher.getPatterns();
+                return this.formatter.format(t);
+            }) : getRouter(injector, options.protocol ?? 'kafka', true).matcher.getPatterns();
 
-            await this.socket.subscribe(topics.map(t => this.getReplyTopic(t)), options)
+            const reply$ = topics.map(t => this.getReplyTopic(t));
+            console.log(reply$);
+            await this.socket.subscribe(reply$, options)
         }
 
     }
@@ -152,11 +154,7 @@ export class KafkaClient extends AbstractClient<TopicRequestOptions, KafkaReques
     }
 
     protected createRequest(pattern: Pattern, options: RequestInitOpts<any, TopicRequestOptions>): KafkaRequest<any> {
-        if (isString(pattern)) {
-            return new KafkaRequest(pattern, null, options);
-        } else {
-            return new KafkaRequest(this.formatter.format(pattern), pattern, options);
-        }
+        return new KafkaRequest(this.formatter.format(pattern), pattern, options);
     }
 
 

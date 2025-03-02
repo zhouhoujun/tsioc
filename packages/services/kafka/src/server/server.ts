@@ -79,12 +79,10 @@ export class KafkaServer extends Server<RequestContext, KafkaServConfig> {
 
         const client: Kafka = this.client = new Kafka(connectOpts);
 
-
         const consumeOpts = {
             groupId: 'boot-group' + postfixId,
             ...options.consumer,
         };
-
 
         const consumer = client.consumer(consumeOpts);
         const producer = client.producer(options.producer);

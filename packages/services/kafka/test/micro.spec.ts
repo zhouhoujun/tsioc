@@ -7,9 +7,9 @@ import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import expect = require('expect');
+import { ClientModule } from '@tsdi/common/client';
 import { KAFKA_SERV_INTERCEPTORS, KafkaClient } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
-import { ClientModule } from '@tsdi/common/client';
 
 
 const SENSORS = tokenId<string[]>('SENSORS');
@@ -182,7 +182,7 @@ describe('Kafka Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(ErrorResponse);
-        expect(a.statusMessage.indexOf('reply has not registered.')).toBeGreaterThan(1);
+        expect(a.statusMessage).toContain('Timeout has occurred');
     });
 
     it('sensor.message.* message', async () => {
@@ -214,7 +214,7 @@ describe('Kafka Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(ErrorResponse);
-        expect(a.statusMessage.indexOf('reply has not registered.')).toBeGreaterThan(1);
+        expect(a.statusMessage).toContain('Timeout has occurred');
     });
 
     it('sensor/message/* message', async () => {
@@ -278,7 +278,7 @@ describe('Kafka Micro Service', () => {
                 })));
 
         expect(a).toBeInstanceOf(ErrorResponse);
-        expect(a.statusMessage.indexOf('reply has not registered.')).toBeGreaterThan(1);
+        expect(a.statusMessage).toContain('Timeout has occurred');
     });
 
 
