@@ -20,6 +20,69 @@ npm install @tsdi/swagger
 
 ```
 
+### demo
+
+```ts
+import { Module } from '@tsdi/ioc';
+import { bootstrapApplication } from '@tsdi/core';
+import { LoggerModule, LogConfigure } from '@tsdi/logger';
+import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
+import { CorsInterceptor, HttpModule } from '@tsdi/http';
+import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
+import { DataSource } from 'typeorm';
+import { TypeOrmModule } from '@tsdi/typeorm-adapter';
+import { ServerModule } from '@tsdi/platform-server';
+import { ServerLog4Module } from '@tsdi/platform-server/log4js';
+import { ServerEndpointModule } from '@tsdi/platform-server/endpoints'
+import { SwaggerModule } from '@tsdi/swagger';
+
+@Module({
+    baseURL: __dirname,
+    imports: [
+        LoggerModule.withOptions(logconfig),
+        ServerModule,
+        ServerLog4Module,
+        ServerEndpointModule,
+        TransactionModule,
+        TypeOrmModule.withConnection(connections),
+        EndpointModule.register({
+            transport: 'https',
+            config: {
+                majorVersion: 2,
+                serverOpts: {
+                    cert,
+                    key
+                },
+                interceptors: [
+                    CorsInterceptor,
+                    ContentInterceptor,
+                    JsonInterceptor,
+                    BodyparserInterceptor,
+                ]
+            }
+        }),
+        SwaggerModule.withOptions({
+            title: 'api document',
+            description: 'platform basic api',
+            version: 'v1',
+            prefix: 'api-doc'
+        })
+    ],
+    declarations: [
+        UserController,
+        RoleController
+    ]
+})
+export class App {
+
+}
+
+
+bootstrapApplication(App);
+
+```
+
+
 ## Documentation
 Documentation is available on the
 * [@tsdi/ioc document](https://github.com/zhouhoujun/tsioc/tree/master/packages/ioc).

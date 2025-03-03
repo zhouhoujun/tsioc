@@ -220,38 +220,14 @@ BootApplication.run(ServerMainModule)
 ```
 
 
-* use @Bootstrap main to boot application
-
-```ts
-
-@Bootstrap({
-    imports: [
-        KoaModule
-    ],
-    bootstrap: MvcServerToken
-})
-class MvcApi {
-    constructor() {
-        console.log('boot application');
-    }
-
-    static main() {
-        console.log('run mvc api...');
-        // use your builder
-        BootApplication.run(MvcApi);
-    }
-}
-
-
-```
 
 ### message route
 
 ```ts
 
-import { BootApplication, DIModule, Message, MessageQueue, MessageContext, Middleware,  RouteMapping, ApplicationContext, Handle } from '../src';
+import { Application, Module, Message, MessageQueue, MessageContext, Middleware,  RouteMapping, ApplicationContext, Handle } from '@tsdi/core';
 import expect = require('expect');
-import { Injector, Injectable, lang } from '@tsdi/ioc';
+import { Module, Injector, Injectable, lang } from '@tsdi/ioc';
 
 @RouteMapping('/device')
 class DeviceController {
@@ -377,7 +353,7 @@ describe('app message queue', () => {
     let injector: Injector;
 
     before(async () => {
-        ctx = await BootApplication.run(MainApp);
+        ctx = await Application.run(MainApp);
         injector = ctx.injector;
     });
 
