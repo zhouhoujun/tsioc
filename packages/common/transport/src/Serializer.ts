@@ -39,7 +39,7 @@ export const SERIALIZER_FILTERS = tokenId<FilterLike[]>('SERIALIZER_FILTERS');
 export class DefaultSerializerFactory implements SerializerFactory {
     create(context: Injector | InvocationContext, options?: SerializerOpts): Serializer {
         const handler = createHandler(context, {
-            backend: defaultBackend,
+            backend: jsonSerializeBackend,
             filtersToken: SERIALIZER_FILTERS,
             interceptorsToken: SERIALIZER_INTERCEPTORS,
             enableTypeChain: true,
@@ -52,6 +52,6 @@ export class DefaultSerializerFactory implements SerializerFactory {
 }
 
 
-const defaultBackend = (input: any, context?: TransportContext) => {
+const jsonSerializeBackend = (input: any, context?: TransportContext) => {
     return of(JSON.stringify(input, null, 2))
 };

@@ -10,6 +10,7 @@ import {
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
+    readabeRequestBodyerializeInterceptor,
     requestPacketIfySerializeInterceptor, requestSerializeBackend, requestTimeoutInterceptor, SocketClientTransport
 } from '@tsdi/common/client';
 import {
@@ -125,7 +126,8 @@ export class TcpConfiguration {
                     interceptors: [
                         messageVaildateInterceptor,
                         messageSerializeInterceptor,
-                        requestPacketIfySerializeInterceptor
+                        requestPacketIfySerializeInterceptor,
+                        readabeRequestBodyerializeInterceptor
                     ]
                 },
                 deserializerConfig: {

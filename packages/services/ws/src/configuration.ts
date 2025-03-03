@@ -10,6 +10,7 @@ import {
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
     DefaultClientTransport,
+    readabeRequestBodyerializeInterceptor,
     requestPacketIfySerializeInterceptor,
     requestSerializeBackend, requestTimeoutInterceptor
 } from '@tsdi/common/client';
@@ -136,7 +137,8 @@ export class WsConfiguration {
                         interceptors: [
                             messageVaildateInterceptor,
                             messageSerializeInterceptor,
-                            requestPacketIfySerializeInterceptor
+                            requestPacketIfySerializeInterceptor,
+                            readabeRequestBodyerializeInterceptor
                         ]
                     },
                     deserializerConfig: {

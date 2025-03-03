@@ -13,7 +13,7 @@ export interface PipeTransform<TReturn = any, T = any> {
      * @param {T} value
      * @param {...any[]} args
      * @returns {TReturn}
-     * @memberof IPipeTransform
+     * @memberof PipeTransform
      */
     transform(value: T, ...args: any[]): TReturn;
 }

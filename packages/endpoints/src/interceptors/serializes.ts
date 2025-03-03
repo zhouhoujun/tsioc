@@ -156,6 +156,9 @@ export const emptyStatusSerializeInterceptor: InterceptorFn<RequestContext> = (i
     return next(input, context)
 }
 
+/**
+ * head method
+ */
 export const headMethodSerializeInterceptor: InterceptorFn<RequestContext> = (input: RequestContext, next: HandlerFn<RequestContext, Packet>, context: TransportContext) => {
     if (input.method?.toUpperCase() == HEAD) {
         if (!input.headersSent && !input.headerAdapter.hasContentLength(input.response)) {
@@ -167,7 +170,13 @@ export const headMethodSerializeInterceptor: InterceptorFn<RequestContext> = (in
     return next(input, context)
 }
 
-
+/**
+ * no body
+ * @param input 
+ * @param next 
+ * @param context 
+ * @returns 
+ */
 export const noBodySerializeInterceptor: InterceptorFn<RequestContext> = (input: RequestContext, next: HandlerFn<RequestContext, Packet>, context: TransportContext) => {
     if (input.body === null) {
         if (input.explicitNullBody) {
@@ -210,6 +219,9 @@ export const lengthLimitSerializeInterceptor: InterceptorFn<RequestContext> = (i
     return next(input, context);
 }
 
+/**
+ * limited readable body to buffuer
+ */
 export const limitedReadableSerializeInterceptor: InterceptorFn<RequestContext> = (input: RequestContext, next: HandlerFn<RequestContext, Packet>, context: TransportContext) => {
     if (input.streamAdapter.isReadable(input.body)) {
         return defer(async () => {
@@ -243,6 +255,13 @@ function parseToOutgoing(input: RequestContext): Outgoing {
     return pkg;
 }
 
+/**
+ * serialize header and readable body to two packet.
+ * @param input 
+ * @param next 
+ * @param context 
+ * @returns 
+ */
 export const headersReadableBodyInterceptor: InterceptorFn<RequestContext> = (input: RequestContext, next: HandlerFn<RequestContext, Packet>, context: TransportContext) => {
     if (input.streamAdapter.isReadable(input.body)) {
         let contentLength = input.length || 0;
@@ -277,7 +296,7 @@ export const headersReadableBodyInterceptor: InterceptorFn<RequestContext> = (in
 }
 
 /**
- * request context servializ
+ * request context servialize.
  * @param input 
  * @param next 
  * @param context 
