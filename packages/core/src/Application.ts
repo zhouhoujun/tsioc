@@ -78,7 +78,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
     }
 
     /**
-     * run application.
+     * bootstrap application.
      * 
      * 根据配置启动运行应用程序
      *
@@ -88,7 +88,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
      */
     static run<T, TArg extends ApplicationArguments>(option: ApplicationOption<T, TArg>): Promise<ApplicationContext<T, TArg>>
     /**
-     * run application.
+     * bootstrap application.
      * 
      * 根据模块，环境变量启动运行应用程序
      *
@@ -233,6 +233,29 @@ export class Application<T = any, TArg = ApplicationArguments> {
         }
     }
 
+}
+
+/**
+ * bootstrap application.
+ * 
+ * 根据配置启动运行应用程序
+ * 
+ * @param {ApplicationOption} option option of type {@link ApplicationOption}
+ * @returns async returnning instance of {@link ApplicationContext}.
+ */
+export function bootstrapApplication<T, TArg extends ApplicationArguments>(option: ApplicationOption<T, TArg>): Promise<ApplicationContext<T, TArg>>;
+/**
+ * bootstrap application.
+ * 
+ * 根据模块，环境变量启动运行应用程序
+ *
+ * @param {Type<T>} target target class type.
+ * @param {EnvironmentOption} [option] option {@link EnvironmentOption} application run depdences.
+ * @returns async returnning instance of {@link ApplicationContext}.
+ */
+export function bootstrapApplication<T, TArg extends ApplicationArguments>(target: Type<T>, option?: EnvironmentOption<TArg>): Promise<ApplicationContext<T, TArg>>;
+export function bootstrapApplication<T, TArg extends ApplicationArguments>(target: any, option?: EnvironmentOption<any>): Promise<ApplicationContext<T, TArg>> {
+    return new Application<T, TArg>(option ? { module: target, ...option } as ApplicationOption : target).run();
 }
 
 

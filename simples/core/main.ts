@@ -1,4 +1,5 @@
-import { Application } from '@tsdi/core';
+import { Application, bootstrapApplication } from '@tsdi/core';
 import { MockTransBootTest } from './src/app';
 
-Application.run(MockTransBootTest);
+// Application.run(MockTransBootTest);
+bootstrapApplication(MockTransBootTest);
