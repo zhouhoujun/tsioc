@@ -122,7 +122,6 @@ export class TypeormAdapter {
         }
 
         const dataSource = await this.createConnection(options, config);
-
         if (options.initDb) {
             await options.initDb(dataSource)
         }

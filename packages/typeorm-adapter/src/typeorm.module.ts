@@ -23,7 +23,7 @@ export interface TypeormOptions extends ConnectionOptions {
 }
 
 @Module({
-    imports:[
+    imports: [
         LoggerModule
     ],
     providers: [
@@ -41,9 +41,19 @@ export class TypeormModule {
      * @returns 
      */
     static withConnection(...connections: ProvdierOf<TypeormOptions | DataSourceOptions>[]): ModuleWithProviders<TypeormModule> {
-        return {
-            module: TypeormModule,
-            providers: connections.map(c => toProvider(CONNECTIONS, c, true))
-        }
+        return provideTypeorm(...connections);
+    }
+}
+
+
+/**
+ * provide typeorm service.
+ * @param connections 
+ * @returns 
+ */
+export function provideTypeorm(...connections: ProvdierOf<TypeormOptions | DataSourceOptions>[]): ModuleWithProviders<TypeormModule> {
+    return {
+        module: TypeormModule,
+        providers: connections.map(c => toProvider(CONNECTIONS, c, true))
     }
 }
