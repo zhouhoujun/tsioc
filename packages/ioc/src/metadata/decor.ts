@@ -746,7 +746,7 @@ export const ProvidedIn: ProvidedIn = createDecorator<ProvidedInTargetMetadata>(
     props: (target: Type, provide?: Token, alias?: string) => ({ target, provide: getToken(provide!, alias) }),
     design: {
         afterAnnoation: (ctx, next) => {
-            const meta = ctx.class.getMetadata<ProvidedInTargetMetadata>(ctx.currDecor!);
+            const meta = ctx.class.getMetadata<ProvidedInTargetMetadata>(ctx.currDecor);
             const type = ctx.type;
             const prds = meta.provide ? { provide: meta.provide, useClass: type } : type;
             const platform = ctx.injector.platform();

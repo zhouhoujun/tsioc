@@ -48,6 +48,7 @@ export function createDecorator<T>(name: string, option: DecoratorOption<T>): an
     if (option.design) factory.getDesignHandle = mapToFac(option.design as Record<string, Handle | Handle[]>);
     if (option.runtime) factory.getRuntimeHandle = mapToFac(option.runtime as Record<string, Handle | Handle[]>);
     factory.toString = () => decor;
+    factory.decorator = decor;
     return factory
 }
 

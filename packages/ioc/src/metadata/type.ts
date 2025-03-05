@@ -24,6 +24,10 @@ import { Handle } from '../handle';
  */
 export interface DecoratorFn extends Function {
     /**
+     * decorator name.
+     */
+    decorator?: string;
+    /**
      * decorator name
      */
     toString(): string;
@@ -450,34 +454,46 @@ export class Class<T = any> {
         return this.defs.some(d => isEqual(d.decor, decor) && (type ? d.decorType == type : true) && (propertyKey ? d.propertyKey == propertyKey : true));
     }
 
-    getDecorDefine<T = any>(decor: string | DecoratorFn | undefined, vaild?: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
-    getDecorDefine<T = any>(decor: string | DecoratorFn | undefined, type: DecoratorType, vaild?: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
-    getDecorDefine<T = any>(decor: string | DecoratorFn | undefined, type: DecorMemberType | null, propertyKey: string, vaild?: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
-    getDecorDefine(decor?: string | DecoratorFn, typeOrVaild?: DecoratorType | null | ((d: DecorDefine<T>) => boolean), propertyKeyOrVaild?: string | ((d: DecorDefine<T>) => boolean), vaild?: (d: DecorDefine<T>) => boolean): DecorDefine | undefined {
+    getDecorDefine<T = any>(filter: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
+    getDecorDefine<T = any>(decor: string | DecoratorFn | undefined, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
+    getDecorDefine<T = any>(decor: string | DecoratorFn | undefined, type: DecoratorType, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
+    getDecorDefine<T = any>(decor: string | DecoratorFn | undefined, type: DecorMemberType | null, propertyKey: string, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
+    getDecorDefine(arg: any, typeOrVaild?: DecoratorType | null | ((d: DecorDefine<T>) => boolean), propertyKeyOrVaild?: string | ((d: DecorDefine<T>) => boolean), filter?: (d: DecorDefine<T>) => boolean): DecorDefine | undefined {
+        let decor: string | DecoratorFn | undefined;
         let type: DecoratorType | null | undefined;
-        if (isFunction(typeOrVaild)) {
-            vaild = typeOrVaild;
-            typeOrVaild = undefined;
-        }
-        if (typeOrVaild !== null) {
-            type = typeOrVaild ?? Decors.CLASS;
-        }
         let propertyKey: string | undefined;
-        if (isFunction(propertyKeyOrVaild)) {
-            vaild = propertyKeyOrVaild
+        if (isFunction(arg) && !(arg as DecoratorFn).decorator) {
+            filter = arg;
         } else {
-            propertyKey = propertyKeyOrVaild;
+            decor = arg;
+            if (isFunction(typeOrVaild)) {
+                filter = typeOrVaild;
+                typeOrVaild = undefined;
+            }
+            if (typeOrVaild !== null) {
+                type = typeOrVaild ?? Decors.CLASS;
+            }
+            if (isFunction(propertyKeyOrVaild)) {
+                filter = propertyKeyOrVaild
+            } else {
+                propertyKey = propertyKeyOrVaild;
+            }
         }
-        return this.defs.find(d => (decor ? isEqual(d.decor, decor) : true) && (type ? d.decorType == type : true) && (propertyKey ? d.propertyKey == propertyKey : true) && (vaild ? vaild(d) : true))
+        return this.defs.find(d => (decor ? isEqual(d.decor, decor) : true) && (type ? d.decorType == type : true) && (propertyKey ? d.propertyKey == propertyKey : true) && (filter ? filter(d) : true))
     }
 
     /**
-     * get all class decorator defines.
+     * get decorator defines.
+     * @param decor
+     */
+    getDecorDefines(filter: (d: DecorDefine<T>) => boolean): DecorDefine[];
+    /**
+     * get decorator defines.
      * @param decor
      */
     getDecorDefines(decor?: string | DecoratorFn, filter?: (d: DecorDefine<T>) => boolean): DecorDefine[];
     /**
-     * get all decorator defines.
+     * get decorator defines.
      * @param decor decorator.
      * @param type  decorator type.
      */
@@ -488,20 +504,26 @@ export class Class<T = any> {
      * @param type  decorator type.
      */
     getDecorDefines<T = any>(decor: string | DecoratorFn | undefined, type: DecorMemberType | null, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
-    getDecorDefines(decor?: string | DecoratorFn, typeOrFilter?: DecoratorType | null | ((d: DecorDefine<T>) => boolean), propertyKeyOrFilter?: string | ((d: DecorDefine<T>) => boolean), filter?: (d: DecorDefine<T>) => boolean): DecorDefine[] {
+    getDecorDefines(arg: any, typeOrFilter?: DecoratorType | null | ((d: DecorDefine<T>) => boolean), propertyKeyOrFilter?: string | ((d: DecorDefine<T>) => boolean), filter?: (d: DecorDefine<T>) => boolean): DecorDefine[] {
+        let decor: string | DecoratorFn | undefined;
         let type: DecoratorType | null | undefined;
-        if (isFunction(typeOrFilter)) {
-            filter = typeOrFilter;
-            typeOrFilter = undefined;
-        }
-        if (typeOrFilter !== null) {
-            type = typeOrFilter ?? Decors.CLASS;
-        }
         let propertyKey: string | undefined;
-        if (isFunction(propertyKeyOrFilter)) {
-            filter = propertyKeyOrFilter
+        if (isFunction(arg) && !(arg as DecoratorFn).decorator) {
+            filter = arg;
         } else {
-            propertyKey = propertyKeyOrFilter;
+            decor = arg;
+            if (isFunction(typeOrFilter)) {
+                filter = typeOrFilter;
+                typeOrFilter = undefined;
+            }
+            if (typeOrFilter !== null) {
+                type = typeOrFilter ?? Decors.CLASS;
+            }
+            if (isFunction(propertyKeyOrFilter)) {
+                filter = propertyKeyOrFilter
+            } else {
+                propertyKey = propertyKeyOrFilter;
+            }
         }
         return this.defs.filter(d => (decor ? isEqual(d.decor, decor) : true) && (type ? d.decorType == type : true) && (propertyKey ? d.propertyKey == propertyKey : true) && (filter ? filter(d) : true))
 
@@ -523,38 +545,44 @@ export class Class<T = any> {
     getParamDefines<T>(decor?: string | DecoratorFn, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean) {
         return this.getDecorDefines(decor, Decors.parameter, propertyKey, filter)
     }
+
     /**
      * get class metadata.
      * @param decor decoractor or decoractor name.
      */
-    getMetadata<T = any>(decor: string | DecoratorFn | undefined, vaild?: (d: DecorDefine<T>) => boolean): T;
+    getMetadata<T = any>(filter: (d: DecorDefine<T>) => boolean): T;
+    /**
+     * get class metadata.
+     * @param decor decoractor or decoractor name.
+     */
+    getMetadata<T = any>(decor: string | DecoratorFn | undefined, filter?: (d: DecorDefine<T>) => boolean): T;
     /**
      * get property or method metadta.
      * @param decor decoractor or decoractor name.
      * @param propertyKey property name.
      */
-    getMetadata<T = any>(decor: string | DecoratorFn | undefined, type: DecoratorType, vaild?: (d: DecorDefine<T>) => boolean): T;
+    getMetadata<T = any>(decor: string | DecoratorFn | undefined, type: DecoratorType, filter?: (d: DecorDefine<T>) => boolean): T;
     /**
      * get property or method metadta.
      * @param decor decoractor or decoractor name.
      * @param propertyKey property name.
      * @param type decoractor type.
      */
-    getMetadata<T = any>(decor: string | DecoratorFn | undefined, type: DecorMemberType | null, propertyKey: string | undefined, vaild?: (d: DecorDefine<T>) => boolean): T;
+    getMetadata<T = any>(decor: string | DecoratorFn | undefined, type: DecorMemberType | null, propertyKey: string | undefined, filter?: (d: DecorDefine<T>) => boolean): T;
     getMetadata(...args: any[]) {
         return (this.getDecorDefine as Function).apply(this, args)?.metadata;
     }
 
-    getMethodMetadata(decor?: string | DecoratorFn, propertyKey?: string, vaild?: (d: DecorDefine<T>) => boolean) {
-        return this.getMetadata(decor, Decors.method, propertyKey, vaild)
+    getMethodMetadata(decor?: string | DecoratorFn, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean) {
+        return this.getMetadata(decor, Decors.method, propertyKey, filter)
     }
 
-    getPropMetadata(decor?: string | DecoratorFn, propertyKey?: string, vaild?: (d: DecorDefine<T>) => boolean) {
-        return this.getMetadata(decor, Decors.property, propertyKey, vaild)
+    getPropMetadata(decor?: string | DecoratorFn, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean) {
+        return this.getMetadata(decor, Decors.property, propertyKey, filter)
     }
 
-    getParamMetadata(decor?: string | DecoratorFn, propertyKey?: string, vaild?: (d: DecorDefine<T>) => boolean) {
-        return this.getMetadata(decor, Decors.parameter, propertyKey, vaild)
+    getParamMetadata(decor?: string | DecoratorFn, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean) {
+        return this.getMetadata(decor, Decors.parameter, propertyKey, filter)
     }
 
     /**
