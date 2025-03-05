@@ -1,4 +1,4 @@
-import { Class, DecorDefine, Injectable, Injector, isString, OnDestroy, ReflectiveRef, tokenId, Type } from '@tsdi/ioc';
+import { Class, DecorDefine, Decors, Injectable, Injector, isString, OnDestroy, ReflectiveRef, tokenId, Type } from '@tsdi/ioc';
 import { Backend, Handler, CanHandle, Interceptor, Filter, setHandlerOptions, ConfigableHandler, BackendFn } from '@tsdi/core';
 import { joinPath, normalize } from '@tsdi/common';
 import { NotFoundExecption, PushDisabledExecption } from '@tsdi/common/transport';
@@ -32,8 +32,8 @@ export class ControllerRoute<T> extends ConfigableHandler<RequestContext, any, R
         const mapping = factory.typeRef.class.getAnnotation<MappingDef>();
         this.prefix = joinPath(options.prefix, mapping.prefix, mapping.version, mapping.route);
         setHandlerOptions(this, mapping);
-        this.sortRoutes = factory.typeRef.class.defs
-            .filter(m => m && m.decorType === 'method' && isString((m.metadata as RouteMappingMetadata).route))
+        this.sortRoutes = factory.typeRef.class
+            .getDecorDefines(undefined, Decors.method, m => m && isString((m.metadata as RouteMappingMetadata).route))
             .sort((ra, rb) => (ra.metadata.route || '').length - (rb.metadata.route || '').length) as DecorDefine<RouteMappingMetadata>[];
 
         factory.onDestroy(this);

@@ -1,4 +1,4 @@
-import { lang, Injectable, Decors, InvocationContext, ReflectiveRef, Type } from '@tsdi/ioc';
+import { lang, Injectable, InvocationContext, ReflectiveRef, Type } from '@tsdi/ioc';
 import { RunnableRef } from '@tsdi/core';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
@@ -97,7 +97,7 @@ export class SuiteRunner<T = any> extends RunnableRef<T> implements UnitRunner {
     }
 
     async runBefore(describe: SuiteDescribe) {
-        const befores = this.typeRef.class.getDecorDefines<BeforeTestMetadata>(Before.toString(), Decors.method);
+        const befores = this.typeRef.class.getMethodDefines<BeforeTestMetadata>(Before);
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -111,7 +111,7 @@ export class SuiteRunner<T = any> extends RunnableRef<T> implements UnitRunner {
     }
 
     async runBeforeEach() {
-        const befores = this.typeRef.class.getDecorDefines<BeforeEachTestMetadata>(BeforeEach.toString(), Decors.method);
+        const befores = this.typeRef.class.getMethodDefines<BeforeEachTestMetadata>(BeforeEach);
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -122,7 +122,7 @@ export class SuiteRunner<T = any> extends RunnableRef<T> implements UnitRunner {
     }
 
     async runAfterEach() {
-        const afters = this.typeRef.class.getDecorDefines<BeforeEachTestMetadata>(AfterEach.toString(), Decors.method);
+        const afters = this.typeRef.class.getMethodDefines<BeforeEachTestMetadata>(AfterEach);
         await lang.step(afters.map(df => () => {
             return this.runTimeout(
                 df.propertyKey,
@@ -132,7 +132,7 @@ export class SuiteRunner<T = any> extends RunnableRef<T> implements UnitRunner {
     }
 
     async runAfter(describe: SuiteDescribe) {
-        const afters = this.typeRef.class.getDecorDefines<BeforeTestMetadata>(After.toString(), Decors.method);
+        const afters = this.typeRef.class.getMethodDefines<BeforeTestMetadata>(After);
         await lang.step(
             afters.map(df => () => {
                 return this.runTimeout(
@@ -143,7 +143,7 @@ export class SuiteRunner<T = any> extends RunnableRef<T> implements UnitRunner {
     }
 
     async runTest(desc: SuiteDescribe) {
-        const tests = this.typeRef.class.getDecorDefines<TestCaseMetadata>(Test.toString(), Decors.method);
+        const tests = this.typeRef.class.getMethodDefines<TestCaseMetadata>(Test);
         await lang.step(
             tests.map(df => {
                 return {

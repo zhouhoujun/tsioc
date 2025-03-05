@@ -1,7 +1,7 @@
 import {
     isUndefined, Type, createDecorator, ProviderType, InjectableMetadata, PropertyMetadata, ActionTypes, InjectFlags,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
-    isString, Parameter, ProviderMetadata, Decors, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
+    isString, Parameter, ProviderMetadata, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
     ModuleType, ClassType, MutilProvider, ReflectiveRef, Class, Injector,
     ProvidedInMetadata
 } from '@tsdi/ioc';
@@ -491,7 +491,7 @@ export const Interceptable: Interceptable = createDecorator('Interceptable', {
     design: {
         method: (ctx, next) => {
             const typeRef = ctx.class;
-            const decors = typeRef.getDecorDefines<InterceptMetadata>(ctx.currDecor, Decors.method);
+            const decors = typeRef.getMethodDefines<InterceptMetadata>(ctx.currDecor);
             const injector = ctx.injector;
             const factory = injector.get(ReflectiveFactory).create(typeRef);
             const currResolver = injector.get(InterceptorResolver);
@@ -542,7 +542,7 @@ export const Filterable: Filterable = createDecorator('Filterable', {
     design: {
         method: (ctx, next) => {
             const typeRef = ctx.class;
-            const decors = typeRef.getDecorDefines<InterceptMetadata>(ctx.currDecor, Decors.method);
+            const decors = typeRef.getMethodDefines<InterceptMetadata>(ctx.currDecor);
             const injector = ctx.injector;
             const factory = injector.get(ReflectiveFactory).create(typeRef);
             const currResolver = injector.get(FilterResolver);
@@ -605,7 +605,7 @@ export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
     design: {
         method: (ctx, next) => {
             const typeRef = ctx.class;
-            const decors = typeRef.getDecorDefines<FilterHandlerMetadata<any>>(ctx.currDecor, Decors.method);
+            const decors = typeRef.getMethodDefines<FilterHandlerMetadata<any>>(ctx.currDecor);
             const injector = ctx.injector;
             const factory = injector.get(InvocationFactoryResolver).resolve(typeRef);
             const currResolver = injector.get(FilterHandlerResolver);

@@ -447,17 +447,13 @@ export class Class<T = any> {
     hasMetadata(decor: string | DecoratorFn, type: DecoratorType | null, propertyKey?: string): boolean;
     hasMetadata(decor: string | DecoratorFn, type?: DecoratorType | null, propertyKey?: string): boolean {
         type = (type === null) ? null : (type ?? Decors.CLASS);
-        decor = getDectorId(decor);
-        return this.defs.some(d => getDectorId(d.decor) == decor && (type ? d.decorType == type : true) && (propertyKey ? d.propertyKey == propertyKey : true));
+        return this.defs.some(d => isEqual(d.decor, decor) && (type ? d.decorType == type : true) && (propertyKey ? d.propertyKey == propertyKey : true));
     }
 
     getDecorDefine<T = any>(decor: string | DecoratorFn | undefined, vaild?: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
     getDecorDefine<T = any>(decor: string | DecoratorFn | undefined, type: DecoratorType, vaild?: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
     getDecorDefine<T = any>(decor: string | DecoratorFn | undefined, type: DecorMemberType | null, propertyKey: string, vaild?: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
     getDecorDefine(decor?: string | DecoratorFn, typeOrVaild?: DecoratorType | null | ((d: DecorDefine<T>) => boolean), propertyKeyOrVaild?: string | ((d: DecorDefine<T>) => boolean), vaild?: (d: DecorDefine<T>) => boolean): DecorDefine | undefined {
-        if (decor) {
-            decor = getDectorId(decor)
-        }
         let type: DecoratorType | null | undefined;
         if (isFunction(typeOrVaild)) {
             vaild = typeOrVaild;
@@ -472,7 +468,7 @@ export class Class<T = any> {
         } else {
             propertyKey = propertyKeyOrVaild;
         }
-        return this.defs.find(d => (decor ? getDectorId(d.decor) == decor : true) && (type ? d.decorType == type : true) && (propertyKey ? d.propertyKey == propertyKey : true) && (vaild ? vaild(d) : true))
+        return this.defs.find(d => (decor ? isEqual(d.decor, decor) : true) && (type ? d.decorType == type : true) && (propertyKey ? d.propertyKey == propertyKey : true) && (vaild ? vaild(d) : true))
     }
 
     /**
@@ -493,9 +489,6 @@ export class Class<T = any> {
      */
     getDecorDefines<T = any>(decor: string | DecoratorFn | undefined, type: DecorMemberType | null, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
     getDecorDefines(decor?: string | DecoratorFn, typeOrFilter?: DecoratorType | null | ((d: DecorDefine<T>) => boolean), propertyKeyOrFilter?: string | ((d: DecorDefine<T>) => boolean), filter?: (d: DecorDefine<T>) => boolean): DecorDefine[] {
-        if (decor) {
-            decor = getDectorId(decor)
-        }
         let type: DecoratorType | null | undefined;
         if (isFunction(typeOrFilter)) {
             filter = typeOrFilter;
@@ -510,25 +503,25 @@ export class Class<T = any> {
         } else {
             propertyKey = propertyKeyOrFilter;
         }
-        return this.defs.filter(d => (decor ? getDectorId(d.decor) == decor : true) && (type ? d.decorType == type : true) && (propertyKey ? d.propertyKey == propertyKey : true) && (filter ? filter(d) : true))
+        return this.defs.filter(d => (decor ? isEqual(d.decor, decor) : true) && (type ? d.decorType == type : true) && (propertyKey ? d.propertyKey == propertyKey : true) && (filter ? filter(d) : true))
 
     }
 
-    getClassdDefines(decor?: string | DecoratorFn) {
-        return this.getDecorDefines(decor, Decors.CLASS)
+    getClassdDefines<T>(decor?: string | DecoratorFn, filter?: (d: DecorDefine<T>) => boolean) {
+        return this.getDecorDefines(decor, Decors.CLASS, filter)
     }
 
-    getMethodDefines(decor?: string | DecoratorFn, propertyKey?: string) {
-        return this.getDecorDefines(decor, Decors.method, propertyKey)
+    getMethodDefines<T>(decor?: string | DecoratorFn, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean) {
+        return this.getDecorDefines(decor, Decors.method, propertyKey, filter)
     }
 
 
-    getPropDefines(decor?: string | DecoratorFn, propertyKey?: string) {
-        return this.getDecorDefines(decor, Decors.property, propertyKey)
+    getPropDefines<T>(decor?: string | DecoratorFn, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean) {
+        return this.getDecorDefines(decor, Decors.property, propertyKey, filter)
     }
 
-    getParamDefines(decor?: string | DecoratorFn, propertyKey?: string) {
-        return this.getDecorDefines(decor, Decors.parameter, propertyKey)
+    getParamDefines<T>(decor?: string | DecoratorFn, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean) {
+        return this.getDecorDefines(decor, Decors.parameter, propertyKey, filter)
     }
     /**
      * get class metadata.
@@ -696,4 +689,9 @@ function getParamNames(func: Function) {
 
 function getDectorId(decor: string | Function): string {
     return isString(decor) ? decor : decor.toString()
+}
+
+function isEqual(decor1: string | DecoratorFn, decor2: string | DecoratorFn) {
+    if (decor1 == decor2) return true;
+    return getDectorId(decor1) == getDectorId(decor2);
 }

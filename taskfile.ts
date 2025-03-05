@@ -5,7 +5,7 @@ import { PackModule, NodeActivityContext, JsonReplaceActivityOption } from '@tsd
 import { ServerActivitiesModule } from '@tsdi/platform-server/activities';
 import * as through from 'through2';
 
-@Task({
+@Activity({
     deps: [
         PackModule,
         ServerActivitiesModule
