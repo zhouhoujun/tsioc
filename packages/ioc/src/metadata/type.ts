@@ -533,10 +533,10 @@ export class Class<T = any> {
      * @param decor decoractor or decoractor name.
      * @param filter custom filter.
      */
-    getClassdDefines<T = any>(decor: string | DecoratorFn | undefined, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
+    getClassdDefines<T = any>(decor: string | DecoratorFn | null, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
     getClassdDefines(...args: any[]) {
         args.unshift(Decors.CLASS);
-        return (this.findDefines as Function).apply(this, args)?.metadata;
+        return (this.findDefines as Function).apply(this, args);
     }
 
     /**
@@ -549,10 +549,17 @@ export class Class<T = any> {
      * @param decor decoractor or decoractor name.
      * @param filter custom filter.
      */
-    getMethodDefines<T = any>(decor: string | DecoratorFn | undefined, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
+    getMethodDefines<T = any>(decor: string | DecoratorFn | null, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
+    /**
+     * get method metadata.
+     * @param decor decoractor or decoractor name.
+     * @param propertyKey method name
+     * @param filter custom filter.
+     */
+    getMethodDefines<T = any>(decor: string | DecoratorFn | null, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
     getMethodDefines(...args: any[]) {
         args.unshift(Decors.method);
-        return (this.findDefines as Function).apply(this, args)?.metadata;
+        return (this.findDefines as Function).apply(this, args);
     }
 
     /**
@@ -565,10 +572,17 @@ export class Class<T = any> {
      * @param decor decoractor or decoractor name.
      * @param filter custom filter.
      */
-    getPropDefines<T = any>(decor: string | DecoratorFn | undefined, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
+    getPropDefines<T = any>(decor: string | DecoratorFn | null, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
+    /**
+     * get property metadata.
+     * @param decor decoractor or decoractor name.
+     * @param propertyKey property name
+     * @param filter custom filter.
+     */
+    getPropDefines<T = any>(decor: string | DecoratorFn | null, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
     getPropDefines(...args: any[]) {
         args.unshift(Decors.property);
-        return (this.findDefines as Function).apply(this, args)?.metadata;
+        return (this.findDefines as Function).apply(this, args);
     }
 
     /**
@@ -581,10 +595,17 @@ export class Class<T = any> {
      * @param decor decoractor or decoractor name.
      * @param filter custom filter.
      */
-    getParamDefines<T = any>(decor: string | DecoratorFn | undefined, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
+    getParamDefines<T = any>(decor: string | DecoratorFn | null, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
+    /**
+     * get parameter metadata.
+     * @param decor decoractor or decoractor name.
+     * @param propertyKey method name
+     * @param filter custom filter.
+     */
+    getParamDefines<T = any>(decor: string | DecoratorFn | null,  propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
     getParamDefines(...args: any[]) {
         args.unshift(Decors.parameter);
-        return (this.findDefines as Function).apply(this, args)?.metadata;
+        return (this.findDefines as Function).apply(this, args);
     }
 
     /**
@@ -614,9 +635,9 @@ export class Class<T = any> {
     getMethodMetadata<T = any>(decor: string | DecoratorFn | null, filter?: (d: DecorDefine<T>) => boolean): T;
     /**
      * get method metadata.
-     * @param decor 
-     * @param propertyKey 
-     * @param filter 
+     * @param decor decoractor or decoractor name.
+     * @param propertyKey method name
+     * @param filter custom filter
      */
     getMethodMetadata(decor: string | DecoratorFn | null, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): T;
     getMethodMetadata(...args: any[]) {
@@ -637,9 +658,9 @@ export class Class<T = any> {
     getPropMetadata<T = any>(decor: string | DecoratorFn | null, filter?: (d: DecorDefine<T>) => boolean): T;
     /**
      * get property metadata.
-     * @param decor 
-     * @param propertyKey 
-     * @param filter 
+     * @param decor decoractor or decoractor name.
+     * @param propertyKey property name
+     * @param filter custom filter
      */
     getPropMetadata(decor: string | DecoratorFn | null, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): T;
     getPropMetadata(...args: any[]) {
@@ -661,9 +682,9 @@ export class Class<T = any> {
     getParamMetadata<T = any>(decor: string | DecoratorFn | null, filter?: (d: DecorDefine<T>) => boolean): T;
     /**
      * get parameter metadata.
-     * @param decor 
-     * @param propertyKey 
-     * @param filter 
+     * @param decor decoractor or decoractor name.
+     * @param propertyKey method name
+     * @param filter custom filter
      */
     getParamMetadata(decor: string | DecoratorFn|null, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): T;
     getParamMetadata(...args: any[]) {
