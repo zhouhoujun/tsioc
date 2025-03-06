@@ -185,7 +185,7 @@ export const Configuration: ConfigurationDecorator = createDecorator<Confgiurati
     design: {
         afterAnnoation: (ctx, next) => {
             const { class: typeRef, injector } = ctx;
-            const meta = typeRef.getMetadata<ConfgiurationMetadata>(ctx.currDecor!);
+            const meta = typeRef.getMetadata<ConfgiurationMetadata>(ctx.currDecor);
             if (meta.imports) {
                 injector.inject({
                     provider: async (injector) => {

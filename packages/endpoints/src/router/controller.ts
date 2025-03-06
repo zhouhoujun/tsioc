@@ -33,7 +33,7 @@ export class ControllerRoute<T> extends ConfigableHandler<RequestContext, any, R
         this.prefix = joinPath(options.prefix, mapping.prefix, mapping.version, mapping.route);
         setHandlerOptions(this, mapping);
         this.sortRoutes = factory.typeRef.class
-            .getDecorDefines(undefined, Decors.method, m => m && isString((m.metadata as RouteMappingMetadata).route))
+            .getMethodDefines(m => m && isString((m.metadata as RouteMappingMetadata).route))
             .sort((ra, rb) => (ra.metadata.route || '').length - (rb.metadata.route || '').length) as DecorDefine<RouteMappingMetadata>[];
 
         factory.onDestroy(this);

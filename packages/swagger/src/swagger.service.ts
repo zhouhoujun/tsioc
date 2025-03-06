@@ -143,7 +143,7 @@ export class SwaggerService {
 
                 v.ctrlRef.class.defs.forEach(df => {
                     if (df.decorType == 'class' && isString((df.metadata as RouteMappingMetadata).route)) {
-                        const description = v.ctrlRef.class.getMetadata(undefined, d => !!d.metadata?.description)?.description;
+                        const description = v.ctrlRef.class.getMetadata(d => !!d.metadata?.description)?.description;
 
                         jsonDoc.tags?.push({
                             name: v.ctrlRef.class.className,
@@ -170,7 +170,7 @@ export class SwaggerService {
                     const method = df.metadata.method?.toLowerCase() ?? 'get';
                     if (api[method]) throw new Execption(`has mutil route address ${path}, with same method ${method}`);
 
-                    const returnType = v.ctrlRef.class.getMethodMetadata(undefined, df.propertyKey, r => isType(r.metadata.response))?.response ?? df.metadata.returnType ?? df.metadata.type;
+                    const returnType = v.ctrlRef.class.getMethodMetadata(null, df.propertyKey, r => isType(r.metadata.response))?.response ?? df.metadata.returnType ?? df.metadata.type;
                     let returnTypeName = '';
                     if (returnType && returnType != Object && returnType != Promise) {
                         returnTypeName = getClassName(returnType);
@@ -182,8 +182,8 @@ export class SwaggerService {
                     const paramMatedatas = v.ctrlRef.class.getParameters(df.propertyKey) as TransportParameter[]
                     api[method] = {
                         "x-swagger-router-controller": v.ctrlRef.class.className,
-                        summary: (v.ctrlRef.class.getMethodMetadata(undefined, df.propertyKey, r => r.metadata.summary) as any)?.summary ?? '',
-                        description: (v.ctrlRef.class.getMethodMetadata(undefined, df.propertyKey, r => r.metadata.description) as any)?.description ?? '',
+                        summary: (v.ctrlRef.class.getMethodMetadata(null, df.propertyKey, r => r.metadata.summary) as any)?.summary ?? '',
+                        description: (v.ctrlRef.class.getMethodMetadata(null, df.propertyKey, r => r.metadata.description) as any)?.description ?? '',
                         operationId: df.propertyKey + '-' + method,
                         tags: [v.ctrlRef.class.className],
                         parameters: paramMatedatas?.filter(p => ((!p.scope || p.scope == 'query' || p.scope == 'path') && p.flags && (p.flags & InjectFlags.Request)))?.map(p => this.toParamObject(jsonDoc, p as TransportParameter, modelResolver)),
