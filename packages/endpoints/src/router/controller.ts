@@ -91,7 +91,7 @@ export class ControllerRoute<T> extends ConfigableHandler<RequestContext, any, R
 
         return this.sortRoutes.find(m => m
             && (ctx.method == '*' || m.metadata.method === ctx.method)
-            && ((m.metadata.route || '') === subRoute || (m.metadata.regExp && m.metadata.regExp.test(subRoute))))
+            && (m.metadata.regExp ? m.metadata.regExp.test(subRoute) : m.metadata.route === subRoute))
     }
 }
 
