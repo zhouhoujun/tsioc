@@ -10,15 +10,29 @@ import { SwaggerService } from './swagger.service';
 })
 export class SwaggerModule {
 
+    /**
+     * provide swagger module with options.
+     * @param options 
+     * @returns 
+     */
     static withOptions(options: ProvdierOf<SwaggerSetupOptions>): ModuleWithProviders<SwaggerModule> {
+        return provideSwagger(options);
+    }
+}
 
-        const providers: ProviderType[] = [
-            toProvider(SWAGGER_SETUP_OPTIONS, options)
-        ];
+/**
+ * provide swagger module with options.
+ * @param options 
+ * @returns 
+ */
+export function provideSwagger(options: ProvdierOf<SwaggerSetupOptions>): ModuleWithProviders<SwaggerModule> {
 
-        return {
-            providers,
-            module: SwaggerModule
-        }
+    const providers: ProviderType[] = [
+        toProvider(SWAGGER_SETUP_OPTIONS, options)
+    ];
+
+    return {
+        providers,
+        module: SwaggerModule
     }
 }

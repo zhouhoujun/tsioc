@@ -34,21 +34,31 @@ export const LOGGER_PROVIDERS: ProviderType[] = [
 export class LoggerModule {
 
     /**
-     * LoggerModule with options.
+     * provide logger with options.
      * @param config
      * @param debug 
      * @returns 
      */
     static withOptions(config: ProvdierOf<LogConfigure> | ProvdierOf<LogConfigure>[] | null, debug?: boolean): ModuleWithProviders<LoggerModule> {
-        const providers: ProviderType[] = config ? (isArray(config) ? config : [config]).map(cfg => toProvider(LOG_CONFIGURES, cfg, true)) : [{ provide: LOG_CONFIGURES, useValue: { adapter: 'console' }, multi: true }]
-        if (debug) {
-            providers.push(DebugLogAspect)
-        }
+        return provideLogger(config, debug);
+    }
+}
 
-        return {
-            module: LoggerModule,
-            providers
-        }
+/**
+ * provide logger with options.
+ * @param config
+ * @param debug 
+ * @returns 
+ */
+export function provideLogger(config: ProvdierOf<LogConfigure> | ProvdierOf<LogConfigure>[] | null, debug?: boolean): ModuleWithProviders<LoggerModule> {
+    const providers: ProviderType[] = config ? (isArray(config) ? config : [config]).map(cfg => toProvider(LOG_CONFIGURES, cfg, true)) : [{ provide: LOG_CONFIGURES, useValue: { adapter: 'console' }, multi: true }]
+    if (debug) {
+        providers.push(DebugLogAspect)
+    }
+
+    return {
+        module: LoggerModule,
+        providers
     }
 }
 

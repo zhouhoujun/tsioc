@@ -66,7 +66,7 @@ export class EndpointModule {
 }
 
 /**
- * provide service.
+ * provide service with optioos.
  * @param options 
  * @param autoBootstrap default true 
  */

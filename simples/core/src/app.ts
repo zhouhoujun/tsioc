@@ -1,14 +1,14 @@
 import { Module } from '@tsdi/ioc';
-import { LoggerModule, LogConfigure } from '@tsdi/logger';
-import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor } from '@tsdi/endpoints';
+import { LoggerModule, LogConfigure, provideLogger } from '@tsdi/logger';
+import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor, provideService } from '@tsdi/endpoints';
 import { CorsInterceptor, HttpModule } from '@tsdi/http';
 import { ConnectionOptions, TransactionModule } from '@tsdi/repository';
 import { DataSource } from 'typeorm';
-import { TypeOrmModule } from '@tsdi/typeorm-adapter';
+import { provideTypeorm, TypeOrmModule } from '@tsdi/typeorm-adapter';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerLog4Module } from '@tsdi/platform-server/log4js';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints'
-import { SwaggerModule } from '@tsdi/swagger';
+import { provideSwagger, SwaggerModule } from '@tsdi/swagger';
 import * as fs from 'fs';
 import * as path from 'path';
 import { User } from './models/User';
@@ -95,13 +95,14 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
 @Module({
     baseURL: __dirname,
     imports: [
-        LoggerModule.withOptions(logconfig),
+        // LoggerModule.withOptions(logconfig),
+        provideLogger(logconfig),
         ServerModule,
         ServerLog4Module,
         ServerEndpointModule,
         TransactionModule,
-        TypeOrmModule.withConnection(connections),
-        EndpointModule.register({
+        provideTypeorm(connections),
+        provideService({
             transport: 'https',
             config: {
                 majorVersion: 2,
@@ -116,13 +117,36 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
                     BodyparserInterceptor,
                 ]
             }
-        }),
-        SwaggerModule.withOptions({
+        }),        
+        provideSwagger({
             title: 'api document',
             description: 'platform basic api',
             version: 'v1',
             prefix: 'api-doc'
         })
+        // TypeOrmModule.withConnection(connections),
+        // EndpointModule.register({
+        //     transport: 'https',
+        //     config: {
+        //         majorVersion: 2,
+        //         serverOpts: {
+        //             cert,
+        //             key
+        //         },
+        //         interceptors: [
+        //             CorsInterceptor,
+        //             ContentInterceptor,
+        //             JsonInterceptor,
+        //             BodyparserInterceptor,
+        //         ]
+        //     }
+        // }),
+        // SwaggerModule.withOptions({
+        //     title: 'api document',
+        //     description: 'platform basic api',
+        //     version: 'v1',
+        //     prefix: 'api-doc'
+        // })
     ],
     declarations: [
         UserController,

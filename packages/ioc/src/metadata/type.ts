@@ -449,27 +449,27 @@ export class Class<T = any> {
     }
 
     /**
-     * find one decorator define.
+     * get one decorator define.
      * @param type decorator type
      * @param decor decorator
      */
-    findDefine<T = any>(type: DecoratorType | null, filter: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
+    getDefine<T = any>(type: DecoratorType | null, filter: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
     /**
-     * find one decorator define.
+     * get one decorator define.
      * @param type decorator type
      * @param decor decorator
      * @param filter custom filter.
      */
-    findDefine<T = any>(type: DecoratorType | null, decor: string | DecoratorFn | undefined, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
+    getDefine<T = any>(type: DecoratorType | null, decor: string | DecoratorFn | undefined, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
     /**
-     * find one decorator define.
+     * get one decorator define.
      * @param type decorator type
      * @param decor decorator
      * @param propertyKey the property, mothod or paramter key
      * @param filter custom filter.
      */
-    findDefine<T = any>(type: DecorMemberType | null, decor: string | DecoratorFn | undefined, propertyKey: string, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
-    findDefine<T = any>(type: DecoratorType | null, arg: any, propertyKeyOrFilter?: string | ((d: DecorDefine<T>) => boolean), filter?: (d: DecorDefine<T>) => boolean): DecorDefine | undefined {
+    getDefine<T = any>(type: DecorMemberType | null, decor: string | DecoratorFn | undefined, propertyKey: string, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
+    getDefine<T = any>(type: DecoratorType | null, arg: any, propertyKeyOrFilter?: string | ((d: DecorDefine<T>) => boolean), filter?: (d: DecorDefine<T>) => boolean): DecorDefine | undefined {
         let decor: string | DecoratorFn | undefined;
         let propertyKey: string | undefined;
         if (isFunction(arg) && !(arg as DecoratorFn).decorator) {
@@ -486,27 +486,27 @@ export class Class<T = any> {
     }
 
     /**
-     * find decorator defines.
+     * get decorator defines.
      * @param type decorator type
      * @param decor decorator
      */
-    findDefines(type: DecoratorType | null, filter: (d: DecorDefine<T>) => boolean): DecorDefine[];
+    getDefines(type: DecoratorType | null, filter: (d: DecorDefine<T>) => boolean): DecorDefine[];
     /**
-     * find decorator defines.
+     * get decorator defines.
      * @param type decorator type
      * @param decor decorator
      * @param filter custom filter.
      */
-    findDefines(type?: DecoratorType | null, decor?: string | DecoratorFn, filter?: (d: DecorDefine<T>) => boolean): DecorDefine[];
+    getDefines(type?: DecoratorType | null, decor?: string | DecoratorFn, filter?: (d: DecorDefine<T>) => boolean): DecorDefine[];
     /**
-     * find all decorator defines.
+     * get decorator defines.
      * @param type decorator type
      * @param decor decorator
      * @param propertyKey the property, mothod or paramter key
      * @param filter custom filter.
      */
-    findDefines<T = any>(type: DecorMemberType | null, decor?: string | DecoratorFn | undefined, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
-    findDefines(type: DecoratorType | null, arg: any, propertyKeyOrFilter?: string | ((d: DecorDefine<T>) => boolean), filter?: (d: DecorDefine<T>) => boolean): DecorDefine[] {
+    getDefines<T = any>(type: DecorMemberType | null, decor?: string | DecoratorFn | undefined, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
+    getDefines(type: DecoratorType | null, arg: any, propertyKeyOrFilter?: string | ((d: DecorDefine<T>) => boolean), filter?: (d: DecorDefine<T>) => boolean): DecorDefine[] {
         let decor: string | DecoratorFn | undefined;
         let propertyKey: string | undefined;
         if (isFunction(arg) && !(arg as DecoratorFn).decorator) {
@@ -536,7 +536,7 @@ export class Class<T = any> {
     getClassdDefines<T = any>(decor: string | DecoratorFn | null, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
     getClassdDefines(...args: any[]) {
         args.unshift(Decors.CLASS);
-        return (this.findDefines as Function).apply(this, args);
+        return (this.getDefines as Function).apply(this, args);
     }
 
     /**
@@ -559,7 +559,7 @@ export class Class<T = any> {
     getMethodDefines<T = any>(decor: string | DecoratorFn | null, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
     getMethodDefines(...args: any[]) {
         args.unshift(Decors.method);
-        return (this.findDefines as Function).apply(this, args);
+        return (this.getDefines as Function).apply(this, args);
     }
 
     /**
@@ -582,7 +582,7 @@ export class Class<T = any> {
     getPropDefines<T = any>(decor: string | DecoratorFn | null, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
     getPropDefines(...args: any[]) {
         args.unshift(Decors.property);
-        return (this.findDefines as Function).apply(this, args);
+        return (this.getDefines as Function).apply(this, args);
     }
 
     /**
@@ -602,10 +602,10 @@ export class Class<T = any> {
      * @param propertyKey method name
      * @param filter custom filter.
      */
-    getParamDefines<T = any>(decor: string | DecoratorFn | null,  propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
+    getParamDefines<T = any>(decor: string | DecoratorFn | null, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
     getParamDefines(...args: any[]) {
         args.unshift(Decors.parameter);
-        return (this.findDefines as Function).apply(this, args);
+        return (this.getDefines as Function).apply(this, args);
     }
 
     /**
@@ -620,7 +620,7 @@ export class Class<T = any> {
     getMetadata<T = any>(decor: string | DecoratorFn | null, filter?: (d: DecorDefine<T>) => boolean): T;
     getMetadata(...args: any[]) {
         args.unshift(Decors.CLASS);
-        return (this.findDefine as Function).apply(this, args)?.metadata;
+        return (this.getDefine as Function).apply(this, args)?.metadata;
     }
 
     /**
@@ -642,7 +642,7 @@ export class Class<T = any> {
     getMethodMetadata(decor: string | DecoratorFn | null, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): T;
     getMethodMetadata(...args: any[]) {
         args.unshift(Decors.method);
-        return (this.findDefine as Function).apply(this, args)?.metadata;
+        return (this.getDefine as Function).apply(this, args)?.metadata;
     }
 
     /**
@@ -665,7 +665,7 @@ export class Class<T = any> {
     getPropMetadata(decor: string | DecoratorFn | null, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): T;
     getPropMetadata(...args: any[]) {
         args.unshift(Decors.property);
-        return (this.findDefine as Function).apply(this, args)?.metadata;
+        return (this.getDefine as Function).apply(this, args)?.metadata;
     }
 
 
@@ -686,10 +686,10 @@ export class Class<T = any> {
      * @param propertyKey method name
      * @param filter custom filter
      */
-    getParamMetadata(decor: string | DecoratorFn|null, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): T;
+    getParamMetadata(decor: string | DecoratorFn | null, propertyKey?: string, filter?: (d: DecorDefine<T>) => boolean): T;
     getParamMetadata(...args: any[]) {
         args.unshift(Decors.parameter);
-        return (this.findDefine as Function).apply(this, args)?.metadata;
+        return (this.getDefine as Function).apply(this, args)?.metadata;
     }
 
 
