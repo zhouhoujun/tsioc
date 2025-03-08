@@ -1,5 +1,5 @@
 /* eslint-disable no-useless-escape */
-import { isString, isRegExp, lang, isArray, Type, ctorName, Decors, Platform, Class } from '@tsdi/ioc';
+import { isString, isRegExp, lang, isArray, Type, ctorName, Decors, Platform, Class, DecoratorType } from '@tsdi/ioc';
 import { AdviceMatcher } from './AdviceMatcher';
 import { AdviceMetadata } from './metadata/meta';
 import { IPointcut } from './joinpoints/IPointcut';
@@ -198,7 +198,12 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
     }
 
     protected toAnnExpress(def: Class, exp: string): MatchExpress {
-        const annotation = aExp.test(exp) ? exp : ('@' + exp);
+        let annotation = aExp.test(exp) ? exp : ('@' + exp);
+        if(annInExp.test(annotation)) {
+            const [ann, annIn] = annotation.split(':');
+            annotation = ann;
+            return (name?: string, fullName?: string) => def.hasMetadata(annotation, annIn as DecoratorType, name)
+        }
         return (name?: string, fullName?: string) => def.hasMetadata(annotation, (!name || name === ctorName) ? Decors.CLASS : Decors.method, name)
     }
 
@@ -300,6 +305,9 @@ const fasleFn = () => false;
 const aExp = /^@/;
 const annPreChkExp = /^\^?@\w+/;
 const annContentExp = /^@annotation\(.*\)$/;
+
+const annInExp = /^@?\w+:(class|method|property|parameter)$/;
+
 const executionChkExp = /^execution\(\S+\)$/;
 const execContentExp = /^execution\(.*\)$/;
 const mthNameExp = /^\w+(\((\s*\w+\s*,)*\s*\w*\))?$/;

@@ -11,7 +11,9 @@ export const AuthorizationPointcut = 'execution(AuthorizationAspect.authProcess)
 @Aspect()
 export class AuthorizationAspect {
     // pointcut for method has @Authorization decorator.
-    @Pointcut('@annotation(Authorization)')
+    @Pointcut('@annotation(Authorization:method)')
+    @Pointcut('@annotation(Authorization:class) && @annotation(RouteMapping:method)')
+    @Pointcut('@annotation(Authorization:class) && @annotation(Route:method)')
     authProcess() {
         // pointcut for custom auth.
     }

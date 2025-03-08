@@ -7,7 +7,9 @@ import { Repository as TypeormRepository } from 'typeorm';
 import { User } from '../models/User';
 import { UserService } from './user.service';
 import { Api, ApiOperation, ApiParam } from '@tsdi/swagger';
+import { Authorization } from '@tsdi/security';
 
+@Authorization()
 @Api('user manager')
 @Controller('/users')
 export class UserController {

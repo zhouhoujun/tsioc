@@ -1,4 +1,4 @@
-import { Module } from '@tsdi/ioc';
+import { MethodMetadata, Module } from '@tsdi/ioc';
 import { LoggerModule, LogConfigure, provideLogger } from '@tsdi/logger';
 import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor, provideService } from '@tsdi/endpoints';
 import { CorsInterceptor, HttpModule } from '@tsdi/http';
@@ -16,6 +16,8 @@ import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
 import { UserRepository } from './repositories/UserRepository';
 import { Role } from './models/Role';
+import { Aspect, Before, Joinpoint } from '@tsdi/aop';
+import { AuthorizationAspect, AuthorizationPointcut } from '@tsdi/security';
 
 
 
@@ -91,6 +93,17 @@ const logconfig = {
 const key = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-privkey.pem'));
 const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.pem'));
 
+@Aspect()
+export class CheckRightAspect {
+    // pointcut for method has @AutoWried decorator.
+    @Before(AuthorizationPointcut, 'allMetadata')
+    // @Around({ pointcut: 'run()', annotation: Before })
+    beforelog(joinPoint: Joinpoint, allMetadata: MethodMetadata[]) {
+        console.log('allMetadata:', allMetadata);
+        console.log('aspect execution Before AnnotationAspect.auth, method name:', joinPoint.fullName, ' state:', joinPoint.state, ' returning:', joinPoint.returning, ' throwing:', joinPoint.throwing);
+    }
+}
+
 
 @Module({
     baseURL: __dirname,
@@ -147,6 +160,10 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../cert/localhost-cert.
         //     version: 'v1',
         //     prefix: 'api-doc'
         // })
+    ],
+    providers: [
+        AuthorizationAspect,
+        CheckRightAspect
     ],
     declarations: [
         UserController,

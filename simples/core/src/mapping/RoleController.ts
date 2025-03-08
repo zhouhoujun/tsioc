@@ -4,6 +4,7 @@ import { InjectRepository, Transactional } from '@tsdi/repository';
 import { Repository } from 'typeorm';
 import { Role } from '../models/Role';
 import { Api, ApiOperation } from '@tsdi/swagger';
+import { Authorization } from '@tsdi/security';
 
 
 @Api('role manager')
@@ -13,7 +14,9 @@ export class RoleController {
     constructor(@InjectRepository(Role) private repo: Repository<Role>, @Log() private logger: Logger) {
 
     }
+    
 
+    @Authorization()
     @ApiOperation('save role with transactional in control', Role)
     @Transactional()
     @RouteMapping('/', 'POST')
@@ -27,6 +30,7 @@ export class RoleController {
         return value;
     }
 
+    @Authorization()
     @ApiOperation('save role with transactional in method', Role)
     @Transactional()
     @RouteMapping('/save2', 'POST')
@@ -49,6 +53,7 @@ export class RoleController {
     }
 
 
+    @Authorization()
     @Transactional()
     @RouteMapping('/:id', 'DELETE')
     async del(@RequestPath() id: string) {

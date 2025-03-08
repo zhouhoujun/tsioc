@@ -237,11 +237,13 @@ export interface Pointcut {
      * - path or module name, match express.
      *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
      *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
-     *
+     *  - `@annotation(DecortorName:class|method|property|parameter)
      * ```
      * @Aspect()
      * class AspectClass {
      *   @Pointcut('"execution(moduelName.*.*(..)")')
+     *   @Pointcut('@annotation(DecortorName:class)')
+     *   @Pointcut('@annotation(DecortorName:method)')
      *   process(joinPoint: JointPoint){
      *   }
      * }
@@ -270,7 +272,7 @@ export interface Pointcut {
      * - path or module name, match express.
      *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
      *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
-     *
+     *  - `@annotation(DecortorName:class|method|property|parameter)
      * ```
      * @Aspect()
      * class AspectClass {
@@ -286,6 +288,8 @@ export interface Pointcut {
      * @Aspect()
      * class AspectClass {
      *   @Pointcut('@annotation(DecoratorName)')
+     *   @Pointcut('@annotation(DecortorName:class)')
+     *   @Pointcut('@annotation(DecortorName:method)')
      *   process(joinPoint: JointPoint){
      *   }
      * }
@@ -326,7 +330,8 @@ export interface IBeforeDecorator {
      * - path or module name, match express.
      *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
      *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
-     *
+     *  - `@annotation(DecortorName:class|method|property|parameter)
+     * 
      * ```
      * @Aspect()
      * class AspectClass {
@@ -359,7 +364,8 @@ export interface IBeforeDecorator {
      * - path or module name, match express.
      *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
      *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
-     *
+     *  - `@annotation(DecortorName:class|method|property|parameter)
+     * 
      * ```
      * @Aspect()
      * class AspectClass {
@@ -415,7 +421,8 @@ export interface After {
      * - path or module name, match express.
      *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
      *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
-     *
+     *  - `@annotation(DecortorName:class|method|property|parameter)
+     * 
      * ```
      * @Aspect()
      * class AspectClass {
@@ -448,7 +455,8 @@ export interface After {
      * - path or module name, match express.
      *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
      *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
-     *
+     *  - `@annotation(DecortorName:class|method|property|parameter)
+     * 
      * ```
      * @Aspect()
      * class AspectClass {
@@ -510,7 +518,8 @@ export interface Around {
      * - path or module name, match express.
      *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
      *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
-     *
+     *  - `@annotation(DecortorName:class|method|property|parameter)
+     * 
      * ```
      * @Aspect()
      * class AspectClass {
@@ -577,7 +586,8 @@ export interface AfterReturning {
      * - path or module name, match express.
      *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
      *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
-     *
+     *  - `@annotation(DecortorName:class|method|property|parameter)
+     * 
      * ```
      * @Aspect()
      * class AspectClass {
@@ -661,7 +671,8 @@ export interface AfterThrowing {
      * - path or module name, match express.
      *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
      *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
-     *
+     *  - `@annotation(DecortorName:class|method|property|parameter)
+     * 
      * ```
      * @Aspect()
      * class AspectClass {
