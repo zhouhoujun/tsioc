@@ -28,3 +28,46 @@ export class RegisterLifeScope<T extends RegContext = RegContext> extends IocAct
         this.handle(ctx, next)
     }
 }
+
+
+// export class LifeScope implements Handler {
+
+//     private interceptors: InterceptorLike[];
+
+//     private _chain?: InterceptorFn | null;
+//     constructor(private backend: HandlerFn) {
+//         this.interceptors = [];
+//     }
+
+//     handle(input: any, context?: any) {
+//         if (!this._chain) {
+//             this._chain = this.compose();
+//         }
+//         return this._chain(input, this.backend, context);
+//     }
+
+//     /**
+//      * use interceptor for the handler.
+//      * @param interceptor 
+//      * @param order 
+//      * @returns 
+//      */
+//     use(interceptors: InterceptorLike | InterceptorLike[], order?: number): this {
+//         this.interceptors.push(...(Array.isArray(interceptors) ? interceptors : [interceptors]));
+//         this.reset();
+//         return this;
+//     }
+
+//     protected reset(): void {
+//         this._chain = null;
+//     }
+
+//     /**
+//      * compose iterceptors and filters in chain.
+//      * @returns 
+//      */
+//     protected compose(): InterceptorFn {
+//         return composeInterceptors(this.interceptors)
+//     }
+
+// }

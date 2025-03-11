@@ -1,5 +1,6 @@
 import { from, isObservable, Observable, of } from 'rxjs';
 import { isFunction, isPromise } from './utils/chk';
+import { Token } from './tokens';
 
 /**
  * `Handler` is the fundamental building block of handle.
@@ -128,4 +129,100 @@ export function observableHandlerFactory<TInput = any, TOutput = any, TContext =
     return {
         handle
     }
+}
+
+
+
+/**
+ * context token.
+ */
+export class ContextToken<T = any> {
+    constructor(readonly defaultValue: () => T) { }
+}
+
+
+/**
+ * custom context.
+ */
+export class Context {
+
+    private map: Map<Token | ContextToken, any>;
+
+    constructor(entries?: readonly (readonly [Token | ContextToken, any])[] | null) {
+        this.map = new Map(entries);
+    }
+
+    /**
+     * Store a value in the context. If a value is already present it will be overwritten.
+     *
+     * @param token The reference to an instance of `Token`.
+     * @param value The value to store.
+     *
+     * @returns A reference to itself for easy chaining.
+     */
+    set<T>(token: Token<T> | ContextToken<T>, value: T) {
+        this.map.set(token, value);
+        return this;
+    }
+    /**
+     * Retrieve the value associated with the given token.
+     *
+     * @param token The reference to an instance of `Token`.
+     *
+     * @returns The stored value or default if one is defined.
+     */
+    get<T>(token: ContextToken<T>): T;
+    /**
+     * Retrieve the value associated with the given token.
+     *
+     * @param token The reference to an instance of `Token`.
+     *
+     * @returns The stored value or default if one is defined.
+     */
+    get<T>(token: Token<T>): T | null;
+    /**
+     * Retrieve the value associated with the given token.
+     *
+     * @param token The reference to an instance of `Token`.
+     *
+     * @returns The stored value or default if one is defined.
+     */
+    get<T>(token: Token<T> | ContextToken<T>): T | null {
+        if (token instanceof ContextToken && !this.map.has(token)) {
+            this.map.set(token, token.defaultValue());
+        }
+        return this.map.get(token) ?? null;
+    }
+    /**
+     * Delete the value associated with the given token.
+     *
+     * @param token The reference to an instance of `Token`.
+     *
+     * @returns A reference to itself for easy chaining.
+     */
+    delete<T>(token: Token<T> | ContextToken<T>) {
+        this.map.delete(token);
+        return this;
+    }
+    /**
+     * Checks for existence of a given token.
+     *
+     * @param token The reference to an instance of `Token`.
+     *
+     * @returns True if the token exists, false otherwise.
+     */
+    has<T>(token: Token<T> | ContextToken<T>): boolean {
+        return this.map.has(token);
+    }
+    /**
+     * @returns a list of tokens currently stored in the context.
+     */
+    keys(): Iterator<Token | ContextToken> {
+        return this.map.keys();
+    }
+
+    onDestroy(): void {
+        this.map.clear();
+    }
+
 }
