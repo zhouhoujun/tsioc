@@ -1,6 +1,5 @@
 import { from, isObservable, Observable, of } from 'rxjs';
 import { isFunction, isPromise } from './utils/chk';
-import { Execption } from './execption';
 
 /**
  * `Handler` is the fundamental building block of handle.
@@ -82,26 +81,6 @@ export function composeInterceptors(interceptors: InterceptorLike[]): Intercepto
 }
 
 
-
-export function runChained<TInput = any, TOutput = any, TContext = any>(interceptors: InterceptorLike<TInput, TOutput, TContext>[], input: TInput, next?: HandlerFn<TInput, TOutput, TContext>, context?: TContext): Observable<TOutput> | Promise<TOutput> | TOutput {
-    if (!interceptors.length) return null!;
-    let index = -1;
-    function dispatch(i: number): Observable<TOutput> | Promise<TOutput> | TOutput {
-        if (i <= index) {
-            throw new Execption('next called mutiple times.');
-        }
-        index = i;
-        let interceptor = interceptors[i];
-        if (!interceptor && next) {
-            return next(input, context);
-        }
-        const gnext = dispatch.bind(null, i + 1);
-        return isFunction(interceptor) ? interceptor(input, gnext, context) : interceptor.intercept(input, { handle: gnext }, context)
-    }
-    return dispatch(0)
-}
-
-
 function chainEndFn(req: any, finalHandlerFn: HandlerFn, context?: any): Observable<any> {
     return finalHandlerFn(req, context);
 }
@@ -133,11 +112,11 @@ export function chainFactory(chainTailFn: InterceptorFn, interceptorFn: Intercep
 }
 
 /**
- * handler factory.
+ * observable handler factory.
  * @param fn 
  * @returns 
  */
-export function handlerFactory<TInput = any, TOutput = any, TContext = any>(fn: (ctx: TInput, context?: TContext) => TOutput | Observable<TOutput> | Promise<TOutput>) {
+export function observableHandlerFactory<TInput = any, TOutput = any, TContext = any>(fn: (ctx: TInput, context?: TContext) => TOutput | Observable<TOutput> | Promise<TOutput>) {
     const handle = (input: TInput, context?: TContext): Observable<TOutput> => {
         const $res = fn(input, context);
         if (isObservable($res)) {

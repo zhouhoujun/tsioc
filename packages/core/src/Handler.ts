@@ -23,6 +23,7 @@ export interface Handler<TInput = any, TOutput = any, TContext = any> {
      */
     equals?(target: any): boolean;
 }
+
 /**
  * handler fn.
  */
