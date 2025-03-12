@@ -48,10 +48,10 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
     props: (route: string, arg1?: Protocols | ProtocolRouteOptions, option?: RouteOptions) =>
         (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata,
     design: {
-        method: (ctx, next) => {
+        method: (ctx) => {
 
             const defines = ctx.class.getMethodDefines(ctx.currDecor) as DecorDefine<HandleMetadata>[];
-            if (!defines || !defines.length) return next();
+            if (!defines || !defines.length) return;
 
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
@@ -67,8 +67,6 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
                     factory.onDestroy(() => router.unuse(r, endpoint));
                 });
             });
-
-            return next();
         }
     }
 });
@@ -118,16 +116,15 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
     props: (route: Pattern, arg1?: Protocols | ProtocolRouteOptions, option?: RouteOptions) =>
         (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata<any>,
     def: {
-        class: (ctx, next) => {
+        class: (ctx) => {
             ctx.class.setAnnotation(ctx.define.metadata);
-            return next();
         }
     },
     design: {
-        method: (ctx, next) => {
+        method: (ctx) => {
 
             const defines = ctx.class.getMethodDefines(ctx.currDecor) as DecorDefine<HandleMetadata>[];
-            if (!defines || !defines.length) return next();
+            if (!defines || !defines.length) return;
 
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
@@ -144,11 +141,9 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
                     factory.onDestroy(() => router.unuse(r, endpoint));
                 });
             });
-
-            return next();
         },
 
-        afterAnnoation: (ctx, next) => {
+        afterAnnoation: (ctx) => {
             const mapping = ctx.class.getAnnotation<MappingDef>();
             const injector = ctx.injector;
 
@@ -162,8 +157,6 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
                 path: route,
                 middleware: ctx.type
             });
-
-            return next();
         }
     }
 });
@@ -250,13 +243,12 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
             }
         },
         def: controllerOnly ? undefined : {
-            class: (ctx, next) => {
+            class: (ctx) => {
                 ctx.class.setAnnotation(ctx.define.metadata);
-                return next();
             }
         },
         design: {
-            afterAnnoation: (ctx, next) => {
+            afterAnnoation: (ctx) => {
 
                 const injector = ctx.injector;
                 const mapping = ctx.class.getAnnotation<MappingDef>();
@@ -272,7 +264,6 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 endpoint.factory.onDestroy(() => {
                     router.unuse(route)
                 });
-                return next();
             }
         }
     });

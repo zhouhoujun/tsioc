@@ -266,7 +266,8 @@ export class DefaultInjector extends Injector {
             platform,
             type
         } as DesignContext;
-        platform.getAction(DesignLifeScope).register(ctx, () => {
+        
+        platform.design.handle(ctx, null, (ctx) => {
             cleanObj(ctx);
             this.onRegistered(def);
         });
@@ -937,8 +938,8 @@ function registerCores(container: Container, platform: Platform) {
     container.setValue(ReflectiveFactory, factory);
     platform.registerSingleton(container, ReflectiveFactory, factory);
     // bing action.
-    platform.registerAction(
-        DesignLifeScope,
-        RuntimeLifeScope
-    )
+    // platform.registerAction(
+    //     DesignLifeScope,
+    //     RuntimeLifeScope
+    // )
 }

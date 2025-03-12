@@ -1,5 +1,5 @@
 import {
-    Token, InjectableMetadata, isArray, getClass, refl, createDecorator, 
+    Token, InjectableMetadata, isArray, getClass, refl, createDecorator,
     createPropDecorator, createParamDecorator, ActionTypes
 } from '@tsdi/ioc';
 import { RunnableFactory } from '@tsdi/core';
@@ -49,24 +49,22 @@ export const Directive: Directive = createDecorator<DirectiveMetadata>('Directiv
         class: (ctx, next) => {
             const def = ctx.class.getAnnotation<DirectiveDef>();
             def.annoType = 'directive';
-            return next();
         }
     },
     design: {
         class: (ctx, next) => {
             const directivDef = ctx.class.getAnnotation<DirectiveDef>();
             if (directivDef.annoType !== 'directive') {
-                return next();
+                return;
             }
 
             if (directivDef.compiled) {
-                return next();
+                return;
             }
 
             const compiler = ctx.injector.get(CompilerFacade);
             ctx.class.setAnnotation(compiler.compileDirective(directivDef));
 
-            next();
         }
     }
 });
@@ -107,26 +105,24 @@ export const Component: Component = createDecorator<ComponentMetadata>('Componen
     actionType: [ActionTypes.annoation, ActionTypes.typeProviders],
     props: (selector: string, template?: any, option?: InjectableMetadata) => ({ selector, template, ...option }),
     def: {
-        class: (ctx, next) => {
+        class: (ctx) => {
             const def = ctx.class.getAnnotation<ComponentDef>();
             def.annoType = 'component';
-            return next();
         }
     },
     design: {
-        class: (ctx, next) => {
+        class: (ctx) => {
             const compRefl = ctx.class.getAnnotation<ComponentDef>();
             if (compRefl.annoType !== 'component') {
-                return next();
+                return
             }
 
             if (compRefl.compiled) {
-                return next();
+                return
             }
 
             const compiler = ctx.injector.get(CompilerFacade);
             ctx.class.setAnnotation(compiler.compileComponent(compRefl));
-            next();
         }
     },
     providers: [
@@ -498,12 +494,11 @@ export interface ContentChildrenDecorator {
  */
 export const ContentChildren: ContentChildrenDecorator = createPropDecorator('ContentChildren', {
     def: {
-        property: (ctx, next) => {
+        property: (ctx) => {
             ctx.define.metadata
             if (!(ctx.define.metadata as QueryMetadata).selector) {
                 (ctx.define.metadata as QueryMetadata).selector = isDirOrComponent(ctx.class.type) ? ctx.class.type : ctx.class.type;
             }
-            return next();
         }
     },
     props: (selector?: any, data?: { descendants?: boolean, read?: any }) =>
@@ -555,12 +550,11 @@ export interface ContentChildDecorator {
  */
 export const ContentChild: ContentChildDecorator = createPropDecorator('ContentChild', {
     def: {
-        property: (ctx, next) => {
+        property: (ctx) => {
             const meta = ctx.define.metadata as QueryMetadata;
             if (!meta.selector) {
                 meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.define.propertyKey;
             }
-            return next();
         }
     },
     props: (selector?: any, opts?: { read?: any, static?: boolean }) =>
@@ -599,12 +593,11 @@ export interface ViewChildrenDecorator {
 
 export const ViewChildren: ViewChildrenDecorator = createPropDecorator('ViewChildren', {
     def: {
-        property: (ctx, next) => {
+        property: (ctx) => {
             const meta = ctx.define.metadata as QueryMetadata;
             if (!meta.selector) {
                 meta.selector = isDirOrComponent(meta.type) ? meta.type : ctx.define.propertyKey;
             }
-            return next();
         }
     },
     props: (selector: Token | Function, opts?: { read?: any }) =>
@@ -664,11 +657,10 @@ export interface ViewChildDecorator {
  */
 export const ViewChild: ViewChildDecorator = createPropDecorator('ViewChild', {
     def: {
-        property: (ctx, next) => {
+        property: (ctx) => {
             if (!(ctx.define.metadata as QueryMetadata).selector) {
                 (ctx.define.metadata as QueryMetadata).selector = isDirOrComponent(ctx.class.type) ? ctx.class.type : ctx.define.propertyKey;
             }
-            return next();
         }
     },
     props: (selector: any, data: any) =>

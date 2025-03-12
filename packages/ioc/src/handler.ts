@@ -15,7 +15,7 @@ export interface Handler<TInput = any, TOutput = any, TContext = any> {
      * @param input handle input.
      * @param context handle with context.
      */
-    handle(input: TInput, context?: TContext): Observable<TOutput> | Promise<TOutput> | TOutput;
+    handle(input: TInput, context?: TContext): TOutput;
 
     /**
      * is this equals to target or not
@@ -30,7 +30,21 @@ export interface Handler<TInput = any, TOutput = any, TContext = any> {
  * handler fn.
  * 处理器基本构建块。
  */
-export type HandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, context?: TContext) => Observable<TOutput> | Promise<TOutput> | TOutput;
+export interface HandlerFn<TInput = any, TOutput = any, TContext = any> extends Function {
+    (input: TInput, context?: TContext): TOutput;
+    owner?: Handler<TInput, TOutput, TContext>;
+}
+
+// /**
+//  * handler fn.
+//  * 处理器基本构建块。
+//  */
+// export type HandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, context?: TContext) => TOutput;
+
+/**
+ * hanlder like
+ */
+export type HanlderLike<TInput = any, TOutput = any, TContext = any> = HandlerFn<TInput, TOutput, TContext> | Handler<TInput, TOutput, TContext>;
 
 /**
  * Interceptor is a chainable behavior modifier for `hanlders`.
@@ -48,7 +62,7 @@ export interface Interceptor<TInput = any, TOutput = any, TContext = any> {
      * @param context interceptor with context.
      * @returns An observable of the event stream.
      */
-    intercept(input: TInput, next: Handler, context?: TContext): Observable<TOutput> | Promise<TOutput> | TOutput;
+    intercept(input: TInput, next: Handler, context?: TContext): TOutput;
 
     /**
      * is this equals to target or not
@@ -63,7 +77,10 @@ export interface Interceptor<TInput = any, TOutput = any, TContext = any> {
  * interceptor fn.
  * 拦截方法，用于链接多个处理器，组合成处理器串。
  */
-export type InterceptorFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, next: HandlerFn, context?: TContext) => Observable<TOutput> | Promise<TOutput> | TOutput;
+export interface InterceptorFn<TInput = any, TOutput = any, TContext = any> extends Function {
+    (input: TInput, next: HandlerFn, context?: TContext): TOutput;
+    owner?: Interceptor<TInput, TOutput, TContext>;
+}
 
 /**
  * interceptor like.
@@ -82,7 +99,7 @@ export function composeInterceptors(interceptors: InterceptorLike[]): Intercepto
 }
 
 
-function chainEndFn(req: any, finalHandlerFn: HandlerFn, context?: any): Observable<any> {
+function chainEndFn(req: any, finalHandlerFn: HandlerFn, context?: any) {
     return finalHandlerFn(req, context);
 }
 
@@ -93,12 +110,8 @@ function chainedInterceptorFn(
     chainTailLike: InterceptorLike, interceptorLike: InterceptorLike,
 ): InterceptorFn {
 
-    const chainTailFn = isFunction(chainTailLike) ? chainTailLike : (req: any, handle: HandlerFn, context?: any) => chainTailLike.intercept(req, {
-        handle,
-    }, context);
-    const interceptorFn = isFunction(interceptorLike) ? interceptorLike : (req: any, handle: HandlerFn, context?: any) => interceptorLike.intercept(req, {
-        handle,
-    }, context);
+    const chainTailFn = isFunction(chainTailLike) ? chainTailLike : toInterceptorFn(chainTailLike);
+    const interceptorFn = isFunction(interceptorLike) ? interceptorLike : toInterceptorFn(interceptorLike);
 
     return chainFactory(chainTailFn, interceptorFn)
 }
@@ -110,6 +123,18 @@ export function chainFactory(chainTailFn: InterceptorFn, interceptorFn: Intercep
             (downstreamRequest, ctx?: any) => chainTailFn(downstreamRequest, finalHandlerFn, ctx ?? context),
             context
         )
+}
+
+export function toHandlerFn(handler: Handler): HandlerFn {
+    const fn = (input: any, context?: any) => handler.handle(input, context);
+    fn.owner = handler;
+    return fn;
+}
+
+export function toInterceptorFn(interceptor: Interceptor): InterceptorFn {
+    const fn = (input: any, next: HandlerFn, context?: any) => interceptor.intercept(input, next.owner ?? { handle: next }, context);
+    fn.owner = interceptor;
+    return fn;
 }
 
 /**
@@ -179,7 +204,7 @@ export class Context {
      *
      * @returns The stored value or default if one is defined.
      */
-    get<T>(token: Token<T>): T | null;
+    get<T>(token: Token<T>): T;
     /**
      * Retrieve the value associated with the given token.
      *
@@ -187,7 +212,7 @@ export class Context {
      *
      * @returns The stored value or default if one is defined.
      */
-    get<T>(token: Token<T> | ContextToken<T>): T | null {
+    get<T>(token: Token<T> | ContextToken<T>): T {
         if (token instanceof ContextToken && !this.map.has(token)) {
             this.map.set(token, token.defaultValue());
         }

@@ -41,14 +41,13 @@ export interface Aspect {
 export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
     actionType: ActionTypes.annoation,
     def: {
-        class: (ctx, next) => {
+        class: (ctx) => {
             ctx.class.getAnnotation<AopDef>().aspect = ctx.define.metadata;
-            return next()
         }
     },
     design: {
-        afterAnnoation: (ctx, next) => {
-            const advisor = ctx.injector.platform().getActionValue(Advisor);
+        afterAnnoation: (ctx) => {
+            const advisor = ctx.injector.platform().context.get(Advisor);
             if (advisor) {
                 const { type, injector } = ctx;
 
@@ -61,8 +60,6 @@ export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
             } else {
                 console.error('aop module not registered. make sure register before', ctx.type)
             }
-
-            next()
         }
     },
     props: (annotation: string, within?: Type | Type[], append?: ClassMetadata) =>
@@ -93,9 +90,8 @@ export interface NonePointcut {
  */
 export const NonePointcut: NonePointcut = createDecorator<ClassMetadata>('NonePointcut', {
     def: {
-        class: (ctx, next) => {
+        class: (ctx) => {
             ctx.class.getAnnotation<AopDef>().nonePointcut = true;
-            return next()
         }
     }
 });
@@ -195,7 +191,7 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
         },
         ...options,
         def: {
-            method: (ctx, next) => {
+            method: (ctx) => {
                 if (!ctx.class.getAnnotation<AopDef>().advices) {
                     ctx.class.getAnnotation<AopDef>().advices = []
                 }
@@ -203,7 +199,6 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
                     ctx.define.metadata.name = ctx.define.propertyKey;
                 }
                 ctx.class.getAnnotation<AopDef>().advices.push(ctx.define.metadata);
-                return next()
             }
         },
         appendProps: (metadata) => {

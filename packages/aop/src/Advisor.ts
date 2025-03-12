@@ -29,7 +29,7 @@ export class Advisor implements OnDestroy {
     }
 
     register(type: Type | Class): void {
-        const matcher = this.platform.getAction(AdviceMatcher);
+        const matcher = this.platform.context.get(AdviceMatcher);
         const typeRefl = isFunction(type) ? refl.get(type) : type as Class;
         const ClassType = typeRefl.type;
         this.aspects.forEach(aspect => {
@@ -115,7 +115,7 @@ export class Advisor implements OnDestroy {
         if (advicesMap && advicesMap.size) {
             const className = typeRef.className;
             const decorators = typeRef.getPropertyDescriptors();
-            const proceeding = this.platform.getAction(Proceeding);
+            const proceeding = this.platform.context.get(Proceeding);
 
             advicesMap.forEach((advices, name) => {
                 if (name === ctorName) {

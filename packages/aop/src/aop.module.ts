@@ -20,10 +20,10 @@ export class AopProvider {
     setup(@Inject() injector: Injector) {
 
         const platform = injector.platform();
-        if (platform.hasAction(Advisor)) return;
+        if (platform.context.has(Advisor)) return;
 
-        platform.setActionValue(Advisor, new Advisor(platform), Advisor)
-            .setActionValue(AdviceMatcher, new DefaultAdviceMatcher(platform), DefaultAdviceMatcher);
+        platform.context.set(Advisor, new Advisor(platform))
+            .set(AdviceMatcher, new DefaultAdviceMatcher(platform));
 
         platform.registerAction(ProceedingScope);
         platform.setActionValue(Proceeding, platform.getAction(ProceedingScope));

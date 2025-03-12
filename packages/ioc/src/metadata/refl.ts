@@ -1,9 +1,10 @@
-import { Action, Actions } from '../action';
+// import { Action, Actions } from '../action';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { AnnotationType, Type } from '../types';
 import { cleanObj, getParentClass } from '../utils/lang';
 import { isBoolean, isFunction } from '../utils/chk';
-import { runChain, Handle } from '../handle';
+// import { runChain, HandlerFn } from '../handle';
+// import { Platform } from '../platform';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata,
     RunnableMetadata, InjectableMetadata, MethodMetadata
@@ -12,8 +13,9 @@ import {
     ctorName, DecoratorType, DecorContext, DecorDefine, Decors, ActionTypes,
     Class, TypeDef, DecoratorFn
 } from './type';
-import { Platform } from '../platform';
 import { InvokeOptions } from '../context';
+import { Context, Handler, HandlerFn } from '../handler';
+import { LifeScope } from '../lifescope/lifescope';
 
 
 
@@ -28,19 +30,19 @@ export interface DecorDefHandles<T = any> {
     /**
      * class decorator def handle.
      */
-    class?: Handle<DecorContext<T>> | Handle<DecorContext<T>>[];
+    class?: HandlerFn<DecorContext<T>, void, Context> | HandlerFn<DecorContext<T>, void, Context>[];
     /**
      * method decorator def handle.
      */
-    method?: Handle<DecorContext<T>> | Handle<DecorContext<T>>[];
+    method?: HandlerFn<DecorContext<T>, void, Context> | HandlerFn<DecorContext<T>, void, Context>[];
     /**
      * property decorator def handle.
      */
-    property?: Handle<DecorContext<T>> | Handle<DecorContext<T>>[];
+    property?: HandlerFn<DecorContext<T>, void, Context> | HandlerFn<DecorContext<T>, void, Context>[];
     /**
      * parameter decorator def handle.
      */
-    parameter?: Handle<DecorContext<T>> | Handle<DecorContext<T>>[];
+    parameter?: HandlerFn<DecorContext<T>, void, Context> | HandlerFn<DecorContext<T>, void, Context>[];
 }
 
 /**
@@ -52,37 +54,37 @@ export interface DesignScopeHandles<T> {
      * decorator BeforeAnnoation action handles.
      * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
      */
-    beforeAnnoation?: Handle<T> | Handle<T>[];
+    beforeAnnoation?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
     /**
      * decorator Class action handles.
      * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
      */
-    class?: Handle<T> | Handle<T>[];
+    class?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
     /**
      * decorator Property action handles.
      * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
      */
-    property?: Handle<T> | Handle<T>[];
+    property?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
     /**
      * decorator Method action handles.
      * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
      */
-    method?: Handle<T> | Handle<T>[];
+    method?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
     /**
      * decorator Annoation action handles.
      * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
      */
-    annoation?: Handle<T> | Handle<T>[];
+    annoation?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
     /**
      * decorator AfterAnnoation action handles.
      * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
      */
-    afterAnnoation?: Handle<T> | Handle<T>[];
+    afterAnnoation?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 }
 
 /**
@@ -94,31 +96,31 @@ export interface RuntimeScopeHandles<T> {
      * decorator BeforeConstructor action handles.
      * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
      */
-    beforeConstructor?: Handle<T> | Handle<T>[];
+    beforeConstructor?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
     /**
      * decorator AfterConstructor action handles.
      * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
      */
-    afterConstructor?: Handle<T> | Handle<T>[];
+    afterConstructor?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
     /**
      * decorator Property action handles.
      * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
      */
-    property?: Handle<T> | Handle<T>[];
+    property?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
     /**
      * decorator Method action handles.
      * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
      */
-    method?: Handle<T> | Handle<T>[];
+    method?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
     /**
      * decorator Class action handles.
      * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
      */
-    class?: Handle<T> | Handle<T>[];
+    class?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
 }
 
@@ -237,7 +239,7 @@ export function regActionType(decor: string, type: ActionType) {
 }
 
 const paramInjectDecors: Record<string, boolean> = { '@Inject': true, '@Autowired': true, '@Param': true, '@Nullable': true };
-export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
+export const decorParamInject = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (paramInjectDecors[ctx.define.decor.toString()]) {
         const def = ctx.class;
         const meta = ctx.define.metadata as ParameterMetadata;
@@ -263,11 +265,11 @@ export const ParamInjectAction = (ctx: DecorContext, next: () => void) => {
             params.splice(idx, 1, meta)
         }
     }
-    return next()
+    return next(ctx, context)
 }
 
 
-export const InitPropDesignAction = (ctx: DecorContext, next: () => void) => {
+export const decorInitProp = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (!(ctx.define.metadata as PropertyMetadata).type) {
         let type = Reflect.getOwnMetadata('design:type', ctx.target, ctx.define.propertyKey);
         if (!type) {
@@ -276,21 +278,21 @@ export const InitPropDesignAction = (ctx: DecorContext, next: () => void) => {
         }
         (ctx.define.metadata as PropertyMetadata).type = type;
     }
-    return next()
+    return next(ctx, context)
 }
 
 
 
 const propInjectDecors: Record<string, boolean> = { '@Inject': true, '@Autowired': true };
-export const PropInjectAction = (ctx: DecorContext, next: () => void) => {
+export const decorPropInject = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (propInjectDecors[ctx.define.decor.toString()]) {
         ctx.class.setProperyProviders(ctx.define.propertyKey, [ctx.define.metadata])
     }
-    return next()
+    return next(ctx, context)
 }
 
 
-export const InitCtorDesignParams = (ctx: DecorContext, next: () => void) => {
+export const decorCtorDesignParams = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (!ctx.class.hasParameters(ctorName)) {
         let paramTypes: any[] = Reflect.getMetadata('design:paramtypes', ctx.class.type);
         if (paramTypes) {
@@ -303,11 +305,11 @@ export const InitCtorDesignParams = (ctx: DecorContext, next: () => void) => {
             }))
         }
     }
-    return next()
+    return next(ctx, context)
 }
 
 const typeAnnoDecors: Record<string, boolean> = { '@Injectable': true, '@Singleton': true, '@Abstract': true, '@Static': true };
-export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
+export const decorAnnoAction = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (typeAnnoDecors[ctx.define.decor.toString()]) {
         const def = ctx.class;
         const meta = ctx.define.metadata as ClassMetadata & InjectableMetadata;
@@ -336,11 +338,11 @@ export const TypeAnnoAction = (ctx: DecorContext, next: () => void) => {
             def.getAnnotation().providedIn = meta.providedIn
         }
     }
-    return next()
+    return next(ctx, context)
 };
 
 const runnableDecors: Record<string, boolean> = { '@Autorun': true, '@IocExt': true };
-export const RunnableAction = (ctx: DecorContext, next: () => void) => {
+export const decorRunnable = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (runnableDecors[ctx.define.decor.toString()]) {
         const metadata = ctx.define.metadata as RunnableMetadata<any>;
         (metadata as any).decorType = ctx.define.decorType,
@@ -349,20 +351,20 @@ export const RunnableAction = (ctx: DecorContext, next: () => void) => {
         ctx.class.runnables.push(ctx.define.metadata);
         ctx.class.runnables.sort((au1, au2) => au1.order! - au2.order!)
     }
-    return next()
+    return next(ctx, context)
 }
 
 const typeProvidersDecors: Record<string, boolean> = { '@Injectable': true, '@Providers': true };
-export const TypeProvidersAction = (ctx: DecorContext, next: () => void) => {
+export const decorProviders = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (typeProvidersDecors[ctx.define.decor.toString()]) {
         if ((ctx.define.metadata as ProvidersMetadata).providers) {
             ctx.class.providers.push(...(ctx.define.metadata as ProvidersMetadata).providers!)
         }
     }
-    return next()
+    return next(ctx, context);
 }
 
-export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
+export const decorMethodDesignParams = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     const reflective = ctx.class;
     const method = ctx.define.propertyKey;
     if (!reflective.hasParameters(method)) {
@@ -377,98 +379,111 @@ export const InitMethodDesignParams = (ctx: DecorContext, next: () => void) => {
     if (!reflective.hasReturnning(method) && meta.type) {
         reflective.setReturnning(method, meta.type)
     }
-    return next()
+    return next(ctx, context)
 }
 
 const methodProvidersDecors: Record<string, boolean> = { '@Providers': true, '@Autowired': true };
-export const MethodProvidersAction = (ctx: DecorContext, next: () => void) => {
+export const decorMethodProviders = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (methodProvidersDecors[ctx.define.decor.toString()]) {
         const mpdrs = (ctx.define.metadata as MethodMetadata) as InvokeOptions;
         if (mpdrs) {
             ctx.class.setMethodOptions(ctx.define.propertyKey, mpdrs)
         }
     }
-    return next()
+    return next(ctx, context)
 }
 
-export const ExecuteDecorHandle = (ctx: DecorContext, next: () => void) => {
-    if (ctx.define.decor.getHandle) {
-        const handles = ctx.define.decor.getHandle(ctx.define.decorType);
-        runChain(handles, ctx)
-    }
-    return next()
-}
-
-
-class DecorActions extends Actions<DecorContext> {
-    protected override getPlatform(ctx: DecorContext): Platform { return null!; }
-    protected override parseHandle(provider: Platform, ac: any): Handle {
-        if (isFunction(ac)) {
-            return ac
-        } else if (ac instanceof Action) {
-            return ac.getHandle()
-        }
-        return null!
+export const decorExtendHandler = (ctx: DecorContext, context: Context) => {
+    if (ctx.define.decor.getHandler) {
+        const handles = ctx.define.decor.getHandler(ctx.define.decorType);
+        handles.forEach(h => {
+            h(ctx, context)
+        })
     }
 }
 
-export const typeDecorActions: Actions<DecorContext> = new DecorActions();
-export const propDecorActions: Actions<DecorContext> = new DecorActions();
-export const methodDecorActions: Actions<DecorContext> = new DecorActions();
-export const paramDecorActions: Actions<DecorContext> = new DecorActions();
+export const typeDecorLifeScope: LifeScope<DecorContext> = new LifeScope(null, decorExtendHandler, [
+    decorCtorDesignParams,
+    decorAnnoAction,
+    decorProviders,
+    decorRunnable
+]);
+export const propDecorLifeScope: LifeScope<DecorContext> = new LifeScope(null, decorExtendHandler, [
+    decorMethodDesignParams,
+    decorMethodProviders,
+    decorRunnable
+]);
+export const methodDecorLifeScope: LifeScope<DecorContext> = new LifeScope(null, decorExtendHandler, [
+    decorInitProp,
+    decorPropInject
+]);
+export const paramDecorLifeScope: LifeScope<DecorContext> = new LifeScope(null, decorExtendHandler, [
+    decorParamInject
+]);
 
+// class DecorActions extends Actions<DecorContext> {
+//     protected override getPlatform(ctx: DecorContext): Platform { return null!; }
+//     protected override parseHandle(provider: Platform, ac: any): HandlerFn {
+//         if (isFunction(ac)) {
+//             return ac
+//         } else if (ac instanceof Action) {
+//             return ac.getHandle()
+//         }
+//         return null!
+//     }
+// }
+// typeDecorActions.use(
+//     InitCtorDesignParams,
+//     TypeAnnoAction,
+//     TypeProvidersAction,
+//     RunnableAction,
+//     ExecuteDecorHandle
+// );
 
-typeDecorActions.use(
-    InitCtorDesignParams,
-    TypeAnnoAction,
-    TypeProvidersAction,
-    RunnableAction,
-    ExecuteDecorHandle
-);
+// methodDecorActions.use(
+//     InitMethodDesignParams,
+//     MethodProvidersAction,
+//     RunnableAction,
+//     ExecuteDecorHandle
+// );
 
-methodDecorActions.use(
-    InitMethodDesignParams,
-    MethodProvidersAction,
-    RunnableAction,
-    ExecuteDecorHandle
-);
+// propDecorActions.use(
+//     InitPropDesignAction,
+//     PropInjectAction,
+//     ExecuteDecorHandle
+// );
+// paramDecorActions.use(
+//     ParamInjectAction,
+//     ExecuteDecorHandle
+// );
 
-propDecorActions.use(
-    InitPropDesignAction,
-    PropInjectAction,
-    ExecuteDecorHandle
-);
-paramDecorActions.use(
-    ParamInjectAction,
-    ExecuteDecorHandle
-);
-
-function dispatch(actions: Actions<DecorContext>, target: any, type: Type, define: DecorDefine, options: DecoratorOption<any>) {
+function dispatch(lifescope: LifeScope<DecorContext>, target: any, type: Type, define: DecorDefine, options: DecoratorOption<any>) {
     const ctx = {
         define,
         target,
         class: get(type)
     } as DecorContext;
     options.init && options.init(ctx);
-    actions.handle(ctx, () => {
-        ctx.class.addDefine(define)
+    
+    lifescope.handle(ctx, null, () => {
+        ctx.class.addDefine(define);
+        options.afterInit && options.afterInit(ctx);
+        cleanObj(ctx)
     });
-    options.afterInit && options.afterInit(ctx);
-    cleanObj(ctx)
 }
 
 export function dispatchTypeDecor(type: Type, define: DecorDefine, options: DecoratorOption<any>) {
-    dispatch(typeDecorActions, type, type, define, options)
+    dispatch(typeDecorLifeScope, type, type, define, options)
 }
 
 export function dispatchPorpDecor(type: any, define: DecorDefine, options: DecoratorOption<any>) {
     if (!define.metadata.propertyKey) define.metadata.propertyKey = define.propertyKey;
-    dispatch(propDecorActions, type, type.constructor, define, options)
+    dispatch(propDecorLifeScope, type, type.constructor, define, options)
 }
 
 export function dispatchMethodDecor(type: any, define: DecorDefine, options: DecoratorOption<any>) {
     if (!define.metadata.propertyKey) define.metadata.propertyKey = define.propertyKey;
-    dispatch(methodDecorActions, type, type.constructor, define, options)
+    dispatch(methodDecorLifeScope, type, type.constructor, define, options)
 }
 
 export function dispatchParamDecor(type: any, define: DecorDefine, options: DecoratorOption<any>) {
@@ -479,7 +494,7 @@ export function dispatchParamDecor(type: any, define: DecorDefine, options: Deco
         type = type.constructor
     }
     if (!define.metadata.propertyKey) define.metadata.propertyKey = define.propertyKey;
-    dispatch(paramDecorActions, target, type, define, options)
+    dispatch(paramDecorLifeScope, target, type, define, options)
 }
 
 /**

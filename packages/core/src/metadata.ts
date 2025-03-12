@@ -111,9 +111,8 @@ export interface Pipe {
 export const Pipe: Pipe = createDecorator<PipeMetadata>('Pipe', {
     actionType: [ActionTypes.annoation, ActionTypes.typeProviders],
     def: {
-        class: (ctx, next) => {
+        class: (ctx) => {
             ctx.class.setAnnotation(ctx.define.metadata);
-            return next()
         }
     },
     props: (name: string, pure?: boolean) => ({ name, provide: name, pure }),
@@ -183,7 +182,7 @@ export interface ConfigurationDecorator {
 export const Configuration: ConfigurationDecorator = createDecorator<ConfgiurationMetadata>('Configuration', {
     actionType: [ActionTypes.annoation],
     design: {
-        afterAnnoation: (ctx, next) => {
+        afterAnnoation: (ctx) => {
             const { class: typeRef, injector } = ctx;
             const meta = typeRef.getMetadata<ConfgiurationMetadata>(ctx.currDecor);
             if (meta.imports) {
@@ -197,8 +196,6 @@ export const Configuration: ConfigurationDecorator = createDecorator<Confgiurati
             } else {
                 injectBean(injector, typeRef, meta)
             }
-
-            next()
         }
     },
     appendProps: (meta) => {
@@ -264,9 +261,9 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
     return createDecorator(name, {
         props: (filter?: Type | string, options?: { order?: number }) => ({ filter, ...options }),
         design: {
-            method: runtime === true ? undefined : (ctx, next) => {
+            method: runtime === true ? undefined : (ctx) => {
                 const typeRef = ctx.class;
-                if (typeRef.getAnnotation().static === false && !typeRef.getAnnotation().singleton) return next();
+                if (typeRef.getAnnotation().static === false && !typeRef.getAnnotation().singleton) return;
 
                 const decors = typeRef.getMethodDefines(ctx.currDecor) ?? [];
                 const injector = ctx.injector;
@@ -283,17 +280,16 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                     multicaster.addListener(event, handler, isFILO ? order ?? 0 : order);
                     factory.onDestroy(() => multicaster.removeListener(event, handler))
                 });
-                next()
             }
         },
         runtime: {
-            method: (ctx, next) => {
+            method: (ctx) => {
                 const typeRef = ctx.class;
                 if (!runtime && (
                     !ctx.context?.isResolve
                     || typeRef.getAnnotation().static === true
                     || typeRef.getAnnotation().singleton
-                )) return next();
+                )) return;
 
                 const decors = typeRef.getMethodDefines(ctx.currDecor) ?? [];
                 const injector = ctx.injector;
@@ -310,7 +306,6 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                     multicaster.addListener(event, handler, isFILO ? order ?? 0 : order);
                     factory.onDestroy(() => multicaster.removeListener(event, handler))
                 });
-                next()
             }
         }
     })
@@ -489,7 +484,7 @@ export interface Interceptable {
 export const Interceptable: Interceptable = createDecorator('Interceptable', {
     props: (target: Type | string, options?: InvocationOptions) => ({ target, ...options }),
     design: {
-        method: (ctx, next) => {
+        method: (ctx) => {
             const typeRef = ctx.class;
             const decors = typeRef.getMethodDefines<InterceptMetadata>(ctx.currDecor);
             const injector = ctx.injector;
@@ -508,8 +503,6 @@ export const Interceptable: Interceptable = createDecorator('Interceptable', {
 
                 }
             });
-
-            next()
         }
     }
 });
@@ -540,7 +533,7 @@ export interface Filterable {
 export const Filterable: Filterable = createDecorator('Filterable', {
     props: (target: Type | string, options?: InvocationOptions) => ({ target, ...options }),
     design: {
-        method: (ctx, next) => {
+        method: (ctx) => {
             const typeRef = ctx.class;
             const decors = typeRef.getMethodDefines<InterceptMetadata>(ctx.currDecor);
             const injector = ctx.injector;
@@ -558,8 +551,6 @@ export const Filterable: Filterable = createDecorator('Filterable', {
                     factory.onDestroy(() => resolver.removeFilter(target as Type | string, filter));
                 }
             });
-
-            next()
         }
     }
 });
@@ -603,7 +594,7 @@ export interface FilterHandler {
 export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
     props: (filter?: Type | string, options?: InvocationOptions) => ({ filter, ...options }),
     design: {
-        method: (ctx, next) => {
+        method: (ctx) => {
             const typeRef = ctx.class;
             const decors = typeRef.getMethodDefines<FilterHandlerMetadata<any>>(ctx.currDecor);
             const injector = ctx.injector;
@@ -616,8 +607,6 @@ export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
                 resolver.addHandle(filter, handler, order);
                 factory.onDestroy(() => resolver.removeHandle(filter, handler));
             });
-
-            next()
         }
     }
 });
@@ -733,9 +722,4 @@ export const Topic: TransportParameterDecorator = createParamDecorator('Topic', 
 
 
 export const Serializable = createDecorator('Serializable', {
-    design: {
-        class:  (ctx, next) => {
-            next();
-        }
-    }
 })

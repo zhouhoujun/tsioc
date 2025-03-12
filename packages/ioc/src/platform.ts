@@ -1,13 +1,15 @@
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
-import { Handle } from './handle';
-import { Action } from './action';
+// import { Handle } from './handle';
+// import { Action } from './action';
 import { OnDestroy } from './destroy';
 import { Injector, InjectorScope } from './injector';
 import { Token } from './tokens';
 import { ClassType, Type } from './types';
 import { ProviderType } from './providers';
 import { ModuleRef } from './module.ref';
+import { LifeScope } from './lifescope/lifescope';
+import { Context } from './handler';
 
 
 /**
@@ -23,6 +25,12 @@ export abstract class Platform implements OnDestroy {
      * platform injector.
      */
     abstract get injector(): Injector;
+
+    abstract get runtime(): LifeScope;
+    abstract get design(): LifeScope;
+
+    abstract get context(): Context;
+
     /**
      * register injector.
      * @param token 
@@ -89,43 +97,44 @@ export abstract class Platform implements OnDestroy {
      * @param type 
      */
     abstract clearTypeProvider(type: Type): void;
-    /**
-    * register action, simple create instance via `new type(this)`.
-    * @param types
-    */
-    abstract registerAction(...types: Type<Action>[]): this;
-    /**
-     * has action.
-     * @param token action token.
-     */
-    abstract hasAction(token: Token): boolean;
-    /**
-     * get action instace in current .
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {Injector} provider
-     * @returns {T}
-     */
-    abstract getAction<T>(token: Token<T>, notFoundValue?: T): T
-    /**
-     * get action handle.
-     * @param target target.
-     */
-    abstract getHandle<T extends Handle>(target: Token<Action>): T;
-    /**
-     * set action value.
-     * @param token 
-     * @param value 
-     * @param provider 
-     */
-    abstract setActionValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
-    /**
-     * get action value
-     * @param token 
-     * @param notFoundValue 
-     */
-    abstract getActionValue<T>(token: Token<T>, notFoundValue?: T): T;
+
+    // /**
+    // * register action, simple create instance via `new type(this)`.
+    // * @param types
+    // */
+    // abstract registerAction(...types: Type<Action>[]): this;
+    // /**
+    //  * has action.
+    //  * @param token action token.
+    //  */
+    // abstract hasAction(token: Token): boolean;
+    // /**
+    //  * get action instace in current .
+    //  *
+    //  * @template T
+    //  * @param {Token<T>} token
+    //  * @param {Injector} provider
+    //  * @returns {T}
+    //  */
+    // abstract getAction<T>(token: Token<T>, notFoundValue?: T): T
+    // /**
+    //  * get action handle.
+    //  * @param target target.
+    //  */
+    // abstract getHandle<T extends Handle>(target: Token<Action>): T;
+    // /**
+    //  * set action value.
+    //  * @param token 
+    //  * @param value 
+    //  * @param provider 
+    //  */
+    // abstract setActionValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
+    // /**
+    //  * get action value
+    //  * @param token 
+    //  * @param notFoundValue 
+    //  */
+    // abstract getActionValue<T>(token: Token<T>, notFoundValue?: T): T;
     /**
      * destroy hook.
      */

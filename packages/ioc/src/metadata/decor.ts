@@ -54,7 +54,7 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
         def: {
             ...options.def,
             class: [
-                (ctx, next) => {
+                (ctx) => {
                     const def = ctx.class.getAnnotation<ModuleDef>();
                     const metadata = def.annotation = ctx.define.metadata;
                     def.module = true;
@@ -66,23 +66,17 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
                     if (metadata.exports) def.exports = getTypes<ClassType>(metadata.exports);
                     if (metadata.declarations) def.declarations = getTypes<ClassType>(metadata.declarations);
                     if (metadata.bootstrap) def.bootstrap = getTypes(metadata.bootstrap);
-                    return next()
                 },
                 ...isArray(hd) ? hd : [hd]
             ]
         },
         design: {
-            beforeAnnoation: (context: DesignContext, next) => {
+            beforeAnnoation: (context: DesignContext) => {
                 const { type, class: typeRef } = context;
                 // use as dependence inject module.
                 if (context.injectorType) {
-                    const result = context.injectorType(type, typeRef);
-                    if (result) {
-                        result.then(() => next());
-                        return;
-                    }
+                    context.injectorType(type, typeRef);
                 }
-                next()
             }
         },
         appendProps: (meta) => {
@@ -745,7 +739,7 @@ export interface ProvidedIn {
 export const ProvidedIn: ProvidedIn = createDecorator<ProvidedInTargetMetadata>('ProvidedIn', {
     props: (target: Type, provide?: Token, alias?: string) => ({ target, provide: getToken(provide!, alias) }),
     design: {
-        afterAnnoation: (ctx, next) => {
+        afterAnnoation: (ctx) => {
             const meta = ctx.class.getMetadata<ProvidedInTargetMetadata>(ctx.currDecor);
             const type = ctx.type;
             const prds = meta.provide ? { provide: meta.provide, useClass: type } : type;
@@ -754,8 +748,6 @@ export const ProvidedIn: ProvidedIn = createDecorator<ProvidedInTargetMetadata>(
             ctx.injector.onDestroy(() => {
                 platform.removeTypeProvider(type, prds);
             });
-
-            return next()
         }
     }
 });

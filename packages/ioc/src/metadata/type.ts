@@ -14,7 +14,7 @@ import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { Execption } from '../execption';
 import { InstanceOf, MethodType } from '../injector';
-import { Handle } from '../handle';
+import { HandlerFn } from '../handler';
 
 
 
@@ -32,20 +32,20 @@ export interface DecoratorFn extends Function {
      */
     toString(): string;
     /**
-     * get decorator handle.
+     * get decorator handlers.
      * @param type decorator type.
      */
-    getHandle?(type: DecoratorType): Handle<DecorContext>[];
+    getHandler?(type: DecoratorType): HandlerFn<DecorContext>[];
     /**
-     * get decorator runtime handle.
+     * get decorator runtime handlers.
      * @param type decorator type.
      */
-    getRuntimeHandle?(type: DecoratorScope): Handle<RuntimeContext>[];
+    getRuntimeHandler?(type: DecoratorScope): HandlerFn<RuntimeContext>[];
     /**
-     * get decorator design handle.
+     * get decorator design handlers.
      * @param type decorator type.
      */
-    getDesignHandle?(type: DecoratorScope): Handle<DesignContext>[];
+    getDesignHandler?(type: DecoratorScope): HandlerFn<DesignContext>[];
 }
 
 

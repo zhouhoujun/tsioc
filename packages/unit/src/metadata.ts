@@ -35,10 +35,9 @@ export interface Suite {
 export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
     actionType: ActionTypes.annoation,
     def: {
-        class: (ctx, next) => {
+        class: (ctx) => {
             ctx.class.setAnnotation(ctx.define.metadata);
             ctx.class.getAnnotation<SuiteDef>().suite = true;
-            return next()
         }
     },
     props: (describe: string, timeout?: number) => ({ describe, timeout }),

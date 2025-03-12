@@ -10,6 +10,10 @@ import { Injector, InjectorScope } from '../injector';
 import { Execption } from '../execption';
 import { Platform } from '../platform';
 import { ModuleRef } from '../module.ref';
+import { LifeScope } from '../lifescope/lifescope';
+import { Context } from '../handler';
+import { RUNTIME_INTERCEPTORS } from '../lifescope/runtime';
+import { DESIGN_INTERECPTORS, registerHandler } from '../lifescope/design';
 
 
 /**
@@ -17,22 +21,44 @@ import { ModuleRef } from '../module.ref';
  */
 export class DefaultPlatform implements Platform {
 
-    private _actions: Map<Token, any>;
+    // private _actions: Map<Token, any>;
     private _singls: Map<Token, any>;
     private _pdrs: Map<Type, ProviderType[]>;
     private _scopes: Map<string | Type, Injector>;
 
     readonly modules = new Map<Type, ModuleRef>();
     private injectors: Injector[];
+    private _runtime?: LifeScope;
+    private _design?: LifeScope;
+
+    readonly context: Context;
 
     constructor(readonly injector: Injector) {
+        this.context = new Context();
         this._scopes = new Map();
         this._pdrs = new Map();
-        this._actions = new Map();
+        // this._actions = new Map();
         this._singls = new Map();
         this.injectors = [injector];
         this._singls.set(Platform, this);
-        injector.onDestroy(this)
+        injector.onDestroy(this);
+    }
+
+
+    get runtime(): LifeScope {
+        if (!this._runtime) {
+            this._runtime = new LifeScope(this, (ctx) => {
+                ctx.instance = new ctx.type(...ctx.args || []);
+            }, RUNTIME_INTERCEPTORS);
+        }
+        return this._runtime;
+    }
+
+    get design(): LifeScope {
+        if (!this._design) {
+            this._design = new LifeScope(this, registerHandler, DESIGN_INTERECPTORS);
+        }
+        return this._design;
     }
 
     register(injector: Injector): void {
@@ -99,55 +125,55 @@ export class DefaultPlatform implements Platform {
         return (this._scopes.get(scope) ?? defaultInjector) as T
     }
 
-    /**
-     * get token factory resolve instace in current BaseInjector.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {Injector} provider
-     * @returns {T}
-     */
-    getAction<T>(token: Token<T>, notFoundValue?: T): T {
-        if (!this._actions.has(token)) {
-            this.registerAction(token as Type)
-        }
-        return this._actions.get(token) ?? notFoundValue
-    }
+    // /**
+    //  * get token factory resolve instace in current BaseInjector.
+    //  *
+    //  * @template T
+    //  * @param {Token<T>} token
+    //  * @param {Injector} provider
+    //  * @returns {T}
+    //  */
+    // getAction<T>(token: Token<T>, notFoundValue?: T): T {
+    //     if (!this._actions.has(token)) {
+    //         this.registerAction(token as Type)
+    //     }
+    //     return this._actions.get(token) ?? notFoundValue
+    // }
 
-    hasAction(token: Token) {
-        return this._actions.has(token)
-    }
+    // hasAction(token: Token) {
+    //     return this._actions.has(token)
+    // }
 
-    registerAction(...types: Type<Action>[]): this {
-        types.forEach(type => {
-            if (this._actions.has(type)) return;
-            this.processAction(type)
-        });
-        return this
-    }
+    // registerAction(...types: Type<Action>[]): this {
+    //     types.forEach(type => {
+    //         if (this._actions.has(type)) return;
+    //         this.processAction(type)
+    //     });
+    //     return this
+    // }
 
-    getHandle<T extends Handle>(target: Token<Action>): T {
-        const action = this._actions.get(target) as Action;
-        return (action?.getHandle() ?? null) as T
-    }
+    // getHandle<T extends Handle>(target: Token<Action>): T {
+    //     const action = this._actions.get(target) as Action;
+    //     return (action?.getHandle() ?? null) as T
+    // }
 
-    setActionValue<T>(token: Token<T>, value: T, provider?: Type<T>) {
-        this._actions.set(token, value);
-        if (provider) this._actions.set(provider, value)
-        return this
-    }
+    // setActionValue<T>(token: Token<T>, value: T, provider?: Type<T>) {
+    //     this._actions.set(token, value);
+    //     if (provider) this._actions.set(provider, value)
+    //     return this
+    // }
 
-    getActionValue<T>(token: Token<T>, notFoundValue?: T): T {
-        return this._actions.get(token) ?? notFoundValue
-    }
+    // getActionValue<T>(token: Token<T>, notFoundValue?: T): T {
+    //     return this._actions.get(token) ?? notFoundValue
+    // }
 
-    protected processAction(type: Type<Action>) {
-        if (this._actions.has(type)) return true;
-        const instance = new (type as ClassType)(this) as Action & ActionSetup;
+    // protected processAction(type: Type<Action>) {
+    //     if (this._actions.has(type)) return true;
+    //     const instance = new (type as ClassType)(this) as Action & ActionSetup;
 
-        this._actions.set(type, instance);
-        if (isFunction(instance.setup)) instance.setup()
-    }
+    //     this._actions.set(type, instance);
+    //     if (isFunction(instance.setup)) instance.setup()
+    // }
 
     /**
      * get type provider.
@@ -203,8 +229,9 @@ export class DefaultPlatform implements Platform {
         this._scopes.clear();
         this.modules.clear();
         this._pdrs.clear();
-        this._actions.clear();
+        // this._actions.clear();
         this._singls.clear()
+        this.context.onDestroy();
         this.injectors = [];
     }
 
