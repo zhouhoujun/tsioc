@@ -1,7 +1,6 @@
 export * from './execption';
 export * from './types';
 export * from './tokens';
-export * from './action';
 export * from './destroy';
 export * from './injector';
 export * from './context';
@@ -32,21 +31,6 @@ export * from './metadata/tk';
 // providers
 export * from './providers';
 
-// export * from './handle';
-// actions
-// export * from './actions/ctx';
-// export * from './actions/act';
-// export * from './actions/reg'
-// export * from './actions/lifescope';
-
-
-// // runtime actions
-// export * as runtimes from './actions/run-act';
-// export * from './actions/runtime';
-
-// // design time action.
-// export * as designs from './actions/des-act';
-// export * from './actions/design';
 
 export * from './handler';
 export * from './lifescope/ctx';

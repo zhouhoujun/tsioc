@@ -1,8 +1,6 @@
 import { InjectFlags, Token } from '../tokens';
 import { Type, ClassType } from '../types';
-import { Handle } from '../handle';
 import { isFunction } from '../utils/chk';
-import { Action, ActionSetup } from '../action';
 import { get } from '../metadata/refl';
 import { Class } from '../metadata/type';
 import { ProviderType, StaticProvider } from '../providers';
@@ -125,56 +123,6 @@ export class DefaultPlatform implements Platform {
         return (this._scopes.get(scope) ?? defaultInjector) as T
     }
 
-    // /**
-    //  * get token factory resolve instace in current BaseInjector.
-    //  *
-    //  * @template T
-    //  * @param {Token<T>} token
-    //  * @param {Injector} provider
-    //  * @returns {T}
-    //  */
-    // getAction<T>(token: Token<T>, notFoundValue?: T): T {
-    //     if (!this._actions.has(token)) {
-    //         this.registerAction(token as Type)
-    //     }
-    //     return this._actions.get(token) ?? notFoundValue
-    // }
-
-    // hasAction(token: Token) {
-    //     return this._actions.has(token)
-    // }
-
-    // registerAction(...types: Type<Action>[]): this {
-    //     types.forEach(type => {
-    //         if (this._actions.has(type)) return;
-    //         this.processAction(type)
-    //     });
-    //     return this
-    // }
-
-    // getHandle<T extends Handle>(target: Token<Action>): T {
-    //     const action = this._actions.get(target) as Action;
-    //     return (action?.getHandle() ?? null) as T
-    // }
-
-    // setActionValue<T>(token: Token<T>, value: T, provider?: Type<T>) {
-    //     this._actions.set(token, value);
-    //     if (provider) this._actions.set(provider, value)
-    //     return this
-    // }
-
-    // getActionValue<T>(token: Token<T>, notFoundValue?: T): T {
-    //     return this._actions.get(token) ?? notFoundValue
-    // }
-
-    // protected processAction(type: Type<Action>) {
-    //     if (this._actions.has(type)) return true;
-    //     const instance = new (type as ClassType)(this) as Action & ActionSetup;
-
-    //     this._actions.set(type, instance);
-    //     if (isFunction(instance.setup)) instance.setup()
-    // }
-
     /**
      * get type provider.
      * @param type
@@ -229,7 +177,6 @@ export class DefaultPlatform implements Platform {
         this._scopes.clear();
         this.modules.clear();
         this._pdrs.clear();
-        // this._actions.clear();
         this._singls.clear()
         this.context.onDestroy();
         this.injectors = [];

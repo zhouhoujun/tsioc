@@ -34,7 +34,6 @@ export interface ReturnDefer {
  * Joinpoint of aop.
  */
 export class Joinpoint extends DefaultInvocationContext<any[]> implements IocContext {
-    invokeHandle!: (joinPoint: Joinpoint, advicer: Advicer, sync?: boolean) => any;
 
     /**
      * custom proxy invoke origin method.

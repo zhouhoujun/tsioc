@@ -7,7 +7,7 @@ import { getToken, Token } from '../tokens';
 import { Type } from '../types';
 import { isMetadataObject } from '../utils/obj';
 import { Execption } from '../execption';
-import { Handle } from '../handle';
+import { HandlerFn } from '../handler';
 
 
 
@@ -44,19 +44,19 @@ export function createDecorator<T>(name: string, option: DecoratorOption<T>): an
             option.actionType.forEach(a => regActionType(decor, a))
             : regActionType(decor, option.actionType)
     }
-    if (option.def) factory.getHandle = mapToFac(option.def as Record<string, Handle | Handle[]>);
-    if (option.design) factory.getDesignHandle = mapToFac(option.design as Record<string, Handle | Handle[]>);
-    if (option.runtime) factory.getRuntimeHandle = mapToFac(option.runtime as Record<string, Handle | Handle[]>);
+    if (option.def) factory.getHandle = mapToFac(option.def as Record<string, HandlerFn | HandlerFn[]>);
+    if (option.design) factory.getDesignHandle = mapToFac(option.design as Record<string, HandlerFn | HandlerFn[]>);
+    if (option.runtime) factory.getRuntimeHandle = mapToFac(option.runtime as Record<string, HandlerFn | HandlerFn[]>);
     factory.toString = () => decor;
     factory.decorator = decor;
     return factory
 }
 
 
-function mapToFac(maps: Record<string, Handle | Handle[]>): (type: DecoratorType) => Handle[] {
+function mapToFac(maps: Record<string, HandlerFn | HandlerFn[]>): (type: DecoratorType) => HandlerFn[] {
     const mapHd = new Map();
     for (const type in maps) {
-        let rged: Handle[] = mapHd.get(type);
+        let rged: HandlerFn[] = mapHd.get(type);
         if (!rged) {
             rged = [];
             mapHd.set(type, rged);

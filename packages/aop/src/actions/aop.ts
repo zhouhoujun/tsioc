@@ -5,9 +5,9 @@ import { Advisor } from '../Advisor';
 
 
 /**
- * execute bind method pointcut action.
+ * execute bind method pointcut interecptor.
  */
-export const BindMthPointcutAction = function (ctx: RuntimeContext, next: HandlerFn, context: Context): void {
+export const bindMthPointcut = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
     // aspect class do nothing.
     // ctx.type had checked.
     if (ctx.instance && isValAspectTag(ctx.type, ctx.class)) {
@@ -19,11 +19,11 @@ export const BindMthPointcutAction = function (ctx: RuntimeContext, next: Handle
 
 
 /**
- * before constructor advice actions.
+ * before constructor advice interecptor.
  *
  * @export
  */
-export const BeforeCtorAdviceAction = function (ctx: RuntimeContext, next: HandlerFn, context: Context): void {
+export const beforeCtorAdvice = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
     // aspect class do nothing.
     if (isValAspectTag(ctx.type, ctx.class)) {
         context.get(ProceedingScope)
@@ -34,40 +34,34 @@ export const BeforeCtorAdviceAction = function (ctx: RuntimeContext, next: Handl
 }
 
 /**
- * after constructor advice actions.
+ * after constructor advice interecptor.
  *
  * @export
  */
-export const AfterCtorAdviceAction = function (ctx: RuntimeContext, next: () => void): void {
+export const afterCtorAdvice = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
     // aspect class do nothing.
-    if (!ctx.instance || !isValAspectTag(ctx.type, ctx.class)) {
-        return next()
+    if (ctx.instance && isValAspectTag(ctx.type, ctx.class)) {
+        context.get(ProceedingScope)
+            .afterConstr(ctx.instance, ctx.type, ctx.params, ctx.args, ctx.injector, ctx.context);
     }
 
-    ctx.injector.platform()
-        .getAction(ProceedingScope)
-        .afterConstr(ctx.instance, ctx.type, ctx.params, ctx.args, ctx.injector, ctx.context);
-
-    next()
+    return next(ctx, context)
 }
 
 
 /**
- *  match pointcut action.
+ *  match pointcut interecptor.
  *
  * @export
  */
-export const MatchPointcutAction = function (ctx: RuntimeContext, next: () => void): void {
+export const matchPointcut = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
     // aspect class do nothing.
-    if (!isValAspectTag(ctx.type, ctx.class)) {
-        return next()
+    if (isValAspectTag(ctx.type, ctx.class)) {
+        const advisor = context.get(Advisor);
+        advisor.register(ctx.class);
     }
 
-    const platform = ctx.injector.platform();
-    const advisor = platform.getActionValue(Advisor);
-    advisor.register(ctx.class);
-
-    next()
+    return next(ctx, context)
 }
 
 

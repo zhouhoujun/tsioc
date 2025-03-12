@@ -1,7 +1,7 @@
 import { InvocationContext } from '../context';
 import { Context, ContextToken, HandlerFn } from '../handler';
 import { FactoryRecord, FnType } from '../injector';
-import { Decors } from '../metadata/type';
+import { DecoratorFn, DecoratorScope, Decors } from '../metadata/type';
 import { Platform } from '../platform';
 import { ReflectiveFactory } from '../reflective';
 import { isType } from '../utils/chk';
@@ -27,34 +27,45 @@ export const autorunInterceptor = (ctx: DesignContext, next: HandlerFn, context:
     });
 }
 
-export const BEFORE_ANNOATION_SCOPE = new ContextToken<LifeScope>(() => null!);
+function invokeHandler(decors: DecoratorFn[], ctx: DesignContext, scope: DecoratorScope, context?: any) {
+    decors.forEach(d => {
+        ctx.currDecor = d;
+        d.getDesignHandler?.(scope)?.forEach(h => {
+            h(ctx, context);
+        })
+    });
+}
+
+const BEFORE_ANNOATION_SCOPE = new ContextToken<LifeScope>(() => null!);
 export function getDesignBeforeAnnoationScope(platform: Platform): LifeScope<DesignContext> {
     let scope = platform.context.get(BEFORE_ANNOATION_SCOPE);
     if (!scope) {
         scope = new LifeScope<DesignContext>(platform, (ctx, context) => {
-            ctx.class.classDecors.forEach(d => {
-                ctx.currDecor = d;
-                d.getDesignHandler?.(Decors.beforeAnnoation)?.forEach(h => {
-                    h(ctx, context);
-                })
-            });
+            invokeHandler(ctx.class.classDecors, ctx, Decors.beforeAnnoation, context)
         });
         platform.context.set(BEFORE_ANNOATION_SCOPE, scope);
     }
     return scope;
 }
 
-export const AFTER_ANNOATION_SCOPE = new ContextToken<LifeScope>(() => null!);
+const ANNOATION_SCOPE = new ContextToken<LifeScope>(() => null!);
+export function getDesignAnnoationScope(platform: Platform): LifeScope<DesignContext> {
+    let scope = platform.context.get(ANNOATION_SCOPE);
+    if (!scope) {
+        scope = new LifeScope<DesignContext>(platform, (ctx, context) => {
+            invokeHandler(ctx.class.classDecors, ctx, Decors.annoation, context)
+        });
+        platform.context.set(ANNOATION_SCOPE, scope);
+    }
+    return scope;
+}
+
+const AFTER_ANNOATION_SCOPE = new ContextToken<LifeScope>(() => null!);
 export function getDesignAfterAnnoationScope(platform: Platform): LifeScope<DesignContext> {
     let scope = platform.context.get(AFTER_ANNOATION_SCOPE);
     if (!scope) {
         scope = new LifeScope<DesignContext>(platform, (ctx, context) => {
-            ctx.class.classDecors.forEach(d => {
-                ctx.currDecor = d;
-                d.getDesignHandler?.(Decors.afterAnnoation)?.forEach(h => {
-                    h(ctx, context);
-                })
-            });
+            invokeHandler(ctx.class.classDecors, ctx, Decors.afterAnnoation, context)
         });
         platform.context.set(AFTER_ANNOATION_SCOPE, scope);
     }
@@ -62,35 +73,25 @@ export function getDesignAfterAnnoationScope(platform: Platform): LifeScope<Desi
 }
 
 
-export const DESIGN_PROPERTY_SCOPE = new ContextToken<LifeScope>(() => null!);
+const DESIGN_PROPERTY_SCOPE = new ContextToken<LifeScope>(() => null!);
 export function getDesignPropertyScope(platform: Platform): LifeScope<DesignContext> {
     let scope = platform.context.get(DESIGN_PROPERTY_SCOPE);
     if (!scope) {
         scope = new LifeScope<DesignContext>(platform, (ctx, context) => {
-            ctx.class.classDecors.forEach(d => {
-                ctx.currDecor = d;
-                d.getDesignHandler?.(Decors.property)?.forEach(h => {
-                    h(ctx, context);
-                })
-            });
+            invokeHandler(ctx.class.propDecors, ctx, Decors.property, context)
         });
         platform.context.set(DESIGN_PROPERTY_SCOPE, scope);
     }
     return scope;
 }
 
-export const DESIGN_METHOD_SCOPE = new ContextToken<LifeScope>(() => null!);
+const DESIGN_METHOD_SCOPE = new ContextToken<LifeScope>(() => null!);
 
 export function getDesignMethodScope(platform: Platform): LifeScope<DesignContext> {
     let scope = platform.context.get(DESIGN_METHOD_SCOPE);
     if (!scope) {
         scope = new LifeScope<DesignContext>(platform, (ctx, context) => {
-            ctx.class.classDecors.forEach(d => {
-                ctx.currDecor = d;
-                d.getDesignHandler?.(Decors.property)?.forEach(h => {
-                    h(ctx, context);
-                })
-            });
+            invokeHandler(ctx.class.methodDecors, ctx, Decors.method, context);
         });
         platform.context.set(DESIGN_METHOD_SCOPE, scope);
     }
@@ -105,7 +106,7 @@ export const annoactionInterceptor = (input: DesignContext, next: HandlerFn, con
 
     getDesignPropertyScope(input.platform).handle(input, context);
     getDesignMethodScope(input.platform).handle(input, context);
-
+    getDesignAnnoationScope(input.platform).handle(input, context);
     getDesignAfterAnnoationScope(input.platform).handle(input, context);
 }
 

@@ -1,10 +1,6 @@
-// import { Action, Actions } from '../action';
-import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { AnnotationType, Type } from '../types';
 import { cleanObj, getParentClass } from '../utils/lang';
 import { isBoolean, isFunction } from '../utils/chk';
-// import { runChain, HandlerFn } from '../handle';
-// import { Platform } from '../platform';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata,
     RunnableMetadata, InjectableMetadata, MethodMetadata
@@ -16,6 +12,7 @@ import {
 import { InvokeOptions } from '../context';
 import { Context, Handler, HandlerFn } from '../handler';
 import { LifeScope } from '../lifescope/lifescope';
+import { DesignContext, RuntimeContext } from '../lifescope/ctx';
 
 
 

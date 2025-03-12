@@ -11,7 +11,6 @@ import { OperationArgumentResolver } from '../resolver';
 import { InvokeArguments, InvokeOptions } from '../context';
 import { getModuleType } from '../module.ref';
 import { getTypes } from '../utils/lang';
-import { DesignContext } from '../actions/ctx';
 import { DecoratorOption } from './refl';
 import { ModuleDef } from './type';
 
@@ -71,7 +70,7 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
             ]
         },
         design: {
-            beforeAnnoation: (context: DesignContext) => {
+            beforeAnnoation: (context) => {
                 const { type, class: typeRef } = context;
                 // use as dependence inject module.
                 if (context.injectorType) {

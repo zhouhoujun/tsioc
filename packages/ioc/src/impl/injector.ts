@@ -15,13 +15,11 @@ import { get } from '../metadata/refl';
 import { ModuleDef, Class } from '../metadata/type';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
 import { ModuleWithProviders, ProviderType, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
-import { DesignContext } from '../actions/ctx';
-import { DesignLifeScope } from '../actions/design';
-import { RuntimeLifeScope } from '../actions/runtime';
 import { ReflectiveFactory } from '../reflective';
 import { ReflectiveFactoryImpl, hasContext } from './reflective';
 import { createContext, InvocationContext, InvokeOptions } from '../context';
 import { DefaultPlatform } from './platform';
+import { DesignContext } from '../lifescope/ctx';
 
 export const SCOPE_PRODIDERS: ProviderType[] = [];
 

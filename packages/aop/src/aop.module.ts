@@ -1,8 +1,8 @@
-import { Inject, runtimes, RuntimeLifeScope, Injector, Autorun, Module } from '@tsdi/ioc';
-import { BeforeCtorAdviceAction, AfterCtorAdviceAction, BindMthPointcutAction, MatchPointcutAction } from './actions/aop';
+import { Inject, Injector, Autorun, Module, getRuntimeClassScope, getRuntimeBeforeCtorScope, getRuntimeAfterCtorScope, getRuntimeMethodScope } from '@tsdi/ioc';
+import { beforeCtorAdvice, afterCtorAdvice, bindMthPointcut, matchPointcut } from './actions/aop';
 import { Advisor } from './Advisor';
 import { DefaultAdviceMatcher } from './DefaultAdviceMatcher';
-import { ProceedingScope } from './actions/proceed';
+import { CtorAdvicesScope, MethodAdvicesScope, ProceedingScope } from './actions/proceed';
 import { Proceeding } from './Proceeding';
 import { AdviceMatcher } from './AdviceMatcher';
 
@@ -20,25 +20,45 @@ export class AopProvider {
     setup(@Inject() injector: Injector) {
 
         const platform = injector.platform();
-        if (platform.context.has(Advisor)) return;
+        const context = platform.context;
+        if (context.has(Advisor)) return;
 
-        platform.context.set(Advisor, new Advisor(platform))
-            .set(AdviceMatcher, new DefaultAdviceMatcher(platform));
+        const ctorAdvicesScope = new CtorAdvicesScope();
+        const methodAdvicesScope = new MethodAdvicesScope();
 
-        platform.registerAction(ProceedingScope);
-        platform.setActionValue(Proceeding, platform.getAction(ProceedingScope));
+        context.set(CtorAdvicesScope, ctorAdvicesScope)
+            .set(MethodAdvicesScope, methodAdvicesScope);
 
-        platform.getAction(runtimes.BeforeCtorScope)
-            .useBefore(BeforeCtorAdviceAction);
+        const proceeding = new ProceedingScope(platform, [ctorAdvicesScope, methodAdvicesScope]);
 
-        platform.getAction(runtimes.AfterCtorScope)
-            .use(AfterCtorAdviceAction);
+        context.set(Advisor, new Advisor(platform))
+            .set(AdviceMatcher, new DefaultAdviceMatcher(platform))
+            .set(Proceeding, proceeding)
+            .set(ProceedingScope, proceeding);
 
-        platform.getAction(runtimes.RuntimeMthScope)
-            .useBefore(BindMthPointcutAction);
 
-        platform.getAction(RuntimeLifeScope)
-            .useBefore(MatchPointcutAction, runtimes.CtorArgsAction);
+        getRuntimeBeforeCtorScope(platform).use(beforeCtorAdvice, 0);
+
+        getRuntimeAfterCtorScope(platform).use(afterCtorAdvice);
+
+        getRuntimeMethodScope(platform).use(bindMthPointcut, 0);
+
+        platform.runtime.use(matchPointcut, 1);
+
+        // platform.registerAction(ProceedingLifeScope);
+        // platform.setActionValue(Proceeding, platform.getAction(ProceedingLifeScope));
+
+        // platform.getAction(runtimes.BeforeCtorScope)
+        //     .useBefore(BeforeCtorAdviceAction);
+
+        // platform.getAction(runtimes.AfterCtorScope)
+        //     .use(AfterCtorAdviceAction);
+
+        // platform.getAction(runtimes.RuntimeMthScope)
+        //     .useBefore(BindMthPointcutAction);
+
+        // platform.getAction(RuntimeLifeScope)
+        //     .useBefore(MatchPointcutAction, runtimes.CtorArgsAction);
 
     }
 }
@@ -55,4 +75,12 @@ export class AopProvider {
 })
 export class AopModule {
 
+}
+
+export function provideAop() {
+    return {
+        providers: [
+            AopProvider
+        ]
+    };
 }

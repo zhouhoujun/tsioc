@@ -9,8 +9,9 @@ export const initReflectInterceptor: InterceptorFn<RegContext, void> = (input: R
     if (!input.class) {
         input.class = get(input.type)
     }
-    if (input.class.getAnnotation().singleton) {
-        input.singleton = input.class.getAnnotation().singleton!;
+    const singleton = input.class.getAnnotation().singleton;
+    if (singleton) {
+        input.singleton = singleton;
     }
     return next(input, context)
 }

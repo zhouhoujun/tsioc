@@ -1,5 +1,5 @@
 import { from, isObservable, Observable, of } from 'rxjs';
-import { isFunction, isPromise } from './utils/chk';
+import { isFunction, isNumber, isPromise } from './utils/chk';
 import { Token } from './tokens';
 
 /**
@@ -135,6 +135,57 @@ export function toInterceptorFn(interceptor: Interceptor): InterceptorFn {
     const fn = (input: any, next: HandlerFn, context?: any) => interceptor.intercept(input, next.owner ?? { handle: next }, context);
     fn.owner = interceptor;
     return fn;
+}
+
+export class BaseChain<TInput = any, TOutput = any, TContext = any> {
+
+    private _chain?: InterceptorFn<TInput, TOutput, TContext> | null;
+    constructor(
+        private interceptors: InterceptorLike<TInput>[] = []
+    ) { }
+
+    /**
+     * use interceptor for the handler.
+     * @param interceptor 
+     * @param order 
+     * @returns 
+     */
+    use(interceptors: InterceptorLike | InterceptorLike[], order?: number): this {
+        const iterceps = Array.isArray(interceptors) ? interceptors : [interceptors]
+        if (isNumber(order)) {
+            this.interceptors.splice(order, 0, ...iterceps)
+        } else {
+            this.interceptors.push(...iterceps);
+        }
+        this.reset();
+        return this;
+    }
+
+    protected getChain(): InterceptorFn<TInput, TOutput, TContext> {
+        if (!this._chain) {
+            this._chain = this.compose();
+        }
+        return this._chain;
+    }
+
+    protected reset(): void {
+        this._chain = null;
+    }
+
+    /**
+     * compose iterceptors and filters in chain.
+     * @returns 
+     */
+    protected compose(): InterceptorFn {
+        return composeInterceptors(this.interceptors)
+    }
+
+}
+
+export class InterceptorChina<TInput = any, TOutput = any, TContext = any> extends BaseChain<TInput, TOutput, TContext> implements Interceptor<TInput, TOutput, TContext> {
+    intercept(input: TInput, next: Handler, context?: TContext): TOutput {
+        return this.getChain()(input, toHandlerFn(next), context);
+    }
 }
 
 /**

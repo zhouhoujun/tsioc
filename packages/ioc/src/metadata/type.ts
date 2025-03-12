@@ -11,10 +11,10 @@ import { forIn, hasItem } from '../utils/lang';
 import { getClassAnnotation } from '../utils/util';
 import { isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
-import { DesignContext, RuntimeContext } from '../actions/ctx';
 import { Execption } from '../execption';
 import { InstanceOf, MethodType } from '../injector';
 import { HandlerFn } from '../handler';
+import { DesignContext, RuntimeContext } from '../lifescope/ctx';
 
 
 
