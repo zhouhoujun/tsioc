@@ -1,7 +1,7 @@
-import { finalize, map } from 'rxjs';
-import { BaseChain, Context, Handler, HandlerFn, Interceptor, InterceptorLike } from '../handler';
+import { finalize } from 'rxjs';
+import { BaseChain, Context, Handler, HandlerFn, InterceptorLike } from '../handler';
 import { Platform } from '../platform';
-import { isNumber, isObservable, isPromise } from '../utils/chk';
+import { isObservable, isPromise } from '../utils/chk';
 
 export class LifeScope<TInput = any> extends BaseChain<TInput> implements Handler<TInput> {
 
@@ -31,6 +31,7 @@ export class LifeScope<TInput = any> extends BaseChain<TInput> implements Handle
             })
         } else {
             finalizeFn?.(input, context);
+            return res$;
         }
     }
 }

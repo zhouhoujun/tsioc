@@ -1,7 +1,7 @@
 import { Type, RuntimeContext, AnnotationType, Class, HandlerFn, Context } from '@tsdi/ioc';
-import { ProceedingScope } from './proceed';
 import { AopDef } from '../metadata/ref';
 import { Advisor } from '../Advisor';
+import { Proceeding } from '../Proceeding';
 
 
 /**
@@ -19,34 +19,55 @@ export const bindMthPointcut = (ctx: RuntimeContext, next: HandlerFn, context: C
 
 
 /**
- * before constructor advice interecptor.
+ * constructor advice interecptor.
  *
  * @export
  */
-export const beforeCtorAdvice = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
+export const ctorAdvice = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
     // aspect class do nothing.
     if (isValAspectTag(ctx.type, ctx.class)) {
-        context.get(ProceedingScope)
+        context.get(Proceeding)
             .beforeConstr(ctx.type, ctx.params, ctx.args, ctx.injector, ctx.context);
     }
 
-    return next(ctx, context)
-}
+    next(ctx, context)
 
-/**
- * after constructor advice interecptor.
- *
- * @export
- */
-export const afterCtorAdvice = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
-    // aspect class do nothing.
     if (ctx.instance && isValAspectTag(ctx.type, ctx.class)) {
-        context.get(ProceedingScope)
+        context.get(Proceeding)
             .afterConstr(ctx.instance, ctx.type, ctx.params, ctx.args, ctx.injector, ctx.context);
     }
-
-    return next(ctx, context)
 }
+
+
+// /**
+//  * before constructor advice interecptor.
+//  *
+//  * @export
+//  */
+// export const beforeCtorAdvice = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
+//     // aspect class do nothing.
+//     if (isValAspectTag(ctx.type, ctx.class)) {
+//         context.get(ProceedingScope)
+//             .beforeConstr(ctx.type, ctx.params, ctx.args, ctx.injector, ctx.context);
+//     }
+
+//     return next(ctx, context)
+// }
+
+// /**
+//  * after constructor advice interecptor.
+//  *
+//  * @export
+//  */
+// export const afterCtorAdvice = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
+//     // aspect class do nothing.
+//     if (ctx.instance && isValAspectTag(ctx.type, ctx.class)) {
+//         context.get(ProceedingScope)
+//             .afterConstr(ctx.instance, ctx.type, ctx.params, ctx.args, ctx.injector, ctx.context);
+//     }
+
+//     return next(ctx, context)
+// }
 
 
 /**

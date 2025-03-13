@@ -1,5 +1,5 @@
-import { from, isObservable, Observable, of } from 'rxjs';
-import { isFunction, isNumber, isPromise } from './utils/chk';
+import { catchError, finalize, from, isObservable, lastValueFrom, map, mergeMap, Observable, of, throwError } from 'rxjs';
+import { isDefined, isFunction, isNumber, isPromise } from './utils/chk';
 import { Token } from './tokens';
 
 /**
@@ -131,8 +131,15 @@ export function toHandlerFn(handler: Handler): HandlerFn {
     return fn;
 }
 
+export function toHandler(handle: HandlerFn) {
+    if (handle.owner) return handle.owner;
+    const hanlder = { handle };
+    handle.owner = hanlder;
+    return hanlder;
+}
+
 export function toInterceptorFn(interceptor: Interceptor): InterceptorFn {
-    const fn = (input: any, next: HandlerFn, context?: any) => interceptor.intercept(input, next.owner ?? { handle: next }, context);
+    const fn = (input: any, next: HandlerFn, context?: any) => interceptor.intercept(input, toHandler(next), context);
     fn.owner = interceptor;
     return fn;
 }
@@ -161,6 +168,10 @@ export class BaseChain<TInput = any, TOutput = any, TContext = any> {
         return this;
     }
 
+    getIndexOf(interceptor: InterceptorLike) {
+        return this.interceptors.indexOf(interceptor)
+    }
+
     protected getChain(): InterceptorFn<TInput, TOutput, TContext> {
         if (!this._chain) {
             this._chain = this.compose();
@@ -186,6 +197,66 @@ export class InterceptorChina<TInput = any, TOutput = any, TContext = any> exten
     intercept(input: TInput, next: Handler, context?: TContext): TOutput {
         return this.getChain()(input, toHandlerFn(next), context);
     }
+}
+
+export interface NextOpter {
+    next?: (res: any) => any;
+    error?: (error: any) => any;
+    finally?: () => any;
+}
+
+export function runHandler(input: any, handler: HandlerFn | Handler, nextOpter?: NextOpter | ((res: any) => any), context?: any) {
+
+    const opter = nextOpter ? (isFunction(nextOpter) ? { next: nextOpter } : nextOpter) : null;
+
+    let res$: any;
+    try {
+        res$ = isFunction(handler) ? handler(input, context) : handler.handle(input, context);
+        if (!opter) return res$;
+    } catch (err) {
+        opter?.error?.(err);
+        throw err;
+    } finally {
+        opter?.finally?.()
+    }
+
+    if (!opter) return res$;
+
+    if (isObservable(res$)) {
+        return res$.pipe(
+            mergeMap(res => {
+                if (opter.next) {
+                    const n$ = opter.next(res);
+                    if (isObservable(n$) || isPromise(n$)) return n$;
+                }
+                return of(res);
+            }),
+            finalize(() => {
+                opter.finally?.()
+            }),
+            catchError((err, caught) => {
+                if (opter.error) {
+                    const ct = opter.error(err);
+                    if (isObservable(ct) || isPromise(ct)) return ct;
+                    if (isDefined(ct)) return of(ct);
+                }
+                return throwError(() => err);
+            })
+        )
+    } else if (isPromise(res$)) {
+        return res$.then(res => opter.next ? opter.next(res) : res)
+            .catch(err => {
+                if (opter.error) {
+                    const ct = opter.error(err);
+                    if (isObservable(ct)) return lastValueFrom(ct)
+                    if (isPromise(ct)) return ct;
+                    if (isDefined(ct)) return ct;
+                }
+                throw err;
+            })
+            .finally(opter.finally);
+    }
+
 }
 
 /**

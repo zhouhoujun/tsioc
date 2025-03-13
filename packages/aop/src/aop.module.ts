@@ -1,8 +1,8 @@
-import { Inject, Injector, Autorun, Module, getRuntimeClassScope, getRuntimeBeforeCtorScope, getRuntimeAfterCtorScope, getRuntimeMethodScope } from '@tsdi/ioc';
-import { beforeCtorAdvice, afterCtorAdvice, bindMthPointcut, matchPointcut } from './actions/aop';
+import { Inject, Injector, Autorun, Module, getRuntimeMethodScope, ctorInterceptor, initReflectInterceptor } from '@tsdi/ioc';
+import { bindMthPointcut, matchPointcut, ctorAdvice } from './actions/aop';
 import { Advisor } from './Advisor';
 import { DefaultAdviceMatcher } from './DefaultAdviceMatcher';
-import { CtorAdvicesScope, MethodAdvicesScope, ProceedingScope } from './actions/proceed';
+import { ProceedingScope } from './actions/proceed';
 import { Proceeding } from './Proceeding';
 import { AdviceMatcher } from './AdviceMatcher';
 
@@ -22,14 +22,8 @@ export class AopProvider {
         const platform = injector.platform();
         const context = platform.context;
         if (context.has(Advisor)) return;
-
-        const ctorAdvicesScope = new CtorAdvicesScope();
-        const methodAdvicesScope = new MethodAdvicesScope();
-
-        context.set(CtorAdvicesScope, ctorAdvicesScope)
-            .set(MethodAdvicesScope, methodAdvicesScope);
-
-        const proceeding = new ProceedingScope(platform, [ctorAdvicesScope, methodAdvicesScope]);
+       
+        const proceeding = new ProceedingScope(platform);
 
         context.set(Advisor, new Advisor(platform))
             .set(AdviceMatcher, new DefaultAdviceMatcher(platform))
@@ -37,13 +31,12 @@ export class AopProvider {
             .set(ProceedingScope, proceeding);
 
 
-        getRuntimeBeforeCtorScope(platform).use(beforeCtorAdvice, 0);
-
-        getRuntimeAfterCtorScope(platform).use(afterCtorAdvice);
-
+        // getRuntimeBeforeCtorScope(platform).use(beforeCtorAdvice, 0);
+        // getRuntimeAfterCtorScope(platform).use(afterCtorAdvice);
+        platform.runtime.use(matchPointcut, platform.runtime.getIndexOf(initReflectInterceptor) + 1);
+        platform.runtime.use(ctorAdvice, platform.runtime.getIndexOf(ctorInterceptor));
         getRuntimeMethodScope(platform).use(bindMthPointcut, 0);
-
-        platform.runtime.use(matchPointcut, 1);
+        
 
         // platform.registerAction(ProceedingLifeScope);
         // platform.setActionValue(Proceeding, platform.getAction(ProceedingLifeScope));

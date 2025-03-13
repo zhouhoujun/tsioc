@@ -1,13 +1,7 @@
 import {
     Type, isFunction, lang, Platform, isNil, isPromise, refl, ctorName,
     ParameterMetadata, InvocationContext, Injector, object2string, isObservable,
-    LifeScope,
-    HandlerFn,
-    InterceptorLike,
-    InterceptorChina,
-    Context,
-    Handler,
-    toHandlerFn
+    LifeScope, HandlerFn,InterceptorLike,InterceptorChina, Context, ContextToken
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
 import { Joinpoint } from '../joinpoints/Joinpoint';
@@ -29,18 +23,11 @@ const aExp = /^@/;
  * @class ProxyMethod
  * @implements {IProxyMethod}
  */
-export class ProceedingScope extends InterceptorChina<Joinpoint> implements Proceeding {
+export class ProceedingScope implements Proceeding {
 
     constructor(
-        readonly platform: Platform,
-        interceptors: InterceptorLike<Joinpoint>[]) {
-        super(interceptors)
-    }
-
-    // override intercept(ctx: Joinpoint, next: Handler<Joinpoint>, context: Context) {
-    //     super.intercept(ctx, next)
-    // }
-
+        readonly platform: Platform
+    ) { }
 
     beforeConstr(targetType: Type, params: ParameterMetadata[] | undefined, args: any[] | undefined, injector: Injector, parent: InvocationContext | undefined) {
         const advices = this.platform.context.get(Advisor).getAdvices(targetType, ctorName);
@@ -57,7 +44,8 @@ export class ProceedingScope extends InterceptorChina<Joinpoint> implements Proc
             params,
             parent
         });
-        this.handle(joinPoint)
+
+        getBeforeCtorAdvicesScope(this.platform).handle(joinPoint);
     }
 
     afterConstr(target: any, targetType: Type, params: ParameterMetadata[] | undefined, args: any[] | undefined, injector: Injector, parent: InvocationContext | undefined) {
@@ -76,7 +64,8 @@ export class ProceedingScope extends InterceptorChina<Joinpoint> implements Proc
             target,
             parent
         });
-        this.handle(joinPoint)
+
+        getAfterCtorAdvicesScope(this.platform).handle(joinPoint);
     }
 
     /**
@@ -146,9 +135,7 @@ export class ProceedingScope extends InterceptorChina<Joinpoint> implements Proc
                 joinPoint.onDestroy(parent)
             }
 
-            this.intercept(joinPoint, { handle: originMethodHandler }, platform.context);
-
-            return joinPoint.returning;
+            return getMethodAdvicesScope(platform).handle(joinPoint, platform.context);
 
             // if (joinPoint.returningDefer) {
             //     return isObservable(joinPoint.originReturning) ?
@@ -163,24 +150,8 @@ export class ProceedingScope extends InterceptorChina<Joinpoint> implements Proc
         }
     }
 
-    // setup() {
-    //     this.use(CtorAdvicesScope, MethodAdvicesScope)
-    // }
-
 }
 
-export const originMethodHandler = (ctx: Joinpoint, context: Context) => {
-    try {
-        if (ctx.originProxy) {
-            ctx.returning = ctx.originProxy(ctx)
-        } else {
-            ctx.returning = ctx.originMethod?.apply(ctx.target, ctx.args)
-        }
-    } catch (err) {
-        ctx.throwing = err as Error
-    }
-    return ctx.returning;
-}
 
 function invokeAdvice(joinPoint: Joinpoint, advicer: Advicer, sync?: boolean) {
     if (joinPoint.destroyed) {
@@ -228,19 +199,65 @@ function invokeAdvice(joinPoint: Joinpoint, advicer: Advicer, sync?: boolean) {
 }
 
 
-export class CtorAdvicesScope extends InterceptorChina<Joinpoint> {
+const BEFORE_CTOR_ADVICES = new ContextToken<LifeScope>(() => null!);
+export function getBeforeCtorAdvicesScope(platform: Platform): LifeScope<Joinpoint> {
+    let scope = platform.context.get(BEFORE_CTOR_ADVICES);
+    if (!scope) {
+        scope = new LifeScope<Joinpoint>(platform, (ctx, context) => {
+            runChain<Joinpoint>([
+                (ctx, bnext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Before, bnext, ctx.advices.syncBefore),
+                (ctx, pnext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Pointcut, pnext, ctx.advices.syncPointcut),
+                (ctx, anext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Around, anext, ctx.advices.syncAround)
+            ], ctx, next)
 
-    constructor(interceptors: InterceptorLike<Joinpoint>[] = [CtorBeforeAdviceAction, CtorAfterAdviceAction]) {
-        super(interceptors)
+
+        });
+        platform.context.set(BEFORE_CTOR_ADVICES, scope);
     }
-    override intercept(ctx: Joinpoint, next: Handler, context: Context) {
-        if (ctx.methodName === ctorName) {
-            return this.getChain()(ctx, toHandlerFn(next), context)
-        } else {
-            return next.handle(ctx, context)
-        }
-    }
+    return scope;
 }
+
+const AFTER_CTOR_ADVICES = new ContextToken<LifeScope>(() => null!);
+export function getAfterCtorAdvicesScope(platform: Platform): LifeScope<Joinpoint> {
+    let scope = platform.context.get(AFTER_CTOR_ADVICES);
+    if (!scope) {
+        scope = new LifeScope<Joinpoint>(platform, (ctx, context) => {
+            return runChain<Joinpoint>([
+                (ctx, anext) => runAdvicers(ctx, invokeAdvice, ctx.advices.After, anext, ctx.advices.syncAfter),
+                (ctx, anext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Around, anext, ctx.advices.syncAround)
+            ], ctx, next)
+
+        });
+        platform.context.set(AFTER_CTOR_ADVICES, scope);
+    }
+    return scope;
+}
+
+const METHOD_ADVICES = new ContextToken<LifeScope>(() => null!);
+export function getMethodAdvicesScope(platform: Platform): LifeScope<Joinpoint> {
+    let scope = platform.context.get(METHOD_ADVICES);
+    if (!scope) {
+        scope = new LifeScope<Joinpoint>(platform, originMethodHandler);
+        platform.context.set(METHOD_ADVICES, scope);
+    }
+    return scope;
+}
+
+
+export const originMethodHandler = (ctx: Joinpoint, context: Context) => {
+    try {
+        if (ctx.originProxy) {
+            ctx.returning = ctx.originProxy(ctx)
+        } else {
+            ctx.returning = ctx.originMethod?.apply(ctx.target, ctx.args)
+        }
+    } catch (err) {
+        ctx.throwing = err as Error
+    }
+    return ctx.returning;
+}
+
+
 
 function runAdvicers(ctx: Joinpoint, invoker: (joinPoint: Joinpoint, advicer: Advicer, sync?: boolean) => any, advicers: Advicer[], next: () => void, sync: boolean | undefined) {
     if (sync) {
@@ -264,29 +281,46 @@ function runAdvicers(ctx: Joinpoint, invoker: (joinPoint: Joinpoint, advicer: Ad
     }
 }
 
-export const CtorBeforeAdviceAction = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-    if (ctx.state === JoinpointState.Before) {
-        runChain<Joinpoint>([
-            (ctx, bnext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Before, bnext, ctx.advices.syncBefore),
-            (ctx, pnext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Pointcut, pnext, ctx.advices.syncPointcut),
-            (ctx, anext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Around, anext, ctx.advices.syncAround)
-        ], ctx, next)
-    } else {
-        next()
-    }
 
-}
 
-export const CtorAfterAdviceAction = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-    if (ctx.state === JoinpointState.After) {
-        runChain<Joinpoint>([
-            (ctx, anext) => runAdvicers(ctx, invokeAdvice, ctx.advices.After, anext, ctx.advices.syncAfter),
-            (ctx, anext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Around, anext, ctx.advices.syncAround)
-        ], ctx, next)
-    } else {
-        next()
-    }
-}
+// export class CtorAdvicesScope extends InterceptorChina<Joinpoint> {
+
+//     constructor(interceptors: InterceptorLike<Joinpoint>[] = [CtorBeforeAdviceAction, CtorAfterAdviceAction]) {
+//         super(interceptors)
+//     }
+//     override intercept(ctx: Joinpoint, next: Handler, context: Context) {
+//         if (ctx.methodName === ctorName) {
+//             return this.getChain()(ctx, toHandlerFn(next), context)
+//         } else {
+//             return next.handle(ctx, context)
+//         }
+//     }
+// }
+
+
+// export const CtorBeforeAdviceAction = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
+//     if (ctx.state === JoinpointState.Before) {
+//         runChain<Joinpoint>([
+//             (ctx, bnext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Before, bnext, ctx.advices.syncBefore),
+//             (ctx, pnext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Pointcut, pnext, ctx.advices.syncPointcut),
+//             (ctx, anext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Around, anext, ctx.advices.syncAround)
+//         ], ctx, next)
+//     } else {
+//         next()
+//     }
+
+// }
+
+// export const CtorAfterAdviceAction = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
+//     if (ctx.state === JoinpointState.After) {
+//         runChain<Joinpoint>([
+//             (ctx, anext) => runAdvicers(ctx, invokeAdvice, ctx.advices.After, anext, ctx.advices.syncAfter),
+//             (ctx, anext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Around, anext, ctx.advices.syncAround)
+//         ], ctx, next)
+//     } else {
+//         next()
+//     }
+// }
 
 const methodAdvicesInterceptors: InterceptorLike<Joinpoint>[] = [
     BeforeAdvicesAction,
@@ -306,7 +340,7 @@ export class MethodAdvicesScope extends InterceptorChina<Joinpoint> {
 
 export const BeforeAdvicesAction = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
     if (ctx.throwing) {
-        return next()
+        return;
     }
     ctx.state = JoinpointState.Before;
 
@@ -318,7 +352,7 @@ export const BeforeAdvicesAction = (ctx: Joinpoint, next: HandlerFn, context: Co
 
 export const PointcutAdvicesAction = function (ctx: Joinpoint, next: HandlerFn, context: Context) => {
     if (ctx.throwing) {
-        return next()
+        return;
     }
     ctx.state = JoinpointState.Pointcut;
     runAdvicers(ctx, ctx.invokeHandle, ctx.advices.Pointcut, next, ctx.advices.syncPointcut)

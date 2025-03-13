@@ -1,6 +1,6 @@
 import { createContext, InvocationContext } from '../context';
 import { ArgumentExecption, Execption } from '../execption';
-import { Context, ContextToken, HandlerFn, InterceptorFn } from '../handler';
+import { Context, ContextToken, HandlerFn, InterceptorFn, runHandler } from '../handler';
 import { PropertyMetadata } from '../metadata/meta';
 import { ctorName, DecoratorFn, DecoratorScope, Decors } from '../metadata/type';
 import { Platform } from '../platform';
@@ -15,25 +15,23 @@ import { LifeScope } from './lifescope';
 
 export const runtimeAutorunInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
 
-    next(input, context);
-
-    const autos = input.class.runnables.filter(c => c.auto && c.decorType === Decors.method)
-    if (autos.length) {
-        const { injector, class: def, instance, context } = input;
-        const factory = injector.get(ReflectiveFactory).create(def, context);
-        autos.forEach(aut => {
-            factory.invoke(aut.method, context, instance)
-        })
-    }
+    return runHandler(input, next, (res) => {
+        const autos = input.class.runnables.filter(c => c.auto && c.decorType === Decors.method)
+        if (autos.length) {
+            const { injector, class: def, instance, context } = input;
+            const factory = injector.get(ReflectiveFactory).create(def, context);
+            autos.forEach(aut => {
+                factory.invoke(aut.method, context, instance)
+            })
+        }
+    }, context);
 
 }
 
 
 const RUNTIME_CLASS_SCOPE = new ContextToken<LifeScope>(() => null!);
 export const runtimeAnnoInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
-    next(input, context);
-
-    getRuntimeClassScope(input.platform).handle(input, context);
+    return runHandler(input, next, () => getRuntimeClassScope(input.platform).handle(input, context), context);
 }
 
 function invokeRuntimeHandler(decors: DecoratorFn[], ctx: RuntimeContext, scope: DecoratorScope, context?: any) {
@@ -68,23 +66,23 @@ export const singletonInterceptor: InterceptorFn<RuntimeContext, void> = (input:
 
 export const cacheInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
 
-    next(input, context);
+    return runHandler(input, next, () => {
 
-    if (!input.instance || input.singleton) return;
-    const ann = input.class.getAnnotation();
-    if (!ann.expires || ann.expires! <= 0) return;
+        if (!input.instance || input.singleton) return;
+        const ann = input.class.getAnnotation();
+        if (!ann.expires || ann.expires! <= 0) return;
 
-    input.injector.cache(input.type, input.instance, ann.expires!);
+        input.injector.cache(input.type, input.instance, ann.expires!);
+    }, context);
 }
 
 
 
 
 export const methodInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
-
-    next(input, context);
-
-    getRuntimeMethodScope(input.platform).handle(input, context);
+    return runHandler(input, next, () => {
+        getRuntimeMethodScope(input.platform).handle(input, context);
+    }, context)
 }
 
 const RUNTIME_METHOD_SCOPE = new ContextToken<LifeScope>(() => null!);
@@ -93,7 +91,7 @@ export function getRuntimeMethodScope(platform: Platform): LifeScope<RuntimeCont
     if (!scope) {
         scope = new LifeScope<RuntimeContext>(platform, (ctx, context) => {
             invokeRuntimeHandler(ctx.class.methodDecors, ctx, Decors.method, context)
-    
+
         });
         platform.context.set(RUNTIME_METHOD_SCOPE, scope);
     }
@@ -103,30 +101,30 @@ export function getRuntimeMethodScope(platform: Platform): LifeScope<RuntimeCont
 
 export const propertyInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
 
-    next(input, context);
+    return runHandler(input, next, () => {
+        const ictx = input.context;
+        if (!ictx) throw new Execption('autowride property need InvocationContext');
+        let meta: PropertyMetadata, key: string, val;
 
-    const ictx = input.context;
-    if (!ictx) throw new Execption('autowride property need InvocationContext');
-    let meta: PropertyMetadata, key: string, val;
-
-    input.class.eachProperty((metas, propertyKey) => {
-        key = `${propertyKey}_INJECTED`;
-        meta = metas.find(m => m.provider)!;
-        if (!meta) {
-            meta = metas.find(m => m.type)!
-        }
-        if (meta && !(input as any)[key]) {
-
-            val = ictx.resolveArgument(meta as Parameter, input.type, onError);
-
-            if (isDefined(val)) {
-                input.instance[propertyKey] = val;
-                (input as any)[key] = true
+        input.class.eachProperty((metas, propertyKey) => {
+            key = `${propertyKey}_INJECTED`;
+            meta = metas.find(m => m.provider)!;
+            if (!meta) {
+                meta = metas.find(m => m.type)!
             }
-        }
-    });
+            if (meta && !(input as any)[key]) {
 
-    getRuntimePropertyScope(input.platform).handle(input, context);
+                val = ictx.resolveArgument(meta as Parameter, input.type, onError);
+
+                if (isDefined(val)) {
+                    input.instance[propertyKey] = val;
+                    (input as any)[key] = true
+                }
+            }
+        });
+
+        getRuntimePropertyScope(input.platform).handle(input, context);
+    }, context)
 
 }
 
@@ -174,12 +172,14 @@ export const ctorArgsInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
         input.args = input.class.resolveArguments(ctorName, input.context!)
     }
 
-    next(input, context);
-
-    // after create.
-    if (newCtx && !newCtx.used) {
-        newCtx.destroy()
-    }
+    return runHandler(input, next, {
+        finally: () => {
+            // after create.
+            if (newCtx && !newCtx.used) {
+                newCtx.destroy()
+            }
+        }
+    }, context);
 }
 
 const BEFORE_CTOR_SCOPE = new ContextToken<LifeScope>(() => null!);

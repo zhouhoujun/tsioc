@@ -1,5 +1,5 @@
 import { InvocationContext } from '../context';
-import { Context, ContextToken, HandlerFn } from '../handler';
+import { Context, ContextToken, HandlerFn, runHandler } from '../handler';
 import { FactoryRecord, FnType } from '../injector';
 import { DecoratorFn, DecoratorScope, Decors } from '../metadata/type';
 import { Platform } from '../platform';
@@ -11,20 +11,20 @@ import { DesignContext, RuntimeContext } from './ctx';
 import { LifeScope } from './lifescope';
 
 export const autorunInterceptor = (ctx: DesignContext, next: HandlerFn, context: Context) => {
-    next(ctx, context);
+    return runHandler(ctx, next, (res) => {
+        const runs = ctx.class.runnables.filter(c => c.auto && c.decorType === Decors.CLASS);
+        if (runs.length < 1) {
+            return
+        }
 
-    const runs = ctx.class.runnables.filter(c => c.auto && c.decorType === Decors.CLASS);
-    if (runs.length < 1) {
-        return
-    }
-
-    const injector = ctx.injector;
-    const instance = injector.get(ctx.provide || ctx.type);
-    if (!instance) return;
-    const factory = injector.get(ReflectiveFactory).create(ctx.class);
-    runs.forEach(meta => {
-        factory.invoke(meta.method, undefined, instance);
-    });
+        const injector = ctx.injector;
+        const instance = injector.get(ctx.provide || ctx.type);
+        if (!instance) return;
+        const factory = injector.get(ReflectiveFactory).create(ctx.class);
+        runs.forEach(meta => {
+            factory.invoke(meta.method, undefined, instance);
+        });
+    }, context)
 }
 
 function invokeHandler(decors: DecoratorFn[], ctx: DesignContext, scope: DecoratorScope, context?: any) {
@@ -102,12 +102,12 @@ export function getDesignMethodScope(platform: Platform): LifeScope<DesignContex
 export const annoactionInterceptor = (input: DesignContext, next: HandlerFn, context: Context) => {
     getDesignBeforeAnnoationScope(input.platform).handle(input, context);
 
-    next(input, context);
-
-    getDesignPropertyScope(input.platform).handle(input, context);
-    getDesignMethodScope(input.platform).handle(input, context);
-    getDesignAnnoationScope(input.platform).handle(input, context);
-    getDesignAfterAnnoationScope(input.platform).handle(input, context);
+    return runHandler(input, next, (res) => {
+        getDesignPropertyScope(input.platform).handle(input, context);
+        getDesignMethodScope(input.platform).handle(input, context);
+        getDesignAnnoationScope(input.platform).handle(input, context);
+        getDesignAfterAnnoationScope(input.platform).handle(input, context);
+    }, context)
 }
 
 export const dependencyInterceptor = (input: DesignContext, next: HandlerFn, context: Context) => {
