@@ -1,4 +1,4 @@
-import { Handle, ProvdierOf, Token } from '@tsdi/ioc';
+import { ProvdierOf, Token } from '@tsdi/ioc';
 import { RequestContext } from '../RequestContext';
 
 
@@ -23,7 +23,7 @@ export interface Middleware<Tx extends RequestContext = RequestContext> {
  * 
  * 中间件函数
  */
-export type MiddlewareFn<T extends RequestContext = RequestContext> = Handle<T, Promise<void>>;
+export type MiddlewareFn<T extends RequestContext = RequestContext> = (ctx: T, next: () => Promise<void>) => Promise<void>;
 /**
  * middleware like. instance of middleware or middleware function.
  * 

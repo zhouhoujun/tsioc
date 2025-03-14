@@ -1,6 +1,6 @@
 import { createContext, InvocationContext } from '../context';
 import { ArgumentExecption, Execption } from '../execption';
-import { Context, ContextToken, HandlerFn, InterceptorFn, runHandler } from '../handler';
+import { Context, ContextToken, HandlerFn, InterceptorFn, invokeTail } from '../handler';
 import { PropertyMetadata } from '../metadata/meta';
 import { ctorName, DecoratorFn, DecoratorScope, Decors } from '../metadata/type';
 import { Platform } from '../platform';
@@ -15,7 +15,7 @@ import { LifeScope } from './lifescope';
 
 export const runtimeAutorunInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
 
-    return runHandler(input, next, (res) => {
+    return invokeTail(() => next(input, context), (res) => {
         const autos = input.class.runnables.filter(c => c.auto && c.decorType === Decors.method)
         if (autos.length) {
             const { injector, class: def, instance, context } = input;
@@ -31,7 +31,7 @@ export const runtimeAutorunInterceptor: InterceptorFn<RuntimeContext, void> = (i
 
 const RUNTIME_CLASS_SCOPE = new ContextToken<LifeScope>(() => null!);
 export const runtimeAnnoInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
-    return runHandler(input, next, () => getRuntimeClassScope(input.platform).handle(input, context), context);
+    return invokeTail(() => next(input, context), () => getRuntimeClassScope(input.platform).handle(input, context), context);
 }
 
 function invokeRuntimeHandler(decors: DecoratorFn[], ctx: RuntimeContext, scope: DecoratorScope, context?: any) {
@@ -66,7 +66,7 @@ export const singletonInterceptor: InterceptorFn<RuntimeContext, void> = (input:
 
 export const cacheInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
 
-    return runHandler(input, next, () => {
+    return invokeTail(() => next(input, context), () => {
 
         if (!input.instance || input.singleton) return;
         const ann = input.class.getAnnotation();
@@ -80,7 +80,7 @@ export const cacheInterceptor: InterceptorFn<RuntimeContext, void> = (input: Run
 
 
 export const methodInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
-    return runHandler(input, next, () => {
+    return invokeTail(() => next(input, context), () => {
         getRuntimeMethodScope(input.platform).handle(input, context);
     }, context)
 }
@@ -101,7 +101,7 @@ export function getRuntimeMethodScope(platform: Platform): LifeScope<RuntimeCont
 
 export const propertyInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
 
-    return runHandler(input, next, () => {
+    return invokeTail(() => next(input, context), () => {
         const ictx = input.context;
         if (!ictx) throw new Execption('autowride property need InvocationContext');
         let meta: PropertyMetadata, key: string, val;
@@ -124,6 +124,7 @@ export const propertyInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
         });
 
         getRuntimePropertyScope(input.platform).handle(input, context);
+
     }, context)
 
 }
@@ -172,7 +173,7 @@ export const ctorArgsInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
         input.args = input.class.resolveArguments(ctorName, input.context!)
     }
 
-    return runHandler(input, next, {
+    return invokeTail(() => next(input, context), {
         finally: () => {
             // after create.
             if (newCtx && !newCtx.used) {

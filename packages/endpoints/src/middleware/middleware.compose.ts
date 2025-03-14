@@ -1,4 +1,4 @@
-import { chain, isFunction } from '@tsdi/ioc';
+import { Execption, isFunction } from '@tsdi/ioc';
 import { Backend, BackendFn } from '@tsdi/core';
 import { defer, Observable } from 'rxjs';
 import { MiddlewareFn, MiddlewareLike } from './middleware';
@@ -15,6 +15,47 @@ export function middlewareFnify<T extends RequestContext>(m: MiddlewareLike<T>):
     return isFunction(m) ? m : ((ctx, next) => m.invoke(ctx, next));
 }
 
+
+/**
+ * compose handlers in chain.
+ * @param handlers 
+ */
+export function chain<T extends RequestContext = RequestContext>(handlers: MiddlewareFn<T>[]): MiddlewareFn<T> {
+    return (ctx: T, next: () => Promise<void>) => {
+        return runChain(handlers, ctx, next);
+    }
+}
+
+/**
+ * run handles in chain.
+ *
+ * @export
+ * @template T input context type.
+ * @template TR returnning type.
+ * @param {MiddlewareFn<T>[]} handles to run handles in chain. array of {@link MiddlewareFn}.
+ * @param {T} ctx input context.
+ * @param {() => Promise<void>} [next] the next step.
+ */
+export function runChain<T extends RequestContext = RequestContext>(handles: MiddlewareFn<T>[], ctx: T, next?: () => Promise<void>): Promise<void> {
+    if (!handles.length) return null!;
+    let index = -1;
+    function dispatch(i: number): Promise<void> {
+        if (i <= index) {
+            throw new Execption('next called mutiple times.');
+        }
+        index = i;
+        let handle = handles[i];
+        if (i === handles.length) {
+            handle = next!
+        }
+        if (!handle) {
+            return next? next(): Promise.resolve();
+        }
+        const gnext = dispatch.bind(null, i + 1);
+        return handle(ctx, gnext)
+    }
+    return dispatch(0)
+}
 
 /**
  * compose middlewares

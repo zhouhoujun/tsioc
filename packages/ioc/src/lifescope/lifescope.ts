@@ -1,7 +1,5 @@
-import { finalize } from 'rxjs';
-import { BaseChain, Context, Handler, HandlerFn, InterceptorLike } from '../handler';
+import { BaseChain, Handler, HandlerFn, InterceptorLike, invokeTail, NextOpter } from '../handler';
 import { Platform } from '../platform';
-import { isObservable, isPromise } from '../utils/chk';
 
 export class LifeScope<TInput = any> extends BaseChain<TInput> implements Handler<TInput> {
 
@@ -13,25 +11,8 @@ export class LifeScope<TInput = any> extends BaseChain<TInput> implements Handle
         super(interceptors)
     }
 
-    handle(input: any, context?: any, finalizeFn?: (input: TInput, context?: Context) => void) {
+    handle(input: any, context?: any, next?: NextOpter<any>|((input: TInput) => any)) {
         const chain = this.getChain();
-        const res$ = chain(input, this.backend, context ?? this.platform?.context);
-        if (!finalizeFn) return res$;
-
-        if (isObservable(res$)) {
-            return res$.pipe(
-                finalize(() => {
-                    finalizeFn?.(input, context);
-                })
-            )
-        } else if (isPromise(res$)) {
-            return res$.then(res => {
-                finalizeFn?.(input, context);
-                return res;
-            })
-        } else {
-            finalizeFn?.(input, context);
-            return res$;
-        }
+        return invokeTail(()=> chain(input, this.backend, context ?? this.platform?.context), next, context);
     }
 }

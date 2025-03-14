@@ -1,4 +1,4 @@
-import { catchError, finalize, from, isObservable, lastValueFrom, map, mergeMap, Observable, of, throwError } from 'rxjs';
+import { catchError, finalize, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { isDefined, isFunction, isNumber, isPromise } from './utils/chk';
 import { Token } from './tokens';
 
@@ -95,7 +95,7 @@ export type InterceptorLike<TInput = any, TOutput = any, TContext = any> = Inter
  * @returns 
  */
 export function composeInterceptors(interceptors: InterceptorLike[]): InterceptorFn {
-    return interceptors.reduceRight((next, interceptorFn) => chainedInterceptorFn(next as InterceptorFn, interceptorFn), chainEndFn as InterceptorFn) as InterceptorFn;
+    return interceptors.reduceRight((next, interceptorFn) => chainedInterceptorFn(next, interceptorFn), chainEndFn);
 }
 
 
@@ -143,6 +143,26 @@ export function toInterceptorFn(interceptor: Interceptor): InterceptorFn {
     fn.owner = interceptor;
     return fn;
 }
+
+/**
+ * observable handler factory.
+ * @param fn 
+ * @returns 
+ */
+export function observableHandlerFactory<TInput = any, TOutput = any, TContext = any>(fn: (ctx: TInput, context?: TContext) => TOutput | Observable<TOutput> | Promise<TOutput>) {
+    const handle = (input: TInput, context?: TContext): Observable<TOutput> => {
+        const $res = fn(input, context);
+        if (isObservable($res)) {
+            return $res;
+        }
+        return isPromise($res) ? from($res) : of($res);
+    };
+
+    return {
+        handle
+    }
+}
+
 
 export class BaseChain<TInput = any, TOutput = any, TContext = any> {
 
@@ -199,85 +219,91 @@ export class InterceptorChina<TInput = any, TOutput = any, TContext = any> exten
     }
 }
 
-export interface NextOpter {
-    next?: (res: any) => any;
+export interface NextOpter<T> {
+    next?: (res: T) => any;
     error?: (error: any) => any;
     finally?: () => any;
 }
 
-export function runHandler(input: any, handler: HandlerFn | Handler, nextOpter?: NextOpter | ((res: any) => any), context?: any) {
+export function invokeTail<T>(invoker: () => Observable<T> | Promise<T> | T, nextOpter?: NextOpter<T> | ((res: T) => any), context?: any) {
 
     const opter = nextOpter ? (isFunction(nextOpter) ? { next: nextOpter } : nextOpter) : null;
 
-    let res$: any;
+    let res$: Observable<T> | Promise<T> | T;
     try {
-        res$ = isFunction(handler) ? handler(input, context) : handler.handle(input, context);
-        if (!opter) return res$;
+        res$ = invoker();
     } catch (err) {
-        opter?.error?.(err);
+        if (opter?.error) {
+            const ct = opter?.error(err);
+            if (isDefined(ct)) {
+                return ct;
+            }
+        }
         throw err;
-    } finally {
-        opter?.finally?.()
     }
 
     if (!opter) return res$;
 
     if (isObservable(res$)) {
-        return res$.pipe(
-            mergeMap(res => {
-                if (opter.next) {
-                    const n$ = opter.next(res);
+        let ob$ = res$;
+        if (opter.next) {
+            ob$ = ob$.pipe(
+                mergeMap(res => {
+                    const n$ = opter.next!(res);
                     if (isObservable(n$) || isPromise(n$)) return n$;
-                }
-                return of(res);
-            }),
-            finalize(() => {
-                opter.finally?.()
-            }),
-            catchError((err, caught) => {
-                if (opter.error) {
-                    const ct = opter.error(err);
+                    return of(res);
+                }),
+            )
+        }
+        if (opter.finally) {
+            ob$ = ob$.pipe(
+                finalize(() => {
+                    opter.finally!()
+                }));
+        }
+        if (opter.error) {
+            ob$ = ob$.pipe(
+                catchError((err, caught) => {
+                    const ct = opter.error!(err);
                     if (isObservable(ct) || isPromise(ct)) return ct;
                     if (isDefined(ct)) return of(ct);
-                }
-                return throwError(() => err);
-            })
-        )
+
+                    return throwError(() => err);
+                })
+            )
+        }
+        return ob$;
     } else if (isPromise(res$)) {
-        return res$.then(res => opter.next ? opter.next(res) : res)
-            .catch(err => {
-                if (opter.error) {
-                    const ct = opter.error(err);
-                    if (isObservable(ct)) return lastValueFrom(ct)
-                    if (isPromise(ct)) return ct;
-                    if (isDefined(ct)) return ct;
-                }
+        let pr$ = res$;
+        if (opter.next) {
+            pr$ = pr$.then(res => opter.next!(res))
+        }
+        if (opter.error) {
+            pr$ = pr$.catch(err => {
+                const ct = opter.error!(err);
+                if (isObservable(ct)) return lastValueFrom(ct)
+                // if (isPromise(ct)) return ct;
+                if (isDefined(ct)) return ct;
+
                 throw err;
             })
-            .finally(opter.finally);
-    }
-
-}
-
-/**
- * observable handler factory.
- * @param fn 
- * @returns 
- */
-export function observableHandlerFactory<TInput = any, TOutput = any, TContext = any>(fn: (ctx: TInput, context?: TContext) => TOutput | Observable<TOutput> | Promise<TOutput>) {
-    const handle = (input: TInput, context?: TContext): Observable<TOutput> => {
-        const $res = fn(input, context);
-        if (isObservable($res)) {
-            return $res;
         }
-        return isPromise($res) ? from($res) : of($res);
-    };
+        if (opter.finally) {
+            pr$ = pr$.finally(opter.finally)
+        }
+        return pr$;
+    } else {
+        if (opter.next) {
+            res$ = opter.next(res$);
+        }
+        if (opter.finally) {
+            opter.finally()
+        }
 
-    return {
-        handle
+        return res$;
     }
-}
 
+}
 
 
 /**

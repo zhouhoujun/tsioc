@@ -1,5 +1,5 @@
 import { InvocationContext } from '../context';
-import { Context, ContextToken, HandlerFn, runHandler } from '../handler';
+import { Context, ContextToken, HandlerFn, invokeTail } from '../handler';
 import { FactoryRecord, FnType } from '../injector';
 import { DecoratorFn, DecoratorScope, Decors } from '../metadata/type';
 import { Platform } from '../platform';
@@ -11,7 +11,7 @@ import { DesignContext, RuntimeContext } from './ctx';
 import { LifeScope } from './lifescope';
 
 export const autorunInterceptor = (ctx: DesignContext, next: HandlerFn, context: Context) => {
-    return runHandler(ctx, next, (res) => {
+    return invokeTail(() => next(ctx, context),  (res) => {
         const runs = ctx.class.runnables.filter(c => c.auto && c.decorType === Decors.CLASS);
         if (runs.length < 1) {
             return
@@ -102,7 +102,7 @@ export function getDesignMethodScope(platform: Platform): LifeScope<DesignContex
 export const annoactionInterceptor = (input: DesignContext, next: HandlerFn, context: Context) => {
     getDesignBeforeAnnoationScope(input.platform).handle(input, context);
 
-    return runHandler(input, next, (res) => {
+    return invokeTail(() => next(input, context), (res) => {
         getDesignPropertyScope(input.platform).handle(input, context);
         getDesignMethodScope(input.platform).handle(input, context);
         getDesignAnnoationScope(input.platform).handle(input, context);
