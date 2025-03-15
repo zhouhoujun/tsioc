@@ -367,7 +367,7 @@ export const decorMethodDesignParams = (ctx: DecorContext, next: HandlerFn, cont
     if (!reflective.hasParameters(method)) {
         const names = reflective.getParamNames(method);
         reflective.setParameters(method,
-            (Reflect.getMetadata('design:paramtypes', ctx.target, method) as Type[]).map((type, idx) => ({ type, name: names[idx] })))
+            (Reflect.getMetadata('design:paramtypes', ctx.target, method) as Type[])?.map((type, idx) => ({ type, name: names[idx] })))
     }
     const meta = ctx.define.metadata as MethodMetadata;
     if (!meta.type) {

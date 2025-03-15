@@ -176,7 +176,7 @@ export const registerHandler: HandlerFn = (ctx: DesignContext, context: Context)
 
             let instance: any;
             platform.runtime.handle(ctx, null, (input) => {
-                instance = input.instance;
+                instance = ctx.instance;
                 if (singleton || isStatic) {
                     recd.value = instance
                 }

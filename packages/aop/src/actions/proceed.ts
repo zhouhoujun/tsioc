@@ -1,11 +1,8 @@
 import {
     Type, isFunction, lang, Platform, isNil, isPromise, refl, ctorName,
-    ParameterMetadata, InvocationContext, Injector, object2string, isObservable,
+    InvocationContext, Injector, object2string, isObservable,
     LifeScope, HandlerFn, Context, ContextToken, invokeTail,
-    NextOpter,
-    InterceptorChina,
-    toHandler,
-    RuntimeContext
+    InterceptorChina, toHandler, RuntimeContext, InterceptorLike
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
 import { Joinpoint } from '../joinpoints/Joinpoint';
@@ -254,10 +251,7 @@ const CTOR_ADVICES_CHAIN = new ContextToken<InterceptorChina>(() => null!);
 export function getCtorAdvicesScope(platform: Platform): InterceptorChina<Joinpoint> {
     let chain = platform.context.get(CTOR_ADVICES_CHAIN);
     if (!chain) {
-        chain = new InterceptorChina<Joinpoint>([
-            afterThrowingInterceptor,
-            beforeAdvicesIterceptor
-        ]);
+        chain = new InterceptorChina<Joinpoint>(ADVICES_INTERCEPTORS);
         platform.context.set(CTOR_ADVICES_CHAIN, chain);
     }
     return chain;
@@ -302,29 +296,64 @@ const METHOD_ADVICES = new ContextToken<LifeScope>(() => null!);
 export function getMethodAdvicesScope(platform: Platform): LifeScope<Joinpoint> {
     let scope = platform.context.get(METHOD_ADVICES);
     if (!scope) {
-        scope = new LifeScope<Joinpoint>(platform, originMethodHandler, [
-            afterThrowingInterceptor,
-            beforeAdvicesIterceptor
-        ]);
+        scope = new LifeScope<Joinpoint>(platform, originMethodHandler, ADVICES_INTERCEPTORS);
         platform.context.set(METHOD_ADVICES, scope);
     }
     return scope;
 }
 
 
+
 export const afterThrowingInterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
     return invokeTail(() => next(ctx, context), {
         error: (error) => {
             ctx.throwing = error;
+            // return runAdvicers(ctx, ctx.advices.Around, ctx.advices.syncAround);
 
         },
     }, context);
 }
 
-export const beforeAdvicesIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
+// export const afterThrowingAroundInterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
+//     return invokeTail(() => next(ctx, context), {
+//         error: (error) => {
+//             ctx.throwing = error;
+//         },
+//     }, context);
+// }
+
+export const beforeIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
 
     return next(ctx, context)
 }
+
+export const pointcutIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
+
+    return next(ctx, context)
+}
+
+export const beforeAroundIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
+
+    return next(ctx, context)
+}
+
+export const afterIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
+
+    return next(ctx, context)
+}
+
+// export const afterAroundIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
+//     return next(ctx, context)
+// }
+
+export const afterReturningIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
+    return next(ctx, context)
+}
+
+// export const afterReturningAroundIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
+//     return next(ctx, context)
+// }
+
 
 export const originMethodHandler = (ctx: Joinpoint, context: Context) => {
     if (ctx.originProxy) {
@@ -335,7 +364,17 @@ export const originMethodHandler = (ctx: Joinpoint, context: Context) => {
     return ctx.returning;
 }
 
-
+const ADVICES_INTERCEPTORS: InterceptorLike<Joinpoint>[] = [
+    afterThrowingInterceptor,
+    // afterThrowingAroundInterceptor,
+    afterReturningIterceptor,
+    // afterReturningAroundIterceptor,
+    // afterAroundIterceptor,
+    afterIterceptor,
+    beforeIterceptor,
+    pointcutIterceptor,
+    beforeAroundIterceptor,
+];
 
 
 
