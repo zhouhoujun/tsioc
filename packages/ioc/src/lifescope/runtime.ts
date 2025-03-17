@@ -13,6 +13,18 @@ import { RuntimeContext } from './ctx';
 import { LifeScope } from './lifescope';
 
 
+export const cleanContextInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
+
+    return invokeTail(() => next(input, context), {
+        finally: () => {
+            // after create.
+            if (input.isNewContext && input.context && !input.context.used) {
+                input.context.destroy()
+            }
+        }
+    });
+}
+
 export const runtimeAutorunInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
 
     return invokeTail(() => next(input, context), (res) => {
@@ -123,7 +135,7 @@ export const propertyInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
             }
         });
 
-        getRuntimePropertyScope(input.platform).handle(input, context);
+        return getRuntimePropertyScope(input.platform).handle(input, context);
 
     })
 
@@ -164,7 +176,8 @@ export const ctorArgsInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
             providers,
             methodName: ctorName
         });
-        input.context = newCtx
+        input.context = newCtx;
+        input.isNewContext = true;
     } else if (uctx && providers.length) {
         uctx.injector.inject(providers)
     }
@@ -173,14 +186,7 @@ export const ctorArgsInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
         input.args = input.class.resolveArguments(ctorName, input.context!)
     }
 
-    return invokeTail(() => next(input, context), {
-        finally: () => {
-            // after create.
-            if (newCtx && !newCtx.used) {
-                newCtx.destroy()
-            }
-        }
-    });
+    return next(input, context);
 }
 
 const BEFORE_CTOR_SCOPE = new ContextToken<LifeScope>(() => null!);
@@ -224,6 +230,7 @@ export const ctorInterceptor: InterceptorFn<RuntimeContext, void> = (input: Runt
 
 export const RUNTIME_INTERCEPTORS = [
     initReflectInterceptor,
+    cleanContextInterceptor,
     runtimeAutorunInterceptor,
     runtimeAnnoInterceptor,
     cacheInterceptor,

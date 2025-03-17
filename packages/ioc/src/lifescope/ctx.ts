@@ -76,6 +76,7 @@ export interface RuntimeContext extends RegContext {
      * invocation context.
      */
     context?: InvocationContext;
+    isNewContext?: boolean;
     /**
      * target instance.
      *

@@ -47,6 +47,7 @@ export class DefaultPlatform implements Platform {
         if (!this._runtime) {
             this._runtime = new LifeScope(this, (ctx) => {
                 ctx.instance = new ctx.type(...ctx.args || []);
+                return ctx.instance;
             }, RUNTIME_INTERCEPTORS);
         }
         return this._runtime;

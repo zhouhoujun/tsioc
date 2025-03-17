@@ -37,16 +37,16 @@ export function createDecorator<T>(name: string, option: DecoratorOption<T>): an
         return (...pms: any[]) => {
             return storeMetadata(factory, pms, metadata, option)
         }
-    }
+    };
 
     if (option.actionType) {
         isArray(option.actionType) ?
             option.actionType.forEach(a => regActionType(decor, a))
             : regActionType(decor, option.actionType)
     }
-    if (option.def) factory.getHandle = mapToFac(option.def as Record<string, HandlerFn | HandlerFn[]>);
-    if (option.design) factory.getDesignHandle = mapToFac(option.design as Record<string, HandlerFn | HandlerFn[]>);
-    if (option.runtime) factory.getRuntimeHandle = mapToFac(option.runtime as Record<string, HandlerFn | HandlerFn[]>);
+    if (option.def) factory.getHandler = mapToFac(option.def as Record<string, HandlerFn | HandlerFn[]>);
+    if (option.design) factory.getDesignHandler = mapToFac(option.design as Record<string, HandlerFn | HandlerFn[]>);
+    if (option.runtime) factory.getRuntimeHandler = mapToFac(option.runtime as Record<string, HandlerFn | HandlerFn[]>);
     factory.toString = () => decor;
     factory.decorator = decor;
     return factory

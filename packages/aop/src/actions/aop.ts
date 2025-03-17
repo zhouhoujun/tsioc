@@ -11,7 +11,7 @@ export const bindMthPointcut = (ctx: RuntimeContext, next: HandlerFn, context: C
     // aspect class do nothing.
     // ctx.type had checked.
     if (ctx.instance && isValAspectTag(ctx.type, ctx.class)) {
-        context.get(Advisor).attach(ctx.class, ctx.instance);
+        context.get(Advisor)?.attach(ctx.class, ctx.instance);
     }
 
     return next(ctx, context)
@@ -27,7 +27,7 @@ export const ctorAdvice = (ctx: RuntimeContext, next: HandlerFn, context: Contex
     if (!isValAspectTag(ctx.type, ctx.class)) return next(ctx, context);
 
     // aspect class do nothing.
-    return context.get(Proceeding).pointcutConstr(ctx, next, context);
+    return context.get(Proceeding)?.pointcutConstr(ctx, next, context);
 
 }
 
@@ -40,7 +40,7 @@ export const matchPointcut = (ctx: RuntimeContext, next: HandlerFn, context: Con
     // aspect class do nothing.
     if (isValAspectTag(ctx.type, ctx.class)) {
         const advisor = context.get(Advisor);
-        advisor.register(ctx.class);
+        advisor?.register(ctx.class);
     }
 
     return next(ctx, context)

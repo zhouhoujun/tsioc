@@ -264,10 +264,12 @@ export class DefaultInjector extends Injector {
             platform,
             type
         } as DesignContext;
-        
-        platform.design.handle(ctx, null, (ctx) => {
-            cleanObj(ctx);
-            this.onRegistered(def);
+
+        platform.design.handle(ctx, null, {
+            finally: () => {
+                cleanObj(ctx);
+                this.onRegistered(def);
+            }
         });
         return true
     }
