@@ -24,7 +24,7 @@ export const autorunInterceptor = (ctx: DesignContext, next: HandlerFn, context:
         runs.forEach(meta => {
             factory.invoke(meta.method, undefined, instance);
         });
-    }, context)
+    })
 }
 
 function invokeHandler(decors: DecoratorFn[], ctx: DesignContext, scope: DecoratorScope, context?: any) {
@@ -107,7 +107,7 @@ export const annoactionInterceptor = (input: DesignContext, next: HandlerFn, con
         getDesignMethodScope(input.platform).handle(input, context);
         getDesignAnnoationScope(input.platform).handle(input, context);
         getDesignAfterAnnoationScope(input.platform).handle(input, context);
-    }, context)
+    })
 }
 
 export const dependencyInterceptor = (input: DesignContext, next: HandlerFn, context: Context) => {

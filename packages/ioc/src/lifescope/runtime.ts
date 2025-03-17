@@ -24,14 +24,14 @@ export const runtimeAutorunInterceptor: InterceptorFn<RuntimeContext, void> = (i
                 factory.invoke(aut.method, context, instance)
             })
         }
-    }, context);
+    });
 
 }
 
 
 const RUNTIME_CLASS_SCOPE = new ContextToken<LifeScope>(() => null!);
 export const runtimeAnnoInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
-    return invokeTail(() => next(input, context), () => getRuntimeClassScope(input.platform).handle(input, context), context);
+    return invokeTail(() => next(input, context), () => getRuntimeClassScope(input.platform).handle(input, context));
 }
 
 function invokeRuntimeHandler(decors: DecoratorFn[], ctx: RuntimeContext, scope: DecoratorScope, context?: any) {
@@ -73,7 +73,7 @@ export const cacheInterceptor: InterceptorFn<RuntimeContext, void> = (input: Run
         if (!ann.expires || ann.expires! <= 0) return;
 
         input.injector.cache(input.type, input.instance, ann.expires!);
-    }, context);
+    });
 }
 
 
@@ -82,7 +82,7 @@ export const cacheInterceptor: InterceptorFn<RuntimeContext, void> = (input: Run
 export const methodInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
     return invokeTail(() => next(input, context), () => {
         getRuntimeMethodScope(input.platform).handle(input, context);
-    }, context)
+    })
 }
 
 const RUNTIME_METHOD_SCOPE = new ContextToken<LifeScope>(() => null!);
@@ -125,7 +125,7 @@ export const propertyInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
 
         getRuntimePropertyScope(input.platform).handle(input, context);
 
-    }, context)
+    })
 
 }
 
@@ -180,7 +180,7 @@ export const ctorArgsInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
                 newCtx.destroy()
             }
         }
-    }, context);
+    });
 }
 
 const BEFORE_CTOR_SCOPE = new ContextToken<LifeScope>(() => null!);

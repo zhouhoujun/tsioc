@@ -220,12 +220,12 @@ export class InterceptorChina<TInput = any, TOutput = any, TContext = any> exten
 }
 
 export interface NextOpter<T> {
-    next?: (res: T) => any;
+    next?: (res: T, context?: any) => any;
     error?: (error: any) => any;
     finally?: () => any;
 }
 
-export function invokeTail<T>(invoker: () => Observable<T> | Promise<T> | T, nextOpter?: NextOpter<T> | ((res: T) => any), context?: any) {
+export function invokeTail<T>(invoker: () => Observable<T> | Promise<T> | T, nextOpter?: NextOpter<T> | ((res: T, context?: any) => any)): Observable<T> | Promise<T> | T {
 
     const opter = nextOpter ? (isFunction(nextOpter) ? { next: nextOpter } : nextOpter) : null;
 
@@ -305,6 +305,19 @@ export function invokeTail<T>(invoker: () => Observable<T> | Promise<T> | T, nex
 
 }
 
+const endHandler: HandlerFn = (res, context?: any) => res;
+
+export function composeHandlers(hanlders: HanlderLike[]): HandlerFn {
+    return hanlders.reduceRight((next, handler) => {
+        const invok = isFunction(handler) ? (input: any, context?: any) => handler(input, context) : (input: any, context?: any) => handler.handle(input, context);
+        const nextFn = isFunction(next) ? (input: any, context?: any) => next(input, context) : (input: any, context?: any) => next.handle(input, context);
+        return (input: any, context?: any) => invokeTail(() => invok(input, context), nextFn);
+    }, endHandler) as HandlerFn;
+}
+
+// export function composeInvokes<T>(invokers: Array<() => Observable<T> | Promise<T> | T>): Observable<T> | Promise<T> | T {
+//     return invokers.reverse().reduceRight((next, opener) => invokeTail(opener, next), (res) => res);
+// }
 
 /**
  * context token.

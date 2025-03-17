@@ -1,8 +1,7 @@
 import {
-    Type, isFunction, lang, Platform, isNil, isPromise, refl, ctorName,
-    InvocationContext, Injector, object2string, isObservable,
-    LifeScope, HandlerFn, Context, ContextToken, invokeTail,
-    InterceptorChina, toHandler, RuntimeContext, InterceptorLike
+    Type, isFunction, lang, Platform, isNil, refl, ctorName,
+    InvocationContext, object2string, LifeScope, HandlerFn, Context, ContextToken, invokeTail,
+    InterceptorChina, toHandler, RuntimeContext, InterceptorLike, isDefined, composeHandlers
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
 import { Joinpoint } from '../joinpoints/Joinpoint';
@@ -12,7 +11,6 @@ import { Advicer } from '../advices/Advicer';
 import { AroundMetadata } from '../metadata/meta';
 import { Advisor } from '../Advisor';
 import { Proceeding } from '../Proceeding';
-import { from, lastValueFrom } from 'rxjs';
 
 const proxyFlag = '_proxy';
 const aExp = /^@/;
@@ -210,17 +208,11 @@ function invokeAdvice(joinPoint: Joinpoint, advicer: Advicer, sync?: boolean) {
         joinPoint.addRef(context)
     }
 
-    let returning = advicer.aspect.invoke(advicer.advice.name!, joinPoint);
-
-    if (isObservable(returning)) {
-        returning = lastValueFrom(returning)
-    }
-    if (isPromise(returning)) {
-        return returning.finally(() => context && joinPoint.removeRef(context))
-    } else {
-        context && joinPoint.removeRef(context);
-        return returning
-    }
+    return invokeTail(() => advicer.aspect.invoke(advicer.advice.name!, joinPoint), {
+        finally: () => {
+            context && joinPoint.removeRef(context);
+        }
+    });
 }
 
 
@@ -258,40 +250,6 @@ export function getCtorAdvicesScope(platform: Platform): InterceptorChina<Joinpo
 }
 
 
-const BEFORE_CTOR_ADVICES = new ContextToken<LifeScope>(() => null!);
-export function getBeforeCtorAdvicesScope(platform: Platform): LifeScope<Joinpoint> {
-    let scope = platform.context.get(BEFORE_CTOR_ADVICES);
-    if (!scope) {
-        scope = new LifeScope<Joinpoint>(platform, (ctx, context) => {
-            // runChain<Joinpoint>([
-            //     (ctx, bnext) => runAdvicers(ctx, ctx.advices.Before, bnext, ctx.advices.syncBefore),
-            //     (ctx, pnext) => runAdvicers(ctx, ctx.advices.Pointcut, pnext, ctx.advices.syncPointcut),
-            //     (ctx, anext) => runAdvicers(ctx, ctx.advices.Around, anext, ctx.advices.syncAround)
-            // ], ctx, next)
-
-
-        });
-        platform.context.set(BEFORE_CTOR_ADVICES, scope);
-    }
-    return scope;
-}
-
-const AFTER_CTOR_ADVICES = new ContextToken<LifeScope>(() => null!);
-export function getAfterCtorAdvicesScope(platform: Platform): LifeScope<Joinpoint> {
-    let scope = platform.context.get(AFTER_CTOR_ADVICES);
-    if (!scope) {
-        scope = new LifeScope<Joinpoint>(platform, (ctx, context) => {
-            // return runChain<Joinpoint>([
-            //     (ctx, anext) => runAdvicers(ctx, ctx.advices.After, anext, ctx.advices.syncAfter),
-            //     (ctx, anext) => runAdvicers(ctx, ctx.advices.Around, anext, ctx.advices.syncAround)
-            // ], ctx, next)
-
-        });
-        platform.context.set(AFTER_CTOR_ADVICES, scope);
-    }
-    return scope;
-}
-
 const METHOD_ADVICES = new ContextToken<LifeScope>(() => null!);
 export function getMethodAdvicesScope(platform: Platform): LifeScope<Joinpoint> {
     let scope = platform.context.get(METHOD_ADVICES);
@@ -308,51 +266,58 @@ export const afterThrowingInterceptor = (ctx: Joinpoint, next: HandlerFn, contex
     return invokeTail(() => next(ctx, context), {
         error: (error) => {
             ctx.throwing = error;
-            // return runAdvicers(ctx, ctx.advices.Around, ctx.advices.syncAround);
+            ctx.state = JoinpointState.AfterThrowing;
+            const handler = composeHandlers([
+                ...ctx.advices.Around,
+                ...ctx.advices.AfterThrowing
+            ].map(a => (ctx) => invokeAdvice(ctx, a)));
+            return handler(ctx, context);
 
         },
-    }, context);
+    });
 }
 
-// export const afterThrowingAroundInterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-//     return invokeTail(() => next(ctx, context), {
-//         error: (error) => {
-//             ctx.throwing = error;
-//         },
-//     }, context);
-// }
 
 export const beforeIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-
-    return next(ctx, context)
+    ctx.state = JoinpointState.Before;
+    const handler = composeHandlers([
+        ...ctx.advices.Around,
+        ...ctx.advices.Before
+    ].map(a => (ctx) => invokeAdvice(ctx, a)));
+    return invokeTail(() => handler(ctx, context), () => next(ctx, context));
 }
 
 export const pointcutIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-
-    return next(ctx, context)
-}
-
-export const beforeAroundIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-
-    return next(ctx, context)
+    ctx.state = JoinpointState.Pointcut;    
+    const handler = composeHandlers(ctx.advices.Pointcut.map(a => (ctx) => invokeAdvice(ctx, a)));
+    return invokeTail(() => handler(ctx, context), () => next(ctx, context));
 }
 
 export const afterIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-
-    return next(ctx, context)
+    return invokeTail(() => next(ctx, context), (res) => {
+        ctx.state = JoinpointState.After;
+        if (isDefined(res)) ctx.returning = res;
+        const handler = composeHandlers([
+            ...ctx.advices.Around,
+            ...ctx.advices.After
+        ].map(a => (ctx) => invokeAdvice(ctx, a)));
+        return handler(ctx, context);
+    });
 }
 
-// export const afterAroundIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-//     return next(ctx, context)
-// }
 
 export const afterReturningIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-    return next(ctx, context)
+    return invokeTail(() => next(ctx, context), (res) => {
+        ctx.state = JoinpointState.AfterReturning;
+        if (isDefined(res)) ctx.returning = res;
+        const handler = composeHandlers([
+            ...ctx.advices.Around,
+            ...ctx.advices.AfterReturning
+        ].map(a => (ctx) => invokeAdvice(ctx, a)));
+        return handler(ctx, context);
+    })
 }
 
-// export const afterReturningAroundIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-//     return next(ctx, context)
-// }
 
 
 export const originMethodHandler = (ctx: Joinpoint, context: Context) => {
@@ -366,16 +331,48 @@ export const originMethodHandler = (ctx: Joinpoint, context: Context) => {
 
 const ADVICES_INTERCEPTORS: InterceptorLike<Joinpoint>[] = [
     afterThrowingInterceptor,
-    // afterThrowingAroundInterceptor,
     afterReturningIterceptor,
-    // afterReturningAroundIterceptor,
-    // afterAroundIterceptor,
     afterIterceptor,
     beforeIterceptor,
     pointcutIterceptor,
-    beforeAroundIterceptor,
 ];
 
+
+
+
+// const BEFORE_CTOR_ADVICES = new ContextToken<LifeScope>(() => null!);
+// export function getBeforeCtorAdvicesScope(platform: Platform): LifeScope<Joinpoint> {
+//     let scope = platform.context.get(BEFORE_CTOR_ADVICES);
+//     if (!scope) {
+//         scope = new LifeScope<Joinpoint>(platform, (ctx, context) => {
+//             // runChain<Joinpoint>([
+//             //     (ctx, bnext) => runAdvicers(ctx, ctx.advices.Before, bnext, ctx.advices.syncBefore),
+//             //     (ctx, pnext) => runAdvicers(ctx, ctx.advices.Pointcut, pnext, ctx.advices.syncPointcut),
+//             //     (ctx, anext) => runAdvicers(ctx, ctx.advices.Around, anext, ctx.advices.syncAround)
+//             // ], ctx, next)
+
+
+//         });
+//         platform.context.set(BEFORE_CTOR_ADVICES, scope);
+//     }
+//     return scope;
+// }
+
+// const AFTER_CTOR_ADVICES = new ContextToken<LifeScope>(() => null!);
+// export function getAfterCtorAdvicesScope(platform: Platform): LifeScope<Joinpoint> {
+//     let scope = platform.context.get(AFTER_CTOR_ADVICES);
+//     if (!scope) {
+//         scope = new LifeScope<Joinpoint>(platform, (ctx, context) => {
+//             // return runChain<Joinpoint>([
+//             //     (ctx, anext) => runAdvicers(ctx, ctx.advices.After, anext, ctx.advices.syncAfter),
+//             //     (ctx, anext) => runAdvicers(ctx, ctx.advices.Around, anext, ctx.advices.syncAround)
+//             // ], ctx, next)
+
+//         });
+//         platform.context.set(AFTER_CTOR_ADVICES, scope);
+//     }
+//     return scope;
+// }
 
 
 // export class CtorAdvicesScope extends InterceptorChina<Joinpoint> {

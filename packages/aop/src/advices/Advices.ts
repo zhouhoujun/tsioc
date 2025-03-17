@@ -8,18 +8,19 @@ import { Advicer } from './Advicer';
  * @interface Advices
  */
 export interface Advices {
-    syncPointcut?: boolean;
     Pointcut: Advicer[];
-    syncBefore?: boolean;
     Before: Advicer[];
-    syncAfter?: boolean;
     After: Advicer[];
-    syncAround?: boolean;
     Around: Advicer[];
-    syncAfterThrowing?: boolean;
     AfterThrowing: Advicer[];
-    syncAfterReturning?: boolean;
     AfterReturning: Advicer[];
+
+    // syncPointcut?: boolean;
+    // syncBefore?: boolean;
+    // syncAfter?: boolean;
+    // syncAround?: boolean;
+    // syncAfterThrowing?: boolean;
+    // syncAfterReturning?: boolean;
 }
 
 /**
