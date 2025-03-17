@@ -11,7 +11,7 @@ import { DesignContext, RuntimeContext } from './ctx';
 import { LifeScope } from './lifescope';
 
 export const autorunInterceptor = (ctx: DesignContext, next: HandlerFn, context: Context) => {
-    return invokeTail(() => next(ctx, context),  (res) => {
+    return invokeTail(() => next(ctx, context), (res) => {
         const runs = ctx.class.runnables.filter(c => c.auto && c.decorType === Decors.CLASS);
         if (runs.length < 1) {
             return
@@ -175,16 +175,18 @@ export const registerHandler: HandlerFn = (ctx: DesignContext, context: Context)
             } as RuntimeContext;
 
             let instance: any;
-            platform.runtime.handle(ctx, null, (input) => {
-                instance = ctx.instance;
-                if (singleton || isStatic) {
-                    recd.value = instance
+            platform.runtime.handle(ctx, null, {
+                finally: () => {
+                    instance = ctx.instance;
+                    if (singleton || isStatic) {
+                        recd.value = instance
+                    }
+                    // clean context
+                    cleanObj(ctx);
                 }
-                // clean context
-                cleanObj(input);
             });
 
-            return instance;
+            return instance ?? ctx.instance;
         },
         stic: isStatic,
         fy: FnType.Inj,

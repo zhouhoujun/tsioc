@@ -1,6 +1,6 @@
 import { AnnotationType, Type } from '../types';
 import { cleanObj, getParentClass } from '../utils/lang';
-import { isBoolean, isFunction } from '../utils/chk';
+import { isBoolean } from '../utils/chk';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata,
     RunnableMetadata, InjectableMetadata, MethodMetadata
@@ -10,7 +10,7 @@ import {
     Class, TypeDef, DecoratorFn
 } from './type';
 import { InvokeOptions } from '../context';
-import { Context, Handler, HandlerFn } from '../handler';
+import { Context, HandlerFn } from '../handler';
 import { LifeScope } from '../lifescope/lifescope';
 import { DesignContext, RuntimeContext } from '../lifescope/ctx';
 
@@ -405,12 +405,12 @@ export const typeDecorLifeScope: LifeScope<DecorContext> = new LifeScope(null, d
     decorProviders,
     decorRunnable
 ]);
-export const propDecorLifeScope: LifeScope<DecorContext> = new LifeScope(null, decorExtendHandler, [
+export const methodDecorLifeScope: LifeScope<DecorContext> = new LifeScope(null, decorExtendHandler, [
     decorMethodDesignParams,
     decorMethodProviders,
     decorRunnable
 ]);
-export const methodDecorLifeScope: LifeScope<DecorContext> = new LifeScope(null, decorExtendHandler, [
+export const propDecorLifeScope: LifeScope<DecorContext> = new LifeScope(null, decorExtendHandler, [
     decorInitProp,
     decorPropInject
 ]);
@@ -418,41 +418,6 @@ export const paramDecorLifeScope: LifeScope<DecorContext> = new LifeScope(null, 
     decorParamInject
 ]);
 
-// class DecorActions extends Actions<DecorContext> {
-//     protected override getPlatform(ctx: DecorContext): Platform { return null!; }
-//     protected override parseHandle(provider: Platform, ac: any): HandlerFn {
-//         if (isFunction(ac)) {
-//             return ac
-//         } else if (ac instanceof Action) {
-//             return ac.getHandle()
-//         }
-//         return null!
-//     }
-// }
-// typeDecorActions.use(
-//     InitCtorDesignParams,
-//     TypeAnnoAction,
-//     TypeProvidersAction,
-//     RunnableAction,
-//     ExecuteDecorHandle
-// );
-
-// methodDecorActions.use(
-//     InitMethodDesignParams,
-//     MethodProvidersAction,
-//     RunnableAction,
-//     ExecuteDecorHandle
-// );
-
-// propDecorActions.use(
-//     InitPropDesignAction,
-//     PropInjectAction,
-//     ExecuteDecorHandle
-// );
-// paramDecorActions.use(
-//     ParamInjectAction,
-//     ExecuteDecorHandle
-// );
 
 function dispatch(lifescope: LifeScope<DecorContext>, target: any, type: Type, define: DecorDefine, options: DecoratorOption<any>) {
     const ctx = {
