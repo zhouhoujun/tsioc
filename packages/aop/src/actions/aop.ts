@@ -24,7 +24,7 @@ export const bindMthPointcut = (ctx: RuntimeContext, next: HandlerFn, context: C
  * @export
  */
 export const ctorAdvice = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
-    if (!isValAspectTag(ctx.type, ctx.class)) return next(ctx, context);
+    if (!isValAspectTag(ctx.type, ctx.class) || !context.has(Proceeding)) return next(ctx, context);
 
     // aspect class do nothing.
     return context.get(Proceeding)?.pointcutConstr(ctx, next, context);

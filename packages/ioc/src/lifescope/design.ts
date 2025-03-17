@@ -28,10 +28,10 @@ export const autorunInterceptor = (ctx: DesignContext, next: HandlerFn, context:
 }
 
 function invokeHandler(decors: DecoratorFn[], ctx: DesignContext, scope: DecoratorScope, context?: any) {
-    decors.forEach(d => {
+    decors?.forEach(d => {
         ctx.currDecor = d;
         d.getDesignHandler?.(scope)?.forEach(h => {
-            h(ctx, context);
+            h?.(ctx, context);
         })
     });
 }

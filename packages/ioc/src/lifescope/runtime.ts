@@ -47,10 +47,10 @@ export const runtimeAnnoInterceptor: InterceptorFn<RuntimeContext, void> = (inpu
 }
 
 function invokeRuntimeHandler(decors: DecoratorFn[], ctx: RuntimeContext, scope: DecoratorScope, context?: any) {
-    decors.forEach(d => {
+    decors?.forEach(d => {
         ctx.currDecor = d;
         d.getRuntimeHandler?.(scope)?.forEach(h => {
-            h(ctx, context);
+            h?.(ctx, context);
         })
     });
 }
@@ -68,11 +68,11 @@ export function getRuntimeClassScope(platform: Platform): LifeScope<RuntimeConte
 
 export const singletonInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
 
-    next(input, context);
-
-    if (input.type && input.instance && input.singleton) {
-        input.platform.registerSingleton(input.injector, input.provide || input.type, input.instance)
-    }
+    return invokeTail(() => next(input, context), () => {
+        if (input.type && input.instance && input.singleton) {
+            input.platform.registerSingleton(input.injector, input.provide || input.type, input.instance)
+        }
+    })
 }
 
 
@@ -115,7 +115,7 @@ export const propertyInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
 
     return invokeTail(() => next(input, context), () => {
         const ictx = input.context;
-        if (!ictx) throw new Execption('autowride property need InvocationContext');
+        if (!ictx || !input.instance) throw new Execption('autowride property need InvocationContext');
         let meta: PropertyMetadata, key: string, val;
 
         input.class.eachProperty((metas, propertyKey) => {
