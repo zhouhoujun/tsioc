@@ -31,7 +31,7 @@ function invokeHandler(decors: DecoratorFn[], ctx: DesignContext, scope: Decorat
     decors?.forEach(d => {
         ctx.currDecor = d;
         d.getDesignHandler?.(scope)?.forEach(h => {
-            h?.(ctx, context);
+            h(ctx, context);
         })
     });
 }

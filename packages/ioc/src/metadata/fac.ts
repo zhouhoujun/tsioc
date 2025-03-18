@@ -56,12 +56,13 @@ export function createDecorator<T>(name: string, option: DecoratorOption<T>): an
 function mapToFac(maps: Record<string, HandlerFn | HandlerFn[]>): (type: DecoratorType) => HandlerFn[] {
     const mapHd = new Map();
     for (const type in maps) {
+        const handle = maps[type];
+        if(!handle) continue;
         let rged: HandlerFn[] = mapHd.get(type);
         if (!rged) {
             rged = [];
             mapHd.set(type, rged);
         }
-        const handle = maps[type];
         isArray(handle) ? rged.push(...handle) : rged.push(handle)
     }
     return (type: DecoratorType) => mapHd.get(type) ?? []

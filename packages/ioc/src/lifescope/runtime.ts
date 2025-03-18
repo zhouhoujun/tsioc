@@ -50,7 +50,7 @@ function invokeRuntimeHandler(decors: DecoratorFn[], ctx: RuntimeContext, scope:
     decors?.forEach(d => {
         ctx.currDecor = d;
         d.getRuntimeHandler?.(scope)?.forEach(h => {
-            h?.(ctx, context);
+            h(ctx, context);
         })
     });
 }
