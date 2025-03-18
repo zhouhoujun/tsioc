@@ -148,7 +148,7 @@ export function getMethodAdvicesScope(platform: Platform): LifeScope<Joinpoint> 
 export const afterReturningIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
     return invokeTail(() => next(ctx, context), (res) => {
         ctx.state = JoinpointState.AfterReturning;
-        if (isDefined(res) && !(res instanceof Joinpoint)) ctx.returning = res;
+        if (isDefined(res) && res !== ctx) ctx.returning = res;
         return ctx.advices.getAfterReturningHanlder()?.(ctx, context);
     })
 }
@@ -181,7 +181,7 @@ export const pointcutIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Con
 export const afterIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
     return invokeTail(() => next(ctx, context), (res) => {
         ctx.state = JoinpointState.After;
-        if (isDefined(res) && !(res instanceof Joinpoint)) ctx.returning = res;
+        if (isDefined(res) && res !== ctx) ctx.returning = res;
         return ctx.advices.getAfterHanlder()?.(ctx, context);
     });
 }
