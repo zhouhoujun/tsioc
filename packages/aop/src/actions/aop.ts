@@ -27,7 +27,7 @@ export const ctorAdvice = (ctx: RuntimeContext, next: HandlerFn, context: Contex
     if (!isValAspectTag(ctx.type, ctx.class) || !context.has(Proceeding)) return next(ctx, context);
 
     // aspect class do nothing.
-    return context.get(Proceeding)?.pointcutConstr(ctx, next, context);
+    return context.get(Proceeding).pointcutConstr(ctx, next, context);
 
 }
 

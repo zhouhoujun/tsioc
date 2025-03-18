@@ -392,10 +392,7 @@ export const decorMethodProviders = (ctx: DecorContext, next: HandlerFn, context
 
 export const decorExtendHandler = (ctx: DecorContext, context: Context) => {
     if (ctx.define.decor.getHandler) {
-        const handles = ctx.define.decor.getHandler(ctx.define.decorType);
-        handles.forEach(h => {
-            h(ctx, context)
-        })
+        ctx.define.decor.getHandler(ctx.define.decorType)?.(ctx, context);
     }
 }
 

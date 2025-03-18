@@ -35,17 +35,17 @@ export interface DecoratorFn extends Function {
      * get decorator handlers.
      * @param type decorator type.
      */
-    getHandler?(type: DecoratorType): HandlerFn<DecorContext>[];
+    getHandler?(type: DecoratorType): HandlerFn<DecorContext> | undefined;
     /**
      * get decorator runtime handlers.
      * @param type decorator type.
      */
-    getRuntimeHandler?(type: DecoratorScope): HandlerFn<RuntimeContext>[];
+    getRuntimeHandler?(type: DecoratorScope): HandlerFn<RuntimeContext> | undefined;
     /**
      * get decorator design handlers.
      * @param type decorator type.
      */
-    getDesignHandler?(type: DecoratorScope): HandlerFn<DesignContext>[];
+    getDesignHandler?(type: DecoratorScope): HandlerFn<DesignContext> | undefined;
 }
 
 

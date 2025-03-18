@@ -7,7 +7,7 @@ import { getToken, Token } from '../tokens';
 import { Type } from '../types';
 import { isMetadataObject } from '../utils/obj';
 import { Execption } from '../execption';
-import { HandlerFn } from '../handler';
+import { composeHandlers, HandlerFn } from '../handler';
 
 
 
@@ -53,19 +53,14 @@ export function createDecorator<T>(name: string, option: DecoratorOption<T>): an
 }
 
 
-function mapToFac(maps: Record<string, HandlerFn | HandlerFn[]>): (type: DecoratorType) => HandlerFn[] {
-    const mapHd = new Map();
+function mapToFac(maps: Record<string, HandlerFn | HandlerFn[]>): (type: DecoratorType) => HandlerFn | undefined {
+    const mapHd: Record<string, HandlerFn> = {};
     for (const type in maps) {
         const handle = maps[type];
-        if(!handle) continue;
-        let rged: HandlerFn[] = mapHd.get(type);
-        if (!rged) {
-            rged = [];
-            mapHd.set(type, rged);
-        }
-        isArray(handle) ? rged.push(...handle) : rged.push(handle)
+        if (!handle) continue;
+        mapHd[type] = isArray(handle) ? composeHandlers(handle) : handle
     }
-    return (type: DecoratorType) => mapHd.get(type) ?? []
+    return (type: DecoratorType) => mapHd[type];
 }
 
 function storeMetadata<T>(decor: DecoratorFn, args: any[], metadata: any, option: MetadataFactory<T>): any {

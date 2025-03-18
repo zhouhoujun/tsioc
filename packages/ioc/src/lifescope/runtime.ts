@@ -49,9 +49,7 @@ export const runtimeAnnoInterceptor: InterceptorFn<RuntimeContext, void> = (inpu
 function invokeRuntimeHandler(decors: DecoratorFn[], ctx: RuntimeContext, scope: DecoratorScope, context?: any) {
     decors?.forEach(d => {
         ctx.currDecor = d;
-        d.getRuntimeHandler?.(scope)?.forEach(h => {
-            h(ctx, context);
-        })
+        d.getRuntimeHandler?.(scope)?.(ctx, context);
     });
 }
 
