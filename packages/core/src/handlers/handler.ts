@@ -1,4 +1,4 @@
-import { isFunction, isPromise } from '@tsdi/ioc';
+import { chainEndFn, chainFactory, composeInterceptors, isFunction, isPromise } from '@tsdi/ioc';
 import { Observable, isObservable, of, from } from 'rxjs';
 import { Backend, Handler, HandlerFn } from '../Handler';
 import { InterceptorFn, InterceptorLike } from '../Interceptor';
@@ -65,46 +65,6 @@ function chainedFilterFn(
     }, context);
 
     return chainFactory(chainTailFn, filterFn)
-}
-
-/**
- * compose chain interceptor.
- * @param interceptors 
- * @returns 
- */
-export function composeInterceptors(interceptors: InterceptorLike[]): InterceptorFn {
-    return interceptors.reduceRight((next, interceptorFn) => chainedInterceptorFn(next as InterceptorFn, interceptorFn), chainEndFn as InterceptorFn) as InterceptorFn;
-}
-
-
-function chainEndFn(req: any, finalHandlerFn: HandlerFn, context?: any): Observable<any> {
-    return finalHandlerFn(req, context);
-}
-
-/**
- * Constructs a `ChainedInterceptorFn` which wraps and invokes a functional interceptor.
- */
-function chainedInterceptorFn(
-    chainTailLike: InterceptorLike, interceptorLike: InterceptorLike,
-): InterceptorFn {
-
-    const chainTailFn = isFunction(chainTailLike) ? chainTailLike : (req: any, handle: HandlerFn, context?: any) => chainTailLike.intercept(req, {
-        handle,
-    }, context);
-    const interceptorFn = isFunction(interceptorLike) ? interceptorLike : (req: any, handle: HandlerFn, context?: any) => interceptorLike.intercept(req, {
-        handle,
-    }, context);
-
-    return chainFactory(chainTailFn, interceptorFn)
-}
-
-export function chainFactory(chainTailFn: InterceptorFn, interceptorFn: InterceptorFn): InterceptorFn {
-    return (initialRequest, finalHandlerFn, context?: any) =>
-        interceptorFn(
-            initialRequest,
-            (downstreamRequest, ctx?: any) => chainTailFn(downstreamRequest, finalHandlerFn, ctx ?? context),
-            context
-        )
 }
 
 /**

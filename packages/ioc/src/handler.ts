@@ -1,4 +1,4 @@
-import { catchError, finalize, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
+import { catchError, finalize, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { isDefined, isFunction, isNumber, isPromise } from './utils/chk';
 import { Token } from './tokens';
 
@@ -34,12 +34,6 @@ export interface HandlerFn<TInput = any, TOutput = any, TContext = any> extends 
     (input: TInput, context?: TContext): TOutput;
     owner?: Handler<TInput, TOutput, TContext>;
 }
-
-// /**
-//  * handler fn.
-//  * 处理器基本构建块。
-//  */
-// export type HandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, context?: TContext) => TOutput;
 
 /**
  * hanlder like
@@ -99,7 +93,7 @@ export function composeInterceptors(interceptors: InterceptorLike[]): Intercepto
 }
 
 
-function chainEndFn(req: any, finalHandlerFn: HandlerFn, context?: any) {
+export function chainEndFn(req: any, finalHandlerFn: HandlerFn, context?: any) {
     return finalHandlerFn(req, context);
 }
 
@@ -143,26 +137,6 @@ export function toInterceptorFn(interceptor: Interceptor): InterceptorFn {
     fn.owner = interceptor;
     return fn;
 }
-
-/**
- * observable handler factory.
- * @param fn 
- * @returns 
- */
-export function observableHandlerFactory<TInput = any, TOutput = any, TContext = any>(fn: (ctx: TInput, context?: TContext) => TOutput | Observable<TOutput> | Promise<TOutput>) {
-    const handle = (input: TInput, context?: TContext): Observable<TOutput> => {
-        const $res = fn(input, context);
-        if (isObservable($res)) {
-            return $res;
-        }
-        return isPromise($res) ? from($res) : of($res);
-    };
-
-    return {
-        handle
-    }
-}
-
 
 export class BaseChain<TInput = any, TOutput = any, TContext = any> {
 

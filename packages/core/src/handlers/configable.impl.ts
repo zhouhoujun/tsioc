@@ -1,6 +1,6 @@
 import {
-    InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType, lang, promiseOf, Execption, isFunction, refl,
-    Token, InvocationContext, createContext, isClassType, ArgumentExecption, isToken, isArray, toProvider, Type, getClass
+    InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType, lang, promiseOf, Execption, toProvider, Type, getClass, Token,
+    InvocationContext, createContext, isClassType, ArgumentExecption, isToken, isArray,  isFunction, composeInterceptors, chainFactory
 } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
@@ -9,7 +9,7 @@ import { PipeTransform } from '../pipes/pipe';
 import { FILTERS_TOKEN, Filter, FilterLike, FilterResolver } from '../filters/filter';
 import { Backend, BackendFn } from '../Handler';
 import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerOptions, HandlerService, TypeConfigableHandlerOptions } from './configable';
-import { composeInterceptors, composeFilters, chainFactory } from './handler';
+import { composeFilters } from './handler';
 
 
 
