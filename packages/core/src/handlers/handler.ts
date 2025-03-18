@@ -1,8 +1,7 @@
-import { chainEndFn, chainFactory, composeInterceptors, isFunction, isPromise } from '@tsdi/ioc';
+import { composeInterceptors, isFunction, isPromise } from '@tsdi/ioc';
 import { Observable, isObservable, of, from } from 'rxjs';
 import { Backend, Handler, HandlerFn } from '../Handler';
 import { InterceptorFn, InterceptorLike } from '../Interceptor';
-import { FilterFn, FilterLike } from '../filters/filter';
 
 
 /**
@@ -41,31 +40,6 @@ export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> im
 }
 
 
-/**
- * compose chain filters.
- * @param filters 
- * @returns 
- */
-export function composeFilters(filters: FilterLike[]): FilterFn {
-    return filters.reduceRight((next, filterFn) => chainedFilterFn(next as FilterFn, filterFn), chainEndFn as FilterFn) as FilterFn;
-}
-
-/**
- * Constructs a `ChainedFilterFn` which wraps and invokes a functional interceptor.
- */
-function chainedFilterFn(
-    chainTailLike: FilterLike, filterLike: FilterLike,
-): FilterFn {
-
-    const chainTailFn = isFunction(chainTailLike) ? chainTailLike : (req: any, handle: HandlerFn, context?: any) => chainTailLike.doFilter(req, {
-        handle,
-    }, context);
-    const filterFn = isFunction(filterLike) ? filterLike : (req: any, handle: HandlerFn, context?: any) => filterLike.doFilter(req, {
-        handle,
-    }, context);
-
-    return chainFactory(chainTailFn, filterFn)
-}
 
 /**
  * handler factory.

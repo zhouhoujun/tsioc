@@ -1,4 +1,4 @@
-import { Abstract, getTokenOf, ProvdierOf, Token, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, chainEndFn, chainFactory, getTokenOf, HandlerFn, isFunction, ProvdierOf, Token, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Handler } from '../Handler';
 import { InterceptorFn } from '../Interceptor';
@@ -123,3 +123,29 @@ export abstract class FilterHandlerResolver {
     abstract removeHandle(filter: Type | string, handler: Handler): this;
 }
 
+
+/**
+ * compose chain filters.
+ * @param filters 
+ * @returns 
+ */
+export function composeFilters(filters: FilterLike[]): FilterFn {
+    return filters.reduceRight((next, filterFn) => chainedFilterFn(next as FilterFn, filterFn), chainEndFn as FilterFn) as FilterFn;
+}
+
+/**
+ * Constructs a `ChainedFilterFn` which wraps and invokes a functional interceptor.
+ */
+function chainedFilterFn(
+    chainTailLike: FilterLike, filterLike: FilterLike,
+): FilterFn {
+
+    const chainTailFn = isFunction(chainTailLike) ? chainTailLike : (req: any, handle: HandlerFn, context?: any) => chainTailLike.doFilter(req, {
+        handle,
+    }, context);
+    const filterFn = isFunction(filterLike) ? filterLike : (req: any, handle: HandlerFn, context?: any) => filterLike.doFilter(req, {
+        handle,
+    }, context);
+
+    return chainFactory(chainTailFn, filterFn)
+}

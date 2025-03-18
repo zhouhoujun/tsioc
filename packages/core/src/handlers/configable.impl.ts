@@ -6,10 +6,9 @@ import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxj
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
 import { INTERCEPTORS_TOKEN, Interceptor, InterceptorFn, InterceptorLike, InterceptorResolver } from '../Interceptor';
 import { PipeTransform } from '../pipes/pipe';
-import { FILTERS_TOKEN, Filter, FilterLike, FilterResolver } from '../filters/filter';
+import { FILTERS_TOKEN, Filter, FilterLike, FilterResolver, composeFilters } from '../filters/filter';
 import { Backend, BackendFn } from '../Handler';
 import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerOptions, HandlerService, TypeConfigableHandlerOptions } from './configable';
-import { composeFilters } from './handler';
 
 
 
