@@ -167,9 +167,12 @@ export function observableHandlerFactory<TInput = any, TOutput = any, TContext =
 export class BaseChain<TInput = any, TOutput = any, TContext = any> {
 
     private _chain?: InterceptorFn<TInput, TOutput, TContext> | null;
+    private interceptors: InterceptorLike<TInput>[];
     constructor(
-        private interceptors: InterceptorLike<TInput>[] = []
-    ) { }
+        interceptors: InterceptorLike<TInput>[] = []
+    ) {
+        this.interceptors = interceptors.slice(0);
+    }
 
     /**
      * use interceptor for the handler.
@@ -311,7 +314,7 @@ export function composeHandlers(hanlders: HanlderLike[]): HandlerFn {
     return hanlders.reduceRight((next, handler) => {
         const invok = isFunction(handler) ? handler : (input: any, context?: any) => handler.handle(input, context);
         const nextFn = isFunction(next) ? next : (input: any, context?: any) => next.handle(input, context);
-        return (input: any, context?: any) => invokeTail(() => invok(input, context), (res)=> nextFn(res ?? input, context));
+        return (input: any, context?: any) => invokeTail(() => invok(input, context), (res) => nextFn(res ?? input, context));
     }, endHandler) as HandlerFn;
 }
 
