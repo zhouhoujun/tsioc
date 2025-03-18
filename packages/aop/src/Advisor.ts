@@ -36,70 +36,21 @@ export class Advisor implements OnDestroy {
             const aopRef = aspect.class as Class;
             const matchpoints = matcher.match(aopRef, typeRefl, aopRef.getAnnotation<AopDef>().advices);
             matchpoints.forEach(mpt => {
-                const name = mpt.name;
-                const advice = mpt.advice;
+                const { name, advice } = mpt;
+                if (!advice.adviceName) return;
 
                 let advices = this.getAdvices(ClassType, name);
                 if (!advices) {
-                    advices = {
-                        Before: [],
-                        Pointcut: [],
-                        After: [],
-                        Around: [],
-                        AfterThrowing: [],
-                        AfterReturning: []
-                    } as Advices;
+                    advices = new Advices();
                     this.setAdvices(ClassType, name, advices)
                 }
-
                 const advicer = {
                     ...mpt,
                     aspect
                 } as Advicer;
 
-                if (advice.adviceName === 'Before') {
-                    if (!advices.Before.some(a => equals(a, advicer))) {
-                        // if (!advices.syncBefore && advicer.advice.sync) {
-                        //     advices.syncBefore = true
-                        // }
-                        advices.Before.push(advicer)
-                    }
-                } else if (advice.adviceName === 'Pointcut') {
-                    if (!advices.Pointcut.some(a => equals(a, advicer))) {
-                        // if (!advices.syncPointcut && advicer.advice.sync) {
-                        //     advices.syncPointcut = true
-                        // }
-                        advices.Pointcut.push(advicer)
-                    }
-                } else if (advice.adviceName === 'Around') {
-                    if (!advices.Around.some(a => equals(a, advicer))) {
-                        // if (!advices.syncAround && advicer.advice.sync) {
-                        //     advices.syncAround = true
-                        // }
-                        advices.Around.push(advicer)
-                    }
-                } else if (advice.adviceName === 'After') {
-                    if (!advices.After.some(a => equals(a, advicer))) {
-                        // if (!advices.syncAfter && advicer.advice.sync) {
-                        //     advices.syncAfter = true
-                        // }
-                        advices.After.push(advicer)
-                    }
-                } else if (advice.adviceName === 'AfterThrowing') {
-                    if (!advices.AfterThrowing.some(a => equals(a, advicer))) {
-                        // if (!advices.syncAfterThrowing && advicer.advice.sync) {
-                        //     advices.syncAfterThrowing = true
-                        // }
-                        advices.AfterThrowing.push(advicer)
-                    }
-                } else if (advice.adviceName === 'AfterReturning') {
-                    if (!advices.AfterReturning.some(a => equals(a, advicer))) {
-                        // if (!advices.syncAfterReturning && advicer.advice.sync) {
-                        //     advices.syncAfterReturning = true
-                        // }
-                        advices.AfterReturning.push(advicer)
-                    }
-                }
+                advices.addAdvicer(advice.adviceName, advicer);
+
             });
         })
     }
@@ -216,8 +167,4 @@ export class Advisor implements OnDestroy {
         this.aspects = [];
         this.advices.clear()
     }
-}
-
-function equals(a: Advicer, b: Advicer) {
-    return a.aspect.type === b.aspect.type && a.advice.name === b.advice.name
 }

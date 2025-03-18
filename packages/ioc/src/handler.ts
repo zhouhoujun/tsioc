@@ -309,15 +309,12 @@ const endHandler: HandlerFn = (res, context?: any) => res;
 
 export function composeHandlers(hanlders: HanlderLike[]): HandlerFn {
     return hanlders.reduceRight((next, handler) => {
-        const invok = isFunction(handler) ? (input: any, context?: any) => handler(input, context) : (input: any, context?: any) => handler.handle(input, context);
-        const nextFn = isFunction(next) ? (input: any, context?: any) => next(input, context) : (input: any, context?: any) => next.handle(input, context);
-        return (input: any, context?: any) => invokeTail(() => invok(input, context), nextFn);
+        const invok = isFunction(handler) ? handler : (input: any, context?: any) => handler.handle(input, context);
+        const nextFn = isFunction(next) ? next : (input: any, context?: any) => next.handle(input, context);
+        return (input: any, context?: any) => invokeTail(() => invok(input, context), (res)=> nextFn(res ?? input, context));
     }, endHandler) as HandlerFn;
 }
 
-// export function composeInvokes<T>(invokers: Array<() => Observable<T> | Promise<T> | T>): Observable<T> | Promise<T> | T {
-//     return invokers.reverse().reduceRight((next, opener) => invokeTail(opener, next), (res) => res);
-// }
 
 /**
  * context token.

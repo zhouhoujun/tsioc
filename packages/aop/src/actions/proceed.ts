@@ -1,19 +1,16 @@
 import {
-    Type, isFunction, lang, Platform, isNil, refl, ctorName,
-    InvocationContext, object2string, LifeScope, HandlerFn, Context, ContextToken, invokeTail,
-    InterceptorChina, toHandler, RuntimeContext, InterceptorLike, isDefined, composeHandlers
+    Type, isFunction, lang, Platform, refl, ctorName,
+    InvocationContext, LifeScope, HandlerFn, Context, ContextToken, invokeTail,
+    InterceptorChina, toHandler, RuntimeContext, InterceptorLike, isDefined
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
 import { Joinpoint } from '../joinpoints/Joinpoint';
 import { JoinpointState } from '../joinpoints/state';
 import { Advices } from '../advices/Advices';
-import { Advicer } from '../advices/Advicer';
-import { AroundMetadata } from '../metadata/meta';
 import { Advisor } from '../Advisor';
 import { Proceeding } from '../Proceeding';
 
 const proxyFlag = '_proxy';
-const aExp = /^@/;
 
 /**
  * Proxy method.
@@ -45,51 +42,11 @@ export class ProceedingScope implements Proceeding {
             params,
             parent
         });
-        return getCtorAdvicesScope(this.platform).intercept(joinPoint, toHandler((joinPoint) => {
-            next(ctx, context);
-            return ctx.instance;
-        }), this.platform.context);
+        return getCtorAdvicesScope(this.platform).intercept(joinPoint, toHandler((joinPoint) => invokeTail(() => next(ctx, context), () => {
+            const instance = joinPoint.returning = joinPoint.target = ctx.instance;
+            return instance;
+        })), this.platform.context);
     }
-
-
-    // beforeConstr(targetType: Type, params: ParameterMetadata[] | undefined, args: any[] | undefined, injector: Injector, parent: InvocationContext | undefined, next?: NextOpter<any> | ((input: any) => any)) {
-    //     const advices = this.platform.context.get(Advisor).getAdvices(targetType, ctorName);
-    //     if (!advices) {
-    //         return
-    //     }
-
-    //     const joinPoint = Joinpoint.create(injector ?? this.platform.getInjector('root') ?? this.platform.getInjector('platform'), {
-    //         targetType: targetType,
-    //         methodName: ctorName,
-    //         state: JoinpointState.Before,
-    //         advices,
-    //         args,
-    //         params,
-    //         parent
-    //     });
-
-    //     getBeforeCtorAdvicesScope(this.platform).handle(joinPoint, this.platform.context, next);
-    // }
-
-    // afterConstr(target: any, targetType: Type, params: ParameterMetadata[] | undefined, args: any[] | undefined, injector: Injector, parent: InvocationContext | undefined, next?: NextOpter<any> | ((input: any) => any)) {
-    //     const advices = this.platform.context.get(Advisor).getAdvices(targetType, ctorName);
-    //     if (!advices) {
-    //         return
-    //     }
-
-    //     const joinPoint = Joinpoint.create(injector ?? this.platform.getInjector('root') ?? this.platform.getInjector('platform'), {
-    //         targetType: targetType,
-    //         methodName: ctorName,
-    //         state: JoinpointState.After,
-    //         advices,
-    //         args,
-    //         params,
-    //         target,
-    //         parent
-    //     });
-
-    //     getAfterCtorAdvicesScope(this.platform).handle(joinPoint, this.platform.context, next);
-    // }
 
     /**
      * proceed the proxy method.
@@ -158,84 +115,10 @@ export class ProceedingScope implements Proceeding {
                 joinPoint.onDestroy(parent)
             }
 
-            return getMethodAdvicesScope(platform).handle(joinPoint, platform.context);
-
-            // if (joinPoint.returningDefer) {
-            //     return isObservable(joinPoint.originReturning) ?
-            //         from(joinPoint.returningDefer.promise)
-            //         : joinPoint.returningDefer.promise
-            // } else {
-            //     if (joinPoint.throwing) {
-            //         throw joinPoint.throwing;
-            //     }
-            //     return joinPoint.returning
-            // }
+            return getMethodAdvicesScope(platform).handle(joinPoint, platform.context, (res) => joinPoint.returning);
         }
     }
 
-}
-
-
-function invokeAdvice(joinPoint: Joinpoint, advicer: Advicer, sync?: boolean) {
-    if (joinPoint.destroyed) {
-        throw new Error(`joinPoint is destroyed, when invoked advicer ${object2string(advicer)}.\n\njoinPoint object ${object2string(joinPoint, { fun: false, typeInst: true })}`)
-    }
-    const metadata = advicer.advice as AroundMetadata;
-    if (!isNil(joinPoint.args) && metadata.args) {
-        joinPoint.setValue(metadata.args, joinPoint.args)
-    }
-
-    if (metadata.annotationArgName) {
-        if (metadata.annotationName) {
-            let d: string = metadata.annotationName;
-            d = d ? (aExp.test(d) ? d : `@${d}`) : '';
-            joinPoint.setValue(metadata.annotationArgName, joinPoint.annotations ? joinPoint.annotations.filter(v => v && v.decor.toString() == d).map(d => d.metadata) : [])
-        } else {
-            joinPoint.setValue(metadata.annotationArgName, joinPoint.annotations?.map(d => d.metadata) ?? [])
-        }
-    }
-
-    if (!isNil(joinPoint.returning) && metadata.returning) {
-        joinPoint.setValue(metadata.returning, joinPoint.returning)
-    }
-
-    if (joinPoint.throwing && metadata.throwing) {
-        joinPoint.setValue(metadata.throwing, joinPoint.throwing)
-    }
-
-    const context = advicer.aspect.getContext();
-    if (context) {
-        joinPoint.addRef(context)
-    }
-
-    return invokeTail(() => advicer.aspect.invoke(advicer.advice.name!, joinPoint), {
-        finally: () => {
-            context && joinPoint.removeRef(context);
-        }
-    });
-}
-
-
-function runAdvicers(ctx: Joinpoint, advicers: Advicer[], next: () => void, sync: boolean | undefined) {
-    if (sync) {
-        if (!ctx.returningDefer) {
-            ctx.returningDefer = lang.defer()
-        }
-        return lang.step(advicers.map(a => () => invokeAdvice(ctx, a, sync)))
-            .then(() => next())
-            .catch(err => {
-                ctx.throwing = err;
-            })
-    } else {
-        try {
-            advicers.forEach(advicer => {
-                invokeAdvice(ctx, advicer)
-            });
-            return next()
-        } catch (err) {
-            ctx.throwing = err
-        }
-    }
 }
 
 
@@ -262,60 +145,45 @@ export function getMethodAdvicesScope(platform: Platform): LifeScope<Joinpoint> 
 
 
 
+export const afterReturningIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
+    return invokeTail(() => next(ctx, context), (res) => {
+        ctx.state = JoinpointState.AfterReturning;
+        if (isDefined(res) && !(res instanceof Joinpoint)) ctx.returning = res;
+        return ctx.advices.getAfterReturningHanlder()?.(ctx, context);
+    })
+}
+
 export const afterThrowingInterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
     return invokeTail(() => next(ctx, context), {
         error: (error) => {
             ctx.throwing = error;
             ctx.state = JoinpointState.AfterThrowing;
-            const handler = composeHandlers([
-                ...ctx.advices.Around,
-                ...ctx.advices.AfterThrowing
-            ].map(a => (ctx) => invokeAdvice(ctx, a)));
-            return handler(ctx, context);
-
+            return ctx.advices.getAfterThrowingHanlder()?.(ctx, context);
         },
     });
 }
 
 
 export const beforeIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-    ctx.state = JoinpointState.Before;
-    const handler = composeHandlers([
-        ...ctx.advices.Around,
-        ...ctx.advices.Before
-    ].map(a => (ctx) => invokeAdvice(ctx, a)));
-    return invokeTail(() => handler(ctx, context), () => next(ctx, context));
+    return invokeTail(() => {
+        ctx.state = JoinpointState.Before;
+        return ctx.advices.getBeforeHanlder()?.(ctx, context)
+    }, () => next(ctx, context));
 }
 
 export const pointcutIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-    ctx.state = JoinpointState.Pointcut;    
-    const handler = composeHandlers(ctx.advices.Pointcut.map(a => (ctx) => invokeAdvice(ctx, a)));
-    return invokeTail(() => handler(ctx, context), () => next(ctx, context));
+    return invokeTail(() => {
+        ctx.state = JoinpointState.Pointcut;
+        return ctx.advices.getPointcutHanlder()?.(ctx, context)
+    }, () => next(ctx, context));
 }
 
 export const afterIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
     return invokeTail(() => next(ctx, context), (res) => {
         ctx.state = JoinpointState.After;
-        if (isDefined(res)) ctx.returning = res;
-        const handler = composeHandlers([
-            ...ctx.advices.Around,
-            ...ctx.advices.After
-        ].map(a => (ctx) => invokeAdvice(ctx, a)));
-        return handler(ctx, context);
+        if (isDefined(res) && !(res instanceof Joinpoint)) ctx.returning = res;
+        return ctx.advices.getAfterHanlder()?.(ctx, context);
     });
-}
-
-
-export const afterReturningIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-    return invokeTail(() => next(ctx, context), (res) => {
-        ctx.state = JoinpointState.AfterReturning;
-        if (isDefined(res)) ctx.returning = res;
-        const handler = composeHandlers([
-            ...ctx.advices.Around,
-            ...ctx.advices.AfterReturning
-        ].map(a => (ctx) => invokeAdvice(ctx, a)));
-        return handler(ctx, context);
-    })
 }
 
 
@@ -336,205 +204,3 @@ const ADVICES_INTERCEPTORS: InterceptorLike<Joinpoint>[] = [
     beforeIterceptor,
     pointcutIterceptor,
 ];
-
-
-
-
-// const BEFORE_CTOR_ADVICES = new ContextToken<LifeScope>(() => null!);
-// export function getBeforeCtorAdvicesScope(platform: Platform): LifeScope<Joinpoint> {
-//     let scope = platform.context.get(BEFORE_CTOR_ADVICES);
-//     if (!scope) {
-//         scope = new LifeScope<Joinpoint>(platform, (ctx, context) => {
-//             // runChain<Joinpoint>([
-//             //     (ctx, bnext) => runAdvicers(ctx, ctx.advices.Before, bnext, ctx.advices.syncBefore),
-//             //     (ctx, pnext) => runAdvicers(ctx, ctx.advices.Pointcut, pnext, ctx.advices.syncPointcut),
-//             //     (ctx, anext) => runAdvicers(ctx, ctx.advices.Around, anext, ctx.advices.syncAround)
-//             // ], ctx, next)
-
-
-//         });
-//         platform.context.set(BEFORE_CTOR_ADVICES, scope);
-//     }
-//     return scope;
-// }
-
-// const AFTER_CTOR_ADVICES = new ContextToken<LifeScope>(() => null!);
-// export function getAfterCtorAdvicesScope(platform: Platform): LifeScope<Joinpoint> {
-//     let scope = platform.context.get(AFTER_CTOR_ADVICES);
-//     if (!scope) {
-//         scope = new LifeScope<Joinpoint>(platform, (ctx, context) => {
-//             // return runChain<Joinpoint>([
-//             //     (ctx, anext) => runAdvicers(ctx, ctx.advices.After, anext, ctx.advices.syncAfter),
-//             //     (ctx, anext) => runAdvicers(ctx, ctx.advices.Around, anext, ctx.advices.syncAround)
-//             // ], ctx, next)
-
-//         });
-//         platform.context.set(AFTER_CTOR_ADVICES, scope);
-//     }
-//     return scope;
-// }
-
-
-// export class CtorAdvicesScope extends InterceptorChina<Joinpoint> {
-
-//     constructor(interceptors: InterceptorLike<Joinpoint>[] = [CtorBeforeAdviceAction, CtorAfterAdviceAction]) {
-//         super(interceptors)
-//     }
-//     override intercept(ctx: Joinpoint, next: Handler, context: Context) {
-//         if (ctx.methodName === ctorName) {
-//             return this.getChain()(ctx, toHandlerFn(next), context)
-//         } else {
-//             return next.handle(ctx, context)
-//         }
-//     }
-// }
-
-
-// export const CtorBeforeAdviceAction = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-//     if (ctx.state === JoinpointState.Before) {
-//         runChain<Joinpoint>([
-//             (ctx, bnext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Before, bnext, ctx.advices.syncBefore),
-//             (ctx, pnext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Pointcut, pnext, ctx.advices.syncPointcut),
-//             (ctx, anext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Around, anext, ctx.advices.syncAround)
-//         ], ctx, next)
-//     } else {
-//         next()
-//     }
-
-// }
-
-// export const CtorAfterAdviceAction = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-//     if (ctx.state === JoinpointState.After) {
-//         runChain<Joinpoint>([
-//             (ctx, anext) => runAdvicers(ctx, invokeAdvice, ctx.advices.After, anext, ctx.advices.syncAfter),
-//             (ctx, anext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Around, anext, ctx.advices.syncAround)
-//         ], ctx, next)
-//     } else {
-//         next()
-//     }
-// }
-
-// const methodAdvicesInterceptors: InterceptorLike<Joinpoint>[] = [
-//     BeforeAdvicesAction,
-//     PointcutAdvicesAction,
-//     ExecuteOriginMethodAction,
-//     AfterAdvicesAction,
-//     AfterReturningAdvicesAction,
-//     AfterThrowingAdvicesAction
-// ];
-
-// export class MethodAdvicesScope extends InterceptorChina<Joinpoint> {
-//     constructor(interceptors: InterceptorLike<Joinpoint>[] = methodAdvicesInterceptors) {
-//         super(interceptors)
-//     }
-// }
-
-
-// export const BeforeAdvicesAction = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-//     if (ctx.throwing) {
-//         return;
-//     }
-//     ctx.state = JoinpointState.Before;
-
-//     runChain<Joinpoint>([
-//         (ctx, anext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Around, anext, ctx.advices.syncAround),
-//         (ctx, bnext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Before, bnext, ctx.advices.syncBefore)
-//     ], ctx, next)
-// }
-
-// export const PointcutAdvicesAction = function (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-//     if (ctx.throwing) {
-//         return;
-//     }
-//     ctx.state = JoinpointState.Pointcut;
-//     runAdvicers(ctx, ctx.invokeHandle, ctx.advices.Pointcut, next, ctx.advices.syncPointcut)
-// }
-
-// export const ExecuteOriginMethodAction = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-//     if (ctx.throwing) {
-//         return next()
-//     }
-//     try {
-//         if (ctx.originProxy) {
-//             ctx.returning = ctx.originProxy(ctx)
-//         } else {
-//             ctx.returning = ctx.originMethod?.apply(ctx.target, ctx.args)
-//         }
-//     } catch (err) {
-//         ctx.throwing = err as Error
-//     }
-
-//     next()
-// }
-
-// export const AfterAdvicesAction = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-//     if (ctx.throwing) {
-//         return next()
-//     }
-//     ctx.state = JoinpointState.After;
-
-//     runChain<Joinpoint>([
-//         (ctx, anext) => runAdvicers(ctx, invokeAdvice, ctx.advices.Around, anext, ctx.advices.syncAround),
-//         (ctx, anext) => runAdvicers(ctx, invokeAdvice, ctx.advices.After, anext, ctx.advices.syncAfter)
-//     ], ctx, next)
-// }
-
-
-// export const AfterReturningAdvicesAction = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-//     if (ctx.throwing) {
-//         return next()
-//     }
-
-//     ctx.state = JoinpointState.AfterReturning;
-//     const invoker = ctx.invokeHandle;
-//     let isAsync = false;
-//     let returning = ctx.returning;
-//     const orgReturning = (ctx as any).originReturning = returning;
-
-//     if (isPromise(returning)) {
-//         isAsync = true
-//     } else if (isObservable(returning)) {
-//         isAsync = true;
-//         returning = lastValueFrom(returning)
-//     }
-//     if (isAsync && !ctx.returningDefer) {
-//         ctx.returningDefer = lang.defer()
-//     }
-
-//     runChain<Joinpoint, any>([
-//         (ctx, rnext) => isAsync ?
-//             (returning as Promise<any>).then(val => {
-//                 return (rnext() as Promise<any>)
-//                     .then(() => {
-//                         if (orgReturning !== ctx.returning) {
-//                             return ctx.returning
-//                         }
-//                         return val
-//                     })
-//                     .then(r => {
-//                         ctx.returningDefer?.resolve(r)
-//                     })
-//             }).catch(err => {
-//                 ctx.throwing = err;
-//                 next()
-//             }) : rnext()
-//         ,
-//         (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.syncAround || isAsync),
-//         (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.AfterReturning, anext, ctx.advices.syncAfterReturning || isAsync),
-//         (ctx, anext) => isAsync ? anext() : ctx.returningDefer?.resolve(ctx.returning)
-//     ], ctx)
-
-// }
-
-// export const AfterThrowingAdvicesAction = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
-//     if (!ctx.throwing) return next();
-
-//     ctx.state = JoinpointState.AfterThrowing;
-//     const invoker = ctx.invokeHandle;
-//     runChain<Joinpoint>([
-//         (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.Around, anext, ctx.advices.syncAround),
-//         (ctx, anext) => runAdvicers(ctx, invoker, ctx.advices.AfterThrowing, anext, ctx.advices.syncAfterThrowing)
-//     ], ctx, () => {
-//         ctx.returningDefer?.reject(ctx.throwing)
-//     })
-// }

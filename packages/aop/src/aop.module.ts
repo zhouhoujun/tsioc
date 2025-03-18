@@ -31,27 +31,9 @@ export class AopProvider {
             .set(ProceedingScope, proceeding);
 
 
-        // getRuntimeBeforeCtorScope(platform).use(beforeCtorAdvice, 0);
-        // getRuntimeAfterCtorScope(platform).use(afterCtorAdvice);
         platform.runtime.use(matchPointcut, platform.runtime.getIndexOf(initReflectInterceptor) + 1);
         platform.runtime.use(ctorAdvice, platform.runtime.getIndexOf(ctorInterceptor));
         getRuntimeMethodScope(platform).use(bindMthPointcut, 0);
-        
-
-        // platform.registerAction(ProceedingLifeScope);
-        // platform.setActionValue(Proceeding, platform.getAction(ProceedingLifeScope));
-
-        // platform.getAction(runtimes.BeforeCtorScope)
-        //     .useBefore(BeforeCtorAdviceAction);
-
-        // platform.getAction(runtimes.AfterCtorScope)
-        //     .use(AfterCtorAdviceAction);
-
-        // platform.getAction(runtimes.RuntimeMthScope)
-        //     .useBefore(BindMthPointcutAction);
-
-        // platform.getAction(RuntimeLifeScope)
-        //     .useBefore(MatchPointcutAction, runtimes.CtorArgsAction);
 
     }
 }

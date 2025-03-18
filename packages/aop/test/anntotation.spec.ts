@@ -49,7 +49,7 @@ describe('aop test', () => {
         @Inject({ defaultValue: new Date()})
         testAt!: Date;
         constructor() {
-
+            console.log('create MethodTest2')
         }
 
         @Autowired()
