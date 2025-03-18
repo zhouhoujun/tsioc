@@ -55,7 +55,7 @@ export class Advices {
 
     getPointcutHanlder(): HandlerFn | null {
         if (this._pointcutHanlder === undefined) {
-            const advices = [...this.maps.get('Pointcut') ?? [], ...this.maps.get('Around') ?? [] ];
+            const advices = this.maps.get('Pointcut');
             this._pointcutHanlder = advices?.length ? toHanlder(advices) : null;
         }
         return this._pointcutHanlder;
