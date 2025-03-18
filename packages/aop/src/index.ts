@@ -20,10 +20,10 @@ export * from './AdviceMatcher';
 export * from './Proceeding';
 export * from './Advisor';
 
-export * from './DefaultAdviceMatcher';
 export * from './aop.module';
 
 
-// actions
-export * from './actions/aop';
-export * from './actions/proceed';
+// impl
+// export * from './impl/DefaultAdviceMatcher';
+// export * from './impl/aop';
+// export * from './impl/proceed';
