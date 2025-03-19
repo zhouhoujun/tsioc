@@ -284,11 +284,11 @@ export function invokeTail<T>(invoker: () => Observable<T> | Promise<T> | T, nex
 
 const endHandler: HandlerFn = (res, context?: any) => res;
 
-export function composeHandlers(hanlders: HanlderLike[]): HandlerFn {
+export function composeHandlers(hanlders: HanlderLike[], interceptor?: (res: any, input: any, nextFn: HandlerFn, context?: any) => any): HandlerFn {
     return hanlders.reduceRight((next, handler) => {
         const invok = isFunction(handler) ? handler : (input: any, context?: any) => handler.handle(input, context);
         const nextFn = isFunction(next) ? next : (input: any, context?: any) => next.handle(input, context);
-        return (input: any, context?: any) => invokeTail(() => invok(input, context), (res) => nextFn(res ?? input, context));
+        return (input: any, context?: any) => invokeTail(() => invok(input, context), (res) => interceptor ? interceptor(res, input, nextFn, context) : nextFn(res ?? input, context));
     }, endHandler) as HandlerFn;
 }
 
