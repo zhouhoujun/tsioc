@@ -162,7 +162,7 @@ export class CheckRightAspect {
         // })
     ],
     providers: [
-        AuthorizationAspect,
+        // AuthorizationAspect,
         CheckRightAspect
     ],
     declarations: [
