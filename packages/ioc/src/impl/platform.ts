@@ -13,7 +13,6 @@ import { Context } from '../handler';
 import { RUNTIME_INTERCEPTORS } from '../lifescope/runtime';
 import { DESIGN_INTERECPTORS, registerHandler } from '../lifescope/design';
 
-
 /**
  * default platform implements {@link Platform}.
  */

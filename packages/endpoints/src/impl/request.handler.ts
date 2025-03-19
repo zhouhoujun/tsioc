@@ -1,5 +1,5 @@
 import { ArgumentExecption, Execption, Injector, InvocationContext, ProvdierOf, createContext, getClass } from '@tsdi/ioc';
-import { BackendFn, ConfigableHandler, HandlerFn, normalizeConfigableHandlerOptions } from '@tsdi/core';
+import { BackendFn, ConfigableHandler, InterceptorFn, normalizeConfigableHandlerOptions } from '@tsdi/core';
 import { ForbiddenExecption } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
 import { RequestContext } from '../RequestContext';
@@ -24,7 +24,7 @@ export class DefaultRequestHandler<TInput extends RequestContext = RequestContex
         return this;
     }
 
-    protected override getChain(input: TInput): HandlerFn<TInput, any> {
+    protected override getChain(input: TInput): InterceptorFn<TInput, any> {
         return this.getChainOf(getClass(input.request)) ?? super.getChain(input);
     }
 

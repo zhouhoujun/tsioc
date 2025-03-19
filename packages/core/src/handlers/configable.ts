@@ -1,4 +1,4 @@
-import { Injector, InvokerOptions, ProvdierOf, StaticProvider, ClassType, Abstract, Token, Type, InvokeProviders } from '@tsdi/ioc';
+import { Injector, ProvdierOf, StaticProvider, ClassType, Abstract, Token, Type, InvokeProviders } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { GuardLike, GuardsService } from '../guard';
 import { InterceptorLike, InterceptorService } from '../Interceptor';

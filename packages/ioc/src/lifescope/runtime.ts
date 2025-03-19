@@ -1,6 +1,6 @@
 import { createContext, InvocationContext } from '../context';
 import { ArgumentExecption, Execption } from '../execption';
-import { Context, ContextToken, HandlerFn, InterceptorFn, invokeTail } from '../handler';
+import { Context, ContextToken, HandlerFn, InterceptorFn, InterceptorLike, invokeTail } from '../handler';
 import { PropertyMetadata } from '../metadata/meta';
 import { ctorName, DecoratorFn, DecoratorScope, Decors } from '../metadata/type';
 import { Platform } from '../platform';
@@ -237,5 +237,5 @@ export const RUNTIME_INTERCEPTORS = [
     propertyInterceptor,
     ctorArgsInterceptor,
     ctorInterceptor
-]
+] as InterceptorLike<RuntimeContext>[]
 

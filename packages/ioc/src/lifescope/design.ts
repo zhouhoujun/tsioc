@@ -1,5 +1,5 @@
 import { InvocationContext } from '../context';
-import { Context, ContextToken, HandlerFn, invokeTail } from '../handler';
+import { Context, ContextToken, HandlerFn, InterceptorLike, invokeTail } from '../handler';
 import { FactoryRecord, FnType } from '../injector';
 import { DecoratorFn, DecoratorScope, Decors } from '../metadata/type';
 import { Platform } from '../platform';
@@ -198,4 +198,4 @@ export const DESIGN_INTERECPTORS = [
     autorunInterceptor,
     annoactionInterceptor,
     dependencyInterceptor
-]
+] as InterceptorLike<DesignContext>[];

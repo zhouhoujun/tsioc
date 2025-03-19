@@ -1,33 +1,22 @@
+import { Handler as IHandler, HandlerFn as IHandlerFn } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
+
+
+export { Handler as IHandler, HandlerFn as IHandlerFn } from '@tsdi/ioc';
 
 /**
  * `Handler` is the fundamental building block of handle.
  * 
  * 处理器基本构建块。
  */
-export interface Handler<TInput = any, TOutput = any, TContext = any> {
-    /**
-     * handle.
-     * 
-     * 处理句柄
-     * @param input handle input.
-     * @param context handle with context.
-     */
-    handle(input: TInput, context?: TContext): Observable<TOutput>;
+export interface Handler<TInput = any, TOutput = any, TContext = any> extends IHandler<TInput, Observable<TOutput>, TContext> {
 
-    /**
-     * is this equals to target or not
-     * 
-     * 该实例等于目标与否？
-     * @param target 
-     */
-    equals?(target: any): boolean;
 }
 
 /**
  * handler fn.
  */
-export type HandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, context?: TContext) => Observable<TOutput>;
+export type HandlerFn<TInput = any, TOutput = any, TContext = any> = IHandlerFn<TInput, Observable<TOutput>, TContext>;
 
 
 /**
