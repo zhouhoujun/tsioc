@@ -1,5 +1,5 @@
 import { tokenId } from '@tsdi/ioc';
-import { GuardLike, Filter, Interceptor } from '@tsdi/core';
+import { GuardLike, Filter, ApplicationInterceptor } from '@tsdi/core';
 import { ServiceConfig } from '@tsdi/endpoints';
 import { SocketOptions, BindOptions } from 'dgram';
 
@@ -22,7 +22,7 @@ export interface UdpServConfig extends ServiceConfig<SocketOptions> {
 /**
  * Token of ws server interceptors.
  */
-export const UDP_SERV_INTERCEPTORS = tokenId<Interceptor[]>('UDP_SERV_INTERCEPTORS');
+export const UDP_SERV_INTERCEPTORS = tokenId<ApplicationInterceptor[]>('UDP_SERV_INTERCEPTORS');
 
 /**
  * Token of ws filters.

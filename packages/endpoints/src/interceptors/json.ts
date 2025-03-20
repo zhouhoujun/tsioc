@@ -1,5 +1,5 @@
 import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
-import { Handler, Interceptor } from '@tsdi/core';
+import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
 import { ctype } from '@tsdi/common/transport';
 import { Observable, map } from 'rxjs';
 import { Middleware } from '../middleware/middleware';
@@ -16,7 +16,7 @@ export abstract class JsonOptions {
 
 
 @Injectable()
-export class JsonInterceptor implements Middleware<RequestContext>, Interceptor<RequestContext> {
+export class JsonInterceptor implements Middleware<RequestContext>, ApplicationInterceptor<RequestContext> {
     private pretty: boolean;
     private spaces: number;
     private paramName: string;
@@ -27,7 +27,7 @@ export class JsonInterceptor implements Middleware<RequestContext>, Interceptor<
         this.paramName = option?.param ?? '';
     }
 
-    intercept(input: RequestContext, next: Handler<RequestContext, any>, context?: any): Observable<any> {
+    intercept(input: RequestContext, next: ApplicationHandler<RequestContext, any>, context?: any): Observable<any> {
         return next.handle(input, context)
             .pipe(
                 map(res => {

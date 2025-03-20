@@ -1,5 +1,5 @@
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
-import { Handler, Interceptor } from '@tsdi/core';
+import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
 import { Observable, finalize, from, mergeMap } from 'rxjs';
 import { Middleware } from './middleware/middleware';
 import { RequestContext } from './RequestContext';
@@ -102,7 +102,7 @@ const defOpts = {
  * session.
  */
 @Injectable()
-export class Session implements Middleware<RequestContext>, Interceptor<RequestContext> {
+export class Session implements Middleware<RequestContext>, ApplicationInterceptor<RequestContext> {
 
     private options: SessionOptions;
     constructor(@Nullable() options: SessionOptions) {
@@ -112,7 +112,7 @@ export class Session implements Middleware<RequestContext>, Interceptor<RequestC
         }
     }
 
-    intercept(input: RequestContext, next: Handler<RequestContext, any>): Observable<any> {
+    intercept(input: RequestContext, next: ApplicationHandler<RequestContext, any>): Observable<any> {
         input.setValue(SessionOptions, this.options);
         const se = input.get(SessionAdapter);
         if (!se) return next.handle(input);

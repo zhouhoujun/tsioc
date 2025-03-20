@@ -1,6 +1,6 @@
 /* eslint-disable no-control-regex */
 import { Abstract, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
-import { Handler, Interceptor, InvalidJsonException } from '@tsdi/core';
+import { ApplicationHandler, ApplicationInterceptor, InvalidJsonException } from '@tsdi/core';
 import { BadRequestExecption, UnsupportedMediaTypeExecption, IReadable, MimeTypes, isBuffer } from '@tsdi/common/transport';
 import { RequestContext, Middleware } from '@tsdi/endpoints';
 import { Observable, from, mergeMap } from 'rxjs';
@@ -29,7 +29,7 @@ export class PayloadOptions {
 }
 
 @Injectable()
-export class BodyparserInterceptor implements Middleware<RequestContext>, Interceptor<RequestContext> {
+export class BodyparserInterceptor implements Middleware<RequestContext>, ApplicationInterceptor<RequestContext> {
 
     private options: {
         json: {
@@ -75,7 +75,7 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Interc
             || isBuffer(input.request.body);
     }
 
-    intercept(input: RequestContext, next: Handler<RequestContext, any>, context?: any): Observable<any> {
+    intercept(input: RequestContext, next: ApplicationHandler<RequestContext, any>, context?: any): Observable<any> {
         if (!this.canHanlde(input)) return next.handle(input, context);
         return from(this.parseBody(input))
             .pipe(

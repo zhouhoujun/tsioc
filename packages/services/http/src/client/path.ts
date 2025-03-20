@@ -1,5 +1,5 @@
 // import { Injectable } from '@tsdi/ioc';
-// import { Handler, Interceptor } from '@tsdi/core';
+// import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
 // import { AbstractClient } from '@tsdi/common/client';
 // import { HttpEvent, HttpRequest } from '@tsdi/common/http';
 // import { Observable } from 'rxjs';
@@ -7,11 +7,11 @@
 // const abstUrlExp = /^http(s)?:/;
 
 // @Injectable()
-// export class HttpPathInterceptor implements Interceptor<HttpRequest<any>, HttpEvent<any>> {
+// export class HttpPathInterceptor implements ApplicationInterceptor<HttpRequest<any>, HttpEvent<any>> {
 
 //     constructor() { }
 
-//     intercept(req: HttpRequest<any>, next: Handler<HttpRequest<any>, HttpEvent<any>>): Observable<HttpEvent<any>> {
+//     intercept(req: HttpRequest<any>, next: ApplicationHandler<HttpRequest<any>, HttpEvent<any>>): Observable<HttpEvent<any>> {
 //         let url = req.url.trim();
 //         if (!abstUrlExp.test(url)) {
 //             const context = req.context;

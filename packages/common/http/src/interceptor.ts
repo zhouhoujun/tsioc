@@ -1,5 +1,5 @@
 import { Injectable, Injector, tokenId } from '@tsdi/ioc';
-import { InterceptingHandler, Interceptor } from '@tsdi/core';
+import { InterceptingHandler, ApplicationInterceptor } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpRequest } from './request';
@@ -8,7 +8,7 @@ import { HttpEvent } from './response';
 /**
  * http interceptor.
  */
-export interface HttpInterceptor extends Interceptor<HttpRequest<any>, HttpEvent<any>> {
+export interface HttpInterceptor extends ApplicationInterceptor<HttpRequest<any>, HttpEvent<any>> {
     /**
      * the method to implemet interceptor.
      * @param req request.

@@ -1,5 +1,5 @@
 import { tokenId } from '@tsdi/ioc';
-import { Interceptor, Filter } from '@tsdi/core';
+import { ApplicationInterceptor, Filter } from '@tsdi/core';
 import { ResponseEvent, TopicRequestOptions } from '@tsdi/common';
 import { ClientConfig } from '@tsdi/common/client';
 import { QoS, UserProperties } from 'mqtt';
@@ -18,7 +18,7 @@ export interface MqttClientConfig extends ClientConfig<MqttConnectOpts> {
 /**
  * Mqtt client interceptors.
  */
-export const MQTT_CLIENT_INTERCEPTORS = tokenId<Interceptor<MqttRequest<any>, ResponseEvent<any>>[]>('MQTT_CLIENT_INTERCEPTORS');
+export const MQTT_CLIENT_INTERCEPTORS = tokenId<ApplicationInterceptor<MqttRequest<any>, ResponseEvent<any>>[]>('MQTT_CLIENT_INTERCEPTORS');
 
 /**
  * Mqtt client filters.

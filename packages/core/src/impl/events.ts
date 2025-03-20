@@ -2,8 +2,8 @@ import { ArgumentExecption, composeHandlers, getClass, InjectFlags, Handler as I
 import { forkJoin, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanHandle } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
-import { Interceptor } from '../Interceptor';
-import { Handler } from '../Handler';
+import { ApplicationInterceptor } from '../ApplicationInterceptor';
+import { ApplicationHandler } from '../ApplicationHandler';
 import { Filter } from '../filters/filter';
 import { ExecptionHandlerFilter } from '../filters/execption.filter';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
@@ -16,7 +16,7 @@ import { toObservable } from '../handlers';
 /**
  *  event multicaster interceptors multi token.
  */
-export const EVENT_MULTICASTER_INTERCEPTORS = tokenId<Interceptor<ApplicationEvent, any>[]>('EVENT_MULTICASTER_INTERCEPTORS');
+export const EVENT_MULTICASTER_INTERCEPTORS = tokenId<ApplicationInterceptor<ApplicationEvent, any>[]>('EVENT_MULTICASTER_INTERCEPTORS');
 
 /**
  *  event multicaster filters multi token.
@@ -29,7 +29,7 @@ export const EVENT_MULTICASTER_FILTERS = tokenId<Filter[]>('EVENT_MULTICASTER_FI
 export const EVENT_MULTICASTER_GUARDS = tokenId<CanHandle[]>('EVENT_MULTICASTER_GUARDS');
 
 
-export class DefaultEventMulticaster extends ApplicationEventMulticaster implements Handler<ApplicationEvent> {
+export class DefaultEventMulticaster extends ApplicationEventMulticaster implements ApplicationHandler<ApplicationEvent> {
 
     private _handler: ConfigableHandler<ApplicationEvent>;
     private maps: Map<Type, HandlerLike[]>;
@@ -54,7 +54,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         }
     }
 
-    get handler(): Handler<ApplicationEvent> {
+    get handler(): ApplicationHandler<ApplicationEvent> {
         return this._handler
     }
 
@@ -80,7 +80,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    useInterceptors(interceptors: ProvdierOf<Interceptor<ApplicationEvent, any>> | ProvdierOf<Interceptor<ApplicationEvent, any>>[], order?: number): this {
+    useInterceptors(interceptors: ProvdierOf<ApplicationInterceptor<ApplicationEvent, any>> | ProvdierOf<ApplicationInterceptor<ApplicationEvent, any>>[], order?: number): this {
         this._handler.useInterceptors(interceptors, order);
         return this;
     }
@@ -101,7 +101,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    removeListener(event: Type<ApplicationEvent>, handler: Handler): this {
+    removeListener(event: Type<ApplicationEvent>, handler: ApplicationHandler): this {
         const handlers = this.maps.get(event);
         if (handlers) {
             const idx = handlers.findIndex(i => (i as IHandler).equals ? (i as IHandler).equals?.(handler) : i === handler);

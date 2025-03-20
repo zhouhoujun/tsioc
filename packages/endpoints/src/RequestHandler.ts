@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { Handler } from '@tsdi/core';
+import { ApplicationHandler } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { RequestContext } from './RequestContext';
 
@@ -8,7 +8,7 @@ import { RequestContext } from './RequestContext';
  * Request handler, the fundamental building block of servers.
  */
 @Abstract()
-export abstract class RequestHandler<TContext extends RequestContext = RequestContext> implements Handler<TContext, any> {
+export abstract class RequestHandler<TContext extends RequestContext = RequestContext> implements ApplicationHandler<TContext, any> {
     /**
      * async providers ready.
      */

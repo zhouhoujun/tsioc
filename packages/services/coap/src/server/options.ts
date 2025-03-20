@@ -1,5 +1,5 @@
 import { tokenId } from '@tsdi/ioc';
-import { ExecptionFilter, Interceptor, GuardLike, Filter } from '@tsdi/core';
+import { ExecptionFilter, ApplicationInterceptor, GuardLike, Filter } from '@tsdi/core';
 import { BindServerEvent, ServiceConfig } from '@tsdi/endpoints';
 import { CoapServerOptions } from 'coap';
 
@@ -24,7 +24,7 @@ export const COAP_SERV_OPTS = tokenId<CoapServConfig>('COAP_SERV_OPTS');
 /**
  * CoAP server interceptors.
  */
-export const COAP_SERV_INTERCEPTORS = tokenId<Interceptor[]>('COAP_SERV_INTERCEPTORS');
+export const COAP_SERV_INTERCEPTORS = tokenId<ApplicationInterceptor[]>('COAP_SERV_INTERCEPTORS');
 /**
  * CoAP server filters.
  */
@@ -39,7 +39,7 @@ export const COAP_SERV_GUARDS = tokenId<GuardLike[]>('COAP_SERV_GUARDS');
 /**
  * Token of coap bind server interceptors.
  */
-export const COAP_BIND_INTERCEPTORS = tokenId<Interceptor<BindServerEvent>[]>('COAP_BIND_INTERCEPTORS');
+export const COAP_BIND_INTERCEPTORS = tokenId<ApplicationInterceptor<BindServerEvent>[]>('COAP_BIND_INTERCEPTORS');
 /**
  * Token of tcp bind server filters.
  */

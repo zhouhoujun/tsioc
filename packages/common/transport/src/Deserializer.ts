@@ -1,5 +1,5 @@
 import { Abstract, Injectable, Injector, InvocationContext, isString, tokenId } from '@tsdi/ioc';
-import { ConfigableHandlerOptions, createHandler, ExecptionHandlerFilter, FilterLike, Handler, InterceptorLike, InvalidJsonException } from '@tsdi/core';
+import { ConfigableHandlerOptions, createHandler, ExecptionHandlerFilter, FilterLike, ApplicationHandler, ApplicationInterceptorLike, InvalidJsonException } from '@tsdi/core';
 import { defer, Observable, of } from 'rxjs';
 import { TEXT_DECODER, TransportContext } from './context';
 import { isBuffer, toBuffer } from './StreamAdapter';
@@ -27,7 +27,7 @@ export abstract class DeserializerFactory {
 
 export class DefaultDeserializer<TIn = any, TOut = any> implements Deserializer<TIn, TOut> {
     constructor(
-        private handler: Handler<TIn, TOut>
+        private handler: ApplicationHandler<TIn, TOut>
     ) { }
 
     deserialize(input: TIn, context: TransportContext): Observable<TOut> {
@@ -36,7 +36,7 @@ export class DefaultDeserializer<TIn = any, TOut = any> implements Deserializer<
 
 }
 
-export const DESERIALIZER_INTERCEPTORS = tokenId<InterceptorLike[]>('DESERIALIZER_INTERCEPTORS');
+export const DESERIALIZER_INTERCEPTORS = tokenId<ApplicationInterceptorLike[]>('DESERIALIZER_INTERCEPTORS');
 export const DESERIALIZER_FILTERS = tokenId<FilterLike[]>('DESERIALIZER_FILTERS');
 
 

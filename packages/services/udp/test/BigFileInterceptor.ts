@@ -1,4 +1,4 @@
-import { Handler, Interceptor } from '@tsdi/core';
+import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
 import { Injectable, lang } from '@tsdi/ioc';
 import { RequestContext } from '@tsdi/endpoints';
 import { Observable, from } from 'rxjs';
@@ -11,8 +11,8 @@ import { ctype } from '@tsdi/common/transport';
 
 
 @Injectable()
-export class BigFileInterceptor implements Interceptor {
-    intercept(input: RequestContext, next: Handler<any, any>): Observable<any> {
+export class BigFileInterceptor implements ApplicationInterceptor {
+    intercept(input: RequestContext, next: ApplicationHandler<any, any>): Observable<any> {
 
         if (input.url == 'content/big.json') {
             return from(this.genedata(input))

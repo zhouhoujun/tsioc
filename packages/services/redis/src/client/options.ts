@@ -1,5 +1,5 @@
 import { tokenId } from '@tsdi/ioc';
-import { Filter, Interceptor } from '@tsdi/core';
+import { Filter, ApplicationInterceptor } from '@tsdi/core';
 import { ResponseEvent } from '@tsdi/common';
 import { ClientConfig } from '@tsdi/common/client';
 import { RedisOptions } from 'ioredis';
@@ -22,7 +22,7 @@ export interface RedisClientConfig extends ClientConfig<RedisOptions> {
 /**
  * REDIS client interceptors.
  */
-export const REDIS_CLIENT_INTERCEPTORS = tokenId<Interceptor<RedisRequest<any>, ResponseEvent<any>>[]>('REDIS_CLIENT_INTERCEPTORS');
+export const REDIS_CLIENT_INTERCEPTORS = tokenId<ApplicationInterceptor<RedisRequest<any>, ResponseEvent<any>>[]>('REDIS_CLIENT_INTERCEPTORS');
 /**
  * REDIS client filters.
  */

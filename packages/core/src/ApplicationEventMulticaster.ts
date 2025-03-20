@@ -4,8 +4,8 @@ import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { Filter } from './filters/filter';
 import { CanHandle } from './guard';
-import { Handler } from './Handler';
-import { Interceptor } from './Interceptor';
+import { ApplicationHandler } from './ApplicationHandler';
+import { ApplicationInterceptor } from './ApplicationInterceptor';
 import { PipeTransform } from './pipes/pipe';
 import { HandlerService } from './handlers/configable';
 
@@ -48,7 +48,7 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * @param interceptor 
      * @param order 
      */
-    abstract useInterceptors(interceptor: ProvdierOf<Interceptor<ApplicationEvent, any>> | ProvdierOf<Interceptor<ApplicationEvent, any>>[], order?: number): this;
+    abstract useInterceptors(interceptor: ProvdierOf<ApplicationInterceptor<ApplicationEvent, any>> | ProvdierOf<ApplicationInterceptor<ApplicationEvent, any>>[], order?: number): this;
     /**
      * use filter
      * @param filter 
@@ -66,7 +66,7 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * @param event 
      * @param handler 
      */
-    abstract removeListener(event: Type<ApplicationEvent>, handler: Handler): this;
+    abstract removeListener(event: Type<ApplicationEvent>, handler: ApplicationHandler): this;
     /**
      * emit event. ailas name of publishEvent
      * @param event the event to publish

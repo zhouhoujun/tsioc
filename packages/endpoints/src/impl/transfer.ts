@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { Handler } from '@tsdi/core';
+import { ApplicationHandler } from '@tsdi/core';
 import { AbstractTransferFactory, Incoming, TopicIncoming, TransferOpts, TransportContext, UrlIncoming } from '@tsdi/common/transport';
 import { RequestContext } from '../RequestContext';
 import { ServerTransfer, ServerTransferFactory } from '../transfer';
@@ -50,7 +50,7 @@ export class DefaultServerTransferFactory extends AbstractTransferFactory<Incomi
         }
     }
 
-    protected override createInstace(handler: Handler): ServerTransfer {
+    protected override createInstace(handler: ApplicationHandler): ServerTransfer {
         return new ServerTransfer(handler);
     }
 }

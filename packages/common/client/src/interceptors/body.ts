@@ -1,5 +1,5 @@
 import { isNil, isString } from '@tsdi/ioc';
-import { HandlerFn, InterceptorFn } from '@tsdi/core';
+import { ApplicationHandlerFn, ApplicationInterceptorFn } from '@tsdi/core';
 import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, RequestParams, AbstractRequest } from '@tsdi/common';
 import { IStream, Packet, StreamAdapter } from '@tsdi/common/transport';
 import { defer, mergeMap } from 'rxjs';
@@ -13,7 +13,7 @@ import { ClientTransport } from '../transport';
  * @param context 
  * @returns 
  */
-export const bodyServializeInterceptor: InterceptorFn<AbstractRequest<any> & RequestSerialize, Packet> = (req: AbstractRequest<any> & RequestSerialize, next: HandlerFn, context?: any) => {
+export const bodyServializeInterceptor: ApplicationInterceptorFn<AbstractRequest<any> & RequestSerialize, Packet> = (req: AbstractRequest<any> & RequestSerialize, next: ApplicationHandlerFn, context?: any) => {
 
     const transport = req.context.get(ClientTransport)!;
     let body = req.serializeBody ? req.serializeBody(req.body) : serializeBody(transport.streamAdapter, req.body);

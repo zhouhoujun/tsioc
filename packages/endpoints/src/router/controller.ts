@@ -1,5 +1,5 @@
 import { Class, DecorDefine, Decors, Injectable, Injector, isString, OnDestroy, ReflectiveRef, tokenId, Type } from '@tsdi/ioc';
-import { Backend, Handler, CanHandle, Interceptor, Filter, setHandlerOptions, ConfigableHandler, BackendFn } from '@tsdi/core';
+import { Backend, ApplicationHandler, CanHandle, ApplicationInterceptor, Filter, setHandlerOptions, ConfigableHandler, BackendFn } from '@tsdi/core';
 import { joinPath, normalize } from '@tsdi/common';
 import { NotFoundExecption, PushDisabledExecption } from '@tsdi/common/transport';
 
@@ -10,7 +10,7 @@ import { MappingDef, RouteMappingMetadata } from './router';
 import { RequestContext } from '../RequestContext';
 
 
-export const CTRL_INTERCEPTORS = tokenId<Interceptor[]>('CTRL_INTERCEPTORS');
+export const CTRL_INTERCEPTORS = tokenId<ApplicationInterceptor[]>('CTRL_INTERCEPTORS');
 export const CTRL_GUARDS = tokenId<CanHandle[]>('CTRL_GUARDS');
 export const CTRL_FILTERS = tokenId<Filter[]>('CTRL_FILTERS');
 
@@ -21,7 +21,7 @@ export const CTRL_FILTERS = tokenId<Filter[]>('CTRL_FILTERS');
  */
 export class ControllerRoute<T> extends ConfigableHandler<RequestContext, any, RouteHandlerOptions> implements Middleware<RequestContext>, OnDestroy {
 
-    private routes: Map<string, Handler>;
+    private routes: Map<string, ApplicationHandler>;
     protected sortRoutes: DecorDefine<RouteMappingMetadata>[];
     readonly prefix: string;
 

@@ -8,8 +8,8 @@ import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent, ApplicationStartupEvent } from '../events';
 import { PipeTransform } from '../pipes/pipe';
 import { CanHandle } from '../guard';
-import { Handler } from '../Handler';
-import { Interceptor } from '../Interceptor';
+import { ApplicationHandler } from '../ApplicationHandler';
+import { ApplicationInterceptor } from '../ApplicationInterceptor';
 import { Filter } from '../filters/filter';
 import { ExecptionHandlerFilter } from '../filters/execption.filter';
 import { handlerFactory } from '../handlers/handler';
@@ -22,7 +22,7 @@ import { NotHandleExecption } from '../execptions';
 /**
  *  Application runner interceptors multi token
  */
-export const APP_RUNNERS_INTERCEPTORS = tokenId<Interceptor<HandleContext>[]>('APP_RUNNERS_INTERCEPTORS');
+export const APP_RUNNERS_INTERCEPTORS = tokenId<ApplicationInterceptor<HandleContext>[]>('APP_RUNNERS_INTERCEPTORS');
 
 /**
  *  Application runner filters multi token
@@ -36,7 +36,7 @@ export const APP_RUNNERS_GUARDS = tokenId<CanHandle[]>('APP_RUNNERS_GUARDS');
 
 
 @Injectable()
-export class DefaultApplicationRunners extends ApplicationRunners implements Handler {
+export class DefaultApplicationRunners extends ApplicationRunners implements ApplicationHandler {
     private _types: Type[];
     private _maps: Map<Type, HandlerLike[]>;
     private _refs: Map<Type, ReflectiveRef[]>;
@@ -58,7 +58,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         return this._refs.size;
     }
 
-    get handler(): Handler {
+    get handler(): ApplicationHandler {
         return this._handler
     }
 
@@ -72,7 +72,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         return this;
     }
 
-    useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this {
+    useInterceptors(interceptor: ProvdierOf<ApplicationInterceptor> | ProvdierOf<ApplicationInterceptor>[], order?: number): this {
         this._handler.useInterceptors(interceptor, order);
         return this;
     }

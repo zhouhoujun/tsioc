@@ -1,5 +1,5 @@
 import { tokenId } from '@tsdi/ioc';
-import { GuardLike, Filter, Interceptor } from '@tsdi/core';
+import { GuardLike, Filter, ApplicationInterceptor } from '@tsdi/core';
 import { ServiceConfig } from '@tsdi/endpoints';
 import { RedisOptions } from 'ioredis';
 
@@ -17,7 +17,7 @@ export interface RedisServConfig extends ServiceConfig<RedisOptions> {
 /**
  * Redis server interceptors.
  */
-export const REDIS_SERV_INTERCEPTORS = tokenId<Interceptor[]>('REDIS_SERV_INTERCEPTORS');
+export const REDIS_SERV_INTERCEPTORS = tokenId<ApplicationInterceptor[]>('REDIS_SERV_INTERCEPTORS');
 
 /**
  * Redis server filters.

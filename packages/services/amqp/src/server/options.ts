@@ -1,4 +1,4 @@
-import { Interceptor, Filter, GuardLike } from '@tsdi/core';
+import { ApplicationInterceptor, Filter, GuardLike } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ServiceConfig } from '@tsdi/endpoints';
 import * as amqp from 'amqplib';
@@ -20,7 +20,7 @@ export interface AmqpServConfig extends ServiceConfig<string | amqp.Options.Conn
 /**
  * Amqp server interceptors.
  */
-export const AMQP_SERV_INTERCEPTORS = tokenId<Interceptor[]>('AMQP_SERV_INTERCEPTORS');
+export const AMQP_SERV_INTERCEPTORS = tokenId<ApplicationInterceptor[]>('AMQP_SERV_INTERCEPTORS');
 
 /**
  * Amqp server filters.

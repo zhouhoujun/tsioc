@@ -1,6 +1,6 @@
 import { Abstract, DefaultInvocationContext, Execption, getClass, lang, Injectable, Injector, InvokeArguments, isPromise, isUndefined, composeHandlers } from '@tsdi/ioc';
 import { catchError, finalize, isObservable, mergeMap, Observable, of, throwError } from 'rxjs';
-import { Handler } from '../Handler';
+import { ApplicationHandler } from '../ApplicationHandler';
 import { Filter, FilterHandlerResolver } from './filter';
 import { HandleContext } from '../handlers/context';
 import { toObservable } from '../handlers';
@@ -41,7 +41,7 @@ export abstract class ExecptionFilter<TInput = any, TOutput = any, TContext = an
      * @param next The next interceptor in the chain, or the backend
      * @returns any
      */
-    doFilter(input: TInput, next: Handler<TInput, TOutput>, context?: TContext): Observable<any> {
+    doFilter(input: TInput, next: ApplicationHandler<TInput, TOutput>, context?: TContext): Observable<any> {
         return next.handle(input, context)
             .pipe(
                 catchError((err, caught) => {

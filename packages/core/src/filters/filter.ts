@@ -1,7 +1,7 @@
 import { Abstract, chainEndFn, chainFactory, getTokenOf, HandlerFn, isFunction, ProvdierOf, Token, tokenId, Type, TypeOf, HandlerLike } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { Handler } from '../Handler';
-import { InterceptorFn } from '../Interceptor';
+import { ApplicationHandler } from '../ApplicationHandler';
+import { ApplicationInterceptorFn } from '../ApplicationInterceptor';
 
 
 /**
@@ -18,7 +18,7 @@ export abstract class Filter<TInput = any, TOutput = any, TContext = any> {
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    abstract doFilter(input: TInput, next: Handler<TInput, TOutput>, context?: TContext): Observable<TOutput>;
+    abstract doFilter(input: TInput, next: ApplicationHandler<TInput, TOutput>, context?: TContext): Observable<TOutput>;
 
     /**
      * is this equals to target or not
@@ -34,7 +34,7 @@ export abstract class Filter<TInput = any, TOutput = any, TContext = any> {
  * 
  * 处理器过滤方法。
  */
-export type FilterFn<TInput = any, TOutput = any, TContext = any> = InterceptorFn<TInput, TOutput, TContext>;
+export type FilterFn<TInput = any, TOutput = any, TContext = any> = ApplicationInterceptorFn<TInput, TOutput, TContext>;
 
 /**
  * filter like

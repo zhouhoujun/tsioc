@@ -1,5 +1,5 @@
 import { composeHandlers, object2string, isNil, invokeTail } from '@tsdi/ioc';
-import { HandlerFn } from '@tsdi/core';
+import { ApplicationHandlerFn } from '@tsdi/core';
 import { Advicer } from './Advicer';
 import { AdviceTypes, AroundMetadata } from '../metadata/meta';
 import { Joinpoint } from '../joinpoints/Joinpoint';
@@ -12,11 +12,11 @@ import { Joinpoint } from '../joinpoints/Joinpoint';
  */
 export class Advices {
     maps: Map<AdviceTypes, Advicer[]>;
-    private _beforeHanlder?: HandlerFn | null;
-    private _afterHanlder?: HandlerFn | null;
-    private _pointcutHanlder?: HandlerFn | null;
-    private _afterThrowingHanlder?: HandlerFn | null;
-    private _afterReturninHanlder?: HandlerFn | null;
+    private _beforeHanlder?: ApplicationHandlerFn | null;
+    private _afterHanlder?: ApplicationHandlerFn | null;
+    private _pointcutHanlder?: ApplicationHandlerFn | null;
+    private _afterThrowingHanlder?: ApplicationHandlerFn | null;
+    private _afterReturninHanlder?: ApplicationHandlerFn | null;
 
 
     constructor() {
@@ -45,7 +45,7 @@ export class Advices {
         }
     }
 
-    getBeforeHanlder(): HandlerFn | null {
+    getBeforeHanlder(): ApplicationHandlerFn | null {
         if (this._beforeHanlder === undefined) {
             const advices = [...this.maps.get('Around') ?? [], ...this.maps.get('Before') ?? []];
             this._beforeHanlder = advices?.length ? toHanlder(advices) : null;
@@ -53,7 +53,7 @@ export class Advices {
         return this._beforeHanlder;
     }
 
-    getPointcutHanlder(): HandlerFn | null {
+    getPointcutHanlder(): ApplicationHandlerFn | null {
         if (this._pointcutHanlder === undefined) {
             const advices = this.maps.get('Pointcut');
             this._pointcutHanlder = advices?.length ? toHanlder(advices) : null;
@@ -61,21 +61,21 @@ export class Advices {
         return this._pointcutHanlder;
     }
 
-    getAfterHanlder(): HandlerFn | null {
+    getAfterHanlder(): ApplicationHandlerFn | null {
         if (this._afterHanlder === undefined) {
             const advices = [...this.maps.get('Around') ?? [], ...this.maps.get('After') ?? []];
             this._afterHanlder = advices?.length ? toHanlder(advices) : null;
         }
         return this._afterHanlder;
     }
-    getAfterThrowingHanlder(): HandlerFn | null {
+    getAfterThrowingHanlder(): ApplicationHandlerFn | null {
         if (this._afterThrowingHanlder === undefined) {
             const advices = [...this.maps.get('Around') ?? [], ...this.maps.get('AfterThrowing') ?? []];
             this._afterThrowingHanlder = advices?.length ? toHanlder(advices) : null;
         }
         return this._afterThrowingHanlder;
     }
-    getAfterReturningHanlder(): HandlerFn | null {
+    getAfterReturningHanlder(): ApplicationHandlerFn | null {
         if (this._afterReturninHanlder === undefined) {
             const advices = [...this.maps.get('Around') ?? [], ...this.maps.get('AfterReturning') ?? []];
             this._afterReturninHanlder = advices?.length ? toHanlder(advices) : null;
@@ -84,7 +84,7 @@ export class Advices {
     }
 }
 
-function toHanlder(advices: Advicer[]): HandlerFn<Joinpoint> {
+function toHanlder(advices: Advicer[]): ApplicationHandlerFn<Joinpoint> {
     return composeHandlers(advices.map(a=> (input: Joinpoint, context?: any)=> invokeAdvice(input, a)));
 }
 function equals(a: Advicer, b: Advicer) {

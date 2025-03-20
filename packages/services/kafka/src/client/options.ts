@@ -1,5 +1,5 @@
 import { Token, tokenId } from '@tsdi/ioc';
-import { Filter, Interceptor } from '@tsdi/core';
+import { Filter, ApplicationInterceptor } from '@tsdi/core';
 import { Pattern, ResponseEvent } from '@tsdi/common';
 import { ClientConfig } from '@tsdi/common/client';
 import { ConsumerConfig, ConsumerRunConfig, KafkaConfig, ProducerConfig, ProducerRecord } from 'kafkajs';
@@ -31,7 +31,7 @@ export interface KafkaClientConfig extends ClientConfig<KafkaConfig> {
 /**
  * Kafka client interceptors.
  */
-export const KAFKA_CLIENT_INTERCEPTORS = tokenId<Interceptor<KafkaRequest<any>, ResponseEvent<any>>[]>('KAFKA_CLIENT_INTERCEPTORS');
+export const KAFKA_CLIENT_INTERCEPTORS = tokenId<ApplicationInterceptor<KafkaRequest<any>, ResponseEvent<any>>[]>('KAFKA_CLIENT_INTERCEPTORS');
 /**
  * Kafka client filters.
  */

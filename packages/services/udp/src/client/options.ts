@@ -1,4 +1,4 @@
-import { Filter, Interceptor } from '@tsdi/core';
+import { Filter, ApplicationInterceptor } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ResponseEvent } from '@tsdi/common';
 import { TransportOptions } from '@tsdi/common/transport';
@@ -25,7 +25,7 @@ export interface UdpClientConfig extends ClientConfig<SocketOptions> {
 /**
  * UDP client interceptors.
  */
-export const UDP_CLIENT_INTERCEPTORS = tokenId<Interceptor<UdpRequest<any>, ResponseEvent<any>>[]>('UDP_CLIENT_INTERCEPTORS');
+export const UDP_CLIENT_INTERCEPTORS = tokenId<ApplicationInterceptor<UdpRequest<any>, ResponseEvent<any>>[]>('UDP_CLIENT_INTERCEPTORS');
 /**
  * UDP client filters.
  */

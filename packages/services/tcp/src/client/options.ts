@@ -1,5 +1,5 @@
 import { tokenId } from '@tsdi/ioc';
-import { Interceptor, Filter } from '@tsdi/core';
+import { ApplicationInterceptor, Filter } from '@tsdi/core';
 import { ResponseEvent } from '@tsdi/common';
 import { ClientConfig } from '@tsdi/common/client';
 import { ConnectionOptions } from 'tls';
@@ -26,7 +26,7 @@ export interface TcpClientConfig extends ClientConfig<NetConnectOpts | Connectio
 /**
  * tcp client interceptors.
  */
-export const TCP_CLIENT_INTERCEPTORS = tokenId<Interceptor<TcpRequest<any>, ResponseEvent<any>>[]>('TCP_CLIENT_INTERCEPTORS');
+export const TCP_CLIENT_INTERCEPTORS = tokenId<ApplicationInterceptor<TcpRequest<any>, ResponseEvent<any>>[]>('TCP_CLIENT_INTERCEPTORS');
 /**
  * tcp client filters.
  */

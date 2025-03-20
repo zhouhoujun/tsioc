@@ -1,5 +1,5 @@
 import { tokenId } from '@tsdi/ioc';
-import { ExecptionFilter, Interceptor } from '@tsdi/core';
+import { ExecptionFilter, ApplicationInterceptor } from '@tsdi/core';
 import { ResponseEvent } from '@tsdi/common';
 import { ClientConfig, ClientOpts } from '@tsdi/common/client';
 import { OptionName } from 'coap-packet';
@@ -41,7 +41,7 @@ export const COAP_CLIENT_OPTS = tokenId<CoapClientConfig>('COAP_CLIENT_OPTS');
 /**
  * Coap client interceptors token.
  */
-export const COAP_CLIENT_INTERCEPTORS = tokenId<Interceptor<CoapRequest<any>, ResponseEvent<any>[]>>('COAP_INTERCEPTORS');
+export const COAP_CLIENT_INTERCEPTORS = tokenId<ApplicationInterceptor<CoapRequest<any>, ResponseEvent<any>[]>>('COAP_INTERCEPTORS');
 
 /**
  * Coap client filters token.

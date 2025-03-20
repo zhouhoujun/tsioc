@@ -8,7 +8,7 @@ import { DefaultApplicationFactory } from './impl/context';
 import { DefaultEventMulticaster } from './impl/events';
 import { InvocationFactoryResolverImpl } from './impl/invocation';
 import { InvocationFactoryResolver } from './invocation';
-import { InterceptorResolver } from './Interceptor';
+import { InterceptorResolver } from './ApplicationInterceptor';
 import { FilterHandlerResolver, FilterResolver } from './filters/filter';
 import { DefaultFilterResolver, DefaultFiterHandlerMethodResolver, DefaultInterceptorResolver } from './filters/filter.impl';
 import { ExecptionHandlerFilter } from './filters/execption.filter';

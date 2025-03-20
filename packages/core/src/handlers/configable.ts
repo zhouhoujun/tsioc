@@ -1,9 +1,9 @@
 import { Injector, ProvdierOf, StaticProvider, ClassType, Abstract, Token, Type, InvokeProviders } from '@tsdi/ioc';
 import { GuardLike, GuardsService } from '../guard';
-import { InterceptorLike, InterceptorService } from '../Interceptor';
+import { ApplicationInterceptorLike, InterceptorService } from '../ApplicationInterceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
 import { FilterLike, FilterService } from '../filters/filter';
-import { Backend, BackendFn, Handler } from '../Handler';
+import { Backend, BackendFn, ApplicationHandler } from '../ApplicationHandler';
 import { Observable } from 'rxjs';
 
 
@@ -24,7 +24,7 @@ export abstract class AbstractConfigableHandler<
     TInput = any,
     TOutput = any,
     TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>,
-    TContext = any> implements Handler<TInput, TOutput, TContext>, HandlerService {
+    TContext = any> implements ApplicationHandler<TInput, TOutput, TContext>, HandlerService {
     abstract get injector(): Injector;
     abstract get ready(): Promise<void>;
 
@@ -46,7 +46,7 @@ export abstract class AbstractConfigableHandler<
      * @param order 
      * @returns 
      */
-    abstract useInterceptors(interceptor: ProvdierOf<InterceptorLike> | ProvdierOf<InterceptorLike>[], order?: number): this;
+    abstract useInterceptors(interceptor: ProvdierOf<ApplicationInterceptorLike> | ProvdierOf<ApplicationInterceptorLike>[], order?: number): this;
 
     /**
      * use guards for the handler.
@@ -88,7 +88,7 @@ export interface GuardHandlerOptions<TInput = any> extends BackendOptions<TInput
     /**
      * interceptors token.
      */
-    interceptorsToken?: Token<InterceptorLike<TInput>[]>;
+    interceptorsToken?: Token<ApplicationInterceptorLike<TInput>[]>;
     /**
      * guards tokens.
      */
@@ -113,7 +113,7 @@ export interface HandlerOptions<TInput = any> extends InvokeProviders {
     /**
      * interceptors of bootstrap.
      */
-    interceptors?: ProvdierOf<InterceptorLike<TInput>>[];
+    interceptors?: ProvdierOf<ApplicationInterceptorLike<TInput>>[];
     /**
      * pipes for the bootstrap.
      */
@@ -132,7 +132,7 @@ export interface ConfigableHandlerOptions<TInput = any> extends HandlerOptions<T
     /**
      * handler type.
      */
-    handlerType?: Type<Handler>;
+    handlerType?: Type<ApplicationHandler>;
     /**
      * enable input type filters and interceptors chain for handler.
      */

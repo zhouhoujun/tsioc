@@ -1,20 +1,20 @@
 import { composeInterceptors, isFunction, isPromise } from '@tsdi/ioc';
 import { Observable, isObservable, of, from } from 'rxjs';
-import { Backend, Handler, HandlerFn } from '../Handler';
-import { InterceptorFn, InterceptorLike } from '../Interceptor';
+import { Backend, ApplicationHandler, ApplicationHandlerFn } from '../ApplicationHandler';
+import { ApplicationInterceptorFn, ApplicationInterceptorLike } from '../ApplicationInterceptor';
 
 
 /**
  * intercepting hnalder.
  */
-export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> implements Handler<TInput, TOutput, TContext> {
+export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> implements ApplicationHandler<TInput, TOutput, TContext> {
 
-    private chain?: InterceptorFn<TInput, TOutput, TContext> | null;
-    private backend: HandlerFn;
+    private chain?: ApplicationInterceptorFn<TInput, TOutput, TContext> | null;
+    private backend: ApplicationHandlerFn;
 
     constructor(
-        backend: Backend<TInput, TOutput, TContext> | HandlerFn,
-        private interceptors: InterceptorLike[] | (() => InterceptorLike[]) = []
+        backend: Backend<TInput, TOutput, TContext> | ApplicationHandlerFn,
+        private interceptors: ApplicationInterceptorLike[] | (() => ApplicationInterceptorLike[]) = []
     ) {
         if (isFunction(backend)) {
             this.backend = backend
@@ -34,7 +34,7 @@ export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> im
         this.chain = null;
     }
 
-    protected compose(): InterceptorFn<TInput, TOutput> {
+    protected compose(): ApplicationInterceptorFn<TInput, TOutput> {
         return composeInterceptors(isFunction(this.interceptors) ? this.interceptors() : this.interceptors)
     }
 }

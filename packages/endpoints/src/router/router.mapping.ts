@@ -3,7 +3,7 @@ import {
     Execption, isArray, isPromise, isObservable, isBoolean
 } from '@tsdi/ioc';
 import {
-    Handler, CanHandle, getGuardsToken, getInterceptorsToken,
+    ApplicationHandler, CanHandle, getGuardsToken, getInterceptorsToken,
     getFiltersToken, setHandlerOptions, createHandler
 } from '@tsdi/core';
 import { Pattern, PatternFormatter, Protocols, defaultFormatter, joinPath, normalize } from '@tsdi/common';
@@ -100,7 +100,7 @@ export class MappingRouter extends Router<RouteHanlder> implements Middleware, O
         }
     }
 
-    intercept(ctx: RequestContext, next: Handler<any, any>): Observable<any> {
+    intercept(ctx: RequestContext, next: ApplicationHandler<any, any>): Observable<any> {
         return this.handle(ctx, () => next.handle(ctx))
     }
 

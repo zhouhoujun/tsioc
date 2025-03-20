@@ -1,5 +1,5 @@
 import { tokenId } from '@tsdi/ioc';
-import { GuardLike, Filter, Interceptor } from '@tsdi/core';
+import { GuardLike, Filter, ApplicationInterceptor } from '@tsdi/core';
 import { ServiceConfig } from '@tsdi/endpoints';
 import { IClientSubscribeOptions, IClientPublishOptions } from 'mqtt';
 import { MqttConnectOpts } from '../connect';
@@ -20,7 +20,7 @@ export interface MqttServConfig extends ServiceConfig<MqttConnectOpts> {
 /**
  * Mqtt server interceptors.
  */
-export const MQTT_SERV_INTERCEPTORS = tokenId<Interceptor[]>('MQTT_SERV_INTERCEPTORS');
+export const MQTT_SERV_INTERCEPTORS = tokenId<ApplicationInterceptor[]>('MQTT_SERV_INTERCEPTORS');
 
 /**
  * Mqtt server interceptors.

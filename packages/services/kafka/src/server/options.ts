@@ -1,4 +1,4 @@
-import { GuardLike, Filter, Interceptor } from '@tsdi/core';
+import { GuardLike, Filter, ApplicationInterceptor } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ServiceConfig } from '@tsdi/endpoints';
 import { ConsumerConfig, KafkaConfig, ProducerConfig, ConsumerRunConfig, ProducerRecord } from 'kafkajs';
@@ -28,7 +28,7 @@ export interface KafkaServConfig extends ServiceConfig<KafkaConfig> {
 /**
  * Kafka server interceptors.
  */
-export const KAFKA_SERV_INTERCEPTORS = tokenId<Interceptor[]>('KAFKA_SERV_INTERCEPTORS');
+export const KAFKA_SERV_INTERCEPTORS = tokenId<ApplicationInterceptor[]>('KAFKA_SERV_INTERCEPTORS');
 
 /**
  * Kafka server filters.

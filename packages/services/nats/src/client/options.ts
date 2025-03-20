@@ -1,4 +1,4 @@
-import { Interceptor, Filter } from '@tsdi/core';
+import { ApplicationInterceptor, Filter } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ResponseEvent } from '@tsdi/common';
 import { ClientConfig } from '@tsdi/common/client';
@@ -31,7 +31,7 @@ export interface NatsClientConfig extends ClientConfig<ConnectionOptions> {
 /**
  * NATS client interceptors.
  */
-export const NATS_CLIENT_INTERCEPTORS = tokenId<Interceptor<NatsRequest<any>, ResponseEvent<any>>[]>('NATS_CLIENT_INTERCEPTORS');
+export const NATS_CLIENT_INTERCEPTORS = tokenId<ApplicationInterceptor<NatsRequest<any>, ResponseEvent<any>>[]>('NATS_CLIENT_INTERCEPTORS');
 /**
  * NATS client filters.
  */

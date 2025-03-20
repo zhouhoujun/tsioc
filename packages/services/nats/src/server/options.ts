@@ -1,4 +1,4 @@
-import { Interceptor, Filter, GuardLike } from '@tsdi/core';
+import { ApplicationInterceptor, Filter, GuardLike } from '@tsdi/core';
 import { tokenId } from '@tsdi/ioc';
 import { ServiceConfig } from '@tsdi/endpoints';
 import { ConnectionOptions, PublishOptions, SubscriptionOptions } from 'nats';
@@ -27,7 +27,7 @@ export interface NatsServConfig extends ServiceConfig<ConnectionOptions> {
 /**
  * Nats server interceptors.
  */
-export const NATS_SERV_INTERCEPTORS = tokenId<Interceptor[]>('NATS_SERV_INTERCEPTORS');
+export const NATS_SERV_INTERCEPTORS = tokenId<ApplicationInterceptor[]>('NATS_SERV_INTERCEPTORS');
 
 /**
  * Nats server filters.
