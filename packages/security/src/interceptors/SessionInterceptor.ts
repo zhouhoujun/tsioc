@@ -1,14 +1,15 @@
-import { Incoming, Outgoing, OutgoingMessage } from '@tsdi/common/transport';
-import { Handler, Interceptor } from '@tsdi/core';
-import { RequestContext, ServiceConfig } from '@tsdi/endpoints';
+import { Injectable } from '@tsdi/ioc';
+import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
+import { OutgoingMessage } from '@tsdi/common/transport';
+import { RequestContext } from '@tsdi/endpoints';
 import { Observable } from 'rxjs';
 
 
+@Injectable()
+export class SessionInterceptor implements ApplicationInterceptor<RequestContext, OutgoingMessage> {
 
-export class SessionInterceptor implements Interceptor<RequestContext, OutgoingMessage> {
-
-    intercept(input: RequestContext, next: Handler, context?: any): Observable<any> {
-        next.handle(input, context)
+    intercept(input: RequestContext, next: ApplicationHandler, context?: any): Observable<any> {
+        return next.handle(input, context)
     }
-    
+
 }

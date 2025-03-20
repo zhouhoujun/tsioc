@@ -39,22 +39,12 @@ export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> im
     }
 }
 
-
+/**
+ * parse response to `Observable`
+ */
 export function toObservable<T>(res: T): Observable<T> {
     if (isObservable(res)) {
         return res as Observable<T>;
     }
     return isPromise(res) ? from(res) : of(res);
-}
-
-/**
- * handler factory.
- * @param fn 
- * @returns 
- */
-export function handlerFactory<TInput = any, TOutput = any, TContext = any>(fn: (ctx: TInput, context?: TContext) => TOutput | Observable<TOutput> | Promise<TOutput>) {
-    const handle = (input: TInput, context?: TContext) => toObservable(fn(input, context));
-    return {
-        handle
-    }
 }
