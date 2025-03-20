@@ -1,35 +1,11 @@
 import * as ts from 'typescript'
-import * as through from 'through2';
-import { createFilter } from '@rollup/pluginutils';
-import { Plugin } from 'rollup';
 
 
-const tsChkExp = /\.ts$/;
+
+export const tsChkExp = /^(?!.*\.d\.ts$).*\.ts$/;
 const replEmpty = /\s*$/;
 const constructorName = 'constructor';
-/**
- * attach class Annotations before typescript ts compile.
- *
- * @export
- * @param {string} [annotationField='classAnnations']
- * @returns
- */
-export function classAnnotations() {
-    return through.obj(function (file, encoding, callback) {
-        if (file.isNull()) {
-            return callback(null, file)
-        }
 
-        if (file.isStream()) {
-            return callback('doesn\'t support Streams')
-        }
-
-        let contents: string = file.contents.toString('utf8');
-        contents = iocAnnotations(contents);
-        file.contents = Buffer.from(contents);
-        callback(null, file)
-    })
-}
 
 export function iocAnnotations(contents: string): string {
     // fix typescript '$' bug when create source file.
@@ -95,42 +71,4 @@ export function iocAnnotations(contents: string): string {
 
 }
 
-export interface AnnOptions {
-    include?: string | string[];
-    exclude?: string | string[];
-}
 
-/**
- * rollup class Annotations for ioc.
- *
- * @export
- * @param {*} options
- * @returns
- */
-export function rollupClassAnnotations(options?: AnnOptions): Plugin {
-    options = options || {};
-    const filter = createFilter(options.include, options.exclude);
-    return {
-        name: 'classAnnations',
-        transform(code, id) {
-            if (!filter(id) && !tsChkExp.test(id)) {
-                return null
-            }
-            return new Promise((resolve) => {
-                try {
-                    resolve({
-                        code: iocAnnotations(code),
-                        map: null
-                    });
-                } catch (err: any) {
-                    // istanbul ignore else
-                    if ('position' in err && this.error) {
-                        this.error(err.message, err.position)
-                    } else {
-                        throw err
-                    }
-                }
-            });
-        },
-    }
-}

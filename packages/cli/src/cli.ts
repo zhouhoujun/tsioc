@@ -51,11 +51,10 @@ program
                 console.log(chalk.gray('init activity project...'));
                 cmds = [
                     '@tsdi/ioc',
-                    '@tsdi/core',
                     '@tsdi/annotations',
                     '@tsdi/aop',
                     '@tsdi/logger',
-                    '@tsdi/boot',
+                    '@tsdi/core',
                     '@tsdi/activities'
                 ];
                 if (options.browser) {
@@ -75,11 +74,10 @@ program
                 console.log(chalk.gray('init pack project...'));
                 cmds = [
                     '@tsdi/ioc',
-                    '@tsdi/core',
                     '@tsdi/annotations',
                     '@tsdi/aop',
                     '@tsdi/logger',
-                    '@tsdi/boot',
+                    '@tsdi/core',
                     '@tsdi/platform-server',
                     '@tsdi/activities',
                     '@tsdi/platform-server/activities',
@@ -95,11 +93,10 @@ program
                 console.log(chalk.gray('init boot project...'));
                 cmds = [
                     '@tsdi/ioc',
-                    '@tsdi/core',
                     '@tsdi/annotations',
                     '@tsdi/aop',
-                    '@tsdi/logger',
-                    '@tsdi/boot'
+                    '@tsdi/core',
+                    '@tsdi/logger'
                 ];
                 if (options.browser) {
                     cmds.push('@tsdi/platform-browser');
