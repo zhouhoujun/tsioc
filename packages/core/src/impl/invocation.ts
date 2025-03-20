@@ -1,6 +1,6 @@
 import { Class, Injectable, InvocationContext, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, createContext, getClass, isFunction, isNumber, isPromise, isString, lang } from '@tsdi/ioc';
 import { Observable, from, isObservable, lastValueFrom, of } from 'rxjs';
-import { ApplicationHandlerFn } from '../ApplicationHandler';
+import { BackendFn } from '../ApplicationHandler';
 import { InvocationOptions, Respond, TypedRespond, InvocationFactory, InvocationFactoryResolver, InvocationHandler, } from '../invocation';
 import { ConfigableHandler } from '../handlers/configable.impl';
 import { ResultValue } from '../handlers/ResultValue';
@@ -40,7 +40,7 @@ export class InvocationHandlerImpl<
         return this.invoker.equals(target.invoker);
     }
 
-    protected override getBackend(): ApplicationHandlerFn<TInput, TOutput> {
+    protected override getBackend(): BackendFn<TInput, TOutput> {
         return (input: any, context?: TContext) => from(this.respond(input, context));
     }
 
@@ -93,7 +93,6 @@ export class InvocationHandlerImpl<
 
     protected attchContext(input: InvocationContext, context: TContext, nextData?: any) {
         if (context instanceof Context) {
-            // isDefined(nextData) && context.next(nextData);
             input.setValue(Context, context);
         }
         input.setValue(getClass(context), context);

@@ -182,18 +182,6 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
             }
             return of(r);
         })(event));
-        
-
-        // return handlers.reduce(($obs, h) => {
-        //     return $obs.pipe(
-        //         mergeMap(r => {
-        //             if (r !== false || !event.propagation) {
-        //                 return h.handle(event)
-        //             }
-        //             return of(r);
-        //         })
-        //     )
-        // }, of(undefined))
     }
 
     clear(): void {

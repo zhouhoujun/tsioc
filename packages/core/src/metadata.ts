@@ -719,7 +719,3 @@ export const Topic: TransportParameterDecorator = createParamDecorator('Topic', 
         meta.scope = 'topic'
     }
 });
-
-
-export const Serializable = createDecorator('Serializable', {
-})
