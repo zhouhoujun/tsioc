@@ -1,10 +1,10 @@
 import { Injector, ProvdierOf, StaticProvider, ClassType, Abstract, Token, Type, InvokeProviders } from '@tsdi/ioc';
-import { Observable } from 'rxjs';
 import { GuardLike, GuardsService } from '../guard';
 import { InterceptorLike, InterceptorService } from '../Interceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
 import { FilterLike, FilterService } from '../filters/filter';
 import { Backend, BackendFn, Handler } from '../Handler';
+import { Observable } from 'rxjs';
 
 
 
@@ -46,7 +46,7 @@ export abstract class AbstractConfigableHandler<
      * @param order 
      * @returns 
      */
-    abstract useInterceptors(interceptor: ProvdierOf<InterceptorLike<TInput, TOutput>> | ProvdierOf<InterceptorLike<TInput, TOutput>>[], order?: number): this;
+    abstract useInterceptors(interceptor: ProvdierOf<InterceptorLike> | ProvdierOf<InterceptorLike>[], order?: number): this;
 
     /**
      * use guards for the handler.

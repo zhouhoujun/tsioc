@@ -8,7 +8,7 @@ export class LifeScope<TInput = any> extends BaseChain<TInput> implements Handle
         private backend: HandlerFn<TInput>,
         interceptors: InterceptorLike<TInput>[] = []
     ) {
-        super(interceptors)
+        super(interceptors.slice())
     }
 
     handle(input: any, context?: any, next?: NextOpter<any>|((input: TInput) => any)) {

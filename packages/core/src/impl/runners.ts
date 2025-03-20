@@ -1,6 +1,6 @@
 import {
-    isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, refl, ProvdierOf, getClassName,
-    StaticProviders, ReflectiveFactory, isArray, ArgumentExecption, ReflectiveRef, StaticProvider
+    isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, refl, ProvdierOf, getClassName, ReflectiveFactory,
+    StaticProviders, isArray, ArgumentExecption, ReflectiveRef, StaticProvider, HandlerLike, composeHandlers
 } from '@tsdi/ioc';
 import { finalize, forkJoin, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { ApplicationRunners, RunnableFactory, RunnableRef } from '../ApplicationRunners';
@@ -38,7 +38,7 @@ export const APP_RUNNERS_GUARDS = tokenId<CanHandle[]>('APP_RUNNERS_GUARDS');
 @Injectable()
 export class DefaultApplicationRunners extends ApplicationRunners implements Handler {
     private _types: Type[];
-    private _maps: Map<Type, Handler[]>;
+    private _maps: Map<Type, HandlerLike[]>;
     private _refs: Map<Type, ReflectiveRef[]>;
     private _handler: ConfigableHandler;
     constructor(
@@ -202,7 +202,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
     }
 
     handle(context: HandleContext<any>): Observable<any> {
-        let handlers: Handler[] | undefined;
+        let handlers: HandlerLike[] | undefined;
         if (isFunction(context.args)) {
             handlers = this._maps.get(context.args)
         } else if (isArray(context.args)) {
@@ -213,7 +213,10 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         } else {
             return throwError(() => new ArgumentExecption('input type unknow'))
         }
-        if (handlers && handlers.length) return forkJoin(handlers.map(h => h.handle(context)));
+        if (handlers && handlers.length)  {
+            return composeHandlers(handlers)(context);
+            // forkJoin(handlers.map(h => h.handle(context)));
+        }
         return throwError(() => new NotHandleExecption(context, context.args));
     }
 

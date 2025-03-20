@@ -1,4 +1,4 @@
-import { Abstract, StaticProvider, Type, ProvdierOf } from '@tsdi/ioc';
+import { Abstract, StaticProvider, Type, ProvdierOf, HandlerLike } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
@@ -60,7 +60,7 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * @param event 
      * @param handler 
      */
-    abstract addListener(event: Type<ApplicationEvent>, handler: Handler, order?: number): this;
+    abstract addListener(event: Type<ApplicationEvent>, handler: HandlerLike, order?: number): this;
     /**
      * add event handler.
      * @param event 

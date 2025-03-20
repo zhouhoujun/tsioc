@@ -1,4 +1,4 @@
-import { ArgumentExecption, getClass, InjectFlags, Injector, ProvdierOf, StaticProvider, tokenId, Type } from '@tsdi/ioc';
+import { ArgumentExecption, composeHandlers, getClass, InjectFlags, Handler as IHandler, HandlerLike, Injector, ProvdierOf, StaticProvider, tokenId, Type } from '@tsdi/ioc';
 import { forkJoin, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanHandle } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
@@ -10,6 +10,7 @@ import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { PayloadApplicationEvent } from '../events';
+import { toObservable } from '../handlers';
 
 
 /**
@@ -30,8 +31,8 @@ export const EVENT_MULTICASTER_GUARDS = tokenId<CanHandle[]>('EVENT_MULTICASTER_
 
 export class DefaultEventMulticaster extends ApplicationEventMulticaster implements Handler<ApplicationEvent> {
 
-    private _handler: ConfigableHandler<ApplicationEvent, any>;
-    private maps: Map<Type, Handler[]>;
+    private _handler: ConfigableHandler<ApplicationEvent>;
+    private maps: Map<Type, HandlerLike[]>;
     protected _children: ApplicationEventMulticaster[];
 
     readonly parent: ApplicationEventMulticaster | null;
@@ -53,7 +54,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         }
     }
 
-    get handler(): Handler<ApplicationEvent, any> {
+    get handler(): Handler<ApplicationEvent> {
         return this._handler
     }
 
@@ -89,10 +90,10 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    addListener(event: Type<ApplicationEvent>, handler: Handler, order = -1): this {
+    addListener(event: Type<ApplicationEvent>, handler: HandlerLike, order = -1): this {
         const handlers = this.maps.get(event);
         if (handlers) {
-            if (handlers.some(i => i.equals ? i.equals(handler) : i === handler)) return this;
+            if (handlers.some(i => (i as IHandler).equals ? (i as IHandler).equals?.(handler) : i === handler)) return this;
             order >= 0 ? handlers.splice(order, 0, handler) : handlers.push(handler);
         } else {
             this.maps.set(event, [handler]);
@@ -103,7 +104,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     removeListener(event: Type<ApplicationEvent>, handler: Handler): this {
         const handlers = this.maps.get(event);
         if (handlers) {
-            const idx = handlers.findIndex(i => i.equals ? i.equals(handler) : i === handler);
+            const idx = handlers.findIndex(i => (i as IHandler).equals ? (i as IHandler).equals?.(handler) : i === handler);
             if (idx >= 0) {
                 handlers.splice(idx, 1);
             }
@@ -175,16 +176,24 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         const handlers = this.maps.get(getClass(event));
         if (!handlers || !handlers.length) return of(undefined);
 
-        return handlers.reduce(($obs, h) => {
-            return $obs.pipe(
-                mergeMap(r => {
-                    if (r !== false || !event.propagation) {
-                        return h.handle(event)
-                    }
-                    return of(r);
-                })
-            )
-        }, of(undefined))
+       return toObservable(composeHandlers(handlers, (r, next)=> {
+            if (r !== false || !event.propagation) {
+                return next(event)
+            }
+            return of(r);
+        })(event));
+        
+
+        // return handlers.reduce(($obs, h) => {
+        //     return $obs.pipe(
+        //         mergeMap(r => {
+        //             if (r !== false || !event.propagation) {
+        //                 return h.handle(event)
+        //             }
+        //             return of(r);
+        //         })
+        //     )
+        // }, of(undefined))
     }
 
     clear(): void {

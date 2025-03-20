@@ -1,8 +1,9 @@
-import { Abstract, DefaultInvocationContext, Execption, getClass, lang, Injectable, Injector, InvokeArguments, isPromise, isUndefined } from '@tsdi/ioc';
+import { Abstract, DefaultInvocationContext, Execption, getClass, lang, Injectable, Injector, InvokeArguments, isPromise, isUndefined, composeHandlers } from '@tsdi/ioc';
 import { catchError, finalize, isObservable, mergeMap, Observable, of, throwError } from 'rxjs';
 import { Handler } from '../Handler';
 import { Filter, FilterHandlerResolver } from './filter';
 import { HandleContext } from '../handlers/context';
+import { toObservable } from '../handlers';
 
 
 /**
@@ -107,16 +108,12 @@ export class ExecptionHandlerFilter<TInput, TOutput = any, TContext = any> exten
 
         const expcption = new ExecptionContext(err, input, injector);
 
-        return handlers.reduce(($obs, h) => {
-            return $obs.pipe(
-                mergeMap(r => {
-                    if (isUndefined(r)) {
-                        return h.handle(expcption, context)
-                    }
-                    return of(r);
-                })
-            )
-        }, of(undefined)).pipe(
+        return toObservable(composeHandlers(handlers, (res, next, input, context) => {
+            if (isUndefined(res)) {
+                return next(expcption, context)
+            }
+            return of(res);
+        })(expcption, context)).pipe(
             catchError((err1, caugh) => {
                 err1.originExecption = err;
                 err1.message = `${err1.message}\r\n${err.toString()}`;
@@ -126,6 +123,26 @@ export class ExecptionHandlerFilter<TInput, TOutput = any, TContext = any> exten
                 expcption.destroy();
             })
         );
+
+        // return handlers.reduce(($obs, h) => {
+        //     return $obs.pipe(
+        //         mergeMap(r => {
+        //             if (isUndefined(r)) {
+        //                 return h.handle(expcption, context)
+        //             }
+        //             return of(r);
+        //         })
+        //     )
+        // }, of(undefined)).pipe(
+        //     catchError((err1, caugh) => {
+        //         err1.originExecption = err;
+        //         err1.message = `${err1.message}\r\n${err.toString()}`;
+        //         return throwError(() => err1)
+        //     }),
+        //     finalize(() => {
+        //         expcption.destroy();
+        //     })
+        // );
     }
 
 }

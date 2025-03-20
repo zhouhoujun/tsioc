@@ -36,9 +36,9 @@ export interface HandlerFn<TInput = any, TOutput = any, TContext = any> extends 
 }
 
 /**
- * hanlder like
+ * handler like
  */
-export type HanlderLike<TInput = any, TOutput = any, TContext = any> = HandlerFn<TInput, TOutput, TContext> | Handler<TInput, TOutput, TContext>;
+export type HandlerLike<TInput = any, TOutput = any, TContext = any> = HandlerFn<TInput, TOutput, TContext> | Handler<TInput, TOutput, TContext>;
 
 /**
  * Interceptor is a chainable behavior modifier for `hanlders`.
@@ -141,11 +141,10 @@ export function toInterceptorFn(interceptor: Interceptor): InterceptorFn {
 export class BaseChain<TInput = any, TOutput = any, TContext = any> {
 
     private _chain?: InterceptorFn<TInput, TOutput, TContext> | null;
-    private interceptors: InterceptorLike<TInput>[];
+
     constructor(
-        interceptors: InterceptorLike<TInput>[] = []
+        private interceptors: InterceptorLike<TInput>[] = []
     ) {
-        this.interceptors = interceptors.slice(0);
     }
 
     /**
@@ -284,11 +283,11 @@ export function invokeTail<T>(invoker: () => Observable<T> | Promise<T> | T, nex
 
 const endHandler: HandlerFn = (res, context?: any) => res;
 
-export function composeHandlers(hanlders: HanlderLike[], interceptor?: (res: any, input: any, nextFn: HandlerFn, context?: any) => any): HandlerFn {
+export function composeHandlers(hanlders: HandlerLike[], interceptor?: (res: any, nextFn: HandlerFn, input: any, context?: any) => any): HandlerFn {
     return hanlders.reduceRight((next, handler) => {
         const invok = isFunction(handler) ? handler : (input: any, context?: any) => handler.handle(input, context);
         const nextFn = isFunction(next) ? next : (input: any, context?: any) => next.handle(input, context);
-        return (input: any, context?: any) => invokeTail(() => invok(input, context), (res) => interceptor ? interceptor(res, input, nextFn, context) : nextFn(res ?? input, context));
+        return (input: any, context?: any) => invokeTail(() => invok(input, context), (res) => interceptor ? interceptor(res,  nextFn, input, context) : nextFn(res ?? input, context));
     }, endHandler) as HandlerFn;
 }
 

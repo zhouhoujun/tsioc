@@ -1,8 +1,5 @@
-import { Handler as IHandler, HandlerFn as IHandlerFn } from '@tsdi/ioc';
+import { Handler as IHandler, HandlerFn as IHandlerFn, HandlerLike as IHandlerLike } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-
-
-export { Handler as IHandler, HandlerFn as IHandlerFn } from '@tsdi/ioc';
 
 /**
  * `Handler` is the fundamental building block of handle.
@@ -18,6 +15,10 @@ export interface Handler<TInput = any, TOutput = any, TContext = any> extends IH
  */
 export type HandlerFn<TInput = any, TOutput = any, TContext = any> = IHandlerFn<TInput, Observable<TOutput>, TContext>;
 
+/**
+ * handler like.
+ */
+export type HandlerLike<TInput = any, TOutput = any, TContext = any> = IHandlerLike<TInput, Observable<TOutput>, TContext>;
 
 /**
  * `Backend` is backend handler of services.
@@ -36,4 +37,4 @@ export interface Backend<TInput = any, TOutput = any, TContext = any> extends Ha
 /**
  * backend fn.
  */
-export type BackendFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, context?: TContext) => Observable<TOutput>;
+export type BackendFn<TInput = any, TOutput = any, TContext = any> = HandlerFn<TInput, TOutput, TContext>;

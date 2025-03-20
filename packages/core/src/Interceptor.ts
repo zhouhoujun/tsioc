@@ -5,7 +5,8 @@ import {
 import { Observable } from 'rxjs';
 
 
-export { Interceptor as IInterceptor, InterceptorFn as IInterceptorFn, InterceptorLike as IInterceptorLike } from '@tsdi/ioc';
+// export { Interceptor, InterceptorFn, InterceptorLike } from '@tsdi/ioc';
+
 /**
  * Interceptor is a chainable behavior modifier for `hanlders`.
  * 

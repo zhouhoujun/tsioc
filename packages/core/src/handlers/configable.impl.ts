@@ -1,6 +1,6 @@
 import {
     InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType, lang, promiseOf, Execption, toProvider, Type, getClass, Token,
-    InvocationContext, createContext, isClassType, ArgumentExecption, isToken, isArray,  isFunction, composeInterceptors, chainFactory
+    InvocationContext, createContext, isClassType, ArgumentExecption, isToken, isArray, isFunction, composeInterceptors, chainFactory
 } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';

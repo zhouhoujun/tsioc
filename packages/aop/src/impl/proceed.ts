@@ -126,7 +126,7 @@ const CTOR_ADVICES_CHAIN = new ContextToken<InterceptorChina>(() => null!);
 export function getCtorAdvicesScope(platform: Platform): InterceptorChina<Joinpoint> {
     let chain = platform.context.get(CTOR_ADVICES_CHAIN);
     if (!chain) {
-        chain = new InterceptorChina<Joinpoint>(ADVICES_INTERCEPTORS);
+        chain = new InterceptorChina<Joinpoint>(ADVICES_INTERCEPTORS.slice());
         platform.context.set(CTOR_ADVICES_CHAIN, chain);
     }
     return chain;

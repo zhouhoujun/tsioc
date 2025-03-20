@@ -1,4 +1,4 @@
-import { Abstract, chainEndFn, chainFactory, getTokenOf, HandlerFn, isFunction, ProvdierOf, Token, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { Abstract, chainEndFn, chainFactory, getTokenOf, HandlerFn, isFunction, ProvdierOf, Token, tokenId, Type, TypeOf, HandlerLike } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { Handler } from '../Handler';
 import { InterceptorFn } from '../Interceptor';
@@ -18,7 +18,7 @@ export abstract class Filter<TInput = any, TOutput = any, TContext = any> {
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    abstract doFilter(input: TInput, next: Handler, context?: TContext): Observable<TOutput>;
+    abstract doFilter(input: TInput, next: Handler<TInput, TOutput>, context?: TContext): Observable<TOutput>;
 
     /**
      * is this equals to target or not
@@ -107,20 +107,20 @@ export abstract class FilterHandlerResolver {
      * resolve filter hanlde.
      * @param filter 
      */
-    abstract resolve<T>(filter: Type<T> | T | string): Handler[];
+    abstract resolve<T>(filter: Type<T> | T | string): HandlerLike[];
     /**
      * add filter handle.
      * @param filter filter type
      * @param handler filter handler.
      * @param order order.
      */
-    abstract addHandle(filter: Type | string, handler: Handler, order?: number): this;
+    abstract addHandle(filter: Type | string, handler: HandlerLike, order?: number): this;
     /**
      * remove filter handle.
      * @param filter filter type.
      * @param handler filter handler.
      */
-    abstract removeHandle(filter: Type | string, handler: Handler): this;
+    abstract removeHandle(filter: Type | string, handler: HandlerLike): this;
 }
 
 

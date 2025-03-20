@@ -1,4 +1,4 @@
-import { getClass, isFunction, isString, Type, ArgumentExecption, Injector, InjectFlags } from '@tsdi/ioc';
+import { getClass, isFunction, isString, Type, ArgumentExecption, Injector, InjectFlags, HandlerLike } from '@tsdi/ioc';
 import { Handler } from '../Handler';
 import { Filter, FilterHandlerResolver, FilterLike, FilterResolver } from './filter';
 import { Interceptor, InterceptorLike, InterceptorResolver } from '../Interceptor';
@@ -89,11 +89,11 @@ export class DefaultFilterResolver implements FilterResolver {
  */
 export class DefaultFiterHandlerMethodResolver implements FilterHandlerResolver {
 
-    private maps = new Map<Type | string, Handler[]>();
+    private maps = new Map<Type | string, HandlerLike[]>();
 
     constructor(private injector: Injector) { }
 
-    resolve<T>(target: Type<T> | T | string): Handler[] {
+    resolve<T>(target: Type<T> | T | string): HandlerLike[] {
         const handlers = this.maps.get(isString(target) ? target : (isFunction(target) ? target : getClass(target))) ?? [];
         const resolver = this.injector.get(FilterHandlerResolver, null, InjectFlags.SkipSelf);
 
@@ -106,7 +106,7 @@ export class DefaultFiterHandlerMethodResolver implements FilterHandlerResolver 
         return handlers;
     }
 
-    addHandle(filter: Type | string, handler: Handler, order?: number): this {
+    addHandle(filter: Type | string, handler: HandlerLike, order?: number): this {
         if (!handler) {
             throw new ArgumentExecption('handler missing');
         }
@@ -114,7 +114,7 @@ export class DefaultFiterHandlerMethodResolver implements FilterHandlerResolver 
         if (!hds) {
             hds = [handler];
             this.maps.set(filter, hds)
-        } else if (!hds.some(h => h.equals ? h.equals(handler) : h === handler)) {
+        } else if (!hds.some(h => (h as Handler).equals ? (h as Handler).equals?.(handler) : h === handler)) {
             hds.push(handler)
         }
         return this
@@ -123,7 +123,7 @@ export class DefaultFiterHandlerMethodResolver implements FilterHandlerResolver 
     removeHandle(filter: Type | string, handler: Handler): this {
         const hds = this.maps.get(filter);
         if (!hds) return this;
-        const idx = hds.findIndex(h => h.equals ? h.equals(handler) : h === handler);
+        const idx = hds.findIndex(h => (h as Handler).equals ? (h as Handler).equals?.(handler) : h === handler);
         if (idx > 0) hds.splice(idx, 1);
         return this
     }
