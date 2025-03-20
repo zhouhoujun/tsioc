@@ -14,13 +14,19 @@ export interface ApplicationInterceptor<TInput = any, TOutput = any, TContext = 
 }
 
 /**
- * InterceptorFn is a chainable behavior modifier for `hanlders`.
+ * Application interceptor function is a chainable behavior modifier for `hanlders`.
  * 拦截方法，用于链接多个处理器，组合成处理器串。
  */
 export type ApplicationInterceptorFn<TInput = any, TOutput = any, TContext = any> = InterceptorFn<TInput, Observable<TOutput>, TContext>;
 
+/**
+ * Application interceptor like.
+ */
 export type ApplicationInterceptorLike<TInput = any, TOutput = any, TContext = any> = InterceptorLike<TInput, Observable<TOutput>, TContext>
 
+/**
+ * Application interceptor service.
+ */
 export interface InterceptorService {
     /**
      * use interceptors
