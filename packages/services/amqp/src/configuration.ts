@@ -1,5 +1,5 @@
 import { InjectFlags, isString } from '@tsdi/ioc';
-import { Bean, Configuration, ContextToken, ExecptionHandlerFilter, HandlerFn, InterceptorFn } from '@tsdi/core';
+import { Bean, Configuration, ContextToken, ExecptionHandlerFilter, ApplicationHandlerFn, ApplicationInterceptorFn } from '@tsdi/core';
 import { DefaultResponseFactory, HeaderAdapter, IHeaders, parseQueryString, ResponseFactory } from '@tsdi/common';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
@@ -18,9 +18,7 @@ import {
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter, TopicRequestContext,
     lengthLimitSerializeInterceptor, SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
     contextBodySerializeBackend, execptionMessageSerializeInterceptor,
-    JsonInterceptor,
-    BodyparserInterceptor,
-    limitedReadableSerializeInterceptor,
+    JsonInterceptor, BodyparserInterceptor, limitedReadableSerializeInterceptor,
 } from '@tsdi/endpoints';
 import { filter, fromEvent, map } from 'rxjs';
 import { AmqpClient } from './client/client';
@@ -30,7 +28,6 @@ import { AmqpServer } from './server/server';
 import { AMQP_SERV_FILTERS, AMQP_SERV_GUARDS, AMQP_SERV_INTERCEPTORS, AmqpServConfig } from './server/options';
 import { AmqpRequestHandler } from './server/handler';
 import { AmqpRequest } from './client/request';
-// import { AmqpSocket, AMQP_MESSAGE } from './socket';
 import { Channel, ConsumeMessage } from 'amqplib';
 
 
@@ -39,7 +36,7 @@ const AMQP_MESSAGE = new ContextToken<ConsumeMessage>(() => null!);
 const sizeLimit = 1048576; // 1024 * 1024;
 // const defaultMaxSize = 524288; //1024 * 512;
 
-const attachIncomingHeaders: InterceptorFn = (input: any, next: HandlerFn, context: TransportContext) => {
+const attachIncomingHeaders: ApplicationInterceptorFn = (input: any, next: ApplicationHandlerFn, context: TransportContext) => {
     return next(input, context)
         .pipe(
             map(body => {

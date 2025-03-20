@@ -1,13 +1,11 @@
 import { InjectFlags, isString } from '@tsdi/ioc';
-import { Bean, Configuration, ExecptionHandlerFilter, HandlerFn, InterceptorFn } from '@tsdi/core';
+import { Bean, Configuration, ExecptionHandlerFilter, ApplicationHandlerFn, ApplicationInterceptorFn } from '@tsdi/core';
 import { DefaultResponseFactory, HeaderAdapter, IHeaders, LOCALHOST, parseQueryString, ResponseFactory } from '@tsdi/common';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
-    FileAdapter, MimeAdapter, NotSupportedExecption, bodyDesrializeBackend,
-    messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
-    StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory,
-    TransportContext,
-    IReadable
+    IReadable, FileAdapter, MimeAdapter, NotSupportedExecption, bodyDesrializeBackend,
+    messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter, TransportContext,
+    StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory
 } from '@tsdi/common/transport';
 import {
     RESPONSE_TRANSFER_INTERCEPTORS, bodyServializeInterceptor,
@@ -21,9 +19,7 @@ import {
     lengthLimitSerializeInterceptor, contextBodySerializeBackend,
     execptionMessageSerializeInterceptor, emptyStatusSerializeInterceptor,
     HttpExecptionHandlers, HttpStatusAdapter, noBodySerializeInterceptor,
-    JsonInterceptor,
-    BodyparserInterceptor,
-    limitedReadableSerializeInterceptor
+    JsonInterceptor, BodyparserInterceptor, limitedReadableSerializeInterceptor
 } from '@tsdi/endpoints';
 import { map } from 'rxjs';
 import { NatsClient } from './client/client';
@@ -41,7 +37,7 @@ import { NatsPatternFormatter } from './pattern';
 const sizeLimit = 1048576; // 1024 * 1024;
 // const defaultMaxSize = 524288; //1024 * 512;
 
-const attachIncomingHeaders: InterceptorFn = (input: any, next: HandlerFn, context: TransportContext) => {
+const attachIncomingHeaders: ApplicationInterceptorFn = (input: any, next: ApplicationHandlerFn, context: TransportContext) => {
     return next(input, context)
         .pipe(
             map(body => {

@@ -1,14 +1,12 @@
 import { InjectFlags, isString } from '@tsdi/ioc';
-import { Bean, Configuration, ExecptionHandlerFilter, HandlerFn, InterceptorFn } from '@tsdi/core';
+import { Bean, Configuration, ExecptionHandlerFilter, ApplicationHandlerFn, ApplicationInterceptorFn } from '@tsdi/core';
 import { DefaultResponseFactory, HeaderAdapter, IHeaders as Headers, parseQueryString, ResponseFactory } from '@tsdi/common';
 import {
-    deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
-    FileAdapter, MimeAdapter, NotSupportedExecption, Packet,
+    deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, 
+    DeserializerFactory, FileAdapter, MimeAdapter, NotSupportedExecption, 
     messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory,
-    TransportContext,
-    IReadable,
-    bodyDesrializeBackend
+    TransportContext, IReadable, bodyDesrializeBackend
 } from '@tsdi/common/transport';
 import {
     bodyServializeInterceptor,
@@ -19,12 +17,9 @@ import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
     ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
     execptionMessageSerializeInterceptor, lengthLimitSerializeInterceptor,
-    SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
-    TopicRequestContext, contextBodySerializeBackend,
-    JsonInterceptor, BodyparserInterceptor,
-    noBodySerializeInterceptor,
-    limitedReadableSerializeInterceptor
-    
+    SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts, TopicRequestContext,
+    contextBodySerializeBackend, limitedReadableSerializeInterceptor,
+    JsonInterceptor, BodyparserInterceptor, noBodySerializeInterceptor    
 } from '@tsdi/endpoints';
 import { IHeaders } from 'kafkajs';
 import { map } from 'rxjs';
@@ -44,7 +39,7 @@ import { DEFAULT_BROKERS, KafkaHeaders } from './const';
 // const sizeLimit = 1048576; // 1024 * 1024;
 const sizeLimit = 5242880; //1024 * 1024 * 5;
 
-const attachIncomingHeaders: InterceptorFn = (input: any, next: HandlerFn, context: TransportContext) => {
+const attachIncomingHeaders: ApplicationInterceptorFn = (input: any, next: ApplicationHandlerFn, context: TransportContext) => {
     return next(input, context)
         .pipe(
             map(body => {
