@@ -2,11 +2,11 @@ import { Module } from '@tsdi/ioc';
 import { JWTModule } from '../jwt';
 
 @Module({
-    imports:[
+    imports: [
         JWTModule
     ],
-    providers:[
-
+    providers: [
+        
     ]
 })
 export class OAuthModule {

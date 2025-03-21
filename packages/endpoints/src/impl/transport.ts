@@ -1,10 +1,10 @@
-import { Injector, isUndefined } from '@tsdi/ioc';
+import { Injector } from '@tsdi/ioc';
 import { ServerTransport } from '../transport';
 import { Deserializer, ev, FileAdapter, IDuplex, IncomingFactory, MimeAdapter, OutgoingFactory, Packet, Serializer, StatusAdapter, StreamAdapter, TransportContext, writePacket } from '@tsdi/common/transport';
 import { HeaderAdapter } from '@tsdi/common';
 import { ServerTransfer } from '../transfer';
 import { ServiceConfig } from '../server.options';
-import { fromEvent, map, Observable, Subscriber } from 'rxjs';
+import { fromEvent, Observable } from 'rxjs';
 import { AcceptsPriority } from '../accepts';
 import { RequestContext } from '../RequestContext';
 

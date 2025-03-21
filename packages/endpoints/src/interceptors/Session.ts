@@ -6,10 +6,10 @@ import { RequestContext } from '../RequestContext';
 
 
 /**
- * session
+ * session manager.
  */
 @Abstract()
-export abstract class SessionAdapter {
+export abstract class SessionManager {
     /**
      * init & load session. 
      */
@@ -67,6 +67,17 @@ export abstract class SessionAdapter {
     abstract commit(): Promise<void>;
 
     /**
+     * session login.
+     * @param user 
+     */
+    abstract login(user: any): Promise<void>;
+    
+    /**
+     * session logout. 
+     */
+    abstract logout(): Promise<void>;
+
+    /**
      * JSON representation of the session.
      */
     abstract toJSON(): Record<string, any>;
@@ -114,7 +125,7 @@ export class Session implements Middleware<RequestContext>, ApplicationIntercept
 
     intercept(input: RequestContext, next: ApplicationHandler<RequestContext, any>): Observable<any> {
         input.setValue(SessionOptions, this.options);
-        const se = input.get(SessionAdapter);
+        const se = input.get(SessionManager);
         if (!se) return next.handle(input);
         return from(se.load())
             .pipe(
@@ -129,7 +140,7 @@ export class Session implements Middleware<RequestContext>, ApplicationIntercept
 
     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
         ctx.setValue(SessionOptions, this.options);
-        const se = ctx.get(SessionAdapter);
+        const se = ctx.get(SessionManager);
         if (!se) return await next();
         await se.load();
         try {
