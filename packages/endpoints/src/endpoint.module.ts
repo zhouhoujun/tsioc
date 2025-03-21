@@ -5,7 +5,6 @@ import {
 import { ConfigMissingExecption, TypedRespond } from '@tsdi/core';
 import { isMicroTransport, NotImplementedExecption, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
 import { ServiceConfig } from './server.options';
-import { Session } from './interceptors/Session';
 import { ServerTransportFactory } from './transport';
 import { EndpointTypedRespond } from './typed.respond';
 import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, LoggerInterceptor } from './interceptors';
@@ -42,8 +41,7 @@ import { HttpStatusAdapter } from './impl/status';
         BodyparserInterceptor,
 
         FinalizeFilter,
-        ExecptionFinalizeFilter,
-        Session
+        ExecptionFinalizeFilter
     ]
 })
 export class EndpointModule {

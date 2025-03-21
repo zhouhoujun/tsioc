@@ -88,22 +88,6 @@ export abstract class SessionManager {
 }
 
 
-/**
- * session options.
- */
-@Abstract()
-export abstract class SessionOptions {
-    abstract key: string;
-    abstract maxAge?: number;
-    abstract overwrite?: boolean;
-    abstract httpOnly?: boolean;
-    abstract signed?: boolean;
-    abstract externalKey?: string;
-    abstract autoCommit?: boolean;
-    abstract encode?: (body: Object) => string;
-    abstract decode?: (str: string) => Object;
-}
-
 const defOpts = {
     key: 'endpoints',
     overwrite: true,
@@ -112,21 +96,13 @@ const defOpts = {
     autoCommit: true,
     encode,
     decode
-} as SessionOptions;
+};
 
 /**
  * session.
  */
 @Injectable()
 export class SessionInterceptor implements Middleware<RequestContext>, ApplicationInterceptor<RequestContext> {
-
-    private options: SessionOptions;
-    constructor(@Nullable() options: SessionOptions) {
-        this.options = {
-            ...defOpts,
-            ...options
-        }
-    }
 
     intercept(input: RequestContext, next: ApplicationHandler<RequestContext, any>): Observable<any> {
         const se = input.get(Session);
@@ -135,7 +111,7 @@ export class SessionInterceptor implements Middleware<RequestContext>, Applicati
             .pipe(
                 mergeMap(() => next.handle(input)),
                 finalize(() => {
-                    if (this.options.autoCommit) {
+                    if (input.serverOptions.session?.autoCommit) {
                         se.commit();
                     }
                 })
@@ -143,14 +119,13 @@ export class SessionInterceptor implements Middleware<RequestContext>, Applicati
     }
 
     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
-        ctx.setValue(SessionOptions, this.options);
         const se = ctx.get(Session);
         if (!se) return await next();
         await se.load();
         try {
             await next();
         } finally {
-            if (this.options.autoCommit) {
+            if (ctx.serverOptions.session?.autoCommit) {
                 await se.commit();
             }
         }

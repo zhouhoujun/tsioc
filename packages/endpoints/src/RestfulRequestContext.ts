@@ -2,6 +2,7 @@ import { Abstract } from '@tsdi/ioc';
 import { Incoming, Outgoing, encodeUrl, escapeHtml, ctype, NotSupportedExecption } from '@tsdi/common/transport';
 import { RequestContext } from './RequestContext';
 import { ServiceConfig } from './server.options';
+import * as Cookies from 'cookies';
 
 /**
  * abstract Restful request context.
@@ -68,6 +69,21 @@ export abstract class RestfulRequestContext<
             });
         }
         return this._query;
+    }
+
+    private _cookies?: Cookies;
+    get cookies() {
+        if (!this._cookies) {
+            this._cookies = new Cookies(this.request as any, this.response as any, {
+                keys: this.serverOptions.session?.keys ?? ['endpoints'],
+                secure: this.secure
+            });
+        }
+        return this._cookies;
+    }
+
+    set cookies(value: Cookies) {
+        this._cookies = value;
     }
 
     /**

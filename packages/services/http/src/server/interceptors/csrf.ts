@@ -2,7 +2,7 @@ import { Abstract, Inject, Injectable, Nullable, tokenId } from '@tsdi/ioc';
 import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
 import { GET, HEAD, OPTIONS } from '@tsdi/common';
 import { ForbiddenExecption } from '@tsdi/common/transport';
-import { RestfulRequestContext, Middleware, SessionManager, CsrfOps } from '@tsdi/endpoints';
+import { RestfulRequestContext, Middleware, Session, CsrfOps } from '@tsdi/endpoints';
 import { Observable, throwError } from 'rxjs';
 import * as CSRFTokens from 'csrf';
 
@@ -86,7 +86,7 @@ export class Csrf implements Middleware<RestfulRequestContext>, ApplicationInter
         ctx.injector.inject({
             provide: CSRF,
             useFactory: () => {
-                const se = ctx.injector.get(SessionManager, null);
+                const se = ctx.get(Session);
                 if (!se) {
                     return null
                 }
@@ -97,7 +97,7 @@ export class Csrf implements Middleware<RestfulRequestContext>, ApplicationInter
             }
         });
 
-        const session = ctx.injector.get(SessionManager, null);
+        const session = ctx.get(Session);
         if (!session || this.options.excludedMethods?.indexOf(ctx.method) !== -1) {
             return next.handle(ctx)
         }
@@ -130,7 +130,7 @@ export class Csrf implements Middleware<RestfulRequestContext>, ApplicationInter
         ctx.injector.inject({
             provide: CSRF,
             useFactory: () => {
-                const se = ctx.injector.get(SessionManager, null);
+                const se = ctx.get(Session);
                 if (!se) {
                     return null
                 }
@@ -141,7 +141,7 @@ export class Csrf implements Middleware<RestfulRequestContext>, ApplicationInter
             }
         });
 
-        const session = ctx.injector.get(SessionManager, null);
+        const session = ctx.get(Session);
         if (!session || this.options.excludedMethods?.indexOf(ctx.method) !== -1) {
             return await next()
         }

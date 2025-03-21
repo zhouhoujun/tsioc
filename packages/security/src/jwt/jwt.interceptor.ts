@@ -3,9 +3,10 @@ import * as jwt from 'jsonwebtoken';
 import { Injectable, lang } from '@tsdi/ioc';
 import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
 import { Incoming, OutgoingMessage, UnauthorizedExecption } from '@tsdi/common/transport';
-import { RequestContext, SessionManager } from '@tsdi/endpoints';
+import { RequestContext } from '@tsdi/endpoints';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { InvalidTokenExecption } from '../exceptions';
+import { Authenticator } from '../Authenticator';
 
 
 export class JWTOption {
@@ -30,7 +31,7 @@ export class JwtInterceptor implements ApplicationInterceptor<RequestContext, Ou
                 if (err) {
                     defer.reject(new InvalidTokenExecption(err.message));
                 }
-                input.get(SessionManager).login(input, decoded)
+                input.get(Authenticator).login(input, decoded)
                     .then(() => {
                         defer.resolve();
                     }).catch(err => {

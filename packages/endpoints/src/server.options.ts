@@ -2,7 +2,6 @@ import { ProvdierOf, Type } from '@tsdi/ioc';
 import { RequestMethod } from '@tsdi/common';
 import { MimeSource, TransportConfigure } from '@tsdi/common/transport';
 import { RequestHandlerOptions } from './AbstractRequestHandler';
-import { SessionOptions } from './interceptors/Session';
 import { ContentOptions } from './interceptors/content';
 import { RouteOpts } from './router/router.module';
 import { ServerTransportFactory } from './transport';
@@ -19,6 +18,16 @@ export interface ProxyOpts {
     maxIpsCount?: number;
 }
 
+export interface SessionOptions {
+    keys?: string[];
+    maxAge?: number;
+    overwrite?: boolean;
+    httpOnly?: boolean;
+    signed?: boolean;
+    externalKey?: string;
+    autoCommit?: boolean;
+}
+
 /**
  * service config.
  */
@@ -27,7 +36,7 @@ export interface ServiceConfig<TSerOpts = any> extends RequestHandlerOptions<any
      * request timeout.
      */
     timeout?: number;
-    session?: boolean | SessionOptions;
+    session?: SessionOptions;
     content?: ContentOptions;
     serverOpts?: TSerOpts;
     /**
@@ -43,7 +52,7 @@ export interface ServiceConfig<TSerOpts = any> extends RequestHandlerOptions<any
      * server request handler type
      */
     handlerType?: Type<RequestHandler>;
-    
+
     /**
      * service transport factory.
      */
