@@ -10,9 +10,9 @@ import { InvalidTokenExecption } from '../exceptions';
 
 export class JWTOption {
     constructor(
-        readonly tokenName: string,
         readonly secret: jwt.Secret | jwt.PublicKey,
         readonly tokenIn: 'header' | 'query' | 'body' = 'header',
+        readonly tokenName: string = 'authentication',
         readonly options?: jwt.VerifyOptions) { }
 }
 
@@ -30,7 +30,7 @@ export class JwtInterceptor implements ApplicationInterceptor<RequestContext, Ou
                 if (err) {
                     defer.reject(new InvalidTokenExecption(err.message));
                 }
-                input.get(SessionManager).login(decoded)
+                input.get(SessionManager).login(input, decoded)
                     .then(() => {
                         defer.resolve();
                     }).catch(err => {
@@ -60,6 +60,6 @@ function parseAuthHeader(hdrValue?: string) {
     if (typeof hdrValue !== 'string') {
         return null;
     }
-    var matches = hdrValue.match(matcExp);
+    const matches = hdrValue.match(matcExp);
     return matches && { scheme: matches[1], value: matches[2] };
 }

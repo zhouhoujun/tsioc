@@ -6,10 +6,10 @@ import { RequestContext } from '../RequestContext';
 
 
 /**
- * session manager.
+ * session storage.
  */
 @Abstract()
-export abstract class SessionManager {
+export abstract class Session {
     /**
      * init & load session. 
      */
@@ -67,21 +67,26 @@ export abstract class SessionManager {
     abstract commit(): Promise<void>;
 
     /**
-     * session login.
-     * @param user 
-     */
-    abstract login(user: any): Promise<void>;
-    
-    /**
-     * session logout. 
-     */
-    abstract logout(): Promise<void>;
-
-    /**
      * JSON representation of the session.
      */
     abstract toJSON(): Record<string, any>;
 }
+
+
+@Abstract()
+export abstract class SessionManager {
+    /**
+     * session login.
+     * @param user 
+     */
+    abstract login(ctx: RequestContext, user: any): Promise<void>;
+    
+    /**
+     * session logout. 
+     */
+    abstract logout(ctx: RequestContext): Promise<void>;
+}
+
 
 /**
  * session options.
@@ -100,7 +105,7 @@ export abstract class SessionOptions {
 }
 
 const defOpts = {
-    key: 'transport',
+    key: 'endpoints',
     overwrite: true,
     httpOnly: true,
     signed: true,
@@ -113,7 +118,7 @@ const defOpts = {
  * session.
  */
 @Injectable()
-export class Session implements Middleware<RequestContext>, ApplicationInterceptor<RequestContext> {
+export class SessionInterceptor implements Middleware<RequestContext>, ApplicationInterceptor<RequestContext> {
 
     private options: SessionOptions;
     constructor(@Nullable() options: SessionOptions) {
@@ -124,8 +129,7 @@ export class Session implements Middleware<RequestContext>, ApplicationIntercept
     }
 
     intercept(input: RequestContext, next: ApplicationHandler<RequestContext, any>): Observable<any> {
-        input.setValue(SessionOptions, this.options);
-        const se = input.get(SessionManager);
+        const se = input.get(Session);
         if (!se) return next.handle(input);
         return from(se.load())
             .pipe(
@@ -140,7 +144,7 @@ export class Session implements Middleware<RequestContext>, ApplicationIntercept
 
     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
         ctx.setValue(SessionOptions, this.options);
-        const se = ctx.get(SessionManager);
+        const se = ctx.get(Session);
         if (!se) return await next();
         await se.load();
         try {

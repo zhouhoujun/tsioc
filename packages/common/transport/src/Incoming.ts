@@ -33,6 +33,8 @@ export interface IncomingMessage<T = any, TMsg = any, THead extends Header = Hea
 export interface Incoming<T = any, TMsg = any> extends IncomingMessage<T, TMsg> {
 
     method?: string;
+    
+    cookies?: any;
 
     params?: Record<string, any>;
 
