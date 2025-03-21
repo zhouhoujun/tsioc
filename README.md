@@ -1,5 +1,37 @@
 tsioc is application frameworks.
 
+tsioc - TypeScript IoC Framework Overview
+
+# Core Architecture
+This is a comprehensive TypeScript framework called "tsioc" (TypeScript IoC) that provides:
+
+- Dependency Injection (IoC): A robust IoC container that manages dependencies between components
+- Aspect-Oriented Programming (AOP): Implementation of cross-cutting concerns like security and transactions
+- Module System: Decorator-based module system for organizing code
+- Decorators: Extensive use of TypeScript decorators for defining components
+
+# Key Features
+- HTTP Endpoints: Controller-based system with decorators like @Controller, @Get, @Post
+- Security: Authorization through aspects with support for various authentication methods
+- Messaging: Support for multiple protocols (AMQP, MQTT, Kafka, Nats, Redis, WS, TCP, etc.) with a unified API
+- Database Integration: TypeORM integration with transaction support
+- Exception Handling: Comprehensive exception system with HTTP status mapping
+Interceptors: Request/response transformation and cross-cutting concerns
+
+# Package Structure
+
+The framework is organized into multiple packages:
+
+- @tsdi/ioc: Core IoC container
+- @tsdi/aop: Aspect-Oriented Programming support
+- @tsdi/core: Application core and module management
+- @tsdi/endpoints: HTTP endpoint handling
+- @tsdi/security: Authentication and authorization
+- @tsdi/repository: Database repository pattern
+- @tsdi/typeorm-adapter: TypeORM integration
+- Various protocol adapters: For different communication protocols
+
+The framework follows patterns similar to Spring/Java, with heavy use of decorators and dependency injection. It's designed for building modular, maintainable applications with clear separation of concerns, particularly well-suited for microservices and complex backend applications.
 
 # source build
 

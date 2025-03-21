@@ -2,8 +2,8 @@ export * from './middleware/middleware';
 export * from './middleware/middleware.compose';
 export * from './middleware/middleware.service';
 
-export * from './Session';
-export { Session as SessionMiddleware, Session as SessionInterceptor } from './Session';
+export * from './interceptors/Session';
+export { Session as SessionMiddleware, Session as SessionInterceptor } from './interceptors/Session';
 export * from './router/route';
 export * from './router/router';
 export * from './router/router.mapping';

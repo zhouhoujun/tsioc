@@ -11,7 +11,7 @@ export class SecurityModule {
 }
 
 
-export function provideSecurityModule(optiosn: {
+export function provideSecurityModule(options: {
     type: 'basic' | 'oauth' | 'oauth2' | 'oidc'
 }): ModuleWithProviders {
     return {

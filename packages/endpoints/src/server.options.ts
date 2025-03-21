@@ -2,7 +2,7 @@ import { ProvdierOf, Type } from '@tsdi/ioc';
 import { RequestMethod } from '@tsdi/common';
 import { MimeSource, TransportConfigure } from '@tsdi/common/transport';
 import { RequestHandlerOptions } from './AbstractRequestHandler';
-import { SessionOptions } from './Session';
+import { SessionOptions } from './interceptors/Session';
 import { ContentOptions } from './interceptors/content';
 import { RouteOpts } from './router/router.module';
 import { ServerTransportFactory } from './transport';
