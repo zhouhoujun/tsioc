@@ -121,13 +121,11 @@ export const execptionSerializeInterceptor: ApplicationInterceptorFn<RequestCont
             pkg.statusMessage = message;
         }
         // // empty response.
-        // if (statusAdapter?.isEmptyExecption(status)) {
-        //     // pkg.statusCode = status;
-        //     // pkg.statusMessage = input.statusMessage ?? '';
-        //     pkg.body = null;
-        // } else {
-        //     pkg.body = message;
-        // }
+        if (statusAdapter?.isEmptyExecption(status)) {
+            pkg.body = null;
+        } else {
+            pkg.body = message;
+        }
 
         pkg.error = {
             name: err.name,

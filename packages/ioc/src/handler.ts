@@ -30,10 +30,8 @@ export interface Handler<TInput = any, TOutput = any, TContext = any> {
  * handler fn.
  * 处理器基本构建块。
  */
-export interface HandlerFn<TInput = any, TOutput = any, TContext = any> extends Function {
-    (input: TInput, context?: TContext): TOutput;
-    owner?: Handler<TInput, TOutput, TContext>;
-}
+export type HandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, context?: TContext) => TOutput;
+
 
 /**
  * handler like
@@ -71,10 +69,8 @@ export interface Interceptor<TInput = any, TOutput = any, TContext = any> {
  * interceptor fn.
  * 拦截方法，用于链接多个处理器，组合成处理器串。
  */
-export interface InterceptorFn<TInput = any, TOutput = any, TContext = any> extends Function {
-    (input: TInput, next: HandlerFn<any, TOutput, TContext>, context?: TContext): TOutput;
-    owner?: Interceptor<TInput, TOutput, TContext>;
-}
+export type InterceptorFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, next: HandlerFn<any, TOutput, TContext>, context?: TContext) => TOutput;
+
 
 /**
  * interceptor like.
@@ -89,7 +85,13 @@ export type InterceptorLike<TInput = any, TOutput = any, TContext = any> = Inter
  * @returns 
  */
 export function composeInterceptors(interceptors: InterceptorLike[]): InterceptorFn {
-    return interceptors.reduceRight((next, interceptorFn) => chainedInterceptorFn(next, interceptorFn), chainEndFn);
+    if (!interceptors.length) {
+        return chainEndFn;
+    }
+    if (interceptors.length === 1) {
+        return isFunction(interceptors[0]) ? interceptors[0] : toInterceptorFn(interceptors[0]);
+    }
+    return interceptors.reduceRight((next, interceptorFn) => chainedInterceptorFn(next, interceptorFn), chainEndFn) as InterceptorFn;
 }
 
 
@@ -119,22 +121,44 @@ export function chainFactory(chainTailFn: InterceptorFn, interceptorFn: Intercep
         )
 }
 
+
+
+// ...
+// 添加WeakMap缓存
+const handlerFnCache = new WeakMap<Handler, HandlerFn>();
+
 export function toHandlerFn(handler: Handler): HandlerFn {
+    // 优先返回缓存结果
+    if (handlerFnCache.has(handler)) {
+        return handlerFnCache.get(handler)!;
+    }
+
+    // 创建标准化函数
     const fn = (input: any, context?: any) => handler.handle(input, context);
-    fn.owner = handler;
+
+    // 设置双向引用
+    handlerFnCache.set(handler, fn);
+
     return fn;
 }
 
-export function toHandler(handle: HandlerFn) {
-    if (handle.owner) return handle.owner;
+const handlerCache = new WeakMap<HandlerFn, Handler>();
+export function toHandler(handle: HandlerFn): Handler {
+    if (handlerCache.has(handle)) {
+        return handlerCache.get(handle)!;
+    }
     const hanlder = { handle };
-    handle.owner = hanlder;
+    handlerCache.set(handle, hanlder);
     return hanlder;
 }
 
+const interceptorCache = new WeakMap<Interceptor, InterceptorFn>();
 export function toInterceptorFn(interceptor: Interceptor): InterceptorFn {
+    if (interceptorCache.has(interceptor)) {
+        return interceptorCache.get(interceptor)!;
+    }
     const fn = (input: any, next: HandlerFn, context?: any) => interceptor.intercept(input, toHandler(next), context);
-    fn.owner = interceptor;
+    interceptorCache.set(interceptor, fn);
     return fn;
 }
 
@@ -202,92 +226,113 @@ export interface NextOpter<T> {
 }
 
 export function invokeTail<T>(invoker: () => Observable<T> | Promise<T> | T, nextOpter?: NextOpter<T> | ((res: T, context?: any) => any)): Observable<T> | Promise<T> | T {
-
     const opter = nextOpter ? (isFunction(nextOpter) ? { next: nextOpter } : nextOpter) : null;
 
-    let res$: Observable<T> | Promise<T> | T;
     try {
-        res$ = invoker();
+        const res$ = invoker();
+        if (!opter) return res$;
+
+        if (isObservable(res$)) {
+            return processObservable(res$, opter);
+        } else if (isPromise(res$)) {
+            return processPromise(res$, opter);
+        }
+        return processSync(res$, opter);
     } catch (err) {
-        if (opter?.error) {
-            const ct = opter?.error(err);
-            if (isDefined(ct)) {
-                return ct;
-            }
-        }
-        throw err;
+        return handleError(err, opter!);
     }
+}
 
-    if (!opter) return res$;
+function processObservable<T>(ob$: Observable<T>, opter: NextOpter<T>): Observable<T> {
+    let processed$ = ob$;
 
-    if (isObservable(res$)) {
-        let ob$ = res$;
-        if (opter.next) {
-            ob$ = ob$.pipe(
-                mergeMap(res => {
-                    const n$ = opter.next!(res);
-                    if (isObservable(n$) || isPromise(n$)) return n$;
-                    return of(res);
-                }),
-            )
-        }
-        if (opter.finally) {
-            ob$ = ob$.pipe(
-                finalize(() => {
-                    opter.finally!()
-                }));
-        }
-        if (opter.error) {
-            ob$ = ob$.pipe(
-                catchError((err, caught) => {
-                    const ct = opter.error!(err);
-                    if (isObservable(ct) || isPromise(ct)) return ct;
-                    if (isDefined(ct)) return of(ct);
-
-                    return throwError(() => err);
-                })
-            )
-        }
-        return ob$;
-    } else if (isPromise(res$)) {
-        let pr$ = res$;
-        if (opter.next) {
-            pr$ = pr$.then(res => opter.next!(res))
-        }
-        if (opter.error) {
-            pr$ = pr$.catch(err => {
-                const ct = opter.error!(err);
-                if (isObservable(ct)) return lastValueFrom(ct)
-                // if (isPromise(ct)) return ct;
-                if (isDefined(ct)) return ct;
-
-                throw err;
+    if (opter.next) {
+        processed$ = processed$.pipe(
+            mergeMap(res => {
+                const n$ = opter.next!(res);
+                return (isObservable(n$) || isPromise(n$)) ? n$ : of(res);
             })
-        }
-        if (opter.finally) {
-            pr$ = pr$.finally(opter.finally)
-        }
-        return pr$;
-    } else {
-        if (opter.next) {
-            res$ = opter.next(res$);
-        }
-        if (opter.finally) {
-            opter.finally()
-        }
-
-        return res$;
+        );
     }
 
+    if (opter.finally) {
+        processed$ = processed$.pipe(finalize(() => opter.finally!()));
+    }
+
+    if (opter.error) {
+        processed$ = processed$.pipe(
+            catchError(err => handleOperatorError(opter.error!(err), err) as Observable<T>)
+        );
+    }
+
+    return processed$;
+}
+
+function processPromise<T>(pr$: Promise<T>, opter: NextOpter<T>): Promise<T> {
+    let processed = pr$;
+
+    if (opter.next) {
+        processed = processed.then(res => opter.next!(res));
+    }
+
+    if (opter.error) {
+        processed = processed.catch(err => handlePromiseError(opter.error!(err), err));
+    }
+
+    if (opter.finally) {
+        processed = processed.finally(opter.finally);
+    }
+
+    return processed;
+}
+
+function processSync<T>(res: T, opter: NextOpter<T>): T {
+    let result = res;
+
+    if (opter.next) {
+        result = opter.next(result);
+    }
+
+    if (opter.finally) {
+        opter.finally();
+    }
+
+    return result;
+}
+
+function handleError<T>(err: any, opter?: NextOpter<T>): T {
+    if (opter?.error) {
+        const ct = opter.error(err);
+        if (isDefined(ct)) return ct;
+    }
+    throw err;
+}
+
+function handleOperatorError<T>(ct: any, err: any) {
+    if (isObservable(ct) || isPromise(ct)) return ct;
+    if (isDefined(ct)) return of(ct);
+    return throwError(() => err);
+}
+
+function handlePromiseError<T>(ct: any, err: any): T | Promise<T> {
+    if (isObservable(ct)) return lastValueFrom(ct) as Promise<T>;
+    if (isDefined(ct)) return ct;
+    throw err;
 }
 
 const endHandler: HandlerFn = (res, context?: any) => res;
 
+/**
+ * compose chain handlers.
+ * @param hanlders 
+ * @param interceptor 
+ * @returns 
+ */
 export function composeHandlers(hanlders: HandlerLike[], interceptor?: (res: any, nextFn: HandlerFn, input: any, context?: any) => any): HandlerFn {
     return hanlders.reduceRight((next, handler) => {
         const invok = isFunction(handler) ? handler : (input: any, context?: any) => handler.handle(input, context);
         const nextFn = isFunction(next) ? next : (input: any, context?: any) => next.handle(input, context);
-        return (input: any, context?: any) => invokeTail(() => invok(input, context), (res) => interceptor ? interceptor(res,  nextFn, input, context) : nextFn(res ?? input, context));
+        return (input: any, context?: any) => invokeTail(() => invok(input, context), (res) => interceptor ? interceptor(res, nextFn, input, context) : nextFn(res ?? input, context));
     }, endHandler) as HandlerFn;
 }
 
