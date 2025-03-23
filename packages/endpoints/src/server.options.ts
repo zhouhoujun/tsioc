@@ -11,22 +11,13 @@ import { ServerOptions as Http1ServerOptions } from 'http';
 import { ServerOptions as HttsServerOptions } from 'https';
 import { ServerOptions as Http2ServerOptions, SecureServerOptions } from 'http2';
 import { MiddlewareOpts } from './middleware/middleware';
-
+import { SessionOptions } from './sessions/Session';
 
 export interface ProxyOpts {
     proxyIpHeader: string;
     maxIpsCount?: number;
 }
 
-export interface SessionOptions {
-    keys?: string[];
-    maxAge?: number;
-    overwrite?: boolean;
-    httpOnly?: boolean;
-    signed?: boolean;
-    externalKey?: string;
-    autoCommit?: boolean;
-}
 
 /**
  * service config.

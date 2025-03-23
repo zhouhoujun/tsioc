@@ -3,6 +3,7 @@ import { Incoming, Outgoing, encodeUrl, escapeHtml, ctype, NotSupportedExecption
 import { RequestContext } from './RequestContext';
 import { ServiceConfig } from './server.options';
 import * as Cookies from 'cookies';
+import { Session } from './sessions/Session';
 
 /**
  * abstract Restful request context.
@@ -41,6 +42,10 @@ export abstract class RestfulRequestContext<
     get href(): string {
         return this.URL.href
     }
+    
+    get path(): string {
+        return this.URL.pathname
+    }
 
     /**
      * Get request pathname .
@@ -75,7 +80,7 @@ export abstract class RestfulRequestContext<
     get cookies() {
         if (!this._cookies) {
             this._cookies = new Cookies(this.request as any, this.response as any, {
-                keys: this.serverOptions.session?.keys ?? ['endpoints'],
+                keys: this.serverOptions.session?.key? [ this.serverOptions.session?.key] : ['endpoints'],
                 secure: this.secure
             });
         }
@@ -85,6 +90,15 @@ export abstract class RestfulRequestContext<
     set cookies(value: Cookies) {
         this._cookies = value;
     }
+
+    private _session?: Session;
+    get session(): Session {
+        if(this._session === undefined) {
+            this._session = this.get(Session) ?? null;
+        }
+        return this._session;
+    }
+
 
     /**
      * Get the search string. Same as the query string

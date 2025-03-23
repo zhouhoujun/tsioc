@@ -29,6 +29,8 @@ export * from './server.options';
 export * from './Server';
 export * from './transfer';
 
+export * from './sessions/Session';
+
 export * from './interceptors';
 
 export * from './finalize.filter';

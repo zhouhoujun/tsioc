@@ -1,92 +1,75 @@
 import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
 import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
-import { Observable, finalize, from, mergeMap } from 'rxjs';
+import { Observable, finalize, from, mergeMap, catchError, throwError } from 'rxjs';
 import { Middleware } from '../middleware/middleware';
 import { RequestContext } from '../RequestContext';
+import { Session } from '../sessions/Session';
+
 
 
 /**
- * session storage.
+ * session.
  */
-@Abstract()
-export abstract class Session {
-    /**
-     * init & load session. 
-     */
-    abstract load(): Promise<void>;
-    /**
-     * secret.
-     */
-    abstract secret: string;
-    /**
-     * Return how many values there are in the session object.
-     * Used to see if it's "populated".
-     */
-    abstract get length(): number;
-    /**
-     *  populated flag, which is just a boolean alias of .length.
-     *
-     * @return {Boolean}
-     * @api public
-     */
-    abstract get populated(): boolean;
+@Injectable()
+export class SessionInterceptor implements Middleware<RequestContext>, ApplicationInterceptor<RequestContext> {
 
-    /**
-     * get session maxAge
-     *
-     * @return {Number}
-     * @api public
-     */
-    abstract get maxAge(): number;
-    /**
-     * set session maxAge
-     *
-     * @param {Number}
-     * @api public
-     */
-    abstract set maxAge(age: number);
+    intercept(input: RequestContext, next: ApplicationHandler<RequestContext, any>): Observable<any> {
+        const session = input.get(Session);
+        if (!session) {
+            return next.handle(input);
+        }
 
-    /**
-     * get session external key
-     * only exist if opts.store present
-     */
-    abstract get externalKey(): string;
+        // 添加错误处理和状态检查
+        return from(session.load())
+            .pipe(
+                mergeMap(() => {
+                    if (!session.isValid()) {
+                        return throwError(() => new Error('Invalid session'));
+                    }
+                    return next.handle(input);
+                }),
+                catchError(error => {
+                    console.error('Session error:', error);
+                    return throwError(() => error);
+                }),
+                finalize(() => {
+                    if (input.serverOptions.session?.autoCommit && session.isModified()) {
+                        session.commit().catch(err => {
+                            console.error('Failed to commit session:', err);
+                        });
+                    }
+                })
+            );
+    }
 
-    /**
-     * save this session no matter whether it is populated
-     *
-     * @api public
-     */
-    abstract save(): Promise<void>;
+    async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
+        const session = ctx.get(Session);
+        if (!session) {
+            return await next();
+        }
 
-    /**
-     * commit this session's headers if autoCommit is set to false
-     *
-     * @api public
-     */
-    abstract commit(): Promise<void>;
+        try {
+            await session.load();
+            
+            if (!session.isValid()) {
+                throw new Error('Invalid session');
+            }
 
-    /**
-     * JSON representation of the session.
-     */
-    abstract toJSON(): Record<string, any>;
+            await next();
+        } catch (error) {
+            console.error('Session error:', error);
+            throw error;
+        } finally {
+            if (ctx.serverOptions.session?.autoCommit && session.isModified()) {
+                try {
+                    await session.commit();
+                } catch (error) {
+                    console.error('Failed to commit session:', error);
+                }
+            }
+        }
+    }
 }
-
-
-@Abstract()
-export abstract class SessionManager {
-    /**
-     * session login.
-     * @param user 
-     */
-    abstract login(ctx: RequestContext, user: any): Promise<void>;
-    
-    /**
-     * session logout. 
-     */
-    abstract logout(ctx: RequestContext): Promise<void>;
-}
-
 
 const defOpts = {
     key: 'endpoints',
@@ -98,39 +81,6 @@ const defOpts = {
     decode
 };
 
-/**
- * session.
- */
-@Injectable()
-export class SessionInterceptor implements Middleware<RequestContext>, ApplicationInterceptor<RequestContext> {
-
-    intercept(input: RequestContext, next: ApplicationHandler<RequestContext, any>): Observable<any> {
-        const se = input.get(Session);
-        if (!se) return next.handle(input);
-        return from(se.load())
-            .pipe(
-                mergeMap(() => next.handle(input)),
-                finalize(() => {
-                    if (input.serverOptions.session?.autoCommit) {
-                        se.commit();
-                    }
-                })
-            )
-    }
-
-    async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
-        const se = ctx.get(Session);
-        if (!se) return await next();
-        await se.load();
-        try {
-            await next();
-        } finally {
-            if (ctx.serverOptions.session?.autoCommit) {
-                await se.commit();
-            }
-        }
-    }
-}
 
 /**
  * Decode the base64 cookie value to an object.
