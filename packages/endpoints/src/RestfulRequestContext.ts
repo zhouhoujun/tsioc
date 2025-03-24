@@ -3,7 +3,6 @@ import { Incoming, Outgoing, encodeUrl, escapeHtml, ctype, NotSupportedExecption
 import { RequestContext } from './RequestContext';
 import { ServiceConfig } from './server.options';
 import * as Cookies from 'cookies';
-import { Session } from './sessions/Session';
 
 /**
  * abstract Restful request context.
@@ -89,14 +88,6 @@ export abstract class RestfulRequestContext<
 
     set cookies(value: Cookies) {
         this._cookies = value;
-    }
-
-    private _session?: Session;
-    get session(): Session {
-        if(this._session === undefined) {
-            this._session = this.get(Session) ?? null;
-        }
-        return this._session;
     }
 
 

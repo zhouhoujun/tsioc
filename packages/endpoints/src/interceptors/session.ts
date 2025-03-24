@@ -1,9 +1,8 @@
-import { Abstract, Injectable, Nullable } from '@tsdi/ioc';
+import { Injectable } from '@tsdi/ioc';
 import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
 import { Observable, finalize, from, mergeMap, catchError, throwError } from 'rxjs';
 import { Middleware } from '../middleware/middleware';
 import { RequestContext } from '../RequestContext';
-import { Session } from '../sessions/Session';
 
 
 
@@ -14,7 +13,7 @@ import { Session } from '../sessions/Session';
 export class SessionInterceptor implements Middleware<RequestContext>, ApplicationInterceptor<RequestContext> {
 
     intercept(input: RequestContext, next: ApplicationHandler<RequestContext, any>): Observable<any> {
-        const session = input.get(Session);
+        const session = input.session;
         if (!session) {
             return next.handle(input);
         }
@@ -43,7 +42,7 @@ export class SessionInterceptor implements Middleware<RequestContext>, Applicati
     }
 
     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
-        const session = ctx.get(Session);
+        const session = ctx.session;
         if (!session) {
             return await next();
         }

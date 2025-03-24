@@ -9,6 +9,7 @@ import { ServiceConfig } from './server.options';
 import { CONTENT_DISPOSITION_TOKEN } from './content';
 import { ServerTransport } from './transport';
 import { AcceptsPriority } from './accepts';
+import { Session } from './sessions/Session';
 
 /**
  * abstract request context.
@@ -79,6 +80,14 @@ export abstract class RequestContext<
      * response.
      */
     abstract get response(): TResponse;
+
+    private _session?: Session;
+    get session(): Session {
+        if(this._session === undefined) {
+            this._session = this.get(Session) ?? null;
+        }
+        return this._session;
+    }
 
     /**
      * Set response content length.
