@@ -31,6 +31,9 @@ export class Application<T = any, TArg = ApplicationArguments> {
      */
     protected context!: ApplicationContext<T, TArg>;
 
+    /**
+     * module loader
+     */
     protected loader!: ModuleLoader;
 
 
