@@ -1,52 +1,7 @@
-import { assertTemplate, Component, EmbeddedViewRef, Input, TemplateRef, ViewContainerRef } from '@tsdi/components';
+import { Injectable } from '@tsdi/ioc';
+import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 
-/**
- * while control activity.
- *
- * @export
- * @class ConfirmActivity
- * @extends {ControlActivity}
- */
-@Component('confirm,[confirm]')
-export class ConfirmActivity<T> {
-
-    private _context: DirConfirmContext<T> = new DirConfirmContext<T>();
-    private _thenTemplateRef: TemplateRef<DirConfirmContext<T>> | null = null;
-    private _thenViewRef: EmbeddedViewRef<DirConfirmContext<T>> | null = null;
-    constructor(private _viewContainer: ViewContainerRef, templateRef: TemplateRef<DirConfirmContext<T>>) {
-        this._thenTemplateRef = templateRef;
-    }
-
-    @Input()
-    set confirm(condition: T) {
-        this._context.$implicit = this._context.dirConfirm = condition;
-        this._updateView();
-    }
-
-    /**
-     * A template to show if the condition expression evaluates to true.
-     */
-    @Input()
-    set confirmThen(templateRef: TemplateRef<DirConfirmContext<T>> | null) {
-        assertTemplate('confirmConent', templateRef);
-        this._thenTemplateRef = templateRef;
-        this._thenViewRef = null;  // clear previous view if any.
-        this._updateView();
-    }
-
-    private _updateView() {
-        if (this._context.$implicit) {
-            if (!this._thenViewRef) {
-                this._viewContainer.clear();
-                if (this._thenTemplateRef) {
-                    this._thenViewRef =
-                        this._viewContainer.createEmbeddedView(this._thenTemplateRef, this._context);
-                }
-            }
-        }
-    }
-}
 
 
 /**
@@ -55,4 +10,69 @@ export class ConfirmActivity<T> {
  export class DirConfirmContext<T> {
     public $implicit: T = null!;
     public dirConfirm: T = null!;
+}
+
+export interface ConfirmActivityContext extends ActivityContext {
+    message?: string;
+    title?: string;
+    confirmCallback?: () => Promise<boolean>;
+    cancelCallback?: () => Promise<void>;
+}
+
+export interface ConfirmActivityOptions {
+    message: string;
+    title?: string;
+    confirmText?: string;
+    cancelText?: string;
+}
+
+@Injectable()
+export class ConfirmActivity implements Activity<ConfirmActivityContext> {
+    name = 'confirm';
+
+    constructor(private options?: ConfirmActivityOptions) {}
+
+    async execute(context: ConfirmActivityContext): Promise<ActivityResult> {
+        try {
+            // 如果提供了自定义确认回调，使用它
+            if (context.confirmCallback) {
+                const confirmed = await context.confirmCallback();
+                return {
+                    success: confirmed,
+                    data: {
+                        confirmed,
+                        timestamp: Date.now()
+                    }
+                };
+            }
+
+            // 使用默认的确认机制
+            const message = context.message || this.options?.message || 'Please confirm this action';
+            const title = context.title || this.options?.title || 'Confirmation';
+
+            // 这里可以实现具体的确认UI逻辑
+            // 为演示目的，我们返回一个 Promise
+            return new Promise<ActivityResult>((resolve) => {
+                const confirmed = window.confirm(`${title}\n${message}`);
+                resolve({
+                    success: confirmed,
+                    data: {
+                        confirmed,
+                        timestamp: Date.now()
+                    }
+                });
+            });
+        } catch (error) {
+            return {
+                success: false,
+                error: error as Error
+            };
+        }
+    }
+
+    async compensate(context: ConfirmActivityContext): Promise<void> {
+        if (context.cancelCallback) {
+            await context.cancelCallback();
+        }
+    }
 }

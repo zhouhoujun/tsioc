@@ -1,5 +1,5 @@
 import { PackModule, LibPackBuilderOption } from '@tsdi/pack';
-import { Workflow, Task } from '@tsdi/activities';
+import { WorkflowInstance, Task } from '@tsdi/activities';
 import { ServerActivitiesModule } from '@tsdi/platform-server/activities';
 
 @Task({
@@ -26,5 +26,5 @@ export class BootBuilder {
 }
 
 if (process.cwd() === __dirname) {
-    Workflow.run(BootBuilder);
+    WorkflowInstance.run(BootBuilder);
 }

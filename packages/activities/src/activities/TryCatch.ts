@@ -1,166 +1,173 @@
+import { Injectable } from '@tsdi/ioc';
+import { Activity, ActivityContext, ActivityResult } from './Activity';
 
-import { Directive, DoCheck, Host, Input, TemplateRef, ViewContainerRef } from '@tsdi/components';
+export interface TryCatchActivityContext extends ActivityContext {
+    /**
+     * try 块中的活动
+     */
+    tryActivity: Activity;
+    /**
+     * catch 块中的活动
+     */
+    catchActivity?: Activity;
+    /**
+     * finally 块中的活动
+     */
+    finallyActivity?: Activity;
+    /**
+     * 错误类型过滤器
+     */
+    errorTypes?: (new (...args: any[]) => Error)[];
+    /**
+     * 错误处理函数
+     */
+    errorHandler?: (error: Error) => Promise<ActivityResult>;
+    /**
+     * 是否在 catch 块中重新抛出错误
+     */
+    rethrow?: boolean;
+}
 
+export interface TryCatchActivityOptions {
+    /**
+     * 默认错误类型过滤器
+     */
+    defaultErrorTypes?: (new (...args: any[]) => Error)[];
+    /**
+     * 默认是否重新抛出错误
+     */
+    defaultRethrow?: boolean;
+}
 
-/**
- * try catch activity.
- * 
- * ### Usage Examples
- *
- * The following example shows how to use more than one case to display the same view:
- *
- * ```
- * <container-element [tryCatch]="switch_expression">
- *   <!-- the same view can be shown in more than one case -->
- *   <some-element *try>...</some-element>
- *   <some-element *catch="match_expression_1">...</some-element>
- *   <some-element *catch="match_expression_2">...</some-element>
- *   <some-other-element *catch="match_expression_3">...</some-other-element>
- *   <!--default case when there are no matches -->
- * </container-element>
- * ```
- *
- * The following example shows how cases can be nested:
- * ```
- * <container-element [tryCatch]="switch_expression">
- *       <some-element *try>...</some-element>
- *       <some-element *try>...</some-element>
- *       <some-element *catch="match_expression_1">...</some-element>
- *       <some-element *catch="match_expression_2">...</some-element>
- *       <some-other-element *catch="match_expression_3">...</some-other-element>
- *       <ng-container *catch="match_expression_3">
- *         <!-- use a ng-container to group multiple root nodes -->
- *         <inner-element></inner-element>
- *         <inner-other-element></inner-other-element>
- *       </ng-container>
- *     </container-element>
- * ```
- * @export
- * @class TryCatchActivity
- * @extends {ControlActivity}
- */
-@Directive('[tryCatch]')
-export class TryCatchActivity<T = any> {
-    private _defaultViews!: TryView[];
-    private _defaultUsed = false;
+@Injectable()
+export class TryCatchActivity implements Activity<TryCatchActivityContext> {
+    name = 'try_catch';
 
-    private _catchCount = 0;
-    private _lastCatchCheckIndex = 0;
-    private _lastCatchMatched = false;
-    private _tryCatch: any;
+    constructor(private options: TryCatchActivityOptions = {}) {
+        this.options = {
+            defaultErrorTypes: [Error],
+            defaultRethrow: false,
+            ...options
+        };
+    }
 
-    _addTry(view: TryView) {
-        if (!this._defaultViews) {
-            this._defaultViews = [];
+    async execute(context: TryCatchActivityContext): Promise<ActivityResult> {
+        if (!context.tryActivity) {
+            return {
+                success: false,
+                error: new Error('Try activity is required')
+            };
         }
-        this._defaultViews.push(view);
-    }
 
+        let tryResult: ActivityResult | null = null;
+        let catchResult: ActivityResult | null = null;
+        let finallyResult: ActivityResult | null = null;
 
-    _addCatch() {
-        this._catchCount++;
-    }
+        try {
+            // 执行 try 块
+            tryResult = await context.tryActivity.execute(context);
+        } catch (error) {
+            const caughtError = error as Error;
 
-    @Input()
-    set tryCatch(newValue: any) {
-        this._tryCatch = newValue;
-        if (this._catchCount === 0) {
-            this._updateTrys(true);
-        }
-    }
+            // 检查错误类型是否匹配
+            const errorTypes = context.errorTypes ?? this.options.defaultErrorTypes;
+            const shouldCatch = errorTypes?.some(errorType => 
+                caughtError instanceof errorType
+            );
 
+            if (shouldCatch && context.catchActivity) {
+                // 执行 catch 块
+                try {
+                    catchResult = await context.catchActivity.execute({
+                        ...context,
+                        error: caughtError
+                    });
 
-    _matchCatch(value: any): boolean {
-        const matched = value === this._tryCatch;
-        this._lastCatchMatched = this._lastCatchMatched || matched;
-        this._lastCatchCheckIndex++;
-        if (this._lastCatchCheckIndex === this._catchCount) {
-            this._updateTrys(!this._lastCatchMatched);
-            this._lastCatchCheckIndex = 0;
-            this._lastCatchMatched = false;
-        }
-        return matched;
-    }
-
-    private _updateTrys(useDefault: boolean) {
-        if (this._defaultViews && useDefault !== this._defaultUsed) {
-            this._defaultUsed = useDefault;
-            for (let i = 0; i < this._defaultViews.length; i++) {
-                const defaultView = this._defaultViews[i];
-                defaultView.enforceState(useDefault);
+                    // 如果配置了重新抛出，则抛出错误
+                    if (context.rethrow ?? this.options.defaultRethrow) {
+                        throw caughtError;
+                    }
+                } catch (catchError) {
+                    return {
+                        success: false,
+                        error: catchError as Error,
+                        data: {
+                            tryResult,
+                            catchError: catchError as Error
+                        }
+                    };
+                }
+            } else {
+                // 错误类型不匹配或没有 catch 块，重新抛出错误
+                throw caughtError;
+            }
+        } finally {
+            // 执行 finally 块
+            if (context.finallyActivity) {
+                try {
+                    finallyResult = await context.finallyActivity.execute(context);
+                } catch (finallyError) {
+                    const result = {
+                        success: false,
+                        error: finallyError as Error,
+                        data: {
+                            tryResult,
+                            catchResult,
+                            finallyError: finallyError as Error
+                        }
+                    } as ActivityResult;
+                    return result;
+                }
             }
         }
-    }
 
-}
-
-
-@Directive({ selector: '[catch]' })
-export class CatchActivity implements DoCheck {
-    private _view: TryView;
-    /**
-     * Stores the HTML template to be selected on match.
-     */
-    @Input() execption: any;
-
-    constructor(
-        viewContainer: ViewContainerRef, templateRef: TemplateRef<Object>,
-        @Host() private trys: TryCatchActivity) {
-        trys._addCatch();
-        this._view = new TryView(viewContainer, templateRef);
-    }
-
-    /**
-     * Performs case matching. For internal use only.
-     */
-    onDoCheck() {
-        this._view.enforceState(this.trys._matchCatch(this.execption));
-    }
-}
-
-@Directive({ selector: '[try]' })
-export class TryActivity {
-    constructor(
-        viewContainer: ViewContainerRef, templateRef: TemplateRef<Object>,
-        @Host() trys: TryCatchActivity) {
-        trys._addTry(new TryView(viewContainer, templateRef));
-    }
-}
-
-
-
-/**
- * try view.
- */
-export class TryView {
-    private _created = false;
-
-    constructor(
-        private _viewContainerRef: ViewContainerRef, private _templateRef: TemplateRef<Object>) { }
-
-    create(): void {
-        this._created = true;
-        this._viewContainerRef.createEmbeddedView(this._templateRef);
-    }
-
-    destroy(): void {
-        this._created = false;
-        this._viewContainerRef.clear();
-    }
-
-    enforceState(created: boolean) {
-        if (created && !this._created) {
-            this.create();
-        } else if (!created && this._created) {
-            this.destroy();
+        // 如果有自定义错误处理器，使用它处理任何错误
+        if (context.errorHandler) {
+            const error = tryResult?.error || catchResult?.error || finallyResult?.error;
+            if (error) {
+                try {
+                    return await context.errorHandler(error);
+                } catch (handlerError) {
+                    return {
+                        success: false,
+                        error: handlerError as Error,
+                        data: {
+                            tryResult,
+                            catchResult,
+                            finallyResult,
+                            handlerError: handlerError as Error
+                        }
+                    };
+                }
+            }
         }
-    }
-}
 
-/**
- * try context
- */
-export class DirTryContext<T> {
-    public $implicit: T = null!;
-    public dirCatch: T = null!;
+        // 返回执行结果
+        return {
+            success: Boolean(tryResult?.success || catchResult?.success),
+            error: tryResult?.error || catchResult?.error || finallyResult?.error,
+            data: {
+                tryResult,
+                catchResult,
+                finallyResult
+            }
+        };
+    }
+
+    async compensate(context: TryCatchActivityContext): Promise<void> {
+        // 按相反顺序执行补偿操作
+        const compensations: Promise<void>[] = [];
+
+        if (context.finallyActivity?.compensate) {
+            compensations.push(context.finallyActivity.compensate(context));
+        }
+        if (context.catchActivity?.compensate) {
+            compensations.push(context.catchActivity.compensate(context));
+        }
+        if (context.tryActivity?.compensate) {
+            compensations.push(context.tryActivity.compensate(context));
+        }
+
+        await Promise.all(compensations);
+    }
 }

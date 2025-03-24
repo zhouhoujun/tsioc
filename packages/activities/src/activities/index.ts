@@ -1,15 +1,14 @@
-
+export * from './Activity';
+export * from './BaseActivities';
+export * from './Confirm';
+export * from './Process';
 export * from './TimerActivity';
-
+export * from './TryCatch';
+export * from './While';
 export * from './Parallel';
 export * from './Sequence';
-
-export * from './Confirm';
 export * from './Delay';
 export * from './Interval';
 export * from './DoWhile';
 export * from './Invoke';
 export * from './Throw';
-export * from './TryCatch';
-export * from './While';
-

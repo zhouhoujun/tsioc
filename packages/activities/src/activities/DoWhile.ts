@@ -1,60 +1,138 @@
-import { assertTemplate, Component, EmbeddedViewRef, Input, TemplateRef, ViewContainerRef } from '@tsdi/components';
+import { Injectable } from '@tsdi/ioc';
+import { Activity, ActivityContext, ActivityResult } from './Activity';
 
-
-
-/**
- * do while control activity.
- *
- * @export
- * @class DoWhileActivity
- * @extends {ContentActivity}
- */
-@Component('dowhile,[dowhile]')
-export class DoWhileActivity<T> {
-
-    private _context: DirDowhileContext<T> = new DirDowhileContext<T>();
-    private _thenTemplateRef: TemplateRef<DirDowhileContext<T>> | null = null;
-    private _thenViewRef: EmbeddedViewRef<DirDowhileContext<T>> | null = null;
-    constructor(private _viewContainer: ViewContainerRef, templateRef: TemplateRef<DirDowhileContext<T>>) {
-        this._thenTemplateRef = templateRef;
-    }
-
-    @Input()
-    set dowhile(condition: T) {
-        this._context.$implicit = this._context.dirDowhile = condition;
-        this._updateView();
-    }
-
+export interface DoWhileActivityContext extends ActivityContext {
     /**
-     * A template to show if the condition expression evaluates to true.
+     * 循环条件
      */
-    @Input()
-    set dowhileThen(templateRef: TemplateRef<DirDowhileContext<T>> | null) {
-        assertTemplate('dowhileConent', templateRef);
-        this._thenTemplateRef = templateRef;
-        this._thenViewRef = null;  // clear previous view if any.
-        this._updateView();
+    condition: () => Promise<boolean> | boolean;
+    /**
+     * 循环体活动
+     */
+    bodyActivity: Activity;
+    /**
+     * 最大迭代次数
+     */
+    maxIterations?: number;
+    /**
+     * 迭代间隔（毫秒）
+     */
+    interval?: number;
+    /**
+     * 迭代回调
+     */
+    onIteration?: (iteration: number, result: ActivityResult) => void;
+}
+
+export interface DoWhileActivityOptions {
+    /**
+     * 默认最大迭代次数
+     */
+    defaultMaxIterations?: number;
+    /**
+     * 默认迭代间隔
+     */
+    defaultInterval?: number;
+}
+
+@Injectable()
+export class DoWhileActivity implements Activity<DoWhileActivityContext> {
+    name = 'do_while';
+    private isRunning = false;
+
+    constructor(private options: DoWhileActivityOptions = {}) {
+        this.options = {
+            defaultMaxIterations: 100,
+            defaultInterval: 0,
+            ...options
+        };
     }
 
-    private _updateView() {
-        if (this._context.$implicit) {
-            if (!this._thenViewRef) {
-                this._viewContainer.clear();
-                if (this._thenTemplateRef) {
-                    this._thenViewRef =
-                        this._viewContainer.createEmbeddedView(this._thenTemplateRef, this._context);
+    async execute(context: DoWhileActivityContext): Promise<ActivityResult> {
+        if (!context.bodyActivity || !context.condition) {
+            return {
+                success: false,
+                error: new Error('Missing required body activity or condition')
+            };
+        }
+
+        const maxIterations = context.maxIterations ?? this.options.defaultMaxIterations;
+        const interval = context.interval ?? this.options.defaultInterval!;
+        let iteration = 0;
+        let lastResult: ActivityResult | null = null;
+        this.isRunning = true;
+
+        try {
+            do {
+                // 检查最大迭代次数
+                if (iteration >= maxIterations!) {
+                    return {
+                        success: false,
+                        error: new Error(`Maximum iterations (${maxIterations}) reached`),
+                        data: {
+                            iterations: iteration,
+                            lastResult
+                        }
+                    };
                 }
-            }
+
+                // 执行循环体活动
+                lastResult = await context.bodyActivity.execute(context);
+                
+                // 调用迭代回调
+                if (context.onIteration) {
+                    context.onIteration(iteration, lastResult);
+                }
+
+                // 如果循环体执行失败，中断循环
+                if (!lastResult.success) {
+                    return {
+                        success: false,
+                        error: lastResult.error,
+                        data: {
+                            iterations: iteration,
+                            lastResult
+                        }
+                    };
+                }
+
+                // 等待指定间隔
+                if (interval > 0) {
+                    await new Promise(resolve => setTimeout(resolve, interval));
+                }
+
+                iteration++;
+            } while (this.isRunning && await context.condition());
+
+            return {
+                success: true,
+                data: {
+                    iterations: iteration,
+                    completed: true,
+                    lastResult
+                }
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error as Error,
+                data: {
+                    iterations: iteration,
+                    lastResult
+                }
+            };
+        } finally {
+            this.isRunning = false;
         }
     }
 
-}
+    async compensate(context: DoWhileActivityContext): Promise<void> {
+        // 停止循环
+        this.isRunning = false;
 
-
-/**
- * Do while context
- */
- export class DirDowhileContext<T> {
-    public $implicit: T = null!;
-    public dirDowhile: T = null!;
+        // 如果循环体活动有补偿操作，执行它
+        if (context.bodyActivity.compensate) {
+            await context.bodyActivity.compensate(context);
+        }
+    }
 }

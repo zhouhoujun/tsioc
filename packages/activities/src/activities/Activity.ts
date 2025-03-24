@@ -1,24 +1,19 @@
-import { Component } from '@tsdi/components';
+import { Abstract, Injectable, Token } from '@tsdi/ioc';
 
-/**
- * base activity element.
- * 
- * 
- * ```ts
- * 
- * \@Component({
- *    select: 'myActivity',
- *    template: `<activity *if="work && right"></activity>`
- * })
- * export class MyActivity {
- *    work = true;
- *    right = true;
- * }
- * ```
- */
-@Component('activity')
-export class Activity {
-
-
+export interface ActivityContext {
+    [key: string]: any;
 }
 
+export interface ActivityResult<T = any> {
+    success: boolean;
+    data?: T;
+    error?: Error;
+}
+
+@Abstract()
+export abstract class Activity<TContext extends ActivityContext = ActivityContext> {
+    abstract name: string;
+    abstract execute(context: TContext): Promise<ActivityResult>;
+    
+    compensate?(context: ActivityContext): Promise<void>;
+} 

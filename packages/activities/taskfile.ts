@@ -2,8 +2,8 @@ import { PackModule, LibPackBuilderOption } from '@tsdi/pack';
 import { ServerActivitiesModule } from '@tsdi/platform-server/activities';
 import { Component } from '@tsdi/components';
 import { Application } from '@tsdi/core';
-import { ActivityModule } from './src/ActivityModule';
-import { Workflow } from './src/Workflow';
+import { ActivityModule } from './src/workflow.module';
+import { WorkflowInstance } from './src/Workflow';
 
 
 
@@ -36,7 +36,7 @@ import { Workflow } from './src/Workflow';
 // }
 
 if (process.cwd() === __dirname) {
-    Workflow.run({
+    WorkflowInstance.run({
         imports:[PackModule, ServerActivitiesModule],
         template: [
             {

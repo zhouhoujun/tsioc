@@ -1,6 +1,6 @@
 import { Aspect, Joinpoint, AfterReturning } from '@tsdi/aop';
-import { ActivityRef } from '../refs/activity';
-import { RunState } from '../refs/state';
+import { Activity } from '../activities/Activity';
+
 
 
 /**
@@ -10,7 +10,7 @@ import { RunState } from '../refs/state';
  * @class TaskLogAspect
  */
 @Aspect({
-    within: ActivityRef,
+    within: Activity,
     singleton: true
 })
 export class RunAspect {
@@ -22,14 +22,14 @@ export class RunAspect {
     @AfterReturning('execution(*.run)')
     afterRun(joinPoint: Joinpoint) {
 
-        const actRef = joinPoint.target as ActivityRef;
+        // const actRef = joinPoint.target as ActivityRef;
 
-        switch (actRef.state) {
-            case RunState.pause:
-                throw new Error('workflow paused!');
-            case RunState.stop:
-                throw new Error('workflow stop!');
-        }
+        // switch (actRef.state) {
+        //     case RunState.pause:
+        //         throw new Error('workflow paused!');
+        //     case RunState.stop:
+        //         throw new Error('workflow stop!');
+        // }
 
     }
 

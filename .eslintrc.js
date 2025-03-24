@@ -24,5 +24,6 @@ module.exports = {
         "@typescript-eslint/no-namespace": "off",
         "@typescript-eslint/no-empty-interface": "off",
         "@typescript-eslint/no-control-regex": "off",
+        "@typescript-eslint/no-unsafe-finally": "off",
     }
 }
