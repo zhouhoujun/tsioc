@@ -1,55 +1,65 @@
 import { Injectable } from '@tsdi/ioc';
-import { Workflow } from '../decorators/workflow.decorator';
-import { DelayActivity } from '../activities/Delay';
-import { WorkflowService } from '../services/workflow.service';
-import { StartActivity } from '../activities/BaseActivities';
-import { EndActivity } from '../activities/BaseActivities';
-import { Delay } from '../decorators/delay.decorator';
-import { ProcessActivity } from '../activities/Process';
+import { Workflow } from '../decorators';
+import { Delay } from '../decorators';
+import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
 
-@Workflow({
-    name: 'process_with_delay',
-    activities: [
-        StartActivity,
-        DelayActivity,
-        ProcessActivity,
-        EndActivity
-    ],
-    transitions: [
-        { from: 'start', to: 'delay' },
-        { from: 'delay', to: 'process' },
-        { from: 'process', to: 'end' }
-    ],
-    initialState: 'start',
-    finalStates: ['end']
-})
-export class ProcessWithDelayWorkflow {
-    @Delay({
-        defaultDuration: 2000,
-        showProgress: true,
-        progressInterval: 100
-    })
-    delay!: DelayActivity;
+// 活动类
+class ProcessActivity implements Activity {
+    name = 'process';
+    
+    async execute(context: ActivityContext): Promise<ActivityResult> {
+        // 模拟处理逻辑
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return {
+            success: true,
+            data: { processed: true }
+        };
+    }
 }
 
-@Injectable()
-export class ProcessService {
-    constructor(private workflowService: WorkflowService) {}
+// 工作流类
+@Workflow({
+    name: 'DelayProcessingWorkflow',
+    description: '使用 Delay 装饰器的工作流示例'
+})
+export class DelayProcessingWorkflow {
+    @Delay({
+        defaultDelay: 2000,
+        defaultInterruptible: true
+    })
+    async waitBeforeProcess(
+        delay: number,
+        options?: {
+            interruptible?: boolean;
+            onComplete?: () => void;
+        }
+    ) {
+        return { delay, ...options };
+    }
+}
+
+// 服务类
+export class ProcessingService {
+    constructor(private workflow: DelayProcessingWorkflow) {}
 
     async processWithDelay() {
-        const context = {
-            duration: 3000, // 3秒延迟
-            interruptible: true,
-            onProgress: (progress: number) => {
-                console.log(`Progress: ${progress.toFixed(1)}%`);
+        const processActivity = new ProcessActivity();
+
+        // 示例1：基本延迟
+        const result1 = await this.workflow.waitBeforeProcess(3000, {
+            onComplete: () => {
+                console.log('Delay completed');
             }
-        };
+        });
 
-        const result = await this.workflowService.startWorkflow(
-            ProcessWithDelayWorkflow,
-            context
-        );
+        // 示例2：不可中断的延迟
+        const result2 = await this.workflow.waitBeforeProcess(5000, {
+            interruptible: false,
+            onComplete: () => {
+                console.log('Non-interruptible delay completed');
+            }
+        });
 
-        return result;
+        return { result1, result2 };
     }
 } 

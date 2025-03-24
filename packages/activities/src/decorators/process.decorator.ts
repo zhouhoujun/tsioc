@@ -1,59 +1,33 @@
-import { Injectable } from '@tsdi/ioc';
 import { ProcessActivity, ProcessActivityContext, ProcessActivityOptions } from '../activities/Process';
+import { Activity } from '../activities/Activity';
 
-export interface ProcessDecoratorOptions extends ProcessActivityOptions {
-    /**
-     * 是否在验证失败时抛出错误
-     */
-    throwOnValidationError?: boolean;
-    /**
-     * 是否在错误时继续处理
-     */
-    continueOnError?: boolean;
-    /**
-     * 批处理大小
-     */
-    batchSize?: number;
-    /**
-     * 处理超时时间（毫秒）
-     */
-    timeout?: number;
-    /**
-     * 是否显示进度
-     */
-    showProgress?: boolean;
-    /**
-     * 进度更新间隔（毫秒）
-     */
-    progressInterval?: number;
-}
+export function Process(options: ProcessActivityOptions = {}) {
+    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+        const originalMethod = descriptor.value;
 
-export function Process(options: ProcessDecoratorOptions = {}) {
-    return function (target: any, propertyKey: string) {
-        const activity = new ProcessActivity({
-            defaultOptions: {
-                throwOnValidationError: options.throwOnValidationError ?? true,
-                continueOnError: options.continueOnError ?? false,
-                batchSize: options.batchSize ?? 100,
-                timeout: options.timeout ?? 30000,
-                ...options.defaultOptions
+        descriptor.value = async function (...args: any[]) {
+            const activity = new ProcessActivity(options);
+            const context: ProcessActivityContext = {
+                data: args[0],
+                processor: args[1],
+                onProgress: args[2]?.onProgress,
+                errorHandler: args[2]?.errorHandler,
+                validator: args[2]?.validator,
+                options: args[2]?.options
+            };
+
+            // 验证参数
+            if (context.data === undefined) {
+                throw new Error('First argument must be the data to process');
             }
-        });
 
-        // 创建 getter 来获取活动实例
-        Object.defineProperty(target, propertyKey, {
-            get: function () {
-                return activity;
-            },
-            enumerable: true,
-            configurable: true
-        });
+            if (typeof context.processor !== 'function') {
+                throw new Error('Second argument must be a processor function');
+            }
 
-        // 添加元数据
-        Reflect.defineMetadata('activity', {
-            type: 'process',
-            name: propertyKey,
-            options
-        }, target, propertyKey);
+            return await activity.execute(context);
+        };
+
+        return descriptor;
     };
 } 

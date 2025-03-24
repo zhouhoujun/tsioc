@@ -1,58 +1,72 @@
-import { Workflow } from '../decorators/workflow.decorator';
-import { While } from '../decorators/while.decorator';
+import { Injectable } from '@tsdi/ioc';
+import { Workflow } from '../decorators';
+import { While } from '../decorators';
 import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
 
+// 活动类
 class ProcessActivity implements Activity {
     name = 'process';
-
+    
     async execute(context: ActivityContext): Promise<ActivityResult> {
-        // 实现数据处理逻辑
-        console.log('Processing data...');
-        return { success: true, data: context.data };
+        // 模拟处理逻辑
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return {
+            success: true,
+            data: { processed: true }
+        };
     }
 }
 
-@Workflow()
-export class DataProcessingWorkflow {
+// 工作流类
+@Workflow({
+    name: 'WhileProcessingWorkflow',
+    description: '使用 While 装饰器的工作流示例'
+})
+export class WhileProcessingWorkflow {
     @While({
         defaultMaxIterations: 10,
-        defaultInterval: 1000,
-        defaultContinueOnError: true
+        defaultContinueOnError: false
     })
-    async processDataUntilComplete(
-        activity: Activity,
+    async whileProcess(
+        condition: (context: ActivityContext) => Promise<boolean>,
+        body: Activity,
         options?: {
             maxIterations?: number;
-            interval?: number;
-            onIteration?: (iteration: number, result: any) => void;
-            errorHandler?: (error: Error, iteration: number) => Promise<any>;
             continueOnError?: boolean;
-            throwOnConditionFalse?: boolean;
+            onIteration?: (iteration: number, result: ActivityResult) => void;
+            onComplete?: () => void;
         }
     ) {
-        // 这里实现循环条件
-        // 例如：检查数据是否处理完成
-        return true; // 示例中始终返回 true，实际应用中应该根据具体条件返回
+        return { condition, body, ...options };
     }
 }
 
-// 示例使用
+// 服务类
 export class DataProcessingService {
-    constructor(private workflow: DataProcessingWorkflow) {}
+    constructor(private workflow: WhileProcessingWorkflow) {}
 
-    async processDataWithRetry(data: any) {
+    async processWithWhile() {
         const processActivity = new ProcessActivity();
 
-        return await this.workflow.processDataUntilComplete(processActivity, {
-            maxIterations: 5,
-            interval: 2000,
-            onIteration: (iteration, result) => {
-                console.log(`Iteration ${iteration} completed with result:`, result);
+        // 示例：处理数据直到条件满足
+        let counter = 0;
+        const result = await this.workflow.whileProcess(
+            async (context) => {
+                counter++;
+                return counter < 3; // 执行3次
             },
-            errorHandler: async (error, iteration) => {
-                console.error(`Error at iteration ${iteration}:`, error);
-                return { success: false, error };
+            processActivity,
+            {
+                maxIterations: 5,
+                onIteration: (iteration, result) => {
+                    console.log(`Iteration ${iteration} completed:`, result);
+                },
+                onComplete: () => {
+                    console.log('While loop completed');
+                }
             }
-        });
+        );
+
+        return result;
     }
 } 

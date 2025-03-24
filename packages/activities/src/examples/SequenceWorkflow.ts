@@ -1,12 +1,9 @@
 import { Injectable } from '@tsdi/ioc';
-import { Workflow } from '../decorators/workflow.decorator';
-import { SequenceActivity } from '../activities/Sequence';
-import { WorkflowService } from '../services/workflow.service';
+import { Workflow } from '../decorators';
+import { Sequence } from '../decorators';
 import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
-import { StartActivity, EndActivity } from '../activities/BaseActivities';
-import { Sequence } from '../decorators/sequence.decorator';
 
-@Injectable()
+// 活动类
 class ValidateActivity implements Activity {
     name = 'validate';
     
@@ -20,7 +17,6 @@ class ValidateActivity implements Activity {
     }
 }
 
-@Injectable()
 class ProcessActivity implements Activity {
     name = 'process';
     
@@ -34,56 +30,51 @@ class ProcessActivity implements Activity {
     }
 }
 
+// 工作流类
 @Workflow({
-    name: 'sequential_processing_workflow',
-    activities: [
-        StartActivity,
-        SequenceActivity,
-        EndActivity
-    ],
-    transitions: [
-        { from: 'start', to: 'sequence' },
-        { from: 'sequence', to: 'end' }
-    ],
-    initialState: 'start',
-    finalStates: ['end']
+    name: 'SequentialProcessingWorkflow',
+    description: '使用 Sequence 装饰器的工作流示例'
 })
 export class SequentialProcessingWorkflow {
     @Sequence({
         defaultContinueOnError: false
     })
-    sequence!: SequenceActivity;
+    async executeSequence(
+        activities: Activity[],
+        options?: {
+            continueOnError?: boolean;
+            onActivityComplete?: (activity: Activity, result: ActivityResult) => void;
+            errorHandler?: (activity: Activity, error: Error) => Promise<ActivityResult>;
+        }
+    ) {
+        return { activities, ...options };
+    }
 }
 
-@Injectable()
+// 服务类
 export class DataProcessor {
-    constructor(private workflowService: WorkflowService) {}
+    constructor(private workflow: SequentialProcessingWorkflow) {}
 
     async processData() {
-        const context = {
-            activities: [
-                new ValidateActivity(),
-                new ProcessActivity()
-            ],
-            continueOnError: false,
-            onActivityComplete: (activity: Activity, result: ActivityResult) => {
-                console.log(`Activity ${activity.name} completed:`, result);
-            },
-            errorHandler: async (activity: Activity, error: Error) => {
-                console.error(`Error in activity ${activity.name}:`, error);
-                return {
-                    success: false,
-                    error,
-                    data: { handled: true }
-                };
+        const validateActivity = new ValidateActivity();
+        const processActivity = new ProcessActivity();
+
+        return await this.workflow.executeSequence(
+            [validateActivity, processActivity],
+            {
+                continueOnError: false,
+                onActivityComplete: (activity: Activity, result: ActivityResult) => {
+                    console.log(`Activity ${activity.name} completed:`, result);
+                },
+                errorHandler: async (activity: Activity, error: Error) => {
+                    console.error(`Error in activity ${activity.name}:`, error);
+                    return {
+                        success: false,
+                        error,
+                        data: { handled: true }
+                    };
+                }
             }
-        };
-
-        const result = await this.workflowService.startWorkflow(
-            SequentialProcessingWorkflow,
-            context
         );
-
-        return result;
     }
 } 

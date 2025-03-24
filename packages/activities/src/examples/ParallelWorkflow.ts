@@ -1,12 +1,9 @@
 import { Injectable } from '@tsdi/ioc';
-import { Workflow } from '../decorators/workflow.decorator';
-import { ParallelActivity } from '../activities/Parallel';
-import { WorkflowService } from '../services/workflow.service';
+import { Workflow } from '../decorators';
+import { Parallel } from '../decorators';
 import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
-import { StartActivity, EndActivity } from '../activities/BaseActivities';
-import { Parallel } from '../decorators/parallel.decorator';
 
-@Injectable()
+// 活动类
 class DataFetchActivity implements Activity {
     name = 'fetch_data';
     
@@ -15,12 +12,11 @@ class DataFetchActivity implements Activity {
         await new Promise(resolve => setTimeout(resolve, 1000));
         return {
             success: true,
-            data: { source: this.name }
+            data: { fetched: true }
         };
     }
 }
 
-@Injectable()
 class DataProcessActivity implements Activity {
     name = 'process_data';
     
@@ -34,51 +30,61 @@ class DataProcessActivity implements Activity {
     }
 }
 
+class DataValidateActivity implements Activity {
+    name = 'validate_data';
+    
+    async execute(context: ActivityContext): Promise<ActivityResult> {
+        // 模拟数据验证
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        return {
+            success: true,
+            data: { validated: true }
+        };
+    }
+}
+
+// 工作流类
 @Workflow({
-    name: 'parallel_processing_workflow',
-    activities: [
-        StartActivity,
-        ParallelActivity,
-        EndActivity
-    ],
-    transitions: [
-        { from: 'start', to: 'parallel' },
-        { from: 'parallel', to: 'end' }
-    ],
-    initialState: 'start',
-    finalStates: ['end']
+    name: 'ParallelProcessingWorkflow',
+    description: '使用 Parallel 装饰器的工作流示例'
 })
 export class ParallelProcessingWorkflow {
     @Parallel({
         defaultMaxConcurrent: 3,
         defaultErrorStrategy: 'continue'
     })
-    parallel!: ParallelActivity;
+    async executeParallel(
+        activities: Activity[],
+        options?: {
+            maxConcurrent?: number;
+            waitAll?: boolean;
+            onActivityComplete?: (activity: Activity, result: ActivityResult) => void;
+            errorStrategy?: 'continue' | 'stop' | 'throw';
+        }
+    ) {
+        return { activities, ...options };
+    }
 }
 
-@Injectable()
-export class DataProcessor {
-    constructor(private workflowService: WorkflowService) {}
+// 服务类
+export class DataProcessingService {
+    constructor(private workflow: ParallelProcessingWorkflow) {}
 
     async processData() {
-        const context = {
-            activities: [
-                new DataFetchActivity(),
-                new DataProcessActivity()
-            ],
-            maxConcurrent: 2,
-            waitAll: true,
-            onActivityComplete: (activity: Activity, result: ActivityResult) => {
-                console.log(`Activity ${activity.name} completed:`, result);
-            },
-            errorStrategy: 'continue'
-        };
+        const fetchActivity = new DataFetchActivity();
+        const processActivity = new DataProcessActivity();
+        const validateActivity = new DataValidateActivity();
 
-        const result = await this.workflowService.startWorkflow(
-            ParallelProcessingWorkflow,
-            context
+        return await this.workflow.executeParallel(
+            [fetchActivity, processActivity, validateActivity],
+            {
+                maxConcurrent: 3,
+                waitAll: true,
+                onActivityComplete: (activity: Activity, result: ActivityResult) => {
+                    console.log(`Activity ${activity.name} completed:`, result);
+                },
+                errorStrategy: 'continue'
+            }
         );
-
-        return result;
     }
 } 

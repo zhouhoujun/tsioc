@@ -1,36 +1,28 @@
 import { Injectable } from '@tsdi/ioc';
-import { Workflow } from '../decorators/workflow.decorator';
-import { InvokeActivity } from '../activities/Invoke';
-import { WorkflowService } from '../services/workflow.service';
-import { EndActivity, StartActivity } from '../activities/BaseActivities';
-import { ActivityContext } from '../activities/Activity';
-import { Invoke } from '../decorators/invoke.decorator';
+import { Workflow } from '../decorators';
+import { Invoke } from '../decorators';
+import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
 
-// 示例：远程服务调用
-async function callExternalService(context: ActivityContext): Promise<any> {
-    const { url, method, data } = context;
-    // 模拟 HTTP 请求
-    return await fetch(url, {
-        method,
-        body: JSON.stringify(data)
-    }).then(res => res.json());
+// 活动类
+class DataFetchActivity implements Activity {
+    name = 'fetch_data';
+    
+    async execute(context: ActivityContext): Promise<ActivityResult> {
+        // 模拟数据获取
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return {
+            success: true,
+            data: { fetched: true }
+        };
+    }
 }
 
+// 工作流类
 @Workflow({
-    name: 'service_call_workflow',
-    activities: [
-        StartActivity,
-        InvokeActivity,
-        EndActivity
-    ],
-    transitions: [
-        { from: 'start', to: 'invoke' },
-        { from: 'invoke', to: 'end' }
-    ],
-    initialState: 'start',
-    finalStates: ['end']
+    name: 'InvokeProcessingWorkflow',
+    description: '使用 Invoke 装饰器的工作流示例'
 })
-export class ServiceCallWorkflow {
+export class InvokeProcessingWorkflow {
     @Invoke({
         defaultRetry: {
             maxAttempts: 3,
@@ -38,48 +30,69 @@ export class ServiceCallWorkflow {
             backoff: 2
         }
     })
-    invoke!: InvokeActivity;
+    async invokeActivity(
+        target: Activity | ((context: ActivityContext, ...args: any[]) => Promise<any>),
+        options?: {
+            args?: any[];
+            resultMapper?: (result: any) => any;
+            errorHandler?: (error: Error) => Promise<ActivityResult>;
+            retry?: {
+                maxAttempts: number;
+                delay: number;
+                backoff?: number;
+            };
+        }
+    ) {
+        return { target, ...options };
+    }
 }
 
-@Injectable()
-export class ServiceCaller {
-    constructor(private workflowService: WorkflowService) {}
+// 服务类
+export class DataProcessingService {
+    constructor(private workflow: InvokeProcessingWorkflow) {}
 
-    async callService(url: string, method: string, data: any) {
-        const context = {
-            target: callExternalService,
-            args: [],
-            url,
-            method,
-            data,
-            resultMapper: (result: any) => {
-                // 转换结果
-                return {
-                    ...result,
-                    timestamp: Date.now()
-                };
-            },
-            errorHandler: async (error: Error) => {
-                console.error('Service call failed:', error);
-                // 可以返回自定义的失败结果
-                return {
-                    success: false,
-                    error,
-                    data: { handled: true }
-                };
-            },
-            retry: {
-                maxAttempts: 5,
-                delay: 2000,
-                backoff: 1.5
+    async processData() {
+        const fetchActivity = new DataFetchActivity();
+
+        // 示例1：调用活动
+        const result1 = await this.workflow.invokeActivity(
+            fetchActivity,
+            {
+                retry: {
+                    maxAttempts: 3,
+                    delay: 1000,
+                    backoff: 2
+                },
+                errorHandler: async (error) => {
+                    console.error('Activity execution failed:', error);
+                    return {
+                        success: false,
+                        error,
+                        data: { handled: true }
+                    };
+                }
             }
-        };
-
-        const result = await this.workflowService.startWorkflow(
-            ServiceCallWorkflow,
-            context
         );
 
-        return result;
+        // 示例2：调用函数
+        const result2 = await this.workflow.invokeActivity(
+            async (context, data) => {
+                // 模拟数据处理
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                return {
+                    processed: true,
+                    data
+                };
+            },
+            {
+                args: [{ id: 1, value: 'test' }],
+                resultMapper: (result) => ({
+                    ...result,
+                    timestamp: Date.now()
+                })
+            }
+        );
+
+        return { result1, result2 };
     }
 } 

@@ -9,11 +9,11 @@ export interface TryCatchActivityContext extends ActivityContext {
     /**
      * catch 块中的活动
      */
-    catchActivity?: Activity;
+    catchActivity?: Activity|null;
     /**
      * finally 块中的活动
      */
-    finallyActivity?: Activity;
+    finallyActivity?: Activity|null;
     /**
      * 错误类型过滤器
      */
@@ -29,6 +29,10 @@ export interface TryCatchActivityContext extends ActivityContext {
 }
 
 export interface TryCatchActivityOptions {
+    /**
+     * finally 块中的活动
+     */
+    finallyActivity?: Activity|null;
     /**
      * 默认错误类型过滤器
      */
@@ -62,6 +66,7 @@ export class TryCatchActivity implements Activity<TryCatchActivityContext> {
         let tryResult: ActivityResult | null = null;
         let catchResult: ActivityResult | null = null;
         let finallyResult: ActivityResult | null = null;
+        let finallyErrorResult: ActivityResult | null = null;
 
         try {
             // 执行 try 块
@@ -107,7 +112,7 @@ export class TryCatchActivity implements Activity<TryCatchActivityContext> {
                 try {
                     finallyResult = await context.finallyActivity.execute(context);
                 } catch (finallyError) {
-                    const result = {
+                    finallyErrorResult = {
                         success: false,
                         error: finallyError as Error,
                         data: {
@@ -116,9 +121,11 @@ export class TryCatchActivity implements Activity<TryCatchActivityContext> {
                             finallyError: finallyError as Error
                         }
                     } as ActivityResult;
-                    return result;
                 }
             }
+        }
+        if(finallyErrorResult) {
+            return finallyErrorResult;
         }
 
         // 如果有自定义错误处理器，使用它处理任何错误

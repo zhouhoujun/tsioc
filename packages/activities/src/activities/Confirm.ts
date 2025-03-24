@@ -13,66 +13,160 @@ import { Activity, ActivityContext, ActivityResult } from './Activity';
 }
 
 export interface ConfirmActivityContext extends ActivityContext {
-    message?: string;
-    title?: string;
-    confirmCallback?: () => Promise<boolean>;
-    cancelCallback?: () => Promise<void>;
+    /**
+     * 确认消息
+     */
+    message: string;
+    /**
+     * 确认选项
+     */
+    options?: {
+        /**
+         * 确认按钮文本
+         */
+        confirmText?: string;
+        /**
+         * 取消按钮文本
+         */
+        cancelText?: string;
+        /**
+         * 超时时间（毫秒）
+         */
+        timeout?: number;
+        /**
+         * 默认选择
+         */
+        defaultChoice?: boolean;
+    };
+    /**
+     * 确认回调
+     */
+    onConfirm?: (confirmed: boolean) => void;
+    /**
+     * 超时回调
+     */
+    onTimeout?: () => void;
+    /**
+     * 错误处理函数
+     */
+    errorHandler?: (error: Error) => Promise<ActivityResult>;
 }
 
 export interface ConfirmActivityOptions {
-    message: string;
-    title?: string;
-    confirmText?: string;
-    cancelText?: string;
+    /**
+     * 默认确认选项
+     */
+    defaultOptions?: {
+        confirmText: string;
+        cancelText: string;
+        timeout: number;
+        defaultChoice: boolean;
+    };
 }
 
 @Injectable()
 export class ConfirmActivity implements Activity<ConfirmActivityContext> {
     name = 'confirm';
 
-    constructor(private options?: ConfirmActivityOptions) {}
+    constructor(private options: ConfirmActivityOptions = {}) {
+        this.options = {
+            defaultOptions: {
+                confirmText: '确认',
+                cancelText: '取消',
+                timeout: 30000,
+                defaultChoice: false,
+                ...options.defaultOptions
+            },
+            ...options
+        };
+    }
 
     async execute(context: ConfirmActivityContext): Promise<ActivityResult> {
-        try {
-            // 如果提供了自定义确认回调，使用它
-            if (context.confirmCallback) {
-                const confirmed = await context.confirmCallback();
-                return {
-                    success: confirmed,
-                    data: {
-                        confirmed,
-                        timestamp: Date.now()
-                    }
-                };
-            }
-
-            // 使用默认的确认机制
-            const message = context.message || this.options?.message || 'Please confirm this action';
-            const title = context.title || this.options?.title || 'Confirmation';
-
-            // 这里可以实现具体的确认UI逻辑
-            // 为演示目的，我们返回一个 Promise
-            return new Promise<ActivityResult>((resolve) => {
-                const confirmed = window.confirm(`${title}\n${message}`);
-                resolve({
-                    success: confirmed,
-                    data: {
-                        confirmed,
-                        timestamp: Date.now()
-                    }
-                });
-            });
-        } catch (error) {
+        if (!context.message) {
             return {
                 success: false,
-                error: error as Error
+                error: new Error('No confirmation message provided')
+            };
+        }
+
+        const defaultOptions = this.options.defaultOptions!;
+        const options = {
+            confirmText: defaultOptions.confirmText,
+            cancelText: defaultOptions.cancelText,
+            timeout: defaultOptions.timeout,
+            defaultChoice: defaultOptions.defaultChoice,
+            ...(context.options || {})
+        };
+
+        try {
+            // 模拟确认对话框
+            const confirmed = await this.showConfirmation(context.message, options);
+
+            context.onConfirm?.(confirmed);
+
+            return {
+                success: true,
+                data: {
+                    confirmed,
+                    timestamp: Date.now(),
+                    message: context.message
+                }
+            };
+        } catch (error) {
+            // 如果有自定义错误处理器，使用它
+            if (context.errorHandler) {
+                try {
+                    return await context.errorHandler(error as Error);
+                } catch (handlerError) {
+                    return {
+                        success: false,
+                        error: handlerError as Error,
+                        data: {
+                            originalError: error,
+                            handlerError: handlerError
+                        }
+                    };
+                }
+            }
+
+            return {
+                success: false,
+                error: error as Error,
+                data: {
+                    confirmed: false,
+                    error: error as Error
+                }
             };
         }
     }
 
-    async compensate(context: ConfirmActivityContext): Promise<void> {
-        if (context.cancelCallback) {
-            await context.cancelCallback();
+    private async showConfirmation(
+        message: string,
+        options: {
+            confirmText: string;
+            cancelText: string;
+            timeout: number;
+            defaultChoice: boolean;
         }
+    ): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            // 设置超时
+            const timeoutId = setTimeout(() => {
+                reject(new Error('Confirmation timeout'));
+            }, options.timeout);
+
+            // 模拟用户交互
+            // 在实际应用中，这里应该显示真实的确认对话框
+            // 并等待用户响应
+            setTimeout(() => {
+                clearTimeout(timeoutId);
+                resolve(options.defaultChoice);
+            }, 1000);
+        });
+    }
+
+    async compensate(context: ConfirmActivityContext): Promise<void> {
+        // 如果需要，实现补偿逻辑
+        // 例如：清理临时状态、回滚操作等
     }
 }

@@ -1,91 +1,76 @@
 import { Injectable } from '@tsdi/ioc';
-import { Workflow } from '../decorators/workflow.decorator';
-import { ConfirmActivity } from '../activities/Confirm';
-import { WorkflowService } from '../services/workflow.service';
-import { Activity, ActivityResult } from '../activities/Activity';
-import { ActivityContext } from '../activities/Activity';
-import { StartActivity, EndActivity } from '../activities/BaseActivities';
-import { Confirm } from '../decorators/confirm.decorator';
+import { Workflow } from '../decorators';
+import { Confirm } from '../decorators';
+import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
 
-@Injectable()
-export class DeleteItemActivity implements Activity {
-    name = 'delete_item';
+// 活动类
+class DataProcessActivity implements Activity {
+    name = 'process';
     
     async execute(context: ActivityContext): Promise<ActivityResult> {
-        // 实现删除逻辑
+        // 模拟处理逻辑
+        await new Promise(resolve => setTimeout(resolve, 1000));
         return {
             success: true,
-            data: { deletedId: context.itemId }
+            data: { processed: true }
         };
-    }
-
-    async compensate(context: ActivityContext): Promise<void> {
-        // 实现恢复删除项的逻辑
-        console.log('Restoring deleted item...');
     }
 }
 
+// 工作流类
 @Workflow({
-    name: 'delete_with_confirm',
-    activities: [
-        StartActivity,
-        ConfirmActivity,
-        DeleteItemActivity,
-        EndActivity
-    ],
-    transitions: [
-        { from: 'start', to: 'confirm' },
-        { 
-            from: 'confirm', 
-            to: 'delete_item',
-            condition: (ctx: ActivityContext) => ctx.confirmed === true 
-        },
-        { 
-            from: 'confirm', 
-            to: 'end',
-            condition: (ctx: ActivityContext) => ctx.confirmed === false 
-        },
-        { from: 'delete_item', to: 'end' }
-    ],
-    initialState: 'start',
-    finalStates: ['end']
+    name: 'ConfirmProcessingWorkflow',
+    description: '使用 Confirm 装饰器的工作流示例'
 })
-export class DeleteWithConfirmWorkflow {
+export class ConfirmProcessingWorkflow {
     @Confirm({
-        message: 'Are you sure you want to delete this item?',
-        title: 'Delete Confirmation',
-        confirmText: 'Yes, delete',
-        cancelText: 'Cancel'
+        defaultMessage: 'Please confirm this action',
+        defaultTimeout: 30000 // 30秒
     })
-    confirm!: ConfirmActivity;
+    async confirmAction(
+        message: string,
+        options?: {
+            timeout?: number;
+            onConfirmed?: (result: ActivityResult) => void;
+            onRejected?: (reason: string) => void;
+            onTimeout?: () => void;
+        }
+    ) {
+        return { message, ...options };
+    }
 }
 
-@Injectable()
-export class ItemService {
-    constructor(private workflowService: WorkflowService) {}
+// 服务类
+export class DataProcessingService {
+    constructor(private workflow: ConfirmProcessingWorkflow) {}
 
-    async deleteItem(itemId: string) {
-        const context = {
-            itemId,
-            confirmCallback: async () => {
-                // 可以实现自定义的确认UI逻辑
-                return new Promise<boolean>((resolve) => {
-                    // 示例：使用自定义对话框
-                    const confirmed = window.confirm('确认删除？');
-                    resolve(confirmed);
-                });
-            },
-            cancelCallback: async () => {
-                // 取消时的清理逻辑
-                console.log('Delete operation cancelled');
+    async processWithConfirmation() {
+        const processActivity = new DataProcessActivity();
+
+        // 示例1：基本确认
+        const result1 = await this.workflow.confirmAction(
+            'Do you want to process this data?',
+            {
+                onConfirmed: (result) => {
+                    console.log('Action confirmed:', result);
+                },
+                onRejected: (reason) => {
+                    console.log('Action rejected:', reason);
+                }
             }
-        };
-
-        const result = await this.workflowService.startWorkflow(
-            DeleteWithConfirmWorkflow,
-            context
         );
 
-        return result;
+        // 示例2：带超时的确认
+        const result2 = await this.workflow.confirmAction(
+            'Please confirm within 10 seconds',
+            {
+                timeout: 10000,
+                onTimeout: () => {
+                    console.log('Confirmation timed out');
+                }
+            }
+        );
+
+        return { result1, result2 };
     }
 } 

@@ -12,3 +12,6 @@ export * from './Interval';
 export * from './DoWhile';
 export * from './Invoke';
 export * from './Throw';
+export * from './If';
+export * from './Case';
+export * from './Switch';

@@ -3,13 +3,13 @@ import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export interface DoWhileActivityContext extends ActivityContext {
     /**
-     * 循环条件
-     */
-    condition: () => Promise<boolean> | boolean;
-    /**
      * 循环体活动
      */
-    bodyActivity: Activity;
+    body: Activity;
+    /**
+     * 循环条件函数
+     */
+    condition: (context: ActivityContext) => Promise<boolean>;
     /**
      * 最大迭代次数
      */
@@ -19,9 +19,17 @@ export interface DoWhileActivityContext extends ActivityContext {
      */
     interval?: number;
     /**
-     * 迭代回调
+     * 迭代回调函数
      */
     onIteration?: (iteration: number, result: ActivityResult) => void;
+    /**
+     * 错误处理函数
+     */
+    errorHandler?: (error: Error, iteration: number) => Promise<ActivityResult>;
+    /**
+     * 是否在错误时继续执行
+     */
+    continueOnError?: boolean;
 }
 
 export interface DoWhileActivityOptions {
@@ -33,83 +41,148 @@ export interface DoWhileActivityOptions {
      * 默认迭代间隔
      */
     defaultInterval?: number;
+    /**
+     * 默认是否在错误时继续执行
+     */
+    defaultContinueOnError?: boolean;
 }
 
 @Injectable()
 export class DoWhileActivity implements Activity<DoWhileActivityContext> {
     name = 'do_while';
-    private isRunning = false;
 
     constructor(private options: DoWhileActivityOptions = {}) {
         this.options = {
-            defaultMaxIterations: 100,
+            defaultMaxIterations: 1000,
             defaultInterval: 0,
+            defaultContinueOnError: false,
             ...options
         };
     }
 
     async execute(context: DoWhileActivityContext): Promise<ActivityResult> {
-        if (!context.bodyActivity || !context.condition) {
+        if (!context.body) {
             return {
                 success: false,
-                error: new Error('Missing required body activity or condition')
+                error: new Error('No body activity provided for do-while loop')
+            };
+        }
+
+        if (!context.condition) {
+            return {
+                success: false,
+                error: new Error('No condition provided for do-while loop')
             };
         }
 
         const maxIterations = context.maxIterations ?? this.options.defaultMaxIterations;
-        const interval = context.interval ?? this.options.defaultInterval!;
+        const interval = context.interval ?? this.options.defaultInterval ?? 0;
+        const continueOnError = context.continueOnError ?? this.options.defaultContinueOnError;
+
         let iteration = 0;
-        let lastResult: ActivityResult | null = null;
-        this.isRunning = true;
+        const results: ActivityResult[] = [];
+        const errors: Error[] = [];
 
         try {
             do {
-                // 检查最大迭代次数
-                if (iteration >= maxIterations!) {
-                    return {
-                        success: false,
-                        error: new Error(`Maximum iterations (${maxIterations}) reached`),
-                        data: {
-                            iterations: iteration,
-                            lastResult
+                try {
+                    // 执行循环体
+                    const result = await context.body.execute(context);
+                    results.push(result);
+
+                    // 调用迭代回调
+                    context.onIteration?.(iteration, result);
+
+                    // 如果活动执行失败且不继续执行，返回错误
+                    if (!result.success && !continueOnError) {
+                        return {
+                            success: false,
+                            error: result.error,
+                            data: {
+                                iteration,
+                                results,
+                                errors
+                            }
+                        };
+                    }
+
+                    // 如果活动执行失败且继续执行，收集错误
+                    if (!result.success) {
+                        errors.push(result.error!);
+                    }
+
+                    // 等待指定的间隔时间
+                    if (interval > 0) {
+                        await new Promise(resolve => setTimeout(resolve, interval));
+                    }
+
+                    iteration++;
+
+                    // 检查是否达到最大迭代次数
+                    if (iteration >= maxIterations!) {
+                        return {
+                            success: false,
+                            error: new Error(`Maximum iterations (${maxIterations}) reached`),
+                            data: {
+                                iteration,
+                                results,
+                                errors
+                            }
+                        };
+                    }
+
+                    // 检查循环条件
+                    const shouldContinue = await context.condition(context);
+                    if (!shouldContinue) {
+                        break;
+                    }
+                } catch (error) {
+                    // 如果有自定义错误处理器，使用它
+                    if (context.errorHandler) {
+                        try {
+                            const handledResult = await context.errorHandler(error as Error, iteration);
+                            results.push(handledResult);
+
+                            if (!handledResult.success && !continueOnError) {
+                                return {
+                                    success: false,
+                                    error: handledResult.error,
+                                    data: {
+                                        iteration,
+                                        results,
+                                        errors
+                                    }
+                                };
+                            }
+                        } catch (handlerError) {
+                            errors.push(handlerError as Error);
                         }
-                    };
+                    } else {
+                        errors.push(error as Error);
+                    }
+
+                    // 如果不继续执行，返回错误
+                    if (!continueOnError) {
+                        return {
+                            success: false,
+                            error: error as Error,
+                            data: {
+                                iteration,
+                                results,
+                                errors
+                            }
+                        };
+                    }
                 }
+            } while (iteration < maxIterations!);
 
-                // 执行循环体活动
-                lastResult = await context.bodyActivity.execute(context);
-                
-                // 调用迭代回调
-                if (context.onIteration) {
-                    context.onIteration(iteration, lastResult);
-                }
-
-                // 如果循环体执行失败，中断循环
-                if (!lastResult.success) {
-                    return {
-                        success: false,
-                        error: lastResult.error,
-                        data: {
-                            iterations: iteration,
-                            lastResult
-                        }
-                    };
-                }
-
-                // 等待指定间隔
-                if (interval > 0) {
-                    await new Promise(resolve => setTimeout(resolve, interval));
-                }
-
-                iteration++;
-            } while (this.isRunning && await context.condition());
-
+            // 返回执行结果
             return {
-                success: true,
+                success: errors.length === 0,
                 data: {
-                    iterations: iteration,
-                    completed: true,
-                    lastResult
+                    iteration,
+                    results,
+                    errors: errors.length > 0 ? errors : undefined
                 }
             };
         } catch (error) {
@@ -117,22 +190,16 @@ export class DoWhileActivity implements Activity<DoWhileActivityContext> {
                 success: false,
                 error: error as Error,
                 data: {
-                    iterations: iteration,
-                    lastResult
+                    iteration,
+                    results,
+                    errors
                 }
             };
-        } finally {
-            this.isRunning = false;
         }
     }
 
     async compensate(context: DoWhileActivityContext): Promise<void> {
-        // 停止循环
-        this.isRunning = false;
-
-        // 如果循环体活动有补偿操作，执行它
-        if (context.bodyActivity.compensate) {
-            await context.bodyActivity.compensate(context);
-        }
+        // 如果需要，实现补偿逻辑
+        // 例如：清理临时文件、回滚数据库事务等
     }
 }
