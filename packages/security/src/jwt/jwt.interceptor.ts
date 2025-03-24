@@ -7,15 +7,10 @@ import { RequestContext } from '@tsdi/endpoints';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
 import { InvalidTokenExecption } from '../exceptions';
 import { Authenticator } from '../Authenticator';
+import { JWTOption } from './jwt.config';
 
 
-export class JWTOption {
-    constructor(
-        readonly secret: jwt.Secret | jwt.PublicKey,
-        readonly tokenIn: 'header' | 'query' | 'body' = 'header',
-        readonly tokenName: string = 'authentication',
-        readonly options?: jwt.VerifyOptions) { }
-}
+
 
 @Injectable()
 export class JwtInterceptor implements ApplicationInterceptor<RequestContext, OutgoingMessage> {
