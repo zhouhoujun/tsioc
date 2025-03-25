@@ -1,35 +1,37 @@
-import { IfActivity, IfActivityContext, IfActivityOptions } from '../activities/If';
-import { Activity } from '../activities/Activity';
+import { createDecorator } from '@tsdi/ioc';
+import { IfActivityOptions } from '../activities/If';
 
-export function If(options: IfActivityOptions = {}) {
-    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-        const originalMethod = descriptor.value;
+export const If = createDecorator<IfActivityOptions>('If', {}); 
 
-        descriptor.value = async function (...args: any[]) {
-            const activity = new IfActivity(options);
-            const context: IfActivityContext = {
-                condition: args[0],
-                thenActivity: args[1],
-                elseActivity: args[2],
-                errorHandler: args[3]?.errorHandler
-            };
+// export function If(options: IfActivityOptions = {}) {
+//     return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+//         const originalMethod = descriptor.value;
 
-            // 验证参数
-            if (typeof context.condition !== 'function') {
-                throw new Error('First argument must be a condition function');
-            }
+//         descriptor.value = async function (...args: any[]) {
+//             const activity = new IfActivity(options);
+//             const context: IfActivityContext = {
+//                 condition: args[0],
+//                 thenActivity: args[1],
+//                 elseActivity: args[2],
+//                 errorHandler: args[3]?.errorHandler
+//             };
 
-            if (!context.thenActivity || typeof context.thenActivity.execute !== 'function') {
-                throw new Error('Second argument must be an Activity instance for then branch');
-            }
+//             // 验证参数
+//             if (typeof context.condition !== 'function') {
+//                 throw new Error('First argument must be a condition function');
+//             }
 
-            if (context.elseActivity && typeof context.elseActivity.execute !== 'function') {
-                throw new Error('Third argument must be an Activity instance for else branch');
-            }
+//             if (!context.thenActivity || typeof context.thenActivity.execute !== 'function') {
+//                 throw new Error('Second argument must be an Activity instance for then branch');
+//             }
 
-            return await activity.execute(context);
-        };
+//             if (context.elseActivity && typeof context.elseActivity.execute !== 'function') {
+//                 throw new Error('Third argument must be an Activity instance for else branch');
+//             }
 
-        return descriptor;
-    };
-} 
+//             return await activity.execute(context);
+//         };
+
+//         return descriptor;
+//     };
+// } 

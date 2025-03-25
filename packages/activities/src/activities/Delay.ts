@@ -5,90 +5,142 @@ export interface DelayActivityContext extends ActivityContext {
     /**
      * 延迟时间（毫秒）
      */
-    delay: number;
+    duration?: number;
     /**
-     * 延迟完成回调
+     * 自定义延迟实现
      */
-    onComplete?: () => void;
+    delayCallback?: () => Promise<void>;
     /**
      * 是否可中断
      */
     interruptible?: boolean;
+    /**
+     * 进度回调
+     */
+    onProgress?: (progress: number) => void;
 }
 
 export interface DelayActivityOptions {
     /**
      * 默认延迟时间（毫秒）
      */
-    defaultDelay?: number;
+    defaultDuration?: number;
     /**
-     * 默认是否可中断
+     * 是否显示进度
      */
-    defaultInterruptible?: boolean;
+    showProgress?: boolean;
+    /**
+     * 进度更新间隔（毫秒）
+     */
+    progressInterval?: number;
 }
 
 @Injectable()
 export class DelayActivity implements Activity<DelayActivityContext> {
     name = 'delay';
-    private timeoutId: NodeJS.Timeout | null = null;
+    private abortController: AbortController | null = null;
 
     constructor(private options: DelayActivityOptions = {}) {
         this.options = {
-            defaultDelay: 1000,
-            defaultInterruptible: true,
+            defaultDuration: 1000,
+            showProgress: false,
+            progressInterval: 100,
             ...options
         };
     }
 
     async execute(context: DelayActivityContext): Promise<ActivityResult> {
-        if (!context.delay && !this.options.defaultDelay) {
-            return {
-                success: false,
-                error: new Error('No delay time specified')
-            };
-        }
-
-        const delay = context.delay ?? this.options.defaultDelay!;
-        const interruptible = context.interruptible ?? this.options.defaultInterruptible;
-
         try {
-            await new Promise<void>((resolve, reject) => {
-                this.timeoutId = setTimeout(() => {
-                    resolve();
-                }, delay);
+            // 如果提供了自定义延迟回调，使用它
+            if (context.delayCallback) {
+                await context.delayCallback();
+                return {
+                    success: true,
+                    data: { completed: true }
+                };
+            }
 
-                if (!interruptible) {
-                    this.timeoutId.unref();
-                }
-            });
+            const duration = context.duration ?? this.options.defaultDuration;
+            if (!duration || duration < 0) {
+                throw new Error('Invalid delay duration');
+            }
 
-            context.onComplete?.();
+            // 创建可中断的延迟
+            this.abortController = new AbortController();
+            await this.delay(duration, context);
 
             return {
                 success: true,
                 data: {
-                    delay,
+                    duration,
                     completed: true,
                     timestamp: Date.now()
                 }
             };
         } catch (error) {
+            if (error instanceof DOMException && error.name === 'AbortError') {
+                return {
+                    success: false,
+                    data: { interrupted: true },
+                    error: new Error('Delay interrupted')
+                };
+            }
             return {
                 success: false,
-                error: error as Error,
-                data: {
-                    delay,
-                    completed: false,
-                    timestamp: Date.now()
-                }
+                error: error as Error
             };
+        } finally {
+            this.abortController = null;
         }
     }
 
     async compensate(context: DelayActivityContext): Promise<void> {
-        if (this.timeoutId) {
-            clearTimeout(this.timeoutId);
-            this.timeoutId = null;
+        // 中断当前延迟
+        if (context.interruptible && this.abortController) {
+            this.abortController.abort();
+        }
+    }
+
+    private async delay(duration: number, context: DelayActivityContext): Promise<void> {
+        const startTime = Date.now();
+        const { showProgress, progressInterval } = this.options;
+
+        if (showProgress && context.onProgress) {
+            // 带进度的延迟实现
+            return new Promise((resolve, reject) => {
+                const updateProgress = () => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min((elapsed / duration) * 100, 100);
+                    context.onProgress?.(progress);
+
+                    if (elapsed >= duration) {
+                        resolve();
+                    } else {
+                        setTimeout(updateProgress, progressInterval);
+                    }
+                };
+
+                // 设置中断处理
+                if (this.abortController) {
+                    this.abortController.signal.addEventListener('abort', () => {
+                        reject(new DOMException('Delay aborted', 'AbortError'));
+                    });
+                }
+
+                updateProgress();
+            });
+        } else {
+            // 简单延迟实现
+            await new Promise((resolve, reject) => {
+                const timeoutId = setTimeout(resolve, duration);
+
+                if (this.abortController) {
+                    this.abortController.signal.addEventListener('abort', () => {
+                        clearTimeout(timeoutId);
+                        reject(new DOMException('Delay aborted', 'AbortError'));
+                    });
+                }
+            });
         }
     }
 }

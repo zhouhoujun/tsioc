@@ -1,9 +1,9 @@
 import { Injectable } from '@tsdi/ioc';
-import { Workflow } from '../decorators';
-import { Timer } from '../decorators';
-import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
+import { Timer, Workflow } from '../decorators';
+import { Activity, ActivityContext, ActivityResult, EndActivity, StartActivity, TimerActivity } from '../activities';
+import { WorkflowService } from '../services';
 
-// 活动类
+@Injectable()
 class DataCheckActivity implements Activity {
     name = 'check_data';
     
@@ -17,73 +17,72 @@ class DataCheckActivity implements Activity {
     }
 }
 
-// 工作流类
 @Workflow({
-    name: 'ScheduledCheckWorkflow',
-    description: '使用 Timer 装饰器的工作流示例'
+    name: 'scheduled_check_workflow',
+    activities: [
+        StartActivity,
+        TimerActivity,
+        DataCheckActivity,
+        EndActivity
+    ],
+    transitions: [
+        { from: 'start', to: 'timer' },
+        { from: 'timer', to: 'check_data' },
+        { from: 'check_data', to: 'end' }
+    ],
+    initialState: 'start',
+    finalStates: ['end']
 })
 export class ScheduledCheckWorkflow {
     @Timer({
         defaultDelay: 5000,
         defaultImmediate: false
     })
-    async scheduleCheck(
-        callback: (context: ActivityContext) => Promise<void>,
-        options?: {
-            type?: 'timeout' | 'interval' | 'date';
-            delay?: number;
-            targetDate?: Date;
-            interval?: number;
-            maxRepeats?: number;
-            immediate?: boolean;
-            onComplete?: () => void;
-        }
-    ) {
-        return { callback, ...options };
-    }
+    timer!: TimerActivity;
 }
 
-// 服务类
+@Injectable()
 export class DataMonitor {
-    constructor(private workflow: ScheduledCheckWorkflow) {}
+    constructor(private workflowService: WorkflowService) {}
 
     async startMonitoring() {
-        const dataCheckActivity = new DataCheckActivity();
-
-        return await this.workflow.scheduleCheck(
-            async (context) => {
+        const context = {
+            type: 'interval',
+            interval: 30000, // 30秒
+            maxRepeats: 10,  // 最多执行10次
+            immediate: true,
+            callback: async (ctx: ActivityContext) => {
                 console.log('Checking data...');
-                const result = await dataCheckActivity.execute(context);
-                console.log('Check result:', result);
+                // 执行数据检查逻辑
             },
-            {
-                type: 'interval',
-                interval: 30000, // 30秒
-                maxRepeats: 10,  // 最多执行10次
-                immediate: true,
-                onComplete: () => {
-                    console.log('Monitoring completed');
-                }
+            onComplete: () => {
+                console.log('Monitoring completed');
             }
+        };
+
+        const result = await this.workflowService.startWorkflow(
+            ScheduledCheckWorkflow,
+            context
         );
+
+        return result;
     }
 
-    async scheduleOneTimeCheck(targetDate: Date) {
-        const dataCheckActivity = new DataCheckActivity();
-
-        return await this.workflow.scheduleCheck(
-            async (context) => {
+    async scheduleCheck(targetDate: Date) {
+        const context = {
+            type: 'date',
+            targetDate,
+            callback: async (ctx: ActivityContext) => {
                 console.log('Executing scheduled check...');
-                const result = await dataCheckActivity.execute(context);
-                console.log('Check result:', result);
-            },
-            {
-                type: 'date',
-                targetDate,
-                onComplete: () => {
-                    console.log('Scheduled check completed');
-                }
+                // 执行定时检查逻辑
             }
+        };
+
+        const result = await this.workflowService.startWorkflow(
+            ScheduledCheckWorkflow,
+            context
         );
+
+        return result;
     }
 } 

@@ -1,38 +1,40 @@
-import { SequenceActivity, SequenceActivityContext, SequenceActivityOptions } from '../activities/Sequence';
-import { Activity } from '../activities/Activity';
+import { createDecorator } from '@tsdi/ioc';
+import { SequenceActivityOptions } from '../activities/Sequence';
 
-export function Sequence(options: SequenceActivityOptions = {}) {
-    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-        const originalMethod = descriptor.value;
+export const Sequence = createDecorator<SequenceActivityOptions>('Sequence', {}); 
 
-        descriptor.value = async function (...args: any[]) {
-            const activity = new SequenceActivity(options);
-            const context: SequenceActivityContext = {
-                activities: args[0],
-                continueOnError: args[1]?.continueOnError,
-                onActivityComplete: args[1]?.onActivityComplete,
-                errorHandler: args[1]?.errorHandler
-            };
+// export function Sequence(options: SequenceActivityOptions = {}) {
+//     return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+//         const originalMethod = descriptor.value;
 
-            // 验证参数
-            if (!Array.isArray(context.activities)) {
-                throw new Error('First argument must be an array of Activity instances');
-            }
+//         descriptor.value = async function (...args: any[]) {
+//             const activity = new SequenceActivity(options);
+//             const context: SequenceActivityContext = {
+//                 activities: args[0],
+//                 continueOnError: args[1]?.continueOnError,
+//                 onActivityComplete: args[1]?.onActivityComplete,
+//                 errorHandler: args[1]?.errorHandler
+//             };
 
-            if (context.activities.length === 0) {
-                throw new Error('Activities array cannot be empty');
-            }
+//             // 验证参数
+//             if (!Array.isArray(context.activities)) {
+//                 throw new Error('First argument must be an array of Activity instances');
+//             }
 
-            // 验证所有活动
-            context.activities.forEach((activity, index) => {
-                if (!activity || typeof activity.execute !== 'function') {
-                    throw new Error(`Activity at index ${index} must be a valid Activity instance`);
-                }
-            });
+//             if (context.activities.length === 0) {
+//                 throw new Error('Activities array cannot be empty');
+//             }
 
-            return await activity.execute(context);
-        };
+//             // 验证所有活动
+//             context.activities.forEach((activity, index) => {
+//                 if (!activity || typeof activity.execute !== 'function') {
+//                     throw new Error(`Activity at index ${index} must be a valid Activity instance`);
+//                 }
+//             });
 
-        return descriptor;
-    };
-} 
+//             return await activity.execute(context);
+//         };
+
+//         return descriptor;
+//     };
+// } 

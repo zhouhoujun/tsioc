@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
-import { WorkflowDefinition, WorkflowInstance } from '../Workflow';
+import { WorkflowDefinition } from '../Workflow';
 
 export interface WorkflowExecutionContext extends ActivityContext {
     workflowId?: string;

@@ -1,70 +1,83 @@
 import { Injectable } from '@tsdi/ioc';
-import { Workflow } from '../decorators';
-import { DoWhile } from '../decorators';
-import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
+import { Workflow, DoWhile } from '../decorators';
+import { DoWhileActivity } from '../activities/DoWhile';
+import { WorkflowService } from '../services';
+import { Activity, ActivityContext, ActivityResult, EndActivity, StartActivity } from '../activities';
 
-// 活动类
-class DataProcessActivity implements Activity {
-    name = 'process';
+
+@Injectable()
+class ProcessItemActivity implements Activity {
+    name = 'process_item';
     
     async execute(context: ActivityContext): Promise<ActivityResult> {
-        // 模拟处理逻辑
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const { items, currentIndex } = context;
+        if (currentIndex >= items.length) {
+            return {
+                success: false,
+                error: new Error('No more items to process')
+            };
+        }
+
+        // 处理当前项
+        const item = items[currentIndex];
+        // ... 处理逻辑 ...
+
         return {
             success: true,
-            data: { processed: true }
+            data: { 
+                processedItem: item,
+                currentIndex 
+            }
         };
     }
 }
 
-// 工作流类
 @Workflow({
-    name: 'DoWhileProcessingWorkflow',
-    description: '使用 DoWhile 装饰器的工作流示例'
+    name: 'process_items_workflow',
+    activities: [
+        StartActivity,
+        DoWhileActivity,
+        EndActivity
+    ],
+    transitions: [
+        { from: 'start', to: 'do_while' },
+        { from: 'do_while', to: 'end' }
+    ],
+    initialState: 'start',
+    finalStates: ['end']
 })
-export class DoWhileProcessingWorkflow {
+export class ProcessItemsWorkflow {
     @DoWhile({
-        defaultMaxIterations: 10,
-        defaultContinueOnError: false
+        defaultMaxIterations: 1000,
+        defaultInterval: 100
     })
-    async doWhileProcess(
-        condition: (context: ActivityContext) => Promise<boolean>,
-        body: Activity,
-        options?: {
-            maxIterations?: number;
-            continueOnError?: boolean;
-            onIteration?: (iteration: number, result: ActivityResult) => void;
-            onComplete?: () => void;
-        }
-    ) {
-        return { condition, body, ...options };
-    }
+    doWhile!: DoWhileActivity;
 }
 
-// 服务类
-export class DataProcessingService {
-    constructor(private workflow: DoWhileProcessingWorkflow) {}
+@Injectable()
+export class ItemProcessor {
+    constructor(private workflowService: WorkflowService) {}
 
-    async processWithDoWhile() {
-        const processActivity = new DataProcessActivity();
-
-        // 示例：处理数据直到条件满足
-        let counter = 0;
-        const result = await this.workflow.doWhileProcess(
-            async (context) => {
-                counter++;
-                return counter < 3; // 执行3次
+    async processItems(items: any[]) {
+        const context = {
+            items,
+            currentIndex: 0,
+            bodyActivity: new ProcessItemActivity(),
+            condition: async () => {
+                return context.currentIndex < items.length;
             },
-            processActivity,
-            {
-                maxIterations: 5,
-                onIteration: (iteration, result) => {
-                    console.log(`Iteration ${iteration} completed:`, result);
-                },
-                onComplete: () => {
-                    console.log('Do-while loop completed');
+            onIteration: (iteration: number, result: ActivityResult) => {
+                if (result.success) {
+                    context.currentIndex++;
+                    console.log(`Processed item ${iteration + 1}/${items.length}`);
                 }
-            }
+            },
+            interval: 500 // 每次处理间隔500ms
+        };
+
+        const result = await this.workflowService.startWorkflow(
+            ProcessItemsWorkflow,
+            context
         );
 
         return result;

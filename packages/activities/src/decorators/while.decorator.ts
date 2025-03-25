@@ -1,35 +1,37 @@
-import { WhileActivity, WhileActivityContext, WhileActivityOptions } from '../activities/While';
-import { Activity } from '../activities/Activity';
+import { createDecorator } from '@tsdi/ioc';
+import { WhileActivityOptions } from '../activities/While';
 
-export function While(options: WhileActivityOptions = {}) {
-    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-        const originalMethod = descriptor.value;
+export const While = createDecorator<WhileActivityOptions>('While', {}); 
 
-        descriptor.value = async function (...args: any[]) {
-            const activity = new WhileActivity(options);
-            const context: WhileActivityContext = {
-                condition: args[0],
-                body: args[1],
-                maxIterations: args[2]?.maxIterations,
-                interval: args[2]?.interval,
-                onIteration: args[2]?.onIteration,
-                errorHandler: args[2]?.errorHandler,
-                continueOnError: args[2]?.continueOnError,
-                throwOnConditionFalse: args[2]?.throwOnConditionFalse
-            };
+// export function While(options: WhileActivityOptions = {}) {
+//     return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+//         const originalMethod = descriptor.value;
 
-            // 验证参数
-            if (typeof context.condition !== 'function') {
-                throw new Error('First argument must be a condition function');
-            }
+//         descriptor.value = async function (...args: any[]) {
+//             const activity = new WhileActivity(options);
+//             const context: WhileActivityContext = {
+//                 condition: args[0],
+//                 body: args[1],
+//                 maxIterations: args[2]?.maxIterations,
+//                 interval: args[2]?.interval,
+//                 onIteration: args[2]?.onIteration,
+//                 errorHandler: args[2]?.errorHandler,
+//                 continueOnError: args[2]?.continueOnError,
+//                 throwOnConditionFalse: args[2]?.throwOnConditionFalse
+//             };
 
-            if (!context.body || typeof context.body.execute !== 'function') {
-                throw new Error('Second argument must be an Activity instance for loop body');
-            }
+//             // 验证参数
+//             if (typeof context.condition !== 'function') {
+//                 throw new Error('First argument must be a condition function');
+//             }
 
-            return await activity.execute(context);
-        };
+//             if (!context.body || typeof context.body.execute !== 'function') {
+//                 throw new Error('Second argument must be an Activity instance for loop body');
+//             }
 
-        return descriptor;
-    };
-} 
+//             return await activity.execute(context);
+//         };
+
+//         return descriptor;
+//     };
+// } 

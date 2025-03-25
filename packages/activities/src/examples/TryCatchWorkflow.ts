@@ -1,9 +1,10 @@
 import { Injectable } from '@tsdi/ioc';
-import { Workflow } from '../decorators';
-import { TryCatch } from '../decorators';
-import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
+import { Workflow, TryCatch } from '../decorators';
+import { WorkflowService } from '../services';
+import { Activity, ActivityContext, ActivityResult, EndActivity, StartActivity, TryCatchActivity } from '../activities';
 
-// 活动类
+
+@Injectable()
 class RiskyOperationActivity implements Activity {
     name = 'risky_operation';
     
@@ -12,8 +13,6 @@ class RiskyOperationActivity implements Activity {
         if (Math.random() > 0.5) {
             throw new Error('Operation failed');
         }
-        
-        await new Promise(resolve => setTimeout(resolve, 1000));
         return {
             success: true,
             data: { completed: true }
@@ -21,75 +20,64 @@ class RiskyOperationActivity implements Activity {
     }
 }
 
+@Injectable()
 class ErrorHandlingActivity implements Activity {
-    name = 'error_handler';
+    name = 'error_handling';
     
     async execute(context: ActivityContext): Promise<ActivityResult> {
-        const { error } = context;
-        console.error('Handling error:', error);
-        
+        const error = context.error as Error;
+        console.error('Handling error:', error.message);
         return {
             success: true,
-            data: { error: error?.message }
+            data: { handled: true, error: error.message }
         };
     }
 }
 
-class CleanupActivity implements Activity {
-    name = 'cleanup';
-    
-    async execute(context: ActivityContext): Promise<ActivityResult> {
-        // 模拟清理操作
-        await new Promise(resolve => setTimeout(resolve, 500));
-        return {
-            success: true,
-            data: { cleaned: true }
-        };
-    }
-}
-
-// 工作流类
 @Workflow({
-    name: 'TryCatchProcessingWorkflow',
-    description: '使用 TryCatch 装饰器的工作流示例'
+    name: 'error_handling_workflow',
+    activities: [
+        StartActivity,
+        TryCatchActivity,
+        EndActivity
+    ],
+    transitions: [
+        { from: 'start', to: 'try_catch' },
+        { from: 'try_catch', to: 'end' }
+    ],
+    initialState: 'start',
+    finalStates: ['end']
 })
-export class TryCatchProcessingWorkflow {
-    @TryCatch()
-    async tryCatchProcess(
-        tryActivity: Activity,
-        catchActivity: Activity,
-        finallyActivity?: Activity,
-        options?: {
-            onError?: (error: Error) => void;
-            onComplete?: () => void;
-        }
-    ) {
-        return { tryActivity, catchActivity, finallyActivity, ...options };
-    }
+export class ErrorHandlingWorkflow {
+    @TryCatch({
+        defaultErrorTypes: [Error],
+        defaultRethrow: false
+    })
+    tryCatch!: TryCatchActivity;
 }
 
-// 服务类
-export class DataProcessingService {
-    constructor(private workflow: TryCatchProcessingWorkflow) {}
+@Injectable()
+export class ErrorHandler {
+    constructor(private workflowService: WorkflowService) {}
 
-    async processWithErrorHandling() {
-        const riskyActivity = new RiskyOperationActivity();
-        const errorActivity = new ErrorHandlingActivity();
-        const cleanupActivity = new CleanupActivity();
+    async handleRiskyOperation() {
+        const context = {
+            tryActivity: new RiskyOperationActivity(),
+            catchActivity: new ErrorHandlingActivity(),
+            errorTypes: [Error],
+            errorHandler: async (error: Error) => {
+                console.error('Custom error handling:', error);
+                return {
+                    success: true,
+                    data: { customHandled: true }
+                };
+            },
+            rethrow: false
+        };
 
-        // 示例：错误处理流程
-        const result = await this.workflow.tryCatchProcess(
-            riskyActivity,
-            errorActivity,
-            cleanupActivity,
-            {
-                onError: (error) => {
-                    console.log('Error occurred:', error);
-                },
-                onComplete: () => {
-                    console.log('Try-catch processing completed');
-                }
-            }
+        const result = await this.workflowService.startWorkflow(
+            ErrorHandlingWorkflow,
+            context
         );
 
         return result;

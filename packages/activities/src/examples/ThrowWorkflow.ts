@@ -1,9 +1,10 @@
 import { Injectable } from '@tsdi/ioc';
-import { Workflow } from '../decorators';
-import { Throw } from '../decorators';
-import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
+import { Workflow, Throw } from '../decorators';
+import { Activity, ActivityContext, ActivityResult, EndActivity, StartActivity, ThrowActivity } from '../activities';
+import { WorkflowService } from '../services/workflow.service';
 
-// 活动类
+
+@Injectable()
 class ValidationActivity implements Activity {
     name = 'validate';
     
@@ -24,53 +25,60 @@ class ValidationActivity implements Activity {
     }
 }
 
-// 工作流类
 @Workflow({
-    name: 'ValidationWorkflow',
-    description: '使用 Throw 装饰器的工作流示例'
+    name: 'validation_workflow',
+    activities: [
+        StartActivity,
+        ValidationActivity,
+        ThrowActivity,
+        EndActivity
+    ],
+    transitions: [
+        { from: 'start', to: 'validate' },
+        { 
+            from: 'validate', 
+            to: 'throw',
+            condition: (ctx: ActivityContext) => !ctx.validated 
+        },
+        { 
+            from: 'validate', 
+            to: 'end',
+            condition: (ctx: ActivityContext) => ctx.validated 
+        },
+        { from: 'throw', to: 'end' }
+    ],
+    initialState: 'start',
+    finalStates: ['end']
 })
 export class ValidationWorkflow {
     @Throw({
         defaultErrorCode: 'VALIDATION_ERROR'
     })
-    async validateAndThrow(
-        error: Error | string,
-        options?: {
-            code?: string | number;
-            details?: any;
-            compensateBeforeThrow?: boolean;
-        }
-    ) {
-        return { error, ...options };
-    }
+    throw!: ThrowActivity;
 }
 
-// 服务类
+@Injectable()
 export class ValidationService {
-    constructor(private workflow: ValidationWorkflow) {}
+    constructor(private workflowService: WorkflowService) {}
 
     async validateData(data: any) {
-        const validationActivity = new ValidationActivity();
-        
-        // 先执行验证
-        const validationResult = await validationActivity.execute({ data });
-        
-        if (!validationResult.success) {
-            // 如果验证失败，抛出错误
-            return await this.workflow.validateAndThrow(
-                new Error('Invalid data format'),
-                {
-                    code: 'INVALID_FORMAT',
-                    details: {
-                        field: 'data',
-                        reason: 'format_mismatch',
-                        received: data
-                    },
-                    compensateBeforeThrow: true
-                }
-            );
-        }
+        const context = {
+            data,
+            error: new Error('Invalid data format'),
+            code: 'INVALID_FORMAT',
+            details: {
+                field: 'data',
+                reason: 'format_mismatch',
+                received: data
+            },
+            compensateBeforeThrow: true
+        };
 
-        return validationResult;
+        const result = await this.workflowService.startWorkflow(
+            ValidationWorkflow,
+            context
+        );
+
+        return result;
     }
 } 

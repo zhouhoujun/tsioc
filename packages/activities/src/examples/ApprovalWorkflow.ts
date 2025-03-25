@@ -1,58 +1,64 @@
 import { Injectable } from '@tsdi/ioc';
-import { Workflow } from '../decorators';
+import { Process, Workflow } from '../decorators';
 import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
+import { EndActivity, StartActivity } from '../activities';
 
-// 活动类
-class DataValidationActivity implements Activity {
-    name = 'validate';
+@Injectable()
+export class RequestApprovalActivity extends Activity {
+    name = 'request_approval';
     
     async execute(context: ActivityContext): Promise<ActivityResult> {
-        const { data } = context;
-        
-        if (!data || !data.required) {
-            return {
-                success: false,
-                error: new Error('Validation failed')
-            };
-        }
-
+        // 实现请求审批逻辑
         return {
             success: true,
-            data: { validated: true }
+            data: { requestId: 'REQ-001' }
         };
     }
 }
 
-class ApprovalActivity implements Activity {
+@Injectable()
+export class ApprovalActivity extends Activity {
     name = 'approve';
     
     async execute(context: ActivityContext): Promise<ActivityResult> {
-        const { data, approved, approver } = context;
-        
-        if (!approved) {
-            return {
-                success: false,
-                error: new Error('Approval rejected')
-            };
-        }
-
+        // 实现审批逻辑
         return {
-            success: true,
-            data: { 
-                approved: true,
-                approver,
-                timestamp: Date.now()
-            }
+            success: context.approved === true,
+            data: { approvedBy: context.approver }
         };
+    }
+
+    async compensate(context: ActivityContext): Promise<void> {
+        // 实现补偿逻辑
+        console.log('Compensating approval...');
     }
 }
 
 // 工作流类
 @Workflow({
-    name: 'ApprovalProcessingWorkflow',
-    description: '使用 Approval 装饰器的工作流示例'
+    name: 'approval_workflow',
+    description: '使用 Approval 装饰器的工作流示例',
+    activities: [
+        StartActivity,
+        RequestApprovalActivity,
+        ApprovalActivity,
+        EndActivity
+    ],
+    transitions: [
+        { from: 'start', to: 'request_approval' },
+        { from: 'request_approval', to: 'approve' },
+        { 
+            from: 'approve', 
+            to: 'end',
+            condition: (ctx: ActivityContext) => ctx.approved === true 
+        }
+    ],
+    initialState: 'start',
+    finalStates: ['end']
 })
 export class ApprovalProcessingWorkflow {
+
+    @Process()
     async requestApproval(
         data: any,
         approver: string | string[],
@@ -64,21 +70,21 @@ export class ApprovalProcessingWorkflow {
             onTimeout?: () => void;
         }
     ) {
-        const validationActivity = new DataValidationActivity();
-        const approvalActivity = new ApprovalActivity();
+        // const validationActivity = new DataValidationActivity();
+        // const approvalActivity = new ApprovalActivity();
 
-        // 先执行验证
-        const validationResult = await validationActivity.execute({ data });
-        if (!validationResult.success) {
-            return validationResult;
-        }
+        // // 先执行验证
+        // const validationResult = await validationActivity.execute({ data });
+        // if (!validationResult.success) {
+        //     return validationResult;
+        // }
 
         // 执行审批
-        return await approvalActivity.execute({
-            data,
-            approved: options?.autoApprove ?? false,
-            approver: Array.isArray(approver) ? approver[0] : approver
-        });
+        // return await approvalActivity.execute({
+        //     data,
+        //     approved: options?.autoApprove ?? false,
+        //     approver: Array.isArray(approver) ? approver[0] : approver
+        // });
     }
 }
 
