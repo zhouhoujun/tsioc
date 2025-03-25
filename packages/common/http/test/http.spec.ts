@@ -203,7 +203,7 @@ class DeviceAModule {
         ServerHttpClientModule,
         EndpointModule.register({
             transport: 'http',
-            serverOpts: {
+            config: {
                 interceptors: [
                     ContentInterceptor,
                     JsonInterceptor,
