@@ -1,5 +1,5 @@
 import { Abstract, Static, Token } from '@tsdi/ioc';
-import { Joinpoint, JoinpointState, NonePointcut } from '@tsdi/aop';
+import { JoinPoint, JoinpointState, NonePointcut } from '@tsdi/aop';
 import { Logger } from './logger';
 import { Level } from './Level';
 
@@ -13,19 +13,19 @@ export abstract class JoinpointFormater {
     /**
      * format message.
      *
-     * @param {Joinpoint} joinPoint
+     * @param {JoinPoint} joinPoint
      * @param {Level} level
      * @param {Logger} logger
      * @param {...any[]} messages
      * @returns {string}
      */
-    abstract format(joinPoint: Joinpoint, level: Level, logger: Logger, ...messages: any[]): any[];
+    abstract format(joinPoint: JoinPoint, level: Level, logger: Logger, ...messages: any[]): any[];
 }
 
 /**
  * Joinpoint log formater
  */
-export type LOGFormater = JoinpointFormater | Token<JoinpointFormater> | ((joinPoint?: Joinpoint, ...messages: any[]) => any[]) | string;
+export type LOGFormater = JoinpointFormater | Token<JoinpointFormater> | ((joinPoint?: JoinPoint, ...messages: any[]) => any[]) | string;
 
 
 @NonePointcut()
@@ -36,7 +36,7 @@ export class DefaultJoinpointFormater extends JoinpointFormater {
         return `[${time.toISOString()}]`
     }
 
-    format(joinPoint: Joinpoint, level: Level, logger: Logger, ...messages: any[]): any[] {
+    format(joinPoint: JoinPoint, level: Level, logger: Logger, ...messages: any[]): any[] {
         switch (joinPoint.state) {
             case JoinpointState.Before:
             case JoinpointState.Pointcut:

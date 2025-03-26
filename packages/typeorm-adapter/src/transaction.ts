@@ -1,5 +1,5 @@
 import { Type, ctorName, Injectable, lang, refl } from '@tsdi/ioc';
-import { Joinpoint } from '@tsdi/aop';
+import { JoinPoint } from '@tsdi/aop';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { InjectRepository, RepositoryMetadata, TransactionalMetadata, TransactionExecption, TransactionManager, TransactionStatus } from '@tsdi/repository';
 import { EntityManager, MongoRepository, Repository, TreeRepository } from 'typeorm';
@@ -7,12 +7,12 @@ import { TypeormAdapter } from './TypeormAdapter';
 
 export class TypeormTransactionStatus extends TransactionStatus {
 
-    private _jointPoint: Joinpoint | undefined;
+    private _jointPoint: JoinPoint | undefined;
     constructor(private definition: TransactionalMetadata, private logger: Logger) {
         super();
     }
 
-    getPoint(): Joinpoint | undefined {
+    getPoint(): JoinPoint | undefined {
         return this._jointPoint
     }
 
@@ -20,7 +20,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
         return !!this._jointPoint
     }
 
-    async flush(joinPoint: Joinpoint): Promise<void> {
+    async flush(joinPoint: JoinPoint): Promise<void> {
         this._jointPoint = joinPoint;
         const isolation = this.definition.isolation?.replace('_', ' ');
         const connection = this.definition.connection;

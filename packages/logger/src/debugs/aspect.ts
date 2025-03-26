@@ -1,4 +1,4 @@
-import { Aspect, Around, Joinpoint, JoinpointState } from '@tsdi/aop';
+import { Aspect, Around, JoinPoint, JoinpointState } from '@tsdi/aop';
 import { Logger } from '../logger';
 import { LogAspect } from '../aspect';
 import { Level } from '../Level';
@@ -17,7 +17,7 @@ export class DebugLogAspect extends LogAspect {
     @InjectLog({ level: 'trace' }) logger!: Logger;
 
     @Around('execution(*.*)')
-    logging(joinPoint: Joinpoint) {
+    logging(joinPoint: JoinPoint) {
         let level: Level = 'info';
         switch (joinPoint.state) {
             case JoinpointState.AfterThrowing:

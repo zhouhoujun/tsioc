@@ -4,7 +4,7 @@ import {
     InterceptorChina, toHandler, RuntimeContext, InterceptorLike, isDefined
 } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
-import { Joinpoint } from '../joinpoints/Joinpoint';
+import { JoinPoint } from '../joinpoints/JoinPoint';
 import { JoinpointState } from '../joinpoints/state';
 import { Advices } from '../advices/Advices';
 import { Advisor } from '../Advisor';
@@ -33,7 +33,7 @@ export class ProceedingScope implements Proceeding {
             return next(ctx, context);
         }
         const { injector, args, params, context: parent } = ctx;
-        const joinPoint = Joinpoint.create(injector ?? this.platform.getInjector('root') ?? this.platform.getInjector('platform'), {
+        const joinPoint = JoinPoint.create(injector ?? this.platform.getInjector('root') ?? this.platform.getInjector('platform'), {
             targetType: targetType,
             methodName: ctorName,
             state: JoinpointState.Before,
@@ -54,7 +54,7 @@ export class ProceedingScope implements Proceeding {
      * @param {*} target
      * @param {Type} targetType
      * @param {IPointcut} pointcut
-     * @param {Joinpoint} [provJoinpoint]
+     * @param {JoinPoint} [provJoinpoint]
      */
     proceed(target: any, targetType: Type, advices: Advices, pointcut: IPointcut) {
         if (advices && pointcut) {
@@ -99,7 +99,7 @@ export class ProceedingScope implements Proceeding {
                 parent = larg
             }
             const targetRef = refl.get(targetType);
-            const joinPoint = Joinpoint.create(parent?.injector ?? platform.getInjector('root') ?? this.platform.getInjector('platform'), {
+            const joinPoint = JoinPoint.create(parent?.injector ?? platform.getInjector('root') ?? this.platform.getInjector('platform'), {
                 targetType: targetType,
                 methodName: name,
                 fullName,
@@ -123,10 +123,10 @@ export class ProceedingScope implements Proceeding {
 
 
 const CTOR_ADVICES_CHAIN = new ContextToken<InterceptorChina>(() => null!);
-export function getCtorAdvicesScope(platform: Platform): InterceptorChina<Joinpoint> {
+export function getCtorAdvicesScope(platform: Platform): InterceptorChina<JoinPoint> {
     let chain = platform.context.get(CTOR_ADVICES_CHAIN);
     if (!chain) {
-        chain = new InterceptorChina<Joinpoint>(ADVICES_INTERCEPTORS.slice());
+        chain = new InterceptorChina<JoinPoint>(ADVICES_INTERCEPTORS.slice());
         platform.context.set(CTOR_ADVICES_CHAIN, chain);
     }
     return chain;
@@ -134,10 +134,10 @@ export function getCtorAdvicesScope(platform: Platform): InterceptorChina<Joinpo
 
 
 const METHOD_ADVICES = new ContextToken<LifeScope>(() => null!);
-export function getMethodAdvicesScope(platform: Platform): LifeScope<Joinpoint> {
+export function getMethodAdvicesScope(platform: Platform): LifeScope<JoinPoint> {
     let scope = platform.context.get(METHOD_ADVICES);
     if (!scope) {
-        scope = new LifeScope<Joinpoint>(platform, originMethodHandler, ADVICES_INTERCEPTORS);
+        scope = new LifeScope<JoinPoint>(platform, originMethodHandler, ADVICES_INTERCEPTORS);
         platform.context.set(METHOD_ADVICES, scope);
     }
     return scope;
@@ -145,7 +145,7 @@ export function getMethodAdvicesScope(platform: Platform): LifeScope<Joinpoint> 
 
 
 
-export const afterReturningIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
+export const afterReturningIterceptor = (ctx: JoinPoint, next: HandlerFn, context: Context) => {
     return invokeTail(() => next(ctx, context), (res) => {
         ctx.state = JoinpointState.AfterReturning;
         if (isDefined(res) && res !== ctx) ctx.returning = res;
@@ -153,7 +153,7 @@ export const afterReturningIterceptor = (ctx: Joinpoint, next: HandlerFn, contex
     })
 }
 
-export const afterThrowingInterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
+export const afterThrowingInterceptor = (ctx: JoinPoint, next: HandlerFn, context: Context) => {
     return invokeTail(() => next(ctx, context), {
         error: (error) => {
             ctx.throwing = error;
@@ -164,21 +164,21 @@ export const afterThrowingInterceptor = (ctx: Joinpoint, next: HandlerFn, contex
 }
 
 
-export const beforeIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
+export const beforeIterceptor = (ctx: JoinPoint, next: HandlerFn, context: Context) => {
     return invokeTail(() => {
         ctx.state = JoinpointState.Before;
         return ctx.advices.getBeforeHanlder()?.(ctx, context)
     }, () => next(ctx, context));
 }
 
-export const pointcutIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
+export const pointcutIterceptor = (ctx: JoinPoint, next: HandlerFn, context: Context) => {
     return invokeTail(() => {
         ctx.state = JoinpointState.Pointcut;
         return ctx.advices.getPointcutHanlder()?.(ctx, context)
     }, () => next(ctx, context));
 }
 
-export const afterIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Context) => {
+export const afterIterceptor = (ctx: JoinPoint, next: HandlerFn, context: Context) => {
     return invokeTail(() => next(ctx, context), (res) => {
         ctx.state = JoinpointState.After;
         if (isDefined(res) && res !== ctx) ctx.returning = res;
@@ -188,7 +188,7 @@ export const afterIterceptor = (ctx: Joinpoint, next: HandlerFn, context: Contex
 
 
 
-export const originMethodHandler = (ctx: Joinpoint, context: Context) => {
+export const originMethodHandler = (ctx: JoinPoint, context: Context) => {
     if (ctx.originProxy) {
         ctx.returning = ctx.originProxy(ctx)
     } else {
@@ -197,7 +197,7 @@ export const originMethodHandler = (ctx: Joinpoint, context: Context) => {
     return ctx.returning;
 }
 
-const ADVICES_INTERCEPTORS: InterceptorLike<Joinpoint>[] = [
+const ADVICES_INTERCEPTORS: InterceptorLike<JoinPoint>[] = [
     afterThrowingInterceptor,
     afterReturningIterceptor,
     afterIterceptor,

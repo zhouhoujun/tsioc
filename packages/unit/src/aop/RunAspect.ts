@@ -1,5 +1,5 @@
 import { LogAspect } from '@tsdi/logger';
-import { Aspect, Around, Joinpoint, JoinpointState, AfterThrowing } from '@tsdi/aop';
+import { Aspect, Around, JoinPoint, JoinpointState, AfterThrowing } from '@tsdi/aop';
 
 import { DefaultTestReport } from '../reports/TestReport';
 import { TestReport, SuiteDescribe, ICaseDescribe } from '../reports/interface';
@@ -22,27 +22,27 @@ export class RunAspect extends LogAspect {
     }
 
     @AfterThrowing('execution(*.runBefore)')
-    beforeError(joinPoint: Joinpoint) {
+    beforeError(joinPoint: JoinPoint) {
         this.getReport().track(joinPoint.throwing)
     }
 
     @AfterThrowing('execution(*.runBeforeEach)')
-    beforeEachError(joinPoint: Joinpoint) {
+    beforeEachError(joinPoint: JoinPoint) {
         this.getReport().track(joinPoint.throwing)
     }
 
     @AfterThrowing('execution(*.runAfterEach)')
-    afterEachError(joinPoint: Joinpoint) {
+    afterEachError(joinPoint: JoinPoint) {
         this.getReport().track(joinPoint.throwing)
     }
 
     @AfterThrowing('execution(*.runAfter)')
-    afterError(joinPoint: Joinpoint) {
+    afterError(joinPoint: JoinPoint) {
         this.getReport().track(joinPoint.throwing)
     }
 
     @Around('execution(*.runSuite)')
-    logSuite(joinPoint: Joinpoint) {
+    logSuite(joinPoint: JoinPoint) {
         const runner = joinPoint.target as UnitRunner;
         const desc = joinPoint.args?.[0] as SuiteDescribe;
         switch (joinPoint.state) {
@@ -57,7 +57,7 @@ export class RunAspect extends LogAspect {
     }
 
     @Around('execution(*.runCase)')
-    logTestCase(joinPoint: Joinpoint) {
+    logTestCase(joinPoint: JoinPoint) {
         const desc = joinPoint.args?.[0] as ICaseDescribe;
         const suiteDesc = joinPoint.args && joinPoint.args.length > 1 ? joinPoint.args[1] : {};
         const runner = joinPoint.target as SuiteRunner;

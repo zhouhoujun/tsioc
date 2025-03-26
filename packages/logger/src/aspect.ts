@@ -1,5 +1,5 @@
 import { Abstract, isFunction, isToken, isObject, isArray, isNil } from '@tsdi/ioc';
-import { Aspect, Joinpoint, JoinpointState, Pointcut } from '@tsdi/aop';
+import { Aspect, JoinPoint, JoinpointState, Pointcut } from '@tsdi/aop';
 import { Logger } from './logger';
 import { LogMetadata } from './metadata';
 import { isLevel, Level } from './Level';
@@ -16,12 +16,12 @@ import { LogConfigure } from './LogConfigure';
 @Abstract()
 export abstract class LogAspect extends LogProcess {
 
-    processLog(joinPoint: Joinpoint, ...messages: any[]): void;
-    processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]): void;
-    processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]): void;
-    processLog(joinPoint: Joinpoint, annotation: LogMetadata[], ...messages: any[]): void;
-    processLog(joinPoint: Joinpoint, annotation: LogMetadata[], level: Level, ...messages: any[]): void
-    processLog(joinPoint: Joinpoint, annotation: any, level: any, ...messages: any[]): void {
+    processLog(joinPoint: JoinPoint, ...messages: any[]): void;
+    processLog(joinPoint: JoinPoint, level: Level, ...messages: any[]): void;
+    processLog(joinPoint: JoinPoint, level: Level, ...messages: any[]): void;
+    processLog(joinPoint: JoinPoint, annotation: LogMetadata[], ...messages: any[]): void;
+    processLog(joinPoint: JoinPoint, annotation: LogMetadata[], level: Level, ...messages: any[]): void
+    processLog(joinPoint: JoinPoint, annotation: any, level: any, ...messages: any[]): void {
         if (isArray(annotation)) {
             if (!isLevel(level)) {
                 !isNil(level) && messages.unshift(level)
@@ -51,7 +51,7 @@ export abstract class LogAspect extends LogProcess {
         }
     }
 
-    protected writeLog(logger: Logger, joinPoint: Joinpoint, level: Level, format: boolean, ...messages: any[]) {
+    protected writeLog(logger: Logger, joinPoint: JoinPoint, level: Level, format: boolean, ...messages: any[]) {
         (async () => {
             const formatMsgs = format ? this.formatMessage(joinPoint, logger, level, ...messages) : messages;
             if (level) {
@@ -98,7 +98,7 @@ export abstract class LogAspect extends LogProcess {
         return this._formater
     }
 
-    protected formatMessage(joinPoint: Joinpoint, logger: Logger, level: Level, ...messages: any[]): any[] {
+    protected formatMessage(joinPoint: JoinPoint, logger: Logger, level: Level, ...messages: any[]): any[] {
         const formater = this.getFormater();
         if (formater) {
             messages = formater.format(joinPoint, level, logger, ...messages)
@@ -127,7 +127,7 @@ export abstract class LogAspect extends LogProcess {
 export class AnnotationLogAspect extends LogAspect {
 
     @Pointcut('@annotation(Log)', 'annotation')
-    logging(joinPoint: Joinpoint, annotation: LogMetadata[]) {
+    logging(joinPoint: JoinPoint, annotation: LogMetadata[]) {
         this.processLog(joinPoint, annotation)
     }
 }

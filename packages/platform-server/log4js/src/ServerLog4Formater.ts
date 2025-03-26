@@ -1,5 +1,5 @@
 import { ProvidedIn, Static } from '@tsdi/ioc';
-import { Joinpoint, JoinpointState, NonePointcut } from '@tsdi/aop';
+import { JoinPoint, JoinpointState, NonePointcut } from '@tsdi/aop';
 import { LogAspect, JoinpointFormater, Level, Logger, DefaultJoinpointFormater, ConsoleLog } from '@tsdi/logger';
 import * as chalk from 'chalk';
 
@@ -10,7 +10,7 @@ import * as chalk from 'chalk';
 export class ServerJoinpointLogFormater extends DefaultJoinpointFormater {
 
 
-    format(joinPoint: Joinpoint, level: Level, logger: Logger, ...messages: any[]): any[] {
+    format(joinPoint: JoinPoint, level: Level, logger: Logger, ...messages: any[]): any[] {
         if (!(logger instanceof ConsoleLog)) {
             return super.format(joinPoint, level, logger, ...messages);
         }

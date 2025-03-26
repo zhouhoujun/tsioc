@@ -1,5 +1,5 @@
 import { Parameter, InvocationContext, Type, lang, ArgumentExecption, OperationArgumentResolver, isArray, composeResolver, Injectable } from '@tsdi/ioc';
-import { Joinpoint } from '@tsdi/aop';
+import { JoinPoint } from '@tsdi/aop';
 import { RepositoryArgumentResolver, RepositoryMetadata, TransactionManager, TransactionResolver } from '@tsdi/repository';
 import { MongoRepository, Repository, TreeRepository } from 'typeorm';
 import { TypeormAdapter } from './TypeormAdapter';
@@ -67,12 +67,12 @@ export class TypeormTransactionResolver extends TransactionResolver {
     constructor() {
         super();
         this.resolver = composeResolver(
-            (param, ctx) => ctx instanceof Joinpoint && isArray(ctx.annotations) && ctx.annotations.length > 0,
+            (param, ctx) => ctx instanceof JoinPoint && isArray(ctx.annotations) && ctx.annotations.length > 0,
             {
-                canResolve: (param, ctx: Joinpoint) => {
+                canResolve: (param, ctx: JoinPoint) => {
                     return param.provider === TransactionManager || param.type === TransactionManager
                 },
-                resolve(param, ctx: Joinpoint): any {
+                resolve(param, ctx: JoinPoint): any {
                     if (ctx.has(TransactionManager)) {
                         return ctx.get(TransactionManager)
                     } else {

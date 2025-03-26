@@ -1,5 +1,5 @@
 import { ArgumentExecption, lang } from '@tsdi/ioc';
-import { Aspect, Joinpoint, Before, AfterReturning, AfterThrowing } from '@tsdi/aop';
+import { Aspect, JoinPoint, Before, AfterReturning, AfterThrowing } from '@tsdi/aop';
 import { TransactionalMetadata } from './metadata';
 import { TransactionManager } from './manager';
 import { TransactionExecption } from './execption';
@@ -16,7 +16,7 @@ import { TransactionStatus } from './status';
 export class TransactionalAspect {
 
     @Before('@annotation(Transactional)', { sync: true, annotationName: 'Transactional', annotationArgName: 'annotation' })
-    async begin(manager: TransactionManager, annotation: TransactionalMetadata[], joinPoint: Joinpoint) {
+    async begin(manager: TransactionManager, annotation: TransactionalMetadata[], joinPoint: JoinPoint) {
         if (!manager) throw new ArgumentExecption('TransactionManager can not be null.')
         const status = await manager.getTransaction(lang.first(annotation));
         joinPoint.setValue(TransactionStatus, status);
@@ -24,13 +24,13 @@ export class TransactionalAspect {
     }
 
     @AfterReturning('@annotation(Transactional)', 'returning', { sync: true })
-    async commit(manager: TransactionManager, returning: any, joinPoint: Joinpoint) {
+    async commit(manager: TransactionManager, returning: any, joinPoint: JoinPoint) {
         if (!manager) throw new ArgumentExecption('TransactionManager can not be null.')
         await manager.commit(joinPoint.get(TransactionStatus))
     }
 
     @AfterThrowing('@annotation(Transactional)', 'error', { sync: true })
-    async rollback(manager: TransactionManager, error: Error, joinPoint: Joinpoint) {
+    async rollback(manager: TransactionManager, error: Error, joinPoint: JoinPoint) {
         if (!manager) throw new ArgumentExecption('TransactionManager can not be null.')
         try {
             await manager.rollback(joinPoint.get(TransactionStatus))

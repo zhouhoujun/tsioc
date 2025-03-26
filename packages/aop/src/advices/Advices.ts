@@ -2,7 +2,7 @@ import { composeHandlers, object2string, isNil, invokeTail } from '@tsdi/ioc';
 import { ApplicationHandlerFn } from '@tsdi/core';
 import { Advicer } from './Advicer';
 import { AdviceTypes, AroundMetadata } from '../metadata/meta';
-import { Joinpoint } from '../joinpoints/Joinpoint';
+import { JoinPoint } from '../joinpoints/JoinPoint';
 
 /**
  * advices of target.
@@ -84,8 +84,8 @@ export class Advices {
     }
 }
 
-function toHanlder(advices: Advicer[]): ApplicationHandlerFn<Joinpoint> {
-    return composeHandlers(advices.map(a=> (input: Joinpoint, context?: any)=> invokeAdvice(input, a)));
+function toHanlder(advices: Advicer[]): ApplicationHandlerFn<JoinPoint> {
+    return composeHandlers(advices.map(a=> (input: JoinPoint, context?: any)=> invokeAdvice(input, a)));
 }
 function equals(a: Advicer, b: Advicer) {
     return a.aspect.type === b.aspect.type && a.advice.name === b.advice.name
@@ -93,7 +93,7 @@ function equals(a: Advicer, b: Advicer) {
 
 const aExp = /^@/;
 
-function invokeAdvice(joinPoint: Joinpoint, advicer: Advicer) {
+function invokeAdvice(joinPoint: JoinPoint, advicer: Advicer) {
     if (joinPoint.destroyed) {
         throw new Error(`joinPoint is destroyed, when invoked advicer ${object2string(advicer)}.\n\njoinPoint object ${object2string(joinPoint, { fun: false, typeInst: true })}`)
     }

@@ -4,7 +4,6 @@ import {
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
-import { Advicer } from '../advices/Advicer';
 
 /**
  * joinpoint option.
@@ -13,7 +12,7 @@ export interface JoinpointOption extends TargetInvokeArguments {
     targetType: Type;
     methodName: string;
     fullName?: string;
-    provJoinpoint?: Joinpoint;
+    provJoinpoint?: JoinPoint;
     params?: ParameterMetadata[];
     originMethod?: Function;
     args?: any[];
@@ -33,12 +32,12 @@ export interface ReturnDefer {
 /**
  * Joinpoint of aop.
  */
-export class Joinpoint extends DefaultInvocationContext<any[]> implements IocContext {
+export class JoinPoint extends DefaultInvocationContext<any[]> implements IocContext {
 
     /**
      * custom proxy invoke origin method.
      */
-    originProxy?: (joinpoint: Joinpoint) => any;
+    originProxy?: (joinpoint: JoinPoint) => any;
 
     readonly originReturning: any;
     returningDefer?: Defer;
@@ -86,12 +85,12 @@ export class Joinpoint extends DefaultInvocationContext<any[]> implements IocCon
     }
 
     /**
-     * parse option to instance of {@link Joinpoint}
+     * parse option to instance of {@link JoinPoint}
      * @param injector 
      * @param options 
      * @returns 
      */
     static create(injector: Injector, options: JoinpointOption) {
-        return new Joinpoint(injector, options)
+        return new JoinPoint(injector, options)
     }
 }

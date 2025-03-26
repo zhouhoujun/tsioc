@@ -1,5 +1,5 @@
 import { Abstract, Injector, Inject, Type } from '@tsdi/ioc';
-import { Joinpoint } from '@tsdi/aop';
+import { JoinPoint } from '@tsdi/aop';
 import { Logger } from './logger';
 import { Level } from './Level';
 import { InjectLog, LogMetadata } from './metadata';
@@ -22,8 +22,8 @@ export abstract class LogProcess {
         return name ? this.mangers.getLogger(name, adapter) : this.logger
     }
 
-    abstract processLog(joinPoint: Joinpoint, ...messages: any[]): void;
-    abstract processLog(joinPoint: Joinpoint, level: Level, ...messages: any[]): void;
-    abstract processLog(joinPoint: Joinpoint, annotation: LogMetadata[], ...messages: any[]): void;
-    abstract processLog(joinPoint: Joinpoint, annotation: LogMetadata[], level: Level, ...messages: any[]): void;
+    abstract processLog(joinPoint: JoinPoint, ...messages: any[]): void;
+    abstract processLog(joinPoint: JoinPoint, level: Level, ...messages: any[]): void;
+    abstract processLog(joinPoint: JoinPoint, annotation: LogMetadata[], ...messages: any[]): void;
+    abstract processLog(joinPoint: JoinPoint, annotation: LogMetadata[], level: Level, ...messages: any[]): void;
 }

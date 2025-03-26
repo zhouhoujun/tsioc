@@ -1,4 +1,4 @@
-import { Aspect, Joinpoint, AfterReturning } from '@tsdi/aop';
+import { Aspect, JoinPoint, AfterReturning } from '@tsdi/aop';
 import { Activity } from '../activities/Activity';
 
 
@@ -20,7 +20,7 @@ export class RunAspect {
     }
 
     @AfterReturning('execution(*.run)')
-    afterRun(joinPoint: Joinpoint) {
+    afterRun(joinPoint: JoinPoint) {
 
         // const actRef = joinPoint.target as ActivityRef;
 

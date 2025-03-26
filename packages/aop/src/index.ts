@@ -8,7 +8,7 @@ export * from './metadata/decor';
 // joinpoints
 export * from './joinpoints/state';
 export * from './joinpoints/IPointcut';
-export * from './joinpoints/Joinpoint';
+export * from './joinpoints/JoinPoint';
 export * from './joinpoints/MatchPointcut';
 
 // advices

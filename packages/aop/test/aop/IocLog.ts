@@ -1,11 +1,11 @@
-import { Joinpoint, Around, Aspect, Before } from '../../src';
+import { JoinPoint, Around, Aspect, Before } from '../../src';
 
 
 
 @Aspect({ static: true })
 export class IocLog {
     @Around('execution(*)')
-    log(joinPoint: Joinpoint) {
+    log(joinPoint: JoinPoint) {
         if (joinPoint.target) {
             const key = 'around_' + joinPoint.methodName + '_' + joinPoint.state.toString();
             if (!joinPoint.target[key]) {
@@ -16,7 +16,7 @@ export class IocLog {
     }
 
     @Before('execution(*)')
-    beforelog(joinPoint: Joinpoint) {
+    beforelog(joinPoint: JoinPoint) {
         console.log('aspect execution Before log, method name:', joinPoint.fullName, ' state:', joinPoint.state, ' returning:', joinPoint.returning, ' throwing:', joinPoint.throwing);
     }
 
