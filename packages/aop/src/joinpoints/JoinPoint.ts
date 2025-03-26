@@ -10,7 +10,7 @@ import { Advices } from '../advices/Advices';
  */
 export interface JoinpointOption extends TargetInvokeArguments {
     targetType: Type;
-    methodName: string;
+    methodName: string|symbol;
     fullName?: string;
     provJoinpoint?: JoinPoint;
     params?: ParameterMetadata[];
@@ -45,7 +45,6 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
 
     throwing: any;
 
-
     private _fullName: string | undefined;
 
     readonly target: any;
@@ -79,7 +78,7 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
 
     get fullName(): string {
         if (!this._fullName) {
-            this._fullName = lang.getClassName(this.targetType) + '.' + this.methodName
+            this._fullName = lang.getClassName(this.targetType) + '.' + this.methodName?.toString()
         }
         return this._fullName
     }

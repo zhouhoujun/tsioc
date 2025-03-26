@@ -3,8 +3,8 @@ import { getPipe, TransportArgumentResolver, TransportParameter } from './resolv
 import { HandleContext } from './context';
 
 
-export function missingPipeExecption(parameter: Parameter, type?: Type, method?: string) {
-    return new ArgumentExecption(`missing pipe to transform argument ${parameter.name} type, method ${method} of class ${type}`)
+export function missingPipeExecption(parameter: Parameter, type?: Type, method?: string | symbol) {
+    return new ArgumentExecption(`missing pipe to transform argument ${parameter.name} type, method ${method?.toString()} of class ${type}`)
 }
 
 export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx: T, scope?: string, filed?: string) => any, canResolve: (param: TransportParameter, payload: any, ctx: T) => boolean): TransportArgumentResolver[] {

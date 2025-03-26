@@ -17,7 +17,7 @@ export class Advisor implements OnDestroy {
      *
      * @type {Map<Type, Map<string, Advices>>}
      */
-    advices: Map<Type, Map<string, Advices>>;
+    advices: Map<Type, Map<string|symbol, Advices>>;
     /**
      * aspects.
      */
@@ -60,7 +60,7 @@ export class Advisor implements OnDestroy {
         this.advices.delete(type);
     }
 
-    attach<T>(typeRef: Class<T>, instance: T): void {
+    attach<T>(typeRef: Class<T>, instance: T): T {
         const type = typeRef.type;
         const advicesMap = this.advices.get(type);
         if (advicesMap && advicesMap.size) {
@@ -74,15 +74,17 @@ export class Advisor implements OnDestroy {
                 }
                 const pointcut = {
                     name: name,
-                    fullName: `${className}.${name}`,
+                    fullName: `${className}.${name.toString()}`,
                     descriptor: decorators[name]
                 }
                 proceeding.proceed(instance, type, advices, pointcut)
             })
         }
+        return instance;
+        
     }
 
-    detach<T>(typeRef: Class<T>, instance: T): void {
+    detach<T>(typeRef: Class<T>, instance: T): T {
         const advicesMap = this.advices.get(typeRef.type);
         if (advicesMap && advicesMap.size) {
             const decorators = typeRef.getPropertyDescriptors();
@@ -117,6 +119,7 @@ export class Advisor implements OnDestroy {
                 }
             })
         }
+        return instance;
     }
 
     /**
@@ -125,7 +128,7 @@ export class Advisor implements OnDestroy {
      * @param {string} key
      * @param {Advices} advices
      */
-    private setAdvices(type: Type, key: string, advices: Advices): void {
+    private setAdvices(type: Type, key: string|symbol, advices: Advices): void {
         let map = this.advices.get(type);
         if (!map) {
             map = new Map();
@@ -140,7 +143,7 @@ export class Advisor implements OnDestroy {
      * @param {string} key
      * @returns
      */
-    getAdvices(type: Type, key: string): Advices {
+    getAdvices(type: Type, key: string|symbol): Advices {
         return this.advices.get(type)?.get(key) || null!
     }
 

@@ -10,7 +10,7 @@ export interface IPointcut {
      *
      * @type {string}
      */
-    name: string;
+    name: string|symbol;
     /**
      * full name of property or method
      *

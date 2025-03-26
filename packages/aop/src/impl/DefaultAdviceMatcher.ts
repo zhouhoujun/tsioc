@@ -9,7 +9,7 @@ import { AopDef } from '../metadata/ref';
 /**
  * match express.
  */
-export type MatchExpress = (method?: string, fullName?: string, targetType?: Type, target?: any, pointcut?: IPointcut) => boolean;
+export type MatchExpress = (method?: string | symbol, fullName?: string, targetType?: Type, target?: any, pointcut?: IPointcut) => boolean;
 
 
 /**
@@ -120,7 +120,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
 
     protected matchTypeFactory(relfect: Class, metadata: AdviceMetadata): MatchExpress {
         const checks = this.genChecks(relfect, metadata);
-        return (method?: string, fullName?: string, targetType?: Type, target?: any, pointcut?: IPointcut) => checks.every(chk => chk(method, fullName, targetType, target, pointcut))
+        return (method?: string | symbol, fullName?: string, targetType?: Type, target?: any, pointcut?: IPointcut) => checks.every(chk => chk(method, fullName, targetType, target, pointcut))
     }
 
     protected genChecks(relfect: Class, metadata: AdviceMetadata): MatchExpress[] {
@@ -185,13 +185,13 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
 
         if (withInChkExp.test(strExp)) {
             const classnames = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).split(',').map(n => n.trim());
-            return (name?: string, fullName?: string, targetType?: Type) => targetType ? classnames.indexOf(lang.getClassName(targetType)) >= 0 : false
+            return (name?: string | symbol, fullName?: string, targetType?: Type) => targetType ? classnames.indexOf(lang.getClassName(targetType)) >= 0 : false
         }
 
         if (targetChkExp.test(strExp)) {
             const torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
             const platform = this.platform;
-            return (name?: string, fullName?: string, targetType?: Type) => targetType ? platform.getInjector(def.type).getTokenProvider(torken) === targetType : false
+            return (name?: string | symbol, fullName?: string, targetType?: Type) => targetType ? platform.getInjector(def.type).getTokenProvider(torken) === targetType : false
         }
 
         return fasleFn
@@ -199,17 +199,17 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
 
     protected toAnnExpress(def: Class, exp: string): MatchExpress {
         let annotation = aExp.test(exp) ? exp : ('@' + exp);
-        if(annInExp.test(annotation)) {
+        if (annInExp.test(annotation)) {
             const [ann, annIn] = annotation.split(':');
             annotation = ann;
-            return (name?: string, fullName?: string) => def.hasMetadata(annotation, annIn as DecoratorType, name)
+            return (name?: string | symbol, fullName?: string) => def.hasMetadata(annotation, annIn as DecoratorType, name)
         }
-        return (name?: string, fullName?: string) => def.hasMetadata(annotation, (!name || name === ctorName) ? Decors.CLASS : Decors.method, name)
+        return (name?: string | symbol, fullName?: string) => def.hasMetadata(annotation, (!name || name === ctorName) ? Decors.CLASS : Decors.method, name)
     }
 
     protected toExecExpress(def: Class, exp: string): MatchExpress {
         if (exp === '*' || exp === '*.*') {
-            return (name?: string, fullName?: string) => !!name && !def.getAnnotation<AopDef>().aspect
+            return (name?: string | symbol, fullName?: string) => !!name && !def.getAnnotation<AopDef>().aspect
         }
 
         if (mthNameExp.test(exp)) {
@@ -224,7 +224,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
                 .replace(replNav, '\\\/');
 
             const matcher = new RegExp(exp + '$');
-            return (name?: string, fullName?: string) => fullName ? matcher.test(fullName) : false
+            return (name?: string | symbol, fullName?: string) => fullName ? matcher.test(fullName) : false
         }
         return fasleFn
     }
@@ -235,7 +235,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         const fns = exp.tokens.map(t => this.expressToFunc(def, t));
         const argnames = exp.tokens.map((t, i) => 'arg' + i);
         const boolexp = new Function(...argnames, `return ${exp.toString((t, i, tkidx) => 'arg' + tkidx + '()')}`);
-        return (method?: string, fullName?: string, targetType?: Type, target?: any, pointcut?: IPointcut) => {
+        return (method?: string | symbol, fullName?: string, targetType?: Type, target?: any, pointcut?: IPointcut) => {
             const args = fns.map(fn => () => fn(method, fullName, targetType, target, pointcut));
             return boolexp(...args)
         }

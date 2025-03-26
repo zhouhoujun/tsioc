@@ -40,7 +40,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     /**
      * named of invocation method.
      */
-    readonly methodName: string | undefined;
+    readonly methodName: string | symbol | undefined;
 
     readonly isResolve: boolean;
 

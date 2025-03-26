@@ -3,7 +3,7 @@ import {
     Filterable, Interceptable, ApplicationHandlerFn, HandleContext
 } from '../src';
 import { Injectable, Inject, lang, Abstract, Module, Static } from '@tsdi/ioc';
-import { Aspect, Around, Joinpoint } from '@tsdi/aop';
+import { Aspect, Around, JoinPoint } from '@tsdi/aop';
 import { Logger, LogConfigure, InjectLog, LoggerModule } from '@tsdi/logger';
 import * as net from 'net';
 import { ServerModule } from '@tsdi/platform-server';
@@ -78,7 +78,7 @@ export class ClassSevice {
 export class LoggerAspect {
 
     @Around('execution(*.run)')
-    log(jp: Joinpoint) {
+    log(jp: JoinPoint) {
         console.log(jp.fullName, jp.state, 'run........');
     }
 
@@ -88,7 +88,7 @@ export class LoggerAspect {
     }
 
     @Around('execution(*.destroyed)')
-    destoryedlog(jp: Joinpoint) {
+    destoryedlog(jp: JoinPoint) {
         console.log(jp.fullName, jp.state, 'destroyed........');
     }
 }

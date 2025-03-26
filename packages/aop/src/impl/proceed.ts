@@ -48,6 +48,31 @@ export class ProceedingScope implements Proceeding {
         })), this.platform.context);
     }
 
+
+    createProxy(instance: any, advicesMap: Map<string|symbol, Advices>, targetType: Type, pointcut: IPointcut) {
+        return new Proxy(instance as object, {
+            get: (target, name, receiver) => {
+                advicesMap.get(name)
+                // const descriptor = typeRef.getPropertyDescriptor(name);
+                // if (!descriptor) return;
+                const result = Reflect.get(target, name);
+
+                return result;
+            },
+            set(target, p, newValue, receiver) {
+                
+                const result = Reflect.set(target, p, newValue, receiver);
+                return result;
+            },
+            // apply(target, thisArg, argArray) {
+            //     advicesMap.forEach((adivces, name) => {
+            //         Reflect.apply(target[name], thisArg, argArray);
+            //     })
+            //     Reflect.apply(target, thisArg, argArray);
+            // },
+        });
+    }
+
     /**
      * proceed the proxy method.
      *

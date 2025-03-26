@@ -35,7 +35,7 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
     /**
      * named of invocation method.
      */
-    abstract get methodName(): string | undefined;
+    abstract get methodName(): string | symbol | undefined;
     /**
      * add reference resolver.
      * @param contexts the list instance of {@link InvocationContext}.
@@ -229,5 +229,5 @@ export interface TargetInvokeArguments<TArg = any> extends InvokeArguments<TArg>
     /**
      * named of invocation target method.
      */
-    methodName?: string;
+    methodName?: string|symbol;
 }

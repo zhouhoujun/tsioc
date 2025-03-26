@@ -117,7 +117,7 @@ export const propertyInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
         let meta: PropertyMetadata, key: string, val;
 
         input.class.eachProperty((metas, propertyKey) => {
-            key = `${propertyKey}_INJECTED`;
+            key = `${propertyKey.toString()}_INJECTED`;
             meta = metas.find(m => m.provider)!;
             if (!meta) {
                 meta = metas.find(m => m.type)!
