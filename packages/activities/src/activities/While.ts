@@ -58,6 +58,7 @@ export interface WhileActivityOptions {
 @Injectable()
 export class WhileActivity implements Activity<WhileActivityContext> {
     name = 'while';
+    private isRunning = false;  // 添加运行状态标志
 
     constructor(private options: WhileActivityOptions = {}) {
         this.options = {
@@ -70,6 +71,8 @@ export class WhileActivity implements Activity<WhileActivityContext> {
     }
 
     async execute(context: WhileActivityContext): Promise<ActivityResult> {
+        this.isRunning = true;
+
         if (!context.condition) {
             return {
                 success: false,
@@ -94,7 +97,7 @@ export class WhileActivity implements Activity<WhileActivityContext> {
         const errors: Error[] = [];
 
         try {
-            while (iteration < maxIterations!) {
+            while (this.isRunning && iteration < maxIterations!) {
                 // 检查循环条件
                 const shouldContinue = await context.condition(context);
                 if (!shouldContinue) {
@@ -105,114 +108,80 @@ export class WhileActivity implements Activity<WhileActivityContext> {
                 }
 
                 try {
-                    // 执行循环体
                     const result = await context.body.execute(context);
                     results.push(result);
-
-                    // 调用迭代回调
                     context.onIteration?.(iteration, result);
 
-                    // 如果活动执行失败且不继续执行，返回错误
-                    if (!result.success && !continueOnError) {
-                        return {
-                            success: false,
-                            error: result.error,
-                            data: {
-                                iteration,
-                                results,
-                                errors
-                            }
-                        };
-                    }
-
-                    // 如果活动执行失败且继续执行，收集错误
+                    // 优化错误处理逻辑
                     if (!result.success) {
                         errors.push(result.error!);
+                        if (!continueOnError) {
+                            return this.createResult(false, result.error, iteration, results, errors);
+                        }
                     }
 
-                    // 等待指定的间隔时间
-                    if (interval > 0) {
+                    // 等待间隔
+                    if (interval > 0 && this.isRunning) {
                         await new Promise(resolve => setTimeout(resolve, interval));
                     }
 
                     iteration++;
                 } catch (error) {
-                    // 如果有自定义错误处理器，使用它
+                    // 统一错误处理
+                    const err = error as Error;
+                    errors.push(err);
+                    
                     if (context.errorHandler) {
                         try {
-                            const handledResult = await context.errorHandler(error as Error, iteration);
+                            const handledResult = await context.errorHandler(err, iteration);
                             results.push(handledResult);
-
                             if (!handledResult.success && !continueOnError) {
-                                return {
-                                    success: false,
-                                    error: handledResult.error,
-                                    data: {
-                                        iteration,
-                                        results,
-                                        errors
-                                    }
-                                };
+                                return this.createResult(false, handledResult.error, iteration, results, errors);
                             }
                         } catch (handlerError) {
                             errors.push(handlerError as Error);
                         }
-                    } else {
-                        errors.push(error as Error);
                     }
 
-                    // 如果不继续执行，返回错误
                     if (!continueOnError) {
-                        return {
-                            success: false,
-                            error: error as Error,
-                            data: {
-                                iteration,
-                                results,
-                                errors
-                            }
-                        };
+                        return this.createResult(false, err, iteration, results, errors);
                     }
                 }
             }
 
-            // 检查是否达到最大迭代次数
+            // 统一结果返回
             if (iteration >= maxIterations!) {
-                return {
-                    success: false,
-                    error: new Error(`Maximum iterations (${maxIterations}) reached`),
-                    data: {
-                        iteration,
-                        results,
-                        errors
-                    }
-                };
+                return this.createResult(false, new Error(`Maximum iterations (${maxIterations}) reached`), iteration, results, errors);
             }
-
-            // 返回执行结果
-            return {
-                success: errors.length === 0,
-                data: {
-                    iteration,
-                    results,
-                    errors: errors.length > 0 ? errors : undefined
-                }
-            };
-        } catch (error) {
-            return {
-                success: false,
-                error: error as Error,
-                data: {
-                    iteration,
-                    results,
-                    errors
-                }
-            };
+            
+            return this.createResult(errors.length === 0, undefined, iteration, results, errors.length ? errors : undefined);
+        } finally {
+            this.isRunning = false;
         }
     }
 
+    private createResult(
+        success: boolean,
+        error?: Error,
+        iteration?: number,
+        results?: ActivityResult[],
+        errors?: Error[]
+    ): ActivityResult {
+        return {
+            success,
+            error,
+            data: {
+                iteration,
+                results,
+                errors
+            }
+        };
+    }
+
     async compensate(context: WhileActivityContext): Promise<void> {
-        // 如果需要，实现补偿逻辑
-        // 例如：清理临时文件、回滚数据库事务等
+        this.isRunning = false;  // 停止循环
+        if (context.body?.compensate) {
+            await context.body.compensate(context);
+        }
     }
 }

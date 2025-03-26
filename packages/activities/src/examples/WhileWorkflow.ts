@@ -1,9 +1,9 @@
 import { Injectable } from '@tsdi/ioc';
-import { Workflow } from '../decorators';
-import { While } from '../decorators';
-import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
+import { Workflow, While } from '../decorators';
+import { Activity, ActivityContext, ActivityResult, EndActivity, StartActivity, WhileActivity } from '../activities';
+import { WorkflowService } from '../services';
 
-// 活动类
+@Injectable()
 class ProcessActivity implements Activity {
     name = 'process';
     
@@ -17,54 +17,54 @@ class ProcessActivity implements Activity {
     }
 }
 
-// 工作流类
 @Workflow({
-    name: 'WhileProcessingWorkflow',
-    description: '使用 While 装饰器的工作流示例'
+    name: 'while_processing_workflow',
+    activities: [
+        StartActivity,
+        WhileActivity,
+        ProcessActivity,
+        EndActivity
+    ],
+    transitions: [
+        { from: 'start', to: 'while' },
+        { from: 'while', to: 'process' },
+        { from: 'process', to: 'end' }
+    ],
+    initialState: 'start',
+    finalStates: ['end']
 })
 export class WhileProcessingWorkflow {
     @While({
         defaultMaxIterations: 10,
         defaultContinueOnError: false
     })
-    async whileProcess(
-        condition: (context: ActivityContext) => Promise<boolean>,
-        body: Activity,
-        options?: {
-            maxIterations?: number;
-            continueOnError?: boolean;
-            onIteration?: (iteration: number, result: ActivityResult) => void;
-            onComplete?: () => void;
-        }
-    ) {
-        return { condition, body, ...options };
-    }
+    while!: WhileActivity;
 }
 
-// 服务类
-export class DataProcessingService {
-    constructor(private workflow: WhileProcessingWorkflow) {}
+@Injectable()
+export class DataProcessor {
+    constructor(private workflowService: WorkflowService) {}
 
-    async processWithWhile() {
-        const processActivity = new ProcessActivity();
-
-        // 示例：处理数据直到条件满足
+    async processWithCondition() {
         let counter = 0;
-        const result = await this.workflow.whileProcess(
-            async (context) => {
+        
+        const context = {
+            condition: async (ctx: ActivityContext) => {
                 counter++;
-                return counter < 3; // 执行3次
+                return counter < 5; // 循环5次
             },
-            processActivity,
-            {
-                maxIterations: 5,
-                onIteration: (iteration, result) => {
-                    console.log(`Iteration ${iteration} completed:`, result);
-                },
-                onComplete: () => {
-                    console.log('While loop completed');
-                }
+            body: new ProcessActivity(),
+            onIteration: (iteration: number, result: ActivityResult) => {
+                console.log(`Iteration ${iteration} completed:`, result);
+            },
+            onComplete: () => {
+                console.log('While processing completed');
             }
+        };
+
+        const result = await this.workflowService.startWorkflow(
+            WhileProcessingWorkflow,
+            context
         );
 
         return result;
