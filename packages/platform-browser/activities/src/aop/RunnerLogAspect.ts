@@ -1,5 +1,5 @@
 import { Inject, lang, IContainer, CONTAINER} from '@tsdi/ioc';
-import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
+import { Around, Aspect, JoinPoint, JoinpointState } from '@tsdi/aop';
 import { LogProcess } from '@tsdi/logger';
 import { WorkflowInstance } from '@tsdi/activities';
 
@@ -17,7 +17,7 @@ export class RunnerLogAspect extends LogProcess {
     }
 
     @Around('execution(*.start)')
-    processLog(joinPoint: Joinpoint) {
+    processLog(joinPoint: JoinPoint) {
         let logger = this.logger;
         let runner = joinPoint.target as WorkflowInstance;
         let context = runner.getContext();

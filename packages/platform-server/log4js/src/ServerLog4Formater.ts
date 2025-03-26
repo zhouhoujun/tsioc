@@ -1,13 +1,13 @@
 import { ProvidedIn, Static } from '@tsdi/ioc';
 import { JoinPoint, JoinpointState, NonePointcut } from '@tsdi/aop';
-import { LogAspect, JoinpointFormater, Level, Logger, DefaultJoinpointFormater, ConsoleLog } from '@tsdi/logger';
+import { LogAspect, JoinPointFormater, Level, Logger, DefaultJoinPointFormater, ConsoleLog } from '@tsdi/logger';
 import * as chalk from 'chalk';
 
 
 @NonePointcut()
 @Static()
-@ProvidedIn(LogAspect, JoinpointFormater)
-export class ServerJoinpointLogFormater extends DefaultJoinpointFormater {
+@ProvidedIn(LogAspect, JoinPointFormater)
+export class ServerJoinpointLogFormater extends DefaultJoinPointFormater {
 
 
     format(joinPoint: JoinPoint, level: Level, logger: Logger, ...messages: any[]): any[] {

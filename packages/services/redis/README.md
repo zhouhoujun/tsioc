@@ -108,7 +108,7 @@ export class ClassSevice extends Runner {
 export class Logger {
 
     @Around('execution(*.run)')
-    log(jp: Joinpoint) {
+    log(jp: JoinPoint) {
         console.log(jp.fullName, jp.state, 'run........');
     }
 

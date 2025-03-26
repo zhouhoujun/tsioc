@@ -3,7 +3,7 @@ import { AopModule } from '@tsdi/aop';
 import { AnnotationLogAspect } from './aspect';
 import { LoggerManager } from './LoggerManager';
 import { ConsoleLogManager, LoggerManagers } from './manager';
-import { DefaultJoinpointFormater } from './formater';
+import { DefaultJoinPointFormater } from './formater';
 import { LOG_CONFIGURES, LogConfigure } from './LogConfigure';
 import { DebugLogAspect } from './debugs/aspect';
 
@@ -13,7 +13,7 @@ import { DebugLogAspect } from './debugs/aspect';
 export const LOGGER_PROVIDERS: ProviderType[] = [
     LoggerManagers,
     AnnotationLogAspect,
-    DefaultJoinpointFormater,
+    DefaultJoinPointFormater,
     ConsoleLogManager,
     { provide: LoggerManager, useExisting: LoggerManagers }
 ];

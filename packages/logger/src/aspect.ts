@@ -4,7 +4,7 @@ import { Logger } from './logger';
 import { LogMetadata } from './metadata';
 import { isLevel, Level } from './Level';
 import { LogProcess } from './LogProcess';
-import { JoinpointFormater, DefaultJoinpointFormater } from './formater';
+import { JoinPointFormater, DefaultJoinPointFormater } from './formater';
 import { LogConfigure } from './LogConfigure';
 
 /**
@@ -80,16 +80,16 @@ export abstract class LogAspect extends LogProcess {
         return `[${now.toISOString()}]`
     }
 
-    private _formater: JoinpointFormater | undefined;
+    private _formater: JoinPointFormater | undefined;
     getFormater() {
         if (!this._formater) {
             const config = this.mangers.getConfigure() || ({} as LogConfigure);
-            let formater: JoinpointFormater | undefined;
-            const format = config.format || JoinpointFormater;
+            let formater: JoinPointFormater | undefined;
+            const format = config.format || JoinPointFormater;
             if (isToken(format)) {
-                formater = this.injector.get(format, null) ?? this.injector.get(DefaultJoinpointFormater)
+                formater = this.injector.get(format, null) ?? this.injector.get(DefaultJoinPointFormater)
             } else if (isFunction(format)) {
-                formater = { format } as JoinpointFormater
+                formater = { format } as JoinPointFormater
             } else if (isObject(format) && isFunction(format.format)) {
                 formater = format
             }

@@ -6,10 +6,10 @@ import { Level } from './Level';
 
 
 /**
- * Joinpoint log formater logs
+ * JoinPoint log formater logs
  */
 @Abstract()
-export abstract class JoinpointFormater {
+export abstract class JoinPointFormater {
     /**
      * format message.
      *
@@ -23,14 +23,14 @@ export abstract class JoinpointFormater {
 }
 
 /**
- * Joinpoint log formater
+ * JoinPoint log formater
  */
-export type LOGFormater = JoinpointFormater | Token<JoinpointFormater> | ((joinPoint?: JoinPoint, ...messages: any[]) => any[]) | string;
+export type LOGFormater = JoinPointFormater | Token<JoinPointFormater> | ((joinPoint?: JoinPoint, ...messages: any[]) => any[]) | string;
 
 
 @NonePointcut()
 @Static()
-export class DefaultJoinpointFormater extends JoinpointFormater {
+export class DefaultJoinPointFormater extends JoinPointFormater {
 
     protected timestamp(time: Date): any {
         return `[${time.toISOString()}]`

@@ -30,7 +30,7 @@ export interface ReturnDefer {
 }
 
 /**
- * Joinpoint of aop.
+ * JoinPoint of aop.
  */
 export class JoinPoint extends DefaultInvocationContext<any[]> implements IocContext {
 

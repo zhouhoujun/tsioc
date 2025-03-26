@@ -21,7 +21,6 @@ export abstract class Proceeding {
      * @param {*} target
      * @param {Type} targetType
      * @param {IPointcut} pointcut
-     * @param {Joinpoint} [provJoinpoint]
      */
     abstract proceed(target: any, targetType: Type, advices: Advices, pointcut: IPointcut): void;
 }

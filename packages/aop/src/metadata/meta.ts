@@ -2,7 +2,7 @@ import { MethodMetadata, Type, ClassMetadata, MethodPropMetadata } from '@tsdi/i
 
 
 /**
- * Joinpoint state.
+ * JoinPoint state.
  */
 export type AdviceTypes = 'Before' | 'Pointcut' | 'After' | 'AfterReturning' | 'AfterThrowing' | 'Advice' | 'Around';
 

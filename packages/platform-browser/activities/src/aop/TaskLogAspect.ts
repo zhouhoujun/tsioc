@@ -1,5 +1,5 @@
 import { lang } from '@tsdi/ioc';
-import { Around, Aspect, Joinpoint, JoinpointState } from '@tsdi/aop';
+import { Around, Aspect, JoinPoint, JoinpointState } from '@tsdi/aop';
 import { LogProcess } from '@tsdi/logger';
 import { IActivityRef, ActivityRef, ControlActivityElementRef } from '@tsdi/activities';
 
@@ -11,7 +11,7 @@ import { IActivityRef, ActivityRef, ControlActivityElementRef } from '@tsdi/acti
  */
 export class TaskLogProcess extends LogProcess {
 
-    processLog(joinPoint: Joinpoint) {
+    processLog(joinPoint: JoinPoint) {
         (async () => {
             let logger = this.logger;
             let target = joinPoint.target as IActivityRef;
@@ -58,7 +58,7 @@ export class TaskLogProcess extends LogProcess {
 })
 export class TaskLogAspect extends TaskLogProcess {
     @Around('execution(*.run)')
-    logging(joinPoint: Joinpoint) {
+    logging(joinPoint: JoinPoint) {
         this.processLog(joinPoint);
     }
 }
@@ -77,7 +77,7 @@ export class TaskLogAspect extends TaskLogProcess {
 })
 export class TaskControlLogAspect extends TaskLogProcess {
     @Around('execution(*.run)')
-    logging(joinPoint: Joinpoint) {
+    logging(joinPoint: JoinPoint) {
         this.processLog(joinPoint);
     }
 }

@@ -1,5 +1,5 @@
 import { MethodMetadata } from '@tsdi/ioc';
-import { Aspect, Joinpoint, Pointcut } from '@tsdi/aop';
+import { Aspect, JoinPoint, Pointcut } from '@tsdi/aop';
 import { LogAspect } from '../src';
 
 
@@ -7,7 +7,7 @@ import { LogAspect } from '../src';
 export class AnntotationLogAspect extends LogAspect {
 
     @Pointcut('@annotation(Logger)', { annotationArgName: 'logAnnotation', annotationName: '@Log'} )
-    logging(logAnnotation: MethodMetadata[], joinPoint: Joinpoint) {
+    logging(logAnnotation: MethodMetadata[], joinPoint: JoinPoint) {
         this.processLog(joinPoint, logAnnotation);
     }
 }

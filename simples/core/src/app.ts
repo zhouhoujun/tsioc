@@ -16,7 +16,7 @@ import { UserController } from './mapping/UserController';
 import { RoleController } from './mapping/RoleController';
 import { UserRepository } from './repositories/UserRepository';
 import { Role } from './models/Role';
-import { Aspect, Before, Joinpoint } from '@tsdi/aop';
+import { Aspect, Before, JoinPoint } from '@tsdi/aop';
 import { AuthorizationAspect, AuthorizationPointcut } from '@tsdi/security';
 
 
@@ -98,7 +98,7 @@ export class CheckRightAspect {
     // pointcut for method has @AutoWried decorator.
     @Before(AuthorizationPointcut, 'allMetadata')
     // @Around({ pointcut: 'run()', annotation: Before })
-    beforelog(joinPoint: Joinpoint, allMetadata: MethodMetadata[]) {
+    beforelog(joinPoint: JoinPoint, allMetadata: MethodMetadata[]) {
         console.log('allMetadata:', allMetadata);
         console.log('aspect execution Before AnnotationAspect.auth, method name:', joinPoint.fullName, ' state:', joinPoint.state, ' returning:', joinPoint.returning, ' throwing:', joinPoint.throwing);
     }

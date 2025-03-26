@@ -61,7 +61,7 @@ see [simples](https://github.com/zhouhoujun/tsioc/tree/master/packages/aop/test/
 
 import { TypeMetadata, IClassMethodDecorator, createClassMethodDecorator} from '@tsdi/core';
 
-import { Joinpoint, Around, Aspect , Pointcut } from '@tsdi/aop';
+import { JoinPoint, Around, Aspect , Pointcut } from '@tsdi/aop';
 
 export const Authorization: IClassMethodDecorator<TypeMetadata> = createClassMethodDecorator<TypeMetadata>('Authorization');
 
@@ -70,7 +70,7 @@ export const Authorization: IClassMethodDecorator<TypeMetadata> = createClassMet
 export class AuthAspect {
     // pointcut for method has @Authorization decorator.
     @Pointcut('@annotation(Authorization)', 'authAnnotation')
-    auth(joinPoint: Joinpoint, authAnnotation:MethodMetadata[]) {
+    auth(joinPoint: JoinPoint, authAnnotation:MethodMetadata[]) {
         console.log('aspect annotation Before log, method name:', joinPoint.fullName, ' state:', joinPoint.state, ' returning:', joinPoint.returning, ' throwing:', joinPoint.throwing);
     }
 }
@@ -79,7 +79,7 @@ export class AuthAspect {
 export class SecrityAspect {
     // before AuthAspect.auth check some.
     @Before('execution(AuthAspect.auth)', 'authAnnotation')
-    sessionCheck(authAnnotation:MethodMetadata[],joinPoint: Joinpoint) {
+    sessionCheck(authAnnotation:MethodMetadata[],joinPoint: JoinPoint) {
         console.log('aspect execution check session secrity Before AnnotationAspect.auth, method name:', joinPoint.fullName, ' state:', joinPoint.state, ' returning:', joinPoint.returning, ' throwing:', joinPoint.throwing);
     }
 }
@@ -91,12 +91,12 @@ export class DebugLog {
 
     @Before(/\w+Controller.\w+$/)
     // @Before('execution(*Controller.*)')
-    Beforlog(joinPoint: Joinpoint) {
+    Beforlog(joinPoint: JoinPoint) {
         console.log('aspect Before log:', joinPoint.fullName);
     }
 
     @Around('execution(*Controller.*)')
-    log(joinPoint: Joinpoint) {
+    log(joinPoint: JoinPoint) {
         console.log('aspect Around log, method name:', joinPoint.fullName, ' state:', joinPoint.state, ' Args:', joinPoint.args, ' returning:', joinPoint.returning, ' throwing:', joinPoint.throwing);
     }
 }
