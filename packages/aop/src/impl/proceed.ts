@@ -11,6 +11,9 @@ import { Advisor } from '../Advisor';
 import { Proceeding } from '../Proceeding';
 
 const proxyFlag = '_proxy';
+export interface ProxyFunction extends Function {
+    _proxy?: boolean;
+}
 
 /**
  * Proxy method.
@@ -52,24 +55,38 @@ export class ProceedingScope implements Proceeding {
     createProxy(instance: any, advicesMap: Map<string|symbol, Advices>, targetType: Type, pointcut: IPointcut) {
         return new Proxy(instance as object, {
             get: (target, name, receiver) => {
-                advicesMap.get(name)
-                // const descriptor = typeRef.getPropertyDescriptor(name);
-                // if (!descriptor) return;
+                const advices = advicesMap.get(name);
                 const result = Reflect.get(target, name);
-
-                return result;
-            },
-            set(target, p, newValue, receiver) {
                 
-                const result = Reflect.set(target, p, newValue, receiver);
+                if (advices && isFunction(result)) {
+                    if (!result[proxyFlag]) {
+                        const proxyFn = this.proxy(result.bind(target), advices, target, targetType, {
+                            ...pointcut,
+                            name: name.toString(),
+                            fullName: `${targetType.name}.${name.toString()}`
+                        }) as ProxyFunction;
+                        proxyFn[proxyFlag] = true;
+                        return proxyFn;
+                    }
+                }
                 return result;
             },
-            // apply(target, thisArg, argArray) {
-            //     advicesMap.forEach((adivces, name) => {
-            //         Reflect.apply(target[name], thisArg, argArray);
-            //     })
-            //     Reflect.apply(target, thisArg, argArray);
-            // },
+            set:(target, p, newValue, receiver) => {
+                const advices = advicesMap.get(p);
+                if (advices && isFunction(newValue)) {
+                    if (!newValue[proxyFlag]) {
+                        const proxyFn = this.proxy(newValue.bind(target), advices, target, targetType, {
+                            ...pointcut,
+                            name: p.toString(),
+                            fullName: `${targetType.name}.${p.toString()}`
+                        }) as ProxyFunction;
+                        proxyFn[proxyFlag] = true;
+                        Reflect.set(target, p, proxyFn, receiver);
+                        return true;
+                    }
+                }
+                return Reflect.set(target, p, newValue, receiver);
+            }
         });
     }
 
