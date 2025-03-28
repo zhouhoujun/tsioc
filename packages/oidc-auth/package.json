@@ -38,6 +38,7 @@
     "@tsdi/core": "latest",
     "@types/node": "^14.14.7",
     "jsonwebtoken": "^9.0.0",
+    "class-transformer": "^0.5.1",
     "uuid": "^9.0.0"
   },
   "directories": {

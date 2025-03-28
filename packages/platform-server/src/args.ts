@@ -1,5 +1,5 @@
-import { ApplicationArguments } from '@tsdi/core';
 import { isString } from '@tsdi/ioc';
+import { ApplicationArguments } from '@tsdi/core';
 
 
 const isArg = /^--/;

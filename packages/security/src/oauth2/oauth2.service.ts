@@ -1,6 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
 import { RequestContext } from '@tsdi/endpoints';
 import { OAuth2Options } from './oauth2.options';
+import { URLSearchParams } from 'url';
 
 @Injectable()
 export class OAuth2Service {
@@ -13,21 +14,64 @@ export class OAuth2Service {
         // 使用授权码获取访问令牌
         const tokenResponse = await this.getAccessToken(code, options);
         
+        // 验证令牌响应
+        if (!tokenResponse.access_token) {
+            throw new Error('Invalid token response');
+        }
+
         // 获取用户信息
         const userInfo = await this.getUserInfo(tokenResponse.access_token, options);
         
         return userInfo;
     }
 
-    private async getAccessToken(code: string, options: OAuth2Options): Promise<any> {
-        // 实现获取访问令牌的逻辑
-        // 需要根据具体的 OAuth2 提供商实现
-        throw new Error('Need to implement token exchange');
+    protected async getAccessToken(code: string, options: OAuth2Options): Promise<any> {
+        const params = new URLSearchParams();
+        params.append('grant_type', 'authorization_code');
+        params.append('code', code);
+        params.append('redirect_uri', options.callbackURL);
+        params.append('client_id', options.clientId);
+        params.append('client_secret', options.clientSecret);
+
+        const response = await fetch(options.tokenURL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: params
+        });
+
+        if (!response.ok) {
+            throw new Error(`Token request failed: ${response.statusText}`);
+        }
+
+        return response.json();
     }
 
-    private async getUserInfo(accessToken: string, options: OAuth2Options): Promise<any> {
-        // 实现获取用户信息的逻辑
-        // 需要根据具体的 OAuth2 提供商实现
-        throw new Error('Need to implement user info fetch');
+    protected async getUserInfo(accessToken: string, options: OAuth2Options): Promise<any> {
+        const response = await fetch(options.profileURL || `${options.tokenURL}/userinfo`, {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`User info request failed: ${response.statusText}`);
+        }
+
+        return response.json();
+    }
+
+    // 新增方法：构建授权URL
+    buildAuthorizationUrl(options: OAuth2Options, state?: string): string {
+        const url = new URL(options.authorizationURL);
+        url.searchParams.append('response_type', 'code');
+        url.searchParams.append('client_id', options.clientId);
+        url.searchParams.append('redirect_uri', options.callbackURL);
+        url.searchParams.append('scope', options.scope?.join(' ') || '');
+        if (state) {
+            url.searchParams.append('state', state);
+        }
+        return url.toString();
     }
 } 

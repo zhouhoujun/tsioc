@@ -31,12 +31,12 @@ export class OAuth2Interceptor implements ApplicationInterceptor<RestfulRequestC
         return ctx.path.includes('/oauth/callback');
     }
 
-    private isAuthenticated(ctx: RestfulRequestContext): boolean {
+    protected isAuthenticated(ctx: RestfulRequestContext): boolean {
         // 实现会话检查逻辑
         return !!ctx.session?.user;
     }
 
-    private async handleCallback(ctx: RestfulRequestContext, options: OAuth2Options) {
+    protected async handleCallback(ctx: RestfulRequestContext, options: OAuth2Options) {
         const code = ctx.query.code;
         if (!code) {
             throw new Error('No authorization code provided');
@@ -52,11 +52,11 @@ export class OAuth2Interceptor implements ApplicationInterceptor<RestfulRequestC
         await ctx.get(Authenticator).login(ctx, userInfo);
     }
 
-    private async getAccessToken(code: string, options: OAuth2Options): Promise<any> {
+    protected async getAccessToken(code: string, options: OAuth2Options): Promise<any> {
         // 实现获取访问令牌的逻辑
     }
 
-    private async getUserInfo(accessToken: string): Promise<any> {
+    protected async getUserInfo(accessToken: string): Promise<any> {
         // 实现获取用户信息的逻辑
     }
 

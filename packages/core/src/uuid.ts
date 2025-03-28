@@ -7,7 +7,7 @@ export abstract class UuidGenerator {
      *
      * @returns {string} uuid string.
      */
-    abstract generate(): string;
+    abstract generate(type?: 'uuid1' | 'uuid4' | 'uuid5'): string;
 }
 
 /**

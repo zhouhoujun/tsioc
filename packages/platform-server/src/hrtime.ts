@@ -1,5 +1,5 @@
-import { HrtimeFormatter } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
+import { HrtimeFormatter } from '@tsdi/core';
 import { hrtime } from 'process';
 
 @Injectable()

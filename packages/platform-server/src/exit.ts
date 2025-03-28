@@ -1,5 +1,5 @@
-import { ApplicationContext, Start } from '@tsdi/core';
 import { Static } from '@tsdi/ioc';
+import { ApplicationContext, Start } from '@tsdi/core';
 
 @Static()
 export class ApplicationExit {

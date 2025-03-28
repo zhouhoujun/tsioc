@@ -16,7 +16,14 @@ import { OAuth2Service } from './oauth2.service';
     ]
 })
 export class OAuth2Module {
-
+    /**
+     * 提供模块配置选项
+     * @param options  OAuth2配置参数
+     * @returns 返回配置好的模块提供器
+     */
+    static withOption(options: OAuth2Options) {
+        return provideOAuth2Module(options)
+    }
 }
 
 export function provideOAuth2Module(options: OAuth2Options) {

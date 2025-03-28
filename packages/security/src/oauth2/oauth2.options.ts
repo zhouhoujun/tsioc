@@ -4,6 +4,7 @@ export class OAuth2Options {
         readonly clientSecret: string,
         readonly authorizationURL: string,
         readonly tokenURL: string,
+        readonly profileURL: string,
         readonly callbackURL: string,
         readonly scope?: string[]
     ) { }

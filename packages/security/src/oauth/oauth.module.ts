@@ -15,6 +15,10 @@ import { OAuthInterceptor } from './oauth.interceptor';
 })
 export class OAuthModule {
 
+    static withOption(options: OAuthOption) {
+        return provideOAuthModule(options)
+    }
+
 }
 
 export function provideOAuthModule(options: OAuthOption) {
