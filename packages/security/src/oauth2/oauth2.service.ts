@@ -1,6 +1,7 @@
 import { Injectable } from '@tsdi/ioc';
 import { RequestContext } from '@tsdi/endpoints';
 import { OAuth2Options } from './oauth2.options';
+import { fetch } from 'cross-fetch';
 import { URLSearchParams } from 'url';
 
 @Injectable()
