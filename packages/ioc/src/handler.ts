@@ -121,44 +121,41 @@ export function chainFactory(chainTailFn: InterceptorFn, interceptorFn: Intercep
         )
 }
 
+const handleFn = Symbol('__handlerFn');
+const owner = Symbol('__owner');
 
-
-// ...
-// 添加WeakMap缓存
-const handlerFnCache = new WeakMap<Handler, HandlerFn>();
-
-export function toHandlerFn(handler: Handler): HandlerFn {
-    // 优先返回缓存结果
-    if (handlerFnCache.has(handler)) {
-        return handlerFnCache.get(handler)!;
+export function toHandlerFn(handler: Handler & { [handleFn]?: HandlerFn }): HandlerFn {
+    // 优先返回结果
+    if (handler[handleFn]) {
+        return handler[handleFn];
     }
 
     // 创建标准化函数
     const fn = (input: any, context?: any) => handler.handle(input, context);
-
-    // 设置双向引用
-    handlerFnCache.set(handler, fn);
+    fn[owner] = handler;
+    handler[handleFn] = fn;
 
     return fn;
 }
 
-const handlerCache = new WeakMap<HandlerFn, Handler>();
-export function toHandler(handle: HandlerFn): Handler {
-    if (handlerCache.has(handle)) {
-        return handlerCache.get(handle)!;
+export function toHandler(handle: HandlerFn & { [owner]?: Handler }): Handler {
+    if (handle[owner]) {
+        return handle[owner];
     }
-    const hanlder = { handle };
-    handlerCache.set(handle, hanlder);
-    return hanlder;
+    const handler = { handle };
+    handle[owner] = handler;
+    return handler;
 }
 
-const interceptorCache = new WeakMap<Interceptor, InterceptorFn>();
-export function toInterceptorFn(interceptor: Interceptor): InterceptorFn {
-    if (interceptorCache.has(interceptor)) {
-        return interceptorCache.get(interceptor)!;
+
+const interceptorFn = Symbol('__interceptorFn');
+export function toInterceptorFn(interceptor: Interceptor & { [interceptorFn]?: InterceptorFn }): InterceptorFn {
+    if (interceptor[interceptorFn]) {
+        return interceptor[interceptorFn];
     }
     const fn = (input: any, next: HandlerFn, context?: any) => interceptor.intercept(input, toHandler(next), context);
-    interceptorCache.set(interceptor, fn);
+    interceptor[interceptorFn] = fn;
+    // fn[owner] = interceptor;
     return fn;
 }
 
@@ -213,11 +210,6 @@ export class BaseChain<TInput = any, TOutput = any, TContext = any> {
 
 }
 
-export class InterceptorChina<TInput = any, TOutput = any, TContext = any> extends BaseChain<TInput, TOutput, TContext> implements Interceptor<TInput, TOutput, TContext> {
-    intercept(input: TInput, next: Handler, context?: TContext): TOutput {
-        return this.getChain()(input, toHandlerFn(next), context);
-    }
-}
 
 export interface NextOpter<T> {
     next?: (res: T, context?: any) => any;
