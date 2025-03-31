@@ -6,11 +6,11 @@ import { Proceeding } from '../Proceeding';
 
 
 /**
- * advice interecptor.
+ * pointcut interecptor.
  *
  * @export
  */
-export const ctorAdvice = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
+export const pointcutInterceptor = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
     if (!isValAspectTag(ctx.type, ctx.class) || !context.has(Proceeding)) return next(ctx, context);
 
     // aspect class do nothing.
@@ -23,7 +23,7 @@ export const ctorAdvice = (ctx: RuntimeContext, next: HandlerFn, context: Contex
  *
  * @export
  */
-export const matchPointcut = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
+export const matchInterceptor = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
     // aspect class do nothing.
     if (isValAspectTag(ctx.type, ctx.class)) {
         const advisor = context.get(Advisor);

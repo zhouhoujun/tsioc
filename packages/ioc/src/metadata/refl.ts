@@ -89,17 +89,17 @@ export interface DesignScopeHandles<T> {
  * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
  */
 export interface RuntimeScopeHandles<T> {
-    /**
-     * decorator BeforeConstructor action handles.
-     * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
-     */
-    beforeConstructor?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
+    // /**
+    //  * decorator BeforeConstructor action handles.
+    //  * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
+    //  */
+    // beforeConstructor?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
-    /**
-     * decorator AfterConstructor action handles.
-     * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
-     */
-    afterConstructor?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
+    // /**
+    //  * decorator AfterConstructor action handles.
+    //  * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
+    //  */
+    // afterConstructor?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
     /**
      * decorator Property action handles.

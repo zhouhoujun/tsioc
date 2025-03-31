@@ -24,6 +24,6 @@ export * from './aop.module';
 
 
 // impl
-export * from './impl/DefaultAdviceMatcher';
+export * from './impl/matcher';
 // export * from './impl/aop';
 // export * from './impl/proceed';
