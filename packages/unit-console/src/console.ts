@@ -1,5 +1,4 @@
 import { Token, lang, Module } from '@tsdi/ioc';
-import { TimeFormatPipe } from '@tsdi/core';
 import { SuiteDescribe, RealtimeReporter, ICaseDescribe } from '@tsdi/unit';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerLog4Module } from '@tsdi/platform-server/log4js';

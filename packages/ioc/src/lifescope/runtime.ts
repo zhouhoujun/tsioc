@@ -187,41 +187,7 @@ export const ctorArgsInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
     return next(input, context);
 }
 
-// const BEFORE_CTOR_SCOPE = new ContextToken<LifeScope>(() => null!);
-// export function getRuntimeBeforeCtorScope(platform: Platform): LifeScope<RuntimeContext> {
-//     let scope = platform.context.get(BEFORE_CTOR_SCOPE);
-//     if (!scope) {
-//         scope = new LifeScope<RuntimeContext>(platform, (ctx, context) => {
-//             invokeRuntimeHandler(ctx.class.classDecors, ctx, Decors.beforeConstructor, context)
-//         });
-//         platform.context.set(BEFORE_CTOR_SCOPE, scope);
-//     }
-//     return scope;
-// }
 
-// const AFTER_CTOR_SCOPE = new ContextToken<LifeScope>(() => null!);
-// export function getRuntimeAfterCtorScope(platform: Platform): LifeScope<RuntimeContext> {
-//     let scope = platform.context.get(AFTER_CTOR_SCOPE);
-//     if (!scope) {
-//         scope = new LifeScope<RuntimeContext>(platform, (ctx, context) => {
-//             invokeRuntimeHandler(ctx.class.classDecors, ctx, Decors.afterConstructor, context)
-//         });
-//         platform.context.set(AFTER_CTOR_SCOPE, scope);
-//     }
-//     return scope;
-// }
-
-
-/**
- * after constructor decorator.
- *
- */
-export const ctorInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
-    // return invokeTail(() => getRuntimeBeforeCtorScope(input.platform).handle(input, context), () =>
-    //     invokeTail(() => next(input, context), () => getRuntimeAfterCtorScope(input.platform).handle(input, context))
-    // );
-    return next(input, context)
-}
 
 
 export const RUNTIME_INTERCEPTORS = [
@@ -233,7 +199,6 @@ export const RUNTIME_INTERCEPTORS = [
     singletonInterceptor,
     methodInterceptor,
     propertyInterceptor,
-    ctorArgsInterceptor,
-    ctorInterceptor
+    ctorArgsInterceptor
 ] as InterceptorLike<RuntimeContext>[]
 

@@ -44,60 +44,60 @@ export interface DecorDefHandles<T = any> {
 
 /**
  * design action scope hanldes.
- * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
+ * raise handles order by beforeAnnoation -> class -> property -> method -> afterAnnoation
  */
 export interface DesignScopeHandles<T> {
     /**
      * decorator BeforeAnnoation action handles.
-     * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
+     * raise handles order by beforeAnnoation -> class -> property -> method -> afterAnnoation
      */
     beforeAnnoation?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
     /**
      * decorator Class action handles.
-     * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
+     * raise handles order by beforeAnnoation -> class -> property -> method -> afterAnnoation
      */
     class?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
     /**
      * decorator Property action handles.
-     * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
+     * raise handles order by beforeAnnoation -> class -> property -> method -> afterAnnoation
      */
     property?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
     /**
      * decorator Method action handles.
-     * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
+     * raise handles order by beforeAnnoation -> class -> property -> method -> afterAnnoation
      */
     method?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
     /**
      * decorator AfterAnnoation action handles.
-     * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
+     * raise handles order by beforeAnnoation -> class -> property -> method -> afterAnnoation
      */
     afterAnnoation?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 }
 
 /**
  * runtime action scope hanldes.
- * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
+ * raise handles order by property -> method -> class
  */
 export interface RuntimeScopeHandles<T> {
     /**
      * decorator Property action handles.
-     * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
+     * raise handles order by property -> method -> class
      */
     property?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
     /**
      * decorator Method action handles.
-     * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
+     * raise handles order by property -> method -> class
      */
     method?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
     /**
      * decorator Class action handles.
-     * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
+     * raise handles order by  property -> method -> class
      */
     class?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
@@ -120,7 +120,7 @@ export interface DecorRegisterOption<T = any> {
     /**
      * set design action scope handles.
      * raise when Type inject.
-     * raise design handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
+     * raise design handles order by beforeAnnoation -> class -> property -> method -> afterAnnoation
      */
     design?: DesignScopeHandles<DesignContext>
     /**

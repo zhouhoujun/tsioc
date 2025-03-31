@@ -1,4 +1,4 @@
-import { Inject, Injector, Autorun, Module, ctorInterceptor, initReflectInterceptor } from '@tsdi/ioc';
+import { Inject, Injector, Autorun, Module, ctorArgsInterceptor, initReflectInterceptor } from '@tsdi/ioc';
 import { matchInterceptor, pointcutInterceptor } from './impl/aop';
 import { Advisor } from './Advisor';
 import { DefaultAdviceMatcher } from './impl/matcher';
@@ -32,7 +32,7 @@ export class AopProvider {
 
 
         platform.runtime.use(matchInterceptor, platform.runtime.getIndexOf(initReflectInterceptor) + 1);
-        platform.runtime.use(pointcutInterceptor, platform.runtime.getIndexOf(ctorInterceptor));
+        platform.runtime.use(pointcutInterceptor, platform.runtime.getIndexOf(ctorArgsInterceptor) + 1);
 
     }
 }

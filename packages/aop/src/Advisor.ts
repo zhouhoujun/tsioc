@@ -1,9 +1,8 @@
-import { Type, lang, ReflectiveRef, OnDestroy, Platform, refl, ctorName, isFunction, Class } from '@tsdi/ioc';
+import { Type, lang, ReflectiveRef, OnDestroy, Platform, refl, isFunction, Class } from '@tsdi/ioc';
 import { Advicer } from './advices/Advicer';
 import { Advices } from './advices/Advices';
 import { AdviceMatcher } from './AdviceMatcher';
 import { AopDef } from './metadata/ref';
-import { Proceeding } from './Proceeding';
 
 /**
  * for global aop advisor.
@@ -60,68 +59,6 @@ export class Advisor implements OnDestroy {
         this.advices.delete(type);
     }
 
-    attach<T>(typeRef: Class<T>, instance: T): T {
-        const type = typeRef.type;
-        const advicesMap = this.advices.get(type);
-        if (advicesMap && advicesMap.size) {
-            const className = typeRef.className;
-            const decorators = typeRef.getPropertyDescriptors();
-            const proceeding = this.platform.context.get(Proceeding);
-
-            advicesMap.forEach((advices, name) => {
-                if (name === ctorName) {
-                    return
-                }
-                const pointcut = {
-                    name: name,
-                    fullName: `${className}.${name.toString()}`,
-                    descriptor: decorators[name]
-                }
-                proceeding.proceed(instance, type, advices, pointcut)
-            })
-        }
-        return instance;
-
-    }
-
-    detach<T>(typeRef: Class<T>, instance: T): T {
-        const advicesMap = this.advices.get(typeRef.type);
-        if (advicesMap && advicesMap.size) {
-            const decorators = typeRef.getPropertyDescriptors();
-            advicesMap.forEach((advices, name) => {
-                if (name === ctorName) {
-                    return
-                }
-                const descriptor = decorators[name];
-                if (!descriptor) return;
-
-                if (descriptor.get || descriptor.set) {
-                    if (descriptor.get) {
-                        const getMth = descriptor.get.bind(instance);
-                        Object.defineProperty(instance, name, {
-                            get: () => {
-                                return getMth()
-                            }
-                        })
-                    }
-                    if (descriptor.set) {
-                        const setMth = descriptor.set.bind(instance);
-                        Object.defineProperty(instance, name, {
-                            set: (val) => {
-                                setMth(val)
-                            }
-                        })
-                    }
-                } else if (isFunction(descriptor.value)) {
-                    (instance as any)[name] = descriptor.value.bind(instance);
-                } else {
-                    (instance as any)[name] = (instance as any)[name];
-                }
-            })
-        }
-        return instance;
-    }
-
     /**
      * set advices.
      *
@@ -145,6 +82,10 @@ export class Advisor implements OnDestroy {
      */
     getAdvices(type: Type, key: string | symbol): Advices {
         return this.advices.get(type)?.get(key) || null!
+    }
+
+    getAdvicesMap(type: Type) {
+        return this.advices.get(type);
     }
 
     /**

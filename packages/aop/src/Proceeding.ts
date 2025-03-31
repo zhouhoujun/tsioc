@@ -1,6 +1,5 @@
-import { Abstract, Context, HandlerFn, RuntimeContext, Type } from '@tsdi/ioc';
-import { Advices } from './advices/Advices';
-import { IPointcut } from './joinpoints/IPointcut';
+import { Abstract, Class, Context, HandlerFn, RuntimeContext, Type } from '@tsdi/ioc';
+import { Advisor } from './Advisor';
 
 
 @Abstract()
@@ -14,13 +13,10 @@ export abstract class Proceeding {
      */
     abstract pointcut(ctx: RuntimeContext, next: HandlerFn, context: Context): any;
 
+
+    abstract attach<T>(typeRef: Class<T>, instance: T, advisor?: Advisor): T;
+
+    abstract detach<T>(typeRef: Class<T>, instance: T, advisor?: Advisor): T;
+
     
-    /**
-     * proceed the proxy method.
-     *
-     * @param {*} target
-     * @param {Type} targetType
-     * @param {IPointcut} pointcut
-     */
-    abstract proceed(target: any, targetType: Type, advices: Advices, pointcut: IPointcut): void;
 }
