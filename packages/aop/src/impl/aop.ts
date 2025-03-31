@@ -4,22 +4,9 @@ import { Advisor } from '../Advisor';
 import { Proceeding } from '../Proceeding';
 
 
-/**
- * execute bind method pointcut interecptor.
- */
-export const bindMthPointcut = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
-    // aspect class do nothing.
-    // ctx.type had checked.
-    if (ctx.instance && isValAspectTag(ctx.type, ctx.class)) {
-        context.get(Advisor)?.attach(ctx.class, ctx.instance);
-    }
-
-    return next(ctx, context)
-};
-
 
 /**
- * constructor advice interecptor.
+ * advice interecptor.
  *
  * @export
  */
@@ -27,7 +14,7 @@ export const ctorAdvice = (ctx: RuntimeContext, next: HandlerFn, context: Contex
     if (!isValAspectTag(ctx.type, ctx.class) || !context.has(Proceeding)) return next(ctx, context);
 
     // aspect class do nothing.
-    return context.get(Proceeding).pointcutConstr(ctx, next, context);
+    return context.get(Proceeding).pointcut(ctx, next, context);
 
 }
 

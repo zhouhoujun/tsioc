@@ -1,5 +1,4 @@
 import { Injectable } from '@tsdi/ioc';
-import { RequestContext } from '@tsdi/endpoints';
 import { OIDCOptions } from './oidc.options';
 import { OAuth2Service } from '../oauth2/oauth2.service';
 import { JWTService } from '../jwt/jwt.service';

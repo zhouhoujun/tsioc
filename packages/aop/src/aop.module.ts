@@ -1,5 +1,5 @@
-import { Inject, Injector, Autorun, Module, getRuntimeMethodScope, ctorInterceptor, initReflectInterceptor } from '@tsdi/ioc';
-import { bindMthPointcut, matchPointcut, ctorAdvice } from './impl/aop';
+import { Inject, Injector, Autorun, Module, ctorInterceptor, initReflectInterceptor } from '@tsdi/ioc';
+import { matchPointcut, ctorAdvice } from './impl/aop';
 import { Advisor } from './Advisor';
 import { DefaultAdviceMatcher } from './impl/DefaultAdviceMatcher';
 import { ProceedingScope } from './impl/proceed';
@@ -22,7 +22,7 @@ export class AopProvider {
         const platform = injector.platform();
         const context = platform.context;
         if (context.has(Advisor)) return;
-       
+
         const proceeding = new ProceedingScope(platform);
 
         context.set(Advisor, new Advisor(platform))
@@ -33,7 +33,6 @@ export class AopProvider {
 
         platform.runtime.use(matchPointcut, platform.runtime.getIndexOf(initReflectInterceptor) + 1);
         platform.runtime.use(ctorAdvice, platform.runtime.getIndexOf(ctorInterceptor));
-        getRuntimeMethodScope(platform).use(bindMthPointcut, 0);
 
     }
 }

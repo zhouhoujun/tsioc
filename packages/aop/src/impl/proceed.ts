@@ -29,11 +29,14 @@ export class ProceedingScope implements Proceeding {
     ) { }
 
 
-    pointcutConstr(ctx: RuntimeContext, next: HandlerFn, context: Context) {
+    pointcut(ctx: RuntimeContext, next: HandlerFn, context: Context) {
         const targetType = ctx.type;
-        const advices = this.platform.context.get(Advisor).getAdvices(targetType, ctorName);
+        const advisor = this.platform.context.get(Advisor);
+        const advices = advisor.getAdvices(targetType, ctorName);
         if (!advices) {
-            return next(ctx, context);
+            return invokeTail(() => next(ctx, context), () => {
+                ctx.instance = advisor.attach(ctx.class, ctx.instance)
+            });
         }
         const { injector, args, params, context: parent } = ctx;
         const joinPoint = JoinPoint.create(injector ?? this.platform.getInjector('root') ?? this.platform.getInjector('platform'), {
@@ -46,23 +49,25 @@ export class ProceedingScope implements Proceeding {
             parent
         });
         return getCtorAdvicesScope(this.platform).intercept(joinPoint, toHandler((joinPoint) => invokeTail(() => next(ctx, context), () => {
-            const instance = joinPoint.returning = joinPoint.target = ctx.instance;
+            let instance = joinPoint.returning = joinPoint.target = ctx.instance;
+            instance = ctx.instance = advisor.attach(ctx.class, instance)
             return instance;
         })), this.platform.context);
     }
 
 
-    createProxy(instance: any, advicesMap: Map<string|symbol, Advices>, targetType: Type, pointcut: IPointcut) {
+    createProxy(instance: any, advicesMap: Map<string | symbol, Advices>, targetType: Type, pointcut: IPointcut) {
         return new Proxy(instance as object, {
             get: (target, name, receiver) => {
+
                 const advices = advicesMap.get(name);
                 const result = Reflect.get(target, name);
-                
+
                 if (advices && isFunction(result)) {
                     if (!result[proxyFlag]) {
                         const proxyFn = this.proxy(result.bind(target), advices, target, targetType, {
                             ...pointcut,
-                            name: name.toString(),
+                            name,
                             fullName: `${targetType.name}.${name.toString()}`
                         }) as ProxyFunction;
                         proxyFn[proxyFlag] = true;
@@ -71,21 +76,21 @@ export class ProceedingScope implements Proceeding {
                 }
                 return result;
             },
-            set:(target, p, newValue, receiver) => {
-                const advices = advicesMap.get(p);
+            set: (target, name, newValue, receiver) => {
+                const advices = advicesMap.get(name);
                 if (advices && isFunction(newValue)) {
                     if (!newValue[proxyFlag]) {
                         const proxyFn = this.proxy(newValue.bind(target), advices, target, targetType, {
                             ...pointcut,
-                            name: p.toString(),
-                            fullName: `${targetType.name}.${p.toString()}`
+                            name,
+                            fullName: `${targetType.name}.${name.toString()}`
                         }) as ProxyFunction;
                         proxyFn[proxyFlag] = true;
-                        Reflect.set(target, p, proxyFn, receiver);
+                        Reflect.set(target, name, proxyFn, receiver);
                         return true;
                     }
                 }
-                return Reflect.set(target, p, newValue, receiver);
+                return Reflect.set(target, name, newValue, receiver);
             }
         });
     }

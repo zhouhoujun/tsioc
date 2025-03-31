@@ -7,12 +7,12 @@ import { IPointcut } from './joinpoints/IPointcut';
 export abstract class Proceeding {
 
     /**
-     * invoke constructor pointcut advices.
+     * pointcut target type in runtime.
      * @param ctx 
      * @param next 
      * @param context 
      */
-    abstract pointcutConstr(ctx: RuntimeContext, next: HandlerFn, context: Context): any;
+    abstract pointcut(ctx: RuntimeContext, next: HandlerFn, context: Context): any;
 
     
     /**
