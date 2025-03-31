@@ -84,8 +84,8 @@ export type DecoratorType = 'class' | DecorMemberType;
  * Annoation: annoation actions for design time.
  * AfterAnnoation: after annoation actions for design time.
  */
-export type DecoratorScope = 'beforeAnnoation' | DecoratorType
-    | 'beforeConstructor' | 'afterConstructor' | 'annoation' | 'afterAnnoation';
+export type DecoratorScope = DecoratorType
+    | 'beforeAnnoation' | 'afterAnnoation';
 
 export const ctorName = 'constructor';
 export namespace Decors {
@@ -94,9 +94,6 @@ export namespace Decors {
     export const method = 'method';
     export const parameter = 'parameter';
     export const beforeAnnoation = 'beforeAnnoation';
-    export const beforeConstructor = 'beforeConstructor';
-    export const afterConstructor = 'afterConstructor';
-    export const annoation = 'annoation';
     export const afterAnnoation = 'afterAnnoation';
 }
 

@@ -72,12 +72,6 @@ export interface DesignScopeHandles<T> {
     method?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
     /**
-     * decorator Annoation action handles.
-     * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
-     */
-    annoation?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
-
-    /**
      * decorator AfterAnnoation action handles.
      * raise handles order by beforeAnnoation -> class -> property -> method -> annoation ->  afterAnnoation
      */
@@ -89,18 +83,6 @@ export interface DesignScopeHandles<T> {
  * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
  */
 export interface RuntimeScopeHandles<T> {
-    // /**
-    //  * decorator BeforeConstructor action handles.
-    //  * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
-    //  */
-    // beforeConstructor?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
-
-    // /**
-    //  * decorator AfterConstructor action handles.
-    //  * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class
-    //  */
-    // afterConstructor?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
-
     /**
      * decorator Property action handles.
      * raise handles order by beforeConstructor -> afterConstructor -> property -> method -> class

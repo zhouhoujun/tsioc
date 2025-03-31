@@ -46,17 +46,6 @@ export function getDesignBeforeAnnoationScope(platform: Platform): LifeScope<Des
     return scope;
 }
 
-const ANNOATION_SCOPE = new ContextToken<LifeScope>(() => null!);
-export function getDesignAnnoationScope(platform: Platform): LifeScope<DesignContext> {
-    let scope = platform.context.get(ANNOATION_SCOPE);
-    if (!scope) {
-        scope = new LifeScope<DesignContext>(platform, (ctx, context) => {
-            invokeHandler(ctx.class.classDecors, ctx, Decors.annoation, context)
-        });
-        platform.context.set(ANNOATION_SCOPE, scope);
-    }
-    return scope;
-}
 
 const AFTER_ANNOATION_SCOPE = new ContextToken<LifeScope>(() => null!);
 export function getDesignAfterAnnoationScope(platform: Platform): LifeScope<DesignContext> {
@@ -97,16 +86,20 @@ export function getDesignMethodScope(platform: Platform): LifeScope<DesignContex
 }
 
 
-export const annoactionInterceptor = (input: DesignContext, next: HandlerFn, context: Context) => {
-    getDesignBeforeAnnoationScope(input.platform).handle(input, context);
-
-    return invokeTail(() => next(input, context), (res) => {
-        getDesignPropertyScope(input.platform).handle(input, context);
-        getDesignMethodScope(input.platform).handle(input, context);
-        getDesignAnnoationScope(input.platform).handle(input, context);
-        getDesignAfterAnnoationScope(input.platform).handle(input, context);
-    })
+export const afterPropertyAnnoationInterceptor = (input: DesignContext, next: HandlerFn, context: Context) => {
+    return invokeTail(() => next(input, context), () => getDesignPropertyScope(input.platform).handle(input, context));
 }
+export const afterMethodAnnoationInterceptor = (input: DesignContext, next: HandlerFn, context: Context) => {
+    return invokeTail(() => next(input, context), () => getDesignMethodScope(input.platform).handle(input, context));
+}
+export const afterAnnoationInterceptor = (input: DesignContext, next: HandlerFn, context: Context) => {
+    return invokeTail(() => next(input, context), () => getDesignAfterAnnoationScope(input.platform).handle(input, context));
+}
+
+export const beforeAnnoactionInterceptor = (input: DesignContext, next: HandlerFn, context: Context) => {
+    return invokeTail(() => getDesignBeforeAnnoationScope(input.platform).handle(input, context), () => next(input, context));
+}
+
 
 export const dependencyInterceptor = (input: DesignContext, next: HandlerFn, context: Context) => {
     const { injector, type, provide, regProvides } = input;
@@ -196,6 +189,9 @@ export const registerHandler: HandlerFn = (ctx: DesignContext, context: Context)
 export const DESIGN_INTERECPTORS = [
     initReflectInterceptor,
     autorunInterceptor,
-    annoactionInterceptor,
+    afterAnnoationInterceptor,
+    afterMethodAnnoationInterceptor,
+    afterPropertyAnnoationInterceptor,
+    beforeAnnoactionInterceptor,
     dependencyInterceptor
 ] as InterceptorLike<DesignContext>[];
