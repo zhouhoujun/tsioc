@@ -10,12 +10,17 @@ import { Advices } from '../advices/Advices';
  */
 export interface JoinpointOption extends TargetInvokeArguments {
     targetType: Type;
-    methodName: string|symbol;
+    methodName: string | symbol;
     fullName?: string;
     provJoinpoint?: JoinPoint;
     params?: ParameterMetadata[];
+    /**
+     * custom proxy invoke origin method.
+     */
+    originProxy?: (joinPoint: JoinPoint) => any;
     originMethod?: Function;
     args?: any[];
+    valueChange?: { newValue: any, oldValue: any },
     state?: JoinpointState;
     advices: Advices;
     annotations?: DecorDefine[];
@@ -37,7 +42,7 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
     /**
      * custom proxy invoke origin method.
      */
-    originProxy?: (joinpoint: JoinPoint) => any;
+    originProxy?: (joinPoint: JoinPoint) => any;
 
     readonly originReturning: any;
     returningDefer?: Defer;
@@ -53,6 +58,7 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
     readonly originMethod?: Function;
     readonly params?: ParameterMetadata[];
     readonly annotations?: DecorDefine[];
+    readonly valueChange?: { newValue: any, oldValue: any };
 
     public state: JoinpointState;
 
@@ -61,14 +67,16 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
         this.target = options.target;
         this.targetType = options.targetType;
         this.advices = options.advices;
+        this.originProxy = options.originProxy;
         this.originMethod = options.originMethod;
         this.params = options.params;
+        this.valueChange = options.valueChange;
         this.annotations = options.annotations;
         this.state = options.state ?? JoinpointState.Before;
     }
-    
+
     protected override initArgs(args: ProvdierOf<any[]>): void {
-        if(isArray(args)) {
+        if (isArray(args)) {
             this._args = args;
             this.injector.setValue(CONTEXT_ARGUMENTS, args);
         } else {
