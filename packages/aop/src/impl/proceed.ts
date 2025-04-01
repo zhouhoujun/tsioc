@@ -1,6 +1,7 @@
 import {
     isFunction, lang, Platform, ctorName, InvocationContext, LifeScope, HandlerFn,
-    Context, ContextToken, invokeTail, RuntimeContext, InterceptorLike, isDefined, Class
+    Context, ContextToken, invokeTail, RuntimeContext, InterceptorLike, isDefined, Class,
+    ParameterMetadata, proxyTag
 } from '@tsdi/ioc';
 import { JoinPoint } from '../joinpoints/JoinPoint';
 import { JoinpointState } from '../joinpoints/state';
@@ -8,9 +9,9 @@ import { Advices } from '../advices/Advices';
 import { Advisor } from '../Advisor';
 import { Proceeding } from '../Proceeding';
 
-const proxyFlag = '_proxy';
+
 export interface ProxyFunction extends Function {
-    _proxy?: boolean;
+    [proxyTag]?: boolean;
 }
 
 /**
@@ -31,17 +32,21 @@ export class ProceedingScope implements Proceeding {
         const targetType = ctx.type;
         const advisor = this.platform.context.get(Advisor);
         const advices = advisor.getAdvices(targetType, ctorName);
+        ctx.isNewContext = false;
         if (!advices) {
             return invokeTail(() => next(ctx, context), () => {
-                ctx.instance = this.attach(ctx.class, ctx.instance, advisor)
+                ctx.instance = this.attach(ctx.class, ctx.instance, advisor, ctx.context)
             });
         }
 
         return this.handle(null, ctx.class, ctorName, advices, ctx.platform, {
+            parent: ctx.context,
+            args: ctx.args,
+            params: ctx.params,
             originProxy: (joinPoint) => {
                 invokeTail(() => next(ctx, context), () => {
-                    let instance = joinPoint.returning = ctx.instance;
-                    instance = ctx.instance = this.attach(ctx.class, ctx.instance, advisor);
+                    let instance = joinPoint.returning = joinPoint.target = ctx.instance;
+                    instance = ctx.instance = this.attach(ctx.class, ctx.instance, advisor, ctx.context);
                     return instance;
                 })
             },
@@ -50,147 +55,44 @@ export class ProceedingScope implements Proceeding {
     }
 
 
-    attach<T>(typeRef: Class<T>, instance: T, advisor?: Advisor): T {
-        // if (typeof Proxy === 'undefined') return this.noProxyAttach(typeRef, instance, advisor);
-        // return this.proxyAttach(typeRef, instance, advisor);
-        return this.noProxyAttach(typeRef, instance, advisor);
+    attach<T>(typeRef: Class<T>, instance: T, advisor?: Advisor, parent?: InvocationContext): T {
+        //es5 proxy-polyfill
+        // return this.noProxyAttach(typeRef, instance, advisor);
+        const advicesMap = (advisor ?? this.platform.context.get(Advisor)).getAdvicesMap(typeRef.type);
+        if (advicesMap && advicesMap.size && Array.from(advicesMap.keys()).some(i => i && i !== ctorName)) {
+            return this.createProxy(typeRef, instance, advicesMap, parent) as T;
+        }
+        return instance;
     }
 
     detach<T>(typeRef: Class<T>, instance: T, advisor?: Advisor): T {
-        if (typeof Proxy === 'undefined') return this.noProxyDetach(typeRef, instance, advisor);
-        return this.proxyDetach(typeRef, instance, advisor);
-    }
-
-    protected proxyAttach<T>(typeRef: Class<T>, instance: T, advisor?: Advisor): T {
-        const type = typeRef.type;
-        const advicesMap = (advisor ?? this.platform.context.get(Advisor)).getAdvicesMap(type);
-        if (advicesMap && advicesMap.size && Array.from(advicesMap.keys()).some(i => i && i !== ctorName)) {
-            return this.createProxy(typeRef, instance, advicesMap) as T;
-        }
         return instance;
     }
 
-    protected proxyDetach<T>(typeRef: Class<T>, instance: T, advisor?: Advisor): T {
-        const advicesMap = (advisor ?? this.platform.context.get(Advisor)).getAdvicesMap(typeRef.type);
-        if (advicesMap && advicesMap.size && Array.from(advicesMap.keys()).some(i => i && i !== ctorName)) {
-            const decorators = typeRef.getPropertyDescriptors();
-            advicesMap.forEach((advices, name) => {
-                if (name === ctorName) {
-                    return
-                }
-                const descriptor = decorators[name];
-                if (!descriptor) return;
-
-                if (descriptor.get || descriptor.set) {
-                    if (descriptor.get) {
-                        const getMth = descriptor.get.bind(instance);
-                        Object.defineProperty(instance, name, {
-                            get: () => {
-                                return getMth()
-                            }
-                        })
-                    }
-                    if (descriptor.set) {
-                        const setMth = descriptor.set.bind(instance);
-                        Object.defineProperty(instance, name, {
-                            set: (val) => {
-                                setMth(val)
-                            }
-                        })
-                    }
-                } else if (isFunction(descriptor.value)) {
-                    (instance as any)[name] = descriptor.value.bind(instance);
-                } else {
-                    (instance as any)[name] = (instance as any)[name];
-                }
-            })
-        }
-        return instance;
-    }
-
-    protected noProxyAttach<T>(typeRef: Class<T>, instance: T, advisor?: Advisor): T {
-        const advicesMap = (advisor ?? this.platform.context.get(Advisor)).getAdvicesMap(typeRef.type);
-        if (advicesMap && advicesMap.size) {
-            const className = typeRef.className;
-            const decorators = typeRef.getPropertyDescriptors();
-
-            advicesMap.forEach((advices, name) => {
-                if (name === ctorName) {
-                    return
-                }
-                const pointcut = {
-                    name: name,
-                    fullName: `${className}.${name.toString()}`,
-                    descriptor: decorators[name]
-                }
-                this.proceed(instance, typeRef, advices, name, decorators[name])
-            })
-        }
-        return instance;
-
-    }
-
-    protected noProxyDetach<T>(typeRef: Class<T>, instance: T, advisor?: Advisor): T {
-        const advicesMap = (advisor ?? this.platform.context.get(Advisor)).getAdvicesMap(typeRef.type);
-        if (advicesMap && advicesMap.size) {
-            const decorators = typeRef.getPropertyDescriptors();
-            advicesMap.forEach((advices, name) => {
-                if (name === ctorName) {
-                    return
-                }
-                const descriptor = decorators[name];
-                if (!descriptor) return;
-
-                if (descriptor.get || descriptor.set) {
-                    if (descriptor.get) {
-                        const getMth = descriptor.get.bind(instance);
-                        Object.defineProperty(instance, name, {
-                            get: () => {
-                                return getMth()
-                            }
-                        })
-                    }
-                    if (descriptor.set) {
-                        const setMth = descriptor.set.bind(instance);
-                        Object.defineProperty(instance, name, {
-                            set: (val) => {
-                                setMth(val)
-                            }
-                        })
-                    }
-                } else if (isFunction(descriptor.value)) {
-                    (instance as any)[name] = descriptor.value.bind(instance);
-                } else {
-                    (instance as any)[name] = (instance as any)[name];
-                }
-            })
-        }
-        return instance;
-    }
-
-    protected createProxy(typeRef: Class, instance: any, advicesMap: Map<string | symbol, Advices>) {
+    protected createProxy(typeRef: Class, instance: any, advicesMap: Map<string | symbol, Advices>, parent?: InvocationContext) {
         const descriptors = typeRef.getPropertyDescriptors();
 
         const weekMap = new WeakMap();
-        //es5 proxy-polyfill
-        const proxy = new Proxy(instance, {
+        const proxy: any = new Proxy(instance, {
             get: (target, name, receiver) => {
                 if (name === ctorName) return Reflect.get(target, name, receiver);
                 const advices = advicesMap.get(name);
                 if (!advices) return Reflect.get(target, name, receiver);
 
                 const descriptor = descriptors[name];
-                if (descriptor.get || isFunction(descriptor.value)) {
+                if (isFunction(descriptor.value)) {
                     const result = Reflect.get(target, name, receiver);
                     let proxyFn = weekMap.get(result);
                     if (!proxyFn) {
-                        proxyFn = this.proxy(result.bind(target), advices, target, typeRef, name) as ProxyFunction;
-                        proxyFn[proxyFlag] = true;
+                        proxyFn = this.proxy(result.bind(receiver ?? proxy), advices, target, typeRef, name, parent) as ProxyFunction;
+                        proxyFn[proxyTag] = true;
                         weekMap.set(result, proxyFn);
                     }
                     return proxyFn;
                 }
-                return this.handle(instance, typeRef, name, advices, this.platform, {
+                return this.handle(receiver ?? proxy, typeRef, name, advices, this.platform, {
+                    parent,
+                    args: [],
                     originProxy: (j) => {
                         return { value: Reflect.get(target, name, receiver) }
                     },
@@ -202,20 +104,10 @@ export class ProceedingScope implements Proceeding {
                 if (name === ctorName) return Reflect.set(target, name, receiver);
                 const advices = advicesMap.get(name);
                 if (!advices) return Reflect.set(target, name, newValue, receiver);
-                const descriptor = descriptors[name];
-                if (descriptor.set) {
-                    const result = (descriptor.set ?? descriptor.value).bind(target);
-                    let proxyFn = weekMap.get(result);
-                    if (!proxyFn) {
-                        proxyFn = this.proxy(newValue, advices, target, typeRef, name) as ProxyFunction;
-                        proxyFn[proxyFlag] = true;
-                        weekMap.set(result, proxyFn);
-                    }
-                    Reflect.set(target, name, proxyFn, receiver);
-                    return true;
-                }
-                const oldValue = target[name];
-                return this.handle(instance, typeRef, name, advices, this.platform, {
+                const oldValue = Reflect.get(target, name, receiver);
+                return this.handle(receiver ?? proxy, typeRef, name, advices, this.platform, {
+                    parent,
+                    args: [],
                     valueChange: { newValue, oldValue },
                     originProxy: (j) => {
                         return Reflect.set(target, name, newValue, receiver);
@@ -226,50 +118,13 @@ export class ProceedingScope implements Proceeding {
 
         return proxy;
     }
-
-    /**
-     * proceed the proxy method.
-     *
-     * @param {*} target
-     * @param {Type} targetType
-     * @param {IPointcut} pointcut
-     * @param {JoinPoint} [provJoinpoint]
-     */
-    protected proceed(target: any, targetRef: Class, advices: Advices, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>) {
-        if (advices && propertyKey && descriptor) {
-            if (descriptor.get || descriptor.set) {
-                if (descriptor.get) {
-                    const getProxy = this.proxy(descriptor.get.bind(target), advices, target, targetRef, propertyKey);
-                    Object.defineProperty(target, propertyKey, {
-                        get: () => {
-                            return getProxy()
-                        }
-                    })
-                }
-                if (descriptor.set) {
-                    const setProxy = this.proxy(descriptor.set.bind(target), advices, target, targetRef, propertyKey);
-                    Object.defineProperty(target, propertyKey, {
-                        set: (val) => {
-                            setProxy(val)
-                        }
-                    })
-                }
-            } else if (isFunction(target[propertyKey]) && !target[propertyKey][proxyFlag]) {
-                const propertyMethod = target[propertyKey];
-                target[propertyKey] = this.proxy(propertyMethod, advices, target, targetRef, propertyKey);
-                target[propertyKey][proxyFlag] = true
-            }
-        }
-    }
-
-    protected proxy(originMethod: Function, advices: Advices, target: any, targetRef: Class, propertyKey: string | symbol) {
+    protected proxy(originMethod: Function, advices: Advices, target: any, targetRef: Class, propertyKey: string | symbol, parent?: InvocationContext) {
         const platform = this.platform;
         return (...args: any[]) => {
             if (!platform || !platform.injector || platform.injector.destroyed) {
                 return originMethod.call(target, ...args)
             }
             const larg = lang.last(args);
-            let parent: InvocationContext | undefined;
             if (larg instanceof InvocationContext) {
                 args = args.slice(0, args.length - 1);
                 parent = larg
@@ -284,19 +139,22 @@ export class ProceedingScope implements Proceeding {
 
     private handle(target: any, targetRef: Class, propertyKey: string | symbol, advices: Advices, platform: Platform, options: {
         originMethod?: Function,
-        args?: any[],
+        args?: any[];
+        params?: ParameterMetadata[];
         valueChange?: { newValue: any, oldValue: any },
         parent?: InvocationContext,
         originProxy?: (joinPoint: JoinPoint) => any,
         next?: (res: JoinPoint) => any
     } = {}): any {
         const fullName = `${targetRef.className}.${propertyKey.toString()}`;
+        if (!options.params) {
+            options.params = targetRef.getParameters(propertyKey);
+        }
         const joinPoint = JoinPoint.create(options.parent?.injector ?? platform.getInjector('root') ?? platform.getInjector('platform'), {
             ...options,
             targetType: targetRef.type,
             methodName: propertyKey,
             fullName,
-            params: targetRef.getParameters(propertyKey),
             target,
             advices,
             annotations: targetRef.defs.filter(d => d.propertyKey === propertyKey),
@@ -308,30 +166,96 @@ export class ProceedingScope implements Proceeding {
         return getAdvicesLifeScope(platform).handle(joinPoint, platform.context, options.next ?? (() => joinPoint.returning));
     }
 
-}
+    
+    // protected customAttach<T>(typeRef: Class<T>, instance: T, advisor?: Advisor, parent?: InvocationContext): T {
+    //     const advicesMap = (advisor ?? this.platform.context.get(Advisor)).getAdvicesMap(typeRef.type);
+    //     if (advicesMap && advicesMap.size) {
+    //         const decorators = typeRef.getPropertyDescriptors();
 
+    //         advicesMap.forEach((advices, name) => {
+    //             if (name === ctorName) {
+    //                 return
+    //             }
+    //             this.proceed(instance, typeRef, advices, name, decorators[name], parent)
+    //         })
+    //     }
+    //     return instance;
 
-function observe(o: object, callback: (key: string, value: any) => void) {
-    function buildProxy(prefix: string, o: object) {
-        return new Proxy(o, {
-            set: (target: any, property: string | symbol, value: any) => {
-                // same as above, but add prefix
-                callback(prefix + property.toString(), value);
-                target[property] = value;
-                return true;
-            },
-            get(target: any, property: string | symbol) {
-                // return a new proxy if possible, add to prefix
-                const out = target[property];
-                if (out instanceof Object) {
-                    return buildProxy(prefix + property.toString() + '.', out);
-                }
-                return out;
-            },
-        });
-    }
+    // }
 
-    return buildProxy('', o);
+    // protected customDetach<T>(typeRef: Class<T>, instance: T, advisor?: Advisor): T {
+    //     const advicesMap = (advisor ?? this.platform.context.get(Advisor)).getAdvicesMap(typeRef.type);
+    //     if (advicesMap && advicesMap.size) {
+    //         const decorators = typeRef.getPropertyDescriptors();
+    //         advicesMap.forEach((advices, name) => {
+    //             if (name === ctorName) {
+    //                 return
+    //             }
+    //             const descriptor = decorators[name];
+    //             if (!descriptor) return;
+
+    //             if (descriptor.get || descriptor.set) {
+    //                 if (descriptor.get) {
+    //                     const getMth = descriptor.get.bind(instance);
+    //                     Object.defineProperty(instance, name, {
+    //                         get: () => {
+    //                             return getMth()
+    //                         }
+    //                     })
+    //                 }
+    //                 if (descriptor.set) {
+    //                     const setMth = descriptor.set.bind(instance);
+    //                     Object.defineProperty(instance, name, {
+    //                         set: (val) => {
+    //                             setMth(val)
+    //                         }
+    //                     })
+    //                 }
+    //             } else if (isFunction(descriptor.value)) {
+    //                 (instance as any)[name] = descriptor.value.bind(instance);
+    //             } else {
+    //                 (instance as any)[name] = (instance as any)[name];
+    //             }
+    //         })
+    //     }
+    //     return instance;
+    // }    
+
+    // /**
+    //  * proceed the proxy method.
+    //  *
+    //  * @param {*} target
+    //  * @param {Type} targetType
+    //  * @param {IPointcut} pointcut
+    //  * @param {JoinPoint} [provJoinpoint]
+    //  */
+    // protected proceed(target: any, targetRef: Class, advices: Advices, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<any>, parent?: InvocationContext) {
+    //     if (advices && propertyKey && descriptor) {
+    //         if (descriptor.get || descriptor.set) {
+    //             if (descriptor.get) {
+    //                 const getProxy = this.proxy(descriptor.get.bind(target), advices, target, targetRef, propertyKey, parent);
+    //                 Object.defineProperty(target, propertyKey, {
+    //                     get: () => {
+    //                         return getProxy()
+    //                     }
+    //                 })
+    //             }
+    //             if (descriptor.set) {
+    //                 const setProxy = this.proxy(descriptor.set.bind(target), advices, target, targetRef, propertyKey, parent);
+    //                 Object.defineProperty(target, propertyKey, {
+    //                     set: (val) => {
+    //                         setProxy(val)
+    //                     }
+    //                 })
+    //             }
+    //         } else if (isFunction(target[propertyKey]) && !target[propertyKey][proxyTag]) {
+    //             const propertyMethod = target[propertyKey];
+    //             target[propertyKey] = this.proxy(propertyMethod, advices, target, targetRef, propertyKey, parent);
+    //             target[propertyKey][proxyTag] = true
+    //         }
+    //     }
+    // }
+
 }
 
 

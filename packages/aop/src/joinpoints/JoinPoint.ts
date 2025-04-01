@@ -44,15 +44,12 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
      */
     originProxy?: (joinPoint: JoinPoint) => any;
 
-    readonly originReturning: any;
-    returningDefer?: Defer;
-    returning: any;
 
+    target: any;
+    returning: any;
     throwing: any;
 
     private _fullName: string | undefined;
-
-    readonly target: any;
     readonly targetType: Type;
     readonly advices: Advices;
     readonly originMethod?: Function;

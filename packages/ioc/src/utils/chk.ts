@@ -207,8 +207,9 @@ export function isArray(target: any): target is Array<any> {
  */
 export function isObject(target: any): target is object {
     if (isNull(target)) return false;
-    const type = typeof target;
-    return (type === 'object' || type === 'function')
+    return target instanceof Object;
+    // const type = typeof target;
+    // return (type === 'object' || type === 'function')
 }
 
 

@@ -187,6 +187,7 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
     annotation?: ModuleMetadata
 }
 
+export const proxyTag = Symbol('__proxy');
 /**
  * type class reflective.
  * 
@@ -307,7 +308,7 @@ export class Class<T = any> {
         if (!args) {
             args = this.resolveArguments(method, context);
         }
-        const hasPointcut = inst[method]['_proxy'] == true;
+        const hasPointcut = inst[method][proxyTag] == true;
         if (hasPointcut) {
             args.push(context)
         }
