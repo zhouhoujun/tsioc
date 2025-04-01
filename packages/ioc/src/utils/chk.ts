@@ -48,7 +48,7 @@ export function isClass(fn: Function) {
  * @returns 
  */
 export function isType(t: any): t is Type<any> {
-    return typeof t === 'function' && isClass(t) //&& t.prototype && t.prototype.constructor === t;
+    return typeof t === 'function' && isClass(t)
 }
 
 /**
