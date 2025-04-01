@@ -66,7 +66,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
             });
 
             let target = joinPoint.target;
-            if (Object.keys(context).length) {
+            if (Object.keys(context).length) {                
                 target = { ...target, ...context }
             }
 

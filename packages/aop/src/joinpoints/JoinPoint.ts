@@ -24,7 +24,14 @@ export interface JoinpointOption extends TargetInvokeArguments {
     state?: JoinpointState;
     advices: Advices;
     annotations?: DecorDefine[];
+    /**
+     * instance of target type
+     */
     target?: any;
+    /**
+     * target proxy
+     */
+    receiver?: any;
 }
 
 
@@ -44,7 +51,13 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
      */
     originProxy?: (joinPoint: JoinPoint) => any;
 
-
+    /**
+     * target proxy
+     */
+    receiver: any;
+    /**
+     * instance of target type
+     */
     target: any;
     returning: any;
     throwing: any;
@@ -62,6 +75,7 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
     constructor(injector: Injector, options: JoinpointOption) {
         super(injector, options);
         this.target = options.target;
+        this.receiver = options.receiver;
         this.targetType = options.targetType;
         this.advices = options.advices;
         this.originProxy = options.originProxy;

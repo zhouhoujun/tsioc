@@ -32,21 +32,21 @@ export class ProceedingScope implements Proceeding {
         const targetType = ctx.type;
         const advisor = this.platform.context.get(Advisor);
         const advices = advisor.getAdvices(targetType, ctorName);
-        ctx.isNewContext = false;
+        // ctx.isNewContext = false;
         if (!advices) {
             return invokeTail(() => next(ctx, context), () => {
-                ctx.instance = this.attach(ctx.class, ctx.instance, advisor, ctx.context)
+                ctx.instance = this.attach(ctx.class, ctx.instance, advisor) //, ctx.context)
             });
         }
 
-        return this.handle(null, ctx.class, ctorName, advices, ctx.platform, {
+        return this.handle(ctx.class, ctorName, advices, ctx.platform, {
             parent: ctx.context,
             args: ctx.args,
             params: ctx.params,
             originProxy: (joinPoint) => {
                 invokeTail(() => next(ctx, context), () => {
                     let instance = joinPoint.returning = joinPoint.target = ctx.instance;
-                    instance = ctx.instance = this.attach(ctx.class, ctx.instance, advisor, ctx.context);
+                    instance = ctx.instance = this.attach(ctx.class, ctx.instance, advisor) //, ctx.context);
                     return instance;
                 })
             },
@@ -57,7 +57,7 @@ export class ProceedingScope implements Proceeding {
 
     attach<T>(typeRef: Class<T>, instance: T, advisor?: Advisor, parent?: InvocationContext): T {
         //es5 proxy-polyfill
-        // return this.noProxyAttach(typeRef, instance, advisor);
+        // return this.customAttach(typeRef, instance, advisor);
         const advicesMap = (advisor ?? this.platform.context.get(Advisor)).getAdvicesMap(typeRef.type);
         if (advicesMap && advicesMap.size && Array.from(advicesMap.keys()).some(i => i && i !== ctorName)) {
             return this.createProxy(typeRef, instance, advicesMap, parent) as T;
@@ -84,13 +84,15 @@ export class ProceedingScope implements Proceeding {
                     const result = Reflect.get(target, name, receiver);
                     let proxyFn = weekMap.get(result);
                     if (!proxyFn) {
-                        proxyFn = this.proxy(result.bind(receiver ?? proxy), advices, target, typeRef, name, parent) as ProxyFunction;
+                        proxyFn = this.proxy(result, advices, receiver ?? proxy, target, typeRef, name, parent) as ProxyFunction;
                         proxyFn[proxyTag] = true;
                         weekMap.set(result, proxyFn);
                     }
                     return proxyFn;
                 }
-                return this.handle(receiver ?? proxy, typeRef, name, advices, this.platform, {
+                return this.handle(typeRef, name, advices, this.platform, {
+                    receiver: receiver ?? proxy,
+                    target,
                     parent,
                     args: [],
                     originProxy: (j) => {
@@ -105,7 +107,9 @@ export class ProceedingScope implements Proceeding {
                 const advices = advicesMap.get(name);
                 if (!advices) return Reflect.set(target, name, newValue, receiver);
                 const oldValue = Reflect.get(target, name, receiver);
-                return this.handle(receiver ?? proxy, typeRef, name, advices, this.platform, {
+                return this.handle(typeRef, name, advices, this.platform, {
+                    receiver: receiver ?? proxy,
+                    target,
                     parent,
                     args: [],
                     valueChange: { newValue, oldValue },
@@ -118,7 +122,7 @@ export class ProceedingScope implements Proceeding {
 
         return proxy;
     }
-    protected proxy(originMethod: Function, advices: Advices, target: any, targetRef: Class, propertyKey: string | symbol, parent?: InvocationContext) {
+    protected proxy(originMethod: Function, advices: Advices, receiver: any, target: any, targetRef: Class, propertyKey: string | symbol, parent?: InvocationContext) {
         const platform = this.platform;
         return (...args: any[]) => {
             if (!platform || !platform.injector || platform.injector.destroyed) {
@@ -129,7 +133,9 @@ export class ProceedingScope implements Proceeding {
                 args = args.slice(0, args.length - 1);
                 parent = larg
             }
-            return this.handle(target, targetRef, propertyKey, advices, platform, {
+            return this.handle(targetRef, propertyKey, advices, platform, {
+                receiver,
+                target,
                 originMethod,
                 args,
                 parent
@@ -137,7 +143,9 @@ export class ProceedingScope implements Proceeding {
         }
     }
 
-    private handle(target: any, targetRef: Class, propertyKey: string | symbol, advices: Advices, platform: Platform, options: {
+    private handle(targetRef: Class, propertyKey: string | symbol, advices: Advices, platform: Platform, options: {
+        receiver?: any,
+        target?: any,
         originMethod?: Function,
         args?: any[];
         params?: ParameterMetadata[];
@@ -155,7 +163,6 @@ export class ProceedingScope implements Proceeding {
             targetType: targetRef.type,
             methodName: propertyKey,
             fullName,
-            target,
             advices,
             annotations: targetRef.defs.filter(d => d.propertyKey === propertyKey),
         });
@@ -166,7 +173,7 @@ export class ProceedingScope implements Proceeding {
         return getAdvicesLifeScope(platform).handle(joinPoint, platform.context, options.next ?? (() => joinPoint.returning));
     }
 
-    
+
     // protected customAttach<T>(typeRef: Class<T>, instance: T, advisor?: Advisor, parent?: InvocationContext): T {
     //     const advicesMap = (advisor ?? this.platform.context.get(Advisor)).getAdvicesMap(typeRef.type);
     //     if (advicesMap && advicesMap.size) {
@@ -219,7 +226,7 @@ export class ProceedingScope implements Proceeding {
     //         })
     //     }
     //     return instance;
-    // }    
+    // }
 
     // /**
     //  * proceed the proxy method.
@@ -233,7 +240,7 @@ export class ProceedingScope implements Proceeding {
     //     if (advices && propertyKey && descriptor) {
     //         if (descriptor.get || descriptor.set) {
     //             if (descriptor.get) {
-    //                 const getProxy = this.proxy(descriptor.get.bind(target), advices, target, targetRef, propertyKey, parent);
+    //                 const getProxy = this.proxy(descriptor.get, advices, null, target, targetRef, propertyKey, parent);
     //                 Object.defineProperty(target, propertyKey, {
     //                     get: () => {
     //                         return getProxy()
@@ -241,7 +248,7 @@ export class ProceedingScope implements Proceeding {
     //                 })
     //             }
     //             if (descriptor.set) {
-    //                 const setProxy = this.proxy(descriptor.set.bind(target), advices, target, targetRef, propertyKey, parent);
+    //                 const setProxy = this.proxy(descriptor.set, advices, null, target, targetRef, propertyKey, parent);
     //                 Object.defineProperty(target, propertyKey, {
     //                     set: (val) => {
     //                         setProxy(val)
@@ -250,7 +257,7 @@ export class ProceedingScope implements Proceeding {
     //             }
     //         } else if (isFunction(target[propertyKey]) && !target[propertyKey][proxyTag]) {
     //             const propertyMethod = target[propertyKey];
-    //             target[propertyKey] = this.proxy(propertyMethod, advices, target, targetRef, propertyKey, parent);
+    //             target[propertyKey] = this.proxy(propertyMethod, advices, null, target, targetRef, propertyKey, parent);
     //             target[propertyKey][proxyTag] = true
     //         }
     //     }
@@ -319,7 +326,7 @@ export const originMethodHandler = (ctx: JoinPoint, context: Context) => {
     if (ctx.originProxy) {
         ctx.returning = ctx.originProxy(ctx)
     } else {
-        ctx.returning = ctx.originMethod?.apply(ctx.target, ctx.args)
+        ctx.returning = ctx.originMethod?.apply(ctx.receiver ?? ctx.target, ctx.args)
     }
     return ctx.returning;
 }
