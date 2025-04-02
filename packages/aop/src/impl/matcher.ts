@@ -231,7 +231,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
 
     protected tranlateExpress(def: Class, strExp: string): MatchExpress {
         if (!boolOper.test(strExp)) return this.expressToFunc(def, strExp);
-        const exp = new BoolExpression(strExp, isBoolToken);
+        const exp = new BoolExpression(strExp, isAdviceToken);
         const fns = exp.tokens.map(t => this.expressToFunc(def, t));
         const argnames = exp.tokens.map((t, i) => 'arg' + i);
         const boolexp = new Function(...argnames, `return ${exp.toString((t, i, tkidx) => 'arg' + tkidx + '()')}`);
@@ -244,16 +244,42 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
 
 export class BoolExpression {
     private _parsed: { type: string, value: any }[];
-    constructor(express: string, isToken?: (exp: string) => boolean) {
+    constructor(express: string, isToken: (exp: string) => boolean = isAdviceToken) {
         const parts = express.split(boolOper);
         const keys: string[] = [];
         parts.forEach(exp => {
             exp = exp.trim();
+            while (exp && exp.startsWith('(')) {
+                keys.push('(');
+                exp = exp.substring(1);
+            }
+
             if (isToken && isToken(exp)) {
                 keys.push(exp)
             } else {
                 if (exp.length > 1) {
-                    keys.push(...exp.split(allOperators))
+                    const endOpt: string[] = [];
+                    while (exp && exp.endsWith(')')) {
+                        endOpt.unshift(')');
+                        exp = exp.substring(0, exp.length - 1);
+                        if (isToken && isToken(exp)) {
+                            keys.push(exp);
+                            exp = '';
+                            break;
+                        }
+                    }
+                    if (exp) {
+                        exp.split(allOperators).forEach(e => {
+                            e = e.trim();
+                            if (e) {
+                                keys.push(e);
+                            }
+                        });
+                    }
+                    if (endOpt.length) {
+                        keys.push(...endOpt);
+                    }
+
                 } else if (exp) {
                     keys.push(exp)
                 }
@@ -281,6 +307,107 @@ export class BoolExpression {
     }
 }
 
+// export class BoolExpression {
+//     private _parsed: { type: string, value: any }[];
+//     constructor(express: string, isToken: (exp: string) => boolean = isAdviceToken) {
+//         const tokens = this.tokenize(express, isToken);
+//         this._parsed = this.parseTokens(tokens);
+//     }
+
+//     private tokenize(express: string, isToken: (exp: string) => boolean): string[] {
+//         // 使用正则表达式拆分表达式为token
+//         return express.match(/(@\w+\([^)]*\)|\(|\)|\|\||&&|!|AND|OR|NOT|[\w.]+|\S)/g) || [];
+//     }
+
+//     private parseTokens(tokens: string[]): any[] {
+//         const output: any[] = [];
+//         const operators: string[] = [];
+        
+//         tokens.forEach(token => {
+//             token = token.trim();
+//             if (!token) return;
+
+//             if (token === '(') {
+//                 operators.push(token);
+//             } else if (token === ')') {
+//                 // 处理括号闭合
+//                 while (operators.length && operators[operators.length - 1] !== '(') {
+//                     output.push({ type: 'operator', value: operators.pop() });
+//                 }
+//                 operators.pop(); // 移除 '('
+//             } else if (boolOper.test(token)) {
+//                 // 处理操作符优先级
+//                 const op = operatorMap[token] || token;
+//                 while (operators.length && this.getPrecedence(operators[operators.length - 1]) >= this.getPrecedence(op)) {
+//                     output.push({ type: 'operator', value: operators.pop() });
+//                 }
+//                 operators.push(op);
+//             } else {
+//                 // 处理普通token
+//                 output.push({ type: 'token', value: token });
+//             }
+//         });
+
+//         // 添加剩余操作符
+//         while (operators.length) {
+//             output.push({ type: 'operator', value: operators.pop() });
+//         }
+
+//         return output;
+//     }
+
+//     private getPrecedence(op: string): number {
+//         switch (op) {
+//             case '!': return 3;
+//             case '&&': return 2;
+//             case '||': return 1;
+//             default: return 0;
+//         }
+//     }
+
+//     private _tokens!: any[];
+//     get tokens() {
+//         if (!this._tokens) {
+//             this._tokens = this._parsed
+//                 .filter(t => t.type === 'token')
+//                 .map(t => t.value);
+//         }
+//         return this._tokens;
+//     }
+
+//     toString(map?: (token: string, idx?: number, tokenIdx?: number) => string): string {
+//         const stack: {value: string, precedence: number}[] = [];
+//         let tokenIdx = 0;
+
+//         this._parsed.forEach(item => {
+//             if (item.type === 'token') {
+//                 const mapped = map ? map(item.value, tokenIdx, tokenIdx++) : item.value;
+//                 stack.push({value: mapped, precedence: 0});
+//             } else {
+//                 const right = stack.pop()!;
+//                 const left = stack.pop()!;
+//                 const currentPrecedence = this.getPrecedence(item.value);
+                
+//                 // 处理括号分组
+//                 const leftValue = left.precedence < currentPrecedence ? `(${left.value})` : left.value;
+//                 const rightValue = right.precedence < currentPrecedence ? `(${right.value})` : right.value;
+                
+//                 stack.push({
+//                     value: `${leftValue} ${item.value} ${rightValue}`,
+//                     precedence: currentPrecedence
+//                 });
+//             }
+//         });
+
+//         // 最终格式化处理
+//         return stack[0].value
+//             .replace(/\(\s+/g, '(')
+//             .replace(/\s+\)/g, ')')
+//             .replace(/\s+/g, ' ')
+//             .trim();
+//     }
+// }
+
 const boolOper = /(!|&&| AND | OR | NOT |\|\|)/g;
 const allOperators = /(,|!|&&| AND | OR | NOT |\|\||\(|\)| )/g;
 const nativeOperators = /^(,|!|&&|\|\||\(|\))$/
@@ -299,12 +426,12 @@ function rewrite(ex: any[], el: string) {
     return ex
 }
 
-const isBoolToken = (exp: string) => annContentExp.test(exp) || execContentExp.test(exp) || withInChkExp.test(exp) || targetChkExp.test(exp);
+export const isAdviceToken = (exp: string) => annContentExp.test(exp) || execContentExp.test(exp) || withInChkExp.test(exp) || targetChkExp.test(exp);
 
 const fasleFn = () => false;
 const aExp = /^@/;
 const annPreChkExp = /^\^?@\w+/;
-const annContentExp = /^@annotation\(.*\)$/;
+const annContentExp = /^@annotation\(\w+(:(class|method|property|parameter))?\)$/;
 
 const annInExp = /^@?\w+:(class|method|property|parameter)$/;
 

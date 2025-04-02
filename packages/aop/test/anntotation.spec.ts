@@ -93,6 +93,30 @@ describe('aop test', () => {
         expect(body).toEqual('arg0() && ( arg1() || arg2() )')
     })
 
+    it('annaction expression test', () => {
+
+        const exp = new BoolExpression('@annotation(Authorization:class) && @annotation(RouteMapping:method)');
+        // const fns = exp.tokens.map(t => );
+        const argnames = exp.tokens.map((t, i) => 'arg' + i);
+        const body = exp.toString((t, i, tkidx) => 'arg' + tkidx + '()');
+
+        console.log(exp, body, argnames);
+        expect(argnames).toEqual(['arg0', 'arg1'])
+        expect(body).toEqual('arg0() && arg1()')
+    })
+
+    it('annaction expression with () test', () => {
+
+        const exp = new BoolExpression('@annotation(Authorization:class) && (@annotation(RouteMapping:method) || @annotation(Route:method))');
+        // const fns = exp.tokens.map(t => );
+        const argnames = exp.tokens.map((t, i) => 'arg' + i);
+        const body = exp.toString((t, i, tkidx) => 'arg' + tkidx + '()');
+
+        console.log(exp, body, argnames);
+        expect(argnames).toEqual(['arg0', 'arg1', 'arg2'])
+        expect(body).toEqual('arg0() && ( arg1() || arg2() )')
+    })
+
     it('Aop anntotation test', () => {
 
         container.register(AnnotationAspect);
