@@ -18,8 +18,6 @@ export class Advices {
     private _afterThrowingHanlder?: ApplicationHandlerFn | null;
     private _afterReturninHanlder?: ApplicationHandlerFn | null;
 
-
-
     constructor() {
         this.maps = new Map();
     }
@@ -130,6 +128,8 @@ export class AdvicesMapping {
     }
 
     clear() {
+        this.props.forEach(v => v.clear());
+        this.child.forEach(c => c.clear());
         this.props.clear();
         this.child.clear();
     }

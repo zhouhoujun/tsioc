@@ -13,10 +13,8 @@ export abstract class Proceeding {
      */
     abstract pointcut(ctx: RuntimeContext, next: HandlerFn, context: Context): any;
 
-
     abstract attach<T>(typeRef: Class<T>, instance: T, mapping?: AdvicesMapping): T;
 
     abstract detach<T>(typeRef: Class<T>, instance: T, mapping?: AdvicesMapping): T;
 
-    
 }

@@ -65,31 +65,6 @@ export class Advisor implements OnDestroy {
         this.advices.delete(type);
     }
 
-    // /**
-    //  * set advices.
-    //  *
-    //  * @param {string} key
-    //  * @param {Advices} advices
-    //  */
-    // private setAdvices(type: Type, key: string | symbol, advices: Advices): void {
-    //     let map = this.advices.get(type);
-    //     if (!map) {
-    //         map = new Map();
-    //         this.advices.set(type, map)
-    //     }
-    //     map.set(key, advices)
-    // }
-
-    // /**
-    //  * get advices.
-    //  *
-    //  * @param {string} key
-    //  * @returns
-    //  */
-    // getAdvices(type: Type, key: string | symbol): Advices {
-    //     return this.advices.get(type)?.get(key) || null!
-    // }
-
     getMapping(type: Type) {
         return this.advices.get(type);
     }
