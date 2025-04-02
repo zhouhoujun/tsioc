@@ -1,4 +1,4 @@
-import { composeHandlers, object2string, isNil, invokeTail } from '@tsdi/ioc';
+import { composeHandlers, object2string, isNil, invokeTail, Class, ctorName } from '@tsdi/ioc';
 import { ApplicationHandlerFn } from '@tsdi/core';
 import { Advicer } from './Advicer';
 import { AdviceTypes, AroundMetadata } from '../metadata/meta';
@@ -11,7 +11,7 @@ import { JoinPoint } from '../joinpoints/JoinPoint';
  * @interface Advices
  */
 export class Advices {
-    maps: Map<AdviceTypes, Advicer[]>;
+    protected maps: Map<AdviceTypes, Advicer[]>;
     private _beforeHanlder?: ApplicationHandlerFn | null;
     private _afterHanlder?: ApplicationHandlerFn | null;
     private _pointcutHanlder?: ApplicationHandlerFn | null;
@@ -19,9 +19,11 @@ export class Advices {
     private _afterReturninHanlder?: ApplicationHandlerFn | null;
 
 
+
     constructor() {
         this.maps = new Map();
     }
+
 
     protected cleanHanlder() {
         this._beforeHanlder = undefined;
@@ -82,10 +84,61 @@ export class Advices {
         }
         return this._afterReturninHanlder;
     }
+
+    clear() {
+        this.cleanHanlder();
+        this.maps.clear();
+    }
 }
 
+export class AdvicesMapping {
+    private props: Map<string | symbol, Advices>;
+    private child: Map<string | symbol, AdvicesMapping>;
+
+    private _hasProp = false;
+    get size() {
+        return this.props.size
+    }
+
+    constructor(
+        readonly typeRef: Class
+    ) {
+        this.props = new Map();
+        this.child = new Map();
+    }
+
+    hasProp() {
+        return this._hasProp || this.child.size > 0
+    }
+
+
+    get(name: string | symbol): Advices | undefined {
+        return this.props.get(name);
+    }
+
+    set(name: string | symbol, advices: Advices) {
+        if (!this._hasProp && name !== ctorName) this._hasProp = true;
+        this.props.set(name, advices);
+    }
+
+    getChild(name: string | symbol): AdvicesMapping | undefined {
+        return this.child.get(name);
+    }
+
+    setChild(name: string | symbol, advices: AdvicesMapping) {
+        this.child.set(name, advices);
+    }
+
+    clear() {
+        this.props.clear();
+        this.child.clear();
+    }
+
+}
+
+
 function toHanlder(advices: Advicer[]): ApplicationHandlerFn<JoinPoint> {
-    return composeHandlers(advices.map(a=> (input: JoinPoint, context?: any)=> invokeAdvice(input, a)));
+    return composeHandlers(advices.map(a => (input: JoinPoint, context?: any) => invokeAdvice(input, a)));
 }
 function equals(a: Advicer, b: Advicer) {
     return a.aspect.type === b.aspect.type && a.advice.name === b.advice.name

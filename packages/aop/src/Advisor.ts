@@ -1,6 +1,6 @@
 import { Type, lang, ReflectiveRef, OnDestroy, Platform, refl, isFunction, Class } from '@tsdi/ioc';
 import { Advicer } from './advices/Advicer';
-import { Advices } from './advices/Advices';
+import { Advices, AdvicesMapping } from './advices/Advices';
 import { AdviceMatcher } from './AdviceMatcher';
 import { AopDef } from './metadata/ref';
 
@@ -14,9 +14,9 @@ export class Advisor implements OnDestroy {
     /**
      * method advices.
      *
-     * @type {Map<Type, Map<string, Advices>>}
+     * @type {Map<Type, AdvicesMapping>}
      */
-    advices: Map<Type, Map<string | symbol, Advices>>;
+    advices: Map<Type, AdvicesMapping>;
     /**
      * aspects.
      */
@@ -28,9 +28,14 @@ export class Advisor implements OnDestroy {
     }
 
     register(type: Type | Class): void {
+        if (this.advices.has((type as Class).type ?? type)) {
+            return;
+        }
         const matcher = this.platform.context.get(AdviceMatcher);
         const typeRefl = isFunction(type) ? refl.get(type) : type as Class;
-        const ClassType = typeRefl.type;
+        const mapping = new AdvicesMapping(typeRefl);
+        this.advices.set(typeRefl.type, mapping);
+        
         this.aspects.forEach(aspect => {
             const aopRef = aspect.class as Class;
             const matchpoints = matcher.match(aopRef, typeRefl, aopRef.getAnnotation<AopDef>().advices);
@@ -38,10 +43,10 @@ export class Advisor implements OnDestroy {
                 const { name, advice } = mpt;
                 if (!advice.adviceName) return;
 
-                let advices = this.getAdvices(ClassType, name);
+                let advices = mapping.get(name);
                 if (!advices) {
                     advices = new Advices();
-                    this.setAdvices(ClassType, name, advices)
+                    mapping.set(name, advices)
                 }
                 const advicer = {
                     ...mpt,
@@ -51,7 +56,8 @@ export class Advisor implements OnDestroy {
                 advices.addAdvicer(advice.adviceName, advicer);
 
             });
-        })
+        });
+
     }
 
     unregister(type: Type) {
@@ -59,32 +65,32 @@ export class Advisor implements OnDestroy {
         this.advices.delete(type);
     }
 
-    /**
-     * set advices.
-     *
-     * @param {string} key
-     * @param {Advices} advices
-     */
-    private setAdvices(type: Type, key: string | symbol, advices: Advices): void {
-        let map = this.advices.get(type);
-        if (!map) {
-            map = new Map();
-            this.advices.set(type, map)
-        }
-        map.set(key, advices)
-    }
+    // /**
+    //  * set advices.
+    //  *
+    //  * @param {string} key
+    //  * @param {Advices} advices
+    //  */
+    // private setAdvices(type: Type, key: string | symbol, advices: Advices): void {
+    //     let map = this.advices.get(type);
+    //     if (!map) {
+    //         map = new Map();
+    //         this.advices.set(type, map)
+    //     }
+    //     map.set(key, advices)
+    // }
 
-    /**
-     * get advices.
-     *
-     * @param {string} key
-     * @returns
-     */
-    getAdvices(type: Type, key: string | symbol): Advices {
-        return this.advices.get(type)?.get(key) || null!
-    }
+    // /**
+    //  * get advices.
+    //  *
+    //  * @param {string} key
+    //  * @returns
+    //  */
+    // getAdvices(type: Type, key: string | symbol): Advices {
+    //     return this.advices.get(type)?.get(key) || null!
+    // }
 
-    getAdvicesMap(type: Type) {
+    getMapping(type: Type) {
         return this.advices.get(type);
     }
 

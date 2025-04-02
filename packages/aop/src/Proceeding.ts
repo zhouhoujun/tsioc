@@ -1,5 +1,5 @@
-import { Abstract, Class, Context, HandlerFn, RuntimeContext, Type } from '@tsdi/ioc';
-import { Advisor } from './Advisor';
+import { Abstract, Class, Context, HandlerFn, RuntimeContext } from '@tsdi/ioc';
+import { AdvicesMapping } from './advices/Advices';
 
 
 @Abstract()
@@ -14,9 +14,9 @@ export abstract class Proceeding {
     abstract pointcut(ctx: RuntimeContext, next: HandlerFn, context: Context): any;
 
 
-    abstract attach<T>(typeRef: Class<T>, instance: T, advisor?: Advisor): T;
+    abstract attach<T>(typeRef: Class<T>, instance: T, mapping?: AdvicesMapping): T;
 
-    abstract detach<T>(typeRef: Class<T>, instance: T, advisor?: Advisor): T;
+    abstract detach<T>(typeRef: Class<T>, instance: T, mapping?: AdvicesMapping): T;
 
     
 }

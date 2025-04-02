@@ -1,6 +1,7 @@
 import {
     tokenId, Injector, IocContext, DefaultInvocationContext, ParameterMetadata, lang, Type,
-    DecorDefine, Defer, TargetInvokeArguments, ProvdierOf, isArray, CONTEXT_ARGUMENTS
+    DecorDefine, Defer, TargetInvokeArguments, ProvdierOf, isArray, CONTEXT_ARGUMENTS,
+    Class
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advices } from '../advices/Advices';
@@ -9,7 +10,8 @@ import { Advices } from '../advices/Advices';
  * joinpoint option.
  */
 export interface JoinpointOption extends TargetInvokeArguments {
-    targetType: Type;
+    targetRef?: Class | null;
+    targetType?: Type;
     methodName: string | symbol;
     fullName?: string;
     provJoinpoint?: JoinPoint;
@@ -63,7 +65,8 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
     throwing: any;
 
     private _fullName: string | undefined;
-    readonly targetType: Type;
+    readonly targetRef: Class | null | undefined;
+    readonly targetType: Type | undefined;
     readonly advices: Advices;
     readonly originMethod?: Function;
     readonly params?: ParameterMetadata[];
@@ -76,6 +79,7 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
         super(injector, options);
         this.target = options.target;
         this.receiver = options.receiver;
+        this.targetRef = options.targetRef;
         this.targetType = options.targetType;
         this.advices = options.advices;
         this.originProxy = options.originProxy;

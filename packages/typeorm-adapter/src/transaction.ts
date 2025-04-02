@@ -1,4 +1,4 @@
-import { Type, ctorName, Injectable, lang, refl } from '@tsdi/ioc';
+import { Type, ctorName, Injectable, lang } from '@tsdi/ioc';
 import { JoinPoint } from '@tsdi/aop';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { InjectRepository, RepositoryMetadata, TransactionalMetadata, TransactionExecption, TransactionManager, TransactionStatus } from '@tsdi/repository';
@@ -25,7 +25,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
         const isolation = this.definition.isolation?.replace('_', ' ');
         const connection = this.definition.connection;
         const propagation = this.definition.propagation;
-        const targetRef = refl.get(joinPoint.targetType);
+        const targetRef = joinPoint.targetRef;
 
         const runInTransaction = (entityManager: EntityManager) => {
 
@@ -33,7 +33,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
             joinPoint.setValue(EntityManager, entityManager);
 
             const context = {} as any;
-            targetRef.defs.forEach(dec => {
+            targetRef?.defs.forEach(dec => {
                 if (dec.decorType === 'parameter' && dec.propertyKey === joinPoint.methodName) {
                     if (dec.decor === InjectRepository) {
                         joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager))
@@ -53,7 +53,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
                 }
             });
 
-            ctorName !== joinPoint.methodName && targetRef.getParameters(ctorName)?.forEach(metadata => {
+            ctorName !== joinPoint.methodName && targetRef?.getParameters(ctorName)?.forEach(metadata => {
                 const paramName = metadata.name;
                 if (paramName) {
                     const filed = joinPoint.target[paramName];
