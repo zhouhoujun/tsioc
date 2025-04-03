@@ -1,4 +1,4 @@
-import { MethodMetadata, Type, ClassMetadata, MethodPropMetadata } from '@tsdi/ioc';
+import { MethodMetadata, Type, ClassMetadata, MethodPropMetadata, Class } from '@tsdi/ioc';
 import { IPointcut } from '../joinpoints/IPointcut';
 
 
@@ -43,7 +43,7 @@ export interface PointcutAnnotation {
 /**
  * match express.
  */
-export type MatchExpress = (name?: string | symbol, fullName?: string, targetType?: Type, target?: any, pointcut?: IPointcut) => boolean;
+export type MatchExpress = (name: string | symbol, fullName: string, targetRef: Class, target?: any, pointcut?: IPointcut) => boolean;
 
 
 
