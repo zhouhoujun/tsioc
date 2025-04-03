@@ -108,14 +108,21 @@ export interface AdviceDecorator {
      * define advice with params.
      *
      * ### Usage
-     * - path or module name, match express.
-     *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
-     *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     * - path name, match express.
+     *  - `execution(className.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     *  - `execution(className.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *  - `execution(className.*.*(..)) && (@annotation(DecortorName) || @within(ClassName))`
+     *  - `get(*.filedname.*)`
+     *  - `get(className.filedname.*)`
+     *  - `set(*.filedname.*)`
+     *  - `set(className.filedname.*)`
+     *  - `watch(*.filedname.*)`  get set
+     *  - `watch(className.filedname.*)` get set
      *
      * ```
      * @Aspect()
      * class AspectClass {
-     *   @Advice('"execution(moduelName.*.*(..)")')
+     *   @Advice('"execution(className.*.*(..)")')
      *   process(joinPoint: JointPoint){
      *   }
      * }
@@ -141,14 +148,21 @@ export interface AdviceDecorator {
      * define advice with params.
      *
      * ### Usage
-     * - path or module name, match express.
-     *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
-     *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     * - path name, match express.
+     *  - `execution(className.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     *  - `execution(className.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *  - `execution(className.*.*(..)) && (@annotation(DecortorName) || @within(ClassName))`
+     *  - `get(*.filedname.*)`
+     *  - `get(className.filedname.*)`
+     *  - `set(*.filedname.*)`
+     *  - `set(className.filedname.*)`
+     *  - `watch(*.filedname.*)`  get set
+     *  - `watch(className.filedname.*)` get set
      *
      * ```
      * @Aspect()
      * class AspectClass {
-     *   @Advice('"execution(moduelName.*.*(..)")')
+     *   @Advice('"execution(className.*.*(..)")')
      *   process(joinPoint: JointPoint){
      *   }
      * }
@@ -175,7 +189,7 @@ export interface AdviceDecorator {
      * define advice with metadata map.
      * @param {AdviceMetadata} [metadata]
      */
-    (metadata: AdviceMetadata): MethodDecorator;
+    (metadata: Omit<AdviceMetadata, 'matchFn'>): MethodDecorator;
 }
 
 export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: string, options?: DecoratorOption<T>) {
@@ -229,14 +243,21 @@ export interface Pointcut {
      * Pointcut advice with params.
      *
      * ### Usage
-     * - path or module name, match express.
-     *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
-     *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     * - path name, match express.
+     *  - `execution(className.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     *  - `execution(className.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *  - `execution(className.*.*(..)) && (@annotation(DecortorName) || @within(ClassName))`
+     *  - `get(*.filedname.*)`
+     *  - `get(className.filedname.*)`
+     *  - `set(*.filedname.*)`
+     *  - `set(className.filedname.*)`
+     *  - `watch(*.filedname.*)`  get set
+     *  - `watch(className.filedname.*)` get set
      *  - `@annotation(DecortorName:class|method|property|parameter)
      * ```
      * @Aspect()
      * class AspectClass {
-     *   @Pointcut('"execution(moduelName.*.*(..)")')
+     *   @Pointcut('"execution(className.*.*(..)")')
      *   @Pointcut('@annotation(DecortorName:class)')
      *   @Pointcut('@annotation(DecortorName:method)')
      *   process(joinPoint: JointPoint){
@@ -264,14 +285,21 @@ export interface Pointcut {
      * Pointcut advice with params.
      *
      * ### Usage
-     * - path or module name, match express.
-     *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
-     *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     * - path name, match express.
+     *  - `execution(className.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     *  - `execution(className.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *  - `execution(className.*.*(..)) && (@annotation(DecortorName) || @within(ClassName))`
+     *  - `get(*.filedname.*)`
+     *  - `get(className.filedname.*)`
+     *  - `set(*.filedname.*)`
+     *  - `set(className.filedname.*)`
+     *  - `watch(*.filedname.*)`  get set
+     *  - `watch(className.filedname.*)` get set
      *  - `@annotation(DecortorName:class|method|property|parameter)
      * ```
      * @Aspect()
      * class AspectClass {
-     *   @Pointcut('"execution(moduelName.*.*(..)")')
+     *   @Pointcut('"execution(className.*.*(..)")')
      *   process(joinPoint: JointPoint){
      *   }
      * }
@@ -300,7 +328,7 @@ export interface Pointcut {
      *
      * @param {AdviceMetadata} [metadata]
      */
-    (metadata: AdviceMetadata): MethodDecorator;
+    (metadata: Omit<AdviceMetadata, 'matchFn'>): MethodDecorator;
 }
 
 /**
@@ -322,15 +350,22 @@ export interface IBeforeDecorator {
      * Before advice with params.
      *
      * ### Usage
-     * - path or module name, match express.
-     *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
-     *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     * - path name, match express.
+     *  - `execution(className.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     *  - `execution(className.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *  - `execution(className.*.*(..)) && (@annotation(DecortorName) || @within(ClassName))`
+     *  - `get(*.filedname.*)`
+     *  - `get(className.filedname.*)`
+     *  - `set(*.filedname.*)`
+     *  - `set(className.filedname.*)`
+     *  - `watch(*.filedname.*)`  get set
+     *  - `watch(className.filedname.*)` get set
      *  - `@annotation(DecortorName:class|method|property|parameter)
      * 
      * ```
      * @Aspect()
      * class AspectClass {
-     *   @Before('"execution(moduelName.*.*(..)")')
+     *   @Before('"execution(className.*.*(..)")')
      *   process(joinPoint: JointPoint){
      *   }
      * }
@@ -356,15 +391,22 @@ export interface IBeforeDecorator {
      * Before advice with params.
      *
      * ### Usage
-     * - path or module name, match express.
-     *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
-     *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     * - path name, match express.
+     *  - `execution(className.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     *  - `execution(className.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *  - `execution(className.*.*(..)) && (@annotation(DecortorName) || @within(ClassName))`
+     *  - `get(*.filedname.*)`
+     *  - `get(className.filedname.*)`
+     *  - `set(*.filedname.*)`
+     *  - `set(className.filedname.*)`
+     *  - `watch(*.filedname.*)`  get set
+     *  - `watch(className.filedname.*)` get set
      *  - `@annotation(DecortorName:class|method|property|parameter)
      * 
      * ```
      * @Aspect()
      * class AspectClass {
-     *   @Before('"execution(moduelName.*.*(..)")')
+     *   @Before('"execution(className.*.*(..)")')
      *   process(joinPoint: JointPoint){
      *   }
      * }
@@ -391,7 +433,7 @@ export interface IBeforeDecorator {
      *
      * @param {AdviceMetadata} metadata
      */
-    (metadata: AdviceMetadata): MethodDecorator;
+    (metadata: Omit<AdviceMetadata, 'matchFn'>): MethodDecorator;
 }
 
 /**
@@ -413,15 +455,22 @@ export interface After {
      * After advice with params.
      *
      * ### Usage
-     * - path or module name, match express.
-     *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
-     *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     * - path name, match express.
+     *  - `execution(className.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     *  - `execution(className.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *  - `execution(className.*.*(..)) && (@annotation(DecortorName) || @within(ClassName))`
+     *  - `get(*.filedname.*)`
+     *  - `get(className.filedname.*)`
+     *  - `set(*.filedname.*)`
+     *  - `set(className.filedname.*)`
+     *  - `watch(*.filedname.*)`  get set
+     *  - `watch(className.filedname.*)` get set
      *  - `@annotation(DecortorName:class|method|property|parameter)
      * 
      * ```
      * @Aspect()
      * class AspectClass {
-     *   @After('"execution(moduelName.*.*(..)")')
+     *   @After('"execution(className.*.*(..)")')
      *   process(joinPoint: JointPoint){
      *   }
      * }
@@ -447,15 +496,22 @@ export interface After {
      * After advice with params.
      *
      * ### Usage
-     * - path or module name, match express.
-     *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
-     *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     * - path name, match express.
+     *  - `execution(className.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     *  - `execution(className.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *  - `execution(className.*.*(..)) && (@annotation(DecortorName) || @within(ClassName))`
+     *  - `get(*.filedname.*)`
+     *  - `get(className.filedname.*)`
+     *  - `set(*.filedname.*)`
+     *  - `set(className.filedname.*)`
+     *  - `watch(*.filedname.*)`  get set
+     *  - `watch(className.filedname.*)` get set
      *  - `@annotation(DecortorName:class|method|property|parameter)
      * 
      * ```
      * @Aspect()
      * class AspectClass {
-     *   @After('"execution(moduelName.*.*(..)")')
+     *   @After('"execution(className.*.*(..)")')
      *   process(joinPoint: JointPoint){
      *   }
      * }
@@ -482,7 +538,7 @@ export interface After {
      *
      * @param {AdviceMetadata} [metadata]
      */
-    (metadata?: AdviceMetadata): MethodDecorator;
+    (metadata?: Omit<AdviceMetadata, 'matchFn'>): MethodDecorator;
 }
 
 /**
@@ -510,15 +566,22 @@ export interface Around {
      * Around advice with params.
      *
      * ### Usage
-     * - path or module name, match express.
-     *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
-     *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     * - path name, match express.
+     *  - `execution(className.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     *  - `execution(className.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *  - `execution(className.*.*(..)) && (@annotation(DecortorName) || @within(ClassName))`
+     *  - `get(*.filedname.*)`
+     *  - `get(className.filedname.*)`
+     *  - `set(*.filedname.*)`
+     *  - `set(className.filedname.*)`
+     *  - `watch(*.filedname.*)`  get set
+     *  - `watch(className.filedname.*)` get set
      *  - `@annotation(DecortorName:class|method|property|parameter)
      * 
      * ```
      * @Aspect()
      * class AspectClass {
-     *   @Around('"execution(moduelName.*.*(..)")')
+     *   @Around('"execution(className.*.*(..)")')
      *   process(joinPoint: JointPoint){
      *   }
      * }
@@ -555,7 +618,7 @@ export interface Around {
      *
      * @param {AroundMetadata} [metadata]
      */
-    (metadata?: AroundMetadata): MethodDecorator;
+    (metadata?: Omit<AroundMetadata, 'matchFn'>): MethodDecorator;
 }
 
 /**
@@ -578,15 +641,22 @@ export interface AfterReturning {
      * AfterReturning advice with params.
      *
      * ### Usage
-     * - path or module name, match express.
-     *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
-     *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     * - path name, match express.
+     *  - `execution(className.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     *  - `execution(className.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *  - `execution(className.*.*(..)) && (@annotation(DecortorName) || @within(ClassName))`
+     *  - `get(*.filedname.*)`
+     *  - `get(className.filedname.*)`
+     *  - `set(*.filedname.*)`
+     *  - `set(className.filedname.*)`
+     *  - `watch(*.filedname.*)`  get set
+     *  - `watch(className.filedname.*)` get set
      *  - `@annotation(DecortorName:class|method|property|parameter)
      * 
      * ```
      * @Aspect()
      * class AspectClass {
-     *   @AfterReturning('"execution(moduelName.*.*(..)")')
+     *   @AfterReturning('"execution(className.*.*(..)")')
      *   process(joinPoint: JointPoint){
      *   }
      * }
@@ -632,7 +702,7 @@ export interface AfterReturning {
      *
      * @param {AfterReturningMetadata} [metadata]
      */
-    (metadata?: AfterReturningMetadata): MethodDecorator;
+    (metadata?: Omit<AfterReturningMetadata, 'matchFn'>): MethodDecorator;
 }
 
 /**
@@ -663,15 +733,22 @@ export interface AfterThrowing {
      * AfterThrowing advice with params.
      *
      * ### Usage
-     * - path or module name, match express.
-     *  - `execution(moduelName.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
-     *  - `execution(moduelName.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     * - path name, match express.
+     *  - `execution(className.*.*(..)) || @annotation(DecortorName) || @within(ClassName)`
+     *  - `execution(className.*.*(..)) && @annotation(DecortorName) && @within(ClassName)`
+     *  - `execution(className.*.*(..)) && (@annotation(DecortorName) || @within(ClassName))`
+     *  - `get(*.filedname.*)`
+     *  - `get(className.filedname.*)`
+     *  - `set(*.filedname.*)`
+     *  - `set(className.filedname.*)`
+     *  - `watch(*.filedname.*)`  get set
+     *  - `watch(className.filedname.*)` get set
      *  - `@annotation(DecortorName:class|method|property|parameter)
      * 
      * ```
      * @Aspect()
      * class AspectClass {
-     *   @AfterThrowing('"execution(moduelName.*.*(..)")')
+     *   @AfterThrowing('"execution(className.*.*(..)")')
      *   process(joinPoint: JointPoint){
      *   }
      * }
@@ -719,7 +796,7 @@ export interface AfterThrowing {
      *
      * @param {AfterThrowingMetadata} [metadata]
      */
-    (metadata?: AfterThrowingMetadata): MethodDecorator;
+    (metadata?: Omit<AfterThrowingMetadata, 'matchFn'>): MethodDecorator;
 }
 
 /**

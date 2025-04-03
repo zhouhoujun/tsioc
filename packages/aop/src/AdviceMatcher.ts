@@ -19,3 +19,4 @@ export abstract class AdviceMatcher {
      */
     abstract match(aspectType: Class, type: Class, adviceMetas?: AdviceMetadata[]): MatchPointcut[];
 }
+

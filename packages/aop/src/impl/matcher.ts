@@ -1,16 +1,10 @@
 /* eslint-disable no-useless-escape */
 import { isString, isRegExp, lang, isArray, Type, ctorName, Decors, Platform, Class, DecoratorType } from '@tsdi/ioc';
 import { AdviceMatcher } from '../AdviceMatcher';
-import { AdviceMetadata } from '../metadata/meta';
+import { AdviceMetadata, MatchExpress } from '../metadata/meta';
 import { IPointcut } from '../joinpoints/IPointcut';
 import { MatchPointcut } from '../joinpoints/MatchPointcut';
 import { AopDef } from '../metadata/ref';
-
-/**
- * match express.
- */
-export type MatchExpress = (method?: string | symbol, fullName?: string, targetType?: Type, target?: any, pointcut?: IPointcut) => boolean;
-
 
 /**
  * advice matcher, use to match advice when a registered create instance.
@@ -70,7 +64,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         } else {
             const points: IPointcut[] = [];
             const decorators = tagref.getPropertyDescriptors();
-            // match method.
+            // match method or property.
             for (const name in decorators) {
                 points.push({
                     name: name,
@@ -145,8 +139,12 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         }
 
         if (isString(metadata.pointcut)) {
-            const pointcuts = (metadata.pointcut || '').trim();
-            checks.push(this.tranlateExpress(relfect, pointcuts))
+            let matchFn = metadata.matchFn;
+            if (!matchFn) {
+                const pointcuts = (metadata.pointcut || '').trim();
+                matchFn = metadata.matchFn = this.tranlateExpress(relfect, pointcuts);
+            }
+            checks.push(matchFn)
         } else if (metadata.pointcut) {
             const reg = metadata.pointcut;
             if (annPreChkExp.test(reg.source)) {
@@ -194,6 +192,17 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
             return (name?: string | symbol, fullName?: string, targetType?: Type) => targetType ? platform.getInjector(def.type).getTokenProvider(torken) === targetType : false
         }
 
+        if (getPropExp.test(strExp)) {
+            return this.toPropExpress(def, strExp.substring(10, strExp.length - 1), 'get')
+        }
+        if (setPropExp.test(strExp)) {
+            return this.toPropExpress(def, strExp.substring(10, strExp.length - 1), 'set')
+        }
+        if (watchPropExp.test(strExp)) {
+            return this.toPropExpress(def, strExp.substring(10, strExp.length - 1), 'watch')
+        }
+
+
         return fasleFn
     }
 
@@ -208,6 +217,28 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
     }
 
     protected toExecExpress(def: Class, exp: string): MatchExpress {
+        if (exp === '*' || exp === '*.*') {
+            return (name?: string | symbol, fullName?: string) => !!name && !def.getAnnotation<AopDef>().aspect
+        }
+
+        if (mthNameExp.test(exp)) {
+            // if is method name, will match aspect self only.
+            return fasleFn
+        }
+
+        if (tgMthChkExp.test(exp)) {
+            exp = exp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+                .replace(replAny1, '\\\w+')
+                .replace(replDot, '\\\.')
+                .replace(replNav, '\\\/');
+
+            const matcher = new RegExp(exp + '$');
+            return (name?: string | symbol, fullName?: string) => fullName ? matcher.test(fullName) : false
+        }
+        return fasleFn
+    }
+
+    protected toPropExpress(def: Class, exp: string, access: 'get' | 'set' | 'watch'): MatchExpress {
         if (exp === '*' || exp === '*.*') {
             return (name?: string | symbol, fullName?: string) => !!name && !def.getAnnotation<AopDef>().aspect
         }
@@ -322,7 +353,7 @@ export class BoolExpression {
 //     private parseTokens(tokens: string[]): any[] {
 //         const output: any[] = [];
 //         const operators: string[] = [];
-        
+
 //         tokens.forEach(token => {
 //             token = token.trim();
 //             if (!token) return;
@@ -387,11 +418,11 @@ export class BoolExpression {
 //                 const right = stack.pop()!;
 //                 const left = stack.pop()!;
 //                 const currentPrecedence = this.getPrecedence(item.value);
-                
+
 //                 // 处理括号分组
 //                 const leftValue = left.precedence < currentPrecedence ? `(${left.value})` : left.value;
 //                 const rightValue = right.precedence < currentPrecedence ? `(${right.value})` : right.value;
-                
+
 //                 stack.push({
 //                     value: `${leftValue} ${item.value} ${rightValue}`,
 //                     precedence: currentPrecedence
@@ -426,7 +457,9 @@ function rewrite(ex: any[], el: string) {
     return ex
 }
 
-export const isAdviceToken = (exp: string) => annContentExp.test(exp) || execContentExp.test(exp) || withInChkExp.test(exp) || targetChkExp.test(exp);
+export const isAdviceToken = (exp: string) => annContentExp.test(exp) || execContentExp.test(exp)
+    || withInChkExp.test(exp) || targetChkExp.test(exp)
+    || getPropExp.test(exp) || setPropExp.test(exp) || watchPropExp.test(exp);
 
 const fasleFn = () => false;
 const aExp = /^@/;
@@ -441,8 +474,13 @@ const mthNameExp = /^\w+(\((\s*\w+\s*,)*\s*\w*\))?$/;
 const tgMthChkExp = /^([\w\*]+\.)+[\w\*]+(\((\s*\w+\s*,)*\s*\w*\))?$/;
 const preParam = /^\(/;
 const endParam = /\)$/;
-const withInChkExp = /^@within\(\s*\w+/;
-const targetChkExp = /^@target\(\s*\w+/;
+const withInChkExp = /^@within\(\s*\w+(\s*,\s*\w+)*\s*\)$/;
+const targetChkExp = /^@target\(\s*\w+\s*\)$/;
+
+const getPropExp = /^get((\w|\*)+(.(\w|\*)+))*\)$/;
+const setPropExp = /^set((\w|\*)+(.(\w|\*)+))*\)$/;
+const watchPropExp = /^watch((\w|\*)+(.(\w|\*)+))*\)$/;
+
 const replAny = /\*\*/gi;
 const replAny1 = /\*/gi;
 const replDot = /\./gi;
