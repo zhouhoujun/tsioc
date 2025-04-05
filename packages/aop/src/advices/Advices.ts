@@ -11,6 +11,8 @@ import { JoinPoint } from '../joinpoints/JoinPoint';
  * @interface Advices
  */
 export class Advices {
+    private _hasGet = false;
+    private _hasSet = false;
     protected maps: Map<AdviceTypes, Advicer[]>;
     private _beforeHanlder?: ApplicationHandlerFn | null;
     private _afterHanlder?: ApplicationHandlerFn | null;
@@ -22,6 +24,13 @@ export class Advices {
         this.maps = new Map();
     }
 
+    hasGet() {
+        return this._hasGet
+    }
+
+    hasSet() {
+        return this._hasSet
+    }
 
     protected cleanHanlder() {
         this._beforeHanlder = undefined;
@@ -32,6 +41,23 @@ export class Advices {
     }
 
     addAdvicer(type: AdviceTypes, advicer: Advicer) {
+        if (!this._hasGet) {
+            if (advicer.accessor) {
+                this._hasGet = advicer.accessor === 'get';
+            } else {
+                this._hasGet = true;
+            }
+        }
+
+        if (!this._hasSet) {
+            if (advicer.accessor) {
+                this._hasSet = advicer.accessor === 'set';
+            } else {
+                this._hasSet = true;
+            }
+        }
+
+
         let advicers = this.maps.get(type);
         if (!advicers) {
             advicers = [advicer];
@@ -149,6 +175,9 @@ const aExp = /^@/;
 function invokeAdvice(joinPoint: JoinPoint, advicer: Advicer) {
     if (joinPoint.destroyed) {
         throw new Error(`joinPoint is destroyed, when invoked advicer ${object2string(advicer)}.\n\njoinPoint object ${object2string(joinPoint, { fun: false, typeInst: true })}`)
+    }
+    if (advicer.accessor && advicer.accessor !== joinPoint.accessor) {
+        return;
     }
     const metadata = advicer.advice as AroundMetadata;
     if (!isNil(joinPoint.args) && metadata.args) {

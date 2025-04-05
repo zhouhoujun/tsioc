@@ -199,7 +199,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
             return this.toPropExpress(strExp.substring(10, strExp.length - 1), 'set')
         }
         if (watchPropExp.test(strExp)) {
-            return this.toPropExpress(strExp.substring(10, strExp.length - 1), 'watch')
+            return this.toPropExpress(strExp.substring(10, strExp.length - 1))
         }
 
 
@@ -238,9 +238,15 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         return fasleFn
     }
 
-    protected toPropExpress(exp: string, access: 'get' | 'set' | 'watch'): MatchExpress {
+    protected toPropExpress(exp: string, access?: 'get' | 'set'): MatchExpress {
         if (exp === '*' || exp === '*.*') {
-            return (name, fullName, targetRef) => !!name && !targetRef.getAnnotation<AopDef>().aspect
+            return (name, fullName, targetRef, target, pointcut) => {
+                const flag = !!name && !targetRef.getAnnotation<AopDef>().aspect;
+                if (flag && access) {
+                    (pointcut as MatchPointcut).accessor = access;
+                }
+                return flag;
+            }
         }
 
         if (mthNameExp.test(exp)) {
@@ -255,7 +261,13 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
                 .replace(replNav, '\\\/');
 
             const matcher = new RegExp(exp + '$');
-            return (name, fullName, targetRef) => fullName ? matcher.test(fullName) : false
+            return (name, fullName, targetRef, target, pointcut) => {
+                const flag = fullName ? matcher.test(fullName) : false;
+                if (flag && access) {
+                    (pointcut as MatchPointcut).accessor = access;
+                }
+                return flag
+            }
         }
         return fasleFn
     }

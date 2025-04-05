@@ -90,11 +90,13 @@ export class ProceedingScope implements Proceeding {
                     }
                     return proxyFn;
                 }
+                if (!advices.hasGet()) return Reflect.get(target, name, receiver);
                 return this.handle(typeRef, fullName, name, advices, this.platform, {
                     receiver: receiver ?? proxy,
                     target,
                     parent,
                     args: [],
+                    accessor: 'get',
                     originProxy: (j) => {
                         let value = Reflect.get(target, name, receiver);
                         const submapping = mapping?.getChild(name);
@@ -118,7 +120,7 @@ export class ProceedingScope implements Proceeding {
                 if (name === ctorName) return Reflect.set(target, name, receiver);
                 const fullName = `${prefix}.${name.toString()}`;
                 const advices = mapping?.get(name);
-                if (!advices) return Reflect.set(target, name, newValue, receiver);
+                if (!advices || !advices.hasSet()) return Reflect.set(target, name, newValue, receiver);
 
                 const oldValue = Reflect.get(target, name, receiver);
                 return this.handle(typeRef, fullName, name, advices, this.platform, {
@@ -126,6 +128,7 @@ export class ProceedingScope implements Proceeding {
                     target,
                     parent,
                     args: [],
+                    accessor: 'set',
                     valueChange: { newValue, oldValue },
                     originProxy: (j) => {
                         return Reflect.set(target, name, newValue, receiver);
@@ -163,6 +166,7 @@ export class ProceedingScope implements Proceeding {
         target?: any,
         originMethod?: Function,
         args?: any[];
+        accessor?: 'get' | 'set';
         params?: ParameterMetadata[];
         valueChange?: { newValue: any, oldValue: any },
         parent?: InvocationContext,
