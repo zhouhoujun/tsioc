@@ -787,6 +787,12 @@ export class Class<T = any> {
         return this.descriptos
     }
 
+    getPropertyKeys(): Array<string | symbol> {
+        const props = this.parent?.getPropertyKeys() ?? [];
+        props.push(...this.propMetadatas.keys())
+        return props //Reflect.getMetadataKeys(this.type.prototype!)
+    }
+
     isExtends(type: Type): boolean {
         return this.extendTypes.indexOf(type) >= 0
     }

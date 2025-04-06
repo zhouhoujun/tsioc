@@ -72,6 +72,14 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
                 })
             }
 
+            const keys = tagref.getPropertyKeys();
+            keys.forEach(k => {
+                points.push({
+                    name: k,
+                    fullName: `${className}.${k.toString()}`,
+                })
+            })
+
             adviceMetas.forEach(metadata => {
                 matched = matched.concat(this.filterPointcut(tagref, points, metadata))
             })
@@ -221,10 +229,10 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
             return (name, fullName, targetRef) => !!name && !targetRef.getAnnotation<AopDef>().aspect
         }
 
-        if (mthNameExp.test(exp)) {
-            // if is method name, will match aspect self only.
-            return fasleFn
-        }
+        // if (mthNameExp.test(exp)) {
+        //     // if is method name, will match aspect self only.
+        //     return fasleFn
+        // }
 
         if (tgMthChkExp.test(exp)) {
             exp = exp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
@@ -249,12 +257,12 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
             }
         }
 
-        if (mthNameExp.test(exp)) {
-            // if is method name, will match aspect self only.
-            return fasleFn
-        }
+        // if (mthNameExp.test(exp)) {
+        //     // if is method name, will match aspect self only.
+        //     return fasleFn
+        // }
 
-        if (tgMthChkExp.test(exp)) {
+        if (tgPropChkExp.test(exp)) {
             exp = exp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
                 .replace(replAny1, '\\\w+')
                 .replace(replDot, '\\\.')
@@ -482,8 +490,10 @@ const annInExp = /^@?\w+:(class|method|property|parameter)$/;
 
 const executionChkExp = /^execution\(\S+\)$/;
 const execContentExp = /^execution\(.*\)$/;
-const mthNameExp = /^\w+(\((\s*\w+\s*,)*\s*\w*\))?$/;
+// const mthNameExp = /^\w+(\((\s*\w+\s*,)*\s*\w*\))?$/;
 const tgMthChkExp = /^([\w\*]+\.)+[\w\*]+(\((\s*\w+\s*,)*\s*\w*\))?$/;
+const tgPropChkExp = /^([\w\*]+\.)+[\w\*]+$/;
+
 const preParam = /^\(/;
 const endParam = /\)$/;
 const withInChkExp = /^@within\(\s*\w+(\s*,\s*\w+)*\s*\)$/;

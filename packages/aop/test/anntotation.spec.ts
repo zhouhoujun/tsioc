@@ -6,6 +6,7 @@ import { CheckRightAspect } from './aop/CheckRightAspect';
 import { IocLog } from './aop/IocLog';
 import { AopModule, BoolExpression } from '../src';
 import expect = require('expect');
+import { ChangedAspect } from './aop/ChangedAspect';
 
 
 describe('aop test', () => {
@@ -46,7 +47,7 @@ describe('aop test', () => {
 
         tester!: string;
 
-        @Inject({ defaultValue: new Date()})
+        @Inject({ defaultValue: new Date() })
         testAt!: Date;
         constructor() {
             console.log('create MethodTest2')
@@ -57,6 +58,24 @@ describe('aop test', () => {
             return person.say();
         }
 
+    }
+
+    @Injectable()
+    class PersonComponet {
+        @Inject('personFullName', { defaultValue: ''})
+        public personFullName = '';
+
+        fulChange: any;
+
+        @Inject('props',{defaultValue: {name: 'xx'}})
+        public props: {name: string} = {
+            name: 'xx'
+        }
+        changed?:any;
+    
+        constructor() {
+
+        }
     }
 
     @Injectable('Test3')
@@ -137,6 +156,18 @@ describe('aop test', () => {
         container.register(MethodTest2);
         expect(container.invoke(MethodTest2, 'sayHello')).toEqual('Mama')
 
+    });
+
+    it('Aop property change', () => {
+        container.register(ChangedAspect);
+        container.register(PersonComponet);
+        const comp = container.get(PersonComponet);
+        comp.personFullName = 'name1';
+        expect(comp.fulChange).toEqual({oldVlue:'', newValue:'name1'});
+
+        comp.props.name = 'mm';
+        expect(comp.changed).toEqual({oldVlue:'xx', newValue:'mm'});
+        // expect(container.invoke(MethodTest2,'sayHello')).toEqual('Mama')
     });
 
     after(() => {
