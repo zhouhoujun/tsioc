@@ -90,7 +90,7 @@ export class ProceedingScope implements Proceeding {
                     }
                     return proxyFn;
                 }
-                if (!advices.hasGet()) return Reflect.get(target, name, receiver);
+                if (!advices.hasGet() && !advices.hasSet()) return Reflect.get(target, name, receiver);
                 return this.handle(typeRef, fullName, name, advices, this.platform, {
                     receiver: receiver ?? proxy,
                     target,
