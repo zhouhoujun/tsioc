@@ -183,11 +183,11 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
     protected expressToFunc(strExp: string): MatchExpress {
 
         if (annContentExp.test(strExp)) {
-            return this.toAnnExpress(strExp.substring(12, strExp.length - 1))
+            return this.toAnnExpress(strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1))
         }
 
         if (execContentExp.test(strExp)) {
-            return this.toExecExpress(strExp.substring(10, strExp.length - 1))
+            return this.toExecExpress(strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1))
         }
 
         if (withInChkExp.test(strExp)) {
@@ -202,13 +202,13 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         }
 
         if (getPropExp.test(strExp)) {
-            return this.toPropExpress(strExp.substring(10, strExp.length - 1), 'get')
+            return this.toPropExpress(strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1), 'get')
         }
         if (setPropExp.test(strExp)) {
-            return this.toPropExpress(strExp.substring(10, strExp.length - 1), 'set')
+            return this.toPropExpress(strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1), 'set')
         }
         if (valuePropExp.test(strExp)) {
-            return this.toPropExpress(strExp.substring(10, strExp.length - 1), 'value')
+            return this.toPropExpress(strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1), 'value')
         }
 
 
@@ -247,8 +247,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         return fasleFn
     }
 
-    protected toPropExpress(exp: string, accessor?: 'get' | 'set' | 'value'): MatchExpress {
-        if(!accessor) return fasleFn;
+    protected toPropExpress(exp: string, accessor: 'get' | 'set' | 'value'): MatchExpress {
 
         if (exp === '*' || exp === '*.*') {
             return (name, fullName, targetRef, target, pointcut) => {
@@ -502,9 +501,9 @@ const endParam = /\)$/;
 const withInChkExp = /^@within\(\s*\w+(\s*,\s*\w+)*\s*\)$/;
 const targetChkExp = /^@target\(\s*\w+\s*\)$/;
 
-const getPropExp = /^get((\w|\*)+(.(\w|\*)+))*\)$/;
-const setPropExp = /^set((\w|\*)+(.(\w|\*)+))*\)$/;
-const valuePropExp = /^value((\w|\*)+(.(\w|\*)+))*\)$/;
+const getPropExp = /^get\((\w|\*)+(.(\w|\*)+)*\)$/;
+const setPropExp = /^set\((\w|\*)+(.(\w|\*)+)*\)$/;
+const valuePropExp = /^value\((\w|\*)+(.(\w|\*)+)*\)$/;
 
 const replAny = /\*\*/gi;
 const replAny1 = /\*/gi;

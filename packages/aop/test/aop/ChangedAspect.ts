@@ -5,7 +5,7 @@ import { JoinPoint, Around, Aspect, Before, After, AdviceMetadata } from '../../
 @Aspect()
 export class ChangedAspect {
     // pointcut for method has @AutoWried decorator.
-    @Around('set(*.props.name)')
+    @After('set(*.props.name)')
     change(joinPoint: JoinPoint) {
         if (joinPoint.state == 'After') {
             joinPoint.target.changed = joinPoint.valueChange;

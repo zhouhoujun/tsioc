@@ -163,10 +163,10 @@ describe('aop test', () => {
         container.register(PersonComponet);
         const comp = container.get(PersonComponet);
         comp.personFullName = 'name1';
-        expect(comp.fulChange).toEqual({oldVlue:'', newValue:'name1'});
+        expect(comp.fulChange).toEqual({oldValue:'', newValue:'name1'});
 
         comp.props.name = 'mm';
-        expect(comp.changed).toEqual({oldVlue:'xx', newValue:'mm'});
+        expect(comp.changed).toEqual({oldValue:'xx', newValue:'mm'});
         // expect(container.invoke(MethodTest2,'sayHello')).toEqual('Mama')
     });
 

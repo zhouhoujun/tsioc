@@ -43,7 +43,7 @@ export class Advices {
     addAdvicer(type: AdviceTypes, advicer: Advicer) {
         if (!this._hasGet) {
             if (advicer.accessor) {
-                this._hasGet = advicer.accessor === 'get';
+                this._hasGet = advicer.accessor === 'get' || advicer.accessor === 'value';
             } else {
                 this._hasGet = true;
             }
@@ -51,7 +51,7 @@ export class Advices {
 
         if (!this._hasSet) {
             if (advicer.accessor) {
-                this._hasSet = advicer.accessor === 'set';
+                this._hasSet = advicer.accessor === 'set' || advicer.accessor === 'value';
             } else {
                 this._hasSet = true;
             }
@@ -176,7 +176,7 @@ function invokeAdvice(joinPoint: JoinPoint, advicer: Advicer) {
     if (joinPoint.destroyed) {
         throw new Error(`joinPoint is destroyed, when invoked advicer ${object2string(advicer)}.\n\njoinPoint object ${object2string(joinPoint, { fun: false, typeInst: true })}`)
     }
-    if (advicer.accessor && advicer.accessor !== joinPoint.accessor) {
+    if (advicer.accessor && advicer.accessor !== 'value' && advicer.accessor !== joinPoint.accessor) {
         return;
     }
     const metadata = advicer.advice as AroundMetadata;

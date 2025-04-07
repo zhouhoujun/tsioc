@@ -22,7 +22,7 @@ export interface JoinpointOption extends TargetInvokeArguments {
     originProxy?: (joinPoint: JoinPoint) => any;
     originMethod?: Function;
     args?: any[];
-    accessor?: 'get'|'set';
+    accessor?: 'get' | 'set';
     valueChange?: { newValue: any, oldValue: any },
     state?: JoinpointState;
     advices: Advices;
@@ -64,7 +64,7 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
     target: any;
     returning: any;
     throwing: any;
-    accessor?: 'get'| 'set';
+    accessor?: 'get' | 'set' | 'value';
 
     private _fullName: string | undefined;
     readonly targetRef: Class | null | undefined;
