@@ -6,8 +6,6 @@ import { AdviceMetadata } from '../metadata/meta';
  */
 export interface MatchPointcut extends IPointcut {
 
-    accessor?: 'get' | 'set';
-
     /**
      * advice for pointcut.
      *

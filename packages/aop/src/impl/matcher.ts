@@ -77,6 +77,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
                 points.push({
                     name: k,
                     fullName: `${className}.${k.toString()}`,
+                    accessor: 'value'
                 })
             })
 
@@ -206,8 +207,8 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         if (setPropExp.test(strExp)) {
             return this.toPropExpress(strExp.substring(10, strExp.length - 1), 'set')
         }
-        if (watchPropExp.test(strExp)) {
-            return this.toPropExpress(strExp.substring(10, strExp.length - 1))
+        if (valuePropExp.test(strExp)) {
+            return this.toPropExpress(strExp.substring(10, strExp.length - 1), 'value')
         }
 
 
@@ -226,7 +227,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
 
     protected toExecExpress(exp: string): MatchExpress {
         if (exp === '*' || exp === '*.*') {
-            return (name, fullName, targetRef) => !!name && !targetRef.getAnnotation<AopDef>().aspect
+            return (name, fullName, targetRef, target, pointcut) => !pointcut?.accessor && !!name && !targetRef.getAnnotation<AopDef>().aspect
         }
 
         // if (mthNameExp.test(exp)) {
@@ -241,17 +242,19 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
                 .replace(replNav, '\\\/');
 
             const matcher = new RegExp(exp + '$');
-            return (name, fullName, targetRef) => fullName ? matcher.test(fullName) : false
+            return (name, fullName, targetRef, target, pointcut) => (fullName || !pointcut?.accessor) ? matcher.test(fullName) : false
         }
         return fasleFn
     }
 
-    protected toPropExpress(exp: string, access?: 'get' | 'set'): MatchExpress {
+    protected toPropExpress(exp: string, accessor?: 'get' | 'set' | 'value'): MatchExpress {
+        if(!accessor) return fasleFn;
+
         if (exp === '*' || exp === '*.*') {
             return (name, fullName, targetRef, target, pointcut) => {
                 const flag = !!name && !targetRef.getAnnotation<AopDef>().aspect;
-                if (flag && access) {
-                    (pointcut as MatchPointcut).accessor = access;
+                if (flag && accessor && pointcut) {
+                    pointcut.accessor = accessor;
                 }
                 return flag;
             }
@@ -271,8 +274,8 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
             const matcher = new RegExp(exp + '$');
             return (name, fullName, targetRef, target, pointcut) => {
                 const flag = fullName ? matcher.test(fullName) : false;
-                if (flag && access) {
-                    (pointcut as MatchPointcut).accessor = access;
+                if (flag && accessor && pointcut) {
+                    pointcut.accessor = accessor;
                 }
                 return flag
             }
@@ -479,7 +482,7 @@ function rewrite(ex: any[], el: string) {
 
 export const isAdviceToken = (exp: string) => annContentExp.test(exp) || execContentExp.test(exp)
     || withInChkExp.test(exp) || targetChkExp.test(exp)
-    || getPropExp.test(exp) || setPropExp.test(exp) || watchPropExp.test(exp);
+    || getPropExp.test(exp) || setPropExp.test(exp) || valuePropExp.test(exp);
 
 const fasleFn = () => false;
 const aExp = /^@/;
@@ -501,7 +504,7 @@ const targetChkExp = /^@target\(\s*\w+\s*\)$/;
 
 const getPropExp = /^get((\w|\*)+(.(\w|\*)+))*\)$/;
 const setPropExp = /^set((\w|\*)+(.(\w|\*)+))*\)$/;
-const watchPropExp = /^watch((\w|\*)+(.(\w|\*)+))*\)$/;
+const valuePropExp = /^value((\w|\*)+(.(\w|\*)+))*\)$/;
 
 const replAny = /\*\*/gi;
 const replAny1 = /\*/gi;

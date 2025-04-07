@@ -13,7 +13,7 @@ export class ChangedAspect {
         console.log('aspect execution around, property name:', joinPoint.fullName, ' state:', joinPoint.state, 'change:', joinPoint.valueChange, joinPoint.accessor);
     }
 
-    @Around('watch(*.personFullName)')
+    @Around('value(*.personFullName)')
     nameChange(joinPoint: JoinPoint) {
         if (joinPoint.state == 'After') {
             joinPoint.target.fulChange = joinPoint.valueChange;

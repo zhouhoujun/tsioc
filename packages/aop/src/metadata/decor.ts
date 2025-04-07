@@ -116,8 +116,8 @@ export interface AdviceDecorator {
      *  - `get(className.filedname.*)`
      *  - `set(*.filedname.*)`
      *  - `set(className.filedname.*)`
-     *  - `watch(*.filedname.*)`  get set
-     *  - `watch(className.filedname.*)` get set
+     *  - `value(*.filedname.*)`  get set
+     *  - `value(className.filedname.*)` get set
      *
      * ```
      * @Aspect()
@@ -156,8 +156,8 @@ export interface AdviceDecorator {
      *  - `get(className.filedname.*)`
      *  - `set(*.filedname.*)`
      *  - `set(className.filedname.*)`
-     *  - `watch(*.filedname.*)`  get set
-     *  - `watch(className.filedname.*)` get set
+     *  - `value(*.filedname.*)`  get set
+     *  - `value(className.filedname.*)` get set
      *
      * ```
      * @Aspect()
@@ -251,8 +251,8 @@ export interface Pointcut {
      *  - `get(className.filedname.*)`
      *  - `set(*.filedname.*)`
      *  - `set(className.filedname.*)`
-     *  - `watch(*.filedname.*)`  get set
-     *  - `watch(className.filedname.*)` get set
+     *  - `value(*.filedname.*)`  get set
+     *  - `value(className.filedname.*)` get set
      *  - `@annotation(DecortorName:class|method|property|parameter)
      * ```
      * @Aspect()
@@ -293,8 +293,8 @@ export interface Pointcut {
      *  - `get(className.filedname.*)`
      *  - `set(*.filedname.*)`
      *  - `set(className.filedname.*)`
-     *  - `watch(*.filedname.*)`  get set
-     *  - `watch(className.filedname.*)` get set
+     *  - `value(*.filedname.*)`  get set
+     *  - `value(className.filedname.*)` get set
      *  - `@annotation(DecortorName:class|method|property|parameter)
      * ```
      * @Aspect()
@@ -358,8 +358,8 @@ export interface IBeforeDecorator {
      *  - `get(className.filedname.*)`
      *  - `set(*.filedname.*)`
      *  - `set(className.filedname.*)`
-     *  - `watch(*.filedname.*)`  get set
-     *  - `watch(className.filedname.*)` get set
+     *  - `value(*.filedname.*)`  get set
+     *  - `value(className.filedname.*)` get set
      *  - `@annotation(DecortorName:class|method|property|parameter)
      * 
      * ```
@@ -399,8 +399,8 @@ export interface IBeforeDecorator {
      *  - `get(className.filedname.*)`
      *  - `set(*.filedname.*)`
      *  - `set(className.filedname.*)`
-     *  - `watch(*.filedname.*)`  get set
-     *  - `watch(className.filedname.*)` get set
+     *  - `value(*.filedname.*)`  get set
+     *  - `value(className.filedname.*)` get set
      *  - `@annotation(DecortorName:class|method|property|parameter)
      * 
      * ```
@@ -463,8 +463,8 @@ export interface After {
      *  - `get(className.filedname.*)`
      *  - `set(*.filedname.*)`
      *  - `set(className.filedname.*)`
-     *  - `watch(*.filedname.*)`  get set
-     *  - `watch(className.filedname.*)` get set
+     *  - `value(*.filedname.*)`  get set
+     *  - `value(className.filedname.*)` get set
      *  - `@annotation(DecortorName:class|method|property|parameter)
      * 
      * ```
@@ -504,8 +504,8 @@ export interface After {
      *  - `get(className.filedname.*)`
      *  - `set(*.filedname.*)`
      *  - `set(className.filedname.*)`
-     *  - `watch(*.filedname.*)`  get set
-     *  - `watch(className.filedname.*)` get set
+     *  - `value(*.filedname.*)`  get set
+     *  - `value(className.filedname.*)` get set
      *  - `@annotation(DecortorName:class|method|property|parameter)
      * 
      * ```
@@ -574,8 +574,8 @@ export interface Around {
      *  - `get(className.filedname.*)`
      *  - `set(*.filedname.*)`
      *  - `set(className.filedname.*)`
-     *  - `watch(*.filedname.*)`  get set
-     *  - `watch(className.filedname.*)` get set
+     *  - `value(*.filedname.*)`  get set
+     *  - `value(className.filedname.*)` get set
      *  - `@annotation(DecortorName:class|method|property|parameter)
      * 
      * ```
@@ -649,8 +649,8 @@ export interface AfterReturning {
      *  - `get(className.filedname.*)`
      *  - `set(*.filedname.*)`
      *  - `set(className.filedname.*)`
-     *  - `watch(*.filedname.*)`  get set
-     *  - `watch(className.filedname.*)` get set
+     *  - `value(*.filedname.*)`  get set
+     *  - `value(className.filedname.*)` get set
      *  - `@annotation(DecortorName:class|method|property|parameter)
      * 
      * ```
@@ -741,8 +741,8 @@ export interface AfterThrowing {
      *  - `get(className.filedname.*)`
      *  - `set(*.filedname.*)`
      *  - `set(className.filedname.*)`
-     *  - `watch(*.filedname.*)`  get set
-     *  - `watch(className.filedname.*)` get set
+     *  - `value(*.filedname.*)`  get set
+     *  - `value(className.filedname.*)` get set
      *  - `@annotation(DecortorName:class|method|property|parameter)
      * 
      * ```

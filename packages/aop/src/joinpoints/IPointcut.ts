@@ -18,6 +18,8 @@ export interface IPointcut {
      */
     fullName: string;
 
+    accessor?: 'get' | 'set' | 'value';
+
     /**
      * method
      *
