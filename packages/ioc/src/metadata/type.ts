@@ -371,6 +371,13 @@ export class Class<T = any> {
         this.parent?.eachProperty(callback)
     }
 
+    getPropertyKeys(): Array<string | symbol> {
+        const props = this.parent?.getPropertyKeys() ?? [];
+        props.push(...this.propMetadatas.keys())
+        return props
+    }
+
+
     hasMethodOptions(method: string): boolean {
         return this.methodOptions.has(method)
     }
@@ -785,12 +792,6 @@ export class Class<T = any> {
             this.descriptos = descriptos
         }
         return this.descriptos
-    }
-
-    getPropertyKeys(): Array<string | symbol> {
-        const props = this.parent?.getPropertyKeys() ?? [];
-        props.push(...this.propMetadatas.keys())
-        return props //Reflect.getMetadataKeys(this.type.prototype!)
     }
 
     isExtends(type: Type): boolean {

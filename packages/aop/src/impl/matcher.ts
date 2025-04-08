@@ -1,5 +1,5 @@
 /* eslint-disable no-useless-escape */
-import { isString, isRegExp, lang, isArray, Type, ctorName, Decors, Platform, Class, DecoratorType } from '@tsdi/ioc';
+import { isString, isRegExp, lang, isArray, Type, ctorName, Decors, Platform, Class, DecoratorType, isType } from '@tsdi/ioc';
 import { AdviceMatcher } from '../AdviceMatcher';
 import { AdviceMetadata, MatchExpress } from '../metadata/meta';
 import { IPointcut } from '../joinpoints/IPointcut';
@@ -72,14 +72,28 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
                 })
             }
 
-            const keys = tagref.getPropertyKeys();
-            keys.forEach(k => {
-                points.push({
-                    name: k,
-                    fullName: `${className}.${k.toString()}`,
-                    accessor: 'value'
-                })
-            })
+            const pmaps: Record<string | symbol, IPointcut> = {};
+            tagref.eachProperty((v, k) => {
+                let p = pmaps[k];
+                if (!p) {
+                    const m = v.find(r => r.provider) ?? v.find(r => r.type);
+                    const type = isType(m?.provider) ? m.provider : m?.type;
+                    p = {
+                        name: k,
+                        fullName: `${className}.${k.toString()}`,
+                        type,
+                        accessor: 'value'
+                    }
+                    pmaps[k] = p;
+                } else if (!p.type) {
+                    const m = v.find(r => r.provider) ?? v.find(r => r.type);
+                    p.type = isType(m?.provider) ? m.provider : m?.type;
+                }
+            });
+
+            for (const pr of Object.values(pmaps)) {
+                points.push(pr);
+            }
 
             adviceMetas.forEach(metadata => {
                 matched = matched.concat(this.filterPointcut(tagref, points, metadata))

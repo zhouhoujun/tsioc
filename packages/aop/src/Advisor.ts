@@ -45,7 +45,7 @@ export class Advisor implements OnDestroy {
 
                 let advices = mapping.get(name);
                 if (!advices) {
-                    advices = new Advices();
+                    advices = new Advices(advice.type);
                     mapping.set(name, advices)
                 }
                 const advicer = {

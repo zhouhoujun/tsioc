@@ -1,4 +1,4 @@
-import { composeHandlers, object2string, isNil, invokeTail, Class, ctorName } from '@tsdi/ioc';
+import { composeHandlers, object2string, isNil, invokeTail, Class, ctorName, Type } from '@tsdi/ioc';
 import { ApplicationHandlerFn } from '@tsdi/core';
 import { Advicer } from './Advicer';
 import { AdviceTypes, AroundMetadata } from '../metadata/meta';
@@ -20,7 +20,7 @@ export class Advices {
     private _afterThrowingHanlder?: ApplicationHandlerFn | null;
     private _afterReturninHanlder?: ApplicationHandlerFn | null;
 
-    constructor() {
+    constructor(readonly proptType?: Type) {
         this.maps = new Map();
     }
 
@@ -113,6 +113,25 @@ export class Advices {
         this.cleanHanlder();
         this.maps.clear();
     }
+
+    /**
+     * 合并另一个Advices实例
+     */
+    merge(other: Advices): this {
+        other.maps.forEach((advicers, type) => {
+            advicers.forEach(advicer => this.addAdvicer(type, advicer));
+        });
+        return this;
+    }
+
+    /**
+     * 克隆当前Advices实例
+     */
+    clone(): Advices {
+        const cloned = new Advices();
+        cloned.merge(this);
+        return cloned;
+    }
 }
 
 export class AdvicesMapping {
@@ -158,6 +177,68 @@ export class AdvicesMapping {
         this.child.forEach(c => c.clear());
         this.props.clear();
         this.child.clear();
+    }
+
+
+    /**
+     * 合并另一个AdvicesMapping实例
+     */
+    merge(other: AdvicesMapping): this {
+        // 合并属性
+        other.props.forEach((advices, name) => {
+            const existing = this.props.get(name);
+            if (existing) {
+                existing.merge(advices);
+            } else {
+                this.props.set(name, advices.clone());
+            }
+        });
+
+        // 合并子节点
+        other.child.forEach((childMapping, name) => {
+            const existing = this.child.get(name);
+            if (existing) {
+                existing.merge(childMapping);
+            } else {
+                this.child.set(name, childMapping.clone());
+            }
+        });
+
+        return this;
+    }
+
+    /**
+     * 克隆当前AdvicesMapping实例
+     */
+    clone(): AdvicesMapping {
+        const cloned = new AdvicesMapping(this.typeRef);
+        cloned.merge(this);
+        return cloned;
+    }
+
+    /**
+     * 深度遍历所有Advices
+     */
+    forEach(callback: (advices: Advices, name: string | symbol) => void): void {
+        this.props.forEach(callback);
+        this.child.forEach(child => child.forEach(callback));
+    }
+
+    /**
+     * 查找指定名称的Advices（包括子节点）
+     */
+    find(name: string | symbol): Advices | undefined {
+        // 先在当前层级查找
+        const advices = this.props.get(name);
+        if (advices) return advices;
+
+        // 在子节点中查找
+        for (const child of this.child.values()) {
+            const found = child.find(name);
+            if (found) return found;
+        }
+
+        return undefined;
     }
 
 }
@@ -213,3 +294,4 @@ function invokeAdvice(joinPoint: JoinPoint, advicer: Advicer) {
         }
     });
 }
+

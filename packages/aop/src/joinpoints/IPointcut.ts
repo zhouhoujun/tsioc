@@ -1,3 +1,5 @@
+import { Type } from '@tsdi/ioc';
+
 /**
  * pointcut.
  *
@@ -19,6 +21,8 @@ export interface IPointcut {
     fullName: string;
 
     accessor?: 'get' | 'set' | 'value';
+
+    type?: Type;
 
     /**
      * method
