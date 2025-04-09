@@ -143,7 +143,8 @@ export class AdvicesMapping {
     }
 
     constructor(
-        readonly typeRef: Class
+        readonly typeRef: Class,
+        private match: (fullName: string, startsWith?: boolean) => boolean
     ) {
         this.props = new Map();
     }
@@ -157,12 +158,14 @@ export class AdvicesMapping {
         return this.props.get(name);
     }
 
+    has(name: string | symbol): boolean {
+        return this.props.has(name);
+    }
+
     set(name: string | symbol, advices: Advices | AdvicesMapping) {
         if (!this._hasProp && name !== ctorName) this._hasProp = true;
         this.props.set(name, advices);
     }
-
-
 
     clear() {
         this.props.forEach(v => v.clear());
@@ -195,7 +198,7 @@ export class AdvicesMapping {
      * 克隆当前AdvicesMapping实例
      */
     clone(): AdvicesMapping {
-        const cloned = new AdvicesMapping(this.typeRef);
+        const cloned = new AdvicesMapping(this.typeRef, this.match);
         cloned.merge(this);
         return cloned;
     }
@@ -216,10 +219,10 @@ export class AdvicesMapping {
     /**
      * 查找指定名称的Advices（包括子节点）
      */
-    find(name: string | symbol): Advices | undefined {
-        const advices = this.props.get(name);
-        if (advices) return advices instanceof AdvicesMapping ? advices.find(name) : advices;
-
+    find(fullName: string): Advices | AdvicesMapping | undefined {
+        if(this.match(fullName)){
+            return this.props.get(fullName.substring(fullName.lastIndexOf('.')+1));          
+        }
         return undefined;
     }
 

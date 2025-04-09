@@ -1,4 +1,4 @@
-import { Type, lang, ReflectiveRef, OnDestroy, Platform, refl, isFunction, Class } from '@tsdi/ioc';
+import { Type, lang, ReflectiveRef, OnDestroy, Platform, refl, isFunction, Class, getClass } from '@tsdi/ioc';
 import { Advicer } from './advices/Advicer';
 import { Advices, AdvicesMapping } from './advices/Advices';
 import { AdviceMatcher } from './AdviceMatcher';
@@ -33,18 +33,23 @@ export class Advisor implements OnDestroy {
         }
         const matcher = this.platform.context.get(AdviceMatcher);
         const typeRefl = isFunction(type) ? refl.get(type) : type as Class;
-        const mapping = new AdvicesMapping(typeRefl);
+        const mapping = new AdvicesMapping(typeRefl, (path) => path.startsWith(typeRefl.className));
         this.advices.set(typeRefl.type, mapping);
-        
+
         this.aspects.forEach(aspect => {
             const aopRef = aspect.class as Class;
             const matchpoints = matcher.match(aopRef, typeRefl, aopRef.getAnnotation<AopDef>().advices);
             matchpoints.forEach(mpt => {
-                const { name, advice } = mpt;
+                const { name, advice, match, type: subType } = mpt;
                 if (!advice.adviceName) return;
 
-                let advices = mapping.get(name);
+                let advices = mapping.get(name) as Advices;
+
                 if (!advices) {
+                    if(match) {
+                        mapping.set(name, new AdvicesMapping(refl.get(subType!), match));
+                        return;
+                    }
                     advices = new Advices(advice.type);
                     mapping.set(name, advices)
                 }

@@ -32,7 +32,7 @@ export class ProceedingScope implements Proceeding {
         const targetType = ctx.type;
         const advisor = this.platform.context.get(Advisor);
         const mapping = advisor.getMapping(targetType);
-        const advices = mapping?.get(ctorName);
+        const advices = mapping?.get(ctorName) as Advices;
         ctx.isNewContext = false;
         if (!advices) {
             return invokeTail(() => next(ctx, context), () => {
@@ -76,8 +76,17 @@ export class ProceedingScope implements Proceeding {
             get: (target, name, receiver) => {
                 if (name === ctorName) return Reflect.get(target, name, receiver);
                 const fullName = `${prefix}.${name.toString()}`;
-                const advices = mapping?.get(name);
+                const advices = mapping?.find(fullName);
                 if (!advices) return Reflect.get(target, name, receiver);
+                if (advices instanceof AdvicesMapping) {
+                    const result = Reflect.get(target, name, receiver);
+                    let vpxy = weekMap.get(result);
+                    if (!vpxy) {
+                        vpxy = this.createProxy(fullName, advices.typeRef, result, advices, parent);
+                        weekMap.set(result, vpxy);
+                    }
+                    return vpxy;
+                }
 
                 const descriptor = descriptors?.[name];
                 if (isFunction(descriptor?.value)) {
@@ -98,17 +107,17 @@ export class ProceedingScope implements Proceeding {
                     args: [],
                     accessor: 'get',
                     originProxy: (j) => {
-                        let value = Reflect.get(target, name, receiver);
-                        const submapping = mapping?.getChild(name);
-                        if (submapping && isObject(value)) {
-                            let vpxy = weekMap.get(value);
-                            if (!vpxy) {
-                                const vType = getClass(value);
-                                vpxy = this.createProxy(fullName, vType ? refl.get(vType) : null, value, submapping, parent);
-                                weekMap.set(value, vpxy);
-                            }
-                            value = vpxy;
-                        }
+                        const value = Reflect.get(target, name, receiver);
+                        // const submapping = mapping?.getChild(name);
+                        // if (submapping && isObject(value)) {
+                        //     let vpxy = weekMap.get(value);
+                        //     if (!vpxy) {
+                        //         const vType = getClass(value);
+                        //         vpxy = this.createProxy(fullName, vType ? refl.get(vType) : null, value, submapping, parent);
+                        //         weekMap.set(value, vpxy);
+                        //     }
+                        //     value = vpxy;
+                        // }
 
                         return { value }
                     },
@@ -119,8 +128,9 @@ export class ProceedingScope implements Proceeding {
             set: (target, name, newValue, receiver) => {
                 if (name === ctorName) return Reflect.set(target, name, receiver);
                 const fullName = `${prefix}.${name.toString()}`;
-                const advices = mapping?.get(name);
-                if (!advices || !advices.hasSet()) return Reflect.set(target, name, newValue, receiver);
+                const advices = mapping?.find(fullName);
+
+                if (!advices || advices instanceof AdvicesMapping || !advices.hasSet()) return Reflect.set(target, name, newValue, receiver);
 
                 const oldValue = Reflect.get(target, name, receiver);
                 return this.handle(typeRef, fullName, name, advices, this.platform, {
