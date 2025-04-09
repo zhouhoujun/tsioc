@@ -135,8 +135,7 @@ export class Advices {
 }
 
 export class AdvicesMapping {
-    private props: Map<string | symbol, Advices>;
-    private child: Map<string | symbol, AdvicesMapping>;
+    private props: Map<string | symbol, Advices | AdvicesMapping>;
 
     private _hasProp = false;
     get size() {
@@ -147,36 +146,27 @@ export class AdvicesMapping {
         readonly typeRef: Class
     ) {
         this.props = new Map();
-        this.child = new Map();
     }
 
     hasProp() {
-        return this._hasProp || this.child.size > 0
+        return this._hasProp;
     }
 
 
-    get(name: string | symbol): Advices | undefined {
+    get(name: string | symbol): Advices | AdvicesMapping | undefined {
         return this.props.get(name);
     }
 
-    set(name: string | symbol, advices: Advices) {
+    set(name: string | symbol, advices: Advices | AdvicesMapping) {
         if (!this._hasProp && name !== ctorName) this._hasProp = true;
         this.props.set(name, advices);
     }
 
-    getChild(name: string | symbol): AdvicesMapping | undefined {
-        return this.child.get(name);
-    }
 
-    setChild(name: string | symbol, advices: AdvicesMapping) {
-        this.child.set(name, advices);
-    }
 
     clear() {
         this.props.forEach(v => v.clear());
-        this.child.forEach(c => c.clear());
         this.props.clear();
-        this.child.clear();
     }
 
 
@@ -188,19 +178,13 @@ export class AdvicesMapping {
         other.props.forEach((advices, name) => {
             const existing = this.props.get(name);
             if (existing) {
-                existing.merge(advices);
+                if (advices instanceof AdvicesMapping && existing instanceof AdvicesMapping) {
+                    existing.merge(existing.clone());
+                } else if (advices instanceof Advices && existing instanceof Advices) {
+                    existing.merge(existing.clone());
+                }
             } else {
                 this.props.set(name, advices.clone());
-            }
-        });
-
-        // 合并子节点
-        other.child.forEach((childMapping, name) => {
-            const existing = this.child.get(name);
-            if (existing) {
-                existing.merge(childMapping);
-            } else {
-                this.child.set(name, childMapping.clone());
             }
         });
 
@@ -220,23 +204,21 @@ export class AdvicesMapping {
      * 深度遍历所有Advices
      */
     forEach(callback: (advices: Advices, name: string | symbol) => void): void {
-        this.props.forEach(callback);
-        this.child.forEach(child => child.forEach(callback));
+        this.props.forEach((v, k) => {
+            if (v instanceof AdvicesMapping) {
+                v.forEach(callback);
+            } else {
+                callback(v, k);
+            }
+        });
     }
 
     /**
      * 查找指定名称的Advices（包括子节点）
      */
     find(name: string | symbol): Advices | undefined {
-        // 先在当前层级查找
         const advices = this.props.get(name);
-        if (advices) return advices;
-
-        // 在子节点中查找
-        for (const child of this.child.values()) {
-            const found = child.find(name);
-            if (found) return found;
-        }
+        if (advices) return advices instanceof AdvicesMapping ? advices.find(name) : advices;
 
         return undefined;
     }
