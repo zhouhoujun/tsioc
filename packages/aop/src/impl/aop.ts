@@ -18,20 +18,20 @@ export const pointcutInterceptor = (ctx: RuntimeContext, next: HandlerFn, contex
 
 }
 
-/**
- *  match pointcut interecptor.
- *
- * @export
- */
-export const matchInterceptor = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
-    // aspect class do nothing.
-    if (isValAspectTag(ctx.type, ctx.class)) {
-        const advisor = context.get(Advisor);
-        advisor?.register(ctx.class);
-    }
+// /**
+//  *  match pointcut interecptor.
+//  *
+//  * @export
+//  */
+// export const matchInterceptor = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
+//     // aspect class do nothing.
+//     if (isValAspectTag(ctx.type, ctx.class)) {
+//         const advisor = context.get(Advisor);
+//         advisor?.register(ctx.class);
+//     }
 
-    return next(ctx, context)
-}
+//     return next(ctx, context)
+// }
 
 
 /**

@@ -1,5 +1,5 @@
 import { Inject, Injector, Autorun, Module, ctorArgsInterceptor, initReflectInterceptor } from '@tsdi/ioc';
-import { matchInterceptor, pointcutInterceptor } from './impl/aop';
+import { pointcutInterceptor } from './impl/aop';
 import { Advisor } from './Advisor';
 import { DefaultAdviceMatcher } from './impl/matcher';
 import { ProceedingScope } from './impl/proceed';
@@ -24,14 +24,15 @@ export class AopProvider {
         if (context.has(Advisor)) return;
 
         const proceeding = new ProceedingScope(platform);
+        const matcher = new DefaultAdviceMatcher(platform);
 
-        context.set(Advisor, new Advisor(platform))
-            .set(AdviceMatcher, new DefaultAdviceMatcher(platform))
+        context.set(Advisor, new Advisor(matcher))
+            .set(AdviceMatcher, matcher)
             .set(Proceeding, proceeding)
             .set(ProceedingScope, proceeding);
 
 
-        platform.runtime.use(matchInterceptor, platform.runtime.getIndexOf(initReflectInterceptor) + 1);
+        // platform.runtime.use(matchInterceptor, platform.runtime.getIndexOf(initReflectInterceptor) + 1);
         platform.runtime.use(pointcutInterceptor, platform.runtime.getIndexOf(ctorArgsInterceptor) + 1);
 
     }

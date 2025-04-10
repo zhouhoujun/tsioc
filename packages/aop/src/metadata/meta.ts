@@ -1,5 +1,5 @@
 import { MethodMetadata, Type, ClassMetadata, MethodPropMetadata, Class } from '@tsdi/ioc';
-import { IPointcut } from '../joinpoints/IPointcut';
+// import { IPointcut } from '../joinpoints/IPointcut';
 
 
 /**
@@ -41,13 +41,6 @@ export interface PointcutAnnotation {
 
 
 /**
- * match express.
- */
-export type MatchExpress = (name: string | symbol, fullName: string, targetRef: Class, target?: any, pointcut?: IPointcut) => boolean;
-
-
-
-/**
  * advice metadata.
  *
  * @export
@@ -62,8 +55,12 @@ export interface AdviceMetadata extends PointcutAnnotation, MethodMetadata {
      * @annotation(DecoratorName)
      */
     pointcut: string | RegExp;
-
-    matchFn?: MatchExpress;
+    /**
+     * set name provider of pointcut metadata for advices.
+     *
+     * @type {string}
+     **/
+    accessor?: 'get' | 'set' | 'value';
     /**
      * math only the object.
      *

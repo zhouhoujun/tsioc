@@ -5,7 +5,7 @@ import {
 } from '@tsdi/ioc';
 import { JoinPoint } from '../joinpoints/JoinPoint';
 import { JoinpointState } from '../joinpoints/state';
-import { Advices, AdvicesMapping } from '../advices/Advices';
+// import { Advices, AdvicesMapping } from '../advices/Advices';
 import { Advisor } from '../Advisor';
 import { Proceeding } from '../Proceeding';
 
@@ -29,25 +29,25 @@ export class ProceedingScope implements Proceeding {
 
 
     pointcut(ctx: RuntimeContext, next: HandlerFn, context: Context) {
-        const targetType = ctx.type;
+        // const targetType = ctx.type;
         const advisor = this.platform.context.get(Advisor);
-        const mapping = advisor.getMapping(targetType);
-        const advices = mapping?.get(ctorName) as Advices;
+        // const mapping = advisor.getMapping(targetType);
+        // const advices = mapping?.get(ctorName) as Advices;
         ctx.isNewContext = false;
-        if (!advices) {
+        if (!advisor.hasProp(ctx.class, ctorName)) {
             return invokeTail(() => next(ctx, context), () => {
-                ctx.instance = this.attach(ctx.class, ctx.instance, mapping, ctx.context)
+                ctx.instance = this.attach(ctx.class, ctx.instance, advisor, ctx.context)
             });
         }
 
-        return this.handle(ctx.class, `${ctx.class.className}.${ctorName}`, ctorName, advices, ctx.platform, {
+        return this.handle(ctx.class, `${ctx.class.className}.${ctorName}`, ctorName, advisor, ctx.platform, {
             parent: ctx.context,
             args: ctx.args,
             params: ctx.params,
             originProxy: (joinPoint) => {
                 invokeTail(() => next(ctx, context), () => {
                     let instance = joinPoint.returning = joinPoint.target = ctx.instance;
-                    instance = ctx.instance = this.attach(ctx.class, ctx.instance, mapping, ctx.context);
+                    instance = ctx.instance = this.attach(ctx.class, ctx.instance, advisor, ctx.context);
                     return instance;
                 })
             },
@@ -56,19 +56,22 @@ export class ProceedingScope implements Proceeding {
     }
 
 
-    attach<T>(typeRef: Class<T>, instance: T, mapping?: AdvicesMapping, parent?: InvocationContext): T {
+    attach<T>(typeRef: Class<T>, instance: T, advisor?: Advisor, parent?: InvocationContext): T {
         //es5 proxy-polyfill
-        if (mapping && mapping.hasProp()) {
-            return this.createProxy(typeRef.className, typeRef, instance, mapping, parent) as T;
+        if(!advisor) {
+            advisor = this.platform.context.get(Advisor);
+        }
+        if (advisor && advisor.hasAnyProp(typeRef)) {
+            return this.createProxy(typeRef.className, typeRef, instance, advisor, parent) as T;
         }
         return instance;
     }
 
-    detach<T>(typeRef: Class<T>, instance: T, mapping?: AdvicesMapping): T {
+    detach<T>(typeRef: Class<T>, instance: T): T {
         return instance;
     }
 
-    protected createProxy(prefix: string, typeRef: Class | null, instance: any, mapping: AdvicesMapping | undefined, parent?: InvocationContext) {
+    protected createProxy(prefix: string, typeRef: Class | null, instance: any, advisor: Advisor, parent?: InvocationContext) {
         const descriptors = typeRef?.getPropertyDescriptors();
 
         const weekMap = new WeakMap();
@@ -76,30 +79,30 @@ export class ProceedingScope implements Proceeding {
             get: (target, name, receiver) => {
                 if (name === ctorName) return Reflect.get(target, name, receiver);
                 const fullName = `${prefix}.${name.toString()}`;
-                const advices = mapping?.find(fullName);
-                if (!advices) return Reflect.get(target, name, receiver);
-                if (advices instanceof AdvicesMapping) {
-                    const result = Reflect.get(target, name, receiver);
-                    let vpxy = weekMap.get(result);
-                    if (!vpxy) {
-                        vpxy = this.createProxy(fullName, advices.typeRef, result, advices, parent);
-                        weekMap.set(result, vpxy);
-                    }
-                    return vpxy;
-                }
+                // const advices = mapping?.find(fullName);
+                if (!advisor.match(name, fullName, typeRef, instance, 'get')) return Reflect.get(target, name, receiver);
+                // if (advices instanceof AdvicesMapping) {
+                //     const result = Reflect.get(target, name, receiver);
+                //     let vpxy = weekMap.get(result);
+                //     if (!vpxy) {
+                //         vpxy = this.createProxy(fullName, advices.typeRef, result, advices, parent);
+                //         weekMap.set(result, vpxy);
+                //     }
+                //     return vpxy;
+                // }
 
                 const descriptor = descriptors?.[name];
                 if (isFunction(descriptor?.value)) {
                     const result = Reflect.get(target, name, receiver);
                     let proxyFn = weekMap.get(result);
                     if (!proxyFn) {
-                        proxyFn = this.proxy(result, advices, receiver ?? proxy, target, typeRef, fullName, name, parent) as ProxyFunction;
+                        proxyFn = this.proxy(result, advisor, receiver ?? proxy, target, typeRef, fullName, name, parent) as ProxyFunction;
                         proxyFn[proxyTag] = true;
                         weekMap.set(result, proxyFn);
                     }
                     return proxyFn;
                 }
-                if (!advices.hasGet() && !advices.hasSet()) return Reflect.get(target, name, receiver);
+                // if (!advices.hasGet() && !advices.hasSet()) return Reflect.get(target, name, receiver);
                 return this.handle(typeRef, fullName, name, advices, this.platform, {
                     receiver: receiver ?? proxy,
                     target,
@@ -133,7 +136,7 @@ export class ProceedingScope implements Proceeding {
                 if (!advices || advices instanceof AdvicesMapping || !advices.hasSet()) return Reflect.set(target, name, newValue, receiver);
 
                 const oldValue = Reflect.get(target, name, receiver);
-                return this.handle(typeRef, fullName, name, advices, this.platform, {
+                return this.handle(typeRef, fullName, name, advisor, this.platform, {
                     receiver: receiver ?? proxy,
                     target,
                     parent,
@@ -171,7 +174,7 @@ export class ProceedingScope implements Proceeding {
         }
     }
 
-    private handle(targetRef: Class | null, fullName: string, propertyKey: string | symbol, advices: Advices, platform: Platform, options: {
+    private handle(targetRef: Class | null, fullName: string, propertyKey: string | symbol, advisor: Advisor, platform: Platform, options: {
         receiver?: any,
         target?: any,
         originMethod?: Function,
@@ -192,7 +195,7 @@ export class ProceedingScope implements Proceeding {
             targetType: targetRef?.type,
             methodName: propertyKey,
             fullName,
-            advices,
+            advisor,
             annotations: targetRef?.defs.filter(d => d.propertyKey === propertyKey),
         });
         if (options.parent) {

@@ -1,10 +1,11 @@
 /* eslint-disable no-useless-escape */
 import { isString, isRegExp, lang, isArray, Type, ctorName, Decors, Platform, Class, DecoratorType, isType } from '@tsdi/ioc';
 import { AdviceMatcher } from '../AdviceMatcher';
-import { AdviceMetadata, MatchExpress } from '../metadata/meta';
+import { AdviceMetadata } from '../metadata/meta';
 import { IPointcut } from '../joinpoints/IPointcut';
-import { MatchPointcut } from '../joinpoints/MatchPointcut';
+// import { MatchPointcut } from '../joinpoints/MatchPointcut';
 import { AopDef } from '../metadata/ref';
+import { MatchExpress } from '../advices/Advicer';
 
 /**
  * advice matcher, use to match advice when a registered create instance.
@@ -17,93 +18,59 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
 
     constructor(private platform: Platform) { }
 
-    match(aspref: Class, tagref: Class, adviceMetas?: AdviceMetadata[]): MatchPointcut[] {
-        const aopDef = aspref.getAnnotation<AopDef>();
-        const aspectMeta = aopDef.aspect;
-        if (aspectMeta) {
+
+    createMatch(aspectMeta: AdviceMetadata): MatchExpress {
+        if (aspectMeta.matchFn == undefined) {
+            aspectMeta.matchFn = aspectMeta.pointcut ? this.matchTypeFactory(aspectMeta) : null;
+        }
+        return (name, fullName, targetRef, target, accessor?: 'get' | 'set') => {
+
             if (aspectMeta.without) {
                 const outs = isArray(aspectMeta.without) ? aspectMeta.without : [aspectMeta.without];
-                if (outs.some(t => tagref.isExtends(t))) {
-                    return []
+                if (outs.some(t => (target && target instanceof t) || targetRef?.isExtends(t))) {
+                    return false
                 }
             }
             if (aspectMeta.within) {
                 const ins = isArray(aspectMeta.within) ? aspectMeta.within : [aspectMeta.within];
-                if (!ins.some(t => tagref.isExtends(t))) {
+                if (!ins.some(t => (target && target instanceof t) || targetRef?.isExtends(t))) {
                     if (!aspectMeta.annotation) {
-                        return []
+                        return false
                     }
                 }
             }
             if (aspectMeta.annotation) {
                 const annotation = aspectMeta.annotation.toString();
                 const anno = (annPreChkExp.test(annotation) ? '' : '@') + annotation;
-                if (!tagref.defs.some(d => d.decor.toString() === anno)) {
-                    return []
+                if (!targetRef || !targetRef.defs.some(d => d.decor.toString() === anno)) {
+                    return false
+                }
+            }
+
+            if(accessor && aspectMeta.accessor) {
+                if (accessor !== aspectMeta.accessor) {
+                    return false;
+                }
+            }
+
+            if (aspectMeta.target) {
+                return aspectMeta.target === target;
+            }
+
+            if (aspectMeta.type === targetRef?.type) {
+                return this.matchAspectSelf(name, aspectMeta);
+            } else {
+                if (aspectMeta.type === targetRef?.type) {
+                    return this.matchAspectSelf(name, aspectMeta);
+                } else {
+                    const matchFn = aspectMeta.matchFn;
+                    return matchFn ? matchFn(name, fullName, targetRef, target) : false;
                 }
             }
         }
-
-        const className = tagref.className;
-        adviceMetas = adviceMetas || aopDef.advices;
-        let matched: MatchPointcut[] = [];
-
-        if (aspref.type === tagref.type) {
-            const decorators = tagref.getPropertyDescriptors();
-            for (const n in decorators) {
-                adviceMetas.forEach(adv => {
-                    if (this.matchAspectSelf(n, adv)) {
-                        matched.push({
-                            name: n,
-                            fullName: `${className}.${n}`,
-                            advice: adv
-                        });
-                    }
-                })
-            }
-        } else {
-            const points: IPointcut[] = [];
-            const decorators = tagref.getPropertyDescriptors();
-            // match method or property.
-            for (const name in decorators) {
-                points.push({
-                    name: name,
-                    fullName: `${className}.${name}`
-                })
-            }
-
-            const pmaps: Record<string | symbol, IPointcut> = {};
-            tagref.eachProperty((v, k) => {
-                let p = pmaps[k];
-                if (!p) {
-                    const m = v.find(r => r.provider) ?? v.find(r => r.type);
-                    const type = isType(m?.provider) ? m.provider : m?.type;
-                    p = {
-                        name: k,
-                        fullName: `${className}.${k.toString()}`,
-                        type,
-                        accessor: 'value'
-                    }
-                    pmaps[k] = p;
-                } else if (!p.type) {
-                    const m = v.find(r => r.provider) ?? v.find(r => r.type);
-                    p.type = isType(m?.provider) ? m.provider : m?.type;
-                }
-            });
-
-            for (const pr of Object.values(pmaps)) {
-                points.push(pr);
-            }
-
-            adviceMetas.forEach(metadata => {
-                matched = matched.concat(this.filterPointcut(tagref, points, metadata))
-            })
-        }
-
-        return matched
     }
 
-    protected matchAspectSelf(name: string, metadata: AdviceMetadata): boolean {
+    protected matchAspectSelf(name: string | symbol, metadata: AdviceMetadata): boolean {
         if (metadata.pointcut) {
             let pointcut = metadata.pointcut;
 
@@ -111,74 +78,171 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
                 if (executionChkExp.test(pointcut)) {
                     pointcut = pointcut.substring(10, pointcut.length - 1)
                 }
-                return pointcut.startsWith(name)
+                return pointcut.startsWith(name.toString())
             } else if (isRegExp(pointcut)) {
-                return pointcut.test(name)
+                return pointcut.test(name.toString())
             }
         }
         return false
     }
 
-    filterPointcut(targetRef: Class, points: IPointcut[], metadata: AdviceMetadata, target?: any): MatchPointcut[] {
-        if (!metadata.pointcut) {
-            return []
-        }
-        let matchedPointcut;
 
-        if (metadata.pointcut) {
-            let matchFn = metadata.matchFn;
-            if (!matchFn) {
-                matchFn = metadata.matchFn = this.matchTypeFactory(metadata);
-            }
-            matchedPointcut = points.filter(p => matchFn(p.name, p.fullName, targetRef, target, p))
-        }
+    // match(aspref: Class, tagref: Class, adviceMetas?: AdviceMetadata[]): MatchPointcut[] {
+    //     const aopDef = aspref.getAnnotation<AopDef>();
+    //     const aspectMeta = aopDef.aspect;
+    //     if (aspectMeta) {
+    //         if (aspectMeta.without) {
+    //             const outs = isArray(aspectMeta.without) ? aspectMeta.without : [aspectMeta.without];
+    //             if (outs.some(t => tagref.isExtends(t))) {
+    //                 return []
+    //             }
+    //         }
+    //         if (aspectMeta.within) {
+    //             const ins = isArray(aspectMeta.within) ? aspectMeta.within : [aspectMeta.within];
+    //             if (!ins.some(t => tagref.isExtends(t))) {
+    //                 if (!aspectMeta.annotation) {
+    //                     return []
+    //                 }
+    //             }
+    //         }
+    //         if (aspectMeta.annotation) {
+    //             const annotation = aspectMeta.annotation.toString();
+    //             const anno = (annPreChkExp.test(annotation) ? '' : '@') + annotation;
+    //             if (!tagref.defs.some(d => d.decor.toString() === anno)) {
+    //                 return []
+    //             }
+    //         }
+    //     }
 
-        matchedPointcut = matchedPointcut || [];
-        return matchedPointcut.map(p => {
-            return { ...p, advice: metadata }
-        })
-    }
+    //     const className = tagref.className;
+    //     adviceMetas = adviceMetas || aopDef.advices;
+    //     let matched: MatchPointcut[] = [];
+
+    //     if (aspref.type === tagref.type) {
+    //         const decorators = tagref.getPropertyDescriptors();
+    //         for (const n in decorators) {
+    //             adviceMetas.forEach(adv => {
+    //                 if (this.matchAspectSelf(n, adv)) {
+    //                     matched.push({
+    //                         name: n,
+    //                         fullName: `${className}.${n}`,
+    //                         advice: adv
+    //                     });
+    //                 }
+    //             })
+    //         }
+    //     } else {
+    //         const points: IPointcut[] = [];
+    //         const decorators = tagref.getPropertyDescriptors();
+    //         // match method or property.
+    //         for (const name in decorators) {
+    //             points.push({
+    //                 name: name,
+    //                 fullName: `${className}.${name}`
+    //             })
+    //         }
+
+    //         const pmaps: Record<string | symbol, IPointcut> = {};
+    //         tagref.eachProperty((v, k) => {
+    //             let p = pmaps[k];
+    //             if (!p) {
+    //                 const m = v.find(r => r.provider) ?? v.find(r => r.type);
+    //                 const type = isType(m?.provider) ? m.provider : m?.type;
+    //                 p = {
+    //                     name: k,
+    //                     fullName: `${className}.${k.toString()}`,
+    //                     type,
+    //                     accessor: 'value'
+    //                 }
+    //                 pmaps[k] = p;
+    //             } else if (!p.type) {
+    //                 const m = v.find(r => r.provider) ?? v.find(r => r.type);
+    //                 p.type = isType(m?.provider) ? m.provider : m?.type;
+    //             }
+    //         });
+
+    //         for (const pr of Object.values(pmaps)) {
+    //             points.push(pr);
+    //         }
+
+    //         adviceMetas.forEach(metadata => {
+    //             matched = matched.concat(this.filterPointcut(tagref, points, metadata))
+    //         })
+    //     }
+
+    //     return matched
+    // }
+    // protected filterPointcut(targetRef: Class, points: IPointcut[], metadata: AdviceMetadata, target?: any): MatchPointcut[] {
+    //     if (!metadata.pointcut) {
+    //         return []
+    //     }
+    //     let matchedPointcut;
+
+    //     if (metadata.pointcut) {
+    //         let matchFn = metadata.matchFn;
+    //         if (!matchFn) {
+    //             matchFn = metadata.matchFn = this.matchTypeFactory(metadata);
+    //         }
+    //         matchedPointcut = points.filter(p => matchFn(p.name, p.fullName, targetRef, target, p))
+    //     }
+
+    //     matchedPointcut = matchedPointcut || [];
+    //     return matchedPointcut.map(p => {
+    //         return { ...p, advice: metadata }
+    //     })
+    // }
 
     protected matchTypeFactory(metadata: AdviceMetadata): MatchExpress {
-        const checks = this.genChecks(metadata);
-        return (method: string | symbol, fullName: string, targetRef: Class, target?: any, pointcut?: IPointcut) => checks.every(chk => chk(method, fullName, targetRef, target, pointcut))
-    }
-
-    protected genChecks(metadata: AdviceMetadata): MatchExpress[] {
-        const checks: MatchExpress[] = [];
-        if (metadata.within) {
-            checks.push((name, fullName, targetRef) => {
-                if (isArray(metadata.within)) {
-                    return metadata.within.some(t => targetRef.isExtends(t))
-                } else {
-                    return targetRef.isExtends(metadata.within!)
-                }
-            })
-        }
-        if (metadata.target) {
-            checks.push((method, fullName, targetRef, target) => {
-                return metadata.target === target
-            })
-        }
-
-        if (metadata.annotation) {
-            checks.push((method, fullName, targetRef) => targetRef.hasMetadata(metadata.annotation!, (!method || method === ctorName) ? Decors.CLASS : Decors.method, method))
-        }
-
         if (isString(metadata.pointcut)) {
             const pointcuts = (metadata.pointcut || '').trim();
-            checks.push(this.tranlateExpress(pointcuts))
-        } else if (metadata.pointcut) {
+            return this.tranlateExpress(pointcuts, metadata)
+        } else {
             const reg = metadata.pointcut;
             if (annPreChkExp.test(reg.source)) {
-                checks.push((method, fullName, targetRef) => targetRef.defs.some(n => reg.test(n.decor.toString())))
+                return (method, fullName, targetRef) => targetRef?.defs.some(n => reg.test(n.decor.toString())) === true;
             } else {
-                checks.push((name, fullName) => reg.test(fullName!))
+                return (name, fullName) => reg.test(fullName!)
             }
         }
-
-        return checks
+        // const checks = this.genChecks(metadata);
+        // return (method: string | symbol, fullName: string, targetRef: Class, target?: any, pointcut?: IPointcut) => checks.every(chk => chk(method, fullName, targetRef, target, pointcut))
     }
+
+    // protected genChecks(metadata: AdviceMetadata): MatchExpress[] {
+    //     const checks: MatchExpress[] = [];
+    //     if (metadata.within) {
+    //         checks.push((name, fullName, targetRef, target) => {
+    //             if (isArray(metadata.within)) {
+    //                 return metadata.within.some(t =>  targetRef?.isExtends(t))
+    //             } else {
+    //                 return targetRef.isExtends(metadata.within!)
+    //             }
+    //         })
+    //     }
+    //     if (metadata.target) {
+    //         checks.push((method, fullName, targetRef, target) => {
+    //             return metadata.target === target
+    //         })
+    //     }
+
+    //     if (metadata.annotation) {
+    //         checks.push((method, fullName, targetRef) => targetRef.hasMetadata(metadata.annotation!, (!method || method === ctorName) ? Decors.CLASS : Decors.method, method))
+    //     }
+
+    //     if (isString(metadata.pointcut)) {
+    //         const pointcuts = (metadata.pointcut || '').trim();
+    //         checks.push(this.tranlateExpress(pointcuts))
+    //     } else if (metadata.pointcut) {
+    //         const reg = metadata.pointcut;
+    //         if (annPreChkExp.test(reg.source)) {
+    //             checks.push((method, fullName, targetRef) => targetRef?.defs.some(n => reg.test(n.decor.toString())) === true)
+    //         } else {
+    //             checks.push((name, fullName) => reg.test(fullName!))
+    //         }
+    //     }
+
+    //     return checks
+    // }
 
     protected spiltBrace(strExp: string): string {
         strExp = strExp.trim();
@@ -194,7 +258,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         }
     }
 
-    protected expressToFunc(strExp: string): MatchExpress {
+    protected expressToFunc(strExp: string, metadata: AdviceMetadata): MatchExpress {
 
         if (annContentExp.test(strExp)) {
             return this.toAnnExpress(strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1))
@@ -216,13 +280,15 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         }
 
         if (getPropExp.test(strExp)) {
-            return this.toPropExpress(strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1), 'get')
+            metadata.accessor = 'get';
+            return this.toPropExpress(strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1))
         }
         if (setPropExp.test(strExp)) {
-            return this.toPropExpress(strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1), 'set')
+            metadata.accessor = 'set';
+            return this.toPropExpress(strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1))
         }
         if (valuePropExp.test(strExp)) {
-            return this.toPropExpress(strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1), 'value')
+            return this.toPropExpress(strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1))
         }
 
 
@@ -234,14 +300,14 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         if (annInExp.test(annotation)) {
             const [ann, annIn] = annotation.split(':');
             annotation = ann;
-            return (name, fullName, targetRef) => targetRef.hasMetadata(annotation, annIn as DecoratorType, name)
+            return (name, fullName, targetRef) => targetRef?.hasMetadata(annotation, annIn as DecoratorType, name) === true
         }
-        return (name, fullName, targetRef) => targetRef.hasMetadata(annotation, (!name || name === ctorName) ? Decors.CLASS : Decors.method, name)
+        return (name, fullName, targetRef) => targetRef?.hasMetadata(annotation, (!name || name === ctorName) ? Decors.CLASS : Decors.method, name) === true
     }
 
     protected toExecExpress(exp: string): MatchExpress {
         if (exp === '*' || exp === '*.*') {
-            return (name, fullName, targetRef, target, pointcut) => !pointcut?.accessor && !!name && !targetRef.getAnnotation<AopDef>().aspect
+            return (name, fullName, targetRef, target) => !!name && !targetRef?.getAnnotation<AopDef>().aspect
         }
 
         // if (mthNameExp.test(exp)) {
@@ -256,19 +322,16 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
                 .replace(replNav, '\\\/');
 
             const matcher = new RegExp(exp + '$');
-            return (name, fullName, targetRef, target, pointcut) => (fullName || !pointcut?.accessor) ? matcher.test(fullName) : false
+            return (name, fullName, targetRef, target) => fullName ? matcher.test(fullName) : false
         }
         return fasleFn
     }
 
-    protected toPropExpress(exp: string, accessor: 'get' | 'set' | 'value'): MatchExpress {
+    protected toPropExpress(exp: string): MatchExpress {
 
         if (exp === '*' || exp === '*.*') {
-            return (name, fullName, targetRef, target, pointcut) => {
-                const flag = !!name && !targetRef.getAnnotation<AopDef>().aspect;
-                if (flag && accessor && pointcut) {
-                    pointcut.accessor = accessor;
-                }
+            return (name, fullName, targetRef, target) => {
+                const flag = !!name && !targetRef?.getAnnotation<AopDef>().aspect;
                 return flag;
             }
         }
@@ -285,25 +348,22 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
                 .replace(replNav, '\\\/');
 
             const matcher = new RegExp(exp + '$');
-            return (name, fullName, targetRef, target, pointcut) => {
+            return (name, fullName, targetRef, target) => {
                 const flag = fullName ? matcher.test(fullName) : false;
-                if (flag && accessor && pointcut) {
-                    pointcut.accessor = accessor;
-                }
                 return flag
             }
         }
         return fasleFn
     }
 
-    protected tranlateExpress(strExp: string): MatchExpress {
-        if (!boolOper.test(strExp)) return this.expressToFunc(strExp);
+    protected tranlateExpress(strExp: string, metadata: AdviceMetadata): MatchExpress {
+        if (!boolOper.test(strExp)) return this.expressToFunc(strExp, metadata);
         const exp = new BoolExpression(strExp, isAdviceToken);
-        const fns = exp.tokens.map(t => this.expressToFunc(t));
+        const fns = exp.tokens.map(t => this.expressToFunc(t, metadata));
         const argnames = exp.tokens.map((t, i) => 'arg' + i);
         const boolexp = new Function(...argnames, `return ${exp.toString((t, i, tkidx) => 'arg' + tkidx + '()')}`);
-        return (method: string | symbol, fullName: string, targetRef: Class, target?: any, pointcut?: IPointcut) => {
-            const args = fns.map(fn => () => fn(method, fullName, targetRef, target, pointcut));
+        return (method: string | symbol, fullName: string, targetRef?: Class, target?: any) => {
+            const args = fns.map(fn => () => fn(method, fullName, targetRef, target));
             return boolexp(...args)
         }
     }

@@ -22,9 +22,6 @@ export interface IPointcut {
 
     accessor?: 'get' | 'set' | 'value';
 
-    
-    match?: (path: string, startsWith?: boolean) => boolean;
-
     type?: Type;
 
     /**
