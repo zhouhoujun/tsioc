@@ -5,7 +5,7 @@ import { AdviceMetadata } from '../metadata/meta';
 import { IPointcut } from '../joinpoints/IPointcut';
 // import { MatchPointcut } from '../joinpoints/MatchPointcut';
 import { AopDef } from '../metadata/ref';
-import { MatchExpress } from '../advices/Advicer';
+import { MatchExpress, MatchOptions } from '../advices/Advicer';
 
 /**
  * advice matcher, use to match advice when a registered create instance.
@@ -23,7 +23,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         if (aspectMeta.matchFn == undefined) {
             aspectMeta.matchFn = aspectMeta.pointcut ? this.matchTypeFactory(aspectMeta) : null;
         }
-        return (name, fullName, targetRef, target, accessor?: 'get' | 'set') => {
+        return (name, fullName, targetRef, target, options?: MatchOptions) => {
 
             if (aspectMeta.without) {
                 const outs = isArray(aspectMeta.without) ? aspectMeta.without : [aspectMeta.without];
@@ -47,8 +47,8 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
                 }
             }
 
-            if(accessor && aspectMeta.accessor) {
-                if (accessor !== aspectMeta.accessor) {
+            if (options?.accessor && aspectMeta.accessor) {
+                if (options.accessor !== aspectMeta.accessor) {
                     return false;
                 }
             }
@@ -64,7 +64,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
                     return this.matchAspectSelf(name, aspectMeta);
                 } else {
                     const matchFn = aspectMeta.matchFn;
-                    return matchFn ? matchFn(name, fullName, targetRef, target) : false;
+                    return matchFn ? matchFn(name, fullName, targetRef, target, options) : false;
                 }
             }
         }
@@ -306,8 +306,8 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
     }
 
     protected toExecExpress(exp: string): MatchExpress {
-        if (exp === '*' || exp === '*.*') {
-            return (name, fullName, targetRef, target) => !!name && !targetRef?.getAnnotation<AopDef>().aspect
+        if (exp === '*') {
+            exp = '*.*';
         }
 
         // if (mthNameExp.test(exp)) {
@@ -316,24 +316,47 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         // }
 
         if (tgMthChkExp.test(exp)) {
+            const paths = exp.split('.').filter(r => r);
+            let root$: RegExp | undefined;
+            let host$: RegExp | undefined;
+            if (paths.length > 2) {
+                let hostExp = paths.slice(0, paths.length - 1).join('.');
+                hostExp = hostExp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+                    .replace(replAny1, '\\\w+')
+                    .replace(replDot, '\\\.')
+                    .replace(replNav, '\\\/');
+                host$ = new RegExp('^'+ hostExp + '$');
+            }
+            if (paths.length > 1) {
+                let rootExp = paths.slice(0, 2).join('.');
+                rootExp = rootExp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+                    .replace(replAny1, '\\\w+')
+                    .replace(replDot, '\\\.')
+                    .replace(replNav, '\\\/');
+                root$ = new RegExp('^'+rootExp);
+            }
             exp = exp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
                 .replace(replAny1, '\\\w+')
                 .replace(replDot, '\\\.')
                 .replace(replNav, '\\\/');
 
-            const matcher = new RegExp(exp + '$');
-            return (name, fullName, targetRef, target) => fullName ? matcher.test(fullName) : false
+            const matcher = new RegExp('^'+ exp + '$');
+            return (name, fullName, targetRef, target, options?: MatchOptions) => {
+                if (options?.way === 'root') {
+                    return root$ ? root$.test(fullName) : false;
+                } else if (options?.way === 'host') {
+                    return host$ ? host$.test(fullName) : false;
+                }
+                return matcher.test(fullName)
+            }
         }
         return fasleFn
     }
 
     protected toPropExpress(exp: string): MatchExpress {
 
-        if (exp === '*' || exp === '*.*') {
-            return (name, fullName, targetRef, target) => {
-                const flag = !!name && !targetRef?.getAnnotation<AopDef>().aspect;
-                return flag;
-            }
+        if (exp === '*') {
+            exp = '*.*';
         }
 
         // if (mthNameExp.test(exp)) {
@@ -342,15 +365,38 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         // }
 
         if (tgPropChkExp.test(exp)) {
+            const paths = exp.split('.').filter(r => r);
+            let root$: RegExp | undefined;
+            let host$: RegExp | undefined;
+            if (paths.length > 2) {
+                let hostExp = paths.slice(0, paths.length - 1).join('.');
+                hostExp = hostExp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+                    .replace(replAny1, '\\\w+')
+                    .replace(replDot, '\\\.')
+                    .replace(replNav, '\\\/');
+                host$ = new RegExp('^'+ hostExp + '$');
+            }
+            if (paths.length > 1) {
+                let rootExp = paths.slice(0, 2).join('.');
+                rootExp = rootExp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+                    .replace(replAny1, '\\\w+')
+                    .replace(replDot, '\\\.')
+                    .replace(replNav, '\\\/');
+                root$ = new RegExp('^'+rootExp);
+            }
             exp = exp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
                 .replace(replAny1, '\\\w+')
                 .replace(replDot, '\\\.')
                 .replace(replNav, '\\\/');
 
             const matcher = new RegExp(exp + '$');
-            return (name, fullName, targetRef, target) => {
-                const flag = fullName ? matcher.test(fullName) : false;
-                return flag
+            return (name, fullName, targetRef, target, options?: MatchOptions) => {
+                if (options?.way === 'root') {
+                    return root$ ? root$.test(fullName) : false;
+                } else if (options?.way === 'host') {
+                    return host$ ? host$.test(fullName) : false;
+                }
+                return matcher.test(fullName)
             }
         }
         return fasleFn
@@ -362,7 +408,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         const fns = exp.tokens.map(t => this.expressToFunc(t, metadata));
         const argnames = exp.tokens.map((t, i) => 'arg' + i);
         const boolexp = new Function(...argnames, `return ${exp.toString((t, i, tkidx) => 'arg' + tkidx + '()')}`);
-        return (method: string | symbol, fullName: string, targetRef?: Class, target?: any) => {
+        return (method: string | symbol, fullName: string, targetRef?: Class | null, target?: any) => {
             const args = fns.map(fn => () => fn(method, fullName, targetRef, target));
             return boolexp(...args)
         }

@@ -58,7 +58,7 @@ export class ProceedingScope implements Proceeding {
 
     attach<T>(typeRef: Class<T>, instance: T, advisor?: Advisor, parent?: InvocationContext): T {
         //es5 proxy-polyfill
-        if(!advisor) {
+        if (!advisor) {
             advisor = this.platform.context.get(Advisor);
         }
         if (advisor && advisor.hasAnyProp(typeRef)) {
@@ -79,8 +79,20 @@ export class ProceedingScope implements Proceeding {
             get: (target, name, receiver) => {
                 if (name === ctorName) return Reflect.get(target, name, receiver);
                 const fullName = `${prefix}.${name.toString()}`;
+
+                if (advisor.match(name, fullName, typeRef, instance, { way: 'host' })) {
+                    const result = Reflect.get(target, name, receiver);
+                    let vpxy = weekMap.get(result);
+                    if (!vpxy) {
+                        vpxy = this.createProxy(fullName, refl.get(getClass(result)), result, advisor, parent);
+                        weekMap.set(result, vpxy);
+                    }
+                    return vpxy;
+                }
+                if (!advisor.match(name, fullName, typeRef, instance, { accessor: 'get' })) {
+                    return Reflect.get(target, name, receiver);
+                }
                 // const advices = mapping?.find(fullName);
-                if (!advisor.match(name, fullName, typeRef, instance, 'get')) return Reflect.get(target, name, receiver);
                 // if (advices instanceof AdvicesMapping) {
                 //     const result = Reflect.get(target, name, receiver);
                 //     let vpxy = weekMap.get(result);
@@ -103,7 +115,7 @@ export class ProceedingScope implements Proceeding {
                     return proxyFn;
                 }
                 // if (!advices.hasGet() && !advices.hasSet()) return Reflect.get(target, name, receiver);
-                return this.handle(typeRef, fullName, name, advices, this.platform, {
+                return this.handle(typeRef, fullName, name, advisor, this.platform, {
                     receiver: receiver ?? proxy,
                     target,
                     parent,
@@ -131,9 +143,12 @@ export class ProceedingScope implements Proceeding {
             set: (target, name, newValue, receiver) => {
                 if (name === ctorName) return Reflect.set(target, name, receiver);
                 const fullName = `${prefix}.${name.toString()}`;
-                const advices = mapping?.find(fullName);
+                // const advices = mapping?.find(fullName);
 
-                if (!advices || advices instanceof AdvicesMapping || !advices.hasSet()) return Reflect.set(target, name, newValue, receiver);
+                // if (!advices || advices instanceof AdvicesMapping || !advices.hasSet()) return Reflect.set(target, name, newValue, receiver);
+                if (!advisor.match(name, fullName, typeRef, instance, { accessor: 'set' })) {
+                    return Reflect.set(target, name, newValue, receiver);
+                }
 
                 const oldValue = Reflect.get(target, name, receiver);
                 return this.handle(typeRef, fullName, name, advisor, this.platform, {
@@ -153,7 +168,7 @@ export class ProceedingScope implements Proceeding {
         return proxy;
     }
 
-    protected proxy(originMethod: Function, advices: Advices, receiver: any, target: any, targetRef: Class | null, fullName: string, propertyKey: string | symbol, parent?: InvocationContext) {
+    protected proxy(originMethod: Function, advisor: Advisor, receiver: any, target: any, targetRef: Class | null, fullName: string, propertyKey: string | symbol, parent?: InvocationContext) {
         const platform = this.platform;
         return (...args: any[]) => {
             if (!platform || !platform.injector || platform.injector.destroyed) {
@@ -164,7 +179,7 @@ export class ProceedingScope implements Proceeding {
                 args = args.slice(0, args.length - 1);
                 parent = larg
             }
-            return this.handle(targetRef, fullName, propertyKey, advices, platform, {
+            return this.handle(targetRef, fullName, propertyKey, advisor, platform, {
                 receiver,
                 target,
                 originMethod,

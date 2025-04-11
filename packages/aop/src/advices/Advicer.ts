@@ -3,10 +3,15 @@ import { AdviceMetadata } from '../metadata/meta';
 // import { IPointcut } from '../joinpoints/IPointcut';
 
 
+export interface MatchOptions {
+    way?: 'root' | 'host' | 'full';
+    accessor?: 'get' | 'set' 
+}
+
 /**
  * match express.
  */
-export type MatchExpress = (name: string | symbol, fullName: string, targetRef?: Class|null, target?: any, accessor?: 'get' | 'set') => boolean;
+export type MatchExpress = (name: string | symbol, fullName: string, targetRef?: Class | null, target?: any, options?: MatchOptions) => boolean;
 
 
 
@@ -34,7 +39,7 @@ export interface Advicer {
      * @type {Type}
      */
     aspect: ReflectiveRef;
-    
+
     accessor?: 'get' | 'set' | 'value';
 }
 

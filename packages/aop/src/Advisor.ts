@@ -1,5 +1,5 @@
 import { Type, lang, ReflectiveRef, OnDestroy, Platform, refl, isFunction, Class, getClass, ctorName, getClassName } from '@tsdi/ioc';
-import { Advicer } from './advices/Advicer';
+import { Advicer, MatchOptions } from './advices/Advicer';
 // import { Advices, AdvicesMapping } from './advices/Advices';
 import { AdviceMatcher } from './AdviceMatcher';
 import { AopDef } from './metadata/ref';
@@ -135,9 +135,9 @@ export class Advisor implements OnDestroy {
         })
     }
 
-    match(name: string | symbol, fullName: string, targetRef?: Class|null, target?: any, accessor?: 'get' | 'set'): boolean {
+    match(name: string | symbol, fullName: string, targetRef?: Class|null, target?: any, options?: MatchOptions): boolean {
         return Array.from(this.advices.values()).some(r => {
-            return r.some(a => a.match(name, fullName, targetRef, target, accessor))
+            return r.some(a => a.match(name, fullName, targetRef, target, options))
         })
     }
 
