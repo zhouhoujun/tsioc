@@ -124,6 +124,10 @@ export class SocketService {
 
     @InjectLog() logger!: Logger;
 
+    constructor() {
+        
+    }
+
     public tcpServer!: net.Server;
     private init_times = 0;
 
@@ -141,7 +145,8 @@ export class SocketService {
         this.logger.info('destroying...');
         this.tcpServer.removeAllListeners();
         const defer = lang.defer();
-        this.tcpServer.close(() => {
+        this.tcpServer.close((err) => {
+            if(err) console.error(err);
             this.logger.info('tcpServer closed...');
             defer.resolve();
         });

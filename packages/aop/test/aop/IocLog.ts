@@ -12,7 +12,7 @@ export class IocLog {
                 joinPoint.target[key] = true;
             }
         }
-        console.log('aspect execution Around log, method name:', joinPoint.fullName, ' state:', joinPoint.state, ' args:', joinPoint.args, ' returning:', joinPoint.returning, ' throwing:', joinPoint.throwing);
+        console.log('aspect execution Around log, method name:', joinPoint.fullName, ' state:', joinPoint.state, ' returning:', joinPoint.returning, ' throwing:', joinPoint.throwing);
     }
 
     @Before('execution(*)')

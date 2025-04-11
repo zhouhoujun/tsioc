@@ -133,13 +133,13 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
 
         if (withInChkExp.test(strExp)) {
             const classnames = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).split(',').map(n => n.trim());
-            return (name, fullName, targetRef, target, options) => (!options?.way) && classnames.indexOf(targetRef.className) >= 0
+            return (name, fullName, targetRef, target, options) => (options?.way != 'host') && classnames.indexOf(targetRef.className) >= 0
         }
 
         if (targetChkExp.test(strExp)) {
             const torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
             const platform = this.platform;
-            return (name, fullName, targetRef, target, options) => (!options?.way) && platform.getInjector(targetRef.type).getTokenProvider(torken) === targetRef.type
+            return (name, fullName, targetRef, target, options) => (options?.way != 'host') && platform.getInjector(targetRef.type).getTokenProvider(torken) === targetRef.type
         }
 
         if (getPropExp.test(strExp)) {
@@ -164,9 +164,9 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         if (annInExp.test(annotation)) {
             const [ann, annIn] = annotation.split(':');
             annotation = ann;
-            return (name, fullName, targetRef, target, options) => (!options?.way) && targetRef.hasMetadata(annotation, annIn as DecoratorType, name)
+            return (name, fullName, targetRef, target, options) => (options?.way != 'host') && targetRef.hasMetadata(annotation, annIn as DecoratorType, name)
         }
-        return (name, fullName, targetRef, target, options) => (!options?.way) && targetRef.hasMetadata(annotation, (!name || name === ctorName) ? Decors.CLASS : Decors.method, name)
+        return (name, fullName, targetRef, target, options) => (options?.way != 'host') && targetRef.hasMetadata(annotation, (!name || name === ctorName) ? Decors.CLASS : Decors.method, name)
     }
 
     protected toExecExpress(exp: string): MatchExpress {

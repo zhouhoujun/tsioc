@@ -10,7 +10,7 @@ export class ChangedAspect {
         if (joinPoint.state == 'After') {
             joinPoint.target.changed = joinPoint.valueChange;
         }
-        console.log('aspect execution around, property name:', joinPoint.fullName, ' state:', joinPoint.state, 'change:', joinPoint.valueChange, joinPoint.accessor);
+        console.log('aspect set around, property name:', joinPoint.fullName, ' state:', joinPoint.state, 'change:', joinPoint.valueChange, joinPoint.accessor);
     }
 
     @Around('value(*.personFullName)')
@@ -18,7 +18,7 @@ export class ChangedAspect {
         if (joinPoint.state == 'After') {
             joinPoint.target.fulChange = joinPoint.valueChange;
         }
-        console.log('aspect execution around, property name:', joinPoint.fullName, ' state:', joinPoint.state, 'change:', joinPoint.valueChange, joinPoint.accessor);
+        console.log('aspect value around, property name:', joinPoint.fullName, ' state:', joinPoint.state, 'change:', joinPoint.valueChange, joinPoint.accessor);
     }
 }
 
