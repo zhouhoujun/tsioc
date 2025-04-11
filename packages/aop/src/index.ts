@@ -9,11 +9,9 @@ export * from './metadata/decor';
 export * from './joinpoints/state';
 export * from './joinpoints/IPointcut';
 export * from './joinpoints/JoinPoint';
-export * from './joinpoints/MatchPointcut';
 
 // advices
 export * from './advices/Advicer';
-export * from './advices/Advices';
 
 
 export * from './AdviceMatcher';
@@ -25,5 +23,3 @@ export * from './aop.module';
 
 // impl
 export * from './impl/matcher';
-// export * from './impl/aop';
-// export * from './impl/proceed';

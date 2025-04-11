@@ -8,16 +8,6 @@ import { MatchExpress } from './advices/Advicer';
  */
 @Abstract()
 export abstract class AdviceMatcher {
-
     abstract createMatch(adviceMatadata: AdviceMetadata): MatchExpress;
-    // /**
-    //  * match pointcuts of type.
-    //  *
-    //  * @param {Type} aspectType
-    //  * @param {Type} type
-    //  * @param {AdviceMetadata[]} [adviceMetas]
-    //  * @returns {MatchPointcut[]}
-    //  */
-    // abstract match(aspectType: Class, type: Class, adviceMetas?: AdviceMetadata[]): MatchPointcut[];
 }
 

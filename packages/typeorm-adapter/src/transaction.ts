@@ -34,7 +34,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
 
             const context = {} as any;
             targetRef?.defs.forEach(dec => {
-                if (dec.decorType === 'parameter' && dec.propertyKey === joinPoint.methodName) {
+                if (dec.decorType === 'parameter' && dec.propertyKey === joinPoint.propertyKey) {
                     if (dec.decor === InjectRepository) {
                         joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager))
                     } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
@@ -53,7 +53,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
                 }
             });
 
-            ctorName !== joinPoint.methodName && targetRef?.getParameters(ctorName)?.forEach(metadata => {
+            ctorName !== joinPoint.propertyKey && targetRef?.getParameters(ctorName)?.forEach(metadata => {
                 const paramName = metadata.name;
                 if (paramName) {
                     const filed = joinPoint.target[paramName];

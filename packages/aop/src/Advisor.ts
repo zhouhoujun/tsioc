@@ -1,6 +1,5 @@
-import { Type, lang, ReflectiveRef, OnDestroy, Platform, refl, isFunction, Class, getClass, ctorName, getClassName } from '@tsdi/ioc';
+import { Type, lang, ReflectiveRef, OnDestroy, Class, getClassName, ctorName } from '@tsdi/ioc';
 import { Advicer, MatchOptions } from './advices/Advicer';
-// import { Advices, AdvicesMapping } from './advices/Advices';
 import { AdviceMatcher } from './AdviceMatcher';
 import { AopDef } from './metadata/ref';
 import { AdviceTypes } from './metadata/meta';
@@ -14,12 +13,6 @@ import { AdviceTypes } from './metadata/meta';
 export class Advisor implements OnDestroy {
 
     private advices: Map<AdviceTypes, Advicer[]>;
-    // /**
-    //  * method advices.
-    //  *
-    //  * @type {Map<Type, AdvicesMapping>}
-    //  */
-    // advices: Map<Type, AdvicesMapping>;
     /**
      * aspects.
      */
@@ -30,52 +23,7 @@ export class Advisor implements OnDestroy {
         this.aspects = []
     }
 
-    // register(type: Type | Class): void {
-    //     if (this.advices.has((type as Class).type ?? type)) {
-    //         return;
-    //     }
-    //     const matcher = this.platform.context.get(AdviceMatcher);
-    //     const typeRefl = isFunction(type) ? refl.get(type) : type as Class;
-    //     const mapping = new AdvicesMapping(typeRefl, (path) => path.startsWith(typeRefl.className));
-    //     this.advices.set(typeRefl.type, mapping);
 
-    //     this.aspects.forEach(aspect => {
-    //         const aopRef = aspect.class as Class;
-    //         const matchpoints = matcher.match(aopRef, typeRefl, aopRef.getAnnotation<AopDef>().advices);
-    //         matchpoints.forEach(mpt => {
-    //             const { name, advice, match, type: subType } = mpt;
-    //             if (!advice.adviceName) return;
-
-    //             let advices = mapping.get(name) as Advices;
-
-    //             if (!advices) {
-    //                 if(match) {
-    //                     mapping.set(name, new AdvicesMapping(refl.get(subType!), match));
-    //                     return;
-    //                 }
-    //                 advices = new Advices(advice.type);
-    //                 mapping.set(name, advices)
-    //             }
-    //             const advicer = {
-    //                 ...mpt,
-    //                 aspect
-    //             } as Advicer;
-
-    //             advices.addAdvicer(advice.adviceName, advicer);
-
-    //         });
-    //     });
-
-    // }
-
-    // unregister(type: Type) {
-    //     this.advices.get(type)?.clear();
-    //     this.advices.delete(type);
-    // }
-
-    // getMapping(type: Type) {
-    //     return this.advices.get(type);
-    // }
 
     /**
      * add aspect.
@@ -91,6 +39,9 @@ export class Advisor implements OnDestroy {
     protected registerAspect(aspect: ReflectiveRef): void {
         this.aspects.push(aspect);
         aspect.class.getAnnotation<AopDef>().advices?.forEach(advice => {
+            if(!advice.type){
+                advice.type = aspect.type;
+            }
             const match = this.matcher.createMatch(advice);
             const adviceType = advice.adviceName!;
             let advices = this.advices.get(adviceType);
@@ -109,8 +60,8 @@ export class Advisor implements OnDestroy {
 
     }
 
-    unregisterAspect(aspect: ReflectiveRef) {
-        aspect.class.getAnnotation<AopDef>().advices?.forEach(advice => {
+    protected unregisterAspect(aspect: ReflectiveRef) {
+        aspect.class?.getAnnotation<AopDef>().advices?.forEach(advice => {
             this.advices.forEach(advices => {
                 advices.filter(a => a.aspect.type === aspect.type)
                     .forEach(a => {
@@ -129,31 +80,74 @@ export class Advisor implements OnDestroy {
         return this.aspects.find(r => r.type === type)
     }
 
-    hasProp(tagref: Class, property: string | symbol): boolean {
-        return Array.from(this.advices.values()).some(r => {
-            return r.some(a => a.match(property, `${tagref.className}.${property.toString()}`, tagref))
-        })
-    }
 
-    match(name: string | symbol, fullName: string, targetRef?: Class|null, target?: any, options?: MatchOptions): boolean {
+    match(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions): boolean {
         return Array.from(this.advices.values()).some(r => {
             return r.some(a => a.match(name, fullName, targetRef, target, options))
         })
     }
 
-    hasAnyProp(instance: any, typeRef?: Class): boolean {
+    hasCtor(tagref: Class): boolean {
+        return this.match(ctorName, `${tagref.className}.${ctorName}`, tagref)
+    }
+
+
+    hasPointcut(instance: any, typeRef: Class, withConstructor?: boolean): boolean {
         const names = Object.keys(instance);
 
         const decorators = typeRef?.getPropertyDescriptors()
         // match method or property.
         if (decorators) {
-            names.push(...Object.keys(decorators));
+            for (const name in decorators) {
+                if (!withConstructor || (withConstructor && name != ctorName)) {
+                    names.push(name);
+                }
+            }
         }
-        return Array.from(this.advices.values()).some(r => {
 
-            return names.some(name=> r.some(a => a.match(name, `${typeRef?.className?? getClassName(instance)}.${name}`, typeRef, instance)))
+        return Array.from(this.advices.values()).some(r => {
+            return names.some(name => r.some(a => a.match(name, `${typeRef?.className ?? getClassName(instance)}.${name}`, typeRef, instance, { way: 'root' })))
         })
     }
+
+    protected getAdvicers(type: AdviceTypes): Advicer[] {
+        return this.advices.get(type) || [];
+    }
+
+    getBefore(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions): Advicer[] {
+        return [
+            ...this.getAdvicers('Around'),
+            ...this.getAdvicers('Before')
+        ].filter(adv => adv.match(name, fullName, targetRef, target, options));
+    }
+
+
+    getPointcut(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions): Advicer[] {
+        return this.getAdvicers('Pointcut')
+            .filter(adv => adv.match(name, fullName, targetRef, target, options));
+    }
+
+    getAfter(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions): Advicer[] {
+        return [
+           ...this.getAdvicers('Around'),
+           ...this.getAdvicers('After')
+        ].filter(adv => adv.match(name, fullName, targetRef, target, options));
+    }
+
+    getAfterReturning(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions): Advicer[] {
+        return [
+            ...this.getAdvicers('Around'),
+            ...this.getAdvicers('AfterReturning')
+        ].filter(adv => adv.match(name, fullName, targetRef, target, options));
+    }
+
+    getAfterThrowing(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions): Advicer[] {
+        return [
+            ...this.getAdvicers('Around'),
+            ...this.getAdvicers('AfterThrowing')
+        ].filter(adv => adv.match(name, fullName, targetRef, target, options));
+    }
+
 
     onDestroy(): void {
         this.aspects = [];

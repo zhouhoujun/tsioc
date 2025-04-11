@@ -19,7 +19,7 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
                     },
                     resolve(parameter, ctx) {
                         const pipe = getPipe(parameter, ctx, true);
-                        if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
+                        if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.propertyKey)
                         return pipe.transform(getPayload(ctx as T, parameter.scope, parameter.field ?? parameter.name), ...parameter.args || [])
                     }
                 },
@@ -30,7 +30,7 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
                     },
                     resolve(parameter, ctx) {
                         const pipe = getPipe(parameter, ctx, true);
-                        if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
+                        if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.propertyKey)
                         return pipe.transform(getPayload(ctx as T, parameter.scope), ...parameter.args || [])
                     }
                 }
@@ -45,7 +45,7 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
                         const value = getPayload(ctx as T, parameter.scope, parameter.field ?? parameter.name);
                         const values: any[] = isString(value) ? value.split(',') : value;
                         const pipe = getPipe(parameter, ctx, true);
-                        if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
+                        if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.propertyKey)
                         return values.map(val => pipe.transform(val, ...parameter.args || [])) as any
                     }
                 }
@@ -57,7 +57,7 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
                 resolve(parameter, ctx) {
                     const value = getPayload(ctx as T, parameter.scope, parameter.field);
                     const pipe = getPipe(parameter, ctx);
-                    if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.methodName)
+                    if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.propertyKey)
                     return pipe.transform(value, ...parameter.args || [])
                 }
             },

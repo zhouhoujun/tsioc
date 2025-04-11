@@ -1,13 +1,16 @@
 import {
     isFunction, lang, Platform, ctorName, InvocationContext, LifeScope, HandlerFn,
     Context, ContextToken, invokeTail, RuntimeContext, InterceptorLike, isDefined,
-    ParameterMetadata, Class, getClass, proxyTag, isObject, refl
+    ParameterMetadata, Class, getClass, proxyTag, isObject, refl,
+    composeHandlers, isNil, object2string
 } from '@tsdi/ioc';
 import { JoinPoint } from '../joinpoints/JoinPoint';
 import { JoinpointState } from '../joinpoints/state';
-// import { Advices, AdvicesMapping } from '../advices/Advices';
 import { Advisor } from '../Advisor';
 import { Proceeding } from '../Proceeding';
+import { Advicer } from '../advices/Advicer';
+import { ApplicationHandlerFn } from '@tsdi/core';
+import { AroundMetadata } from '../metadata/meta';
 
 
 export interface ProxyFunction extends Function {
@@ -29,12 +32,9 @@ export class ProceedingScope implements Proceeding {
 
 
     pointcut(ctx: RuntimeContext, next: HandlerFn, context: Context) {
-        // const targetType = ctx.type;
         const advisor = this.platform.context.get(Advisor);
-        // const mapping = advisor.getMapping(targetType);
-        // const advices = mapping?.get(ctorName) as Advices;
         ctx.isNewContext = false;
-        if (!advisor.hasProp(ctx.class, ctorName)) {
+        if (!advisor.hasCtor(ctx.class)) {
             return invokeTail(() => next(ctx, context), () => {
                 ctx.instance = this.attach(ctx.class, ctx.instance, advisor, ctx.context)
             });
@@ -61,8 +61,8 @@ export class ProceedingScope implements Proceeding {
         if (!advisor) {
             advisor = this.platform.context.get(Advisor);
         }
-        if (advisor && advisor.hasAnyProp(typeRef)) {
-            return this.createProxy(typeRef.className, typeRef, instance, advisor, parent) as T;
+        if (advisor && advisor.hasPointcut(instance, typeRef, true)) {
+            return this.createProxy(typeRef.className, typeRef, instance, typeRef, instance, advisor, parent) as T;
         }
         return instance;
     }
@@ -71,7 +71,7 @@ export class ProceedingScope implements Proceeding {
         return instance;
     }
 
-    protected createProxy(prefix: string, typeRef: Class | null, instance: any, advisor: Advisor, parent?: InvocationContext) {
+    protected createProxy(prefix: string, rootRef: Class, root: any, typeRef: Class | null, instance: any, advisor: Advisor, parent?: InvocationContext) {
         const descriptors = typeRef?.getPropertyDescriptors();
 
         const weekMap = new WeakMap();
@@ -80,60 +80,40 @@ export class ProceedingScope implements Proceeding {
                 if (name === ctorName) return Reflect.get(target, name, receiver);
                 const fullName = `${prefix}.${name.toString()}`;
 
-                if (advisor.match(name, fullName, typeRef, instance, { way: 'host' })) {
+                if (advisor.match(name, fullName, rootRef, instance, { way: 'host' })) {
                     const result = Reflect.get(target, name, receiver);
                     let vpxy = weekMap.get(result);
                     if (!vpxy) {
-                        vpxy = this.createProxy(fullName, refl.get(getClass(result)), result, advisor, parent);
+                        vpxy = this.createProxy(fullName, rootRef, root, refl.get(getClass(result)), result, advisor, parent);
                         weekMap.set(result, vpxy);
                     }
                     return vpxy;
                 }
-                if (!advisor.match(name, fullName, typeRef, instance, { accessor: 'get' })) {
-                    return Reflect.get(target, name, receiver);
-                }
-                // const advices = mapping?.find(fullName);
-                // if (advices instanceof AdvicesMapping) {
-                //     const result = Reflect.get(target, name, receiver);
-                //     let vpxy = weekMap.get(result);
-                //     if (!vpxy) {
-                //         vpxy = this.createProxy(fullName, advices.typeRef, result, advices, parent);
-                //         weekMap.set(result, vpxy);
-                //     }
-                //     return vpxy;
-                // }
 
                 const descriptor = descriptors?.[name];
                 if (isFunction(descriptor?.value)) {
                     const result = Reflect.get(target, name, receiver);
                     let proxyFn = weekMap.get(result);
                     if (!proxyFn) {
-                        proxyFn = this.proxy(result, advisor, receiver ?? proxy, target, typeRef, fullName, name, parent) as ProxyFunction;
+                        proxyFn = this.proxy(result, advisor, receiver ?? proxy, root, rootRef, fullName, name, parent) as ProxyFunction;
                         proxyFn[proxyTag] = true;
                         weekMap.set(result, proxyFn);
                     }
                     return proxyFn;
                 }
-                // if (!advices.hasGet() && !advices.hasSet()) return Reflect.get(target, name, receiver);
-                return this.handle(typeRef, fullName, name, advisor, this.platform, {
+
+                if (!advisor.match(name, fullName, rootRef, instance, { accessor: 'get' })) {
+                    return Reflect.get(target, name, receiver);
+                }
+
+                return this.handle(rootRef, fullName, name, advisor, this.platform, {
                     receiver: receiver ?? proxy,
-                    target,
+                    target: root,
                     parent,
                     args: [],
                     accessor: 'get',
                     originProxy: (j) => {
                         const value = Reflect.get(target, name, receiver);
-                        // const submapping = mapping?.getChild(name);
-                        // if (submapping && isObject(value)) {
-                        //     let vpxy = weekMap.get(value);
-                        //     if (!vpxy) {
-                        //         const vType = getClass(value);
-                        //         vpxy = this.createProxy(fullName, vType ? refl.get(vType) : null, value, submapping, parent);
-                        //         weekMap.set(value, vpxy);
-                        //     }
-                        //     value = vpxy;
-                        // }
-
                         return { value }
                     },
                     next: (j) => j.returning.value
@@ -143,17 +123,15 @@ export class ProceedingScope implements Proceeding {
             set: (target, name, newValue, receiver) => {
                 if (name === ctorName) return Reflect.set(target, name, receiver);
                 const fullName = `${prefix}.${name.toString()}`;
-                // const advices = mapping?.find(fullName);
 
-                // if (!advices || advices instanceof AdvicesMapping || !advices.hasSet()) return Reflect.set(target, name, newValue, receiver);
-                if (!advisor.match(name, fullName, typeRef, instance, { accessor: 'set' })) {
+                if (!advisor.match(name, fullName, rootRef, instance, { accessor: 'set' })) {
                     return Reflect.set(target, name, newValue, receiver);
                 }
 
                 const oldValue = Reflect.get(target, name, receiver);
-                return this.handle(typeRef, fullName, name, advisor, this.platform, {
+                return this.handle(rootRef, fullName, name, advisor, this.platform, {
                     receiver: receiver ?? proxy,
-                    target,
+                    target: root,
                     parent,
                     args: [],
                     accessor: 'set',
@@ -168,7 +146,7 @@ export class ProceedingScope implements Proceeding {
         return proxy;
     }
 
-    protected proxy(originMethod: Function, advisor: Advisor, receiver: any, target: any, targetRef: Class | null, fullName: string, propertyKey: string | symbol, parent?: InvocationContext) {
+    protected proxy(originMethod: Function, advisor: Advisor, receiver: any, target: any, targetRef: Class, fullName: string, propertyKey: string | symbol, parent?: InvocationContext) {
         const platform = this.platform;
         return (...args: any[]) => {
             if (!platform || !platform.injector || platform.injector.destroyed) {
@@ -189,7 +167,7 @@ export class ProceedingScope implements Proceeding {
         }
     }
 
-    private handle(targetRef: Class | null, fullName: string, propertyKey: string | symbol, advisor: Advisor, platform: Platform, options: {
+    private handle(targetRef: Class, fullName: string, propertyKey: string | symbol, advisor: Advisor, platform: Platform, options: {
         receiver?: any,
         target?: any,
         originMethod?: Function,
@@ -208,7 +186,7 @@ export class ProceedingScope implements Proceeding {
             ...options,
             targetRef,
             targetType: targetRef?.type,
-            methodName: propertyKey,
+            propertyKey,
             fullName,
             advisor,
             annotations: targetRef?.defs.filter(d => d.propertyKey === propertyKey),
@@ -240,7 +218,10 @@ export const afterReturningIterceptor = (ctx: JoinPoint, next: HandlerFn, contex
     return invokeTail(() => next(ctx, context), (res) => {
         ctx.state = JoinpointState.AfterReturning;
         if (isDefined(res) && res !== ctx) ctx.returning = res;
-        return ctx.advices.getAfterReturningHanlder()?.(ctx, context);
+        const advicers = ctx.advisor.getAfterReturning(ctx.propertyKey, ctx.fullName, ctx.targetRef, ctx.target, { accessor: ctx.accessor });
+        if (advicers?.length) {
+            return toHanlder(advicers)(ctx, context);
+        }
     })
 }
 
@@ -249,23 +230,31 @@ export const afterThrowingInterceptor = (ctx: JoinPoint, next: HandlerFn, contex
         error: (error) => {
             ctx.throwing = error;
             ctx.state = JoinpointState.AfterThrowing;
-            return ctx.advices.getAfterThrowingHanlder()?.(ctx, context);
+            const advicers = ctx.advisor.getAfterThrowing(ctx.propertyKey, ctx.fullName, ctx.targetRef, ctx.target, { accessor: ctx.accessor });
+            if (advicers?.length) {
+                return toHanlder(advicers)(ctx, context);
+            }
         },
     });
 }
 
-
 export const beforeIterceptor = (ctx: JoinPoint, next: HandlerFn, context: Context) => {
     return invokeTail(() => {
         ctx.state = JoinpointState.Before;
-        return ctx.advices.getBeforeHanlder()?.(ctx, context)
+        const advicers = ctx.advisor.getBefore(ctx.propertyKey, ctx.fullName, ctx.targetRef, ctx.target, { accessor: ctx.accessor });
+        if (advicers?.length) {
+            return toHanlder(advicers)(ctx, context);
+        }
     }, () => next(ctx, context));
 }
 
 export const pointcutIterceptor = (ctx: JoinPoint, next: HandlerFn, context: Context) => {
     return invokeTail(() => {
         ctx.state = JoinpointState.Pointcut;
-        return ctx.advices.getPointcutHanlder()?.(ctx, context)
+        const advicers = ctx.advisor.getPointcut(ctx.propertyKey, ctx.fullName, ctx.targetRef, ctx.target, { accessor: ctx.accessor });
+        if (advicers?.length) {
+            return toHanlder(advicers)(ctx, context);
+        }
     }, () => next(ctx, context));
 }
 
@@ -273,7 +262,10 @@ export const afterIterceptor = (ctx: JoinPoint, next: HandlerFn, context: Contex
     return invokeTail(() => next(ctx, context), (res) => {
         ctx.state = JoinpointState.After;
         if (isDefined(res) && res !== ctx) ctx.returning = res;
-        return ctx.advices.getAfterHanlder()?.(ctx, context);
+        const advicers = ctx.advisor.getAfter(ctx.propertyKey, ctx.fullName, ctx.targetRef, ctx.target, { accessor: ctx.accessor });
+        if (advicers?.length) {
+            return toHanlder(advicers)(ctx, context);
+        }
     });
 }
 
@@ -295,3 +287,56 @@ const ADVICES_INTERCEPTORS: InterceptorLike<JoinPoint>[] = [
     beforeIterceptor,
     pointcutIterceptor,
 ];
+
+
+
+function toHanlder(advices: Advicer[]): ApplicationHandlerFn<JoinPoint> {
+    return composeHandlers(advices.map(a => (input: JoinPoint, context?: any) => invokeAdvice(input, a)));
+}
+// function equals(a: Advicer, b: Advicer) {
+//     return a.aspect.type === b.aspect.type && a.advice.name === b.advice.name
+// }
+
+const aExp = /^@/;
+
+function invokeAdvice(joinPoint: JoinPoint, advicer: Advicer) {
+    if (joinPoint.destroyed) {
+        throw new Error(`joinPoint is destroyed, when invoked advicer ${object2string(advicer)}.\n\njoinPoint object ${object2string(joinPoint, { fun: false, typeInst: true })}`)
+    }
+    if (advicer.accessor && advicer.accessor !== 'value' && advicer.accessor !== joinPoint.accessor) {
+        return
+    }
+    const metadata = advicer.advice as AroundMetadata;
+    if (!isNil(joinPoint.args) && metadata.args) {
+        joinPoint.setValue(metadata.args, joinPoint.args)
+    }
+
+    if (metadata.annotationArgName) {
+        if (metadata.annotationName) {
+            let d: string = metadata.annotationName;
+            d = d ? (aExp.test(d) ? d : `@${d}`) : '';
+            joinPoint.setValue(metadata.annotationArgName, joinPoint.annotations ? joinPoint.annotations.filter(v => v && v.decor.toString() == d).map(d => d.metadata) : [])
+        } else {
+            joinPoint.setValue(metadata.annotationArgName, joinPoint.annotations?.map(d => d.metadata) ?? [])
+        }
+    }
+
+    if (!isNil(joinPoint.returning) && metadata.returning) {
+        joinPoint.setValue(metadata.returning, joinPoint.returning)
+    }
+
+    if (joinPoint.throwing && metadata.throwing) {
+        joinPoint.setValue(metadata.throwing, joinPoint.throwing)
+    }
+
+    const context = advicer.aspect.getContext();
+    if (context) {
+        joinPoint.addRef(context)
+    }
+
+    return invokeTail(() => advicer.aspect.invoke(advicer.advice.name!, joinPoint), {
+        finally: () => {
+            context && joinPoint.removeRef(context);
+        }
+    });
+}

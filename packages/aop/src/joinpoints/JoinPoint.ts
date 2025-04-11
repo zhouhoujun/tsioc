@@ -4,16 +4,15 @@ import {
     Class
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
-// import { Advices } from '../advices/Advices';
 import { Advisor } from '../Advisor';
 
 /**
  * joinpoint option.
  */
 export interface JoinpointOption extends TargetInvokeArguments {
-    targetRef?: Class | null;
-    targetType?: Type;
-    methodName: string | symbol;
+    targetRef: Class;
+    propertyKey: string | symbol;
+    targetType?: Type;   
     fullName?: string;
     provJoinpoint?: JoinPoint;
     params?: ParameterMetadata[];
@@ -59,6 +58,7 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
      * target proxy
      */
     receiver: any;
+    root: any;
     /**
      * instance of target type
      */
@@ -66,9 +66,9 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
     returning: any;
     throwing: any;
     accessor?: 'get' | 'set' | 'value';
-
-    private _fullName: string | undefined;
-    readonly targetRef: Class | null | undefined;
+    readonly propertyKey: string | symbol;
+    readonly fullName: string;
+    readonly targetRef: Class;
     readonly targetType: Type | undefined;
     readonly advisor: Advisor;
     readonly originMethod?: Function;
@@ -81,9 +81,11 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
     constructor(injector: Injector, options: JoinpointOption) {
         super(injector, options);
         this.target = options.target;
+        this.propertyKey = options.propertyKey;
         this.receiver = options.receiver;
         this.targetRef = options.targetRef;
-        this.targetType = options.targetType;
+        this.targetType = options.targetType ?? options.targetRef.type;
+        this.fullName = options.fullName ?? lang.getClassName(this.targetType) + '.' + this.propertyKey?.toString();
         this.advisor = options.advisor;
         this.originProxy = options.originProxy;
         this.originMethod = options.originMethod;
@@ -101,13 +103,6 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
         } else {
             super.initArgs(args);
         }
-    }
-
-    get fullName(): string {
-        if (!this._fullName) {
-            this._fullName = lang.getClassName(this.targetType) + '.' + this.methodName?.toString()
-        }
-        return this._fullName
     }
 
     /**

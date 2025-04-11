@@ -1,17 +1,16 @@
 import { Class, ReflectiveRef } from '@tsdi/ioc';
 import { AdviceMetadata } from '../metadata/meta';
-// import { IPointcut } from '../joinpoints/IPointcut';
 
 
 export interface MatchOptions {
     way?: 'root' | 'host' | 'full';
-    accessor?: 'get' | 'set' 
+    accessor?: 'get' | 'set' | 'value'
 }
 
 /**
  * match express.
  */
-export type MatchExpress = (name: string | symbol, fullName: string, targetRef?: Class | null, target?: any, options?: MatchOptions) => boolean;
+export type MatchExpress = (name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions) => boolean;
 
 
 

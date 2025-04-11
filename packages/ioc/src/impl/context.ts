@@ -27,7 +27,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     private _dsryCbs = new Set<DestroyCallback>();
     private _destroyed = false;
 
-    propertyKey?: string;
     /**
      * invocation static injector. 
      */
@@ -40,7 +39,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     /**
      * named of invocation method.
      */
-    readonly methodName: string | symbol | undefined;
+    readonly propertyKey: string | symbol | undefined;
 
     readonly isResolve: boolean;
 
@@ -74,7 +73,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         });
 
         this.targetType = options.targetType;
-        this.methodName = options.methodName;
+        this.propertyKey = options.propertyKey;
         injector.onDestroy(this);
     }
 

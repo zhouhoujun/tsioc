@@ -172,7 +172,7 @@ export const ctorArgsInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
             targetType: input.type,
             parent: uctx,
             providers,
-            methodName: ctorName
+            propertyKey: ctorName
         });
         input.context = newCtx;
         input.isNewContext = true;

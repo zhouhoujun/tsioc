@@ -143,7 +143,7 @@ const loggerResolver = {
         if (!managers) {
             let local: string;
             if (pr.propertyKey && pr.paramName) {
-                local = ` method ${ctx.methodName?.toString()} param ${pr.paramName} of class `
+                local = ` method ${ctx.propertyKey?.toString()} param ${pr.paramName} of class `
             } else if (pr.propertyKey) {
                 local = ` field ${pr.propertyKey} of class `
             } else {
@@ -155,7 +155,7 @@ const loggerResolver = {
         if (!managers.getLoggerManager(adapter)) {
             let local: string;
             if (pr.propertyKey && pr.paramName) {
-                local = ` method ${ctx.methodName?.toString()} param ${pr.paramName} of class `
+                local = ` method ${ctx.propertyKey?.toString()} param ${pr.paramName} of class `
             } else if (pr.propertyKey) {
                 local = ` field ${pr.propertyKey} of class `
             } else {

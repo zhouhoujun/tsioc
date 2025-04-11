@@ -206,7 +206,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
      * @api public
      */
     get fresh(): boolean {
-        const method = this.methodName;
+        const method = this.propertyKey;
         const s = this.status as number;
 
         // GET or HEAD for weak freshness validation only
