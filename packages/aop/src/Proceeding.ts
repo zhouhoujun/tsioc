@@ -1,5 +1,4 @@
 import { Abstract, Class, Context, HandlerFn, RuntimeContext } from '@tsdi/ioc';
-// import { AdvicesMapping } from './advices/Advices';
 
 
 @Abstract()

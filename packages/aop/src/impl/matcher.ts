@@ -3,7 +3,7 @@ import { isString, isRegExp, lang, isArray, Type, ctorName, Decors, Platform, Cl
 import { AdviceMatcher } from '../AdviceMatcher';
 import { AdviceMetadata } from '../metadata/meta';
 import { AopDef } from '../metadata/ref';
-import { MatchExpress, MatchOptions } from '../advices/Advicer';
+import { MatchExpress, MatchOptions } from '../Advicer';
 
 /**
  * advice matcher, use to match advice when a registered create instance.

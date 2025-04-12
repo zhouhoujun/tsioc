@@ -21,7 +21,6 @@ import { OperationInvoker } from '../operation';
 export class DefaultInvocationContext<T = any> extends InvocationContext implements Destroyable, OnDestroy {
 
     protected _refs: InvocationContext[] | null;
-    protected _methodName?: string;
     private _injected = false;
 
     private _dsryCbs = new Set<DestroyCallback>();

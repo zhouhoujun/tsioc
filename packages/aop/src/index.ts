@@ -11,7 +11,7 @@ export * from './joinpoints/IPointcut';
 export * from './joinpoints/JoinPoint';
 
 // advices
-export * from './advices/Advicer';
+export * from './Advicer';
 
 
 export * from './AdviceMatcher';

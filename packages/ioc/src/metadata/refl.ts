@@ -461,7 +461,7 @@ export function getDef<T extends TypeDef>(type: Type): T {
  * @param type class type.
  */
 export function get<T = any>(type: Type): Class<T> {
-    if(!type || isPrimitiveType(type)) return null!;
+    if(!type || type === Object) return null!;
     let tagRefl = (type as AnnotationType).ƿRef?.() as Class<T>;
     if (tagRefl?.type !== type) {
         let prRef: Class = tagRefl;

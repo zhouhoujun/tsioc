@@ -8,8 +8,7 @@ import { JoinPoint } from '../joinpoints/JoinPoint';
 import { JoinpointState } from '../joinpoints/state';
 import { Advisor } from '../Advisor';
 import { Proceeding } from '../Proceeding';
-import { Advicer } from '../advices/Advicer';
-import { ApplicationHandlerFn } from '@tsdi/core';
+import { Advicer } from '../Advicer';
 import { AroundMetadata } from '../metadata/meta';
 
 
@@ -82,6 +81,9 @@ export class ProceedingScope implements Proceeding {
 
                 if (advisor.match(name, fullName, rootRef, instance, { way: 'host' })) {
                     const result = Reflect.get(target, name, receiver);
+                    if (!isObject(result)) {
+                        return result;
+                    }
                     let vpxy = weekMap.get(result);
                     if (!vpxy) {
                         vpxy = this.createProxy(fullName, rootRef, root, refl.get(getClass(result)), result, advisor, parent);
@@ -290,7 +292,7 @@ const ADVICES_INTERCEPTORS: InterceptorLike<JoinPoint>[] = [
 
 
 
-function toHanlder(advices: Advicer[]): ApplicationHandlerFn<JoinPoint> {
+function toHanlder(advices: Advicer[]): HandlerFn<JoinPoint> {
     return composeHandlers(advices.map(a => (input: JoinPoint, context?: any) => invokeAdvice(input, a)));
 }
 // function equals(a: Advicer, b: Advicer) {
