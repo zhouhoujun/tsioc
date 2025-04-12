@@ -199,16 +199,17 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
                     .replace(replNav, '\\\/');
                 root$ = new RegExp('^' + rootExp);
             }
-            exp = exp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+            let full = exp.substring(0);
+            full = full.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
                 .replace(replAny1, '\\\w+')
                 .replace(replDot, '\\\.')
                 .replace(replNav, '\\\/');
 
-            const matcher = new RegExp('^' + exp + '$');
+            const matcher = new RegExp('^' + full + '$');
             return (name, fullName, targetRef, target, options?: MatchOptions) => {
-                // if (exp.startsWith('*.*') && targetRef.getAnnotation<AopDef>().aspect) {
-                //     return false;
-                // }
+                if (exp.startsWith('*.*') && targetRef.getAnnotation<AopDef>().aspect) {
+                    return false;
+                }
                 if (options?.way) {
                     if (options.way === 'root') {
                         return root$ ? root$.test(fullName) : false;
@@ -253,16 +254,17 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
                     .replace(replNav, '\\\/');
                 root$ = new RegExp('^' + rootExp);
             }
-            exp = exp.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
+            let full = exp.substring(0);
+            full = full.replace(replAny, '(\\\w+(\\\.|\\\/)){0,}\\\w+')
                 .replace(replAny1, '\\\w+')
                 .replace(replDot, '\\\.')
                 .replace(replNav, '\\\/');
 
-            const matcher = new RegExp(exp + '$');
+            const matcher = new RegExp(full + '$');
             return (name, fullName, targetRef, target, options?: MatchOptions) => {
-                // if (exp.startsWith('*.*') && targetRef.getAnnotation<AopDef>().aspect) {
-                //     return false;
-                // }
+                if (exp.startsWith('*.*') && targetRef.getAnnotation<AopDef>().aspect) {
+                    return false;
+                }
                 if (options?.way) {
                     if (options.way === 'root') {
                         return root$ ? root$.test(fullName) : false;
