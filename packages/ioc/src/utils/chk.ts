@@ -321,9 +321,6 @@ export function isAnnotation(target: any): target is AnnotationType {
  * @returns {Type}
  */
 export function getClass(target: any): Type {
-    if (!target) {
-        return null!
-    }
     if (isType(target)) {
         return target
     }

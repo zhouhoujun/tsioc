@@ -79,7 +79,7 @@ export class ProceedingScope implements Proceeding {
                 if (name === ctorName) return Reflect.get(target, name, receiver);
                 const fullName = `${prefix}.${name.toString()}`;
 
-                if (advisor.match(name, fullName, rootRef, instance, { way: 'host' })) {
+                if (advisor.match(name, fullName, rootRef, root, { way: 'host' })) {
                     const result = Reflect.get(target, name, receiver);
                     if (!isObject(result)) {
                         return result;
@@ -97,7 +97,7 @@ export class ProceedingScope implements Proceeding {
                     const result = Reflect.get(target, name, receiver);
                     let proxyFn = weekMap.get(result);
                     if (!proxyFn) {
-                        proxyFn = this.proxy(result, advisor, receiver ?? proxy, root, rootRef, fullName, name, parent) as ProxyFunction;
+                        proxyFn = this.proxy(result, advisor, receiver, root, rootRef, fullName, name, parent) as ProxyFunction;
                         proxyFn[proxyTag] = true;
                         weekMap.set(result, proxyFn);
                     }

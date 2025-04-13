@@ -321,13 +321,23 @@ const endHandler: HandlerFn = (res, context?: any) => res;
  * @returns 
  */
 export function composeHandlers(hanlders: HandlerLike[], interceptor?: (res: any, nextFn: HandlerFn, input: any, context?: any) => any): HandlerFn {
+    if(!interceptor && hanlders.length === 1) return parseToHandlerFn(hanlders[0]);
     return hanlders.reduceRight((next, handler) => {
-        const invok = isFunction(handler) ? handler : (input: any, context?: any) => handler.handle(input, context);
+        const invok = parseToHandlerFn(handler);
         const nextFn = isFunction(next) ? next : (input: any, context?: any) => next.handle(input, context);
         return (input: any, context?: any) => invokeTail(() => invok(input, context), (res) => interceptor ? interceptor(res, nextFn, input, context) : nextFn(res ?? input, context));
     }, endHandler) as HandlerFn;
 }
 
+function parseToHandlerFn(handler: HandlerLike): HandlerFn {
+    if (isFunction(handler)) {
+        return handler;
+    } else if (handler) {
+        return toHandlerFn(handler);
+    } else {
+        throw new Error('Invalid handler');
+    }
+}
 
 /**
  * context token.
