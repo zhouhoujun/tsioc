@@ -93,7 +93,7 @@ export class ProceedingScope implements Proceeding {
                     const result = Reflect.get(target, name, receiver);
                     let proxyFn = weekMap.get(result);
                     if (!proxyFn) {
-                        proxyFn = this.proxy(result, advisor, receiver ?? proxy, root, rootRef, fullName, name, parent);
+                        proxyFn = this.proxy(result, name, fullName, advisor, receiver ?? proxy, root, rootRef, parent);
                         weekMap.set(result, proxyFn);
                     }
                     return proxyFn;
@@ -117,7 +117,7 @@ export class ProceedingScope implements Proceeding {
 
             },
             set: (target, name, newValue, receiver) => {
-                if (name === ctorName  || name === proxyTag) return Reflect.set(target, name, receiver);
+                if (name === ctorName || name === proxyTag) return Reflect.set(target, name, receiver);
                 const fullName = `${prefix}.${name.toString()}`;
 
                 if (!advisor.match(name, fullName, rootRef, instance, { accessor: 'set' })) {
@@ -142,7 +142,7 @@ export class ProceedingScope implements Proceeding {
         return proxy;
     }
 
-    protected proxy(originMethod: Function, advisor: Advisor, receiver: any, target: any, targetRef: Class, fullName: string, propertyKey: string | symbol, parent?: InvocationContext) {
+    protected proxy(originMethod: Function, propertyKey: string | symbol, fullName: string, advisor: Advisor, receiver: any, target: any, targetRef: Class, parent?: InvocationContext) {
         const platform = this.platform;
         return (...args: any[]) => {
             if (!platform || !platform.injector || platform.injector.destroyed) {
@@ -288,9 +288,7 @@ const ADVICES_INTERCEPTORS: InterceptorLike<JoinPoint>[] = [
 function toHanlder(advices: Advicer[]): HandlerFn<JoinPoint> {
     return composeHandlers(advices.map(a => (input: JoinPoint, context?: any) => invokeAdvice(input, a)));
 }
-// function equals(a: Advicer, b: Advicer) {
-//     return a.aspect.type === b.aspect.type && a.advice.name === b.advice.name
-// }
+
 
 const aExp = /^@/;
 
@@ -298,9 +296,7 @@ function invokeAdvice(joinPoint: JoinPoint, advicer: Advicer) {
     if (joinPoint.destroyed) {
         throw new Error(`joinPoint is destroyed, when invoked advicer ${object2string(advicer)}.\n\njoinPoint object ${object2string(joinPoint, { fun: false, typeInst: true })}`)
     }
-    // if (advicer.accessor && advicer.accessor !== 'value' && advicer.accessor !== joinPoint.accessor) {
-    //     return
-    // }
+
     const metadata = advicer.advice as AroundMetadata;
     if (!isNil(joinPoint.args) && metadata.args) {
         joinPoint.setValue(metadata.args, joinPoint.args)

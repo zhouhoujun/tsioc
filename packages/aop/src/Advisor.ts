@@ -50,24 +50,26 @@ export class Advisor implements OnDestroy {
                 this.advices.set(adviceType, advices);
             }
 
-            advices.push({
-                advice,
-                match,
-                accessor: advice.accessor,
-                aspect
-            });
+            if (!advices.some(r => r.advice.type == advice.type
+                && r.advice.name === advice.name
+                && r.advice.pointcut === advice.pointcut)) {
+                advices.push({
+                    advice,
+                    match,
+                    accessor: advice.accessor,
+                    aspect
+                });
+            }
         });
 
     }
 
     protected unregisterAspect(aspect: ReflectiveRef) {
-        aspect.class?.getAnnotation<AopDef>().advices?.forEach(advice => {
-            this.advices.forEach(advices => {
-                advices.filter(a => a.aspect.type === aspect.type)
-                    .forEach(a => {
-                        advices.splice(advices.indexOf(a), 1);
-                    })
-            })
+        this.advices.forEach(advices => {
+            advices.filter(a => a.aspect.type === aspect.type)
+                .forEach(a => {
+                    advices.splice(advices.indexOf(a), 1);
+                })
         })
     }
 
