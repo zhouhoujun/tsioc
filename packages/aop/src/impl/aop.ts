@@ -1,4 +1,4 @@
-import { Type, RuntimeContext, AnnotationType, Class, HandlerFn, Context, noPointcutTag, invokeTail } from '@tsdi/ioc';
+import { Type, RuntimeContext, AnnotationType, Class, HandlerFn, Context, noPointcutTag } from '@tsdi/ioc';
 import { AopDef } from '../metadata/ref';
 import { Proceeding } from '../Proceeding';
 
@@ -13,7 +13,7 @@ export const pointcutInterceptor = (ctx: RuntimeContext, next: HandlerFn, contex
     if (!isValAspectTag(ctx.type, ctx.class) || !context.has(Proceeding)) return next(ctx, context);
 
     // aspect class do nothing.
-    return context.get(Proceeding).pointcut(ctx, next, context);
+    return context.get(Proceeding).pointcutCtor(ctx, next, context);
 
 }
 
@@ -27,10 +27,7 @@ export const matchInterceptor = (ctx: RuntimeContext, next: HandlerFn, context: 
     // aspect class do nothing.
     if (!isValAspectTag(ctx.type, ctx.class) || !context.has(Proceeding)) return next(ctx, context);
 
-    return invokeTail(() => next(ctx, context), () => {
-        const proceeding = context.get(Proceeding);
-        ctx.instance = proceeding?.attach(ctx.class, ctx.instance, ctx.context);
-    });
+    return context.get(Proceeding).pointcutProperty(ctx, next, context);
 }
 
 /**

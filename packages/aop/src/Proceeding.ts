@@ -5,15 +5,22 @@ import { Abstract, Class, Context, HandlerFn, InvocationContext, RuntimeContext 
 export abstract class Proceeding {
 
     /**
-     * pointcut target type in runtime.
+     * pointcut constructor target type in runtime.
      * @param ctx 
      * @param next 
      * @param context 
      */
-    abstract pointcut(ctx: RuntimeContext, next: HandlerFn, context: Context): any;
+    abstract pointcutCtor(ctx: RuntimeContext, next: HandlerFn, context: Context): any;
+    /**
+     * pointcut property target type in runtime.
+     * @param ctx 
+     * @param next 
+     * @param context 
+     */
+    abstract pointcutProperty(ctx: RuntimeContext, next: HandlerFn, context: Context): any;
 
-    abstract attach<T>(typeRef: Class<T>, instance: T, parent?: InvocationContext): T;
+    // abstract attach<T>(typeRef: Class<T>, instance: T, parent?: InvocationContext): T;
 
-    abstract detach<T>(typeRef: Class<T>, instance: T, parent?: InvocationContext): T;
+    // abstract detach<T>(typeRef: Class<T>, instance: T, parent?: InvocationContext): T;
 
 }

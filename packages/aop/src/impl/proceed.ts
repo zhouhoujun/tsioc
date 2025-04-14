@@ -25,16 +25,18 @@ export class ProceedingScope implements Proceeding {
     ) { }
 
 
-    pointcut(ctx: RuntimeContext, next: HandlerFn, context: Context) {
-        const advisor = this.platform.context.get(Advisor);
-        ctx.isNewContext = false;
+    pointcutCtor(ctx: RuntimeContext, next: HandlerFn, context: Context) {
+        const advisor = context.get(Advisor);
         if (!advisor.hasCtor(ctx.class)) {
-            // return invokeTail(() => next(ctx, context), () => {
-            //     ctx.instance = this.attach(ctx.class, ctx.instance, ctx.context)
-            // });
-            return next(ctx, context)
+            return invokeTail(() => next(ctx, context), () => {
+                if (advisor.hasPointcut(ctx.instance, ctx.class, true)) {
+                    ctx.hasPointcut = true;
+                    ctx.isNewContext = false;
+                }
+            });
         }
 
+        ctx.isNewContext = false;
         return this.handle(ctx.class, `${ctx.class.className}.${ctorName}`, ctorName, null, advisor, ctx.platform, {
             parent: ctx.context,
             args: ctx.args,
@@ -42,7 +44,6 @@ export class ProceedingScope implements Proceeding {
             originProxy: (joinPoint) => {
                 invokeTail(() => next(ctx, context), () => {
                     const instance = joinPoint.returning = joinPoint.target = ctx.instance;
-                    // instance = ctx.instance = this.attach(ctx.class, ctx.instance, ctx.context，advisor);
                     return instance;
                 })
             },
@@ -50,21 +51,29 @@ export class ProceedingScope implements Proceeding {
 
     }
 
-
-    attach<T>(typeRef: Class<T>, instance: T, parent?: InvocationContext, advisor?: Advisor): T {
-        //es5 proxy-polyfill
-        if (!advisor) {
-            advisor = this.platform.context.get(Advisor);
-        }
-        if (advisor && isDefined(instance) && advisor.hasPointcut(instance, typeRef, true)) {
-            return this.createProxy(typeRef.className, typeRef, instance, typeRef, instance, advisor, parent) as T;
-        }
-        return instance;
+    pointcutProperty(ctx: RuntimeContext, next: HandlerFn, context: Context) {
+        return invokeTail(() => next(ctx, context), () => {
+            const advisor = context.get(Advisor);
+            if (isDefined(ctx.instance) && (ctx.hasPointcut || advisor.hasPointcut(ctx.instance, ctx.class, true))) {
+                ctx.instance = this.createProxy(ctx.class.className, ctx.class, ctx.instance, ctx.class, ctx.instance, advisor, ctx.context)
+            }
+        });
     }
 
-    detach<T>(typeRef: Class<T>, instance: T): T {
-        return instance;
-    }
+    // attach<T>(typeRef: Class<T>, instance: T, parent?: InvocationContext, advisor?: Advisor): T {
+    //     //es5 proxy-polyfill
+    //     if (!advisor) {
+    //         advisor = this.platform.context.get(Advisor);
+    //     }
+    //     if (advisor && isDefined(instance) && advisor.hasPointcut(instance, typeRef, true)) {
+    //         return this.createProxy(typeRef.className, typeRef, instance, typeRef, instance, advisor, parent) as T;
+    //     }
+    //     return instance;
+    // }
+
+    // detach<T>(typeRef: Class<T>, instance: T): T {
+    //     return instance;
+    // }
 
     protected createProxy(prefix: string, rootRef: Class, root: any, typeRef: Class | null, instance: any, advisor: Advisor, parent?: InvocationContext) {
         const descriptors = typeRef?.getPropertyDescriptors();
@@ -74,7 +83,7 @@ export class ProceedingScope implements Proceeding {
             get: (target, name, receiver) => {
                 if (name === ctorName || name === proxyTag) return Reflect.get(target, name, receiver);
                 const fullName = `${prefix}.${name.toString()}`;
-                
+
                 if (advisor.match(name, fullName, rootRef, root, { way: 'host' })) {
                     const result = Reflect.get(target, name, receiver);
                     if (!isObject(result)) {
