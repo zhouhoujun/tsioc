@@ -54,6 +54,8 @@ export class ClassSevice {
 
     state!: string;
 
+    times = 0;
+
     @Filterable(HandleContext)
     filter(intput: any, next: ApplicationHandlerFn, context?: any): Observable<any> {
         return next(intput, context);
@@ -66,7 +68,7 @@ export class ClassSevice {
 
     @Runner()
     async run(): Promise<any> {
-        this.logger.info('ClassSevice running.....');
+        this.logger.info('ClassSevice running.....', this.times++);
         // console.log(refs.get(ClassSevice));
 
         // console.log(this.container);
@@ -87,7 +89,7 @@ export class LoggerAspect {
         console.log('test........');
     }
 
-    @Around('execution(*.destroyed)')
+    @Around('execution(*.onDispose)')
     destoryedlog(jp: JoinPoint) {
         console.log(jp.fullName, jp.state, 'destroyed........');
     }
@@ -137,7 +139,7 @@ export class SocketService {
         const tcpServer = this.tcpServer = new net.Server();
         tcpServer.listen(8801);
         this.init_times++;
-        this.logger.info('destroyed state', 'init', this.init_times);
+        this.logger.info('socket service state', 'init', this.init_times);
     }
 
     @Dispose()

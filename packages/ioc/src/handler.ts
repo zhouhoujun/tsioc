@@ -235,11 +235,9 @@ export function invokeTail<T>(invoker: () => Observable<T> | Promise<T> | T, nex
     }
 }
 
-function processObservable<T>(ob$: Observable<T>, opter: NextOpter<T>): Observable<T> {
-    let processed$ = ob$;
-
+function processObservable<T>(obs$: Observable<T>, opter: NextOpter<T>): Observable<T> {
     if (opter.next) {
-        processed$ = processed$.pipe(
+        obs$ = obs$.pipe(
             mergeMap(res => {
                 const n$ = opter.next!(res);
                 return (isObservable(n$) || isPromise(n$)) ? n$ : of(res);
@@ -248,39 +246,35 @@ function processObservable<T>(ob$: Observable<T>, opter: NextOpter<T>): Observab
     }
 
     if (opter.finally) {
-        processed$ = processed$.pipe(finalize(() => opter.finally!()));
+        obs$ = obs$.pipe(finalize(() => opter.finally!()));
     }
 
     if (opter.error) {
-        processed$ = processed$.pipe(
+        obs$ = obs$.pipe(
             catchError(err => handleOperatorError(opter.error!(err), err) as Observable<T>)
         );
     }
 
-    return processed$;
+    return obs$;
 }
 
 function processPromise<T>(pr$: Promise<T>, opter: NextOpter<T>): Promise<T> {
-    let processed = pr$;
-
     if (opter.next) {
-        processed = processed.then(res => opter.next!(res));
+        pr$ = pr$.then(res => opter.next!(res));
     }
 
     if (opter.error) {
-        processed = processed.catch(err => handlePromiseError(opter.error!(err), err));
+        pr$ = pr$.catch(err => handlePromiseError(opter.error!(err), err));
     }
 
     if (opter.finally) {
-        processed = processed.finally(opter.finally);
+        pr$ = pr$.finally(opter.finally);
     }
 
-    return processed;
+    return pr$;
 }
 
-function processSync<T>(res: T, opter: NextOpter<T>): T {
-    let result = res;
-
+function processSync<T>(result: T, opter: NextOpter<T>): T {
     if (opter.next) {
         result = opter.next(result);
     }
