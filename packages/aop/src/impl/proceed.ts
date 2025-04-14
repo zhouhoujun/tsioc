@@ -20,7 +20,6 @@ import { AroundMetadata } from '../metadata/meta';
  * @implements {IProxyMethod}
  */
 export class ProceedingScope implements Proceeding {
-
     constructor(
         readonly platform: Platform
     ) { }
@@ -30,9 +29,10 @@ export class ProceedingScope implements Proceeding {
         const advisor = this.platform.context.get(Advisor);
         ctx.isNewContext = false;
         if (!advisor.hasCtor(ctx.class)) {
-            return invokeTail(() => next(ctx, context), () => {
-                ctx.instance = this.attach(ctx.class, ctx.instance, advisor, ctx.context)
-            });
+            // return invokeTail(() => next(ctx, context), () => {
+            //     ctx.instance = this.attach(ctx.class, ctx.instance, ctx.context)
+            // });
+            return next(ctx, context)
         }
 
         return this.handle(ctx.class, `${ctx.class.className}.${ctorName}`, ctorName, null, advisor, ctx.platform, {
@@ -41,8 +41,8 @@ export class ProceedingScope implements Proceeding {
             params: ctx.params,
             originProxy: (joinPoint) => {
                 invokeTail(() => next(ctx, context), () => {
-                    let instance = joinPoint.returning = joinPoint.target = ctx.instance;
-                    instance = ctx.instance = this.attach(ctx.class, ctx.instance, advisor, ctx.context);
+                    const instance = joinPoint.returning = joinPoint.target = ctx.instance;
+                    // instance = ctx.instance = this.attach(ctx.class, ctx.instance, ctx.context，advisor);
                     return instance;
                 })
             },
@@ -51,12 +51,12 @@ export class ProceedingScope implements Proceeding {
     }
 
 
-    attach<T>(typeRef: Class<T>, instance: T, advisor?: Advisor, parent?: InvocationContext): T {
+    attach<T>(typeRef: Class<T>, instance: T, parent?: InvocationContext, advisor?: Advisor): T {
         //es5 proxy-polyfill
         if (!advisor) {
             advisor = this.platform.context.get(Advisor);
         }
-        if (advisor && advisor.hasPointcut(instance, typeRef, true)) {
+        if (advisor && isDefined(instance) && advisor.hasPointcut(instance, typeRef, true)) {
             return this.createProxy(typeRef.className, typeRef, instance, typeRef, instance, advisor, parent) as T;
         }
         return instance;
@@ -74,7 +74,7 @@ export class ProceedingScope implements Proceeding {
             get: (target, name, receiver) => {
                 if (name === ctorName || name === proxyTag) return Reflect.get(target, name, receiver);
                 const fullName = `${prefix}.${name.toString()}`;
-
+                
                 if (advisor.match(name, fullName, rootRef, root, { way: 'host' })) {
                     const result = Reflect.get(target, name, receiver);
                     if (!isObject(result)) {
@@ -91,12 +91,16 @@ export class ProceedingScope implements Proceeding {
                 const descriptor = descriptors?.[name];
                 if (isFunction(descriptor?.value)) {
                     const result = Reflect.get(target, name, receiver);
-                    let proxyFn = weekMap.get(result);
-                    if (!proxyFn) {
-                        proxyFn = this.proxy(result, name, fullName, advisor, receiver ?? proxy, root, rootRef, parent);
-                        weekMap.set(result, proxyFn);
+                    let cachedFn = weekMap.get(result);
+                    if (!cachedFn) {
+                        if (advisor.match(name, fullName, rootRef, instance)) {
+                            cachedFn = this.proxy(result, name, fullName, advisor, receiver ?? proxy, root, rootRef, parent);
+                        } else {
+                            cachedFn = result;
+                        }
+                        weekMap.set(result, cachedFn);
                     }
-                    return proxyFn;
+                    return cachedFn;
                 }
 
                 if (!advisor.match(name, fullName, rootRef, instance, { accessor: 'get' })) {

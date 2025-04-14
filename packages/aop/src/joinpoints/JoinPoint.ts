@@ -1,7 +1,6 @@
 import {
     tokenId, Injector, IocContext, DefaultInvocationContext, ParameterMetadata, lang, Type,
-    DecorDefine, Defer, TargetInvokeArguments, ProvdierOf, isArray, CONTEXT_ARGUMENTS,
-    Class
+    DecorDefine, Defer, TargetInvokeArguments, ProvdierOf, isArray, CONTEXT_ARGUMENTS, Class
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advisor } from '../Advisor';
@@ -48,7 +47,6 @@ export interface ReturnDefer {
  * JoinPoint of aop.
  */
 export class JoinPoint extends DefaultInvocationContext<any[]> implements IocContext {
-
     /**
      * custom proxy invoke origin method.
      */

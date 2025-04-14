@@ -94,6 +94,9 @@ export interface ClassType<T = any> extends Type<T> {
     new(...args: any[]): T;
 }
 
+
+export const noPointcutTag = Symbol('ƿNPT');
+export const refTag = Symbol('ƿRef');
 /**
  * annotation class type
  * 
@@ -108,11 +111,11 @@ export interface AnnotationType<T = any> extends Type<T> {
     /**
      * class Reflective 
      */
-    ƿRef?(): any;
+    [refTag]?(): any;
     /**
      * class flag. none poincut for aop.
      */
-    ƿNPT?: boolean;
+    [noPointcutTag]?: boolean;
 }
 
 

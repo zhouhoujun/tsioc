@@ -68,7 +68,7 @@ export class ClassSevice {
 
     @Runner()
     async run(): Promise<any> {
-        this.logger.info('ClassSevice running.....', this.times++);
+        this.logger.info('ClassSevice running.....', ++this.times);
         // console.log(refs.get(ClassSevice));
 
         // console.log(this.container);

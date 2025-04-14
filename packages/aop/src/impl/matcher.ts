@@ -1,5 +1,5 @@
 /* eslint-disable no-useless-escape */
-import { isString, isRegExp, lang, isArray, Type, ctorName, Decors, Platform, Class, DecoratorType, isType } from '@tsdi/ioc';
+import { isString, isRegExp, isArray, ctorName, Decors, Platform, Class, DecoratorType } from '@tsdi/ioc';
 import { AdviceMatcher } from '../AdviceMatcher';
 import { AdviceMetadata } from '../metadata/meta';
 import { AopDef } from '../metadata/ref';

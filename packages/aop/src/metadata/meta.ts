@@ -1,5 +1,4 @@
-import { MethodMetadata, Type, ClassMetadata, MethodPropMetadata, Class } from '@tsdi/ioc';
-// import { IPointcut } from '../joinpoints/IPointcut';
+import { MethodMetadata, Type, ClassMetadata, MethodPropMetadata } from '@tsdi/ioc';
 
 
 /**

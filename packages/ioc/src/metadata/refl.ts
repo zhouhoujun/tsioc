@@ -1,4 +1,4 @@
-import { AnnotationType, Type } from '../types';
+import { AnnotationType, refTag, Type } from '../types';
 import { cleanObj, getParentClass } from '../utils/lang';
 import { isBoolean, isPrimitiveType } from '../utils/chk';
 import {
@@ -462,7 +462,7 @@ export function getDef<T extends TypeDef>(type: Type): T {
  */
 export function get<T = any>(type: Type): Class<T> {
     if(!type || type === Object) return null!;
-    let tagRefl = (type as AnnotationType).ƿRef?.() as Class<T>;
+    let tagRefl = (type as AnnotationType)[refTag]?.() as Class<T>;
     if (tagRefl?.type !== type) {
         let prRef: Class = tagRefl;
         if (!prRef) {
@@ -472,7 +472,7 @@ export function get<T = any>(type: Type): Class<T> {
             }
         }
         tagRefl = new Class(type, getDef(type), prRef);
-        (type as AnnotationType).ƿRef = () => tagRefl;
+        (type as AnnotationType)[refTag] = () => tagRefl;
 
     }
     return tagRefl;

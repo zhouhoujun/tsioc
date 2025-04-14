@@ -1,4 +1,4 @@
-import { Abstract, StaticProvider, Type, ProvdierOf, HandlerLike } from '@tsdi/ioc';
+import { Abstract, StaticProvider, Type, ProvdierOf, HandlerLike, noPointcutTag } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
@@ -17,6 +17,8 @@ import { HandlerService } from './handlers/configable';
  */
 @Abstract()
 export abstract class ApplicationEventMulticaster implements HandlerService, ApplicationEventPublisher {
+
+    static [noPointcutTag] = true;
 
     /**
      * parent eventMulticaster
