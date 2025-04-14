@@ -39,7 +39,7 @@ export class Advisor implements OnDestroy {
     protected registerAspect(aspect: ReflectiveRef): void {
         this.aspects.push(aspect);
         aspect.class.getAnnotation<AopDef>().advices?.forEach(advice => {
-            if(!advice.type){
+            if (!advice.type) {
                 advice.type = aspect.type;
             }
             const match = this.matcher.createMatch(advice);
@@ -129,8 +129,8 @@ export class Advisor implements OnDestroy {
 
     getAfter(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions): Advicer[] {
         return [
-           ...this.getAdvicers('Around'),
-           ...this.getAdvicers('After')
+            ...this.getAdvicers('Around'),
+            ...this.getAdvicers('After')
         ].filter(adv => adv.match(name, fullName, targetRef, target, options));
     }
 

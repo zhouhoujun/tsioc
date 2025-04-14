@@ -12,10 +12,6 @@ import { Advicer } from '../Advicer';
 import { AroundMetadata } from '../metadata/meta';
 
 
-export interface ProxyFunction extends Function {
-    [proxyTag]?: boolean;
-}
-
 /**
  * Proxy method.
  *
@@ -39,7 +35,7 @@ export class ProceedingScope implements Proceeding {
             });
         }
 
-        return this.handle(ctx.class, `${ctx.class.className}.${ctorName}`, ctorName, advisor, ctx.platform, {
+        return this.handle(ctx.class, `${ctx.class.className}.${ctorName}`, ctorName, null, advisor, ctx.platform, {
             parent: ctx.context,
             args: ctx.args,
             params: ctx.params,
@@ -76,7 +72,7 @@ export class ProceedingScope implements Proceeding {
         const weekMap = new WeakMap();
         const proxy: any = new Proxy(instance, {
             get: (target, name, receiver) => {
-                if (name === ctorName) return Reflect.get(target, name, receiver);
+                if (name === ctorName || name === proxyTag) return Reflect.get(target, name, receiver);
                 const fullName = `${prefix}.${name.toString()}`;
 
                 if (advisor.match(name, fullName, rootRef, root, { way: 'host' })) {
@@ -97,8 +93,7 @@ export class ProceedingScope implements Proceeding {
                     const result = Reflect.get(target, name, receiver);
                     let proxyFn = weekMap.get(result);
                     if (!proxyFn) {
-                        proxyFn = this.proxy(result, advisor, receiver, root, rootRef, fullName, name, parent) as ProxyFunction;
-                        proxyFn[proxyTag] = true;
+                        proxyFn = this.proxy(result, advisor, receiver ?? proxy, root, rootRef, fullName, name, parent);
                         weekMap.set(result, proxyFn);
                     }
                     return proxyFn;
@@ -108,8 +103,7 @@ export class ProceedingScope implements Proceeding {
                     return Reflect.get(target, name, receiver);
                 }
 
-                return this.handle(rootRef, fullName, name, advisor, this.platform, {
-                    receiver: receiver ?? proxy,
+                return this.handle(rootRef, fullName, name, receiver ?? proxy, advisor, this.platform, {
                     target: root,
                     parent,
                     args: [],
@@ -123,7 +117,7 @@ export class ProceedingScope implements Proceeding {
 
             },
             set: (target, name, newValue, receiver) => {
-                if (name === ctorName) return Reflect.set(target, name, receiver);
+                if (name === ctorName  || name === proxyTag) return Reflect.set(target, name, receiver);
                 const fullName = `${prefix}.${name.toString()}`;
 
                 if (!advisor.match(name, fullName, rootRef, instance, { accessor: 'set' })) {
@@ -131,8 +125,7 @@ export class ProceedingScope implements Proceeding {
                 }
 
                 const oldValue = Reflect.get(target, name, receiver);
-                return this.handle(rootRef, fullName, name, advisor, this.platform, {
-                    receiver: receiver ?? proxy,
+                return this.handle(rootRef, fullName, name, receiver ?? proxy, advisor, this.platform, {
                     target: root,
                     parent,
                     args: [],
@@ -145,6 +138,7 @@ export class ProceedingScope implements Proceeding {
             }
         });
 
+        proxy[proxyTag] = true;
         return proxy;
     }
 
@@ -155,12 +149,11 @@ export class ProceedingScope implements Proceeding {
                 return originMethod.call(target, ...args)
             }
             const larg = lang.last(args);
-            if (larg instanceof InvocationContext) {
+            if (target[proxyTag] && larg instanceof InvocationContext) {
                 args = args.slice(0, args.length - 1);
                 parent = larg
             }
-            return this.handle(targetRef, fullName, propertyKey, advisor, platform, {
-                receiver,
+            return this.handle(targetRef, fullName, propertyKey, receiver, advisor, platform, {
                 target,
                 originMethod,
                 args,
@@ -169,8 +162,7 @@ export class ProceedingScope implements Proceeding {
         }
     }
 
-    private handle(targetRef: Class, fullName: string, propertyKey: string | symbol, advisor: Advisor, platform: Platform, options: {
-        receiver?: any,
+    private handle(targetRef: Class, fullName: string, propertyKey: string | symbol, receiver: any, advisor: Advisor, platform: Platform, options: {
         target?: any,
         originMethod?: Function,
         args?: any[];
@@ -186,6 +178,7 @@ export class ProceedingScope implements Proceeding {
         }
         const joinPoint = JoinPoint.create(options.parent?.injector ?? platform.getInjector('root') ?? platform.getInjector('platform'), {
             ...options,
+            receiver,
             targetRef,
             targetType: targetRef?.type,
             propertyKey,
@@ -305,9 +298,9 @@ function invokeAdvice(joinPoint: JoinPoint, advicer: Advicer) {
     if (joinPoint.destroyed) {
         throw new Error(`joinPoint is destroyed, when invoked advicer ${object2string(advicer)}.\n\njoinPoint object ${object2string(joinPoint, { fun: false, typeInst: true })}`)
     }
-    if (advicer.accessor && advicer.accessor !== 'value' && advicer.accessor !== joinPoint.accessor) {
-        return
-    }
+    // if (advicer.accessor && advicer.accessor !== 'value' && advicer.accessor !== joinPoint.accessor) {
+    //     return
+    // }
     const metadata = advicer.advice as AroundMetadata;
     if (!isNil(joinPoint.args) && metadata.args) {
         joinPoint.setValue(metadata.args, joinPoint.args)

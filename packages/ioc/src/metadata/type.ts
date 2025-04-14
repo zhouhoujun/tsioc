@@ -308,7 +308,7 @@ export class Class<T = any> {
         if (!args) {
             args = this.resolveArguments(method, context);
         }
-        const hasPointcut = inst[method][proxyTag] == true;
+        const hasPointcut = inst[proxyTag];
         if (hasPointcut) {
             args.push(context)
         }
