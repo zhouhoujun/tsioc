@@ -1,4 +1,4 @@
-import { Inject, Injector, Autorun, Module, ctorArgsInterceptor, initReflectInterceptor, methodInterceptor } from '@tsdi/ioc';
+import { Inject, Injector, Autorun, Module, ctorArgsInterceptor, methodInterceptor } from '@tsdi/ioc';
 import { matchInterceptor, pointcutInterceptor } from './impl/aop';
 import { Advisor } from './Advisor';
 import { DefaultAdviceMatcher } from './impl/matcher';

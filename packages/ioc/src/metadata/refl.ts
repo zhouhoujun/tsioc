@@ -1,6 +1,6 @@
 import { AnnotationType, refTag, Type } from '../types';
 import { cleanObj, getParentClass } from '../utils/lang';
-import { isBoolean, isPrimitiveType } from '../utils/chk';
+import { isBoolean } from '../utils/chk';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata,
     RunnableMetadata, InjectableMetadata, MethodMetadata
@@ -462,18 +462,18 @@ export function getDef<T extends TypeDef>(type: Type): T {
  */
 export function get<T = any>(type: Type): Class<T> {
     if(!type || type === Object) return null!;
-    let tagRefl = (type as AnnotationType)[refTag]?.() as Class<T>;
-    if (tagRefl?.type !== type) {
-        let prRef: Class = tagRefl;
+    let tyRef = (type as AnnotationType)[refTag]?.() as Class<T>;
+    if (tyRef?.type !== type) {
+        let prRef: Class = tyRef;
         if (!prRef) {
             const parentType = getParentClass(type);
             if (parentType) {
                 prRef = get(parentType)
             }
         }
-        tagRefl = new Class(type, getDef(type), prRef);
-        (type as AnnotationType)[refTag] = () => tagRefl;
+        tyRef = new Class(type, getDef(type), prRef);
+        (type as AnnotationType)[refTag] = () => tyRef;
 
     }
-    return tagRefl;
+    return tyRef;
 }

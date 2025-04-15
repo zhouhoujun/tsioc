@@ -1,6 +1,6 @@
 import { Injectable, Inject, Autowired, Container, Injector } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
-import { LogModule, InjectLog, Logger } from '../src';
+import { LoggerModule, InjectLog, Logger } from '../src';
 import { DebugLog1Aspect } from './debugLog';
 import { AnntotationLogAspect } from './AnntotationLogAspect';
 import expect = require('expect');
@@ -83,7 +83,7 @@ describe('logging test', () => {
     let container: Container;
     beforeEach(async () => {
         container = Injector.create();
-        container.use(AopModule, LogModule);
+        container.use(AopModule, LoggerModule);
         container.setValue(Date, new Date());
     });
 
