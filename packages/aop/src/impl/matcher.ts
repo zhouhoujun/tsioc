@@ -17,7 +17,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
     constructor(private platform: Platform) { }
 
 
-    createMatch(aspectMeta: AdviceMetadata): MatchExpress {
+    parse(aspectMeta: AdviceMetadata): MatchExpress {
         if (aspectMeta.matchFn == undefined) {
             aspectMeta.matchFn = aspectMeta.pointcut ? this.matchTypeFactory(aspectMeta) : null;
         }

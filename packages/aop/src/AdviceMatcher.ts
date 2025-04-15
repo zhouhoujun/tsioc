@@ -8,6 +8,6 @@ import { MatchExpress } from './Advicer';
  */
 @Abstract()
 export abstract class AdviceMatcher {
-    abstract createMatch(adviceMatadata: AdviceMetadata): MatchExpress;
+    abstract parse(adviceMatadata: AdviceMetadata): MatchExpress;
 }
 

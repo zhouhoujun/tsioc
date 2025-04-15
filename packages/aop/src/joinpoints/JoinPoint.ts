@@ -94,6 +94,10 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
         this.state = options.state ?? JoinpointState.Before;
     }
 
+    proceed() {
+        
+    }
+
     protected override initArgs(args: ProvdierOf<any[]>): void {
         if (isArray(args)) {
             this._args = args;

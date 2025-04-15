@@ -1,21 +1,13 @@
 import { Around, JoinPoint } from '@tsdi/aop';
 import { ChangeDetector } from '../binding/change-detection';
 
-export function TwoWayBind(eventName?: string) {
-  return function (target: any, key: string) {
-    const event = eventName || `${key}Change`;
-    
-    // // 监听属性变化
-    // Around(`accessor:${key}`)
+export function Watchable() {
+  return function (target: any, key: string) {        
+    // Around(`set:${key}`)
     //   .call((joinPoint: JoinPoint) => {
     //     const oldVal = joinPoint.target[key];
     //     const result = joinPoint.proceed();
     //     if (oldVal !== result) {
-    //       // 触发变更事件
-    //       if (joinPoint.target[event]) {
-    //         joinPoint.target[event].emit(result);
-    //       }
-    //       // 标记脏检查
     //       const detector = joinPoint.injector.get(ChangeDetector);
     //       detector.markDirty(joinPoint.target);
     //     }

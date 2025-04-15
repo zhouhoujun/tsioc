@@ -41,7 +41,7 @@ export class Advisor implements OnDestroy {
             if (!advice.type) {
                 advice.type = aspect.type;
             }
-            const match = this.matcher.createMatch(advice);
+            const match = this.matcher.parse(advice);
             const adviceType = advice.adviceName!;
             let advices = this.advices.get(adviceType);
             if (!advices) {
