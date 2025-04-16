@@ -262,7 +262,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
 
             const matcher = new RegExp(full + '$');
             return (name, fullName, targetRef, target, options?: MatchOptions) => {
-                if (exp.startsWith('*.*') && targetRef.getAnnotation<AopDef>().aspect) {
+                if (exp.startsWith('*.*')  && targetRef.getAnnotation<AopDef>().aspect) {
                     return false;
                 }
                 if (options?.way) {
