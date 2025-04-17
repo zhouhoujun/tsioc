@@ -130,7 +130,7 @@ describe('Redis Micro Service', () => {
         // expect(res).toBeDefined();
         // expect(isArray(res.features)).toBeTruthy();
         expect(res instanceof ErrorResponse).toBeDefined();
-        expect(res.statusMessage).toContain('Packet length 23.74mb great than max size');
+        expect(res.statusMessage).toContain('Packet length 23.74MB great than max size');
     })
 
     it('fetch json 2', async () => {
