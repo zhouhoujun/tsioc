@@ -97,6 +97,7 @@ export interface ClassType<T = any> extends Type<T> {
 
 export const noPointcut = Symbol('ƿNPT');
 export const typeRef = Symbol('ƿRef');
+export const typeAnn = 'ƿAnn';
 /**
  * annotation class type
  * 
