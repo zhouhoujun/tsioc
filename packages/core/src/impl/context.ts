@@ -1,6 +1,7 @@
 import {
     Type, Injector, ProviderType, InvokeArguments, DefaultInvocationContext,
-    Class, ModuleDef, ModuleRef, ReflectiveRef, ProvdierOf
+    Class, ModuleDef, ModuleRef, ReflectiveRef, ProvdierOf,
+    noPointcut
 } from '@tsdi/ioc';
 import { Logger, LoggerManagers } from '@tsdi/logger';
 import { Observable } from 'rxjs';
@@ -107,7 +108,7 @@ export class DefaultApplicationFactory extends ApplicationFactory {
     /**
      * none poincut for aop.
      */
-    static ƿNPT = true;
+    static [noPointcut] = true;
 
     create<T, TArg = ApplicationArguments>(root: ModuleRef<T>, option?: EnvironmentOption<TArg>): ApplicationContext<T, TArg> {
         const ann = root.moduleReflect.getAnnotation<ModuleDef>();

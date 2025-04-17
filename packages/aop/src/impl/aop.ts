@@ -1,5 +1,4 @@
-import { Type, RuntimeContext, AnnotationType, Class, HandlerFn, Context, noPointcutTag } from '@tsdi/ioc';
-import { AopDef } from '../metadata/ref';
+import { Type, RuntimeContext, AnnotationType, HandlerFn, Context, noPointcut } from '@tsdi/ioc';
 import { Proceeding } from '../Proceeding';
 
 
@@ -10,7 +9,7 @@ import { Proceeding } from '../Proceeding';
  * @export
  */
 export const pointcutInterceptor = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
-    if (!isValAspectTag(ctx.type, ctx.class) || !context.has(Proceeding)) return next(ctx, context);
+    if (!isValAspect(ctx.type) || !context.has(Proceeding)) return next(ctx, context);
 
     // aspect class do nothing.
     return context.get(Proceeding).pointcutCtor(ctx, next, context);
@@ -25,7 +24,7 @@ export const pointcutInterceptor = (ctx: RuntimeContext, next: HandlerFn, contex
  */
 export const matchInterceptor = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
     // aspect class do nothing.
-    if (!isValAspectTag(ctx.type, ctx.class) || !context.has(Proceeding)) return next(ctx, context);
+    if (!isValAspect(ctx.type) || !context.has(Proceeding)) return next(ctx, context);
 
     return context.get(Proceeding).pointcutProperty(ctx, next, context);
 }
@@ -37,9 +36,6 @@ export const matchInterceptor = (ctx: RuntimeContext, next: HandlerFn, context: 
  * @param {Type} targetType
  * @returns {boolean}
  */
-function isValAspectTag(targetType: Type, clas: Class): boolean {
-    if ((targetType as AnnotationType)[noPointcutTag]) {
-        return false
-    }
-    return !clas.getAnnotation<AopDef>().nonePointcut
+function isValAspect(targetType: Type): boolean {
+    return !(targetType as AnnotationType)[noPointcut]
 }

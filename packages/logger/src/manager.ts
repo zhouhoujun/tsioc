@@ -1,6 +1,6 @@
 import {
     ArgumentExecption, getToken, Inject, Injectable,
-    Injector, isString, Nullable, Token, Type
+    Injector, isString, noPointcut, Nullable, Token, Type
 } from '@tsdi/ioc';
 import { HeaderFormater, Logger } from './logger';
 import { LOG_CONFIGURES, LogConfigure } from './LogConfigure';
@@ -17,7 +17,7 @@ import { LoggerConfig, LoggerManager } from './LoggerManager';
     providedIn: 'root'
 })
 export class LoggerManagers implements LoggerManager {
-    static ƿNPT = true;
+    static [noPointcut] = true;
 
     private maps: Map<string | Token<LoggerManager>, LoggerManager>;
     private cfgs: Map<string | Token<LoggerManager>, LogConfigure>;
@@ -118,7 +118,7 @@ export interface ConsoleLoggerConfig extends LoggerConfig {
  */
 @Injectable(LoggerManager, 'console')
 export class ConsoleLogManager implements LoggerManager {
-    static ƿNPT = true;
+    static [noPointcut] = true;
     private config: ConsoleLoggerConfig | undefined;
 
     constructor(@Nullable() private headerFormater: HeaderFormater) {
@@ -141,7 +141,7 @@ export class ConsoleLogManager implements LoggerManager {
  * @implements {Logger}
  */
 export class ConsoleLog implements Logger {
-    static ƿNPT = true;
+    static [noPointcut] = true;
     readonly category: string;
     formatHeader = true;
 

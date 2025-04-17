@@ -7,6 +7,5 @@ import { AdviceMetadata, AspectMetadata } from './meta';
  */
 export interface AopDef extends TypeDef {
     aspect?: AspectMetadata;
-    nonePointcut?: boolean;
     advices: AdviceMetadata[];
 }

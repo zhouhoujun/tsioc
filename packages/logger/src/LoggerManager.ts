@@ -1,4 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, noPointcut } from '@tsdi/ioc';
 import { Level } from './Level';
 import { Logger } from './logger';
 
@@ -20,7 +20,7 @@ export interface LoggerConfig extends Record<string, any> {
  */
 @Abstract()
 export abstract class LoggerManager {
-    static ƿNPT = true;
+    static [noPointcut] = true;
     /**
      * config logger context.
      *

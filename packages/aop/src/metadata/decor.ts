@@ -1,4 +1,4 @@
-import { isString, Type, ClassMetadata, DecoratorOption, createDecorator, ActionTypes, lang, ReflectiveFactory } from '@tsdi/ioc';
+import { isString, Type, ClassMetadata, DecoratorOption, createDecorator, ActionTypes, lang, ReflectiveFactory, noPointcut, AnnotationType } from '@tsdi/ioc';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata, PointcutAnnotation, AdviceTypes } from './meta';
 import { Advisor } from '../Advisor';
 import { AopDef } from './ref';
@@ -91,7 +91,7 @@ export interface NonePointcut {
 export const NonePointcut: NonePointcut = createDecorator<ClassMetadata>('NonePointcut', {
     def: {
         class: (ctx) => {
-            ctx.class.getAnnotation<AopDef>().nonePointcut = true;
+            (ctx.class.type as AnnotationType)[noPointcut] = true;
         }
     }
 });

@@ -1,4 +1,4 @@
-import { Abstract, Class, InvocationContext, InvokeParentContext, ModuleRef, noPointcutTag, OnDestroy, ProvdierOf, ReflectiveRef, StaticProvider, Type } from '@tsdi/ioc';
+import { Abstract, Class, InvocationContext, InvokeParentContext, ModuleRef, noPointcut, OnDestroy, ProvdierOf, ReflectiveRef, StaticProvider, Type } from '@tsdi/ioc';
 import { CanHandle } from './guard';
 import { ApplicationInterceptor } from './ApplicationInterceptor';
 import { PipeTransform } from './pipes/pipe';
@@ -13,7 +13,7 @@ import { InvocationOptions } from './invocation';
  */
 @Abstract()
 export abstract class ApplicationRunners implements HandlerService, OnDestroy {
-  static [noPointcutTag] = true;
+  static [noPointcut] = true;
 
   /**
    * runner types size.

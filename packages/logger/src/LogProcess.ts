@@ -1,4 +1,4 @@
-import { Abstract, Injector, Inject, Type } from '@tsdi/ioc';
+import { Abstract, Injector, Inject, Type, noPointcut } from '@tsdi/ioc';
 import { JoinPoint } from '@tsdi/aop';
 import { Logger } from './logger';
 import { Level } from './Level';
@@ -12,7 +12,7 @@ import { LoggerManagers } from './manager';
  */
 @Abstract()
 export abstract class LogProcess {
-    static ƿNPT = true;
+    static [noPointcut] = true;
 
     @InjectLog() logger!: Logger;
     @Inject() mangers!: LoggerManagers;

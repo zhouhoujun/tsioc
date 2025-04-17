@@ -1,4 +1,4 @@
-import { ClassType, Injector, isArray, isMetadataObject, isString, lang, Modules, Type } from '@tsdi/ioc';
+import { ClassType, Injector, isArray, isMetadataObject, isString, lang, Modules, noPointcut, Type } from '@tsdi/ioc';
 import { LoadType, ModuleLoader, PathModules } from '../ModuleLoader';
 
 /**
@@ -10,7 +10,7 @@ import { LoadType, ModuleLoader, PathModules } from '../ModuleLoader';
  */
 export class DefaultModuleLoader extends ModuleLoader {
 
-    static ƿNPT = true;
+    static [noPointcut] = true;
 
     private _loader!: (modulepath: string) => Promise<Modules>;
     getLoader() {

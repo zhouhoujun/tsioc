@@ -1,5 +1,5 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
-import { Type, ClassType } from './types';
+import { Type, ClassType, noPointcut } from './types';
 import { ClassProvider, ExistingProvider, FactoryProvider, ModuleType, ProviderType, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
@@ -23,7 +23,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * 
      * 该类是否支持AOP注入
      */
-    static ƿNPT = true;
+    static [noPointcut] = true;
 
     /**
      * injector scope.
