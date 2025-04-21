@@ -55,7 +55,7 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
             class: [
                 (ctx) => {
                     const def = ctx.class.getAnnotation<ModuleDef>();
-                    const metadata = def.annotation = ctx.define.metadata;
+                    const metadata = ctx.define.metadata;
                     def.module = true;
                     def.providedIn = metadata.providedIn;
                     def.baseURL = metadata.baseURL;

@@ -181,10 +181,6 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
     * module extends providers.
     */
     providers?: ProviderType[];
-    /**
-     * module annoation metadata.
-     */
-    annotation?: ModuleMetadata
 }
 
 export const proxyTag = Symbol('__proxy');

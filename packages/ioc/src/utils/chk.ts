@@ -220,7 +220,7 @@ const hasOwnProperty = Object.hasOwnProperty;
  * @param property 
  * @returns 
  */
-export function hasOwn(target: any, property: string) {
+export function hasOwn(target: any, property: string | symbol) {
     return hasOwnProperty.call(target, property)
 }
 

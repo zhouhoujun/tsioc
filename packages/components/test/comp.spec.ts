@@ -1,9 +1,8 @@
 import expect = require('expect');
 import { Before, Suite, Test } from '@tsdi/unit';
 import { ApplicationContext, Application } from '@tsdi/core';
-import { ComponentRef, ComponentRunnableRef } from '@tsdi/components';
-import { AppComponent, Components, TestModule } from './tmd';
 import { ReflectiveRef } from '@tsdi/ioc';
+import { ExampleComponent } from './tmd';
 
 
 
@@ -14,14 +13,14 @@ export class CTest {
 
     @Before()
     async init() {
-        this.ctx = await Application.run(TestModule);
+        this.ctx = await Application.run(ExampleComponent);
     }
 
     @Test('can bind bootsrap component')
     async test1() {
         expect(this.ctx.runners.size).toEqual(1);
-        const appcomRef = this.ctx.runners.getRef(AppComponent) as ReflectiveRef<AppComponent>;
-        expect(appcomRef.getInstance() instanceof AppComponent).toBeTruthy();
+        const appcomRef = this.ctx.runners.getRef(ExampleComponent);
+        expect(appcomRef.getInstance() instanceof ExampleComponent).toBeTruthy();
         expect(appcomRef.getInstance().label).toEqual('name');
         expect(appcomRef.getInstance().cmp1.label).toEqual('name');
     }
