@@ -2,6 +2,28 @@ import { Component, OnChanges, OnInit } from '../src';
 
 
 @Component({
+  selector: 'app-comp',
+  template: `
+      <Text [text]="'Well come'"></Text>
+      <Field #fie [label]="label" [(value)]="value"></Field>
+      <comp></comp>
+  `
+})
+export class AppComponent implements OnInit {
+  label?: string;
+  value?: string;
+  // ...其他代码
+}
+
+@Directive('Input, [Input]')
+export class InputDirective {
+  @Input() name!: string;
+  @Input() value!: string;
+  @Output() valueChange: EventEmitter<string> = new EventEmitter();
+}
+
+
+@Component({
     selector: 'Text'
 })
 export class TextComponet {

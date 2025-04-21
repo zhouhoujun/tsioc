@@ -1,3 +1,4 @@
+
 export class ViewBuilder {
     static create(selector: string, template: string | DocumentFragment): HTMLElement {
         const root = document.querySelector(selector) || document.createElement('div');
