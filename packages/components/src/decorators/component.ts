@@ -1,6 +1,8 @@
 import { Module, Injectable, Inject, ModuleType, createDecorator, AnnotationType, noPointcut, isObject, hasOwn, getModuleType, lang, ClassType, TypeDef } from '@tsdi/ioc';
 import { OnChanges, OnInit, AfterViewInit } from '../lifecycle';
 import { ReactiveEffect } from '../ReactiveEffect';
+import { TemplateCompiler } from '../template/compiler';
+import { ComponenFactory, ComponentRef } from '../refs/component';
 
 export interface ComponentDef<T = any> extends TypeDef<T> {
     imports?: ModuleType[],
@@ -15,6 +17,8 @@ export interface ComponentDef<T = any> extends TypeDef<T> {
 
 export type ComponentDecorator = (options: Partial<ComponentDef>) => ClassDecorator;
 
+const componentDefs = new WeakMap<any, ComponentRef<any>>();
+
 
 export const Component: ComponentDecorator = createDecorator<Partial<ComponentDef>>('Component', {
     def: {
@@ -27,10 +31,35 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
             if (metadata.imports) def.imports = getModuleType(metadata.imports);
         }
     },
+    design: {
+        class: (ctx) => {
+            const effect = ctx.injector.get(ReactiveEffect);
+            const factory = ctx.injector.get(ComponenFactory);
+            // ctx.isNewContext = false;
+            const componentRef = factory.create(ctx.class);
+            
+        }
+    },
     runtime: {
         class: (ctx) => {
-            ctx.instance = reactive(ctx.instance, ctx.injector.get(ReactiveEffect));
-            return (ctx.instance as OnInit).onInit?.()
+            const effect = ctx.injector.get(ReactiveEffect);
+            ctx.instance = reactive(ctx.instance, effect);
+            const factory = ctx.injector.get(ComponenFactory);
+            ctx.isNewContext = false;
+            const componentRef = factory.create(ctx.class, {parent: ctx.context});
+            componentDefs.set(ctx.instance, componentRef);
+
+            
+            // // 添加模板编译支持
+            // const def = ctx.class.getAnnotation<ComponentDef>();
+            // if (def.template || def.templateUrl) {
+            //     const effect = ctx.injector.get(ReactiveEffect);
+            //     const compiler = new TemplateCompiler(effect, def.compilerOptions);
+            //     const template = def.template || fetchTemplate(def.templateUrl!);
+            //     target.render = () => compiler.compile(template, target);
+            // }
+            return (ctx.instance as OnInit).onInit?.();
+            
         }
     }
 })
@@ -91,7 +120,5 @@ function reactive(target: any, effect: ReactiveEffect) {
 
     proxy[isReactive] = true
 
-    return proxy
+    return proxy;
 }
-
-
