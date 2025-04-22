@@ -179,8 +179,8 @@ export class DefaultInjector extends Injector {
     protected processInject(providers: Provider[]) {
         this.assertNotDestroyed();
         if (providers.length) {
-            const platform = this.platform();
-            return deepForEach(providers, p => this.processProvider(platform, p, providers), v => isPlainObject(v) && !((v as StaticProviders).provide || (v as DynamicProvider).provider))
+            const platform = this.platform();            
+            return eachProvider(providers, p => this.processProvider(platform, p, providers))
         }
     }
 
@@ -592,6 +592,13 @@ export class DefaultInjector extends Injector {
     }
 }
 
+function isProvider(v: any) {
+    return isPlainObject(v) && !((v as StaticProviders).provide || (v as DynamicProvider).provider)
+}
+
+export function eachProvider(providers: Provider[], cb: (provider: StaticProvider | DynamicProvider) => void) {
+   return deepForEach(providers, cb, isProvider);
+}
 
 /**
  * static injector.
@@ -635,10 +642,9 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
         type = typeOrDef.module;
         const providers = typeOrDef.providers;
         if (providers && providers.length) {
-            mpd = deepForEach(
+            mpd = eachProvider(
                 providers,
-                pdr => processProvider(pdr, providers),
-                v => isPlainObject(v) && !(v.provide || v.provider)
+                pdr => processProvider(pdr, providers)
             );
         }
     }
@@ -657,10 +663,9 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
 
         if (annotation.providers) {
             const providers = annotation.providers;
-            ps = mergePromise(ps, () => deepForEach(
+            ps = mergePromise(ps, () => eachProvider(
                 providers,
-                pdr => processProvider(pdr, providers),
-                v => isPlainObject(v) && !(v.provide || v.provider)
+                pdr => processProvider(pdr, providers)                
             ))
         }
 

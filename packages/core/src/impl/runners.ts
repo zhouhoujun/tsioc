@@ -1,6 +1,7 @@
 import {
     isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, refl, ProvdierOf, getClassName, ReflectiveFactory,
-    StaticProviders, isArray, ArgumentExecption, ReflectiveRef, StaticProvider, HandlerLike, composeHandlers, InvocationContext
+    StaticProviders, isArray, ArgumentExecption, ReflectiveRef, StaticProvider, HandlerLike, composeHandlers, InvocationContext,
+    eachProvider
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { ApplicationRunners, RunnableFactory, RunnableRef } from '../ApplicationRunners';
@@ -90,11 +91,22 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
             ends = [];
             this._maps.set(target.type, ends);
         }
-        const hasAdapter = target.providers.some(r => (r as StaticProviders).provide === RunnableRef || (r as StaticProviders).provide === RunnableFactory);
+
+        let hasAdapter = false;
+        let hasFactory = false;
+        eachProvider(target.providers, (r) => {
+            if ((r as StaticProviders).provide === RunnableRef) {
+                hasAdapter = true;
+            }
+            if ((r as StaticProviders).provide === RunnableFactory) {
+                hasAdapter = true;
+                hasFactory = true;
+            }
+        });
+        
         if (hasAdapter) {
             const targetRef = this.reflectiveFactory.create(target, options);
-            const hasFactory = target.providers.some(r => (r as StaticProviders).provide === RunnableFactory);
-            const endpoint = hasFactory ?  (ctx: InvocationContext) => targetRef.resolve(RunnableFactory).create(targetRef).invoke(ctx) : (ctx: InvocationContext) => targetRef.resolve(RunnableRef).invoke(ctx);
+            const endpoint = hasFactory ? (ctx: InvocationContext) => targetRef.resolve(RunnableFactory).create(targetRef).invoke(ctx) : (ctx: InvocationContext) => targetRef.resolve(RunnableRef).invoke(ctx);
             ends.push(endpoint);
             this.attachRef(targetRef, options.order);
             targetRef.onDestroy(() => this.detach(target.type));
@@ -202,7 +214,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         } else {
             return throwError(() => new ArgumentExecption('input type unknow'))
         }
-        if (handlers && handlers.length)  {
+        if (handlers && handlers.length) {
             return toObservable(composeHandlers(handlers)(context));
         }
         return throwError(() => new NotHandleExecption(context, context.args));
