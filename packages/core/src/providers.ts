@@ -37,14 +37,14 @@ export const RESOLVER_PROVIDERS = [
 ]
 
 
-SCOPE_PRODIDERS.push(...RESOLVER_PROVIDERS);
+SCOPE_PRODIDERS.push(RESOLVER_PROVIDERS);
 
 /**
  * Application root dependence providers
  */
 export const ROOT_DEPENDENCE_PROVIDERS: Provider[] = [
-    ...TRANSFORM_PROVIDERS,
-    ...RESOLVER_PROVIDERS,
+    TRANSFORM_PROVIDERS,
+    RESOLVER_PROVIDERS,
     {
         provide: getResolverToken(PayloadApplicationEvent),
         useValue: createPayloadResolver(

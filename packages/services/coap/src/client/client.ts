@@ -25,11 +25,11 @@ export class CoapClient extends AbstractClient<UrlRequestOptions, CoapRequest<an
             const options = this.getOptions();
             const connectOpts = {
                 type: 'udp4',
-                sendBufferSize: options.transportOpts?.maxSize ?? defaultMaxSize,
+                sendBufferSize: options.transportOptions?.maxSize ?? defaultMaxSize,
                 ...options.connectOpts
             } as SocketOptions;
             this.socket = createSocket(connectOpts);
-            const transportOpts = options.transportOpts!;
+            const transportOpts = options.transportOptions!;
             if (!transportOpts.host) {
                 transportOpts.host = new URL(options.url!).host;
             }

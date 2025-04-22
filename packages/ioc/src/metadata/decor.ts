@@ -743,7 +743,7 @@ export const ProvidedIn: ProvidedIn = createDecorator<ProvidedInTargetMetadata>(
             const type = ctx.type;
             const prds = meta.provide ? { provide: meta.provide, useClass: type } : type;
             const platform = ctx.injector.platform();
-            platform.setTypeProvider(meta.target, [prds]);
+            platform.setTypeProvider(meta.target, prds);
             ctx.injector.onDestroy(() => {
                 platform.removeTypeProvider(type, prds);
             });

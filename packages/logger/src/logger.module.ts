@@ -27,9 +27,7 @@ export const LOGGER_PROVIDERS: Provider[] = [
     imports: [
         AopModule
     ],
-    providers: [
-        ...LOGGER_PROVIDERS
-    ]
+    providers: LOGGER_PROVIDERS
 })
 export class LoggerModule {
 

@@ -375,9 +375,9 @@ export function normalizeConfigableHandlerOptions<T extends ConfigableHandlerOpt
     if (options.execptionHandlers) {
         const handles = isArray(options.execptionHandlers) ? options.execptionHandlers : [options.execptionHandlers];
         if (!options.providers) {
-            options.providers = [...handles];
+            options.providers = handles;
         } else {
-            options.providers.push(...handles)
+            options.providers.push(handles)
         }
     }
     return options;

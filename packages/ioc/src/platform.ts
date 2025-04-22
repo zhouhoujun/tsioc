@@ -85,7 +85,7 @@ export abstract class Platform implements OnDestroy {
      * @param type
      * @param providers
      */
-    abstract setTypeProvider(type: Type | Class, providers: Provider[]): void;
+    abstract setTypeProvider(type: Type | Class, ...providers: Provider[]): void;
     /**
      * remove type providers.
      * @param type

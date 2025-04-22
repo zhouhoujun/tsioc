@@ -211,10 +211,10 @@ export class DefaultInjector extends Injector {
                 const pdrs = (p as DynamicProvider).provider(this);
                 if (isPromise(pdrs)) {
                     return pdrs.then(ps => {
-                        if (ps) this.processInject(isArray(ps) ? ps: [ps]);
+                        if (ps) this.processInject(isArray(ps) ? ps : [ps]);
                     });
                 }
-                if (pdrs) this.processInject(isArray(pdrs) ? pdrs: [pdrs]);
+                if (pdrs) this.processInject(isArray(pdrs) ? pdrs : [pdrs]);
             }
         }
     }

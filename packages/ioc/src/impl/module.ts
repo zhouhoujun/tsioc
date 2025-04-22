@@ -109,7 +109,7 @@ export function createModuleRef<T>(module: Type<T> | Class<T> | ModuleWithProvid
     if (isType(module)) return new DefaultModuleRef(get<ModuleDef>(module), parent, option);
     if (isModuleProviders(module)) return new DefaultModuleRef(get<ModuleDef>(module.module), parent, {
         ...option,
-        providers: [...module.providers ?? [], ...option?.providers ?? []]
+        providers: option?.providers?.length? [module.providers ?? [], option?.providers] : module.providers
     });
     return new DefaultModuleRef(module, parent, option)
 }

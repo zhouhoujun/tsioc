@@ -309,8 +309,8 @@ export const decorAnnoAction = (ctx: DecorContext, next: HandlerFn, context: Con
             def.getAnnotation().expires = meta.expires
         }
 
-        if (ctx.define.providers) {
-            def.providers.push(...ctx.define.providers)
+        if (ctx.define.providers?.length) {
+            def.providers.push(ctx.define.providers)
         }
 
         if (meta.providedIn) {
@@ -336,8 +336,8 @@ export const decorRunnable = (ctx: DecorContext, next: HandlerFn, context: Conte
 const typeProvidersDecors: Record<string, boolean> = { '@Injectable': true, '@Providers': true };
 export const decorProviders = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (typeProvidersDecors[ctx.define.decor.toString()]) {
-        if ((ctx.define.metadata as ProvidersMetadata).providers) {
-            ctx.class.providers.push(...(ctx.define.metadata as ProvidersMetadata).providers!)
+        if ((ctx.define.metadata as ProvidersMetadata).providers?.length) {
+            ctx.class.providers.push((ctx.define.metadata as ProvidersMetadata).providers!)
         }
     }
     return next(ctx, context);

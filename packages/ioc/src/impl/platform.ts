@@ -133,7 +133,7 @@ export class DefaultPlatform implements Platform {
         tyRef.extendTypes.forEach(t => {
             const tpd = this._pdrs.get(t);
             if (tpd) {
-                pdrs.unshift(...tpd)
+                pdrs.unshift(tpd)
             }
         })
         return pdrs
@@ -144,11 +144,11 @@ export class DefaultPlatform implements Platform {
      * @param type 
      * @param providers 
      */
-    setTypeProvider(type: Type | Class, providers: StaticProvider[]) {
+    setTypeProvider(type: Type | Class, ...providers: StaticProvider[]) {
         const ty = isFunction(type) ? type : type.type;
         const prds = this._pdrs.get(ty);
         if (prds) {
-            prds.push(...providers)
+            prds.push(providers)
         } else {
             this._pdrs.set(ty, providers)
         }

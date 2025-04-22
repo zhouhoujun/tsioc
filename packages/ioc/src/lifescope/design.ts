@@ -109,7 +109,7 @@ export const dependencyInterceptor = (input: DesignContext, next: HandlerFn, con
             if (!platform.getInjector(type)) {
                 const pType = input.providedIn;
                 const prd = { provide, useExisting: type };
-                platform.setTypeProvider(pType, [prd]);
+                platform.setTypeProvider(pType, prd);
                 injector.onDestroy(() => {
                     platform.removeTypeProvider(pType, prd);
                 });

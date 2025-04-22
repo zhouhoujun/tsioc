@@ -385,7 +385,7 @@ export class Class<T = any> {
             const eopt = this.methodOptions.get(method)!;
             if (hasItem(options.providers)) {
                 if (!eopt.providers) eopt.providers = [];
-                eopt.providers.push(...options.providers!)
+                eopt.providers.push(options.providers!)
             }
             if (hasItem(options.resolvers)) {
                 if (!eopt.resolvers) eopt.resolvers = [];
