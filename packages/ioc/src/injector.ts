@@ -1,6 +1,6 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
 import { Type, ClassType, noPointcut } from './types';
-import { ClassProvider, ExistingProvider, FactoryProvider, ModuleType, ProviderType, ValueProvider } from './providers';
+import { ClassProvider, ExistingProvider, FactoryProvider, ModuleType, Provider, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
@@ -110,10 +110,10 @@ export abstract class Injector implements Destroyable, OnDestroy {
      *
      * @template T
      * @param {Token<T>} token the resolve token {@link Token}.
-     * @param {ProviderType[]} providers the providers to resolve with token. array of {@link ProviderType}.
+     * @param {Provider[]} providers the providers to resolve with token. array of {@link Provider}.
      * @returns {T}
      */
-    abstract resolve<T>(token: Token<T>, providers?: ProviderType[]): T;
+    abstract resolve<T>(token: Token<T>, providers?: Provider[]): T;
     /**
      * resolve token instance with token and param provider.
      * 
@@ -143,10 +143,10 @@ export abstract class Injector implements Destroyable, OnDestroy {
      *
      * @template T
      * @param {Token<T>} token the resolve token {@link Token}.
-     * @param {...ProviderType[]} providers the providers {@link ProviderType} to resolve with token.
+     * @param {...Provider[]} providers the providers {@link Provider} to resolve with token.
      * @returns {T}
      */
-    abstract resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
+    abstract resolve<T>(token: Token<T>, ...providers: Provider[]): T;
 
     /**
      * set value.
@@ -190,15 +190,15 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * 注入提供标记指令
      * @param providers
      */
-    abstract inject(providers: ProviderType | ProviderType[]): this;
+    abstract inject(providers: Provider | Provider[]): this;
     /**
      * inject providers.
      *
      * 注入提供标记指令
-     * @param {...ProviderType[]} providers
+     * @param {...Provider[]} providers
      * @returns {this}
      */
-    abstract inject(...providers: ProviderType[]): this;
+    abstract inject(...providers: Provider[]): this;
     /**
      * use modules.
      *
@@ -256,10 +256,10 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @param {(T | Type<T> | Class<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
      * @param {T} [instance] instance of target type.
-     * @param {...ProviderType[]} providers ...params of {@link ProviderType}.
+     * @param {...Provider[]} providers ...params of {@link Provider}.
      * @returns {TR} the returnning of invoked method.
      */
-    abstract invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
+    abstract invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
     /**
      * invoke method.
      *
@@ -268,10 +268,10 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @template T
      * @param {(T | Type<T> | Class<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
-     * @param {ProviderType[]} providers array of {@link ProviderType}.
+     * @param {Provider[]} providers array of {@link Provider}.
      * @returns {TR} the returnning of invoked method.
      */
-    abstract invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
+    abstract invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, providers: Provider[]): TR;
     /**
      * invoke method.
      *
@@ -327,7 +327,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * create platform injector.
      * @param providers
      */
-    static create(providers?: ProviderType[]): Injector;
+    static create(providers?: Provider[]): Injector;
     /**
      * create injector.
      * @param providers 
@@ -341,14 +341,14 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @param parent 
      * @param scope 
      */
-    static create(providers: ProviderType[] | undefined, parent: Injector, scope?: InjectorScope): Injector;
+    static create(providers: Provider[] | undefined, parent: Injector, scope?: InjectorScope): Injector;
     /**
      * create injector with option.
      * @param options 
      */
-    static create(options: { providers: ProviderType[], parent?: Injector, scope?: InjectorScope }): Injector;
+    static create(options: { providers: Provider[], parent?: Injector, scope?: InjectorScope }): Injector;
     static create(
-        options: ProviderType[] | Injector | { providers: ProviderType[], parent?: Injector, scope?: InjectorScope } | undefined,
+        options: Provider[] | Injector | { providers: Provider[], parent?: Injector, scope?: InjectorScope } | undefined,
         parent?: Injector | InjectorScope, scope?: InjectorScope): Injector {
         if (!options) {
             options = []
@@ -402,7 +402,7 @@ export const INJECT_IMPL = {
      * @param parent 
      * @param scope 
      */
-    create(providers?: ProviderType[], parent?: Injector, scope?: InjectorScope): Injector {
+    create(providers?: Provider[], parent?: Injector, scope?: InjectorScope): Injector {
         throw new Execption('not implemented.')
     }
 };

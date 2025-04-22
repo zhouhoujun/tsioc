@@ -1,6 +1,6 @@
 import { Type, ClassType, DesignParam, Modules } from '../types';
 import { InjectFlags, Token } from '../tokens';
-import { ModuleType, ProviderType } from '../providers';
+import { ModuleType, Provider } from '../providers';
 import { ArgumentResolver } from '../resolver';
 import { InvokeArguments } from '../context';
 
@@ -133,7 +133,7 @@ export interface ProvidersMetadata {
      *
      * @type {KeyValue<Token, Token>}
      */
-    providers?: ProviderType[];
+    providers?: Provider[];
 }
 
 
@@ -173,9 +173,9 @@ export interface MethodMetadata extends Record<string, any> {
     /**
      * param providers
      *
-     * @type {ProviderType[]}
+     * @type {Provider[]}
      */
-    providers?: ProviderType[];
+    providers?: Provider[];
     /**
      * method property key
      *

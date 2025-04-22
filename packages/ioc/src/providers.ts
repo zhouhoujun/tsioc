@@ -224,11 +224,12 @@ export type StaticProviders = ClassProvider & ValueProvider & ConstructorProvide
  */
 export type StaticProvider<T = any> = TypeProvider<T> | ClassProvider<T> | ValueProvider<T> | ConstructorProvider<T> | ExistingProvider<T> | FactoryProvider<T>;
 
+
 /**
  * providers for {@link Injector}.
  * 
  */
-export type ProviderType = ClassType | Modules[] | StaticProvider | DynamicProvider;
+export type Provider = StaticProvider | DynamicProvider | Modules[] | Array<Provider>;
 
 /**
  * type module with providers.
@@ -241,10 +242,10 @@ export interface ModuleWithProviders<T = any> {
     /**
      * providers for the module
      */
-    providers: ProviderType[];
+    providers: Provider[];
 }
 
-export type ModuleType<T extends Type = Type> = Modules<T> | ModuleWithProviders;
+export type ModuleType<T extends Type = Type> = Modules<T> | ModuleWithProviders | Array<ModuleType>;
 
 /**
  * is module providers or not.

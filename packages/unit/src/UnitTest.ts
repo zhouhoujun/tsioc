@@ -1,4 +1,4 @@
-import { Module, ProviderType, Type } from '@tsdi/ioc';
+import { Module, Provider, Type } from '@tsdi/ioc';
 import { Application, PROCESS_ROOT, LoadType } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { UNITTESTCONFIGURE, UnitTestConfigureService } from './configure';
@@ -36,7 +36,7 @@ export class UnitTest { }
  * @returns {Promise<any>}
  */
 export async function runTest(src: string | Type | (string | Type)[], config?: UnitTestConfigure, ...loads: LoadType[]): Promise<any> {
-   const providers: ProviderType[] = [
+   const providers: Provider[] = [
       {
          provide: UNITTESTCONFIGURE,
          useValue: { ...config, src }

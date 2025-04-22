@@ -1,5 +1,5 @@
 import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
-import { ModuleType, ModuleWithProviders, ProviderType } from './providers';
+import { ModuleType, ModuleWithProviders, Provider } from './providers';
 import { Injector } from './injector';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
@@ -74,11 +74,11 @@ export interface ModuleOption {
     /**
      *  the provider dependencies.
      */
-    depProviders?: ProviderType[];
+    depProviders?: Provider[];
     /**
      *  providers.
      */
-    providers?: ProviderType[];
+    providers?: Provider[];
     /**
      * dependence modules. register before module injector init.
      */

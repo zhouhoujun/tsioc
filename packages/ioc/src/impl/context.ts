@@ -10,7 +10,7 @@ import { Injector, isInjector } from '../injector';
 import { Execption } from '../execption';
 import { Class } from '../metadata/type';
 import { getDef } from '../metadata/refl';
-import { ProvdierOf, ProviderType, toProvider } from '../providers';
+import { ProvdierOf, Provider, toProvider } from '../providers';
 import { OperationInvoker } from '../operation';
 
 
@@ -111,7 +111,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         return BASE_RESOLVERS
     }
 
-    protected createInjector(injector: Injector, providers?: ProviderType[]) {
+    protected createInjector(injector: Injector, providers?: Provider[]) {
         return Injector.create(providers, injector, this.injectorScope)
     }
 

@@ -1,5 +1,5 @@
 import {
-    isUndefined, Type, createDecorator, ProviderType, InjectableMetadata, PropertyMetadata, ActionTypes, InjectFlags,
+    isUndefined, Type, createDecorator, Provider, InjectableMetadata, PropertyMetadata, ActionTypes, InjectFlags,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
     isString, Parameter, ProviderMetadata, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
     ModuleType, ClassType, MutilProvider, ReflectiveRef, Class, Injector,
@@ -214,7 +214,7 @@ function injectBean(injector: Injector, typeRef: Class<any>, meta: Confgiuration
         .forEach(d => {
             const key = d.propertyKey;
             const { provide, static: stac, multi, multiOrder, providedIn } = d.metadata as BeanMetadata;
-            let provider: ProviderType
+            let provider: Provider
             if (d.decorType === 'method') {
                 provider = {
                     provide,
@@ -222,7 +222,7 @@ function injectBean(injector: Injector, typeRef: Class<any>, meta: Confgiuration
                     static: stac,
                     multi,
                     multiOrder
-                } as ProviderType
+                } as Provider
             } else {
                 provider = {
                     provide,
@@ -230,7 +230,7 @@ function injectBean(injector: Injector, typeRef: Class<any>, meta: Confgiuration
                     static: stac,
                     multi,
                     multiOrder
-                } as ProviderType
+                } as Provider
             }
             providedIn ? injector.platform().getInjector(providedIn).inject(provider) : injector.inject(provider);
         });

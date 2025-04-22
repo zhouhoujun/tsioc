@@ -6,7 +6,7 @@ import {
     InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProvidedInTargetMetadata, ModuleMetadata, ProvidedInMetadata
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
-import { ProviderType, StaticProvider } from '../providers';
+import { Provider, StaticProvider } from '../providers';
 import { OperationArgumentResolver } from '../resolver';
 import { InvokeArguments, InvokeOptions } from '../context';
 import { getModuleType } from '../module.ref';
@@ -668,7 +668,7 @@ export interface Providers {
      *
      * @param {(Registration | symbol | string)} providers provider reference service to target.
      */
-    (providers: ProviderType[]): ClassDecorator;
+    (providers: Provider[]): ClassDecorator;
 
     /**
      * Providers decorator, for class. use to add ref service to the class.

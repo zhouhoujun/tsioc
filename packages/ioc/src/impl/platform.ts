@@ -3,7 +3,7 @@ import { Type, ClassType } from '../types';
 import { isFunction } from '../utils/chk';
 import { get } from '../metadata/refl';
 import { Class } from '../metadata/type';
-import { ProviderType, StaticProvider } from '../providers';
+import { Provider, StaticProvider } from '../providers';
 import { Injector, InjectorScope } from '../injector';
 import { Execption } from '../execption';
 import { Platform } from '../platform';
@@ -20,7 +20,7 @@ export class DefaultPlatform implements Platform {
 
     // private _actions: Map<Token, any>;
     private _singls: Map<Token, any>;
-    private _pdrs: Map<Type, ProviderType[]>;
+    private _pdrs: Map<Type, Provider[]>;
     private _scopes: Map<string | Type, Injector>;
 
     readonly modules = new Map<Type, ModuleRef>();
@@ -154,7 +154,7 @@ export class DefaultPlatform implements Platform {
         }
     }
 
-    removeTypeProvider(type: Type | Class, ...providers: ProviderType[]): void {
+    removeTypeProvider(type: Type | Class, ...providers: Provider[]): void {
         const ty = isFunction(type) ? type : type.type;
         if (!providers.length) {
             this.clearTypeProvider(ty);

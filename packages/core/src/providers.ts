@@ -1,4 +1,4 @@
-import { Injector, isDefined, ProviderType, ReflectiveFactory, SCOPE_PRODIDERS } from '@tsdi/ioc';
+import { Injector, isDefined, Provider, ReflectiveFactory, SCOPE_PRODIDERS } from '@tsdi/ioc';
 import { ApplicationFactory } from './ApplicationContext';
 import { ApplicationRunners } from './ApplicationRunners';
 import { RandomUuidGenerator, UuidGenerator } from './uuid';
@@ -22,7 +22,7 @@ import { TRANSFORM_PROVIDERS } from './pipes/transform';
 /**
  * Platform default providers
  */
-export const DEFAULTA_PROVIDERS: ProviderType[] = [
+export const DEFAULTA_PROVIDERS: Provider[] = [
     { provide: InvocationFactoryResolver, useFactory: (factory) => new InvocationFactoryResolverImpl(factory), deps: [ReflectiveFactory], static: true },
     { provide: ApplicationFactory, useClass: DefaultApplicationFactory, static: true },
     { provide: UuidGenerator, useClass: RandomUuidGenerator, asDefault: true, static: true }
@@ -42,7 +42,7 @@ SCOPE_PRODIDERS.push(...RESOLVER_PROVIDERS);
 /**
  * Application root dependence providers
  */
-export const ROOT_DEPENDENCE_PROVIDERS: ProviderType[] = [
+export const ROOT_DEPENDENCE_PROVIDERS: Provider[] = [
     ...TRANSFORM_PROVIDERS,
     ...RESOLVER_PROVIDERS,
     {

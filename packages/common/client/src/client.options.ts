@@ -1,5 +1,5 @@
 import { Protocols } from '@tsdi/common';
-import { ModuleType, ProvdierOf, ProviderType, Token, Type } from '@tsdi/ioc';
+import { ModuleType, ProvdierOf, Provider, Token, Type } from '@tsdi/ioc';
 import { ClientBackend } from './backend';
 import { ClientConfig } from './options';
 import { AbstractClient } from './AbstractClient';
@@ -21,7 +21,7 @@ export interface BasicClientOpts {
     /**
      * custom provider with module.
      */
-    providers?: ProviderType[];
+    providers?: Provider[];
 
 }
 

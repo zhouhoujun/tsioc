@@ -1,4 +1,4 @@
-import { ModuleType, ProvdierOf, ProviderType, Type } from '@tsdi/ioc';
+import { ModuleType, ProvdierOf, Provider, Type } from '@tsdi/ioc';
 import { InvocationOptions } from '@tsdi/core';
 import { CommonProtocols, Protocols } from '@tsdi/common';
 import { TransportConfigure } from '@tsdi/common/transport';
@@ -45,7 +45,7 @@ export interface BasicServiceOpts {
     /**
      * custom provider with module.
      */
-    providers?: ProviderType[];
+    providers?: Provider[];
 }
 
 export interface MqttServiceOpts<TSerOpts = any> extends BasicServiceOpts {

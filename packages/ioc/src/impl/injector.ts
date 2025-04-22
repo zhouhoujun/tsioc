@@ -14,14 +14,14 @@ import { Platform } from '../platform';
 import { get } from '../metadata/refl';
 import { ModuleDef, Class } from '../metadata/type';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
-import { ModuleWithProviders, ProviderType, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
+import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
 import { ReflectiveFactory } from '../reflective';
 import { ReflectiveFactoryImpl, hasContext } from './reflective';
 import { createContext, InvocationContext, InvokeOptions } from '../context';
 import { DefaultPlatform } from './platform';
 import { DesignContext } from '../lifescope/ctx';
 
-export const SCOPE_PRODIDERS: ProviderType[] = [];
+export const SCOPE_PRODIDERS: Provider[] = [];
 
 /**
  * Default Injector
@@ -56,7 +56,7 @@ export class DefaultInjector extends Injector {
         return this._readyDefer.promise
     }
 
-    constructor(providers: ProviderType[] = [], readonly parent?: Injector, readonly scope?: InjectorScope) {
+    constructor(providers: Provider[] = [], readonly parent?: Injector, readonly scope?: InjectorScope) {
         super();
         this.records = new Map();
         if (parent) {
@@ -102,7 +102,7 @@ export class DefaultInjector extends Injector {
         }
     }
 
-    protected initProviders(providers: ProviderType[]) {
+    protected initProviders(providers: Provider[]) {
         const result = this.processInject(providers);
         if (result) {
             result.then(() => this._readyDefer.resolve())
@@ -152,8 +152,8 @@ export class DefaultInjector extends Injector {
         return this
     }
 
-    inject(providers: ProviderType | ProviderType[]): this;
-    inject(...providers: ProviderType[]): this;
+    inject(providers: Provider | Provider[]): this;
+    inject(...providers: Provider[]): this;
     inject(...args: any[]): this {
         this.processInject(args);
         return this
@@ -176,7 +176,7 @@ export class DefaultInjector extends Injector {
         return types;
     }
 
-    protected processInject(providers: ProviderType[]) {
+    protected processInject(providers: Provider[]) {
         this.assertNotDestroyed();
         if (providers.length) {
             const platform = this.platform();
@@ -199,7 +199,7 @@ export class DefaultInjector extends Injector {
         }, v => isPlainObject(v) && !(isType(v.module) && isArray(v.providers)));
     }
 
-    protected processProvider(platform: Platform, p: TypeOption | StaticProvider | DynamicProvider, providers?: ProviderType[]): void | Promise<void> {
+    protected processProvider(platform: Platform, p: TypeOption | StaticProvider | DynamicProvider, providers?: Provider[]): void | Promise<void> {
         if (isFunction(p)) {
             this.registerType(platform, p)
         } else if (isPlainObject(p)) {
@@ -211,10 +211,10 @@ export class DefaultInjector extends Injector {
                 const pdrs = (p as DynamicProvider).provider(this);
                 if (isPromise(pdrs)) {
                     return pdrs.then(ps => {
-                        if (ps) isArray(ps) ? ps.forEach(pdr => this.processProvider(platform, pdr)) : this.processProvider(platform, ps);
+                        if (ps) this.processInject(isArray(ps) ? ps: [ps]);
                     });
                 }
-                if (pdrs) isArray(pdrs) ? pdrs.forEach(pdr => this.processProvider(platform, pdr)) : this.processProvider(platform, pdrs);
+                if (pdrs) this.processInject(isArray(pdrs) ? pdrs: [pdrs]);
             }
         }
     }
@@ -406,8 +406,8 @@ export class DefaultInjector extends Injector {
 
     resolve<T, TArg>(token: Token<T>, option?: InvokeOptions): T;
     resolve<T>(token: Token<T>, context?: InvocationContext): T;
-    resolve<T>(token: Token<T>, providers?: ProviderType[]): T;
-    resolve<T>(token: Token<T>, ...providers: ProviderType[]): T;
+    resolve<T>(token: Token<T>, providers?: Provider[]): T;
+    resolve<T>(token: Token<T>, ...providers: Provider[]): T;
     resolve<T>(token: Token<T>, ...args: any[]) {
         if (!args.length) {
             return this.get(token);
@@ -463,13 +463,13 @@ export class DefaultInjector extends Injector {
         return this
     }
 
-    invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, ...providers: ProviderType[]): TR;
+    invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
     invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
     invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
-    invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, providers: ProviderType[]): TR;
+    invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, providers: Provider[]): TR;
     invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
         this.assertNotDestroyed();
-        let providers: ProviderType[] | undefined;
+        let providers: Provider[] | undefined;
         let context: InvocationContext | undefined;
         let option: any;
         if (args.length === 1) {
@@ -609,7 +609,7 @@ const isRootAlias = (token: any) => token === Injector || token === INJECTOR || 
 const isInjectAlias = (token: any) => token === Injector || token === INJECTOR;
 const isStaticAlias = (token: any) => token === StaticInjector;
 
-INJECT_IMPL.create = (providers: ProviderType[], parent?: Injector, scope?: InjectorScope) => {
+INJECT_IMPL.create = (providers: Provider[], parent?: Injector, scope?: InjectorScope) => {
     if (scope === 'static' || isType(scope)) {
         return new StaticInjector(providers, parent, scope)
     }

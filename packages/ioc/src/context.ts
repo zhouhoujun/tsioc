@@ -4,7 +4,7 @@ import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
 import { Injector, InstanceOf } from './injector';
 import { ArgumentResolver, Parameter } from './resolver';
-import { ProvdierOf, ProviderType } from './providers';
+import { ProvdierOf, Provider } from './providers';
 import { Execption } from './execption';
 import { OperationInvoker } from './operation';
 
@@ -175,7 +175,7 @@ export interface InvokeProviders {
      * 
      * 调用接口的提供者
      */
-    providers?: ProviderType[];
+    providers?: Provider[];
 }
 
 

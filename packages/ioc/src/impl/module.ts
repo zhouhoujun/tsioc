@@ -3,7 +3,7 @@ import { get } from '../metadata/refl';
 import { Class, ModuleDef } from '../metadata/type';
 import { ModuleOption, ModuleRef } from '../module.ref';
 import { Platform } from '../platform';
-import { isModuleProviders, ModuleWithProviders, ProviderType } from '../providers';
+import { isModuleProviders, ModuleWithProviders, Provider } from '../providers';
 import { Type } from '../types';
 import { isType } from '../utils/chk';
 import { DefaultInjector, mergePromise } from './injector';
@@ -49,7 +49,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         return mergePromise(ps, () => this.ininModule(platfrom, dedupStack, option))
     }
 
-    protected override initProviders(providers: ProviderType[]): void {
+    protected override initProviders(providers: Provider[]): void {
 
     }
 

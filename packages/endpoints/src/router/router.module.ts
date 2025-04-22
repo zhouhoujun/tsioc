@@ -1,4 +1,4 @@
-import { Injector, InstanceOf, Module, ModuleWithProviders, ProviderType, ReflectiveFactory, Token, TypeOf, getToken, isFunction, isString, isType, tokenId } from '@tsdi/ioc';
+import { Injector, InstanceOf, Module, ModuleWithProviders, Provider, ReflectiveFactory, Token, TypeOf, getToken, isFunction, isString, isType, tokenId } from '@tsdi/ioc';
 import { PatternFormatter, Protocols, defaultFormatter } from '@tsdi/common';
 import { ROUTES, Routes } from './route';
 import { MESSAGE_ROUTERS, RouteMatcher, Router, ROUTERS } from './router';
@@ -128,7 +128,7 @@ export class RouterModule {
     }
 }
 
-export function createRouteProviders(protocol: Protocols, microservice: boolean, optsify: InstanceOf<RouteOpts>, asDefault?: boolean): ProviderType[] {
+export function createRouteProviders(protocol: Protocols, microservice: boolean, optsify: InstanceOf<RouteOpts>, asDefault?: boolean): Provider[] {
     const token = getToken(microservice ? 'MicroServiceRouter' : Router, protocol);
     return [
         {

@@ -1,6 +1,6 @@
 import {
     Arrayify, Injector, Module, ModuleRef, ModuleWithProviders,
-    ProviderType, isArray, lang, toProvider, tokenId
+    Provider, isArray, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { ConfigMissingExecption, TypedRespond } from '@tsdi/core';
 import { isMicroTransport, NotImplementedExecption, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
@@ -77,13 +77,13 @@ export function provideService(options: ServiceOptions): ModuleWithProviders<End
 export function provideService(options: Array<ServiceOptions>): ModuleWithProviders<EndpointModule>;
 export function provideService(options: Arrayify<ServiceOptions>): ModuleWithProviders<EndpointModule> {
 
-    const providers: ProviderType[] = [];
+    const providers: Provider[] = [];
     if (isArray(options)) {
         options.forEach((op, idx) => {
-            providers.push(...createServiceProviders(op, idx));
+            providers.push(createServiceProviders(op, idx));
         })
     } else {
-        providers.push(...createServiceProviders(options, 0));
+        providers.push(createServiceProviders(options, 0));
     }
 
     return {
@@ -102,7 +102,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
 
     const microservice = isMicroTransport(options);
     return [
-        ...options.providers ?? [],
+        options.providers ?? [],
         {
             provider: async (injector) => {
                 const transportName = toTransportModuleName(options.transport);
@@ -131,7 +131,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
 
                 const cloneOpts = lang.deepClone(moduleOpts.config, moduleOpts.defaultConfig, (n, value, deft) => {
                     if (n == 'providers' || n === 'routes') {
-                        return [...value, ...deft];
+                        return [value, deft];
                     }
                     return value;
                 });
@@ -140,7 +140,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
                     backend: RouterModule.getToken(moduleOpts.transport, microservice),
                     enableTypeChain: true,
                     ...cloneOpts
-                } as ServiceConfig & { providers: ProviderType[] };
+                } as ServiceConfig & { providers: Provider[] };
 
                 if (!serverOpts.providers) {
                     serverOpts.providers = [];
@@ -172,7 +172,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
                 }
 
 
-                const providers: ProviderType[] = [];
+                const providers: Provider[] = [];
 
                 if (moduleOpts.server) {
                     providers.push(toProvider(moduleOpts.serverType, moduleOpts.server));
@@ -188,14 +188,14 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
                 });
 
                 return [
-                    ...moduleOpts.providers ?? [],
-                    ...createRouteProviders(moduleOpts.transport, microservice, serverOpts.routes ?? {}),
+                    moduleOpts.providers ?? [],
+                    createRouteProviders(moduleOpts.transport, microservice, serverOpts.routes ?? {}),
                     { provide: REGISTER_SERVICES, useValue: { service: moduleOpts.serverType, bootstrap: serverOpts.bootstrap, microservice: serverOpts.microservice, providers }, multi: true }
                 ];
             }
         }
 
-    ] as ProviderType[];
+    ] as Provider[];
 
 }
 

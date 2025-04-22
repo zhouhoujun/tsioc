@@ -1,4 +1,4 @@
-import { isFunction, Type, ClassType, ProviderType, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, ReflectiveFactory } from '@tsdi/ioc';
+import { isFunction, Type, ClassType, Provider, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, ReflectiveFactory } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEPENDENCE_PROVIDERS, } from './providers';
 import { ModuleLoader } from './ModuleLoader';
@@ -43,8 +43,8 @@ export class Application<T = any, TArg = ApplicationArguments> {
         }
         if (!isFunction(target)) {
             if (!this.loader && target.loader) this.loader = target.loader;
-            const providers = target.platformProviders?.length ? [...this.getPlatformDefaultProviders(), ...target.platformProviders] : this.getPlatformDefaultProviders();
-            target.deps = target.deps?.length ? [...this.getDeps(), ...target.deps] : this.getDeps();
+            const providers = target.platformProviders?.length ? [this.getPlatformDefaultProviders(), target.platformProviders] : this.getPlatformDefaultProviders();
+            target.deps = target.deps?.length ? [this.getDeps(), target.deps] : this.getDeps();
             target.scope = 'root';
             this.root = this.createInjector(providers, target)
         } else {
@@ -53,7 +53,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
         }
     }
 
-    protected getPlatformDefaultProviders(): ProviderType[] {
+    protected getPlatformDefaultProviders(): Provider[] {
         return DEFAULTA_PROVIDERS
     }
 
@@ -61,11 +61,11 @@ export class Application<T = any, TArg = ApplicationArguments> {
         return [];
     }
 
-    protected getRootDependenceProviders(): ProviderType[] {
+    protected getRootDependenceProviders(): Provider[] {
         return ROOT_DEPENDENCE_PROVIDERS;
     }
 
-    protected getRootDefaultProviders(): ProviderType[] {
+    protected getRootDefaultProviders(): Provider[] {
         return [];
     }
 
@@ -146,7 +146,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
     }
 
 
-    protected createInjector<T, TArg>(providers: ProviderType[], option: ApplicationOption<T, TArg>) {
+    protected createInjector<T, TArg>(providers: Provider[], option: ApplicationOption<T, TArg>) {
         const container = option.injector ?? Injector.create(providers);
         if (option.baseURL) {
             container.setValue(PROCESS_ROOT, option.baseURL)
@@ -156,10 +156,10 @@ export class Application<T = any, TArg = ApplicationArguments> {
         } else {
             this.loader = new DefaultModuleLoader();
         }
-        option.platformDeps && container.use(...option.platformDeps);
-        option.depProviders = [...this.getRootDependenceProviders(), ...option.depProviders || []];
-        option.deps = [...this.getRootDependencies(), ...option.deps || []]
-        option.providers = [...this.getRootDefaultProviders(), ...option.providers || []];
+        option.platformDeps && container.use(option.platformDeps);
+        option.depProviders = option.depProviders?.length ? [this.getRootDependenceProviders(), option.depProviders] : this.getRootDependenceProviders();
+        option.deps = option.deps?.length ? [this.getRootDependencies(), option.deps] : this.getRootDependencies();
+        option.providers = option.providers?.length? [this.getRootDefaultProviders(), option.providers] : this.getRootDefaultProviders();
         return this.createModuleRef(container, option);
     }
 

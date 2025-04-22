@@ -1,5 +1,5 @@
 import { Type, ClassType, Annotation } from '../types';
-import { ModuleWithProviders, ProviderType } from '../providers';
+import { ModuleWithProviders, Provider } from '../providers';
 import {
     PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata,
     PropertyMetadata, ParameterMetadata
@@ -180,7 +180,7 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
     /**
     * module extends providers.
     */
-    providers?: ProviderType[];
+    providers?: Provider[];
 }
 
 export const proxyTag = Symbol('__proxy');
@@ -215,7 +215,7 @@ export class Class<T = any> {
     /**
      * class extends providers.
      */
-    readonly providers: ProviderType[];
+    readonly providers: Provider[];
     /**
      * class resolvers.
      *

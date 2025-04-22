@@ -3,7 +3,7 @@ import { Class } from '../metadata/type';
 import { isArray, isNil, isPromise } from '../utils/chk';
 import { InjectFlags, Token } from '../tokens';
 import { get } from '../metadata/refl';
-import { ProviderType } from '../providers';
+import { Provider } from '../providers';
 import { createContext, InvocationContext, InvokeArguments } from '../context';
 import { ReflectiveRef, ReflectiveFactory, InvokerOptions } from '../reflective';
 import { Injector, MethodType } from '../injector';
@@ -20,7 +20,7 @@ import { Platform } from '../platform';
  */
 export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 
-    private _tagPdrs: ProviderType[] | undefined;
+    private _tagPdrs: Provider[] | undefined;
     private _type: Type<T>;
     private _typeName: string;
     private _instance?: T;
@@ -54,9 +54,13 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     getInstance(): T {
         this.assertNotDestroyed();
         if (!this._instance) {
-            this._instance = this.resolve(this.type, this._isResolve ? InjectFlags.Resolve : undefined);
+            this._instance = this.createInstance();
         }
         return this._instance;
+    }
+
+    protected createInstance() {
+        return this.resolve(this.type, this._isResolve ? InjectFlags.Resolve : undefined);
     }
 
     resolve<R>(token: Token<R>, flags?: InjectFlags): R {
@@ -199,10 +203,9 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         if (!this._tagPdrs) {
             this._tagPdrs = injector.platform().getTypeProvider(this.class)
         }
-        let providers = option?.providers;
-        let resolvers = option?.resolvers;
-        providers = providers ? this._tagPdrs.concat(providers) : this._tagPdrs;
-        resolvers = resolvers ? this.class.resolvers.concat(resolvers) : this.class.resolvers
+
+        const resolvers = option?.resolvers ? this.class.resolvers.concat(option?.resolvers) : this.class.resolvers;
+        const providers = option?.providers?.length? [this._tagPdrs, option.providers]: this._tagPdrs;
 
         return createContext(injector, {
             ...option,

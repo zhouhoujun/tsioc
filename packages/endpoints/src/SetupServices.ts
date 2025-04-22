@@ -1,4 +1,4 @@
-import { Injectable, ProviderType, ReflectiveRef, Type, tokenId } from '@tsdi/ioc';
+import { Injectable, Provider, ReflectiveRef, Type, tokenId } from '@tsdi/ioc';
 import { ApplicationContext, Startup } from '@tsdi/core';
 import { Server } from './Server';
 
@@ -7,7 +7,7 @@ export interface RegisterService {
     service: Type<any>;
     bootstrap?: boolean;
     microservice?: boolean;
-    providers: ProviderType[]
+    providers: Provider[]
 }
 
 export const REGISTER_SERVICES = tokenId<RegisterService[]>('REGISTER_SERVICES');

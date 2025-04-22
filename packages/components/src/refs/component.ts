@@ -10,6 +10,11 @@ export abstract class ComponentRef<T> extends ReflectiveRef<T> {
      * @memberof ComponentRef
      */
     abstract get compiler(): TemplateCompiler;
+
+    /**
+     * This component instance.
+     */
+    abstract get instance(): T;
     /**
      * render component.
      *
@@ -20,7 +25,7 @@ export abstract class ComponentRef<T> extends ReflectiveRef<T> {
 }
 
 export interface ComponentOptions extends TemplateCompilerOptions, InvokeArguments {
-    
+
 }
 
 

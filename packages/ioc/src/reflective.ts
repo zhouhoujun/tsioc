@@ -17,9 +17,9 @@ import { OperationInvoker } from './operation';
 @Abstract()
 export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
     /**
-     * injector.
+     * injector of context.
      * 
-     * 当前类注入的容器
+     * 当前类注入的容器上下文的容器
      */
     abstract get injector(): Injector;
     /**

@@ -1,4 +1,4 @@
-import { Type, Abstract, Injector, tokenId, Token, ProviderType } from '@tsdi/ioc';
+import { Type, Abstract, Injector, tokenId, Token, Provider } from '@tsdi/ioc';
 import { LoadType } from '@tsdi/core';
 import { Transport } from '@tsdi/common/transport';
 import { LogConfigure } from '@tsdi/logger';
@@ -33,7 +33,7 @@ export abstract class ApplicationConfiguration implements Record<string, any> {
      *
      * @type {KeyValue<Token, Token>}
      */
-    abstract providers?: ProviderType[];
+    abstract providers?: Provider[];
     /**
      * application name.
      *

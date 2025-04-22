@@ -1,5 +1,5 @@
 import {
-    ProviderType, Injector, Abstract, Type, Destroyable, Modules, ModuleOption, ModuleRef,
+    Provider, Injector, Abstract, Type, Destroyable, Modules, ModuleOption, ModuleRef,
     InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class, ReflectiveRef, InvokeArguments, ClassType
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
@@ -134,7 +134,7 @@ export interface EnvironmentOption<TArg = any> extends ModuleOption, InvokeArgum
     /**
      * application providers.
      */
-    platformProviders?: ProviderType[];
+    platformProviders?: Provider[];
     /**
      * Application runners invocation options.
      */

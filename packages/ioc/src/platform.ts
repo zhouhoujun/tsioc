@@ -6,7 +6,7 @@ import { OnDestroy } from './destroy';
 import { Injector, InjectorScope } from './injector';
 import { Token } from './tokens';
 import { ClassType, Type } from './types';
-import { ProviderType } from './providers';
+import { Provider } from './providers';
 import { ModuleRef } from './module.ref';
 import { LifeScope } from './lifescope/lifescope';
 import { Context } from './handler';
@@ -79,19 +79,19 @@ export abstract class Platform implements OnDestroy {
      * get the type private providers.
      * @param type
      */
-    abstract getTypeProvider(type: Type | Class): ProviderType[];
+    abstract getTypeProvider(type: Type | Class): Provider[];
     /**
      * set type providers.
      * @param type
      * @param providers
      */
-    abstract setTypeProvider(type: Type | Class, providers: ProviderType[]): void;
+    abstract setTypeProvider(type: Type | Class, providers: Provider[]): void;
     /**
      * remove type providers.
      * @param type
      * @param providers
      */
-    abstract removeTypeProvider(type: Type | Class, ...providers: ProviderType[]): void;
+    abstract removeTypeProvider(type: Type | Class, ...providers: Provider[]): void;
     /**
      * clear type provider.
      * @param type 

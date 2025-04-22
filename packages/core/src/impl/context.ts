@@ -1,5 +1,5 @@
 import {
-    Type, Injector, ProviderType, InvokeArguments, DefaultInvocationContext,
+    Type, Injector, Provider, InvokeArguments, DefaultInvocationContext,
     Class, ModuleDef, ModuleRef, ReflectiveRef, ProvdierOf,
     noPointcut
 } from '@tsdi/ioc';
@@ -44,7 +44,7 @@ export class DefaultApplicationContext<T = any, TArg = ApplicationArguments> ext
         }
     }
 
-    protected override createInjector(injector: Injector, providers?: ProviderType[]): Injector {
+    protected override createInjector(injector: Injector, providers?: Provider[]): Injector {
         if (providers) injector.inject(providers);
         return injector
     }

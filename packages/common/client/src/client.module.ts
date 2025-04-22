@@ -1,6 +1,6 @@
 import {
     Arrayify, Injector, Module, ModuleRef, ModuleWithProviders,
-    ProviderType, isArray, lang, toProvider, tokenId
+    Provider, isArray, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { ConfigMissingExecption, createHandler } from '@tsdi/core';
 import { DefaultResponseFactory } from '@tsdi/common';
@@ -67,11 +67,11 @@ export function provideClient(options: Array<ClientOptions>): ModuleWithProvider
  * @returns 
  */
 export function provideClient(options: Arrayify<ClientOptions>): ModuleWithProviders<ClientModule> {
-    let providers: ProviderType[];
+    let providers: Provider[];
     if (isArray(options)) {
         providers = []
         options.forEach((op, idx) => {
-            providers.push(...clientProviders(op, idx));
+            providers.push(clientProviders(op, idx));
         })
     } else {
         providers = clientProviders(options);
@@ -93,7 +93,7 @@ export const CLIENT_MODULES = tokenId<(ClientModuleOpts)[]>('CLIENT_MODULES');
 function clientProviders(options: ClientOptions, idx?: number) {
     const microservice = isMicroTransport(options);
     return [
-        ...options.providers ?? [],
+        options.providers ?? [],
         {
             provider: async (injector) => {
                 const transportName = toTransportModuleName(options.transport);
@@ -118,7 +118,7 @@ function clientProviders(options: ClientOptions, idx?: number) {
 
                 const cloneOpts = lang.deepClone(opts.config, opts.defaultConfig, (n, value, deft) => {
                     if (n == 'providers') {
-                        return [...value, ...deft];
+                        return [value, deft];
                     }
                     return value;
                 });
@@ -126,7 +126,7 @@ function clientProviders(options: ClientOptions, idx?: number) {
                     backend: opts.backend ?? ClientBackend,
                     enableTypeChain: true,
                     ...cloneOpts
-                } as ClientConfig & { providers: ProviderType[] };
+                } as ClientConfig & { providers: Provider[] };
 
                 if (!clientOpts.providers) {
                     clientOpts.providers = [];
@@ -162,7 +162,7 @@ function clientProviders(options: ClientOptions, idx?: number) {
                 // }
 
 
-                const providers: ProviderType[] = [];
+                const providers: Provider[] = [];
 
                 if (opts.clientProvider) {
                     providers.push(toProvider(opts.clientType, opts.clientProvider));
@@ -187,5 +187,5 @@ function clientProviders(options: ClientOptions, idx?: number) {
                 ] : providers;
             }
         }
-    ] as ProviderType[];
+    ] as Provider[];
 }
