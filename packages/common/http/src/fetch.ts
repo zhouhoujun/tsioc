@@ -1,3 +1,5 @@
+/* eslint-disable no-constant-condition */
+/* eslint-disable no-case-declarations */
 import { Injectable, lang } from '@tsdi/ioc';
 import { HeaderMappings, HttpStatusCode } from '@tsdi/common';
 import { HttpBackend } from './handler';

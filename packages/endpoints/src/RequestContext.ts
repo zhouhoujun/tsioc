@@ -1,4 +1,4 @@
-import { Abstract, OperationArgumentResolver, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
+import { Abstract, OperationArgumentResolver, composeResolvers, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
 import { HandleContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
 import { HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess } from '@tsdi/common';
 import {
@@ -25,7 +25,12 @@ export abstract class RequestContext<
     TStatus = any> extends HandleContext<Incoming<any>> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
-        return [...this.injector.get(MODEL_RESOLVERS, []), ...primitiveResolvers];
+        const res = [composeResolvers(primitiveResolvers)];
+        const modelResolvers = this.injector.get(MODEL_RESOLVERS, null);
+        if (modelResolvers?.length) {
+            res.unshift(composeResolvers(modelResolvers));
+        }
+        return res;
     }
 
     abstract get serverOptions(): TOptions;
@@ -83,7 +88,7 @@ export abstract class RequestContext<
 
     private _session?: Session;
     get session(): Session {
-        if(this._session === undefined) {
+        if (this._session === undefined) {
             this._session = this.get(Session) ?? null;
         }
         return this._session;

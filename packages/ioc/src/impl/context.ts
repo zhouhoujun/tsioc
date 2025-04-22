@@ -2,7 +2,7 @@ import { Type, ClassType } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getClassName, getClassChain } from '../utils/lang';
 import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getClass } from '../utils/chk';
-import { OperationArgumentResolver, Parameter, composeResolver } from '../resolver';
+import { OperationArgumentResolver, Parameter, composeResolver, composeResolvers } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token, tokenId } from '../tokens';
@@ -98,11 +98,20 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      */
     protected getResolvers(): OperationArgumentResolver[] {
         if (!this._resolvers && !this.destroyed) {
-            this._resolvers = [
-                ...this.getArgumentResolver(),
-                ...this.options.resolvers?.map(r => isFunction(r) ? (r as Function)(this.injector) : r) ?? [],
-                ...this.getDefaultResolvers()
-            ];
+            const resolvers: OperationArgumentResolver[] = [];
+            const args = this.getArgumentResolver();
+            if (args?.length) {
+                resolvers.push(composeResolvers(args));
+            }
+            const resls = this.options.resolvers?.map(r => isFunction(r) ? (r as Function)(this.injector) : r);
+            if (resls?.length) {
+                resolvers.push(composeResolvers(resls));
+            }
+            const defaultResls = this.getDefaultResolvers();
+            if (defaultResls?.length) {
+                resolvers.push(composeResolvers(defaultResls));
+            }
+            this._resolvers = resolvers;
         }
         return this._resolvers ?? [];
     }

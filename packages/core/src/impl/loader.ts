@@ -28,7 +28,7 @@ export class DefaultModuleLoader extends ModuleLoader {
     /**
      * load module.
      *
-     * @param {...LoadType[]} modules
+     * @param {LoadType[]} modules
      * @returns {Promise<Modules[]>}
      */
     load(modules: LoadType[]): Promise<Modules[]> {
@@ -64,7 +64,7 @@ export class DefaultModuleLoader extends ModuleLoader {
     /**
      * load types from module.
      *
-     * @param {...LoadType[]} modules
+     * @param {LoadType[]} modules
      * @returns {Promise<Type[]>}
      */
     async loadTypes(modules: LoadType[]): Promise<Type[][]> {

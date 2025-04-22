@@ -1,5 +1,5 @@
 import { Type, TypeOf } from './types';
-import { Token, tokenId } from './tokens';
+import { Token } from './tokens';
 import { ParameterMetadata } from './metadata/meta';
 import { InvocationContext } from './context';
 import { isDefined } from './utils/chk';
@@ -59,8 +59,14 @@ export type ArgumentResolver = TypeOf<OperationArgumentResolver>;
  */
 export function composeResolver<T extends OperationArgumentResolver<any>, TP extends Parameter = Parameter, TCtx extends InvocationContext = InvocationContext>(
     filter: (parameter: TP, ctx: TCtx) => boolean, ...resolvers: T[]): OperationArgumentResolver {
+    return composeResolvers(resolvers, filter)
+}
+
+export function composeResolvers<T extends OperationArgumentResolver<any>, TP extends Parameter = Parameter, TCtx extends InvocationContext = InvocationContext>(
+    resolvers: T[], filter?: (parameter: TP, ctx: TCtx) => boolean): OperationArgumentResolver {
+    if (resolvers.length === 1) return resolvers[0];
     return {
-        canResolve: (parameter: TP, ctx: TCtx) => filter(parameter, ctx),
+        canResolve: (parameter: TP, ctx: TCtx) => filter ? filter(parameter, ctx) : resolvers.some(r => r.canResolve(parameter, ctx)),
         resolve: (parameter: TP, ctx: TCtx) => {
             let result: any;
             resolvers.some(r => {

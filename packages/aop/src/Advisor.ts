@@ -111,15 +111,19 @@ export class Advisor implements OnDestroy {
         })
     }
 
-    protected getAdvicers(type: AdviceTypes): Advicer[] {
-        return this.advices.get(type) || [];
+    protected getAdvicers(...types: AdviceTypes[]): Advicer[] {
+        if (types?.length === 1) return this.advices.get(types[0]) ?? [];
+        return types.reduce((pre, cur) => {
+            const advicers = this.advices.get(cur);
+            return advicers?.length? pre.concat(advicers) :  pre;
+        }, [] as Advicer[]);       
     }
 
+
+
     getBefore(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions): Advicer[] {
-        return [
-            ...this.getAdvicers('Around'),
-            ...this.getAdvicers('Before')
-        ].filter(adv => adv.match(name, fullName, targetRef, target, options));
+        return this.getAdvicers('Around', 'Before')
+            .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }
 
 
@@ -129,24 +133,18 @@ export class Advisor implements OnDestroy {
     }
 
     getAfter(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions): Advicer[] {
-        return [
-            ...this.getAdvicers('Around'),
-            ...this.getAdvicers('After')
-        ].filter(adv => adv.match(name, fullName, targetRef, target, options));
+        return this.getAdvicers('Around', 'After')
+            .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }
 
     getAfterReturning(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions): Advicer[] {
-        return [
-            ...this.getAdvicers('Around'),
-            ...this.getAdvicers('AfterReturning')
-        ].filter(adv => adv.match(name, fullName, targetRef, target, options));
+        return this.getAdvicers('Around', 'AfterReturning')
+            .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }
 
     getAfterThrowing(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions): Advicer[] {
-        return [
-            ...this.getAdvicers('Around'),
-            ...this.getAdvicers('AfterThrowing')
-        ].filter(adv => adv.match(name, fullName, targetRef, target, options));
+        return this.getAdvicers('Around', 'AfterThrowing')
+            .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }
 
 
