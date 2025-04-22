@@ -1,4 +1,4 @@
-import { Module, ModuleWithProviders, ProvdierOf, ProviderType, toProvider } from '@tsdi/ioc';
+import { Module, ModuleWithProviders, ProvdierOf, Provider, toProvider } from '@tsdi/ioc';
 import { SWAGGER_SETUP_OPTIONS, SwaggerSetupOptions } from './swagger.config';
 import { SwaggerService } from './swagger.service';
 
@@ -27,7 +27,7 @@ export class SwaggerModule {
  */
 export function provideSwagger(options: ProvdierOf<SwaggerSetupOptions>): ModuleWithProviders<SwaggerModule> {
 
-    const providers: ProviderType[] = [
+    const providers: Provider[] = [
         toProvider(SWAGGER_SETUP_OPTIONS, options)
     ];
 

@@ -1,4 +1,4 @@
-import { Module, ProviderType } from '@tsdi/ioc';
+import { Module, Provider } from '@tsdi/ioc';
 import { OIDCService } from './OIDCService';
 import { OIDCStrategy } from './OIDCStrategy';
 import { OIDCInterceptor } from './OIDCInterceptor';

@@ -1,5 +1,5 @@
 /* eslint-disable no-useless-escape */
-import { Module, Injectable, Injector, ProviderType } from '@tsdi/ioc';
+import { Module, Injectable, Injector, Provider } from '@tsdi/ioc';
 import { DOCUMENT, PLATFORM_ID, PLATFORM_SERVER_ID } from '@tsdi/common';
 import { HttpBackend, HttpEvent, HttpHandler, HttpInterceptingHandler, HttpRequest, XhrFactory } from '@tsdi/common/http';
 import { XMLHttpRequest2 } from './xhr.request';
@@ -52,7 +52,7 @@ function interceptingHandler(backend: HttpBackend, injector: Injector) {
 }
 
 
-export const HTTP_PROVIDERS: ProviderType[] = [
+export const HTTP_PROVIDERS: Provider[] = [
   { provide: PLATFORM_ID, useValue: PLATFORM_SERVER_ID },
   { provide: DOCUMENT, useValue: domino.createDocument() },
   { provide: XhrFactory, useClass: ServerXhr },
