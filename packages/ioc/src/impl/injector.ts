@@ -592,12 +592,12 @@ export class DefaultInjector extends Injector {
     }
 }
 
-function isProvider(v: any) {
+function notProvider(v: any) {
     return isPlainObject(v) && !((v as StaticProviders).provide || (v as DynamicProvider).provider)
 }
 
 export function eachProvider(providers: Provider[], cb: (provider: StaticProvider | DynamicProvider) => void) {
-   return deepForEach(providers, cb, isProvider);
+   return deepForEach(providers, cb, notProvider);
 }
 
 /**
