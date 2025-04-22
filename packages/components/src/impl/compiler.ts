@@ -1,5 +1,5 @@
+import { isObject } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
-import { Abstract, isObject } from '@tsdi/ioc';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 
 

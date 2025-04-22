@@ -1,8 +1,9 @@
 import { Class, DefaultReflectiveRef, hasOwn, Injector, InvokeArguments, isObject } from '@tsdi/ioc';
+import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentRef } from '../refs/component';
 import { TemplateCompiler } from '../template/compiler';
 import { ComponentDef } from '../decorators/component';
-import { ReactiveEffect } from '../ReactiveEffect';
+import { ViewRef } from '../refs/view';
 
 export class ComponentRefImpl<T> extends DefaultReflectiveRef<T> implements ComponentRef<T> {
 
@@ -14,6 +15,11 @@ export class ComponentRefImpl<T> extends DefaultReflectiveRef<T> implements Comp
         super(_class, injector, options);
         this.compiler = this.getContext().get(TemplateCompiler);
     }
+    
+    get hostView(): ViewRef {
+        throw new Error('Method not implemented.');
+    }
+    
     get instance(): T {
         return this.getInstance()
     }

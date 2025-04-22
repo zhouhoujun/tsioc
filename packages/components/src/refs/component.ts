@@ -1,5 +1,6 @@
 import { Abstract, Class, InvokeArguments, ReflectiveRef, Token } from '@tsdi/ioc';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
+import { ViewRef } from './view';
 
 @Abstract()
 export abstract class ComponentRef<T> extends ReflectiveRef<T> {
@@ -12,9 +13,16 @@ export abstract class ComponentRef<T> extends ReflectiveRef<T> {
     abstract get compiler(): TemplateCompiler;
 
     /**
+     * The host view defined by the template
+     * for this component instance.
+     */
+    abstract get hostView(): ViewRef;
+
+    /**
      * This component instance.
      */
     abstract get instance(): T;
+
     /**
      * render component.
      *
@@ -22,8 +30,22 @@ export abstract class ComponentRef<T> extends ReflectiveRef<T> {
      * @memberof ComponentRef
      */
     abstract render(): Promise<void>;
+
+    /**
+    * destroy this.
+    */
+    abstract destroy(): void;
+
+    /**
+     * register callback on destroy.
+     * @param callback destroy callback
+     */
+    abstract onDestroy(callback: () => void): void;
 }
 
+/**
+ * Component options.
+ */
 export interface ComponentOptions extends TemplateCompilerOptions, InvokeArguments {
 
 }
