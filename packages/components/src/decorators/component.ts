@@ -1,8 +1,10 @@
-import { Module, Injectable, Inject, ModuleType, createDecorator, AnnotationType, noPointcut, isObject, hasOwn, getModuleType, lang, ClassType, TypeDef } from '@tsdi/ioc';
+import { Module, Injectable, Inject, ModuleType, createDecorator, AnnotationType, noPointcut, isObject, hasOwn, getModuleType, lang, ClassType, TypeDef, ReflectiveFactory } from '@tsdi/ioc';
 import { OnChanges, OnInit, AfterViewInit } from '../lifecycle';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { TemplateCompiler } from '../template/compiler';
 import { ComponenFactory, ComponentRef } from '../refs/component';
+import { RunnableFactory } from '@tsdi/core';
+import { ComponentRunnableFactory } from '../refs/runnable';
 
 export interface ComponentDef<T = any> extends TypeDef<T> {
     imports?: ModuleType[],
@@ -35,9 +37,13 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
             const factory = ctx.injector.get(ComponenFactory);
             // ctx.isNewContext = false;
             const componentRef = factory.create(ctx.class);
-            
+
         }
     },
+    providers: [
+        { provide: RunnableFactory, useExisting: ComponentRunnableFactory },
+        { provide: ReflectiveFactory, useExisting: ComponenFactory }
+    ]
     // runtime: {
     //     class: (ctx) => {
     //         const effect = ctx.injector.get(ReactiveEffect);
@@ -47,7 +53,7 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
     //         const componentRef = factory.create(ctx.class, {parent: ctx.context});
     //         componentDefs.set(ctx.instance, componentRef);
 
-            
+
     //         // // 添加模板编译支持
     //         // const def = ctx.class.getAnnotation<ComponentDef>();
     //         // if (def.template || def.templateUrl) {
@@ -57,7 +63,7 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
     //         //     target.render = () => compiler.compile(template, target);
     //         // }
     //         return (ctx.instance as OnInit).onInit?.();
-            
+
     //     }
     // }
 })

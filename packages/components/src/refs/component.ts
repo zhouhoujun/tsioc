@@ -1,4 +1,4 @@
-import { Abstract, Class, InvokeArguments, ReflectiveRef, Token } from '@tsdi/ioc';
+import { Abstract, Class, InvokeArguments, ReflectiveRef, ReflectiveFactory, Token } from '@tsdi/ioc';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { ViewRef } from './view';
 
@@ -56,7 +56,7 @@ export interface ComponentOptions extends TemplateCompilerOptions, InvokeArgumen
  * ComponentRef factory.
  */
 @Abstract()
-export abstract class ComponenFactory {
+export abstract class ComponenFactory implements ReflectiveFactory {
     /**
      * create ReflectiveRef of target type
      * @param type target type or target type def.
