@@ -1,4 +1,4 @@
-import { isFunction, Type, ClassType, Provider, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, ReflectiveFactory } from '@tsdi/ioc';
+import { isFunction, Type, ClassType, Provider, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, ReflectiveFactory, isType, Module, refl } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEPENDENCE_PROVIDERS, } from './providers';
 import { ModuleLoader } from './ModuleLoader';
@@ -159,7 +159,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
         option.platformDeps && container.use(option.platformDeps);
         option.depProviders = option.depProviders?.length ? [this.getRootDependenceProviders(), option.depProviders] : this.getRootDependenceProviders();
         option.deps = option.deps?.length ? [this.getRootDependencies(), option.deps] : this.getRootDependencies();
-        option.providers = option.providers?.length? [this.getRootDefaultProviders(), option.providers] : this.getRootDefaultProviders();
+        option.providers = option.providers?.length ? [this.getRootDefaultProviders(), option.providers] : this.getRootDefaultProviders();
         return this.createModuleRef(container, option);
     }
 
@@ -168,8 +168,23 @@ export class Application<T = any, TArg = ApplicationArguments> {
     }
 
     protected moduleify(module: Type | Class | ModuleMetadata | ModuleDef): Type | Class {
-        if (isFunction(module)) return module;
-        if (module instanceof Class) return module;
+        if (isType(module)) {
+            module = refl.get(module);
+        }
+
+        if (module instanceof Class) {
+            if (!module.getAnnotation<ModuleDef>().module) {
+                const bootstrapType = module.type as ClassType;
+                return new Class(DynamicModule, {
+                    name: 'DynamicModule',
+                    type: DynamicModule,
+                    module: true,
+                    declarations: [bootstrapType],
+                    bootstrap: [bootstrapType],
+                } as ModuleDef);
+            }
+            return module;
+        }
 
         return new Class(DynamicModule, {
             name: 'DynamicModule',
@@ -260,6 +275,5 @@ export function bootstrapApplication<T, TArg extends ApplicationArguments>(targe
 export function bootstrapApplication<T, TArg extends ApplicationArguments>(target: any, option?: EnvironmentOption<any>): Promise<ApplicationContext<T, TArg>> {
     return new Application<T, TArg>(option ? { module: target, ...option } as ApplicationOption : target).run();
 }
-
 
 class DynamicModule { }

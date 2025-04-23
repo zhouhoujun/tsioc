@@ -4,6 +4,7 @@ import { ApplicationContext, Application } from '@tsdi/core';
 import { ReflectiveRef } from '@tsdi/ioc';
 import { ExampleComponent } from './app';
 import { ComponentRef } from '../src/refs/component';
+import { ComponentsModule } from '../src';
 
 
 
@@ -14,7 +15,11 @@ export class CTest {
 
     @Before()
     async init() {
-        this.ctx = await Application.run(ExampleComponent);
+        this.ctx = await Application.run(ExampleComponent, {
+            deps: [
+                ComponentsModule
+            ]
+        });
     }
 
     @Test('can bind bootsrap component')

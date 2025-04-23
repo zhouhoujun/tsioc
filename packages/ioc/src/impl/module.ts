@@ -1,3 +1,4 @@
+import { Execption } from '../execption';
 import { Injector, InjectorScope } from '../injector';
 import { get } from '../metadata/refl';
 import { Class, ModuleDef } from '../metadata/type';
@@ -106,11 +107,16 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
  * create module ref.
  */
 export function createModuleRef<T>(module: Type<T> | Class<T> | ModuleWithProviders<T>, parent: Injector, option?: ModuleOption): ModuleRef<T> {
-    if (isType(module)) return new DefaultModuleRef(get<ModuleDef>(module), parent, option);
-    if (isModuleProviders(module)) return new DefaultModuleRef(get<ModuleDef>(module.module), parent, {
-        ...option,
-        providers: option?.providers?.length? [module.providers ?? [], option?.providers] : module.providers
-    });
-    return new DefaultModuleRef(module, parent, option)
+    if (isModuleProviders(module)) {
+        return new DefaultModuleRef(get<ModuleDef>(module.module), parent, {
+            ...option,
+            providers: option?.providers?.length ? [module.providers ?? [], option?.providers] : module.providers
+        })
+    }
+    const moduleDef = isType(module) ? get(module) : module;
+    if (!moduleDef.getAnnotation<ModuleDef>().module) {
+        throw new Execption(`module def must be module type.`)
+    }
+    return new DefaultModuleRef(moduleDef, parent, option)
 }
 

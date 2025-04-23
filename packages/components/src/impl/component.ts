@@ -1,4 +1,4 @@
-import { Class, DefaultReflectiveRef, Injector, InvokeArguments } from '@tsdi/ioc';
+import { Class, DefaultReflectiveRef, Injectable, Injector, InvokeArguments } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentRef } from '../refs/component';
 import { ViewRef } from '../refs/view';
@@ -39,6 +39,14 @@ export class ComponentRefImpl<T> extends DefaultReflectiveRef<T> implements Comp
 
 }
 
+@Injectable()
+export class ComponentFactoryImpl {
+    constructor(protected compiler: TemplateCompiler) {
+    }
+    create<T>(_class: Class<T>, injector: Injector, options?: InvokeArguments<any>): ComponentRef<T> {
+        return new ComponentRefImpl(_class, injector, this.compiler, options);
+    }
+}
 
 
 async function fetchTemplate(url: string): Promise<string> {

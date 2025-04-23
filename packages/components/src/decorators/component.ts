@@ -1,4 +1,4 @@
-import { ModuleType, createDecorator, AnnotationType, noPointcut, getModuleType, TypeDef, ReflectiveFactory } from '@tsdi/ioc';
+import { ModuleType, createDecorator, AnnotationType, noPointcut, getModuleType, TypeDef, ReflectiveFactory, ActionTypes } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponenFactory } from '../refs/component';
 import { RunnableFactory } from '@tsdi/core';
@@ -19,6 +19,7 @@ export type ComponentDecorator = (options: Partial<ComponentDef>) => ClassDecora
 
 
 export const Component: ComponentDecorator = createDecorator<Partial<ComponentDef>>('Component', {
+    actionType: ActionTypes.annoation,
     def: {
         class: (ctx) => {
             (ctx.class.type as AnnotationType)[noPointcut] = true;
