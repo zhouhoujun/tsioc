@@ -1,8 +1,6 @@
-import { Module, Injectable, Inject, ModuleType, createDecorator, AnnotationType, noPointcut, isObject, hasOwn, getModuleType, lang, ClassType, TypeDef, ReflectiveFactory } from '@tsdi/ioc';
-import { OnChanges, OnInit, AfterViewInit } from '../lifecycle';
+import { ModuleType, createDecorator, AnnotationType, noPointcut, getModuleType, TypeDef, ReflectiveFactory } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
-import { TemplateCompiler } from '../template/compiler';
-import { ComponenFactory, ComponentRef } from '../refs/component';
+import { ComponenFactory } from '../refs/component';
 import { RunnableFactory } from '@tsdi/core';
 import { ComponentRunnableFactory } from '../refs/runnable';
 
@@ -44,27 +42,5 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
         { provide: RunnableFactory, useExisting: ComponentRunnableFactory },
         { provide: ReflectiveFactory, useExisting: ComponenFactory }
     ]
-    // runtime: {
-    //     class: (ctx) => {
-    //         const effect = ctx.injector.get(ReactiveEffect);
-    //         ctx.instance = reactive(ctx.instance, effect);
-    //         const factory = ctx.injector.get(ComponenFactory);
-    //         ctx.isNewContext = false;
-    //         const componentRef = factory.create(ctx.class, {parent: ctx.context});
-    //         componentDefs.set(ctx.instance, componentRef);
-
-
-    //         // // 添加模板编译支持
-    //         // const def = ctx.class.getAnnotation<ComponentDef>();
-    //         // if (def.template || def.templateUrl) {
-    //         //     const effect = ctx.injector.get(ReactiveEffect);
-    //         //     const compiler = new TemplateCompiler(effect, def.compilerOptions);
-    //         //     const template = def.template || fetchTemplate(def.templateUrl!);
-    //         //     target.render = () => compiler.compile(template, target);
-    //         // }
-    //         return (ctx.instance as OnInit).onInit?.();
-
-    //     }
-    // }
 })
 

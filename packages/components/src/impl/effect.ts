@@ -4,6 +4,7 @@ export class DefaultReactiveEffect extends ReactiveEffect {
     private depsMap = new WeakMap<any, Map<string | symbol, Set<Function>>>();
     private activeEffects = new Set<Function>();
     private scheduler?: (fn: Function) => void;
+    private isActive = true;
 
     constructor(options?: { scheduler?: (fn: Function) => void }) {
         super();
@@ -61,5 +62,16 @@ export class DefaultReactiveEffect extends ReactiveEffect {
     // 清理所有依赖
     cleanupAll() {
         this.depsMap = new WeakMap();
+    }
+
+    stop(): void {
+        if (this.isActive) {
+            this.cleanupAll();
+            this.isActive = false;
+        }
+    }
+
+    get active(): boolean {
+        return this.isActive;
     }
 }

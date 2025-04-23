@@ -3,7 +3,7 @@ import { ReactiveEffect } from '../ReactiveEffect';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 
 
-export class DefaultTemplateCompiler implements TemplateCompiler {
+export class TemplateCompilerImpl implements TemplateCompiler {
 
     private options: TemplateCompilerOptions;
 
@@ -21,6 +21,9 @@ export class DefaultTemplateCompiler implements TemplateCompiler {
         this.walkNodes(doc.body.childNodes, context);
         
         fragment.append(...Array.from(doc.body.childNodes));
+        // ...解析模板逻辑...
+        this.processBindings(fragment, context);
+
         return fragment;
     }
 
@@ -99,5 +102,29 @@ export class DefaultTemplateCompiler implements TemplateCompiler {
                 ? Object.entries(value).map(([k, v]) => `${k}:${v}`).join(';')
                 : value;
         }
+    }
+
+    private processBindings(node: Node, context: any) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            const el = node as HTMLElement;
+            
+            // 处理v-model双向绑定
+            if (el.hasAttribute('v-model')) {
+                const prop = el.getAttribute('v-model')!;
+                this.effect.run(() => {
+                    if (el instanceof HTMLInputElement) {
+                        el.value = context[prop];
+                        el.addEventListener('input', () => {
+                            context[prop] = el.value;
+                        });
+                    }
+                });
+            }
+            
+            // 处理其他指令...
+        }
+        
+        // 递归处理子节点
+        node.childNodes.forEach(child => this.processBindings(child, context));
     }
 }

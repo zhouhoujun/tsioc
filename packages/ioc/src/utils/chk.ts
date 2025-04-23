@@ -205,11 +205,9 @@ export function isArray(target: any): target is Array<any> {
  * @param {*} target
  * @returns {target is object}
  */
-export function isObject(target: any): target is object {
+export function isObject(target: any): boolean {
     if (isNull(target)) return false;
     return target instanceof Object;
-    // const type = typeof target;
-    // return (type === 'object' || type === 'function')
 }
 
 

@@ -116,7 +116,7 @@ export function deepForEach<T>(
  */
 export function deepClone<T>(input: T, defaultValue?: any, mergeArray?: (name: string, value: Array<any>, defaultArray: Array<any>) => Array<any>): T {
     if (!isObject(input)) return defaultValue ? deepClone(defaultValue) : null!;
-    return Object.entries(input).reduce((result, [key, value]) => {
+    return Object.entries(input as object).reduce((result, [key, value]) => {
         if (isPlainObject(value)) {
             result[key] = deepClone(value, defaultValue?.[key], mergeArray);
         } else if (!isUndefined(value)) {
