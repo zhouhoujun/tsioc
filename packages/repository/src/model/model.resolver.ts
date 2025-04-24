@@ -121,8 +121,8 @@ class ModelResolver<C = any> extends AbstractModelArgumentResolver<C> {
         return this.option.createInstance ? this.option.createInstance(model) : super.createInstance(model as ClassType)
     }
 
-    get resolvers(): ModelFieldResolver<C>[] {
-        return this.option.fieldResolvers ?? []
+    get resolvers(): ModelFieldResolver<C>[] | null {
+        return this.option.fieldResolvers ?? null
     }
     hasModel(type: Type<any>): boolean {
         return this.option.isModel(type)

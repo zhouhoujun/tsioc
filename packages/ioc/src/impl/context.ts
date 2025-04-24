@@ -97,7 +97,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
      * the invocation arguments resolver.
      */
     protected getResolvers(): OperationArgumentResolver[] {
-        if (!this._resolvers && !this.destroyed) {
+        if (!this._resolvers) {
             const resolvers: OperationArgumentResolver[] = [];
             const args = this.getArgumentResolver();
             if (args?.length) {
@@ -113,7 +113,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             }
             this._resolvers = resolvers;
         }
-        return this._resolvers ?? [];
+        return this._resolvers;
     }
 
     protected getDefaultResolvers(): OperationArgumentResolver[] {

@@ -164,8 +164,8 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         return this._refs.get(type)?.[idx] ?? null!;
     }
 
-    getRefs<T>(type: Type<T>): ReflectiveRef<T>[] {
-        return this._refs.get(type) ?? [];
+    getRefs<T>(type: Type<T>): ReflectiveRef<T>[] | null {
+        return this._refs.get(type) ?? null;
     }
 
     run(type?: Type | Type[]): Promise<void> {
