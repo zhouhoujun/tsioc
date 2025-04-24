@@ -428,6 +428,7 @@ export interface RegOption<T = any> extends ProvidedInMetadata {
     regProvides?: boolean;
     singleton?: boolean;
     static?: boolean;
+    declaration?: boolean
 }
 
 /**

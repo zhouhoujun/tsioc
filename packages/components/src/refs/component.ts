@@ -1,7 +1,10 @@
-import { Abstract, Class, InvokeArguments, ReflectiveRef, ReflectiveFactory, Token, Injector } from '@tsdi/ioc';
+import { Abstract, InvokeArguments, ReflectiveRef, Injector } from '@tsdi/ioc';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { ViewRef } from './view';
 
+/**
+ * ComponentRef.
+ */
 @Abstract()
 export abstract class ComponentRef<T> {
 

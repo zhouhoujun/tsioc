@@ -682,8 +682,9 @@ function processInjectoDeclarations(annotation: ModuleDef<any>, dedupStack: Type
     regType: (typeRef: Class, type: Type, option?: RegOption) => void, declarations?: boolean, ps?: Promise<void> | void): void | Promise<void> {
     const dps: Promise<void>[] = [];
     if (ps) dps.push(ps);
-    const regFn = (typeRef: Class, type: Type, option?: RegOption) => regType(typeRef, type, { ...option, static: false });
+
     if (declarations && annotation.declarations?.length) {
+        const regFn = (typeRef: Class, type: Type, option?: RegOption) => regType(typeRef, type, { ...option, static: false, declaration: true });
         annotation.declarations?.forEach(d => {
             const res = processInjectorType(d, dedupStack, processProvider, regFn, undefined, true);
             if (res) {
@@ -691,13 +692,15 @@ function processInjectoDeclarations(annotation: ModuleDef<any>, dedupStack: Type
             }
         });
     }
-    annotation.exports?.forEach(d => {
-        if (annotation.declarations && annotation.declarations.indexOf(d) >= 0) return;
-        const res = processInjectorType(d, dedupStack, processProvider, regFn, undefined, true);
-        if (res) {
-            dps.push(res);
-        }
-    })
+    if (annotation.exports?.length) {
+        const regFn = (typeRef: Class, type: Type, option?: RegOption) => regType(typeRef, type, typeRef.getAnnotation<ModuleDef>().module ? option : { ...option, static: false, declaration: true });
+        annotation.exports?.forEach(d => {
+            const res = processInjectorType(d, dedupStack, processProvider, regFn, undefined, true);
+            if (res) {
+                dps.push(res);
+            }
+        })
+    }
     if (dps.length) return Promise.all(dps) as Promise<any>;
 }
 
