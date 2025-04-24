@@ -47,7 +47,7 @@ export abstract class ApplicationRunners implements HandlerService, OnDestroy {
    * get reflectiveRef of type.
    * @param type 
    */
-  abstract getRefs<T>(type: Type<T>): ReflectiveRef<T>[] | null;
+  abstract getRefs<T>(type: Type<T>): ReflectiveRef<T>[];
 
   /**
    * run all runners.

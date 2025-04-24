@@ -1,7 +1,7 @@
 import {
-    isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, refl, ProvdierOf, getClassName, ReflectiveFactory,
-    StaticProviders, isArray, ArgumentExecption, ReflectiveRef, StaticProvider, HandlerLike, composeHandlers, InvocationContext,
-    eachProvider
+    isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, refl, ProvdierOf, 
+    getClassName, ReflectiveFactory, StaticProviders, isArray, ArgumentExecption, ReflectiveRef, 
+    StaticProvider, HandlerLike, composeHandlers, InvocationContext, eachProvider
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { ApplicationRunners, RunnableFactory, RunnableRef } from '../ApplicationRunners';
@@ -164,8 +164,8 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         return this._refs.get(type)?.[idx] ?? null!;
     }
 
-    getRefs<T>(type: Type<T>): ReflectiveRef<T>[] | null {
-        return this._refs.get(type) ?? null;
+    getRefs<T>(type: Type<T>): ReflectiveRef<T>[] {
+        return this._refs.get(type) ?? [];
     }
 
     run(type?: Type | Type[]): Promise<void> {

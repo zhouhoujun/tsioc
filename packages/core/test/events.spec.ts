@@ -134,7 +134,7 @@ describe('Application Event', () => {
     it('onApplicationStart called', async () => {
 
         expect(ctx.instance).not.toBeNull();
-        const testServiceRef = ctx.runners.getRef(TestService);
+        const testServiceRef = ctx.runners.getRef(TestService)!;
         expect(testServiceRef).toBeInstanceOf(ReflectiveRef);
         // console.log(runner.instance);
         expect(testServiceRef.getInstance().started).toBeTruthy();
