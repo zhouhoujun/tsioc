@@ -319,7 +319,7 @@ export class Class<T = any> {
      * @param context invocation context.
      */
     resolveArguments(method: string, context: InvocationContext): any[] {
-        const parameters = this.getParameters(method) ?? [];
+        const parameters = this.getParameters(method) ?? Empty;
         const args = parameters.map(p => context.resolveArgument(p, this.type));
         return args;
     }

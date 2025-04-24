@@ -11,7 +11,7 @@ import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldExecption, m
 @Abstract()
 export abstract class AbstractModelArgumentResolver<C = any> implements ModelArgumentResolver<C> {
 
-    abstract get resolvers(): ModelFieldResolver[];
+    abstract get resolvers(): ModelFieldResolver[] | null;
 
     canResolve(parameter: Parameter, ctx: HandleContext): boolean {
         return this.hasModel(parameter.provider as Type ?? parameter.type) && this.hasFields(parameter, ctx)

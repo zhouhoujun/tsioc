@@ -1,4 +1,4 @@
-import { Type, lang, ReflectiveRef, OnDestroy, Class, getClassName, ctorName } from '@tsdi/ioc';
+import { Type, lang, ReflectiveRef, OnDestroy, Class, getClassName, ctorName, Empty } from '@tsdi/ioc';
 import { Advicer, MatchOptions } from './Advicer';
 import { AdviceMatcher } from './AdviceMatcher';
 import { AopDef } from './metadata/ref';
@@ -112,7 +112,7 @@ export class Advisor implements OnDestroy {
     }
 
     protected getAdvicers(...types: AdviceTypes[]): Advicer[] {
-        if (types?.length === 1) return this.advices.get(types[0]) ?? [];
+        if (types?.length === 1) return this.advices.get(types[0]) ?? Empty;
         return types.reduce((pre, cur) => {
             const advicers = this.advices.get(cur);
             return advicers?.length? pre.concat(advicers) :  pre;
