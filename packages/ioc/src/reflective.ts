@@ -59,6 +59,10 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
      */
     abstract getInstance(): T;
     /**
+     * create new instance.
+     */
+    abstract createInstance(): T;
+    /**
      * invoke target method.
      * 
      * 调用反射类方法

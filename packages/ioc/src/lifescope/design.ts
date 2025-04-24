@@ -132,8 +132,8 @@ export const dependencyInterceptor = (input: DesignContext, next: HandlerFn, con
 export const registerHandler: HandlerFn = (ctx: DesignContext, context: Context) => {
     const { type, injector, platform } = ctx;
     const provide = ctx.provide || ctx.type;
-    const singleton = ctx.singleton || ctx.class.getAnnotation().singleton === true;
-    const isStatic = ctx.class.getAnnotation().static;
+    const singleton = ctx.singleton ?? ctx.class.getAnnotation().singleton === true;
+    const isStatic = ctx.static ?? ctx.class.getAnnotation().static;
 
     const recd = {
         type,

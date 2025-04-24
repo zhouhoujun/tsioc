@@ -3,6 +3,7 @@ import { ComponentState } from '../state';
 import { ComponentRef } from '../refs/component';
 import { ViewContainerRef } from '../refs/container';
 import { ComponentRunnableFactory, ComponentRunnableRef } from '../refs/runnable';
+import { ShellActivity } from '@tsdi/pack';
 
 
 
@@ -13,24 +14,16 @@ import { ComponentRunnableFactory, ComponentRunnableRef } from '../refs/runnable
  * @class ComponentRunnableRef
  */
 export class ComponentRunnableRefImpl<T = any> extends ComponentRunnableRef<T> {
+    get typeRef(): ReflectiveRef<T> {
+        return this.componentRef;
+    }
 
-    constructor(readonly typeRef: ReflectiveRef<T>, private moduleRef?: ModuleRef) {
+    constructor(readonly componentRef: ComponentRef<T>, private moduleRef?: ModuleRef) {
         super()
     }
 
-    private _compRef?: ComponentRef<T>;
-    get componentRef(): ComponentRef<T> {
-        if (!this._compRef) {
-            const injector = this.typeRef.injector;
-            this._compRef = injector.get(ViewContainerRef).createComponent(this.typeRef, {
-                moduleRef: this.moduleRef
-            });
-        }
-        return this._compRef;
-    }
-
     override invoke(context: InvocationContext<any>) {
-        return this.typeRef.injector.get(ComponentState).bootstrap(this.componentRef);
+        return this.componentRef.render();
     }
 
 }
@@ -38,8 +31,8 @@ export class ComponentRunnableRefImpl<T = any> extends ComponentRunnableRef<T> {
 @Injectable()
 export class ComponentRunnableFactoryImpl extends ComponentRunnableFactory {
 
-    create<T>(typeRef: ReflectiveRef<T>, moduleRef?: ModuleRef): ComponentRunnableRef<T> {
-        return new ComponentRunnableRefImpl(typeRef, moduleRef)
+    create<T>(componentRef: ComponentRef<T>, moduleRef?: ModuleRef): ComponentRunnableRef<T> {
+        return new ComponentRunnableRefImpl(componentRef, moduleRef)
     }
 
 }

@@ -52,14 +52,14 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
     }
 
     getInstance(): T {
-        this.assertNotDestroyed();
         if (!this._instance) {
             this._instance = this.createInstance();
         }
         return this._instance;
     }
 
-    protected createInstance() {
+    createInstance() {
+        this.assertNotDestroyed();
         return this.resolve(this.type, this._isResolve ? InjectFlags.Resolve : undefined);
     }
 
@@ -205,7 +205,7 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
         }
 
         const resolvers = option?.resolvers ? this.class.resolvers.concat(option?.resolvers) : this.class.resolvers;
-        const providers = option?.providers?.length? [this._tagPdrs, option.providers]: this._tagPdrs;
+        const providers = option?.providers?.length ? [this._tagPdrs, option.providers] : this._tagPdrs;
 
         return createContext(injector, {
             ...option,

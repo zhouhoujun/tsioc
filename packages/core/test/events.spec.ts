@@ -111,7 +111,7 @@ class TestService {
     imports: [
 
     ],
-    declarations: [
+    providers: [
         TestService
     ],
     bootstrap: [

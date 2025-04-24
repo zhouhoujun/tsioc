@@ -1,9 +1,16 @@
-import { Abstract, Class, InvokeArguments, ReflectiveRef, ReflectiveFactory, Token } from '@tsdi/ioc';
+import { Abstract, Class, InvokeArguments, ReflectiveRef, ReflectiveFactory, Token, Injector } from '@tsdi/ioc';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { ViewRef } from './view';
 
 @Abstract()
-export abstract class ComponentRef<T> extends ReflectiveRef<T> {
+export abstract class ComponentRef<T> {
+
+    /**
+     * injector of context.
+     * 
+     * 当前类注入的容器上下文的容器
+     */
+    abstract get injector(): Injector;
     /**
      * render component.
      *
@@ -56,14 +63,14 @@ export interface ComponentOptions extends TemplateCompilerOptions, InvokeArgumen
  * ComponentRef factory.
  */
 @Abstract()
-export abstract class ComponenFactory implements ReflectiveFactory {
+export abstract class ComponenFactory {
     /**
      * create ReflectiveRef of target type
      * @param type target type or target type def.
      * @param option target type invoke option {@link InvokeArguments}
      * @returns instance of {@link ReflectiveRef}
      */
-    abstract create<T>(type: Token<T> | Class<T>, option?: ComponentOptions): ComponentRef<T>;
+    abstract create<T>(typeRef: ReflectiveRef<T>, option?: ComponentOptions): ComponentRef<T>;
 
 }
 

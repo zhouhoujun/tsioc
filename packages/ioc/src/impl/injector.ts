@@ -179,7 +179,7 @@ export class DefaultInjector extends Injector {
     protected processInject(providers: Provider[]) {
         this.assertNotDestroyed();
         if (providers.length) {
-            const platform = this.platform();            
+            const platform = this.platform();
             return eachProvider(providers, p => this.processProvider(platform, p, providers))
         }
     }
@@ -338,8 +338,8 @@ export class DefaultInjector extends Injector {
     protected processInjectorType(platform: Platform, typeOrDef: Type | ModuleWithProviders, dedupStack: Type[], moduleRefl?: Class) {
         return processInjectorType(typeOrDef, dedupStack,
             (pdr, pdrs) => this.processProvider(platform, pdr, pdrs),
-            (tyref, type) => {
-                this.registerReflect(platform, tyref)
+            (tyref, type, options) => {
+                this.registerReflect(platform, tyref, options)
             }, moduleRefl)
     }
 
@@ -370,7 +370,7 @@ export class DefaultInjector extends Injector {
         this.assertNotDestroyed();
         const platform = this.platform();
         if (!platform.hasSingleton(token)) {
-            platform.registerSingleton(this, token, value)
+            platform.setSingleton(this, token, value)
         }
         return this
     }
@@ -593,7 +593,7 @@ export class DefaultInjector extends Injector {
 }
 
 export function eachProvider(providers: Provider[], cb: (provider: StaticProvider | DynamicProvider) => void) {
-   return deepForEach(providers, cb, v => isPlainObject(v) && !((v as StaticProviders).provide || (v as DynamicProvider).provider));
+    return deepForEach(providers, cb, v => isPlainObject(v) && !((v as StaticProviders).provide || (v as DynamicProvider).provider));
 }
 
 /**
@@ -628,7 +628,7 @@ export function mergePromise(ps1: Promise<any> | undefined | void, ps2: () => an
 
 export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedupStack: Type[],
     processProvider: (provider: StaticProvider | DynamicProvider, providers?: any[]) => void,
-    regType: (typeRef: Class, type: Type) => void, moduleRefl?: Class, imported?: boolean): void | Promise<void> {
+    regType: (typeRef: Class, type: Type, option?: RegOption) => void, moduleRefl?: Class, imported?: boolean): void | Promise<void> {
     let type: Type;
     let ps: Promise<any> | void | undefined;
     let mpd: Promise<any> | void | undefined;
@@ -661,7 +661,7 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
             const providers = annotation.providers;
             ps = mergePromise(ps, () => eachProvider(
                 providers,
-                pdr => processProvider(pdr, providers)                
+                pdr => processProvider(pdr, providers)
             ))
         }
 
@@ -678,19 +678,20 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
 
 function processInjectoDeclarations(annotation: ModuleDef<any>, dedupStack: Type[],
     processProvider: (provider: StaticProvider | DynamicProvider, providers?: any[]) => void,
-    regType: (typeRef: Class, type: Type) => void, declarations?: boolean, ps?: Promise<void> | void): void | Promise<void> {
+    regType: (typeRef: Class, type: Type, option?: RegOption) => void, declarations?: boolean, ps?: Promise<void> | void): void | Promise<void> {
     const dps: Promise<void>[] = [];
     if (ps) dps.push(ps);
+    const regFn = (typeRef: Class, type: Type, option?: RegOption) => regType(typeRef, type, { ...option, static: false });
     if (declarations && annotation.declarations?.length) {
         annotation.declarations?.forEach(d => {
-            const res = processInjectorType(d, dedupStack, processProvider, regType, undefined, true);
+            const res = processInjectorType(d, dedupStack, processProvider, regFn, undefined, true);
             if (res) {
                 dps.push(res);
             }
         });
     }
     annotation.exports?.forEach(d => {
-        const res = processInjectorType(d, dedupStack, processProvider, regType, undefined, true);
+        const res = processInjectorType(d, dedupStack, processProvider, regFn, undefined, true);
         if (res) {
             dps.push(res);
         }
@@ -937,7 +938,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
 function registerCores(container: Container, platform: Platform) {
     const factory = new ReflectiveFactoryImpl(platform);
     container.setValue(ReflectiveFactory, factory);
-    platform.registerSingleton(container, ReflectiveFactory, factory);
+    platform.setSingleton(container, ReflectiveFactory, factory);
     // bing action.
     // platform.registerAction(
     //     DesignLifeScope,

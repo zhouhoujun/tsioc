@@ -1,7 +1,5 @@
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
-// import { Handle } from './handle';
-// import { Action } from './action';
 import { OnDestroy } from './destroy';
 import { Injector, InjectorScope } from './injector';
 import { Token } from './tokens';
@@ -42,7 +40,7 @@ export abstract class Platform implements OnDestroy {
      * @param token 
      * @param value 
      */
-    abstract registerSingleton<T>(injector: Injector, token: Token<T>, value: T): this;
+    abstract setSingleton<T>(injector: Injector, token: Token<T>, value: T): this;
     /**
      * get singleton instance.
      * @param token 

@@ -1,4 +1,4 @@
-import { Class, DefaultReflectiveRef, Injectable, Injector, InvokeArguments } from '@tsdi/ioc';
+import { Class, Injectable, Injector, InvokeArguments, ReflectiveRef } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentRef } from '../refs/component';
 import { ViewRef } from '../refs/view';
@@ -6,34 +6,47 @@ import { TemplateCompiler } from '../template/compiler';
 import { ComponentDef } from '../decorators/component';
 import { reactive } from './reactive';
 
-export class ComponentRefImpl<T> extends DefaultReflectiveRef<T> implements ComponentRef<T> {
+export class ComponentRefImpl<T> implements ComponentRef<T> {
 
     constructor(
-        _class: Class<T>,
-        injector: Injector,
+        private typeRef: ReflectiveRef<T>,
         readonly compiler: TemplateCompiler,
         options?: InvokeArguments<any>) {
-        super(_class, injector, options);
-        this.compiler = this.getContext().get(TemplateCompiler);
+    }
+
+    get injector(): Injector {
+        return this.typeRef.injector
+    }
+
+    destroy(): void {
+        throw new Error('Method not implemented.');
+    }
+
+    onDestroy(callback: () => void): void {
+        throw new Error('Method not implemented.');
     }
     
     get hostView(): ViewRef {
         throw new Error('Method not implemented.');
     }
     
+    private _inst?: T;
     get instance(): T {
-        return this.getInstance()
+        if(!this._inst) {
+            this._inst = this.createInstance()
+        }
+        return this._inst;
     }
 
 
     async render(): Promise<void> {
-        const def = this.class.getAnnotation<ComponentDef>();
+        const def = this.typeRef.class.getAnnotation<ComponentDef>();
         const template = def.template || await fetchTemplate(def.templateUrl!);
         this.compiler.compile(template, this);
     }
 
-    protected override createInstance(): T {
-        const instance = super.createInstance();
+    protected createInstance(): T {
+        const instance = this.typeRef.getInstance();
         return reactive(instance, this.injector.get(ReactiveEffect))
     }
 
@@ -43,8 +56,8 @@ export class ComponentRefImpl<T> extends DefaultReflectiveRef<T> implements Comp
 export class ComponentFactoryImpl {
     constructor(protected compiler: TemplateCompiler) {
     }
-    create<T>(_class: Class<T>, injector: Injector, options?: InvokeArguments<any>): ComponentRef<T> {
-        return new ComponentRefImpl(_class, injector, this.compiler, options);
+    create<T>(typeRef: ReflectiveRef<T>, options?: InvokeArguments<any>): ComponentRef<T> {
+        return new ComponentRefImpl(typeRef, this.compiler, options);
     }
 }
 

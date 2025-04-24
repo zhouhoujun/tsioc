@@ -71,7 +71,7 @@ export class DefaultPlatform implements Platform {
      * @param token 
      * @param value 
      */
-    registerSingleton<T>(injector: Injector, token: Token<T>, value: T): this {
+    setSingleton<T>(injector: Injector, token: Token<T>, value: T): this {
         if (this._singls.has(token)) {
             throw new Execption('has singleton instance with token:' + token.toString())
         }

@@ -1,4 +1,4 @@
-import { ModuleType, createDecorator, AnnotationType, noPointcut, getModuleType, TypeDef, ReflectiveFactory, ActionTypes } from '@tsdi/ioc';
+import { ModuleType, createDecorator, AnnotationType, noPointcut, getModuleType, TypeDef, ActionTypes } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponenFactory } from '../refs/component';
 import { RunnableFactory } from '@tsdi/core';
@@ -30,18 +30,16 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
             if (metadata.imports) def.imports = getModuleType(metadata.imports);
         }
     },
-    design: {
-        class: (ctx) => {
-            const effect = ctx.injector.get(ReactiveEffect);
-            const factory = ctx.injector.get(ComponenFactory);
-            // ctx.isNewContext = false;
-            const componentRef = factory.create(ctx.class);
+    // design: {
+    //     class: (ctx) => {
+    //         const effect = ctx.injector.get(ReactiveEffect);
+    //         const factory = ctx.injector.get(ComponenFactory);
+    //         // ctx.isNewContext = false;
 
-        }
-    },
+    //     }
+    // },
     providers: [
-        { provide: RunnableFactory, useExisting: ComponentRunnableFactory },
-        { provide: ReflectiveFactory, useExisting: ComponenFactory }
+        { provide: RunnableFactory, useExisting: ComponentRunnableFactory }
     ]
 })
 

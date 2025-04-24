@@ -73,10 +73,10 @@ class TestService {
     imports: [
     ],
     providers:[
-    ],
-    declarations: [
         TestService,
         ExecptionHandlers
+    ],
+    declarations: [
     ],
     bootstrap: [
         TestService

@@ -2,8 +2,7 @@ import {
     isUndefined, Type, createDecorator, Provider, InjectableMetadata, PropertyMetadata, ActionTypes, InjectFlags,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
     isString, Parameter, ProviderMetadata, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
-    ModuleType, ClassType, MutilProvider, ReflectiveRef, Class, Injector,
-    ProvidedInMetadata
+    ModuleType, ClassType, MutilProvider, ReflectiveRef, Class, Injector, ProvidedInMetadata
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import {

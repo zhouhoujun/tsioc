@@ -49,7 +49,8 @@ export interface RegContext extends IocContext {
     /**
      * custom set singleton or not.
      */
-    singleton: boolean;
+    singleton?: boolean;
+    static?: boolean;
 }
 
 /**
@@ -61,6 +62,7 @@ export interface DesignContext extends RegContext, ProvidedInMetadata {
     regProvides?: boolean;
     getRecords: () => Map<Token, FactoryRecord>;
 }
+
 
 /**
  * Ioc Register action context.
