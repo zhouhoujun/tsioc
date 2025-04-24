@@ -1,4 +1,4 @@
-import { Module, ModuleWithProviders } from '@tsdi/ioc';
+import { Empty, Module, ModuleWithProviders } from '@tsdi/ioc';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpClient } from './client';
 import { HttpXhrBackend } from './xhr';
@@ -57,8 +57,8 @@ export class HttpClientXsrfModule {
         return {
             module: HttpClientXsrfModule,
             providers: [
-                options.cookieName ? { provide: XSRF_COOKIE_NAME, useValue: options.cookieName } : [],
-                options.headerName ? { provide: XSRF_HEADER_NAME, useValue: options.headerName } : [],
+                options.cookieName ? { provide: XSRF_COOKIE_NAME, useValue: options.cookieName } : Empty,
+                options.headerName ? { provide: XSRF_HEADER_NAME, useValue: options.headerName } : Empty,
             ]
         };
     }

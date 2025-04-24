@@ -50,8 +50,8 @@ export class HandleContext<TInput = any> extends DefaultInvocationContext<TInput
         return res;
     }
 
-    protected playloadDefaultResolvers(): OperationArgumentResolver<any>[] {
-        return []
+    protected playloadDefaultResolvers(): OperationArgumentResolver<any>[] | null {
+        return null
     }
 
     protected override clear(): void {

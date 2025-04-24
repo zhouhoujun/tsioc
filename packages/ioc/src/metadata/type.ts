@@ -1,7 +1,7 @@
 import { Type, ClassType, Annotation } from '../types';
 import { ModuleWithProviders, Provider } from '../providers';
 import {
-    PatternMetadata, ProvidersMetadata, ProvidedInMetadata, ModuleMetadata,
+    PatternMetadata, ProvidersMetadata, ProvidedInMetadata,
     PropertyMetadata, ParameterMetadata
 } from './meta';
 import { InvocationContext, InvokeArguments } from '../context';
@@ -12,7 +12,7 @@ import { getClassAnnotation } from '../utils/util';
 import { isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { Execption } from '../execption';
-import { InstanceOf, MethodType } from '../injector';
+import { Empty, InstanceOf, MethodType } from '../injector';
 import { HandlerFn } from '../handler';
 import { DesignContext, RuntimeContext } from '../lifescope/ctx';
 
@@ -717,7 +717,7 @@ export class Class<T = any> {
 
     getParamNames(method: string | symbol): string[] {
         const prop = method ?? ctorName;
-        return this.getParams().get(prop) || []
+        return this.getParams().get(prop) || Empty
     }
 
     getParams(): Map<string | symbol, any[]> {

@@ -1,5 +1,5 @@
 import { Execption } from '../execption';
-import { Injector, InjectorScope } from '../injector';
+import { Empty, Injector, InjectorScope } from '../injector';
 import { get } from '../metadata/refl';
 import { Class, ModuleDef } from '../metadata/type';
 import { ModuleOption, ModuleRef } from '../module.ref';
@@ -110,7 +110,7 @@ export function createModuleRef<T>(module: Type<T> | Class<T> | ModuleWithProvid
     if (isModuleProviders(module)) {
         return new DefaultModuleRef(get<ModuleDef>(module.module), parent, {
             ...option,
-            providers: option?.providers?.length ? [module.providers ?? [], option?.providers] : module.providers
+            providers: option?.providers?.length ? [module.providers ?? Empty, option?.providers] : module.providers
         })
     }
     const moduleDef = isType(module) ? get(module) : module;

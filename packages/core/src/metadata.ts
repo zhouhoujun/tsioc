@@ -2,7 +2,8 @@ import {
     isUndefined, Type, createDecorator, Provider, InjectableMetadata, PropertyMetadata, ActionTypes, InjectFlags,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
     isString, Parameter, ProviderMetadata, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
-    ModuleType, ClassType, MutilProvider, ReflectiveRef, Class, Injector, ProvidedInMetadata
+    ModuleType, ClassType, MutilProvider, ReflectiveRef, Class, Injector, ProvidedInMetadata,
+    Empty
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import {
@@ -264,7 +265,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                 const typeRef = ctx.class;
                 if (typeRef.getAnnotation().static === false && !typeRef.getAnnotation().singleton) return;
 
-                const decors = typeRef.getMethodDefines(ctx.currDecor) ?? [];
+                const decors = typeRef.getMethodDefines(ctx.currDecor);
                 const injector = ctx.injector;
                 const factory = injector.get(InvocationFactoryResolver).resolve(typeRef);
                 const currMulticaster = injector.get(ApplicationEventMulticaster);
@@ -290,7 +291,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                     || typeRef.getAnnotation().singleton
                 )) return;
 
-                const decors = typeRef.getMethodDefines(ctx.currDecor) ?? [];
+                const decors = typeRef.getMethodDefines(ctx.currDecor);
                 const injector = ctx.injector;
                 const factory = injector.get(InvocationFactoryResolver).resolve(typeRef);
                 const currMulticaster = injector.get(ApplicationEventMulticaster);

@@ -273,12 +273,9 @@ export const decorPropInject = (ctx: DecorContext, next: HandlerFn, context: Con
 
 export const decorCtorDesignParams = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (!ctx.class.hasParameters(ctorName)) {
-        let paramTypes: any[] = Reflect.getMetadata('design:paramtypes', ctx.class.type);
+        const paramTypes: any[] = Reflect.getMetadata('design:paramtypes', ctx.class.type);
         if (paramTypes) {
             const names = ctx.class.getParamNames(ctorName);
-            if (!paramTypes) {
-                paramTypes = []
-            }
             ctx.class.setParameters(ctorName, paramTypes.map((type, index) => {
                 return { type, name: names[index] }
             }))

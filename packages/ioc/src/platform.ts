@@ -1,10 +1,10 @@
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
 import { OnDestroy } from './destroy';
-import { Injector, InjectorScope } from './injector';
 import { Token } from './tokens';
 import { ClassType, Type } from './types';
 import { Provider } from './providers';
+import { Injector, InjectorScope } from './injector';
 import { ModuleRef } from './module.ref';
 import { LifeScope } from './lifescope/lifescope';
 import { Context } from './handler';

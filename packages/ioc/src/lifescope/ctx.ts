@@ -50,6 +50,9 @@ export interface RegContext extends IocContext {
      * custom set singleton or not.
      */
     singleton?: boolean;
+    /**
+     * static or not.
+     */
     static?: boolean;
 }
 

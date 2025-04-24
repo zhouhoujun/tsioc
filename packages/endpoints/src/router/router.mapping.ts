@@ -1,6 +1,7 @@
 import {
     ModuleRef, isFunction, lang, OnDestroy, promiseOf, Injector,
-    Execption, isArray, isPromise, isObservable, isBoolean
+    Execption, isArray, isPromise, isObservable, isBoolean,
+    Empty
 } from '@tsdi/ioc';
 import {
     ApplicationHandler, CanHandle, getGuardsToken, getInterceptorsToken,
@@ -404,7 +405,7 @@ export class MappingRoute implements Middleware, RequestHandler {
 
     protected canActive(ctx: RequestContext) {
         if (!this._guards) {
-            this._guards = this.route.guards?.map(g => isFunction(g) ? ctx.resolve(g) : g) ?? []
+            this._guards = this.route.guards?.map(g => isFunction(g) ? ctx.resolve(g) : g) ?? Empty
         }
         if (!this._guards.length) return true;
         return lang.some(this._guards.map(guard => () => promiseOf(guard.canHandle(ctx))), vaild => vaild === false)

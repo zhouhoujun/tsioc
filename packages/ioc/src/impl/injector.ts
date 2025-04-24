@@ -7,7 +7,8 @@ import { cleanObj, deepForEach, defer, immediate } from '../utils/lang';
 import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil, isType, isPromise } from '../utils/chk';
 import {
     MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, InjectorEvent,
-    Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
+    Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption,
+    Empty
 } from '../injector';
 import { Execption } from '../execption';
 import { Platform } from '../platform';
@@ -56,7 +57,7 @@ export class DefaultInjector extends Injector {
         return this._readyDefer.promise
     }
 
-    constructor(providers: Provider[] = [], readonly parent?: Injector, readonly scope?: InjectorScope) {
+    constructor(providers: Provider[] = Empty, readonly parent?: Injector, readonly scope?: InjectorScope) {
         super();
         this.records = new Map();
         if (parent) {
@@ -476,7 +477,7 @@ export class DefaultInjector extends Injector {
             const arg0 = args[0];
             if (arg0 instanceof InvocationContext) {
                 context = arg0;
-                providers = []
+                providers = Empty;
             } else if (isArray(arg0)) {
                 providers = arg0
             } else if (isPlainObject(arg0) && !arg0.provide) {
@@ -691,6 +692,7 @@ function processInjectoDeclarations(annotation: ModuleDef<any>, dedupStack: Type
         });
     }
     annotation.exports?.forEach(d => {
+        if (annotation.declarations && annotation.declarations.indexOf(d) >= 0) return;
         const res = processInjectorType(d, dedupStack, processProvider, regFn, undefined, true);
         if (res) {
             dps.push(res);
@@ -840,8 +842,6 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
 }
 
 const THROW_FLAGE = {};
-
-const Empty: any[] = [];
 
 /**
  * resolve token.

@@ -1,4 +1,5 @@
 import { BaseChain, Handler, HandlerFn, InterceptorLike, invokeTail, NextOpter } from '../handler';
+import { Empty } from '../injector';
 import { Platform } from '../platform';
 
 export class LifeScope<TInput = any> extends BaseChain<TInput> implements Handler<TInput> {
@@ -6,7 +7,7 @@ export class LifeScope<TInput = any> extends BaseChain<TInput> implements Handle
     constructor(
         readonly platform: Platform | null,
         private backend: HandlerFn<TInput>,
-        interceptors: InterceptorLike<TInput>[] = []
+        interceptors: InterceptorLike<TInput>[] = Empty
     ) {
         super(interceptors.slice())
     }

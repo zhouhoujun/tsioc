@@ -351,12 +351,16 @@ export abstract class Injector implements Destroyable, OnDestroy {
         options: Provider[] | Injector | { providers: Provider[], parent?: Injector, scope?: InjectorScope } | undefined,
         parent?: Injector | InjectorScope, scope?: InjectorScope): Injector {
         if (!options) {
-            options = []
+            options = Empty
         }
         return isArray(options) ? INJECT_IMPL.create(options, parent as Injector, scope) :
             (isInjector(options) ? INJECT_IMPL.create(undefined, options, parent as InjectorScope) : INJECT_IMPL.create(options.providers, options.parent, options.scope))
     }
 }
+
+
+
+export const Empty: any[] = [];
 
 
 /**

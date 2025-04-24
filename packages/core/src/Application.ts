@@ -1,4 +1,4 @@
-import { isFunction, Type, ClassType, Provider, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, ReflectiveFactory, isType, Module, refl } from '@tsdi/ioc';
+import { isFunction, Type, ClassType, Provider, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, ReflectiveFactory, isType, Module, refl, Empty } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEPENDENCE_PROVIDERS, } from './providers';
 import { ModuleLoader } from './ModuleLoader';
@@ -44,11 +44,11 @@ export class Application<T = any, TArg = ApplicationArguments> {
         if (!isFunction(target)) {
             if (!this.loader && target.loader) this.loader = target.loader;
             const providers = target.platformProviders?.length ? [this.getPlatformDefaultProviders(), target.platformProviders] : this.getPlatformDefaultProviders();
-            target.deps = target.deps?.length ? [this.getDeps(), target.deps] : this.getDeps();
+            target.deps = [this.getDeps() ?? Empty, target.deps ?? Empty];
             target.scope = 'root';
             this.root = this.createInjector(providers, target)
         } else {
-            const option = { module: target, deps: this.getDeps(), scope: 'root' };
+            const option = { module: target, deps: this.getDeps() ?? Empty, scope: 'root' };
             this.root = this.createInjector(this.getPlatformDefaultProviders(), option)
         }
     }
@@ -57,16 +57,16 @@ export class Application<T = any, TArg = ApplicationArguments> {
         return DEFAULTA_PROVIDERS
     }
 
-    protected getRootDependencies(): ModuleType[] {
-        return [];
+    protected getRootDependencies(): ModuleType[] | null {
+        return null;
     }
 
     protected getRootDependenceProviders(): Provider[] {
         return ROOT_DEPENDENCE_PROVIDERS;
     }
 
-    protected getRootDefaultProviders(): Provider[] {
-        return [];
+    protected getRootDefaultProviders(): Provider[] | null {
+        return null;
     }
 
     /**
@@ -138,11 +138,11 @@ export class Application<T = any, TArg = ApplicationArguments> {
     }
 
     get loadTypes(): Type[] {
-        return this._loads ?? []
+        return this._loads ?? Empty
     }
 
-    protected getDeps(): Modules[] {
-        return []
+    protected getDeps(): Modules[] | null {
+        return null
     }
 
 
@@ -157,9 +157,9 @@ export class Application<T = any, TArg = ApplicationArguments> {
             this.loader = new DefaultModuleLoader();
         }
         option.platformDeps && container.use(option.platformDeps);
-        option.depProviders = option.depProviders?.length ? [this.getRootDependenceProviders(), option.depProviders] : this.getRootDependenceProviders();
-        option.deps = option.deps?.length ? [this.getRootDependencies(), option.deps] : this.getRootDependencies();
-        option.providers = option.providers?.length ? [this.getRootDefaultProviders(), option.providers] : this.getRootDefaultProviders();
+        option.depProviders = [this.getRootDependenceProviders() ?? Empty, option.depProviders ?? Empty];
+        option.deps = [this.getRootDependencies() ?? Empty, option.deps ?? Empty];
+        option.providers = [this.getRootDefaultProviders() ?? Empty, option.providers ?? Empty];
         return this.createModuleRef(container, option);
     }
 
@@ -191,8 +191,8 @@ export class Application<T = any, TArg = ApplicationArguments> {
             type: DynamicModule,
             ...module,
             module: true,
-            imports: module.imports ? getModuleType(module.imports) : [],
-            exports: module.exports ? lang.getTypes<ClassType>(module.exports) : [],
+            imports: module.imports ? getModuleType(module.imports) : Empty,
+            exports: module.exports ? lang.getTypes<ClassType>(module.exports) : Empty,
             bootstrap: module.bootstrap ? lang.getTypes(module.bootstrap) : null
         } as ModuleDef);
     }
@@ -218,7 +218,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
                 if (target.loads) {
                     this._loads = await this.loader.register(this.root, target.loads);
                 }
-                this.context = modueRef.resolve(ApplicationFactory).create(root, { ...target, providers: [] });
+                this.context = modueRef.resolve(ApplicationFactory).create(root, { ...target, providers: Empty });
             }
         }
         return this.context
