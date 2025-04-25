@@ -25,7 +25,6 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
             (ctx.class.type as AnnotationType)[noPointcut] = true;
             const def = ctx.class.getAnnotation<ComponentDef>();
             const metadata = ctx.define.metadata;
-            def.providedIn = metadata.providedIn;
             def.providers = metadata.providers;
             if (metadata.imports) def.imports = getModuleType(metadata.imports);
         }

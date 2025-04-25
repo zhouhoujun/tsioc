@@ -414,7 +414,7 @@ export function dispatchTypeDecor(type: Type, define: DecorDefine, options: Deco
     dispatch(typeDecorLifeScope, type, type, define, options)
 }
 
-export function dispatchPorpDecor(type: any, define: DecorDefine, options: DecoratorOption<any>) {
+export function dispatchPropertyDecor(type: any, define: DecorDefine, options: DecoratorOption<any>) {
     if (!define.metadata.propertyKey) define.metadata.propertyKey = define.propertyKey;
     dispatch(propDecorLifeScope, type, type.constructor, define, options)
 }

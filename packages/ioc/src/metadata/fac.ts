@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { AbstractMetadata, ClassMetadata, ParameterMetadata, PatternMetadata, PropertyMetadata } from './meta';
-import { DecoratorOption, dispatchMethodDecor, dispatchParamDecor, dispatchPorpDecor, dispatchTypeDecor, MetadataFactory, regActionType, toDefine } from './refl';
+import { DecoratorOption, dispatchMethodDecor, dispatchParamDecor, dispatchPropertyDecor, dispatchTypeDecor, MetadataFactory, regActionType, toDefine } from './refl';
 import { Decors, ActionTypes, DecoratorType, DecoratorFn } from './type';
 import { isUndefined, isNumber, isString, isArray } from '../utils/chk';
 import { getToken, Token } from '../tokens';
@@ -82,7 +82,7 @@ function storeMetadata<T>(decor: DecoratorFn, args: any[], metadata: any, option
         case 2:
             target = args[0];
             propertyKey = args[1];
-            dispatchPorpDecor(target, toDefine(decor, metadata, Decors.property, option, propertyKey), option)
+            dispatchPropertyDecor(target, toDefine(decor, metadata, Decors.property, option, propertyKey), option)
             break;
         case 3:
             if (isNumber(args[2])) {
@@ -93,7 +93,7 @@ function storeMetadata<T>(decor: DecoratorFn, args: any[], metadata: any, option
             } else if (isUndefined(args[2])) {
                 target = args[0];
                 propertyKey = args[1];
-                dispatchPorpDecor(target, toDefine(decor, metadata, Decors.property, option, propertyKey), option)
+                dispatchPropertyDecor(target, toDefine(decor, metadata, Decors.property, option, propertyKey), option)
             } else {
                 target = args[0];
                 propertyKey = args[1];
@@ -103,7 +103,7 @@ function storeMetadata<T>(decor: DecoratorFn, args: any[], metadata: any, option
                 }
                 // is set get or not.
                 if (descriptor.set || descriptor.get) {
-                    dispatchPorpDecor(target, toDefine(decor, metadata, Decors.property, option, propertyKey), option)
+                    dispatchPropertyDecor(target, toDefine(decor, metadata, Decors.property, option, propertyKey), option)
                 } else {
                     dispatchMethodDecor(target, toDefine(decor, metadata, Decors.method, option, propertyKey), option)
                 }
