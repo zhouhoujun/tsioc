@@ -4,6 +4,7 @@ import { DEFAULTA_PROVIDERS, ROOT_DEPENDENCE_PROVIDERS, } from './providers';
 import { ModuleLoader } from './ModuleLoader';
 import { DefaultModuleLoader } from './impl/loader';
 import { ApplicationArguments } from './ApplicationArguments';
+import { TransformModule } from './pipes/transform';
 
 
 
@@ -41,7 +42,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
         if (loader) {
             this.loader = loader;
         }
-        if (!isFunction(target)) {
+        if (!isType(target)) {
             if (!this.loader && target.loader) this.loader = target.loader;
             const providers = target.platformProviders?.length ? [this.getPlatformDefaultProviders(), target.platformProviders] : this.getPlatformDefaultProviders();
             target.deps = [this.getDeps() ?? Empty, target.deps ?? Empty];
@@ -142,7 +143,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
     }
 
     protected getDeps(): Modules[] | null {
-        return null
+        return [TransformModule]
     }
 
 

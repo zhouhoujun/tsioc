@@ -222,6 +222,11 @@ export function hasOwn(target: any, property: string | symbol) {
     return hasOwnProperty.call(target, property)
 }
 
+/**
+ * has any property or not.
+ * @param target 
+ * @returns 
+ */
 export function hasProps(target: any): boolean {
     return isObject(target) && Object.keys(target).length > 0;
 }

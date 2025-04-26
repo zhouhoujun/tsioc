@@ -15,7 +15,6 @@ import { ExecptionHandlerFilter } from './filters/execption.filter';
 import { getResolverToken } from './handlers/resolver';
 import { PayloadApplicationEvent } from './events';
 import { createPayloadResolver } from './handlers/resolvers';
-import { TRANSFORM_PROVIDERS } from './pipes/transform';
 
 
 
@@ -43,7 +42,6 @@ SCOPE_PRODIDERS.push(RESOLVER_PROVIDERS);
  * Application root dependence providers
  */
 export const ROOT_DEPENDENCE_PROVIDERS: Provider[] = [
-    TRANSFORM_PROVIDERS,
     RESOLVER_PROVIDERS,
     {
         provide: getResolverToken(PayloadApplicationEvent),
