@@ -622,7 +622,7 @@ INJECT_IMPL.create = (providers: Provider[], parent?: Injector, scope?: Injector
 
 export function mergePromise(ps1: Promise<any> | undefined | void, ps2: () => any) {
     if (ps1) {
-        return ps1.then(() => ps2());
+        return ps1.then(ps2);
     }
     return ps2();
 }
@@ -630,27 +630,21 @@ export function mergePromise(ps1: Promise<any> | undefined | void, ps2: () => an
 export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedupStack: Type[],
     processProvider: (provider: StaticProvider | DynamicProvider, providers?: any[]) => void,
     regType: (typeRef: Class, type: Type, option?: RegOption) => void, moduleRefl?: Class, imported?: boolean): void | Promise<void> {
-    let type: Type;
-    let ps: Promise<any> | void | undefined;
-    let mpd: Promise<any> | void | undefined;
-    if (isType(typeOrDef)) {
-        type = typeOrDef;
-    } else {
-        type = typeOrDef.module;
-        const providers = typeOrDef.providers;
-        if (providers && providers.length) {
-            mpd = eachProvider(
-                providers,
-                pdr => processProvider(pdr, providers)
-            );
-        }
+    // 提前检查重复处理
+    const type = isType(typeOrDef) ? typeOrDef : typeOrDef.module;
+    if (dedupStack.includes(type)) {
+        return;
     }
-    const isDuplicate = dedupStack.indexOf(type) !== -1;
-    if (isDuplicate) {
-        return ps ?? mpd;
+    dedupStack.push(type);
+
+    let ps: Promise<any> | void | undefined;
+
+    // 处理ModuleWithProviders情况
+    if (!isType(typeOrDef) && typeOrDef.providers?.length) {
+        ps = eachProvider(typeOrDef.providers, pdr => processProvider(pdr, typeOrDef.providers));
     }
 
-    dedupStack.push(type);
+
     const typeRef = moduleRefl ?? get<ModuleDef>(type);
     const annotation = typeRef.getAnnotation<ModuleDef>();
     if (annotation.module) {
@@ -672,7 +666,7 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
 
     }
 
-    return mergePromise(ps && mpd ? Promise.all([ps, mpd]) : ps ?? mpd, () => regType(typeRef, type));
+    return ps? ps.then(()=> regType(typeRef, type)) : regType(typeRef, type);
 
 }
 
