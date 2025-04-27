@@ -246,12 +246,12 @@ function processObservable<T>(obs$: Observable<T>, opter: NextOpter<T>): Observa
     }
 
     if (opter.finally) {
-        obs$ = obs$.pipe(finalize(() => opter.finally!()));
+        obs$ = obs$.pipe(finalize(opter.finally));
     }
 
     if (opter.error) {
         obs$ = obs$.pipe(
-            catchError(err => handleOperatorError(opter.error!(err), err) as Observable<T>)
+            catchError(err => handleOperatorError(opter.error?.(err), err) as Observable<T>)
         );
     }
 
@@ -260,11 +260,11 @@ function processObservable<T>(obs$: Observable<T>, opter: NextOpter<T>): Observa
 
 function processPromise<T>(pr$: Promise<T>, opter: NextOpter<T>): Promise<T> {
     if (opter.next) {
-        pr$ = pr$.then(res => opter.next!(res));
+        pr$ = pr$.then(opter.next);
     }
 
     if (opter.error) {
-        pr$ = pr$.catch(err => handlePromiseError(opter.error!(err), err));
+        pr$ = pr$.catch(err => handlePromiseError(opter.error?.(err), err));
     }
 
     if (opter.finally) {
