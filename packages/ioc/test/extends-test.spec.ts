@@ -1,4 +1,4 @@
-import { Injector } from '../src';
+import { createInjector, Injector } from '../src';
 import * as mds from './extends-test';
 import { Person, Home } from './extends-test';
 import expect = require('expect');
@@ -7,7 +7,7 @@ describe('extends test', () => {
     let injector: Injector;
     
     before(async () => {
-        injector = Injector.create();
+        injector = createInjector();
         injector.use(mds);
     });
 

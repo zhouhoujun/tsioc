@@ -1,4 +1,4 @@
-import { isFunction, Type, ClassType, Provider, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, ReflectiveFactory, isType, Module, refl, Empty } from '@tsdi/ioc';
+import { isFunction, Type, ClassType, Provider, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, ReflectiveFactory, isType, Module, refl, Empty, createInjector } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEPENDENCE_PROVIDERS, } from './providers';
 import { ModuleLoader } from './ModuleLoader';
@@ -148,7 +148,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
 
 
     protected createInjector<T, TArg>(providers: Provider[], option: ApplicationOption<T, TArg>) {
-        const container = option.injector ?? Injector.create(providers);
+        const container = option.injector ?? createInjector(providers);
         if (option.baseURL) {
             container.setValue(PROCESS_ROOT, option.baseURL)
         }

@@ -6,7 +6,7 @@ import { OperationArgumentResolver, Parameter, composeResolver, composeResolvers
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token, tokenId } from '../tokens';
-import { Injector, isInjector } from '../injector';
+import { createInjector, Injector, isInjector } from '../injector';
 import { Execption } from '../execption';
 import { Class } from '../metadata/type';
 import { getDef } from '../metadata/refl';
@@ -121,7 +121,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     }
 
     protected createInjector(injector: Injector, providers?: Provider[]) {
-        return Injector.create(providers, injector, this.injectorScope)
+        return createInjector(providers, injector, this.injectorScope)
     }
 
     /**

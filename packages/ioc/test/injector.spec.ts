@@ -1,4 +1,4 @@
-import { Injectable, InjectFlags, Injector, isNumber, ReflectiveFactory, tokenId } from '@tsdi/ioc';
+import { createInjector, Injectable, InjectFlags, Injector, isNumber, ReflectiveFactory, tokenId } from '@tsdi/ioc';
 import expect = require('expect');
 import { CollegeStudent, MiddleSchoolStudent, Student } from './debug';
 
@@ -28,7 +28,7 @@ describe('Injector test', () => {
 
     let inj: Injector;
     before(() => {
-        inj = Injector.create([
+        inj = createInjector([
             PlcService,
             { provide: Student, useClass: CollegeStudent },
             { provide: 'hi', useValue: 'hello world.' },
@@ -116,7 +116,7 @@ describe('Injector test', () => {
     describe('with inject flags', () => {
 
         it('resolve default flags', () => {
-            const subinj = Injector.create(inj);
+            const subinj = createInjector(inj);
             expect(subinj.get(Student)).toBeInstanceOf(CollegeStudent);
             expect(subinj.get(Student, undefined, InjectFlags.Default)).toBeInstanceOf(CollegeStudent);
             subinj.destroy();
@@ -124,14 +124,14 @@ describe('Injector test', () => {
         })
 
         it('resolve self flags', () => {
-            const subinj = Injector.create(inj);
+            const subinj = createInjector(inj);
             expect(subinj.get(Students, [], InjectFlags.Self)).toEqual([]);
             expect(subinj.get(Students, null, InjectFlags.Self)).toBeNull();
             subinj.destroy();
         })
 
         it('resolve skip self flags', () => {
-            const subinj = Injector.create(inj);
+            const subinj = createInjector(inj);
             const value = subinj.get(Students, [], InjectFlags.SkipSelf);
             expect(value).not.toEqual([]);
             expect(Array.isArray(value)).toBeTruthy();

@@ -1,5 +1,5 @@
 import expect = require('expect');
-import { Injectable, Inject, getToken, ProvidedIn, Injector, ReflectiveFactory } from '../src';
+import { Injectable, Inject, getToken, ProvidedIn, Injector, ReflectiveFactory, createInjector } from '../src';
 
 
 @Injectable()
@@ -46,7 +46,7 @@ describe('resolve', () => {
     let injector: Injector;
     before(() => {
 
-        injector = Injector.create([DataProvider, CustomDataProvider, TestService, TestServiceProvider]);
+        injector = createInjector([DataProvider, CustomDataProvider, TestService, TestServiceProvider]);
     });
 
     it('get', () => {

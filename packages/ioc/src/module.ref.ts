@@ -43,16 +43,6 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
      */
     abstract import<M>(modle: Type<M> | ModuleWithProviders<M>, children?: boolean): void | Promise<void>;
     /**
-     * use modules.
-     * @param modules 
-     */
-    abstract use(modules: ModuleType[]): Type[];
-    /**
-     * use modules.
-     * @param modules 
-     */
-    abstract use(...modules: ModuleType[]): Type[];
-    /**
      * destroy.
      */
     abstract destroy(): void | Promise<void>;

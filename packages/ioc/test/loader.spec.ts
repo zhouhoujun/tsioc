@@ -1,4 +1,4 @@
-import { Container, getToken, Injector } from '../src';
+import { Container, createInjector, getToken, Injector } from '../src';
 import * as debuModules from './debug';
 import { ClassRoom, CollegeClassRoom, InjCollegeClassRoom, InjMClassRoom, MClassRoom, MiddleSchoolStudent, Person, SimppleAutoWried, StingMClassRoom, StringIdTest, Student, SymbolIdest } from './debug';
 import expect = require('expect');
@@ -9,7 +9,7 @@ describe('injector use ', () => {
 
     let injector: Injector;
     before(async () => {
-        injector = Injector.create();
+        injector = createInjector();
         await injector.use(debuModules);
         injector.setValue(Date, new Date());
     });

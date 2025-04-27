@@ -323,39 +323,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      */
     protected abstract processRegister(platform: Platform, def: Class, option?: TypeOption): void;
 
-    /**
-     * create platform injector.
-     * @param providers
-     */
-    static create(providers?: Provider[]): Injector;
-    /**
-     * create injector.
-     * @param providers 
-     * @param parent 
-     * @param scope 
-     */
-    static create(parent: Injector, scope?: InjectorScope): Injector;
-    /**
-     * create injector.
-     * @param providers 
-     * @param parent 
-     * @param scope 
-     */
-    static create(providers: Provider[] | undefined, parent: Injector, scope?: InjectorScope): Injector;
-    /**
-     * create injector with option.
-     * @param options 
-     */
-    static create(options: { providers: Provider[], parent?: Injector, scope?: InjectorScope }): Injector;
-    static create(
-        options: Provider[] | Injector | { providers: Provider[], parent?: Injector, scope?: InjectorScope } | undefined,
-        parent?: Injector | InjectorScope, scope?: InjectorScope): Injector {
-        if (!options) {
-            options = Empty
-        }
-        return isArray(options) ? INJECT_IMPL.create(options, parent as Injector, scope) :
-            (isInjector(options) ? INJECT_IMPL.create(undefined, options, parent as InjectorScope) : INJECT_IMPL.create(options.providers, options.parent, options.scope))
-    }
+
 }
 
 
@@ -374,11 +342,74 @@ export function isInjector(target: any): target is Injector {
     return target instanceof Injector
 }
 
+
+/**
+ * create platform injector.
+ * @param providers
+*/
+export function createInjector(providers?: Provider[]): Injector;
+/**
+ * create injector.
+ * @param providers 
+ * @param parent 
+ * @param scope 
+ */
+export function createInjector(parent: Injector, scope?: InjectorScope): Injector;
+/**
+ * create injector.
+ * @param providers 
+ * @param parent 
+ * @param scope 
+ */
+export function createInjector(providers: Provider[] | undefined, parent: Injector, scope?: InjectorScope): Injector;
+/**
+ * create injector with option.
+ * @param options 
+ */
+export function createInjector(options: { providers: Provider[], parent?: Injector, scope?: InjectorScope }): Injector;
+export function createInjector(
+    options: Provider[] | Injector | { providers: Provider[], parent?: Injector, scope?: InjectorScope } | undefined,
+    parent?: Injector | InjectorScope, scope?: InjectorScope): Injector {
+    if (!options) {
+        options = Empty
+    }
+    return isArray(options) ? INJECT_IMPL.create(options, parent as Injector, scope) :
+        (isInjector(options) ? INJECT_IMPL.create(undefined, options, parent as InjectorScope) : INJECT_IMPL.create(options.providers, options.parent, options.scope))
+}
+
 /**
 * ioc container. 
 */
 @Abstract()
-export abstract class Container extends Injector { }
+export abstract class Container extends Injector {
+    /**
+     * create platform injector.
+     * @param providers
+    */
+    static create(providers?: Provider[]): Container;
+    /**
+     * create injector.
+     * @param providers 
+     * @param parent 
+     * @param scope 
+     */
+    static create(parent: Injector, scope?: InjectorScope): Container;
+    /**
+     * create injector.
+     * @param providers 
+     * @param parent 
+     * @param scope 
+     */
+    static create(providers: Provider[] | undefined, parent: Injector, scope?: InjectorScope): Injector;
+    /**
+     * create injector with option.
+     * @param options 
+     */
+    static create(options: { providers: Provider[], parent?: Injector, scope?: InjectorScope }): Injector;
+    static create(...args: any): Injector {
+        return createInjector(...args)
+    }
+}
 
 @Abstract()
 export abstract class InjectorEvent {
