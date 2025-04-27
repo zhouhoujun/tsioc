@@ -199,6 +199,7 @@ class DeviceAModule {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
+        RouterModule.forRoot('tcp', { microservice: true }),
         HttpClientModule,
         ServerHttpClientModule,
         EndpointModule.register({
@@ -211,7 +212,6 @@ class DeviceAModule {
                 ]
             }
         }),
-        RouterModule.forRoot('tcp', { microservice: true }),
         ServerHttpClientModule,
         DeviceManageModule,
         DeviceAModule

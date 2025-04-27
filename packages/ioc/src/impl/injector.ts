@@ -7,8 +7,7 @@ import { cleanObj, deepForEach, defer, immediate } from '../utils/lang';
 import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil, isType, isPromise } from '../utils/chk';
 import {
     MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, InjectorEvent,
-    Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption,
-    Empty
+    Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption, Empty
 } from '../injector';
 import { Execption } from '../execption';
 import { Platform } from '../platform';

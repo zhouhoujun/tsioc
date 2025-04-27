@@ -158,9 +158,9 @@ export class Application<T = any, TArg = ApplicationArguments> {
             this.loader = new DefaultModuleLoader();
         }
         option.platformDeps && container.use(option.platformDeps);
-        option.depProviders = [this.getRootDependenceProviders() ?? Empty, option.depProviders ?? Empty];
+        // option.depProviders = [this.getRootDependenceProviders() ?? Empty, option.depProviders ?? Empty];
         option.deps = [this.getRootDependencies() ?? Empty, option.deps ?? Empty];
-        option.providers = [this.getRootDefaultProviders() ?? Empty, option.providers ?? Empty];
+        option.providers = [this.getRootDependenceProviders() ?? Empty, this.getRootDefaultProviders() ?? Empty, option.providers ?? Empty];
         return this.createModuleRef(container, option);
     }
 

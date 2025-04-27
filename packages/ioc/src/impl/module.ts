@@ -33,10 +33,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         const platfrom = this.platform();
         platfrom.modules.set(this._type, this);
         let ps: Promise<void> | void | undefined;
-        if (option.depProviders?.length) {
-            ps = this.processInject(option.depProviders);
-        }
-
+        
         if (option.deps?.length) {
             const deps = option.deps;
             ps = mergePromise(ps, () => this.processUse(deps))
@@ -57,10 +54,6 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
     private ininModule(platfrom: Platform, dedupStack: Type[], option: ModuleOption, ps: Promise<void> | void | undefined) {
 
         ps = mergePromise(ps, () => this.processInjectorType(platfrom, this._type, dedupStack, this.moduleReflect));
-
-        if (option.uses) {
-            ps = mergePromise(ps, () => this.processUse(option.uses!))
-        }
 
         return mergePromise(ps, () => {
             this._instance = this.get(this._type);

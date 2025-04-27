@@ -113,10 +113,11 @@ describe('di module', () => {
     it('can get service via module deps with option', async () => {
         const ctx = await Application.run({
             module: StatupModule,
-            uses: [
-                LoggerModule
-            ],
+            // uses: [
+            //     LoggerModule
+            // ],
             deps: [
+                LoggerModule,
                 ModuleA
             ],
         });
@@ -134,10 +135,11 @@ describe('di module', () => {
     it('can statup socket service in module with option', async () => {
         const ctx = await Application.run({
             module: StatupModule,
-            uses: [
-                LoggerModule
-            ],
+            // uses: [
+            //     LoggerModule
+            // ],
             deps: [
+                LoggerModule,
                 ServerLog4Module
             ]
         });
