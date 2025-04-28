@@ -110,7 +110,6 @@ export interface ProvidedInTargetMetadata {
  *
  * @export
  * @interface ProvidersMetadata
- * @extends {TypeMetadata}
  */
 export interface ProvidersMetadata {
     /**
@@ -350,7 +349,6 @@ export type AutoWiredMetadata = MethodParamPropMetadata;
  *
  * @export
  * @interface RunnableMetadata
- * @extends {TypeMetadata}
  */
 export interface RunnableMetadata<TArg> extends Omit<DeclarationMetadata, 'abstract' | 'declaration'> {
     /**

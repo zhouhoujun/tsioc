@@ -1,7 +1,7 @@
 import {
-    isArray, isString, lang, Type, TypeOf, createDecorator, ActionTypes, PatternMetadata, InjectFlags,
-    ClassMethodDecorator, createParamDecorator, TypeMetadata, Execption, isMetadataObject, DecorDefine,
-    ProvidedInMetadata
+    isArray, isString, lang, Type, TypeOf, createDecorator, ActionTypes, InjectFlags,
+    ClassMethodDecorator, createParamDecorator, Execption, isMetadataObject, DecorDefine,
+    ProvidedInMetadata, DeclarationMetadata
 } from '@tsdi/ioc';
 import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike } from '@tsdi/core';
 import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Protocols } from '@tsdi/common';
@@ -682,9 +682,8 @@ export const Put: PutDecorator = createRouteDecorator(PUT);
  *
  * @export
  * @interface RegisterForMetadata
- * @extends {TypeMetadata}
  */
-export interface HandleMetadata<TArg = any> extends TypeMetadata, PatternMetadata, RouteOptions<TArg> {
+export interface HandleMetadata<TArg = any> extends DeclarationMetadata, RouteOptions<TArg> {
     /**
      * handle route
      */
