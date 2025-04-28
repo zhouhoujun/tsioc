@@ -1,11 +1,11 @@
 import { Execption } from '../execption';
-import { Empty, Injector, InjectorScope } from '../injector';
+import { Injector, InjectorScope } from '../injector';
 import { get } from '../metadata/refl';
 import { Class, ModuleDef } from '../metadata/type';
 import { ModuleOption, ModuleRef } from '../module.ref';
 import { Platform } from '../platform';
 import { isModuleProviders, ModuleWithProviders, Provider } from '../providers';
-import { Type } from '../types';
+import { Type, Empty } from '../types';
 import { isType } from '../utils/chk';
 import { DefaultInjector, mergePromise } from './injector';
 

@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { Type, ClassType } from '../types';
+import { Type, ClassType, Empty } from '../types';
 import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { isPlainObject, isTypeObject } from '../utils/obj';
@@ -7,7 +7,7 @@ import { cleanObj, deepForEach, defer, immediate } from '../utils/lang';
 import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil, isType, isPromise } from '../utils/chk';
 import {
     MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, InjectorEvent,
-    Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption, Empty
+    Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
 } from '../injector';
 import { Execption } from '../execption';
 import { Platform } from '../platform';
@@ -665,7 +665,7 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
 
     }
 
-    return ps? ps.then(()=> regType(typeRef, type)) : regType(typeRef, type);
+    return ps ? ps.then(() => regType(typeRef, type)) : regType(typeRef, type);
 
 }
 
@@ -677,7 +677,7 @@ function processInjectoDeclarations(annotation: ModuleDef<any>, dedupStack: Type
     if (ps) dps.push(ps);
 
     if (declarations && annotation.declarations?.length) {
-        const regFn = (typeRef: Class, type: Type, option?: RegOption) => regType(typeRef, type, { ...option, static: false, declaration: true });
+        const regFn = (typeRef: Class, type: Type, option?: RegOption) => regType(typeRef, type, { static: false, ...option, declaration: true });
         annotation.declarations?.forEach(d => {
             const res = processInjectorType(d, dedupStack, processProvider, regFn, undefined, true);
             if (res) {
@@ -686,7 +686,7 @@ function processInjectoDeclarations(annotation: ModuleDef<any>, dedupStack: Type
         });
     }
     if (annotation.exports?.length) {
-        const regFn = (typeRef: Class, type: Type, option?: RegOption) => regType(typeRef, type, typeRef.getAnnotation<ModuleDef>().module ? option : { ...option, static: false, declaration: true });
+        const regFn = (typeRef: Class, type: Type, option?: RegOption) => regType(typeRef, type, typeRef.getAnnotation<ModuleDef>().module ? option : { static: false, ...option, declaration: true });
         annotation.exports?.forEach(d => {
             const res = processInjectorType(d, dedupStack, processProvider, regFn, undefined, true);
             if (res) {

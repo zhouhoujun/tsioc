@@ -252,7 +252,7 @@ export interface PatternMetadata {
 /***
  * declaration metadata.
  */
-export interface DeclarationMetadata extends TypeMetadata, ProvidedInMetadata, ProvidersMetadata {
+export interface DeclarationMetadata extends TypeMetadata, ProvidedInMetadata, ProvidersMetadata, PatternMetadata {
     /**
      * is abstract or not.
      */
@@ -267,22 +267,6 @@ export interface DeclarationMetadata extends TypeMetadata, ProvidedInMetadata, P
      * declaration.
      */
     declaration?: 'component' | 'pipe' | 'activity' | 'directive' | 'service';
-    /**
-     * static provider or not.
-     */
-    static?: boolean;
-    /**
-     * is singleton or not.
-     *
-     * @type {boolean}
-     */
-    singleton?: boolean;
-    /**
-     * class cache timeout when not used.
-     *
-     * @type {number}
-     */
-    expires?: number;
 }
 
 /**

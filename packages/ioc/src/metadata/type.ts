@@ -1,4 +1,4 @@
-import { Type, ClassType, Annotation } from '../types';
+import { Type, ClassType, Annotation, Empty } from '../types';
 import { ModuleWithProviders, Provider } from '../providers';
 import {
     PatternMetadata, ProvidersMetadata, ProvidedInMetadata,
@@ -12,7 +12,7 @@ import { getClassAnnotation } from '../utils/util';
 import { isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { Execption } from '../execption';
-import { Empty, InstanceOf, MethodType } from '../injector';
+import { InstanceOf, MethodType } from '../injector';
 import { HandlerFn } from '../handler';
 import { DesignContext, RuntimeContext } from '../lifescope/ctx';
 

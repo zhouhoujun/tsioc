@@ -1,5 +1,5 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
-import { Type, ClassType, noPointcut } from './types';
+import { Type, ClassType, noPointcut, Empty } from './types';
 import { ClassProvider, ExistingProvider, FactoryProvider, ModuleType, Provider, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
@@ -326,9 +326,6 @@ export abstract class Injector implements Destroyable, OnDestroy {
 
 }
 
-
-
-export const Empty: any[] = [];
 
 
 /**
