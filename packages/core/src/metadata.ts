@@ -1,9 +1,9 @@
 import {
     isUndefined, Type, createDecorator, Provider, InjectableMetadata, PropertyMetadata, ActionTypes, InjectFlags,
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
-    isString, Parameter, ProviderMetadata, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
+    isString, Parameter, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
     ModuleType, ClassType, MutilProvider, ReflectiveRef, Class, Injector, ProvidedInMetadata,
-    Empty
+    DeclarationMetadata
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import {
@@ -644,7 +644,7 @@ export const ExecptionHandler: ExecptionHandler = FilterHandler;
  * @interface PipeMetadata
  * @extends {TypeMetadata}
  */
-export interface PipeMetadata extends ProviderMetadata {
+export interface PipeMetadata extends DeclarationMetadata {
     /**
      * pipe class type.
      */

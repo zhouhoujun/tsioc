@@ -373,7 +373,7 @@ export interface Controller {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: Omit<Omit<ProtocolRouteMappingOptions, 'route'>, 'response'>): ClassDecorator;
+    (route: string, options: Omit<ProtocolRouteMappingOptions, 'route' | 'response'>): ClassDecorator;
     /**
      * controller decorator. define the controller method as an route.
      *

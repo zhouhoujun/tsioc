@@ -2,8 +2,8 @@ import { AnnotationType, typeRef, Type } from '../types';
 import { cleanObj, getParentClass } from '../utils/lang';
 import { isBoolean } from '../utils/chk';
 import {
-    ParameterMetadata, PropertyMetadata, ProvidersMetadata, ClassMetadata,
-    RunnableMetadata, InjectableMetadata, MethodMetadata
+    ParameterMetadata, PropertyMetadata, ProvidersMetadata, DeclarationMetadata,
+    RunnableMetadata, MethodMetadata
 } from './meta';
 import {
     ctorName, DecoratorType, DecorContext, DecorDefine, Decors, ActionTypes,
@@ -288,7 +288,7 @@ const typeAnnoDecors: Record<string, boolean> = { '@Injectable': true, '@Singlet
 export const decorAnnoAction = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (typeAnnoDecors[ctx.define.decor.toString()]) {
         const def = ctx.class;
-        const meta = ctx.define.metadata as ClassMetadata & InjectableMetadata;
+        const meta = ctx.define.metadata as DeclarationMetadata;
         if (isBoolean(meta.abstract)) {
             def.getAnnotation().abstract = meta.abstract
         }

@@ -2,8 +2,8 @@ import { Type, ClassType } from '../types';
 import { isArray, isString } from '../utils/chk';
 import { Token, getToken, InjectFlags } from '../tokens';
 import {
-    ClassMetadata, RunnableMetadata, AutoWiredMetadata, InjectMetadata, PatternMetadata,
-    InjectableMetadata, ParameterMetadata, ProvidersMetadata, ProvidedInTargetMetadata, ModuleMetadata, ProvidedInMetadata
+    DeclarationMetadata, RunnableMetadata, AutoWiredMetadata, InjectableMetadata, SingletonMetadata, ModuleMetadata,
+    InjectMetadata, PatternMetadata, ParameterMetadata, ProvidersMetadata, ProvidedInTargetMetadata, ProvidedInMetadata,
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { Provider, StaticProvider } from '../providers';
@@ -784,7 +784,7 @@ export interface Static {
  *
  * @Static()
  */
-export const Static: Static = createDecorator<ClassMetadata>('Static', {
+export const Static: Static = createDecorator<DeclarationMetadata>('Static', {
     props: (provide: Token, alias?: string) => ({ provide: getToken(provide, alias) }),
     appendProps: (meta) => {
         meta.static = true
@@ -828,7 +828,7 @@ export interface Singleton {
  *
  * @Singleton()
  */
-export const Singleton: Singleton = createDecorator<ClassMetadata>('Singleton', {
+export const Singleton: Singleton = createDecorator<SingletonMetadata>('Singleton', {
     props: (provide: Token, alias?: string) => ({ provide: getToken(provide, alias) }),
     appendProps: (meta) => {
         meta.singleton = true

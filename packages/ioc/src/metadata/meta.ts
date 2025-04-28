@@ -60,21 +60,6 @@ export interface ProvideMetadata {
 }
 
 
-/**
- * provider type to.
- *
- * @export
- * @interface Provider
- * @extends {MetaType}
- */
-export interface ProviderMetadata {
-    /**
-     * this type provider to.
-     *
-     * @type {SymbolType}
-     */
-    provide?: Token;
-}
 
 /**
  * ref provider.
@@ -264,27 +249,50 @@ export interface PatternMetadata {
     expires?: number;
 }
 
-/**
- * abstract metadata.
+
+/***
+ * declaration metadata.
  */
-export interface AbstractMetadata {
-    /**
-     * class type.
-     */
-    type?: Type;
+export interface DeclarationMetadata extends TypeMetadata, ProvidedInMetadata, ProvidersMetadata {
     /**
      * is abstract or not.
      */
     abstract?: boolean;
+    /**
+     * this type provider to.
+     *
+     * @type {SymbolType}
+     */
+    provide?: Token;
+    /**
+     * declaration.
+     */
+    declaration?: 'component' | 'pipe' | 'activity' | 'directive' | 'service';
+    /**
+     * static provider or not.
+     */
+    static?: boolean;
+    /**
+     * is singleton or not.
+     *
+     * @type {boolean}
+     */
+    singleton?: boolean;
+    /**
+     * class cache timeout when not used.
+     *
+     * @type {number}
+     */
+    expires?: number;
 }
 
 /**
- * class metadata.
+ * Singleton decorator metadata.
  *
  * @export
- * @interface ClassMetadata
+ * @interface SingletonMetadata
  */
-export interface ClassMetadata extends AbstractMetadata, PatternMetadata, ProviderMetadata { }
+export interface SingletonMetadata extends Omit<DeclarationMetadata, 'abstract' | 'declaration' | 'static' | 'expires'> { }
 
 /**
  * Injectable decorator metadata.
@@ -292,7 +300,7 @@ export interface ClassMetadata extends AbstractMetadata, PatternMetadata, Provid
  * @export
  * @interface InjectableMetadata
  */
-export interface InjectableMetadata extends TypeMetadata, PatternMetadata, ProviderMetadata, ProvidedInMetadata, ProvidersMetadata { }
+export interface InjectableMetadata extends Omit<DeclarationMetadata, 'abstract' | 'declaration'> { }
 
 /**
  * module metadata.
@@ -344,7 +352,7 @@ export type AutoWiredMetadata = MethodParamPropMetadata;
  * @interface RunnableMetadata
  * @extends {TypeMetadata}
  */
-export interface RunnableMetadata<TArg> extends TypeMetadata, PatternMetadata, ProvidedInMetadata {
+export interface RunnableMetadata<TArg> extends Omit<DeclarationMetadata, 'abstract' | 'declaration'> {
     /**
      * the method as runnable.
      */

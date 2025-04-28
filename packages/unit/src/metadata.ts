@@ -1,4 +1,4 @@
-import { ActionTypes, ClassMetadata, createDecorator, DecoratorOption, TypeDef } from '@tsdi/ioc';
+import { ActionTypes, DeclarationMetadata, createDecorator, DecoratorOption, TypeDef } from '@tsdi/ioc';
 import { RunnableRef } from '@tsdi/core';
 import { SuiteRunner } from './runner/SuiteRunner';
 
@@ -281,7 +281,7 @@ export interface TestCaseMetadata extends TestMetadata {
  * @interface SuiteMetadata
  * @extends {AnnotationMetadata}
  */
-export interface SuiteMetadata extends ClassMetadata {
+export interface SuiteMetadata extends DeclarationMetadata {
     /**
      * test suite describe message.
      *
