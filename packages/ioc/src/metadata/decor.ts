@@ -2,7 +2,7 @@ import { Type, ClassType } from '../types';
 import { isArray, isString } from '../utils/chk';
 import { Token, getToken, InjectFlags } from '../tokens';
 import {
-    DeclarationMetadata, RunnableMetadata, AutoWiredMetadata, InjectableMetadata, SingletonMetadata, ModuleMetadata,
+    AnnotationMetadata, RunnableMetadata, AutoWiredMetadata, InjectableMetadata, SingletonMetadata, ModuleMetadata,
     InjectMetadata, PatternMetadata, ParameterMetadata, ProvidersMetadata, ProvidedInTargetMetadata, ProvidedInMetadata,
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
@@ -784,7 +784,7 @@ export interface Static {
  *
  * @Static()
  */
-export const Static: Static = createDecorator<DeclarationMetadata>('Static', {
+export const Static: Static = createDecorator<AnnotationMetadata>('Static', {
     props: (provide: Token, alias?: string) => ({ provide: getToken(provide, alias) }),
     appendProps: (meta) => {
         meta.static = true

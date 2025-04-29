@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { DeclarationMetadata, ParameterMetadata, PatternMetadata, PropertyMetadata } from './meta';
+import { AnnotationMetadata, ParameterMetadata, PatternMetadata, PropertyMetadata } from './meta';
 import { DecoratorOption, dispatchMethodDecor, dispatchParamDecor, dispatchPropertyDecor, dispatchTypeDecor, MetadataFactory, regActionType, toDefine } from './refl';
 import { Decors, ActionTypes, DecoratorType, DecoratorFn } from './type';
 import { isUndefined, isNumber, isString, isArray } from '../utils/chk';
@@ -123,7 +123,7 @@ export interface IClassDecorator {
      *
      * @param {InjectableMetadata} [metadata] metadata map.
      */
-    (metadata?: DeclarationMetadata): ClassDecorator;
+    (metadata?: AnnotationMetadata): ClassDecorator;
 
     (provide: Token, alias: string, pattern?: PatternMetadata): ClassDecorator;
 }
@@ -211,7 +211,7 @@ export interface IAbstractDecorator {
  *
  * @Abstract
  */
-export const Abstract: IAbstractDecorator = createDecorator<DeclarationMetadata>('Abstract', {
+export const Abstract: IAbstractDecorator = createDecorator<AnnotationMetadata>('Abstract', {
     appendProps: (meta) => {
         meta.abstract = true
     }

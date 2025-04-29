@@ -250,9 +250,9 @@ export interface PatternMetadata {
 
 
 /***
- * declaration metadata.
+ * Annotation metadata.
  */
-export interface DeclarationMetadata extends TypeMetadata, ProvidedInMetadata, ProvidersMetadata, PatternMetadata {
+export interface AnnotationMetadata extends ProvidedInMetadata, ProvidersMetadata, PatternMetadata {
     /**
      * is abstract or not.
      */
@@ -275,7 +275,7 @@ export interface DeclarationMetadata extends TypeMetadata, ProvidedInMetadata, P
  * @export
  * @interface SingletonMetadata
  */
-export interface SingletonMetadata extends Omit<DeclarationMetadata, 'abstract' | 'declaration' | 'static' | 'expires'> { }
+export interface SingletonMetadata extends Omit<AnnotationMetadata, 'abstract' | 'declaration' | 'static' | 'expires'> { }
 
 /**
  * Injectable decorator metadata.
@@ -283,7 +283,7 @@ export interface SingletonMetadata extends Omit<DeclarationMetadata, 'abstract' 
  * @export
  * @interface InjectableMetadata
  */
-export interface InjectableMetadata extends Omit<DeclarationMetadata, 'abstract' | 'declaration'> { }
+export interface InjectableMetadata extends Omit<AnnotationMetadata, 'abstract' | 'declaration'> { }
 
 /**
  * module metadata.
@@ -334,7 +334,7 @@ export type AutoWiredMetadata = MethodParamPropMetadata;
  * @export
  * @interface RunnableMetadata
  */
-export interface RunnableMetadata<TArg> extends Omit<DeclarationMetadata, 'abstract' | 'declaration'> {
+export interface RunnableMetadata<TArg> extends Omit<AnnotationMetadata, 'abstract' | 'declaration'> {
     /**
      * the method as runnable.
      */

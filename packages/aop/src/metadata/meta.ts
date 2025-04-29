@@ -1,4 +1,4 @@
-import { MethodMetadata, Type, DeclarationMetadata, MethodPropMetadata } from '@tsdi/ioc';
+import { MethodMetadata, Type, AnnotationMetadata, MethodPropMetadata } from '@tsdi/ioc';
 
 
 /**
@@ -132,7 +132,7 @@ export interface AroundMetadata extends AfterReturningMetadata, AfterThrowingMet
 /**
  * aspect metadata.
  */
-export interface AspectMetadata extends DeclarationMetadata {
+export interface AspectMetadata extends AnnotationMetadata {
     /**
      * set pointcut in the type only.
      *

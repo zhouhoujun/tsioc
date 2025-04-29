@@ -1,8 +1,7 @@
 import { Type, ClassType, Annotation, Empty } from '../types';
 import { ModuleWithProviders, Provider } from '../providers';
 import {
-    PatternMetadata, ProvidersMetadata, ProvidedInMetadata,
-    PropertyMetadata, ParameterMetadata
+    ProvidersMetadata, PropertyMetadata, ParameterMetadata, AnnotationMetadata
 } from './meta';
 import { InvocationContext, InvokeArguments } from '../context';
 import { Token } from '../tokens';
@@ -144,7 +143,7 @@ export interface DecorContext<T = any> {
 /**
  * type def metadata.
  */
-export interface TypeDef<T = any> extends ProvidedInMetadata, PatternMetadata, Annotation<T> {
+export interface TypeDef<T = any> extends Annotation<T>, AnnotationMetadata {
 
 }
 

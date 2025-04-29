@@ -3,7 +3,7 @@ import {
     ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
     isString, Parameter, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
     ModuleType, ClassType, MutilProvider, ReflectiveRef, Class, Injector, ProvidedInMetadata,
-    DeclarationMetadata
+    AnnotationMetadata
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import {
@@ -644,7 +644,7 @@ export const ExecptionHandler: ExecptionHandler = FilterHandler;
  * @interface PipeMetadata
  * @extends {TypeMetadata}
  */
-export interface PipeMetadata extends DeclarationMetadata {
+export interface PipeMetadata extends AnnotationMetadata {
     /**
      * pipe class type.
      */
