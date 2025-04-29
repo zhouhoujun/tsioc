@@ -537,10 +537,6 @@ export interface FactoryRecord<T = any> {
      */
     cache?: T;
     /**
-     * last timer use the cache.
-     */
-    ltop?: number;
-    /**
      * cache expires.
      */
     expires?: number;

@@ -3,7 +3,10 @@ import { Platform } from '../platform';
 import { Empty } from '../types';
 import { isNumber } from '../utils/chk';
 
-export class LifeScope<TInput = any>  implements Handler<TInput> {
+/**
+ * Life scope.
+ */
+export class LifeScope<TInput = any> implements Handler<TInput> {
 
     private _chain?: InterceptorFn<TInput> | null;
     private interceptors: InterceptorLike<TInput>[]
@@ -16,9 +19,9 @@ export class LifeScope<TInput = any>  implements Handler<TInput> {
         this.interceptors = interceptors.slice();
     }
 
-    handle(input: any, context?: any, next?: NextOpter<any>|((input: TInput) => any)) {
+    handle(input: any, context?: any, next?: NextOpter<any> | ((input: TInput) => any)) {
         const chain = this.getChain();
-        return invokeTail(()=> chain(input, this.backend, context ?? this.platform?.context), next);
+        return invokeTail(() => chain(input, this.backend, context ?? this.platform?.context), next);
     }
 
     /**

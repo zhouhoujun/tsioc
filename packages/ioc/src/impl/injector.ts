@@ -39,7 +39,6 @@ export class DefaultInjector extends Injector {
      *
      * @protected
      * @type {Map<Token, Function>}
-     * @memberof BaseInjector
      */
     protected records: Map<Token, FactoryRecord>;
     private isAlias?: (token: Token) => boolean;
@@ -144,10 +143,9 @@ export class DefaultInjector extends Injector {
         const ltop = Date.now();
         if (pd) {
             pd.cache = cache;
-            pd.ltop = ltop
-            pd.expires = expires
+            pd.expires = ltop + expires
         } else {
-            this.records.set(token, { cache, ltop, expires })
+            this.records.set(token, { cache, expires })
         }
         return this
     }
@@ -898,13 +896,11 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
             case FnType.Inj:
             default:
                 if (rd.expires) {
-                    if ((rd.expires + rd.ltop!) < Date.now()) {
-                        rd.ltop = Date.now();
+                    if (rd.expires < Date.now()) {
                         return rd.cache!
                     }
                     rd.expires = null!;
                     rd.cache = null!;
-                    rd.ltop = null!
                 }
                 return rd.fn?.(...deps)
         }
