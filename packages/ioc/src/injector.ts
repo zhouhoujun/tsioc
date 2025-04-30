@@ -540,10 +540,6 @@ export interface FactoryRecord<T = any> {
      * cache expires.
      */
     expires?: number;
-    /**
-     * unregister callback.
-     */
-    unreg?: () => void;
 }
 
 export interface MethodFunc extends Function, TypedPropertyDescriptor<any> {

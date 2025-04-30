@@ -180,8 +180,7 @@ export const registerHandler: HandlerFn = (ctx: DesignContext, context: Context)
             return instance ?? ctx.instance;
         },
         stic: isStatic,
-        fy: FnType.Inj,
-        unreg: () => platform.clearTypeProvider(type)
+        fy: FnType.Inj
     } as FactoryRecord;
     ctx.getRecords().set(provide, recd)
 }
