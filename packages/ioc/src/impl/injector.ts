@@ -454,8 +454,7 @@ export class DefaultInjector extends Injector {
         const isp = this.records?.get(token);
         if (isp) {
             this.records.delete(token);
-            // if (isType(token)) this.platform().clearTypeProvider(token);
-            if (isType(isp.type)) this.platform().clearTypeProvider(isp.type);
+            if (isp.type) this.platform().clearTypeProvider(isp.type);
             cleanObj(isp)
         }
 
@@ -577,7 +576,7 @@ export class DefaultInjector extends Injector {
     protected clear() {
         this.scope && this.platform()?.removeInjector(this.scope);
         this.records.forEach(r => {        
-            if (isType(r?.type)) this.platform().clearTypeProvider(r.type);
+            if (r?.type) this.platform().clearTypeProvider(r.type);
         });
         this.records.clear();
         this.records = null!;
