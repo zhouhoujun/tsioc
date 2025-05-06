@@ -170,7 +170,7 @@ export interface DecoratorOption<T> extends MetadataFactory<T>, DecorRegisterOpt
  */
 export function toDefine<T>(decor: DecoratorFn, metadata: T, decorType: DecoratorType, options: MetadataFactory<any>, propertyKey?: string, parameterIndex?: number): DecorDefine<T> {
 
-    const providers = options.providers || [];
+    const providers = options.providers;
 
     return {
         decor,

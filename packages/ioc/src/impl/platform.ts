@@ -1,5 +1,5 @@
 import { InjectFlags, Token } from '../tokens';
-import { Type, ClassType } from '../types';
+import { Type, ClassType, Empty } from '../types';
 import { isFunction } from '../utils/chk';
 import { get } from '../metadata/refl';
 import { Class } from '../metadata/class';
@@ -45,7 +45,7 @@ export class DefaultPlatform implements Platform {
     get runtime(): LifeScope {
         if (!this._runtime) {
             this._runtime = new LifeScope(this, (ctx) => {
-                ctx.instance = new ctx.type(...ctx.args || []);
+                ctx.instance = new ctx.type(...ctx.args || Empty);
                 return ctx.instance;
             }, RUNTIME_INTERCEPTORS);
         }

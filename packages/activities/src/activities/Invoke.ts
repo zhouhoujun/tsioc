@@ -1,4 +1,4 @@
-import { Injectable } from '@tsdi/ioc';
+import { Empty, Injectable } from '@tsdi/ioc';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export type InvokeFn = (context: ActivityContext, ...args: any[]) => Promise<any>;
@@ -135,7 +135,7 @@ export class InvokeActivity implements Activity<InvokeActivityContext> {
             result = activityResult.data;
         } else {
             // 调用函数
-            result = await context.target(context, ...(context.args || []));
+            result = await context.target(context, ...(context.args || Empty));
         }
 
         // 如果有结果转换函数，使用它
