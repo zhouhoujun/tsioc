@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { Type, ClassType, Empty } from '../types';
+import { Type, ClassType, Empty, noPointcut } from '../types';
 import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { isPlainObject, isTypeObject } from '../utils/obj';
@@ -26,7 +26,13 @@ export const SCOPE_PRODIDERS: Provider[] = [];
 /**
  * Default Injector
  */
-export class DefaultInjector extends Injector {
+export class DefaultInjector implements Injector {
+    /**
+     * none poincut for aop.
+     * 
+     * 该类是否支持AOP注入
+     */
+    static [noPointcut] = true;
 
     private _destroyed = false;
     protected _dsryCbs = new Set<DestroyCallback>();
@@ -56,7 +62,7 @@ export class DefaultInjector extends Injector {
     }
 
     constructor(providers: Provider[] = Empty, readonly parent?: Injector, readonly scope?: InjectorScope) {
-        super();
+
         this.records = new Map();
         if (parent) {
             this.initParent(parent)
@@ -576,7 +582,7 @@ export class DefaultInjector extends Injector {
 
     protected clear() {
         this.scope && this.platform()?.removeInjector(this.scope);
-        this.records.forEach(r => {        
+        this.records.forEach(r => {
             if (isType(r?.type)) this.platform().clearTypeProvider(r.type);
         });
         this.records.clear();
@@ -616,7 +622,10 @@ INJECT_IMPL.create = (providers: Provider[], parent?: Injector, scope?: Injector
         return new StaticInjector(providers, parent, scope)
     }
     return new DefaultInjector(providers, parent!, scope)
-}
+};
+
+INJECT_IMPL.isInjector = (target) => target instanceof DefaultInjector;
+
 
 export function mergePromise(ps1: Promise<any> | undefined | void, ps2: () => any) {
     if (ps1) {

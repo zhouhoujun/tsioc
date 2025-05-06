@@ -1,14 +1,15 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
-import { Type, ClassType, noPointcut, Empty } from './types';
+import { Type, ClassType, Empty } from './types';
 import { ClassProvider, ExistingProvider, FactoryProvider, ModuleType, Provider, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/type';
 import { ProvidedInMetadata } from './metadata/meta';
-import { isArray } from './utils/chk';
+import { getClass, isArray } from './utils/chk';
 import { InvocationContext, InvokeOptions } from './context';
 import { Execption } from './execption';
 import { Platform } from './platform';
+import { isTypeObject } from './utils/obj';
 
 /**
  * injector.
@@ -18,12 +19,6 @@ import { Platform } from './platform';
  */
 @Abstract()
 export abstract class Injector implements Destroyable, OnDestroy {
-    /**
-     * none poincut for aop.
-     * 
-     * 该类是否支持AOP注入
-     */
-    static [noPointcut] = true;
 
     /**
      * injector scope.
@@ -316,16 +311,33 @@ export abstract class Injector implements Destroyable, OnDestroy {
     abstract onDestroy(callback: DestroyCallback): void;
 
     /**
-     * register provider.
-     * @param platfrom 
-     * @param provider 
-     * @returns 
+     * create platform injector.
+     * @param providers
+    */
+    static create(providers?: Provider[]): Container;
+    /**
+     * create injector.
+     * @param providers 
+     * @param parent 
+     * @param scope 
      */
-    protected abstract processRegister(platform: Platform, def: Class, option?: TypeOption): void;
-
-
+    static create(parent: Injector, scope?: InjectorScope): Container;
+    /**
+     * create injector.
+     * @param providers 
+     * @param parent 
+     * @param scope 
+     */
+    static create(providers: Provider[] | undefined, parent: Injector, scope?: InjectorScope): Injector;
+    /**
+     * create injector with option.
+     * @param options 
+     */
+    static create(options: { providers: Provider[], parent?: Injector, scope?: InjectorScope }): Injector;
+    static create(...args: any): Injector {
+        return createInjector(...args)
+    }
 }
-
 
 
 /**
@@ -336,7 +348,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
  * @returns {target is Injector}
  */
 export function isInjector(target: any): target is Injector {
-    return target instanceof Injector
+    return INJECT_IMPL.isInjector(target);
 }
 
 
@@ -379,33 +391,6 @@ export function createInjector(
 */
 @Abstract()
 export abstract class Container extends Injector {
-    /**
-     * create platform injector.
-     * @param providers
-    */
-    static create(providers?: Provider[]): Container;
-    /**
-     * create injector.
-     * @param providers 
-     * @param parent 
-     * @param scope 
-     */
-    static create(parent: Injector, scope?: InjectorScope): Container;
-    /**
-     * create injector.
-     * @param providers 
-     * @param parent 
-     * @param scope 
-     */
-    static create(providers: Provider[] | undefined, parent: Injector, scope?: InjectorScope): Injector;
-    /**
-     * create injector with option.
-     * @param options 
-     */
-    static create(options: { providers: Provider[], parent?: Injector, scope?: InjectorScope }): Injector;
-    static create(...args: any): Injector {
-        return createInjector(...args)
-    }
 }
 
 @Abstract()
@@ -435,6 +420,10 @@ export const INJECT_IMPL = {
      * @param scope 
      */
     create(providers?: Provider[], parent?: Injector, scope?: InjectorScope): Injector {
+        throw new Execption('not implemented.')
+    },
+
+    isInjector(target: any): boolean {
         throw new Execption('not implemented.')
     }
 };

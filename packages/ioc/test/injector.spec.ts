@@ -1,4 +1,4 @@
-import { createInjector, Injectable, InjectFlags, Injector, isNumber, ReflectiveFactory, tokenId } from '@tsdi/ioc';
+import { createInjector, DefaultInjector, Injectable, InjectFlags, Injector, isNumber, ReflectiveFactory, tokenId } from '@tsdi/ioc';
 import expect = require('expect');
 import { CollegeStudent, MiddleSchoolStudent, Student } from './debug';
 
@@ -43,7 +43,7 @@ describe('Injector test', () => {
     });
 
     it('create injector with providers', () => {
-        expect(inj).toBeInstanceOf(Injector);
+        expect(inj).toBeInstanceOf(DefaultInjector);
         expect(inj.size).toBeGreaterThan(0);
     });
 
