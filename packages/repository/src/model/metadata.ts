@@ -18,7 +18,7 @@ export interface RepositoryMetadata extends ParamPropMetadata {
 /**
  * Repository Decorator, to autowired repository for paramerter or filed.
  */
- export interface RepositoryDecorator {
+export interface RepositoryDecorator {
     /**
      * Repository Decorator, to autowired repository for paramerter or filed.
      * @param modle the model type.
@@ -32,7 +32,7 @@ export interface RepositoryMetadata extends ParamPropMetadata {
  * @Repository
  */
 export const Repository: RepositoryDecorator = createDecorator<RepositoryMetadata>('Repository', {
-    actionType: [ActionTypes.paramInject, ActionTypes.propInject],
+    actionType: ActionTypes.inject,
     props: (model: Type, connection?: string) => ({ model, connection, resolver: RepositoryArgumentResolver })
 });
 
@@ -42,4 +42,4 @@ export const Repository: RepositoryDecorator = createDecorator<RepositoryMetadat
  * 
  * @alias 
  */
- export const InjectRepository: RepositoryDecorator = Repository;
+export const InjectRepository: RepositoryDecorator = Repository;

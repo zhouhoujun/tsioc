@@ -3,7 +3,7 @@ import { Type, ClassType, Empty } from './types';
 import { ClassProvider, ExistingProvider, FactoryProvider, ModuleType, Provider, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
-import { Class } from './metadata/type';
+import { Class } from './metadata/class';
 import { ProvidedInMetadata } from './metadata/meta';
 import { getClass, isArray } from './utils/chk';
 import { InvocationContext, InvokeOptions } from './context';

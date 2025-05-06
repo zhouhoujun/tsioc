@@ -59,7 +59,7 @@ export interface Runner {
  * @Runner decorator.
  */
 export const Runner: Runner = createDecorator('Runner', {
-    actionType: 'runnable',
+    actionType: ActionTypes.runnable,
     props: <TArg>(method: string | RunnerOption<TArg>, args?: RunnerOption<TArg>) =>
         (isString(method) ? { method, args } : { args: method }),
 
@@ -109,7 +109,7 @@ export interface Pipe {
  * @expors {@link Pipe}
  */
 export const Pipe: Pipe = createDecorator<PipeMetadata>('Pipe', {
-    actionType: [ActionTypes.annoation, ActionTypes.typeProviders],
+    actionType: [ActionTypes.annoation, ActionTypes.providers],
     def: {
         class: (ctx) => {
             ctx.class.setAnnotation(ctx.define.metadata);
@@ -180,7 +180,7 @@ export interface ConfigurationDecorator {
  * @Configuartion
  */
 export const Configuration: ConfigurationDecorator = createDecorator<ConfgiurationMetadata>('Configuration', {
-    actionType: [ActionTypes.annoation],
+    actionType: ActionTypes.annoation,
     design: {
         afterAnnoation: (ctx) => {
             const { class: typeRef, injector } = ctx;

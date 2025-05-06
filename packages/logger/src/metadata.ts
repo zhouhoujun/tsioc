@@ -184,7 +184,7 @@ const loggerResolver = {
  * @InjectLog
  */
 export const InjectLog: Log<LogMetadata> = createDecorator<LogMetadata>('InjectLog', {
-    actionType: [ActionTypes.paramInject, ActionTypes.propInject],
+    actionType: ActionTypes.inject,
     init: (ctx) => {
         if (ctx.define.decorType === Decors.parameter || ctx.define.decorType === Decors.property) {
             const metadata = ctx.define.metadata as LogMetadata;

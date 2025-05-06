@@ -1,7 +1,7 @@
 import { Execption } from '../execption';
 import { Injector, InjectorScope } from '../injector';
 import { get } from '../metadata/refl';
-import { Class, ModuleDef } from '../metadata/type';
+import { Class, ModuleDef } from '../metadata/class';
 import { ModuleOption, ModuleRef } from '../module.ref';
 import { Platform } from '../platform';
 import { isModuleProviders, ModuleWithProviders, Provider } from '../providers';

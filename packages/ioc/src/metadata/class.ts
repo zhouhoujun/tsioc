@@ -77,6 +77,7 @@ export interface RunableDefine {
 export type DecorMemberType = 'property' | 'method' | 'parameter';
 export type DecoratorType = 'class' | DecorMemberType;
 
+
 /**
  * decorator scopes.
  *
@@ -96,13 +97,14 @@ export namespace Decors {
     export const afterAnnoation = 'afterAnnoation';
 }
 
+export type ActionType = 'inject' | 'annoation' | 'runnable'
+    | 'providers';
+
 export namespace ActionTypes {
-    export const propInject = 'propInject';
-    export const paramInject = 'paramInject';
+    export const inject = 'inject';
     export const annoation = 'annoation';
     export const runnable = 'runnable';
-    export const typeProviders = 'typeProviders';
-    export const methodProviders = 'methodProviders';
+    export const providers = 'providers';
 }
 
 /**

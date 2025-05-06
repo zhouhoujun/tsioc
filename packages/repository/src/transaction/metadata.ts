@@ -15,7 +15,7 @@ export interface Transactional {
 }
 
 export const Transactional: Transactional = createDecorator<TransactionalMetadata>('Transactional', {
-    actionType: ActionTypes.methodProviders,
+    actionType: ActionTypes.providers,
     def: {
         method: [
             (ctx) => {

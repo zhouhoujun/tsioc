@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { AnnotationMetadata, ParameterMetadata, PatternMetadata, PropertyMetadata } from './meta';
-import { DecoratorOption, dispatchMethodDecor, dispatchParamDecor, dispatchPropertyDecor, dispatchTypeDecor, MetadataFactory, regActionType, toDefine } from './refl';
-import { Decors, ActionTypes, DecoratorType, DecoratorFn } from './type';
+import { DecoratorOption, dispatchMethodDecor, dispatchParamDecor, dispatchPropertyDecor, dispatchTypeDecor, MetadataFactory, toDefine } from './refl';
+import { Decors, ActionTypes, DecoratorType, DecoratorFn } from './class';
 import { isUndefined, isNumber, isString, isArray } from '../utils/chk';
 import { getToken, Token } from '../tokens';
 import { Type } from '../types';
@@ -39,11 +39,6 @@ export function createDecorator<T>(name: string, option: DecoratorOption<T>): an
         }
     };
 
-    if (option.actionType) {
-        isArray(option.actionType) ?
-            option.actionType.forEach(a => regActionType(decor, a))
-            : regActionType(decor, option.actionType)
-    }
     if (option.def) factory.getHandler = mapToFac(option.def as Record<string, HandlerFn | HandlerFn[]>);
     if (option.design) factory.getDesignHandler = mapToFac(option.design as Record<string, HandlerFn | HandlerFn[]>);
     if (option.runtime) factory.getRuntimeHandler = mapToFac(option.runtime as Record<string, HandlerFn | HandlerFn[]>);
@@ -160,7 +155,7 @@ export type MethodPropParamDecorator = (target: Object, propertyKey: string | sy
  */
 export function createParamDecorator<T = ParameterMetadata>(name: string, options?: DecoratorOption<T>) {
     return createDecorator<T>(name, {
-        actionType: [ActionTypes.paramInject],
+        actionType: ActionTypes.inject,
         props: (provider: Token, alias?: string | Record<string, any>) => {
             if (alias) {
                 return isString(alias) ? { provider: getToken(provider, alias) } : { provider: getToken(provider, alias.alias), ...alias, alias: undefined } as any
@@ -184,7 +179,7 @@ export function createParamDecorator<T = ParameterMetadata>(name: string, option
  */
 export function createPropDecorator<T = PropertyMetadata>(name: string, options?: DecoratorOption<T>) {
     return createDecorator<T>(name, {
-        actionType: [ActionTypes.propInject],
+        actionType: ActionTypes.inject,
         props: (provider: Token, alias?: string) => ({ provider, alias } as any),
         ...options
     })

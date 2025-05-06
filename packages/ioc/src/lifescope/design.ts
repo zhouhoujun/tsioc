@@ -1,7 +1,7 @@
 import { InvocationContext } from '../context';
 import { Context, ContextToken, HandlerFn, InterceptorLike, invokeTail } from '../handler';
 import { FactoryRecord, FnType } from '../injector';
-import { DecoratorFn, DecoratorScope, Decors } from '../metadata/type';
+import { DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
 import { Platform } from '../platform';
 import { ReflectiveFactory } from '../reflective';
 import { isType } from '../utils/chk';

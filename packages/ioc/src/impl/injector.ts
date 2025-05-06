@@ -12,7 +12,7 @@ import {
 import { Execption } from '../execption';
 import { Platform } from '../platform';
 import { get } from '../metadata/refl';
-import { ModuleDef, Class } from '../metadata/type';
+import { ModuleDef, Class } from '../metadata/class';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
 import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
 import { ReflectiveFactory } from '../reflective';

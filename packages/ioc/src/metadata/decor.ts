@@ -12,7 +12,7 @@ import { InvokeArguments, InvokeOptions } from '../context';
 import { getModuleType } from '../module.ref';
 import { getTypes } from '../utils/lang';
 import { DecoratorOption } from './refl';
-import { ModuleDef } from './type';
+import { ModuleDef } from './class';
 
 
 

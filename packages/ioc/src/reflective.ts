@@ -1,7 +1,7 @@
 import { Type } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Abstract } from './metadata/fac';
-import { Class } from './metadata/type';
+import { Class } from './metadata/class';
 import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
 import { Injector, MethodType } from './injector';
 import { InvocationContext, InvokeArguments, InvokeParentContext } from './context';

@@ -1,5 +1,5 @@
 import { Abstract } from './metadata/fac';
-import { Class } from './metadata/type';
+import { Class } from './metadata/class';
 import { OnDestroy } from './destroy';
 import { Token } from './tokens';
 import { ClassType, Type } from './types';

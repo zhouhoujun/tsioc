@@ -1,14 +1,14 @@
 import { AnnotationType, typeRef, Type } from '../types';
 import { cleanObj, getParentClass } from '../utils/lang';
-import { isBoolean } from '../utils/chk';
+import { isArray, isBoolean } from '../utils/chk';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, AnnotationMetadata,
     RunnableMetadata, MethodMetadata
 } from './meta';
 import {
     ctorName, DecoratorType, DecorContext, DecorDefine, Decors, ActionTypes,
-    Class, TypeDef, DecoratorFn
-} from './type';
+    Class, TypeDef, DecoratorFn, ActionType
+} from './class';
 import { InvokeOptions } from '../context';
 import { Context, HandlerFn } from '../handler';
 import { LifeScope } from '../lifescope/lifescope';
@@ -16,8 +16,6 @@ import { DesignContext, RuntimeContext } from '../lifescope/ctx';
 
 
 
-export type ActionType = 'propInject' | 'paramInject' | 'annoation' | 'runnable'
-    | 'typeProviders' | 'methodProviders';
 
 
 /**
@@ -192,25 +190,27 @@ export function toDefine<T>(decor: DecoratorFn, metadata: T, decorType: Decorato
 
 
 
-export function regActionType(decor: string, type: ActionType) {
+function regActionType(decor: string, type: ActionType, decType: DecoratorType) {
     switch (type) {
         case ActionTypes.annoation:
-            typeAnnoDecors[decor] = true;
+            if (!typeAnnoDecors[decor]) typeAnnoDecors[decor] = true;
             break;
-        case ActionTypes.paramInject:
-            paramInjectDecors[decor] = true;
-            break;
-        case ActionTypes.propInject:
-            propInjectDecors[decor] = true;
+        case ActionTypes.inject:
+            if (decType === 'parameter') {
+                if (!paramInjectDecors[decor]) paramInjectDecors[decor] = true;
+            } else if (decType === 'property') {
+                if (!propInjectDecors[decor]) propInjectDecors[decor] = true;
+            }
             break;
         case ActionTypes.runnable:
-            runnableDecors[decor] = true;
+            if (!runnableDecors[decor]) runnableDecors[decor] = true;
             break;
-        case ActionTypes.typeProviders:
-            typeProvidersDecors[decor] = true;
-            break;
-        case ActionTypes.methodProviders:
-            methodProvidersDecors[decor] = true;
+        case ActionTypes.providers:
+            if (decType === 'class') {
+                if (!typeProvidersDecors[decor]) typeProvidersDecors[decor] = true;
+            } else if (decType === 'method') {
+                if (!methodProvidersDecors[decor]) methodProvidersDecors[decor] = true;
+            }
             break;
         default:
             return
@@ -401,8 +401,15 @@ function dispatch(lifescope: LifeScope<DecorContext>, target: any, type: Type, d
         target,
         class: get(type)
     } as DecorContext;
+    if (options.actionType) {
+        if (isArray(options.actionType)) {
+            options.actionType.forEach(ty => regActionType(define.decor.toString(), ty, define.decorType))
+        } else {
+            regActionType(define.decor.toString(), options.actionType, define.decorType)
+        }
+    }
     options.init && options.init(ctx);
-    
+
     lifescope.handle(ctx, null, () => {
         ctx.class.addDefine(define);
         options.afterInit && options.afterInit(ctx);
@@ -458,7 +465,7 @@ export function getDef<T extends TypeDef>(type: Type): T {
  * @param type class type.
  */
 export function get<T = any>(type: Type): Class<T> {
-    if(!type || type === Object) return null!;
+    if (!type || type === Object) return null!;
     let tyRef = (type as AnnotationType)[typeRef]?.() as Class<T>;
     if (tyRef?.type !== type) {
         let prRef: Class = tyRef;

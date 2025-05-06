@@ -8,7 +8,7 @@ import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token, tokenId } from '../tokens';
 import { createInjector, Injector, isInjector } from '../injector';
 import { Execption } from '../execption';
-import { Class } from '../metadata/type';
+import { Class } from '../metadata/class';
 import { getDef } from '../metadata/refl';
 import { ProvdierOf, Provider, toProvider } from '../providers';
 import { OperationInvoker } from '../operation';

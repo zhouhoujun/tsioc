@@ -1,5 +1,5 @@
 import { Type, ClassType } from '../types';
-import { Class } from '../metadata/type';
+import { Class } from '../metadata/class';
 import { isArray, isNil, isPromise } from '../utils/chk';
 import { InjectFlags, Token } from '../tokens';
 import { get } from '../metadata/refl';

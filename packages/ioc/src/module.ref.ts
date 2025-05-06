@@ -2,7 +2,7 @@ import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
 import { ModuleType, ModuleWithProviders, Provider } from './providers';
 import { Injector } from './injector';
 import { Abstract } from './metadata/fac';
-import { Class } from './metadata/type';
+import { Class } from './metadata/class';
 import { Type, ClassType } from './types';
 import { isType } from './utils/chk';
 import { deepForEach } from './utils/lang';

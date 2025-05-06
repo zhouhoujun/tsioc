@@ -20,7 +20,7 @@ export { immediate, nextTick, Defer, promiseOf, promisify, getClassName } from '
 
 // metadata
 export * from './metadata/meta';
-export * from './metadata/type';
+export * from './metadata/class';
 export * as refl from './metadata/refl';
 export { DecoratorOption, MetadataFactory } from './metadata/refl';
 export * from './metadata/fac';

@@ -2,7 +2,7 @@ import { InjectFlags, Token } from '../tokens';
 import { Type, ClassType } from '../types';
 import { isFunction } from '../utils/chk';
 import { get } from '../metadata/refl';
-import { Class } from '../metadata/type';
+import { Class } from '../metadata/class';
 import { Provider, StaticProvider } from '../providers';
 import { Injector, InjectorScope } from '../injector';
 import { Execption } from '../execption';

@@ -2,7 +2,7 @@ import { createContext, InvocationContext } from '../context';
 import { ArgumentExecption, Execption } from '../execption';
 import { Context, ContextToken, HandlerFn, InterceptorFn, InterceptorLike, invokeTail } from '../handler';
 import { PropertyMetadata } from '../metadata/meta';
-import { ctorName, DecoratorFn, DecoratorScope, Decors } from '../metadata/type';
+import { ctorName, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
 import { Platform } from '../platform';
 import { ReflectiveFactory } from '../reflective';
 import { Parameter } from '../resolver';
