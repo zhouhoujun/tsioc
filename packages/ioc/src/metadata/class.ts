@@ -97,8 +97,7 @@ export namespace Decors {
     export const afterAnnoation = 'afterAnnoation';
 }
 
-export type ActionType = 'inject' | 'annoation' | 'runnable'
-    | 'providers';
+export type ActionType = 'inject' | 'annoation' | 'runnable' | 'providers';
 
 export namespace ActionTypes {
     export const inject = 'inject';

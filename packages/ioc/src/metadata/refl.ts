@@ -47,19 +47,13 @@ export interface DecorDefHandles<T = any> {
 export interface DesignScopeHandles<T> {
     /**
      * decorator BeforeAnnoation action handles.
-     * raise handles order by beforeAnnoation -> class -> property -> method -> afterAnnoation
+     * raise handles order by beforeAnnoation -> property -> method -> afterAnnoation
      */
     beforeAnnoation?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
     /**
-     * decorator Class action handles.
-     * raise handles order by beforeAnnoation -> class -> property -> method -> afterAnnoation
-     */
-    class?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
-
-    /**
      * decorator Property action handles.
-     * raise handles order by beforeAnnoation -> class -> property -> method -> afterAnnoation
+     * raise handles order by beforeAnnoation -> property -> method -> afterAnnoation
      */
     property?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 
@@ -71,7 +65,7 @@ export interface DesignScopeHandles<T> {
 
     /**
      * decorator AfterAnnoation action handles.
-     * raise handles order by beforeAnnoation -> class -> property -> method -> afterAnnoation
+     * raise handles order by beforeAnnoation -> property -> method -> afterAnnoation
      */
     afterAnnoation?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
 }
@@ -191,30 +185,39 @@ export function toDefine<T>(decor: DecoratorFn, metadata: T, decorType: Decorato
 
 
 function regActionType(decor: string, type: ActionType, decType: DecoratorType) {
+    let records: Record<string, boolean> | undefined;
     switch (type) {
         case ActionTypes.annoation:
-            if (!typeAnnoDecors[decor]) typeAnnoDecors[decor] = true;
+            records = typeAnnoDecors;
             break;
         case ActionTypes.inject:
-            if (decType === 'parameter') {
-                if (!paramInjectDecors[decor]) paramInjectDecors[decor] = true;
-            } else if (decType === 'property') {
-                if (!propInjectDecors[decor]) propInjectDecors[decor] = true;
+            switch (decType) {
+                case 'parameter':
+                    records = paramInjectDecors;
+                    break;
+                case 'property':
+                    records = propInjectDecors;
+                    break;
             }
             break;
         case ActionTypes.runnable:
-            if (!runnableDecors[decor]) runnableDecors[decor] = true;
+            records = runnableDecors;
             break;
         case ActionTypes.providers:
-            if (decType === 'class') {
-                if (!typeProvidersDecors[decor]) typeProvidersDecors[decor] = true;
-            } else if (decType === 'method') {
-                if (!methodProvidersDecors[decor]) methodProvidersDecors[decor] = true;
+            switch (decType) {
+                case 'class':
+                    records = typeProvidersDecors;
+                    break;
+                case 'method':
+                    records = methodProvidersDecors;
+                    break;
             }
             break;
         default:
             return
     }
+
+    if (records && !records[decor]) records[decor] = true;
 }
 
 const paramInjectDecors: Record<string, boolean> = { '@Inject': true, '@Autowired': true, '@Param': true, '@Nullable': true };
