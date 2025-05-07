@@ -41,10 +41,6 @@ export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
         }
     },
     props: (describe: string, timeout?: number) => ({ describe, timeout }),
-    appendProps: (metadata) => {
-        metadata.singleton = true;
-        return metadata
-    },
     providers: [
         { provide: RunnableRef, useClass: SuiteRunner }
     ]
