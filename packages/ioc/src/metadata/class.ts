@@ -295,11 +295,11 @@ export class Class<T = any> {
      * @param instance the method of instance 
      * @param args invoke with args
      */
-    invoke(method: string, context: InvocationContext, instance?: T, args?: any[]) {
+    invoke(method: string|symbol, context: InvocationContext, instance?: T, args?: any[]) {
         const type = this.type;
         const inst: any = instance ?? context.resolve(type);
         if (!inst || !isFunction(inst[method])) {
-            throw new Execption(`type: ${type} has no method ${method}.`)
+            throw new Execption(`type: ${type} has no method ${method.toString()}.`)
         }
         if (!args) {
             args = this.resolveArguments(method, context);
@@ -318,7 +318,7 @@ export class Class<T = any> {
      * @param method invoke the method named with.
      * @param context invocation context.
      */
-    resolveArguments(method: string, context: InvocationContext): any[] {
+    resolveArguments(method: string|symbol, context: InvocationContext): any[] {
         const parameters = this.getParameters(method) ?? Empty;
         const args = parameters.map(p => context.resolveArgument(p, this.type));
         return args;
@@ -374,13 +374,13 @@ export class Class<T = any> {
     }
 
 
-    hasMethodOptions(method: string): boolean {
+    hasMethodOptions(method: string|symbol): boolean {
         return this.methodOptions.has(method)
     }
-    getMethodOptions<T>(method: string): InvokeArguments<T> | undefined {
+    getMethodOptions<T>(method: string|symbol): InvokeArguments<T> | undefined {
         return this.methodOptions.get(method) ?? this.parent?.getMethodOptions(method)
     }
-    setMethodOptions<T>(method: string, options: InvokeArguments<T>) {
+    setMethodOptions<T>(method: string|symbol, options: InvokeArguments<T>) {
         if (this.methodOptions.has(method)) {
             const eopt = this.methodOptions.get(method)!;
             if (hasItem(options.providers)) {

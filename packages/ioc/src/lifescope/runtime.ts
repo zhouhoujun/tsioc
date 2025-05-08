@@ -4,13 +4,14 @@ import { Context, ContextToken, HandlerFn, InterceptorFn, InterceptorLike, invok
 import { PropertyMetadata } from '../metadata/meta';
 import { ctorName, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
 import { Platform } from '../platform';
-import { ReflectiveFactory } from '../reflective';
+// import { ReflectiveFactory } from '../reflective';
 import { Parameter } from '../resolver';
 import { Type } from '../types';
 import { isDefined } from '../utils/chk';
 import { initReflectInterceptor } from './commom';
 import { RuntimeContext } from './ctx';
 import { LifeScope } from './lifescope';
+import { InvocationFactory } from '../operation';
 
 
 export const cleanContextInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
@@ -31,9 +32,10 @@ export const runtimeAutorunInterceptor: InterceptorFn<RuntimeContext, void> = (i
         const autos = input.class.runnables.filter(c => c.auto && c.decorType === Decors.method)
         if (autos.length) {
             const { injector, class: def, instance, context } = input;
-            const factory = injector.get(ReflectiveFactory).create(def, context);
+            const invoker = injector.get(InvocationFactory).create(def, {instance, parent: context});
             autos.forEach(aut => {
-                factory.invoke(aut.method, context, instance)
+                invoker.invoke(aut.method);
+                // factory.invoke(aut.method, context, instance)
             })
         }
     });

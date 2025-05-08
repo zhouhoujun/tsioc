@@ -2,8 +2,9 @@ import { InvocationContext } from '../context';
 import { Context, ContextToken, HandlerFn, InterceptorLike, invokeTail } from '../handler';
 import { FactoryRecord, FnType } from '../injector';
 import { DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
+import { InvocationFactory } from '../operation';
 import { Platform } from '../platform';
-import { ReflectiveFactory } from '../reflective';
+// import { ReflectiveFactory } from '../reflective';
 import { isType } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
 import { initReflectInterceptor } from './commom';
@@ -20,9 +21,10 @@ export const autorunInterceptor = (ctx: DesignContext, next: HandlerFn, context:
         const injector = ctx.injector;
         const instance = injector.get(ctx.provide || ctx.type);
         if (!instance) return;
-        const factory = injector.get(ReflectiveFactory).create(ctx.class);
+        const invoker = injector.get(InvocationFactory).create(ctx.class, { instance });
         runs.forEach(meta => {
-            factory.invoke(meta.method, undefined, instance);
+            invoker.invoke(meta.method);
+            // factory.invoke(meta.method, undefined, instance);
         });
     })
 }

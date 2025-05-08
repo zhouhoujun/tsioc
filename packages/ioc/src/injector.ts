@@ -529,4 +529,4 @@ export interface MethodFunc extends Function, TypedPropertyDescriptor<any> {
 /**
  * method type.
  */
-export type MethodType<T> = string | ((tag: T) => MethodFunc);
+export type MethodType<T> = string | symbol | ((tag: T) => MethodFunc);

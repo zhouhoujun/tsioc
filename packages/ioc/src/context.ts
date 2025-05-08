@@ -6,11 +6,11 @@ import { Injector, InstanceOf } from './injector';
 import { ArgumentResolver, Parameter } from './resolver';
 import { ProvdierOf, Provider } from './providers';
 import { Execption } from './execption';
-import { OperationInvoker } from './operation';
+import { InvocationInvoker } from './operation';
 
 
 /**
- * The context for the {@link OperationInvoker invocation of an operation}.
+ * The context for the {@link InvocationInvoker invocation of an operation}.
  * 
  * 执行操作调用的接口上下文
  */

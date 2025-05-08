@@ -15,11 +15,13 @@ import { get } from '../metadata/refl';
 import { ModuleDef, Class } from '../metadata/class';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
 import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
-import { ReflectiveFactory } from '../reflective';
-import { ReflectiveFactoryImpl, hasContext } from './reflective';
-import { createContext, InvocationContext, InvokeOptions } from '../context';
+// import { ReflectiveFactory } from '../reflective';
+// import { ReflectiveFactoryImpl, hasContext } from './reflective';
+import { createContext, InvocationContext, InvokeOptions, TargetInvokeArguments } from '../context';
 import { DefaultPlatform } from './platform';
 import { DesignContext } from '../lifescope/ctx';
+import { hasContext, InvocationFactoryImpl } from './operation';
+import { InvocationFactory } from '../operation';
 
 export const SCOPE_PRODIDERS: Provider[] = [];
 
@@ -496,8 +498,8 @@ export class DefaultInjector implements Injector {
         let tgRefl: Class | undefined;
 
         if (!context) {
-            const opts = { ...option, providers };
-            context = hasContext(opts) ? createContext(this, opts) : undefined;
+            option = { ...option, providers };
+            // context = hasContext(opts) ? createContext(this, opts) : undefined;
         }
         if (isTypeObject(target)) {
             targetClass = getClass(target);
@@ -515,11 +517,14 @@ export class DefaultInjector implements Injector {
             }
         }
         tgRefl = tgRefl ?? get(targetClass);
-        const refti = this.get(ReflectiveFactory).create(tgRefl);
-        const val = refti.invoke(propertyKey, context, instance);
-        immediate(() => refti.destroy());
 
-        return val;
+        return this.get(InvocationFactory).create(tgRefl, { ...option, propertyKey, parent: context, instance }).invoke();
+
+        // const refti = this.get(InvocationFactory).create(tgRefl, {  parent: context, instance} as TargetInvokeArguments);
+        // const val = refti.invoke(propertyKey, context, instance);
+        // immediate(() => refti.destroy());
+
+        // return val;
     }
 
     protected assertNotDestroyed(): void {
@@ -938,7 +943,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
  * @param {IContainer} container
  */
 function registerCores(container: Injector, platform: Platform) {
-    const factory = new ReflectiveFactoryImpl(platform);
-    container.setValue(ReflectiveFactory, factory);
-    platform.setSingleton(container, ReflectiveFactory, factory);
+    const factory = new InvocationFactoryImpl(platform);
+    container.setValue(InvocationFactory, factory);
+    // platform.setSingleton(container, ReflectiveFactory, factory);
 }

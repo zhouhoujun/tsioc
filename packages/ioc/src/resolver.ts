@@ -3,7 +3,7 @@ import { Token } from './tokens';
 import { ParameterMetadata } from './metadata/meta';
 import { InvocationContext } from './context';
 import { isDefined } from './utils/chk';
-import { OperationInvoker } from './operation';
+import { InvocationInvoker } from './operation';
 
 /**
  * parameter argument of an {@link OperationArgumentResolver}.
@@ -22,7 +22,7 @@ export interface Parameter<T = any> extends ParameterMetadata {
 }
 
 /**
- * Resolver for an argument of an {@link OperationInvoker}.
+ * Resolver for an argument of an {@link InvocationInvoker}.
  * 
  * 调用参数解析器。
  */
