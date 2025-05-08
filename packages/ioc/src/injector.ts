@@ -5,11 +5,10 @@ import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/class';
 import { ProvidedInMetadata } from './metadata/meta';
-import { getClass, isArray } from './utils/chk';
+import { isArray } from './utils/chk';
 import { InvocationContext, InvokeOptions } from './context';
 import { Execption } from './execption';
 import { Platform } from './platform';
-import { isTypeObject } from './utils/obj';
 
 /**
  * injector.
@@ -314,14 +313,14 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * create platform injector.
      * @param providers
     */
-    static create(providers?: Provider[]): Container;
+    static create(providers?: Provider[]): Injector;
     /**
      * create injector.
      * @param providers 
      * @param parent 
      * @param scope 
      */
-    static create(parent: Injector, scope?: InjectorScope): Container;
+    static create(parent: Injector, scope?: InjectorScope): Injector;
     /**
      * create injector.
      * @param providers 
@@ -338,7 +337,6 @@ export abstract class Injector implements Destroyable, OnDestroy {
         return createInjector(...args)
     }
 }
-
 
 /**
  * object is provider map or not.
@@ -386,12 +384,7 @@ export function createInjector(
         (isInjector(options) ? INJECT_IMPL.create(undefined, options, parent as InjectorScope) : INJECT_IMPL.create(options.providers, options.parent, options.scope))
 }
 
-/**
-* ioc container. 
-*/
-@Abstract()
-export abstract class Container extends Injector {
-}
+
 
 @Abstract()
 export abstract class InjectorEvent {

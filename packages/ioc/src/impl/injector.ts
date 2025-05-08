@@ -7,7 +7,7 @@ import { cleanObj, deepForEach, defer, immediate } from '../utils/lang';
 import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil, isType, isPromise } from '../utils/chk';
 import {
     MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, InjectorEvent,
-    Container, Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
+    Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
 } from '../injector';
 import { Execption } from '../execption';
 import { Platform } from '../platform';
@@ -581,7 +581,7 @@ export class DefaultInjector implements Injector {
 
     protected clear() {
         this.scope && this.platform()?.removeInjector(this.scope);
-        this.records.forEach(r => {        
+        this.records.forEach(r => {
             if (r?.type) this.platform().clearTypeProvider(r.type);
         });
         this.records.clear();
@@ -607,11 +607,12 @@ export class StaticInjector extends DefaultInjector {
     protected isStatic = true;
 }
 
-const platformAlias = [Injector, INJECTOR, Container, CONTAINER];
+
+const platformAlias = [Injector, INJECTOR, CONTAINER];
 const rootAlias = [Injector, INJECTOR, ROOT_INJECTOR];
 const injectAlias = [Injector, INJECTOR];
 
-const isPlatformAlias = (token: any) => token === Injector || token === INJECTOR || token === Container || token === CONTAINER;
+const isPlatformAlias = (token: any) => token === Injector || token === INJECTOR || token === CONTAINER;
 const isRootAlias = (token: any) => token === Injector || token === INJECTOR || token == ROOT_INJECTOR;
 const isInjectAlias = (token: any) => token === Injector || token === INJECTOR;
 const isStaticAlias = (token: any) => token === StaticInjector;
@@ -936,13 +937,8 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
  * @export
  * @param {IContainer} container
  */
-function registerCores(container: Container, platform: Platform) {
+function registerCores(container: Injector, platform: Platform) {
     const factory = new ReflectiveFactoryImpl(platform);
     container.setValue(ReflectiveFactory, factory);
     platform.setSingleton(container, ReflectiveFactory, factory);
-    // bing action.
-    // platform.registerAction(
-    //     DesignLifeScope,
-    //     RuntimeLifeScope
-    // )
 }

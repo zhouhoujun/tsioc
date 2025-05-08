@@ -18,7 +18,6 @@ import { DESIGN_INTERECPTORS, registerHandler } from '../lifescope/design';
  */
 export class DefaultPlatform implements Platform {
 
-    // private _actions: Map<Token, any>;
     private _singls: Map<Token, any>;
     private _pdrs: Map<Type, Provider[]>;
     private _scopes: Map<string | Type, Injector>;
@@ -34,7 +33,6 @@ export class DefaultPlatform implements Platform {
         this.context = new Context();
         this._scopes = new Map();
         this._pdrs = new Map();
-        // this._actions = new Map();
         this._singls = new Map();
         this.injectors = [injector];
         this._singls.set(Platform, this);
