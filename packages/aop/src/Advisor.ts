@@ -37,6 +37,7 @@ export class Advisor implements OnDestroy {
 
     protected registerAspect(aspect: ReflectiveRef): void {
         this.aspects.push(aspect);
+        aspect.onDestroy(() => this.remove(aspect));
         aspect.class.getAnnotation<AopDef>().advices?.forEach(advice => {
             if (!advice.type) {
                 advice.type = aspect.type;
@@ -115,8 +116,8 @@ export class Advisor implements OnDestroy {
         if (types?.length === 1) return this.advices.get(types[0]) ?? Empty;
         return types.reduce((pre, cur) => {
             const advicers = this.advices.get(cur);
-            return advicers?.length? pre.concat(advicers) :  pre;
-        }, [] as Advicer[]);       
+            return advicers?.length ? pre.concat(advicers) : pre;
+        }, [] as Advicer[]);
     }
 
 
