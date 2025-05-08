@@ -96,11 +96,4 @@ export class ReflectiveOperationInvoker<T = any> implements OperationInvoker<T>,
         return this.typeRef.class.invoke(this.method, context, instance);
     }
 
-    /**
-     * resolve args.
-     * @param context 
-     */
-    resolveArguments(context?: InvocationContext): any[] {
-        return this.typeRef.resolveArguments(this.method, context ?? this.context)
-    }
 }

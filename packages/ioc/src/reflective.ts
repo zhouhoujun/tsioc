@@ -99,15 +99,6 @@ export abstract class ReflectiveRef<T = any> implements Destroyable, OnDestroy {
      */
     abstract invoke(method: MethodType<T>, context?: InvocationContext, instance?: T): any;
     /**
-     * resolve arguments.
-     * 
-     * 解析类方法的所有参数实例。
-     * 
-     * @param method 类方法
-     * @param context 用户自定义上下文， 默认使用该方法的默认上下文环境
-     */
-    abstract resolveArguments(method: MethodType<T>, context?: InvocationContext): any[];
-    /**
      * create method invoker of target type.
      * 
      * 创建执行操作调用的接口。

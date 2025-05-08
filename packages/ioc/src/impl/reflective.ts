@@ -104,17 +104,6 @@ export class DefaultReflectiveRef<T> extends ReflectiveRef<T> {
 
     }
 
-    resolveArguments<TArg>(method: MethodType<T>, option?: InvokeArguments<TArg> | InvocationContext) {
-        this.assertNotDestroyed();
-        const name = this.class.getMethodName(method);
-        const [context, destroy] = this.createMethodContext(name, option);
-        const args = this.class.resolveArguments(name, context);
-        if (destroy) {
-            destroy()
-        }
-        return args
-    }
-
     protected createMethodContext<TArg>(method: string, option?: InvokeArguments<TArg> | InvocationContext): [InvocationContext, Function | undefined] {
         const ctx = this.getContext(method);
         let context: InvocationContext;

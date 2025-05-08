@@ -70,16 +70,6 @@ export interface OperationInvoker<T = any> {
      */
     invoke(context: InvocationContext, instance: object): T;
     /**
-     * resolve args. 
-     * @param context 
-     */
-    resolveArguments(): any[];
-    /**
-     * resolve args. 
-     * @param context 
-     */
-    resolveArguments(context: InvocationContext): any[];
-    /**
      * is equals to target or not.
      * @param target 
      */
