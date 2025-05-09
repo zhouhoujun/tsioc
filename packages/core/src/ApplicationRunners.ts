@@ -1,4 +1,4 @@
-import { Abstract, Class, InvocationContext, InvokeParentContext, ModuleRef, noPointcut, OnDestroy, ProvdierOf, ReflectiveRef, StaticProvider, Type } from '@tsdi/ioc';
+import { Abstract, Class, InvokeParentContext, noPointcut, OnDestroy, ProvdierOf, InvocationInvoker, StaticProvider, Type } from '@tsdi/ioc';
 import { CanHandle } from './guard';
 import { ApplicationInterceptor } from './ApplicationInterceptor';
 import { PipeTransform } from './pipes/pipe';
@@ -24,7 +24,7 @@ export abstract class ApplicationRunners implements HandlerService, OnDestroy {
    * attach runner
    * @param type 
    */
-  abstract attach<T, TArg>(type: Type<T> | Class<T>, options?: InvokeParentContext & InvocationOptions<TArg>): ReflectiveRef<T>;
+  abstract attach<T, TArg>(type: Type<T> | Class<T>, options?: InvokeParentContext & InvocationOptions<TArg>): InvocationInvoker<T>;
 
   /**
    * detach runner
@@ -42,12 +42,12 @@ export abstract class ApplicationRunners implements HandlerService, OnDestroy {
    * get reflectiveRef of type.
    * @param type 
    */
-  abstract getRef<T>(type: Type<T>, idx?: number): ReflectiveRef<T>;
+  abstract getRef<T>(type: Type<T>, idx?: number): InvocationInvoker<T>;
   /**
    * get reflectiveRef of type.
    * @param type 
    */
-  abstract getRefs<T>(type: Type<T>): ReflectiveRef<T>[];
+  abstract getRefs<T>(type: Type<T>): InvocationInvoker<T>[];
 
   /**
    * run all runners.
@@ -91,29 +91,29 @@ export abstract class ApplicationRunners implements HandlerService, OnDestroy {
 }
 
 
-/**
- * Runnable Ref
- */
-@Abstract()
-export abstract class RunnableRef<T = any> {
-  /**
-   * type ReflectiveRef
-   */
-  abstract get typeRef(): ReflectiveRef<T>;
-  /**
-   * invoke.
-   */
-  abstract invoke(context: InvocationContext): any;
-}
+// /**
+//  * Runnable Ref
+//  */
+// @Abstract()
+// export abstract class RunnableRef<T = any> {
+//   /**
+//    * type ReflectiveRef
+//    */
+//   abstract get typeRef(): ReflectiveRef<T>;
+//   /**
+//    * invoke.
+//    */
+//   abstract invoke(context: InvocationContext): any;
+// }
 
-/**
- * Runnable Factory.
- */
-@Abstract()
-export abstract class RunnableFactory {
-  /**
-   * runnable factory.
-   * @param typeRef 
-   */
-  abstract create<T>(typeRef: ReflectiveRef<T>, moduleRef?: ModuleRef): RunnableRef<T>
-}
+// /**
+//  * Runnable Factory.
+//  */
+// @Abstract()
+// export abstract class RunnableFactory {
+//   /**
+//    * runnable factory.
+//    * @param typeRef 
+//    */
+//   abstract create<T>(typeRef: ReflectiveRef<T>, moduleRef?: ModuleRef): RunnableRef<T>
+// }

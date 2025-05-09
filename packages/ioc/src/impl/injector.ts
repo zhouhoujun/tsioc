@@ -17,10 +17,10 @@ import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
 import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
 // import { ReflectiveFactory } from '../reflective';
 // import { ReflectiveFactoryImpl, hasContext } from './reflective';
-import { createContext, InvocationContext, InvokeOptions, TargetInvokeArguments } from '../context';
+import { createContext, InvocationContext, InvokeOptions } from '../context';
 import { DefaultPlatform } from './platform';
 import { DesignContext } from '../lifescope/ctx';
-import { hasContext, InvocationFactoryImpl } from './operation';
+import { hasContext, DefaultInvocationFactory } from './operation';
 import { InvocationFactory } from '../operation';
 
 export const SCOPE_PRODIDERS: Provider[] = [];
@@ -499,7 +499,7 @@ export class DefaultInjector implements Injector {
 
         if (!context) {
             option = { ...option, providers };
-            // context = hasContext(opts) ? createContext(this, opts) : undefined;
+            context = createContext(this, option);
         }
         if (isTypeObject(target)) {
             targetClass = getClass(target);
@@ -518,8 +518,9 @@ export class DefaultInjector implements Injector {
         }
         tgRefl = tgRefl ?? get(targetClass);
 
-        return this.get(InvocationFactory).create(tgRefl, { ...option, propertyKey, parent: context, instance }).invoke();
-
+        return tgRefl.invoke(tgRefl.getMethodName(propertyKey), context, instance) 
+        
+        //this.get(InvocationFactory).create(tgRefl, { ...option, propertyKey, parent: context, instance }).invoke();
         // const refti = this.get(InvocationFactory).create(tgRefl, {  parent: context, instance} as TargetInvokeArguments);
         // const val = refti.invoke(propertyKey, context, instance);
         // immediate(() => refti.destroy());
@@ -943,7 +944,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
  * @param {IContainer} container
  */
 function registerCores(container: Injector, platform: Platform) {
-    const factory = new InvocationFactoryImpl(platform);
-    container.setValue(InvocationFactory, factory);
+    // const factory = new InvocationFactoryImpl(platform);
+    // container.setValue(InvocationFactory, factory);
     // platform.setSingleton(container, ReflectiveFactory, factory);
 }

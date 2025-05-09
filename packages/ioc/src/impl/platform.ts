@@ -1,5 +1,5 @@
 import { InjectFlags, Token } from '../tokens';
-import { Type, ClassType, Empty } from '../types';
+import { Type, Empty } from '../types';
 import { isFunction } from '../utils/chk';
 import { get } from '../metadata/refl';
 import { Class } from '../metadata/class';
@@ -12,6 +12,8 @@ import { LifeScope } from '../lifescope/lifescope';
 import { Context } from '../handler';
 import { RUNTIME_INTERCEPTORS } from '../lifescope/runtime';
 import { DESIGN_INTERECPTORS, registerHandler } from '../lifescope/design';
+import { InvocationFactory, InvocationInvoker, InvokerOptions } from '../operation';
+import { createContext } from '../context';
 
 /**
  * default platform implements {@link Platform}.
@@ -96,17 +98,29 @@ export class DefaultPlatform implements Platform {
         this._scopes.set(scope, injector)
     }
 
+
+    /**
+     * create invocation invoker.
+     * @param type 
+     * @param options 
+     * @param injector 
+     */
+    createInvocation<T>(type: Type<T> | Class<T>, options?: InvokerOptions, injector?: Injector): InvocationInvoker<T> {
+        const providers = this.getTypeProvider(type);
+        if (!injector) {
+            injector = this.getRegisterIn((type as Class).type ?? type)!
+        }
+        const context = createContext(injector, {...options, providers:[providers, options?.providers?? Empty]});
+        context.resolve(InvocationFactory).create(context, options)
+
+    }
+
     removeInjector(scope: InjectorScope): void {
         this._scopes.delete(scope)
     }
 
-    getRegisterIn(token: Token): [ClassType, Injector] {
-        let type: ClassType | undefined;
-        const injector = this.injectors.find(r => {
-            type = r.getTokenProvider(token, InjectFlags.Self) as ClassType;
-            return type !== null;
-        })!;
-        return [type!, injector];
+    getRegisterIn(token: Token): Injector | undefined {
+        return this.injectors.find(r => !!r.getTokenProvider(token, InjectFlags.Self));
     }
 
     /**

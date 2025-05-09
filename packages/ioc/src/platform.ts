@@ -2,12 +2,13 @@ import { Abstract } from './metadata/fac';
 import { Class } from './metadata/class';
 import { OnDestroy } from './destroy';
 import { Token } from './tokens';
-import { ClassType, Type } from './types';
+import { Type } from './types';
 import { Provider } from './providers';
 import { Injector, InjectorScope } from './injector';
 import { ModuleRef } from './module.ref';
 import { LifeScope } from './lifescope/lifescope';
 import { Context } from './handler';
+import { InvocationInvoker, InvokerOptions } from './operation';
 
 
 /**
@@ -56,7 +57,14 @@ export abstract class Platform implements OnDestroy {
      * @param token
      * @returns prodider type and the injector the type register in.
      */
-    abstract getRegisterIn(token: Token): [ClassType | undefined, Injector | undefined];
+    abstract getRegisterIn(token: Token): Injector | undefined;
+    /**
+     * create invocation invoker.
+     * @param type 
+     * @param options 
+     * @param injector 
+     */
+    abstract createInvocation<T>(type: Type<T> | Class<T>, options?: InvokerOptions, injector?: Injector): InvocationInvoker;
     /**
      * set injector scope.
      * @param scope 

@@ -1,4 +1,4 @@
-import { isString, Type, AnnotationMetadata, DecoratorOption, createDecorator, ActionTypes, lang, ReflectiveFactory, noPointcut, AnnotationType } from '@tsdi/ioc';
+import { isString, Type, AnnotationMetadata, DecoratorOption, createDecorator, ActionTypes, InvocationFactory, noPointcut, AnnotationType } from '@tsdi/ioc';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata, PointcutAnnotation, AdviceTypes } from './meta';
 import { Advisor } from '../Advisor';
 import { AopDef } from './ref';
@@ -49,14 +49,14 @@ export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
         afterAnnoation: (ctx) => {
             const advisor = ctx.injector.platform().context.get(Advisor);
             if (advisor) {
-                const { type, injector } = ctx;
+                const { injector } = ctx;
 
-                const factory = injector.get(ReflectiveFactory).create(type);
+                const invoker = injector.get(InvocationFactory).create(ctx.class);
                 injector.onDestroy(() => {
-                    advisor.remove(factory);
-                    lang.cleanObj(factory);
+                    advisor.remove(invoker);
+                    invoker.destroy();
                 });
-                advisor.add(factory)
+                advisor.add(invoker)
             } else {
                 console.error('aop module not registered. make sure register before', ctx.type)
             }

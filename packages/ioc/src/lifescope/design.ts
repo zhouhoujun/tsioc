@@ -1,5 +1,6 @@
 import { InvocationContext } from '../context';
 import { Context, ContextToken, HandlerFn, InterceptorLike, invokeTail } from '../handler';
+import { DefaultInvocationFactory } from '../impl';
 import { FactoryRecord, FnType } from '../injector';
 import { DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
 import { InvocationFactory } from '../operation';
@@ -19,9 +20,10 @@ export const autorunInterceptor = (ctx: DesignContext, next: HandlerFn, context:
         }
 
         const injector = ctx.injector;
-        const instance = injector.get(ctx.provide || ctx.type);
-        if (!instance) return;
-        const invoker = injector.get(InvocationFactory).create(ctx.class, { instance });
+        // const instance = injector.get(ctx.provide || ctx.type);
+        // if (!instance) return;
+        
+        const invoker = new DefaultInvocationFactory(ctx.class).create(injector) // injector.get(InvocationFactory).create(ctx.class, { instance });
         runs.forEach(meta => {
             invoker.invoke(meta.method);
             // factory.invoke(meta.method, undefined, instance);

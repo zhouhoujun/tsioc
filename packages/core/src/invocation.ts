@@ -1,4 +1,4 @@
-import { Abstract, Type, OperationInvoker, OnDestroy, Destroyable, ReflectiveRef, DestroyCallback, Class, ProvidedInMetadata, InvokeInstance } from '@tsdi/ioc';
+import { Abstract, Type, InvocationInvoker, OnDestroy, Destroyable, DestroyCallback, Class, ProvidedInMetadata } from '@tsdi/ioc';
 import { AbstractConfigableHandler, ConfigableHandlerOptions } from './handlers/configable';
 
 
@@ -14,7 +14,7 @@ export abstract class InvocationHandler<
     /**
      * opteration invoker.
      */
-    abstract get invoker(): OperationInvoker;
+    abstract get invoker(): InvocationInvoker;
 
     /**
      * is this equals to target or not
@@ -28,22 +28,22 @@ export abstract class InvocationHandler<
  * Invocation Handler factory.
  */
 @Abstract()
-export abstract class InvocationFactory<T> implements OnDestroy, Destroyable {
+export abstract class InvocationHanlderFactory<T> implements OnDestroy, Destroyable {
 
-    abstract get typeRef(): ReflectiveRef<T>;
+    abstract get invoker(): InvocationInvoker<T>;
 
-    abstract create<TArg>(propertyKey: string, options?: InvokeInstance<T> & InvocationOptions<TArg>): InvocationHandler;
+    abstract create<TArg>(propertyKey: string, options?:  InvocationOptions<TArg>): InvocationHandler;
 
 
     destroy(): void {
-        this.typeRef.destroy();
+        this.invoker.destroy();
     }
     get destroyed(): boolean {
-        return this.typeRef.destroyed;
+        return this.invoker.destroyed;
     }
 
     onDestroy(callback?: DestroyCallback): void {
-        this.typeRef.onDestroy(callback);
+        this.invoker.onDestroy(callback);
     }
 }
 
@@ -51,21 +51,21 @@ export abstract class InvocationFactory<T> implements OnDestroy, Destroyable {
  * Invocation Handler factory resolver.
  */
 @Abstract()
-export abstract class InvocationFactoryResolver {
+export abstract class InvocationHanlderFactoryResolver {
     /**
      * resolve endpoint factory.
      * @param type factory type
      * @param injector injector
      * @param categare factory categare
      */
-    abstract resolve<T>(type: ReflectiveRef<T>): InvocationFactory<T>;
+    abstract resolve<T>(type: InvocationInvoker<T>): InvocationHanlderFactory<T>;
     /**
      * resolve endpoint factory.
      * @param type factory type
      * @param injector injector
      * @param categare factory categare
      */
-    abstract resolve<T>(type: Type<T> | Class<T>): InvocationFactory<T>;
+    abstract resolve<T>(type: Type<T> | Class<T>): InvocationHanlderFactory<T>;
 }
 
 

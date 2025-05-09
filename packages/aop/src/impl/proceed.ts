@@ -333,7 +333,7 @@ function invokeAdvice(joinPoint: JoinPoint, advicer: Advicer) {
         joinPoint.setValue(metadata.throwing, joinPoint.throwing)
     }
 
-    const context = advicer.aspect.getContext();
+    const context = advicer.aspect.context;
     if (context) {
         joinPoint.addRef(context)
     }

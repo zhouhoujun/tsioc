@@ -1,4 +1,4 @@
-import { Injector, isDefined, Provider, ReflectiveFactory, SCOPE_PRODIDERS } from '@tsdi/ioc';
+import { Injector, isDefined, Provider, SCOPE_PRODIDERS } from '@tsdi/ioc';
 import { ApplicationFactory } from './ApplicationContext';
 import { ApplicationRunners } from './ApplicationRunners';
 import { RandomUuidGenerator, UuidGenerator } from './uuid';
@@ -7,7 +7,7 @@ import { DefaultApplicationRunners } from './impl/runners';
 import { DefaultApplicationFactory } from './impl/context';
 import { DefaultEventMulticaster } from './impl/events';
 import { InvocationFactoryResolverImpl } from './impl/invocation';
-import { InvocationFactoryResolver } from './invocation';
+import { InvocationHanlderFactoryResolver } from './invocation';
 import { InterceptorResolver } from './ApplicationInterceptor';
 import { FilterHandlerResolver, FilterResolver } from './filters/filter';
 import { DefaultFilterResolver, DefaultFiterHandlerMethodResolver, DefaultInterceptorResolver } from './filters/filter.impl';
@@ -22,7 +22,7 @@ import { createPayloadResolver } from './handlers/resolvers';
  * Platform default providers
  */
 export const DEFAULTA_PROVIDERS: Provider[] = [
-    { provide: InvocationFactoryResolver, useFactory: (factory) => new InvocationFactoryResolverImpl(factory), deps: [ReflectiveFactory], static: true },
+    { provide: InvocationHanlderFactoryResolver, useFactory: (factory) => new InvocationFactoryResolverImpl(factory), deps: [ReflectiveFactory], static: true },
     { provide: ApplicationFactory, useClass: DefaultApplicationFactory, static: true },
     { provide: UuidGenerator, useClass: RandomUuidGenerator, asDefault: true, static: true }
 ]

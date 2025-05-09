@@ -1,4 +1,4 @@
-import { Class, ReflectiveRef } from '@tsdi/ioc';
+import { Class, InvocationInvoker } from '@tsdi/ioc';
 import { AdviceMetadata } from './metadata/meta';
 
 
@@ -37,7 +37,7 @@ export interface Advicer {
      *
      * @type {Type}
      */
-    aspect: ReflectiveRef;
+    aspect: InvocationInvoker;
 
     accessor?: 'get' | 'set' | 'value';
 }

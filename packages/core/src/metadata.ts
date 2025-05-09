@@ -11,7 +11,7 @@ import {
     ApplicationStartedEvent, ApplicationStartEvent, PayloadApplicationEvent
 } from './events';
 import { FilterFn, FilterHandlerResolver, FilterResolver } from './filters/filter';
-import { InvocationOptions, InvocationFactoryResolver } from './invocation';
+import { InvocationOptions, InvocationHanlderFactoryResolver } from './invocation';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
@@ -267,7 +267,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
 
                 const decors = typeRef.getMethodDefines(ctx.currDecor);
                 const injector = ctx.injector;
-                const factory = injector.get(InvocationFactoryResolver).resolve(typeRef);
+                const factory = injector.get(InvocationHanlderFactoryResolver).resolve(typeRef);
                 const currMulticaster = injector.get(ApplicationEventMulticaster);
                 decors.forEach(decor => {
                     const { filter, order, providedIn, ...options } = decor.metadata as InvocationOptions & { filter: Type<ApplicationEvent> & { getStrategy?: () => string } };
@@ -293,7 +293,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
 
                 const decors = typeRef.getMethodDefines(ctx.currDecor);
                 const injector = ctx.injector;
-                const factory = injector.get(InvocationFactoryResolver).resolve(typeRef);
+                const factory = injector.get(InvocationHanlderFactoryResolver).resolve(typeRef);
                 const currMulticaster = injector.get(ApplicationEventMulticaster);
                 decors.forEach(decor => {
                     const { filter, order, providedIn, ...options } = decor.metadata as InvocationOptions & { filter: Type<ApplicationEvent> & { getStrategy?: () => string } };
@@ -598,7 +598,7 @@ export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
             const typeRef = ctx.class;
             const decors = typeRef.getMethodDefines<FilterHandlerMetadata<any>>(ctx.currDecor);
             const injector = ctx.injector;
-            const factory = injector.get(InvocationFactoryResolver).resolve(typeRef);
+            const factory = injector.get(InvocationHanlderFactoryResolver).resolve(typeRef);
             const currResolver = injector.get(FilterHandlerResolver);
             decors.forEach(decor => {
                 const { filter, order, providedIn, ...options } = decor.metadata;

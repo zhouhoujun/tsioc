@@ -1,4 +1,4 @@
-import { Abstract, Class, Context, HandlerFn, InvocationContext, RuntimeContext } from '@tsdi/ioc';
+import { Abstract, Context, HandlerFn, RuntimeContext } from '@tsdi/ioc';
 
 
 @Abstract()
@@ -18,9 +18,5 @@ export abstract class Proceeding {
      * @param context 
      */
     abstract pointcutProperty(ctx: RuntimeContext, next: HandlerFn, context: Context): any;
-
-    // abstract attach<T>(typeRef: Class<T>, instance: T, parent?: InvocationContext): T;
-
-    // abstract detach<T>(typeRef: Class<T>, instance: T, parent?: InvocationContext): T;
 
 }

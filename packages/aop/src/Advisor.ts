@@ -1,4 +1,4 @@
-import { Type, lang, ReflectiveRef, OnDestroy, Class, getClassName, ctorName, Empty } from '@tsdi/ioc';
+import { Type, lang, InvocationInvoker, OnDestroy, Class, getClassName, ctorName, Empty } from '@tsdi/ioc';
 import { Advicer, MatchOptions } from './Advicer';
 import { AdviceMatcher } from './AdviceMatcher';
 import { AopDef } from './metadata/ref';
@@ -15,7 +15,7 @@ export class Advisor implements OnDestroy {
     /**
      * aspects.
      */
-    aspects: ReflectiveRef[];
+    aspects: InvocationInvoker[];
 
     constructor(private matcher: AdviceMatcher) {
         this.advices = new Map();
@@ -30,12 +30,12 @@ export class Advisor implements OnDestroy {
      * @param {Type} aspect
      * @param {Container} raiseContainer
      */
-    add(aspect: ReflectiveRef): void {
+    add(aspect: InvocationInvoker): void {
         if (this.aspects.some(a => a.type === aspect.type)) return;
         this.registerAspect(aspect)
     }
 
-    protected registerAspect(aspect: ReflectiveRef): void {
+    protected registerAspect(aspect: InvocationInvoker): void {
         this.aspects.push(aspect);
         aspect.onDestroy(() => this.remove(aspect));
         aspect.class.getAnnotation<AopDef>().advices?.forEach(advice => {
@@ -64,7 +64,7 @@ export class Advisor implements OnDestroy {
 
     }
 
-    protected unregisterAspect(aspect: ReflectiveRef) {
+    protected unregisterAspect(aspect: InvocationInvoker) {
         this.advices.forEach(advices => {
             advices.filter(a => a.aspect.type === aspect.type)
                 .forEach(a => {
@@ -73,12 +73,12 @@ export class Advisor implements OnDestroy {
         })
     }
 
-    remove(aspect: ReflectiveRef) {
+    remove(aspect: InvocationInvoker) {
         lang.remove(this.aspects, aspect);
         this.unregisterAspect(aspect);
     }
 
-    get(type: Type): ReflectiveRef | undefined {
+    get(type: Type): InvocationInvoker | undefined {
         return this.aspects.find(r => r.type === type)
     }
 

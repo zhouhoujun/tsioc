@@ -1,20 +1,22 @@
-import { ClassType, Type } from '../types';
+import { Type } from '../types';
 import { createContext, InvocationContext, InvokeArguments } from '../context';
-import { InvokerOptions, InvocationInvoker, InvocationFactory, MethodInvokerOptions } from '../operation';
-import { isTypeObject } from '../utils/obj';
-import { isArray, isFunction, isNil, isPromise, isString, isSymbol } from '../utils/chk';
-// import { InvokerOptions, ReflectiveRef } from '../reflective';
+import { InvokerOptions, InvocationInvoker, InvocationFactory } from '../operation';
+import { isFunction, isPromise, isString, isSymbol } from '../utils/chk';
 import { DestroyCallback, OnDestroy } from '../destroy';
 import { Class } from '../metadata/class';
 import { Injector, MethodType } from '../injector';
 import { Provider } from '../providers';
-import { Execption } from '../execption';
+import { ArgumentExecption, Execption } from '../execption';
 import { InjectFlags, Token } from '../tokens';
 import { hasItem, immediate } from '../utils/lang';
-import { Platform } from '../platform';
+import { composeHandlers } from '../handler';
 import { get } from '../metadata/refl';
 
 
+/**
+ * abstract invocation invoker 
+ * implements {@link InvocationInvoker}
+ */
 export abstract class AbstractInvocationInvoker<T, TRes> extends InvocationInvoker<T, TRes> implements OnDestroy {
 
     private _ctx!: InvocationContext;
@@ -139,10 +141,10 @@ export function hasContext(option?: InvokerOptions) {
 }
 
 /**
- * reflective operation invoker.
- * implements {@link OperationInvoker}
+ * default invocation invoker.
+ * extends {@link AbstractInvocationInvoker}
  */
-export class DefaultOperationInvoker<T = any, TRes = any> extends AbstractInvocationInvoker<T, TRes> {
+export class DefaultInvocationInvoker<T = any, TRes = any> extends AbstractInvocationInvoker<T, TRes> {
 
     private _mthCtx: Map<string | symbol, InvocationContext | null>;
     // private _returnType!: Type;
@@ -151,27 +153,16 @@ export class DefaultOperationInvoker<T = any, TRes = any> extends AbstractInvoca
     constructor(
         _class: Class<T>,
         injector: Injector,
-        options: InvokerOptions<T>) {
+        options?: InvokerOptions<T>) {
         super(_class, injector, options);
-        this.propertyKey = options.propertyKey;
+        this.propertyKey = options?.propertyKey;
         this._mthCtx = new Map();
     }
 
     equals(target: InvocationInvoker): boolean {
-        if ((target as DefaultOperationInvoker).propertyKey !== this.propertyKey) return false;
+        if ((target as DefaultInvocationInvoker).propertyKey !== this.propertyKey) return false;
         return super.equals(target);
     }
-
-    // get descriptor(): TypedPropertyDescriptor<T> {
-    //     return this.class.getDescriptor(this.method)
-    // }
-
-    // get returnType(): Type {
-    //     if (!this._returnType) {
-    //         this._returnType = this.class.getReturnning(this.method) ?? Object
-    //     }
-    //     return this._returnType
-    // }
 
     /**
      * Invoke the underlying operation using the given {@code context}.
@@ -208,28 +199,40 @@ export class DefaultOperationInvoker<T = any, TRes = any> extends AbstractInvoca
     invoke(arg?: InvocationContext | InvokeArguments | MethodType<T>, optionOrArgs?: InvocationContext | InvokeArguments): TRes {
         this.assertNotDestroyed();
         let name: string | symbol;
+        let option: InvokeArguments | InvocationContext | undefined;
         if (isString(arg) || isSymbol(arg)) {
             name = arg;
+            option = optionOrArgs;
         } else if (isFunction(arg)) {
             name = this.class.getMethodName(arg);
         } else {
             name = this.propertyKey!;
-            optionOrArgs = arg
+            option = arg
         }
 
-        let args: any[] | undefined;
-        let option: InvokeArguments | InvocationContext | undefined
-        if (isArray(optionOrArgs)) {
-            args = optionOrArgs;
-            option = undefined;
-        } else {
-            option = optionOrArgs as InvokeArguments | InvocationContext;
+
+        if (!name) {
+            const runnables = this.class.runnables.filter(r => !r.auto);
+            if (runnables && runnables.length) {
+                const handler = composeHandlers(runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
+                    return (option) => this.invokeMethod(runnable.method, runnable.args)
+                }));
+                return handler(this.context);
+            } else {
+                throw new ArgumentExecption(this.class.className + ' is invaild runnable, can not invocation without method param.');
+            }
+
         }
+
+        return this.invokeMethod(name, option);
+    }
+
+    protected invokeMethod(name: string | symbol, option?: InvocationContext | InvokeArguments): any {
 
         const [context, destroy] = this.createInvokeContext(name, option);
-        if (!args) {
-            args = this.class.resolveArguments(name, context);
-        }
+
+        const args = this.class.resolveArguments(name, context);
+
         const result = this.class.invoke(name, context, this.instance, args);
 
         if (destroy) {
@@ -317,35 +320,11 @@ export class DefaultOperationInvoker<T = any, TRes = any> extends AbstractInvoca
 }
 
 
-export class InvocationFactoryImpl implements InvocationFactory {
+export class DefaultInvocationFactory implements InvocationFactory {
 
-    constructor(private platform: Platform) {
-
-    }
-
-    create<T>(type: Token<T> | Class<T>, option: InvokerOptions<T>): InvocationInvoker<T> {
-        let injector: Injector | undefined;
-        let classType: ClassType | undefined;
-
-        if (type instanceof Class) {
-            [classType, injector] = this.platform.getRegisterIn(type.type);
-            if (!injector) {
-                injector = option?.parent?.injector;
-            }
-            if (!injector) {
-                throw new Execption(`Type:${type.type} is not registered.`)
-            }
-            return new DefaultOperationInvoker<T>(type, (injector ?? option?.parent?.injector)!, option);
-        } else {
-            [classType, injector] = this.platform.getRegisterIn(type);
-            if (!injector) {
-                injector = option?.parent?.injector;
-            }
-            if (!injector) {
-                throw new Execption(`Type:${classType ?? type.toString()} is not registered.`)
-            }
-            return new DefaultOperationInvoker<T>(get(classType!), (injector ?? option?.parent?.injector)!, option);
-        }
+    create<T>(type: Type<T> | Class<T>,  option?: InvokerOptions<T>): InvocationInvoker<T> {
+        type = type instanceof Class ? type : get(type)
+        return new DefaultInvocationInvoker<T>(type, injector, option);
     }
 
 }

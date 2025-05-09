@@ -1,6 +1,6 @@
 import {
     isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, refl, ProvdierOf, 
-    getClassName, ReflectiveFactory, StaticProviders, isArray, ArgumentExecption, ReflectiveRef, 
+    getClassName, InvocationFactory, InvocationInvoker, StaticProviders, isArray, ArgumentExecption, 
     StaticProvider, HandlerLike, composeHandlers, InvocationContext, eachProvider
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
@@ -14,7 +14,7 @@ import { ApplicationInterceptor } from '../ApplicationInterceptor';
 import { Filter } from '../filters/filter';
 import { ExecptionHandlerFilter } from '../filters/execption.filter';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
-import { InvocationFactoryResolver, InvocationOptions } from '../invocation';
+import { InvocationHanlderFactoryResolver, InvocationOptions } from '../invocation';
 import { HandleContext } from '../handlers/context';
 import { NotHandleExecption } from '../execptions';
 import { toObservable } from '../handlers';
@@ -40,11 +40,11 @@ export const APP_RUNNERS_GUARDS = tokenId<CanHandle[]>('APP_RUNNERS_GUARDS');
 export class DefaultApplicationRunners extends ApplicationRunners implements ApplicationHandler {
     private _types: Type[];
     private _maps: Map<Type, HandlerLike[]>;
-    private _refs: Map<Type, ReflectiveRef[]>;
+    private _refs: Map<Type, InvocationInvoker[]>;
     private _handler: ConfigableHandler;
     constructor(
         private injector: Injector,
-        private reflectiveFactory: ReflectiveFactory,
+        private reflectiveFactory: InvocationFactory,
         protected readonly multicaster: ApplicationEventMulticaster
     ) {
         super()
@@ -83,7 +83,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         return this;
     }
 
-    attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationOptions<TArg> = {}): ReflectiveRef<T> {
+    attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationOptions<TArg> = {}): InvocationInvoker<T> {
         const target = isFunction(type) ? refl.get(type) : type;
 
         let ends = this._maps.get(target.type);
@@ -92,42 +92,43 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
             this._maps.set(target.type, ends);
         }
 
-        let hasAdapter = false;
+
         let hasFactory = false;
         eachProvider(target.providers, (r) => {
-            if ((r as StaticProviders).provide === RunnableRef) {
-                hasAdapter = true;
-            }
-            if ((r as StaticProviders).provide === RunnableFactory) {
-                hasAdapter = true;
+            if ((r as StaticProviders).provide === InvocationFactory) {
                 hasFactory = true;
             }
         });
+
+        let factory: InvocationFactory;
+        if(hasFactory) {
+            this.injector.platform().getRegisterIn(target.type)
+        }
         
-        if (hasAdapter) {
-            const targetRef = this.reflectiveFactory.create(target, options);
-            const endpoint = hasFactory ? (ctx: InvocationContext) => targetRef.resolve(RunnableFactory).create(targetRef).invoke(ctx) : (ctx: InvocationContext) => targetRef.resolve(RunnableRef).invoke(ctx);
-            ends.push(endpoint);
-            this.attachRef(targetRef, options.order);
-            targetRef.onDestroy(() => this.detach(target.type));
-            return targetRef;
-        }
+        // if (hasAdapter) {
+        //     const targetRef = this.reflectiveFactory.create(target, options);
+        //     const endpoint = hasFactory ? (ctx: InvocationContext) => targetRef.resolve(RunnableFactory).create(targetRef).invoke(ctx) : (ctx: InvocationContext) => targetRef.resolve(RunnableRef).invoke(ctx);
+        //     ends.push(endpoint);
+        //     this.attachRef(targetRef, options.order);
+        //     targetRef.onDestroy(() => this.detach(target.type));
+        //     return targetRef;
+        // }
 
-        const runnables = target.runnables.filter(r => !r.auto);
-        if (runnables && runnables.length) {
-            const targetRef = this.reflectiveFactory.create(target, options);
-            const facResolver = targetRef.resolve(InvocationFactoryResolver);
-            const factory = facResolver.resolve(targetRef);
-            const endpoints = runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
-                return factory.create(runnable.method, options)
-            });
-            ends.push(...endpoints);
-            this.attachRef(targetRef, options.order);
-            targetRef.onDestroy(() => this.detach(target.type));
-            return targetRef;
-        }
+        // const runnables = target.runnables.filter(r => !r.auto);
+        // if (runnables && runnables.length) {
+        //     const targetRef = this.reflectiveFactory.create(target, options);
+        //     const facResolver = targetRef.resolve(InvocationHanlderFactoryResolver);
+        //     const factory = facResolver.resolve(targetRef);
+        //     const endpoints = runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
+        //         return factory.create(runnable.method, options)
+        //     });
+        //     ends.push(...endpoints);
+        //     this.attachRef(targetRef, options.order);
+        //     targetRef.onDestroy(() => this.detach(target.type));
+        //     return targetRef;
+        // }
 
-        throw new ArgumentExecption(getClassName(target.type) + ' is invaild runnable');
+        // throw new ArgumentExecption(getClassName(target.type) + ' is invaild runnable');
     }
 
 

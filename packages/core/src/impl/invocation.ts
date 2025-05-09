@@ -1,7 +1,7 @@
 import { Class, Injectable, InvocationContext, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, createContext, getClass, isFunction, isNumber, isPromise, isString, lang } from '@tsdi/ioc';
 import { Observable, from, isObservable, lastValueFrom, of } from 'rxjs';
 import { BackendFn } from '../ApplicationHandler';
-import { InvocationOptions, Respond, TypedRespond, InvocationFactory, InvocationFactoryResolver, InvocationHandler, } from '../invocation';
+import { InvocationOptions, Respond, TypedRespond, InvocationHanlderFactory, InvocationHanlderFactoryResolver, InvocationHandler, } from '../invocation';
 import { ConfigableHandler } from '../handlers/configable.impl';
 import { ResultValue } from '../handlers/ResultValue';
 import { Context, HandleContext } from '../handlers/context';
@@ -130,7 +130,7 @@ export class InvocationHandlerImpl<
 }
 
 @Injectable()
-export class InvocationFactorympl<T = any> extends InvocationFactory<T> {
+export class InvocationFactorympl<T = any> extends InvocationHanlderFactory<T> {
 
     constructor(readonly typeRef: ReflectiveRef<T>) {
         super()
@@ -145,7 +145,7 @@ export class InvocationFactorympl<T = any> extends InvocationFactory<T> {
 /**
  * factory resolver implements
  */
-export class InvocationFactoryResolverImpl implements InvocationFactoryResolver {
+export class InvocationFactoryResolverImpl implements InvocationHanlderFactoryResolver {
     constructor(private factory: ReflectiveFactory) { }
     /**
      * resolve endpoint factory.
@@ -153,15 +153,15 @@ export class InvocationFactoryResolverImpl implements InvocationFactoryResolver 
      * @param injector injector
      * @param categare factory categare
      */
-    resolve<T>(type: ReflectiveRef<T>): InvocationFactory<T>;
+    resolve<T>(type: ReflectiveRef<T>): InvocationHanlderFactory<T>;
     /**
      * resolve endpoint factory.
      * @param type factory type
      * @param injector injector
      * @param categare factory categare
      */
-    resolve<T>(type: Type<T> | Class<T>): InvocationFactory<T>;
-    resolve<T>(type: Type<T> | Class<T> | ReflectiveRef<T>): InvocationFactory<T> {
+    resolve<T>(type: Type<T> | Class<T>): InvocationHanlderFactory<T>;
+    resolve<T>(type: Type<T> | Class<T> | ReflectiveRef<T>): InvocationHanlderFactory<T> {
         let tyref: ReflectiveRef<T>;
         if (type instanceof ReflectiveRef) {
             tyref = type;
