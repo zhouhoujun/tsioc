@@ -1,5 +1,5 @@
-import { isFunction, Type, ClassType, Provider, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, ReflectiveFactory, isType, Module, refl, Empty, createInjector } from '@tsdi/ioc';
-import { ApplicationContext, ApplicationFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
+import { isFunction, Type, ClassType, Provider, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, InvocationFactory, isType, Module, refl, Empty, createInjector } from '@tsdi/ioc';
+import { ApplicationContext, ApplicationContextFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEPENDENCE_PROVIDERS, } from './providers';
 import { ModuleLoader } from './ModuleLoader';
 import { DefaultModuleLoader } from './impl/loader';
@@ -212,14 +212,14 @@ export class Application<T = any, TArg = ApplicationArguments> {
             await root.ready;
             this.initRoot();
             if (isFunction(target)) {
-                const modueRef = root.get(ReflectiveFactory).create(target);
-                this.context = modueRef.resolve(ApplicationFactory).create(root);
+                // const modueRef = root.get(ReflectiveFactory).create(target);
+                this.context = root.resolve(ApplicationContextFactory).create(root);
             } else {
-                const modueRef = root.get(ReflectiveFactory).create(root.moduleType);
+                // const modueRef = root.get(ReflectiveFactory).create(root.moduleType);
                 if (target.loads) {
                     this._loads = await this.loader.register(this.root, target.loads);
                 }
-                this.context = modueRef.resolve(ApplicationFactory).create(root, { ...target, providers: Empty });
+                this.context = root.resolve(ApplicationContextFactory).create(root, { ...target, providers: Empty });
             }
         }
         return this.context

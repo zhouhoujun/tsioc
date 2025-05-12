@@ -1,5 +1,10 @@
-import { Abstract, Type, Invocation, OnDestroy, Destroyable, DestroyCallback, Class, ProvidedInMetadata } from '@tsdi/ioc';
+import { Abstract, Type, Invocation, OnDestroy, Destroyable, DestroyCallback, Class, ProvidedInMetadata, Injector, ProvdierOf, StaticProvider } from '@tsdi/ioc';
 import { AbstractConfigableHandler, ConfigableHandlerOptions } from './handlers/configable';
+import { Observable } from 'rxjs';
+import { PipeTransform } from './pipes/pipe';
+import { ApplicationInterceptorLike } from './ApplicationInterceptor';
+import { GuardLike } from './guard';
+import { FilterLike } from './filters/filter';
 
 
 /**
@@ -10,17 +15,60 @@ export abstract class InvocationHandler<
     TInput = any,
     TOutput = any,
     TOptions extends InvocationOptions = InvocationOptions,
-    TContext = any> extends AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
-    /**
-     * opteration invocation.
-     */
-    abstract get invocation(): Invocation;
+    TContext = any> extends Invocation implements AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
+
+    abstract get injector(): Injector;
+    
+    abstract get ready(): Promise<void>;
 
     /**
-     * is this equals to target or not
-     * @param target 
+     * get config options.
      */
-    abstract equals(target: any): boolean;
+    abstract getOptions(): TOptions;
+
+    /**
+     * use pipes
+     * @param pipes 
+     * @returns 
+     */
+    abstract usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this;
+
+    /**
+     * use interceptor for the handler.
+     * @param interceptor 
+     * @param order 
+     * @returns 
+     */
+    abstract useInterceptors(interceptor: ProvdierOf<ApplicationInterceptorLike> | ProvdierOf<ApplicationInterceptorLike>[], order?: number): this;
+
+    /**
+     * use guards for the handler.
+     * @param guards 
+     */
+    abstract useGuards(guards: ProvdierOf<GuardLike> | ProvdierOf<GuardLike>[], order?: number): this;
+
+    /**
+     * use filters for the handler.
+     * @param filter 
+     * @param order 
+     * @returns 
+     */
+    abstract useFilters(filter: ProvdierOf<FilterLike> | ProvdierOf<FilterLike>[], order?: number): this;
+
+
+    /**
+     * handle.
+     * 
+     * 处理句柄
+     * @param input handle input.
+     * @param context handle with context.
+     */
+    abstract handle(input: TInput, context?: TContext): Observable<TOutput>;
+
+    /**
+     * destroy hooks.
+     */
+    abstract onDestroy(): void;
 }
 
 
@@ -32,7 +80,7 @@ export abstract class InvocationHanlderFactory<T> implements OnDestroy, Destroya
 
     abstract get invocation(): Invocation<T>;
 
-    abstract create<TArg>(propertyKey: string, options?:  InvocationOptions<TArg>): InvocationHandler;
+    abstract create<TArg>(propertyKey: string, options?: InvocationOptions<TArg>): InvocationHandler;
 
 
     destroy(): void {

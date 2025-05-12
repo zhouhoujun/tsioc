@@ -162,7 +162,7 @@ export interface ApplicationOption<T = any, TArg = any> extends EnvironmentOptio
  * application context factory, to create instance of {@link ApplicationContext}.
  */
 @Abstract()
-export abstract class ApplicationFactory {
+export abstract class ApplicationContextFactory {
     /**
      * create application context instance.
      * @param root main module.

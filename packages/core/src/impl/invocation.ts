@@ -147,7 +147,7 @@ export class InvocationFactorympl<T = any> extends InvocationHanlderFactory<T> {
  * factory resolver implements
  */
 export class InvocationFactoryResolverImpl implements InvocationHanlderFactoryResolver {
-    constructor(private factory: InvocationFactory) { }
+    constructor() { }
     /**
      * resolve endpoint factory.
      * @param type factory type

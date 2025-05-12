@@ -1,5 +1,5 @@
 import { ClassType, Modules, Provider, StaticProviders, Type } from '@tsdi/ioc';
-import { Application, ApplicationArguments, ApplicationFactory, DEFAULTA_PROVIDERS, ModuleLoader, PROCESS_ROOT } from '@tsdi/core';
+import { Application, ApplicationArguments, ApplicationContextFactory, DEFAULTA_PROVIDERS, ModuleLoader, PROCESS_ROOT } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
 import { ApplicationConfiguration } from './configure/config';
@@ -93,8 +93,8 @@ export class BootApplication<T = any, TArg = ApplicationArguments> extends Appli
 
 const BOOT_DEFAULTA_PROVIDERS: Provider[] = [
     ConfigureFileLoader,
-    DEFAULTA_PROVIDERS.filter(p => (p as StaticProviders).provide !== ApplicationFactory),
-    { provide: ApplicationFactory, useClass: BootApplicationFactory }
+    DEFAULTA_PROVIDERS.filter(p => (p as StaticProviders).provide !== ApplicationContextFactory),
+    { provide: ApplicationContextFactory, useClass: BootApplicationFactory }
 ];
 
 const BOOT_ROOT_DEFAULT_PROVIDERS = [

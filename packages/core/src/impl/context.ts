@@ -8,7 +8,7 @@ import { ApplicationArguments } from '../ApplicationArguments';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationRunners } from '../ApplicationRunners';
-import { ApplicationContext, ApplicationFactory, BootstrapOption, EnvironmentOption, PROCESS_ROOT } from '../ApplicationContext';
+import { ApplicationContext, ApplicationContextFactory, BootstrapOption, EnvironmentOption, PROCESS_ROOT } from '../ApplicationContext';
 import { ApplicationContextRefreshEvent } from '../events';
 import { setHandlerOptions } from '../handlers/configable.impl';
 
@@ -103,7 +103,7 @@ export class DefaultApplicationContext<T = any, TArg = ApplicationArguments> ext
 /**
  * default application factory.
  */
-export class DefaultApplicationFactory extends ApplicationFactory {
+export class DefaultApplicationContextFactory extends ApplicationContextFactory {
     /**
      * none poincut for aop.
      */

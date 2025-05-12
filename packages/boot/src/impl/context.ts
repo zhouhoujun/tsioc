@@ -1,5 +1,5 @@
 import { InvokeArguments, ModuleDef, ModuleRef, ProvdierOf } from '@tsdi/ioc';
-import { ApplicationArguments, ApplicationFactory, DefaultApplicationContext, PROCESS_ROOT } from '@tsdi/core';
+import { ApplicationArguments, ApplicationContextFactory, DefaultApplicationContext, PROCESS_ROOT } from '@tsdi/core';
 import { ApplicationConfiguration, ConfigureManager } from '../configure/config';
 import { BootApplicationContext, BootEnvironmentOption } from '../context';
 
@@ -42,7 +42,7 @@ export class BootApplicationContextImpl<T = any, TArg = ApplicationArguments> ex
 /**
  * default application factory.
  */
-export class BootApplicationFactory extends ApplicationFactory {
+export class BootApplicationFactory extends ApplicationContextFactory {
 
     create<T, TArg = ApplicationArguments>(root: ModuleRef<T>, option?: BootEnvironmentOption): BootApplicationContext<T, TArg> {
         const ann = root.moduleReflect.getAnnotation<ModuleDef>();
