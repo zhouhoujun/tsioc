@@ -147,14 +147,14 @@ export class InvocationFactorympl<T = any> extends InvocationHanlderFactory<T> {
  * factory resolver implements
  */
 export class InvocationFactoryResolverImpl implements InvocationHanlderFactoryResolver {
-    constructor(private factory: ReflectiveFactory) { }
+    constructor(private factory: InvocationFactory) { }
     /**
      * resolve endpoint factory.
      * @param type factory type
      * @param injector injector
      * @param categare factory categare
      */
-    resolve<T>(type: ReflectiveRef<T>): InvocationHanlderFactory<T>;
+    resolve<T>(type: Invocation<T>): InvocationHanlderFactory<T>;
     /**
      * resolve endpoint factory.
      * @param type factory type
@@ -163,8 +163,8 @@ export class InvocationFactoryResolverImpl implements InvocationHanlderFactoryRe
      */
     resolve<T>(type: Type<T> | Class<T>): InvocationHanlderFactory<T>;
     resolve<T>(type: Type<T> | Class<T>): InvocationHanlderFactory<T> {
-        let tyref: ReflectiveRef<T>;
-        if (type instanceof ReflectiveRef) {
+        let tyref: Invocation<T>;
+        if (type instanceof Invocation) {
             tyref = type;
         } else {
             tyref = this.factory.create(type);

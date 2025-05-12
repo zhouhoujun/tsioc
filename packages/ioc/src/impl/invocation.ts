@@ -16,7 +16,7 @@ import { get } from '../metadata/refl';
  * abstract invocation 
  * implements {@link Invocation}
  */
-export abstract class AbstractInvocation<T, TRes = any> extends Invocation<T, TRes> implements OnDestroy {
+export abstract class AbstractInvocation<T = any, TRes = any> extends Invocation<T, TRes> implements OnDestroy {
 
     private _mthCtx: Map<string | symbol, InvocationContext | null>;
     private _tagPdrs?: Provider[];
