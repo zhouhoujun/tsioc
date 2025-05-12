@@ -6,7 +6,7 @@ export * from './injector';
 export { Injector as Container } from './injector';
 export * from './context';
 export * from './resolver';
-export * from './operation';
+export * from './invocation';
 // export * from './reflective';
 
 export * from './platform';

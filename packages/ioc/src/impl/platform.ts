@@ -12,7 +12,7 @@ import { LifeScope } from '../lifescope/lifescope';
 import { Context } from '../handler';
 import { RUNTIME_INTERCEPTORS } from '../lifescope/runtime';
 import { DESIGN_INTERECPTORS, registerHandler } from '../lifescope/design';
-import { InvocationFactory, InvocationInvoker, InvokerOptions } from '../operation';
+import { InvocationFactory, Invocation, InvokerOptions } from '../invocation';
 import { createContext } from '../context';
 
 /**
@@ -105,7 +105,7 @@ export class DefaultPlatform implements Platform {
      * @param options 
      * @param injector 
      */
-    createInvocation<T>(type: Type<T> | Class<T>, options?: InvokerOptions, injector?: Injector): InvocationInvoker<T> {
+    createInvocation<T>(type: Type<T> | Class<T>, options?: InvokerOptions, injector?: Injector): Invocation<T> {
         const providers = this.getTypeProvider(type);
         if (!injector) {
             injector = this.getRegisterIn((type as Class).type ?? type)!

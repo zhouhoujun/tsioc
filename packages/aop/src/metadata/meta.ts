@@ -147,7 +147,7 @@ export interface AspectMetadata extends AnnotationMetadata {
      *  aspect way for method.
      *  default static.
      *  
-     *  invocation: only in OperationInvoker
+     *  invocation: only in Invocation
      *  class: replace instance method.
      */
     way?: 'invocation' | 'class';

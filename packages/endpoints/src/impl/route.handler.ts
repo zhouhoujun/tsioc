@@ -1,4 +1,4 @@
-import { Class, Execption, Injectable, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
+import { Class, Execption, Injectable, Invocation, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
 import { InvocationHandlerImpl } from '@tsdi/core';
 import { normalize, patternToPath } from '@tsdi/common';
 import { ForbiddenExecption } from '@tsdi/common/transport';
@@ -12,7 +12,7 @@ export class RouteHandlerImpl<TInput extends RequestContext = RequestContext, TO
 
     private _prefix: string;
     readonly route: string;
-    constructor(invoker: OperationInvoker, readonly options: RouteHandlerOptions = {}) {
+    constructor(invoker: Invocation, readonly options: RouteHandlerOptions = {}) {
         super(invoker, options);
         this._prefix = options.prefix || '';
         this.route = patternToPath(options.route || '');

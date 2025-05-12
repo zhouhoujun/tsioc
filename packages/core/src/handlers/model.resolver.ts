@@ -1,9 +1,9 @@
-import { Parameter, tokenId, OperationInvoker, Type, PropertyMetadata } from '@tsdi/ioc';
+import { Parameter, tokenId, Invocation, Type, PropertyMetadata } from '@tsdi/ioc';
 import { HandleContext } from './context';
 
 
 /**
- * model parameter argument of an {@link OperationInvoker}.
+ * model parameter argument of an {@link Invocation}.
  */
  export interface ModelArgumentResolver<TInput = any> {
     /**

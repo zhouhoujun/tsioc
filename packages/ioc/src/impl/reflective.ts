@@ -8,7 +8,7 @@
 // import { ReflectiveRef, ReflectiveFactory, InvokerOptions } from '../reflective';
 // import { Injector, MethodType } from '../injector';
 // import { DestroyCallback } from '../destroy';
-// import { OperationInvoker } from '../operation';
+// import { Invocation } from '../operation';
 // import { ReflectiveOperationInvoker } from './operation';
 // import { getClassName, hasItem, immediate } from '../utils/lang';
 // import { Execption } from '../execption';
@@ -174,16 +174,16 @@
 //     /**
 //      * create method invoker of target type.
 //      * @param method the method name of target.
-//      * @returns instance of {@link OperationInvoker}.
+//      * @returns instance of {@link Invocation}.
 //      */
-//     createInvoker(method: string): OperationInvoker;
+//     createInvoker(method: string): Invocation;
 //     /**
 //      * create method invoker of target type.
 //      * @param method the method name of target.
 //      * @param options invoker options.
-//      * @returns instance of {@link OperationInvoker}.
+//      * @returns instance of {@link Invocation}.
 //      */
-//     createInvoker<TArg>(method: string, options?: InvokerOptions<T, TArg>): OperationInvoker {
+//     createInvoker<TArg>(method: string, options?: InvokerOptions<T, TArg>): Invocation {
 //         this.assertNotDestroyed();
 //         return new ReflectiveOperationInvoker(this, method, { instance: this.getInstance.bind(this), ...options })
 //     }

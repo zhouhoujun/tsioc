@@ -1,4 +1,4 @@
-import { Abstract, Type, InvocationInvoker, OnDestroy, Destroyable, DestroyCallback, Class, ProvidedInMetadata } from '@tsdi/ioc';
+import { Abstract, Type, Invocation, OnDestroy, Destroyable, DestroyCallback, Class, ProvidedInMetadata } from '@tsdi/ioc';
 import { AbstractConfigableHandler, ConfigableHandlerOptions } from './handlers/configable';
 
 
@@ -14,7 +14,7 @@ export abstract class InvocationHandler<
     /**
      * opteration invoker.
      */
-    abstract get invoker(): InvocationInvoker;
+    abstract get invoker(): Invocation;
 
     /**
      * is this equals to target or not
@@ -30,7 +30,7 @@ export abstract class InvocationHandler<
 @Abstract()
 export abstract class InvocationHanlderFactory<T> implements OnDestroy, Destroyable {
 
-    abstract get invoker(): InvocationInvoker<T>;
+    abstract get invoker(): Invocation<T>;
 
     abstract create<TArg>(propertyKey: string, options?:  InvocationOptions<TArg>): InvocationHandler;
 
@@ -58,7 +58,7 @@ export abstract class InvocationHanlderFactoryResolver {
      * @param injector injector
      * @param categare factory categare
      */
-    abstract resolve<T>(type: InvocationInvoker<T>): InvocationHanlderFactory<T>;
+    abstract resolve<T>(type: Invocation<T>): InvocationHanlderFactory<T>;
     /**
      * resolve endpoint factory.
      * @param type factory type

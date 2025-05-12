@@ -5,7 +5,7 @@
 // import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
 // import { Injector, MethodType } from './injector';
 // import { InvocationContext, InvokeArguments, InvokeParentContext } from './context';
-// import { OperationInvoker } from './operation';
+// import { Invocation } from './operation';
 
 
 
@@ -105,9 +105,9 @@
 //      * 
 //      * @param method the method name of target.
 //      * @param options invoker options
-//      * @returns instance of {@link OperationInvoker}.
+//      * @returns instance of {@link Invocation}.
 //      */
-//     abstract createInvoker<TArg>(method: string, options?: InvokerOptions<T, TArg>): OperationInvoker;
+//     abstract createInvoker<TArg>(method: string, options?: InvokerOptions<T, TArg>): Invocation;
 //     /**
 //      * destroyed or not.
 //      * 

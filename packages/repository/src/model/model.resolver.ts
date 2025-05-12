@@ -1,4 +1,4 @@
-import { Abstract, isArray, isDefined, Type, ClassType, Parameter, OperationInvoker, Empty } from '@tsdi/ioc';
+import { Abstract, isArray, isDefined, Type, ClassType, Parameter, Invocation, Empty } from '@tsdi/ioc';
 import { ModelArgumentResolver, HandleContext } from '@tsdi/core';
 import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldExecption, missingPropExecption, ModelFieldResolver, MODEL_FIELD_RESOLVERS } from './field.resolver';
 
@@ -173,7 +173,7 @@ export interface ModelResolveOption<C> {
 }
 
 /**
- * model resolver factory. create resolver for {@link OperationInvoker}.
+ * model resolver factory. create resolver for {@link Invocation}.
  * @param option create option, type of {@link ModelResolveOption}.
  * @returns model resolver instance of {@link ModelArgumentResolver}.
  */

@@ -1,4 +1,4 @@
-import { Type, lang, InvocationInvoker, OnDestroy, Class, getClassName, ctorName, Empty } from '@tsdi/ioc';
+import { Type, lang, Invocation, OnDestroy, Class, getClassName, ctorName, Empty } from '@tsdi/ioc';
 import { Advicer, MatchOptions } from './Advicer';
 import { AdviceMatcher } from './AdviceMatcher';
 import { AopDef } from './metadata/ref';
@@ -15,7 +15,7 @@ export class Advisor implements OnDestroy {
     /**
      * aspects.
      */
-    aspects: InvocationInvoker[];
+    aspects: Invocation[];
 
     constructor(private matcher: AdviceMatcher) {
         this.advices = new Map();
@@ -30,12 +30,12 @@ export class Advisor implements OnDestroy {
      * @param {Type} aspect
      * @param {Container} raiseContainer
      */
-    add(aspect: InvocationInvoker): void {
+    add(aspect: Invocation): void {
         if (this.aspects.some(a => a.type === aspect.type)) return;
         this.registerAspect(aspect)
     }
 
-    protected registerAspect(aspect: InvocationInvoker): void {
+    protected registerAspect(aspect: Invocation): void {
         this.aspects.push(aspect);
         aspect.onDestroy(() => this.remove(aspect));
         aspect.class.getAnnotation<AopDef>().advices?.forEach(advice => {
@@ -64,7 +64,7 @@ export class Advisor implements OnDestroy {
 
     }
 
-    protected unregisterAspect(aspect: InvocationInvoker) {
+    protected unregisterAspect(aspect: Invocation) {
         this.advices.forEach(advices => {
             advices.filter(a => a.aspect.type === aspect.type)
                 .forEach(a => {
@@ -73,12 +73,12 @@ export class Advisor implements OnDestroy {
         })
     }
 
-    remove(aspect: InvocationInvoker) {
+    remove(aspect: Invocation) {
         lang.remove(this.aspects, aspect);
         this.unregisterAspect(aspect);
     }
 
-    get(type: Type): InvocationInvoker | undefined {
+    get(type: Type): Invocation | undefined {
         return this.aspects.find(r => r.type === type)
     }
 

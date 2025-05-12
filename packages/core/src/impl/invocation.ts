@@ -1,4 +1,4 @@
-import { Class, Injectable, InvocationContext, OperationInvoker, ReflectiveFactory, ReflectiveRef, Type, createContext, getClass, isFunction, isNumber, isPromise, isString, lang } from '@tsdi/ioc';
+import { Class, Injectable, InvocationContext, Invocation, ReflectiveFactory, ReflectiveRef, Type, createContext, getClass, isFunction, isNumber, isPromise, isString, lang } from '@tsdi/ioc';
 import { Observable, from, isObservable, lastValueFrom, of } from 'rxjs';
 import { BackendFn } from '../ApplicationHandler';
 import { InvocationOptions, Respond, TypedRespond, InvocationHanlderFactory, InvocationHanlderFactoryResolver, InvocationHandler, } from '../invocation';
@@ -19,7 +19,7 @@ export class InvocationHandlerImpl<
 
     private limit?: number;
     constructor(
-        public readonly invoker: OperationInvoker, options: TOptions) {
+        public readonly invoker: Invocation, options: TOptions) {
         super(invoker.context, options)
         this.limit = options.limit;
         invoker.context.onDestroy(this);
@@ -45,7 +45,7 @@ export class InvocationHandlerImpl<
     }
 
     /**
-     * before `OperationInvoker` invoke 
+     * before `Invocation` invoke 
      * @param ctx 
      */
     protected beforeInvoke(ctx: TInput): any { }

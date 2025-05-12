@@ -11,7 +11,7 @@ import { isDefined } from '../utils/chk';
 import { initReflectInterceptor } from './commom';
 import { RuntimeContext } from './ctx';
 import { LifeScope } from './lifescope';
-import { InvocationFactory } from '../operation';
+import { InvocationFactory } from '../invocation';
 
 
 export const cleanContextInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {

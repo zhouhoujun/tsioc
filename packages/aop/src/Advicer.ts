@@ -1,4 +1,4 @@
-import { Class, InvocationInvoker } from '@tsdi/ioc';
+import { Class, Invocation } from '@tsdi/ioc';
 import { AdviceMetadata } from './metadata/meta';
 
 
@@ -37,7 +37,7 @@ export interface Advicer {
      *
      * @type {Type}
      */
-    aspect: InvocationInvoker;
+    aspect: Invocation;
 
     accessor?: 'get' | 'set' | 'value';
 }

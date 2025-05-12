@@ -3,7 +3,7 @@ import { Context, ContextToken, HandlerFn, InterceptorLike, invokeTail } from '.
 import { DefaultInvocationFactory } from '../impl';
 import { FactoryRecord, FnType } from '../injector';
 import { DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
-import { InvocationFactory } from '../operation';
+import { InvocationFactory } from '../invocation';
 import { Platform } from '../platform';
 // import { ReflectiveFactory } from '../reflective';
 import { isType } from '../utils/chk';

@@ -20,8 +20,8 @@ import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticP
 import { createContext, InvocationContext, InvokeOptions } from '../context';
 import { DefaultPlatform } from './platform';
 import { DesignContext } from '../lifescope/ctx';
-import { hasContext, DefaultInvocationFactory } from './operation';
-import { InvocationFactory } from '../operation';
+import { hasContext, DefaultInvocationFactory } from './invocation';
+import { InvocationFactory } from '../invocation';
 
 export const SCOPE_PRODIDERS: Provider[] = [];
 

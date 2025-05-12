@@ -18,7 +18,7 @@ export type AsyncLike<T> = T | Promise<T> | Observable<T>;
  *
  * 用于执行操作调用的接口。
  */
-export abstract class InvocationInvoker<T = any, TRes = any> {
+export abstract class Invocation<T = any, TRes = any> {
     /**
      * the invoke type.
      */
@@ -79,7 +79,7 @@ export abstract class InvocationInvoker<T = any, TRes = any> {
      * is equals to target or not.
      * @param target 
      */
-    abstract equals(target: InvocationInvoker): boolean;
+    abstract equals(target: Invocation): boolean;
 
     /**
      * destroyed or not.
@@ -121,7 +121,7 @@ export interface InvokerOptions<T = any, TArg = any> extends InvokeParentContext
  * 用于创建执行操作调用的接口。
  */
 export abstract class InvocationFactory {
-    abstract create<T>(type: Type<T> | Class<T>, injector: Injector, options?: InvokerOptions<T>): InvocationInvoker<T>;
+    abstract create<T>(type: Type<T> | Class<T>, injector: Injector, options?: InvokerOptions<T>): Invocation<T>;
 }
 
 
@@ -131,7 +131,7 @@ export abstract class InvocationFactory {
 //  * 
 //  * 用于执行操作调用的接口。
 //  */
-// export interface OperationInvoker<T = any> {
+// export interface Invocation<T = any> {
 //     /**
 //      * type ref.
 //      * 
@@ -187,7 +187,7 @@ export abstract class InvocationFactory {
 //      * is equals to target or not.
 //      * @param target 
 //      */
-//     equals(target: OperationInvoker): boolean;
+//     equals(target: Invocation): boolean;
 // }
 
 // /**
@@ -195,4 +195,4 @@ export abstract class InvocationFactory {
 //  * 
 //  * 类似执行操作调用的接口
 //  */
-// export type InvokerLike<T = any> = OperationInvoker<T> | ((ctx: InvocationContext) => T);
+// export type InvokerLike<T = any> = Invocation<T> | ((ctx: InvocationContext) => T);

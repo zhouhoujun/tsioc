@@ -1,4 +1,4 @@
-import { Abstract, Class, InvokeParentContext, noPointcut, OnDestroy, ProvdierOf, InvocationInvoker, StaticProvider, Type } from '@tsdi/ioc';
+import { Abstract, Class, InvokeParentContext, noPointcut, OnDestroy, ProvdierOf, Invocation, StaticProvider, Type } from '@tsdi/ioc';
 import { CanHandle } from './guard';
 import { ApplicationInterceptor } from './ApplicationInterceptor';
 import { PipeTransform } from './pipes/pipe';
@@ -24,7 +24,7 @@ export abstract class ApplicationRunners implements HandlerService, OnDestroy {
    * attach runner
    * @param type 
    */
-  abstract attach<T, TArg>(type: Type<T> | Class<T>, options?: InvokeParentContext & InvocationOptions<TArg>): InvocationInvoker<T>;
+  abstract attach<T, TArg>(type: Type<T> | Class<T>, options?: InvokeParentContext & InvocationOptions<TArg>): Invocation<T>;
 
   /**
    * detach runner
@@ -42,12 +42,12 @@ export abstract class ApplicationRunners implements HandlerService, OnDestroy {
    * get reflectiveRef of type.
    * @param type 
    */
-  abstract getRef<T>(type: Type<T>, idx?: number): InvocationInvoker<T>;
+  abstract getRef<T>(type: Type<T>, idx?: number): Invocation<T>;
   /**
    * get reflectiveRef of type.
    * @param type 
    */
-  abstract getRefs<T>(type: Type<T>): InvocationInvoker<T>[];
+  abstract getRefs<T>(type: Type<T>): Invocation<T>[];
 
   /**
    * run all runners.

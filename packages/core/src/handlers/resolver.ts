@@ -1,4 +1,4 @@
-import { OperationArgumentResolver, Parameter, OperationInvoker, TypeOf, Token, getTokenOf, isToken, getClassName } from '@tsdi/ioc';
+import { OperationArgumentResolver, Parameter, Invocation, TypeOf, Token, getTokenOf, isToken, getClassName } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
 import { HandleContext } from './context';
 
@@ -36,7 +36,7 @@ export interface TransportParameter<T = any> extends TransportParameterOptions<T
 }
 
 /**
- * Resolver for an transport argument of an {@link OperationInvoker}.
+ * Resolver for an transport argument of an {@link Invocation}.
  */
 export interface TransportArgumentResolver<T = any> extends OperationArgumentResolver<T> {
     /**

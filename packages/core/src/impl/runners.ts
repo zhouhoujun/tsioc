@@ -1,6 +1,6 @@
 import {
     isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, refl, ProvdierOf, 
-    getClassName, InvocationFactory, InvocationInvoker, StaticProviders, isArray, ArgumentExecption, 
+    getClassName, InvocationFactory, Invocation, StaticProviders, isArray, ArgumentExecption, 
     StaticProvider, HandlerLike, composeHandlers, InvocationContext, eachProvider
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
@@ -40,7 +40,7 @@ export const APP_RUNNERS_GUARDS = tokenId<CanHandle[]>('APP_RUNNERS_GUARDS');
 export class DefaultApplicationRunners extends ApplicationRunners implements ApplicationHandler {
     private _types: Type[];
     private _maps: Map<Type, HandlerLike[]>;
-    private _refs: Map<Type, InvocationInvoker[]>;
+    private _refs: Map<Type, Invocation[]>;
     private _handler: ConfigableHandler;
     constructor(
         private injector: Injector,
@@ -83,7 +83,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         return this;
     }
 
-    attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationOptions<TArg> = {}): InvocationInvoker<T> {
+    attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationOptions<TArg> = {}): Invocation<T> {
         const target = isFunction(type) ? refl.get(type) : type;
 
         let ends = this._maps.get(target.type);

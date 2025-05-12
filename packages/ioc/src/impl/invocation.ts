@@ -1,6 +1,6 @@
 import { Type } from '../types';
 import { createContext, InvocationContext, InvokeArguments } from '../context';
-import { InvokerOptions, InvocationInvoker, InvocationFactory } from '../operation';
+import { InvokerOptions, Invocation, InvocationFactory } from '../invocation';
 import { isFunction, isPromise, isString, isSymbol } from '../utils/chk';
 import { DestroyCallback, OnDestroy } from '../destroy';
 import { Class } from '../metadata/class';
@@ -15,9 +15,9 @@ import { get } from '../metadata/refl';
 
 /**
  * abstract invocation invoker 
- * implements {@link InvocationInvoker}
+ * implements {@link Invocation}
  */
-export abstract class AbstractInvocationInvoker<T, TRes> extends InvocationInvoker<T, TRes> implements OnDestroy {
+export abstract class AbstractInvocationInvoker<T, TRes> extends Invocation<T, TRes> implements OnDestroy {
 
     private _ctx!: InvocationContext;
     private _tagPdrs?: Provider[];
@@ -33,7 +33,7 @@ export abstract class AbstractInvocationInvoker<T, TRes> extends InvocationInvok
         super();
         this._ctx = this.createContext(injector, options);
         this._isResolve = hasContext(options);
-        this._ctx.setValue(InvocationInvoker, this);
+        this._ctx.setValue(Invocation, this);
         injector.onDestroy(this);
     }
 
@@ -86,7 +86,7 @@ export abstract class AbstractInvocationInvoker<T, TRes> extends InvocationInvok
         }, this.type)
     }
 
-    equals(target: InvocationInvoker): boolean {
+    equals(target: Invocation): boolean {
         if (!target || !this._class) return false;
         if (target === this) return true;
         if (target?.class !== this.class) return false;
@@ -159,7 +159,7 @@ export class DefaultInvocationInvoker<T = any, TRes = any> extends AbstractInvoc
         this._mthCtx = new Map();
     }
 
-    equals(target: InvocationInvoker): boolean {
+    equals(target: Invocation): boolean {
         if ((target as DefaultInvocationInvoker).propertyKey !== this.propertyKey) return false;
         return super.equals(target);
     }
@@ -322,7 +322,7 @@ export class DefaultInvocationInvoker<T = any, TRes = any> extends AbstractInvoc
 
 export class DefaultInvocationFactory implements InvocationFactory {
 
-    create<T>(type: Type<T> | Class<T>, injector: Injector,  option?: InvokerOptions<T>): InvocationInvoker<T> {
+    create<T>(type: Type<T> | Class<T>, injector: Injector,  option?: InvokerOptions<T>): Invocation<T> {
         type = type instanceof Class ? type : get(type)
         return new DefaultInvocationInvoker<T>(type, injector, option);
     }

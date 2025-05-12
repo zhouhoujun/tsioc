@@ -11,12 +11,12 @@ import { Execption } from '../execption';
 import { Class } from '../metadata/class';
 import { getDef } from '../metadata/refl';
 import { ProvdierOf, Provider, toProvider } from '../providers';
-import { InvocationInvoker } from '../operation';
+import { Invocation } from '../invocation';
 
 
 
 /**
- * The context for the {@link InvocationInvoker invocation of an operation}.
+ * The context for the {@link Invocation invocation of an operation}.
  */
 export class DefaultInvocationContext<T = any> extends InvocationContext implements Destroyable, OnDestroy {
 
