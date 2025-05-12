@@ -121,7 +121,7 @@ export interface InvokerOptions<T = any, TArg = any> extends InvokeParentContext
  * 用于创建执行操作调用的接口。
  */
 export abstract class InvocationFactory {
-    abstract create<T>(type: Type<T> | Class<T>, options?: InvokerOptions<T>): InvocationInvoker<T>;
+    abstract create<T>(type: Type<T> | Class<T>, injector: Injector, options?: InvokerOptions<T>): InvocationInvoker<T>;
 }
 
 

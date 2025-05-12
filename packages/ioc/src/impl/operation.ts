@@ -322,7 +322,7 @@ export class DefaultInvocationInvoker<T = any, TRes = any> extends AbstractInvoc
 
 export class DefaultInvocationFactory implements InvocationFactory {
 
-    create<T>(type: Type<T> | Class<T>,  option?: InvokerOptions<T>): InvocationInvoker<T> {
+    create<T>(type: Type<T> | Class<T>, injector: Injector,  option?: InvokerOptions<T>): InvocationInvoker<T> {
         type = type instanceof Class ? type : get(type)
         return new DefaultInvocationInvoker<T>(type, injector, option);
     }
