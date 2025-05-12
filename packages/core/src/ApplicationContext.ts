@@ -1,6 +1,6 @@
 import {
     Provider, Injector, Abstract, Type, Destroyable, Modules, ModuleOption, ModuleRef,
-    InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class, ReflectiveRef, InvokeArguments, ClassType
+    InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class, Invocation, InvokeArguments, ClassType
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
@@ -56,7 +56,7 @@ export abstract class ApplicationContext<T = any, TArg = ApplicationArguments>
      * @param type bootstrap type.
      * @param option bootstrap option.
      */
-    abstract bootstrap<C, TArg>(type: Type<C> | Class<C>, option?: BootstrapOption<TArg>): Promise<ReflectiveRef<C>>;
+    abstract bootstrap<C, TArg>(type: Type<C> | Class<C>, option?: BootstrapOption<TArg>): Promise<Invocation<C>>;
     /**
      * get logger.
      * @param name 

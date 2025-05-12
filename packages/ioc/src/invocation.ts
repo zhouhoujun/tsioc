@@ -141,7 +141,7 @@ export abstract class InvocationFactoryResolver {
      * @param type factory type.
      * @param context invocation context.
      */
-    abstract resolve<T>(type: Type<T> | Class<T>, contex?: InvocationContext): InvocationFactory<T>;
+    abstract resolve<T>(type: Type<T> | Class<T>, contex: InvocationContext): InvocationFactory<T>;
 }
 
 

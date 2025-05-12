@@ -1,4 +1,4 @@
-import { Class, Injectable, InvocationContext, Invocation, ReflectiveFactory, ReflectiveRef, Type, createContext, getClass, isFunction, isNumber, isPromise, isString, lang } from '@tsdi/ioc';
+import { Class, Injectable, InvocationContext, Invocation, InvocationFactory, Type, createContext, getClass, isFunction, isNumber, isPromise, isString, lang } from '@tsdi/ioc';
 import { Observable, from, isObservable, lastValueFrom, of } from 'rxjs';
 import { BackendFn } from '../ApplicationHandler';
 import { InvocationOptions, Respond, TypedRespond, InvocationHanlderFactory, InvocationHanlderFactoryResolver, InvocationHandler, } from '../invocation';
@@ -19,10 +19,11 @@ export class InvocationHandlerImpl<
 
     private limit?: number;
     constructor(
-        public readonly invoker: Invocation, options: TOptions) {
-        super(invoker.context, options)
+        readonly invocation: Invocation,
+        options: TOptions) {
+        super(invocation.context, options)
         this.limit = options.limit;
-        invoker.context.onDestroy(this);
+        invocation.context.onDestroy(this);
 
     }
 
@@ -37,7 +38,7 @@ export class InvocationHandlerImpl<
 
     equals(target: InvocationHandler): boolean {
         if (target === this) return true;
-        return this.invoker.equals(target.invoker);
+        return this.invocation.equals(target.invocation);
     }
 
     protected override getBackend(): BackendFn<TInput, TOutput> {
@@ -72,7 +73,7 @@ export class InvocationHandlerImpl<
         }
 
         await this.beforeInvoke(input);
-        let res = await this.invoker.invoke(input);
+        let res = await this.invocation.invoke(input);
 
         if (isPromise(res)) {
             res = await res;
@@ -132,12 +133,12 @@ export class InvocationHandlerImpl<
 @Injectable()
 export class InvocationFactorympl<T = any> extends InvocationHanlderFactory<T> {
 
-    constructor(readonly typeRef: ReflectiveRef<T>) {
+    constructor(readonly invocation: Invocation<T>) {
         super()
     }
 
     create<TArg>(propertyKey: string, options?: InvocationOptions<TArg>): InvocationHandler {
-        return new InvocationHandlerImpl(this.typeRef.createInvoker<TArg>(propertyKey, options), options ?? {} as any);
+        return new InvocationHandlerImpl(propertyKey, this.invocation, options ?? {} as any);
     }
 
 }
@@ -161,7 +162,7 @@ export class InvocationFactoryResolverImpl implements InvocationHanlderFactoryRe
      * @param categare factory categare
      */
     resolve<T>(type: Type<T> | Class<T>): InvocationHanlderFactory<T>;
-    resolve<T>(type: Type<T> | Class<T> | ReflectiveRef<T>): InvocationHanlderFactory<T> {
+    resolve<T>(type: Type<T> | Class<T>): InvocationHanlderFactory<T> {
         let tyref: ReflectiveRef<T>;
         if (type instanceof ReflectiveRef) {
             tyref = type;

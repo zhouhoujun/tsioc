@@ -1,4 +1,4 @@
-import { Injector, ProvdierOf, StaticProvider, ClassType, Abstract, Token, Type, InvokeProviders } from '@tsdi/ioc';
+import { Injector, ProvdierOf, StaticProvider, ClassType, Abstract, Token, Type, InvokeProviders, Invocation } from '@tsdi/ioc';
 import { GuardLike, GuardsService } from '../guard';
 import { ApplicationInterceptorLike, InterceptorService } from '../ApplicationInterceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';

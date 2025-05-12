@@ -1,5 +1,4 @@
-import { lang, Injectable, InvocationContext, ReflectiveRef, Type } from '@tsdi/ioc';
-import { RunnableRef } from '@tsdi/core';
+import { lang, Injectable, Invocation, Type, AbstractInvocation, InvocationContext, InvokeArguments, AbstractInvocationFactory, InvocationOptions } from '@tsdi/ioc';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
@@ -14,20 +13,15 @@ import { UnitRunner } from './Runner';
  * @implements {UnitRunner<T>}
  */
 @Injectable()
-export class SuiteRunner<T = any> extends RunnableRef<T> implements UnitRunner {
+export class SuiteRunner<T = any> implements UnitRunner<T> {
 
-    constructor(readonly typeRef: ReflectiveRef) {
-        super()
+    constructor(readonly invocation: Invocation) {
+
     }
 
     get type(): Type<any> {
-        return this.typeRef.type
+        return this.invocation.type
     }
-
-    invoke(context: InvocationContext) {
-        return this.run()
-    }
-
 
     timeout!: number;
     describe!: string;
@@ -43,9 +37,9 @@ export class SuiteRunner<T = any> extends RunnableRef<T> implements UnitRunner {
      * @returns {SuiteDescribe}
      */
     getSuiteDescribe(): SuiteDescribe {
-        const meta = this.typeRef.class.getAnnotation() as SuiteMetadata;
+        const meta = this.invocation.class.getAnnotation() as SuiteMetadata;
         this.timeout = (meta && meta.timeout) ? meta.timeout : (3 * 60 * 60 * 1000);
-        this.describe = meta.describe || this.typeRef.class.className;
+        this.describe = meta.describe || this.invocation.class.className;
         return {
             timeout: this.timeout,
             describe: this.describe,
@@ -60,9 +54,9 @@ export class SuiteRunner<T = any> extends RunnableRef<T> implements UnitRunner {
     }
 
     runTimeout(key: string, describe: string, timeout?: number): Promise<any> {
-        const instance = this.typeRef.getInstance() as any;
+        const instance = this.invocation.instance as any;
         const defer = lang.defer();
-        const injector = this.typeRef.injector;
+        const injector = this.invocation.context.injector;
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
@@ -76,12 +70,12 @@ export class SuiteRunner<T = any> extends RunnableRef<T> implements UnitRunner {
             }
         }, timeout || this.timeout);
 
-        Promise.resolve(this.typeRef.invoke(key, {
+        Promise.resolve(this.invocation.invoke(key, {
             providers: [
                 { provide: RunCaseToken, useValue: instance[key] },
                 { provide: RunSuiteToken, useValue: instance }
             ]
-        }, instance))
+        }))
             .then(r => {
                 clearTimeout(timer);
                 timer = null!;
@@ -97,7 +91,7 @@ export class SuiteRunner<T = any> extends RunnableRef<T> implements UnitRunner {
     }
 
     async runBefore(describe: SuiteDescribe) {
-        const befores = this.typeRef.class.getMethodDefines<BeforeTestMetadata>(Before);
+        const befores = this.invocation.class.getMethodDefines<BeforeTestMetadata>(Before);
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -111,7 +105,7 @@ export class SuiteRunner<T = any> extends RunnableRef<T> implements UnitRunner {
     }
 
     async runBeforeEach() {
-        const befores = this.typeRef.class.getMethodDefines<BeforeEachTestMetadata>(BeforeEach);
+        const befores = this.invocation.class.getMethodDefines<BeforeEachTestMetadata>(BeforeEach);
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -122,7 +116,7 @@ export class SuiteRunner<T = any> extends RunnableRef<T> implements UnitRunner {
     }
 
     async runAfterEach() {
-        const afters = this.typeRef.class.getMethodDefines<BeforeEachTestMetadata>(AfterEach);
+        const afters = this.invocation.class.getMethodDefines<BeforeEachTestMetadata>(AfterEach);
         await lang.step(afters.map(df => () => {
             return this.runTimeout(
                 df.propertyKey,
@@ -132,7 +126,7 @@ export class SuiteRunner<T = any> extends RunnableRef<T> implements UnitRunner {
     }
 
     async runAfter(describe: SuiteDescribe) {
-        const afters = this.typeRef.class.getMethodDefines<BeforeTestMetadata>(After);
+        const afters = this.invocation.class.getMethodDefines<BeforeTestMetadata>(After);
         await lang.step(
             afters.map(df => () => {
                 return this.runTimeout(
@@ -143,7 +137,7 @@ export class SuiteRunner<T = any> extends RunnableRef<T> implements UnitRunner {
     }
 
     async runTest(desc: SuiteDescribe) {
-        const tests = this.typeRef.class.getMethodDefines<TestCaseMetadata>(Test);
+        const tests = this.invocation.class.getMethodDefines<TestCaseMetadata>(Test);
         await lang.step(
             tests.map(df => {
                 return {
@@ -182,3 +176,16 @@ export class SuiteRunner<T = any> extends RunnableRef<T> implements UnitRunner {
 
 }
 
+
+
+export class SuiteInvocation<T = any> extends AbstractInvocation<T> {
+    protected process(option?: InvocationContext | InvokeArguments) {
+        this.context.resolve(SuiteRunner).run();
+    }
+}
+
+export class SuiteInvocationFactory<T = any> extends AbstractInvocationFactory<T> {
+    create(option?: InvocationOptions<T, any> | undefined): Invocation<T, any> {
+        return new SuiteInvocation(this.class, this.createContext(option), option)
+    }
+}

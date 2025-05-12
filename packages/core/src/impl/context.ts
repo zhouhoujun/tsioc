@@ -1,7 +1,6 @@
 import {
     Type, Injector, Provider, InvokeArguments, DefaultInvocationContext,
-    Class, ModuleDef, ModuleRef, ReflectiveRef, ProvdierOf,
-    noPointcut
+    Class, ModuleDef, ModuleRef, Invocation, ProvdierOf, noPointcut
 } from '@tsdi/ioc';
 import { Logger, LoggerManagers } from '@tsdi/logger';
 import { Observable } from 'rxjs';
@@ -65,7 +64,7 @@ export class DefaultApplicationContext<T = any, TArg = ApplicationArguments> ext
         return this._multicaster;
     }
 
-    async bootstrap<C, TArg>(type: Type<C> | Class<C>, option?: BootstrapOption<TArg>): Promise<ReflectiveRef<C>> {
+    async bootstrap<C, TArg>(type: Type<C> | Class<C>, option?: BootstrapOption<TArg>): Promise<Invocation<C>> {
         const typeRef = this.runners.attach(type, { parent: this, ...option });
         if (typeRef) {
             await this.runners.run(typeRef.type);

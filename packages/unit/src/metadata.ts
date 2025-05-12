@@ -1,6 +1,5 @@
-import { ActionTypes, AnnotationMetadata, createDecorator, DecoratorOption, TypeDef } from '@tsdi/ioc';
-import { RunnableRef } from '@tsdi/core';
-import { SuiteRunner } from './runner/SuiteRunner';
+import { ActionTypes, AnnotationMetadata, createDecorator, DecoratorOption, TypeDef, InvocationFactoryResolver, Class, refl } from '@tsdi/ioc';
+import { SuiteInvocationFactory } from './runner/SuiteRunner';
 
 
 /**
@@ -42,7 +41,12 @@ export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
     },
     props: (describe: string, timeout?: number) => ({ describe, timeout }),
     providers: [
-        { provide: RunnableRef, useClass: SuiteRunner }
+        {
+            provide: InvocationFactoryResolver,
+            useValue: {
+                resolve: (type, context) => new SuiteInvocationFactory(type instanceof Class ? type : refl.get(type), context)
+            } as InvocationFactoryResolver
+        }
     ]
 });
 

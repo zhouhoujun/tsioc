@@ -12,9 +12,9 @@ export abstract class InvocationHandler<
     TOptions extends InvocationOptions = InvocationOptions,
     TContext = any> extends AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
     /**
-     * opteration invoker.
+     * opteration invocation.
      */
-    abstract get invoker(): Invocation;
+    abstract get invocation(): Invocation;
 
     /**
      * is this equals to target or not
@@ -30,20 +30,20 @@ export abstract class InvocationHandler<
 @Abstract()
 export abstract class InvocationHanlderFactory<T> implements OnDestroy, Destroyable {
 
-    abstract get invoker(): Invocation<T>;
+    abstract get invocation(): Invocation<T>;
 
     abstract create<TArg>(propertyKey: string, options?:  InvocationOptions<TArg>): InvocationHandler;
 
 
     destroy(): void {
-        this.invoker.destroy();
+        this.invocation.destroy();
     }
     get destroyed(): boolean {
-        return this.invoker.destroyed;
+        return this.invocation.destroyed;
     }
 
     onDestroy(callback?: DestroyCallback): void {
-        this.invoker.onDestroy(callback);
+        this.invocation.onDestroy(callback);
     }
 }
 
@@ -54,11 +54,11 @@ export abstract class InvocationHanlderFactory<T> implements OnDestroy, Destroya
 export abstract class InvocationHanlderFactoryResolver {
     /**
      * resolve endpoint factory.
-     * @param type factory type
+     * @param invocation type invocation
      * @param injector injector
      * @param categare factory categare
      */
-    abstract resolve<T>(type: Invocation<T>): InvocationHanlderFactory<T>;
+    abstract resolve<T>(invocation: Invocation<T>): InvocationHanlderFactory<T>;
     /**
      * resolve endpoint factory.
      * @param type factory type

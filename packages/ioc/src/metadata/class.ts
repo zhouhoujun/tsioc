@@ -60,10 +60,10 @@ export interface RunableDefine {
      * run order.
      */
     order?: number;
-    /**
-     * runnable invoke args.
-     */
-    args?: InvokeArguments<any>;
+    // /**
+    //  * runnable invoke args.
+    //  */
+    // args?: InvokeArguments<any>;
     /**
      * is auto run when created instance.
      */
