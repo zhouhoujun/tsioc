@@ -19,14 +19,9 @@ export const autorunInterceptor = (ctx: DesignContext, next: HandlerFn, context:
             return
         }
 
-        const injector = ctx.injector;
-        // const instance = injector.get(ctx.provide || ctx.type);
-        // if (!instance) return;
-        
-        const invoker = new DefaultInvocationFactory(ctx.class).create(injector) // injector.get(InvocationFactory).create(ctx.class, { instance });
+        const invocation = ctx.platform.getInvocationFactory(ctx.class, ctx.injector).create();
         runs.forEach(meta => {
-            invoker.invoke(meta.method);
-            // factory.invoke(meta.method, undefined, instance);
+            invocation.invoke(meta.method);
         });
     })
 }

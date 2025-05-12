@@ -12,7 +12,7 @@ import { LifeScope } from '../lifescope/lifescope';
 import { Context } from '../handler';
 import { RUNTIME_INTERCEPTORS } from '../lifescope/runtime';
 import { DESIGN_INTERECPTORS, registerHandler } from '../lifescope/design';
-import { InvocationFactory, Invocation, InvokerOptions } from '../invocation';
+import { InvocationFactory, Invocation, InvocationOptions, InvocationFactoryResolver } from '../invocation';
 import { createContext } from '../context';
 
 /**
@@ -25,6 +25,7 @@ export class DefaultPlatform implements Platform {
     private _scopes: Map<string | Type, Injector>;
 
     readonly modules = new Map<Type, ModuleRef>();
+    readonly factories = new Map<Type, InvocationFactory>();
     private injectors: Injector[];
     private _runtime?: LifeScope;
     private _design?: LifeScope;
@@ -105,14 +106,23 @@ export class DefaultPlatform implements Platform {
      * @param options 
      * @param injector 
      */
-    createInvocation<T>(type: Type<T> | Class<T>, options?: InvokerOptions, injector?: Injector): Invocation<T> {
-        const providers = this.getTypeProvider(type);
-        if (!injector) {
-            injector = this.getRegisterIn((type as Class).type ?? type)!
-        }
-        const context = createContext(injector, {...options, providers:[providers, options?.providers?? Empty]});
-        context.resolve(InvocationFactory).create(context, options)
+    getInvocationFactory<T>(type: Type<T> | Class<T>, injector?: Injector): InvocationFactory<T> {
+        let factory = this.factories.get(type instanceof Class ? type.type : type);
+        if (!factory) {
+            type = type instanceof Class ? type : get(type);
+            const classType = type.type;
+            const providers = this.getTypeProvider(type);
+            if (!injector) {
+                injector = this.getRegisterIn(classType)!;
+            }
+            const resolvers = type.resolvers;
+            const context = createContext(injector, { resolvers, providers: providers });
 
+            factory = context.resolve(InvocationFactoryResolver).resolve(type, context);
+            this.factories.set(classType, factory);
+            injector.onDestroy(() => this.factories.delete(classType));
+        }
+        return factory;
     }
 
     removeInjector(scope: InjectorScope): void {

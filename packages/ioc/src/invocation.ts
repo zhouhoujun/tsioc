@@ -4,6 +4,7 @@ import { Class } from './metadata/class';
 import { Type } from './types';
 import { Injector, MethodType } from './injector';
 import { DestroyCallback } from './destroy';
+import { Abstract } from './metadata/fac';
 
 
 /**
@@ -18,6 +19,7 @@ export type AsyncLike<T> = T | Promise<T> | Observable<T>;
  *
  * 用于执行操作调用的接口。
  */
+@Abstract()
 export abstract class Invocation<T = any, TRes = any> {
     /**
      * the invoke type.
@@ -104,13 +106,14 @@ export abstract class Invocation<T = any, TRes = any> {
 }
 
 
-export interface InvokerOptions<T = any, TArg = any> extends InvokeParentContext, InvokeArguments<TArg> {
+export interface InvocationOptions<T = any, TArg = any> extends InvokeParentContext, InvokeArguments<TArg> {
+    injector?: Injector;
     /**
      * instance or instance factory of target type.
      */
     instance?: T | (() => T);
     /**
-    * named of invocation target propertyKey.
+    * the propertyKey method to invoke of this invocation.
     */
     propertyKey?: string | symbol;
 }
@@ -120,79 +123,25 @@ export interface InvokerOptions<T = any, TArg = any> extends InvokeParentContext
  *
  * 用于创建执行操作调用的接口。
  */
-export abstract class InvocationFactory {
-    abstract create<T>(type: Type<T> | Class<T>, injector: Injector, options?: InvokerOptions<T>): Invocation<T>;
+@Abstract()
+export abstract class InvocationFactory<T = any> {
+    abstract get class(): Class<T>;
+    abstract get context(): InvocationContext;
+    abstract create(options?: InvocationOptions<T>): Invocation<T>;
 }
 
 
+/**
+ * Invocation factory resolver.
+ */
+@Abstract()
+export abstract class InvocationFactoryResolver {
+    /**
+     * resolve invocation factory.
+     * @param type factory type.
+     * @param context invocation context.
+     */
+    abstract resolve<T>(type: Type<T> | Class<T>, contex?: InvocationContext): InvocationFactory<T>;
+}
 
-// /**
-//  * Interface to perform an operation invocation.
-//  * 
-//  * 用于执行操作调用的接口。
-//  */
-// export interface Invocation<T = any> {
-//     /**
-//      * type ref.
-//      * 
-//      * 类反射
-//      */
-//     get typeRef(): ReflectiveRef;
 
-//     /**
-//      * `InvocationContext` of operation method
-//      * 
-//      * 调用类方法的上下文环境
-//      */
-//     get context(): InvocationContext;
-//     /**
-//      * invoker order.
-//      * 
-//      * 调用方法顺序
-//      */
-//     order?: number;
-//     /**
-//      * method return type.
-//      */
-//     get returnType(): Type;
-//     /**
-//      * invoke method name
-//      * 
-//      * 调用类方法名称
-//      */
-//     get method(): string;
-//     /**
-//      * origin method descriptor.
-//      * 
-//      * 类方法描述符
-//      */
-//     get descriptor(): TypedPropertyDescriptor<T>;
-//     /**
-//      * Invoke the underlying operation using the given {@code context}.
-//      * @param context the context to use to invoke the operation
-//      */
-//     invoke(): T;
-//     /**
-//      * Invoke the underlying operation using the given {@code context}.
-//      * @param context the context to use to invoke the operation
-//      */
-//     invoke(context: InvocationContext): T;
-//     /**
-//      * Invoke the underlying operation using the given {@code context}.
-//      * @param context the context to use to invoke the operation
-//      * @param instance instance of the method to invoke.
-//      */
-//     invoke(context: InvocationContext, instance: object): T;
-//     /**
-//      * is equals to target or not.
-//      * @param target 
-//      */
-//     equals(target: Invocation): boolean;
-// }
-
-// /**
-//  * invoker like.
-//  * 
-//  * 类似执行操作调用的接口
-//  */
-// export type InvokerLike<T = any> = Invocation<T> | ((ctx: InvocationContext) => T);

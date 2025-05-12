@@ -47,16 +47,16 @@ export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
     },
     design: {
         afterAnnoation: (ctx) => {
-            const advisor = ctx.injector.platform().context.get(Advisor);
+            const advisor = ctx.platform.context.get(Advisor);
             if (advisor) {
-                const { injector } = ctx;
+                const { injector, platform } = ctx;
 
-                const invoker = injector.get(InvocationFactory).create(ctx.class);
+                const invocation = platform.getInvocationFactory(ctx.class, injector).create();
                 injector.onDestroy(() => {
-                    advisor.remove(invoker);
-                    invoker.destroy();
+                    advisor.remove(invocation);
+                    invocation.destroy();
                 });
-                advisor.add(invoker)
+                advisor.add(invocation)
             } else {
                 console.error('aop module not registered. make sure register before', ctx.type)
             }

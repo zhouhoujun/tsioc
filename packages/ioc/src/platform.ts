@@ -8,7 +8,7 @@ import { Injector, InjectorScope } from './injector';
 import { ModuleRef } from './module.ref';
 import { LifeScope } from './lifescope/lifescope';
 import { Context } from './handler';
-import { Invocation, InvokerOptions } from './invocation';
+import { Invocation, InvocationFactory, InvocationOptions } from './invocation';
 
 
 /**
@@ -64,7 +64,7 @@ export abstract class Platform implements OnDestroy {
      * @param options 
      * @param injector 
      */
-    abstract createInvocation<T>(type: Type<T> | Class<T>, options?: InvokerOptions, injector?: Injector): Invocation;
+    abstract getInvocationFactory<T>(type: Type<T> | Class<T>, injector?: Injector): InvocationFactory<T>;
     /**
      * set injector scope.
      * @param scope 

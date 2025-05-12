@@ -20,8 +20,8 @@ import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticP
 import { createContext, InvocationContext, InvokeOptions } from '../context';
 import { DefaultPlatform } from './platform';
 import { DesignContext } from '../lifescope/ctx';
-import { hasContext, DefaultInvocationFactory } from './invocation';
-import { InvocationFactory } from '../invocation';
+import { hasContext, DefaultInvocationFactory, DefaultInvocationFactoryResolver } from './invocation';
+import { InvocationFactory, InvocationFactoryResolver } from '../invocation';
 
 export const SCOPE_PRODIDERS: Provider[] = [];
 
@@ -518,8 +518,8 @@ export class DefaultInjector implements Injector {
         }
         tgRefl = tgRefl ?? get(targetClass);
 
-        return tgRefl.invoke(tgRefl.getMethodName(propertyKey), context, instance) 
-        
+        return tgRefl.invoke(tgRefl.getMethodName(propertyKey), context, instance)
+
         //this.get(InvocationFactory).create(tgRefl, { ...option, propertyKey, parent: context, instance }).invoke();
         // const refti = this.get(InvocationFactory).create(tgRefl, {  parent: context, instance} as TargetInvokeArguments);
         // const val = refti.invoke(propertyKey, context, instance);
@@ -944,7 +944,6 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
  * @param {IContainer} container
  */
 function registerCores(container: Injector, platform: Platform) {
-    // const factory = new InvocationFactoryImpl(platform);
-    // container.setValue(InvocationFactory, factory);
-    // platform.setSingleton(container, ReflectiveFactory, factory);
+    const resolver = new DefaultInvocationFactoryResolver();
+    container.setValue(InvocationFactoryResolver, resolver);
 }
