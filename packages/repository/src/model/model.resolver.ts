@@ -1,6 +1,6 @@
 import { Abstract, isArray, isDefined, Type, ClassType, Parameter, Invocation, Empty } from '@tsdi/ioc';
 import { ModelArgumentResolver, HandleContext } from '@tsdi/core';
-import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldExecption, missingPropExecption, ModelFieldResolver, MODEL_FIELD_RESOLVERS } from './field.resolver';
+import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldException, missingPropException, ModelFieldResolver, MODEL_FIELD_RESOLVERS } from './field.resolver';
 
 
 
@@ -21,7 +21,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
         const classType = (parameter.provider ?? parameter.type) as Type;
         const fields = this.getFields(parameter, ctx);
         if (!fields) {
-            throw missingPropExecption(classType)
+            throw missingPropException(classType)
         }
         if (parameter.multi && isArray(fields)) {
             return fields.map(arg => this.resolveModel(classType, ctx, arg)) as any
@@ -43,7 +43,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
             return null
         }
         if (!fields) {
-            throw missingPropExecption(modelType)
+            throw missingPropException(modelType)
         }
 
         const props = this.getPropertyMeta(modelType);
@@ -51,7 +51,7 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
             this.canResolveModel(p.provider ?? p.type, ctx, fields[p.name], p.nullable)
             : this.fieldResolver.canResolve(p, ctx, fields, modelType)));
         if (missings.length) {
-            throw new MissingModelFieldExecption(missings, modelType)
+            throw new MissingModelFieldException(missings, modelType)
         }
 
         const model = this.createInstance(modelType as ClassType);

@@ -1,12 +1,12 @@
 import { Type } from '../types';
-import { createContext, InvocationContext, InvokeArguments } from '../context';
-import { InvocationOptions, Invocation, InvocationFactory, InvocationFactoryResolver } from '../invocation';
+import { createContext, hasContextOptions, InvocationContext, InvocationOptions, InvokeArguments } from '../context';
+import { Invocation, InvocationFactory, InvocationFactoryResolver } from '../invocation';
 import { isFunction, isPromise, isString, isSymbol } from '../utils/chk';
 import { DestroyCallback, OnDestroy } from '../destroy';
 import { Class } from '../metadata/class';
 import { Injector, MethodType } from '../injector';
 import { Provider } from '../providers';
-import { ArgumentExecption, Execption } from '../execption';
+import { ArgumentException, Exception } from '../exception';
 import { InjectFlags, Token } from '../tokens';
 import { hasItem, immediate } from '../utils/lang';
 import { composeHandlers } from '../handler';
@@ -30,7 +30,7 @@ export abstract class AbstractInvocation<T = any, TRes = any> extends Invocation
         readonly context: InvocationContext,
         private options?: InvocationOptions) {
         super();
-        this._isResolve = hasContext(options);
+        this._isResolve = hasContextOptions(options);
         this._mthCtx = new Map();
         context.setValue(Invocation, this);
         context.onDestroy(this);
@@ -65,7 +65,7 @@ export abstract class AbstractInvocation<T = any, TRes = any> extends Invocation
     invoke(context: InvocationContext): TRes;
     /**
      * Invoke the underlying operation using the given {@code context}.
-     * @param option invoke arguments.
+     * @param options invoke arguments.
      */
     invoke(options: InvokeArguments): TRes;
     /**
@@ -78,13 +78,13 @@ export abstract class AbstractInvocation<T = any, TRes = any> extends Invocation
      * @param method method name.
      * @param context the context to use to invoke the operation
      */
-    invoke(method: MethodType<T>, context: InvocationContext): TRes;
+    invoke(method: MethodType<T>, context?: InvocationContext): TRes;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param method method name.
-     * @param option invoke arguments.
+     * @param options invoke arguments.
      */
-    invoke(method: MethodType<T>, context: InvokeArguments): TRes;
+    invoke(method: MethodType<T>, options?: InvokeArguments): TRes;
     invoke(arg?: InvocationContext | InvokeArguments | MethodType<T>, optionOrArgs?: InvocationContext | InvokeArguments): TRes {
         this.assertNotDestroyed();
         let name: string | symbol | undefined;
@@ -158,7 +158,7 @@ export abstract class AbstractInvocation<T = any, TRes = any> extends Invocation
             }
         } else if (option) {
             if (option.parent && option.parent !== ctx) {
-                if (hasContext(option)) {
+                if (hasContextOptions(option)) {
                     context = createContext(option.parent!, option);
                     context.addRef(ctx);
                     destroy = () => {
@@ -174,7 +174,7 @@ export abstract class AbstractInvocation<T = any, TRes = any> extends Invocation
                         context.removeRef(ctx);
                     }
                 }
-            } else if (hasContext(option)) {
+            } else if (hasContextOptions(option)) {
                 context = createContext(ctx, option);
                 destroy = () => {
                     if (context.used) return;
@@ -262,13 +262,9 @@ export abstract class AbstractInvocation<T = any, TRes = any> extends Invocation
 
     protected assertNotDestroyed(): void {
         if (this.destroyed) {
-            throw new Execption(`ReflectiveRef of ${this._class?.className} has already been destroyed.`)
+            throw new Exception(`ReflectiveRef of ${this._class?.className} has already been destroyed.`)
         }
     }
-}
-
-export function hasContext(option?: InvocationOptions) {
-    return option && (hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || option.args)
 }
 
 /**
@@ -302,7 +298,7 @@ export class DefaultInvocation<T = any, TRes = any> extends AbstractInvocation<T
             }));
             return handler(this.context);
         } else {
-            throw new ArgumentExecption(this.class.className + ' is invaild runnable, can not invocation without method param.');
+            throw new ArgumentException(this.class.className + ' is invaild runnable, can not invocation without method param.');
         }
     }
 

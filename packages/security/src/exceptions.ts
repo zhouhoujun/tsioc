@@ -1,14 +1,14 @@
 import { getClassName } from '@tsdi/ioc';
-import { MessageExecption, OutgoingMessage } from '@tsdi/common/transport';
+import { MessageException, OutgoingMessage } from '@tsdi/common/transport';
 
 
 /**
- * Authentication Execption.
+ * Authentication Exception.
  *
  * @export
- * @extends {MessageExecption}
+ * @extends {MessageException}
  */
-export class AuthenticationExecption extends MessageExecption {
+export class AuthenticationException extends MessageException {
     error: string;
     expose: boolean;
     // tslint:disable-next-line: variable-name
@@ -25,9 +25,9 @@ export class AuthenticationExecption extends MessageExecption {
  * internal oauth error.
  *
  * @export
- * @extends {AuthenticationExecption}
+ * @extends {AuthenticationException}
  */
-export class InternalOAuthExecption extends AuthenticationExecption {
+export class InternalOAuthException extends AuthenticationException {
     constructor(message: string, public oauthError: Error) {
         super(400, message)
     }
@@ -38,10 +38,10 @@ export class InternalOAuthExecption extends AuthenticationExecption {
  * invaild request error.
  *
  * @export
- * @class InvalidRequestExecption
- * @extends {AuthenticationExecption}
+ * @class InvalidRequestException
+ * @extends {AuthenticationException}
  */
-export class InvalidRequestExecption extends AuthenticationExecption {
+export class InvalidRequestException extends AuthenticationException {
     constructor(description?: string, status = 400) {
         super(status, '', description || 'request is invalid')
     }
@@ -52,10 +52,10 @@ export class InvalidRequestExecption extends AuthenticationExecption {
  * invalid token.
  *
  * @export
- * @class InvalidTokenExecption
+ * @class InvalidTokenException
  * @extends {AuthenticationError}
  */
-export class InvalidTokenExecption extends AuthenticationExecption {
+export class InvalidTokenException extends AuthenticationException {
     // tslint:disable-next-line:variable-name
     public error_detail: string;
     constructor(detail: string) {
@@ -66,7 +66,7 @@ export class InvalidTokenExecption extends AuthenticationExecption {
 
 
 
-export class NoOpenIDExecption extends AuthenticationExecption {
+export class NoOpenIDException extends AuthenticationException {
     constructor(message: string, public response: OutgoingMessage) {
         super(400, message);
     }
@@ -77,10 +77,10 @@ export class NoOpenIDExecption extends AuthenticationExecption {
  * OIDC execption.
  *
  * @export
- * @class OIDCExecption
- * @extends {AuthenticationExecption}
+ * @class OIDCException
+ * @extends {AuthenticationException}
  */
-export class OIDCExecption extends AuthenticationExecption {
+export class OIDCException extends AuthenticationException {
 
     constructor(message: string | string[], public code: string | string[], public uri?: string | string[], status?: number) {
         super(status ?? toStatusCode(code), message);

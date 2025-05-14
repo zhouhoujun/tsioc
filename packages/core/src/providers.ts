@@ -11,7 +11,7 @@ import { InvocationHanlderFactoryResolver } from './invocation';
 import { InterceptorResolver } from './ApplicationInterceptor';
 import { FilterHandlerResolver, FilterResolver } from './filters/filter';
 import { DefaultFilterResolver, DefaultFiterHandlerMethodResolver, DefaultInterceptorResolver } from './filters/filter.impl';
-import { ExecptionHandlerFilter } from './filters/execption.filter';
+import { ExceptionHandlerFilter } from './filters/execption.filter';
 import { getResolverToken } from './handlers/resolver';
 import { PayloadApplicationEvent } from './events';
 import { createPayloadResolver } from './handlers/resolvers';
@@ -32,7 +32,7 @@ export const RESOLVER_PROVIDERS = [
     { provide: FilterResolver, useFactory: (injector: Injector) => new DefaultFilterResolver(injector), deps: [Injector], static: true },
     { provide: FilterHandlerResolver, useFactory: (injector: Injector) => new DefaultFiterHandlerMethodResolver(injector), deps: [Injector], static: true },
     { provide: ApplicationEventMulticaster, useFactory: (injector: Injector) => new DefaultEventMulticaster(injector), deps: [Injector], static: true },
-    ExecptionHandlerFilter,
+    ExceptionHandlerFilter,
 ]
 
 

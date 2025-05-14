@@ -1,6 +1,6 @@
 import { Injectable, lang, promisify } from '@tsdi/ioc';
 import { LOCALHOST } from '@tsdi/common';
-import { InternalServerExecption, ev } from '@tsdi/common/transport';
+import { InternalServerException, ev } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { RequestContext, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Socket, createSocket, SocketOptions } from 'dgram';
@@ -37,7 +37,7 @@ export class UdpServer extends Server<RequestContext, UdpServConfig> {
 
     protected async onStart(): Promise<any> {
         await this.onStartup();
-        if (!this.serv) throw new InternalServerExecption();
+        if (!this.serv) throw new InternalServerException();
 
         const options = this.getOptions();
 

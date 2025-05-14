@@ -1,7 +1,7 @@
 import { Injectable, isArray, isBoolean, isNil, isString, lang } from '@tsdi/ioc';
 import { PROCESS_ROOT } from '@tsdi/core';
 import { joinPath } from '@tsdi/common';
-import { BadRequestExecption } from '@tsdi/common/transport';
+import { BadRequestException } from '@tsdi/common/transport';
 import { RequestContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
 
 @Injectable({ static: true })
@@ -25,7 +25,7 @@ export class BrowserContentSendAdapter extends ContentSendAdapter {
         try {
             path = decodeURIComponent(path)
         } catch {
-            throw new BadRequestExecption('failed to decode url');
+            throw new BadRequestException('failed to decode url');
         }
 
         let index = opts.index;
@@ -35,7 +35,7 @@ export class BrowserContentSendAdapter extends ContentSendAdapter {
         
         if (index && endSlash) path += index;
         if (absPath.test(path)) {
-            throw new BadRequestExecption('Malicious Path');
+            throw new BadRequestException('Malicious Path');
         }
 
 

@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 import { ApplicationRunners } from './ApplicationRunners';
 import { ApplicationArguments } from './ApplicationArguments';
 import { LoadType, ModuleLoader } from './ModuleLoader';
-import { InvocationOptions } from './invocation';
+import { InvocationHanlderOptions } from './invocation';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
 import { ApplicationEvent } from './ApplicationEvent';
@@ -40,7 +40,7 @@ export abstract class ApplicationContext<T = any, TArg = ApplicationArguments>
      *
      * @type {TArg}
      */
-    abstract get args(): TArg;
+    abstract get payload(): TArg;
     /**
      * application runners.
      *
@@ -92,7 +92,7 @@ export abstract class ApplicationContext<T = any, TArg = ApplicationArguments>
 /**
  * bootstrap option for {@link RunnableRef}.
  */
-export interface BootstrapOption<T = any> extends InvocationOptions<T> {
+export interface BootstrapOption<T = any> extends InvocationHanlderOptions<T> {
 }
 
 
@@ -138,11 +138,11 @@ export interface EnvironmentOption<TArg = any> extends ModuleOption, InvokeArgum
     /**
      * Application runners invocation options.
      */
-    runnersOptions?: InvocationOptions<TArg>;
+    runnersOptions?: InvocationHanlderOptions<TArg>;
     /**
      * Application events invocation options.
      */
-    eventsOptions?: InvocationOptions<TArg>;
+    eventsOptions?: InvocationHanlderOptions<TArg>;
 }
 
 /**

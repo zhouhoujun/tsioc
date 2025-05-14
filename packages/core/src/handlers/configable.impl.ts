@@ -1,6 +1,8 @@
 import {
-    InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType, lang, promiseOf, Execption, toProvider, Type, getClass, Token, isClassType,
-    InvocationContext, createContext, ArgumentExecption, isToken, isArray, isFunction, composeInterceptors, chainFactory, Empty
+    InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType, lang, promiseOf, Exception, toProvider, Type, getClass, Token, isClassType,
+    InvocationContext, createContext, ArgumentException, isToken, isArray, isFunction, composeInterceptors, chainFactory, Empty,
+    isInjector,
+    hasContextOptions
 } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
@@ -141,8 +143,8 @@ export class ConfigableHandler<
      * use guards for the handler.
      * @param guards 
      */
-    useGuards(guards: ProvdierOf<CanHandle> | ProvdierOf<CanHandle>[], order?: number): this {
-        if (!this.options.guardsToken) throw new ArgumentExecption('no guards token');
+    useGuards(guards: ProvdierOf<GuardLike> | ProvdierOf<GuardLike>[], order?: number): this {
+        if (!this.options.guardsToken) throw new ArgumentException('no guards token');
         this.regMulti(this.options.guardsToken, guards, order);
         this.reset();
         return this;
@@ -154,8 +156,8 @@ export class ConfigableHandler<
      * @param order 
      * @returns 
      */
-    useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this {
-        if (!this.options.filtersToken) throw new ArgumentExecption('no filters token');
+    useFilters(filter: ProvdierOf<FilterLike> | ProvdierOf<FilterLike>[], order?: number): this {
+        if (!this.options.filtersToken) throw new ArgumentException('no filters token');
         this.regMulti(this.options.filtersToken, filter, order);
         this.reset();
         return this;
@@ -225,8 +227,8 @@ export class ConfigableHandler<
     }
 
 
-    protected forbiddenError(): Execption {
-        return new Execption('Forbidden')
+    protected forbiddenError(): Exception {
+        return new Exception('Forbidden')
     }
 
 
@@ -260,7 +262,7 @@ export class ConfigableHandler<
      * @returns 
      */
     protected getBackend(): BackendFn {
-        if (!this.options.backend) throw new ArgumentExecption('backend is Empty.');
+        if (!this.options.backend) throw new ArgumentException('backend is Empty.');
         if (!this.backendFn) {
             const backend = isToken(this.options.backend) ? this.injector.get(this.options.backend, this.context, InjectFlags.Default, this.options.backend as any) : this.options.backend;
             this.backendFn = (isFunction(backend) ? backend : (req, ctx) => (backend as Backend).handle(req, ctx)) as BackendFn;
@@ -368,7 +370,7 @@ export function createHandler<TInput, TOutput>(context: Injector | InvocationCon
     }
     options = normalizeConfigableHandlerOptions(options);
     const Type = options.classType ?? ConfigableHandler;
-    return new Type(createContext(context, options, options.handlerType), options)
+    return new Type(isInjector(context) || (context instanceof InvocationContext && context.targetType !== Type && hasContextOptions(options)) ? createContext(context, options, options.handlerType) : context, options)
 }
 
 export function normalizeConfigableHandlerOptions<T extends ConfigableHandlerOptions>(options: T): T {

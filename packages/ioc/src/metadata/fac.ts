@@ -6,7 +6,7 @@ import { isUndefined, isNumber, isString, isArray } from '../utils/chk';
 import { getToken, Token } from '../tokens';
 import { Type } from '../types';
 import { isMetadataObject } from '../utils/obj';
-import { Execption } from '../execption';
+import { Exception } from '../exception';
 import { composeHandlers, HandlerFn } from '../handler';
 
 
@@ -106,7 +106,7 @@ function storeMetadata<T>(decor: DecoratorFn, args: any[], metadata: any, option
             }
             break;
         default:
-            throw new Execption(`Invalid @${name} Decorator declaration.`)
+            throw new Exception(`Invalid @${name} Decorator declaration.`)
     }
 }
 

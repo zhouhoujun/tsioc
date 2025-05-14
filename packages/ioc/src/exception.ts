@@ -3,19 +3,19 @@ import { isArray } from './utils/chk';
 
 const _tyfunc = 'function';
 /**
- * Execption is Basic Error.
+ * Exception is Basic Error.
  * for custom extends.
  * 
  * 异常处理基础类，用于基础实现自定义异常。
  */
-export class Execption extends Error {
+export class Exception extends Error {
     constructor(message: string, readonly code?: any) {
         super(message);
         let target: Function;
         try {
             target = new.target
         } catch {
-            target = Execption
+            target = Exception
         }
 
         this.name = target.name;
@@ -36,19 +36,19 @@ export class Execption extends Error {
  * 
  * 参数异常。
  */
-export class ArgumentExecption extends Execption {
+export class ArgumentException extends Exception {
     constructor(message?: string | string[]) {
         super(isArray(message) ? message.join('\n') : message || '')
     }
 }
 
-const tymgs = 'TypeExecption';
+const tymgs = 'TypeException';
 /**
  * Type execption.
  * 
  * 类型异常。
  */
-export class TypeExecption extends Execption {
+export class TypeException extends Exception {
     constructor(message?: string) {
         super(message ? `${tymgs}: ${message}` : tymgs)
     }

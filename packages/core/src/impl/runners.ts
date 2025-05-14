@@ -1,6 +1,6 @@
 import {
     isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, refl, ProvdierOf, 
-    getClassName, InvocationFactory, Invocation, StaticProviders, isArray, ArgumentExecption, 
+    getClassName, InvocationFactory, Invocation, StaticProviders, isArray, ArgumentException, 
     StaticProvider, HandlerLike, composeHandlers, InvocationContext, eachProvider
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
@@ -12,11 +12,11 @@ import { CanHandle } from '../guard';
 import { ApplicationHandler } from '../ApplicationHandler';
 import { ApplicationInterceptor } from '../ApplicationInterceptor';
 import { Filter } from '../filters/filter';
-import { ExecptionHandlerFilter } from '../filters/execption.filter';
+import { ExceptionHandlerFilter } from '../filters/execption.filter';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
-import { InvocationHanlderFactoryResolver, InvocationOptions } from '../invocation';
+import { InvocationHanlderFactoryResolver, InvocationHanlderOptions } from '../invocation';
 import { HandleContext } from '../handlers/context';
-import { NotHandleExecption } from '../execptions';
+import { NotHandleException } from '../execptions';
 import { toObservable } from '../handlers';
 
 
@@ -52,7 +52,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         this._maps = new Map();
         this._refs = new Map();
         this._handler = createHandler(injector, this, APP_RUNNERS_INTERCEPTORS, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS, null, true);
-        this._handler.useFilters(ExecptionHandlerFilter);
+        this._handler.useFilters(ExceptionHandlerFilter);
     }
 
     get size(): number {
@@ -83,7 +83,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         return this;
     }
 
-    attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationOptions<TArg> = {}): Invocation<T> {
+    attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationHanlderOptions<TArg> = {}): Invocation<T> {
         const target = isFunction(type) ? refl.get(type) : type;
 
         let ends = this._maps.get(target.type);
@@ -128,7 +128,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         //     return targetRef;
         // }
 
-        // throw new ArgumentExecption(getClassName(target.type) + ' is invaild runnable');
+        // throw new ArgumentException(getClassName(target.type) + ' is invaild runnable');
     }
 
 
@@ -171,13 +171,13 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
 
     run(type?: Type | Type[]): Promise<void> {
         if (type) {
-            return lastValueFrom(this._handler.handle(new HandleContext(this.injector, { args: { useValue: type } })));
+            return lastValueFrom(this._handler.handle(new HandleContext(this.injector, { payload: { useValue: type } })));
         }
         return lastValueFrom(
             this.startup()
                 .pipe(
                     mergeMap(v => this.beforeRun()),
-                    mergeMap(v => this._types?.length ? this._handler.handle(new HandleContext(this.injector, { bootstrap: true, args: { useValue: this._types } })) : of(v)),
+                    mergeMap(v => this._types?.length ? this._handler.handle(new HandleContext(this.injector, { bootstrap: true, payload: { useValue: this._types } })) : of(v)),
                     mergeMap(v => this.afterRun())
                 )
         );
@@ -213,12 +213,12 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
                 handlers = handlers!.concat(this._maps.get(type) ?? []);
             });
         } else {
-            return throwError(() => new ArgumentExecption('input type unknow'))
+            return throwError(() => new ArgumentException('input type unknow'))
         }
         if (handlers && handlers.length) {
             return toObservable(composeHandlers(handlers)(context));
         }
-        return throwError(() => new NotHandleExecption(context, context.args));
+        return throwError(() => new NotHandleException(context, context.args));
     }
 
     protected startup(): Observable<any> {

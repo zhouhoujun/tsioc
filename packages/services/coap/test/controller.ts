@@ -1,5 +1,5 @@
 import { lang } from '@tsdi/ioc';
-import { BadRequestExecption } from '@tsdi/common/transport';
+import { BadRequestException } from '@tsdi/common/transport';
 import { Get, Handle, Payload, Post, RequestBody, RequestParam, RequestPath, RouteMapping, RedirectResult } from '@tsdi/endpoints';
 import { of } from 'rxjs';
 
@@ -30,7 +30,7 @@ export class DeviceController {
     resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
         console.log('age1:', age1);
         if (age1 <= 0) {
-            throw new BadRequestExecption();
+            throw new BadRequestException();
         }
         return age1;
     }

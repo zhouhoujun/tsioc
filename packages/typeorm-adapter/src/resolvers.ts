@@ -1,4 +1,4 @@
-import { Parameter, InvocationContext, Type, lang, ArgumentExecption, OperationArgumentResolver, isArray, composeResolver, Injectable } from '@tsdi/ioc';
+import { Parameter, InvocationContext, Type, lang, ArgumentException, OperationArgumentResolver, isArray, composeResolver, Injectable } from '@tsdi/ioc';
 import { JoinPoint } from '@tsdi/aop';
 import { RepositoryArgumentResolver, RepositoryMetadata, TransactionManager, TransactionResolver } from '@tsdi/repository';
 import { MongoRepository, Repository, TreeRepository } from 'typeorm';
@@ -16,11 +16,11 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
         const { model, connection } = parameter as RepositoryMetadata;
 
         if (!parameter.type || !lang.isExtendsClass(parameter.type, Repository)) {
-            throw new ArgumentExecption(`Autowired repository design type not defined, or not extends with TypeORM Repository`)
+            throw new ArgumentException(`Autowired repository design type not defined, or not extends with TypeORM Repository`)
         }
 
         if (!model || !this.adapter.getConnection(connection).hasMetadata(model)) {
-            throw new ArgumentExecption(`Autowired repository in${this.getLocal(parameter, ctx)}${ctx.targetType} failed. It denpendence on model type ${model ? model : ''},  please register model in TypeORM first. `)
+            throw new ArgumentException(`Autowired repository in${this.getLocal(parameter, ctx)}${ctx.targetType} failed. It denpendence on model type ${model ? model : ''},  please register model in TypeORM first. `)
         }
         return true
     }

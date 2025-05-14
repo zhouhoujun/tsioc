@@ -1,7 +1,7 @@
-import { Class, Execption, Injectable, Invocation, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
+import { Class, Exception, Injectable, Invocation, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
 import { InvocationHandlerImpl } from '@tsdi/core';
 import { normalize, patternToPath } from '@tsdi/common';
-import { ForbiddenExecption } from '@tsdi/common/transport';
+import { ForbiddenException } from '@tsdi/common/transport';
 import { RequestContext } from '../RequestContext';
 import { RouteHandler, RouteHandlerFactory, RouteHandlerFactoryResolver, RouteHandlerOptions } from '../router/route.handler';
 
@@ -48,8 +48,8 @@ export class RouteHandlerImpl<TInput extends RequestContext = RequestContext, TO
         }
     }
 
-    protected override forbiddenError(): Execption {
-        return new ForbiddenExecption()
+    protected override forbiddenError(): Exception {
+        return new ForbiddenException()
     }
 }
 

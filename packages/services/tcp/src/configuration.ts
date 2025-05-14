@@ -1,5 +1,5 @@
 import { InjectFlags } from '@tsdi/ioc';
-import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
+import { Bean, Configuration, ExceptionHandlerFilter } from '@tsdi/core';
 import { DefaultResponseFactory, HeaderAdapter, ResponseFactory } from '@tsdi/common';
 import {
     messageVaildateInterceptor, deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory,
@@ -15,7 +15,7 @@ import {
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, SERVER_MODULES, ServerModuleOpts, ServiceModuleOpts,
-    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
+    ExceptionFinalizeFilter, FinalizeFilter, LoggerFilter,
     execptionSerializeInterceptor, contextSerializeBackend, lengthLimitSerializeInterceptor,
     ServerTransferFactory, SocketServerTransport,
     packetIfySerializeInterceptor,
@@ -221,8 +221,8 @@ export class TcpConfiguration {
                 guardsToken: TCP_SERV_GUARDS,
                 filters: [
                     LoggerFilter,
-                    ExecptionFinalizeFilter,
-                    ExecptionHandlerFilter,
+                    ExceptionFinalizeFilter,
+                    ExceptionHandlerFilter,
                     FinalizeFilter
                 ]
             }

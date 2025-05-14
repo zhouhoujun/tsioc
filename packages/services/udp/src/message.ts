@@ -1,6 +1,6 @@
 // import { MessageFactory, UrlMesage } from '@tsdi/common';
 // import { AbstractServerTransport, IEventEmitter, IReadableStream, MessageReader, MessageWriter, UrlIncomingOptions, ev, toBuffer } from '@tsdi/common/transport';
-// import { Execption, Injectable, promisify } from '@tsdi/ioc';
+// import { Exception, Injectable, promisify } from '@tsdi/ioc';
 // import { RemoteInfo, Socket } from 'dgram';
 // import { Observable, filter, fromEvent } from 'rxjs';
 
@@ -69,7 +69,7 @@
 //         if (session.streamAdapter.isReadable(data)) {
 //             data = await toBuffer(data);
 //         }
-//         if (!data) throw new Execption('message data is empty');
+//         if (!data) throw new Exception('message data is empty');
 //         return promisify<Buffer | string, number, string>(socket.send, socket)(data, msg.remoteInfo.port, msg.remoteInfo.address)
 //     }
 

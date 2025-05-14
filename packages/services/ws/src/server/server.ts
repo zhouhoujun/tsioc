@@ -2,7 +2,7 @@ import { Inject, Injectable, getClassName, isString, lang, promisify } from '@ts
 import { EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST } from '@tsdi/common';
-import { InternalServerExecption, ev } from '@tsdi/common/transport';
+import { InternalServerException, ev } from '@tsdi/common/transport';
 import { BindServerEvent, RequestContext, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { WebSocketServer, createWebSocketStream } from 'ws';
 import { Subject, finalize, first, fromEvent, merge } from 'rxjs';
@@ -59,7 +59,7 @@ export class WsServer extends Server<RequestContext, WsServConfig> {
         const options = this.getOptions();
         if (options.heybird && !bindServer) return;
         await this.setup(bindServer);
-        if (!this.serv) throw new InternalServerExecption();
+        if (!this.serv) throw new InternalServerException();
 
         this.serv.on(ev.CLOSE, () => this.logger.info('WS microservice closed!'));
         this.serv.on(ev.ERROR, (err) => {

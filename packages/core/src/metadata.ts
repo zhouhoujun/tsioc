@@ -1,6 +1,6 @@
 import {
     isUndefined, Type, createDecorator, Provider, InjectableMetadata, PropertyMetadata, ActionTypes, InjectFlags,
-    ReflectiveFactory, MethodPropDecorator, Token, ArgumentExecption, object2string, InvokeArguments,
+    ReflectiveFactory, MethodPropDecorator, Token, ArgumentException, object2string, InvokeArguments,
     isString, Parameter, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
     ModuleType, ClassType, MutilProvider, ReflectiveRef, Class, Injector, ProvidedInMetadata,
     AnnotationMetadata
@@ -11,7 +11,7 @@ import {
     ApplicationStartedEvent, ApplicationStartEvent, PayloadApplicationEvent
 } from './events';
 import { FilterFn, FilterHandlerResolver, FilterResolver } from './filters/filter';
-import { InvocationOptions, InvocationHanlderFactoryResolver } from './invocation';
+import { InvocationHanlderOptions, InvocationHanlderFactoryResolver } from './invocation';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
@@ -24,7 +24,7 @@ import { ApplicationInterceptorFn, InterceptorResolver } from './ApplicationInte
  * 
  * 运行接口配置
  */
-export interface RunnerOption<TArg> extends InvocationOptions<TArg> {
+export interface RunnerOption<TArg> extends InvocationHanlderOptions<TArg> {
     /**
      * custom provider parmeters as default. if not has design parameters.
      */
@@ -52,7 +52,7 @@ export interface Runner {
      * 运行接口修饰器， 用于声明该方法为应用程序的运行接口。
      * @param {InvokeArguments} [args] the method invoke arguments {@link InvokeArguments}.
      */
-    <TArg>(args?: InvocationOptions<TArg>): MethodDecorator;
+    <TArg>(args?: InvocationHanlderOptions<TArg>): MethodDecorator;
 }
 
 /**
@@ -148,7 +148,7 @@ export const Bean: BeanDecorator = createDecorator<BeanMetadata>('Bean', {
             if (metadata.type !== Object) {
                 metadata.provide = metadata.type as any
             } else {
-                throw new ArgumentExecption(`the property has no design Type, named ${ctx.define.propertyKey} with @Bean decorator in type ${object2string(ctx.class.type)}`)
+                throw new ArgumentException(`the property has no design Type, named ${ctx.define.propertyKey} with @Bean decorator in type ${object2string(ctx.class.type)}`)
             }
         }
     }
@@ -247,14 +247,14 @@ export interface EventHandler {
      *
      * @param {order?: number } option message match option.
      */
-    (option?: InvocationOptions): MethodDecorator;
+    (option?: InvocationHanlderOptions): MethodDecorator;
     /**
      * `EventHandler` dectorator, event message handle. use to handle event message of {@link  ApplicationEventPublisher}.
      *
      * @param {Type} event message match pattern.
      * @param {order?: number } option message match option.
      */
-    (event: Type<ApplicationEvent>, option?: InvocationOptions): MethodDecorator;
+    (event: Type<ApplicationEvent>, option?: InvocationHanlderOptions): MethodDecorator;
 }
 
 function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string, runtime?: boolean) {
@@ -270,7 +270,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                 const factory = injector.get(InvocationHanlderFactoryResolver).resolve(typeRef);
                 const currMulticaster = injector.get(ApplicationEventMulticaster);
                 decors.forEach(decor => {
-                    const { filter, order, providedIn, ...options } = decor.metadata as InvocationOptions & { filter: Type<ApplicationEvent> & { getStrategy?: () => string } };
+                    const { filter, order, providedIn, ...options } = decor.metadata as InvocationHanlderOptions & { filter: Type<ApplicationEvent> & { getStrategy?: () => string } };
 
                     const handler = factory.create(decor.propertyKey, options);
 
@@ -296,7 +296,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                 const factory = injector.get(InvocationHanlderFactoryResolver).resolve(typeRef);
                 const currMulticaster = injector.get(ApplicationEventMulticaster);
                 decors.forEach(decor => {
-                    const { filter, order, providedIn, ...options } = decor.metadata as InvocationOptions & { filter: Type<ApplicationEvent> & { getStrategy?: () => string } };
+                    const { filter, order, providedIn, ...options } = decor.metadata as InvocationHanlderOptions & { filter: Type<ApplicationEvent> & { getStrategy?: () => string } };
 
                     const handler = factory.create(decor.propertyKey, { ...options, instance: ctx.instance! });
 
@@ -322,7 +322,7 @@ export const EventHandler: EventHandler = createEventHandler(PayloadApplicationE
 /**
  * event handler metadata.
  */
-export interface EventHandlerMetadata<TArg> extends InvocationOptions<TArg> {
+export interface EventHandlerMetadata<TArg> extends InvocationHanlderOptions<TArg> {
     /**
      * execption type.
      */
@@ -339,9 +339,9 @@ export interface StartupEventHandler {
     /**
      * Application Startup event handle.
      * rasie after `ApplicationContextRefreshEvent`
-     * @param {InvocationOptions} option message match option.
+     * @param {InvocationHanlderOptions} option message match option.
      */
-    (option?: InvocationOptions): MethodDecorator;
+    (option?: InvocationHanlderOptions): MethodDecorator;
 }
 
 /**
@@ -361,9 +361,9 @@ export interface StartEventHandler {
     /**
      * Application start event handle.
      * rasie after `ApplicationStartupEvent`
-     * @param {InvocationOptions} option message match option.
+     * @param {InvocationHanlderOptions} option message match option.
      */
-    (option?: InvocationOptions): MethodDecorator;
+    (option?: InvocationHanlderOptions): MethodDecorator;
 }
 
 /**
@@ -383,9 +383,9 @@ export interface StartedEventHandler {
     /**
      * Application started event handle.
      * rasie after `ApplicationStartEvent`
-     * @param {InvocationOptions} option message match option.
+     * @param {InvocationHanlderOptions} option message match option.
      */
-    (option?: InvocationOptions): MethodDecorator;
+    (option?: InvocationHanlderOptions): MethodDecorator;
 }
 
 /**
@@ -406,9 +406,9 @@ export interface ShutdownEventHandler {
     /**
      * Application Shutdown event handle.
      * rasie after Application close invoked.
-     * @param {InvocationOptions} option message match option.
+     * @param {InvocationHanlderOptions} option message match option.
      */
-    (option?: InvocationOptions): MethodDecorator;
+    (option?: InvocationHanlderOptions): MethodDecorator;
 }
 
 /**
@@ -429,9 +429,9 @@ export interface DisposeEventHandler {
     /**
      * Application Dispose event handle.
      * rasie after `ApplicationShutdownEvent`
-     * @param {InvocationOptions} option message match option.
+     * @param {InvocationHanlderOptions} option message match option.
      */
-    (option?: InvocationOptions): MethodDecorator;
+    (option?: InvocationHanlderOptions): MethodDecorator;
 }
 
 /**
@@ -482,7 +482,7 @@ export interface Interceptable {
  * @exports {@link Interceptable}
  */
 export const Interceptable: Interceptable = createDecorator('Interceptable', {
-    props: (target: Type | string, options?: InvocationOptions) => ({ target, ...options }),
+    props: (target: Type | string, options?: InvocationHanlderOptions) => ({ target, ...options }),
     design: {
         method: (ctx) => {
             const typeRef = ctx.class;
@@ -531,7 +531,7 @@ export interface Filterable {
  * @exports {@link Filterable}
  */
 export const Filterable: Filterable = createDecorator('Filterable', {
-    props: (target: Type | string, options?: InvocationOptions) => ({ target, ...options }),
+    props: (target: Type | string, options?: InvocationHanlderOptions) => ({ target, ...options }),
     design: {
         method: (ctx) => {
             const typeRef = ctx.class;
@@ -561,7 +561,7 @@ export const Filterable: Filterable = createDecorator('Filterable', {
 /**
  * Filter handler metadata.
  */
-export interface FilterHandlerMetadata<TArg> extends InvocationOptions<TArg> {
+export interface FilterHandlerMetadata<TArg> extends InvocationHanlderOptions<TArg> {
     /**
      * filter type.
      */
@@ -582,7 +582,7 @@ export interface FilterHandler {
      * @param {Type} filter message match pattern.
      * @param {order?: number } option message match option.
      */
-    <TArg = any>(filter: Type | string, option?: InvocationOptions<TArg>): MethodDecorator;
+    <TArg = any>(filter: Type | string, option?: InvocationHanlderOptions<TArg>): MethodDecorator;
 }
 
 /**
@@ -592,7 +592,7 @@ export interface FilterHandler {
  * @exports {@link FilterHandler}
  */
 export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
-    props: (filter?: Type | string, options?: InvocationOptions) => ({ filter, ...options }),
+    props: (filter?: Type | string, options?: InvocationHanlderOptions) => ({ filter, ...options }),
     design: {
         method: (ctx) => {
             const typeRef = ctx.class;
@@ -613,28 +613,28 @@ export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
 
 
 /**
- * ExecptionHandler decorator, for class. use to define the class as execption handle register in global execption filter.
+ * ExceptionHandler decorator, for class. use to define the class as execption handle register in global execption filter.
  *
  * @export
- * @interface ExecptionHandler
+ * @interface ExceptionHandler
  */
-export interface ExecptionHandler {
+export interface ExceptionHandler {
     /**
-     * ExecptionHandler decorator, for class. use to define the class as execption handle register in global execption filter.
+     * ExceptionHandler decorator, for class. use to define the class as execption handle register in global execption filter.
      *
      * @param {string} pattern message match pattern.
      * @param {order?: number } option message match option.
      */
-    (execption: Type<Error>, option?: InvocationOptions): MethodDecorator;
+    (execption: Type<Error>, option?: InvocationHanlderOptions): MethodDecorator;
 }
 
 /**
- * ExecptionHandler decorator, for class. use to define the class as execption handle register in global execption filter.
- * @ExecptionHandler
+ * ExceptionHandler decorator, for class. use to define the class as execption handle register in global execption filter.
+ * @ExceptionHandler
  * 
- * @exports {@link ExecptionHandler}
+ * @exports {@link ExceptionHandler}
  */
-export const ExecptionHandler: ExecptionHandler = FilterHandler;
+export const ExceptionHandler: ExceptionHandler = FilterHandler;
 
 
 /**

@@ -1,11 +1,11 @@
-import { Execption, Type } from '@tsdi/ioc';
+import { Exception, Type } from '@tsdi/ioc';
 
 
 
 /**
  * Invalid Json execption.
  */
-export class InvalidJsonException extends Execption {
+export class InvalidJsonException extends Exception {
     constructor(err: any, source: string) {
         super(`is invalid JSON: ${err.message}\nSource data: ${source}`);
     }
@@ -14,7 +14,7 @@ export class InvalidJsonException extends Execption {
 /**
  * Invaild Stream execption.
  */
-export class InvalidStreamExecption extends Execption {
+export class InvalidStreamException extends Exception {
     constructor(message = 'Invalid stream error') {
         super(message)
     }
@@ -23,34 +23,34 @@ export class InvalidStreamExecption extends Execption {
 /**
  * Not handled execption.
  */
-export class NotHandleExecption extends Execption {
+export class NotHandleException extends Exception {
     constructor(readonly target: any, readonly targetType: Type | string, message = 'Not handle') {
         super(message)
     }
 }
 
-export class ConfigMissingExecption extends Execption {
+export class ConfigMissingException extends Exception {
     constructor(message = 'Config Missing') {
-        super(`ConfigMissingExecption: ${message}`)
+        super(`ConfigMissingException: ${message}`)
     }
 }
 
 
-export class GoawayExecption extends Execption {
+export class GoawayException extends Exception {
     constructor(message = 'Connection gowary') {
-        super(`GoawayExecption: ${message}`)
+        super(`GoawayException: ${message}`)
     }
 }
 
-export class OfflineExecption extends Execption {
+export class OfflineException extends Exception {
     constructor(message = 'Connection offline') {
-        super(`OfflineExecption: ${message}`)
+        super(`OfflineException: ${message}`)
     }
 }
 
-export class DisconnectExecption extends Execption {
+export class DisconnectException extends Exception {
     constructor(message = 'Connection disconnect') {
-        super(`DisconnectExecption: ${message}`)
+        super(`DisconnectException: ${message}`)
     }
 }
 

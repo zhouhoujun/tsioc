@@ -1,6 +1,6 @@
 import {
     ModuleRef, isFunction, lang, OnDestroy, promiseOf, Injector,
-    Execption, isArray, isPromise, isObservable, isBoolean,
+    Exception, isArray, isPromise, isObservable, isBoolean,
     Empty
 } from '@tsdi/ioc';
 import {
@@ -8,7 +8,7 @@ import {
     getFiltersToken, setHandlerOptions, createHandler
 } from '@tsdi/core';
 import { Pattern, PatternFormatter, Protocols, defaultFormatter, joinPath, normalize } from '@tsdi/common';
-import { NotFoundExecption, BadRequestExecption } from '@tsdi/common/transport';
+import { NotFoundException, BadRequestException } from '@tsdi/common/transport';
 import { defer, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { RequestHandler } from '../RequestHandler';
 import { Route, Routes } from './route';
@@ -97,7 +97,7 @@ export class MappingRouter extends Router<RouteHanlder> implements Middleware, O
             }
         } else {
             if (noFound) return noFound();
-            return throwError(() => new NotFoundExecption())
+            return throwError(() => new NotFoundException())
         }
     }
 
@@ -169,7 +169,7 @@ export class MappingRouter extends Router<RouteHanlder> implements Middleware, O
 
         if (this.routes.has(route)) {
             const handles = this.routes.get(route)!;
-            if (handles instanceof ControllerRoute) throw new Execption(`route ${route} has registered with Controller: ${handles.factory.typeRef.class.className}`)
+            if (handles instanceof ControllerRoute) throw new Exception(`route ${route} has registered with Controller: ${handles.factory.typeRef.class.className}`)
             if (isArray(handles)) {
                 if (isArray(handler)) {
                     handles.push(...handler);
@@ -438,9 +438,9 @@ export class MappingRoute implements Middleware, RequestHandler {
                 router.prefix = route.path ?? '';
                 return router
             }
-            return (c, n) => { throw new NotFoundExecption() }
+            return (c, n) => { throw new NotFoundException() }
         } else {
-            return (c, n) => { throw new NotFoundExecption() }
+            return (c, n) => { throw new NotFoundException() }
         }
     }
 
@@ -467,7 +467,7 @@ export class MappingRoute implements Middleware, RequestHandler {
 
     protected async redirect(ctx: RequestContext, url: string, alt?: string): Promise<void> {
         if (!isFunction((ctx as RestfulRequestContext).redirect)) {
-            throw new BadRequestExecption();
+            throw new BadRequestException();
         }
         (ctx as RestfulRequestContext).redirect(url, alt)
     }

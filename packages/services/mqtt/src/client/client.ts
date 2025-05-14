@@ -1,5 +1,5 @@
 import { Injectable, isString, promisify } from '@tsdi/ioc';
-import { Context, DisconnectExecption, OfflineExecption } from '@tsdi/core';
+import { Context, DisconnectException, OfflineException } from '@tsdi/core';
 import { Pattern, RequestInitOpts, ResponseEvent } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
@@ -50,11 +50,11 @@ export class MqttClient extends AbstractClient<MqttReqOptions, MqttRequest<any>,
 
             const onOffline = () => {
                 this.logger?.info('mqtt client offline!');
-                sbscriber.error(new OfflineExecption());
+                sbscriber.error(new OfflineException());
             }
             const onDisConnect = (packet: mqtt.IDisconnectPacket) => {
                 this.logger?.info('mqtt client disconnected!', packet.reasonCode);
-                sbscriber.error(new DisconnectExecption('mqtt client disconnected! ' + (packet?.reasonCode ?? '')));
+                sbscriber.error(new DisconnectException('mqtt client disconnected! ' + (packet?.reasonCode ?? '')));
             };
 
             client.on(ev.ERROR, onError);

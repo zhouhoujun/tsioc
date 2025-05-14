@@ -1,6 +1,6 @@
 import { Injector, isArray, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { HttpStatusCode, statusMessage, PUT, GET, HEAD, DELETE, OPTIONS, TRACE, Response, normalize } from '@tsdi/common';
-import { MessageExecption, InternalServerExecption, Outgoing, append, parseTokenList, Incoming, ENOENT } from '@tsdi/common/transport';
+import { MessageException, InternalServerException, Outgoing, append, parseTokenList, Incoming, ENOENT } from '@tsdi/common/transport';
 import { HttpServConfig, RestfulRequestContext, ServerTransport, Throwable } from '@tsdi/endpoints';
 import * as http from 'http';
 import * as http2 from 'http2';
@@ -31,7 +31,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         readonly response: HttpServResponse,
         readonly serverOptions: HttpServConfig
     ) {
-        super(injector, { ...serverOptions, args: request });
+        super(injector, { ...serverOptions, payload: request });
 
         this.setValue(ServerTransport, transport);
         const url = this._url = this.originalUrl = normalize(request.url!);
@@ -325,14 +325,14 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
     throwError(error: Error): Error;
     throwError(status: string | number | Error, message?: string): Error {
         if (isString(status)) {
-            return new InternalServerExecption(status, HttpStatusCode.InternalServerError)
+            return new InternalServerException(status, HttpStatusCode.InternalServerError)
         } else if (isNumber(status)) {
             if (!statusMessage[status as HttpStatusCode]) {
                 status = HttpStatusCode.InternalServerError
             }
-            return new MessageExecption(message ?? statusMessage[status as HttpStatusCode], status)
+            return new MessageException(message ?? statusMessage[status as HttpStatusCode], status)
         }
-        return new MessageExecption(status.message ?? statusMessage[(status as MessageExecption).statusCode as HttpStatusCode ?? 500], (status as MessageExecption).statusCode ?? HttpStatusCode.InternalServerError);
+        return new MessageException(status.message ?? statusMessage[(status as MessageException).statusCode as HttpStatusCode ?? 500], (status as MessageException).statusCode ?? HttpStatusCode.InternalServerError);
     }
 
 
@@ -346,7 +346,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
 
 
 
-    async throwExecption(err: MessageExecption): Promise<void> {
+    async throwException(err: MessageException): Promise<void> {
         let headerSent = false;
         if (this.headersSent || !this.writable) {
             headerSent = err.headerSent = true

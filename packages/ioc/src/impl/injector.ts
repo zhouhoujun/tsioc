@@ -9,7 +9,7 @@ import {
     MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, InjectorEvent,
     Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
 } from '../injector';
-import { Execption } from '../execption';
+import { Exception } from '../exception';
 import { Platform } from '../platform';
 import { get } from '../metadata/refl';
 import { ModuleDef, Class } from '../metadata/class';
@@ -512,7 +512,7 @@ export class DefaultInjector implements Injector {
                 instance = this.get(target as Token, context);
                 targetClass = getClass(instance);
                 if (!targetClass) {
-                    throw new Execption((target as Token).toString() + ' is not implements by any class.')
+                    throw new Exception((target as Token).toString() + ' is not implements by any class.')
                 }
             }
         }
@@ -530,7 +530,7 @@ export class DefaultInjector implements Injector {
 
     protected assertNotDestroyed(): void {
         if (this.destroyed) {
-            throw new Execption('Injector has already been destroyed.')
+            throw new Exception('Injector has already been destroyed.')
         }
     }
 
@@ -804,7 +804,7 @@ const cirMsg = 'Circular dependency';
 /**
  * circular dependency execption.
  */
-export class CircularDependencyExecption extends Execption {
+export class CircularDependencyException extends Exception {
     constructor(message?: string) {
         super(message ? cirMsg + message : cirMsg)
     }
@@ -813,9 +813,9 @@ export class CircularDependencyExecption extends Execption {
 /**
  * Null injector execption.
  */
-export class NullInjectorExecption extends Execption {
+export class NullInjectorException extends Exception {
     constructor(token: Token) {
-        super(`NullInjectorExecption: No provider for ${token?.toString()}!`)
+        super(`NullInjectorException: No provider for ${token?.toString()}!`)
     }
 }
 
@@ -864,7 +864,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
     if (rd && !(flags & InjectFlags.SkipSelf)) {
         let value = rd.value;
         if (value === CIRCULAR) {
-            throw new CircularDependencyExecption()
+            throw new CircularDependencyException()
         }
         if (isDefined(rd.value) && value !== Empty && (rd.stic || !(flags & InjectFlags.Resolve))) return rd.value;
         const deps = [];
@@ -924,12 +924,12 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
         return parent.get(token, context, (flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default, notFoundValue)
     } else if (!(flags & InjectFlags.Optional)) {
         if (notFoundValue === THROW_FLAGE) {
-            throw new NullInjectorExecption(token)
+            throw new NullInjectorException(token)
         }
         return notFoundValue ?? null
     } else {
         if (notFoundValue === THROW_FLAGE) {
-            throw new NullInjectorExecption(token)
+            throw new NullInjectorException(token)
         }
         return notFoundValue ?? null
     }

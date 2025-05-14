@@ -4,7 +4,7 @@ import { ApplicationInterceptor } from './ApplicationInterceptor';
 import { PipeTransform } from './pipes/pipe';
 import { HandlerService } from './handlers/configable';
 import { Filter } from './filters/filter';
-import { InvocationOptions } from './invocation';
+import { InvocationHanlderOptions } from './invocation';
 
 /**
  * Application runners.
@@ -24,7 +24,7 @@ export abstract class ApplicationRunners implements HandlerService, OnDestroy {
    * attach runner
    * @param type 
    */
-  abstract attach<T, TArg>(type: Type<T> | Class<T>, options?: InvokeParentContext & InvocationOptions<TArg>): Invocation<T>;
+  abstract attach<T, TArg>(type: Type<T> | Class<T>, options?: InvokeParentContext & InvocationHanlderOptions<TArg>): Invocation<T>;
 
   /**
    * detach runner
@@ -39,12 +39,12 @@ export abstract class ApplicationRunners implements HandlerService, OnDestroy {
   abstract has<T>(type: Type<T>): boolean;
 
   /**
-   * get reflectiveRef of type.
+   * get Invocation of type.
    * @param type 
    */
   abstract getRef<T>(type: Type<T>, idx?: number): Invocation<T>;
   /**
-   * get reflectiveRef of type.
+   * get Invocation of type.
    * @param type 
    */
   abstract getRefs<T>(type: Type<T>): Invocation<T>[];

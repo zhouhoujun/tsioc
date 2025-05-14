@@ -1,7 +1,7 @@
 import { Injectable, isString } from '@tsdi/ioc';
 import { Context } from '@tsdi/core';
 import { ResponseEvent, Pattern, RequestInitOpts, UrlRequestOptions } from '@tsdi/common';
-import { ServiceUnavailableExecption, ev } from '@tsdi/common/transport';
+import { ServiceUnavailableException, ev } from '@tsdi/common/transport';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { Observable } from 'rxjs';
 import { WebSocket, createWebSocketStream } from 'ws';
@@ -39,7 +39,7 @@ export class WsClient extends AbstractClient<UrlRequestOptions, WsRequest<any>, 
                 observer.complete();
             }
             const onClose = (code: number, reason: Buffer) => {
-                observer.error(new ServiceUnavailableExecption(reason?.toString(), code))
+                observer.error(new ServiceUnavailableException(reason?.toString(), code))
             }
             const onError = (err: any) => {
                 observer.error(err);

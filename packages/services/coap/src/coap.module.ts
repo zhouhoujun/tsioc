@@ -1,8 +1,8 @@
 import { Module } from '@tsdi/ioc';
-import { ExecptionHandlerFilter } from '@tsdi/core';
+import { ExceptionHandlerFilter } from '@tsdi/core';
 import { LOCALHOST } from '@tsdi/common';
 import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
-import { ExecptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
+import { ExceptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { CoapClient } from './client/client';
 import { COAP_CLIENT_FILTERS, COAP_CLIENT_INTERCEPTORS, COAP_CLIENT_OPTS } from './client/options';
 import { CoapHandler } from './client/handler';
@@ -11,7 +11,7 @@ import { COAP_SERV_FILTERS, COAP_SERV_GUARDS, COAP_SERV_INTERCEPTORS, COAP_SERV_
 import { CoapRequestHandler } from './server/handler';
 import { CoapStatusVaildator } from './status';
 import { CoapServerTransportFactory } from './coap.session';
-import { CoapExecptionHandlers } from './server/execption.handles';
+import { CoapExceptionHandlers } from './server/execption.handles';
 
 
 const defaultMaxSize = 1024 * 256;
@@ -70,12 +70,12 @@ const defaultMaxSize = 1024 * 256;
                     interceptorsToken: COAP_SERV_INTERCEPTORS,
                     filtersToken: COAP_SERV_FILTERS,
                     guardsToken: COAP_SERV_GUARDS,
-                    execptionHandlers: CoapExecptionHandlers,
+                    execptionHandlers: CoapExceptionHandlers,
                     sessionFactory: { useExisting: CoapServerTransportFactory },
                     filters: [
                         LoggerInterceptor,
-                        ExecptionFinalizeFilter,
-                        ExecptionHandlerFilter,
+                        ExceptionFinalizeFilter,
+                        ExceptionHandlerFilter,
                         FinalizeFilter
                     ],
                     providers: [
@@ -106,12 +106,12 @@ const defaultMaxSize = 1024 * 256;
                     interceptorsToken: COAP_SERV_INTERCEPTORS,
                     filtersToken: COAP_SERV_FILTERS,
                     guardsToken: COAP_SERV_GUARDS,
-                    execptionHandlers: CoapExecptionHandlers,
+                    execptionHandlers: CoapExceptionHandlers,
                     sessionFactory: { useExisting: CoapServerTransportFactory },
                     filters: [
                         LoggerInterceptor,
-                        ExecptionFinalizeFilter,
-                        ExecptionHandlerFilter,
+                        ExceptionFinalizeFilter,
+                        ExceptionHandlerFilter,
                         FinalizeFilter
                     ],
                     providers: [

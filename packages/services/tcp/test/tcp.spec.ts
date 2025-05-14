@@ -2,7 +2,7 @@ import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { Application, ApplicationContext, } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerModule } from '@tsdi/platform-server';
-import { BadRequestExecption } from '@tsdi/common/transport';
+import { BadRequestException } from '@tsdi/common/transport';
 import { ClientModule, provideClient } from '@tsdi/common/client';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
@@ -44,7 +44,7 @@ export class DeviceController {
     resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
         console.log('age1:', age1);
         if (age1 <= 0) {
-            throw new BadRequestExecption();
+            throw new BadRequestException();
         }
         return age1;
     }

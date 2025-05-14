@@ -5,7 +5,7 @@ import { BindServerEvent, RequestContext, Server, ServerTransportFactory } from 
 import { Socket, createSocket } from 'dgram';
 import { COAP_BIND_FILTERS, COAP_BIND_GUARDS, COAP_BIND_INTERCEPTORS, COAP_SERV_OPTS, CoapServConfig } from './options';
 import { CoapRequestHandler } from './handler';
-import { InternalServerExecption, ev } from '@tsdi/common/transport';
+import { InternalServerException, ev } from '@tsdi/common/transport';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { lastValueFrom } from 'rxjs';
 
@@ -29,7 +29,7 @@ export class CoapServer extends Server<RequestContext, CoapServConfig> {
     listen(listeningListener?: () => void): this;
     listen(port: number, listeningListener?: () => void): this;
     listen(arg1: any, listeningListener?: () => void): this {
-        if (!this._server) throw new InternalServerExecption();
+        if (!this._server) throw new InternalServerException();
         if (isNumber(arg1)) {
             this._server.bind(arg1, listeningListener);
             this.logger.info(lang.getClassName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}:${arg1}`, '!')
@@ -70,7 +70,7 @@ export class CoapServer extends Server<RequestContext, CoapServConfig> {
             await this.setup();
 
         }
-        if (!this._server) throw new InternalServerExecption();
+        if (!this._server) throw new InternalServerException();
 
         this._server.on(ev.CLOSE, (err?: any) => {
             this.logger.info(`Coap ${options?.microservice ? 'microservice' : 'server'} closed!`);

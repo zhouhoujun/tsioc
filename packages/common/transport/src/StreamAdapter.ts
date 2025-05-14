@@ -1,4 +1,4 @@
-import { TypeExecption, isArray } from '@tsdi/ioc';
+import { TypeException, isArray } from '@tsdi/ioc';
 import { Buffer } from 'buffer';
 import { ev } from './consts';
 import { IDuplex, IEventEmitter, IPassThrough, IReadable, IStream, ITransform, IWritable } from './stream';
@@ -27,7 +27,7 @@ export async function toBuffer(body: IReadable, limit = 0, url?: string) {
 
     for await (const chunk of body) {
         if (limit > 0 && bytes + chunk.length > limit) {
-            const error = new TypeExecption(`content size at ${url} over limit: ${limit}`);
+            const error = new TypeException(`content size at ${url} over limit: ${limit}`);
             body.destroy?.(error);
             throw error;
         }

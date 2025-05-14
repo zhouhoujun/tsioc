@@ -1,9 +1,9 @@
 import { InjectFlags, isString } from '@tsdi/ioc';
-import { Bean, Configuration, ContextToken, ExecptionHandlerFilter, ApplicationHandlerFn, ApplicationInterceptorFn } from '@tsdi/core';
+import { Bean, Configuration, ContextToken, ExceptionHandlerFilter, ApplicationHandlerFn, ApplicationInterceptorFn } from '@tsdi/core';
 import { DefaultResponseFactory, HeaderAdapter, IHeaders, parseQueryString, ResponseFactory } from '@tsdi/common';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
-    FileAdapter, MimeAdapter, NotSupportedExecption, bodyDesrializeBackend,
+    FileAdapter, MimeAdapter, NotSupportedException, bodyDesrializeBackend,
     messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory,
     TransportContext, IReadable, ev
@@ -15,7 +15,7 @@ import {
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
-    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter, TopicRequestContext,
+    ExceptionFinalizeFilter, FinalizeFilter, LoggerFilter, TopicRequestContext,
     lengthLimitSerializeInterceptor, SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts,
     contextBodySerializeBackend, execptionMessageSerializeInterceptor,
     JsonInterceptor, BodyparserInterceptor, limitedReadableSerializeInterceptor,
@@ -144,7 +144,7 @@ export class AmqpConfiguration {
                                     },
 
                                     async (socket, msg, req) => {
-                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
+                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedException('Not supported stream payload');
 
                                         const headers = req.headers.getHeaders();
 
@@ -253,7 +253,7 @@ export class AmqpConfiguration {
                                     },
 
                                     async (socket, msg, reqContext, context) => {
-                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
+                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedException('Not supported stream payload');
 
                                         const headers = reqContext.headerAdapter.getHeaders(reqContext.response) as Record<string, any>;
 
@@ -327,8 +327,8 @@ export class AmqpConfiguration {
                 guardsToken: AMQP_SERV_GUARDS,
                 filters: [
                     LoggerFilter,
-                    ExecptionFinalizeFilter,
-                    ExecptionHandlerFilter,
+                    ExceptionFinalizeFilter,
+                    ExceptionHandlerFilter,
                     FinalizeFilter
                 ],
                 interceptors: [

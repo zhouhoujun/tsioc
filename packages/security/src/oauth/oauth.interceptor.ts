@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
-import { UnauthorizedExecption } from '@tsdi/common/transport';
+import { UnauthorizedException } from '@tsdi/common/transport';
 import { RestfulRequestContext } from '@tsdi/endpoints';
 import { Observable, from, throwError } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
@@ -37,7 +37,7 @@ export class OAuthInterceptor implements ApplicationInterceptor<RestfulRequestCo
     private redirectToAuth(ctx: RestfulRequestContext, option: OAuthOption): Observable<never> {
         const authUrl = this.buildAuthUrl(option);
         ctx.redirect(authUrl);
-        return throwError(() => new UnauthorizedExecption('Redirecting to authorization'));
+        return throwError(() => new UnauthorizedException('Redirecting to authorization'));
     }
 
     private buildAuthUrl(option: OAuthOption): string {

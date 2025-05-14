@@ -1,4 +1,4 @@
-import { getClass, isFunction, isString, Type, ArgumentExecption, Injector, InjectFlags, HandlerLike } from '@tsdi/ioc';
+import { getClass, isFunction, isString, Type, ArgumentException, Injector, InjectFlags, HandlerLike } from '@tsdi/ioc';
 import { ApplicationHandler } from '../ApplicationHandler';
 import { Filter, FilterHandlerResolver, FilterLike, FilterResolver } from './filter';
 import { ApplicationInterceptor, ApplicationInterceptorLike, InterceptorResolver } from '../ApplicationInterceptor';
@@ -23,7 +23,7 @@ export class DefaultInterceptorResolver implements InterceptorResolver {
     }
     addInterceptor(target: Type | string, interceptor: ApplicationInterceptorLike, order?: number): this {
         if (!interceptor) {
-            throw new ArgumentExecption('filter missing');
+            throw new ArgumentException('filter missing');
         }
         let hds = this.maps.get(target);
         if (!hds) {
@@ -64,7 +64,7 @@ export class DefaultFilterResolver implements FilterResolver {
     }
     addFilter(target: Type | string, filter: FilterLike, order?: number): this {
         if (!filter) {
-            throw new ArgumentExecption('filter missing');
+            throw new ArgumentException('filter missing');
         }
         let hds = this.maps.get(target);
         if (!hds) {
@@ -108,7 +108,7 @@ export class DefaultFiterHandlerMethodResolver implements FilterHandlerResolver 
 
     addHandle(filter: Type | string, handler: HandlerLike, order?: number): this {
         if (!handler) {
-            throw new ArgumentExecption('handler missing');
+            throw new ArgumentException('handler missing');
         }
         let hds = this.maps.get(filter);
         if (!hds) {

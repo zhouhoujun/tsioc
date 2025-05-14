@@ -2,9 +2,9 @@ import {
     Arrayify, Empty, Injector, Module, ModuleRef, ModuleWithProviders,
     Provider, isArray, lang, toProvider, tokenId
 } from '@tsdi/ioc';
-import { ConfigMissingExecption, createHandler } from '@tsdi/core';
+import { ConfigMissingException, createHandler } from '@tsdi/core';
 import { DefaultResponseFactory } from '@tsdi/common';
-import { isMicroTransport, NotImplementedExecption, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
+import { isMicroTransport, NotImplementedException, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
 import { ClientBackend } from './backend';
 import { ClientTransportBackend, ClientTransportFactory, DefaultClientTransferFactory, UrlRedirector } from './transport';
 import { ClientConfig } from './options';
@@ -110,7 +110,7 @@ function clientProviders(options: ClientOptions, idx?: number) {
                             throw new Error(m[transportModuleName] ? 'has not implemented' : 'not found transport module!')
                         }
                     } catch (err: any) {
-                        throw new NotImplementedExecption(`${options.transport} ${microservice ? 'microservice client' : 'client'} ${err.message ?? 'has not implemented'}`);
+                        throw new NotImplementedException(`${options.transport} ${microservice ? 'microservice client' : 'client'} ${err.message ?? 'has not implemented'}`);
                     }
                 }
                 const opts = { ...defts, ...options, asDefault: null } as ClientModuleOpts & ClientOptions;
@@ -144,8 +144,8 @@ function clientProviders(options: ClientOptions, idx?: number) {
                     clientOpts.providers.push({ provide: ClientBackend, useClass: ClientTransportBackend });
                 }
 
-                if (!clientOpts.handlerType) throw new ConfigMissingExecption(`Config Missing handlerType`);
-                if (!clientOpts.transportFactory || clientOpts.transportFactory == ClientTransportFactory) throw new ConfigMissingExecption(`Config Missing transportFactory`);
+                if (!clientOpts.handlerType) throw new ConfigMissingException(`Config Missing handlerType`);
+                if (!clientOpts.transportFactory || clientOpts.transportFactory == ClientTransportFactory) throw new ConfigMissingException(`Config Missing transportFactory`);
 
                 if (opts.imports) {
                     clientOpts.providers.push({
@@ -158,7 +158,7 @@ function clientProviders(options: ClientOptions, idx?: number) {
                 clientOpts.providers.push(toProvider(ClientTransportFactory, clientOpts.transportFactory));
 
                 // if (!clientOpts.execptionHandlers) {
-                //     clientOpts.execptionHandlers = [DefaultExecptionHandlers]
+                //     clientOpts.execptionHandlers = [DefaultExceptionHandlers]
                 // }
 
 

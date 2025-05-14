@@ -1,5 +1,5 @@
 import { Abstract, Injectable, Injector, InvocationContext, tokenId } from '@tsdi/ioc';
-import { ConfigableHandlerOptions, createHandler, ExecptionHandlerFilter, FilterLike, ApplicationHandler, ApplicationInterceptorLike } from '@tsdi/core';
+import { ConfigableHandlerOptions, createHandler, ExceptionHandlerFilter, FilterLike, ApplicationHandler, ApplicationInterceptorLike } from '@tsdi/core';
 import { Observable, of } from 'rxjs';
 import { TransportContext } from './context';
 
@@ -45,7 +45,7 @@ export class DefaultSerializerFactory implements SerializerFactory {
             enableTypeChain: true,
             ...options
         });
-        handler.useFilters(ExecptionHandlerFilter, 0);
+        handler.useFilters(ExceptionHandlerFilter, 0);
         return new DefaultSerializer(handler);
     }
 

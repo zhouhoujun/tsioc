@@ -1,4 +1,4 @@
-import { Execption, Injectable } from '@tsdi/ioc';
+import { Exception, Injectable } from '@tsdi/ioc';
 import { PatternFormatter, LOCALHOST, defaultFormatter } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { getRouter, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
@@ -54,7 +54,7 @@ export class RedisServer extends Server<RequestContext, RedisServConfig> {
 
     protected async onStart(): Promise<any> {
         await this.connect();
-        if (!this.subscriber || !this.publisher) throw new Execption('Subscriber and Publisher cannot be null');
+        if (!this.subscriber || !this.publisher) throw new Exception('Subscriber and Publisher cannot be null');
 
         const options = this.getOptions();
 

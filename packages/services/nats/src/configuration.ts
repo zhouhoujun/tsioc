@@ -1,9 +1,9 @@
 import { InjectFlags, isString } from '@tsdi/ioc';
-import { Bean, Configuration, ExecptionHandlerFilter, ApplicationHandlerFn, ApplicationInterceptorFn } from '@tsdi/core';
+import { Bean, Configuration, ExceptionHandlerFilter, ApplicationHandlerFn, ApplicationInterceptorFn } from '@tsdi/core';
 import { DefaultResponseFactory, HeaderAdapter, IHeaders, LOCALHOST, parseQueryString, ResponseFactory } from '@tsdi/common';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
-    IReadable, FileAdapter, MimeAdapter, NotSupportedExecption, bodyDesrializeBackend,
+    IReadable, FileAdapter, MimeAdapter, NotSupportedException, bodyDesrializeBackend,
     messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter, TransportContext,
     StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory
 } from '@tsdi/common/transport';
@@ -14,11 +14,11 @@ import {
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
-    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
+    ExceptionFinalizeFilter, FinalizeFilter, LoggerFilter,
     SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts, TopicRequestContext,
     lengthLimitSerializeInterceptor, contextBodySerializeBackend,
     execptionMessageSerializeInterceptor, emptyStatusSerializeInterceptor,
-    HttpExecptionHandlers, HttpStatusAdapter, noBodySerializeInterceptor,
+    HttpExceptionHandlers, HttpStatusAdapter, noBodySerializeInterceptor,
     JsonInterceptor, BodyparserInterceptor, limitedReadableSerializeInterceptor
 } from '@tsdi/endpoints';
 import { map } from 'rxjs';
@@ -140,7 +140,7 @@ export class NatsConfiguration {
                                         const headers = socket.mergeHeaders(req.headers, options.publishOpts?.headers);
                                         req.id && headers.set('identity', String(req.id));
                                         if (isString(req.pattern)) headers.set('path', req.pattern);
-                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
+                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedException('Not supported stream payload');
                                         if (req.params.size) {
                                             headers.set('params', req.params.toString())
                                         }
@@ -228,8 +228,8 @@ export class NatsConfiguration {
                                     options,
                                     (socket, factory, context) => socket.getPacket(factory, m => !m.subject.endsWith('.reply'), context),
                                     (socket, msg, requestContext) => {
-                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
-                                        if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
+                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedException('Not supported stream payload');
+                                        if (!requestContext.responseTopic) throw new NotSupportedException('Not need response');
                                         const headers = socket.mergeHeaders(requestContext.response, options.publishOpts?.headers);
                                         requestContext.request.id && headers.set('identity', String(requestContext.request.id));
                                         requestContext.status && headers.set('status', String(requestContext.status));
@@ -292,15 +292,15 @@ export class NatsConfiguration {
                 serverOpts: {
                     servers: `nats://${LOCALHOST}:4222`
                 },
-                execptionHandlers: HttpExecptionHandlers,
+                execptionHandlers: HttpExceptionHandlers,
                 detailError: false,
                 interceptorsToken: NATS_SERV_INTERCEPTORS,
                 filtersToken: NATS_SERV_FILTERS,
                 guardsToken: NATS_SERV_GUARDS,
                 filters: [
                     LoggerFilter,
-                    ExecptionFinalizeFilter,
-                    ExecptionHandlerFilter,
+                    ExceptionFinalizeFilter,
+                    ExceptionHandlerFilter,
                     FinalizeFilter
                 ],
                 interceptors: [

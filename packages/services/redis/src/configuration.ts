@@ -1,9 +1,9 @@
 import { InjectFlags, isString, promisify, tokenId } from '@tsdi/ioc';
-import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
+import { Bean, Configuration, ExceptionHandlerFilter } from '@tsdi/core';
 import { DefaultResponseFactory, HeaderAdapter, LOCALHOST, ResponseFactory } from '@tsdi/common';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
-    ev, FileAdapter, MimeAdapter, NotSupportedExecption, IReadable, TEXT_DECODER,
+    ev, FileAdapter, MimeAdapter, NotSupportedException, IReadable, TEXT_DECODER,
     messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory    
 } from '@tsdi/common/transport';
@@ -13,7 +13,7 @@ import {
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
-    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter, execptionSerializeInterceptor,
+    ExceptionFinalizeFilter, FinalizeFilter, LoggerFilter, execptionSerializeInterceptor,
     lengthLimitSerializeInterceptor, SERVER_MODULES,
     ServerTransferFactory, ServiceModuleOpts, TopicRequestContext,
     contextSerializeBackend
@@ -118,7 +118,7 @@ export class RedisConfiguration {
                                             subscribes.add(req.responseTopic);
                                             await promisify<string>(socket.subscriber.subscribe, socket.subscriber)(req.responseTopic);
                                         }
-                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
+                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedException('Not supported stream payload');
                                         return await promisify<string, Buffer | string>(socket.publisher.publish, socket.publisher)(req.topic, msg ?? Buffer.alloc(0))
                                     },
                                     async (socket) => {
@@ -215,8 +215,8 @@ export class RedisConfiguration {
                                         filter(m => !!m)
                                     ),
                                     (socket, msg, requestContext) => {
-                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
-                                        if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
+                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedException('Not supported stream payload');
+                                        if (!requestContext.responseTopic) throw new NotSupportedException('Not need response');
                                         return promisify<string, Buffer | string>(socket.publisher.publish, socket.publisher)(requestContext.responseTopic, msg ?? Buffer.alloc(0))
                                     }
                                 )
@@ -264,8 +264,8 @@ export class RedisConfiguration {
                 guardsToken: REDIS_SERV_GUARDS,
                 filters: [
                     LoggerFilter,
-                    ExecptionFinalizeFilter,
-                    ExecptionHandlerFilter,
+                    ExceptionFinalizeFilter,
+                    ExceptionHandlerFilter,
                     FinalizeFilter
                 ],
                 routes: {

@@ -1,6 +1,6 @@
 import { PROCESS_ROOT } from '@tsdi/core';
-import { Injectable, isArray, isBoolean, isNil, isString, TypeExecption } from '@tsdi/ioc';
-import { BadRequestExecption, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenExecption, InternalServerExecption, NotFoundExecption } from '@tsdi/common/transport';
+import { Injectable, isArray, isBoolean, isNil, isString, TypeException } from '@tsdi/ioc';
+import { BadRequestException, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenException, InternalServerException, NotFoundException } from '@tsdi/common/transport';
 import { RequestContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
 import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
 import { existsSync, Stats, stat, createReadStream } from 'fs';
@@ -27,7 +27,7 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
         try {
             path = decodeURIComponent(path)
         } catch {
-            throw new BadRequestExecption('failed to decode url');
+            throw new BadRequestException('failed to decode url');
         }
         let index = opts.index;
         if (index && isBoolean(index)) {
@@ -36,10 +36,10 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
         if (index && endSlash) path += index;
         const baseUrl = ctx.get(PROCESS_ROOT);
         if (isAbsolute(path) || winAbsPath.test(path)) {
-            throw new BadRequestExecption('Malicious Path');
+            throw new BadRequestException('Malicious Path');
         }
         if (UP_REGEXP.test(normalize('.' + sep + path))) {
-            throw new ForbiddenExecption();
+            throw new ForbiddenException();
         }
         let filename = '', encodingExt = '';
         roots.some(root => {
@@ -61,7 +61,7 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
                 for (let i = 0; i < list.length; i++) {
                     let ext = list[i]
                     if (typeof ext !== 'string') {
-                        throw new TypeExecption('option extensions must be array of strings or false')
+                        throw new TypeException('option extensions must be array of strings or false')
                     }
                     if (!/^\./.exec(ext)) ext = `.${ext}`;
                     if (existsSync(`${rpath}${ext}`)) {
@@ -90,9 +90,9 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
             }
         } catch (err) {
             if (notfound.includes((err as any).code)) {
-                throw new NotFoundExecption((err as Error).message)
+                throw new NotFoundException((err as Error).message)
             }
-            throw new InternalServerExecption()
+            throw new InternalServerException()
         }
 
         if (opts.setHeaders) opts.setHeaders(ctx, filename, stats);

@@ -1,7 +1,7 @@
 /* eslint-disable no-control-regex */
-import { Abstract, Injectable, isUndefined, Nullable, TypeExecption } from '@tsdi/ioc';
+import { Abstract, Injectable, isUndefined, Nullable, TypeException } from '@tsdi/ioc';
 import { ApplicationHandler, ApplicationInterceptor, InvalidJsonException } from '@tsdi/core';
-import { BadRequestExecption, UnsupportedMediaTypeExecption, IReadable, MimeTypes, isBuffer } from '@tsdi/common/transport';
+import { BadRequestException, UnsupportedMediaTypeException, IReadable, MimeTypes, isBuffer } from '@tsdi/common/transport';
 import { RequestContext, Middleware } from '@tsdi/endpoints';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
@@ -159,9 +159,9 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Applic
                 } else if (ctx.streamAdapter.isStream(ctx.request)) {
                     return ctx.request.pipe(ctx.streamAdapter.createPassThrough());
                 }
-                throw new UnsupportedMediaTypeExecption('incoming message not support streamable');
+                throw new UnsupportedMediaTypeException('incoming message not support streamable');
             default:
-                throw new UnsupportedMediaTypeExecption('Unsupported Content-Encoding: ' + encoding);
+                throw new UnsupportedMediaTypeException('Unsupported Content-Encoding: ' + encoding);
         }
 
         if (ctx.streamAdapter.isReadable(ctx.request.body) || ctx.streamAdapter.isStream(ctx.request.body)) {
@@ -170,7 +170,7 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Applic
         if (ctx.streamAdapter.isReadable(ctx.request) || ctx.streamAdapter.isStream(ctx.request)) {
             return ctx.request.pipe(ctx.streamAdapter.createGunzip());
         }
-        throw new UnsupportedMediaTypeExecption('incoming message not support streamable');
+        throw new UnsupportedMediaTypeException('incoming message not support streamable');
     }
 
     private jsonify(str: string, strict?: boolean) {
@@ -179,7 +179,7 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Applic
         if (!str) return {};
         // strict JSON test
         if (!strictJSONReg.test(str)) {
-            throw new TypeExecption('invalid JSON, only supports object and array')
+            throw new TypeException('invalid JSON, only supports object and array')
         }
         return JSON.parse(str)
     }
@@ -211,7 +211,7 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Applic
             }
         } catch (err) {
             (err as any).body = str;
-            throw new BadRequestExecption((err as any).message);
+            throw new BadRequestException((err as any).message);
         }
     }
 

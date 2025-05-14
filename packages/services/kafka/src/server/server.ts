@@ -1,7 +1,7 @@
 import { Injectable, isFunction } from '@tsdi/ioc';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
 import { defaultFormatter, PatternFormatter } from '@tsdi/common';
-import { ServiceUnavailableExecption } from '@tsdi/common/transport';
+import { ServiceUnavailableException } from '@tsdi/common/transport';
 import { Server, ServerTransportFactory, RequestContext, getRouter, ServerTransport } from '@tsdi/endpoints';
 import { Kafka, LogEntry, logLevel } from 'kafkajs';
 import { Subject, fromEvent, merge } from 'rxjs';
@@ -96,7 +96,7 @@ export class KafkaServer extends Server<RequestContext, KafkaServConfig> {
 
     protected async onStart(): Promise<any> {
         await this.connnect();
-        if (!this.socket) throw new ServiceUnavailableExecption();
+        if (!this.socket) throw new ServiceUnavailableException();
         const injector = this.handler.injector;
         const options = this.getOptions();
 

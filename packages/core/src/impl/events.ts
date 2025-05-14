@@ -1,11 +1,11 @@
-import { ArgumentExecption, composeHandlers, getClass, InjectFlags, Handler as IHandler, HandlerLike, Injector, ProvdierOf, StaticProvider, tokenId, Type } from '@tsdi/ioc';
+import { ArgumentException, composeHandlers, getClass, InjectFlags, Handler as IHandler, HandlerLike, Injector, ProvdierOf, StaticProvider, tokenId, Type } from '@tsdi/ioc';
 import { forkJoin, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanHandle } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
 import { ApplicationInterceptor } from '../ApplicationInterceptor';
 import { ApplicationHandler } from '../ApplicationHandler';
 import { Filter } from '../filters/filter';
-import { ExecptionHandlerFilter } from '../filters/execption.filter';
+import { ExceptionHandlerFilter } from '../filters/execption.filter';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
@@ -42,7 +42,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         this.maps = new Map();
         this._children = [];
         this._handler = createHandler(injector, this, EVENT_MULTICASTER_INTERCEPTORS, EVENT_MULTICASTER_GUARDS, EVENT_MULTICASTER_FILTERS, null, true);
-        this._handler.useFilters(ExecptionHandlerFilter);
+        this._handler.useFilters(ExceptionHandlerFilter);
         this.parent = this.injector.get(ApplicationEventMulticaster, null, InjectFlags.SkipSelf);
         if (this.parent) {
             const parent = this.parent;
@@ -122,7 +122,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     publishEvent(event: ApplicationEvent): Observable<void | false>;
     publishEvent(event: Object): Observable<void | false>;
     publishEvent(obj: ApplicationEvent | Object): Observable<void | false> {
-        if (!obj) throwError(() => new ArgumentExecption('Event must not be null'));
+        if (!obj) throwError(() => new ArgumentException('Event must not be null'));
 
         // Decorate event as an ApplicationEvent if necessary
         let event: ApplicationEvent;

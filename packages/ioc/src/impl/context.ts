@@ -7,7 +7,7 @@ import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL } fro
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token, tokenId } from '../tokens';
 import { createInjector, Injector, isInjector } from '../injector';
-import { Execption } from '../execption';
+import { Exception } from '../exception';
 import { Class } from '../metadata/class';
 import { getDef } from '../metadata/refl';
 import { ProvdierOf, Provider, toProvider } from '../providers';
@@ -65,7 +65,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             })
         }
 
-        options.args && this.initArgs(options.args);
+        options.payload && this.initArgs(options.payload);
 
         getClassChain(getClass(this)).forEach(c => {
             this.setValue(c, this);
@@ -77,7 +77,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     }
 
     protected initArgs(args: ProvdierOf<T>): void {
-        this.injector.inject(toProvider(CONTEXT_ARGUMENTS, args));
+        this.injector.inject(toProvider(CONTEXT_PAYLOAD, args));
         if (!isFunction(args)) {
             const argType = getClass(args);
             this.injector.setValue(argType, args);
@@ -152,17 +152,17 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     }
 
 
-    protected _args?: T;
+    protected _payload?: T;
     /**
      * the invocation context arguments.
      * 
      * 上下文负载参数
      */
-    get args(): T {
-        if (!this._args) {
-            this._args = this.injector.get(CONTEXT_ARGUMENTS);
+    get payload(): T {
+        if (!this._payload) {
+            this._payload = this.injector.get(CONTEXT_PAYLOAD);
         }
-        return this._args!;
+        return this._payload!;
     }
 
     get used(): boolean {
@@ -279,15 +279,15 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             if (failed) {
                 failed(target!, meta.propertyKey!)
             } else {
-                this.missingExecption([meta], target!, meta.propertyKey!);
+                this.missingException([meta], target!, meta.propertyKey!);
             }
         }
 
         return null;
     }
 
-    protected missingExecption(missings: Parameter<any>[], type: Type<any>, method: string): Execption {
-        throw new MissingParameterExecption(missings, type, method)
+    protected missingException(missings: Parameter<any>[], type: Type<any>, method: string): Exception {
+        throw new MissingParameterException(missings, type, method)
     }
 
     get destroyed() {
@@ -296,7 +296,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     protected assertNotDestroyed(): void {
         if (this.destroyed) {
-            throw new Execption('Context has already been destroyed.')
+            throw new Exception('Context has already been destroyed.')
         }
     }
 
@@ -334,14 +334,14 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 }
 
 /**
- * context arguments token.
+ * context payload token.
  */
-export const CONTEXT_ARGUMENTS = tokenId('CONTEXT_ARGUMENTS');
+export const CONTEXT_PAYLOAD = tokenId('CONTEXT_PAYLOAD');
 
 /**
  * Missing argument execption.
  */
-export class MissingParameterExecption extends Execption {
+export class MissingParameterException extends Exception {
     constructor(parameters: Parameter[], type: Type, method: string) {
         super(`ailed to invoke operation because the following required parameters were missing: [ ${parameters.map(p => object2string(p)).join(',\n')} ], method ${method} of class ${object2string(type)}`)
     }

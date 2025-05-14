@@ -1,4 +1,4 @@
-import { Execption, Inject, Injectable, lang } from '@tsdi/ioc';
+import { Exception, Inject, Injectable, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ev } from '@tsdi/common/transport';
 import { Server, ServerTransportFactory, ServerTransport, RequestContext, getRouter } from '@tsdi/endpoints';
@@ -53,7 +53,7 @@ export class AmqpServer extends Server<RequestContext, AmqpServConfig> {
     }
     protected async onStart(): Promise<any> {
         await this.connect();
-        if (!this._conn) throw new Execption('Amqp Connection has not connected.');
+        if (!this._conn) throw new Exception('Amqp Connection has not connected.');
 
         const options = this.getOptions();
 

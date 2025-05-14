@@ -1,6 +1,6 @@
 import {
     tokenId, Injector, IocContext, DefaultInvocationContext, ParameterMetadata, lang, Type,
-    DecorDefine, Defer, TargetInvokeArguments, ProvdierOf, isArray, CONTEXT_ARGUMENTS, Class
+    DecorDefine, Defer, TargetInvokeArguments, ProvdierOf, isArray, CONTEXT_PAYLOAD, Class
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advisor } from '../Advisor';
@@ -63,6 +63,7 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
     target: any;
     returning: any;
     throwing: any;
+    args: any[];
     accessor?: 'get' | 'set' | 'value';
     readonly propertyKey: string | symbol;
     readonly fullName: string;
@@ -80,6 +81,7 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
         super(injector, options);
         this.target = options.target;
         this.propertyKey = options.propertyKey;
+        this.args = options.args ?? [];
         this.receiver = options.receiver;
         this.targetRef = options.targetRef;
         this.targetType = options.targetType ?? options.targetRef.type;
@@ -96,15 +98,6 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
 
     proceed() {
         
-    }
-
-    protected override initArgs(args: ProvdierOf<any[]>): void {
-        if (isArray(args)) {
-            this._args = args;
-            this.injector.setValue(CONTEXT_ARGUMENTS, args);
-        } else {
-            super.initArgs(args);
-        }
     }
 
     /**

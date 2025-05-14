@@ -3,7 +3,7 @@ import { OAuth2Interceptor } from '../oauth2/oauth2.interceptor';
 import { OIDCOptions } from './oidc.options';
 import { OIDCService } from './oidc.service';
 import { RestfulRequestContext } from '@tsdi/endpoints';
-import { NoOpenIDExecption } from '../exceptions';
+import { NoOpenIDException } from '../exceptions';
 import { Authenticator } from '../Authenticator';
 
 @Injectable()
@@ -15,7 +15,7 @@ export class OIDCInterceptor extends OAuth2Interceptor {
     protected async handleCallback(ctx: RestfulRequestContext, options: OIDCOptions) {
         const code = ctx.query.code;
         if (!code) {
-            throw new NoOpenIDExecption('No authorization code provided', ctx.response);
+            throw new NoOpenIDException('No authorization code provided', ctx.response);
         }
 
         // 获取token响应

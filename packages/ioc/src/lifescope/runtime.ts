@@ -1,5 +1,5 @@
 import { createContext, InvocationContext } from '../context';
-import { ArgumentExecption, Execption } from '../execption';
+import { ArgumentException, Exception } from '../exception';
 import { Context, ContextToken, HandlerFn, InterceptorFn, InterceptorLike, invokeTail } from '../handler';
 import { PropertyMetadata } from '../metadata/meta';
 import { ctorName, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
@@ -112,7 +112,7 @@ export const propertyInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
 
     return invokeTail(() => next(input, context), () => {
         const ictx = input.context;
-        if (!ictx || !input.instance) throw new Execption('autowride property need InvocationContext');
+        if (!ictx || !input.instance) throw new Exception('autowride property need InvocationContext');
         let meta: PropertyMetadata, key: string, val;
 
         input.class.eachProperty((metas, propertyKey) => {
@@ -152,7 +152,7 @@ export function getRuntimePropertyScope(platform: Platform): LifeScope<RuntimeCo
 
 
 const onError = (target: Type, propertyKey: string) => {
-    throw new ArgumentExecption(`can not autowride property ${propertyKey} of class ${target}`)
+    throw new ArgumentException(`can not autowride property ${propertyKey} of class ${target}`)
 }
 
 /**

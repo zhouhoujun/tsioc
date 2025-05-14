@@ -2,16 +2,16 @@ import {
     Arrayify, Empty, Injector, Module, ModuleRef, ModuleWithProviders,
     Provider, isArray, lang, toProvider, tokenId
 } from '@tsdi/ioc';
-import { ConfigMissingExecption, TypedRespond } from '@tsdi/core';
-import { isMicroTransport, NotImplementedExecption, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
+import { ConfigMissingException, TypedRespond } from '@tsdi/core';
+import { isMicroTransport, NotImplementedException, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
 import { ServiceConfig } from './server.options';
 import { ServerTransportFactory } from './transport';
 import { EndpointTypedRespond } from './typed.respond';
 import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, LoggerInterceptor } from './interceptors';
 import { RouteEndpointModule, RouterModule, createRouteProviders } from './router/router.module';
 import { REGISTER_SERVICES, SetupServices } from './SetupServices';
-import { ExecptionFinalizeFilter } from './execption.filter';
-import { DefaultExecptionHandlers } from './execption.handlers';
+import { ExceptionFinalizeFilter } from './exception.filter';
+import { DefaultExceptionHandlers } from './exception.handlers';
 import { FinalizeFilter } from './finalize.filter';
 import { createRequestHandler } from './impl/request.handler';
 import { DefaultServerTransferFactory } from './impl/transfer';
@@ -41,7 +41,7 @@ import { HttpStatusAdapter } from './impl/status';
         BodyparserInterceptor,
 
         FinalizeFilter,
-        ExecptionFinalizeFilter
+        ExceptionFinalizeFilter
     ]
 })
 export class EndpointModule {
@@ -122,7 +122,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
                         }
                     } catch (err: any) {
 
-                        throw new NotImplementedExecption(`${options.transport} ${microservice ? 'microservice' : 'server'} ${err.message ?? 'has not implemented'}`);
+                        throw new NotImplementedException(`${options.transport} ${microservice ? 'microservice' : 'server'} ${err.message ?? 'has not implemented'}`);
                     }
 
                 }
@@ -146,8 +146,8 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
                     serverOpts.providers = [];
                 }
 
-                if (!serverOpts.handlerType) throw new ConfigMissingExecption(`Config Missing handlerType`);
-                if (!serverOpts.transportFactory || serverOpts.transportFactory === ServerTransportFactory) throw new ConfigMissingExecption(`Config Missing transportFactory`);
+                if (!serverOpts.handlerType) throw new ConfigMissingException(`Config Missing handlerType`);
+                if (!serverOpts.transportFactory || serverOpts.transportFactory === ServerTransportFactory) throw new ConfigMissingException(`Config Missing transportFactory`);
 
                 if (microservice) {
                     serverOpts.microservice = microservice;
@@ -168,7 +168,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
                 serverOpts.providers.push(toProvider(ServerTransportFactory, serverOpts.transportFactory));
 
                 if (!serverOpts.execptionHandlers) {
-                    serverOpts.execptionHandlers = [DefaultExecptionHandlers]
+                    serverOpts.execptionHandlers = [DefaultExceptionHandlers]
                 }
 
 

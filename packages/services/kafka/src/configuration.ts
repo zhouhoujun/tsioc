@@ -1,9 +1,9 @@
 import { InjectFlags, isString } from '@tsdi/ioc';
-import { Bean, Configuration, ExecptionHandlerFilter, ApplicationHandlerFn, ApplicationInterceptorFn } from '@tsdi/core';
+import { Bean, Configuration, ExceptionHandlerFilter, ApplicationHandlerFn, ApplicationInterceptorFn } from '@tsdi/core';
 import { DefaultResponseFactory, HeaderAdapter, IHeaders as Headers, parseQueryString, ResponseFactory } from '@tsdi/common';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, 
-    DeserializerFactory, FileAdapter, MimeAdapter, NotSupportedExecption, 
+    DeserializerFactory, FileAdapter, MimeAdapter, NotSupportedException, 
     messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter,
     StreamAdapter, TopicClientIncomingFactory, TopicOutgoingFactory,
     TransportContext, IReadable, bodyDesrializeBackend
@@ -15,7 +15,7 @@ import {
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
-    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
+    ExceptionFinalizeFilter, FinalizeFilter, LoggerFilter,
     execptionMessageSerializeInterceptor, lengthLimitSerializeInterceptor,
     SERVER_MODULES, ServerTransferFactory, ServiceModuleOpts, TopicRequestContext,
     contextBodySerializeBackend, limitedReadableSerializeInterceptor,
@@ -137,7 +137,7 @@ export class KafkaConfiguration {
                                     (socket, msg, req) => {
                                         // const headers = socket.mergeHeaders(req.headers, options.publishOpts?.headers);
                                         // req?.id && headers.set('identity', String(req.id));
-                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
+                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedException('Not supported stream payload');
                                         const headers = {} as IHeaders;
                                         req.headers.forEach((n, v) => {
                                             headers[n] = generHead(v);
@@ -232,8 +232,8 @@ export class KafkaConfiguration {
                                     options,
                                     (socket, factory, instance) => socket.getPacket(factory, m => !m.topic.endsWith('.reply'), instance),
                                     (socket, msg, requestContext) => {
-                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
-                                        if (!requestContext.responseTopic) throw new NotSupportedExecption('Not need response');
+                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedException('Not supported stream payload');
+                                        if (!requestContext.responseTopic) throw new NotSupportedException('Not need response');
                                         const headers = {} as IHeaders;
                                         const reshed = requestContext.headerAdapter.getHeaders(requestContext.response);
                                         Object.keys(reshed).forEach(n => {
@@ -309,8 +309,8 @@ export class KafkaConfiguration {
                 guardsToken: KAFKA_SERV_GUARDS,
                 filters: [
                     LoggerFilter,
-                    ExecptionFinalizeFilter,
-                    ExecptionHandlerFilter,
+                    ExceptionFinalizeFilter,
+                    ExceptionHandlerFilter,
                     FinalizeFilter
                 ],
                 interceptors: [

@@ -30,10 +30,10 @@ export class HandleContext<TInput = any> extends DefaultInvocationContext<TInput
 
     set execption(err: any) {
         this._execption = err;
-        this.onExecption(err);
+        this.onException(err);
     }
 
-    protected onExecption(err: any) { }
+    protected onException(err: any) { }
 
     protected override getArgumentResolver(): OperationArgumentResolver<any>[] {
         const res: OperationArgumentResolver[] = [];

@@ -1,4 +1,4 @@
-import { Execption, Injectable, lang, promisify } from '@tsdi/ioc';
+import { Exception, Injectable, lang, promisify } from '@tsdi/ioc';
 import { defaultFormatter, PatternFormatter } from '@tsdi/common';
 import { ev } from '@tsdi/common/transport';
 import { getRouter, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
@@ -60,7 +60,7 @@ export class MqttServer extends Server<RequestContext, MqttServConfig> {
 
     protected override async onStart(): Promise<any> {
         await this.connect();
-        if (!this.mqtt) throw new Execption('Mqtt connection cannot be null');
+        if (!this.mqtt) throw new Exception('Mqtt connection cannot be null');
 
         const options = this.getOptions();
         const injector = this.handler.injector;

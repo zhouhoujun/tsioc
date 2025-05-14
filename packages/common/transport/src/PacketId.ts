@@ -1,4 +1,4 @@
-import { Abstract, Execption, Injectable } from '@tsdi/ioc';
+import { Abstract, Exception, Injectable } from '@tsdi/ioc';
 import { UuidGenerator } from '@tsdi/core';
 import { NumberAllocator } from 'number-allocator';
 
@@ -23,7 +23,7 @@ export class PacketNumberIdGenerator implements PacketIdGenerator {
         }
         const id = this.allocator.alloc();
         if (!id) {
-            throw new Execption('alloc stream id failed');
+            throw new Exception('alloc stream id failed');
         }
         this.last = id;
         return id;

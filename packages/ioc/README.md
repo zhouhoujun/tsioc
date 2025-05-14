@@ -153,7 +153,7 @@ import { Controller, Delete, Get, Post, Put, RequestParam } from '@tsdi/core';
 import { lang } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logger';
 import { Repository, Transactional } from '@tsdi/repository';
-import { InternalServerExecption } from '@tsdi/endpoints';
+import { InternalServerException } from '@tsdi/endpoints';
 import { User } from '../models/models';
 import { UserRepository } from '../repositories/UserRepository';
 
@@ -180,7 +180,7 @@ export class UserController {
     async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
         const val = await this.usrRep.save(user);
-        if(check) throw new InternalServerExecption('check');
+        if(check) throw new InternalServerException('check');
         this.logger.log(val);
         return val;
     }
@@ -191,7 +191,7 @@ export class UserController {
     async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrRep), user);
         const val = await userRepo.save(user);
-        if(check) throw new InternalServerExecption('check');
+        if(check) throw new InternalServerException('check');
         this.logger.log(val);
         return val;
     }
@@ -222,7 +222,7 @@ export class RoleController {
         this.logger.log(role);
         console.log('save isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
         const value = await this.repo.save(role);
-        if (check) throw new InternalServerExecption('check');
+        if (check) throw new InternalServerException('check');
         this.logger.info(value);
         return value;
     }
@@ -234,7 +234,7 @@ export class RoleController {
         this.logger.log(role);
         console.log('save2 isTransactionActive:', roleRepo.queryRunner?.isTransactionActive);
         const value = await roleRepo.save(role);
-        if (check) throw new InternalServerExecption('check');
+        if (check) throw new InternalServerException('check');
         this.logger.info(value);
         return value;
     }

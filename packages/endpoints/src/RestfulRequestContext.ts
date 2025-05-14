@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { Incoming, Outgoing, encodeUrl, escapeHtml, ctype, NotSupportedExecption } from '@tsdi/common/transport';
+import { Incoming, Outgoing, encodeUrl, escapeHtml, ctype, NotSupportedException } from '@tsdi/common/transport';
 import { RequestContext } from './RequestContext';
 import { ServiceConfig } from './server.options';
 import * as Cookies from 'cookies';
@@ -162,7 +162,7 @@ export abstract class RestfulRequestContext<
      * @api public
      */
     redirect(url: string, alt?: string): void {
-        if (!this.statusAdapter) throw new NotSupportedExecption();
+        if (!this.statusAdapter) throw new NotSupportedException();
 
         if ('back' === url) url = this.getHeader('referrer') as string || alt || '/';
         this.setHeader('location', encodeUrl(url));

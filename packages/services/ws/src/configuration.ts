@@ -1,11 +1,11 @@
 import { InjectFlags, isString, promisify } from '@tsdi/ioc';
-import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
+import { Bean, Configuration, ExceptionHandlerFilter } from '@tsdi/core';
 import { DefaultResponseFactory, HeaderAdapter, ResponseFactory } from '@tsdi/common';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory, DeserializerFactory,
     FileAdapter, MimeAdapter, PacketDeserializeInterceptor, messageSerializeInterceptor,
     messageVaildateInterceptor, PayloadDeserializeInterceptor, Redirector, SerializerFactory, StatusAdapter,
-    StreamAdapter, UrlClientIncomingFactory, UrlOutgoingFactory, ev, NotSupportedExecption, isBuffer
+    StreamAdapter, UrlClientIncomingFactory, UrlOutgoingFactory, ev, NotSupportedException, isBuffer
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
@@ -16,7 +16,7 @@ import {
 } from '@tsdi/common/client';
 import {
     AcceptsPriority, DefaultServerTransferFactory,
-    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter,
+    ExceptionFinalizeFilter, FinalizeFilter, LoggerFilter,
     contextSerializeBackend, lengthLimitSerializeInterceptor, SERVER_MODULES,
     ServerTransferFactory, ServiceModuleOpts,
     execptionSerializeInterceptor,
@@ -98,7 +98,7 @@ export class WsConfiguration {
                                     async (socket, msg, req) => {
                                         const payload = msg.payload ?? msg;
                                         if (streamAdapter.isReadable(payload)) {
-                                            if (!options.enableStream) throw new NotSupportedExecption('Not supported stream payload');
+                                            if (!options.enableStream) throw new NotSupportedException('Not supported stream payload');
                                             return streamAdapter.pipeTo(payload, socket, { end: false });
                                         }
                                         return promisify<any, void>(options.enableStream ? socket.write : socket.send, socket)(payload)
@@ -198,7 +198,7 @@ export class WsConfiguration {
                                     async (socket, msg, requestContext) => {
                                         const payload = msg.payload ?? msg;
                                         if (streamAdapter.isReadable(payload)) {
-                                            if (!options.enableStream) throw new NotSupportedExecption('Not supported stream payload');
+                                            if (!options.enableStream) throw new NotSupportedException('Not supported stream payload');
                                             return streamAdapter.pipeTo(payload, socket, { end: false });
                                         }
                                         return promisify<any, void>(options.enableStream ? socket.write : socket.send, socket)(payload)
@@ -264,8 +264,8 @@ export class WsConfiguration {
                 guardsToken: WS_SERV_GUARDS,
                 filters: [
                     LoggerFilter,
-                    ExecptionFinalizeFilter,
-                    ExecptionHandlerFilter,
+                    ExceptionFinalizeFilter,
+                    ExceptionHandlerFilter,
                     FinalizeFilter
                 ]
             } as WsServConfig

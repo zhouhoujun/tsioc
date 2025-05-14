@@ -1,7 +1,7 @@
-import { Injectable, isFunction, lang, promisify, isNumber, isString, ProvdierOf, ArgumentExecption, isNil } from '@tsdi/ioc';
+import { Injectable, isFunction, lang, promisify, isNumber, isString, ProvdierOf, ArgumentException, isNil } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, ModuleLoader } from '@tsdi/core';
 import { ListenService } from '@tsdi/common';
-import { InternalServerExecption } from '@tsdi/common/transport';
+import { InternalServerException } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { BindServerEvent, CONTENT_DISPOSITION_TOKEN, HttpServConfig, MiddlewareLike, MiddlewareService, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Subject, lastValueFrom } from 'rxjs';
@@ -38,7 +38,7 @@ export class HttpServer extends Server<HttpContext, HttpServConfig> implements L
     listen(options: ListenOptions, listeningListener?: () => void): this;
     listen(port: number, host?: string, listeningListener?: () => void): this;
     listen(arg1: ListenOptions | number, arg2?: any, listeningListener?: () => void): this {
-        if (!this._server) throw new InternalServerExecption();
+        if (!this._server) throw new InternalServerException();
         const isSecure = this.isSecure;
         const options = this.getOptions();
         // const moduleRef = this.handler.injector.get(ModuleRef);
@@ -121,7 +121,7 @@ export class HttpServer extends Server<HttpContext, HttpServConfig> implements L
 
     protected override async onStart(): Promise<any> {
         await this.onStartup();
-        if (!this._server) throw new InternalServerExecption();
+        if (!this._server) throw new InternalServerException();
         const opts = this.getOptions();
 
         const injector = this.handler.injector;

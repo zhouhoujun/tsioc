@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
-import { Incoming, OutgoingMessage, UnauthorizedExecption } from '@tsdi/common/transport';
+import { Incoming, OutgoingMessage, UnauthorizedException } from '@tsdi/common/transport';
 import { RequestContext } from '@tsdi/endpoints';
 import { Observable, defer, mergeMap, throwError } from 'rxjs';
 import { Authenticator } from '../Authenticator';
@@ -48,7 +48,7 @@ export class BasicAuthInterceptor implements ApplicationInterceptor<RequestConte
         );
         
         return throwError(() => 
-            new UnauthorizedExecption('Authentication required')
+            new UnauthorizedException('Authentication required')
         );
     }
 } 

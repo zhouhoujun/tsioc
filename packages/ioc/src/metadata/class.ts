@@ -10,7 +10,7 @@ import { forIn, hasItem } from '../utils/lang';
 import { getClassAnnotation } from '../utils/util';
 import { isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
-import { Execption } from '../execption';
+import { Exception } from '../exception';
 import { InstanceOf, MethodType } from '../injector';
 import { HandlerFn } from '../handler';
 import { DesignContext, RuntimeContext } from '../lifescope/ctx';
@@ -299,7 +299,7 @@ export class Class<T = any> {
         const type = this.type;
         const inst: any = instance ?? context.resolve(type);
         if (!inst || !isFunction(inst[method])) {
-            throw new Execption(`type: ${type} has no method ${method.toString()}.`)
+            throw new Exception(`type: ${type} has no method ${method.toString()}.`)
         }
         if (!args) {
             args = this.resolveArguments(method, context);
@@ -395,8 +395,8 @@ export class Class<T = any> {
                 if (!eopt.values) eopt.values = [];
                 eopt.values.push(...options.values!);
             }
-            if (options.args) {
-                eopt.args = eopt.args ? { ...eopt.args, ...options.args } : options.args
+            if (options.payload) {
+                eopt.payload = eopt.payload ? { ...eopt.payload, ...options.payload } : options.payload
             }
         } else {
             this.methodOptions.set(method, options)

@@ -1,7 +1,7 @@
 /* eslint-disable no-case-declarations */
-import { ArgumentExecption, Injectable, TypeExecption } from '@tsdi/ioc';
+import { ArgumentException, Injectable, TypeException } from '@tsdi/ioc';
 import { HeaderMappings, UrlRequest, RequestMethod, HeadersLike, getHeader } from '@tsdi/common';
-import { BadRequestExecption, Redirector } from '@tsdi/common/transport';
+import { BadRequestException, Redirector } from '@tsdi/common/transport';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { ClientTransport } from './transport';
 import { AbstractClient } from '../AbstractClient';
@@ -13,12 +13,12 @@ export class UrlRedirector implements Redirector {
 
     redirect<T>(req: UrlRequest<any>, status: any, headers: HeadersLike, protocol: string): Observable<T> {
         return new Observable((observer: Observer<T>) => {
-            if (!req.url) return observer.error(new BadRequestExecption());
+            if (!req.url) return observer.error(new BadRequestException());
 
 
             const { statusAdapter, streamAdapter, headerAdapter } = req.context.get(ClientTransport)!;
 
-            if (!headerAdapter) return observer.error(new ArgumentExecption('header adapter missing'));
+            if (!headerAdapter) return observer.error(new ArgumentException('header adapter missing'));
 
             const rdstatus = req.context.get(REDIRECT_STATE);
             // HTTP fetch step 5.2
@@ -34,7 +34,7 @@ export class UrlRedirector implements Redirector {
                 // do not throw when options.redirect == manual
                 // let the user extract the errorneous redirect URL
                 if (rdstatus.redirect !== 'manual') {
-                    observer.error(new BadRequestExecption(`uri requested responds with an invalid redirect URL: ${location}`));
+                    observer.error(new BadRequestException(`uri requested responds with an invalid redirect URL: ${location}`));
                 }
             }
 
@@ -42,7 +42,7 @@ export class UrlRedirector implements Redirector {
             // HTTP fetch step 5.5
             switch (rdstatus.redirect) {
                 case 'error':
-                    observer.error(new BadRequestExecption(`uri requested responds with a redirect, redirect mode is set to error: ${req.url}`));
+                    observer.error(new BadRequestException(`uri requested responds with a redirect, redirect mode is set to error: ${req.url}`));
                     break;
                 case 'manual':
                     // Nothing to do
@@ -55,7 +55,7 @@ export class UrlRedirector implements Redirector {
 
                     // HTTP-redirect fetch step 5
                     if (rdstatus.counter >= rdstatus.follow) {
-                        observer.error(new BadRequestExecption(`maximum redirect reached at: ${req.url}`));
+                        observer.error(new BadRequestException(`maximum redirect reached at: ${req.url}`));
                         break;
                     }
 
@@ -85,7 +85,7 @@ export class UrlRedirector implements Redirector {
 
                     // HTTP-redirect fetch step 9
                     if (statusAdapter?.redirectBodify(status) && req.body && streamAdapter.isReadable(req.body)) {
-                        observer.error(new BadRequestExecption('Cannot follow redirect with body being a readable stream'));
+                        observer.error(new BadRequestException('Cannot follow redirect with body being a readable stream'));
                         break;
                     }
 
@@ -113,7 +113,7 @@ export class UrlRedirector implements Redirector {
                     break;
 
                 default:
-                    observer.error(new TypeExecption(`Redirect option '${rdstatus.redirect}' is not a valid value of RequestRedirect`));
+                    observer.error(new TypeException(`Redirect option '${rdstatus.redirect}' is not a valid value of RequestRedirect`));
                     break;
             }
 

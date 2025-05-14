@@ -1,5 +1,5 @@
 import { Abstract, Class, DestroyCallback, Destroyable, OnDestroy, ReflectiveRef, Token, Type } from '@tsdi/ioc';
-import { InvocationHandler, InvocationOptions } from '@tsdi/core';
+import { InvocationHandler, InvocationHanlderOptions } from '@tsdi/core';
 import { Pattern } from '@tsdi/common';
 
 
@@ -20,7 +20,7 @@ export abstract class RouteHandler extends InvocationHandler<any, any, RouteHand
 /**
  * Route handler options.
  */
-export interface RouteHandlerOptions<T = any> extends InvocationOptions<T> {
+export interface RouteHandlerOptions<T = any> extends InvocationHanlderOptions<T> {
     /**
      * route
      */

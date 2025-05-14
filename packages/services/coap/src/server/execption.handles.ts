@@ -1,127 +1,127 @@
-import { ArgumentExecption, Injectable, MissingParameterExecption } from '@tsdi/ioc';
-import { ExecptionHandler } from '@tsdi/core';
+import { ArgumentException, Injectable, MissingParameterException } from '@tsdi/ioc';
+import { ExceptionHandler } from '@tsdi/core';
 import {
-    BadGatewayExecption, BadRequestExecption, ForbiddenExecption, ServiceUnavailableExecption,
-    GatewayTimeoutExecption, InternalServerExecption, MethodNotAllowedExecption, NotAcceptableExecption,
-    NotFoundExecption, NotImplementedExecption, NotSupportedExecption, RequestTimeoutExecption,
-    UnauthorizedExecption, UnsupportedMediaTypeExecption
+    BadGatewayException, BadRequestException, ForbiddenException, ServiceUnavailableException,
+    GatewayTimeoutException, InternalServerException, MethodNotAllowedException, NotAcceptableException,
+    NotFoundException, NotImplementedException, NotSupportedException, RequestTimeoutException,
+    UnauthorizedException, UnsupportedMediaTypeException
 } from '@tsdi/common/transport';
 import { RequestContext } from '@tsdi/endpoints';
-import { MissingModelFieldExecption } from '@tsdi/repository';
+import { MissingModelFieldException } from '@tsdi/repository';
 import { CoapStatuCode } from '../status';
 
 
 @Injectable({ static: true })
-export class CoapExecptionHandlers {
+export class CoapExceptionHandlers {
 
     constructor() {
 
     }
 
-    @ExecptionHandler(BadRequestExecption)
-    badReqExecption(ctx: RequestContext, execption: BadRequestExecption) {
+    @ExceptionHandler(BadRequestException)
+    badReqException(ctx: RequestContext, execption: BadRequestException) {
         execption.status = CoapStatuCode.BadRequest;
-        ctx.throwExecption(execption)
+        ctx.throwException(execption)
     }
 
-    @ExecptionHandler(UnauthorizedExecption)
-    unauthorized(ctx: RequestContext, execption: UnauthorizedExecption) {
+    @ExceptionHandler(UnauthorizedException)
+    unauthorized(ctx: RequestContext, execption: UnauthorizedException) {
         execption.status = CoapStatuCode.Unauthorized;
-        ctx.throwExecption(execption)
+        ctx.throwException(execption)
     }
 
-    @ExecptionHandler(ForbiddenExecption)
-    forbiddenExecption(ctx: RequestContext, execption: ForbiddenExecption) {
+    @ExceptionHandler(ForbiddenException)
+    forbiddenException(ctx: RequestContext, execption: ForbiddenException) {
         execption.status = CoapStatuCode.Forbidden;
-        ctx.throwExecption(execption)
+        ctx.throwException(execption)
     }
 
-    @ExecptionHandler(NotFoundExecption)
-    notFoundExecption(ctx: RequestContext, execption: NotFoundExecption) {
+    @ExceptionHandler(NotFoundException)
+    notFoundException(ctx: RequestContext, execption: NotFoundException) {
         execption.status = CoapStatuCode.NotFound;
-        ctx.throwExecption(execption)
+        ctx.throwException(execption)
     }
 
-    @ExecptionHandler(MethodNotAllowedExecption)
-    notAllowedExecption(ctx: RequestContext, execption: MethodNotAllowedExecption) {
+    @ExceptionHandler(MethodNotAllowedException)
+    notAllowedException(ctx: RequestContext, execption: MethodNotAllowedException) {
         execption.status = CoapStatuCode.MethodNotAllowed;
-        ctx.throwExecption(execption)
+        ctx.throwException(execption)
     }
 
-    @ExecptionHandler(NotAcceptableExecption)
-    notAcceptableExecption(ctx: RequestContext, execption: NotAcceptableExecption) {
+    @ExceptionHandler(NotAcceptableException)
+    notAcceptableException(ctx: RequestContext, execption: NotAcceptableException) {
         execption.status = CoapStatuCode.NotAcceptable;
-        ctx.throwExecption(execption)
+        ctx.throwException(execption)
     }
 
-    @ExecptionHandler(RequestTimeoutExecption)
-    timeoutExecpotion(ctx: RequestContext, execption: NotAcceptableExecption) {
+    @ExceptionHandler(RequestTimeoutException)
+    timeoutExecpotion(ctx: RequestContext, execption: NotAcceptableException) {
         execption.status = CoapStatuCode.NotFound;
-        ctx.throwExecption(execption)
+        ctx.throwException(execption)
     }
 
 
-    @ExecptionHandler(UnsupportedMediaTypeExecption)
-    unsupported(ctx: RequestContext, execption: UnsupportedMediaTypeExecption) {
+    @ExceptionHandler(UnsupportedMediaTypeException)
+    unsupported(ctx: RequestContext, execption: UnsupportedMediaTypeException) {
         execption.status = CoapStatuCode.UnsupportedContentFormat;
-        ctx.throwExecption(execption)
+        ctx.throwException(execption)
     }
 
-    @ExecptionHandler(InternalServerExecption)
-    internalServerError(ctx: RequestContext, execption: InternalServerExecption) {
+    @ExceptionHandler(InternalServerException)
+    internalServerError(ctx: RequestContext, execption: InternalServerException) {
         execption.status = CoapStatuCode.InternalServerError;
-        ctx.throwExecption(execption)
+        ctx.throwException(execption)
     }
 
 
-    @ExecptionHandler(NotImplementedExecption)
-    notImplementedError(ctx: RequestContext, execption: NotImplementedExecption) {
+    @ExceptionHandler(NotImplementedException)
+    notImplementedError(ctx: RequestContext, execption: NotImplementedException) {
         execption.status = CoapStatuCode.NotImplemented;
-        ctx.throwExecption(execption)
+        ctx.throwException(execption)
     }
 
 
-    @ExecptionHandler(BadGatewayExecption)
-    badGatewayError(ctx: RequestContext, execption: BadGatewayExecption) {
+    @ExceptionHandler(BadGatewayException)
+    badGatewayError(ctx: RequestContext, execption: BadGatewayException) {
         execption.status = CoapStatuCode.BadGateway;
-        ctx.throwExecption(execption)
+        ctx.throwException(execption)
     }
 
-    @ExecptionHandler(ServiceUnavailableExecption)
-    ServiceUnavailableError(ctx: RequestContext, execption: ServiceUnavailableExecption) {
+    @ExceptionHandler(ServiceUnavailableException)
+    ServiceUnavailableError(ctx: RequestContext, execption: ServiceUnavailableException) {
         execption.status = CoapStatuCode.ServiceUnavailable;
-        ctx.throwExecption(execption)
+        ctx.throwException(execption)
     }
 
-    @ExecptionHandler(GatewayTimeoutExecption)
-    gatewayTimeoutError(ctx: RequestContext, execption: GatewayTimeoutExecption) {
+    @ExceptionHandler(GatewayTimeoutException)
+    gatewayTimeoutError(ctx: RequestContext, execption: GatewayTimeoutException) {
         execption.status = CoapStatuCode.GatewayTimeout;
-        ctx.throwExecption(execption)
+        ctx.throwException(execption)
     }
 
-    @ExecptionHandler(NotSupportedExecption)
-    notSupportedError(ctx: RequestContext, execption: NotSupportedExecption) {
+    @ExceptionHandler(NotSupportedException)
+    notSupportedError(ctx: RequestContext, execption: NotSupportedException) {
         execption.status = CoapStatuCode.BadGateway;
-        ctx.throwExecption(execption)
+        ctx.throwException(execption)
     }
 
 
-    @ExecptionHandler(ArgumentExecption)
-    anguExecption(ctx: RequestContext, err: ArgumentExecption) {
-        const execption = new BadRequestExecption(this.detailError(ctx) ? err.message : undefined, '4.00');
-        ctx.throwExecption(execption)
+    @ExceptionHandler(ArgumentException)
+    anguException(ctx: RequestContext, err: ArgumentException) {
+        const execption = new BadRequestException(this.detailError(ctx) ? err.message : undefined, '4.00');
+        ctx.throwException(execption)
     }
 
-    @ExecptionHandler(MissingModelFieldExecption)
-    missFieldExecption(ctx: RequestContext, err: MissingModelFieldExecption) {
-        const execption = new BadRequestExecption(this.detailError(ctx) ? err.message : undefined, '4.00');
-        ctx.throwExecption(execption)
+    @ExceptionHandler(MissingModelFieldException)
+    missFieldException(ctx: RequestContext, err: MissingModelFieldException) {
+        const execption = new BadRequestException(this.detailError(ctx) ? err.message : undefined, '4.00');
+        ctx.throwException(execption)
     }
 
-    @ExecptionHandler(MissingParameterExecption)
-    missExecption(ctx: RequestContext, err: MissingParameterExecption) {
-        const execption = new BadRequestExecption(this.detailError(ctx) ? err.message : undefined, '4.00');
-        ctx.throwExecption(execption)
+    @ExceptionHandler(MissingParameterException)
+    missException(ctx: RequestContext, err: MissingParameterException) {
+        const execption = new BadRequestException(this.detailError(ctx) ? err.message : undefined, '4.00');
+        ctx.throwException(execption)
     }
 
     protected detailError(ctx: RequestContext): boolean {

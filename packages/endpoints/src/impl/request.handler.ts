@@ -1,6 +1,6 @@
-import { ArgumentExecption, Execption, Injector, InvocationContext, ProvdierOf, createContext, getClass } from '@tsdi/ioc';
+import { ArgumentException, Exception, Injector, InvocationContext, ProvdierOf, createContext, getClass } from '@tsdi/ioc';
 import { BackendFn, ConfigableHandler, ApplicationInterceptorFn, normalizeConfigableHandlerOptions } from '@tsdi/core';
-import { ForbiddenExecption } from '@tsdi/common/transport';
+import { ForbiddenException } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 import { AbstractRequestHandler, RequestHandlerOptions } from '../AbstractRequestHandler';
@@ -18,7 +18,7 @@ export class DefaultRequestHandler<TInput extends RequestContext = RequestContex
     extends ConfigableHandler<TInput, any, TOptions> implements AbstractRequestHandler<TInput, TOptions> {
 
     use(middlewares: ProvdierOf<MiddlewareLike<TInput>> | ProvdierOf<MiddlewareLike<TInput>>[], order?: number): this {
-        if(!this.options.middlewaresToken) throw new ArgumentExecption('middlewaresToken config is missing');
+        if(!this.options.middlewaresToken) throw new ArgumentException('middlewaresToken config is missing');
         this.regMulti(this.options.middlewaresToken, middlewares, order);
         this.reset();
         return this;
@@ -44,8 +44,8 @@ export class DefaultRequestHandler<TInput extends RequestContext = RequestContex
         return this.options.middlewaresToken? this.injector.get(this.options.middlewaresToken!, null) : null;
     }
 
-    protected override forbiddenError(): Execption {
-        return new ForbiddenExecption()
+    protected override forbiddenError(): Exception {
+        return new ForbiddenException()
     }
 }
 

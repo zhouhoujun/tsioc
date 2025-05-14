@@ -1,11 +1,11 @@
 import { Abstract, Injector, ProvidedInMetadata, Token, tokenId, Type, TypeDef } from '@tsdi/ioc';
-import { ApplicationInterceptor, Backend, ApplicationHandler, InvocationOptions } from '@tsdi/core';
+import { ApplicationInterceptor, Backend, ApplicationHandler, InvocationHanlderOptions } from '@tsdi/core';
 import { RequestMethod, Pattern, Protocols, PatternFormatter } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 import { Route } from './route';
 import { RequestHandler } from '../RequestHandler';
-import { InternalServerExecption } from '@tsdi/common/transport';
+import { InternalServerException } from '@tsdi/common/transport';
 import { MiddlewareLike } from '../middleware/middleware';
 
 /**
@@ -90,10 +90,10 @@ export function getRouter(injector: Injector, protocol?: Protocols, microservice
 export function getRouter(injector: Injector, protocol?: string, microservice?: boolean): Router;
 export function getRouter(injector: Injector, protocol?: string, microservice?: boolean): Router {
     const routers = injector.get(microservice ? MESSAGE_ROUTERS : ROUTERS, null);
-    if (!routers) throw new InternalServerExecption(`${protocol ?? ''} ${microservice ? 'micro' : ''}service router has not register.`);
-    if (!protocol && routers.length > 1) throw new InternalServerExecption(`has mutil ${microservice ? 'micro' : ''}service, protocol param can not empty`);
+    if (!routers) throw new InternalServerException(`${protocol ?? ''} ${microservice ? 'micro' : ''}service router has not register.`);
+    if (!protocol && routers.length > 1) throw new InternalServerException(`has mutil ${microservice ? 'micro' : ''}service, protocol param can not empty`);
     const router = routers.find(r => r.protocol == protocol) ?? routers.find(r => r.asDefault) ?? routers[0];
-    if (!router) throw new InternalServerExecption(`${protocol ?? ''} ${microservice ? 'micro' : ''}service router has not register.`);
+    if (!router) throw new InternalServerException(`${protocol ?? ''} ${microservice ? 'micro' : ''}service router has not register.`);
     return router;
 }
 
@@ -178,7 +178,7 @@ export abstract class RouteMatcher {
 /**
  * route options
  */
-export interface RouteOptions<T = any> extends InvocationOptions<T> {
+export interface RouteOptions<T = any> extends InvocationHanlderOptions<T> {
     /**
      * pipe extends args.
      */

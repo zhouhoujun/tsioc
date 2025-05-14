@@ -1,4 +1,4 @@
-import { Execption } from '../execption';
+import { Exception } from '../exception';
 import { Injector, InjectorScope } from '../injector';
 import { get } from '../metadata/refl';
 import { Class, ModuleDef } from '../metadata/class';
@@ -108,7 +108,7 @@ export function createModuleRef<T>(module: Type<T> | Class<T> | ModuleWithProvid
     }
     const moduleDef = isType(module) ? get(module) : module;
     if (!moduleDef.getAnnotation<ModuleDef>().module) {
-        throw new Execption(`module def must be module type.`)
+        throw new Exception(`module def must be module type.`)
     }
     return new DefaultModuleRef(moduleDef, parent, option)
 }

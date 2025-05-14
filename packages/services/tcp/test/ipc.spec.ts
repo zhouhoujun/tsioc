@@ -2,7 +2,7 @@ import { Injector, Module, isArray, lang } from '@tsdi/ioc';
 import { Application, ApplicationContext, Payload } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ErrorResponse, Response } from '@tsdi/common';
-import { BadRequestExecption } from '@tsdi/common/transport';
+import { BadRequestException } from '@tsdi/common/transport';
 import { provideClient } from '@tsdi/common/client';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -49,7 +49,7 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
         resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
             console.log('age1:', age1);
             if (age1 <= 0) {
-                throw new BadRequestExecption();
+                throw new BadRequestException();
             }
             return age1;
         }

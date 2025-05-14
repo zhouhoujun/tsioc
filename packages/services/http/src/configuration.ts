@@ -1,5 +1,5 @@
 import { Injectable, InjectFlags, isNil, promisify, tokenId } from '@tsdi/ioc';
-import { Bean, Configuration, ContextToken, ExecptionHandlerFilter } from '@tsdi/core';
+import { Bean, Configuration, ContextToken, ExceptionHandlerFilter } from '@tsdi/core';
 import { Header, HeaderAdapter, LOCALHOST, ResponseFactory } from '@tsdi/common';
 import {
     bodyDesrializeBackend,
@@ -15,13 +15,13 @@ import {
 } from '@tsdi/common/client';
 import { HttpRequest } from '@tsdi/common/http';
 import {
-    ExecptionFinalizeFilter, FinalizeFilter, SERVER_MODULES, ServerModuleOpts,
+    ExceptionFinalizeFilter, FinalizeFilter, SERVER_MODULES, ServerModuleOpts,
     MimeModule, ServiceModuleOpts, JsonInterceptor, BodyparserInterceptor, AcceptsPriority, ServerTransferFactory,
     DefaultServerTransferFactory, DefaultServerTransport, ServerTransport,
     HttpServConfig, LoggerFilter, emptyStatusSerializeInterceptor,
     headMethodSerializeInterceptor, noBodySerializeInterceptor, lengthLimitSerializeInterceptor,
     contextBodySerializeBackend, execptionMessageSerializeInterceptor,
-    HttpExecptionHandlers,
+    HttpExceptionHandlers,
     HttpStatusAdapter
 } from '@tsdi/endpoints';
 import { request as httpRequest, IncomingMessage, ClientRequest, Server } from 'http';
@@ -39,7 +39,7 @@ import { HttpRequestHandler } from './server/handler';
 import { HttpServer } from './server/server';
 // import { HttpStatusAdapter } from './status';
 import { HttpResponseEventFactory } from './client/response.factory';
-// import { HttpExecptionHandlers } from './execption.handlers';
+// import { HttpExceptionHandlers } from './execption.handlers';
 import { HttpContext, HttpServRequest, HttpServResponse } from './server/context';
 
 
@@ -217,7 +217,7 @@ export class HttpConfiguration {
             defaultConfig: {
                 handlerType: HttpRequestHandler,
                 listenOpts: { port: 3000, host: LOCALHOST },
-                execptionHandlers: HttpExecptionHandlers,
+                execptionHandlers: HttpExceptionHandlers,
                 transportFactory: {
                     useFactory: (serializerFactory: SerializerFactory, deserializerFactory: DeserializerFactory,
                         statusAdapter: StatusAdapter | null, headerAdapter: HeaderAdapter, streamAdapter: StreamAdapter,
@@ -315,8 +315,8 @@ export class HttpConfiguration {
                 guardsToken: HTTP_SERV_GUARDS,
                 filters: [
                     LoggerFilter,
-                    ExecptionFinalizeFilter,
-                    ExecptionHandlerFilter,
+                    ExceptionFinalizeFilter,
+                    ExceptionHandlerFilter,
                     FinalizeFilter
                 ],
                 interceptors: [

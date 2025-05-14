@@ -2,10 +2,10 @@ import * as jwt from 'jsonwebtoken';
 
 import { Injectable, lang } from '@tsdi/ioc';
 import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
-import { Incoming, OutgoingMessage, UnauthorizedExecption } from '@tsdi/common/transport';
+import { Incoming, OutgoingMessage, UnauthorizedException } from '@tsdi/common/transport';
 import { RequestContext } from '@tsdi/endpoints';
 import { defer, mergeMap, Observable, throwError } from 'rxjs';
-import { InvalidTokenExecption } from '../exceptions';
+import { InvalidTokenException } from '../exceptions';
 import { Authenticator } from '../Authenticator';
 import { JWTOption } from './jwt.config';
 
@@ -18,19 +18,19 @@ export class JwtInterceptor implements ApplicationInterceptor<RequestContext, Ou
     intercept(input: RequestContext, next: ApplicationHandler, context?: any): Observable<any> {
         const option = input.get(JWTOption);
         const token = this.getToken(input, option);
-        if (!token) return throwError(() => new InvalidTokenExecption('no token'));
+        if (!token) return throwError(() => new InvalidTokenException('no token'));
 
         return defer(() => {
             const defer = lang.defer();
             jwt.verify(token, option.secret, option.options, (err, decoded) => {
                 if (err) {
-                    defer.reject(new InvalidTokenExecption(err.message));
+                    defer.reject(new InvalidTokenException(err.message));
                 }
                 input.get(Authenticator).login(input, decoded)
                     .then(() => {
                         defer.resolve();
                     }).catch(err => {
-                        defer.reject(new InvalidTokenExecption(err.message));
+                        defer.reject(new InvalidTokenException(err.message));
                     })
             });
             return defer.promise;

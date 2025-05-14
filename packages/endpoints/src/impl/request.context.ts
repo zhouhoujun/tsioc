@@ -1,6 +1,6 @@
 import { Injector } from '@tsdi/ioc';
 import { HeaderMappings, LOCALHOST, normalize, parseQueryString } from '@tsdi/common';
-import { Incoming, MessageExecption, Outgoing, TopicIncoming, UrlIncoming } from '@tsdi/common/transport';
+import { Incoming, MessageException, Outgoing, TopicIncoming, UrlIncoming } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 import { ServiceConfig } from '../server.options';
@@ -29,7 +29,7 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
         readonly response: TResponse,
         readonly serverOptions: ServiceConfig = {}
     ) {
-        super(injector, { ...serverOptions, args: request });
+        super(injector, { ...serverOptions, payload: request });
 
         this.setValue(ServerTransport, transport);
         
@@ -107,7 +107,7 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
     }
 
 
-    async throwExecption(execption: MessageExecption): Promise<void> {
+    async throwException(execption: MessageException): Promise<void> {
         if (this.headersSent) return;
         this.execption = execption;
 
@@ -132,7 +132,7 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
         readonly response: TResponse,
         readonly serverOptions: ServiceConfig = {}
     ) {
-        super(injector, { ...serverOptions, args: request });
+        super(injector, { ...serverOptions, payload: request });
 
         this.setValue(ServerTransport, transport);
 
@@ -166,7 +166,7 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
         return this._query;
     }
 
-    async throwExecption(execption: MessageExecption): Promise<void> {
+    async throwException(execption: MessageException): Promise<void> {
         if (this.headersSent) return;
         this.execption = execption;
 
@@ -190,7 +190,7 @@ export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicInco
         readonly response: TResponse,
         readonly serverOptions: ServiceConfig = {}
     ) {
-        super(injector, { ...serverOptions, args: request });
+        super(injector, { ...serverOptions, payload: request });
 
         this.setValue(ServerTransport, transport);
 
@@ -226,7 +226,7 @@ export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicInco
         return this._query;
     }
 
-    async throwExecption(execption: MessageExecption): Promise<void> {
+    async throwException(execption: MessageException): Promise<void> {
         if (this.headersSent) return;
         this.execption = execption;
 

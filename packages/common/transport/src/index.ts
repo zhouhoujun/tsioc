@@ -5,7 +5,7 @@ export * from './socket';
 export * from './consts';
 export * from './utils';
 
-export * from './execptions';
+export * from './exceptions';
 export * from './StatusAdapter';
 export * from './StreamAdapter';
 export * from './MimeAdapter';

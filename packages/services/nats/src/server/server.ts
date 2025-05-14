@@ -1,4 +1,4 @@
-import { Execption, Injectable } from '@tsdi/ioc';
+import { Exception, Injectable } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { getRouter, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
 import { connect } from 'nats';
@@ -32,7 +32,7 @@ export class NatsServer extends Server<RequestContext, NatsServConfig> {
 
     protected async onStart(): Promise<any> {
         await this.connect();
-        if (!this.socket) throw new Execption('Nats connection cannot be null');
+        if (!this.socket) throw new Exception('Nats connection cannot be null');
 
         const options = this.getOptions();
 

@@ -1,7 +1,7 @@
 import { Abstract, Injectable, isDefined } from '@tsdi/ioc';
 import { ApplicationInterceptor, ApplicationHandler } from '@tsdi/core';
 import { GET, HEAD } from '@tsdi/common';
-import { NotFoundExecption } from '@tsdi/common/transport';
+import { NotFoundException } from '@tsdi/common/transport';
 import { Observable, from, mergeMap, of, throwError } from 'rxjs';
 import { Middleware } from '../middleware/middleware';
 import { RequestContext } from '../RequestContext';
@@ -29,7 +29,7 @@ export class ContentInterceptor implements Middleware<RequestContext>, Applicati
             try {
                 await next()
             } catch (err: any) {
-                if (err instanceof NotFoundExecption) {
+                if (err instanceof NotFoundException) {
                     await this.send(ctx, options);
                     return;
                 }
@@ -55,7 +55,7 @@ export class ContentInterceptor implements Middleware<RequestContext>, Applicati
                     mergeMap(async res => {
                         const file = await this.send(input, options)
                         if (!file) {
-                            return throwError(() => new NotFoundExecption())
+                            return throwError(() => new NotFoundException())
                         }
                     })
                 )

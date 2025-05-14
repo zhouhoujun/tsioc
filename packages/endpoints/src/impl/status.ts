@@ -41,7 +41,7 @@ export class HttpStatusAdapter implements StatusAdapter {
     isEmpty(status: number): boolean {
         return emptyStatus[status];
     }
-    isEmptyExecption(status: number): boolean {
+    isEmptyException(status: number): boolean {
         return false;
     }
     isRedirect(status: number): boolean {

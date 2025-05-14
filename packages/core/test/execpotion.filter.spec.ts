@@ -1,26 +1,26 @@
-import { ArgumentExecption, Injectable, MissingParameterExecption, Module } from '@tsdi/ioc';
+import { ArgumentException, Injectable, MissingParameterException, Module } from '@tsdi/ioc';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { Application, ApplicationContext, ExecptionContext } from '../src';
-import { Dispose, EventHandler, ExecptionHandler, Payload, Runner, Shutdown, Start } from '../src/metadata';
+import { Application, ApplicationContext, ExceptionContext } from '../src';
+import { Dispose, EventHandler, ExceptionHandler, Payload, Runner, Shutdown, Start } from '../src/metadata';
 
 
 @Injectable({
     static: true
 })
-export class ExecptionHandlers {
+export class ExceptionHandlers {
 
-    @ExecptionHandler(MissingParameterExecption)
-    catchMessing(exception: MissingParameterExecption, context: ExecptionContext, ctx: ApplicationContext) {
-        ctx.runners.getRef(TestService).getInstance().missingParameterrExecption = exception;
+    @ExceptionHandler(MissingParameterException)
+    catchMessing(exception: MissingParameterException, context: ExceptionContext, ctx: ApplicationContext) {
+        ctx.runners.getRef(TestService).instance.missingParameterrException = exception;
         return exception;
     }
 
-    @ExecptionHandler(ArgumentExecption, {
+    @ExceptionHandler(ArgumentException, {
         response: 'body'
     })
-    catchArgumentError(exception: ArgumentExecption, context: ExecptionContext, ctx: ApplicationContext) {
-        ctx.runners.getRef(TestService).getInstance().argumentExecption = exception;
+    catchArgumentError(exception: ArgumentException, context: ExceptionContext, ctx: ApplicationContext) {
+        ctx.runners.getRef(TestService).instance.argumentException = exception;
         return exception;
     }
 
@@ -35,8 +35,8 @@ class TestService {
     dispose = false;
     message!: string;
 
-    missingParameterrExecption!: MissingParameterExecption;
-    argumentExecption!: ArgumentExecption;
+    missingParameterrException!: MissingParameterException;
+    argumentException!: ArgumentException;
 
     @Runner()
     runService() {
@@ -74,7 +74,7 @@ class TestService {
     ],
     providers:[
         TestService,
-        ExecptionHandlers
+        ExceptionHandlers
     ],
     declarations: [
     ],
@@ -87,7 +87,7 @@ class MainModule {
 }
 
 
-describe('Application Event Execption', () => {
+describe('Application Event Exception', () => {
 
     let ctx: ApplicationContext;
     before(async () => {
@@ -100,7 +100,7 @@ describe('Application Event Execption', () => {
         const testServiceRef = ctx.runners.getRef(TestService);
         expect(testServiceRef).not.toBeNull();
         // console.log(runner.instance);
-        expect(testServiceRef.getInstance().started).toBeTruthy();
+        expect(testServiceRef.instance.started).toBeTruthy();
 
     });
 
@@ -112,27 +112,27 @@ describe('Application Event Execption', () => {
         const testServiceRef = ctx.runners.getRef(TestService);
         expect(testServiceRef).not.toBeNull();
 
-        expect(testServiceRef.getInstance().name).toEqual('name');
-        expect(testServiceRef.getInstance().age).toEqual(20);
+        expect(testServiceRef.instance.name).toEqual('name');
+        expect(testServiceRef.instance.age).toEqual(20);
     })
 
 
     it('payload filed transport parameter arguments message execption', async () => {
 
         const result = await lastValueFrom(ctx.publishEvent({ name: 'zhansan' }).pipe(catchError(err=> of(err))));
-        expect(result).toBeInstanceOf(MissingParameterExecption);
+        expect(result).toBeInstanceOf(MissingParameterException);
 
-        expect((result as MissingParameterExecption).message.indexOf('name: "age"')).toBeGreaterThan(1);
+        expect((result as MissingParameterException).message.indexOf('name: "age"')).toBeGreaterThan(1);
 
         const testServiceRef = ctx.runners.getRef(TestService);
         expect(testServiceRef).not.toBeNull();
-        expect(testServiceRef?.getInstance().name).toEqual('name');
-        expect(testServiceRef?.getInstance().age).toEqual(20);
+        expect(testServiceRef?.instance.name).toEqual('name');
+        expect(testServiceRef?.instance.age).toEqual(20);
     })
 
     it('OnApplicationShutdown and onApplicationDispose had called.', async () => {
         const runner = ctx.runners.getRef(TestService);
-        const service = runner.getInstance() as TestService;
+        const service = runner.instance;
         await ctx.close();
         expect(service.shutdown).toBeTruthy();
         expect(service.dispose).toBeTruthy();

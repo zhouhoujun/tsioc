@@ -1,4 +1,4 @@
-import { ArgumentExecption, Injectable, Injector, lang, promisify } from '@tsdi/ioc';
+import { ArgumentException, Injectable, Injector, lang, promisify } from '@tsdi/ioc';
 import { Decoder, Encoder } from '@tsdi/common';
 import { Packet, TransportOpts, ServerTransportFactory, ev } from '@tsdi/common/transport';
 import { EventServerTransport } from '@tsdi/endpoints';
@@ -87,7 +87,7 @@ export class CoapServerTransport extends EventServerTransport<Socket, UdpMessage
 
 
     protected async write(data: Buffer, packet: Packet<any>): Promise<void> {
-        if (!packet.topic) throw new ArgumentExecption('topic can not be empty.')
+        if (!packet.topic) throw new ArgumentException('topic can not be empty.')
         const idx = packet.topic.lastIndexOf(':');
         const port = parseInt(packet.topic.substring(idx + 1));
         const addr = packet.topic.substring(0, idx);

@@ -1,7 +1,7 @@
 import { Class, DecorDefine, Decors, Injectable, Injector, isString, OnDestroy, ReflectiveRef, tokenId, Type } from '@tsdi/ioc';
 import { Backend, ApplicationHandler, CanHandle, ApplicationInterceptor, Filter, setHandlerOptions, ConfigableHandler, BackendFn } from '@tsdi/core';
 import { joinPath, normalize } from '@tsdi/common';
-import { NotFoundExecption, PushDisabledExecption } from '@tsdi/common/transport';
+import { NotFoundException, PushDisabledException } from '@tsdi/common/transport';
 
 import { lastValueFrom, throwError } from 'rxjs';
 import { Middleware } from '../middleware/middleware';
@@ -59,11 +59,11 @@ export class ControllerRoute<T> extends ConfigableHandler<RequestContext, any, R
 
     protected getBackend(): BackendFn<RequestContext, any> {
         return (ctx) => {
-            if (ctx.headersSent) return throwError(() => new PushDisabledExecption());
+            if (ctx.headersSent) return throwError(() => new PushDisabledException());
 
             const method = this.getRouteMetaData(ctx) as DecorDefine<RouteMappingMetadata>;
             if (!method || !method.propertyKey) {
-                return throwError(() => new NotFoundExecption());
+                return throwError(() => new NotFoundException());
             }
 
             let handler = this.routes.get(method.propertyKey);

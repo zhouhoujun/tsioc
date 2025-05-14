@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { NotSupportedExecption, StatusAdapter } from '@tsdi/common/transport';
+import { NotSupportedException, StatusAdapter } from '@tsdi/common/transport';
 
 
 @Injectable({ static: true })
@@ -9,7 +9,7 @@ export class CoapStatusVaildator implements StatusAdapter {
     }
     get found(): string {
         // return '3.02'
-        throw new NotSupportedExecption();
+        throw new NotSupportedException();
     }
 
     get notFound(): string {
@@ -44,7 +44,7 @@ export class CoapStatusVaildator implements StatusAdapter {
     isEmpty(status: string): boolean {
         return emptyStatus[status]
     }
-    isEmptyExecption(status: string): boolean{
+    isEmptyException(status: string): boolean{
         return emptyErrorStatus[status];
     }
     isRedirect(status: string): boolean {
@@ -61,13 +61,13 @@ export class CoapStatusVaildator implements StatusAdapter {
         return retryStatus[status];
     }
     redirectBodify(status: string, method?: string | undefined): boolean {
-        throw new NotSupportedExecption();
+        throw new NotSupportedException();
         // if (!method) return status === '3.03';
         // return status === '3.03' || ((status === '3.01' || status === '3.02') && method === POST)
     }
 
     redirectDefaultMethod(): string {
-        throw new NotSupportedExecption();
+        throw new NotSupportedException();
         // return GET;
     }
 

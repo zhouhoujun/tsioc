@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, Injectable, Nullable } from '@tsdi/ioc';
+import { Abstract, ArgumentException, Injectable, Nullable } from '@tsdi/ioc';
 import { RestfulRequestContext, Middleware } from '@tsdi/endpoints';
 
 
@@ -62,7 +62,7 @@ export class HelmetMiddleware implements Middleware<RestfulRequestContext> {
         let action: string = xFrame.action ?? 'SAMEORIGIN';
         if (action === 'ALLOW-FROM') {
             if (!xFrame.domain) {
-                throw new ArgumentExecption('ALLOW-FROM action requires a string domain parameter.');
+                throw new ArgumentException('ALLOW-FROM action requires a string domain parameter.');
             }
             action = action + ' ' + xFrame.domain;
         }

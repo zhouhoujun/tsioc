@@ -1,4 +1,4 @@
-import { ArgumentExecption } from '@tsdi/ioc';
+import { ArgumentException } from '@tsdi/ioc';
 
 
 /**
@@ -149,11 +149,11 @@ export function parseTokenList(str: string) {
 
 export function append(header: string, field: string) {
   if (typeof header !== 'string') {
-    throw new ArgumentExecption('header argument is required');
+    throw new ArgumentException('header argument is required');
   }
 
   if (!field) {
-    throw new ArgumentExecption('field argument is required')
+    throw new ArgumentException('field argument is required')
   }
 
   // get fields array
@@ -164,7 +164,7 @@ export function append(header: string, field: string) {
   // assert on invalid field names
   for (let j = 0; j < fields.length; j++) {
     if (!field_name.test(fields[j])) {
-      throw new ArgumentExecption('field argument contains an invalid header name');
+      throw new ArgumentException('field argument contains an invalid header name');
     }
   }
 

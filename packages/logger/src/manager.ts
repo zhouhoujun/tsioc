@@ -1,5 +1,5 @@
 import {
-    ArgumentExecption, getToken, Inject, Injectable,
+    ArgumentException, getToken, Inject, Injectable,
     Injector, isString, noPointcut, Nullable, Token, Type
 } from '@tsdi/ioc';
 import { HeaderFormater, Logger } from './logger';
@@ -44,7 +44,7 @@ export class LoggerManagers implements LoggerManager {
         }
         const mgr = this.maps.get(adapter);
         if (!mgr) {
-            throw new ArgumentExecption(`has no provider for LoggerManager ${adapter.toString()}.`)
+            throw new ArgumentException(`has no provider for LoggerManager ${adapter.toString()}.`)
         }
         const cfg = this.cfgs.get(adapter);
         cfg?.config && mgr.configure(cfg.config);
@@ -81,7 +81,7 @@ export class LoggerManagers implements LoggerManager {
             }
             const manager = this.injector.get(token);
             if (!manager) {
-                throw new ArgumentExecption(`has no provider for LoggerManager ${token.toString()}.`)
+                throw new ArgumentException(`has no provider for LoggerManager ${token.toString()}.`)
             }
 
             this.cfgs.set(adapter, cfg);

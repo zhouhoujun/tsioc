@@ -1,5 +1,5 @@
-import { Execption, isFunction } from '@tsdi/ioc';
-import { InvalidStateExecption, SecurityExecption } from '@tsdi/common/transport';
+import { Exception, isFunction } from '@tsdi/ioc';
+import { InvalidStateException, SecurityException } from '@tsdi/common/transport';
 import { GET } from '@tsdi/common';
 import * as http from 'http';
 import * as https from 'https';
@@ -94,7 +94,7 @@ export class XMLHttpRequest2 {
 
         // Check for valid request method
         if (!this.isAllowedHttpMethod(method)) {
-            throw new SecurityExecption("Request method not allowed");
+            throw new SecurityException("Request method not allowed");
         }
 
         this.settings = {
@@ -127,14 +127,14 @@ export class XMLHttpRequest2 {
      */
     setRequestHeader(header: string, value: string | number | undefined) {
         if (this.readyState != OPENED) {
-            throw new InvalidStateExecption("setRequestHeader can only be called when state is OPEN");
+            throw new InvalidStateException("setRequestHeader can only be called when state is OPEN");
         }
         if (!this.isAllowedHttpHeader(header)) {
             console.warn('Refused to set unsafe header "' + header + '"');
             return false;
         }
         if (this.sendFlag) {
-            throw new InvalidStateExecption("send flag is true");
+            throw new InvalidStateException("send flag is true");
         }
         this.headers[header] = value;
         return true;
@@ -201,11 +201,11 @@ export class XMLHttpRequest2 {
      */
     send(data: any) {
         if (this.readyState != OPENED) {
-            throw new InvalidStateExecption("connection must be opened before send() is called");
+            throw new InvalidStateException("connection must be opened before send() is called");
         }
 
         if (this.sendFlag) {
-            throw new InvalidStateExecption("send has already been called");
+            throw new InvalidStateException("send has already been called");
         }
 
         let ssl = false, local = false;
@@ -231,13 +231,13 @@ export class XMLHttpRequest2 {
                 break;
 
             default:
-                throw new Execption("Protocol not supported.");
+                throw new Exception("Protocol not supported.");
         }
 
         // Load files off the local filesystem (file://)
         if (local) {
             if (this.settings.method !== "GET") {
-                throw new Execption("XMLHttpRequest: Only GET method is supported");
+                throw new Exception("XMLHttpRequest: Only GET method is supported");
             }
 
             if (this.settings.async) {

@@ -7,7 +7,7 @@ import { Class } from './metadata/class';
 import { ProvidedInMetadata } from './metadata/meta';
 import { isArray } from './utils/chk';
 import { InvocationContext, InvokeOptions } from './context';
-import { Execption } from './execption';
+import { Exception } from './exception';
 import { Platform } from './platform';
 
 /**
@@ -413,11 +413,11 @@ export const INJECT_IMPL = {
      * @param scope 
      */
     create(providers?: Provider[], parent?: Injector, scope?: InjectorScope): Injector {
-        throw new Execption('not implemented.')
+        throw new Exception('not implemented.')
     },
 
     isInjector(target: any): boolean {
-        throw new Execption('not implemented.')
+        throw new Exception('not implemented.')
     }
 };
 

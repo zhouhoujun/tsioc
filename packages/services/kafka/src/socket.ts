@@ -1,6 +1,6 @@
 import { isArray, isNumber, isString } from '@tsdi/ioc';
 import { ContextToken } from '@tsdi/core';
-import { isBuffer, BadRequestExecption, TransportContext } from '@tsdi/common/transport';
+import { isBuffer, BadRequestException, TransportContext } from '@tsdi/common/transport';
 import { IHeaders, Consumer, Producer, ConsumerSubscribeTopics, ConsumerRunConfig, EachMessagePayload, CompressionTypes, Message, ProducerRecord } from 'kafkajs';
 import { BehaviorSubject, filter, map, Observable } from 'rxjs';
 
@@ -56,7 +56,7 @@ export class KafkaSocket {
 
     async publish(topic: string, messages: Message[], options?: Omit<ProducerRecord, 'topic' | 'messages'>) {
 
-        if (!topic) throw new BadRequestExecption();
+        if (!topic) throw new BadRequestException();
 
         this.producer.send({
             ...options,

@@ -55,7 +55,7 @@ export const execptionMessageSerializeInterceptor: ApplicationInterceptorFn<Requ
 
         input.status = status;
         // empty response.
-        if (statusAdapter?.isEmptyExecption(status)) {
+        if (statusAdapter?.isEmptyException(status)) {
             return of(null);
         }
 
@@ -121,7 +121,7 @@ export const execptionSerializeInterceptor: ApplicationInterceptorFn<RequestCont
             pkg.statusMessage = message;
         }
         // // empty response.
-        if (statusAdapter?.isEmptyExecption(status)) {
+        if (statusAdapter?.isEmptyException(status)) {
             pkg.body = null;
         } else {
             pkg.body = message;

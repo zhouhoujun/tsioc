@@ -1,4 +1,4 @@
-import { Execption, isFunction } from '@tsdi/ioc';
+import { Exception, isFunction } from '@tsdi/ioc';
 import { Backend, BackendFn } from '@tsdi/core';
 import { defer, Observable } from 'rxjs';
 import { MiddlewareFn, MiddlewareLike } from './middleware';
@@ -41,7 +41,7 @@ export function runChain<T extends RequestContext = RequestContext>(handles: Mid
     let index = -1;
     function dispatch(i: number): Promise<void> {
         if (i <= index) {
-            throw new Execption('next called mutiple times.');
+            throw new Exception('next called mutiple times.');
         }
         index = i;
         let handle = handles[i];

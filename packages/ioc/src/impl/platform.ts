@@ -5,14 +5,14 @@ import { get } from '../metadata/refl';
 import { Class } from '../metadata/class';
 import { Provider, StaticProvider } from '../providers';
 import { Injector, InjectorScope } from '../injector';
-import { Execption } from '../execption';
+import { Exception } from '../exception';
 import { Platform } from '../platform';
 import { ModuleRef } from '../module.ref';
 import { LifeScope } from '../lifescope/lifescope';
 import { Context } from '../handler';
 import { RUNTIME_INTERCEPTORS } from '../lifescope/runtime';
 import { DESIGN_INTERECPTORS, registerHandler } from '../lifescope/design';
-import { InvocationFactory, Invocation, InvocationOptions, InvocationFactoryResolver } from '../invocation';
+import { InvocationFactory, InvocationFactoryResolver } from '../invocation';
 import { createContext } from '../context';
 
 /**
@@ -74,7 +74,7 @@ export class DefaultPlatform implements Platform {
      */
     setSingleton<T>(injector: Injector, token: Token<T>, value: T): this {
         if (this._singls.has(token)) {
-            throw new Execption('has singleton instance with token:' + token.toString())
+            throw new Exception('has singleton instance with token:' + token.toString())
         }
         this._singls.set(token, value);
         injector.onDestroy(() => this._singls.delete(token));

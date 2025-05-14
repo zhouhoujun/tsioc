@@ -1,11 +1,11 @@
-import { ArgumentExecption, Injectable, isNumber, isString } from '@tsdi/ioc';
+import { ArgumentException, Injectable, isNumber, isString } from '@tsdi/ioc';
 import { ApplicationHandler, Interceptor } from '@tsdi/core';
 import { HeaderAdapter } from '@tsdi/common';
 import { Observable, Subscriber, filter, map, mergeMap, of, range, throwError } from 'rxjs';
 
 import { StreamAdapter, isBuffer } from '../StreamAdapter';
 import { IDuplex, IReadable } from '../stream';
-import { PacketLengthException } from '../execptions';
+import { PacketLengthException } from '../exceptions';
 import { AbstractIncoming, IncomingMessage } from '../Incoming';
 import { OutgoingMessage } from '../Outgoing';
 import { TransportContext } from '../context';
@@ -222,7 +222,7 @@ export class SplitPacketInterceptor implements Interceptor<OutgoingMessage, Pack
                         }
                     } else {
 
-                        if (!isBuffer(data)) return throwError(() => new ArgumentExecption('payload has not serializized!'))
+                        if (!isBuffer(data)) return throwError(() => new ArgumentException('payload has not serializized!'))
 
                         if (opts.maxSize && packetSize > opts.maxSize) {
                             return this.subcontract(data, packetSize, sizeLimit).pipe(

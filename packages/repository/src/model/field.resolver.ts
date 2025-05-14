@@ -1,4 +1,4 @@
-import { InvocationContext, isDefined, isFunction, isNil, PropertyMetadata, Type, object2string, ArgumentExecption } from '@tsdi/ioc';
+import { InvocationContext, isDefined, isFunction, isNil, PropertyMetadata, Type, object2string, ArgumentException } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 
 /**
@@ -89,7 +89,7 @@ export interface ModelFieldResolver<C = any> {
 /**
  * Missing model field execption.
  */
-export class MissingModelFieldExecption extends ArgumentExecption {
+export class MissingModelFieldException extends ArgumentException {
     constructor(fields: DBPropertyMetadata[], type: Type) {
         super(`ailed to resolve model class ${object2string(type)} because the following required fields were missing: [ ${fields.map(p => object2string(p)).join(',\n')} ]`)
     }
@@ -149,10 +149,10 @@ export function toPrimitType(dbtype: string): Type {
  * missing pipe error.
  * @param prop property metadata.
  * @param type target type.
- * @returns instance of {@link MessageArgumentExecption}
+ * @returns instance of {@link MessageArgumentException}
  */
 export function missingPropPipe(prop: DBPropertyMetadata, type?: Type) {
-    return new ArgumentExecption(`missing pipe to transform property ${prop.name} of class ${type}`)
+    return new ArgumentException(`missing pipe to transform property ${prop.name} of class ${type}`)
 }
 
 
@@ -300,9 +300,9 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
 /**
  * missing property execption. 
  * @param type 
- * @returns argument execption {@link MessageArgumentExecption}.
+ * @returns argument execption {@link MessageArgumentException}.
  */
-export function missingPropExecption(type?: Type) {
-    return new ArgumentExecption(`missing modle properties of class ${type}`)
+export function missingPropException(type?: Type) {
+    return new ArgumentException(`missing modle properties of class ${type}`)
 }
 

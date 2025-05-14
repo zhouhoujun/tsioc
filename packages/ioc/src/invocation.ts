@@ -1,8 +1,8 @@
 import { Observable } from 'rxjs';
-import { InvocationContext, InvokeArguments, InvokeParentContext } from './context';
+import { InvocationContext, InvocationOptions, InvokeArguments } from './context';
 import { Class } from './metadata/class';
 import { Type } from './types';
-import { Injector, MethodType } from './injector';
+import { MethodType } from './injector';
 import { DestroyCallback } from './destroy';
 import { Abstract } from './metadata/fac';
 
@@ -70,13 +70,13 @@ export abstract class Invocation<T = any, TRes = any> {
      * @param method method name.
      * @param context the context to use to invoke the operation
      */
-    abstract invoke(method: MethodType<T>, context: InvocationContext): TRes;
+    abstract invoke(method: MethodType<T>, context?: InvocationContext): TRes;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param method method name.
-     * @param option invoke arguments.
+     * @param options invoke arguments.
      */
-    abstract invoke(method: MethodType<T>, context: InvokeArguments): TRes;
+    abstract invoke(method: MethodType<T>, options?: InvokeArguments): TRes;
     /**
      * is equals to target or not.
      * @param target 
@@ -103,19 +103,6 @@ export abstract class Invocation<T = any, TRes = any> {
      * @param callback destroy callback
      */
     abstract onDestroy(callback?: DestroyCallback): void | Promise<void>;
-}
-
-
-export interface InvocationOptions<T = any, TArg = any> extends InvokeParentContext, InvokeArguments<TArg> {
-    injector?: Injector;
-    /**
-     * instance or instance factory of target type.
-     */
-    instance?: T | (() => T);
-    /**
-    * the propertyKey method to invoke of this invocation.
-    */
-    propertyKey?: string | symbol;
 }
 
 /**

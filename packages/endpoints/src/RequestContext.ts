@@ -2,7 +2,7 @@ import { Abstract, OperationArgumentResolver, composeResolvers, isArray, isDefin
 import { HandleContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
 import { HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess } from '@tsdi/common';
 import {
-    FileAdapter, Incoming, InternalServerExecption, MessageExecption, MimeAdapter, Outgoing,
+    FileAdapter, Incoming, InternalServerException, MessageException, MimeAdapter, Outgoing,
     StatusAdapter, StreamAdapter, ctype, isBuffer, xmlRegExp
 } from '@tsdi/common/transport';
 import { ServiceConfig } from './server.options';
@@ -138,7 +138,7 @@ export abstract class RequestContext<
     set status(code: TStatus) {
         if (this.headersSent) return;
         this.beforeStatusChanged(code);
-        if (this.statusAdapter && !this.statusAdapter.isStatus(code)) throw new InternalServerExecption(`invalid status code: ${code}`)
+        if (this.statusAdapter && !this.statusAdapter.isStatus(code)) throw new InternalServerException(`invalid status code: ${code}`)
         this._explicitStatus = true;
         this.response.statusCode = code;
         if (!isNil(this.body) && this.statusAdapter?.isEmpty(code)) this.body = null;
@@ -777,7 +777,7 @@ export abstract class RequestContext<
      * throw execption to client.
      * @param execption 
      */
-    abstract throwExecption(execption: MessageExecption): Promise<void>;
+    abstract throwException(execption: MessageException): Promise<void>;
 
 }
 

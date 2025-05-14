@@ -1,4 +1,4 @@
-import { Abstract, ArgumentExecption, Execption, isNil, isString } from '@tsdi/ioc';
+import { Abstract, ArgumentException, Exception, isNil, isString } from '@tsdi/ioc';
 import { Context, Shutdown } from '@tsdi/core';
 import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, PatternFormatter, defaultFormatter } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, fromEventPattern } from 'rxjs';
@@ -263,7 +263,7 @@ export abstract class AbstractClient<
      */
     send(req: TRequest | Pattern, options?: TReqOptions & ResponseAs): Observable<any> {
         if (isNil(req)) {
-            return throwError(() => new ArgumentExecption('Invalid message'))
+            return throwError(() => new ArgumentException('Invalid message'))
         }
         return defer(() => this.handler.ready)
             .pipe(
@@ -314,7 +314,7 @@ export abstract class AbstractClient<
                         return res$.pipe(map((res: Response<any>) => {
                             // Validate that the body is an ArrayBuffer.
                             if (res.body !== null && !(res.body instanceof ArrayBuffer)) {
-                                throw new Execption('Response is not an ArrayBuffer.')
+                                throw new Exception('Response is not an ArrayBuffer.')
                             }
                             return res.body
                         }));
@@ -322,7 +322,7 @@ export abstract class AbstractClient<
                         return res$.pipe(map((res: Response<any>) => {
                             // Validate that the body is a Blob.
                             if (res.body !== null && !(res.body instanceof Blob)) {
-                                throw new Execption('Response is not a Blob.')
+                                throw new Exception('Response is not a Blob.')
                             }
                             return res.body
                         }));
@@ -330,7 +330,7 @@ export abstract class AbstractClient<
                         return res$.pipe(map((res: Response<any>) => {
                             // Validate that the payload is a string.
                             if (res.body !== null && !isString(res.body)) {
-                                throw new Execption('Response is not a string.')
+                                throw new Exception('Response is not a string.')
                             }
                             return res.body
                         }));
@@ -344,7 +344,7 @@ export abstract class AbstractClient<
                 return res$
             default:
                 // Guard against new future observe types being added.
-                throw new Execption(`Unreachable: unhandled observe type ${req.observe}}`)
+                throw new Exception(`Unreachable: unhandled observe type ${req.observe}}`)
         }
     }
 

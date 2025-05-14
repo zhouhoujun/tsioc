@@ -58,8 +58,8 @@ import { KafkaConfiguration } from './configuration';
         //             // sessionFactory: { useExisting: KafkaServerTransportFactory },
         //             filters: [
         //                 LoggerInterceptor,
-        //                 ExecptionFinalizeFilter,
-        //                 ExecptionHandlerFilter,
+        //                 ExceptionFinalizeFilter,
+        //                 ExceptionHandlerFilter,
         //                 FinalizeFilter
         //             ],
         //             routes: {

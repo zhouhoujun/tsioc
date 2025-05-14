@@ -11,7 +11,7 @@
 // import { Invocation } from '../operation';
 // import { ReflectiveOperationInvoker } from './operation';
 // import { getClassName, hasItem, immediate } from '../utils/lang';
-// import { Execption } from '../execption';
+// import { Exception } from '../execption';
 // import { Platform } from '../platform';
 
 
@@ -238,7 +238,7 @@
 
 //     protected assertNotDestroyed(): void {
 //         if (this.destroyed) {
-//             throw new Execption(`ReflectiveRef of ${this._typeName} has already been destroyed.`)
+//             throw new Exception(`ReflectiveRef of ${this._typeName} has already been destroyed.`)
 //         }
 //     }
 // }
@@ -263,7 +263,7 @@
 //                 injector = option?.parent?.injector;
 //             }
 //             if (!injector) {
-//                 throw new Execption(`Type:${type.type} is not registered.`)
+//                 throw new Exception(`Type:${type.type} is not registered.`)
 //             }
 //             return new DefaultReflectiveRef<T>(type, (injector ?? option?.parent?.injector)!, option);
 //         } else {
@@ -272,7 +272,7 @@
 //                 injector = option?.parent?.injector;
 //             }
 //             if (!injector) {
-//                 throw new Execption(`Type:${classType ?? type.toString()} is not registered.`)
+//                 throw new Exception(`Type:${classType ?? type.toString()} is not registered.`)
 //             }
 //             return new DefaultReflectiveRef<T>(get(classType!), (injector ?? option?.parent?.injector)!, option);
 //         }

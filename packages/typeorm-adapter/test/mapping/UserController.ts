@@ -1,6 +1,6 @@
 import { Controller, Delete, Get, Post, Put, RequestParam, RequestPath } from '@tsdi/endpoints';
 import { lang } from '@tsdi/ioc';
-import { InternalServerExecption } from '@tsdi/common/transport';
+import { InternalServerException } from '@tsdi/common/transport';
 import { Log, Logger } from '@tsdi/logger';
 import { Repository, Transactional } from '@tsdi/repository';
 import { Repository as TypeormRepository } from 'typeorm';
@@ -23,7 +23,7 @@ export class UserController {
     getUser(@RequestPath() name: string) {
         this.logger.log('name:', name);
         if (name == 'error') {
-            throw new InternalServerExecption('error');
+            throw new InternalServerException('error');
         }
         return this.usrService.findByAccount(name);
     }
@@ -43,7 +43,7 @@ export class UserController {
     async modify2(user: User, @Repository(User) userRepo: TypeormRepository<User>, @RequestParam({ nullable: true }) check?: boolean) {
         this.logger.log(lang.getClassName(this.usrService), user);
         const val = await userRepo.save(user);
-        if (check) throw new InternalServerExecption('check');
+        if (check) throw new InternalServerException('check');
         this.logger.log(val);
         return val;
     }

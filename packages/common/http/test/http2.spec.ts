@@ -10,7 +10,7 @@
 //     Application, ApplicationContext
 // } from '@tsdi/core';
 // import { HttpClient, HttpClientModule } from '../src';
-// import { BadRequestExecption } from '@tsdi/common/transport';
+// import { BadRequestException } from '@tsdi/common/transport';
 // import { LoggerModule } from '@tsdi/logger';
 // import { ServerHttpClientModule } from '@tsdi/platform-server/http';
 // import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
@@ -40,7 +40,7 @@
 //     resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
 //         console.log('age1:', age1);
 //         if (age1 <= 0) {
-//             throw new BadRequestExecption();
+//             throw new BadRequestException();
 //         }
 //         return age1;
 //     }

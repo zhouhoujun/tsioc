@@ -1,10 +1,10 @@
 import { ApplicationContext, MODEL_RESOLVERS, ModelArgumentResolver, Started, TransportParameter } from '@tsdi/core';
-import { Execption, InjectFlags, Injectable, Type, getClassName, isFunction, isNil, isString, isType, lang } from '@tsdi/ioc';
+import { Exception, InjectFlags, Injectable, Type, getClassName, isFunction, isNil, isString, isType, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, joinPath } from '@tsdi/common';
 import { ctype } from '@tsdi/common/transport';
 import { ControllerRoute, RouteMappingMetadata, Router, ContentInterceptor, getRouter, SetupServices } from '@tsdi/endpoints';
-import { DBPropertyMetadata, MissingModelFieldExecption } from '@tsdi/repository';
+import { DBPropertyMetadata, MissingModelFieldException } from '@tsdi/repository';
 import { HttpServer } from '@tsdi/http'
 import { of } from 'rxjs';
 import { getAbsoluteFSPath } from 'swagger-ui-dist';
@@ -168,7 +168,7 @@ export class SwaggerService {
                     }
                     const api: Record<string, any> = jsonDoc.paths[path];
                     const method = df.metadata.method?.toLowerCase() ?? 'get';
-                    if (api[method]) throw new Execption(`has mutil route address ${path}, with same method ${method}`);
+                    if (api[method]) throw new Exception(`has mutil route address ${path}, with same method ${method}`);
 
                     const returnType = v.ctrlRef.class.getMethodMetadata(null, df.propertyKey, r => isType(r.metadata.response))?.response ?? df.metadata.returnType ?? df.metadata.type;
                     let returnTypeName = '';
@@ -360,7 +360,7 @@ export class SwaggerService {
             type: 'object',
             properties: resovler.getPropertyMeta(type).reduceRight((ps, prop) => {
                 const p = prop as DBPropertyMetadata & ApiModelPropertyMetadata;
-                if (!p.name) throw new MissingModelFieldExecption([p], type)
+                if (!p.name) throw new MissingModelFieldException([p], type)
                 const fType = this.toDocType(p.type);
                 const pobj = ps[p.name] = { ...lang.omit(p, 'type', 'provider', 'default', 'dbtype', 'length', 'width', 'update'), type: fType, nullable: p.nullable } as any;
                 if (p.length && !pobj.maxLenght) {

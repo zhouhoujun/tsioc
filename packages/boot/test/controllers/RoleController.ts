@@ -1,4 +1,4 @@
-import { InternalServerExecption } from '@tsdi/common/transport';
+import { InternalServerException } from '@tsdi/common/transport';
 import { RequestParam, Controller, Post, Put, Get, Delete } from '@tsdi/endpoints';
 import { Log, Logger } from '@tsdi/logger';
 import { InjectRepository, Transactional } from '@tsdi/repository';
@@ -19,7 +19,7 @@ export class RoleController {
         this.logger.log(role);
         console.log('save isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
         const value = await this.repo.save(role);
-        if (check) throw new InternalServerExecption('check');
+        if (check) throw new InternalServerException('check');
         this.logger.info(value);
         return value;
     }
@@ -31,7 +31,7 @@ export class RoleController {
         this.logger.log(role);
         console.log('save2 isTransactionActive:', roleRepo.queryRunner?.isTransactionActive);
         const value = await roleRepo.save(role);
-        if (check) throw new InternalServerExecption('check');
+        if (check) throw new InternalServerException('check');
         this.logger.info(value);
         return value;
     }

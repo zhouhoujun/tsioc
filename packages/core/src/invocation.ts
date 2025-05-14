@@ -1,10 +1,11 @@
-import { Abstract, Type, Invocation, OnDestroy, Destroyable, DestroyCallback, Class, ProvidedInMetadata, Injector, ProvdierOf, StaticProvider } from '@tsdi/ioc';
-import { AbstractConfigableHandler, ConfigableHandlerOptions } from './handlers/configable';
+import { Abstract, Type, Invocation, OnDestroy, Destroyable, DestroyCallback, Class, ProvidedInMetadata, Injector, ProvdierOf, StaticProvider, InvocationOptions } from '@tsdi/ioc';
+import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerService } from './handlers/configable';
 import { Observable } from 'rxjs';
 import { PipeTransform } from './pipes/pipe';
 import { ApplicationInterceptorLike } from './ApplicationInterceptor';
 import { GuardLike } from './guard';
 import { FilterLike } from './filters/filter';
+import { ApplicationHandler } from './ApplicationHandler';
 
 
 /**
@@ -14,17 +15,16 @@ import { FilterLike } from './filters/filter';
 export abstract class InvocationHandler<
     TInput = any,
     TOutput = any,
-    TOptions extends InvocationOptions = InvocationOptions,
-    TContext = any> extends Invocation implements AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
+    TOptions extends InvocationHanlderOptions = InvocationHanlderOptions,
+    TContext = any,
+    T = any> extends Invocation<T> implements ApplicationHandler<TInput, TOutput, TContext>, HandlerService {
 
     abstract get injector(): Injector;
-    
-    abstract get ready(): Promise<void>;
 
-    /**
-     * get config options.
-     */
-    abstract getOptions(): TOptions;
+    // /**
+    //  * get config options.
+    //  */
+    // abstract getOptions(): TOptions;
 
     /**
      * use pipes
@@ -80,7 +80,7 @@ export abstract class InvocationHanlderFactory<T> implements OnDestroy, Destroya
 
     abstract get invocation(): Invocation<T>;
 
-    abstract create<TArg>(propertyKey: string, options?: InvocationOptions<TArg>): InvocationHandler;
+    abstract create<TArg>(propertyKey: string, options?: InvocationHanlderOptions<TArg>): InvocationHandler;
 
 
     destroy(): void {
@@ -100,13 +100,6 @@ export abstract class InvocationHanlderFactory<T> implements OnDestroy, Destroya
  */
 @Abstract()
 export abstract class InvocationHanlderFactoryResolver {
-    /**
-     * resolve endpoint factory.
-     * @param invocation type invocation
-     * @param injector injector
-     * @param categare factory categare
-     */
-    abstract resolve<T>(invocation: Invocation<T>): InvocationHanlderFactory<T>;
     /**
      * resolve endpoint factory.
      * @param type factory type
@@ -153,7 +146,7 @@ export abstract class TypedRespond<TInput = any> {
  * 
  * 终结点配置
  */
-export interface InvocationOptions<T = any> extends ConfigableHandlerOptions<T>, ProvidedInMetadata {
+export interface InvocationHanlderOptions<T = any> extends ConfigableHandlerOptions<T>, InvocationOptions, ProvidedInMetadata {
     /**
      * the endpoint run times limit. 
      */

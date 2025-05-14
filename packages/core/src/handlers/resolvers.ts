@@ -1,10 +1,10 @@
-import { ArgumentExecption, Type, composeResolver, getClass, isArray, isBasic, isDefined, isPrimitiveType, isString, Parameter, Empty } from '@tsdi/ioc';
+import { ArgumentException, Type, composeResolver, getClass, isArray, isBasic, isDefined, isPrimitiveType, isString, Parameter, Empty } from '@tsdi/ioc';
 import { getPipe, TransportArgumentResolver, TransportParameter } from './resolver';
 import { HandleContext } from './context';
 
 
-export function missingPipeExecption(parameter: Parameter, type?: Type, method?: string | symbol) {
-    return new ArgumentExecption(`missing pipe to transform argument ${parameter.name} type, method ${method?.toString()} of class ${type}`)
+export function missingPipeException(parameter: Parameter, type?: Type, method?: string | symbol) {
+    return new ArgumentException(`missing pipe to transform argument ${parameter.name} type, method ${method?.toString()} of class ${type}`)
 }
 
 export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx: T, scope?: string, filed?: string) => any, canResolve: (param: TransportParameter, payload: any, ctx: T) => boolean): TransportArgumentResolver[] {
@@ -19,7 +19,7 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
                     },
                     resolve(parameter, ctx) {
                         const pipe = getPipe(parameter, ctx, true);
-                        if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.propertyKey)
+                        if (!pipe) throw missingPipeException(parameter, ctx.targetType, ctx.propertyKey)
                         return pipe.transform(getPayload(ctx as T, parameter.scope, parameter.field ?? parameter.name), ...parameter.args || Empty)
                     }
                 },
@@ -30,7 +30,7 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
                     },
                     resolve(parameter, ctx) {
                         const pipe = getPipe(parameter, ctx, true);
-                        if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.propertyKey)
+                        if (!pipe) throw missingPipeException(parameter, ctx.targetType, ctx.propertyKey)
                         return pipe.transform(getPayload(ctx as T, parameter.scope), ...parameter.args || Empty)
                     }
                 }
@@ -45,7 +45,7 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
                         const value = getPayload(ctx as T, parameter.scope, parameter.field ?? parameter.name);
                         const values: any[] = isString(value) ? value.split(',') : value;
                         const pipe = getPipe(parameter, ctx, true);
-                        if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.propertyKey)
+                        if (!pipe) throw missingPipeException(parameter, ctx.targetType, ctx.propertyKey)
                         return values.map(val => pipe.transform(val, ...parameter.args || Empty)) as any
                     }
                 }
@@ -57,7 +57,7 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
                 resolve(parameter, ctx) {
                     const value = getPayload(ctx as T, parameter.scope, parameter.field);
                     const pipe = getPipe(parameter, ctx);
-                    if (!pipe) throw missingPipeExecption(parameter, ctx.targetType, ctx.propertyKey)
+                    if (!pipe) throw missingPipeException(parameter, ctx.targetType, ctx.propertyKey)
                     return pipe.transform(value, ...parameter.args || Empty)
                 }
             },

@@ -2,7 +2,7 @@ import { Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService } from '@tsdi/common';
-import { InternalServerExecption, ev } from '@tsdi/common/transport';
+import { InternalServerException, ev } from '@tsdi/common/transport';
 import { BindServerEvent, MiddlewareService, RequestContext, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
 import * as net from 'net';
@@ -38,7 +38,7 @@ export class TcpServer extends Server<RequestContext, TcpServConfig> implements 
     listen(options: ListenOpts, listeningListener?: () => void): this;
     listen(port: number, host?: string, listeningListener?: () => void): this;
     listen(arg1: ListenOpts | number, arg2?: any, listeningListener?: () => void): this {
-        if (!this.serv) throw new InternalServerExecption();
+        if (!this.serv) throw new InternalServerException();
         const options = this.getOptions();
         const isSecure = options.secure = this.isSecure;
         const protocol = options.protocol = options.protocol ?? (isSecure ? 'ssl' : 'tcp');
@@ -100,7 +100,7 @@ export class TcpServer extends Server<RequestContext, TcpServConfig> implements 
             await this.setup();
         }
 
-        if (!this.serv) throw new InternalServerExecption();
+        if (!this.serv) throw new InternalServerException();
 
         this.serv.on(ev.CLOSE, () => this.logger.info(options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));

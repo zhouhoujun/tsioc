@@ -1,5 +1,5 @@
 import { InjectFlags, promisify, tokenId } from '@tsdi/ioc';
-import { Bean, Configuration, ExecptionHandlerFilter } from '@tsdi/core';
+import { Bean, Configuration, ExceptionHandlerFilter } from '@tsdi/core';
 import { DefaultResponseFactory, HeaderAdapter, ResponseFactory } from '@tsdi/common';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
@@ -7,13 +7,13 @@ import {
 } from '@tsdi/common/client';
 import {
     deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory,
-    DeserializerFactory, ev, FileAdapter, MimeAdapter, NotSupportedExecption,
+    DeserializerFactory, ev, FileAdapter, MimeAdapter, NotSupportedException,
     messageVaildateInterceptor, Redirector, SerializerFactory, StatusAdapter, StreamAdapter,
     UrlClientIncomingFactory, UrlOutgoingFactory, IReadable
 } from '@tsdi/common/transport';
 import {
     AcceptsPriority, DefaultServerTransferFactory, DefaultServerTransport,
-    ExecptionFinalizeFilter, FinalizeFilter, LoggerFilter, execptionSerializeInterceptor,
+    ExceptionFinalizeFilter, FinalizeFilter, LoggerFilter, execptionSerializeInterceptor,
     lengthLimitSerializeInterceptor, SERVER_MODULES,
     ServerTransferFactory, ServiceModuleOpts, UrlRequestContext,
     contextSerializeBackend
@@ -87,7 +87,7 @@ export class UdpConfiguration {
                                         return context;
                                     }),
                                     async (socket, msg, req) => {
-                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
+                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedException('Not supported stream payload');
                                         return await promisify<Buffer | string, number, string>(socket.send, socket)(msg ?? Buffer.alloc(0), req.remoteInfo.port, req.remoteInfo.address)
                                     }
                                 )
@@ -164,10 +164,10 @@ export class UdpConfiguration {
                                         return context;
                                     }),
                                     (socket, msg, requestContext, context) => {
-                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedExecption('Not supported stream payload');
+                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedException('Not supported stream payload');
                                         const rinfo = context.get(REMOTE_INFO) as RemoteInfo;
 
-                                        if (!rinfo) throw new NotSupportedExecption('No remote response to');
+                                        if (!rinfo) throw new NotSupportedException('No remote response to');
                                         return promisify<Buffer | string, number, string>(socket.send, socket)(msg ?? Buffer.alloc(0), rinfo.port, rinfo.address);
                                     }
                                 )
@@ -205,8 +205,8 @@ export class UdpConfiguration {
                 detailError: false,
                 filters: [
                     LoggerFilter,
-                    ExecptionFinalizeFilter,
-                    ExecptionHandlerFilter,
+                    ExceptionFinalizeFilter,
+                    ExceptionHandlerFilter,
                     FinalizeFilter
                 ]
             }

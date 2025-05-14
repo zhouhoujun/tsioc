@@ -1,4 +1,4 @@
-import { Abstract, DefaultInvocationContext, Execption, getClass, lang, Injectable, Injector, InvokeArguments, isPromise, isUndefined, composeHandlers } from '@tsdi/ioc';
+import { Abstract, DefaultInvocationContext, Exception, getClass, lang, Injectable, Injector, InvokeArguments, isPromise, isUndefined, composeHandlers } from '@tsdi/ioc';
 import { catchError, finalize, isObservable, mergeMap, Observable, of, throwError } from 'rxjs';
 import { ApplicationHandler } from '../ApplicationHandler';
 import { Filter, FilterHandlerResolver } from './filter';
@@ -11,7 +11,7 @@ import { toObservable } from '../handlers';
  * 
  * 异常处理上下文
  */
-export class ExecptionContext<T = any, TArg extends Error = Error> extends DefaultInvocationContext<TArg> {
+export class ExceptionContext<T = any, TArg extends Error = Error> extends DefaultInvocationContext<TArg> {
 
     constructor(public execption: TArg, readonly host: T, injector: Injector, options?: InvokeArguments) {
         super(injector, { ...options })
@@ -34,7 +34,7 @@ export class ExecptionContext<T = any, TArg extends Error = Error> extends Defau
  * 异常处理过滤器
  */
 @Abstract()
-export abstract class ExecptionFilter<TInput = any, TOutput = any, TContext = any> extends Filter<TInput, TOutput, TContext> {
+export abstract class ExceptionFilter<TInput = any, TOutput = any, TContext = any> extends Filter<TInput, TOutput, TContext> {
     /**
      * execption filter.
      * @param context execption context.
@@ -54,7 +54,7 @@ export abstract class ExecptionFilter<TInput = any, TOutput = any, TContext = an
                     if (isObservable(res)) {
                         return res.pipe(
                             mergeMap(r => {
-                                if (r instanceof Error || r instanceof Execption) {
+                                if (r instanceof Error || r instanceof Exception) {
                                     return throwError(() => r);
                                 }
                                 return of(r);
@@ -62,12 +62,12 @@ export abstract class ExecptionFilter<TInput = any, TOutput = any, TContext = an
                         )
                     } else if (isPromise(res)) {
                         return res.then(r => {
-                            if (r instanceof Error || r instanceof Execption) {
+                            if (r instanceof Error || r instanceof Exception) {
                                 throw r;
                             }
                             return r;
                         });
-                    } else if (res instanceof Error || res instanceof Execption) {
+                    } else if (res instanceof Error || res instanceof Exception) {
                         return throwError(() => res);
                     } else {
                         return of(res);
@@ -88,7 +88,7 @@ export abstract class ExecptionFilter<TInput = any, TOutput = any, TContext = an
  * execption handler filter.
  */
 @Injectable({ static: true })
-export class ExecptionHandlerFilter<TInput, TOutput = any, TContext = any> extends ExecptionFilter<TInput, TOutput, TContext> {
+export class ExceptionHandlerFilter<TInput, TOutput = any, TContext = any> extends ExceptionFilter<TInput, TOutput, TContext> {
     constructor(private injector: Injector) {
         super()
     }
@@ -106,7 +106,7 @@ export class ExecptionHandlerFilter<TInput, TOutput = any, TContext = any> exten
             return throwError(() => err);
         }
 
-        const expcption = new ExecptionContext(err, input, injector);
+        const expcption = new ExceptionContext(err, input, injector);
 
         return toObservable(composeHandlers(handlers, (res, next, input, context) => {
             if (isUndefined(res)) {
@@ -115,7 +115,7 @@ export class ExecptionHandlerFilter<TInput, TOutput = any, TContext = any> exten
             return of(res);
         })(expcption, context)).pipe(
             catchError((err1, caugh) => {
-                err1.originExecption = err;
+                err1.originException = err;
                 err1.message = `${err1.message}\r\n${err.toString()}`;
                 return throwError(() => err1)
             }),
@@ -135,7 +135,7 @@ export class ExecptionHandlerFilter<TInput, TOutput = any, TContext = any> exten
         //     )
         // }, of(undefined)).pipe(
         //     catchError((err1, caugh) => {
-        //         err1.originExecption = err;
+        //         err1.originException = err;
         //         err1.message = `${err1.message}\r\n${err.toString()}`;
         //         return throwError(() => err1)
         //     }),

@@ -1,5 +1,5 @@
-// import { Execption, Injectable, Injector, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
-// import { BadRequestExecption, HeaderPacket, NotFoundExecption, Packet, ResponsePacket, StreamAdapter, TransportOpts, ev, isBuffer } from '@tsdi/common/transport';
+// import { Exception, Injectable, Injector, isArray, isNil, isNumber, isString, isUndefined } from '@tsdi/ioc';
+// import { BadRequestException, HeaderPacket, NotFoundException, Packet, ResponsePacket, StreamAdapter, TransportOpts, ev, isBuffer } from '@tsdi/common/transport';
 // import { ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
 // import { EventEmitter } from 'events';
 // import { Observable, filter, first, fromEvent, merge, of } from 'rxjs';
@@ -16,7 +16,7 @@
 
 //     async bindTopics(topics: (string | RegExp)[]) {
 //         const consumer = this.socket.consumer;
-//         if (!consumer) throw new Execption('No consumer');
+//         if (!consumer) throw new Exception('No consumer');
 //         await consumer.subscribe({
 //             topics,
 //             ... (this.options as KafkaTransportOpts).subscribe,
@@ -40,7 +40,7 @@
 
 //         const opts = this.options as KafkaTransportOpts;
 //         const topic = opts.serverSide ? this.getReply(packet) : packet.topic;
-//         if (!topic) throw new BadRequestExecption();
+//         if (!topic) throw new BadRequestException();
 //         if (!packet.kafkaheaders) {
 //             const headers = packet.kafkaheaders = {} as IHeaders;
 //             packet.headers && Object.keys(packet.headers).forEach(k => {
@@ -56,7 +56,7 @@
 //                 if (opts.consumerAssignments && !isNil(opts.consumerAssignments[responseTopic])) {
 //                     headers[KafkaHeaders.REPLY_PARTITION] = Buffer.from(opts.consumerAssignments[responseTopic].toString());
 //                 } else if (!this.regTopics?.some(i => i.test(responseTopic))) {
-//                     throw new NotFoundExecption(responseTopic + ' has not registered.', this.socket.vaildator?.notFound);
+//                     throw new NotFoundException(responseTopic + ' has not registered.', this.socket.vaildator?.notFound);
 //                 }
 //             }
 //         }

@@ -1,5 +1,5 @@
 import { Abstract, Injector, InvocationContext, tokenId } from '@tsdi/ioc';
-import { ConfigableHandlerOptions, createHandler, ExecptionHandlerFilter, FilterLike, ApplicationHandler, ApplicationInterceptorLike } from '@tsdi/core';
+import { ConfigableHandlerOptions, createHandler, ExceptionHandlerFilter, FilterLike, ApplicationHandler, ApplicationInterceptorLike } from '@tsdi/core';
 import { TransportContext } from './context';
 import { Observable } from 'rxjs';
 
@@ -43,7 +43,7 @@ export abstract class AbstractTransferFactory<TIn, TOut, T extends Transfer<TIn,
             interceptorsToken: TRANSFER_INTERCEPTORS,
             ...this.vaildOptions(options)
         });
-        handler.useFilters(ExecptionHandlerFilter, 0);
+        handler.useFilters(ExceptionHandlerFilter, 0);
         return this.createInstace(handler);
     }
 

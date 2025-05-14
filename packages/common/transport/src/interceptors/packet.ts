@@ -2,7 +2,7 @@ import { Injectable, isNumber, isString } from '@tsdi/ioc';
 import { ApplicationHandler, ApplicationHandlerFn, ApplicationInterceptor, ApplicationInterceptorFn, PipeTransform } from '@tsdi/core';
 import { AbstractRequest } from '@tsdi/common';
 import { Observable, Subscriber, defer, filter, map, mergeMap, throwError } from 'rxjs';
-import { PacketLengthException } from '../execptions';
+import { PacketLengthException } from '../exceptions';
 import { PacketIdGenerator } from '../PacketId';
 import { IDuplex, IReadable } from '../stream';
 import { IncomingMessage } from '../Incoming';

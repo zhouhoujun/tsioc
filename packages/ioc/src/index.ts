@@ -1,4 +1,4 @@
-export * from './execption';
+export * from './exception';
 export * from './types';
 export * from './tokens';
 export * from './destroy';

@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
 /* eslint-disable no-control-regex */
-import { Injectable, isString, Static, TypeExecption } from '@tsdi/ioc';
+import { Injectable, isString, Static, TypeException } from '@tsdi/ioc';
 import { FileAdapter, MimeAdapter, MimeDb, MimeTypes, SplitType } from '@tsdi/common/transport';
 
 
@@ -88,7 +88,7 @@ export class MimeAdapterImpl extends MimeAdapter {
 
     format(media: SplitType): string {
         if (!media || typeof media !== 'object') {
-            throw new TypeExecption('argument obj is required')
+            throw new TypeException('argument obj is required')
         }
 
         const parameters = media.parameters;
@@ -97,11 +97,11 @@ export class MimeAdapterImpl extends MimeAdapter {
         const type = media.type;
 
         if (!type || !typeNameRegExp.test(type)) {
-            throw new TypeExecption('invalid type')
+            throw new TypeException('invalid type')
         }
 
         if (!subtype || !subtypeNameRegExp.test(subtype)) {
-            throw new TypeExecption('invalid subtype')
+            throw new TypeException('invalid subtype')
         }
 
         // format as type/subtype
@@ -110,7 +110,7 @@ export class MimeAdapterImpl extends MimeAdapter {
         // append +suffix
         if (suffix) {
             if (!typeNameRegExp.test(suffix)) {
-                throw new TypeExecption('invalid suffix')
+                throw new TypeException('invalid suffix')
             }
 
             str += '+' + suffix
@@ -125,7 +125,7 @@ export class MimeAdapterImpl extends MimeAdapter {
                 param = params[i]
 
                 if (!tokenRegExp.test(param)) {
-                    throw new TypeExecption('invalid parameter name')
+                    throw new TypeException('invalid parameter name')
                 }
 
                 str += '; ' + param + '=' + this.qstring(parameters[param])
@@ -137,11 +137,11 @@ export class MimeAdapterImpl extends MimeAdapter {
 
     parse(mime: string): SplitType {
         if (!mime) {
-            throw new TypeExecption('argument string is required');
+            throw new TypeException('argument string is required');
         }
 
         if (typeof mime !== 'string') {
-            throw new TypeExecption('argument string is required to be a string');
+            throw new TypeException('argument string is required to be a string');
         }
 
         let index = mime.indexOf(';');
@@ -158,7 +158,7 @@ export class MimeAdapterImpl extends MimeAdapter {
         const match = paramRegExp.exec(type);
         while (match) {
             if (match.index !== index) {
-                throw new TypeExecption('invalid parameter format')
+                throw new TypeException('invalid parameter format')
             }
 
             index += match[0].length;
@@ -176,7 +176,7 @@ export class MimeAdapterImpl extends MimeAdapter {
         }
 
         if (index !== -1 && index !== type.length) {
-            throw new TypeExecption('invalid parameter format')
+            throw new TypeException('invalid parameter format')
         }
 
         obj.parameters = params;
@@ -234,7 +234,7 @@ export class MimeAdapterImpl extends MimeAdapter {
         }
 
         if (str.length > 0 && !textRegExp.test(str)) {
-            throw new TypeExecption('invalid parameter value')
+            throw new TypeException('invalid parameter value')
         }
 
         return '"' + str.replace(quoteRegExp, '\\$1') + '"'
@@ -243,7 +243,7 @@ export class MimeAdapterImpl extends MimeAdapter {
     private splitType(str: string): SplitType {
         const match = typeRegExp.exec(str.toLowerCase());
         if (!match) {
-            throw new TypeExecption('invalid media type')
+            throw new TypeException('invalid media type')
         }
 
         const type = match[1];

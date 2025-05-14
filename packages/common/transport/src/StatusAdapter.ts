@@ -41,7 +41,7 @@ export abstract class StatusAdapter<TStatus = any> {
     abstract isOk(status: TStatus): boolean;
     abstract isNotFound(status: TStatus): boolean;
     abstract isEmpty(status: TStatus): boolean;
-    abstract isEmptyExecption(status: TStatus): boolean;
+    abstract isEmptyException(status: TStatus): boolean;
     abstract isRedirect(status: TStatus): boolean;
     abstract isRequestFailed(status: TStatus): boolean;
     abstract isServerError(status: TStatus): boolean;

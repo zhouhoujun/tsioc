@@ -1,11 +1,15 @@
-import { Class, Injectable, InvocationContext, Invocation, InvocationFactory, Type, createContext, getClass, isFunction, isNumber, isPromise, isString, lang } from '@tsdi/ioc';
+import { Class, Injectable, InvocationContext, Invocation, InvocationFactory, Type, createContext, getClass, isFunction, isNumber, isPromise, isString, lang, AbstractInvocation, Injector, StaticProvider, ProvdierOf, AbstractInvocationFactory, InvocationOptions, InvokeArguments, Exception } from '@tsdi/ioc';
 import { Observable, from, isObservable, lastValueFrom, of } from 'rxjs';
-import { BackendFn } from '../ApplicationHandler';
-import { InvocationOptions, Respond, TypedRespond, InvocationHanlderFactory, InvocationHanlderFactoryResolver, InvocationHandler, } from '../invocation';
-import { ConfigableHandler } from '../handlers/configable.impl';
+import { ApplicationHandler, BackendFn } from '../ApplicationHandler';
+import { InvocationHanlderOptions, Respond, TypedRespond, InvocationHanlderFactory, InvocationHanlderFactoryResolver, InvocationHandler, } from '../invocation';
+import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
 import { ResultValue } from '../handlers/ResultValue';
 import { Context, HandleContext } from '../handlers/context';
 import { getResolverToken } from '../handlers/resolver';
+import { PipeTransform } from '../pipes/pipe';
+import { ApplicationInterceptorLike } from '../ApplicationInterceptor';
+import { GuardLike } from '../guard';
+import { FilterLike } from '../filters/filter';
 
 
 
@@ -13,37 +17,87 @@ import { getResolverToken } from '../handlers/resolver';
 export class InvocationHandlerImpl<
     TInput = any,
     TOutput = any,
-    TOptions extends InvocationOptions<TInput> = InvocationOptions<TInput>,
-    TContext = any
-> extends ConfigableHandler<TInput, TOutput, TOptions, TContext> implements InvocationHandler<TInput, TOutput, TOptions, TContext> {
+    TOptions extends InvocationHanlderOptions<TInput> = InvocationHanlderOptions<TInput>,
+    TContext = any,
+    T = any
+> extends AbstractInvocation<T> implements InvocationHandler<TInput, TOutput, TOptions, TContext, T> {
 
     private limit?: number;
+    private handler: ConfigableHandler<TInput, TOutput, TOptions, TContext>;
     constructor(
-        readonly invocation: Invocation,
-        options: TOptions) {
-        super(invocation.context, options)
+        _class: Class<T>,
+        context: InvocationContext,
+        private options: TOptions) {
+        super(_class, context, options)
         this.limit = options.limit;
-        invocation.context.onDestroy(this);
+        options.backend = this.getBackend();
+        this.handler = createHandler(this.context, options);
 
     }
 
-    override handle(input: TInput, context?: TContext): Observable<TOutput> {
+    get injector(): Injector {
+        return this.context.injector
+    }
+    
+    protected override process(option?: InvocationContext | InvokeArguments) {
+        if(!this.options.propertyKey) throw new Exception('propertyKey is required.');
+        return this.invoke(this.options.propertyKey, option);
+    }
+
+    handle(input: TInput, context?: TContext): Observable<TOutput> {
         if ((input as HandleContext).bootstrap && this.options.bootstrap === false) return of(null) as Observable<TOutput>
         if (isNumber(this.limit)) {
             if (this.limit < 1) return of(null) as Observable<TOutput>;
             this.limit -= 1;
         }
-        return super.handle(input, context);
+        return this.handler.handle(input, context);
     }
 
-    equals(target: InvocationHandler): boolean {
-        if (target === this) return true;
-        return this.invocation.equals(target.invocation);
+    /**
+     * use pipes
+     * @param pipes 
+     * @returns 
+     */
+    usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
+        this.handler.usePipes(pipes);
+        return this;
     }
 
-    protected override getBackend(): BackendFn<TInput, TOutput> {
+    /**
+     * use interceptor for the handler.
+     * @param interceptor 
+     * @param order 
+     * @returns 
+     */
+    useInterceptors(interceptor: ProvdierOf<ApplicationInterceptorLike> | ProvdierOf<ApplicationInterceptorLike>[], order?: number): this {
+        this.handler.useInterceptors(interceptor);
+        return this;
+    }
+
+    /**
+     * use guards for the handler.
+     * @param guards 
+     */
+    useGuards(guards: ProvdierOf<GuardLike> | ProvdierOf<GuardLike>[], order?: number): this {
+        this.handler.useGuards(guards, order);
+        return this;
+    }
+
+    /**
+     * use filters for the handler.
+     * @param filter 
+     * @param order 
+     * @returns 
+     */
+    useFilters(filter: ProvdierOf<FilterLike> | ProvdierOf<FilterLike>[], order?: number): this {
+        this.handler.useFilters(filter, order);
+        return this;
+    }
+
+    protected getBackend(): BackendFn<TInput, TOutput> {
         return (input: any, context?: TContext) => from(this.respond(input, context));
     }
+
 
     /**
      * before `Invocation` invoke 
@@ -65,7 +119,7 @@ export class InvocationHandlerImpl<
                 input = context;
             } else {
                 newCtx = true;
-                const ctx = createContext(this.context, { args: input, resolvers: this.injector.get(getResolverToken(input), []) });
+                const ctx = createContext(this.context, { payload: input, resolvers: this.context.injector.get(getResolverToken(input), []) });
                 ctx.setValue(getClass(input), input);
                 if (context) this.attchContext(ctx, context, input)
                 input = ctx;
@@ -73,7 +127,7 @@ export class InvocationHandlerImpl<
         }
 
         await this.beforeInvoke(input);
-        let res = await this.invocation.invoke(input);
+        let res = await this.invoke(input);
 
         if (isPromise(res)) {
             res = await res;
@@ -111,7 +165,7 @@ export class InvocationHandlerImpl<
             if (trespond) {
                 trespond.respond(ctx, res, this.options.response);
             } else {
-                ctx.args[this.options.response] = res;
+                ctx.payload[this.options.response] = res;
             }
         } else if (this.options.response) {
             const respond = ctx.get(this.options.response) ?? this.options.response;
@@ -131,15 +185,13 @@ export class InvocationHandlerImpl<
 }
 
 @Injectable()
-export class InvocationFactorympl<T = any> extends InvocationHanlderFactory<T> {
-
-    constructor(readonly invocation: Invocation<T>) {
-        super()
+export class InvocationFactorympl<T = any> extends AbstractInvocationFactory implements InvocationHanlderFactory<T> {
+    
+    create(option?: InvocationHanlderOptions): InvocationHandler {
+        return new InvocationHandlerImpl(this.class, this.context, option ?? {} as any);
     }
+    
 
-    create<TArg>(propertyKey: string, options?: InvocationOptions<TArg>): InvocationHandler {
-        return new InvocationHandlerImpl(propertyKey, this.invocation, options ?? {} as any);
-    }
 
 }
 
@@ -148,13 +200,6 @@ export class InvocationFactorympl<T = any> extends InvocationHanlderFactory<T> {
  */
 export class InvocationFactoryResolverImpl implements InvocationHanlderFactoryResolver {
     constructor() { }
-    /**
-     * resolve endpoint factory.
-     * @param type factory type
-     * @param injector injector
-     * @param categare factory categare
-     */
-    resolve<T>(type: Invocation<T>): InvocationHanlderFactory<T>;
     /**
      * resolve endpoint factory.
      * @param type factory type

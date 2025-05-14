@@ -1,7 +1,7 @@
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
 import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
 import { HttpStatusCode, RequestMethod, getHeader } from '@tsdi/common';
-import { InternalServerExecption, Outgoing, append } from '@tsdi/common/transport';
+import { InternalServerException, Outgoing, append } from '@tsdi/common/transport';
 import { CorsOpts, Middleware, RestfulRequestContext } from '@tsdi/endpoints';
 import { defer, lastValueFrom, Observable } from 'rxjs';
 
@@ -163,7 +163,7 @@ export class Cors implements Middleware<RestfulRequestContext>, ApplicationInter
                         err.statusMessage = statusMessage;
                         throw err;
                     } else {
-                        throw new InternalServerExecption(statusMessage);
+                        throw new InternalServerException(statusMessage);
                     }
                 }
             } else {
@@ -260,7 +260,7 @@ export class Cors implements Middleware<RestfulRequestContext>, ApplicationInter
                     err.statusMessage = statusMessage;
                     throw err;
                 } else {
-                    throw new InternalServerExecption(statusMessage);
+                    throw new InternalServerException(statusMessage);
                 }
             }
         } else {
