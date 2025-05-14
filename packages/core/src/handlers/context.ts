@@ -41,8 +41,8 @@ export class HandleContext<TInput = any> extends DefaultInvocationContext<TInput
         if (defRels?.length) {
             res.push(composeResolvers(defRels));
         }
-        if (this.args) {
-            const args = this.injector.get(getResolverToken(this.args), null);
+        if (this.payload) {
+            const args = this.injector.get(getResolverToken(this.payload), null);
             if (args?.length) {
                 res.unshift(composeResolvers(args));
             }

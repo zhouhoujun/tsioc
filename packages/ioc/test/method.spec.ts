@@ -1,4 +1,4 @@
-import { Inject, Autowired, Injectable, Singleton, ParameterMetadata, Param, isFunction, Container, refl, Providers, ReflectiveFactory, getClassRef, InvocationFactory, InvocationFactoryResolver } from '../src';
+import { Inject, Autowired, Injectable, isFunction, Container, Providers, getClassRef, InvocationFactory } from '../src';
 import expect = require('expect');
 // import { AnnotationAspect } from './aop/AnnotationAspect';
 // import { CheckRightAspect } from './aop/CheckRightAspect';
@@ -100,7 +100,7 @@ describe('method exec test', () => {
         const mtt = container.get(MethodTest);
         expect(isFunction(mtt.sayHello)).toBeTruthy();
         // expect(container.invoke(MethodTest, 'sayHello')).toEqual('I love you.');
-        const typeRef = container.get(InvocationFactoryResolver).create(MethodTest);
+        const typeRef = container.get(InvocationFactory).create(MethodTest);
         expect(typeRef.invoke('sayHello')).toEqual('I love you.');
 
     });
@@ -109,7 +109,7 @@ describe('method exec test', () => {
         // container.register(Person);
         container.register(MethodTest2);
         // expect(container.invoke(MethodTest2, t => t.sayHello)).toEqual('Mama');
-        const typeRef = container.get(ReflectiveFactory).create(MethodTest2);
+        const typeRef = container.get(InvocationFactory).create(MethodTest2);
         expect(typeRef.invoke(t => t.sayHello)).toEqual('Mama');
 
     });
@@ -118,7 +118,7 @@ describe('method exec test', () => {
         // container.register(Person);
         container.register(MethodTest3);
         // expect(container.invoke(MethodTest3, 'sayHello')).toEqual('Mama, I love you.');
-        const typeRef = container.get(ReflectiveFactory).create(MethodTest3);
+        const typeRef = container.get(InvocationFactory).create(MethodTest3);
         expect(typeRef.invoke('sayHello')).toEqual('Mama, I love you.');
 
     });
@@ -127,7 +127,7 @@ describe('method exec test', () => {
         // container.register(Person);
         container.register(MethodTest3);
         // expect(container.invoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
-        const typeRef = container.get(ReflectiveFactory).create('Test3');
+        const typeRef = container.get(InvocationFactory).create(container.getTokenProvider('Test3'));
         expect(typeRef.invoke('sayHello')).toEqual('Mama, I love you.');
 
     });

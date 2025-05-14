@@ -13,6 +13,8 @@ import { InvokeOptions } from '../context';
 import { Context, HandlerFn } from '../handler';
 import { LifeScope } from '../lifescope/lifescope';
 import { DesignContext, RuntimeContext } from '../lifescope/ctx';
+import { InvocationFactory } from '../invocation';
+import { Resolve } from '../injector';
 
 
 
@@ -149,6 +151,14 @@ export interface MetadataFactory<T = any> extends ProvidersMetadata {
      * after init decor context.
      */
     afterInit?: (ctx: DecorContext<T>) => void;
+    /**
+     * set invocation factory.
+     */
+    factory?: Resolve<InvocationFactory>;
+    /**
+     * set metadata.
+     * @param metadata
+     */
 }
 
 /**
@@ -412,6 +422,9 @@ function dispatch(lifescope: LifeScope<DecorContext>, target: any, type: Type, d
         }
     }
     options.init && options.init(ctx);
+    if (options.factory && define.decorType === Decors.CLASS) {
+        ctx.class.setInvocationFactory(options.factory);
+    }
 
     lifescope.handle(ctx, null, () => {
         ctx.class.addDefine(define);

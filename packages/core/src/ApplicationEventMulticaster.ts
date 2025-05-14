@@ -68,7 +68,7 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * @param event 
      * @param handler 
      */
-    abstract removeListener(event: Type<ApplicationEvent>, handler: ApplicationHandler): this;
+    abstract removeListener(event: Type<ApplicationEvent>, handler: HandlerLike): this;
     /**
      * emit event. ailas name of publishEvent
      * @param event the event to publish

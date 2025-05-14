@@ -1,6 +1,6 @@
 import {
-    isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, getClassRefify, ProvdierOf, 
-    getClassName, InvocationFactory, Invocation, StaticProviders, isArray, ArgumentException, 
+    isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, getClassRefify, ProvdierOf,
+    getClassName, InvocationFactory, Invocation, StaticProviders, isArray, ArgumentException,
     StaticProvider, HandlerLike, composeHandlers, InvocationContext, eachProvider
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
@@ -44,7 +44,6 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
     private _handler: ConfigableHandler;
     constructor(
         private injector: Injector,
-        private reflectiveFactory: InvocationFactory,
         protected readonly multicaster: ApplicationEventMulticaster
     ) {
         super()
@@ -84,7 +83,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
     }
 
     attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationHanlderOptions<TArg> = {}): Invocation<T> {
-        const target =  getClassRefify(type);
+        const target = getClassRefify(type);
 
         let ends = this._maps.get(target.type);
         if (!ends) {
@@ -92,19 +91,11 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
             this._maps.set(target.type, ends);
         }
 
-
-        let hasFactory = false;
-        eachProvider(target.providers, (r) => {
-            if ((r as StaticProviders).provide === InvocationFactory) {
-                hasFactory = true;
-            }
-        });
-
-        let factory: InvocationFactory;
-        if(hasFactory) {
-            this.injector.platform().getRegisterIn(target.type)
-        }
-        
+        const invocation = target.createInvocation(this.injector, options);
+        this.attachRef(invocation, options.order);
+        invocation.onDestroy(() => this.detach(target.type));
+        ends.push(invocation);
+        return invocation;
         // if (hasAdapter) {
         //     const targetRef = this.reflectiveFactory.create(target, options);
         //     const endpoint = hasFactory ? (ctx: InvocationContext) => targetRef.resolve(RunnableFactory).create(targetRef).invoke(ctx) : (ctx: InvocationContext) => targetRef.resolve(RunnableRef).invoke(ctx);
@@ -132,7 +123,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
     }
 
 
-    protected attachRef(tagRef: ReflectiveRef, order?: number) {
+    protected attachRef(tagRef: Invocation, order?: number) {
         const refs = this._refs.get(tagRef.type);
         if (refs) {
             refs.push(tagRef);
@@ -161,11 +152,11 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         return this._maps.has(type);
     }
 
-    getRef<T>(type: Type<T>, idx = 0): ReflectiveRef<T> {
+    getRef<T>(type: Type<T>, idx = 0): Invocation<T> {
         return this._refs.get(type)?.[idx] ?? null!;
     }
 
-    getRefs<T>(type: Type<T>): ReflectiveRef<T>[] {
+    getRefs<T>(type: Type<T>): Invocation<T>[] {
         return this._refs.get(type) ?? [];
     }
 
@@ -205,11 +196,11 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
 
     handle(context: HandleContext<any>): Observable<any> {
         let handlers: HandlerLike[] | undefined;
-        if (isFunction(context.args)) {
-            handlers = this._maps.get(context.args)
-        } else if (isArray(context.args)) {
+        if (isFunction(context.payload)) {
+            handlers = this._maps.get(context.payload)
+        } else if (isArray(context.payload)) {
             handlers = [];
-            context.args.forEach(type => {
+            context.payload.forEach(type => {
                 handlers = handlers!.concat(this._maps.get(type) ?? []);
             });
         } else {
@@ -218,7 +209,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         if (handlers && handlers.length) {
             return toObservable(composeHandlers(handlers)(context));
         }
-        return throwError(() => new NotHandleException(context, context.args));
+        return throwError(() => new NotHandleException(context, context.payload));
     }
 
     protected startup(): Observable<any> {

@@ -19,7 +19,7 @@ describe('di module', () => {
         expect(typeRef).not.toBeNull();
         
         // console.log(runner.instance);
-        expect(typeRef!.getInstance().mark).toEqual('marked');
+        expect(typeRef!.instance.mark).toEqual('marked');
         await ctx.close();
 
     });
@@ -79,7 +79,7 @@ describe('di module', () => {
             ]
         });
 
-        expect(ctx.runners.getRef(ClassSevice)?.getInstance()).toBeInstanceOf(ClassSevice);
+        expect(ctx.runners.getRef(ClassSevice)?.instance).toBeInstanceOf(ClassSevice);
         expect(ctx.injector.get('ttk')).toEqual('ccc');
         await ctx.close();
     });

@@ -1,9 +1,9 @@
 import {
     isUndefined, Type, createDecorator, Provider, InjectableMetadata, PropertyMetadata, ActionTypes, InjectFlags,
-    ReflectiveFactory, MethodPropDecorator, Token, ArgumentException, object2string, InvokeArguments,
+    MethodPropDecorator, Token, ArgumentException, object2string, InvokeArguments,
     isString, Parameter, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
-    ModuleType, ClassType, MutilProvider, ReflectiveRef, Class, Injector, ProvidedInMetadata,
-    AnnotationMetadata
+    ModuleType, ClassType, MutilProvider, Class, Injector, ProvidedInMetadata, AnnotationMetadata,
+    Invocation
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import {
@@ -11,7 +11,7 @@ import {
     ApplicationStartedEvent, ApplicationStartEvent, PayloadApplicationEvent
 } from './events';
 import { FilterFn, FilterHandlerResolver, FilterResolver } from './filters/filter';
-import { InvocationHanlderOptions, InvocationHanlderFactoryResolver } from './invocation';
+import { InvocationHanlderFactory, InvocationHanlderOptions } from './invocation';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
@@ -188,9 +188,9 @@ export const Configuration: ConfigurationDecorator = createDecorator<Confgiurati
             if (meta.imports) {
                 injector.inject({
                     provider: async (injector) => {
-                        const factory = injector.get(ReflectiveFactory).create(typeRef);
-                        await factory.injector.useAsync(meta.imports!);
-                        injectBean(injector, typeRef, meta, factory)
+                        const invocation = typeRef.createInvocation(injector)
+                        await invocation.context.injector.useAsync(meta.imports!);
+                        injectBean(injector, typeRef, meta, invocation)
                     },
                 })
             } else {
@@ -205,10 +205,13 @@ export const Configuration: ConfigurationDecorator = createDecorator<Confgiurati
     }
 });
 
-function injectBean(injector: Injector, typeRef: Class<any>, meta: ConfgiurationMetadata, factoryRef?: ReflectiveRef<any>) {
-    const factory = factoryRef ?? injector.get(ReflectiveFactory).create(typeRef);
+function injectBean(injector: Injector, typeRef: Class<any>, meta: ConfgiurationMetadata, invocation?: Invocation<any>) {
+    if (!invocation) {
+        invocation = typeRef.createInvocation(injector);
+    }
 
-    if (meta.providers) factory.injector.inject(meta.providers);
+
+    if (meta.providers) invocation.context.injector.inject(meta.providers);
 
     typeRef.defs.filter(d => d.decor === Bean)
         .forEach(d => {
@@ -218,7 +221,7 @@ function injectBean(injector: Injector, typeRef: Class<any>, meta: Confgiuration
             if (d.decorType === 'method') {
                 provider = {
                     provide,
-                    useFactory: () => factory.invoke(key),
+                    useFactory: () => invocation.invoke(key),
                     static: stac,
                     multi,
                     multiOrder
@@ -226,7 +229,7 @@ function injectBean(injector: Injector, typeRef: Class<any>, meta: Confgiuration
             } else {
                 provider = {
                     provide,
-                    useFactory: () => factory.getInstance()[key],
+                    useFactory: () => invocation.instance[key],
                     static: stac,
                     multi,
                     multiOrder
@@ -267,18 +270,18 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
 
                 const decors = typeRef.getMethodDefines(ctx.currDecor);
                 const injector = ctx.injector;
-                const factory = injector.get(InvocationHanlderFactoryResolver).resolve(typeRef);
+                const invocation = typeRef.createInvocation(injector);
                 const currMulticaster = injector.get(ApplicationEventMulticaster);
                 decors.forEach(decor => {
                     const { filter, order, providedIn, ...options } = decor.metadata as InvocationHanlderOptions & { filter: Type<ApplicationEvent> & { getStrategy?: () => string } };
 
-                    const handler = factory.create(decor.propertyKey, options);
+                    const handler = invocation.createHandler(decor.propertyKey, options);
 
                     const event = filter ?? defaultFilter;
                     const isFILO = isFunction(event.getStrategy) && event.getStrategy() == 'FILO';
                     const multicaster = providedIn ? injector.platform().getInjector(providedIn).get(ApplicationEventMulticaster) : currMulticaster;
                     multicaster.addListener(event, handler, isFILO ? order ?? 0 : order);
-                    factory.onDestroy(() => multicaster.removeListener(event, handler))
+                    invocation.onDestroy(() => multicaster.removeListener(event, handler))
                 });
             }
         },
@@ -293,18 +296,18 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
 
                 const decors = typeRef.getMethodDefines(ctx.currDecor);
                 const injector = ctx.injector;
-                const factory = injector.get(InvocationHanlderFactoryResolver).resolve(typeRef);
+                const invocation = typeRef.createInvocation(injector, { instance: ctx.instance });
                 const currMulticaster = injector.get(ApplicationEventMulticaster);
                 decors.forEach(decor => {
                     const { filter, order, providedIn, ...options } = decor.metadata as InvocationHanlderOptions & { filter: Type<ApplicationEvent> & { getStrategy?: () => string } };
 
-                    const handler = factory.create(decor.propertyKey, { ...options, instance: ctx.instance! });
+                    const handler = invocation.createHandler(decor.propertyKey, options);
 
                     const event = filter ?? defaultFilter;
                     const isFILO = isFunction(event.getStrategy) && event.getStrategy() == 'FILO';
                     const multicaster = providedIn ? injector.platform().getInjector(providedIn).get(ApplicationEventMulticaster) : currMulticaster;
                     multicaster.addListener(event, handler, isFILO ? order ?? 0 : order);
-                    factory.onDestroy(() => multicaster.removeListener(event, handler))
+                    invocation.onDestroy(() => multicaster.removeListener(event, handler))
                 });
             }
         }
@@ -488,18 +491,18 @@ export const Interceptable: Interceptable = createDecorator('Interceptable', {
             const typeRef = ctx.class;
             const decors = typeRef.getMethodDefines<InterceptMetadata>(ctx.currDecor);
             const injector = ctx.injector;
-            const factory = injector.get(ReflectiveFactory).create(typeRef);
+            const invocation = typeRef.createInvocation(injector);
             const currResolver = injector.get(InterceptorResolver);
             decors.forEach(decor => {
                 const { target, token, order, providedIn } = decor.metadata;
-                const interceptor = (...args: any[]) => factory.invoke(decor.propertyKey, args);
+                const interceptor = (...args: any[]) => invocation.invoke(decor.propertyKey, args);
                 if (token) {
                     const provider = { provide: interceptor, useValue: interceptor, multi: true, multiOrder: order };
                     providedIn ? injector.platform().getInjector(providedIn).inject(provider) : injector.inject(provider);
                 } else {
                     const resolver = providedIn ? injector.platform().getInjector(providedIn).get(InterceptorResolver) : currResolver;
                     resolver.addInterceptor(target as Type | string, interceptor, order);
-                    factory.onDestroy(() => resolver.removeInterceptor(target as Type | string, interceptor));
+                    invocation.onDestroy(() => resolver.removeInterceptor(target as Type | string, interceptor));
 
                 }
             });
@@ -537,18 +540,18 @@ export const Filterable: Filterable = createDecorator('Filterable', {
             const typeRef = ctx.class;
             const decors = typeRef.getMethodDefines<InterceptMetadata>(ctx.currDecor);
             const injector = ctx.injector;
-            const factory = injector.get(ReflectiveFactory).create(typeRef);
+            const invocation = typeRef.createInvocation(injector);
             const currResolver = injector.get(FilterResolver);
             decors.forEach(decor => {
                 const { target, token, order, providedIn } = decor.metadata;
-                const filter = (...args: any[]) => factory.invoke(decor.propertyKey, args);
+                const filter = (...args: any[]) => invocation.invoke(decor.propertyKey, args);
                 if (token) {
                     const provider = { provide: target, useValue: filter, multi: true, multiOrder: order };
                     providedIn ? injector.platform().getInjector(providedIn).inject(provider) : injector.inject(provider);
                 } else {
                     const resolver = providedIn ? injector.platform().getInjector(providedIn).get(FilterResolver) : currResolver;
                     resolver.addFilter(target as Type | string, filter, order);
-                    factory.onDestroy(() => resolver.removeFilter(target as Type | string, filter));
+                    invocation.onDestroy(() => resolver.removeFilter(target as Type | string, filter));
                 }
             });
         }
@@ -598,14 +601,14 @@ export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
             const typeRef = ctx.class;
             const decors = typeRef.getMethodDefines<FilterHandlerMetadata<any>>(ctx.currDecor);
             const injector = ctx.injector;
-            const factory = injector.get(InvocationHanlderFactoryResolver).resolve(typeRef);
+            const invocation = typeRef.createInvocation(injector);
             const currResolver = injector.get(FilterHandlerResolver);
             decors.forEach(decor => {
                 const { filter, order, providedIn, ...options } = decor.metadata;
-                const handler = factory.create(decor.propertyKey, options);
+                const handler = invocation.createHandler(decor.propertyKey, options);
                 const resolver = providedIn ? injector.platform().getInjector(providedIn).get(FilterHandlerResolver) : currResolver;
                 resolver.addHandle(filter, handler, order);
-                factory.onDestroy(() => resolver.removeHandle(filter, handler));
+                invocation.onDestroy(() => resolver.removeHandle(filter, handler));
             });
         }
     }

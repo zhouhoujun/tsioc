@@ -1,4 +1,4 @@
-import { ActionTypes, AnnotationMetadata, createDecorator, DecoratorOption, TypeDef, InvocationFactoryResolver, Class, refl } from '@tsdi/ioc';
+import { ActionTypes, AnnotationMetadata, createDecorator, DecoratorOption, TypeDef, Class } from '@tsdi/ioc';
 import { SuiteInvocationFactory } from './runner/SuiteRunner';
 
 
@@ -40,14 +40,9 @@ export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
         }
     },
     props: (describe: string, timeout?: number) => ({ describe, timeout }),
-    providers: [
-        {
-            provide: InvocationFactoryResolver,
-            useValue: {
-                resolve: (type, context) => new SuiteInvocationFactory(type instanceof Class ? type : refl.getClassRef(type), context)
-            } as InvocationFactoryResolver
-        }
-    ]
+    factory: (injector) => {
+        return new SuiteInvocationFactory(injector.platform())
+    }
 });
 
 

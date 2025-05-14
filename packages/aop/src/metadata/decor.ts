@@ -49,9 +49,9 @@ export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
         afterAnnoation: (ctx) => {
             const advisor = ctx.platform.context.get(Advisor);
             if (advisor) {
-                const { injector, platform } = ctx;
+                const { injector } = ctx;
 
-                const invocation = platform.getInvocationFactory(ctx.class, injector).create();
+                const invocation = ctx.class.createInvocation(injector);
                 injector.onDestroy(() => {
                     advisor.remove(invocation);
                     invocation.destroy();

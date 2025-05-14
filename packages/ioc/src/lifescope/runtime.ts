@@ -29,8 +29,8 @@ export const runtimeAutorunInterceptor: InterceptorFn<RuntimeContext, void> = (i
     return invokeTail(() => next(input, context), (res) => {
         const autos = input.class.runnables.filter(c => c.auto && c.decorType === Decors.method)
         if (autos.length) {
-            const { injector, class: def, instance, context, platform } = input;
-            const invocation = platform.getInvocationFactory(def, injector).create({ instance, parent: context });
+            const { injector, class: def, instance, context } = input;
+            const invocation = def.createInvocation(injector, { instance, parent: context });
             autos.forEach(aut => {
                 invocation.invoke(aut.method);
             })

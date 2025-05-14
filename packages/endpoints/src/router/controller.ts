@@ -1,11 +1,11 @@
-import { Class, DecorDefine, Decors, Injectable, Injector, isString, OnDestroy, ReflectiveRef, tokenId, Type } from '@tsdi/ioc';
+import { Class, DecorDefine, Decors, Injectable, Injector, Invocation, isString, OnDestroy, tokenId, Type } from '@tsdi/ioc';
 import { Backend, ApplicationHandler, CanHandle, ApplicationInterceptor, Filter, setHandlerOptions, ConfigableHandler, BackendFn } from '@tsdi/core';
 import { joinPath, normalize } from '@tsdi/common';
 import { NotFoundException, PushDisabledException } from '@tsdi/common/transport';
 
 import { lastValueFrom, throwError } from 'rxjs';
 import { Middleware } from '../middleware/middleware';
-import { RouteHandlerFactory, RouteHandlerFactoryResolver, RouteHandlerOptions } from './route.handler';
+import { RouteHandlerOptions } from './route.handler';
 import { MappingDef, RouteMappingMetadata } from './router';
 import { RequestContext } from '../RequestContext';
 
@@ -25,18 +25,18 @@ export class ControllerRoute<T> extends ConfigableHandler<RequestContext, any, R
     protected sortRoutes: DecorDefine<RouteMappingMetadata>[];
     readonly prefix: string;
 
-    constructor(readonly factory: RouteHandlerFactory<any>, options: RouteHandlerOptions) {
-        super(factory.typeRef.getContext(), options);
+    constructor(readonly invocation: Invocation, options: RouteHandlerOptions) {
+        super(invocation.context, options);
         this.routes = new Map();
 
-        const mapping = factory.typeRef.class.getAnnotation<MappingDef>();
+        const mapping = invocation.class.getAnnotation<MappingDef>();
         this.prefix = joinPath(options.prefix, mapping.prefix, mapping.version, mapping.route);
         setHandlerOptions(this, mapping);
-        this.sortRoutes = factory.typeRef.class
+        this.sortRoutes = invocation.class
             .getMethodDefines(m => m && isString((m.metadata as RouteMappingMetadata).route))
             .sort((ra, rb) => (ra.metadata.route || '').length - (rb.metadata.route || '').length) as DecorDefine<RouteMappingMetadata>[];
 
-        factory.onDestroy(this);
+        invocation.onDestroy(this);
     }
 
     protected override initOptions(options: RouteHandlerOptions): RouteHandlerOptions {
@@ -49,7 +49,7 @@ export class ControllerRoute<T> extends ConfigableHandler<RequestContext, any, R
     }
 
     get ctrlRef() {
-        return this.factory?.typeRef;
+        return this.invocation.class;
     }
 
     async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
@@ -71,7 +71,7 @@ export class ControllerRoute<T> extends ConfigableHandler<RequestContext, any, R
                 const prefix = this.prefix;
 
                 const metadata = method.metadata as RouteMappingMetadata;
-                handler = this.factory.create(method.propertyKey, { ...metadata, prefix });
+                handler = this.invocation.createHandler(method.propertyKey, { ...metadata, prefix });
                 this.routes.set(method.propertyKey, handler);
 
             }
@@ -82,7 +82,7 @@ export class ControllerRoute<T> extends ConfigableHandler<RequestContext, any, R
     protected clear() {
         this.routes.clear();
         super.clear();
-        this.factory.typeRef.onDestroy();
+        this.invocation.onDestroy();
         (this as any).factory = null!;
     }
 
@@ -103,7 +103,7 @@ export class ControllerRouteFactory {
     * @param injector injector
     * @param prefix extenal prefix
     */
-    create<T>(type: ReflectiveRef<T>, options?: RouteHandlerOptions): ControllerRoute<T>;
+    create<T>(type: Invocation<T>, options?: RouteHandlerOptions): ControllerRoute<T>;
     /**
      * create ontroller route handler.
      * @param type factory type
@@ -118,12 +118,12 @@ export class ControllerRouteFactory {
     * @param prefix extenal prefix
      */
     create<T>(type: Type<T> | Class<T>, injector: Injector, prefix?: string): ControllerRoute<T>;
-    create<T>(type: Type<T> | Class<T> | ReflectiveRef<T>, arg2?: any, arg3?: RouteHandlerOptions | string): ControllerRoute<T> {
+    create<T>(type: Type<T> | Class<T> | Invocation<T>, arg2?: any, arg3?: RouteHandlerOptions | string): ControllerRoute<T> {
 
         let injector: Injector;
         let factory: RouteHandlerFactory<T>;
         const options = isString(arg3) ? { prefix: arg3 } : { ...arg3 };
-        if (type instanceof ReflectiveRef) {
+        if (type instanceof Invocation) {
             injector = type.injector;
             factory = injector.get(RouteHandlerFactoryResolver).resolve(type);
         } else {

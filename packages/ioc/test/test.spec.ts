@@ -1,4 +1,4 @@
-import { Autowired, Injectable, ParameterMetadata, Param, Inject, Singleton, Container, refl, getToken } from '../src';
+import { Autowired, Injectable, Param, Inject, Singleton, Container, getToken } from '../src';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, MiddleSchoolStudent, CollegeStudent, Student, InjMClassRoom, InjCollegeClassRoom, InjCollegeAliasClassRoom, StingMClassRoom, StringIdTest, SymbolIdest, SymbolCollegeClassRoom } from './debug';
 import expect = require('expect');
 

@@ -1,4 +1,4 @@
-import { Injectable, isString, isType, isArray, lang, refl } from '@tsdi/ioc';
+import { Injectable, isString, isType, isArray, step, getDef } from '@tsdi/ioc';
 import { ApplicationContext, ModuleLoader, Runner } from '@tsdi/core';
 import { OldTestRunner } from './runner/OldTestRunner';
 import { DefaultTestReport } from './reports/TestReport';
@@ -34,7 +34,7 @@ export class UnitTestService {
         }
         oldRunner.unregisterGlobalScope();
         await oldRunner.run();
-        await lang.step(suites.filter(v => v && refl.getDef<SuiteDef>(v)?.suite).map(s => () => ctx.bootstrap(s)));
+        await step(suites.filter(v => v && getDef<SuiteDef>(v)?.suite).map(s => () => ctx.bootstrap(s)));
         await ctx.resolve(DefaultTestReport).report()
     }
 }

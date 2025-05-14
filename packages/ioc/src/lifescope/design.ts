@@ -1,9 +1,7 @@
 import { InvocationContext } from '../context';
 import { Context, ContextToken, HandlerFn, InterceptorLike, invokeTail } from '../handler';
-import { DefaultInvocationFactory } from '../impl';
 import { FactoryRecord, FnType } from '../injector';
 import { DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
-import { InvocationFactory } from '../invocation';
 import { Platform } from '../platform';
 // import { ReflectiveFactory } from '../reflective';
 import { isType } from '../utils/chk';
@@ -19,7 +17,7 @@ export const autorunInterceptor = (ctx: DesignContext, next: HandlerFn, context:
             return
         }
 
-        const invocation = ctx.platform.getInvocationFactory(ctx.class, ctx.injector).create();
+        const invocation = ctx.class.createInvocation(ctx.injector);
         runs.forEach(meta => {
             invocation.invoke(meta.method);
         });

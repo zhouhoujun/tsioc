@@ -2,9 +2,9 @@ import { Observable } from 'rxjs';
 import { InvocationContext, InvocationOptions, InvokeArguments } from './context';
 import { Class } from './metadata/class';
 import { Type } from './types';
-import { MethodType } from './injector';
+import { Injector, MethodType } from './injector';
 import { DestroyCallback } from './destroy';
-import { Abstract } from './metadata/fac';
+import { Handler, HandlerLike } from './handler';
 
 
 /**
@@ -19,8 +19,7 @@ export type AsyncLike<T> = T | Promise<T> | Observable<T>;
  *
  * 用于执行操作调用的接口。
  */
-@Abstract()
-export abstract class Invocation<T = any, TRes = any> {
+export abstract class Invocation<T = any, TRes = any> implements Handler {
     /**
      * the invoke type.
      */
@@ -38,6 +37,8 @@ export abstract class Invocation<T = any, TRes = any> {
      */
     abstract get instance(): T;
 
+    abstract get injector(): Injector;
+
     /**
      * `InvocationContext` of invocation invoker.
      * 
@@ -50,6 +51,11 @@ export abstract class Invocation<T = any, TRes = any> {
      * @param context the context to use to invoke the operation
      */
     abstract invoke(): TRes;
+    /**
+     * Invoke the underlying operation using the given {@code context}.
+     * @param args the arguments to use to invoke the operation
+     */
+    abstract invoke(args: any[]): TRes;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
@@ -77,6 +83,23 @@ export abstract class Invocation<T = any, TRes = any> {
      * @param options invoke arguments.
      */
     abstract invoke(method: MethodType<T>, options?: InvokeArguments): TRes;
+    /**
+     * Invoke the underlying operation using the given {@code context}.
+     * @param method method name.
+     * @param args the arguments to use to invoke the operation
+     */
+    abstract invoke(method: MethodType<T>, args?: any[]): TRes;
+
+    createHandler(method: MethodType<T>, options: InvokeArguments): HandlerLike {
+        return (input: any, context?: any) => this.invoke(method, options);
+    }
+
+    /**
+     * as handle
+     * @param input 
+     * @param context 
+     */
+    abstract handle(input: any, context?: any): any;
     /**
      * is equals to target or not.
      * @param target 
@@ -110,7 +133,6 @@ export abstract class Invocation<T = any, TRes = any> {
  *
  * 用于创建执行操作调用的接口。
  */
-@Abstract()
 export abstract class InvocationFactory {
     abstract create<T>(type: Type<T> | Class<T>, options?: InvocationOptions<T>): Invocation<T>;
 }

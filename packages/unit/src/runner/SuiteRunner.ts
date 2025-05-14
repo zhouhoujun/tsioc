@@ -1,4 +1,4 @@
-import { lang, Injectable, Invocation, Type, AbstractInvocation, InvocationContext, InvokeArguments, AbstractInvocationFactory, InvocationOptions } from '@tsdi/ioc';
+import { lang, Injectable, Invocation, Type, AbstractInvocation, InvocationContext, InvokeArguments, AbstractInvocationFactory, InvocationOptions, Class } from '@tsdi/ioc';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
@@ -184,8 +184,9 @@ export class SuiteInvocation<T = any> extends AbstractInvocation<T> {
     }
 }
 
-export class SuiteInvocationFactory<T = any> extends AbstractInvocationFactory<T> {
-    create(option?: InvocationOptions<T, any> | undefined): Invocation<T, any> {
-        return new SuiteInvocation(this.class, this.createContext(option), option)
+export class SuiteInvocationFactory extends AbstractInvocationFactory {
+    protected createInstance<T>(typeRef: Class<T>, context: InvocationContext, options?: InvocationOptions<T>): Invocation<T> {
+        return new SuiteInvocation<T>(typeRef, context, options);
     }
+
 }

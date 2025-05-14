@@ -169,7 +169,7 @@ export class MappingRouter extends Router<RouteHanlder> implements Middleware, O
 
         if (this.routes.has(route)) {
             const handles = this.routes.get(route)!;
-            if (handles instanceof ControllerRoute) throw new Exception(`route ${route} has registered with Controller: ${handles.factory.typeRef.class.className}`)
+            if (handles instanceof ControllerRoute) throw new Exception(`route ${route} has registered with Controller: ${handles.invocation.typeRef.class.className}`)
             if (isArray(handles)) {
                 if (isArray(handler)) {
                     handles.push(...handler);

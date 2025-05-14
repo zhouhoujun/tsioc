@@ -944,5 +944,5 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
  * @param {IContainer} container
  */
 function registerCores(container: Injector, platform: Platform) {
-
+    platform.setSingleton(container, InvocationFactory, new DefaultInvocationFactory(platform));
 }

@@ -1,5 +1,5 @@
 import expect = require('expect');
-import { Injectable, Inject, getToken, ProvidedIn, Injector, ReflectiveFactory, createInjector } from '../src';
+import { Injectable, Inject, getToken, ProvidedIn, Injector, InvocationFactory, createInjector } from '../src';
 
 
 @Injectable()
@@ -76,7 +76,7 @@ describe('resolve', () => {
     })
 
     it('get service with alias in option', () => {
-        const tsr = injector.get(ReflectiveFactory).create(TestService).resolve(getToken(DataProvider, 'tt'));
+        const tsr = injector.get(InvocationFactory).create(TestService).context.resolve(getToken(DataProvider, 'tt'));
         expect(tsr).toBeInstanceOf(TestServiceProvider);
         expect(tsr.fetch()).toEqual('tt');
     })

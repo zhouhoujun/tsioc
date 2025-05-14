@@ -3,7 +3,7 @@ import { ModuleWithProviders, Provider } from '../providers';
 import {
     ProvidersMetadata, PropertyMetadata, ParameterMetadata, AnnotationMetadata
 } from './meta';
-import { InvocationContext, InvokeArguments } from '../context';
+import { InvocationContext, InvocationOptions, InvokeArguments } from '../context';
 import { Token } from '../tokens';
 import { ArgumentResolver } from '../resolver';
 import { forIn, hasItem } from '../utils/lang';
@@ -14,7 +14,7 @@ import { Exception } from '../exception';
 import { Injector, InstanceOf, MethodType, Resolve } from '../injector';
 import { HandlerFn } from '../handler';
 import { DesignContext, RuntimeContext } from '../lifescope/ctx';
-import { InvocationFactory } from '../invocation';
+import { Invocation, InvocationFactory } from '../invocation';
 
 
 
@@ -287,6 +287,11 @@ export class Class<T = any> {
 
     getInvocationFactory(injector: Injector): InvocationFactory {
         return this.invocationFactory?.(injector) ?? injector.get(InvocationFactory);
+    }
+
+    createInvocation(injector: Injector, options?: InvocationOptions): Invocation<T> {
+        const factory = this.getInvocationFactory(injector);
+        return factory.create(this, {...options, injector, targetType: this.type});
     }
 
     getAnnotation<TAnn extends TypeDef<T>>(): TAnn {

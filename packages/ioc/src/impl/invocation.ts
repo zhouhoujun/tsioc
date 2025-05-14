@@ -1,7 +1,7 @@
 import { Type } from '../types';
 import { createContext, hasContextOptions, InvocationContext, InvocationOptions, InvokeArguments } from '../context';
 import { Invocation, InvocationFactory } from '../invocation';
-import { isFunction, isPromise, isString, isSymbol } from '../utils/chk';
+import { getClass, isArray, isFunction, isObservable, isPromise, isString, isSymbol } from '../utils/chk';
 import { DestroyCallback, OnDestroy } from '../destroy';
 import { Class } from '../metadata/class';
 import { Injector, MethodType } from '../injector';
@@ -9,9 +9,11 @@ import { Provider } from '../providers';
 import { ArgumentException, Exception } from '../exception';
 import { InjectFlags, Token } from '../tokens';
 import { immediate } from '../utils/lang';
-import { composeHandlers } from '../handler';
+import { composeHandlers, Context, invokeTail } from '../handler';
 import { getClassRefify } from '../metadata/refl';
 import { Platform } from '../platform';
+import { lastValueFrom } from 'rxjs';
+import { ArgumentResolver } from '../resolver';
 
 /**
  * abstract invocation 
@@ -46,6 +48,10 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
         return this._class;
     }
 
+    get injector(): Injector {
+        return this.context.injector;
+    }
+
     get instance(): T {
         if (!this._instance) {
             this._instance = this.createInstance()
@@ -59,6 +65,11 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
      * @param context the context to use to invoke the operation
      */
     invoke(): TRes;
+    /**
+     * Invoke the underlying operation using the given {@code context}.
+     * @param args the arguments to use to invoke the operation
+     */
+    invoke(args: any[]): TRes;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
@@ -86,32 +97,108 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
      * @param options invoke arguments.
      */
     invoke(method: MethodType<T>, options?: InvokeArguments): TRes;
-    invoke(arg?: InvocationContext | InvokeArguments | MethodType<T>, optionOrArgs?: InvocationContext | InvokeArguments): TRes {
+    /**
+     * Invoke the underlying operation using the given {@code context}.
+     * @param method method name.
+     * @param args the arguments to use to invoke the operation
+     */
+    invoke(method: MethodType<T>, args?: any[]): TRes;
+    invoke(arg?: InvocationContext | InvokeArguments | MethodType<T> | any[], optionOrArgs?: InvocationContext | InvokeArguments | any[]): TRes {
         this.assertNotDestroyed();
         let name: string | symbol | undefined;
+        let args: any[] | undefined;
         let option: InvokeArguments | InvocationContext | undefined;
-        if (isString(arg) || isSymbol(arg)) {
+        if (isArray(arg)) {
+            args = arg;
+        } else if (isString(arg) || isSymbol(arg)) {
             name = arg;
-            option = optionOrArgs;
+            if (isArray(optionOrArgs)) {
+                args = optionOrArgs;
+            } else {
+                option = optionOrArgs;
+            }
         } else if (isFunction(arg)) {
             name = this.class.getMethodName(arg);
+            if (isArray(optionOrArgs)) {
+                args = optionOrArgs;
+            } else {
+                option = optionOrArgs;
+            }
         }
 
 
         if (!name) {
-            return this.process(option)
+            return this.process(option, args)
         }
 
-        return this.invokeMethod(name, option);
+        return this.invokeMethod(name, option, args);
     }
 
-    protected abstract process(option?: InvocationContext | InvokeArguments): any;
+    /**
+     * before `Invocation` invoke 
+     * @param ctx 
+     */
+    protected beforeInvoke(ctx: any): any { }
 
-    protected invokeMethod(name: string | symbol, option?: InvocationContext | InvokeArguments): any {
+    /**
+     * handle
+     * @param input 
+     * @param context 
+     * @returns 
+     */
+    handle(input: any, context?: any) {
+        let newCtx = false;
+        if (input instanceof InvocationContext) {
+            if (context) this.attchContext(input, context);
+        } else {
+            if (context && context instanceof InvocationContext) {
+                context.setValue(getClass(input), input);
+                input = context;
+            } else {
+                newCtx = true;
+                const ctx = createContext(this.context, { payload: input, resolvers: this.getInputResolver(input) });
+                ctx.setValue(getClass(input), input);
+                if (context) this.attchContext(ctx, context, input)
+                input = ctx;
+            }
+        }
 
-        const [context, destroy] = this.createInvokeContext(name, option);
+        return invokeTail(() => invokeTail(() => this.beforeInvoke(input), () => this.invoke(input)), (res) => {
+            if (isObservable(res)) {
+                res = lastValueFrom(res);
+            }
 
-        const args = this.class.resolveArguments(name, context);
+            const result = this.respondAs(input, res);
+            if (newCtx) (input as InvocationContext).destroy();
+            return result;
+        });
+
+    }
+
+    protected getInputResolver(input: any): ArgumentResolver[] | undefined {
+        return undefined;
+    }
+
+    protected respondAs(input: any, res: any) {
+        return res;
+    }
+
+    protected attchContext(input: InvocationContext, context: any, nextData?: any) {
+        if (context instanceof Context) {
+            input.setValue(Context, context);
+        }
+        input.setValue(getClass(context), context);
+    }
+
+
+    protected abstract process(option?: InvocationContext | InvokeArguments, args?: any[]): any;
+
+    protected invokeMethod(name: string | symbol, option?: InvocationContext | InvokeArguments, args?: any[]): any {
+
+        const [context, destroy] = args ? [this.context] : this.createInvokeContext(name, option);
+        if (!args) {
+            args = this.class.resolveArguments(name, context);
+        }
 
         const result = this.class.invoke(name, context, this.instance, args);
 
@@ -285,8 +372,8 @@ export class DefaultInvocation<T = any, TOpts extends InvocationOptions<T> = Inv
         this.propertyKey = options.propertyKey;
     }
 
-    protected process(option?: InvocationContext | InvokeArguments) {
-        if (this.propertyKey) return this.invokeMethod(this.propertyKey, option);
+    protected process(option?: InvocationContext | InvokeArguments, args?: any[]) {
+        if (this.propertyKey) return this.invokeMethod(this.propertyKey, option, args);
 
         const runnables = this.class.runnables.filter(r => !r.auto);
         if (runnables && runnables.length) {

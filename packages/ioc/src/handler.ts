@@ -185,6 +185,7 @@ export function invokeTail<T>(invoker: () => Observable<T> | Promise<T> | T, nex
     }
 }
 
+
 function processObservable<T>(obs$: Observable<T>, opter: NextOpter<T>): Observable<T> {
     if (opter.next) {
         obs$ = obs$.pipe(
@@ -265,7 +266,7 @@ const endHandler: HandlerFn = (res, context?: any) => res;
  * @returns 
  */
 export function composeHandlers(hanlders: HandlerLike[], interceptor?: (res: any, nextFn: HandlerFn, input: any, context?: any) => any): HandlerFn {
-    if(!interceptor && hanlders.length === 1) return parseToHandlerFn(hanlders[0]);
+    if (!interceptor && hanlders.length === 1) return parseToHandlerFn(hanlders[0]);
     return hanlders.reduceRight((next, handler) => {
         const invok = parseToHandlerFn(handler);
         const nextFn = isFunction(next) ? next : (input: any, context?: any) => next.handle(input, context);

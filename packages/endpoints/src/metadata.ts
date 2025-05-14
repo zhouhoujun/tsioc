@@ -261,7 +261,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 const route = `${normalize(endpoint.prefix)}**`;
                 router.use(route, endpoint);
 
-                endpoint.factory.onDestroy(() => {
+                endpoint.invocation.onDestroy(() => {
                     router.unuse(route)
                 });
             }

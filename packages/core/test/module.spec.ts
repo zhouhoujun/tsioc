@@ -22,9 +22,9 @@ describe('Application run with module options', () => {
         expect(ctx.instance).not.toBeNull();
         const serRef = ctx.runners.getRef(ClassSevice);
         expect(serRef).not.toBeNull();
-        expect(serRef!.getInstance().times).toEqual(1);
+        expect(serRef!.instance.times).toEqual(1);
         // console.log(runner.instance);
-        expect(serRef!.getInstance().mark).toEqual('marked');
+        expect(serRef!.instance.mark).toEqual('marked');
         await ctx.close();
 
     });
