@@ -1,8 +1,7 @@
 import {
-    InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType, lang, promiseOf, Exception, toProvider, Type, getClass, Token, isClassType,
+    InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType, promiseOf, Exception, toProvider, Type, getClass, Token, isClassType,
     InvocationContext, createContext, ArgumentException, isToken, isArray, isFunction, composeInterceptors, chainFactory, Empty,
-    isInjector,
-    hasContextOptions
+    isInjector, hasContextOptions, some
 } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
@@ -97,7 +96,7 @@ export class ConfigableHandler<
 
             if (!this._guards || !this._guards.length) return true;
 
-            if (!(await lang.some(
+            if (!(await some(
                 this._guards!.map(gd => () => promiseOf(isFunction(gd) ? gd(input, context) : gd.canHandle(input, context))),
                 vaild => vaild === false))) {
                 return false;

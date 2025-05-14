@@ -1,7 +1,7 @@
 import { Class, Injectable, InvocationContext, Invocation, InvocationFactory, Type, createContext, getClass, isFunction, isNumber, isPromise, isString, lang, AbstractInvocation, Injector, StaticProvider, ProvdierOf, AbstractInvocationFactory, InvocationOptions, InvokeArguments, Exception } from '@tsdi/ioc';
 import { Observable, from, isObservable, lastValueFrom, of } from 'rxjs';
 import { ApplicationHandler, BackendFn } from '../ApplicationHandler';
-import { InvocationHanlderOptions, Respond, TypedRespond, InvocationHanlderFactory, InvocationHanlderFactoryResolver, InvocationHandler, } from '../invocation';
+import { InvocationHanlderOptions, Respond, TypedRespond, InvocationHanlderFactory, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
 import { ResultValue } from '../handlers/ResultValue';
 import { Context, HandleContext } from '../handlers/context';
@@ -20,27 +20,31 @@ export class InvocationHandlerImpl<
     TOptions extends InvocationHanlderOptions<TInput> = InvocationHanlderOptions<TInput>,
     TContext = any,
     T = any
-> extends AbstractInvocation<T> implements InvocationHandler<TInput, TOutput, TOptions, TContext, T> {
+> extends AbstractInvocation<T, TOptions> implements InvocationHandler<TInput, TOutput, TOptions, TContext, T> {
 
     private limit?: number;
     private handler: ConfigableHandler<TInput, TOutput, TOptions, TContext>;
     constructor(
         _class: Class<T>,
         context: InvocationContext,
-        private options: TOptions) {
+        options: TOptions = {} as TOptions) {
         super(_class, context, options)
         this.limit = options.limit;
         options.backend = this.getBackend();
-        this.handler = createHandler(this.context, options);
+        this.handler = createHandler(this.context, options) as ConfigableHandler<TInput, TOutput, TOptions, TContext>;
 
+    }
+
+    getOptions(): TOptions {
+        return this.options;
     }
 
     get injector(): Injector {
         return this.context.injector
     }
-    
+
     protected override process(option?: InvocationContext | InvokeArguments) {
-        if(!this.options.propertyKey) throw new Exception('propertyKey is required.');
+        if (!this.options.propertyKey) throw new Exception('propertyKey is required.');
         return this.invoke(this.options.propertyKey, option);
     }
 
@@ -185,36 +189,11 @@ export class InvocationHandlerImpl<
 }
 
 @Injectable()
-export class InvocationFactorympl<T = any> extends AbstractInvocationFactory implements InvocationHanlderFactory<T> {
-    
-    create(option?: InvocationHanlderOptions): InvocationHandler {
-        return new InvocationHandlerImpl(this.class, this.context, option ?? {} as any);
-    }
-    
+export class InvocationHandlerFactorympl extends AbstractInvocationFactory implements InvocationHanlderFactory {
 
-
-}
-
-/**
- * factory resolver implements
- */
-export class InvocationFactoryResolverImpl implements InvocationHanlderFactoryResolver {
-    constructor() { }
-    /**
-     * resolve endpoint factory.
-     * @param type factory type
-     * @param injector injector
-     * @param categare factory categare
-     */
-    resolve<T>(type: Type<T> | Class<T>): InvocationHanlderFactory<T>;
-    resolve<T>(type: Type<T> | Class<T>): InvocationHanlderFactory<T> {
-        let tyref: Invocation<T>;
-        if (type instanceof Invocation) {
-            tyref = type;
-        } else {
-            tyref = this.factory.create(type);
-        }
-        return new InvocationFactorympl(tyref);
+    protected createInstance<T>(classRef: Class<T>, context: InvocationContext, options?: InvocationOptions<T>): Invocation<T> {
+        return new InvocationHandlerImpl(classRef, context, options);
     }
 
 }
+

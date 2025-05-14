@@ -1,4 +1,4 @@
-import { Abstract, Type, Invocation, OnDestroy, Destroyable, DestroyCallback, Class, ProvidedInMetadata, Injector, ProvdierOf, StaticProvider, InvocationOptions } from '@tsdi/ioc';
+import { Abstract, Type, Invocation, OnDestroy, Destroyable, DestroyCallback, Class, ProvidedInMetadata, Injector, ProvdierOf, StaticProvider, InvocationOptions, InvocationFactory } from '@tsdi/ioc';
 import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerService } from './handlers/configable';
 import { Observable } from 'rxjs';
 import { PipeTransform } from './pipes/pipe';
@@ -21,10 +21,10 @@ export abstract class InvocationHandler<
 
     abstract get injector(): Injector;
 
-    // /**
-    //  * get config options.
-    //  */
-    // abstract getOptions(): TOptions;
+    /**
+     * get config options.
+     */
+    abstract getOptions(): TOptions;
 
     /**
      * use pipes
@@ -76,39 +76,10 @@ export abstract class InvocationHandler<
  * Invocation Handler factory.
  */
 @Abstract()
-export abstract class InvocationHanlderFactory<T> implements OnDestroy, Destroyable {
-
-    abstract get invocation(): Invocation<T>;
-
-    abstract create<TArg>(propertyKey: string, options?: InvocationHanlderOptions<TArg>): InvocationHandler;
+export abstract class InvocationHanlderFactory extends InvocationFactory {
 
 
-    destroy(): void {
-        this.invocation.destroy();
-    }
-    get destroyed(): boolean {
-        return this.invocation.destroyed;
-    }
-
-    onDestroy(callback?: DestroyCallback): void {
-        this.invocation.onDestroy(callback);
-    }
 }
-
-/**
- * Invocation Handler factory resolver.
- */
-@Abstract()
-export abstract class InvocationHanlderFactoryResolver {
-    /**
-     * resolve endpoint factory.
-     * @param type factory type
-     * @param injector injector
-     * @param categare factory categare
-     */
-    abstract resolve<T>(type: Type<T> | Class<T>): InvocationHanlderFactory<T>;
-}
-
 
 
 

@@ -8,8 +8,6 @@ import { Injector, InjectorScope } from './injector';
 import { ModuleRef } from './module.ref';
 import { LifeScope } from './lifescope/lifescope';
 import { Context } from './handler';
-import { Invocation, InvocationFactory, InvocationOptions } from './invocation';
-
 
 /**
  * platform of {@link Injector}.
@@ -58,13 +56,6 @@ export abstract class Platform implements OnDestroy {
      * @returns prodider type and the injector the type register in.
      */
     abstract getRegisterIn(token: Token): Injector | undefined;
-    /**
-     * create invocation invoker.
-     * @param type 
-     * @param options 
-     * @param injector 
-     */
-    abstract getInvocationFactory<T>(type: Type<T> | Class<T>, injector?: Injector): InvocationFactory<T>;
     /**
      * set injector scope.
      * @param scope 

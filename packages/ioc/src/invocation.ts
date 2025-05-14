@@ -111,24 +111,8 @@ export abstract class Invocation<T = any, TRes = any> {
  * 用于创建执行操作调用的接口。
  */
 @Abstract()
-export abstract class InvocationFactory<T = any> {
-    abstract get class(): Class<T>;
-    abstract get context(): InvocationContext;
-    abstract create(options?: InvocationOptions<T>): Invocation<T>;
-}
-
-
-/**
- * Invocation factory resolver.
- */
-@Abstract()
-export abstract class InvocationFactoryResolver {
-    /**
-     * resolve invocation factory.
-     * @param type factory type.
-     * @param context invocation context.
-     */
-    abstract resolve<T>(type: Type<T> | Class<T>, contex: InvocationContext): InvocationFactory<T>;
+export abstract class InvocationFactory {
+    abstract create<T>(type: Type<T> | Class<T>, options?: InvocationOptions<T>): Invocation<T>;
 }
 
 

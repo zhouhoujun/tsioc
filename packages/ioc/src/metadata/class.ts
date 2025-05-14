@@ -11,9 +11,10 @@ import { getClassAnnotation } from '../utils/util';
 import { isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { Exception } from '../exception';
-import { InstanceOf, MethodType } from '../injector';
+import { Injector, InstanceOf, MethodType, Resolve } from '../injector';
 import { HandlerFn } from '../handler';
 import { DesignContext, RuntimeContext } from '../lifescope/ctx';
+import { InvocationFactory } from '../invocation';
 
 
 
@@ -184,6 +185,7 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
 }
 
 export const proxyTag = Symbol('__proxy');
+
 /**
  * type class reflective.
  * 
@@ -251,6 +253,8 @@ export class Class<T = any> {
      */
     readonly runnables: RunableDefine[];
 
+    private invocationFactory?: Resolve<InvocationFactory>;
+
     constructor(public readonly type: Type<T>, annotation: TypeDef<T>, private parent?: Class) {
         this.annotation = annotation ?? getClassAnnotation(type)! ?? {};
         this.className = this.annotation?.name || type.name;
@@ -277,6 +281,14 @@ export class Class<T = any> {
         this.methodReturns = new Map()
     }
 
+    setInvocationFactory(factory: Resolve<InvocationFactory>) {
+        this.invocationFactory = factory;
+    }
+
+    getInvocationFactory(injector: Injector): InvocationFactory {
+        return this.invocationFactory?.(injector) ?? injector.get(InvocationFactory);
+    }
+
     getAnnotation<TAnn extends TypeDef<T>>(): TAnn {
         return this.annotation as TAnn;
     }
@@ -295,7 +307,7 @@ export class Class<T = any> {
      * @param instance the method of instance 
      * @param args invoke with args
      */
-    invoke(method: string|symbol, context: InvocationContext, instance?: T, args?: any[]) {
+    invoke(method: string | symbol, context: InvocationContext, instance?: T, args?: any[]) {
         const type = this.type;
         const inst: any = instance ?? context.resolve(type);
         if (!inst || !isFunction(inst[method])) {
@@ -311,14 +323,13 @@ export class Class<T = any> {
         return inst[method](...args);
     }
 
-
     /**
      * resolve args.
      * 
      * @param method invoke the method named with.
      * @param context invocation context.
      */
-    resolveArguments(method: string|symbol, context: InvocationContext): any[] {
+    resolveArguments(method: string | symbol, context: InvocationContext): any[] {
         const parameters = this.getParameters(method) ?? Empty;
         const args = parameters.map(p => context.resolveArgument(p, this.type));
         return args;
@@ -374,13 +385,13 @@ export class Class<T = any> {
     }
 
 
-    hasMethodOptions(method: string|symbol): boolean {
+    hasMethodOptions(method: string | symbol): boolean {
         return this.methodOptions.has(method)
     }
-    getMethodOptions<T>(method: string|symbol): InvokeArguments<T> | undefined {
+    getMethodOptions<T>(method: string | symbol): InvokeArguments<T> | undefined {
         return this.methodOptions.get(method) ?? this.parent?.getMethodOptions(method)
     }
-    setMethodOptions<T>(method: string|symbol, options: InvokeArguments<T>) {
+    setMethodOptions<T>(method: string | symbol, options: InvokeArguments<T>) {
         if (this.methodOptions.has(method)) {
             const eopt = this.methodOptions.get(method)!;
             if (hasItem(options.providers)) {

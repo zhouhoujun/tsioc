@@ -1,7 +1,7 @@
 import { InjectFlags, Token } from '../tokens';
 import { Type, Empty } from '../types';
 import { isFunction } from '../utils/chk';
-import { get } from '../metadata/refl';
+import { getClassRef } from '../metadata/refl';
 import { Class } from '../metadata/class';
 import { Provider, StaticProvider } from '../providers';
 import { Injector, InjectorScope } from '../injector';
@@ -12,7 +12,7 @@ import { LifeScope } from '../lifescope/lifescope';
 import { Context } from '../handler';
 import { RUNTIME_INTERCEPTORS } from '../lifescope/runtime';
 import { DESIGN_INTERECPTORS, registerHandler } from '../lifescope/design';
-import { InvocationFactory, InvocationFactoryResolver } from '../invocation';
+import { InvocationFactory } from '../invocation';
 import { createContext } from '../context';
 
 /**
@@ -99,32 +99,6 @@ export class DefaultPlatform implements Platform {
         this._scopes.set(scope, injector)
     }
 
-
-    /**
-     * create invocation invoker.
-     * @param type 
-     * @param options 
-     * @param injector 
-     */
-    getInvocationFactory<T>(type: Type<T> | Class<T>, injector?: Injector): InvocationFactory<T> {
-        let factory = this.factories.get(type instanceof Class ? type.type : type);
-        if (!factory) {
-            type = type instanceof Class ? type : get(type);
-            const classType = type.type;
-            const providers = this.getTypeProvider(type);
-            if (!injector) {
-                injector = this.getRegisterIn(classType)!;
-            }
-            const resolvers = type.resolvers;
-            const context = createContext(injector, { resolvers, providers: providers });
-
-            factory = context.resolve(InvocationFactoryResolver).resolve(type, context);
-            this.factories.set(classType, factory);
-            injector.onDestroy(() => this.factories.delete(classType));
-        }
-        return factory;
-    }
-
     removeInjector(scope: InjectorScope): void {
         this._scopes.delete(scope)
     }
@@ -150,7 +124,7 @@ export class DefaultPlatform implements Platform {
      * @param type
      */
     getTypeProvider(type: Type | Class) {
-        const tyRef = isFunction(type) ? get(type) : type;
+        const tyRef = isFunction(type) ? getClassRef(type) : type;
         const pdrs = tyRef.providers.slice(0);
         tyRef.extendTypes.forEach(t => {
             const tpd = this._pdrs.get(t);

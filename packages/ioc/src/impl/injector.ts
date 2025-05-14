@@ -11,17 +11,17 @@ import {
 } from '../injector';
 import { Exception } from '../exception';
 import { Platform } from '../platform';
-import { get } from '../metadata/refl';
+import { getClassRef } from '../metadata/refl';
 import { ModuleDef, Class } from '../metadata/class';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
 import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
 // import { ReflectiveFactory } from '../reflective';
 // import { ReflectiveFactoryImpl, hasContext } from './reflective';
-import { createContext, InvocationContext, InvokeOptions } from '../context';
+import { createContext, InvocationContext, InvokeOptions, hasContextOptions } from '../context';
 import { DefaultPlatform } from './platform';
 import { DesignContext } from '../lifescope/ctx';
-import { hasContext, DefaultInvocationFactory, DefaultInvocationFactoryResolver } from './invocation';
-import { InvocationFactory, InvocationFactoryResolver } from '../invocation';
+import { DefaultInvocationFactory } from './invocation';
+import { InvocationFactory } from '../invocation';
 
 export const SCOPE_PRODIDERS: Provider[] = [];
 
@@ -232,7 +232,7 @@ export class DefaultInjector implements Injector {
      * @param [singleton]
      */
     protected registerType(platform: Platform, type: Type, option?: RegOption) {
-        this.registerReflect(platform, get(type), option)
+        this.registerReflect(platform, getClassRef(type), option)
     }
 
     protected registerReflect(platform: Platform, def: Class, option?: RegOption) {
@@ -430,7 +430,7 @@ export class DefaultInjector implements Injector {
                 context = arg1.length ? createContext(this, { isResolve, providers: arg1 }) : undefined;
             } else if (arg1.provide) {
                 context = createContext(this, { isResolve, providers: [arg1] });
-            } else if (hasContext(arg1)) {
+            } else if (hasContextOptions(arg1)) {
                 context = createContext(this, { isResolve, ...arg1 });
             }
         } else {
@@ -516,7 +516,7 @@ export class DefaultInjector implements Injector {
                 }
             }
         }
-        tgRefl = tgRefl ?? get(targetClass);
+        tgRefl = tgRefl ?? getClassRef(targetClass);
 
         return tgRefl.invoke(tgRefl.getMethodName(propertyKey), context, instance)
 
@@ -658,7 +658,7 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
     }
 
 
-    const typeRef = moduleRefl ?? get<ModuleDef>(type);
+    const typeRef = moduleRefl ?? getClassRef<ModuleDef>(type);
     const annotation = typeRef.getAnnotation<ModuleDef>();
     if (annotation.module) {
         annotation.imports?.forEach(imp => {
@@ -944,6 +944,5 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
  * @param {IContainer} container
  */
 function registerCores(container: Injector, platform: Platform) {
-    const resolver = new DefaultInvocationFactoryResolver();
-    container.setValue(InvocationFactoryResolver, resolver);
+
 }

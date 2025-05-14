@@ -44,7 +44,7 @@ export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
         {
             provide: InvocationFactoryResolver,
             useValue: {
-                resolve: (type, context) => new SuiteInvocationFactory(type instanceof Class ? type : refl.get(type), context)
+                resolve: (type, context) => new SuiteInvocationFactory(type instanceof Class ? type : refl.getClassRef(type), context)
             } as InvocationFactoryResolver
         }
     ]

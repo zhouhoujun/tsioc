@@ -1,6 +1,6 @@
 import { AnnotationType, typeRef, Type } from '../types';
 import { cleanObj, getParentClass } from '../utils/lang';
-import { isArray, isBoolean } from '../utils/chk';
+import { getClass, isArray, isBoolean, isType } from '../utils/chk';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, AnnotationMetadata,
     RunnableMetadata, MethodMetadata
@@ -402,7 +402,7 @@ function dispatch(lifescope: LifeScope<DecorContext>, target: any, type: Type, d
     const ctx = {
         define,
         target,
-        class: get(type)
+        class: getClassRef(type)
     } as DecorContext;
     if (options.actionType) {
         if (isArray(options.actionType)) {
@@ -467,7 +467,7 @@ export function getDef<T extends TypeDef>(type: Type): T {
  * get type Reflective.
  * @param type class type.
  */
-export function get<T = any>(type: Type): Class<T> {
+export function getClassRef<T = any>(type: Type): Class<T> {
     if (!type || type === Object) return null!;
     let tyRef = (type as AnnotationType)[typeRef]?.() as Class<T>;
     if (tyRef?.type !== type) {
@@ -475,7 +475,7 @@ export function get<T = any>(type: Type): Class<T> {
         if (!prRef) {
             const parentType = getParentClass(type);
             if (parentType) {
-                prRef = get(parentType)
+                prRef = getClassRef(parentType)
             }
         }
         tyRef = new Class(type, getDef(type), prRef);
@@ -483,4 +483,8 @@ export function get<T = any>(type: Type): Class<T> {
 
     }
     return tyRef;
+}
+
+export function getClassRefify<T>(type: Type<T> | Class<T> | T): Class<T> {
+    return type instanceof Class ? type : getClassRef(isType(type) ? type : getClass(type))
 }

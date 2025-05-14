@@ -15,14 +15,14 @@ export * from './platform';
 export * from './utils/chk';
 export * from './utils/obj';
 export * from './utils/token';
+export * from './utils/lang';
 export * as lang from './utils/lang';
-export { immediate, nextTick, Defer, promiseOf, promisify, getClassName } from './utils/lang';
 
 
 // metadata
 export * from './metadata/meta';
 export * from './metadata/class';
-export * as refl from './metadata/refl';
+export * from './metadata/refl';
 export { DecoratorOption, MetadataFactory } from './metadata/refl';
 export * from './metadata/fac';
 export * from './metadata/decor';

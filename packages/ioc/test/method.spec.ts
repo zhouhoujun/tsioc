@@ -1,4 +1,4 @@
-import { Inject, Autowired, Injectable, Singleton, ParameterMetadata, Param, isFunction, Container, refl, Providers, ReflectiveFactory } from '../src';
+import { Inject, Autowired, Injectable, Singleton, ParameterMetadata, Param, isFunction, Container, refl, Providers, ReflectiveFactory, getClassRef, InvocationFactory, InvocationFactoryResolver } from '../src';
 import expect = require('expect');
 // import { AnnotationAspect } from './aop/AnnotationAspect';
 // import { CheckRightAspect } from './aop/CheckRightAspect';
@@ -80,7 +80,7 @@ describe('method exec test', () => {
     });
 
     it('show has prop metadata', () => {
-        const refs = refl.get(MethodTest2);
+        const refs = getClassRef(MethodTest2);
         expect(refs.hasMetadata(Inject, 'property')).toBeTruthy();
         expect(refs.hasMetadata(Inject, 'property', 'testAt')).toBeTruthy();
         expect(refs.hasMetadata(Inject, 'property', 'tester')).toBeFalsy();
@@ -88,7 +88,7 @@ describe('method exec test', () => {
     });
 
     it('show has method metadata', () => {
-        const refs = refl.get(MethodTest3);
+        const refs = getClassRef(MethodTest3);
         expect(refs.hasMetadata(Autowired, 'method')).toBeTruthy();
         expect(refs.hasMetadata(Autowired, 'method', 'sayHello')).toBeTruthy();
         expect(refs.hasMetadata(Autowired, 'method', 'sayHello2')).toBeFalsy();
@@ -100,7 +100,7 @@ describe('method exec test', () => {
         const mtt = container.get(MethodTest);
         expect(isFunction(mtt.sayHello)).toBeTruthy();
         // expect(container.invoke(MethodTest, 'sayHello')).toEqual('I love you.');
-        const typeRef = container.get(ReflectiveFactory).create(MethodTest);
+        const typeRef = container.get(InvocationFactoryResolver).create(MethodTest);
         expect(typeRef.invoke('sayHello')).toEqual('I love you.');
 
     });

@@ -1,10 +1,10 @@
 import {
-    isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, refl, ProvdierOf, 
+    isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, getClassRefify, ProvdierOf, 
     getClassName, InvocationFactory, Invocation, StaticProviders, isArray, ArgumentException, 
     StaticProvider, HandlerLike, composeHandlers, InvocationContext, eachProvider
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
-import { ApplicationRunners, RunnableFactory, RunnableRef } from '../ApplicationRunners';
+import { ApplicationRunners } from '../ApplicationRunners';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent, ApplicationStartupEvent } from '../events';
 import { PipeTransform } from '../pipes/pipe';
@@ -14,7 +14,7 @@ import { ApplicationInterceptor } from '../ApplicationInterceptor';
 import { Filter } from '../filters/filter';
 import { ExceptionHandlerFilter } from '../filters/execption.filter';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
-import { InvocationHanlderFactoryResolver, InvocationHanlderOptions } from '../invocation';
+import { InvocationHanlderOptions } from '../invocation';
 import { HandleContext } from '../handlers/context';
 import { NotHandleException } from '../execptions';
 import { toObservable } from '../handlers';
@@ -84,7 +84,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
     }
 
     attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationHanlderOptions<TArg> = {}): Invocation<T> {
-        const target = isFunction(type) ? refl.get(type) : type;
+        const target =  getClassRefify(type);
 
         let ends = this._maps.get(target.type);
         if (!ends) {

@@ -242,9 +242,13 @@ export interface InvocationOptions<T = any, TArg = any> extends InvokeParentCont
      */
     injector?: Injector;
     /**
+     * invocation invoke target type.
+     */
+    targetType?: Type<T>;
+    /**
      * instance or instance factory of target type.
      */
-    instance?: T | (() => T);
+    instance?: T | ((context?: InvocationContext) => T);
     /**
     * the propertyKey method to invoke of this invocation.
     */

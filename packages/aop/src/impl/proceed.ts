@@ -1,8 +1,8 @@
 import {
     isFunction, lang, Platform, ctorName, InvocationContext, LifeScope, HandlerFn,
     Context, ContextToken, invokeTail, RuntimeContext, InterceptorLike, isDefined,
-    ParameterMetadata, Class, getClass, proxyTag, isObject, refl,
-    composeHandlers, isNil, object2string
+    ParameterMetadata, Class, proxyTag, isObject,
+    composeHandlers, isNil, object2string, getClassRefify
 } from '@tsdi/ioc';
 import { JoinPoint } from '../joinpoints/JoinPoint';
 import { JoinpointState } from '../joinpoints/state';
@@ -91,7 +91,7 @@ export class ProceedingScope implements Proceeding {
                     }
                     let vpxy = weekMap.get(result);
                     if (!vpxy) {
-                        vpxy = this.createProxy(fullName, rootRef, root, refl.get(getClass(result)), result, advisor, parent);
+                        vpxy = this.createProxy(fullName, rootRef, root, getClassRefify(result), result, advisor, parent);
                         weekMap.set(result, vpxy);
                     }
                     return vpxy;

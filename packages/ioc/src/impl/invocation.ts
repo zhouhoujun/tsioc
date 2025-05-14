@@ -1,6 +1,6 @@
 import { Type } from '../types';
 import { createContext, hasContextOptions, InvocationContext, InvocationOptions, InvokeArguments } from '../context';
-import { Invocation, InvocationFactory, InvocationFactoryResolver } from '../invocation';
+import { Invocation, InvocationFactory } from '../invocation';
 import { isFunction, isPromise, isString, isSymbol } from '../utils/chk';
 import { DestroyCallback, OnDestroy } from '../destroy';
 import { Class } from '../metadata/class';
@@ -8,15 +8,16 @@ import { Injector, MethodType } from '../injector';
 import { Provider } from '../providers';
 import { ArgumentException, Exception } from '../exception';
 import { InjectFlags, Token } from '../tokens';
-import { hasItem, immediate } from '../utils/lang';
+import { immediate } from '../utils/lang';
 import { composeHandlers } from '../handler';
-import { get } from '../metadata/refl';
+import { getClassRefify } from '../metadata/refl';
+import { Platform } from '../platform';
 
 /**
  * abstract invocation 
  * implements {@link Invocation}
  */
-export abstract class AbstractInvocation<T = any, TRes = any> extends Invocation<T, TRes> implements OnDestroy {
+export abstract class AbstractInvocation<T = any, TOpts extends InvocationOptions<T> = InvocationOptions<T>, TRes = any> extends Invocation<T, TRes> implements OnDestroy {
 
     private _mthCtx: Map<string | symbol, InvocationContext | null>;
     private _tagPdrs?: Provider[];
@@ -28,7 +29,7 @@ export abstract class AbstractInvocation<T = any, TRes = any> extends Invocation
     constructor(
         private _class: Class<T>,
         readonly context: InvocationContext,
-        private options?: InvocationOptions) {
+        protected options: TOpts = {} as TOpts) {
         super();
         this._isResolve = hasContextOptions(options);
         this._mthCtx = new Map();
@@ -223,6 +224,7 @@ export abstract class AbstractInvocation<T = any, TRes = any> extends Invocation
         if (!target || !this._class) return false;
         if (target === this) return true;
         if (target?.class !== this.class) return false;
+        if ((target as AbstractInvocation).options?.propertyKey !== this.options?.propertyKey) return false;
         return target.instance !== this._instance;
     }
 
@@ -271,21 +273,16 @@ export abstract class AbstractInvocation<T = any, TRes = any> extends Invocation
  * default invocation.
  * extends {@link AbstractInvocation}
  */
-export class DefaultInvocation<T = any, TRes = any> extends AbstractInvocation<T, TRes> {
-    // private _returnType!: Type;
+export class DefaultInvocation<T = any, TOpts extends InvocationOptions<T> = InvocationOptions<T>, TRes = any> extends AbstractInvocation<T, TOpts, TRes> {
+
     readonly propertyKey?: string | symbol;
 
     constructor(
         _class: Class<T>,
         context: InvocationContext,
-        options?: InvocationOptions<T>) {
+        options: TOpts = {} as TOpts) {
         super(_class, context, options);
-        this.propertyKey = options?.propertyKey;
-    }
-
-    equals(target: Invocation): boolean {
-        if ((target as DefaultInvocation).propertyKey !== this.propertyKey) return false;
-        return super.equals(target);
+        this.propertyKey = options.propertyKey;
     }
 
     protected process(option?: InvocationContext | InvokeArguments) {
@@ -305,59 +302,38 @@ export class DefaultInvocation<T = any, TRes = any> extends AbstractInvocation<T
 }
 
 
-export abstract class AbstractInvocationFactory<T = any> implements InvocationFactory<T> {
+export abstract class AbstractInvocationFactory implements InvocationFactory {
 
-    private _class: Class<T>;
+
     constructor(
-        classOrType: Class<T> | Type<T>,
-        readonly context: InvocationContext
+        private platform: Platform
     ) {
-        this._class = classOrType instanceof Class ? classOrType : get(classOrType)
+
     }
 
-    get class() {
-        return this._class
+    create<T>(type: Type<T> | Class<T>, options?: InvocationOptions<T>): Invocation<T> {
+        const cls = getClassRefify(type);
+        const context = this.createContext(cls, options);
+        return this.createInstance(cls, context, options);
     }
 
-    abstract create(option?: InvocationOptions<T>): Invocation<T>;
+    protected abstract createInstance<T>(typeRef: Class<T>, context: InvocationContext, options?: InvocationOptions<T>): Invocation<T>;
 
-    protected createContext(option?: InvocationOptions<T>): InvocationContext<any> {
-        if (!option?.injector || option?.injector === this.context.injector.parent) {
-            if (option) {
-                return createContext(option?.injector ?? this.context.injector.parent!, {
-                    parent: this.context,
-                    ...option,
-                    targetType: this.class.type,
-                }, this.class.type);
-            }
-            return this.context;
-        }
+    protected createContext<T>(typeRef: Class<T>, options?: InvocationOptions<T>): InvocationContext {
+        return createContext(options?.injector ?? this.platform.getRegisterIn(typeRef.type)!, {
+            ...options,
+            targetType: typeRef.type,
+        }, typeRef.type);
 
-        const context = createContext(option.injector, {
-            ...option,
-            targetType: this.class.type,
-        }, this.class.type);
-        context.addRef(this.context);
-        return context;
     }
 
 }
 
 
-export class DefaultInvocationFactory<T = any> extends AbstractInvocationFactory<T> implements InvocationFactory<T> {
+export class DefaultInvocationFactory extends AbstractInvocationFactory implements InvocationFactory {
 
-    create(option?: InvocationOptions<T>): Invocation<T> {
-        const context = this.createContext(option);
-        return new DefaultInvocation<T>(this.class, context, option);
-    }
-
-}
-
-
-export class DefaultInvocationFactoryResolver implements InvocationFactoryResolver {
-
-    resolve<T>(type: Type<T> | Class<T>, context: InvocationContext): InvocationFactory<T> {
-        return new DefaultInvocationFactory(type, context);
+    protected override createInstance<T>(typeRef: Class<T>, context: InvocationContext, options?: InvocationOptions<T>): Invocation<T> {
+        return new DefaultInvocation(typeRef, context, options);
     }
 
 }
