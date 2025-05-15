@@ -12,7 +12,7 @@ import { UnitRunner } from './Runner';
  * @class SuiteRunner
  * @implements {UnitRunner<T>}
  */
-@Injectable()
+@Injectable({ static: false })
 export class SuiteRunner<T = any> implements UnitRunner<T> {
 
     constructor(readonly invocation: Invocation) {
