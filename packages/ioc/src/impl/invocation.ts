@@ -1,4 +1,4 @@
-import { Type } from '../types';
+import { Empty, Type } from '../types';
 import { createContext, hasContextOptions, InvocationContext, InvocationOptions, InvokeArguments } from '../context';
 import { Invocation, InvocationFactory } from '../invocation';
 import { getClass, isArray, isFunction, isObservable, isPromise, isString, isSymbol } from '../utils/chk';
@@ -407,9 +407,16 @@ export abstract class AbstractInvocationFactory implements InvocationFactory {
     protected abstract createInstance<T>(typeRef: Class<T>, context: InvocationContext, options?: InvocationOptions<T>): Invocation<T>;
 
     protected createContext<T>(typeRef: Class<T>, options?: InvocationOptions<T>): InvocationContext {
+        let resolvers = options?.resolvers;
+        if (resolvers) {
+            if (typeRef.resolvers) resolvers = resolvers.concat(typeRef.resolvers)
+        } else {
+            resolvers = typeRef.resolvers;
+        }
         return createContext(options?.injector ?? this.platform.getRegisterIn(typeRef.type)!, {
             ...options,
-            targetType: typeRef.type,
+            providers: [this.platform.getTypeProvider(typeRef) ?? Empty, options?.providers ?? Empty],
+            resolvers
         }, typeRef.type);
 
     }
