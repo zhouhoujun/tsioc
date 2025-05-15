@@ -8,7 +8,7 @@ import { Injector, MethodType } from '../injector';
 import { ArgumentException, Exception } from '../exception';
 import { InjectFlags, Token } from '../tokens';
 import { immediate } from '../utils/lang';
-import { composeHandlers, Context, invokeTail } from '../handler';
+import { composeHandlers, Context, HandlerLike, invokeTail } from '../handler';
 import { getClassRefify } from '../metadata/refl';
 import { Platform } from '../platform';
 import { lastValueFrom } from 'rxjs';
@@ -132,6 +132,11 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
         }
 
         return this.invokeMethod(name, option, args);
+    }
+
+
+    createHandler(method: MethodType<T>, options: InvokeArguments): HandlerLike {
+        return (input: any, context?: any) => this.invoke(method, input);
     }
 
     /**

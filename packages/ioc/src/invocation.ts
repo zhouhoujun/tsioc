@@ -92,10 +92,7 @@ export abstract class Invocation<T = any, TRes = any> implements Handler {
      */
     abstract invoke(method: MethodType<T>, args?: any[]): TRes;
 
-    createHandler(method: MethodType<T>, options: InvokeArguments): HandlerLike {
-        return (input: any, context?: any) => this.invoke(method, options);
-    }
-
+    abstract createHandler(method: MethodType<T>, options: InvokeArguments): HandlerLike;
     /**
      * as handle
      * @param input 

@@ -180,7 +180,7 @@ export class SuiteRunner<T = any> implements UnitRunner<T> {
 
 export class SuiteInvocation<T = any> extends AbstractInvocation<T> {
     protected process(option?: InvocationContext | InvokeArguments) {
-        this.context.resolve(SuiteRunner).run();
+        return this.context.resolve(SuiteRunner).run();
     }
 }
 

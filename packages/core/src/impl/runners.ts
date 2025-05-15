@@ -101,30 +101,6 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         invocation.onDestroy(() => this.detach(target.type));
         ends.push(invocation);
         return invocation;
-        // if (hasAdapter) {
-        //     const targetRef = this.reflectiveFactory.create(target, options);
-        //     const endpoint = hasFactory ? (ctx: InvocationContext) => targetRef.resolve(RunnableFactory).create(targetRef).invoke(ctx) : (ctx: InvocationContext) => targetRef.resolve(RunnableRef).invoke(ctx);
-        //     ends.push(endpoint);
-        //     this.attachRef(targetRef, options.order);
-        //     targetRef.onDestroy(() => this.detach(target.type));
-        //     return targetRef;
-        // }
-
-        // const runnables = target.runnables.filter(r => !r.auto);
-        // if (runnables && runnables.length) {
-        //     const targetRef = this.reflectiveFactory.create(target, options);
-        //     const facResolver = targetRef.resolve(InvocationHanlderFactoryResolver);
-        //     const factory = facResolver.resolve(targetRef);
-        //     const endpoints = runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
-        //         return factory.create(runnable.method, options)
-        //     });
-        //     ends.push(...endpoints);
-        //     this.attachRef(targetRef, options.order);
-        //     targetRef.onDestroy(() => this.detach(target.type));
-        //     return targetRef;
-        // }
-
-        // throw new ArgumentException(getClassName(target.type) + ' is invaild runnable');
     }
 
 
