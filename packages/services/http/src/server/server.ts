@@ -52,7 +52,7 @@ export class HttpServer extends Server<HttpContext, HttpServConfig> implements L
                 // moduleRef.setValue(HTTP_LISTEN_OPTS, options.listenOpts);
                 const url = options.listenOpts!.url = `http${isSecure ? 's' : ''}://${host}:${port}`;
                 this._server.listen(port, host, () => {
-                    this.logger.info(lang.getClassName(this), url, '!');
+                    this.logger.info(lang.getTypeName(this), url, '!');
                     listeningListener?.();
                 });
             } else {
@@ -63,7 +63,7 @@ export class HttpServer extends Server<HttpContext, HttpServConfig> implements L
                 // moduleRef.setValue(HTTP_LISTEN_OPTS, options.listenOpts);
                 const url = options.listenOpts!.url = `http${isSecure ? 's' : ''}://localhost:${port}`;
                 this._server.listen(port, () => {
-                    this.logger.info(lang.getClassName(this), 'access with url:', url, '!');
+                    this.logger.info(lang.getTypeName(this), 'access with url:', url, '!');
                     listeningListener?.();
                 });
             }
@@ -75,7 +75,7 @@ export class HttpServer extends Server<HttpContext, HttpServConfig> implements L
             // moduleRef.setValue(HTTP_LISTEN_OPTS, options.listenOpts);
             const url = options.listenOpts!.url = `http${isSecure ? 's' : ''}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`;
             this._server.listen(opts, () => {
-                this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', url, '!');
+                this.logger.info(lang.getTypeName(this), 'listen:', opts, '. access with url:', url, '!');
                 listeningListener?.();
             });
         }
@@ -144,7 +144,7 @@ export class HttpServer extends Server<HttpContext, HttpServConfig> implements L
         const opts = this.getOptions();
         await promisify(this._server.close, this._server)()
             .then(() => {
-                this.logger.info(lang.getClassName(this), opts.listenOpts, 'closed !');
+                this.logger.info(lang.getTypeName(this), opts.listenOpts, 'closed !');
             })
             .catch(err => {
                 this.logger.error(err);

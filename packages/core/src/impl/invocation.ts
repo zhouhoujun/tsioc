@@ -1,4 +1,4 @@
-import { Class, Injectable, InvocationContext, Invocation, InvocationFactory, Type, createContext, getClass, isFunction, isNumber, isPromise, isString, lang, AbstractInvocation, Injector, StaticProvider, ProvdierOf, AbstractInvocationFactory, InvocationOptions, InvokeArguments, Exception } from '@tsdi/ioc';
+import { Class, Injectable, InvocationContext, Invocation, InvocationFactory, Type, createContext, getType, isFunction, isNumber, isPromise, isString, lang, AbstractInvocation, Injector, StaticProvider, ProvdierOf, AbstractInvocationFactory, InvocationOptions, InvokeArguments, Exception } from '@tsdi/ioc';
 import { Observable, from, isObservable, lastValueFrom, of } from 'rxjs';
 import { ApplicationHandler, BackendFn } from '../ApplicationHandler';
 import { InvocationHanlderOptions, Respond, TypedRespond, InvocationHanlderFactory, InvocationHandler, } from '../invocation';
@@ -119,12 +119,12 @@ export class InvocationHandlerImpl<
             if (context) this.attchContext(input, context);
         } else {
             if (context && context instanceof InvocationContext) {
-                context.setValue(getClass(input), input);
+                context.setValue(getType(input), input);
                 input = context;
             } else {
                 newCtx = true;
                 const ctx = createContext(this.context, { payload: input, resolvers: this.context.injector.get(getResolverToken(input), []) });
-                ctx.setValue(getClass(input), input);
+                ctx.setValue(getType(input), input);
                 if (context) this.attchContext(ctx, context, input)
                 input = ctx;
             }
@@ -154,7 +154,7 @@ export class InvocationHandlerImpl<
         if (context instanceof Context) {
             input.setValue(Context, context);
         }
-        input.setValue(getClass(context), context);
+        input.setValue(getType(context), context);
     }
 
     /**

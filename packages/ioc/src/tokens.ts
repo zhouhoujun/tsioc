@@ -1,6 +1,6 @@
 import { Type, TypeOf } from './types';
-import { getClass, isFunction, isString } from './utils/chk';
-import { getClassName } from './utils/lang';
+import { getType, isFunction, isString } from './utils/chk';
+import { getTypeName } from './utils/lang';
 
 
 /**
@@ -81,7 +81,7 @@ export function getToken(token: Token, alias?: string): Token<any> {
         if (token instanceof InjectToken) {
             atk = token.to(alias);
         } else {
-            const type = isString(token) ? token : getClassName(token);
+            const type = isString(token) ? token : getTypeName(token);
             atk = Symbol(`${type}_${alias}`);
         }
         maps.set(alias, atk);
@@ -99,7 +99,7 @@ export function getToken(token: Token, alias?: string): Token<any> {
  * @returns 
  */
 export function getTokenOf<T>(type: TypeOf<any>, alias: string, propertyKey?: string): Token<T> {
-    return getToken<T>(getClass(type), propertyKey ? `${propertyKey}_${alias}` : alias)
+    return getToken<T>(getType(type), propertyKey ? `${propertyKey}_${alias}` : alias)
 }
 
 /**

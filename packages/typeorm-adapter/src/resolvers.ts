@@ -15,7 +15,7 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
     canResolve(parameter: Parameter<any>, ctx: InvocationContext<any>): boolean {
         const { model, connection } = parameter as RepositoryMetadata;
 
-        if (!parameter.type || !lang.isExtendsClass(parameter.type, Repository)) {
+        if (!parameter.type || !lang.isExtends(parameter.type, Repository)) {
             throw new ArgumentException(`Autowired repository design type not defined, or not extends with TypeORM Repository`)
         }
 

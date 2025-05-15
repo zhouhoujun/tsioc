@@ -1,4 +1,4 @@
-import { DefaultInvocationContext, Injector, InvokeArguments, OperationArgumentResolver, Token, composeResolvers, getClass } from '@tsdi/ioc';
+import { DefaultInvocationContext, Injector, InvokeArguments, OperationArgumentResolver, Token, composeResolvers, getType } from '@tsdi/ioc';
 import { getResolverToken } from './resolver';
 
 /**
@@ -18,7 +18,7 @@ export class HandleContext<TInput = any> extends DefaultInvocationContext<TInput
         options: HandleContextOpts<TInput> = {}) {
         super(injector, options);
         this.bootstrap = options.bootstrap === true;
-        this.setValue(getClass(this), this);
+        this.setValue(getType(this), this);
     }
     private _execption: any;
     /**

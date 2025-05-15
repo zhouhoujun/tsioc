@@ -1,7 +1,7 @@
 import { Empty, Type } from '../types';
 import { createContext, hasContextOptions, InvocationContext, InvocationOptions, InvokeArguments } from '../context';
 import { Invocation, InvocationFactory } from '../invocation';
-import { getClass, isArray, isFunction, isObservable, isPromise, isString, isSymbol } from '../utils/chk';
+import { getType, isArray, isFunction, isObservable, isPromise, isString, isSymbol } from '../utils/chk';
 import { DestroyCallback, OnDestroy } from '../destroy';
 import { Class } from '../metadata/class';
 import { Injector, MethodType } from '../injector';
@@ -9,7 +9,7 @@ import { ArgumentException, Exception } from '../exception';
 import { InjectFlags, Token } from '../tokens';
 import { immediate } from '../utils/lang';
 import { composeHandlers, Context, HandlerLike, invokeTail } from '../handler';
-import { getClassRefify } from '../metadata/refl';
+import { getClassify } from '../metadata/refl';
 import { Platform } from '../platform';
 import { lastValueFrom } from 'rxjs';
 import { ArgumentResolver } from '../resolver';
@@ -157,12 +157,12 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
             if (context) this.attchContext(input, context);
         } else {
             if (context && context instanceof InvocationContext) {
-                context.setValue(getClass(input), input);
+                context.setValue(getType(input), input);
                 input = context;
             } else {
                 newCtx = true;
                 const ctx = createContext(this.context, { payload: input, resolvers: this.getInputResolver(input) });
-                ctx.setValue(getClass(input), input);
+                ctx.setValue(getType(input), input);
                 if (context) this.attchContext(ctx, context, input)
                 input = ctx;
             }
@@ -192,7 +192,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
         if (context instanceof Context) {
             input.setValue(Context, context);
         }
-        input.setValue(getClass(context), context);
+        input.setValue(getType(context), context);
     }
 
 
@@ -384,7 +384,7 @@ export abstract class AbstractInvocationFactory implements InvocationFactory {
     }
 
     create<T>(type: Type<T> | Class<T>, options?: InvocationOptions<T>): Invocation<T> {
-        const cls = getClassRefify(type);
+        const cls = getClassify(type);
         const context = this.createContext(cls, options);
         return this.createInstance(cls, context, options);
     }

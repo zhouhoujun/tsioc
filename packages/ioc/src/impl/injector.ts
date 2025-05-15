@@ -4,14 +4,14 @@ import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { cleanObj, deepForEach, defer, immediate } from '../utils/lang';
-import { isArray, isDefined, isFunction, isNumber, getClass, isString, isUndefined, isNil, isType, isPromise } from '../utils/chk';
+import { isArray, isDefined, isFunction, isNumber, getType, isString, isUndefined, isNil, isType, isPromise } from '../utils/chk';
 import {
     MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, InjectorEvent,
     Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
 } from '../injector';
 import { Exception } from '../exception';
 import { Platform } from '../platform';
-import { getClassRef } from '../metadata/refl';
+import { getClass } from '../metadata/refl';
 import { ModuleDef, Class } from '../metadata/class';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
 import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
@@ -232,7 +232,7 @@ export class DefaultInjector implements Injector {
      * @param [singleton]
      */
     protected registerType(platform: Platform, type: Type, option?: RegOption) {
-        this.registerReflect(platform, getClassRef(type), option)
+        this.registerReflect(platform, getClass(type), option)
     }
 
     protected registerReflect(platform: Platform, def: Class, option?: RegOption) {
@@ -502,7 +502,7 @@ export class DefaultInjector implements Injector {
             context = createContext(this, option);
         }
         if (isTypeObject(target)) {
-            targetClass = getClass(target);
+            targetClass = getType(target);
             instance = target as T
         } else {
             if (target instanceof Class) {
@@ -510,13 +510,13 @@ export class DefaultInjector implements Injector {
                 targetClass = target.type
             } else {
                 instance = this.get(target as Token, context);
-                targetClass = getClass(instance);
+                targetClass = getType(instance);
                 if (!targetClass) {
                     throw new Exception((target as Token).toString() + ' is not implements by any class.')
                 }
             }
         }
-        tgRefl = tgRefl ?? getClassRef(targetClass);
+        tgRefl = tgRefl ?? getClass(targetClass);
 
         return tgRefl.invoke(tgRefl.getMethodName(propertyKey), context, instance)
 
@@ -658,7 +658,7 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
     }
 
 
-    const typeRef = moduleRefl ?? getClassRef<ModuleDef>(type);
+    const typeRef = moduleRefl ?? getClass<ModuleDef>(type);
     const annotation = typeRef.getAnnotation<ModuleDef>();
     if (annotation.module) {
         annotation.imports?.forEach(imp => {

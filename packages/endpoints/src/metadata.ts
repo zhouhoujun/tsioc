@@ -149,9 +149,9 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
 
             const router = mapping.router ? injector.get(mapping.router) : getRouter(injector, mapping.protocol);
             const route = mapping.route!;
-            if (!route) throw new Exception(lang.getClassName(ctx.type) + 'has not route!');
-            if (!router) throw new Exception(lang.getClassName(parent) + 'has not registered!');
-            if (!(router instanceof Router)) throw new Exception(lang.getClassName(router) + 'is not router!');
+            if (!route) throw new Exception(lang.getTypeName(ctx.type) + 'has not route!');
+            if (!router) throw new Exception(lang.getTypeName(parent) + 'has not registered!');
+            if (!(router instanceof Router)) throw new Exception(lang.getTypeName(router) + 'is not router!');
 
             router.use({
                 path: route,
@@ -254,8 +254,8 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 const mapping = ctx.class.getAnnotation<MappingDef>();
 
                 const router = mapping.router ? injector.get(mapping.router) : getRouter(injector, mapping.protocol);
-                if (!router) throw new Exception(lang.getClassName(parent) + 'has not registered!');
-                if (!(router instanceof Router)) throw new Exception(lang.getClassName(router) + 'is not router!');
+                if (!router) throw new Exception(lang.getTypeName(parent) + 'has not registered!');
+                if (!(router instanceof Router)) throw new Exception(lang.getTypeName(router) + 'is not router!');
 
                 const endpoint = injector.get(ControllerRouteFactory).create(ctx.class, injector);
                 const route = `${normalize(endpoint.prefix)}**`;

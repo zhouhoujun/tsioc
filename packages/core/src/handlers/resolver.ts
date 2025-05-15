@@ -1,4 +1,4 @@
-import { OperationArgumentResolver, Parameter, Invocation, TypeOf, Token, getTokenOf, isToken, getClassName } from '@tsdi/ioc';
+import { OperationArgumentResolver, Parameter, Invocation, TypeOf, Token, getTokenOf, isToken, getTypeName } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
 import { HandleContext } from './context';
 
@@ -74,5 +74,5 @@ export function getPipe(parameter: TransportParameter, ctx: HandleContext, isPri
         if (isToken(parameter.pipe)) return ctx.get<PipeTransform>(parameter.pipe);
         return parameter.pipe;
     }
-    return parameter.type ? ctx.get<PipeTransform>(isPrimitive ? parameter.type.name.toLowerCase() : getClassName(parameter.type)) : null;
+    return parameter.type ? ctx.get<PipeTransform>(isPrimitive ? parameter.type.name.toLowerCase() : getTypeName(parameter.type)) : null;
 }

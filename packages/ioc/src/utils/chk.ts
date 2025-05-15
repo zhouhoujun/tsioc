@@ -19,12 +19,13 @@ export function isFunction(t: any): t is Function {
 const fnc$ = /^function\s+\(|^function\s+anonymous\(/;
 const class$ = /^[\s\S]*class\s+/;
 const fncallErr = `cannot be invoked without 'new'`;
+
 /**
- * this fn is class or not.
+ * this fn can use new or not.
  * @param fn 
  * @returns 
  */
-export function isClass(fn: Function) {
+export function isNewable(fn: Function) {
     if (!fn.prototype || fn.prototype.constructor !== fn) return false;
     if (typeof Symbol !== 'undefined' && typeof Symbol.hasInstance !== 'undefined') {
         return fn[Symbol.hasInstance] ? true : false;
@@ -48,7 +49,7 @@ export function isClass(fn: Function) {
  * @returns 
  */
 export function isType(t: any): t is Type<any> {
-    return typeof t === 'function' && isClass(t)
+    return typeof t === 'function' && isNewable(t)
 }
 
 /**
@@ -279,7 +280,7 @@ export function isPrimitiveType(target: any): boolean {
 }
 
 export function isPrimitive(target: any): boolean {
-    return isPrimit(getClass(target));
+    return isPrimit(getType(target));
 }
 
 function isPrimit(target: Function): boolean {
@@ -295,7 +296,7 @@ function isPrimit(target: Function): boolean {
  * @returns 
  */
 export function isBasic(target: any): boolean {
-    return isBasicType(getClass(target))
+    return isBasicType(getType(target))
 }
 function isBasicType(target: Function): boolean {
     return target === Function
@@ -317,13 +318,13 @@ export function isAnnotation(target: any): target is AnnotationType {
 }
 
 /**
- * get class of object.
+ * get class type of object.
  *
  * @export
  * @param {*} target
  * @returns {Type}
  */
-export function getClass(target: any): Type {
+export function getType(target: any): Type {
     if (isType(target)) {
         return target
     }

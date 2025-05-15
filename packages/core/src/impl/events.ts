@@ -1,4 +1,4 @@
-import { ArgumentException, composeHandlers, getClass, InjectFlags, Handler as IHandler, HandlerLike, Injector, ProvdierOf, StaticProvider, tokenId, Type } from '@tsdi/ioc';
+import { ArgumentException, composeHandlers, getType, InjectFlags, Handler as IHandler, HandlerLike, Injector, ProvdierOf, StaticProvider, tokenId, Type } from '@tsdi/ioc';
 import { forkJoin, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanHandle } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
@@ -173,7 +173,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     }
 
     handle(event: ApplicationEvent): Observable<void | false> {
-        const handlers = this.maps.get(getClass(event));
+        const handlers = this.maps.get(getType(event));
         if (!handlers || !handlers.length) return of(undefined);
 
        return toObservable(composeHandlers(handlers, (r, next)=> {

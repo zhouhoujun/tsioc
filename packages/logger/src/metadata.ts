@@ -169,7 +169,7 @@ const loggerResolver = {
     resolve: (pr: LogMetadata, ctx, target?: Type) => {
         const managers = ctx.get(LoggerManagers);
         const level = pr.level;
-        const logger = managers.getLogger(pr.logname ?? lang.getClassName(target ?? pr.target), pr.adapter);
+        const logger = managers.getLogger(pr.logname ?? lang.getTypeName(target ?? pr.target), pr.adapter);
         if (level) logger.level = level;
         return logger
     }
@@ -197,7 +197,7 @@ export const InjectLog: Log<LogMetadata> = createDecorator<LogMetadata>('InjectL
     },
     props: (...args: any[]) => {
         if (args.length === 1) {
-            const logname = isString(args[0]) ? args[0] : lang.getClassName(args[0]);
+            const logname = isString(args[0]) ? args[0] : lang.getTypeName(args[0]);
             return {
                 logname,
                 resolver: loggerResolver

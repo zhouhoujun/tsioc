@@ -1,7 +1,7 @@
 import { Type, ClassType } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
-import { remove, getClassName, getClassChain } from '../utils/lang';
-import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getClass } from '../utils/chk';
+import { remove, getTypeName, getTypeChain } from '../utils/lang';
+import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getType } from '../utils/chk';
 import { OperationArgumentResolver, Parameter, composeResolver, composeResolvers } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
@@ -67,7 +67,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
         options.payload && this.initArgs(options.payload);
 
-        getClassChain(getClass(this)).forEach(c => {
+        getTypeChain(getType(this)).forEach(c => {
             this.setValue(c, this);
         });
 
@@ -79,7 +79,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     protected initArgs(args: ProvdierOf<T>): void {
         this.injector.inject(toProvider(CONTEXT_PAYLOAD, args));
         if (!isFunction(args)) {
-            const argType = getClass(args);
+            const argType = getType(args);
             this.injector.setValue(argType, args);
         }
     }
@@ -365,7 +365,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
     } else if (isString(obj)) {
         return `"${obj}"`
     } else if (isType(obj)) {
-        return 'Type<' + getClassName(obj) + '>'
+        return 'Type<' + getTypeName(obj) + '>'
     } else if (obj instanceof Class) {
         return `[${obj.className} TypeReflect]`
     } else if (isPlainObject(obj)) {
@@ -377,7 +377,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
         return `{ ${str.join(', ')} }`
     } else if (options.typeInst && isTypeObject(obj)) {
         const fileds = Object.keys(obj).filter(k => k).map(k => `${k}: ${object2string(obj[k], { typeInst: false, fun: false })}`);
-        return `[${getClassName(obj)} {${fileds.join(', ')}} ]`
+        return `[${getTypeName(obj)} {${fileds.join(', ')}} ]`
     }
     if (!options.fun && isFunction(obj)) {
         return 'Function'

@@ -1,5 +1,5 @@
 import {
-    InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType, promiseOf, Exception, toProvider, Type, getClass, Token, isClassType,
+    InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType, promiseOf, Exception, toProvider, Type, getType, Token, isClassType,
     InvocationContext, createContext, ArgumentException, isToken, isArray, isFunction, composeInterceptors, chainFactory, Empty,
     isInjector, hasContextOptions, some
 } from '@tsdi/ioc';
@@ -183,7 +183,7 @@ export class ConfigableHandler<
      * @returns 
      */
     protected getChain(input: TInput): ApplicationInterceptorFn<TInput, TOutput> {
-        return this.options.enableTypeChain ? this.getChainOf(getClass(input)) : this.chain!;
+        return this.options.enableTypeChain ? this.getChainOf(getType(input)) : this.chain!;
     }
 
     /**
@@ -251,7 +251,7 @@ export class ConfigableHandler<
     }
 
     protected getHandlerType(): Type {
-        return this.getOptions().handlerType ?? getClass(this)
+        return this.getOptions().handlerType ?? getType(this)
     }
 
 

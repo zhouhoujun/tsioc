@@ -85,7 +85,7 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
         this.receiver = options.receiver;
         this.targetRef = options.targetRef;
         this.targetType = options.targetType ?? options.targetRef.type;
-        this.fullName = options.fullName ?? lang.getClassName(this.targetType) + '.' + this.propertyKey?.toString();
+        this.fullName = options.fullName ?? lang.getTypeName(this.targetType) + '.' + this.propertyKey?.toString();
         this.advisor = options.advisor;
         this.originProxy = options.originProxy;
         this.originMethod = options.originMethod;

@@ -1,4 +1,4 @@
-import { ArgumentException, Type, composeResolver, getClass, isArray, isBasic, isDefined, isPrimitiveType, isString, Parameter, Empty } from '@tsdi/ioc';
+import { ArgumentException, Type, composeResolver, getType, isArray, isBasic, isDefined, isPrimitiveType, isString, Parameter, Empty } from '@tsdi/ioc';
 import { getPipe, TransportArgumentResolver, TransportParameter } from './resolver';
 import { HandleContext } from './context';
 
@@ -26,7 +26,7 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
                 {
                     canResolve(parameter, ctx) {
                         const val = getPayload(ctx as T, parameter.scope);
-                        return !parameter.field && (isBasic(val) || parameter.type == getClass(val))
+                        return !parameter.field && (isBasic(val) || parameter.type == getType(val))
                     },
                     resolve(parameter, ctx) {
                         const pipe = getPipe(parameter, ctx, true);

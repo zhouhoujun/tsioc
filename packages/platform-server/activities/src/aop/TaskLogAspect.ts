@@ -19,7 +19,7 @@ export class TaskLogProcess extends LogProcess {
             let target = joinPoint.targetType as IActivityRef;
             let name = target.name;
             if (!name) {
-                name = lang.getClassName(joinPoint.targetType);
+                name = lang.getTypeName(joinPoint.targetType);
             }
             let start, end;
             let taskname = '\'' + chalk.cyan(name) + '\'';

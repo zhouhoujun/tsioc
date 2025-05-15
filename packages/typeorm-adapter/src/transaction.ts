@@ -174,5 +174,5 @@ export class TypeormTransactionManager extends TransactionManager {
 }
 
 function isRepository(type?: Type) {
-    return type && (type === Repository || type === TreeRepository || type === MongoRepository || lang.isExtendsClass(type, Repository))
+    return type && (type === Repository || type === TreeRepository || type === MongoRepository || lang.isExtends(type, Repository))
 }

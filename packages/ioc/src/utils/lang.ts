@@ -1,7 +1,7 @@
 // use core-js in browser.
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
 import { Type, Modules } from '../types';
-import { getClass, isArray, isFunction, isNil, isObject, isClassType, isPromise, isType, isUndefined } from './chk';
+import { getType, isArray, isFunction, isNil, isObject, isClassType, isPromise, isType, isUndefined } from './chk';
 import { isPlainObject } from './obj';
 import { getClassAnnotation } from './util';
 
@@ -175,14 +175,14 @@ export function last<T>(list?: T[]): T {
 }
 
 /**
- * get class name.
+ * get type name.
  *
  * @export
  * @param {} target
  * @returns {string}
  */
-export function getClassName(target: any): string {
-    const classType = getClass(target);
+export function getTypeName(target: any): string {
+    const classType = getType(target);
     if (!classType) {
         return ''
     }
@@ -190,27 +190,27 @@ export function getClassName(target: any): string {
 }
 
 /**
- * get target type parent class.
+ * get target type parent type.
  *
  * @export
  * @param {Type} target
  * @returns {Type}
  */
-export function getParentClass(target: Type): Type {
+export function getParentType(target: Type): Type {
     const ty = Object.getPrototypeOf(target?.prototype)?.constructor ?? Object.getPrototypeOf(target);
     return ty === Object ? null! : ty
 }
 
 /**
- * get all parent class in chain.
+ * get all parent type in chain.
  *
  * @export
  * @param {Type} target
  * @returns {Type[]}
  */
-export function getClassChain(target: Type): Type[] {
+export function getTypeChain(target: Type): Type[] {
     const types: Type[] = [];
-    forInClassChain(target, type => {
+    forInTypeChain(target, type => {
         types.push(type)
     });
     return types
@@ -223,12 +223,12 @@ export function getClassChain(target: Type): Type[] {
  * @param {Type} target
  * @param {(token: Type) => any} express
  */
-export function forInClassChain(target: Type, express: (token: Type) => any): void {
+export function forInTypeChain(target: Type, express: (token: Type) => any): void {
     while (target) {
         if (express(target) === false) {
             break
         }
-        target = getParentClass(target)
+        target = getParentType(target)
     }
 }
 
@@ -251,22 +251,22 @@ export function isBaseOf<T>(target: any, baseType: Type<T>): target is Type<T> {
 }
 
 /**
- * target is extends class of baseClass or not.
+ * target is extends class of base type or not.
  *
  * @export
  * @param {Token} target
- * @param {(Type | ((type: Type) => boolean))} baseClass
+ * @param {(Type | ((type: Type) => boolean))} baseType
  * @returns {boolean}
  */
-export function isExtendsClass<T extends Type>(target: Type, baseClass: T | ((type: T) => boolean)): target is T {
+export function isExtends<T extends Type>(target: Type, baseType: T | ((type: T) => boolean)): target is T {
     let isExtnds = false;
-    if (isType(target) && baseClass) {
-        const isCls = isClassType(baseClass);
-        forInClassChain(target, t => {
+    if (isType(target) && baseType) {
+        const isCls = isClassType(baseType);
+        forInTypeChain(target, t => {
             if (isCls) {
-                isExtnds = t === baseClass
+                isExtnds = t === baseType
             } else {
-                isExtnds = (<Function>baseClass)(t)
+                isExtnds = (<Function>baseType)(t)
             }
             return !isExtnds
         });
@@ -275,7 +275,7 @@ export function isExtendsClass<T extends Type>(target: Type, baseClass: T | ((ty
 }
 
 /**
- * get all class type in modules.
+ * get all class types in modules.
  *
  * @param {Modules[]} mds
  * @param {...Express<Type, boolean>[]} filters

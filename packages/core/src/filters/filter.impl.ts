@@ -1,4 +1,4 @@
-import { getClass, isFunction, isString, Type, ArgumentException, Injector, InjectFlags, HandlerLike } from '@tsdi/ioc';
+import { getType, isFunction, isString, Type, ArgumentException, Injector, InjectFlags, HandlerLike } from '@tsdi/ioc';
 import { ApplicationHandler } from '../ApplicationHandler';
 import { Filter, FilterHandlerResolver, FilterLike, FilterResolver } from './filter';
 import { ApplicationInterceptor, ApplicationInterceptorLike, InterceptorResolver } from '../ApplicationInterceptor';
@@ -10,7 +10,7 @@ export class DefaultInterceptorResolver implements InterceptorResolver {
     constructor(private injector: Injector) { }
 
     resolve<T>(target: Type<T> | T | string): ApplicationInterceptorLike[] {
-        const interceptors = this.maps.get(isString(target) ? target : (isFunction(target) ? target : getClass(target))) ?? [];
+        const interceptors = this.maps.get(isString(target) ? target : (isFunction(target) ? target : getType(target))) ?? [];
         const resolver = this.injector.get(InterceptorResolver, null, InjectFlags.SkipSelf);
 
         resolver?.resolve(target)?.forEach(r => {
@@ -51,7 +51,7 @@ export class DefaultFilterResolver implements FilterResolver {
     constructor(private injector: Injector) { }
 
     resolve<T>(target: Type<T> | T | string): FilterLike[] {
-        const filters = this.maps.get(isString(target) ? target : (isFunction(target) ? target : getClass(target))) ?? [];
+        const filters = this.maps.get(isString(target) ? target : (isFunction(target) ? target : getType(target))) ?? [];
         const resolver = this.injector.get(FilterResolver, null, InjectFlags.SkipSelf);
 
         resolver?.resolve(target)?.forEach(r => {
@@ -94,7 +94,7 @@ export class DefaultFiterHandlerMethodResolver implements FilterHandlerResolver 
     constructor(private injector: Injector) { }
 
     resolve<T>(target: Type<T> | T | string): HandlerLike[] {
-        const handlers = this.maps.get(isString(target) ? target : (isFunction(target) ? target : getClass(target))) ?? [];
+        const handlers = this.maps.get(isString(target) ? target : (isFunction(target) ? target : getType(target))) ?? [];
         const resolver = this.injector.get(FilterHandlerResolver, null, InjectFlags.SkipSelf);
 
         resolver?.resolve(target)?.forEach(r => {

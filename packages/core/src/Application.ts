@@ -1,4 +1,4 @@
-import { isFunction, Type, ClassType, Provider, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, isType, Empty, createInjector, getClassRef } from '@tsdi/ioc';
+import { isFunction, Type, ClassType, Provider, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, isType, Empty, createInjector, getClass } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationContextFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEPENDENCE_PROVIDERS, } from './providers';
 import { ModuleLoader } from './ModuleLoader';
@@ -170,7 +170,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
 
     protected moduleify(module: Type | Class | ModuleMetadata | ModuleDef): Type | Class {
         if (isType(module)) {
-            module = getClassRef(module);
+            module = getClass(module);
         }
 
         if (module instanceof Class) {

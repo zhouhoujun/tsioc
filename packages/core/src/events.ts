@@ -1,4 +1,4 @@
-import { getClass } from '@tsdi/ioc';
+import { getType } from '@tsdi/ioc';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationContext } from './ApplicationContext';
 
@@ -13,7 +13,7 @@ export class PayloadApplicationEvent<T = any> extends ApplicationEvent {
     }
 
     getPayloadType() {
-        return getClass(this.payload)
+        return getType(this.payload)
     }
 }
 

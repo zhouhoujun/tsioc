@@ -28,7 +28,7 @@ export class RunnerLogAspect extends LogProcess {
         let runner = joinPoint.targetType as WorkflowInstance;
         let context = runner.getContext();
         let uuid = context.id;
-        let name = runner.getBoot().name || lang.getClassName(context.type);
+        let name = runner.getBoot().name || lang.getTypeName(context.type);
         let start, end;
         let taskname = '\'' + chalk.cyan(name || uuid) + '\'';
         if (joinPoint.state === JoinpointState.Before) {

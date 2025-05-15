@@ -1,7 +1,7 @@
 import { InjectFlags, Token } from '../tokens';
 import { Type, Empty } from '../types';
 import { isFunction } from '../utils/chk';
-import { getClassRef, getClassRefify } from '../metadata/refl';
+import { getClass, getClassify } from '../metadata/refl';
 import { Class } from '../metadata/class';
 import { Provider, StaticProvider } from '../providers';
 import { Injector, InjectorScope } from '../injector';
@@ -124,7 +124,7 @@ export class DefaultPlatform implements Platform {
      * @param type
      */
     getTypeProvider(type: Type | Class) {
-        const tyRef = getClassRefify(type);
+        const tyRef = getClassify(type);
         const pdrs = tyRef.providers.slice(0);
         tyRef.extendTypes.forEach(t => {
             const tpd = this._pdrs.get(t);

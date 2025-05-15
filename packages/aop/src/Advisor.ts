@@ -1,4 +1,4 @@
-import { Type, lang, Invocation, OnDestroy, Class, getClassName, ctorName, Empty } from '@tsdi/ioc';
+import { Type, lang, Invocation, OnDestroy, Class, getTypeName, ctorName, Empty } from '@tsdi/ioc';
 import { Advicer, MatchOptions } from './Advicer';
 import { AdviceMatcher } from './AdviceMatcher';
 import { AopDef } from './metadata/ref';
@@ -108,7 +108,7 @@ export class Advisor implements OnDestroy {
         }
 
         return Array.from(this.advices.values()).some(r => {
-            return names.some(name => r.some(a => a.match(name, `${typeRef?.className ?? getClassName(instance)}.${name}`, typeRef, instance, { way: 'root' })))
+            return names.some(name => r.some(a => a.match(name, `${typeRef?.className ?? getTypeName(instance)}.${name}`, typeRef, instance, { way: 'root' })))
         })
     }
 

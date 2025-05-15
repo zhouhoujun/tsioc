@@ -1,4 +1,4 @@
-import { Abstract, DefaultInvocationContext, Exception, getClass, lang, Injectable, Injector, InvokeArguments, isPromise, isUndefined, composeHandlers } from '@tsdi/ioc';
+import { Abstract, DefaultInvocationContext, Exception, getType, lang, Injectable, Injector, InvokeArguments, isPromise, isUndefined, composeHandlers } from '@tsdi/ioc';
 import { catchError, finalize, isObservable, mergeMap, Observable, of, throwError } from 'rxjs';
 import { ApplicationHandler } from '../ApplicationHandler';
 import { Filter, FilterHandlerResolver } from './filter';
@@ -16,8 +16,8 @@ export class ExceptionContext<T = any, TArg extends Error = Error> extends Defau
     constructor(public execption: TArg, readonly host: T, injector: Injector, options?: InvokeArguments) {
         super(injector, { ...options })
 
-        this.setValue(getClass(execption), execption);
-        const tokens = lang.getClassChain(getClass(host));
+        this.setValue(getType(execption), execption);
+        const tokens = lang.getTypeChain(getType(host));
         tokens.forEach(token => this.setValue(token, host));
     }
 

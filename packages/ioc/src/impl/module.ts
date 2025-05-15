@@ -1,6 +1,6 @@
 import { Exception } from '../exception';
 import { Injector, InjectorScope } from '../injector';
-import { getClassRef } from '../metadata/refl';
+import { getClass, getClassify } from '../metadata/refl';
 import { Class, ModuleDef } from '../metadata/class';
 import { ModuleOption, ModuleRef } from '../module.ref';
 import { Platform } from '../platform';
@@ -101,12 +101,12 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
  */
 export function createModuleRef<T>(module: Type<T> | Class<T> | ModuleWithProviders<T>, parent: Injector, option?: ModuleOption): ModuleRef<T> {
     if (isModuleProviders(module)) {
-        return new DefaultModuleRef(getClassRef<ModuleDef>(module.module), parent, {
+        return new DefaultModuleRef(getClass<ModuleDef>(module.module), parent, {
             ...option,
             providers: option?.providers?.length ? [module.providers ?? Empty, option?.providers] : module.providers
         })
     }
-    const moduleDef = isType(module) ? getClassRef(module) : module;
+    const moduleDef =  getClassify(module);
     if (!moduleDef.getAnnotation<ModuleDef>().module) {
         throw new Exception(`module def must be module type.`)
     }

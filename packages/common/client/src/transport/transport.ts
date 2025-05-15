@@ -1,4 +1,4 @@
-import { Abstract, getClass, Injector } from '@tsdi/ioc';
+import { Abstract, getType, Injector } from '@tsdi/ioc';
 import { AbstractRequest, ResponseEvent, ResponseFactory } from '@tsdi/common';
 import { AbstractTransport, ClientIncoming, ClientIncomingFactory, Redirector, Transfer, TransportContext } from '@tsdi/common/transport';
 import { Observable, first, merge, mergeMap, takeUntil } from 'rxjs';
@@ -50,7 +50,7 @@ export abstract class ClientTransport<
 
     protected override initSendContext(context: TransportContext, request: TRequest): void {
         context.set(AbstractRequest, request);
-        context.set(getClass(request), request);
+        context.set(getType(request), request);
     }
 
     request(req: TRequest, destroy$?: Observable<any>, context?: TransportContext): Observable<ResponseEvent<any>> {

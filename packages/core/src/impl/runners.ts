@@ -1,6 +1,6 @@
 import {
-    isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, getClassRefify, ProvdierOf,
-    getClassName, InvocationFactory, Invocation, StaticProviders, isArray, ArgumentException,
+    isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, getClassify, ProvdierOf,
+    getTypeName, InvocationFactory, Invocation, StaticProviders, isArray, ArgumentException,
     StaticProvider, HandlerLike, composeHandlers, InvocationContext, eachProvider,
     ClassType
 } from '@tsdi/ioc';
@@ -84,7 +84,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
     }
 
     attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationHanlderOptions<TArg> = {}): Invocation<T> {
-        const target = getClassRefify(type);
+        const target = getClassify(type);
 
         let ends = this._maps.get(target.type);
         if (!ends) {
