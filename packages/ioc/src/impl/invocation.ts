@@ -5,7 +5,6 @@ import { getClass, isArray, isFunction, isObservable, isPromise, isString, isSym
 import { DestroyCallback, OnDestroy } from '../destroy';
 import { Class } from '../metadata/class';
 import { Injector, MethodType } from '../injector';
-import { Provider } from '../providers';
 import { ArgumentException, Exception } from '../exception';
 import { InjectFlags, Token } from '../tokens';
 import { immediate } from '../utils/lang';
@@ -22,7 +21,6 @@ import { ArgumentResolver } from '../resolver';
 export abstract class AbstractInvocation<T = any, TOpts extends InvocationOptions<T> = InvocationOptions<T>, TRes = any> extends Invocation<T, TRes> implements OnDestroy {
 
     private _mthCtx: Map<string | symbol, InvocationContext | null>;
-    private _tagPdrs?: Provider[];
     private _instance?: T;
     private _isResolve = false;
 
@@ -125,7 +123,9 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
                 option = optionOrArgs;
             }
         }
-
+        if(!name) {
+            name = this.options.propertyKey;
+        }
 
         if (!name) {
             return this.process(option, args)
@@ -291,22 +291,6 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
         return this.context.resolveArgument({ provider: token, flags, nullable: true })!
     }
 
-    protected createContext(injector: Injector, option?: InvocationOptions<T>): InvocationContext<any> {
-        if (!this._tagPdrs) {
-            this._tagPdrs = injector.platform().getTypeProvider(this.class)
-        }
-
-        const resolvers = option?.resolvers ? this.class.resolvers.concat(option?.resolvers) : this.class.resolvers;
-        const providers = option?.providers?.length ? [this._tagPdrs, option.providers] : this._tagPdrs;
-
-        return createContext(injector, {
-            ...option,
-            targetType: this.type,
-            providers,
-            resolvers
-        }, this.type)
-    }
-
     equals(target: Invocation): boolean {
         if (!target || !this._class) return false;
         if (target === this) return true;
@@ -332,7 +316,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
     }
 
     protected clean() {
-        this._tagPdrs = null!;
+        // this._tagPdrs = null!;
         this._class = null!;
         this._instance = null!;
         this._mthCtx.clear();
@@ -362,19 +346,15 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
  */
 export class DefaultInvocation<T = any, TOpts extends InvocationOptions<T> = InvocationOptions<T>, TRes = any> extends AbstractInvocation<T, TOpts, TRes> {
 
-    readonly propertyKey?: string | symbol;
 
     constructor(
         _class: Class<T>,
         context: InvocationContext,
         options: TOpts = {} as TOpts) {
         super(_class, context, options);
-        this.propertyKey = options.propertyKey;
     }
 
-    protected process(option?: InvocationContext | InvokeArguments, args?: any[]) {
-        if (this.propertyKey) return this.invokeMethod(this.propertyKey, option, args);
-
+    protected process(option?: InvocationContext | InvokeArguments) {
         const runnables = this.class.runnables.filter(r => !r.auto);
         if (runnables && runnables.length) {
             const handler = composeHandlers(runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
@@ -416,7 +396,8 @@ export abstract class AbstractInvocationFactory implements InvocationFactory {
         return createContext(options?.injector ?? this.platform.getRegisterIn(typeRef.type)!, {
             ...options,
             providers: [this.platform.getTypeProvider(typeRef) ?? Empty, options?.providers ?? Empty],
-            resolvers
+            resolvers,
+            targetType: typeRef.type
         }, typeRef.type);
 
     }

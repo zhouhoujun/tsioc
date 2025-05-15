@@ -1,7 +1,8 @@
 import {
     isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, getClassRefify, ProvdierOf,
     getClassName, InvocationFactory, Invocation, StaticProviders, isArray, ArgumentException,
-    StaticProvider, HandlerLike, composeHandlers, InvocationContext, eachProvider
+    StaticProvider, HandlerLike, composeHandlers, InvocationContext, eachProvider,
+    ClassType
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { ApplicationRunners } from '../ApplicationRunners';
@@ -90,8 +91,12 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
             ends = [];
             this._maps.set(target.type, ends);
         }
-
-        const invocation = target.createInvocation(this.injector, options);
+        let injector = this.injector.platform().getRegisterIn(target.type);
+        if (!injector) {
+            injector = this.injector;
+            injector.register(target.type as ClassType);
+        }
+        const invocation = target.createInvocation(injector, options);
         this.attachRef(invocation, options.order);
         invocation.onDestroy(() => this.detach(target.type));
         ends.push(invocation);

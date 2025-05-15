@@ -54,9 +54,9 @@ export class SuiteRunner<T = any> implements UnitRunner<T> {
     }
 
     runTimeout(key: string, describe: string, timeout?: number): Promise<any> {
-        const instance = this.invocation.instance as any;
+        const instance = this.invocation.instance;
         const defer = lang.defer();
-        const injector = this.invocation.context.injector;
+        const injector = this.invocation.injector;
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);

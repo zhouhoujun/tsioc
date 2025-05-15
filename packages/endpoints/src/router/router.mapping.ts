@@ -1,13 +1,12 @@
 import {
     ModuleRef, isFunction, lang, OnDestroy, promiseOf, Injector,
-    Exception, isArray, isPromise, isObservable, isBoolean,
-    Empty
+    Exception, isArray, isPromise, isObservable, isBoolean, Empty
 } from '@tsdi/ioc';
 import {
     ApplicationHandler, CanHandle, getGuardsToken, getInterceptorsToken,
     getFiltersToken, setHandlerOptions, createHandler
 } from '@tsdi/core';
-import { Pattern, PatternFormatter, Protocols, defaultFormatter, joinPath, normalize } from '@tsdi/common';
+import { Pattern, PatternFormatter, Protocols, joinPath, normalize } from '@tsdi/common';
 import { NotFoundException, BadRequestException } from '@tsdi/common/transport';
 import { defer, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { RequestHandler } from '../RequestHandler';
@@ -169,7 +168,7 @@ export class MappingRouter extends Router<RouteHanlder> implements Middleware, O
 
         if (this.routes.has(route)) {
             const handles = this.routes.get(route)!;
-            if (handles instanceof ControllerRoute) throw new Exception(`route ${route} has registered with Controller: ${handles.invocation.typeRef.class.className}`)
+            if (handles instanceof ControllerRoute) throw new Exception(`route ${route} has registered with Controller: ${handles.invocation.class.className}`)
             if (isArray(handles)) {
                 if (isArray(handler)) {
                     handles.push(...handler);
