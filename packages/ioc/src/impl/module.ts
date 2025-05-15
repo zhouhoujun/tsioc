@@ -6,7 +6,6 @@ import { ModuleOption, ModuleRef } from '../module.ref';
 import { Platform } from '../platform';
 import { isModuleProviders, ModuleWithProviders, Provider } from '../providers';
 import { Type, Empty } from '../types';
-import { isType } from '../utils/chk';
 import { DefaultInjector, mergePromise } from './injector';
 
 

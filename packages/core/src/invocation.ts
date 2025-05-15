@@ -1,5 +1,5 @@
-import { Abstract, Type, Invocation, OnDestroy, Destroyable, DestroyCallback, Class, ProvidedInMetadata, Injector, ProvdierOf, StaticProvider, InvocationOptions, InvocationFactory } from '@tsdi/ioc';
-import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerService } from './handlers/configable';
+import { Abstract, Type, Invocation, ProvidedInMetadata, Injector, ProvdierOf, StaticProvider, InvocationOptions, InvocationFactory } from '@tsdi/ioc';
+import { ConfigableHandlerOptions, HandlerService } from './handlers/configable';
 import { Observable } from 'rxjs';
 import { PipeTransform } from './pipes/pipe';
 import { ApplicationInterceptorLike } from './ApplicationInterceptor';

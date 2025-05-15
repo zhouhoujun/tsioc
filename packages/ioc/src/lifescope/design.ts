@@ -3,8 +3,7 @@ import { Context, ContextToken, HandlerFn, InterceptorLike, invokeTail } from '.
 import { FactoryRecord, FnType } from '../injector';
 import { DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
 import { Platform } from '../platform';
-// import { ReflectiveFactory } from '../reflective';
-import { isType } from '../utils/chk';
+import { isFunction } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
 import { initReflectInterceptor } from './commom';
 import { DesignContext, RuntimeContext } from './ctx';
@@ -101,7 +100,7 @@ export const beforeAnnoactionInterceptor = (input: DesignContext, next: HandlerF
 export const dependencyInterceptor = (input: DesignContext, next: HandlerFn, context: Context) => {
     const { injector, type, provide, regProvides } = input;
     if (provide && provide !== type) {
-        if (input.providedIn && isType(input.providedIn)) {
+        if (input.providedIn && isFunction(input.providedIn)) {
             const platform = injector.platform();
             if (!platform.getInjector(type)) {
                 const pType = input.providedIn;

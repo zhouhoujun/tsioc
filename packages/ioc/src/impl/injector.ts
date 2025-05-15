@@ -198,11 +198,11 @@ export class DefaultInjector implements Injector {
             if (isType(ty)) {
                 types?.push(ty);
                 return this.processInjectorType(platform, ty, stk)
-            } else if (isType(ty.module) && isArray(ty.providers)) {
+            } else if (isFunction(ty.module) && isArray(ty.providers)) {
                 types?.push(ty.module);
                 return this.processInjectorType(platform, ty, stk)
             }
-        }, v => isPlainObject(v) && !(isType(v.module) && isArray(v.providers)));
+        }, v => isPlainObject(v) && !(isFunction(v.module) && isArray(v.providers)));
     }
 
     protected processProvider(platform: Platform, p: TypeOption | StaticProvider | DynamicProvider, providers?: Provider[]): void | Promise<void> {
@@ -624,7 +624,7 @@ const isInjectAlias = (token: any) => token === Injector || token === INJECTOR;
 const isStaticAlias = (token: any) => token === StaticInjector;
 
 INJECT_IMPL.create = (providers: Provider[], parent?: Injector, scope?: InjectorScope) => {
-    if (scope === 'static' || isType(scope)) {
+    if (scope === 'static' || isFunction(scope)) {
         return new StaticInjector(providers, parent, scope)
     }
     return new DefaultInjector(providers, parent!, scope)
@@ -644,7 +644,7 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
     processProvider: (provider: StaticProvider | DynamicProvider, providers?: any[]) => void,
     regType: (typeRef: Class, type: Type, option?: RegOption) => void, moduleRefl?: Class, imported?: boolean): void | Promise<void> {
     // 提前检查重复处理
-    const type = isType(typeOrDef) ? typeOrDef : typeOrDef.module;
+    const type = isFunction(typeOrDef) ? typeOrDef : typeOrDef.module;
     if (dedupStack.includes(type)) {
         return;
     }
@@ -653,7 +653,7 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
     let ps: Promise<any> | void | undefined;
 
     // 处理ModuleWithProviders情况
-    if (!isType(typeOrDef) && typeOrDef.providers?.length) {
+    if (!isFunction(typeOrDef) && typeOrDef.providers?.length) {
         ps = eachProvider(typeOrDef.providers, pdr => processProvider(pdr, typeOrDef.providers));
     }
 

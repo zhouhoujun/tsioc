@@ -15,7 +15,7 @@ export * from './pipes';
 
 export * from './impl/loader'
 export { DefaultApplicationContext } from './impl/context';
-export { InvocationHandlerImpl } from './impl/invocation';
+// export { InvocationHandlerImpl } from './impl/invocation';
 
 export { DEFAULTA_PROVIDERS, RESOLVER_PROVIDERS } from './providers';
 export * from './Application';

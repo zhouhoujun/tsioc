@@ -260,7 +260,7 @@ export function isBaseOf<T>(target: any, baseType: Type<T>): target is Type<T> {
  */
 export function isExtends<T extends Type>(target: Type, baseType: T | ((type: T) => boolean)): target is T {
     let isExtnds = false;
-    if (isType(target) && baseType) {
+    if (isFunction(target) && baseType) {
         const isCls = isClassType(baseType);
         forInTypeChain(target, t => {
             if (isCls) {

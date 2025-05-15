@@ -1,4 +1,4 @@
-import { Injector, InstanceOf, Module, ModuleWithProviders, Provider, ReflectiveFactory, Token, TypeOf, getToken, isFunction, isString, isType, tokenId } from '@tsdi/ioc';
+import { Injector, InstanceOf, Module, ModuleWithProviders, Provider, Token, TypeOf, getToken, isFunction, isString, isType, tokenId } from '@tsdi/ioc';
 import { PatternFormatter, Protocols, defaultFormatter } from '@tsdi/common';
 import { ROUTES, Routes } from './route';
 import { MESSAGE_ROUTERS, RouteMatcher, Router, ROUTERS } from './router';

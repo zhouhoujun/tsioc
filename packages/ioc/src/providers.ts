@@ -2,7 +2,7 @@ import { ClassType, Modules, Type } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Injector, OptionFlags } from './injector';
 import { isPlainObject } from './utils/obj';
-import { isArray, isBoolean, isDefined, isType } from './utils/chk';
+import { isArray, isBoolean, isDefined, isFunction, isType } from './utils/chk';
 import { ArgumentException } from './exception';
 import { getTypeName } from './utils/lang';
 
@@ -253,7 +253,7 @@ export type ModuleType<T extends Type = Type> = Modules<T> | ModuleWithProviders
  * @returns 
  */
 export function isModuleProviders(target: any): target is ModuleWithProviders {
-    return target && isType(target.module) && isArray(target.providers)
+    return target && isFunction(target.module) && isArray(target.providers)
 }
 
 /**

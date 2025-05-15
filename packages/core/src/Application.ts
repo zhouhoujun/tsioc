@@ -1,4 +1,4 @@
-import { isFunction, Type, ClassType, Provider, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, isType, Empty, createInjector, getClass } from '@tsdi/ioc';
+import { isFunction, Type, ClassType, Provider, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, Empty, createInjector, getClass } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationContextFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEPENDENCE_PROVIDERS, } from './providers';
 import { ModuleLoader } from './ModuleLoader';
@@ -42,7 +42,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
         if (loader) {
             this.loader = loader;
         }
-        if (!isType(target)) {
+        if (!isFunction(target)) {
             if (!this.loader && target.loader) this.loader = target.loader;
             const providers = target.platformProviders?.length ? [this.getPlatformDefaultProviders(), target.platformProviders] : this.getPlatformDefaultProviders();
             target.deps = [this.getDeps() ?? Empty, target.deps ?? Empty];
@@ -169,7 +169,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
     }
 
     protected moduleify(module: Type | Class | ModuleMetadata | ModuleDef): Type | Class {
-        if (isType(module)) {
+        if (isFunction(module)) {
             module = getClass(module);
         }
 
