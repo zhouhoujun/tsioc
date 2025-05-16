@@ -1,5 +1,5 @@
 import { Abstract, Injector, ProvidedInMetadata, Token, tokenId, Type, TypeDef } from '@tsdi/ioc';
-import { ApplicationInterceptor, Backend, ApplicationHandler, InvocationHanlderOptions } from '@tsdi/core';
+import { ApplicationInterceptor, Backend, ApplicationHandler, InvocationHandlerOptions } from '@tsdi/core';
 import { RequestMethod, Pattern, Protocols, PatternFormatter } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { RequestContext } from '../RequestContext';
@@ -178,7 +178,7 @@ export abstract class RouteMatcher {
 /**
  * route options
  */
-export interface RouteOptions<T = any> extends InvocationHanlderOptions<T> {
+export interface RouteOptions<T = any> extends InvocationHandlerOptions<T> {
     /**
      * pipe extends args.
      */

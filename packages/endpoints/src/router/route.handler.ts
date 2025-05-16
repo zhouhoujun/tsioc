@@ -1,5 +1,5 @@
-import { Abstract, Class, DestroyCallback, Destroyable, OnDestroy, Invocation, Token, Type } from '@tsdi/ioc';
-import { InvocationHandler, InvocationHanlderOptions } from '@tsdi/core';
+import { Abstract, Token } from '@tsdi/ioc';
+import { InvocationHandler, InvocationHandlerOptions } from '@tsdi/core';
 import { Pattern } from '@tsdi/common';
 
 
@@ -20,7 +20,7 @@ export abstract class RouteHandler extends InvocationHandler<any, any, RouteHand
 /**
  * Route handler options.
  */
-export interface RouteHandlerOptions<T = any> extends InvocationHanlderOptions<T> {
+export interface RouteHandlerOptions<T = any> extends InvocationHandlerOptions<T> {
     /**
      * route
      */
@@ -34,55 +34,3 @@ export interface RouteHandlerOptions<T = any> extends InvocationHanlderOptions<T
      */
     paths?: Record<string, Token>;
 }
-
-// /**
-//  * route handler factory.
-//  */
-// @Abstract()
-// export abstract class RouteHandlerFactory<T> implements OnDestroy, Destroyable {
-//     /**
-//      * type ref.
-//      */
-//     abstract get typeRef(): ReflectiveRef<T>;
-//     /**
-//      * create route handler.
-//      * @param propertyKey 
-//      * @param options 
-//      */
-//     abstract create<TArg>(propertyKey: string, options: RouteHandlerOptions<TArg>): RouteHandler;
-
-    
-//     destroy(): void {
-//         this.typeRef.destroy();
-//     }
-//     get destroyed(): boolean {
-//         return this.typeRef.destroyed;
-//     }
-    
-//     onDestroy(callback?: DestroyCallback): void {
-//         this.typeRef.onDestroy(callback);
-//     }
-// }
-
-
-// /**
-//  * route handler factory resolver.
-//  */
-// @Abstract()
-// export abstract class RouteHandlerFactoryResolver {
-//     /**
-//      * resolve handler factory.
-//      * @param type factory type
-//      * @param injector injector
-//      * @param categare factory categare
-//      */
-//     abstract resolve<T>(type: ReflectiveRef<T>): RouteHandlerFactory<T>;
-//     /**
-//      * resolve handler factory.
-//      * @param type factory type
-//      * @param injector injector
-//      * @param categare factory categare
-//      */
-//     abstract resolve<T>(type: Type<T> | Class<T>): RouteHandlerFactory<T>;
-// }
-

@@ -1,5 +1,5 @@
-import { Class, DecorDefine, Decors, Injectable, Injector, Invocation, isString, OnDestroy, tokenId, Type } from '@tsdi/ioc';
-import { Backend, ApplicationHandler, CanHandle, ApplicationInterceptor, Filter, setHandlerOptions, ConfigableHandler, BackendFn } from '@tsdi/core';
+import { DecorDefine, Invocation, isString, OnDestroy, tokenId, Type } from '@tsdi/ioc';
+import { ApplicationHandler, CanHandle, ApplicationInterceptor, Filter, setHandlerOptions, ConfigableHandler, BackendFn } from '@tsdi/core';
 import { joinPath, normalize } from '@tsdi/common';
 import { NotFoundException, PushDisabledException } from '@tsdi/common/transport';
 
@@ -8,6 +8,7 @@ import { Middleware } from '../middleware/middleware';
 import { RouteHandlerOptions } from './route.handler';
 import { MappingDef, RouteMappingMetadata } from './router';
 import { RequestContext } from '../RequestContext';
+import { createRouteHandler } from '../impl/route.handler';
 
 
 export const CTRL_INTERCEPTORS = tokenId<ApplicationInterceptor[]>('CTRL_INTERCEPTORS');
@@ -71,7 +72,7 @@ export class ControllerRoute<T> extends ConfigableHandler<RequestContext, any, R
                 const prefix = this.prefix;
 
                 const metadata = method.metadata as RouteMappingMetadata;
-                handler = this.invocation.createHandler(method.propertyKey, { ...metadata, prefix });
+                handler = createRouteHandler(this.invocation, { ...metadata, prefix }, method.propertyKey);
                 this.routes.set(method.propertyKey, handler);
 
             }
@@ -95,42 +96,42 @@ export class ControllerRoute<T> extends ConfigableHandler<RequestContext, any, R
     }
 }
 
-@Injectable()
-export class ControllerRouteFactory {
-    /**
-    * create controller route handler.
-    * @param type ReflectiveRef
-    * @param injector injector
-    * @param prefix extenal prefix
-    */
-    create<T>(type: Invocation<T>, options?: RouteHandlerOptions): ControllerRoute<T>;
-    /**
-     * create ontroller route handler.
-     * @param type factory type
-     * @param injector injector
-    * @param prefix extenal prefix
-     */
-    create<T>(type: Type<T> | Class<T>, injector: Injector, options?: RouteHandlerOptions): ControllerRoute<T>;
-    /**
-     * create ontroller route handler.
-     * @param type factory type
-     * @param injector injector
-    * @param prefix extenal prefix
-     */
-    create<T>(type: Type<T> | Class<T>, injector: Injector, prefix?: string): ControllerRoute<T>;
-    create<T>(type: Type<T> | Class<T> | Invocation<T>, arg2?: any, arg3?: RouteHandlerOptions | string): ControllerRoute<T> {
+// @Injectable()
+// export class ControllerRouteFactory {
+//     /**
+//     * create controller route handler.
+//     * @param type ReflectiveRef
+//     * @param injector injector
+//     * @param prefix extenal prefix
+//     */
+//     create<T>(type: Invocation<T>, options?: RouteHandlerOptions): ControllerRoute<T>;
+//     /**
+//      * create ontroller route handler.
+//      * @param type factory type
+//      * @param injector injector
+//     * @param prefix extenal prefix
+//      */
+//     create<T>(type: Type<T> | Class<T>, injector: Injector, options?: RouteHandlerOptions): ControllerRoute<T>;
+//     /**
+//      * create ontroller route handler.
+//      * @param type factory type
+//      * @param injector injector
+//     * @param prefix extenal prefix
+//      */
+//     create<T>(type: Type<T> | Class<T>, injector: Injector, prefix?: string): ControllerRoute<T>;
+//     create<T>(type: Type<T> | Class<T> | Invocation<T>, arg2?: any, arg3?: RouteHandlerOptions | string): ControllerRoute<T> {
 
-        let injector: Injector;
-        let factory: RouteHandlerFactory<T>;
-        const options = isString(arg3) ? { prefix: arg3 } : { ...arg3 };
-        if (type instanceof Invocation) {
-            injector = type.injector;
-            factory = injector.get(RouteHandlerFactoryResolver).resolve(type);
-        } else {
-            injector = arg2;
-            factory = injector.get(RouteHandlerFactoryResolver).resolve(type);
-        }
+//         let injector: Injector;
+//         let factory: RouteHandlerFactory<T>;
+//         const options = isString(arg3) ? { prefix: arg3 } : { ...arg3 };
+//         if (type instanceof Invocation) {
+//             injector = type.injector;
+//             factory = injector.get(RouteHandlerFactoryResolver).resolve(type);
+//         } else {
+//             injector = arg2;
+//             factory = injector.get(RouteHandlerFactoryResolver).resolve(type);
+//         }
 
-        return new ControllerRoute(factory, options);
-    }
-}
+//         return new ControllerRoute(factory, options);
+//     }
+// }

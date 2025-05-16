@@ -17,6 +17,8 @@ import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
 import { HandleContext } from '../handlers/context';
 import { NotHandleException } from '../execptions';
 import { toObservable } from '../handlers';
+import { InvocationHandlerOptions } from '../invocation';
+import { createInvocationHandler } from './invocation';
 
 
 /**
@@ -81,7 +83,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         return this;
     }
 
-    attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationOptions<T, TArg> = {}): Invocation<T> {
+    attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationHandlerOptions<T, TArg> = {}): Invocation<T> {
         const target = getClassify(type);
 
         let ends = this._maps.get(target.type);
@@ -97,7 +99,8 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         const invocation = target.createInvocation(injector, options);
         this.attachRef(invocation, options.order);
         invocation.onDestroy(() => this.detach(target.type));
-        ends.push(invocation);
+        const handler = createInvocationHandler(invocation, options);
+        ends.push(handler);
         return invocation;
     }
 

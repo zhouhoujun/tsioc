@@ -1,4 +1,4 @@
-import { Injectable, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { getTypeName, Injectable, isNumber, isString, promisify } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService } from '@tsdi/common';
@@ -49,14 +49,14 @@ export class TcpServer extends Server<RequestContext, TcpServConfig> implements 
                 if (!options.listenOpts) {
                     options.listenOpts = { host, port };
                 }
-                this.logger.info(lang.getClassName(this), 'access with url:', `${protocol}://${host}:${port}`, '!')
+                this.logger.info(getTypeName(this), 'access with url:', `${protocol}://${host}:${port}`, '!')
                 this.serv.listen(port, host, listeningListener);
             } else {
                 listeningListener = arg2;
                 if (!options.listenOpts) {
                     options.listenOpts = { host: LOCALHOST, port };
                 }
-                this.logger.info(lang.getClassName(this), 'access with url:', `${protocol}://localhost:${port}`, '!')
+                this.logger.info(getTypeName(this), 'access with url:', `${protocol}://localhost:${port}`, '!')
                 this.serv.listen(port, listeningListener);
             }
         } else {
@@ -65,9 +65,9 @@ export class TcpServer extends Server<RequestContext, TcpServConfig> implements 
                 options.listenOpts = opts;
             }
             if (opts.host || opts.port) {
-                this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with url:', `${protocol}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
+                this.logger.info(getTypeName(this), 'listen:', opts, '. access with url:', `${protocol}://${opts?.host ?? 'localhost'}:${opts?.port}${opts?.path ?? ''}`, '!');
             } else {
-                this.logger.info(lang.getClassName(this), 'listen:', opts, '. access with IPC address:', opts.path, '!');
+                this.logger.info(getTypeName(this), 'listen:', opts, '. access with IPC address:', opts.path, '!');
             }
             this.serv.listen(opts, listeningListener);
         }

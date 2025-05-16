@@ -7,8 +7,9 @@ import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParamet
 import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Protocols } from '@tsdi/common';
 import { getRouter, MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, ProtocolRouteOptions, RouteMappingMetadata, RouteOptions, Router } from './router/router';
 import { Middleware, MiddlewareFn } from './middleware/middleware';
-import { RouteHandlerFactoryResolver } from './router/route.handler';
-import { ControllerRouteFactory } from './router/controller';
+// import { ControllerRouteFactory } from './router/controller';
+import { createRouteHandler } from './impl/route.handler';
+import { ControllerRoute } from './router/controller';
 
 
 export { Topic, Payload } from '@tsdi/core';
@@ -57,14 +58,14 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
             const mapping = ctx.class.getAnnotation<MappingDef>();
 
             const prefix = joinPath(mapping.prefix, mapping.version, mapping.route);
-            const factory = injector.get(RouteHandlerFactoryResolver).resolve(ctx.class);
+            const invocation = ctx.class.createInvocation(injector);
 
             defines.forEach(def => {
                 const metadata = def.metadata;
                 const router = getRouter(injector, metadata.protocol, true);
-                const endpoint = factory.create(def.propertyKey, { ...metadata, prefix });
+                const endpoint = createRouteHandler(invocation, { ...metadata, prefix }, def.propertyKey);
                 router.use(metadata.route!, endpoint, (r) => {
-                    factory.onDestroy(() => router.unuse(r, endpoint));
+                    invocation.onDestroy(() => router.unuse(r, endpoint));
                 });
             });
         }
@@ -130,15 +131,15 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             const mapping = ctx.class.getAnnotation<MappingDef>();
 
             const prefix = joinPath(mapping.prefix, mapping.version, mapping.route);
-            const factory = injector.get(RouteHandlerFactoryResolver).resolve(ctx.class);
+            const invocation = ctx.class.createInvocation(injector);
 
             defines.forEach(def => {
                 const metadata = def.metadata;
                 const router = getRouter(injector, metadata.protocol, true);
                 if (!router || !(router instanceof Router)) throw new Exception(metadata.protocol + ' microservice router has not register.');
-                const endpoint = factory.create(def.propertyKey, { ...metadata, prefix });
+                const endpoint = createRouteHandler(invocation, { ...metadata, prefix }, def.propertyKey);
                 router.use(metadata.route!, endpoint, (r) => {
-                    factory.onDestroy(() => router.unuse(r, endpoint));
+                    invocation.onDestroy(() => router.unuse(r, endpoint));
                 });
             });
         },
@@ -257,7 +258,8 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 if (!router) throw new Exception(lang.getTypeName(parent) + 'has not registered!');
                 if (!(router instanceof Router)) throw new Exception(lang.getTypeName(router) + 'is not router!');
 
-                const endpoint = injector.get(ControllerRouteFactory).create(ctx.class, injector);
+                // const endpoint = injector.get(ControllerRouteFactory).create(ctx.class, injector);
+                const endpoint = new ControllerRoute(ctx.class.createInvocation(injector), {});
                 const route = `${normalize(endpoint.prefix)}**`;
                 router.use(route, endpoint);
 

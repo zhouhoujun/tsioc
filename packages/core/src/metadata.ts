@@ -11,12 +11,13 @@ import {
     ApplicationStartedEvent, ApplicationStartEvent, PayloadApplicationEvent
 } from './events';
 import { FilterFn, FilterHandlerResolver, FilterResolver } from './filters/filter';
-import { InvocationHanlderFactory, InvocationHanlderOptions } from './invocation';
+import { InvocationHandlerOptions } from './invocation';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
 import { TransportParameter, TransportParameterOptions } from './handlers/resolver';
 import { ApplicationInterceptorFn, InterceptorResolver } from './ApplicationInterceptor';
+import { createInvocationHandler } from './impl/invocation';
 
 
 /**
@@ -24,7 +25,7 @@ import { ApplicationInterceptorFn, InterceptorResolver } from './ApplicationInte
  * 
  * 运行接口配置
  */
-export interface RunnerOption<TArg> extends InvocationHanlderOptions<TArg> {
+export interface RunnerOption<TArg> extends InvocationHandlerOptions<TArg> {
     /**
      * custom provider parmeters as default. if not has design parameters.
      */
@@ -52,7 +53,7 @@ export interface Runner {
      * 运行接口修饰器， 用于声明该方法为应用程序的运行接口。
      * @param {InvokeArguments} [args] the method invoke arguments {@link InvokeArguments}.
      */
-    <TArg>(args?: InvocationHanlderOptions<TArg>): MethodDecorator;
+    <TArg>(args?: InvocationHandlerOptions<TArg>): MethodDecorator;
 }
 
 /**
@@ -250,14 +251,14 @@ export interface EventHandler {
      *
      * @param {order?: number } option message match option.
      */
-    (option?: InvocationHanlderOptions): MethodDecorator;
+    (option?: InvocationHandlerOptions): MethodDecorator;
     /**
      * `EventHandler` dectorator, event message handle. use to handle event message of {@link  ApplicationEventPublisher}.
      *
      * @param {Type} event message match pattern.
      * @param {order?: number } option message match option.
      */
-    (event: Type<ApplicationEvent>, option?: InvocationHanlderOptions): MethodDecorator;
+    (event: Type<ApplicationEvent>, option?: InvocationHandlerOptions): MethodDecorator;
 }
 
 function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string, runtime?: boolean) {
@@ -273,10 +274,8 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                 const invocation = typeRef.createInvocation(injector);
                 const currMulticaster = injector.get(ApplicationEventMulticaster);
                 decors.forEach(decor => {
-                    const { filter, order, providedIn, ...options } = decor.metadata as InvocationHanlderOptions & { filter: Type<ApplicationEvent> & { getStrategy?: () => string } };
-
-                    const handler = invocation.createHandler(decor.propertyKey, options);
-
+                    const { filter, order, providedIn, ...options } = decor.metadata as InvocationHandlerOptions & { filter: Type<ApplicationEvent> & { getStrategy?: () => string } };
+                    const handler = createInvocationHandler(invocation, options, decor.propertyKey);
                     const event = filter ?? defaultFilter;
                     const isFILO = isFunction(event.getStrategy) && event.getStrategy() == 'FILO';
                     const multicaster = providedIn ? injector.platform().getInjector(providedIn).get(ApplicationEventMulticaster) : currMulticaster;
@@ -299,10 +298,8 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                 const invocation = typeRef.createInvocation(injector, { instance: ctx.instance });
                 const currMulticaster = injector.get(ApplicationEventMulticaster);
                 decors.forEach(decor => {
-                    const { filter, order, providedIn, ...options } = decor.metadata as InvocationHanlderOptions & { filter: Type<ApplicationEvent> & { getStrategy?: () => string } };
-
-                    const handler = invocation.createHandler(decor.propertyKey, options);
-
+                    const { filter, order, providedIn, ...options } = decor.metadata as InvocationHandlerOptions & { filter: Type<ApplicationEvent> & { getStrategy?: () => string } };
+                    const handler = createInvocationHandler(invocation, options, decor.propertyKey);
                     const event = filter ?? defaultFilter;
                     const isFILO = isFunction(event.getStrategy) && event.getStrategy() == 'FILO';
                     const multicaster = providedIn ? injector.platform().getInjector(providedIn).get(ApplicationEventMulticaster) : currMulticaster;
@@ -325,7 +322,7 @@ export const EventHandler: EventHandler = createEventHandler(PayloadApplicationE
 /**
  * event handler metadata.
  */
-export interface EventHandlerMetadata<TArg> extends InvocationHanlderOptions<TArg> {
+export interface EventHandlerMetadata<TArg> extends InvocationHandlerOptions<TArg> {
     /**
      * execption type.
      */
@@ -342,9 +339,9 @@ export interface StartupEventHandler {
     /**
      * Application Startup event handle.
      * rasie after `ApplicationContextRefreshEvent`
-     * @param {InvocationHanlderOptions} option message match option.
+     * @param {InvocationHandlerOptions} option message match option.
      */
-    (option?: InvocationHanlderOptions): MethodDecorator;
+    (option?: InvocationHandlerOptions): MethodDecorator;
 }
 
 /**
@@ -364,9 +361,9 @@ export interface StartEventHandler {
     /**
      * Application start event handle.
      * rasie after `ApplicationStartupEvent`
-     * @param {InvocationHanlderOptions} option message match option.
+     * @param {InvocationHandlerOptions} option message match option.
      */
-    (option?: InvocationHanlderOptions): MethodDecorator;
+    (option?: InvocationHandlerOptions): MethodDecorator;
 }
 
 /**
@@ -386,9 +383,9 @@ export interface StartedEventHandler {
     /**
      * Application started event handle.
      * rasie after `ApplicationStartEvent`
-     * @param {InvocationHanlderOptions} option message match option.
+     * @param {InvocationHandlerOptions} option message match option.
      */
-    (option?: InvocationHanlderOptions): MethodDecorator;
+    (option?: InvocationHandlerOptions): MethodDecorator;
 }
 
 /**
@@ -409,9 +406,9 @@ export interface ShutdownEventHandler {
     /**
      * Application Shutdown event handle.
      * rasie after Application close invoked.
-     * @param {InvocationHanlderOptions} option message match option.
+     * @param {InvocationHandlerOptions} option message match option.
      */
-    (option?: InvocationHanlderOptions): MethodDecorator;
+    (option?: InvocationHandlerOptions): MethodDecorator;
 }
 
 /**
@@ -432,9 +429,9 @@ export interface DisposeEventHandler {
     /**
      * Application Dispose event handle.
      * rasie after `ApplicationShutdownEvent`
-     * @param {InvocationHanlderOptions} option message match option.
+     * @param {InvocationHandlerOptions} option message match option.
      */
-    (option?: InvocationHanlderOptions): MethodDecorator;
+    (option?: InvocationHandlerOptions): MethodDecorator;
 }
 
 /**
@@ -485,7 +482,7 @@ export interface Interceptable {
  * @exports {@link Interceptable}
  */
 export const Interceptable: Interceptable = createDecorator('Interceptable', {
-    props: (target: Type | string, options?: InvocationHanlderOptions) => ({ target, ...options }),
+    props: (target: Type | string, options?: InvocationHandlerOptions) => ({ target, ...options }),
     design: {
         method: (ctx) => {
             const typeRef = ctx.class;
@@ -534,7 +531,7 @@ export interface Filterable {
  * @exports {@link Filterable}
  */
 export const Filterable: Filterable = createDecorator('Filterable', {
-    props: (target: Type | string, options?: InvocationHanlderOptions) => ({ target, ...options }),
+    props: (target: Type | string, options?: InvocationHandlerOptions) => ({ target, ...options }),
     design: {
         method: (ctx) => {
             const typeRef = ctx.class;
@@ -564,7 +561,7 @@ export const Filterable: Filterable = createDecorator('Filterable', {
 /**
  * Filter handler metadata.
  */
-export interface FilterHandlerMetadata<TArg> extends InvocationHanlderOptions<TArg> {
+export interface FilterHandlerMetadata<TArg> extends InvocationHandlerOptions<TArg> {
     /**
      * filter type.
      */
@@ -585,7 +582,7 @@ export interface FilterHandler {
      * @param {Type} filter message match pattern.
      * @param {order?: number } option message match option.
      */
-    <TArg = any>(filter: Type | string, option?: InvocationHanlderOptions<TArg>): MethodDecorator;
+    <TArg = any>(filter: Type | string, option?: InvocationHandlerOptions<TArg>): MethodDecorator;
 }
 
 /**
@@ -595,7 +592,7 @@ export interface FilterHandler {
  * @exports {@link FilterHandler}
  */
 export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
-    props: (filter?: Type | string, options?: InvocationHanlderOptions) => ({ filter, ...options }),
+    props: (filter?: Type | string, options?: InvocationHandlerOptions) => ({ filter, ...options }),
     design: {
         method: (ctx) => {
             const typeRef = ctx.class;
@@ -605,7 +602,7 @@ export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
             const currResolver = injector.get(FilterHandlerResolver);
             decors.forEach(decor => {
                 const { filter, order, providedIn, ...options } = decor.metadata;
-                const handler = invocation.createHandler(decor.propertyKey, options);
+                const handler = createInvocationHandler(invocation, options, decor.propertyKey);
                 const resolver = providedIn ? injector.platform().getInjector(providedIn).get(FilterHandlerResolver) : currResolver;
                 resolver.addHandle(filter, handler, order);
                 invocation.onDestroy(() => resolver.removeHandle(filter, handler));
@@ -628,7 +625,7 @@ export interface ExceptionHandler {
      * @param {string} pattern message match pattern.
      * @param {order?: number } option message match option.
      */
-    (execption: Type<Error>, option?: InvocationHanlderOptions): MethodDecorator;
+    (execption: Type<Error>, option?: InvocationHandlerOptions): MethodDecorator;
 }
 
 /**

@@ -1,5 +1,5 @@
 import { ModuleType, ProvdierOf, Provider, Type } from '@tsdi/ioc';
-import { InvocationHanlderOptions } from '@tsdi/core';
+import { InvocationHandlerOptions } from '@tsdi/core';
 import { CommonProtocols, Protocols } from '@tsdi/common';
 import { TransportConfigure } from '@tsdi/common/transport';
 import { Http1ServConfig, Http2SecureServConfig, Http2ServConfig, HttpsServConfig, ServiceConfig } from './server.options';
@@ -41,7 +41,7 @@ export interface BasicServiceOpts {
     /**
      * start.
      */
-    start?: InvocationHanlderOptions;
+    start?: InvocationHandlerOptions;
     /**
      * custom provider with module.
      */

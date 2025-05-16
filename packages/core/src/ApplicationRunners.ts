@@ -4,6 +4,7 @@ import { ApplicationInterceptor } from './ApplicationInterceptor';
 import { PipeTransform } from './pipes/pipe';
 import { HandlerService } from './handlers/configable';
 import { Filter } from './filters/filter';
+import { InvocationHandlerOptions } from './invocation';
 
 
 /**
@@ -24,7 +25,7 @@ export abstract class ApplicationRunners implements HandlerService, OnDestroy {
    * attach runner
    * @param type 
    */
-  abstract attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationOptions<T, TArg> ): Invocation<T>;
+  abstract attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationHandlerOptions<T, TArg>): Invocation<T>;
 
   /**
    * detach runner
@@ -90,30 +91,3 @@ export abstract class ApplicationRunners implements HandlerService, OnDestroy {
 
 }
 
-
-// /**
-//  * Runnable Ref
-//  */
-// @Abstract()
-// export abstract class RunnableRef<T = any> {
-//   /**
-//    * type ReflectiveRef
-//    */
-//   abstract get typeRef(): ReflectiveRef<T>;
-//   /**
-//    * invoke.
-//    */
-//   abstract invoke(context: InvocationContext): any;
-// }
-
-// /**
-//  * Runnable Factory.
-//  */
-// @Abstract()
-// export abstract class RunnableFactory {
-//   /**
-//    * runnable factory.
-//    * @param typeRef 
-//    */
-//   abstract create<T>(typeRef: ReflectiveRef<T>, moduleRef?: ModuleRef): RunnableRef<T>
-// }

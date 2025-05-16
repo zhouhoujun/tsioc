@@ -1,6 +1,7 @@
 import {
     ModuleRef, isFunction, lang, OnDestroy, promiseOf, Injector,
-    Exception, isArray, isPromise, isObservable, isBoolean, Empty
+    Exception, isArray, isPromise, isObservable, isBoolean, Empty,
+    getClass
 } from '@tsdi/ioc';
 import {
     ApplicationHandler, CanHandle, getGuardsToken, getInterceptorsToken,
@@ -14,7 +15,7 @@ import { Route, Routes } from './route';
 import { Middleware, MiddlewareFn, MiddlewareLike } from '../middleware/middleware';
 import { MiddlewareBackend, NEXT } from '../middleware/middleware.compose';
 import { RouteHanlder, RouteMatcher, Router } from './router';
-import { ControllerRoute, ControllerRouteFactory } from './controller';
+import { ControllerRoute } from './controller';
 import { RequestContext } from '../RequestContext';
 import { RouteHandler } from './route.handler';
 import { RestfulRequestContext } from '../RestfulRequestContext';
@@ -420,8 +421,10 @@ export class MappingRoute implements Middleware, RequestHandler {
         } else if (route.redirectTo) {
             const to = route.redirectTo
             return (c, n) => this.redirect(c, to)
-        } else if (route.controller) {
-            return this.injector.get(ControllerRouteFactory).create(route.controller, this.injector, route.path);
+        } else if (route.controller) {            
+            const ctrRef = getClass(route.controller);
+            return new ControllerRoute(ctrRef.createInvocation(this.injector), { prefix: route.path });
+            // return this.injector.get(ControllerRouteFactory).create(route.controller, this.injector, route.path);
         } else if (route.children) {
             const router = new MappingRouter(this.injector, route.router?.matcher ?? this.root.matcher, route.router?.formatter ?? this.root.formatter, route.protocol, route.path);
             route.children.forEach(route => router.use(route));
@@ -448,7 +451,9 @@ export class MappingRoute implements Middleware, RequestHandler {
         if (route.handler) {
             handler = isFunction(route.handler) ? this.injector.get(route.handler) : route.handler
         } else if (route.controller) {
-            handler = this.injector.get(ControllerRouteFactory).create(route.controller, this.injector, route.path);
+            const ctrRef = getClass(route.controller);
+            handler = new ControllerRoute(ctrRef.createInvocation(this.injector), { prefix: route.path });
+            // handler = this.injector.get(ControllerRouteFactory).create(route.controller, this.injector, route.path);
         } else {
             const middleware = await this.parse(route);
             handler = new MiddlewareBackend([middleware])

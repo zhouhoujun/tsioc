@@ -1,4 +1,4 @@
-import { Abstract, Type, Invocation, ProvidedInMetadata, Injector, ProvdierOf, StaticProvider, InvocationOptions, InvocationFactory } from '@tsdi/ioc';
+import { Abstract, Type, Invocation, ProvidedInMetadata, ProvdierOf, StaticProvider, InvocationOptions, InvocationFactory, Injector } from '@tsdi/ioc';
 import { ConfigableHandlerOptions, HandlerService } from './handlers/configable';
 import { Observable } from 'rxjs';
 import { PipeTransform } from './pipes/pipe';
@@ -15,9 +15,14 @@ import { ApplicationHandler } from './ApplicationHandler';
 export abstract class InvocationHandler<
     TInput = any,
     TOutput = any,
-    TOptions extends InvocationHanlderOptions = InvocationHanlderOptions,
+    TOptions extends InvocationHandlerOptions = InvocationHandlerOptions,
     TContext = any,
-    T = any> extends Invocation<T> implements ApplicationHandler<TInput, TOutput, TContext>, HandlerService {
+    T = any> implements ApplicationHandler<TInput, TOutput, TContext>, HandlerService {
+
+    /**
+     * invocation.
+     */
+    abstract get invocation(): Invocation<T>;
 
     abstract get injector(): Injector;
 
@@ -113,11 +118,11 @@ export abstract class TypedRespond<TInput = any> {
 
 
 /**
- * Invocation Handler options.
+ * Invocation handler options.
  * 
  * 终结点配置
  */
-export interface InvocationHanlderOptions<T = any> extends Omit<ConfigableHandlerOptions<T>, 'backend'>, InvocationOptions, ProvidedInMetadata {
+export interface InvocationHandlerOptions<T = any, TArg= any> extends Omit<ConfigableHandlerOptions<T>, 'backend'>, Omit<InvocationOptions, 'propertyKey'>, ProvidedInMetadata {
     /**
      * the endpoint run times limit. 
      */

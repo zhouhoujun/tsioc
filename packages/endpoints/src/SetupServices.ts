@@ -1,4 +1,4 @@
-import { Injectable, Provider, ReflectiveRef, Type, tokenId } from '@tsdi/ioc';
+import { Injectable, Provider, Invocation, Type, tokenId } from '@tsdi/ioc';
 import { ApplicationContext, Startup } from '@tsdi/core';
 import { Server } from './Server';
 
@@ -23,7 +23,7 @@ export class SetupServices {
 
     private context!: ApplicationContext;
 
-    private services: ReflectiveRef<Server>[] = [];
+    private services: Invocation<Server>[] = [];
     private unboots = new Set<Type>();
 
     @Startup()
@@ -42,7 +42,7 @@ export class SetupServices {
 
     }
 
-    getServices(): ReflectiveRef<Server>[] {
+    getServices(): Invocation<Server>[] {
         return this.services;
     }
 

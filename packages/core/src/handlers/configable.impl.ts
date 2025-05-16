@@ -1,7 +1,6 @@
 import {
     InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType, promiseOf, Exception, toProvider, Type, getType, Token, isClassType,
-    InvocationContext, createContext, ArgumentException, isToken, isArray, isFunction, composeInterceptors, chainFactory, Empty,
-    isInjector, hasContextOptions, some
+    InvocationContext, createContext, ArgumentException, isToken, isArray, isFunction, composeInterceptors, chainFactory, Empty, some
 } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
@@ -373,7 +372,7 @@ export function createHandler<TInput, TOutput>(context: Injector | InvocationCon
         }
     }
     options = normalizeConfigableHandlerOptions(options);
-    return new Type(isInjector(context) || (context instanceof InvocationContext && context.targetType !== Type && hasContextOptions(options)) ? createContext(context, options, options.handlerType) : context, options)
+    return new Type(createContext(context, options, options.handlerType), options)
 }
 
 export function normalizeConfigableHandlerOptions<T extends ConfigableHandlerOptions>(options: T): T {
@@ -387,7 +386,6 @@ export function normalizeConfigableHandlerOptions<T extends ConfigableHandlerOpt
     }
     return options;
 }
-
 
 /**
  * set handler service with options.

@@ -2,10 +2,8 @@ import { Injector, InstanceOf, Module, ModuleWithProviders, Provider, Token, Typ
 import { PatternFormatter, Protocols, defaultFormatter } from '@tsdi/common';
 import { ROUTES, Routes } from './route';
 import { MESSAGE_ROUTERS, RouteMatcher, Router, ROUTERS } from './router';
-import { ControllerRouteFactory } from './controller';
+
 import { MappingRouter, DefaultRouteMatcher } from './router.mapping';
-import { RouteHandlerFactoryResolver } from './route.handler';
-import { RouteHandlerFactoryResolverImpl } from '../impl/route.handler';
 
 
 
@@ -18,7 +16,7 @@ export const ROUTER_PREFIX = tokenId<string>('ROUTER_PREFIX');
 
 @Module({
     providers: [
-        { provide: RouteHandlerFactoryResolver, useFactory: (factory) => new RouteHandlerFactoryResolverImpl(factory), deps: [ReflectiveFactory] },
+        // { provide: RouteHandlerFactoryResolver, useFactory: (factory) => new RouteHandlerFactoryResolverImpl(factory), deps: [ReflectiveFactory] },
     ]
 })
 export class RouteEndpointModule {
@@ -30,7 +28,7 @@ export class RouteEndpointModule {
  */
 @Module({
     providers: [
-        ControllerRouteFactory
+        // ControllerRouteFactory
     ]
 })
 export class RouterModule {

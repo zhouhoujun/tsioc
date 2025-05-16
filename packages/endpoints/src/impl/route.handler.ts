@@ -1,14 +1,14 @@
-import { Class, Exception, Injectable, Invocation, ReflectiveFactory, ReflectiveRef, Type } from '@tsdi/ioc';
-import { InvocationHandlerImpl } from '@tsdi/core';
+import { ClassType, Exception, Invocation } from '@tsdi/ioc';
+import { DefaultInvocationHandler } from '@tsdi/core';
 import { normalize, patternToPath } from '@tsdi/common';
 import { ForbiddenException } from '@tsdi/common/transport';
 import { RequestContext } from '../RequestContext';
-import { RouteHandler, RouteHandlerFactory, RouteHandlerFactoryResolver, RouteHandlerOptions } from '../router/route.handler';
+import { RouteHandler, RouteHandlerOptions } from '../router/route.handler';
 
 
 
 
-export class RouteHandlerImpl<TInput extends RequestContext = RequestContext, TOutput = any> extends InvocationHandlerImpl<TInput, TOutput> implements RouteHandler {
+export class RouteHandlerImpl<TInput extends RequestContext = RequestContext, TOutput = any> extends DefaultInvocationHandler<TInput, TOutput> implements RouteHandler {
 
     private _prefix: string;
     readonly route: string;
@@ -57,48 +57,14 @@ const isRest = /(^:\w+)|(\/:\w+)/;
 const restParms = /^:\w+/;
 
 
-@Injectable()
-export class RouteHandlerFactoryImpl<T = any> extends RouteHandlerFactory<T> {
-
-    constructor(readonly typeRef: ReflectiveRef<T>) {
-        super()
+export function createRouteHandler<TInput, TClass extends RouteHandler, T>(
+    invocation: Invocation<T>,
+    options: RouteHandlerOptions<TInput>,
+    propertyKey?: string | symbol,
+    type?: ClassType<TClass>): TClass {
+    const Hanlder = type ?? RouteHandlerImpl;
+    if (options.execptionHandlers) {
+        invocation.injector.inject(options.execptionHandlers);
     }
-
-    create<TArg>(propertyKey: string, options?: RouteHandlerOptions<TArg>): RouteHandler {
-        const endpoint = new RouteHandlerImpl(this.typeRef.createInvoker<TArg>(propertyKey, options), options);
-
-        return endpoint;
-    }
-
-}
-
-/**
- * Route factory resolver implements
- */
-export class RouteHandlerFactoryResolverImpl implements RouteHandlerFactoryResolver {
-    constructor(private factory: ReflectiveFactory){}
-    /**
-     * resolve endpoint factory.
-     * @param type factory type
-     * @param injector injector
-     * @param categare factory categare
-     */
-    resolve<T>(type: ReflectiveRef<T>): RouteHandlerFactory<T>;
-    /**
-     * resolve endpoint factory.
-     * @param type factory type
-     * @param injector injector
-     * @param categare factory categare
-     */
-    resolve<T>(type: Type<T> | Class<T>): RouteHandlerFactory<T>;
-    resolve<T>(type: Type<T> | Class<T> | ReflectiveRef<T>): RouteHandlerFactory<T> {
-        let tyref: ReflectiveRef<T>;
-        if (type instanceof ReflectiveRef) {
-            tyref = type;
-        } else {
-            tyref = this.factory.create(type);
-        }
-        return new RouteHandlerFactoryImpl(tyref);
-    }
-
+    return new Hanlder(invocation, options, propertyKey) as TClass;
 }

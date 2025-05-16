@@ -1,12 +1,12 @@
 import { tokenId, Type, TypeOf } from '@tsdi/ioc';
-import { ApplicationHandler, InvocationHanlderOptions } from '@tsdi/core';
+import { ApplicationHandler, InvocationHandlerOptions } from '@tsdi/core';
 import { Middleware, MiddlewareFn } from '../middleware/middleware';
 import { Protocols } from '@tsdi/common';
 
 /**
  * Route.
  */
-export interface Route<TArg = any> extends InvocationHanlderOptions<TArg> {
+export interface Route<TArg = any> extends InvocationHandlerOptions<TArg> {
     /**
      * The path to match against. Cannot be used together with a custom `matcher` function.
      * A URL string that uses router matching notation.

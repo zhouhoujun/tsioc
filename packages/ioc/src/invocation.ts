@@ -4,7 +4,6 @@ import { Class } from './metadata/class';
 import { Type } from './types';
 import { Injector, MethodType } from './injector';
 import { DestroyCallback } from './destroy';
-import { Handler, HandlerLike } from './handler';
 
 
 /**
@@ -19,7 +18,7 @@ export type AsyncLike<T> = T | Promise<T> | Observable<T>;
  *
  * 用于执行操作调用的接口。
  */
-export abstract class Invocation<T = any, TRes = any> implements Handler {
+export abstract class Invocation<T = any, TRes = any> {
     /**
      * the invoke type.
      */
@@ -91,14 +90,6 @@ export abstract class Invocation<T = any, TRes = any> implements Handler {
      * @param args the arguments to use to invoke the operation
      */
     abstract invoke(method: MethodType<T>, args?: any[]): TRes;
-
-    abstract createHandler(method: MethodType<T>, options: InvokeArguments): HandlerLike;
-    /**
-     * runable handle
-     * @param input 
-     * @param context 
-     */
-    abstract handle(input: any, context?: any): any;
     /**
      * is equals to target or not.
      * @param target 

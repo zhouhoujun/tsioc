@@ -115,7 +115,6 @@ export interface ConfigableHandlerOptions<TInput = any> extends InvokeProviders 
      * filters of bootstrap.
      */
     filters?: ProvdierOf<FilterLike<TInput>>[];
-
     
     /**
      * interceptors token.

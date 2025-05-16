@@ -8,10 +8,9 @@ import { Injector, MethodType } from '../injector';
 import { ArgumentException, Exception } from '../exception';
 import { InjectFlags, Token } from '../tokens';
 import { immediate } from '../utils/lang';
-import { composeHandlers, composeInterceptors, Context, HandlerFn, HandlerLike, invokeTail } from '../handler';
+import { composeHandlers } from '../handler';
 import { getClassify } from '../metadata/refl';
 import { Platform } from '../platform';
-import { ArgumentResolver } from '../resolver';
 
 /**
  * abstract invocation 
@@ -28,7 +27,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
     constructor(
         private _class: Class<T>,
         readonly context: InvocationContext,
-        protected options: TOpts = {} as TOpts) {
+        protected options?: TOpts) {
         super();
         this._isResolve = hasContextOptions(options);
         this._mthCtx = new Map();
@@ -124,7 +123,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
             }
         }
         if (!name) {
-            name = this.options.propertyKey;
+            name = this.options?.propertyKey;
         }
 
         if (!name) {
@@ -133,63 +132,6 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
 
         return this.invokeMethod(name, option, args);
     }
-
-
-    createHandler(method: MethodType<T>, options: InvokeArguments): HandlerLike {
-        return (input: any, context?: any) => this.invoke(method, input);
-    }
-
-    /**
-     * handle
-     * @param input 
-     * @param context 
-     * @returns 
-     */
-    handle(input: any, context?: any) {
-        let newCtx = false;
-        if (input instanceof InvocationContext) {
-            if (context) this.attchContext(input, context);
-        } else {
-            if (context && context instanceof InvocationContext) {
-                context.setValue(getType(input), input);
-                input = context;
-            } else {
-                newCtx = true;
-                const ctx = createContext(this.context, { payload: input, resolvers: this.getInputResolver(input) });
-                ctx.setValue(getType(input), input);
-                if (context) this.attchContext(ctx, context, input)
-                input = ctx;
-            }
-        }
-
-        return invokeTail(() => this.runHanlder(input), (res) => {
-            const result = this.respondAs(input, res);
-            if (newCtx) (input as InvocationContext).destroy();
-            return result;
-        });
-
-    }
-
-    protected runHanlder(context: InvocationContext) {
-        return this.invoke(context)
-    }
-
-
-    protected getInputResolver(input: any): ArgumentResolver[] | undefined {
-        return undefined;
-    }
-
-    protected respondAs(context: InvocationContext, res: any) {
-        return res;
-    }
-
-    protected attchContext(input: InvocationContext, context: any, nextData?: any) {
-        if (context instanceof Context) {
-            input.setValue(Context, context);
-        }
-        input.setValue(getType(context), context);
-    }
-
 
     protected abstract process(option?: InvocationContext | InvokeArguments, args?: any[]): any;
 

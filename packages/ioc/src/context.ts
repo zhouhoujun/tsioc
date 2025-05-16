@@ -253,11 +253,6 @@ export interface InvocationOptions<T = any, TArg = any> extends InvokeParentCont
     * the propertyKey method to invoke of this invocation.
     */
     propertyKey?: string | symbol;
-    
-    /**
-     * invocation order
-     */
-    order?: number;
 }
 
 
