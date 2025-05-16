@@ -253,11 +253,16 @@ export interface InvocationOptions<T = any, TArg = any> extends InvokeParentCont
     * the propertyKey method to invoke of this invocation.
     */
     propertyKey?: string | symbol;
+    
+    /**
+     * invocation order
+     */
+    order?: number;
 }
 
 
 
-export function hasContextOptions(option?: InvocationOptions) {
+export function hasContextOptions(option?: InvokeArguments) {
     return option && (hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || option.payload)
 }
 

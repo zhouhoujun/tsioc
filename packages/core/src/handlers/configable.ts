@@ -80,30 +80,23 @@ export abstract class AbstractConfigableHandler<
 }
 
 
-export interface BackendOptions<TInput = any> {
-    backend?: Token<Backend<TInput>> | Token<BackendFn<TInput>> | Backend<TInput> | BackendFn<TInput>;
-}
-
-export interface GuardHandlerOptions<TInput = any> extends BackendOptions<TInput> {
-    /**
-     * interceptors token.
-     */
-    interceptorsToken?: Token<ApplicationInterceptorLike<TInput>[]>;
-    /**
-     * guards tokens.
-     */
-    guardsToken?: Token<GuardLike<TInput>[]>;
-    /**
-     * filter tokens.
-     */
-    filtersToken?: Token<FilterLike<TInput>[]>;
-}
-
-
 /**
- * handler service options.
+ * Configable handler options.
  */
-export interface HandlerOptions<TInput = any> extends InvokeProviders {
+export interface ConfigableHandlerOptions<TInput = any> extends InvokeProviders {
+    /**
+     * handler type.
+     */
+    handlerType?: Type<ApplicationHandler>;
+    /**
+     * enable input type filters and interceptors chain for handler.
+     */
+    enableTypeChain?: boolean;
+    /**
+     * execption handlers
+     */
+    execptionHandlers?: ClassType<any> | ClassType[] | null;
+    
     /**
      * An array of dependency-injection tokens used to look up `GuardLike()`
      * handlers, in order to determine if the current user is allowed to
@@ -122,27 +115,22 @@ export interface HandlerOptions<TInput = any> extends InvokeProviders {
      * filters of bootstrap.
      */
     filters?: ProvdierOf<FilterLike<TInput>>[];
+
+    
+    /**
+     * interceptors token.
+     */
+    interceptorsToken?: Token<ApplicationInterceptorLike<TInput>[]>;
+    /**
+     * guards tokens.
+     */
+    guardsToken?: Token<GuardLike<TInput>[]>;
+    /**
+     * filter tokens.
+     */
+    filtersToken?: Token<FilterLike<TInput>[]>;
+
+    
+    backend?: Token<Backend<TInput>> | Token<BackendFn<TInput>> | Backend<TInput> | BackendFn<TInput>;
 }
 
-
-/**
- * Configable handler options.
- */
-export interface ConfigableHandlerOptions<TInput = any> extends HandlerOptions<TInput>, GuardHandlerOptions<TInput>, BackendOptions<TInput> {
-    /**
-     * handler type.
-     */
-    handlerType?: Type<ApplicationHandler>;
-    /**
-     * enable input type filters and interceptors chain for handler.
-     */
-    enableTypeChain?: boolean;
-    /**
-     * execption handlers
-     */
-    execptionHandlers?: ClassType<any> | ClassType[] | null;
-}
-
-export interface TypeConfigableHandlerOptions<TClass extends AbstractConfigableHandler, TInput = any> extends ConfigableHandlerOptions<TInput> {
-    classType: ClassType<TClass>;
-}

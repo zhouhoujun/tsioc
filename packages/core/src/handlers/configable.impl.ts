@@ -9,7 +9,7 @@ import { INTERCEPTORS_TOKEN, ApplicationInterceptor, ApplicationInterceptorFn, A
 import { PipeTransform } from '../pipes/pipe';
 import { FILTERS_TOKEN, Filter, FilterLike, FilterResolver, composeFilters } from '../filters/filter';
 import { Backend, BackendFn } from '../ApplicationHandler';
-import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerOptions, HandlerService, TypeConfigableHandlerOptions } from './configable';
+import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerService } from './configable';
 
 
 
@@ -327,7 +327,7 @@ export function createHandler<TInput, TOutput>(context: Injector | InvocationCon
 /**
  * create configable hanlder with options
  */
-export function createHandler<TClass extends ConfigableHandler, TInput>(context: Injector | InvocationContext, options: TypeConfigableHandlerOptions<TClass, TInput>): TClass;
+export function createHandler<TClass extends ConfigableHandler, TInput>(context: Injector | InvocationContext, options: ConfigableHandlerOptions<TInput>, type: TClass): TClass;
 /**
  * create configable hanlder with param options
  * @param context 
@@ -348,14 +348,16 @@ export function createHandler<TInput, TOutput, TClass extends ConfigableHandler>
     enableTypeChain?: boolean
 ): ConfigableHandler<TInput, TOutput>;
 export function createHandler<TInput, TOutput>(context: Injector | InvocationContext, arg: ConfigableHandlerOptions<TInput> | Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>,
-    interceptorsToken?: Token<ApplicationInterceptor<TInput, TOutput>[]>,
+    interceptorsToken?: Token<ApplicationInterceptor<TInput, TOutput>[]> | ClassType<ConfigableHandler>,
     guardsToken?: Token<CanHandle[]>,
     filtersToken?: Token<Filter<TInput, TOutput>[]>,
     execptionHandlers?: ClassType<any> | ClassType[] | null,
-    enableTypeChain?: boolean
+    enableTypeChain?: boolean,
+    type?: ClassType<ConfigableHandler>
 ): ConfigableHandler<TInput, TOutput> {
     let options: ConfigableHandlerOptions<TInput> & { classType?: ClassType<ConfigableHandler> };
-    if (interceptorsToken) {
+    let Type = type ?? ConfigableHandler;
+    if (interceptorsToken && !isFunction(interceptorsToken)) {
         options = {
             backend: arg as (Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>),
             interceptorsToken,
@@ -366,9 +368,11 @@ export function createHandler<TInput, TOutput>(context: Injector | InvocationCon
         }
     } else {
         options = arg as ConfigableHandlerOptions<TInput>;
+        if (interceptorsToken) {
+            Type = interceptorsToken as ClassType;
+        }
     }
     options = normalizeConfigableHandlerOptions(options);
-    const Type = options.classType ?? ConfigableHandler;
     return new Type(isInjector(context) || (context instanceof InvocationContext && context.targetType !== Type && hasContextOptions(options)) ? createContext(context, options, options.handlerType) : context, options)
 }
 
@@ -390,7 +394,7 @@ export function normalizeConfigableHandlerOptions<T extends ConfigableHandlerOpt
  * @param service 
  * @param options 
  */
-export function setHandlerOptions(service: HandlerService, options: HandlerOptions) {
+export function setHandlerOptions(service: HandlerService, options: ConfigableHandlerOptions) {
     options.pipes?.length && service.usePipes(options.pipes);
     options.filters?.length && service.useFilters(options.filters);
     options.guards?.length && service.useGuards(options.guards);

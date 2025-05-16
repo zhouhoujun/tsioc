@@ -94,7 +94,7 @@ export abstract class Invocation<T = any, TRes = any> implements Handler {
 
     abstract createHandler(method: MethodType<T>, options: InvokeArguments): HandlerLike;
     /**
-     * as handle
+     * runable handle
      * @param input 
      * @param context 
      */

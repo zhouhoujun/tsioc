@@ -1,17 +1,16 @@
 import { Empty, Type } from '../types';
 import { createContext, hasContextOptions, InvocationContext, InvocationOptions, InvokeArguments } from '../context';
 import { Invocation, InvocationFactory } from '../invocation';
-import { getType, isArray, isFunction, isObservable, isPromise, isString, isSymbol } from '../utils/chk';
+import { getType, isArray, isFunction, isPromise, isString, isSymbol } from '../utils/chk';
 import { DestroyCallback, OnDestroy } from '../destroy';
 import { Class } from '../metadata/class';
 import { Injector, MethodType } from '../injector';
 import { ArgumentException, Exception } from '../exception';
 import { InjectFlags, Token } from '../tokens';
 import { immediate } from '../utils/lang';
-import { composeHandlers, Context, HandlerLike, invokeTail } from '../handler';
+import { composeHandlers, composeInterceptors, Context, HandlerFn, HandlerLike, invokeTail } from '../handler';
 import { getClassify } from '../metadata/refl';
 import { Platform } from '../platform';
-import { lastValueFrom } from 'rxjs';
 import { ArgumentResolver } from '../resolver';
 
 /**
@@ -34,6 +33,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
         this._isResolve = hasContextOptions(options);
         this._mthCtx = new Map();
         context.setValue(Invocation, this);
+        context.setValue(getType(this), this);
         context.onDestroy(this);
     }
 
@@ -123,7 +123,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
                 option = optionOrArgs;
             }
         }
-        if(!name) {
+        if (!name) {
             name = this.options.propertyKey;
         }
 
@@ -138,12 +138,6 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
     createHandler(method: MethodType<T>, options: InvokeArguments): HandlerLike {
         return (input: any, context?: any) => this.invoke(method, input);
     }
-
-    /**
-     * before `Invocation` invoke 
-     * @param ctx 
-     */
-    protected beforeInvoke(ctx: any): any { }
 
     /**
      * handle
@@ -168,11 +162,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
             }
         }
 
-        return invokeTail(() => invokeTail(() => this.beforeInvoke(input), () => this.invoke(input)), (res) => {
-            if (isObservable(res)) {
-                res = lastValueFrom(res);
-            }
-
+        return invokeTail(() => this.runHanlder(input), (res) => {
             const result = this.respondAs(input, res);
             if (newCtx) (input as InvocationContext).destroy();
             return result;
@@ -180,11 +170,16 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
 
     }
 
+    protected runHanlder(context: InvocationContext) {
+        return this.invoke(context)
+    }
+
+
     protected getInputResolver(input: any): ArgumentResolver[] | undefined {
         return undefined;
     }
 
-    protected respondAs(input: any, res: any) {
+    protected respondAs(context: InvocationContext, res: any) {
         return res;
     }
 

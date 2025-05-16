@@ -117,7 +117,7 @@ export abstract class TypedRespond<TInput = any> {
  * 
  * 终结点配置
  */
-export interface InvocationHanlderOptions<T = any> extends ConfigableHandlerOptions<T>, InvocationOptions, ProvidedInMetadata {
+export interface InvocationHanlderOptions<T = any> extends Omit<ConfigableHandlerOptions<T>, 'backend'>, InvocationOptions, ProvidedInMetadata {
     /**
      * the endpoint run times limit. 
      */
@@ -133,5 +133,6 @@ export interface InvocationHanlderOptions<T = any> extends ConfigableHandlerOpti
     /**
      * endpoint handler response as.
      */
-    response?: 'body' | 'header' | 'response' | Type<Respond<T>> | ((input: T, returnning: any) => void)
+    response?: 'body' | 'header' | 'response' | Type<Respond<T>> | ((input: T, returnning: any) => void);
+
 }

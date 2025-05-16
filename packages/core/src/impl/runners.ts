@@ -1,8 +1,7 @@
 import {
-    isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, getClassify, ProvdierOf,
-    getTypeName, InvocationFactory, Invocation, StaticProviders, isArray, ArgumentException,
-    StaticProvider, HandlerLike, composeHandlers, InvocationContext, eachProvider,
-    ClassType
+    isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, getClassify, ProvdierOf, Invocation,
+    isArray, ArgumentException, StaticProvider, HandlerLike, composeHandlers, ClassType,
+    InvocationOptions
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { ApplicationRunners } from '../ApplicationRunners';
@@ -15,7 +14,6 @@ import { ApplicationInterceptor } from '../ApplicationInterceptor';
 import { Filter } from '../filters/filter';
 import { ExceptionHandlerFilter } from '../filters/execption.filter';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
-import { InvocationHanlderOptions } from '../invocation';
 import { HandleContext } from '../handlers/context';
 import { NotHandleException } from '../execptions';
 import { toObservable } from '../handlers';
@@ -83,7 +81,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         return this;
     }
 
-    attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationHanlderOptions<TArg> = {}): Invocation<T> {
+    attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationOptions<T, TArg> = {}): Invocation<T> {
         const target = getClassify(type);
 
         let ends = this._maps.get(target.type);
