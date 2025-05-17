@@ -411,8 +411,8 @@ export class Class<T = any> {
                 if (!eopt.values) eopt.values = [];
                 eopt.values.push(...options.values!);
             }
-            if (options.payload) {
-                eopt.payload = eopt.payload ? { ...eopt.payload, ...options.payload } : options.payload
+            if (options.request) {
+                eopt.request = eopt.request ? { ...eopt.request, ...options.request } : options.request
             }
         } else {
             this.methodOptions.set(method, options)

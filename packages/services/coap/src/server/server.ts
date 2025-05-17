@@ -32,15 +32,15 @@ export class CoapServer extends Server<RequestContext, CoapServConfig> {
         if (!this._server) throw new InternalServerException();
         if (isNumber(arg1)) {
             this._server.bind(arg1, listeningListener);
-            this.logger.info(lang.getClassName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}:${arg1}`, '!')
+            this.logger.info(lang.getTypeName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}:${arg1}`, '!')
         } else if (isFunction(arg1)) {
             this._server.bind(listeningListener);
-            this.logger.info(lang.getClassName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}`, '!')
+            this.logger.info(lang.getTypeName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}`, '!')
         } else if (arg1) {
             this._server.bind(arg1.port ?? 5683, arg1.listener);
-            this.logger.info(lang.getClassName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}:${arg1.port}`, '!')
+            this.logger.info(lang.getTypeName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}:${arg1.port}`, '!')
         } else {
-            this.logger.info(lang.getClassName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}`, '!')
+            this.logger.info(lang.getTypeName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}`, '!')
             this._server.bind(5683);
         }
         return this;

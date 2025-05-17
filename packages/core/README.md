@@ -70,7 +70,7 @@ export class UserController {
     @Post('/')
     @Put('/')
     async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
-        this.logger.log(lang.getClassName(this.usrRep), user);
+        this.logger.log(lang.getTypeName(this.usrRep), user);
         const val = await this.usrRep.save(user);
         if(check) throw new InternalServerError('check');
         this.logger.log(val);
@@ -81,7 +81,7 @@ export class UserController {
     @Post('/save')
     @Put('/save')
     async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
-        this.logger.log(lang.getClassName(this.usrRep), user);
+        this.logger.log(lang.getTypeName(this.usrRep), user);
         const val = await userRepo.save(user);
         if(check) throw new InternalServerError('check');
         this.logger.log(val);

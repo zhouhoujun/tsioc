@@ -187,7 +187,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
 
                 return [
                     moduleOpts.providers ?? Empty,
-                    createRouteProviders(moduleOpts.transport, microservice, serverOpts.routes ?? {}),
+                    createRouteProviders(moduleOpts.transport, microservice, serverOpts.routes),
                     { provide: REGISTER_SERVICES, useValue: { service: moduleOpts.serverType, bootstrap: serverOpts.bootstrap, microservice: serverOpts.microservice, providers }, multi: true }
                 ];
             }

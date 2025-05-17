@@ -31,7 +31,7 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         readonly response: HttpServResponse,
         readonly serverOptions: HttpServConfig
     ) {
-        super(injector, { ...serverOptions, payload: request });
+        super(injector, { ...serverOptions, request: request });
 
         this.setValue(ServerTransport, transport);
         const url = this._url = this.originalUrl = normalize(request.url!);

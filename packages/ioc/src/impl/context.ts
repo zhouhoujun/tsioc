@@ -42,6 +42,11 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     readonly isResolve: boolean;
 
+    readonly request: T;
+    /**
+     * get the invocation arguments resolver.
+     */
+
     constructor(
         injector: Injector,
         private options: TargetInvokeArguments<T> = {},
@@ -65,7 +70,8 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             })
         }
 
-        options.payload && this.initArgs(options.payload);
+        // options.request && this.initArgs(options.request);
+        this.request = options.request!;
 
         getTypeChain(getType(this)).forEach(c => {
             this.setValue(c, this);
@@ -76,13 +82,13 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         injector.onDestroy(this);
     }
 
-    protected initArgs(args: ProvdierOf<T>): void {
-        this.injector.inject(toProvider(CONTEXT_PAYLOAD, args));
-        if (!isFunction(args)) {
-            const argType = getType(args);
-            this.injector.setValue(argType, args);
-        }
-    }
+    // protected initArgs(args: ProvdierOf<T>): void {
+    //     this.injector.inject(toProvider(CONTEXT_PAYLOAD, args));
+    //     if (!isFunction(args)) {
+    //         const argType = getType(args);
+    //         this.injector.setValue(argType, args);
+    //     }
+    // }
 
     /**
      * get context arguments resolvers.
@@ -152,18 +158,18 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     }
 
 
-    protected _payload?: T;
-    /**
-     * the invocation context arguments.
-     * 
-     * 上下文负载参数
-     */
-    get payload(): T {
-        if (!this._payload) {
-            this._payload = this.injector.get(CONTEXT_PAYLOAD);
-        }
-        return this._payload!;
-    }
+    // protected _request?: T;
+    // /**
+    //  * the invocation context arguments.
+    //  * 
+    //  * 上下文负载参数
+    //  */
+    // get request(): T {
+    //     if (!this._request) {
+    //         this._request = this.injector.get(CONTEXT_PAYLOAD);
+    //     }
+    //     return this._request!;
+    // }
 
     get used(): boolean {
         return this._injected

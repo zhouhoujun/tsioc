@@ -76,7 +76,7 @@ export class UserController {
 
         // RequestParam nullable will not throw MissingParameterError if request query has not check param.
         // if query check param value as '1', will throw ArgumentError  "InvalidPipeArgument: '1' for pipe 'ParseBoolPipe'".
-        this.logger.log(lang.getClassName(this.usrRep), user);
+        this.logger.log(lang.getTypeName(this.usrRep), user);
         let val = await this.usrRep.save(user);
         if(check) throw new Error('check');
         this.logger.log(val);
@@ -92,7 +92,7 @@ export class UserController {
 
         // RequestParam nullable will not throw MissingParameterError if request query has not check param.
         // if query check param value as '1', will throw ArgumentError  "InvalidPipeArgument: '1' for pipe 'ParseBoolPipe'".
-        this.logger.log(lang.getClassName(this.usrRep), user);
+        this.logger.log(lang.getTypeName(this.usrRep), user);
         let val = await userRepo.save(user);
         if(check) throw new Error('check');
         this.logger.log(val);

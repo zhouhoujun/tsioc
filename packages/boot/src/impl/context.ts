@@ -52,8 +52,8 @@ export class BootApplicationFactory extends ApplicationContextFactory {
         if (!option) {
             option = {};
         }
-        if (!option.payload) {
-            option.payload = ApplicationArguments as ProvdierOf<TArg>;
+        if (!option.request) {
+            option.request = ApplicationArguments as ProvdierOf<TArg>;
         }
         const ctx = this.createInstance(root, option);
         return ctx

@@ -117,8 +117,8 @@ export class DefaultApplicationContextFactory extends ApplicationContextFactory 
         if (!option) {
             option = {};
         }
-        if (!option.payload) {
-            option.payload = ApplicationArguments as ProvdierOf<TArg>;
+        if (!option.request) {
+            option.request = root.get(ApplicationArguments, null) as TArg;
         }
         const ctx = this.createInstance(root, option);
         return ctx

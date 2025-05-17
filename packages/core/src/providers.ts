@@ -44,7 +44,7 @@ export const ROOT_DEPENDENCE_PROVIDERS: Provider[] = [
         provide: getResolverToken(PayloadApplicationEvent),
         useValue: createPayloadResolver(
             (ctx, scope, field) => {
-                let payload = ctx.payload;
+                let payload = ctx.request;
                 if (scope) {
                     payload = payload[scope];
                     if (field) {

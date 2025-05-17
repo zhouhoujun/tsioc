@@ -53,7 +53,7 @@ export class UserController {
     @RouteMapping('/', 'post')
     @RouteMapping('/', 'put')
     async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
-        this.logger.log(lang.getClassName(this.usrRep), user);
+        this.logger.log(lang.getTypeName(this.usrRep), user);
         let val = await this.usrRep.save(user);
         if(check) throw new Error('check');
         this.logger.log(val);
@@ -64,7 +64,7 @@ export class UserController {
     @RouteMapping('/save', 'post')
     @RouteMapping('/save', 'put')
     async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
-        this.logger.log(lang.getClassName(this.usrRep), user);
+        this.logger.log(lang.getTypeName(this.usrRep), user);
         let val = await userRepo.save(user);
         if(check) throw new Error('check');
         this.logger.log(val);

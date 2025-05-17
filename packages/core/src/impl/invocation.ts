@@ -62,7 +62,7 @@ export class DefaultInvocationHandler<
                 input = context;
             } else {
                 newCtx = true;
-                const ctx = createContext(this.context, { payload: input, resolvers: this.context.injector.get(getResolverToken(input), []) });
+                const ctx = createContext(this.context, { request: input, resolvers: this.context.injector.get(getResolverToken(input), []) });
                 ctx.setValue(getType(input), input);
                 if (context) this.attchContext(ctx, context, input)
                 input = ctx;
@@ -108,7 +108,7 @@ export class DefaultInvocationHandler<
             if (trespond) {
                 trespond.respond(ctx, res, this.options.response);
             } else {
-                ctx.payload[this.options.response] = res;
+                ctx.request[this.options.response] = res;
             }
         } else if (this.options.response) {
             const respond = ctx.get(this.options.response) ?? this.options.response;

@@ -4,11 +4,8 @@ import { BadRequestException } from '@tsdi/common/transport';
 import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
     Middleware, RestfulRequestContext, compose, NEXT, EndpointModule,
-    RedirectResult,
-    ContentInterceptor,
-    JsonInterceptor,
-    BodyparserInterceptor,
-    RouterModule
+    RedirectResult, ContentInterceptor, JsonInterceptor, BodyparserInterceptor,
+    createRouteProviders
 } from '@tsdi/endpoints';
 import { LoggerModule } from '@tsdi/logger';
 import { catchError, lastValueFrom, of } from 'rxjs';
@@ -152,7 +149,7 @@ class DeviceStartupHandle implements Middleware {
 class DeviceAStartupHandle implements Middleware {
 
     invoke(ctx: RestfulRequestContext, next: () => Promise<void>): Promise<void> {
-        if (ctx.args.body.type === 'startup') {
+        if (ctx.request.body.type === 'startup') {
             // todo sth.
             const ret = ctx.get(MyService).dosth();
             ctx.setValue('deviceA_state', ret);
@@ -199,7 +196,7 @@ class DeviceAModule {
         ServerModule,
         LoggerModule,
         ServerEndpointModule,
-        RouterModule.forRoot('tcp', { microservice: true }),
+        // RouterModule.forRoot('tcp', { microservice: true }),
         HttpClientModule,
         ServerHttpClientModule,
         EndpointModule.register({
@@ -218,6 +215,7 @@ class DeviceAModule {
     ],
     providers: [
         // DeviceController,
+        createRouteProviders('tcp', true),
         DeviceStartupHandle
     ],
     declarations: [

@@ -12,8 +12,8 @@ export class RouteHandlerImpl<TInput extends RequestContext = RequestContext, TO
 
     private _prefix: string;
     readonly route: string;
-    constructor(invocation: Invocation, readonly options: RouteHandlerOptions = {}) {
-        super(invocation, options);
+    constructor(invocation: Invocation, readonly options: RouteHandlerOptions = {}, propertyKey?: string | symbol) {
+        super(invocation, options, propertyKey);
         this._prefix = options.prefix || '';
         this.route = patternToPath(options.route || '');
     }

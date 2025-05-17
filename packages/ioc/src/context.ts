@@ -53,9 +53,9 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      */
     abstract hasRef(context: InvocationContext): boolean;
     /**
-     * the invocation payload.
+     * the invocation argument.
      */
-    abstract get payload(): T;
+    abstract get request(): T;
     /**
      * has token in the context or not.
      * 
@@ -209,11 +209,11 @@ export interface InvokeOptions extends InvokeProviders {
  */
 export interface InvokeArguments<T = any> extends InvokeOptions, InvokeParentContext {
     /**
-     * invocation payload.
+     * invocation request.
      * 
      * 调用接口负载对象
      */
-    payload?: ProvdierOf<T>;
+    request?: T;
 }
 
 /**
@@ -258,6 +258,6 @@ export interface InvocationOptions<T = any, TArg = any> extends InvokeParentCont
 
 
 export function hasContextOptions(option?: InvokeArguments) {
-    return option && (hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || option.payload)
+    return option && (hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || option.request)
 }
 

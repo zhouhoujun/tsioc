@@ -1,4 +1,4 @@
-import { Injectable, lang, promisify } from '@tsdi/ioc';
+import { getTypeName, Injectable, promisify } from '@tsdi/ioc';
 import { LOCALHOST } from '@tsdi/common';
 import { InternalServerException, ev } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
@@ -58,7 +58,7 @@ export class UdpServer extends Server<RequestContext, UdpServConfig> {
 
         const bindOpts = options.bindOpts ?? { port: 3000, address: LOCALHOST };
         this.serv.on(ev.LISTENING, () => {
-            this.logger.info(lang.getClassName(this), 'access with url:', `udp${isSecure ? 's' : ''}://${bindOpts.address ?? LOCALHOST}:${bindOpts.port}`, '!');
+            this.logger.info(getTypeName(this), 'access with url:', `udp${isSecure ? 's' : ''}://${bindOpts.address ?? LOCALHOST}:${bindOpts.port}`, '!');
         });
 
         this.serv.bind(bindOpts);

@@ -10,7 +10,7 @@
 // import { DestroyCallback } from '../destroy';
 // import { Invocation } from '../operation';
 // import { ReflectiveOperationInvoker } from './operation';
-// import { getClassName, hasItem, immediate } from '../utils/lang';
+// import { getTypeName, hasItem, immediate } from '../utils/lang';
 // import { Exception } from '../execption';
 // import { Platform } from '../platform';
 
@@ -30,7 +30,7 @@
 //     constructor(private _class: Class<T>, injector: Injector, options?: InvokeArguments<any>) {
 //         super()
 //         this._type = _class.type;
-//         this._typeName = getClassName(this._type);
+//         this._typeName = getTypeName(this._type);
 //         injector.register(this.type as ClassType);
 //         this._isResolve = hasContext(options);
 //         this._ctx = this.createContext(injector, { isResolve: this._isResolve, ...options });

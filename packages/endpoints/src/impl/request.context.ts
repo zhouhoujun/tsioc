@@ -29,7 +29,7 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
         readonly response: TResponse,
         readonly serverOptions: ServiceConfig = {}
     ) {
-        super(injector, { ...serverOptions, payload: request });
+        super(injector, serverOptions);
 
         this.setValue(ServerTransport, transport);
         
@@ -132,7 +132,7 @@ export class PatternRequestContext<TRequest extends Incoming<any> = Incoming<any
         readonly response: TResponse,
         readonly serverOptions: ServiceConfig = {}
     ) {
-        super(injector, { ...serverOptions, payload: request });
+        super(injector, serverOptions);
 
         this.setValue(ServerTransport, transport);
 
@@ -190,7 +190,7 @@ export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicInco
         readonly response: TResponse,
         readonly serverOptions: ServiceConfig = {}
     ) {
-        super(injector, { ...serverOptions, payload: request });
+        super(injector, serverOptions);
 
         this.setValue(ServerTransport, transport);
 

@@ -1,4 +1,4 @@
-import { getClassName } from '@tsdi/ioc';
+import { getTypeName } from '@tsdi/ioc';
 import { MessageException, OutgoingMessage } from '@tsdi/common/transport';
 
 
@@ -14,7 +14,7 @@ export class AuthenticationException extends MessageException {
     // tslint:disable-next-line: variable-name
     constructor(status: number, message: string | string[], public error_description?: string | string[]) {
         super(message, status);
-        this.name = getClassName(this);
+        this.name = getTypeName(this);
         this.error = this.message;
         this.expose = status < 500;
     }

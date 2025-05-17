@@ -40,7 +40,7 @@ export abstract class ApplicationContext<T = any, TArg = ApplicationArguments>
      *
      * @type {TArg}
      */
-    abstract get payload(): TArg;
+    abstract get request(): TArg;
     /**
      * application runners.
      *

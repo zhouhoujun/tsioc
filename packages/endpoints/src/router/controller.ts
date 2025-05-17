@@ -27,7 +27,7 @@ export class ControllerRoute<T> extends ConfigableHandler<RequestContext, any, R
     readonly prefix: string;
 
     constructor(readonly invocation: Invocation, options: RouteHandlerOptions = {}) {
-        super(createContext(invocation.context, options), options);
+        super(invocation.context, options);
         this.routes = new Map();
 
         const mapping = invocation.class.getAnnotation<MappingDef>();
@@ -49,7 +49,7 @@ export class ControllerRoute<T> extends ConfigableHandler<RequestContext, any, R
         }
     }
 
-    get ctrlRef() {
+    get class() {
         return this.invocation.class;
     }
 

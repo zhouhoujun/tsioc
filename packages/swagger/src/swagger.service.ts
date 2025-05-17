@@ -1,5 +1,5 @@
 import { ApplicationContext, MODEL_RESOLVERS, ModelArgumentResolver, Started, TransportParameter } from '@tsdi/core';
-import { Exception, InjectFlags, Injectable, Type, getClassName, isFunction, isNil, isString, isType, lang } from '@tsdi/ioc';
+import { Exception, InjectFlags, Injectable, Type, getTypeName, isFunction, isNil, isString, isType, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, joinPath } from '@tsdi/common';
 import { ctype } from '@tsdi/common/transport';
@@ -37,7 +37,7 @@ export class SwaggerService {
             return models.find(m => m.hasModel(target))
         }
 
-        const servers = moduleRef.get(SetupServices).getServices().map(r => r.getInstance()).filter(r => /^http(s)?$/.test(r.getOptions().protocol || ''))
+        const servers = moduleRef.get(SetupServices).getServices().map(r => r.instance).filter(r => /^http(s)?$/.test(r.getOptions().protocol || ''))
             .map(r => {
                 const url = r.getOptions().listenOpts?.url ?? '';
                 return {
@@ -111,7 +111,7 @@ export class SwaggerService {
         const httpRefs = ctx.runners.getRefs(HttpServer);
         const fspath = getAbsoluteFSPath();
         httpRefs.forEach(httpRef => {
-            const http = httpRef.getInstance();
+            const http = httpRef.instance;
             http.useInterceptors(ContentInterceptor.create({
                 root: fspath,
                 baseUrl: false,
@@ -141,12 +141,12 @@ export class SwaggerService {
             if (route.endsWith('**')) route = route.substring(0, route.length - 2);
             if (v instanceof ControllerRoute) {
 
-                v.ctrlRef.class.defs.forEach(df => {
+                v.class.defs.forEach(df => {
                     if (df.decorType == 'class' && isString((df.metadata as RouteMappingMetadata).route)) {
-                        const description = v.ctrlRef.class.getMetadata(d => !!d.metadata?.description)?.description;
+                        const description = v.class.getMetadata(d => !!d.metadata?.description)?.description;
 
                         jsonDoc.tags?.push({
-                            name: v.ctrlRef.class.className,
+                            name: v.class.className,
                             description
                         })
                         return;
@@ -170,22 +170,22 @@ export class SwaggerService {
                     const method = df.metadata.method?.toLowerCase() ?? 'get';
                     if (api[method]) throw new Exception(`has mutil route address ${path}, with same method ${method}`);
 
-                    const returnType = v.ctrlRef.class.getMethodMetadata(null, df.propertyKey, r => isType(r.metadata.response))?.response ?? df.metadata.returnType ?? df.metadata.type;
+                    const returnType = v.class.getMethodMetadata(null, df.propertyKey, r => isType(r.metadata.response))?.response ?? df.metadata.returnType ?? df.metadata.type;
                     let returnTypeName = '';
                     if (returnType && returnType != Object && returnType != Promise) {
-                        returnTypeName = getClassName(returnType);
+                        returnTypeName = getTypeName(returnType);
                         if (!jsonDoc.components.schemas[returnTypeName]) {
                             this.regSchema(jsonDoc, returnType, modelResolver);
                         }
                     }
 
-                    const paramMatedatas = v.ctrlRef.class.getParameters(df.propertyKey) as TransportParameter[]
+                    const paramMatedatas = v.class.getParameters(df.propertyKey) as TransportParameter[]
                     api[method] = {
-                        "x-swagger-router-controller": v.ctrlRef.class.className,
-                        summary: (v.ctrlRef.class.getMethodMetadata(null, df.propertyKey, r => r.metadata.summary) as any)?.summary ?? '',
-                        description: (v.ctrlRef.class.getMethodMetadata(null, df.propertyKey, r => r.metadata.description) as any)?.description ?? '',
+                        "x-swagger-router-controller": v.class.className,
+                        summary: (v.class.getMethodMetadata(null, df.propertyKey, r => r.metadata.summary) as any)?.summary ?? '',
+                        description: (v.class.getMethodMetadata(null, df.propertyKey, r => r.metadata.description) as any)?.description ?? '',
                         operationId: df.propertyKey + '-' + method,
-                        tags: [v.ctrlRef.class.className],
+                        tags: [v.class.className],
                         parameters: paramMatedatas?.filter(p => ((!p.scope || p.scope == 'query' || p.scope == 'path') && p.flags && (p.flags & InjectFlags.Request)))?.map(p => this.toParamObject(jsonDoc, p as TransportParameter, modelResolver)),
                         requestBody: this.toBodyObject(jsonDoc, paramMatedatas?.filter(p => (p.scope == 'body' || p.scope == 'payload') || (!p.provider && modelResolver(p.type))), modelResolver),
                         responses: df.metadata.responses ?? {
@@ -337,7 +337,7 @@ export class SwaggerService {
             return {
                 type: 'array',
                 items: {
-                    "$ref": `#/components/schemas/${getClassName(itemType)}`
+                    "$ref": `#/components/schemas/${getTypeName(itemType)}`
                 }
             }
         }
@@ -356,7 +356,7 @@ export class SwaggerService {
         const resovler = isFunction(modelResolver) ? modelResolver(type) : modelResolver;
         if (!resovler || !resovler.hasModel(type)) return;
 
-        jsonDoc.components.schemas[getClassName(type)] = {
+        jsonDoc.components.schemas[getTypeName(type)] = {
             type: 'object',
             properties: resovler.getPropertyMeta(type).reduceRight((ps, prop) => {
                 const p = prop as DBPropertyMetadata & ApiModelPropertyMetadata;
@@ -387,7 +387,7 @@ export class SwaggerService {
     }
 
     toModelSchema(jsonDoc: OpenAPIObject, type: Type, modelResolver: ModelArgumentResolver | ((type?: Type) => ModelArgumentResolver | undefined)): any {
-        const modelName = getClassName(type);
+        const modelName = getTypeName(type);
         if (!jsonDoc.components.schemas[modelName]) {
             this.regSchema(jsonDoc, type, modelResolver);
         }

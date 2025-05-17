@@ -77,10 +77,10 @@ export abstract class RequestContext<
         return this.transport.fileAdapter
     }
 
-    /**
-     * request.
-     */
-    abstract get request(): TRequest;
+    // /**
+    //  * request.
+    //  */
+    // abstract get request(): TRequest;
     /**
      * response.
      */
@@ -795,7 +795,7 @@ export function getScopeValue(req: any, scope: string) {
 
 const primitiveResolvers = createPayloadResolver(
     (ctx, scope, field) => {
-        let data = ctx.payload;
+        let data = ctx.request;
 
         if (field && !scope) {
             scope = 'query'

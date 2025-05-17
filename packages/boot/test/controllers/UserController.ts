@@ -1,5 +1,5 @@
 import { Controller, Delete, Get, Post, Put, RequestParam } from '@tsdi/endpoints';
-import { lang } from '@tsdi/ioc';
+import { getTypeName } from '@tsdi/ioc';
 import { Log, Logger } from '@tsdi/logger';
 import { InternalServerException } from '@tsdi/common/transport';
 import { Repository, Transactional } from '@tsdi/repository';
@@ -27,7 +27,7 @@ export class UserController {
     @Post('/')
     @Put('/')
     async modify(user: User, @RequestParam({ nullable: true }) check?: boolean) {
-        this.logger.log(lang.getClassName(this.usrRep), user);
+        this.logger.log(getTypeName(this.usrRep), user);
         const val = await this.usrRep.save(user);
         if(check) throw new InternalServerException('check');
         this.logger.log(val);
@@ -38,7 +38,7 @@ export class UserController {
     @Post('/save')
     @Put('/save')
     async modify2(user: User, @Repository() userRepo: UserRepository, @RequestParam({ nullable: true }) check?: boolean) {
-        this.logger.log(lang.getClassName(this.usrRep), user);
+        this.logger.log(getTypeName(this.usrRep), user);
         const val = await userRepo.save(user);
         if(check) throw new InternalServerException('check');
         this.logger.log(val);

@@ -144,13 +144,13 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
 
     run(type?: Type | Type[]): Promise<void> {
         if (type) {
-            return lastValueFrom(this._handler.handle(new HandleContext(this.injector, { payload: { useValue: type } })));
+            return lastValueFrom(this._handler.handle(new HandleContext(this.injector, { request:  type  })));
         }
         return lastValueFrom(
             this.startup()
                 .pipe(
                     mergeMap(v => this.beforeRun()),
-                    mergeMap(v => this._types?.length ? this._handler.handle(new HandleContext(this.injector, { bootstrap: true, payload: { useValue: this._types } })) : of(v)),
+                    mergeMap(v => this._types?.length ? this._handler.handle(new HandleContext(this.injector, { bootstrap: true, request:  this._types })) : of(v)),
                     mergeMap(v => this.afterRun())
                 )
         );
@@ -178,11 +178,11 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
 
     handle(context: HandleContext<any>): Observable<any> {
         let handlers: HandlerLike[] | undefined;
-        if (isFunction(context.payload)) {
-            handlers = this._maps.get(context.payload)
-        } else if (isArray(context.payload)) {
+        if (isFunction(context.request)) {
+            handlers = this._maps.get(context.request)
+        } else if (isArray(context.request)) {
             handlers = [];
-            context.payload.forEach(type => {
+            context.request.forEach(type => {
                 handlers = handlers!.concat(this._maps.get(type) ?? []);
             });
         } else {
@@ -191,7 +191,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         if (handlers && handlers.length) {
             return toObservable(composeHandlers(handlers)(context));
         }
-        return throwError(() => new NotHandleException(context, context.payload));
+        return throwError(() => new NotHandleException(context, context.request));
     }
 
     protected startup(): Observable<any> {
