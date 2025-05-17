@@ -259,7 +259,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 if (!(router instanceof Router)) throw new Exception(lang.getTypeName(router) + 'is not router!');
 
                 // const endpoint = injector.get(ControllerRouteFactory).create(ctx.class, injector);
-                const endpoint = new ControllerRoute(ctx.class.createInvocation(injector), {});
+                const endpoint = new ControllerRoute(ctx.class.createInvocation(injector));
                 const route = `${normalize(endpoint.prefix)}**`;
                 router.use(route, endpoint);
 

@@ -1,4 +1,4 @@
-import { Inject, Injectable, getClassName, isString, lang, promisify } from '@tsdi/ioc';
+import { Injectable, getTypeName, isString, promisify } from '@tsdi/ioc';
 import { EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST } from '@tsdi/common';
@@ -83,9 +83,9 @@ export class WsServer extends Server<RequestContext, WsServConfig> {
 
 
         if (port && !bindServer) {
-            this.logger.info(lang.getClassName(this), 'access with url:', `ws${isSecure ? 's' : ''}://${host ?? LOCALHOST}:${port}`, '!');
+            this.logger.info(getTypeName(this), 'access with url:', `ws${isSecure ? 's' : ''}://${host ?? LOCALHOST}:${port}`, '!');
         } else {
-            this.logger.info(lang.getClassName(this), 'hybrid bind with', getClassName(bindServer ?? server));
+            this.logger.info(getTypeName(this), 'hybrid bind with', getTypeName(bindServer ?? server));
         }
     }
 

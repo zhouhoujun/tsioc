@@ -8,7 +8,7 @@ import { ServiceConfig } from './server.options';
 import { ServerTransportFactory } from './transport';
 import { EndpointTypedRespond } from './typed.respond';
 import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, LoggerInterceptor } from './interceptors';
-import { RouteEndpointModule, RouterModule, createRouteProviders } from './router/router.module';
+import { createRouteProviders, getRouterToken } from './router/router.module';
 import { REGISTER_SERVICES, SetupServices } from './SetupServices';
 import { ExceptionFinalizeFilter } from './exception.filter';
 import { DefaultExceptionHandlers } from './exception.handlers';
@@ -24,9 +24,7 @@ import { HttpStatusAdapter } from './impl/status';
  */
 @Module({
     imports: [
-        TransportPacketModule,
-        RouteEndpointModule,
-        RouterModule
+        TransportPacketModule
     ],
     providers: [
         SetupServices,
@@ -137,7 +135,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
                 });
 
                 const serverOpts = {
-                    backend: RouterModule.getToken(moduleOpts.transport, microservice),
+                    backend: getRouterToken(moduleOpts.transport, microservice),
                     enableTypeChain: true,
                     ...cloneOpts
                 } as ServiceConfig & { providers: Provider[] };

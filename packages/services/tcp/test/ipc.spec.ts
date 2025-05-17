@@ -6,7 +6,7 @@ import { BadRequestException } from '@tsdi/common/transport';
 import { provideClient } from '@tsdi/common/client';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
-import { RequestBody, RequestParam, RequestPath, RouteMapping, Handle, ContentInterceptor, JsonInterceptor, BodyparserInterceptor, RedirectResult, provideService, RouterModule } from '@tsdi/endpoints';
+import { RequestBody, RequestParam, RequestPath, RouteMapping, Handle, ContentInterceptor, JsonInterceptor, BodyparserInterceptor, RedirectResult, provideService, getRouterToken, createRouteProviders } from '@tsdi/endpoints';
 import { catchError, lastValueFrom, of } from 'rxjs';
 import * as os from 'os';
 import expect = require('expect');
@@ -113,7 +113,7 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
                     },
                 }
             }),
-            RouterModule.forRoot('tcp', {microservice: true}),
+            // RouterModule.forRoot('tcp', {microservice: true}),
             provideService({
                 transport: 'tcp',
                 microservice: false,
@@ -131,13 +131,16 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
                         JsonInterceptor,
                         ContentInterceptor,
                         BodyparserInterceptor,
-                        { useExisting: RouterModule.getToken('tcp', true) }
+                        { useExisting: getRouterToken('tcp', true) }
                     ]
                 },
                 providers: [
                     { provide: TCP_SERV_INTERCEPTORS, useClass: BigFileInterceptor, multi: true },
                 ]
             }),
+        ],
+        providers: [            
+            createRouteProviders('tcp', true),
         ],
         declarations: [
             DeviceController

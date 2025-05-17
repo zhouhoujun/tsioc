@@ -42,7 +42,7 @@ describe('di module', () => {
     //         ]
     //     });
     //     const serRef = ctx.runners.attach(HttpServer);
-    //     serRef.getInstance().use((ctx, next) => {
+    //     serRef.instance.use((ctx, next) => {
     //         console.log('ctx.url:', ctx.url);
     //         if (ctx.url.startsWith('/test')) {
     //             console.log('message queue test: ' + ctx.payload);

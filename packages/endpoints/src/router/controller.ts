@@ -1,4 +1,4 @@
-import { DecorDefine, Invocation, isString, OnDestroy, tokenId, Type } from '@tsdi/ioc';
+import { createContext, DecorDefine, Invocation, isString, OnDestroy, tokenId, Type } from '@tsdi/ioc';
 import { ApplicationHandler, CanHandle, ApplicationInterceptor, Filter, setHandlerOptions, ConfigableHandler, BackendFn } from '@tsdi/core';
 import { joinPath, normalize } from '@tsdi/common';
 import { NotFoundException, PushDisabledException } from '@tsdi/common/transport';
@@ -26,8 +26,8 @@ export class ControllerRoute<T> extends ConfigableHandler<RequestContext, any, R
     protected sortRoutes: DecorDefine<RouteMappingMetadata>[];
     readonly prefix: string;
 
-    constructor(readonly invocation: Invocation, options: RouteHandlerOptions) {
-        super(invocation.context, options);
+    constructor(readonly invocation: Invocation, options: RouteHandlerOptions = {}) {
+        super(createContext(invocation.context, options), options);
         this.routes = new Map();
 
         const mapping = invocation.class.getAnnotation<MappingDef>();

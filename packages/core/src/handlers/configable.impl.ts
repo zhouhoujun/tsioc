@@ -302,9 +302,9 @@ export class ConfigableHandler<
     }
 
     protected clear() {
-        if (this.options.interceptorsToken) this.injector.unregister(this.options.interceptorsToken);
-        if (this.options.guardsToken) this.injector.unregister(this.options.guardsToken);
-        if (this.options.filtersToken) this.injector.unregister(this.options.filtersToken);
+        if (this.options.interceptorsToken) this.injector?.unregister(this.options.interceptorsToken);
+        if (this.options.guardsToken) this.injector?.unregister(this.options.guardsToken);
+        if (this.options.filtersToken) this.injector?.unregister(this.options.filtersToken);
         this.chain = undefined;
         this.backendFn = undefined;
         this.chains?.clear();

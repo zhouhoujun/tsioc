@@ -1,5 +1,5 @@
 import { ClassType, Exception, Invocation } from '@tsdi/ioc';
-import { DefaultInvocationHandler } from '@tsdi/core';
+import { DefaultInvocationHandler, normalizeConfigableHandlerOptions } from '@tsdi/core';
 import { normalize, patternToPath } from '@tsdi/common';
 import { ForbiddenException } from '@tsdi/common/transport';
 import { RequestContext } from '../RequestContext';
@@ -12,8 +12,8 @@ export class RouteHandlerImpl<TInput extends RequestContext = RequestContext, TO
 
     private _prefix: string;
     readonly route: string;
-    constructor(invoker: Invocation, readonly options: RouteHandlerOptions = {}) {
-        super(invoker, options);
+    constructor(invocation: Invocation, readonly options: RouteHandlerOptions = {}) {
+        super(invocation, options);
         this._prefix = options.prefix || '';
         this.route = patternToPath(options.route || '');
     }
@@ -63,8 +63,6 @@ export function createRouteHandler<TInput, TClass extends RouteHandler, T>(
     propertyKey?: string | symbol,
     type?: ClassType<TClass>): TClass {
     const Hanlder = type ?? RouteHandlerImpl;
-    if (options.execptionHandlers) {
-        invocation.injector.inject(options.execptionHandlers);
-    }
+    options = normalizeConfigableHandlerOptions(options);
     return new Hanlder(invocation, options, propertyKey) as TClass;
 }

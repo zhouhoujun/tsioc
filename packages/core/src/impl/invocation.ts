@@ -2,7 +2,7 @@ import { InvocationContext, Invocation, createContext, getType, isFunction, isPr
 import { from, isObservable, lastValueFrom, of } from 'rxjs';
 import { BackendFn } from '../ApplicationHandler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
-import { ConfigableHandler } from '../handlers/configable.impl';
+import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
 import { ResultValue } from '../handlers/ResultValue';
 import { Context } from '../handlers/context';
 import { getResolverToken } from '../handlers/resolver';
@@ -23,7 +23,7 @@ export class DefaultInvocationHandler<
         readonly invocation: Invocation<T>,
         options: TOptions,
         protected propertyKey?: string | symbol) {
-        super(invocation.context, options)
+        super(createContext(invocation.context, options), options)
         this.limit = options.limit;
 
     }
@@ -133,9 +133,7 @@ export function createInvocationHandler<TInput, TOutput, TClass extends Invocati
     options: InvocationHandlerOptions<TInput>,
     propertyKey?: string | symbol,
     type?: ClassType<TClass>): TClass {
-    const Hanlder = type ?? DefaultInvocationHandler;
-    if (options.execptionHandlers) {
-        invocation.injector.inject(options.execptionHandlers);
-    }
+    const Hanlder = type ?? DefaultInvocationHandler;    
+    options = normalizeConfigableHandlerOptions(options);
     return new Hanlder(invocation, options, propertyKey) as TClass;
 }

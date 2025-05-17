@@ -7,7 +7,7 @@ import { ClientModule, provideClient } from '@tsdi/common/client';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { BodyparserInterceptor, ContentInterceptor, EndpointModule, Handle, JsonInterceptor, RouterModule, Payload, provideService, RedirectResult, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/endpoints';
+import { BodyparserInterceptor, ContentInterceptor, EndpointModule, getRouterToken, Handle, JsonInterceptor, Payload, provideService, RedirectResult, RequestBody, RequestParam, RequestPath, RouteMapping } from '@tsdi/endpoints';
 import { TCP_SERV_INTERCEPTORS, TcpClient } from '../src';
 
 import { BigFileInterceptor } from './BigFileInterceptor';
@@ -140,7 +140,7 @@ export class DeviceController {
                         JsonInterceptor,
                         ContentInterceptor,
                         BodyparserInterceptor,
-                        { useExisting: RouterModule.getToken('tcp', true) }
+                        { useExisting: getRouterToken('tcp', true) }
                     ]
                 },
                 providers: [
