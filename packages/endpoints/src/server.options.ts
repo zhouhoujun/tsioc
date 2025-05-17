@@ -3,7 +3,7 @@ import { RequestMethod } from '@tsdi/common';
 import { MimeSource, TransportConfigure } from '@tsdi/common/transport';
 import { RequestHandlerOptions } from './AbstractRequestHandler';
 import { ContentOptions } from './interceptors/content';
-import { RouteOpts } from './router/router.module';
+import { RouteOpts } from './router/router.providers';
 import { ServerTransportFactory } from './transport';
 import { RequestHandler } from './RequestHandler';
 import { RestfulRequestContext } from './RestfulRequestContext';

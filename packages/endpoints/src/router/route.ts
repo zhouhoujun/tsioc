@@ -1,7 +1,7 @@
 import { tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { ApplicationHandler, InvocationHandlerOptions } from '@tsdi/core';
-import { Middleware, MiddlewareFn } from '../middleware/middleware';
 import { Protocols } from '@tsdi/common';
+import { Middleware, MiddlewareFn } from '../middleware/middleware';
 
 /**
  * Route.

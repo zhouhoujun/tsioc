@@ -6,7 +6,7 @@ export * from './router/route';
 export * from './router/router';
 export * from './router/router.mapping';
 export * from './router/controller';
-export * from './router/router.module';
+export * from './router/router.providers';
 
 export * from './metadata';
 export * from './content';

@@ -8,7 +8,7 @@ import { ServiceConfig } from './server.options';
 import { ServerTransportFactory } from './transport';
 import { EndpointTypedRespond } from './typed.respond';
 import { BodyparserInterceptor, ContentInterceptor, JsonInterceptor, LoggerInterceptor } from './interceptors';
-import { createRouteProviders, getRouterToken } from './router/router.module';
+import { createRouteProviders, getRouterToken } from './router/router.providers';
 import { REGISTER_SERVICES, SetupServices } from './SetupServices';
 import { ExceptionFinalizeFilter } from './exception.filter';
 import { DefaultExceptionHandlers } from './exception.handlers';
