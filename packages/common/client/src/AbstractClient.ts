@@ -1,7 +1,7 @@
-import { Abstract, ArgumentException, Exception, isNil, isString } from '@tsdi/ioc';
-import { Context, Shutdown } from '@tsdi/core';
+import { Abstract, ArgumentException, Exception, Context, isNil, isString } from '@tsdi/ioc';
+import { Shutdown } from '@tsdi/core';
 import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, PatternFormatter, defaultFormatter } from '@tsdi/common';
-import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map, fromEventPattern } from 'rxjs';
+import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
 import { ClientHandler } from './handler';
 import { ClientConfig } from './options';
 

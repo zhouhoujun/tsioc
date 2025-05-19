@@ -1,6 +1,6 @@
 import { tokenId } from '@tsdi/ioc';
 import { ExceptionFilter, ApplicationInterceptor, GuardLike, Filter } from '@tsdi/core';
-import { BindServerEvent, ServiceConfig } from '@tsdi/endpoints';
+import { BindServerEvent, MiddlewareLike, ServiceConfig } from '@tsdi/endpoints';
 import { CoapServerOptions } from 'coap';
 
 
@@ -20,6 +20,13 @@ export interface CoapServConfig extends ServiceConfig<CoapServerOptions> {
  * CoAP server config token.
  */
 export const COAP_SERV_OPTS = tokenId<CoapServConfig>('COAP_SERV_OPTS');
+
+
+/**
+ * Coap middlewares token.
+ */
+export const COAP_MIDDLEWARES = tokenId<MiddlewareLike[]>('COAP_MIDDLEWARES');
+
 
 /**
  * CoAP server interceptors.

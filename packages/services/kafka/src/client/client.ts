@@ -1,7 +1,6 @@
-import { Injectable, isFunction, isString } from '@tsdi/ioc';
-import { Context } from '@tsdi/core';
+import { Injectable, Context, isFunction } from '@tsdi/ioc';
 import { InjectLog, Level, Logger } from '@tsdi/logger';
-import { Pattern, RequestInitOpts, ResponseEvent, TopicRequestOptions, patternToPath } from '@tsdi/common';
+import { Pattern, RequestInitOpts, ResponseEvent, TopicRequestOptions } from '@tsdi/common';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { getRouter } from '@tsdi/endpoints';
 import { Cluster, Consumer, ConsumerGroupJoinEvent, Kafka, LogEntry, PartitionAssigner, logLevel } from 'kafkajs';

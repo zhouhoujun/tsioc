@@ -1,7 +1,7 @@
-import { Injectable, isString, lang } from '@tsdi/ioc';
+import { Injectable, Context, isString, lang } from '@tsdi/ioc';
 import { Pattern, RequestInitOpts, ResponseEvent, TopicRequestOptions } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { ev, TransportContext } from '@tsdi/common/transport';
+import { ev } from '@tsdi/common/transport';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import * as amqp from 'amqplib';
 import { AmqpClientConfig } from './options';
@@ -91,7 +91,7 @@ export class AmqpClient extends AbstractClient<TopicRequestOptions, AmqpRequest<
         return null!
     }
 
-    protected override initContext(context: TransportContext): void {
+    protected override initContext(context: Context): void {
         context.set(AbstractClient, this);
         context.set(ClientTransport, this._transport);
     }

@@ -1,11 +1,10 @@
 /* eslint-disable no-case-declarations */
-import { ArgumentException, Injectable, TypeException } from '@tsdi/ioc';
+import { ContextToken, ArgumentException, Injectable, TypeException } from '@tsdi/ioc';
 import { HeaderMappings, UrlRequest, RequestMethod, HeadersLike, getHeader } from '@tsdi/common';
 import { BadRequestException, Redirector } from '@tsdi/common/transport';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { ClientTransport } from './transport';
 import { AbstractClient } from '../AbstractClient';
-import { ContextToken } from '@tsdi/core';
 
 
 @Injectable()

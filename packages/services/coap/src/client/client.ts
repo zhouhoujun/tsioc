@@ -1,4 +1,4 @@
-import { Injectable, InvocationContext, isString } from '@tsdi/ioc';
+import { Injectable, Context, isString } from '@tsdi/ioc';
 import { Pattern, RequestInitOpts, ResponseEvent, UrlRequestOptions } from '@tsdi/common';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { Socket, createSocket, SocketOptions } from 'dgram';
@@ -25,8 +25,8 @@ export class CoapClient extends AbstractClient<UrlRequestOptions, CoapRequest<an
             const options = this.getOptions();
             const connectOpts = {
                 type: 'udp4',
+                ...options.connectOpts,
                 sendBufferSize: options.transportOptions?.maxSize ?? defaultMaxSize,
-                ...options.connectOpts
             } as SocketOptions;
             this.socket = createSocket(connectOpts);
             const transportOpts = options.transportOptions!;
@@ -43,9 +43,9 @@ export class CoapClient extends AbstractClient<UrlRequestOptions, CoapRequest<an
         this.session?.destroy();
     }
 
-    protected initContext(context: InvocationContext<any>): void {
-        context.setValue(AbstractClient, this);
-        context.setValue(ClientTransport, this.session)
+    protected override initContext(context: Context): void {
+        context.set(CoapClient, this);
+        context.set(ClientTransport, this.session)
     }
 
     protected createRequest(pattern: Pattern, options: RequestInitOpts<any, UrlRequestOptions>) {
