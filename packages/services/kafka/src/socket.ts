@@ -1,7 +1,6 @@
-import { isArray, isNumber, isString } from '@tsdi/ioc';
-import { ContextToken } from '@tsdi/core';
+import { ContextToken, isArray, isNumber, isString } from '@tsdi/ioc';
 import { isBuffer, BadRequestException, TransportContext } from '@tsdi/common/transport';
-import { IHeaders, Consumer, Producer, ConsumerSubscribeTopics, ConsumerRunConfig, EachMessagePayload, CompressionTypes, Message, ProducerRecord } from 'kafkajs';
+import { IHeaders, Consumer, Producer, ConsumerSubscribeTopics, ConsumerRunConfig, EachMessagePayload, Message, ProducerRecord } from 'kafkajs';
 import { BehaviorSubject, filter, map, Observable } from 'rxjs';
 
 

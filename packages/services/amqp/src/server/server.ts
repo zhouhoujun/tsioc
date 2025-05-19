@@ -1,4 +1,4 @@
-import { Exception, Inject, Injectable, lang } from '@tsdi/ioc';
+import { Exception, Injectable, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ev } from '@tsdi/common/transport';
 import { Server, ServerTransportFactory, ServerTransport, RequestContext, getRouter } from '@tsdi/endpoints';
