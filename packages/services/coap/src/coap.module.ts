@@ -17,9 +17,11 @@ import { CoapExceptionHandlers } from './server/execption.handles';
 const defaultMaxSize = 1024 * 256;
 
 @Module({
-    providers: [
+    declarations:[
         CoapClient,
         CoapServer,
+    ],
+    providers: [
         CoapStatusVaildator,
         CoapServerTransportFactory,
         {

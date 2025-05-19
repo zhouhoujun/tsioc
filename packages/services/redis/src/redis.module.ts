@@ -8,10 +8,12 @@ import { RedisConfiguration } from './configuration';
 
 @Module({
     providers: [
-        RedisClient,
-        RedisServer,
         RedisPatternFormatter,
         RedisConfiguration
+    ],
+    declarations:[
+        RedisClient,
+        RedisServer
     ]
 })
 export class RedisModule {

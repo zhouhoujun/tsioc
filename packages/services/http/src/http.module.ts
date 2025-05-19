@@ -6,12 +6,14 @@ import { HttpConfiguration, HttpIncomingFactory } from './configuration';
 
 @Module({
     providers: [
-        Http,
-        HttpServer,
         HttpResponseEventFactory,
         HttpIncomingFactory,
         HttpConfiguration
 
+    ],
+    declarations:[
+        Http,
+        HttpServer,
     ]
 })
 export class HttpModule {

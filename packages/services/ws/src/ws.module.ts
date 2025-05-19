@@ -7,9 +7,11 @@ import { WsConfiguration } from './configuration';
 
 @Module({
     providers: [
-        WsClient,
-        WsServer,
         WsConfiguration
+    ],
+    declarations:[
+        WsClient,
+        WsServer
     ]
 })
 export class WsModule {

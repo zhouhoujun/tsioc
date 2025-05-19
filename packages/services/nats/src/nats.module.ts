@@ -7,10 +7,12 @@ import { NatsConfiguration } from './configuration';
 
 @Module({
     providers: [
-        NatsClient,
-        NatsServer,
         NatsPatternFormatter,
         NatsConfiguration        
+    ],
+    declarations:[
+        NatsClient,
+        NatsServer,
     ]
 })
 export class NatsModule {

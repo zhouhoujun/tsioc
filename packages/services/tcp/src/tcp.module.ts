@@ -7,9 +7,11 @@ import { TcpConfiguration } from './configuration';
 
 @Module({
     providers: [
-        TcpClient,
-        TcpServer,
         TcpConfiguration
+    ],
+    declarations: [
+        TcpClient,
+        TcpServer
     ]
 })
 export class TcpModule {

@@ -19,8 +19,10 @@ import { SuiteRunner } from './runner/SuiteRunner';
       RunAspect,
       SuiteRunner,
       OldTestRunner,
-      UnitTestService,
       DefaultTestReport
+   ],
+   declarations:[
+      UnitTestService
    ],
    bootstrap: UnitTestService
 })

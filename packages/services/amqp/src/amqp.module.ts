@@ -7,9 +7,11 @@ import { AmqpConfiguration } from './configuration';
 
 @Module({
     providers: [
-        AmqpClient,
-        AmqpServer,
         AmqpConfiguration
+    ],
+    declarations:[
+        AmqpClient,
+        AmqpServer
     ]
 })
 export class AmqpModule {

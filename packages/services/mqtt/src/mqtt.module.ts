@@ -6,9 +6,11 @@ import { MqttConfiguration } from './configuration';
 
 @Module({
     providers: [
+        MqttConfiguration
+    ],
+    declarations: [
         MqttClient,
         MqttServer,
-        MqttConfiguration
     ]
 })
 export class MqttModule {

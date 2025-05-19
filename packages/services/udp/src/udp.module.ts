@@ -7,9 +7,11 @@ import { UdpConfiguration } from './configuration';
 
 @Module({
     providers: [
-        UdpClient,
-        UdpServer,
         UdpConfiguration
+    ],
+    declarations:[
+        UdpClient,
+        UdpServer
     ]
 })
 export class UdpModule {
