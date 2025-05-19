@@ -7,7 +7,7 @@ import { COAP_BIND_FILTERS, COAP_BIND_GUARDS, COAP_BIND_INTERCEPTORS, COAP_SERV_
 import { CoapRequestHandler } from './handler';
 import { InternalServerException, ev } from '@tsdi/common/transport';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
-import { lastValueFrom } from 'rxjs';
+import { lastValueFrom, Subject } from 'rxjs';
 
 /**
  * CoAP server.
@@ -16,6 +16,7 @@ import { lastValueFrom } from 'rxjs';
 export class CoapServer extends Server<RequestContext, CoapServConfig> {
 
     @InjectLog() logger!: Logger;
+    private destroy$ = new Subject<void>();
     protected isSecure = false;
     constructor(
         readonly handler: CoapRequestHandler,
@@ -86,8 +87,8 @@ export class CoapServer extends Server<RequestContext, CoapServConfig> {
             options.protocol = isSecure ? 'udps' : 'udp';
         }
 
-        const session = factory.create(injector, this._server, options);
-        session.listen(this.handler);
+        const transport = factory.create(injector, this._server, options);
+        transport.handle(this.handler, this.destroy$);
 
         if (!options.microservice && !bindServer) {
             // notify hybrid service to bind http server.
@@ -99,6 +100,8 @@ export class CoapServer extends Server<RequestContext, CoapServConfig> {
     }
     protected async onShutdown(): Promise<any> {
         if (!this._server) return;
+        this.destroy$.next();
+        this.destroy$.complete();
         await promisify(this._server.close, this._server)()
             .catch(err => {
                 this.logger?.error(err);

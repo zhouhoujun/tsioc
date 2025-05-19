@@ -41,7 +41,7 @@ export const COAP_CLIENT_OPTS = tokenId<CoapClientConfig>('COAP_CLIENT_OPTS');
 /**
  * Coap client interceptors token.
  */
-export const COAP_CLIENT_INTERCEPTORS = tokenId<ApplicationInterceptor<CoapRequest<any>, ResponseEvent<any>[]>>('COAP_INTERCEPTORS');
+export const COAP_CLIENT_INTERCEPTORS = tokenId<ApplicationInterceptor<CoapRequest<any>, ResponseEvent<any>>[]>('COAP_INTERCEPTORS');
 
 /**
  * Coap client filters token.

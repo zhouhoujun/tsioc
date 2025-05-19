@@ -14,14 +14,14 @@ import { CoapRequest } from './request';
 @Injectable()
 export class CoapClient extends AbstractClient<UrlRequestOptions, CoapRequest<any>, ResponseEvent<any, string>, CoapClientConfig> {
     private socket?: Socket | null;
-    private session?: ClientTransport | null;
+    private transport?: ClientTransport | null;
 
     constructor(readonly handler: CoapHandler) {
         super();
     }
 
     protected async connect(): Promise<any> {
-        if (!this.session) {
+        if (!this.transport) {
             const options = this.getOptions();
             const connectOpts = {
                 type: 'udp4',
@@ -34,18 +34,18 @@ export class CoapClient extends AbstractClient<UrlRequestOptions, CoapRequest<an
                 transportOpts.host = new URL(options.url!).host;
             }
             const injector = this.handler.injector;
-            this.session = this.handler.injector.get(ClientTransportFactory).create(injector, this.socket, options);
+            this.transport = this.handler.injector.get(ClientTransportFactory).create(injector, this.socket, options);
         }
     }
 
     protected async onShutdown(): Promise<void> {
         this.socket?.close();
-        this.session?.destroy();
+        this.transport?.destroy();
     }
 
     protected override initContext(context: Context): void {
         context.set(CoapClient, this);
-        context.set(ClientTransport, this.session)
+        context.set(ClientTransport, this.transport)
     }
 
     protected createRequest(pattern: Pattern, options: RequestInitOpts<any, UrlRequestOptions>) {
