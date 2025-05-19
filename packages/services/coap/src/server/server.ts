@@ -1,12 +1,13 @@
 import { Inject, Injectable, isFunction, isNumber, isString, lang, promisify } from '@tsdi/ioc';
+import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST } from '@tsdi/common';
+import { InternalServerException, ev } from '@tsdi/common/transport';
 import { BindServerEvent, RequestContext, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Socket, createSocket } from 'dgram';
+import { createServer, Server as CoAPServer } from 'coap';
 import { COAP_BIND_FILTERS, COAP_BIND_GUARDS, COAP_BIND_INTERCEPTORS, COAP_SERV_OPTS, CoapServConfig } from './options';
 import { CoapRequestHandler } from './handler';
-import { InternalServerException, ev } from '@tsdi/common/transport';
-import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { lastValueFrom, Subject } from 'rxjs';
 
 /**
@@ -24,7 +25,7 @@ export class CoapServer extends Server<RequestContext, CoapServConfig> {
         super()
     }
 
-    private _server?: Socket | null;
+    private _server?: CoAPServer | null;
 
     listen(listenOpts?: { port?: number, listener?: () => void }): this;
     listen(listeningListener?: () => void): this;
@@ -32,17 +33,17 @@ export class CoapServer extends Server<RequestContext, CoapServConfig> {
     listen(arg1: any, listeningListener?: () => void): this {
         if (!this._server) throw new InternalServerException();
         if (isNumber(arg1)) {
-            this._server.bind(arg1, listeningListener);
+            this._server.listen(arg1, listeningListener);
             this.logger.info(lang.getTypeName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}:${arg1}`, '!')
         } else if (isFunction(arg1)) {
-            this._server.bind(listeningListener);
+            this._server.listen(listeningListener);
             this.logger.info(lang.getTypeName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}`, '!')
         } else if (arg1) {
-            this._server.bind(arg1.port ?? 5683, arg1.listener);
+            this._server.listen(arg1.port ?? 5683, arg1.listener);
             this.logger.info(lang.getTypeName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}:${arg1.port}`, '!')
         } else {
             this.logger.info(lang.getTypeName(this), 'access with url:', `coap${this.isSecure ? 's' : ''}://${LOCALHOST}`, '!')
-            this._server.bind(5683);
+            this._server.listen(5683);
         }
         return this;
     }
@@ -59,7 +60,7 @@ export class CoapServer extends Server<RequestContext, CoapServConfig> {
     }
 
     protected async setup(): Promise<any> {
-        this._server = createSocket(this.options.serverOpts?.type ?? 'udp4');
+        this._server = createServer(this.options.serverOpts);
     }
 
     protected async onStart(bindServer?: any): Promise<any> {

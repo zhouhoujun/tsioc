@@ -2,6 +2,7 @@ import { Injectable, Context, isString } from '@tsdi/ioc';
 import { Pattern, RequestInitOpts, ResponseEvent, UrlRequestOptions } from '@tsdi/common';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { Socket, createSocket, SocketOptions } from 'dgram';
+import { request, Agent } from 'coap';
 import { CoapClientConfig } from './options';
 import { CoapHandler } from './handler';
 import { defaultMaxSize } from '../trans';
@@ -13,7 +14,7 @@ import { CoapRequest } from './request';
  */
 @Injectable()
 export class CoapClient extends AbstractClient<UrlRequestOptions, CoapRequest<any>, ResponseEvent<any, string>, CoapClientConfig> {
-    private socket?: Socket | null;
+    private agent?: Agent | null;
     private transport?: ClientTransport | null;
 
     constructor(readonly handler: CoapHandler) {
@@ -26,20 +27,15 @@ export class CoapClient extends AbstractClient<UrlRequestOptions, CoapRequest<an
             const connectOpts = {
                 type: 'udp4',
                 ...options.connectOpts,
-                sendBufferSize: options.transportOptions?.maxSize ?? defaultMaxSize,
             } as SocketOptions;
-            this.socket = createSocket(connectOpts);
-            const transportOpts = options.transportOptions!;
-            if (!transportOpts.host) {
-                transportOpts.host = new URL(options.url!).host;
-            }
+            this.agent = new Agent(connectOpts);
+
             const injector = this.handler.injector;
-            this.transport = this.handler.injector.get(ClientTransportFactory).create(injector, this.socket, options);
+            this.transport = this.handler.injector.get(ClientTransportFactory).create(injector, this.agent, options);
         }
     }
 
     protected async onShutdown(): Promise<void> {
-        this.socket?.close();
         this.transport?.destroy();
     }
 

@@ -3,7 +3,7 @@ import { ExceptionFilter, ApplicationInterceptor } from '@tsdi/core';
 import { ResponseEvent } from '@tsdi/common';
 import { ClientConfig, ClientOpts } from '@tsdi/common/client';
 import { OptionName } from 'coap-packet';
-import { OptionValue } from 'coap';
+import { Agent, AgentOptions, OptionValue } from 'coap';
 import { CoapRequest } from './request';
 
 
@@ -25,10 +25,11 @@ import { CoapRequest } from './request';
 //     maxSize?: number;
 // }
 
+
 /**
  * client options.
  */
-export interface CoapClientConfig extends ClientConfig   {
+export interface CoapClientConfig extends ClientConfig<AgentOptions>   {
 
     
 }

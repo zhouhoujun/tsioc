@@ -1,20 +1,10 @@
 import { Module } from '@tsdi/ioc';
-import { ExceptionHandlerFilter } from '@tsdi/core';
-import { LOCALHOST } from '@tsdi/common';
-import { CLIENT_MODULES, ClientModuleOpts } from '@tsdi/common/client';
-import { ExceptionFinalizeFilter, FinalizeFilter, LoggerInterceptor, SERVER_MODULES, ServerModuleOpts } from '@tsdi/endpoints';
 import { CoapClient } from './client/client';
-import { COAP_CLIENT_FILTERS, COAP_CLIENT_INTERCEPTORS, COAP_CLIENT_OPTS } from './client/options';
-import { CoapHandler } from './client/handler';
 import { CoapServer } from './server/server';
-import { COAP_SERV_FILTERS, COAP_SERV_GUARDS, COAP_SERV_INTERCEPTORS, COAP_SERV_OPTS } from './server/options';
-import { CoapRequestHandler } from './server/handler';
 import { CoapStatusVaildator } from './status';
-import { CoapServerTransportFactory } from './coap.session';
-import { CoapExceptionHandlers } from './server/execption.handles';
+import { CoapConfiguration } from './configuration';
 
 
-const defaultMaxSize = 1024 * 256;
 
 @Module({
     declarations:[
@@ -23,106 +13,7 @@ const defaultMaxSize = 1024 * 256;
     ],
     providers: [
         CoapStatusVaildator,
-        CoapServerTransportFactory,
-        {
-            provide: CLIENT_MODULES,
-            useValue: {
-                transport: 'coap',
-                clientType: CoapClient,
-                clientOptsToken: COAP_CLIENT_OPTS,
-                hanlderType: CoapHandler,
-                defaultOpts: {
-                    url: 'coap://localhost:5683',
-                    interceptorsToken: COAP_CLIENT_INTERCEPTORS,
-                    filtersToken: COAP_CLIENT_FILTERS,
-                    backend: TransportBackend,
-                    transportOpts: {
-                        delimiter: '#',
-                        maxSize: defaultMaxSize,
-                    },
-                    sessionFactory: { useExisting: CoapServerTransportFactory },
-                    providers: [
-                        { provide: StatusVaildator, useExisting: CoapStatusVaildator }
-                    ]
-                }
-            } as ClientModuleOpts,
-            multi: true
-        },
-        {
-            provide: SERVER_MODULES,
-            useValue: {
-                transport: 'coap',
-                microservice: true,
-                serverType: CoapServer,
-                serverOptsToken: COAP_SERV_OPTS,
-                handlerType: CoapRequestHandler,
-                
-                defaultOpts: {
-                    autoListen: true,
-                    listenOpts: { port: 5683, host: LOCALHOST },
-                    transportOpts: {
-                        delimiter: '#',
-                        maxSize: defaultMaxSize
-                    },
-                    content: {
-                        root: 'public',
-                        prefix: 'content'
-                    },
-                    detailError: true,
-                    interceptorsToken: COAP_SERV_INTERCEPTORS,
-                    filtersToken: COAP_SERV_FILTERS,
-                    guardsToken: COAP_SERV_GUARDS,
-                    execptionHandlers: CoapExceptionHandlers,
-                    sessionFactory: { useExisting: CoapServerTransportFactory },
-                    filters: [
-                        LoggerInterceptor,
-                        ExceptionFinalizeFilter,
-                        ExceptionHandlerFilter,
-                        FinalizeFilter
-                    ],
-                    providers: [
-                        { provide: StatusVaildator, useExisting: CoapStatusVaildator }
-                    ]
-                }
-            } as ServerModuleOpts,
-            multi: true
-        },
-        {
-            provide: SERVER_MODULES,
-            useValue: {
-                transport: 'coap',
-                serverType: CoapServer,
-                serverOptsToken: COAP_SERV_OPTS,
-                endpointType: CoapRequestHandler,
-                defaultOpts: {
-                    autoListen: true,
-                    listenOpts: { port: 5683, host: LOCALHOST },
-                    transportOpts: {
-                        delimiter: '#',
-                        maxSize: defaultMaxSize
-                    },
-                    content: {
-                        root: 'public'
-                    },
-                    detailError: true,
-                    interceptorsToken: COAP_SERV_INTERCEPTORS,
-                    filtersToken: COAP_SERV_FILTERS,
-                    guardsToken: COAP_SERV_GUARDS,
-                    execptionHandlers: CoapExceptionHandlers,
-                    sessionFactory: { useExisting: CoapServerTransportFactory },
-                    filters: [
-                        LoggerInterceptor,
-                        ExceptionFinalizeFilter,
-                        ExceptionHandlerFilter,
-                        FinalizeFilter
-                    ],
-                    providers: [
-                        { provide: StatusVaildator, useExisting: CoapStatusVaildator }
-                    ]
-                }
-            } as ServerModuleOpts,
-            multi: true
-        }
+        CoapConfiguration
     ]
 })
 export class CoapModule {

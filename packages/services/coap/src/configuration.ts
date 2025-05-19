@@ -30,10 +30,12 @@ import { COAP_MIDDLEWARES, COAP_SERV_FILTERS, COAP_SERV_GUARDS, COAP_SERV_INTERC
 
 
 
-// const defaultMaxSize = 65515; //65535 - 20;
+const defaultMaxSize = 65515; //65535 - 20;
 // const defaultMaxSize = 1048576; // 1024 * 1024;
 // const defaultMaxSize = 5242880; //1024 * 1024 * 5;
 // const defaultMaxSize = 10485760; //1024 * 1024 * 10;
+// const defaultMaxSize = 1024 * 256;
+
 
 const delimiter = Buffer.from('#');
 
