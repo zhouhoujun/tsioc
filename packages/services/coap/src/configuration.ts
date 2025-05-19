@@ -1,15 +1,21 @@
-import { InjectFlags } from '@tsdi/ioc';
+import { InjectFlags, isNil, promisify, tokenId } from '@tsdi/ioc';
 import { Bean, Configuration, ExceptionHandlerFilter } from '@tsdi/core';
-import { DefaultResponseFactory, HeaderAdapter, ResponseFactory } from '@tsdi/common';
+import { DefaultResponseFactory, Header, HeaderAdapter, ResponseEvent, ResponseFactory } from '@tsdi/common';
 import {
     messageVaildateInterceptor, deatchPacketIdInterceptor, DefaultDeserializerFactory, DefaultSerializerFactory,
     DeserializerFactory, FileAdapter, MimeAdapter, PacketDeserializeInterceptor,
     messageSerializeInterceptor, Redirector, SerializerFactory, StatusAdapter, StreamAdapter,
     UrlClientIncomingFactory, UrlOutgoingFactory, PayloadDeserializeInterceptor,
-    UrlIncomingFactory
+    UrlIncomingFactory,
+    NotSupportedException,
+    IReadable, ev,
+    ClientIncoming,
+    TransportContext,
+    Incoming
 } from '@tsdi/common/transport';
 import {
     CLIENT_MODULES, ClientModuleOpts, ClientTransferFactory, DefaultClientTransferFactory,
+    DefaultClientTransport,
     readabeRequestBodyerializeInterceptor,
     requestPacketIfySerializeInterceptor, requestSerializeBackend, requestTimeoutInterceptor, SocketClientTransport
 } from '@tsdi/common/client';
@@ -19,7 +25,9 @@ import {
     execptionSerializeInterceptor, contextSerializeBackend, lengthLimitSerializeInterceptor,
     ServerTransferFactory, SocketServerTransport,
     packetIfySerializeInterceptor,
-    headersReadableBodyInterceptor
+    headersReadableBodyInterceptor,
+    DefaultServerTransport,
+    UrlRequestContext
 } from '@tsdi/endpoints';
 import { CoapClient } from './client/client';
 import { CoapHandler } from './client/handler';
@@ -27,6 +35,9 @@ import { COAP_CLIENT_FILTERS, COAP_CLIENT_INTERCEPTORS } from './client/options'
 import { CoapServer } from './server/server';
 import { CoapRequestHandler } from './server/handler';
 import { COAP_MIDDLEWARES, COAP_SERV_FILTERS, COAP_SERV_GUARDS, COAP_SERV_INTERCEPTORS } from './server/options';
+import { Agent, IncomingMessage, OutgoingMessage,  Server as CoAPServer } from 'coap';
+import { CoapRequest } from './client/request';
+import { Observable } from 'rxjs';
 
 
 
@@ -92,7 +103,7 @@ export class CoapConfiguration {
                         redirector: Redirector | null) => {
                         return {
                             create: (injector, socket, options) => {
-                                return new SocketClientTransport(
+                                return new DefaultClientTransport<Agent, CoapRequest<any>, Buffer | string | IReadable>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
@@ -107,7 +118,54 @@ export class CoapConfiguration {
                                     transferFactory.create(injector, options.transferConfig),
                                     responseFactory,
                                     redirector,
-                                    options
+                                    options,
+                                    (socket, factory, instance) => {
+                                        const context = instance ?? factory();
+                                        const channel = context.get(REQUEST_STREAM);
+                                        return new Observable<ClientIncoming>(subscribe => {
+                                            const onResponse = (resp: IncomingMessage) => {
+                                                (resp as ClientIncoming).body = resp;
+                                                (resp as ClientIncoming).status = resp.code;
+                                                subscribe.next(resp as ClientIncoming);
+                                            };
+                                            const onError = (err: any) => err && subscribe.error(err);
+                                            channel.on(ev.CLOSE, onError);
+                                            channel.on(ev.ERROR, onError);
+                                            channel.on(ev.ABOUT, onError);
+                                            channel.on(ev.TIMEOUT, onError);
+                                            channel.on(ev.RESPONSE, onResponse);
+
+                                            return () => {
+                                                channel.off(ev.CLOSE, onError);
+                                                channel.off(ev.ERROR, onError);
+                                                channel.off(ev.ABOUT, onError);
+                                                channel.off(ev.TIMEOUT, onError);
+                                                channel.off(ev.RESPONSE, onResponse);
+                                                subscribe.unsubscribe();
+                                            }
+                                        })
+
+                                    },
+                                    async (socket, msg, req, context) => {
+                                        if (streamAdapter.isReadable(msg)) throw new NotSupportedException('Not supported stream payload');
+                                        const stream = socket.request({
+                                            // hostname: ,
+                                            method: req.method as any,
+                                            headers: req.headers.getHeaders(),
+                                            pathname: req.url,
+                                            query: req.params.toString()
+                                        });
+
+                                        context.set(REQUEST_STREAM, stream);
+
+
+                                        if (isNil(msg)) {
+                                            await promisify(stream.end, stream)();
+                                        } else {
+                                            await streamAdapter.pipeTo(msg, stream, { end: true });
+                                        }
+
+                                    }
                                 )
                             },
                         }
@@ -163,7 +221,7 @@ export class CoapConfiguration {
                         incomingFactory: UrlIncomingFactory, outgoingFactory: UrlOutgoingFactory, transferFactory: ServerTransferFactory) => {
                         return {
                             create: (injector, socket, options) => {
-                                return new SocketServerTransport(
+                                return new DefaultServerTransport<CoAPServer, UrlRequestContext, any>(
                                     injector,
                                     socket,
                                     serializerFactory.create(injector, {
@@ -180,9 +238,39 @@ export class CoapConfiguration {
                                     incomingFactory,
                                     outgoingFactory,
                                     transferFactory.create(injector, options.transferConfig),
-                                    options
+                                    options,
+                                    (socket: CoAPServer, factory, instance) => {
+                                        return new Observable<OutgoingMessage>(subscribe => {
+                                            const onRequest = (req:any, res: any) => subscribe.next(incomingFactory.create({ req, res }));
+                                            const onError = (err: any) => err && subscribe.error(err);
+                                            socket.on(ev.CLOSE, onError);
+                                            socket.on(ev.ERROR, onError);
+                                            socket.on(ev.ABOUT, onError);
+                                            socket.on(ev.TIMEOUT, onError);
+                                            socket.on(ev.REQUEST, onRequest);
+                                            return () => {
+                                                socket.off(ev.CLOSE, onError);
+                                                socket.off(ev.ERROR, onError);
+                                                socket.off(ev.ABOUT, onError);
+                                                socket.off(ev.TIMEOUT, onError);
+                                                socket.off(ev.REQUEST, onRequest);
+                                                subscribe.unsubscribe();
+                                            }
+                                        })
+                                    },
+                                    (socket: CoAPServer, msg: Buffer | string | IReadable, reqContext: UrlRequestContext, context: TransportContext) => {
+                                        if (isNil(msg)) {
+                                            return promisify(reqContext.response.end, reqContext.response)();
+                                        } else if (streamAdapter.isStream(msg)) {
+                                            return streamAdapter.pipeTo(msg, reqContext.response, { end: true });
+                                        } else {
+                                            return promisify<any, void>(reqContext.response.end, reqContext.response)(msg);
+                                        }
+                                    }
                                 )
                             },
+
+
                         }
                     },
                     deps: [
@@ -232,3 +320,29 @@ export class CoapConfiguration {
     }
 
 }
+
+
+
+// export class CoapIncoming<T = any> implements Incoming<T> {
+//     id: string | number | undefined;
+//     noHead?: boolean | undefined;
+//     get headers(): Record<string, Header> {
+//         return this.req.headers
+//     }
+//     public payload: string | Buffer | IReadable | null;
+
+//     constructor(
+//         readonly req: IncomingMessage,
+//         readonly res: OutgoingMessage
+//     ) {
+//         const len = ~~(req.headers['content-length'] ?? '0');
+//         if (len) {
+//             this.payload = req as IReadable;
+//         } else {
+//             this.payload = null;
+//         }
+
+//     }
+// }
+
+const REQUEST_STREAM = tokenId<OutgoingMessage>('REQUEST_STREAM');

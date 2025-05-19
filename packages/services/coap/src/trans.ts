@@ -3,7 +3,7 @@ import { isBuffer, ctype } from '@tsdi/common/transport';
 import { OptionName } from 'coap-packet';
 
 
-export const defaultMaxSize = 61440; //1024 * 60;
+// export const defaultMaxSize = 61440; //1024 * 60;
 
 export type OptionValue = null | string | number | Buffer | Buffer[];
 

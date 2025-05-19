@@ -5,7 +5,6 @@ import { Socket, createSocket, SocketOptions } from 'dgram';
 import { request, Agent } from 'coap';
 import { CoapClientConfig } from './options';
 import { CoapHandler } from './handler';
-import { defaultMaxSize } from '../trans';
 import { CoapRequest } from './request';
 
 
