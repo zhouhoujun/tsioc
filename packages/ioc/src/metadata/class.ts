@@ -15,6 +15,7 @@ import { Injector, InstanceOf, MethodType, Resolve } from '../injector';
 import { HandlerFn } from '../handler';
 import { DesignContext, RuntimeContext } from '../lifescope/ctx';
 import { Invocation, InvocationFactory } from '../invocation';
+import { DecorContext } from './refl';
 
 
 
@@ -98,11 +99,12 @@ export namespace Decors {
     export const afterAnnoation = 'afterAnnoation';
 }
 
-export type ActionType = 'inject' | 'annoation' | 'runnable' | 'providers';
+export type ActionType = 'inject' | 'annoation' | 'declaration' | 'runnable' | 'providers';
 
 export namespace ActionTypes {
     export const inject = 'inject';
     export const annoation = 'annoation';
+    export const declaration = 'declaration';
     export const runnable = 'runnable';
     export const providers = 'providers';
 }
@@ -133,14 +135,6 @@ export interface DecorDefine<T = any> extends ProvidersMetadata {
     readonly metadata: T;
 }
 
-/**
- * decorator context.
- */
-export interface DecorContext<T = any> {
-    readonly define: DecorDefine<T>,
-    readonly target: any;
-    readonly class: Class;
-}
 
 /**
  * type def metadata.

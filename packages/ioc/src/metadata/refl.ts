@@ -1,4 +1,4 @@
-import { AnnotationType, typeRef, Type } from '../types';
+import { AnnotationType, classRef, Type, typeFac } from '../types';
 import { cleanObj, getParentType } from '../utils/lang';
 import { getType, isArray, isBoolean, isFunction } from '../utils/chk';
 import {
@@ -6,15 +6,17 @@ import {
     RunnableMetadata, MethodMetadata
 } from './meta';
 import {
-    ctorName, DecoratorType, DecorContext, DecorDefine, Decors, ActionTypes,
+    ctorName, DecoratorType, DecorDefine, Decors, ActionTypes,
     Class, TypeDef, DecoratorFn, ActionType
 } from './class';
 import { InvokeOptions } from '../context';
 import { Context, HandlerFn } from '../handler';
 import { LifeScope } from '../lifescope/lifescope';
 import { DesignContext, RuntimeContext } from '../lifescope/ctx';
-import { InvocationFactory } from '../invocation';
 import { Resolve } from '../injector';
+import { InvocationFactory } from '../invocation';
+
+
 
 
 
@@ -155,16 +157,22 @@ export interface MetadataFactory<T = any> extends ProvidersMetadata {
      * set invocation factory.
      */
     factory?: Resolve<InvocationFactory>;
-    /**
-     * set metadata.
-     * @param metadata
-     */
 }
 
 /**
  * decorator option.
  */
 export interface DecoratorOption<T> extends MetadataFactory<T>, DecorRegisterOption<T> { }
+
+/**
+ * decorator context.
+ */
+export interface DecorContext<T = any> {
+    readonly define: DecorDefine<T>,
+    readonly target: any;
+    readonly class: Class;
+    readonly options: DecoratorOption<any>
+}
 
 
 /**
@@ -199,6 +207,10 @@ function regActionType(decor: string, type: ActionType, decType: DecoratorType) 
     switch (type) {
         case ActionTypes.annoation:
             records = typeAnnoDecors;
+            break;
+
+        case ActionTypes.declaration:
+            records = declarations;
             break;
         case ActionTypes.inject:
             switch (decType) {
@@ -343,6 +355,17 @@ export const decorRunnable = (ctx: DecorContext, next: HandlerFn, context: Conte
     return next(ctx, context)
 }
 
+const declarations: Record<string, boolean> = {  };
+export const declarationFactory = (ctx: DecorContext, next: HandlerFn, context: Context) => {
+    if (declarations[ctx.define.decor.toString()]) {
+        const factory = (ctx.class.type as AnnotationType)[typeFac] ?? ctx.options.factory;
+        if (factory) {
+            ctx.class.setInvocationFactory(factory);
+        }
+    }
+    return next(ctx, context)
+}
+
 const typeProvidersDecors: Record<string, boolean> = { '@Injectable': true, '@Providers': true };
 export const decorProviders = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (typeProvidersDecors[ctx.define.decor.toString()]) {
@@ -392,6 +415,7 @@ export const typeDecorLifeScope: LifeScope<DecorContext> = new LifeScope(null, d
     decorCtorDesignParams,
     decorAnnoAction,
     decorProviders,
+    declarationFactory,
     decorRunnable
 ]);
 export const methodDecorLifeScope: LifeScope<DecorContext> = new LifeScope(null, decorExtendHandler, [
@@ -412,6 +436,7 @@ function dispatch(lifescope: LifeScope<DecorContext>, target: any, type: Type, d
     const ctx = {
         define,
         target,
+        options,
         class: getClass(type)
     } as DecorContext;
     if (options.actionType) {
@@ -422,9 +447,6 @@ function dispatch(lifescope: LifeScope<DecorContext>, target: any, type: Type, d
         }
     }
     options.init && options.init(ctx);
-    if (options.factory && define.decorType === Decors.CLASS) {
-        ctx.class.setInvocationFactory(options.factory);
-    }
 
     lifescope.handle(ctx, null, () => {
         ctx.class.addDefine(define);
@@ -477,12 +499,12 @@ export function getDef<T extends TypeDef>(type: Type): T {
 
 
 /**
- * get type reflective {@link Class}.
+ * get type class reflective {@link Class}.
  * @param type type.
  */
 export function getClass<T = any>(type: Type): Class<T> {
     if (!type || type === Object) return null!;
-    let tyRef = (type as AnnotationType)[typeRef]?.() as Class<T>;
+    let tyRef = (type as AnnotationType)[classRef]?.() as Class<T>;
     if (tyRef?.type !== type) {
         let prRef: Class = tyRef;
         if (!prRef) {
@@ -492,7 +514,7 @@ export function getClass<T = any>(type: Type): Class<T> {
             }
         }
         tyRef = new Class(type, getDef(type), prRef);
-        (type as AnnotationType)[typeRef] = () => tyRef;
+        (type as AnnotationType)[classRef] = () => tyRef;
 
     }
     return tyRef;

@@ -1,4 +1,4 @@
-import { AnnotationType } from '../types';
+import { AnnotationType, typeAnn } from '../types';
 
 
 /**
@@ -9,7 +9,7 @@ import { AnnotationType } from '../types';
  * @returns
  */
 export function getClassAnnotation(target: AnnotationType) {
-    const annf = target.ƿAnn;
+    const annf = target[typeAnn];
     return typeof annf === 'function' ? (annf as Function).call(target) : null
 }
 
@@ -21,5 +21,5 @@ export function getClassAnnotation(target: AnnotationType) {
  * @returns {boolean}
  */
 export function hasClassAnnotation(target: AnnotationType): boolean {
-    return typeof target.ƿAnn === 'function'
+    return typeof target[typeAnn] === 'function'
 }

@@ -32,7 +32,7 @@ export interface Suite {
  * @Suite decorator.
  */
 export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
-    actionType: ActionTypes.annoation,
+    actionType: ActionTypes.declaration,
     def: {
         class: (ctx) => {
             ctx.class.setAnnotation(ctx.define.metadata);

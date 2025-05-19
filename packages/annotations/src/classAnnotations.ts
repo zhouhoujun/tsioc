@@ -1,4 +1,5 @@
-import * as ts from 'typescript'
+import * as ts from 'typescript';
+import { typeAnn } from '@tsdi/ioc';
 
 
 
@@ -29,7 +30,7 @@ export function iocAnnotations(contents: string): string {
             }
 
             const classAnnations = `
-                    static ƿAnn(): any {
+                    static ${typeAnn}(): any {
                         return ƿAnn_${className};
                     }
                `;

@@ -1,3 +1,4 @@
+
 /**
  * module object.
  */
@@ -96,23 +97,27 @@ export interface ClassType<T = any> extends Type<T> {
 
 
 export const noPointcut = Symbol('ƿNPT');
-export const typeRef = Symbol('ƿRef');
+export const classRef = Symbol('ƿRef');
 export const typeAnn = 'ƿAnn';
+export const typeFac = 'ƿFac';
 /**
  * annotation class type
  * 
  * 带注解的类
  */
 export interface AnnotationType<T = any> extends Type<T> {
-    new?(...args: any[]): T;
     /**
      * class design annotation
      */
-    ƿAnn?(): Annotation;
+    [typeAnn]?(): Annotation;
+    /**
+     * declaration factory.
+     */
+    [typeFac]?(injector: any): any;
     /**
      * class Reflective 
      */
-    [typeRef]?(): any;
+    [classRef]?(): any;
     /**
      * class flag. none poincut for aop.
      */
@@ -127,7 +132,7 @@ export type TypeOf<T> = Type<T> | Exclude<T, Function>;
 /**
  * arrayify.
  */
-export type Arrayify<T> =  Array<T> | T;
+export type Arrayify<T> = Array<T> | T;
 
 
 export const Empty: any[] = [];
