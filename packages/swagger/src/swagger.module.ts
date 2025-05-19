@@ -3,7 +3,7 @@ import { SWAGGER_SETUP_OPTIONS, SwaggerSetupOptions } from './swagger.config';
 import { SwaggerService } from './swagger.service';
 
 @Module({
-    declarations: [
+    providers: [
         // SwaggerJson,
         SwaggerService
     ]
