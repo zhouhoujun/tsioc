@@ -1,9 +1,7 @@
 import expect = require('expect');
 import { Before, Suite, Test } from '@tsdi/unit';
 import { ApplicationContext, Application } from '@tsdi/core';
-import { ReflectiveRef } from '@tsdi/ioc';
 import { ExampleComponent } from './app';
-import { ComponentRef } from '../src/refs/component';
 import { ComponentsModule } from '../src';
 
 
