@@ -1,8 +1,5 @@
 import { ModuleType, createDecorator, AnnotationType, noPointcut, getModuleType, TypeDef, ActionTypes } from '@tsdi/ioc';
-import { ReactiveEffect } from '../ReactiveEffect';
-import { ComponenFactory } from '../refs/component';
-import { RunnableFactory } from '@tsdi/core';
-import { ComponentRunnableFactory } from '../refs/runnable';
+import { ComponentFactory } from '../refs/component';
 
 export interface ComponentDef<T = any> extends TypeDef<T> {
     imports?: ModuleType[],
@@ -19,7 +16,7 @@ export type ComponentDecorator = (options: Partial<ComponentDef>) => ClassDecora
 
 
 export const Component: ComponentDecorator = createDecorator<Partial<ComponentDef>>('Component', {
-    actionType: ActionTypes.annoation,
+    actionType: ActionTypes.declaration,
     def: {
         class: (ctx) => {
             (ctx.class.type as AnnotationType)[noPointcut] = true;
@@ -29,16 +26,8 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
             if (metadata.imports) def.imports = getModuleType(metadata.imports);
         }
     },
-    // design: {
-    //     class: (ctx) => {
-    //         const effect = ctx.injector.get(ReactiveEffect);
-    //         const factory = ctx.injector.get(ComponenFactory);
-    //         // ctx.isNewContext = false;
-
-    //     }
-    // },
-    providers: [
-        { provide: RunnableFactory, useExisting: ComponentRunnableFactory }
-    ]
+    factory: (injector) => {
+        return injector.get(ComponentFactory)
+    }
 })
 

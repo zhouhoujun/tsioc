@@ -106,7 +106,7 @@ function storeMetadata<T>(decor: DecoratorFn, args: any[], metadata: any, option
             }
             break;
         default:
-            throw new Exception(`Invalid @${name} Decorator declaration.`)
+            throw new Exception(`Invalid @${decor.toString()} Decorator declaration.`)
     }
 }
 

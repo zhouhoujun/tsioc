@@ -3,7 +3,8 @@ import { cleanObj, getParentType } from '../utils/lang';
 import { getType, isArray, isBoolean, isFunction } from '../utils/chk';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, AnnotationMetadata,
-    RunnableMetadata, MethodMetadata
+    RunnableMetadata, MethodMetadata,
+    PatternMetadata
 } from './meta';
 import {
     ctorName, DecoratorType, DecorDefine, Decors, ActionTypes,
@@ -313,7 +314,7 @@ const typeAnnoDecors: Record<string, boolean> = { '@Injectable': true, '@Singlet
 export const decorAnnoAction = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (typeAnnoDecors[ctx.define.decor.toString()]) {
         const def = ctx.class;
-        const meta = ctx.define.metadata as AnnotationMetadata;
+        const meta = ctx.define.metadata as AnnotationMetadata & PatternMetadata;
         if (isBoolean(meta.abstract)) {
             def.getAnnotation().abstract = meta.abstract
         }

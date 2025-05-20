@@ -426,7 +426,7 @@ export const INJECT_IMPL = {
  * instance factory.
  */
 export type Factory<T = any> = (...args: any[]) => T;
-export type Resolve<T> = (injector: Injector) => T;
+export type Resolve<T> = (injector: Injector) => T | null | undefined;
 export type InstanceOf<T> = T | Resolve<T>;
 
 /**

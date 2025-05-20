@@ -263,10 +263,6 @@ export interface AnnotationMetadata extends ProvidedInMetadata, ProvidersMetadat
      * @type {SymbolType}
      */
     provide?: Token;
-    /**
-     * declaration.
-     */
-    declaration?: 'component' | 'pipe' | 'activity' | 'directive' | 'service';
 }
 
 /**

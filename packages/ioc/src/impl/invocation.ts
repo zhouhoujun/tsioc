@@ -311,37 +311,41 @@ export class DefaultInvocation<T = any, TOpts extends InvocationOptions<T> = Inv
 }
 
 
-export abstract class AbstractInvocationFactory implements InvocationFactory {
+export abstract class AbstractInvocationFactory<TOpts extends InvocationOptions = InvocationOptions> implements InvocationFactory<TOpts> {
 
 
     constructor(
-        private platform: Platform
+        protected platform: Platform
     ) {
 
     }
 
-    create<T>(type: Type<T> | Class<T>, options?: InvocationOptions<T>): Invocation<T> {
+    create<T>(type: Type<T> | Class<T>, options?: TOpts): Invocation<T> {
         const cls = getClassify(type);
         const context = this.createContext(cls, options);
         return this.createInstance(cls, context, options);
     }
 
-    protected abstract createInstance<T>(typeRef: Class<T>, context: InvocationContext, options?: InvocationOptions<T>): Invocation<T>;
+    protected abstract createInstance<T>(typeRef: Class<T>, context: InvocationContext, options?: TOpts): Invocation<T>;
 
-    protected createContext<T>(typeRef: Class<T>, options?: InvocationOptions<T>): InvocationContext {
+    protected createContext<T>(typeRef: Class<T>, options?: TOpts): InvocationContext {
         let resolvers = options?.resolvers;
         if (resolvers) {
             if (typeRef.resolvers) resolvers = resolvers.concat(typeRef.resolvers)
         } else {
             resolvers = typeRef.resolvers;
         }
-        return createContext(options?.injector ?? this.platform.getRegisterIn(typeRef.type)!, {
+        return createContext(this.getInjector(typeRef, options), {
             ...options,
             providers: [this.platform.getTypeProvider(typeRef) ?? Empty, options?.providers ?? Empty],
             resolvers,
             targetType: typeRef.type
         }, typeRef.type);
 
+    }
+
+    protected getInjector<T>(typeRef: Class<T>, options?: TOpts): Injector {
+        return options?.injector ?? this.platform.getRegisterIn(typeRef.type)!
     }
 
 }

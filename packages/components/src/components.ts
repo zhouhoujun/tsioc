@@ -1,8 +1,6 @@
 import { Module } from '@tsdi/ioc';
-import { ComponenFactory } from './refs/component';
+import { ComponentFactory } from './refs/component';
 import { ComponentFactoryImpl } from './impl/component';
-import { ComponentRunnableFactory } from './refs/runnable';
-import { ComponentRunnableFactoryImpl } from './impl/runnable';
 
 
 
@@ -14,8 +12,7 @@ import { ComponentRunnableFactoryImpl } from './impl/runnable';
  */
 @Module({
     providers: [
-        { provide: ComponenFactory, useClass: ComponentFactoryImpl },
-        { provide: ComponentRunnableFactory, useClass: ComponentRunnableFactoryImpl }
+        { provide: ComponentFactory, useClass: ComponentFactoryImpl }
     ],
     exports: [
 

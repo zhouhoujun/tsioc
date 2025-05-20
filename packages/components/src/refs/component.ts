@@ -1,4 +1,4 @@
-import { Abstract, InvokeArguments, ReflectiveRef, Injector } from '@tsdi/ioc';
+import { Abstract, Class, Type, InvocationFactory, InvocationOptions, Invocation } from '@tsdi/ioc';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { ViewRef } from './view';
 
@@ -6,14 +6,8 @@ import { ViewRef } from './view';
  * ComponentRef.
  */
 @Abstract()
-export abstract class ComponentRef<T> {
+export abstract class ComponentRef<T> extends Invocation<T> {
 
-    /**
-     * injector of context.
-     * 
-     * 当前类注入的容器上下文的容器
-     */
-    abstract get injector(): Injector;
     /**
      * render component.
      *
@@ -29,34 +23,18 @@ export abstract class ComponentRef<T> {
     abstract get hostView(): ViewRef;
 
     /**
-     * This component instance.
-     */
-    abstract get instance(): T;
-
-    /**
      * render component.
      *
      * @abstract
      * @memberof ComponentRef
      */
     abstract render(): Promise<void>;
-
-    /**
-    * destroy this.
-    */
-    abstract destroy(): void;
-
-    /**
-     * register callback on destroy.
-     * @param callback destroy callback
-     */
-    abstract onDestroy(callback: () => void): void;
 }
 
 /**
  * Component options.
  */
-export interface ComponentOptions extends TemplateCompilerOptions, InvokeArguments {
+export interface ComponentOptions extends TemplateCompilerOptions, InvocationOptions {
 
 }
 
@@ -66,14 +44,14 @@ export interface ComponentOptions extends TemplateCompilerOptions, InvokeArgumen
  * ComponentRef factory.
  */
 @Abstract()
-export abstract class ComponenFactory {
+export abstract class ComponentFactory<TOpts extends ComponentOptions = ComponentOptions> implements InvocationFactory<TOpts> {
     /**
      * create ReflectiveRef of target type
      * @param type target type or target type def.
-     * @param option target type invoke option {@link InvokeArguments}
-     * @returns instance of {@link ReflectiveRef}
+     * @param option target type invoke option {@link ComponentOptions}
+     * @returns instance of {@link ComponentRef}
      */
-    abstract create<T>(typeRef: ReflectiveRef<T>, option?: ComponentOptions): ComponentRef<T>;
+    abstract create<T>(type: Type<T> | Class<T>, option?: TOpts): ComponentRef<T>;
 
 }
 

@@ -1,10 +1,9 @@
 import { Inject, Injector, lang } from '@tsdi/ioc';
 import { RouteMapping } from '@tsdi/endpoints';
 import { ApiOperation, ApiParam } from '@tsdi/swagger';
-import { User } from '../models/models';
 import { InjectRepository } from '@tsdi/repository';
 import { Repository } from 'typeorm';
-// import { UserRepository } from '../repositories/UserRepository';
+import { User } from '../models/models';
 
 @RouteMapping('/users')
 export class UserController {

@@ -123,8 +123,8 @@ export abstract class Invocation<T = any, TRes = any> {
  *
  * 用于创建执行操作调用的接口。
  */
-export abstract class InvocationFactory {
-    abstract create<T>(type: Type<T> | Class<T>, options?: InvocationOptions<T>): Invocation<T>;
+export abstract class InvocationFactory<TOpts extends InvocationOptions = InvocationOptions> {
+    abstract create<T>(type: Type<T> | Class<T>, options?: TOpts): Invocation<T>;
 }
 
 
