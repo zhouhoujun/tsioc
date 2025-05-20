@@ -1,10 +1,11 @@
-import { InvocationContext, Invocation, createContext, getType, isFunction, isPromise, isString, Injector, ClassType, Context } from '@tsdi/ioc';
-import { from, isObservable, lastValueFrom, of } from 'rxjs';
+import { InvocationContext, Invocation, createContext, getType, isFunction, isPromise, isString, Injector, ClassType, Context, invokeTail } from '@tsdi/ioc';
+// import { from, isObservable, lastValueFrom, of } from 'rxjs';
 import { BackendFn } from '../ApplicationHandler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
 import { ResultValue } from '../handlers/ResultValue';
 import { getResolverToken } from '../handlers/resolver';
+import { toObservable } from '../handlers';
 
 
 
@@ -37,7 +38,7 @@ export class DefaultInvocationHandler<
 
 
     protected getBackend(): BackendFn<TInput, TOutput> {
-        return (input: any, context?: TContext) => from(this.respond(input, context));
+        return (input: any, context?: TContext) => toObservable(this.respond(input, context));
     }
 
 
@@ -51,7 +52,7 @@ export class DefaultInvocationHandler<
      * @param input 
      * @returns 
      */
-    protected async respond(input: any, context?: TContext) {
+    protected respond(input: any, context?: TContext) {
         let newCtx = false;
         if (input instanceof InvocationContext) {
             if (context) this.attchContext(input, context);
@@ -68,24 +69,20 @@ export class DefaultInvocationHandler<
             }
         }
 
-        await this.beforeInvoke(input);
-        let res = await (this.propertyKey ? this.invocation.invoke(this.propertyKey, input) : this.invocation.invoke(input));
+        return invokeTail(() => this.beforeInvoke(input),
+            () => invokeTail(() => this.propertyKey ? this.invocation.invoke(this.propertyKey, input) : this.invocation.invoke(input),
+                {
+                    next: (res) => {
+                        if (res instanceof ResultValue) {
+                            return res.sendValue(input);
+                        }
+                        return this.respondAs(input, res);
+                    },
+                    finally: () => {
+                        if (newCtx) (input as InvocationContext).destroy();
+                    }
+                }));
 
-        if (isPromise(res)) {
-            res = await res;
-        }
-        if (isObservable(res)) {
-            res = await lastValueFrom(res);
-        }
-        if (res instanceof ResultValue) {
-            const result = await res.sendValue(input);
-            if (newCtx) (input as InvocationContext).destroy();
-            return result;
-
-        }
-        const result = this.respondAs(input, res);
-        if (newCtx) (input as InvocationContext).destroy();
-        return result;
     }
 
     protected attchContext(input: InvocationContext, context: TContext, nextData?: any) {
@@ -132,7 +129,7 @@ export function createInvocationHandler<TInput, TOutput, TClass extends Invocati
     options: InvocationHandlerOptions<TInput>,
     propertyKey?: string | symbol,
     type?: ClassType<TClass>): TClass {
-    const Hanlder = type ?? DefaultInvocationHandler;    
+    const Hanlder = type ?? DefaultInvocationHandler;
     options = normalizeConfigableHandlerOptions(options);
     return new Hanlder(invocation, options, propertyKey) as TClass;
 }
