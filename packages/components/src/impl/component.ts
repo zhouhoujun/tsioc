@@ -1,4 +1,4 @@
-import { AbstractInvocation, AbstractInvocationFactory, Class, createInjector, Empty, Injectable, Injector, InvocationContext, InvokeArguments, Type } from '@tsdi/ioc';
+import { AbstractInvocation, AbstractInvocationFactory, Class, createInjector, Empty, Exception, Injectable, Injector, InvocationContext, InvokeArguments, Platform, Type } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentOptions, ComponentRef, ComponentFactory } from '../refs/component';
 import { ViewRef } from '../refs/view';
@@ -36,6 +36,7 @@ export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptio
 
     async render(option?: InvocationContext | InvokeArguments): Promise<void> {
         const def = this.class.getAnnotation<ComponentDef>();
+        if(!def.template && !def.templateUrl) throw new Exception(this.class.className + ' template or templateUrl is required.')
         const template = def.template || await fetchTemplate(def.templateUrl!);
         this.compiler.compile(template, this);
     }
@@ -53,6 +54,13 @@ export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptio
 
 @Injectable()
 export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOptions> implements ComponentFactory<ComponentOptions> {
+
+    constructor(
+        platform: Platform
+    ) {
+        super(platform)
+    }
+
     protected override createInstance<T>(typeRef: Class<T>, context: InvocationContext, options?: ComponentOptions): ComponentRef<T> {
         return new ComponentRefImpl(typeRef, context, options);
     }
@@ -64,13 +72,13 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
     protected override getInjector<T>(typeRef: Class<T>, options?: ComponentOptions): Injector {
         let injector = super.getInjector(typeRef, options);
         const def = typeRef.getAnnotation<ComponentDef>();
-        if(def.imports?.length){
+        if (def.imports?.length) {
             injector = createInjector(Empty, injector);
             injector.use(def.imports);
         }
         return injector;
     }
-   
+
 }
 
 

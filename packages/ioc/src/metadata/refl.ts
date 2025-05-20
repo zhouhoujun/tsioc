@@ -314,7 +314,7 @@ const typeAnnoDecors: Record<string, boolean> = { '@Injectable': true, '@Singlet
 export const decorAnnoAction = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (typeAnnoDecors[ctx.define.decor.toString()]) {
         const def = ctx.class;
-        const meta = ctx.define.metadata as AnnotationMetadata & PatternMetadata;
+        const meta = ctx.define.metadata as AnnotationMetadata;
         if (isBoolean(meta.abstract)) {
             def.getAnnotation().abstract = meta.abstract
         }

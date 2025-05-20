@@ -1,6 +1,6 @@
-import { Injector, InstanceOf, Module, ModuleWithProviders, Provider, Token, TypeOf, getToken, isFunction, isString, isType, tokenId } from '@tsdi/ioc';
+import { Injector, InstanceOf, Provider, Token, TypeOf, getToken, isFunction, isType, tokenId } from '@tsdi/ioc';
 import { PatternFormatter, Protocols, defaultFormatter } from '@tsdi/common';
-import { ROUTES, Routes } from './route';
+import { Routes } from './route';
 import { MESSAGE_ROUTERS, RouteMatcher, Router, ROUTERS } from './router';
 
 import { MappingRouter, DefaultRouteMatcher } from './router.mapping';
@@ -18,13 +18,13 @@ export function getRouterToken(protocol: Protocols, microservice?: boolean): Tok
     return getToken(microservice ? 'MicroServiceRouter' : Router, protocol)
 }
 
-export function createRouteProviders(protocol: Protocols, microservice: boolean, optsify: InstanceOf<RouteOpts>= {}, asDefault?: boolean): Provider[] {
-    const token = getRouterToken(protocol, microservice); // getToken(microservice ? 'MicroServiceRouter' : Router, protocol);
+export function createRouteProviders(protocol: Protocols, microservice: boolean, optsify: InstanceOf<RouteOpts> = {}, asDefault?: boolean): Provider[] {
+    const token = getRouterToken(protocol, microservice);
     return [
         {
             provide: token,
             useFactory: (injector: Injector) => {
-                const opts = isFunction(optsify) ? optsify(injector) : optsify;
+                const opts = isFunction(optsify) ? optsify(injector)! : optsify;
                 return new MappingRouter(injector,
                     opts.matcher ? (isType(opts.matcher) ? injector.get(opts.matcher) : opts.matcher) : new DefaultRouteMatcher(),
                     opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter, defaultFormatter),
