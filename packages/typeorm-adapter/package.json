@@ -3,7 +3,8 @@
   "version": "6.0.31",
   "description": "@tsdi/typeorm-adapter is typeorm adapter orm for boot application, mvc frameworks on server.",
   "scripts": {
-    "build": "tsdi build"
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts",
+    "test": "ts-node -r tsconfig-paths/register unit.ts"
   },
   "keywords": [
     "typeorm",

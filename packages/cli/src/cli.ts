@@ -3,7 +3,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as chalk from 'chalk';
-import * as program from 'commander';
+import { program } from 'commander';
 import { execSync } from 'child_process';
 const resolve = require('resolve');
 const cliRoot = path.join(path.normalize(__dirname), '../');

@@ -36,7 +36,7 @@
   "dependencies": {
     "tslib": "^2.0.1",
     "chalk": "^4.0.0",
-    "commander": "^4.1.1",
+    "commander": "^12.1.0",
     "resolve": "^1.17.0",
     "ts-node": "^8.10.1",
     "tsconfig-paths": "^3.9.0"
