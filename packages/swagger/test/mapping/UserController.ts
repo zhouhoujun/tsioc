@@ -2,14 +2,16 @@ import { Inject, Injector, lang } from '@tsdi/ioc';
 import { RouteMapping } from '@tsdi/endpoints';
 import { ApiOperation, ApiParam } from '@tsdi/swagger';
 import { User } from '../models/models';
-import { UserRepository } from '../repositories/UserRepository';
+import { InjectRepository } from '@tsdi/repository';
+import { Repository } from 'typeorm';
+// import { UserRepository } from '../repositories/UserRepository';
 
 @RouteMapping('/users')
 export class UserController {
 
     @Inject() injector!: Injector;
 
-    constructor(public usrRep: UserRepository) {
+    constructor(@InjectRepository(User) private repo: Repository<User>) {
 
     }
 
@@ -17,14 +19,14 @@ export class UserController {
     @RouteMapping('/:name', 'GET')
     getUser(@ApiParam({ name: 'name', description: 'user name' ,required: true}) name: string) {
         console.log('name:', name);
-        return this.usrRep.findByAccount(name);
+        return this.repo.findAndCount({ where: { account: name } });
     }
 
     @RouteMapping('/', 'POST')
     @RouteMapping('/', 'PUT')
     async modify(user: User) {
-        console.log(lang.getTypeName(this.usrRep), user);
-        const val = await this.usrRep.save(user);
+        console.log(lang.getTypeName(this.repo), user);
+        const val = await this.repo.save(user);
         console.log(val);
         return val;
     }
@@ -32,7 +34,7 @@ export class UserController {
     @RouteMapping('/:id', 'DELETE')
     async del(id: string) {
         console.log('id:', id);
-        await this.usrRep.delete(id);
+        await this.repo.delete(id);
         return true;
     }
 

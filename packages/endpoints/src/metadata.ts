@@ -7,7 +7,6 @@ import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParamet
 import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Protocols } from '@tsdi/common';
 import { getRouter, MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, ProtocolRouteOptions, RouteMappingMetadata, RouteOptions, Router } from './router/router';
 import { Middleware, MiddlewareFn } from './middleware/middleware';
-// import { ControllerRouteFactory } from './router/controller';
 import { createRouteHandler } from './impl/route.handler';
 import { ControllerRoute } from './router/controller';
 
@@ -258,7 +257,6 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 if (!router) throw new Exception(lang.getTypeName(parent) + 'has not registered!');
                 if (!(router instanceof Router)) throw new Exception(lang.getTypeName(router) + 'is not router!');
 
-                // const endpoint = injector.get(ControllerRouteFactory).create(ctx.class, injector);
                 const endpoint = new ControllerRoute(ctx.class.createInvocation(injector));
                 const route = `${normalize(endpoint.prefix)}**`;
                 router.use(route, endpoint);
