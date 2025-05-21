@@ -13,6 +13,7 @@ export class TemplateCompilerImpl implements TemplateCompiler {
     }
 
     compile(template: string, context: any): DocumentFragment {
+        // jsdom, fast-xml-parser 解析模板
         const fragment = document.createDocumentFragment();
         const parser = new DOMParser();
         const doc = parser.parseFromString(template, 'text/html');

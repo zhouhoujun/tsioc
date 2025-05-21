@@ -1,5 +1,5 @@
 import { Inject, isString, isFunction, Token, InvocationContext } from '@tsdi/ioc';
-import { AfterViewInit, Component, Directive, EventEmitter, Input, OnInit, Output } from '@tsdi/components';
+import { AfterViewInit, Component, EventEmitter, OnInit } from '@tsdi/components';
 
 @Component({
     selector: 'stest',
@@ -9,9 +9,9 @@ import { AfterViewInit, Component, Directive, EventEmitter, Input, OnInit, Outpu
 )
 export class SimpleTask implements OnInit, AfterViewInit {
 
-    @Input() text!: string;
+    text!: string;
 
-    @Output() textChange = new EventEmitter<string>();
+    textChange = new EventEmitter<string>();
 
     onInit(): void {
         this.text = 'simple task';
@@ -23,13 +23,15 @@ export class SimpleTask implements OnInit, AfterViewInit {
 
 }
 
-@Directive('[loaddata]')
+@Component({
+    selector: '[loaddata]'
+})
 export class LoadData implements OnInit {
-    @Input() service?: Token;
-    @Input() action?: string;
-    @Input() params?: any[];
+    service?: Token;
+    action?: string;
+    params?: any[];
 
-    @Output() loaddata = new EventEmitter<any>();
+    loaddata = new EventEmitter<any>();
 
     constructor(private ctx: InvocationContext) {
 
@@ -65,7 +67,7 @@ export class LoadData implements OnInit {
 export class WorkTask implements AfterViewInit {
     public text!: string;
 
-    @Output() textChange = new EventEmitter<string>();
+    textChange = new EventEmitter<string>();
 
     onInit(): void {
         this.text = 'component task';
@@ -123,7 +125,7 @@ export class SimpleCTask implements OnInit {
     public text!: string;
 
 
-    @Output() valueChange = new EventEmitter<string>();
+    valueChange = new EventEmitter<string>();
 
     textChange(value: string) {
         this.text = value;
@@ -132,7 +134,7 @@ export class SimpleCTask implements OnInit {
     }
 
     onInit(): void {
-        
+
     }
 
 

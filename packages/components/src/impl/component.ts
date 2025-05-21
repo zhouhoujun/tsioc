@@ -39,7 +39,7 @@ export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptio
 
     async render(option?: InvocationContext | InvokeArguments): Promise<void> {
         const def = this.class.getAnnotation<ComponentDef>();
-        if(!def.template && !def.templateUrl) throw new Exception(this.class.className + ' template or templateUrl is required.')
+        if(!/\[\w+\]/.test(def.selector || '') && !def.template && !def.templateUrl) throw new Exception(this.class.className + ' template or templateUrl is required.')
         const template = def.template || await fetchTemplate(def.templateUrl!);
         this.compiler.compile(template, this);
     }
