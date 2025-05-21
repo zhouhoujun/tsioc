@@ -15,9 +15,12 @@ export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptio
         super(_class, context, options);
     }
 
-
+    private _compiler?: TemplateCompiler;
     get compiler(): TemplateCompiler {
-        throw new Error('Method not implemented.');
+        if(!this._compiler) {
+            this._compiler = this.context.get(TemplateCompiler);
+        }
+        return this._compiler;
     }
 
 

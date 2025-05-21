@@ -1,5 +1,5 @@
 import {  } from '@tsdi/ioc';
-import { Abstract, ModuleRef, ReflectiveRef, Injector, InvocationContext, Type, TypeDef } from '@tsdi/ioc';
+import { Abstract, ModuleRef, Injector, InvocationContext, Type, TypeDef } from '@tsdi/ioc';
 import { ComponentRef } from './component';
 import { ElementRef } from './element';
 import { TemplateRef } from './template';
@@ -112,7 +112,7 @@ export abstract class ViewContainerRef {
      *
      * @returns The new `ComponentRef` which contains the component instance and the host view.
      */
-    abstract createComponent<C>(componentType: Type<C> | TypeDef<C> | ReflectiveRef<C>, options?: {
+    abstract createComponent<C>(componentType: Type<C> | TypeDef<C>, options?: {
         index?: number,
         injector?: Injector,
         moduleRef?: ModuleRef,
