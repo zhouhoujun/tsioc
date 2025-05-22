@@ -1,4 +1,5 @@
 import { isObject } from '@tsdi/ioc';
+// import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 
