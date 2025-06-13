@@ -15,8 +15,6 @@ import { getClass } from '../metadata/refl';
 import { ModuleDef, Class } from '../metadata/class';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
 import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
-// import { ReflectiveFactory } from '../reflective';
-// import { ReflectiveFactoryImpl, hasContext } from './reflective';
 import { createContext, InvocationContext, InvokeOptions, hasContextOptions } from '../context';
 import { DefaultPlatform } from './platform';
 import { DesignContext } from '../lifescope/ctx';

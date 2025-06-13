@@ -1,7 +1,6 @@
 import {
     isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, getClassify, ProvdierOf, Invocation,
-    isArray, ArgumentException, StaticProvider, HandlerLike, composeHandlers, ClassType,
-    InvocationOptions
+    isArray, ArgumentException, StaticProvider, HandlerLike, composeHandlers, ClassType
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { ApplicationRunners } from '../ApplicationRunners';

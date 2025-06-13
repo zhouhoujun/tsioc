@@ -1,5 +1,5 @@
 import { Type, TypeOf } from './types';
-import { getType, isFunction, isString } from './utils/chk';
+import { getType, isString } from './utils/chk';
 import { getTypeName } from './utils/lang';
 
 

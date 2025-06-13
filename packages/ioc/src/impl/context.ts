@@ -10,7 +10,7 @@ import { createInjector, Injector, isInjector } from '../injector';
 import { Exception } from '../exception';
 import { Class } from '../metadata/class';
 import { getDef } from '../metadata/refl';
-import { ProvdierOf, Provider, toProvider } from '../providers';
+import { Provider } from '../providers';
 import { Invocation } from '../invocation';
 
 

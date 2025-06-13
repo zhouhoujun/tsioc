@@ -4,7 +4,6 @@ import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { Filter } from './filters/filter';
 import { CanHandle } from './guard';
-import { ApplicationHandler } from './ApplicationHandler';
 import { ApplicationInterceptor } from './ApplicationInterceptor';
 import { PipeTransform } from './pipes/pipe';
 import { HandlerService } from './handlers/configable';

@@ -1,7 +1,7 @@
 import { InjectFlags, Token } from '../tokens';
 import { Type, Empty } from '../types';
 import { isFunction } from '../utils/chk';
-import { getClass, getClassify } from '../metadata/refl';
+import { getClassify } from '../metadata/refl';
 import { Class } from '../metadata/class';
 import { Provider, StaticProvider } from '../providers';
 import { Injector, InjectorScope } from '../injector';
@@ -13,7 +13,6 @@ import { Context } from '../handler';
 import { RUNTIME_INTERCEPTORS } from '../lifescope/runtime';
 import { DESIGN_INTERECPTORS, registerHandler } from '../lifescope/design';
 import { InvocationFactory } from '../invocation';
-import { createContext } from '../context';
 
 /**
  * default platform implements {@link Platform}.
