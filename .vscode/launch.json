@@ -147,46 +147,6 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "test endpoints json",
-            "args": [
-                "${workspaceRoot}/packages/endpoints/json/unit.ts" 
-            ],
-            "runtimeArgs": [
-                "--nolazy",
-                "-r",
-                "ts-node/register",
-                "-r",
-                "tsconfig-paths/register"
-            ],
-            "sourceMaps": true,
-            "cwd": "${workspaceRoot}",
-            
-            "console": "integratedTerminal",
-            "internalConsoleOptions": "neverOpen"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "test endpoints assets",
-            "args": [
-                "${workspaceRoot}/packages/endpoints/assets/unit.ts" 
-            ],
-            "runtimeArgs": [
-                "--nolazy",
-                "-r",
-                "ts-node/register",
-                "-r",
-                "tsconfig-paths/register"
-            ],
-            "sourceMaps": true,
-            "cwd": "${workspaceRoot}",
-            
-            "console": "integratedTerminal",
-            "internalConsoleOptions": "neverOpen"
-        },
-        {
-            "type": "node",
-            "request": "launch",
             "name": "test amqp service",
             "args": [
                 "${workspaceRoot}/packages/services/amqp/unit.ts" 
@@ -530,26 +490,6 @@
             "name": "test components",
             "args": [
                 "${workspaceRoot}/packages/components/unit.ts" 
-            ],
-            "runtimeArgs": [
-                "--nolazy",
-                "-r",
-                "ts-node/register",
-                "-r",
-                "tsconfig-paths/register"
-            ],
-            "sourceMaps": true,
-            "cwd": "${workspaceRoot}",
-            
-            "console": "integratedTerminal",
-            "internalConsoleOptions": "neverOpen"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "test compiler",
-            "args": [
-                "${workspaceRoot}/packages/compiler/unit.ts" 
             ],
             "runtimeArgs": [
                 "--nolazy",
