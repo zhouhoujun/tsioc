@@ -22,7 +22,7 @@ export abstract class RequestContext<
     TResponse extends Outgoing<any> = Outgoing<any>,
     TSocket = any,
     TOptions extends ServiceConfig = ServiceConfig,
-    TStatus = any> extends HandleContext<Incoming<any>> {
+    TStatus = any> extends HandleContext<TRequest> {
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
         const res = [composeResolvers(primitiveResolvers)];
