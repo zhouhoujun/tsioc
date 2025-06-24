@@ -1,7 +1,7 @@
 import { RouteMapping, RequestParam, RequestPath } from '@tsdi/endpoints';
 import { Log, Logger } from '@tsdi/logger';
 import { InjectRepository, Transactional } from '@tsdi/repository';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { Role } from '../models/Role';
 import { Api, ApiOperation } from '@tsdi/swagger';
 import { Authorization } from '@tsdi/security';
@@ -52,6 +52,14 @@ export class RoleController {
         return await this.repo.findOne({ where: { name } });
     }
 
+
+    @ApiOperation('get roles', Role)
+    @RouteMapping('/', 'GET')
+    find(@RequestParam({ nullable: true }) name: string) {
+        this.logger.log('name:', name);
+        console.log('getRole isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
+        return name? this.repo.findAndCount({ where: { name: Like(`%${name}%`) } }) : this.repo.findAndCount();
+    }
 
     @Authorization()
     @Transactional()
