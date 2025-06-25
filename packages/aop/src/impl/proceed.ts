@@ -2,7 +2,8 @@ import {
     isFunction, lang, Platform, ctorName, InvocationContext, LifeScope, HandlerFn,
     Context, ContextToken, invokeTail, RuntimeContext, InterceptorLike, isDefined,
     ParameterMetadata, Class, proxyTag, isObject,
-    composeHandlers, isNil, object2string, getClassify
+    composeHandlers, isNil, object2string, getClassify,
+    composeInterceptors
 } from '@tsdi/ioc';
 import { JoinPoint } from '../joinpoints/JoinPoint';
 import { JoinpointState } from '../joinpoints/state';
@@ -214,7 +215,7 @@ const ADVICES_SCOPE = new ContextToken<LifeScope>(() => null!);
 export function getAdvicesLifeScope(platform: Platform): LifeScope<JoinPoint> {
     let scope = platform.context.get(ADVICES_SCOPE);
     if (!scope) {
-        scope = new LifeScope<JoinPoint>(platform, originMethodHandler, ADVICES_INTERCEPTORS);
+        scope = new LifeScope<JoinPoint>(platform, adviceHanlder, ADVICES_INTERCEPTORS);
         platform.context.set(ADVICES_SCOPE, scope);
     }
     return scope;
@@ -286,6 +287,15 @@ export const originMethodHandler = (ctx: JoinPoint, context: Context) => {
         ctx.returning = ctx.originMethod?.apply(ctx.receiver ?? ctx.target, ctx.args)
     }
     return ctx.returning;
+}
+
+export const adviceHanlder = (ctx: JoinPoint, context: Context) => {
+    const proceedings = ctx.advisor.getProceeding(ctx.propertyKey, ctx.fullName, ctx.targetRef, ctx.target);
+    if(proceedings?.length) {
+        const chain = composeInterceptors(proceedings.map(r=> r.interceptor));
+        return chain(ctx, originMethodHandler, context);
+    }
+    return originMethodHandler(ctx,context);
 }
 
 const ADVICES_INTERCEPTORS: InterceptorLike<JoinPoint>[] = [

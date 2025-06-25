@@ -1,8 +1,9 @@
-import { Type, lang, Invocation, OnDestroy, Class, getTypeName, ctorName, Empty } from '@tsdi/ioc';
-import { Advicer, MatchOptions } from './Advicer';
+import { Type, lang, Invocation, OnDestroy, Class, getTypeName, ctorName, Empty, Context, HandlerFn } from '@tsdi/ioc';
+import { Advicer, AroundProceeding, MatchOptions } from './Advicer';
 import { AdviceMatcher } from './AdviceMatcher';
 import { AopDef } from './metadata/ref';
 import { AdviceTypes } from './metadata/meta';
+import { JoinPoint, ProceedingJoinPoint } from './joinpoints/JoinPoint';
 
 /**
  * for global aop advisor.
@@ -12,6 +13,8 @@ import { AdviceTypes } from './metadata/meta';
  */
 export class Advisor implements OnDestroy {
     private advices: Map<AdviceTypes, Advicer[]>;
+
+    private proceedings: AroundProceeding[];
     /**
      * aspects.
      */
@@ -19,7 +22,8 @@ export class Advisor implements OnDestroy {
 
     constructor(private matcher: AdviceMatcher) {
         this.advices = new Map();
-        this.aspects = []
+        this.aspects = [];
+        this.proceedings = [];
     }
 
 
@@ -43,6 +47,19 @@ export class Advisor implements OnDestroy {
                 advice.type = aspect.type;
             }
             const match = this.matcher.parse(advice);
+            if (advice.name && advice.adviceName === 'Around' && aspect.class.getParameters(advice.name)?.some(r => r.type === ProceedingJoinPoint || r.provider === ProceedingJoinPoint)) {
+                this.proceedings.push({
+                    advice,
+                    match,
+                    aspect,
+                    interceptor: (ctx: JoinPoint, next: HandlerFn, context: Context) => {
+                        const proceeding = new ProceedingJoinPoint(ctx, next, context);
+                        ctx.setValue(ProceedingJoinPoint, proceeding);
+                        return aspect.invoke(advice.name!, ctx);
+                    }
+                });
+                return;
+            }
             const adviceType = advice.adviceName!;
             let advices = this.advices.get(adviceType);
             if (!advices) {
@@ -70,7 +87,8 @@ export class Advisor implements OnDestroy {
                 .forEach(a => {
                     advices.splice(advices.indexOf(a), 1);
                 })
-        })
+        });
+        this.proceedings = this.proceedings.filter(r => r.aspect !== aspect || r.aspect.type !== aspect.type)
     }
 
     remove(aspect: Invocation) {
@@ -120,7 +138,9 @@ export class Advisor implements OnDestroy {
         }, [] as Advicer[]);
     }
 
-
+    getProceeding(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions) {
+        return this.proceedings.filter(adv => adv.match(name, fullName, targetRef, target, options))
+    }
 
     getBefore(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions): Advicer[] {
         return this.getAdvicers('Around', 'Before')

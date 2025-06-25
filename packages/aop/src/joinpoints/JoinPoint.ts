@@ -1,6 +1,7 @@
 import {
     tokenId, Injector, IocContext, DefaultInvocationContext, ParameterMetadata, lang, Type,
-    DecorDefine, Defer, TargetInvokeArguments, Class
+    DecorDefine, Defer, TargetInvokeArguments, Class, HandlerFn, Context, noPointcut,
+    Abstract, 
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advisor } from '../Advisor';
@@ -11,7 +12,7 @@ import { Advisor } from '../Advisor';
 export interface JoinpointOption extends TargetInvokeArguments {
     targetRef: Class;
     propertyKey: string | symbol;
-    targetType?: Type;   
+    targetType?: Type;
     fullName?: string;
     provJoinpoint?: JoinPoint;
     params?: ParameterMetadata[];
@@ -46,6 +47,7 @@ export interface ReturnDefer {
 /**
  * JoinPoint of aop.
  */
+@Abstract()
 export class JoinPoint extends DefaultInvocationContext<any[]> implements IocContext {
     /**
      * custom proxy invoke origin method.
@@ -96,9 +98,7 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
         this.state = options.state ?? JoinpointState.Before;
     }
 
-    proceed() {
-        
-    }
+
 
     /**
      * parse option to instance of {@link JoinPoint}
@@ -109,4 +109,35 @@ export class JoinPoint extends DefaultInvocationContext<any[]> implements IocCon
     static create(injector: Injector, options: JoinpointOption) {
         return new JoinPoint(injector, options)
     }
+}
+
+@Abstract()
+export class ProceedingJoinPoint extends JoinPoint {
+
+    constructor(private joinPoint: JoinPoint, private next: HandlerFn, private context?: Context) {
+        super(joinPoint.injector, {
+            args: joinPoint.args,
+            target: joinPoint.target,
+            receiver: joinPoint.receiver,
+            targetRef: joinPoint.targetRef,
+            targetType: joinPoint.targetType,
+            fullName: joinPoint.fullName,
+            propertyKey: joinPoint.propertyKey,
+            originProxy: joinPoint.originProxy,
+            originMethod: joinPoint.originMethod,
+            params: joinPoint.params,
+            valueChange: joinPoint.valueChange,
+            annotations: joinPoint.annotations,
+            state: joinPoint.state,
+            advisor: joinPoint.advisor
+        })
+    }
+
+    proceed(...args: any[]) {
+        if (args.length) {
+            this.joinPoint.args = args;
+        }
+        return this.next(this.joinPoint, this.context);
+    }
+
 }

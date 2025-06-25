@@ -1,5 +1,6 @@
-import { Class, Invocation } from '@tsdi/ioc';
+import { Class, Invocation, InterceptorFn } from '@tsdi/ioc';
 import { AdviceMetadata } from './metadata/meta';
+import { JoinPoint } from './joinpoints/JoinPoint';
 
 
 export interface MatchOptions {
@@ -42,3 +43,25 @@ export interface Advicer {
     accessor?: 'get' | 'set' | 'value';
 }
 
+
+export interface AroundProceeding {
+    /**
+    * advice for pointcut.
+    *
+    * @type {AdviceMetadata}
+    */
+    advice: AdviceMetadata;
+
+    /**
+     * match express fn.
+     */
+    match: MatchExpress;
+    /**
+     * aspect type.
+     *
+     * @type {Type}
+     */
+    aspect: Invocation;
+
+    interceptor: InterceptorFn<JoinPoint>;
+}
