@@ -443,9 +443,16 @@ const endRest$ = /:\w+$/g;
 const pthRest = '[^/]*';
 const endRest = '[^/]+';
 
+// 缓存编译后的正则表达式
+const cache = new Map<string, RegExp>();
 function createRestfulMatcher(route: string) {
     if (rest$.test(route)) {
-        return new RegExp('^' + route.replace(rest$, pthRest).replace(endRest$, endRest) + '$');
+        if (cache.has(route)) {
+            return cache.get(route)!;
+        }
+        const regExp = new RegExp('^' + route.replace(rest$, pthRest).replace(endRest$, endRest) + '$');
+        cache.set(route, regExp);
+        return regExp;
     }
     return undefined;
 }

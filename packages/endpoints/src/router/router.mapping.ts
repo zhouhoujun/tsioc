@@ -27,19 +27,20 @@ import { RestfulRequestContext } from '../RestfulRequestContext';
  * Mapping router.
  */
 export class MappingRouter extends Router<RouteHanlder> implements Middleware, OnDestroy {
-
+    
     readonly routes: Map<string, RouteHanlder>;
 
     constructor(
         private injector: Injector,
         readonly matcher: RouteMatcher,
         readonly formatter: PatternFormatter,
-        readonly protocol: Protocols | null = null,
         public prefix: string = '',
         routes?: Routes,
+        readonly protocol: Protocols | null = null,
         protected micro = false,
         readonly asDefault?: boolean) {
         super()
+        
         this.routes = new Map<string, MiddlewareFn>();
         if (routes) {
             routes.forEach(r => this.use(r));
@@ -416,8 +417,6 @@ export class MappingRoute implements Middleware, RequestHandler {
             return route as Middleware;
         } else if (route.middleware) {
             return isFunction(route.middleware) ? this.injector.get(route.middleware) : route.middleware
-        } else if (route.middlewareFn) {
-            return route.middlewareFn;
         } else if (route.redirectTo) {
             const to = route.redirectTo
             return (c, n) => this.redirect(c, to)
@@ -426,7 +425,7 @@ export class MappingRoute implements Middleware, RequestHandler {
             return new ControllerRoute(ctrRef.createInvocation(this.injector), { prefix: route.path });
             // return this.injector.get(ControllerRouteFactory).create(route.controller, this.injector, route.path);
         } else if (route.children) {
-            const router = new MappingRouter(this.injector, route.router?.matcher ?? this.root.matcher, route.router?.formatter ?? this.root.formatter, route.protocol, route.path);
+            const router = new MappingRouter(this.injector, route.router?.matcher ?? this.root.matcher, route.router?.formatter ?? this.root.formatter, route.path);
             route.children.forEach(route => router.use(route));
             return router
         } else if (route.loadChildren) {
