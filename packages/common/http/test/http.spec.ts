@@ -1,9 +1,9 @@
-import { Injector, Injectable, lang, tokenId, isArray, Module } from '@tsdi/ioc';
+import { Injector, Injectable, lang, tokenId, isArray, Module, Handler, composeHandlers } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { BadRequestException } from '@tsdi/common/transport';
 import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath,
-    Middleware, RestfulRequestContext, compose, NEXT, EndpointModule,
+    Middleware, RestfulRequestContext, EndpointModule,
     RedirectResult, ContentInterceptor, JsonInterceptor, BodyparserInterceptor,
     createRouteProviders
 } from '@tsdi/endpoints';
@@ -102,17 +102,17 @@ class DeviceController {
 @Handle({
     route: '/hdevice'
 })
-class DeviceQueue implements Middleware {
+class DeviceQueue implements Handler {
 
-    async invoke(ctx: RestfulRequestContext, next: () => Promise<void>): Promise<void> {
-
-        console.log('device msg start.');
-        ctx.setValue('device', 'device data')
-
+    async handle(ctx: RestfulRequestContext): Promise<void> {
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
-        await compose(ctx.get(DEVICE_MIDDLEWARES))(ctx, NEXT);
+
+
+        console.log('device msg start.');
+        ctx.setValue('device', 'device data')
+        await composeHandlers(ctx.get(DEVICE_MIDDLEWARES))(ctx);
         ctx.setValue('device', 'device next');
 
         const device = ctx.get('device');
@@ -126,39 +126,37 @@ class DeviceQueue implements Middleware {
         };
 
         console.log('device sub msg done.');
-        return await next();
+
     }
 }
 
 
 @Injectable()
-class DeviceStartupHandle implements Middleware {
+class DeviceStartupHandle implements Handler {
 
-    invoke(ctx: RestfulRequestContext, next: () => Promise<void>): Promise<void> {
+    async handle(ctx: RestfulRequestContext): Promise<void> {
 
         if (ctx.request.body.type === 'startup') {
             // todo sth.
             const ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceB_state', ret);
         }
-        return next();
     }
 }
 
 @Injectable()
-class DeviceAStartupHandle implements Middleware {
+class DeviceAStartupHandle implements Handler {
 
-    invoke(ctx: RestfulRequestContext, next: () => Promise<void>): Promise<void> {
+    async handle(ctx: RestfulRequestContext): Promise<void> {
         if (ctx.request.body.type === 'startup') {
             // todo sth.
             const ret = ctx.get(MyService).dosth();
             ctx.setValue('deviceA_state', ret);
         }
-        return next();
     }
 }
 
-export const DEVICE_MIDDLEWARES = tokenId<Middleware[]>('DEVICE_MIDDLEWARES');
+export const DEVICE_MIDDLEWARES = tokenId<Handler[]>('DEVICE_MIDDLEWARES');
 
 @Module({
     providers: [
