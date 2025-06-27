@@ -1,6 +1,6 @@
 import { Route } from './route';
 
-class TrieNode {
+export class TrieNode {
     children: Map<string, TrieNode> = new Map();
     route?: Route;
     isWildcard = false;

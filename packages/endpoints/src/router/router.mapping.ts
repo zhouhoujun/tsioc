@@ -1,7 +1,8 @@
 import {
     ModuleRef, isFunction, lang, OnDestroy, promiseOf, Injector,
     Exception, isArray, isPromise, isObservable, isBoolean, Empty,
-    getClass, HandlerFn, HandlerLike
+    getClass, HandlerFn, HandlerLike,
+    isType
 } from '@tsdi/ioc';
 import {
     ApplicationHandler, CanHandle, getGuardsToken, getInterceptorsToken,
@@ -10,7 +11,7 @@ import {
 } from '@tsdi/core';
 import { Pattern, PatternFormatter, Protocols, joinPath, normalize } from '@tsdi/common';
 import { NotFoundException, BadRequestException } from '@tsdi/common/transport';
-import { from, mergeMap, Observable, of, throwError } from 'rxjs';
+import { from, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { RequestHandler } from '../RequestHandler';
 import { Route, Routes } from './route';
 import { RouteHanlder, RouteMatcher, Router } from './router';
@@ -409,15 +410,18 @@ export class MappingRoute implements RequestHandler {
             route.children.forEach(route => router.use(route));
             return router
         } else if (route.loadChildren) {
-            const module = await route.loadChildren();
-            const platform = this.injector.platform();
-            if (!platform.modules.has(module)) {
-                await this.injector.get(ModuleRef).import(module, true)
-            }
-            const router = platform.modules.get(module)?.injector.get(Router) as MappingRouter;
-            if (router) {
-                router.prefix = route.path ?? '';
-                return router
+            const res = route.loadChildren();
+            const module = await (isObservable(res) ? lastValueFrom(res) : res);
+            if (isType(module)) {
+                const platform = this.injector.platform();
+                if (!platform.modules.has(module)) {
+                    await this.injector.get(ModuleRef).import(module, true)
+                }
+                const router = platform.modules.get(module)?.injector.get(Router) as MappingRouter;
+                if (router) {
+                    router.prefix = route.path ?? '';
+                    return router
+                }
             }
         }
         return null;

@@ -1,4 +1,4 @@
-import { HandlerFn, InterceptorFn, isFunction, ProvdierOf, Token } from '@tsdi/ioc';
+import { HandlerFn, InterceptorFn, isFunction } from '@tsdi/ioc';
 import { RequestContext } from '../RequestContext';
 import { from, lastValueFrom } from 'rxjs';
 
@@ -32,14 +32,6 @@ export type MiddlewareFn<T extends RequestContext = RequestContext> = (ctx: T, n
  */
 export type MiddlewareLike<T extends RequestContext = RequestContext> = Middleware<T> | MiddlewareFn<T>;
 
-
-// /**
-//  * middleware options.
-//  */
-// export interface MiddlewareOpts<T extends RequestContext = any> {
-//     middlewaresToken?: Token<MiddlewareLike<T>[]>;
-//     middlewares?: ProvdierOf<MiddlewareLike<T>>[];
-// }
 
 export function convertToInterceptor<TInput extends RequestContext>(middleware: MiddlewareLike<TInput>): InterceptorFn<TInput> {
     return (input: TInput, next: HandlerFn<TInput>, context?: any) => {

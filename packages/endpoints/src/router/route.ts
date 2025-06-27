@@ -1,5 +1,6 @@
 import { Handler, HandlerFn, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { InvocationHandlerOptions } from '@tsdi/core';
+import { Observable } from 'rxjs';
 
 /**
  * Route.
@@ -37,6 +38,10 @@ export interface Route<TArg = any> extends InvocationHandlerOptions<TArg> {
      * Can be empty if child routes specify controller.
      */
     controller?: Type;
+    /**
+     * load controller.
+     */
+    loadController?: LoadController;
 
     /**
      * handler.
@@ -50,7 +55,10 @@ export interface Route<TArg = any> extends InvocationHandlerOptions<TArg> {
 
 }
 
-export type LoadChildren = () => any;
+export type LoadChildren = () => Type | Routes | Promise<Type | Routes> | Observable<Type | Routes>;
+
+export type LoadController= () => Type | Promise<Type> | Observable<Type>;
+
 export type Routes<T = any> = Route<T>[];
 
 /**
