@@ -1,17 +1,16 @@
-import { Abstract, Injector, ProvidedInMetadata, Token, tokenId, Type, TypeDef } from '@tsdi/ioc';
+import { Abstract, HandlerLike, Injector, ProvidedInMetadata, Token, tokenId, Type, TypeDef } from '@tsdi/ioc';
 import { ApplicationInterceptor, Backend, ApplicationHandler, InvocationHandlerOptions } from '@tsdi/core';
 import { RequestMethod, Pattern, Protocols, PatternFormatter } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 import { Route } from './route';
-import { RequestHandler } from '../RequestHandler';
 import { InternalServerException } from '@tsdi/common/transport';
-import { MiddlewareLike } from '../middleware/middleware';
+
 
 /**
  * route.
  */
-export type RouteHanlder = RequestHandler | MiddlewareLike | Array<RequestHandler | MiddlewareLike>;
+export type RouteHanlder = HandlerLike<RequestContext> | Array<HandlerLike<RequestContext>>;
 
 
 /**

@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, ModuleLoader } from '@tsdi/core';
 import { ListenService } from '@tsdi/common';
 import { InternalServerException } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { BindServerEvent, CONTENT_DISPOSITION_TOKEN, HttpServConfig, MiddlewareLike, MiddlewareService, Server, ServerTransportFactory } from '@tsdi/endpoints';
+import { BindServerEvent, CONTENT_DISPOSITION_TOKEN, HttpServConfig, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Subject, lastValueFrom } from 'rxjs';
 import { ListenOptions } from 'net';
 import * as http from 'http';
@@ -17,7 +17,7 @@ import { HttpContext } from './context';
  * http server.
  */
 @Injectable()
-export class HttpServer extends Server<HttpContext, HttpServConfig> implements ListenService<ListenOptions>, MiddlewareService {
+export class HttpServer extends Server<HttpContext, HttpServConfig> implements ListenService<ListenOptions> {
 
     @InjectLog() logger!: Logger;
     private destroy$: Subject<void>;

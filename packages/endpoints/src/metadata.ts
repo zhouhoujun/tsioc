@@ -1,7 +1,7 @@
 import {
     isArray, isString, lang, Type, TypeOf, createDecorator, ActionTypes, InjectFlags,
     ClassMethodDecorator, createParamDecorator, Exception, isMetadataObject, DecorDefine,
-    ProvidedInMetadata, AnnotationMetadata
+    ProvidedInMetadata, AnnotationMetadata, Handler
 } from '@tsdi/ioc';
 import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike } from '@tsdi/core';
 import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Protocols } from '@tsdi/common';
@@ -71,7 +71,7 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
     }
 });
 
-export type HandleDecorator = <TFunction extends Type<Middleware>>(target: TFunction) => TFunction | void;
+export type HandleDecorator = <TFunction extends Type<Handler>>(target: TFunction) => TFunction | void;
 
 /**
  * Handle decorator. use to define the class as middleware or define method as message handler.
@@ -155,7 +155,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
 
             router.use({
                 path: route,
-                middleware: ctx.type
+                handler: ctx.type
             });
         }
     }

@@ -11,7 +11,7 @@ import expect = require('expect');
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
+import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_HANDLERS } from './demo';
 
 import { Http, HttpServer, HttpModule, HTTP_SERV_INTERCEPTORS } from '../src';
 import { BigFileInterceptor } from './BigFileInterceptor';
@@ -108,7 +108,7 @@ describe('http2 server, Http', () => {
     });
 
     it('has registered', async () => {
-        const a = injector.get(DEVICE_MIDDLEWARES);
+        const a = injector.get(DEVICE_HANDLERS);
         expect(a[0]).toBeInstanceOf(DeviceStartupHandle);
         expect(a[1]).toBeInstanceOf(DeviceAStartupHandle);
     });

@@ -1,6 +1,5 @@
-import { HandlerFn, tokenId, Type, TypeOf } from '@tsdi/ioc';
-import { ApplicationHandler, InvocationHandlerOptions } from '@tsdi/core';
-import { Middleware, MiddlewareFn } from '../middleware/middleware';
+import { Handler, HandlerFn, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { InvocationHandlerOptions } from '@tsdi/core';
 
 /**
  * Route.
@@ -42,23 +41,12 @@ export interface Route<TArg = any> extends InvocationHandlerOptions<TArg> {
     /**
      * handler.
      */
-    handler?: TypeOf<ApplicationHandler>;
+    handler?: TypeOf<Handler>;
     /**
      * The handle fn to instantiate when the path matches.
      * Can be empty if child routes specify handle.
      */
     handle?: HandlerFn;
-
-    /**
-     * The middlewarable to instantiate when the path matches.
-     * Can be empty if child routes specify middlewarable.
-     */
-    middleware?: TypeOf<Middleware>;
-    /**
-     * The middlewarable to instantiate when the path matches.
-     * Can be empty if child routes specify middlewarable.
-     */
-    invoke?: MiddlewareFn;
 
 }
 

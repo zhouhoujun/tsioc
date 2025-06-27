@@ -3,7 +3,6 @@ import { ApplicationInterceptor, ApplicationHandler } from '@tsdi/core';
 import { GET, HEAD } from '@tsdi/common';
 import { NotFoundException } from '@tsdi/common/transport';
 import { Observable, from, mergeMap, of, throwError } from 'rxjs';
-import { Middleware } from '../middleware/middleware';
 import { RequestContext } from '../RequestContext';
 
 
@@ -12,35 +11,12 @@ import { RequestContext } from '../RequestContext';
  * static content resources.
  */
 @Injectable()
-export class ContentInterceptor implements Middleware<RequestContext>, ApplicationInterceptor<RequestContext> {
+export class ContentInterceptor implements ApplicationInterceptor<RequestContext> {
 
     options?: ContentOptions;
 
     constructor() { }
 
-    async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
-        if (!(!ctx.method || ctx.method === HEAD || ctx.method === GET || ctx.method === '*')
-            || !ctx.originalUrl) {
-            return next();
-        }
-
-        const options = this.options ?? { ...defOpts, ...ctx.serverOptions.content };
-        if (options.defer) {
-            try {
-                await next()
-            } catch (err: any) {
-                if (err instanceof NotFoundException) {
-                    await this.send(ctx, options);
-                    return;
-                }
-                throw err;
-            }
-        }
-        const file = await this.send(ctx, options);
-        if (!options.defer && !file) {
-            await next()
-        }
-    }
 
     intercept(input: RequestContext, next: ApplicationHandler<RequestContext, any>): Observable<any> {
         if (!(!input.method || input.method === HEAD || input.method === GET || input.method === '*')

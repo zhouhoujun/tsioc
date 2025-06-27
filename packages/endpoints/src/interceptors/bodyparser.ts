@@ -2,7 +2,7 @@
 import { Abstract, Injectable, isUndefined, Nullable, TypeException } from '@tsdi/ioc';
 import { ApplicationHandler, ApplicationInterceptor, InvalidJsonException } from '@tsdi/core';
 import { BadRequestException, UnsupportedMediaTypeException, IReadable, MimeTypes, isBuffer } from '@tsdi/common/transport';
-import { RequestContext, Middleware } from '@tsdi/endpoints';
+import { RequestContext } from '@tsdi/endpoints';
 import { Observable, from, mergeMap } from 'rxjs';
 import * as qslib from 'qs';
 
@@ -29,7 +29,7 @@ export class PayloadOptions {
 }
 
 @Injectable()
-export class BodyparserInterceptor implements Middleware<RequestContext>, ApplicationInterceptor<RequestContext> {
+export class BodyparserInterceptor implements ApplicationInterceptor<RequestContext> {
 
     private options: {
         json: {
@@ -85,14 +85,6 @@ export class BodyparserInterceptor implements Middleware<RequestContext>, Applic
                     return next.handle(input, context)
                 })
             )
-    }
-
-    async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
-        if (!this.canHanlde(ctx)) return await next();
-        const res = await this.parseBody(ctx);
-        ctx.request.body = res.body ?? {};
-        if (isUndefined(ctx.request.rawBody)) ctx.request.rawBody = res.raw;
-        await next()
     }
 
     private parseBody(context: RequestContext): Promise<{ raw?: any, body?: any }> {

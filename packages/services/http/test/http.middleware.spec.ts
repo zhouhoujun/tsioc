@@ -63,9 +63,6 @@ const cert = fs.readFileSync(path.join(__dirname, '../../../../cert/localhost-ce
                 transport: 'https',
                 bootstrap: false,
                 config: {
-                    middlewares: [
-
-                    ],
                     majorVersion: 2,
                     serverOpts: {
                         allowHTTP1: true,
@@ -102,7 +99,7 @@ describe('middleware', () => {
         ctx = await Application.run(ModuleB);
         const runable = ctx.runners.getRef(HttpServer);
 
-        runable.instance.use(async (ctx, next) => {
+        runable.instance.useInterceptors((ctx, next) => {
             console.log('ctx.url:', ctx.url);
             if (ctx.url.startsWith('/test')) {
                 console.log('message queue test: ' + ctx.query);
@@ -110,7 +107,7 @@ describe('middleware', () => {
 
             ctx.body = ctx.query.hi;
             console.log(ctx.body, ctx.query);
-            await next();
+            return next(ctx);
         }, 0);
 
         //run services

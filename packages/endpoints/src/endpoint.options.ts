@@ -4,7 +4,6 @@ import { CommonProtocols, Protocols } from '@tsdi/common';
 import { TransportConfigure } from '@tsdi/common/transport';
 import { Http1ServConfig, Http2SecureServConfig, Http2ServConfig, HttpsServConfig, ServiceConfig } from './server.options';
 import { Server } from './Server';
-import { MiddlewareOpts } from './middleware/middleware';
 
 
 /**
@@ -109,7 +108,7 @@ export interface TcpServiceOpts<TSerOpts = any> extends BasicServiceOpts {
      * microservice or not.
      */
     microservice: false;
-    config?: ServiceConfig<TSerOpts> & MiddlewareOpts;
+    config?: ServiceConfig<TSerOpts>;
 }
 
 export interface HttpServiceOpts extends BasicServiceOpts {
@@ -124,12 +123,12 @@ export interface HttpsServiceOpts extends BasicServiceOpts {
 
 export interface CoapServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'coap';
-    config?: ServiceConfig<TSerOpts> & MiddlewareOpts;
+    config?: ServiceConfig<TSerOpts>;
 }
 
 export interface GrpcServiceOpts<TSerOpts = any> extends BasicServiceOpts {
     transport: 'grpc';
-    config?: ServiceConfig<TSerOpts> & MiddlewareOpts;
+    config?: ServiceConfig<TSerOpts>;
 }
 
 
@@ -152,7 +151,7 @@ export type ServerModuleOpts = CommonServiceOpts & {
     /**
      * server default config.
      */
-    defaultConfig?: ServiceConfig & MiddlewareOpts;
+    defaultConfig?: ServiceConfig;
 }
 
 export type MicroServerModuleOpts = MicroServiceOpts & {

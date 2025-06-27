@@ -1,6 +1,6 @@
 import { tokenId } from '@tsdi/ioc';
 import { ApplicationInterceptor, Filter, GuardLike } from '@tsdi/core';
-import { BindServerEvent, MiddlewareLike, ServiceConfig } from '@tsdi/endpoints';
+import { BindServerEvent, ServiceConfig } from '@tsdi/endpoints';
 
 import * as net from 'net';
 import * as tls from 'tls';
@@ -23,12 +23,6 @@ export interface TcpServConfig extends ServiceConfig<net.ServerOpts | tls.TlsOpt
  * Tcp server interceptors.
  */
 export const TCP_SERV_INTERCEPTORS = tokenId<ApplicationInterceptor[]>('TCP_SERV_INTERCEPTORS');
-
-
-/**
- * tcp middlewares token.
- */
-export const TCP_MIDDLEWARES = tokenId<MiddlewareLike[]>('TCP_MIDDLEWARES');
 
 /**
  * TCP filters.

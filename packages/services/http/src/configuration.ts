@@ -34,12 +34,10 @@ import { fromEvent, Observable, of } from 'rxjs';
 import { Http } from './client/clinet';
 import { HTTP_CLIENT_FILTERS, HTTP_CLIENT_INTERCEPTORS, HttpClientConfig } from './client/options';
 import { HttpHandler } from './client/handler';
-import { HTTP_MIDDLEWARES, HTTP_SERV_FILTERS, HTTP_SERV_GUARDS, HTTP_SERV_INTERCEPTORS } from './server/options';
+import { HTTP_SERV_FILTERS, HTTP_SERV_GUARDS, HTTP_SERV_INTERCEPTORS } from './server/options';
 import { HttpRequestHandler } from './server/handler';
 import { HttpServer } from './server/server';
-// import { HttpStatusAdapter } from './status';
 import { HttpResponseEventFactory } from './client/response.factory';
-// import { HttpExceptionHandlers } from './execption.handlers';
 import { HttpContext, HttpServRequest, HttpServResponse } from './server/context';
 
 
@@ -57,10 +55,9 @@ export class HttpConfiguration {
     @Bean(SERVER_MODULES, { static: true, multi: true })
     serv(): ServiceModuleOpts {
         const option = this.getServOptions() as ServerModuleOpts;
-        option.defaultConfig!.middlewaresToken = HTTP_MIDDLEWARES,
-            option.defaultConfig!.content = {
-                root: 'public'
-            };
+        option.defaultConfig!.content = {
+            root: 'public'
+        };
         return option;
     }
 
@@ -103,7 +100,7 @@ export class HttpConfiguration {
                                     redirector,
                                     options,
                                     (socket: ClientHttp2Session | null, factory, instance) => {
-                                        const context =  instance ?? factory();
+                                        const context = instance ?? factory();
                                         const channel = context.get(REQUEST_STREAM);
                                         if (channel instanceof ClientRequest) {
                                             return new Observable<ClientIncoming>(subscribe => {

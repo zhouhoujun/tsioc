@@ -12,9 +12,6 @@ export class OptimizedRouter {
         routes?.forEach(route => this.trieRouter.insert(route));
     }
 
-    
-
-
     getRoute(ctx: RequestContext): Route | undefined {
         const url = ctx.url;
         if (this.cache.has(url)) {

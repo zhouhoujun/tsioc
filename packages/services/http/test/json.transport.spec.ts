@@ -10,7 +10,7 @@ import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
 
 import { Http } from '../src';
-import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_MIDDLEWARES } from './demo';
+import { DeviceAModule, DeviceAStartupHandle, DeviceController, DeviceManageModule, DeviceQueue, DeviceStartupHandle, DEVICE_HANDLERS } from './demo';
 
 
 
@@ -91,7 +91,7 @@ describe('http server json transport, Http', () => {
     });
 
     it('has registered', async () => {
-        const a = injector.get(DEVICE_MIDDLEWARES);
+        const a = injector.get(DEVICE_HANDLERS);
         expect(a[0]).toBeInstanceOf(DeviceStartupHandle);
         expect(a[1]).toBeInstanceOf(DeviceAStartupHandle);
     });

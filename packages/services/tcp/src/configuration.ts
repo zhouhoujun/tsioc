@@ -26,7 +26,7 @@ import { TcpHandler } from './client/handler';
 import { TCP_CLIENT_FILTERS, TCP_CLIENT_INTERCEPTORS } from './client/options';
 import { TcpServer } from './server/server';
 import { TcpRequestHandler } from './server/handler';
-import { TCP_MIDDLEWARES, TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS } from './server/options';
+import { TCP_SERV_FILTERS, TCP_SERV_GUARDS, TCP_SERV_INTERCEPTORS } from './server/options';
 
 
 
@@ -66,10 +66,9 @@ export class TcpConfiguration {
     @Bean(SERVER_MODULES, { static: true, multi: true })
     serv(): ServiceModuleOpts {
         const option = this.getServOptions(false) as ServerModuleOpts;
-        option.defaultConfig!.middlewaresToken = TCP_MIDDLEWARES,
-            option.defaultConfig!.content = {
-                root: 'public'
-            };
+        option.defaultConfig!.content = {
+            root: 'public'
+        };
         return option;
     }
 

@@ -10,7 +10,6 @@ import { RestfulRequestContext } from './RestfulRequestContext';
 import { ServerOptions as Http1ServerOptions } from 'http';
 import { ServerOptions as HttsServerOptions } from 'https';
 import { ServerOptions as Http2ServerOptions, SecureServerOptions } from 'http2';
-import { MiddlewareOpts } from './middleware/middleware';
 import { SessionOptions } from './sessions/Session';
 
 export interface ProxyOpts {
@@ -154,7 +153,7 @@ export interface CsrfOps {
     secretLength?: number;
 }
 
-export interface HttpBasicServConfig<TSerOpts> extends ServiceConfig<TSerOpts>, MiddlewareOpts {
+export interface HttpBasicServConfig<TSerOpts> extends ServiceConfig<TSerOpts> {
     proxy?: ProxyOpts;
     cors?: boolean | CorsOpts;
     mimeDb?: Record<string, MimeSource>;

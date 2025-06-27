@@ -1,10 +1,12 @@
-import { Injectable, Module, lang, tokenId } from '@tsdi/ioc';
-import { of } from 'rxjs'; 
-import { BadRequestException } from '@tsdi/common/transport';
+import { Injectable, Module, lang, tokenId, Handler, composeHandlers } from '@tsdi/ioc';
+import { Observable, of } from 'rxjs';
+import { BadRequestException, Incoming, Outgoing } from '@tsdi/common/transport';
 
 import {
     RouteMapping, Handle, RequestBody, RequestParam, RequestPath, RedirectResult,
-    Middleware, compose, NEXT, Get, Payload, Subscribe, RequestContext
+    Middleware, Get, Payload, Subscribe, RequestContext,
+    RequestHandler,
+    ServiceConfig
 } from '@tsdi/endpoints';
 import { WsClient } from '@tsdi/ws';
 import { HttpContext } from '../src/server/context';
@@ -56,7 +58,7 @@ export class WsService {
 
 @RouteMapping('/device')
 export class DeviceController {
-    
+
     @Get('/')
     list(@RequestParam({ nullable: true }) name: string) {
         return name ? [{ name: '1' }, { name: '2' }].filter(i => i.name === name) : [{ name: '1' }, { name: '2' }];
@@ -83,7 +85,7 @@ export class DeviceController {
     @RouteMapping('/:age/used', 'GET')
     resfulquery(@RequestPath('age', { pipe: 'int' }) age1: number) {
         console.log('age1:', age1);
-        if(age1<=0){
+        if (age1 <= 0) {
             throw new BadRequestException();
         }
         return age1;
@@ -155,19 +157,18 @@ export class DeviceController {
 // }
 
 @Handle({
-    route:'/hdevice'
+    route: '/hdevice'
 })
-export class DeviceQueue implements Middleware {
+export class DeviceQueue implements Handler {
 
-    async invoke(ctx: HttpContext, next: () => Promise<void>): Promise<void> {
-
+    async handle(ctx: RequestContext): Promise<any> {
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
 
 
         console.log('device msg start.');
         ctx.setValue('device', 'device data')
-        await compose(ctx.get(DEVICE_MIDDLEWARES))(ctx, NEXT);
+        await composeHandlers(ctx.get(DEVICE_HANDLERS))(ctx);
         ctx.setValue('device', 'device next');
 
         const device = ctx.get('device');
@@ -181,15 +182,20 @@ export class DeviceQueue implements Middleware {
         };
 
         console.log('device sub msg done.');
+    }
+
+    async invoke(ctx: HttpContext, next: () => Promise<void>): Promise<void> {
+
+
         return await next();
     }
 }
 
 
 @Injectable()
-export class DeviceStartupHandle implements Middleware {
+export class DeviceStartupHandle implements Handler {
 
-    invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
+    async handle(ctx: RequestContext): Promise<void> {
 
         console.log('DeviceStartupHandle.', 'resp:', ctx.response.type, 'req:', ctx.request.body.type)
         if (ctx.request.body.type === 'startup') {
@@ -197,31 +203,30 @@ export class DeviceStartupHandle implements Middleware {
             const ret = ctx.injector.get(MyService).dosth();
             ctx.setValue('deviceB_state', ret);
         }
-        return next();
+
     }
 }
 
 @Injectable()
-export class DeviceAStartupHandle implements Middleware {
+export class DeviceAStartupHandle implements Handler {
 
-    invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
+    async handle(ctx: RequestContext): Promise<void> {
         console.log('DeviceAStartupHandle.', 'resp:', ctx.response.type, 'req:', ctx.request.body.type)
         if (ctx.request.body.type === 'startup') {
             // todo sth.
             const ret = ctx.get(MyService).dosth();
             ctx.setValue('deviceA_state', ret);
         }
-        return next();
     }
 }
 
-export const DEVICE_MIDDLEWARES = tokenId<Middleware[]>('DEVICE_MIDDLEWARES');
+export const DEVICE_HANDLERS = tokenId<RequestHandler[]>('DEVICE_HANDLERS');
 
 @Module({
     providers: [
         DeviceQueue,
-        { provide: DEVICE_MIDDLEWARES, useClass: DeviceStartupHandle, multi: true },
-        { provide: DEVICE_MIDDLEWARES, useClass: DeviceAStartupHandle, multi: true },
+        { provide: DEVICE_HANDLERS, useClass: DeviceStartupHandle, multi: true },
+        { provide: DEVICE_HANDLERS, useClass: DeviceAStartupHandle, multi: true },
 
     ]
 })

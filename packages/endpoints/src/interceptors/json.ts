@@ -2,7 +2,6 @@ import { Abstract, hasOwn, Injectable, Nullable } from '@tsdi/ioc';
 import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
 import { ctype } from '@tsdi/common/transport';
 import { Observable, map } from 'rxjs';
-import { Middleware } from '../middleware/middleware';
 import { RequestContext } from '../RequestContext';
 
 
@@ -16,7 +15,7 @@ export abstract class JsonOptions {
 
 
 @Injectable()
-export class JsonInterceptor implements Middleware<RequestContext>, ApplicationInterceptor<RequestContext> {
+export class JsonInterceptor implements  ApplicationInterceptor<RequestContext> {
     private pretty: boolean;
     private spaces: number;
     private paramName: string;
@@ -35,11 +34,6 @@ export class JsonInterceptor implements Middleware<RequestContext>, ApplicationI
                     return res;
                 })
             )
-    }
-
-    async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
-        await next();
-        this.streamify(ctx);
     }
 
     protected streamify(ctx: RequestContext) {

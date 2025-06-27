@@ -3,7 +3,7 @@ import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, ListenOpts, ListenService } from '@tsdi/common';
 import { InternalServerException, ev } from '@tsdi/common/transport';
-import { BindServerEvent, MiddlewareService, RequestContext, Server, ServerTransportFactory } from '@tsdi/endpoints';
+import { BindServerEvent, RequestContext, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
 import * as net from 'net';
 import * as tls from 'tls';
@@ -16,7 +16,7 @@ import { TcpRequestHandler } from './handler';
  * tcp server of `tcp` or `ipc`. 
  */
 @Injectable()
-export class TcpServer extends Server<RequestContext, TcpServConfig> implements ListenService, MiddlewareService {
+export class TcpServer extends Server<RequestContext, TcpServConfig> implements ListenService {
 
     protected serv?: net.Server | tls.Server | null;
 

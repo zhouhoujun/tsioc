@@ -1,6 +1,6 @@
 export * from './middleware/middleware';
-export * from './middleware/middleware.compose';
-export * from './middleware/middleware.service';
+// export * from './middleware/middleware.compose';
+// export * from './middleware/middleware.service';
 
 export * from './router/route';
 export * from './router/router';

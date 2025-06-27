@@ -1,7 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
 import { Observable, finalize, from, mergeMap, catchError, throwError } from 'rxjs';
-import { Middleware } from '../middleware/middleware';
 import { RequestContext } from '../RequestContext';
 
 
@@ -10,7 +9,7 @@ import { RequestContext } from '../RequestContext';
  * session.
  */
 @Injectable()
-export class SessionInterceptor implements Middleware<RequestContext>, ApplicationInterceptor<RequestContext> {
+export class SessionInterceptor implements ApplicationInterceptor<RequestContext> {
 
     intercept(input: RequestContext, next: ApplicationHandler<RequestContext, any>): Observable<any> {
         const session = input.session;
@@ -39,34 +38,6 @@ export class SessionInterceptor implements Middleware<RequestContext>, Applicati
                     }
                 })
             );
-    }
-
-    async invoke(ctx: RequestContext, next: () => Promise<void>): Promise<void> {
-        const session = ctx.session;
-        if (!session) {
-            return await next();
-        }
-
-        try {
-            await session.load();
-            
-            if (!session.isValid()) {
-                throw new Error('Invalid session');
-            }
-
-            await next();
-        } catch (error) {
-            console.error('Session error:', error);
-            throw error;
-        } finally {
-            if (ctx.serverOptions.session?.autoCommit && session.isModified()) {
-                try {
-                    await session.commit();
-                } catch (error) {
-                    console.error('Failed to commit session:', error);
-                }
-            }
-        }
     }
 }
 
