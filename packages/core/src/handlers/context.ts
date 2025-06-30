@@ -1,8 +1,6 @@
 import { DefaultInvocationContext, Injector, InvokeArguments, OperationArgumentResolver, composeResolvers, getType } from '@tsdi/ioc';
 import { getResolverToken } from './resolver';
 
-// export { Context, ContextToken } from '@tsdi/ioc';
-
 /**
  * handle context options.
  */

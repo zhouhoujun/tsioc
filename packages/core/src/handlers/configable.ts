@@ -46,7 +46,7 @@ export abstract class AbstractConfigableHandler<
      * @param order 
      * @returns 
      */
-    abstract useInterceptors(interceptor: ProvdierOf<ApplicationInterceptorLike> | ProvdierOf<ApplicationInterceptorLike>[], order?: number): this;
+    abstract useInterceptors(interceptor: ProvdierOf<ApplicationInterceptorLike<TInput>> | ProvdierOf<ApplicationInterceptorLike<TInput>>[], order?: number): this;
 
     /**
      * use guards for the handler.
@@ -60,7 +60,7 @@ export abstract class AbstractConfigableHandler<
      * @param order 
      * @returns 
      */
-    abstract useFilters(filter: ProvdierOf<FilterLike> | ProvdierOf<FilterLike>[], order?: number): this;
+    abstract useFilters(filter: ProvdierOf<FilterLike<TInput>> | ProvdierOf<FilterLike<TInput>>[], order?: number): this;
 
 
     /**

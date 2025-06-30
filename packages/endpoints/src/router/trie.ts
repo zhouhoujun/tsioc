@@ -1,14 +1,14 @@
 import { Route } from './route';
 
-export class TrieNode {
-    children: Map<string, TrieNode> = new Map();
+export class TrieRoute {
+    children: Map<string, TrieRoute> = new Map();
     route?: Route;
     isWildcard = false;
 }
 
 
 export class TrieRouter {
-    private root: TrieNode = new TrieNode();
+    private root: TrieRoute = new TrieRoute();
 
     insert(route: Route) {
         const parts = route.path.split('/').filter(part => part);
@@ -17,14 +17,14 @@ export class TrieRouter {
         for (const part of parts) {
             if (part.startsWith(':')) {
                 if (!node.children.has('*')) {
-                    const newNode = new TrieNode();
+                    const newNode = new TrieRoute();
                     newNode.isWildcard = true;
                     node.children.set('*', newNode);
                 }
                 node = node.children.get('*')!;
             } else {
                 if (!node.children.has(part)) {
-                    node.children.set(part, new TrieNode());
+                    node.children.set(part, new TrieRoute());
                 }
                 node = node.children.get(part)!;
             }
@@ -38,7 +38,7 @@ export class TrieRouter {
         return this.matchRecursive(this.root, parts, 0);
     }
 
-    private matchRecursive(node: TrieNode, parts: string[], index: number): Route | undefined {
+    private matchRecursive(node: TrieRoute, parts: string[], index: number): Route | undefined {
         if (index === parts.length) {
             return node.route;
         }

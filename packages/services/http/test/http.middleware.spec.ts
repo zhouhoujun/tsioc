@@ -3,7 +3,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { ErrorResponse } from '@tsdi/common';
 import { ClientModule } from '@tsdi/common/client';
-import { BodyparserInterceptor, ContentInterceptor, EndpointModule, JsonInterceptor, SetupServices } from '@tsdi/endpoints';
+import { BodyparserInterceptor, ContentInterceptor, convertToInterceptor, EndpointModule, JsonInterceptor, SetupServices } from '@tsdi/endpoints';
 import { ServerModule } from '@tsdi/platform-server';
 import { ServerEndpointModule } from '@tsdi/platform-server/endpoints';
 import { WsClient, WsClientConfig } from '@tsdi/ws';
@@ -99,7 +99,20 @@ describe('middleware', () => {
         ctx = await Application.run(ModuleB);
         const runable = ctx.runners.getRef(HttpServer);
 
-        runable.instance.useInterceptors((ctx, next) => {
+        // // use interceptor
+        // runable.instance.useInterceptors((ctx, next) => {
+        //     console.log('ctx.url:', ctx.url);
+        //     if (ctx.url.startsWith('/test')) {
+        //         console.log('message queue test: ' + ctx.query);
+        //     }
+
+        //     ctx.body = ctx.query.hi;
+        //     console.log(ctx.body, ctx.query);
+        //     return next(ctx);
+        // }, 0);
+
+        // use middleware
+        runable.instance.useInterceptors(convertToInterceptor((ctx, next) => {
             console.log('ctx.url:', ctx.url);
             if (ctx.url.startsWith('/test')) {
                 console.log('message queue test: ' + ctx.query);
@@ -107,8 +120,8 @@ describe('middleware', () => {
 
             ctx.body = ctx.query.hi;
             console.log(ctx.body, ctx.query);
-            return next(ctx);
-        }, 0);
+            return next();
+        }), 0);
 
         //run services
         // await ctx.runners.run([WsServer, HttpServer]);
