@@ -6,8 +6,7 @@ import {
 } from '@tsdi/ioc';
 import {
     ApplicationHandler, CanHandle, getGuardsToken, getInterceptorsToken,
-    getFiltersToken, setHandlerOptions, createHandler,
-    ApplicationHandlerLike
+    getFiltersToken, setHandlerOptions, createHandler, ApplicationHandlerLike
 } from '@tsdi/core';
 import { Pattern, PatternFormatter, Protocols, joinPath, normalize } from '@tsdi/common';
 import { NotFoundException, BadRequestException } from '@tsdi/common/transport';
@@ -105,7 +104,7 @@ export class MappingRouter extends Router<RouteHanlder> implements OnDestroy {
         }
     }
 
-    intercept(ctx: RequestContext, next: ApplicationHandler<any, any>): Observable<any> {
+    intercept(ctx: RequestContext, next: ApplicationHandler<RequestContext>): Observable<any> {
         return this.handle(ctx, () => next.handle(ctx))
     }
 
