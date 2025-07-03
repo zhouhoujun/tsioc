@@ -18,7 +18,6 @@ import { ControllerRoute } from './controller';
 import { RequestContext } from '../RequestContext';
 import { RouteHandler } from './route.handler';
 import { RestfulRequestContext } from '../RestfulRequestContext';
-import { TrieRouter } from './trie';
 
 
 
@@ -29,9 +28,6 @@ import { TrieRouter } from './trie';
  */
 export class MappingRouter extends Router<RouteHanlder> implements OnDestroy {
 
-
-    private trieRouter: TrieRouter = new TrieRouter();
-    private cache: Map<string, Route | undefined> = new Map();
 
     readonly routes: Map<string, RouteHanlder>;
 
@@ -59,7 +55,7 @@ export class MappingRouter extends Router<RouteHanlder> implements OnDestroy {
 
     use(route: Route): this;
     use(route: Pattern, middleware: RouteHanlder, callback?: (route: string, regExp?: RegExp) => void): this;
-    use(route: Route | Pattern, handler?: RouteHanlder, callback?: (route: string, regExp?: RegExp) => void): this {
+    use(route: Route | Pattern, handler?: RouteHanlder, callback?: (route: string, regExp?: RegExp) => void): this {        
         if (handler) {
             this.addHandler(route as Pattern, handler, callback);
             return this;

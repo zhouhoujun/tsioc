@@ -33,15 +33,15 @@ export abstract class Router<T = RouteHanlder> implements Backend<RequestContext
      */
     abstract get prefix(): string;
 
-    abstract get routes(): Map<string, T>;
+    // abstract get routes(): Map<string, T>;
     /**
      * pattern formatter.
      */
     abstract get formatter(): PatternFormatter;
-    /**
-    * route matcher.
-    */
-    abstract get matcher(): RouteMatcher;
+    // /**
+    // * route matcher.
+    // */
+    // abstract get matcher(): RouteMatcher;
     /**
      * use route.
      * @param route 
@@ -55,7 +55,7 @@ export abstract class Router<T = RouteHanlder> implements Backend<RequestContext
      * @param endpoint endpoint. 
      * @param subscribe as subscribe or not.
      */
-    abstract use(route: Pattern, endpoint: T, callback?: (route: string, regExp?: RegExp) => void): this;
+    abstract use(route: Pattern, endpoint: T, callback?: (route: Route) => void): this;
     /**
      * unuse route.
      * @param route The path to match against. Cannot be used together with a custom `matcher` function.
@@ -63,7 +63,7 @@ export abstract class Router<T = RouteHanlder> implements Backend<RequestContext
      * Can be a wild card (`**`) that matches any URL (see Usage Notes below).
      * @param endpoint endpoint.
      */
-    abstract unuse(route: Pattern, endpoint?: T): this;
+    abstract unuse(route: Route): this;
 
     /**
      * intercept
