@@ -3,7 +3,8 @@ import { PatternFormatter, Protocols, defaultFormatter } from '@tsdi/common';
 import { Routes } from './route';
 import { MESSAGE_ROUTERS, RouteMatcher, Router, ROUTERS } from './router';
 
-import { MappingRouter, DefaultRouteMatcher } from './router.mapping';
+import { OptimizedRouter } from './router.optimize';
+import { Wlidcard } from './trie';
 
 
 
@@ -25,14 +26,16 @@ export function createRouteProviders(protocol: Protocols, microservice: boolean,
             provide: token,
             useFactory: (injector: Injector) => {
                 const opts = isFunction(optsify) ? optsify(injector)! : optsify;
-                return new MappingRouter(injector,
-                    opts.matcher ? (isType(opts.matcher) ? injector.get(opts.matcher) : opts.matcher) : new DefaultRouteMatcher(),
+                return new OptimizedRouter(injector,
+                    // opts.matcher ? (isType(opts.matcher) ? injector.get(opts.matcher) : opts.matcher) : new DefaultRouteMatcher(),
                     opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter, defaultFormatter),
                     opts.prefix,
-                    opts.routes,
                     protocol,
-                    microservice,
-                    asDefault)
+                    opts.wildcards,
+                    opts.routes
+                )
+                    // microservice,
+                    // asDefault)
             },
             deps: [Injector],
         },
@@ -49,6 +52,7 @@ export interface RouteOpts {
     matcher?: TypeOf<RouteMatcher>;
     formatter?: TypeOf<PatternFormatter>;
     prefix?: string;
+    wildcards?: Wlidcard[];
     routes?: Routes;
 }
 

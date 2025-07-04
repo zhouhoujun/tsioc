@@ -1,4 +1,4 @@
-import { Route } from './route';
+import { Route, Routes } from './route';
 
 export class TrieRoute {
 
@@ -11,8 +11,11 @@ export class TrieRoute {
         return this._loaded;
     }
 
+    param?: string;
+
     constructor(
-        readonly wlidcards: Wlidcards,
+        readonly wlidcards: Wlidcard[],
+        private loader: (route: Route) => Promise<Routes>,
         readonly isWildcard = false
     ) { }
 
@@ -21,18 +24,21 @@ export class TrieRoute {
         const parts = route.path.split('/').filter(part => part);
         let node = this as TrieRoute;
 
-        const keys = Object.keys(this.wlidcards);
+
         for (const part in parts) {
-            const wildcard = keys.find(key => this.wlidcards[key](part));
+            const wildcard = this.wlidcards.find(w => w.match(part));
             if (wildcard) {
-                if (!node.children.has(wildcard)) {
-                    const newNode = new TrieRoute(this.wlidcards, true);
-                    node.children.set(wildcard, newNode);
+                if (!node.children.has(wildcard.wlidcard)) {
+                    const newNode = new TrieRoute(this.wlidcards, this.loader, true);
+                    if (wildcard.toPath) {
+                        newNode.param = wildcard.toPath(part);
+                    }
+                    node.children.set(wildcard.wlidcard, newNode);
                 }
-                node = node.children.get(wildcard)!;
+                node = node.children.get(wildcard.wlidcard)!;
             } else {
                 if (!node.children.has(part)) {
-                    node.children.set(part, new TrieRoute(this.wlidcards));
+                    node.children.set(part, new TrieRoute(this.wlidcards, this.loader));
                 }
                 node = node.children.get(part)!;
             }
@@ -77,24 +83,80 @@ export class TrieRoute {
         }
     }
 
+    // forEach(cb: (route: Route) => void | false): void | false {
+    //     if (this.route) {
+    //         if (cb(this.route) === false) return false;
+    //     }
+    //     for (const child of this.children.values()) {
+    //         if (child.forEach(cb) === false) return false;
+    //     }
+    // }
+
+    match(parts: string[], index: number, params: Record<string, string> = {}) {
+        return this.recursive(this, parts, index, params);
+    }
+
+
+    protected async recursive(node: TrieRoute, parts: string[], index: number, params: Record<string, string>): Promise<TrieRoute | undefined> {
+
+        if (node.param) {
+            params[node.param] = parts[index - 1];
+        }
+
+        if (index === parts.length) {
+            return node;
+        }
+
+        if (!node.loaded) {
+            await node.load();
+        }
+
+        const part = parts[index];
+        if (this.children.has(part)) {
+            const result = this.recursive(node.children.get(part)!, parts, index + 1, params);
+            if (result) {
+                return result;
+            }
+        }
+
+        for (const wlidcard of this.wlidcards) {
+            if (node.children.has(wlidcard.wlidcard)) {
+                return this.recursive(node.children.get(wlidcard.wlidcard)!, parts, index + 1, params);
+            }
+        }
+
+    }
+
+    protected async load() {
+        const routers = await this.loader(this.route!);
+        routers?.forEach(route => this.insert(route));
+        this._loaded = true;
+    }
+
+
+
+}
+
+export interface Wlidcard {
+    wlidcard: string;
+    match: (part: string) => boolean;
+    toPath?: (part: string) => string;
 }
 
 
-
-export type Wlidcards = Record<string, (part: string) => boolean>;
-
-const restWildcards: Wlidcards = {
-    '*': (part: string) => part.startsWith(':'),
-};
+const restWildcards: Wlidcard[] = [
+    { wlidcard: '*', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
+];
 
 
 export class TrieRouter {
     private root: TrieRoute;
 
     constructor(
-        readonly wlidcards: Wlidcards = restWildcards
+        private loader: (route: Route) => Promise<Routes>,
+        private wlidcards: Wlidcard[] = restWildcards
     ) {
-        this.root = new TrieRoute(this.wlidcards);
+        this.root = new TrieRoute(this.wlidcards, this.loader);
     }
 
 
@@ -103,39 +165,38 @@ export class TrieRouter {
         return this;
     }
 
-    match(path: string): TrieRoute | undefined {
+    match(path: string, params: Record<string, string>): Promise<TrieRoute | undefined> {
         const parts = path.split('/').filter(part => part);
-        return this.matchRecursive(this.root, Object.keys(this.wlidcards), parts, 0);
+        return this.root.match(parts, 0, params);
     }
 
     remove(path: string) {
-        const keys = Object.keys(this.wlidcards);
         const parts = path.split('/').filter(part => part).map(part => {
-            const wildcard = keys.find(key => this.wlidcards[key](part));
-            return wildcard ? wildcard : part;
+            const wildcard = this.wlidcards.find(w => w.match(part));
+            return wildcard ? wildcard.wlidcard : part;
         });
         this.root.remove(parts, 0);
     }
 
-    private matchRecursive(node: TrieRoute, wlidcards: string[], parts: string[], index: number): TrieRoute | undefined {
-        if (index === parts.length || !node.loaded) {
-            return node;
-        }
+    // private matchRecursive(node: TrieRoute, wlidcards: string[], parts: string[], index: number): TrieRoute | undefined {
+    //     if (index === parts.length || !node.loaded) {
+    //         return node;
+    //     }
 
-        const part = parts[index];
-        if (node.children.has(part)) {
-            const result = this.matchRecursive(node.children.get(part)!, wlidcards, parts, index + 1);
-            if (result) {
-                return result;
-            }
-        }
+    //     const part = parts[index];
+    //     if (node.children.has(part)) {
+    //         const result = this.matchRecursive(node.children.get(part)!, wlidcards, parts, index + 1);
+    //         if (result) {
+    //             return result;
+    //         }
+    //     }
 
-        for (const wlidcard of wlidcards) {
-            if (node.children.has(wlidcard)) {
-                return this.matchRecursive(node.children.get(wlidcard)!, wlidcards, parts, index + 1);
-            }
-        }
+    //     for (const wlidcard of wlidcards) {
+    //         if (node.children.has(wlidcard)) {
+    //             return this.matchRecursive(node.children.get(wlidcard)!, wlidcards, parts, index + 1);
+    //         }
+    //     }
 
-        return undefined;
-    }
+    //     return undefined;
+    // }
 }

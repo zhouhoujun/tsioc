@@ -4,7 +4,7 @@ export * from './middleware/middleware';
 
 export * from './router/route';
 export * from './router/router';
-export * from './router/router.mapping';
+export * from './router/router.optimize';
 export * from './router/controller';
 export * from './router/router.providers';
 

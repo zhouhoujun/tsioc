@@ -3,7 +3,7 @@ import { ApplicationHandler, ApplicationInterceptor, Backend, InvalidJsonExcepti
 import { Middleware } from '../middleware/middleware';
 import { RequestContext } from '../RequestContext';
 import { from, fromEventPattern, Observable } from 'rxjs';
-import { OptimizedRouter } from '../router/router.optimize.';
+import { OptimizedRouter } from '../router/router.optimize';
 import { Routes } from '../router/route';
 import { Incoming, Outgoing } from '@tsdi/common/transport';
 import { ServiceConfig } from '../server.options';
