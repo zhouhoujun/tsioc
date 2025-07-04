@@ -1,24 +1,24 @@
+import { isString } from '@tsdi/ioc';
 import { Route, Routes } from './route';
+
 
 export class TrieRoute {
 
+    private routes: Route[] = [];
     children: Map<string, TrieRoute> = new Map();
-
-    route?: Route;
-
-    private _loaded = true;
-    get loaded() {
-        return this._loaded;
-    }
 
     param?: string;
 
     constructor(
         readonly wlidcards: Wlidcard[],
         private loader: (route: Route) => Promise<Routes>,
-        readonly isWildcard = false
+        readonly equals: (r1: Route, r2: Route) => boolean
     ) { }
 
+
+    get(method: string) {
+        return this.routes.find(route => route.method === '*' || route.method === method || route.method?.includes(method));
+    }
 
     insert(route: Route): this {
         const parts = route.path.split('/').filter(part => part);
@@ -29,7 +29,7 @@ export class TrieRoute {
             const wildcard = this.wlidcards.find(w => w.match(part));
             if (wildcard) {
                 if (!node.children.has(wildcard.wlidcard)) {
-                    const newNode = new TrieRoute(this.wlidcards, this.loader, true);
+                    const newNode = new TrieRoute(this.wlidcards, this.loader, this.equals);
                     if (wildcard.toPath) {
                         newNode.param = wildcard.toPath(part);
                     }
@@ -38,7 +38,7 @@ export class TrieRoute {
                 node = node.children.get(wildcard.wlidcard)!;
             } else {
                 if (!node.children.has(part)) {
-                    node.children.set(part, new TrieRoute(this.wlidcards, this.loader));
+                    node.children.set(part, new TrieRoute(this.wlidcards, this.loader, this.equals));
                 }
                 node = node.children.get(part)!;
             }
@@ -49,12 +49,15 @@ export class TrieRoute {
         return this;
     }
 
-    remove(pathParts: string[], index: number): boolean {
+    remove(pathParts: string[], index: number, route?: Route): boolean {
         if (index === pathParts.length) {
             // 到达目标节点，删除路由
-            const hadRoute = this.route !== undefined;
-            this.route = undefined;
-            return hadRoute;
+            if (route) {
+                this.routes.splice(this.routes.findIndex(r => this.equals(r, route)), 1);
+            } else {
+                this.routes = [];
+            }
+            return this.children.size === 0 && this.routes.length === 0;
         }
 
         const part = pathParts[index];
@@ -64,33 +67,30 @@ export class TrieRoute {
         }
 
         // 递归删除子节点
-        const shouldDeleteChild = child.remove(pathParts, index + 1);
-        if (shouldDeleteChild && child.children.size === 0 && !child.route) {
+        const shouldDeleteChild = child.remove(pathParts, index + 1, route);
+        if (shouldDeleteChild) {
             // 子节点没有路由且没有其他子节点，可以删除
             this.children.delete(part);
         }
 
         // 如果当前节点没有路由且没有子节点，可以删除
-        return this.route === undefined && this.children.size === 0;
+        return this.routes.length === 0 && this.children.size === 0;
     }
 
     bind(route: Route) {
-        this.route = route;
+        if (!this.routes.some(r => this.equals(r, route))) {
+            this.routes.push(route);
+        }
         if (route.children) {
             route.children.forEach(r => this.insert(r));
         } else if (route.controller || route.loadChildren || route.loadController) {
-            this._loaded = false;
+            route.loaded = false;
         }
     }
 
-    // forEach(cb: (route: Route) => void | false): void | false {
-    //     if (this.route) {
-    //         if (cb(this.route) === false) return false;
-    //     }
-    //     for (const child of this.children.values()) {
-    //         if (child.forEach(cb) === false) return false;
-    //     }
-    // }
+    loaded() {
+        return !this.routes.some(r => r.loaded !== false);
+    }
 
     match(parts: string[], index: number, params: Record<string, string> = {}) {
         return this.recursive(this, parts, index, params);
@@ -128,9 +128,12 @@ export class TrieRoute {
     }
 
     protected async load() {
-        const routers = await this.loader(this.route!);
-        routers?.forEach(route => this.insert(route));
-        this._loaded = true;
+        const unloadeds = this.routes.filter(r => r.loaded === false);
+        for (const route of unloadeds) {
+            const routers = await this.loader(route);
+            routers?.forEach(route => this.insert(route));
+            route.loaded = true;
+        }
     }
 
 
@@ -154,9 +157,10 @@ export class TrieRouter {
 
     constructor(
         private loader: (route: Route) => Promise<Routes>,
+        private equals: (r1: Route, r2: Route) => boolean,
         private wlidcards: Wlidcard[] = restWildcards
     ) {
-        this.root = new TrieRoute(this.wlidcards, this.loader);
+        this.root = new TrieRoute(this.wlidcards, this.loader, this.equals);
     }
 
 
@@ -170,12 +174,15 @@ export class TrieRouter {
         return this.root.match(parts, 0, params);
     }
 
-    remove(path: string) {
+    remove(route: Route): void;
+    remove(path: string): void;
+    remove(arg: string | Route) {
+        const path = isString(arg) ? arg : arg.path;
         const parts = path.split('/').filter(part => part).map(part => {
             const wildcard = this.wlidcards.find(w => w.match(part));
             return wildcard ? wildcard.wlidcard : part;
         });
-        this.root.remove(parts, 0);
+        this.root.remove(parts, 0, isString(arg) ? undefined : arg);
     }
 
     // private matchRecursive(node: TrieRoute, wlidcards: string[], parts: string[], index: number): TrieRoute | undefined {

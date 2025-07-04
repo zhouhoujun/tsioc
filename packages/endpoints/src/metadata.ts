@@ -5,10 +5,11 @@ import {
 } from '@tsdi/ioc';
 import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike } from '@tsdi/core';
 import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Protocols } from '@tsdi/common';
-import { getRouter, MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, ProtocolRouteOptions, RouteMappingMetadata, RouteOptions, Router } from './router/router';
+import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, ProtocolRouteOptions, RouteMappingMetadata, RouteOptions, Router } from './router/router';
 import { Middleware, MiddlewareFn } from './middleware/middleware';
 import { createRouteHandler } from './impl/route.handler';
-import { ControllerRoute } from './router/controller';
+import { getRouter } from './router/router.providers';
+// import { ControllerRoute } from './router/controller';
 
 
 export { Topic, Payload } from '@tsdi/core';
@@ -64,7 +65,7 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
                 const router = getRouter(injector, metadata.protocol, true);
                 const endpoint = createRouteHandler(invocation, { ...metadata, prefix }, def.propertyKey);
                 router.use(metadata.route!, endpoint, (r) => {
-                    invocation.onDestroy(() => router.unuse(r, endpoint));
+                    invocation.onDestroy(() => router.unuse(r));
                 });
             });
         }
@@ -138,7 +139,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
                 if (!router || !(router instanceof Router)) throw new Exception(metadata.protocol + ' microservice router has not register.');
                 const endpoint = createRouteHandler(invocation, { ...metadata, prefix }, def.propertyKey);
                 router.use(metadata.route!, endpoint, (r) => {
-                    invocation.onDestroy(() => router.unuse(r, endpoint));
+                    invocation.onDestroy(() => router.unuse(r));
                 });
             });
         },
@@ -257,13 +258,18 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 if (!router) throw new Exception(lang.getTypeName(parent) + 'has not registered!');
                 if (!(router instanceof Router)) throw new Exception(lang.getTypeName(router) + 'is not router!');
 
-                const endpoint = new ControllerRoute(ctx.class.createInvocation(injector));
-                const route = `${normalize(endpoint.prefix)}**`;
-                router.use(route, endpoint);
-
-                endpoint.invocation.onDestroy(() => {
-                    router.unuse(route)
+                router.use({
+                    path: mapping.prefix ?? '/',
+                    controller: ctx.class.createInvocation(injector)
                 });
+
+                // const endpoint = new ControllerRoute(ctx.class.createInvocation(injector));
+                // const route = `${normalize(endpoint.prefix)}**`;
+                // router.use(route, endpoint);
+
+                // endpoint.invocation.onDestroy(() => {
+                //     router.unuse(route)
+                // });
             }
         }
     });

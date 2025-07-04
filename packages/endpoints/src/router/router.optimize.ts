@@ -1,15 +1,38 @@
-import { ClassType, DecorDefine, Empty, getClass, Handler, HandlerFn, hasProps, Injector, Invocation, isArray, isClassType, isFunction, isString, isType, ModuleRef, OnDestroy } from '@tsdi/ioc';
-import { RequestContext } from '../RequestContext';
-import { Route, Routes } from './route';
-import { RouteHanlder, RouteMappingMetadata, Router, ROUTERS } from './router';
-import { TrieRoute, TrieRouter, Wlidcard } from './trie';
-import { Pattern, PatternFormatter, Protocols } from '@tsdi/common';
-import { defer, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
-import { BadRequestException, NotFoundException } from '@tsdi/common/transport';
+import {
+    ClassType, composeHandlers, DecorDefine, Empty, getClass, Handler, HandlerFn, hasProps,
+    Injector, Invocation, isArray, isClassType, isFunction, isString, isType, ModuleRef, OnDestroy
+} from '@tsdi/ioc';
 import { ApplicationHandler } from '@tsdi/core';
+import { Pattern, PatternFormatter, Protocols } from '@tsdi/common';
+import { BadRequestException, NotFoundException } from '@tsdi/common/transport';
+import { defer, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
+import { RequestContext } from '../RequestContext';
+import { Route, ROUTES, Routes } from './route';
+import { RouteHanlder, RouteMappingMetadata, Router } from './router';
+import { TrieRoute, TrieRouter, Wlidcard } from './trie';
 import { RestfulRequestContext } from '../RestfulRequestContext';
 import { createRouteHandler } from '../impl/route.handler';
 
+
+
+const resetfulEquals = (r1: Route, r2: Route) => {
+    if (!r1 || !r2) {
+        return false;
+    }
+    if (r1 === r2) {
+        return true;
+    }
+    return r1.path === r2.path
+        && r1.method === r2.method
+        && !!(
+            (r1.redirectTo && r1.redirectTo === r2.redirectTo)
+            || (r1.handler && r1.handler === r2.handler)
+            || (r1.handle && r1.handle === r2.handle)
+            || (r1.controller && (r1.controller === r2.controller || (r1.controller instanceof Invocation && (r1.controller as Invocation).type === (r2.controller as Invocation).type)))
+            || (r1.loadController && r1.loadController === r2.loadController)
+            || (r1.loadChildren && r1.loadChildren === r2.loadChildren)
+        );
+}
 
 
 export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
@@ -23,11 +46,12 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         readonly formatter: PatternFormatter,
         readonly prefix: string = '',
         readonly protocol: Protocols | null = null,
+        equals?: (r1: Route, r2: Route) => boolean,
         wlidcards?: Wlidcard[],
         routes?: Routes
     ) {
         super()
-        this.trieRouter = new TrieRouter(r => this.load(r), wlidcards)
+        this.trieRouter = new TrieRouter(r => this.load(r), equals ?? resetfulEquals, wlidcards)
         routes?.forEach(route => this.trieRouter.insert(route));
     }
 
@@ -35,9 +59,14 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     use(route: Route): this;
     use(route: Pattern, handler: RouteHanlder, callback?: (route: Route) => void): this;
     use(arg: Route | Pattern, handler?: RouteHanlder, callback?: (route: Route) => void): this {
-        const route = (handler) ? arg as Route : {
-            path: this.formatter.format(arg as Pattern),
-            handler
+        let route: Route;
+        if (handler) {
+            route = {
+                path: this.formatter.format(arg as Pattern),
+                handle: composeHandlers(isArray(handler) ? handler : [handler])
+            };
+        } else {
+            route = arg as Route;
         }
         this.trieRouter.insert(route);
         callback?.(route);
@@ -69,20 +98,15 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             return route;
         }).pipe(
             mergeMap(route => {
-                if (!route?.handle) {
-                    if (noFound) return noFound();
-                    return throwError(() => new NotFoundException())
+
+                if (route?.handle) {
+                    return route.handle(ctx);
                 }
-                return route.handle(ctx);
+
+                if (noFound) return noFound();
+                return throwError(() => new NotFoundException())
             })
         )
-        // if (isArray(route)) {
-        //     return runHybirds(route, ctx);
-        // } else if ((route as RequestHandler).handle) {
-        //     return (route as RequestHandler).handle(ctx)
-        // } else {
-        //     return (route as HandlerFn)(ctx);
-        // }
     }
 
     intercept(ctx: RequestContext, next: ApplicationHandler<RequestContext>): Observable<any> {
@@ -91,8 +115,12 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
     protected async load(route: Route): Promise<Routes> {
         if (route.controller) {
+            if (route.controller instanceof Invocation) {
+                return this.parseCtrl(route.controller)
+            }
+
             const ctrRef = getClass(route.controller);
-            const invocation = ctrRef.createInvocation(this.injector);
+            const invocation = ctrRef.createInvocation(this.injector.platform().getInjector(ctrRef.type, this.injector));
 
             return this.parseCtrl(invocation)
 
@@ -114,7 +142,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
                 if (!platform.modules.has(module)) {
                     await this.injector.get(ModuleRef).import(module, true);
                 }
-                const routes = platform.modules.get(module)?.injector.get(ROUTERS);
+                const routes = platform.modules.get(module)?.injector.get(ROUTES);
                 return routes ?? Empty
             }
         }
@@ -129,6 +157,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         return sortRoutes.map(m => {
             return {
                 path: this.formatter.format(m.metadata.route as Pattern),
+                method: m.metadata.method,
                 handler: createRouteHandler(invocation, { ...m.metadata }, m.propertyKey)
             };
         })
@@ -163,13 +192,14 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         }
 
         const params = {};
-        const route = await this.trieRouter.match(url, params);
+        const trieRoute = await this.trieRouter.match(url, params);
         if (hasProps(params)) {
             ctx.request.params = params;
             this.params.set(url, params);
         }
-        this.cache.set(url, route?.route);
-        return route?.route;
+        const route = trieRoute?.get(ctx.method);
+        this.cache.set(url, route);
+        return route;
     }
 
     onDestroy(): void {

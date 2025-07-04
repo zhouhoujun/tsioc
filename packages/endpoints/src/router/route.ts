@@ -1,4 +1,4 @@
-import { Handler, HandlerFn, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { Handler, HandlerFn, Invocation, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { InvocationHandlerOptions } from '@tsdi/core';
 import { Observable } from 'rxjs';
 
@@ -15,6 +15,10 @@ export interface Route<TArg = any> extends InvocationHandlerOptions<TArg> {
      */
     path: string;
     /**
+     * request method.
+     */
+    method?: string | string[];
+    /**
      * A URL to redirect to when the path matches.
      *
      * Absolute if the URL begins with a slash (/), otherwise relative to the path URL.
@@ -23,7 +27,6 @@ export interface Route<TArg = any> extends InvocationHandlerOptions<TArg> {
      * When not present, router does not redirect.
      */
     redirectTo?: string;
-
     /**
      * An array of child `Route` objects that specifies a nested route
      * configuration.
@@ -37,7 +40,7 @@ export interface Route<TArg = any> extends InvocationHandlerOptions<TArg> {
      * The controller to instantiate when the path matches.
      * Can be empty if child routes specify controller.
      */
-    controller?: Type;
+    controller?: Type | Invocation;
     /**
      * load controller.
      */
@@ -52,6 +55,8 @@ export interface Route<TArg = any> extends InvocationHandlerOptions<TArg> {
      * Can be empty if child routes specify handle.
      */
     handle?: HandlerFn;
+
+    loaded?: boolean;
 
 }
 

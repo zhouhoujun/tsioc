@@ -1,10 +1,9 @@
-import { Abstract, HandlerLike, Injector, ProvidedInMetadata, Token, tokenId, Type, TypeDef } from '@tsdi/ioc';
+import { Abstract, HandlerLike, ProvidedInMetadata, Token, Type, TypeDef } from '@tsdi/ioc';
 import { ApplicationInterceptor, Backend, ApplicationHandler, InvocationHandlerOptions } from '@tsdi/core';
 import { RequestMethod, Pattern, Protocols, PatternFormatter } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 import { Route } from './route';
-import { InternalServerException } from '@tsdi/common/transport';
 
 
 /**
@@ -74,104 +73,82 @@ export abstract class Router<T = RouteHanlder> implements Backend<RequestContext
 
 }
 
-/**
- * microservice message routers.
- */
-export const MESSAGE_ROUTERS = tokenId<Router[]>('MESSAGE_ROUTERS');
 
+// /**
+//  * math url path with register route.
+//  */
+// @Abstract()
+// export abstract class RouteMatcher {
+//     /**
+//      * get register topic patterns.
+//      */
+//     abstract getPatterns<T = string>(): T[]
 
-/**
- *  service routers.
- */
-export const ROUTERS = tokenId<Router[]>('ROUTERS');
+//     /**
+//      * each topic patterns.
+//      */
+//     abstract eachPattern<T = string>(callback: (transformed: T, pattern: string) => void): void
+//     /**
+//      * is pattern route or not.
+//      * @param route 
+//      */
+//     abstract isPattern(route: string): boolean;
+//     /**
+//      * register route matcher. 
+//      * @param route The path to match against. Cannot be used together with a custom `matcher` function.
+//      * A URL string that uses router matching notation.
+//      * Can be a wild card (`**`) that matches any URL (see Usage Notes below).
+//      * @param params dynamic token values for route path.  
+//      * 
+//      * #### Examples
+//      * 
+//      * ```ts
+//      * 'path/#'
+//      * 'path/**'
+//      * 'path/*'
+//      * 'path/+'
+//      * 'path/:id'
+//      * 'path/${id}'
+//      * 
+//      * ```
+//      *  
+//      * @returns subscribe topics. 
+//      */
+//     abstract register(route: string, subscribe?: boolean): void;
+//     /**
+//      * register route matcher. 
+//      * @param route The path to match against. Cannot be used together with a custom `matcher` function.
+//      * A URL string that uses router matching notation.
+//      * Can be a wild card (`**`) that matches any URL (see Usage Notes below).
+//      * @param params dynamic token values for route path.  
+//      * 
+//      * #### Examples
+//      * 
+//      * ```ts
+//      * 'path/#'
+//      * 'path/**'
+//      * 'path/*'
+//      * 'path/+'
+//      * 'path/:id'
+//      * 'path/${id}'
+//      * 
+//      * ```
+//      *  
+//      * @returns subscribe topics. 
+//      */
+//     abstract register(route: string, params?: Record<string, any>, subscribe?: boolean): void;
 
-export function getRouter(injector: Injector, protocol?: Protocols, microservice?: boolean): Router;
-export function getRouter(injector: Injector, protocol?: string, microservice?: boolean): Router;
-export function getRouter(injector: Injector, protocol?: string, microservice?: boolean): Router {
-    const routers = injector.get(microservice ? MESSAGE_ROUTERS : ROUTERS, null);
-    if (!routers) throw new InternalServerException(`${protocol ?? ''} ${microservice ? 'micro' : ''}service router has not register.`);
-    if (!protocol && routers.length > 1) throw new InternalServerException(`has mutil ${microservice ? 'micro' : ''}service, protocol param can not empty`);
-    const router = routers.find(r => r.protocol == protocol) ?? routers.find(r => r.asDefault) ?? routers[0];
-    if (!router) throw new InternalServerException(`${protocol ?? ''} ${microservice ? 'micro' : ''}service router has not register.`);
-    return router;
-}
+//     /**
+//      * get the url path match route
+//      * @param path url path
+//      * @returns matched route.
+//      */
+//     abstract match(path: string): string | null;
 
+//     abstract unregister(route: string): void;
 
-/**
- * math url path with register route.
- */
-@Abstract()
-export abstract class RouteMatcher {
-    /**
-     * get register topic patterns.
-     */
-    abstract getPatterns<T = string>(): T[]
-
-    /**
-     * each topic patterns.
-     */
-    abstract eachPattern<T = string>(callback: (transformed: T, pattern: string) => void): void
-    /**
-     * is pattern route or not.
-     * @param route 
-     */
-    abstract isPattern(route: string): boolean;
-    /**
-     * register route matcher. 
-     * @param route The path to match against. Cannot be used together with a custom `matcher` function.
-     * A URL string that uses router matching notation.
-     * Can be a wild card (`**`) that matches any URL (see Usage Notes below).
-     * @param params dynamic token values for route path.  
-     * 
-     * #### Examples
-     * 
-     * ```ts
-     * 'path/#'
-     * 'path/**'
-     * 'path/*'
-     * 'path/+'
-     * 'path/:id'
-     * 'path/${id}'
-     * 
-     * ```
-     *  
-     * @returns subscribe topics. 
-     */
-    abstract register(route: string, subscribe?: boolean): void;
-    /**
-     * register route matcher. 
-     * @param route The path to match against. Cannot be used together with a custom `matcher` function.
-     * A URL string that uses router matching notation.
-     * Can be a wild card (`**`) that matches any URL (see Usage Notes below).
-     * @param params dynamic token values for route path.  
-     * 
-     * #### Examples
-     * 
-     * ```ts
-     * 'path/#'
-     * 'path/**'
-     * 'path/*'
-     * 'path/+'
-     * 'path/:id'
-     * 'path/${id}'
-     * 
-     * ```
-     *  
-     * @returns subscribe topics. 
-     */
-    abstract register(route: string, params?: Record<string, any>, subscribe?: boolean): void;
-
-    /**
-     * get the url path match route
-     * @param path url path
-     * @returns matched route.
-     */
-    abstract match(path: string): string | null;
-
-    abstract unregister(route: string): void;
-
-    abstract clear(): void;
-}
+//     abstract clear(): void;
+// }
 
 
 /**
