@@ -259,7 +259,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 if (!(router instanceof Router)) throw new Exception(lang.getTypeName(router) + 'is not router!');
 
                 router.use({
-                    path: mapping.prefix ?? '/',
+                    path: joinPath(mapping.prefix, mapping.version, mapping.route),
                     controller: ctx.class.createInvocation(injector)
                 });
 

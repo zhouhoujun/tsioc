@@ -38,7 +38,7 @@ const resetfulEquals = (r1: Route, r2: Route) => {
 export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
     private trieRouter: TrieRouter;
-    private cache: Map<string, Route | undefined> = new Map();
+    private cache: Map<string, TrieRoute | undefined> = new Map();
     private params: Map<string, Record<string, string>> = new Map();
 
     constructor(
@@ -74,10 +74,10 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     }
 
     unuse(route: Route): this {
-        this.trieRouter.remove(route.path);
+        this.trieRouter.remove(route);
         const keys: string[] = [];
         this.cache.forEach((v, k) => {
-            if (v === route) {
+            if (v && v.has(route)) {
                 keys.push(k)
             }
         });
@@ -186,19 +186,19 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         const url = ctx.url;
         if (this.cache.has(url)) {
             if (this.params.has(url)) {
-                ctx.request.params = this.params.get(url);
+                ctx.request.path = this.params.get(url);
             }
-            return this.cache.get(url);
+            return this.cache.get(url)?.get(ctx.method);
         }
 
         const params = {};
         const trieRoute = await this.trieRouter.match(url, params);
         if (hasProps(params)) {
-            ctx.request.params = params;
+            ctx.request.path = params;
             this.params.set(url, params);
         }
+        this.cache.set(url, trieRoute);
         const route = trieRoute?.get(ctx.method);
-        this.cache.set(url, route);
         return route;
     }
 

@@ -12,6 +12,7 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
 
 
     private _URL?: URL;
+    private _url: string;
     readonly originalUrl: string;
     /**
      * request header mappings
@@ -33,25 +34,28 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
 
         this.setValue(ServerTransport, transport);
         
-        this.url = normalize(this.url);
-        this.originalUrl = request.pattern? normalize(request.pattern) : this.url;
-        const searhIdx = this.url.indexOf('?');
-        if (searhIdx >= 0) {
-            this.request.query = this.query;
-        }
+        this.parseURL(this.request);
+        this._url = this.originalUrl = this.URL.pathname;
+        // const url = normalize(this.request.url!);
+        // this.originalUrl = request.pattern? normalize(request.pattern) : this.url;
+        // const searhIdx = this.url.indexOf('?');
+        // if (searhIdx >= 0) {
+        //     this.request.query = this.query;
+        // }
     }
 
-    /**
+     /**
      * Get request rul
      */
     get url(): string {
-        return this.request.url!
+        return this._url;
     }
+
     /**
      * Set request url
      */
     set url(value: string) {
-        this.request.url = value;
+        this._url = value;
     }
 
 

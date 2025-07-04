@@ -22,25 +22,25 @@ export class RouteHandlerImpl<TInput extends RequestContext = RequestContext, TO
         return this._prefix;
     }
 
-    protected override beforeInvoke(ctx: TInput): void {
-        if (this.route && isRest.test(this.route)) {
-            const restParams: any = {};
-            const routes = this.route.split('/').map(r => r.trim());
-            const restParamNames = routes.filter(d => restParms.test(d));
-            const routeUrls = normalize(ctx.originalUrl ?? ctx.url, this.prefix).split('/');
-            let has = false;
-            restParamNames.forEach(pname => {
-                const val = routeUrls[routes.indexOf(pname)];
-                if (val) {
-                    has = true;
-                    restParams[pname.substring(1)] = val
-                }
-            });
-            if (has) {
-                ctx.request.path = restParams;
-            }
-        }
-    }
+    // protected override beforeInvoke(ctx: TInput): void {
+    //     if (this.route && isRest.test(this.route)) {
+    //         const restParams: any = {};
+    //         const routes = this.route.split('/').map(r => r.trim());
+    //         const restParamNames = routes.filter(d => restParms.test(d));
+    //         const routeUrls = normalize(ctx.originalUrl ?? ctx.url, this.prefix).split('/');
+    //         let has = false;
+    //         restParamNames.forEach(pname => {
+    //             const val = routeUrls[routes.indexOf(pname)];
+    //             if (val) {
+    //                 has = true;
+    //                 restParams[pname.substring(1)] = val
+    //             }
+    //         });
+    //         if (has) {
+    //             ctx.request.path = restParams;
+    //         }
+    //     }
+    // }
 
     protected override defaultRespond(ctx: TInput, res: any): void {
         if (ctx instanceof RequestContext) {
@@ -53,8 +53,8 @@ export class RouteHandlerImpl<TInput extends RequestContext = RequestContext, TO
     }
 }
 
-const isRest = /(^:\w+)|(\/:\w+)/;
-const restParms = /^:\w+/;
+// const isRest = /(^:\w+)|(\/:\w+)/;
+// const restParms = /^:\w+/;
 
 
 export function createRouteHandler<TInput, TClass extends RouteHandler, T>(

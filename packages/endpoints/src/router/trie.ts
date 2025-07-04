@@ -20,12 +20,16 @@ export class TrieRoute {
         return this.routes.find(route => route.method === '*' || route.method === method || route.method?.includes(method));
     }
 
+    has(route: Route) {
+        return this.routes.some(r => this.equals(r, route));
+    }
+
     insert(route: Route): this {
         const parts = route.path.split('/').filter(part => part);
         let node = this as TrieRoute;
 
 
-        for (const part in parts) {
+        for (const part of parts) {
             const wildcard = this.wlidcards.find(w => w.match(part));
             if (wildcard) {
                 if (!node.children.has(wildcard.wlidcard)) {
@@ -78,7 +82,7 @@ export class TrieRoute {
     }
 
     bind(route: Route) {
-        if (!this.routes.some(r => this.equals(r, route))) {
+        if (!this.has(route)) {
             this.routes.push(route);
         }
         if (route.children) {
@@ -88,8 +92,8 @@ export class TrieRoute {
         }
     }
 
-    loaded() {
-        return !this.routes.some(r => r.loaded !== false);
+    get loaded() {
+        return !this.routes.some(r => r.loaded === false);
     }
 
     match(parts: string[], index: number, params: Record<string, string> = {}) {
@@ -98,7 +102,7 @@ export class TrieRoute {
 
 
     protected async recursive(node: TrieRoute, parts: string[], index: number, params: Record<string, string>): Promise<TrieRoute | undefined> {
-
+        if(!node) return;
         if (node.param) {
             params[node.param] = parts[index - 1];
         }
@@ -112,8 +116,8 @@ export class TrieRoute {
         }
 
         const part = parts[index];
-        if (this.children.has(part)) {
-            const result = this.recursive(node.children.get(part)!, parts, index + 1, params);
+        if (node.children.has(part)) {
+            const result = await this.recursive(node.children.get(part)!, parts, index + 1, params);
             if (result) {
                 return result;
             }
@@ -121,7 +125,7 @@ export class TrieRoute {
 
         for (const wlidcard of this.wlidcards) {
             if (node.children.has(wlidcard.wlidcard)) {
-                return this.recursive(node.children.get(wlidcard.wlidcard)!, parts, index + 1, params);
+                return await this.recursive(node.children.get(wlidcard.wlidcard)!, parts, index + 1, params);
             }
         }
 
