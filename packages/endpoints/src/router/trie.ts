@@ -204,25 +204,4 @@ export class TrieRouter {
         return this.root.forEach(cb);
     }
 
-    // private matchRecursive(node: TrieRoute, wlidcards: string[], parts: string[], index: number): TrieRoute | undefined {
-    //     if (index === parts.length || !node.loaded) {
-    //         return node;
-    //     }
-
-    //     const part = parts[index];
-    //     if (node.children.has(part)) {
-    //         const result = this.matchRecursive(node.children.get(part)!, wlidcards, parts, index + 1);
-    //         if (result) {
-    //             return result;
-    //         }
-    //     }
-
-    //     for (const wlidcard of wlidcards) {
-    //         if (node.children.has(wlidcard)) {
-    //             return this.matchRecursive(node.children.get(wlidcard)!, wlidcards, parts, index + 1);
-    //         }
-    //     }
-
-    //     return undefined;
-    // }
 }

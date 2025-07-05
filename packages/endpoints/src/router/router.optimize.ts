@@ -1,9 +1,9 @@
 import {
-    ClassType, composeHandlers, DecorDefine, Empty, getClass, Handler, HandlerFn, hasProps,
-    Injector, Invocation, isArray, isClassType, isFunction, isString, isType, ModuleRef, OnDestroy
+    ClassType, composeHandlers, DecorDefine, Empty, getClass, Handler, HandlerFn, Injector, Invocation, 
+    isArray, isClassType, isFunction, isString, isType, ModuleRef, OnDestroy
 } from '@tsdi/ioc';
 import { ApplicationHandler } from '@tsdi/core';
-import { joinPath, Pattern, PatternFormatter, Protocols } from '@tsdi/common';
+import { Pattern, PatternFormatter, Protocols } from '@tsdi/common';
 import { BadRequestException, NotFoundException } from '@tsdi/common/transport';
 import { defer, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { RequestContext } from '../RequestContext';
@@ -197,8 +197,9 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     async getRoute(ctx: RequestContext): Promise<Route | undefined> {
         const url = ctx.url;
         if (this.cache.has(url)) {
-            if (this.params.has(url)) {
-                ctx.request.path = this.params.get(url)?.get(ctx.method || '*');
+            const params = this.params.get(url)?.get(ctx.method || '*');
+            if (params) {
+                ctx.request.path = params;
             }
             return this.cache.get(url)?.get(ctx.method);
         }
