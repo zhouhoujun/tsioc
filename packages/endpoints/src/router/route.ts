@@ -6,6 +6,7 @@ import { Observable } from 'rxjs';
  * Route.
  */
 export interface Route<TArg = any> extends InvocationHandlerOptions<TArg> {
+    prefix?: string;
     /**
      * The path to match against. Cannot be used together with a custom `matcher` function.
      * A URL string that uses router matching notation.
@@ -18,6 +19,10 @@ export interface Route<TArg = any> extends InvocationHandlerOptions<TArg> {
      * request method.
      */
     method?: string | string[];
+    /**
+     * path params.
+     */
+    pathParams?: Record<string, number>;
     /**
      * A URL to redirect to when the path matches.
      *
@@ -62,7 +67,7 @@ export interface Route<TArg = any> extends InvocationHandlerOptions<TArg> {
 
 export type LoadChildren = () => Type | Routes | Promise<Type | Routes> | Observable<Type | Routes>;
 
-export type LoadController= () => Type | Promise<Type> | Observable<Type>;
+export type LoadController = () => Type | Promise<Type> | Observable<Type>;
 
 export type Routes<T = any> = Route<T>[];
 

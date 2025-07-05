@@ -64,6 +64,8 @@ export abstract class Router<T = RouteHanlder> implements Backend<RequestContext
      */
     abstract unuse(route: Route): this;
 
+    abstract forEach(cb: (route: Route) => void | false): void | false;
+
     /**
      * intercept
      * @param input 

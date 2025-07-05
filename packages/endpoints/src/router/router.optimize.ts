@@ -3,7 +3,7 @@ import {
     Injector, Invocation, isArray, isClassType, isFunction, isString, isType, ModuleRef, OnDestroy
 } from '@tsdi/ioc';
 import { ApplicationHandler } from '@tsdi/core';
-import { Pattern, PatternFormatter, Protocols } from '@tsdi/common';
+import { joinPath, Pattern, PatternFormatter, Protocols } from '@tsdi/common';
 import { BadRequestException, NotFoundException } from '@tsdi/common/transport';
 import { defer, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { RequestContext } from '../RequestContext';
@@ -39,7 +39,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
     private trieRouter: TrieRouter;
     private cache: Map<string, TrieRoute | undefined> = new Map();
-    private params: Map<string, Record<string, string>> = new Map();
+    private params: Map<string, Map<string, Record<string, string>>> = new Map();
 
     constructor(
         private injector: Injector,
@@ -86,6 +86,10 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         return this
     }
 
+    forEach(cb: (route: Route) => void | false): void | false {
+        return this.trieRouter.forEach(cb);
+    }
+
 
     handle(ctx: RequestContext, noFound?: () => Observable<any>): Observable<any> {
         if (ctx.headersSent || (ctx.status && ctx.statusAdapter && !ctx.statusAdapter.isNotFound(ctx.status))) return of(ctx);
@@ -116,13 +120,13 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     protected async load(route: Route): Promise<Routes> {
         if (route.controller) {
             if (route.controller instanceof Invocation) {
-                return this.parseCtrl(route.controller)
+                return this.parseCtrl(route.controller, route.path, route.pathParams);
             }
 
             const ctrRef = getClass(route.controller);
             const invocation = ctrRef.createInvocation(this.injector.platform().getInjector(ctrRef.type, this.injector));
 
-            return this.parseCtrl(invocation)
+            return this.parseCtrl(invocation, route.path, route.pathParams)
 
         } else if (route.loadController) {
             const res = route.loadController();
@@ -132,7 +136,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             const ctrRef = getClass(controller);
             const invocation = ctrRef.createInvocation(this.injector);
 
-            return this.parseCtrl(invocation)
+            return this.parseCtrl(invocation, route.path, route.pathParams)
 
         } else if (route.loadChildren) {
             const res = route.loadChildren();
@@ -143,13 +147,19 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
                     await this.injector.get(ModuleRef).import(module, true);
                 }
                 const routes = platform.modules.get(module)?.injector.get(ROUTES);
-                return routes ?? Empty
+                return routes?.map(r => {
+                    r.prefix = route.path;
+                    if (route.pathParams) {
+                        r.pathParams = { ...route.pathParams };
+                    }
+                    return r;
+                }) ?? Empty
             }
         }
         return Empty;
     }
 
-    protected parseCtrl(invocation: Invocation): Routes {
+    protected parseCtrl(invocation: Invocation, prefix: string, pathParams: any): Routes {
         const sortRoutes = invocation.class
             .getMethodDefines(m => m && isString((m.metadata as RouteMappingMetadata).route))
             .sort((ra, rb) => (ra.metadata.route || '').length - (rb.metadata.route || '').length) as DecorDefine<RouteMappingMetadata>[];
@@ -157,7 +167,9 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         return sortRoutes.map(m => {
             return {
                 path: this.formatter.format(m.metadata.route as Pattern),
+                prefix,
                 method: m.metadata.method,
+                pathParams: pathParams ? { ...pathParams } : undefined,
                 handler: createRouteHandler(invocation, { ...m.metadata }, m.propertyKey)
             };
         })
@@ -186,19 +198,28 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         const url = ctx.url;
         if (this.cache.has(url)) {
             if (this.params.has(url)) {
-                ctx.request.path = this.params.get(url);
+                ctx.request.path = this.params.get(url)?.get(ctx.method || '*');
             }
             return this.cache.get(url)?.get(ctx.method);
         }
 
-        const params = {};
-        const trieRoute = await this.trieRouter.match(url, params);
-        if (hasProps(params)) {
-            ctx.request.path = params;
-            this.params.set(url, params);
-        }
+        const parts = url.split('/').filter(part => part)
+        const trieRoute = await this.trieRouter.match(parts);
         this.cache.set(url, trieRoute);
         const route = trieRoute?.get(ctx.method);
+        if (route?.pathParams) {
+            const params: Record<string, string> = {};
+            Object.entries(route.pathParams).forEach(([v, k]) => {
+                params[v] = parts[k];
+            })
+            ctx.request.path = params;
+            let paths = this.params.get(url);
+            if (!paths) {
+                paths = new Map();
+                this.params.set(url, paths);
+            }
+            paths.set(ctx.method || '*', params);
+        }
         return route;
     }
 

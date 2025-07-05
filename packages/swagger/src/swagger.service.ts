@@ -1,5 +1,5 @@
 import { ApplicationContext, MODEL_RESOLVERS, ModelArgumentResolver, Started, TransportParameter } from '@tsdi/core';
-import { Exception, InjectFlags, Injectable, Type, getTypeName, isFunction, isNil, isString, isType, lang } from '@tsdi/ioc';
+import { Exception, InjectFlags, Injectable, Invocation, Type, getTypeName, isFunction, isNil, isString, isType, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, joinPath } from '@tsdi/common';
 import { ctype } from '@tsdi/common/transport';
@@ -137,16 +137,17 @@ export class SwaggerService {
 
 
     buildDoc(router: Router, jsonDoc: OpenAPIObject, modelResolver: (type: any) => ModelArgumentResolver | undefined, prefix?: string) {
-        router.routes.forEach((v, route) => {
-            if (route.endsWith('**')) route = route.substring(0, route.length - 2);
-            if (v instanceof ControllerRoute) {
-
-                v.class.defs.forEach(df => {
+        router.forEach(v => {
+            // if (route.endsWith('**')) route = route.substring(0, route.length - 2);
+            if (v.controller instanceof Invocation) {
+                const route = v.path;
+                const cls = v.controller.class;
+                cls.defs.forEach(df => {
                     if (df.decorType == 'class' && isString((df.metadata as RouteMappingMetadata).route)) {
-                        const description = v.class.getMetadata(d => !!d.metadata?.description)?.description;
+                        const description = cls.getMetadata(d => !!d.metadata?.description)?.description;
 
                         jsonDoc.tags?.push({
-                            name: v.class.className,
+                            name: cls.className,
                             description
                         })
                         return;
@@ -170,7 +171,7 @@ export class SwaggerService {
                     const method = df.metadata.method?.toLowerCase() ?? 'get';
                     if (api[method]) throw new Exception(`has mutil route address ${path}, with same method ${method}`);
 
-                    const returnType = v.class.getMethodMetadata(null, df.propertyKey, r => isType(r.metadata.response))?.response ?? df.metadata.returnType ?? df.metadata.type;
+                    const returnType = cls.getMethodMetadata(null, df.propertyKey, r => isType(r.metadata.response))?.response ?? df.metadata.returnType ?? df.metadata.type;
                     let returnTypeName = '';
                     if (returnType && returnType != Object && returnType != Promise) {
                         returnTypeName = getTypeName(returnType);
@@ -179,13 +180,13 @@ export class SwaggerService {
                         }
                     }
 
-                    const paramMatedatas = v.class.getParameters(df.propertyKey) as TransportParameter[]
+                    const paramMatedatas = cls.getParameters(df.propertyKey) as TransportParameter[]
                     api[method] = {
-                        "x-swagger-router-controller": v.class.className,
-                        summary: (v.class.getMethodMetadata(null, df.propertyKey, r => r.metadata.summary) as any)?.summary ?? '',
-                        description: (v.class.getMethodMetadata(null, df.propertyKey, r => r.metadata.description) as any)?.description ?? '',
+                        "x-swagger-router-controller": cls.className,
+                        summary: (cls.getMethodMetadata(null, df.propertyKey, r => r.metadata.summary) as any)?.summary ?? '',
+                        description: (cls.getMethodMetadata(null, df.propertyKey, r => r.metadata.description) as any)?.description ?? '',
                         operationId: df.propertyKey + '-' + method,
-                        tags: [v.class.className],
+                        tags: [cls.className],
                         parameters: paramMatedatas?.filter(p => ((!p.scope || p.scope == 'query' || p.scope == 'path') && p.flags && (p.flags & InjectFlags.Request)))?.map(p => this.toParamObject(jsonDoc, p as TransportParameter, modelResolver)),
                         requestBody: this.toBodyObject(jsonDoc, paramMatedatas?.filter(p => (p.scope == 'body' || p.scope == 'payload') || (!p.provider && modelResolver(p.type))), modelResolver),
                         responses: df.metadata.responses ?? {
@@ -221,9 +222,11 @@ export class SwaggerService {
                         }
                     }
                 });
-            } else if (v instanceof Router) {
-                this.buildDoc(v, jsonDoc, modelResolver, route);
-            }
+                
+            } 
+            // else if (v instanceof Router) {
+            //     this.buildDoc(v, jsonDoc, modelResolver, route);
+            // }
         })
     }
 
