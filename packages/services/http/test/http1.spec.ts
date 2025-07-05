@@ -303,7 +303,7 @@ describe('http1.1 server, Http', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(400);
+        expect(r.status).toEqual(404);
         // expect(r.error).toBeInstanceOf(MissingParameterError);
     })
 

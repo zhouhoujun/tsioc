@@ -1,5 +1,5 @@
 import { Injector } from '@tsdi/ioc';
-import { HeaderMappings, LOCALHOST, normalize, parseQueryString } from '@tsdi/common';
+import { HeaderMappings, joinPath, LOCALHOST, normalize, parseQueryString } from '@tsdi/common';
 import { Incoming, MessageException, Outgoing, TopicIncoming, UrlIncoming } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
 import { RequestContext } from '../RequestContext';
@@ -33,21 +33,19 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
         super(injector, serverOptions);
 
         this.setValue(ServerTransport, transport);
-        this.originalUrl = normalize(this.request.url!);
-        this.parseURL(this.request);
-        this._url = this.URL.pathname;
+        this.originalUrl = request.pattern ? normalize(request.pattern) : this.request.url;
+        this._url = !this.URL.pathname || this.URL.pathname === '/' ? this.request.url : this.URL.pathname;
         // const url = normalize(this.request.url!);
-        // this.originalUrl = request.pattern? normalize(request.pattern) : this.url;
-        
+
         const searhIdx = this.originalUrl.indexOf('?');
         if (searhIdx >= 0) {
             this.request.query = this.query;
         }
     }
 
-     /**
-     * Get request rul
-     */
+    /**
+    * Get request rul
+    */
     get url(): string {
         return this._url;
     }
@@ -105,6 +103,9 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
                 baseUrl = new URL(`${protocol}://${host ?? LOCALHOST}:${port ?? 3000}`, path);
             } catch (err) {
                 baseUrl = new URL(`${protocol}://${host ?? LOCALHOST}:${port ?? 3000}`);
+            }
+            if (url.indexOf(':') > 0) {
+                return baseUrl;
             }
             const uri = new URL(url, baseUrl);
             return uri;
@@ -200,7 +201,7 @@ export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicInco
         this.setValue(ServerTransport, transport);
 
         this.url = this.topic = normalize(request.topic);
-        this.originalUrl = request.pattern? normalize(request.pattern) : this.url;
+        this.originalUrl = request.pattern ? normalize(request.pattern) : this.url;
         this.responseTopic = request.responseTopic ?? transport.options.getResponseTopic?.(request.topic);
         const searhIdx = this.url.indexOf('?');
         if (!this.request.query || searhIdx > 0) {
@@ -213,7 +214,7 @@ export class TopicRequestContext<TRequest extends TopicIncoming<any> = TopicInco
         if (!this._query) {
             const url = this.url;
             const idx = url.indexOf('?');
-            if (idx > 0) {                
+            if (idx > 0) {
                 const urlParams = parseQueryString(url.slice(idx + 1));
 
                 if (this.request.query) {

@@ -34,9 +34,8 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         super(injector, { ...serverOptions, request: request });
 
         this.setValue(ServerTransport, transport);
-        this.originalUrl = normalize(request.url!);
+        this.originalUrl = request.url!;
         this.status = HttpStatusCode.NotFound;
-        this.parseURL(this.request);
         this._url = this.URL.pathname;
         
         // const url = this._url = this.originalUrl = normalize(request.url!);

@@ -1,5 +1,5 @@
 import {
-    ClassType, composeHandlers, DecorDefine, Empty, getClass, Handler, HandlerFn, Injector, Invocation, 
+    ClassType, composeHandlers, DecorDefine, Empty, getClass, Handler, HandlerFn, Injector, Invocation,
     isArray, isClassType, isFunction, isString, isType, ModuleRef, OnDestroy
 } from '@tsdi/ioc';
 import { ApplicationHandler } from '@tsdi/core';
@@ -161,7 +161,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
     protected parseCtrl(invocation: Invocation, prefix: string, pathParams: any): Routes {
         const sortRoutes = invocation.class
-            .getMethodDefines(m => m && isString((m.metadata as RouteMappingMetadata).route))
+            .getMethodDefines(m => m && m.metadata.method && isString(m.metadata.route))
             .sort((ra, rb) => (ra.metadata.route || '').length - (rb.metadata.route || '').length) as DecorDefine<RouteMappingMetadata>[];
 
         return sortRoutes.map(m => {

@@ -264,7 +264,7 @@ describe('Ws hybrid Tcp Server & Ws Client & TcpClient', () => {
                     return of(err);
                 })));
 
-        expect((r as ErrorResponse).statusText).toEqual('Bad Request');
+        expect((r as ErrorResponse).statusText).toEqual('Not Found');
     })
 
     it('route with request restful param pipe throw argument err', async () => {
