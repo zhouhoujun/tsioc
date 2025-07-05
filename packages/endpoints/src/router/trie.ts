@@ -17,7 +17,7 @@ export class TrieRoute {
 
 
     get(method: string) {
-        return this.routes.find(route => route.method === '*' || route.method === method || route.method?.includes(method));
+        return this.routes.find(route => !route.method || route.method === '*' || route.method === method || route.method?.includes(method));
     }
 
     has(route: Route) {

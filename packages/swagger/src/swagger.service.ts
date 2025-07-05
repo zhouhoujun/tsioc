@@ -3,7 +3,7 @@ import { Exception, InjectFlags, Injectable, Type, getTypeName, isFunction, isNi
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, joinPath } from '@tsdi/common';
 import { ctype } from '@tsdi/common/transport';
-import { ControllerRoute, RouteMappingMetadata, Router, ContentInterceptor, getRouter, SetupServices } from '@tsdi/endpoints';
+import { RouteMappingMetadata, Router, ContentInterceptor, getRouter, SetupServices } from '@tsdi/endpoints';
 import { DBPropertyMetadata, MissingModelFieldException } from '@tsdi/repository';
 import { HttpServer } from '@tsdi/http'
 import { of } from 'rxjs';
