@@ -41,10 +41,10 @@ export class HttpContext extends RestfulRequestContext<HttpServRequest, HttpServ
         
         // const url = this._url = this.originalUrl = normalize(request.url!);
 
-        // const searhIdx = url.indexOf('?');
-        // if (searhIdx >= 0) {
-        //     (this.request as any).query = this.query;
-        // }
+        const searhIdx = this.originalUrl.indexOf('?');
+        if (searhIdx >= 0) {
+            (this.request as any).query = this.query;
+        }
 
     }
 

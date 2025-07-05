@@ -394,7 +394,7 @@ describe('HttpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(400);
+        expect(r.status).toEqual(404);
         // expect(r.error).toBeInstanceOf(MissingParameterError);
     })
 

@@ -33,15 +33,16 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
         super(injector, serverOptions);
 
         this.setValue(ServerTransport, transport);
-        
+        this.originalUrl = normalize(this.request.url!);
         this.parseURL(this.request);
-        this._url = this.originalUrl = this.URL.pathname;
+        this._url = this.URL.pathname;
         // const url = normalize(this.request.url!);
         // this.originalUrl = request.pattern? normalize(request.pattern) : this.url;
-        // const searhIdx = this.url.indexOf('?');
-        // if (searhIdx >= 0) {
-        //     this.request.query = this.query;
-        // }
+        
+        const searhIdx = this.originalUrl.indexOf('?');
+        if (searhIdx >= 0) {
+            this.request.query = this.query;
+        }
     }
 
      /**
