@@ -1,4 +1,4 @@
-import { Handler, HandlerFn, Invocation, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { Handler, HandlerFn, HandlerLike, Invocation, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { InvocationHandlerOptions } from '@tsdi/core';
 import { Observable } from 'rxjs';
 
@@ -55,6 +55,11 @@ export interface Route<TArg = any> extends InvocationHandlerOptions<TArg> {
      * handler.
      */
     handler?: TypeOf<Handler>;
+
+    /**
+     * handler.
+     */
+    handlers?: HandlerLike[];
     /**
      * The handle fn to instantiate when the path matches.
      * Can be empty if child routes specify handle.

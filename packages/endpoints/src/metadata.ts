@@ -1,7 +1,8 @@
 import {
     isArray, isString, lang, Type, TypeOf, createDecorator, ActionTypes, InjectFlags,
     ClassMethodDecorator, createParamDecorator, Exception, isMetadataObject, DecorDefine,
-    ProvidedInMetadata, AnnotationMetadata, Handler
+    ProvidedInMetadata, AnnotationMetadata, Handler,
+    ClassType
 } from '@tsdi/ioc';
 import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike } from '@tsdi/core';
 import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Protocols } from '@tsdi/common';
@@ -147,6 +148,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
         afterAnnoation: (ctx) => {
             const mapping = ctx.class.getAnnotation<MappingDef>();
             const injector = ctx.injector;
+            const type = ctx.type as ClassType<Handler>;
 
             const router = mapping.router ? injector.get(mapping.router) : getRouter(injector, mapping.protocol);
             const route = mapping.route!;
@@ -156,7 +158,10 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
 
             router.use({
                 path: route,
-                handler: ctx.type
+                handle: (input, ctx) => {
+                    return injector.get(type).handle(input, ctx);
+                },
+                handler: type
             });
         }
     }
@@ -258,9 +263,13 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 if (!router) throw new Exception(lang.getTypeName(parent) + 'has not registered!');
                 if (!(router instanceof Router)) throw new Exception(lang.getTypeName(router) + 'is not router!');
 
-                router.use({
+                const route = {
                     path: joinPath(mapping.prefix, mapping.version, mapping.route),
                     controller: ctx.class.createInvocation(injector)
+                };
+                router.use(route);
+                route.controller.onDestroy(() => {
+                    router.unuse(route);
                 });
 
                 // const endpoint = new ControllerRoute(ctx.class.createInvocation(injector));

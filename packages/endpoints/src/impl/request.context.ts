@@ -33,7 +33,7 @@ export class UrlRequestContext<TRequest extends UrlIncoming<any> = UrlIncoming<a
         super(injector, serverOptions);
 
         this.setValue(ServerTransport, transport);
-        this.originalUrl = request.pattern ? normalize(request.pattern) : this.request.url;
+        this.originalUrl = request.pattern ? request.pattern : this.request.url;
         this._url = !this.URL.pathname || this.URL.pathname === '/' ? this.request.url : this.URL.pathname;
         // const url = normalize(this.request.url!);
 

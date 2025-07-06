@@ -62,9 +62,16 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         let route: Route;
         if (handler) {
             route = {
-                path: this.formatter.format(arg as Pattern),
-                handle: composeHandlers(isArray(handler) ? handler : [handler])
+                path: this.formatter.format(arg as Pattern)
             };
+            if (isArray(handler)) {
+                route.handlers = handler;
+                route.handle = composeHandlers(handler);
+            } else if (isFunction(handler)) {
+                route.handle = handler;
+            } else {
+                route.handler = handler;
+            }
         } else {
             route = arg as Route;
         }
