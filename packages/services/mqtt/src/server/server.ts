@@ -70,16 +70,16 @@ export class MqttServer extends Server<RequestContext, MqttServConfig> {
         //     router.matcher.register(content, true);
         // }
 
-        const subscribes = router.getPatterns();
+        const { routes } = router.getPatterns();
         if (options.content?.prefix) {
             const content = router.formatter.format(`${options.content.prefix}/#`);
-            subscribes.push(content);
+            routes.push(content);
         }
 
-        this.subscribes = subscribes;
+        this.subscribes = routes;
 
-        await (options.subscribeOptions ? promisify<string | string[], IClientSubscribeOptions>(this.mqtt.subscribe, this.mqtt)(subscribes, options.subscribeOptions)
-            : promisify(this.mqtt.subscribe, this.mqtt)(subscribes))
+        await (options.subscribeOptions ? promisify<string | string[], IClientSubscribeOptions>(this.mqtt.subscribe, this.mqtt)(routes, options.subscribeOptions)
+            : promisify(this.mqtt.subscribe, this.mqtt)(routes))
             .catch(err => {
                 // Just like other commands, subscribe() can fail for some reasons,
                 // ex network issues.
@@ -94,7 +94,7 @@ export class MqttServer extends Server<RequestContext, MqttServConfig> {
 
         this.logger.info(
             `Subscribed successfully! This server is currently subscribed topics.`,
-            subscribes
+            routes
         );
         // router.matcher.eachPattern((topic, pattern) => {
         //     if (topic !== pattern) {

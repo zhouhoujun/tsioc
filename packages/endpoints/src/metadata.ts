@@ -5,7 +5,7 @@ import {
 } from '@tsdi/ioc';
 import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike } from '@tsdi/core';
 import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Protocols } from '@tsdi/common';
-import { RouteOptions } from './router/route';
+import { Route, RouteOptions } from './router/route';
 import { MappingDef, RouteMappingMetadata, RouteMappingOptions, Router } from './router/router';
 import { Middleware, MiddlewareFn } from './middleware/middleware';
 import { createRouteHandler } from './impl/route.handler';
@@ -63,10 +63,17 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
                 const prefix = joinPath(mapping.prefix, mapping.version, router.formatter.format(mapping.route!));
 
                 const path = router.formatter.format(metadata.route!);
-                const endpoint = createRouteHandler(invocation, { ...metadata, path, prefix }, def.propertyKey);
-                router.use(path, endpoint, (r) => {
-                    invocation.onDestroy(() => router.unuse(r));
-                });
+                const handler = createRouteHandler(invocation, { ...metadata, path, prefix }, def.propertyKey);
+                const route = {
+                    path,
+                    paths: metadata.paths,
+                    handler
+                } as Route;
+                if (metadata.route instanceof RegExp) {
+                    route.regExp = metadata.route;
+                }
+                router.use(route);
+                invocation.onDestroy(() => router.unuse(route));
             });
         }
     }
@@ -137,10 +144,17 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
                 const prefix = joinPath(mapping.prefix, mapping.version, router.formatter.format(mapping.route!));
                 if (!router || !(router instanceof Router)) throw new Exception(metadata.protocol + ' microservice router has not register.');
                 const path = router.formatter.format(metadata.route!);
-                const endpoint = createRouteHandler(invocation, { ...metadata, path, prefix }, def.propertyKey);
-                router.use(path, endpoint, (r) => {
-                    invocation.onDestroy(() => router.unuse(r));
-                });
+                const handler = createRouteHandler(invocation, { ...metadata, path, prefix }, def.propertyKey);
+                const route = {
+                    path,
+                    paths: metadata.paths,
+                    handler
+                } as Route;
+                if (metadata.route instanceof RegExp) {
+                    route.regExp = metadata.route;
+                }
+                router.use(route);
+                invocation.onDestroy(() => router.unuse(route));
             });
         },
 
@@ -157,6 +171,8 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
 
             router.use({
                 path: router.formatter.format(route),
+                paths: mapping.paths,
+                regExp: mapping.route instanceof RegExp ? mapping.route : undefined,
                 handle: (input, ctx) => {
                     return injector.get(type).handle(input, ctx);
                 },
@@ -241,12 +257,6 @@ export function createMappingDecorator<T extends RouteMappingMetadata<any>>(name
                 return { ...arg2 as T, route };
             }
         },
-        // appendProps: (meta) => {
-        //     if (meta.route) {
-        //         const regExp = createRestfulMatcher(meta.route);
-        //         if (regExp) (meta as RouteMappingMetadata).regExp = regExp;
-        //     }
-        // },
         def: controllerOnly ? undefined : {
             class: (ctx) => {
                 ctx.class.setAnnotation(ctx.define.metadata);
@@ -270,14 +280,6 @@ export function createMappingDecorator<T extends RouteMappingMetadata<any>>(name
                 route.controller.onDestroy(() => {
                     router.unuse(route);
                 });
-
-                // const endpoint = new ControllerRoute(ctx.class.createInvocation(injector));
-                // const route = `${normalize(endpoint.prefix)}**`;
-                // router.use(route, endpoint);
-
-                // endpoint.invocation.onDestroy(() => {
-                //     router.unuse(route)
-                // });
             }
         }
     });
@@ -446,30 +448,10 @@ export function createRouteDecorator(method: RequestMethod) {
             arg2?: string | { middlewares: (Middleware | MiddlewareFn)[], guards?: Type<CanHandle>[], contentType?: string, method?: string }
         ) => {
             route = normalize(route);
-            // const regExp = createRestfulMatcher(route);
             return (isString(arg2) ? { route, contentType: arg2, method } : { route, ...arg2, method }) as RouteMappingMetadata
         }
     });
 }
-
-// const rest$ = /(^:\w+)|(\/:\w+)/g;
-// const endRest$ = /:\w+$/g;
-// const pthRest = '[^/]*';
-// const endRest = '[^/]+';
-
-// // 缓存编译后的正则表达式
-// const cache = new Map<string, RegExp>();
-// function createRestfulMatcher(route: string) {
-//     if (rest$.test(route)) {
-//         if (cache.has(route)) {
-//             return cache.get(route)!;
-//         }
-//         const regExp = new RegExp('^' + route.replace(rest$, pthRest).replace(endRest$, endRest) + '$');
-//         cache.set(route, regExp);
-//         return regExp;
-//     }
-//     return undefined;
-// }
 
 
 /**

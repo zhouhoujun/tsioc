@@ -12,6 +12,25 @@ import { Route, RouteOptions, Routes } from './route';
 export type RouteHanlder = HandlerLike<RequestContext> | Array<HandlerLike<RequestContext>>;
 
 
+export interface RoutePatterns {
+    /**
+     * all route path 
+     */
+    routes: string[];
+    /**
+     * all route path without wildcard
+     */
+    paths: string[];
+    /**
+     * all route path with wildcard
+     */
+    patterns: string[];
+    /**
+     * all route path with wildcard regexp
+     */
+    regExps: RegExp[];
+}
+
 /**
  * router
  * 
@@ -30,7 +49,7 @@ export abstract class Router<T = RouteHanlder> implements Backend<RequestContext
 
     abstract get routes(): Routes;
 
-    abstract getPatterns(): string[];
+    abstract getPatterns(): RoutePatterns;
     /**
      * route prefix.
      */

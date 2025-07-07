@@ -70,18 +70,16 @@ export class RedisServer extends Server<RequestContext, RedisServConfig> {
         }, options);
 
         const router = getRouter(injector, options.protocol ?? 'redis', true);
+        
+        const {paths, patterns} = router.getPatterns();
+
         if (options.content?.prefix) {
-            const content = injector.get(PatternFormatter, defaultFormatter).format(`${options.content.prefix}/**`);
-            router.matcher.register(content, true);
+            const content = router.formatter.format(`${options.content.prefix}/**`);
+            patterns.push(content);
         }
-        const routes = router.matcher.getPatterns();
 
-        const subscribes: string[] = [];
-        const psubscribes: string[] = [];
-        routes.forEach(r => router.matcher.isPattern(r) ? psubscribes.push(r) : subscribes.push(r));
-
-        if (subscribes.length) {
-            await this.subscriber.subscribe(...subscribes, (err, count) => {
+        if (paths.length) {
+            await this.subscriber.subscribe(...paths, (err, count) => {
                 if (err) {
                     // Just like other commands, subscribe() can fail for some reasons,
                     // ex network issues.
@@ -90,14 +88,14 @@ export class RedisServer extends Server<RequestContext, RedisServConfig> {
                     // `count` represents the number of channels this server are currently subscribed to.
                     this.logger.info(
                         `Subscribed successfully! This server is currently subscribed to ${count} channels.`,
-                        subscribes
+                        paths
                     );
                 }
             });
         }
 
-        if (psubscribes.length) {
-            await this.subscriber.psubscribe(...psubscribes, (err, count) => {
+        if (patterns.length) {
+            await this.subscriber.psubscribe(...patterns, (err, count) => {
                 if (err) {
                     // Just like other commands, subscribe() can fail for some reasons,
                     // ex network issues.
@@ -106,7 +104,7 @@ export class RedisServer extends Server<RequestContext, RedisServConfig> {
                     // `count` represents the number of channels this server are currently subscribed to.
                     this.logger.info(
                         `Subscribed successfully! This server is currently subscribed to ${count} pattern channels.\n`,
-                        psubscribes
+                        patterns
                     );
                 }
             });
@@ -114,11 +112,11 @@ export class RedisServer extends Server<RequestContext, RedisServConfig> {
 
         transport.handle(this.handler, merge(this.destroy$, fromEvent(this.subscriber, ev.ERROR)).pipe(first()))
 
-        router.matcher.eachPattern((topic, pattern) => {
-            if (topic !== pattern) {
-                this.logger.info('Transform pattern', pattern, 'to topic', topic)
-            }
-        });
+        // router.matcher.eachPattern((topic, pattern) => {
+        //     if (topic !== pattern) {
+        //         this.logger.info('Transform pattern', pattern, 'to topic', topic)
+        //     }
+        // });
     }
 
     protected async onShutdown(): Promise<any> {

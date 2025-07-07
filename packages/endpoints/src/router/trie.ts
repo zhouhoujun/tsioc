@@ -8,9 +8,7 @@ export class TrieRoute {
     children: Map<string, TrieRoute> = new Map();
 
     constructor(
-        readonly wlidcards: Wlidcard[],
-        private loader: (route: Route) => Promise<Routes>,
-        readonly equals: (r1: Route, r2: Route) => boolean
+        private options: TrieOptions
     ) { }
 
 
@@ -23,18 +21,19 @@ export class TrieRoute {
     }
 
     has(route: Route) {
-        return this.routes.some(r => this.equals(r, route));
+        return this.routes.some(r => this.options.equals(r, route));
     }
 
     insert(route: Route): boolean {
-        const parts = urlToParts(route.path);
+        const parts = this.options.toParts(route.path);
         let node = this as TrieRoute;
 
-        const start = route.prefix ? urlToParts(route.prefix).length : 0;
+        const start = route.prefix ? this.options.toParts(route.prefix).length : 0;
         let i = start;
         for (const part of parts) {
-            const wildcard = this.wlidcards.find(w => w.match(part, parts, i - start));
+            const wildcard = this.options.wlidcards.find(w => w.match(part, parts, i - start));
             if (wildcard) {
+                route.isWildcard = true;
                 if (wildcard.toPath) {
                     if (!route.pathParams) {
                         route.pathParams = {};
@@ -42,14 +41,14 @@ export class TrieRoute {
                     route.pathParams[wildcard.toPath(part)] = i;
                 }
                 if (!node.children.has(wildcard.wlidcard)) {
-                    const newNode = new TrieRoute(this.wlidcards, this.loader, this.equals);
+                    const newNode = new TrieRoute(this.options);
 
                     node.children.set(wildcard.wlidcard, newNode);
                 }
                 node = node.children.get(wildcard.wlidcard)!;
             } else {
                 if (!node.children.has(part)) {
-                    node.children.set(part, new TrieRoute(this.wlidcards, this.loader, this.equals));
+                    node.children.set(part, new TrieRoute(this.options));
                 }
                 node = node.children.get(part)!;
             }
@@ -64,7 +63,7 @@ export class TrieRoute {
         if (index === pathParts.length) {
             // 到达目标节点，删除路由
             if (route) {
-                this.routes.splice(this.routes.findIndex(r => this.equals(r, route)), 1);
+                this.routes.splice(this.routes.findIndex(r => this.options.equals(r, route)), 1);
             } else {
                 this.routes = [];
             }
@@ -139,7 +138,7 @@ export class TrieRoute {
             }
         }
 
-        for (const wlidcard of this.wlidcards) {
+        for (const wlidcard of this.options.wlidcards) {
             if (node.children.has(wlidcard.wlidcard)) {
                 return await this.recursive(node.children.get(wlidcard.wlidcard)!, parts, index + 1);
             }
@@ -150,7 +149,7 @@ export class TrieRoute {
     protected async load() {
         const unloadeds = this.routes.filter(r => r.loaded === false);
         for (const route of unloadeds) {
-            const routers = await this.loader(route);
+            const routers = await this.options.loader(route);
             routers?.forEach(route => this.insert(route));
             route.loaded = true;
         }
@@ -167,21 +166,22 @@ export interface Wlidcard {
     startWith?: boolean;
 }
 
-export function urlToParts(url: string){
-    return url.split('/').filter(part => part);
-}
 
+export interface TrieOptions {
+    loader: (route: Route) => Promise<Routes>,
+    toParts: (path: string) => string[];
+    equals: (r1: Route, r2: Route) => boolean;
+    wlidcards: Wlidcard[];
+}
 
 
 export class TrieRouter {
     private root: TrieRoute;
 
     constructor(
-        private loader: (route: Route) => Promise<Routes>,
-        private equals: (r1: Route, r2: Route) => boolean,
-        private wlidcards: Wlidcard[]
+        private options: TrieOptions
     ) {
-        this.root = new TrieRoute(this.wlidcards, this.loader, this.equals);
+        this.root = new TrieRoute(this.options);
     }
 
 
@@ -192,7 +192,7 @@ export class TrieRouter {
     match(path: string): Promise<TrieRoute | undefined>;
     match(parts: string[]): Promise<TrieRoute | undefined>;
     match(arg: string | string[]): Promise<TrieRoute | undefined> {
-        const parts = isString(arg) ? urlToParts(arg) : arg;
+        const parts = isString(arg) ? this.options.toParts(arg) : arg;
         return this.root.match(parts, 0);
     }
 
@@ -200,9 +200,9 @@ export class TrieRouter {
     remove(path: string): void;
     remove(arg: string | Route) {
         const path = isString(arg) ? arg : arg.path;
-        const parts = urlToParts(path);
+        const parts = this.options.toParts(path);
         const wparts = parts.map((part, idx) => {
-            const wildcard = this.wlidcards.find(w => w.match(part, parts, idx));
+            const wildcard = this.options.wlidcards.find(w => w.match(part, parts, idx));
             return wildcard ? wildcard.wlidcard : part;
         });
         this.root.remove(wparts, 0, isString(arg) ? undefined : arg);

@@ -1,12 +1,15 @@
 import { Handler, HandlerFn, HandlerLike, Invocation, Token, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { InvocationHandlerOptions } from '@tsdi/core';
+import { Pattern, Protocols, RequestMethod } from '@tsdi/common';
 import { Observable } from 'rxjs';
-import { Pattern, Protocols } from '@tsdi/common';
 
 /**
  * Route.
  */
 export interface Route {
+    /**
+     * route prefix.
+     */
     prefix?: string;
     /**
      * The path to match against. Cannot be used together with a custom `matcher` function.
@@ -16,6 +19,14 @@ export interface Route {
      *
      */
     path: string;
+    /**
+     * route path regExp.
+     */
+    regExp?: RegExp;
+    /**
+     * path is wildcard or not.
+     */
+    isWildcard?: boolean;
     /**
      * request method.
      */
@@ -90,7 +101,19 @@ export const ROUTES = tokenId<Routes>('ROUTES');
 /**
  * route options
  */
-export interface RouteOptions<T = any> extends Partial<Route>, InvocationHandlerOptions<T> {
+export interface RouteOptions<T = any> extends InvocationHandlerOptions<T> {
+    /**
+     * route prefix.
+     */
+    prefix?: string;
+    /**
+     * route path.
+     */
+    path?: string;
+    /**
+     * request method.
+     */
+    method?: RequestMethod;
     /**
      * pipe extends args.
      */

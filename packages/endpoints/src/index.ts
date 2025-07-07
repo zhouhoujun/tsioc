@@ -1,11 +1,8 @@
 export * from './middleware/middleware';
-// export * from './middleware/middleware.compose';
-// export * from './middleware/middleware.service';
 
 export * from './router/route';
 export * from './router/router';
 export * from './router/router.optimize';
-// export * from './router/controller';
 export * from './router/router.providers';
 
 export * from './metadata';

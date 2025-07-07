@@ -5,7 +5,7 @@ import { Route, Routes } from './route';
 import { Router } from './router';
 
 import { OptimizedRouter } from './router.optimize';
-import { Wlidcard } from './trie';
+import { TrieOptions, Wlidcard } from './trie';
 
 
 
@@ -54,8 +54,7 @@ export function createRouteProviders(protocol: Protocols, microservice: boolean,
                     opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter, defaultFormatter),
                     opts.prefix,
                     protocol,
-                    opts.equals,
-                    opts.wildcards,
+                    opts.options,
                     opts.routes,
                     microservice
                 )
@@ -77,8 +76,7 @@ export interface RouteOpts {
     // matcher?: TypeOf<RouteMatcher>;
     formatter?: TypeOf<PatternFormatter>;
     prefix?: string;
-    equals?: (r1: Route, r2: Route) => boolean;
-    wildcards?: Wlidcard[];
+    options?: Partial<TrieOptions>;
     routes?: Routes;
 }
 

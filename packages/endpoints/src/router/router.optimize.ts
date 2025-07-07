@@ -8,8 +8,8 @@ import { BadRequestException, NotFoundException } from '@tsdi/common/transport';
 import { defer, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 import { Route, ROUTES, Routes } from './route';
-import { MappingDef, RouteHanlder, RouteMappingMetadata, Router } from './router';
-import { TrieRoute, TrieRouter, urlToParts, Wlidcard } from './trie';
+import { MappingDef, RouteHanlder, RouteMappingMetadata, RoutePatterns, Router } from './router';
+import { TrieOptions, TrieRoute, TrieRouter, Wlidcard } from './trie';
 import { RestfulRequestContext } from '../RestfulRequestContext';
 import { createRouteHandler } from '../impl/route.handler';
 import { RouteHandler } from './route.handler';
@@ -22,22 +22,30 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     private trieRouter: TrieRouter;
     private cache: Map<string, TrieRoute | null> = new Map();
     private params: Map<string, Map<string, Record<string, string>>> = new Map();
+    private regExps: Map<RegExp, Route> = new Map();
 
     readonly routes: Routes;
+    readonly options: TrieOptions;
 
     constructor(
         private injector: Injector,
         readonly formatter: PatternFormatter,
         readonly prefix: string = '',
         readonly protocol: Protocols | null = null,
-        equals?: (r1: Route, r2: Route) => boolean,
-        wlidcards?: Wlidcard[],
+        options?: Partial<TrieOptions>,
         routes?: Routes,
         private microservice?: boolean
     ) {
         super()
         this.routes = [];
-        this.trieRouter = new TrieRouter(r => this.load(r), equals ?? (microservice ? microEquals : resetfulEquals), wlidcards ?? (microservice ? microWildcards : restWildcards));
+        this.options = {
+            loader: r => this.load(r),
+            equals: microservice ? microEquals : resetfulEquals,
+            toParts: microservice ? microToParts : urlToParts,
+            wlidcards: microservice ? microWildcards : restWildcards,
+            ...options
+        };
+        this.trieRouter = new TrieRouter(this.options);
         routes?.forEach(route => this.trieRouter.insert(route));
     }
 
@@ -50,6 +58,9 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             route = {
                 path: this.formatter.format(arg as Pattern)
             };
+            if (arg instanceof RegExp) {
+                route.regExp = arg;
+            }
             if (isArray(handler)) {
                 route.handlers = handler;
                 route.handle = composeHandlers(handler);
@@ -61,7 +72,9 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         } else {
             route = arg as Route;
         }
-        if (this.trieRouter.insert(route)) {
+        if (route.regExp) {
+            this.regExps.set(route.regExp, route);
+        } else if (this.trieRouter.insert(route)) {
             this.routes.push(route);
         }
         callback?.(route);
@@ -81,24 +94,36 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         return this
     }
 
-    getPatterns() {
+    getPatterns(): RoutePatterns {
+        const paths: string[] = [];
         const patterns: string[] = [];
+        const regExps: RegExp[] = Array.from(this.regExps.keys());
         this.routes.forEach(r => {
             if (r.path) {
                 if (r.paths && r.pathParams && r.handler instanceof RouteHandler) {
                     const injector = r.handler.injector;
                     Object.entries(r.paths).forEach(([key, val]) => {
-                        const paths: any[] = injector.get(val, Empty);
-                        paths.forEach(p => {
-                            patterns.push(r.path.replace(`:${key}`, p));
+                        const pathValues: any[] = injector.get(val, Empty);
+                        pathValues.forEach(p => {
+                            paths.push(r.path.replace(`:${key}`, p));
                         })
                     })
                 } else {
-                    patterns.push(r.path)
+                    if (r.isWildcard) {
+                        patterns.push(r.path);
+                    } else {
+                        paths.push(r.path);
+                    }
+
                 }
             }
         });
-        return patterns;
+        return {
+            routes: paths.concat(patterns),
+            paths,
+            patterns,
+            regExps
+        };
     }
 
     forEach(cb: (route: Route) => void | false): void | false {
@@ -112,7 +137,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         return defer(async () => {
             const route = await this.getRoute(ctx);
             if (route && !route.handle) {
-                route.handle = await this.parse(route);
+                route.handle = this.parse(route);
             }
             return route;
         }).pipe(
@@ -197,6 +222,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
                 prefix,
                 method: m.metadata.method,
                 pathParams: pathParams ? { ...pathParams } : undefined,
+                paths: m.metadata.paths,
                 handler: createRouteHandler(invocation, options, m.propertyKey)
             };
         })
@@ -226,7 +252,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         let parts: string[] | undefined;
         let trieRoute = this.cache.get(url);
         if (trieRoute == undefined) {
-            parts = urlToParts(url);
+            parts = this.options.toParts(url);
             trieRoute = await this.trieRouter.match(parts);
             this.cache.set(url, trieRoute || null);
         }
@@ -242,7 +268,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             }
             if (routes.length > 1) {
                 if (!parts) {
-                    parts = urlToParts(url);
+                    parts = this.options.toParts(url);
                 }
                 const handles = routes.map(route => {
                     return (input: RequestContext, context?: any) => {
@@ -274,7 +300,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         } else if (route?.pathParams) {
             const params: Record<string, string> = {};
             if (!parts) {
-                parts = urlToParts(url);
+                parts = this.options.toParts(url);
             }
             Object.entries(route.pathParams).forEach(([v, k]) => {
                 params[v] = parts![k];
@@ -305,6 +331,8 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         (ctx as RestfulRequestContext).redirect(url, alt)
     }
 }
+
+
 
 function handlerEquals(r1: TypeOf<Handler>, r2: TypeOf<Handler>) {
     return r1 === r2 ||
@@ -348,6 +376,7 @@ function microEquals(r1: Route, r2: Route) {
 
 const microWildcards: Wlidcard[] = [
     { wlidcard: ':', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
+    { wlidcard: '${}', match: (part: string) => part.startsWith('${') && part.endsWith('}'), toPath: (part: string) => part.slice(2, -1) },
     { wlidcard: '*', match: (part: string) => part === '*' },
     { wlidcard: '+', match: (part: string) => part === '+' },
     { wlidcard: '#', match: (part: string, parts: string[], idx: number) => part == '#' && (idx == parts.length - 1), startWith: true },
@@ -358,3 +387,15 @@ const microWildcards: Wlidcard[] = [
 const restWildcards: Wlidcard[] = [
     { wlidcard: '*', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
 ];
+
+const microToParts = (path: string) => {
+    if (path.indexOf('/') >= 0) {
+        return path.split('/').filter(part => part);
+    }
+    if (path.indexOf('.') >= 0) {
+        return path.split('.').filter(part => part);
+    }
+    return path ? [path] : [];
+}
+
+const urlToParts = (url: string) => url.split('/').filter(part => part);
