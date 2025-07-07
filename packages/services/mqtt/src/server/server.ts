@@ -1,4 +1,4 @@
-import { Exception, Injectable, lang, promisify } from '@tsdi/ioc';
+import { Empty, Exception, Injectable, lang, promisify } from '@tsdi/ioc';
 import { ev } from '@tsdi/common/transport';
 import { getRouter, RequestContext, Server, ServerTransport, ServerTransportFactory } from '@tsdi/endpoints';
 import { InjectLog, Logger } from '@tsdi/logger';
@@ -6,6 +6,7 @@ import { Client, connect, IClientSubscribeOptions } from 'mqtt';
 import { MqttServConfig } from './options';
 import { MqttRequestHandler } from './handler';
 import { Subject } from 'rxjs';
+import { RouteHandler } from '@tsdi/endpoints/src/router/route.handler';
 
 
 /**
@@ -64,12 +65,18 @@ export class MqttServer extends Server<RequestContext, MqttServConfig> {
         const options = this.getOptions();
         const injector = this.handler.injector;
         const router = getRouter(injector, options.protocol ?? 'mqtt', true);
+        // if (options.content?.prefix) {
+        //     const content = router.formatter.format(`${options.content.prefix}/#`);
+        //     router.matcher.register(content, true);
+        // }
+
+        const subscribes = router.getPatterns();
         if (options.content?.prefix) {
             const content = router.formatter.format(`${options.content.prefix}/#`);
-            router.matcher.register(content, true);
+            subscribes.push(content);
         }
 
-        const subscribes = this.subscribes = router.matcher.getPatterns();
+        this.subscribes = subscribes;
 
         await (options.subscribeOptions ? promisify<string | string[], IClientSubscribeOptions>(this.mqtt.subscribe, this.mqtt)(subscribes, options.subscribeOptions)
             : promisify(this.mqtt.subscribe, this.mqtt)(subscribes))
@@ -89,11 +96,11 @@ export class MqttServer extends Server<RequestContext, MqttServConfig> {
             `Subscribed successfully! This server is currently subscribed topics.`,
             subscribes
         );
-        router.matcher.eachPattern((topic, pattern) => {
-            if (topic !== pattern) {
-                this.logger.info('Transform pattern', pattern, 'to topic', topic)
-            }
-        });
+        // router.matcher.eachPattern((topic, pattern) => {
+        //     if (topic !== pattern) {
+        //         this.logger.info('Transform pattern', pattern, 'to topic', topic)
+        //     }
+        // });
 
     }
 

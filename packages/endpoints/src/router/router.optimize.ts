@@ -81,6 +81,26 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         return this
     }
 
+    getPatterns() {
+        const patterns: string[] = [];
+        this.routes.forEach(r => {
+            if (r.path) {
+                if (r.paths && r.pathParams && r.handler instanceof RouteHandler) {
+                    const injector = r.handler.injector;
+                    Object.entries(r.paths).forEach(([key, val]) => {
+                        const paths: any[] = injector.get(val, Empty);
+                        paths.forEach(p => {
+                            patterns.push(r.path.replace(`:${key}`, p));
+                        })
+                    })
+                } else {
+                    patterns.push(r.path)
+                }
+            }
+        });
+        return patterns;
+    }
+
     forEach(cb: (route: Route) => void | false): void | false {
         return this.trieRouter.forEach(cb);
     }

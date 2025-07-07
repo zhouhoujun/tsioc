@@ -29,6 +29,8 @@ export abstract class Router<T = RouteHanlder> implements Backend<RequestContext
     abstract handle(input: RequestContext): Observable<any>;
 
     abstract get routes(): Routes;
+
+    abstract getPatterns(): string[];
     /**
      * route prefix.
      */
