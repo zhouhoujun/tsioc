@@ -267,7 +267,7 @@ describe('Udp hybrid Tcp Server & Udp Client & TcpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.statusText).toEqual('Bad Request');
+        expect(r.statusText).toEqual('Not Found');
     })
 
     it('route with request restful param pipe throw argument err', async () => {
