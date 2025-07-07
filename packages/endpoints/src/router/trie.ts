@@ -14,26 +14,26 @@ export class TrieRoute {
     ) { }
 
 
-    find(method: string) {
-        return this.routes.find(route => (route.handler || route.handle) && (!route.method || route.method === '*' || route.method === method || route.method?.includes(method)));
+    find(method?: string) {
+        return this.routes.find(route => (route.handler || route.handle) && (!route.method || route.method === '*' || route.method === method || (method && route.method?.includes(method))));
     }
 
-    filter(method: string) {
-        return this.routes.filter(route => (route.handler || route.handle) && (!route.method || route.method === '*' || route.method === method || route.method?.includes(method)));
+    filter(method?: string) {
+        return this.routes.filter(route => (route.handler || route.handle) && (!route.method || route.method === '*' || route.method === method || (method && route.method?.includes(method))));
     }
 
     has(route: Route) {
         return this.routes.some(r => this.equals(r, route));
     }
 
-    insert(route: Route): this {
-        const parts = route.path.split('/').filter(part => part);
+    insert(route: Route): boolean {
+        const parts = urlToParts(route.path);
         let node = this as TrieRoute;
-        
-        const start = route.prefix ? route.prefix.split('/').filter(part => part).length : 0;
+
+        const start = route.prefix ? urlToParts(route.prefix).length : 0;
         let i = start;
         for (const part of parts) {
-            const wildcard = this.wlidcards.find(w => w.match(part, parts, i-start));
+            const wildcard = this.wlidcards.find(w => w.match(part, parts, i - start));
             if (wildcard) {
                 if (wildcard.toPath) {
                     if (!route.pathParams) {
@@ -56,9 +56,8 @@ export class TrieRoute {
             i++;
         }
 
-        node.bind(route);
+        return node.bind(route);
 
-        return this;
     }
 
     remove(pathParts: string[], index: number, route?: Route): boolean {
@@ -98,8 +97,10 @@ export class TrieRoute {
         }
     }
 
-    bind(route: Route) {
+    bind(route: Route): boolean {
+        let ret = false;
         if (!this.has(route)) {
+            ret = true;
             this.routes.push(route);
         }
         if (route.children) {
@@ -107,6 +108,7 @@ export class TrieRoute {
         } else if (route.controller || route.loadChildren || route.loadController) {
             route.loaded = false;
         }
+        return ret;
     }
 
     get loaded() {
@@ -165,6 +167,9 @@ export interface Wlidcard {
     startWith?: boolean;
 }
 
+export function urlToParts(url: string){
+    return url.split('/').filter(part => part);
+}
 
 
 
@@ -180,15 +185,14 @@ export class TrieRouter {
     }
 
 
-    insert(route: Route): this {
-        this.root.insert(route);
-        return this;
+    insert(route: Route): boolean {
+        return this.root.insert(route);
     }
 
     match(path: string): Promise<TrieRoute | undefined>;
     match(parts: string[]): Promise<TrieRoute | undefined>;
     match(arg: string | string[]): Promise<TrieRoute | undefined> {
-        const parts = isString(arg) ? arg.split('/').filter(part => part) : arg;
+        const parts = isString(arg) ? urlToParts(arg) : arg;
         return this.root.match(parts, 0);
     }
 
@@ -196,8 +200,8 @@ export class TrieRouter {
     remove(path: string): void;
     remove(arg: string | Route) {
         const path = isString(arg) ? arg : arg.path;
-        const parts = path.split('/').filter(part => part);
-        const wparts = parts.map((part,idx) => {
+        const parts = urlToParts(path);
+        const wparts = parts.map((part, idx) => {
             const wildcard = this.wlidcards.find(w => w.match(part, parts, idx));
             return wildcard ? wildcard.wlidcard : part;
         });

@@ -6,7 +6,7 @@ import { Pattern, Protocols } from '@tsdi/common';
 /**
  * Route.
  */
-export interface Route<TArg = any> extends InvocationHandlerOptions<TArg> {
+export interface Route {
     prefix?: string;
     /**
      * The path to match against. Cannot be used together with a custom `matcher` function.
@@ -80,7 +80,7 @@ export type LoadChildren = () => Type | Routes | Promise<Type | Routes> | Observ
 
 export type LoadController = () => Type | Promise<Type> | Observable<Type>;
 
-export type Routes<T = any> = Route<T>[];
+export type Routes = Route[];
 
 /**
  * ROUTES
@@ -90,7 +90,7 @@ export const ROUTES = tokenId<Routes>('ROUTES');
 /**
  * route options
  */
-export interface RouteOptions<T = any> extends Partial<Route<T>> {
+export interface RouteOptions<T = any> extends Partial<Route>, InvocationHandlerOptions<T> {
     /**
      * pipe extends args.
      */

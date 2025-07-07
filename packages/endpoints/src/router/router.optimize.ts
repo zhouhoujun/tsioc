@@ -1,7 +1,6 @@
 import {
     ClassType, composeHandlers, DecorDefine, Empty, getClass, Handler, HandlerFn, Injector, Invocation,
-    isArray, isClassType, isFunction, isString, isType, ModuleRef, OnDestroy,
-    TypeOf
+    isArray, isClassType, isFunction, isString, isType, ModuleRef, OnDestroy, TypeOf
 } from '@tsdi/ioc';
 import { ApplicationHandler } from '@tsdi/core';
 import { Pattern, PatternFormatter, Protocols } from '@tsdi/common';
@@ -9,8 +8,8 @@ import { BadRequestException, NotFoundException } from '@tsdi/common/transport';
 import { defer, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 import { Route, ROUTES, Routes } from './route';
-import { RouteHanlder, RouteMappingMetadata, Router } from './router';
-import { TrieRoute, TrieRouter, Wlidcard } from './trie';
+import { MappingDef, RouteHanlder, RouteMappingMetadata, Router } from './router';
+import { TrieRoute, TrieRouter, urlToParts, Wlidcard } from './trie';
 import { RestfulRequestContext } from '../RestfulRequestContext';
 import { createRouteHandler } from '../impl/route.handler';
 import { RouteHandler } from './route.handler';
@@ -21,8 +20,10 @@ import { RouteHandler } from './route.handler';
 export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
     private trieRouter: TrieRouter;
-    private cache: Map<string, TrieRoute | undefined> = new Map();
+    private cache: Map<string, TrieRoute | null> = new Map();
     private params: Map<string, Map<string, Record<string, string>>> = new Map();
+
+    readonly routes: Routes;
 
     constructor(
         private injector: Injector,
@@ -35,6 +36,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         private microservice?: boolean
     ) {
         super()
+        this.routes = [];
         this.trieRouter = new TrieRouter(r => this.load(r), equals ?? (microservice ? microEquals : resetfulEquals), wlidcards ?? (microservice ? microWildcards : restWildcards));
         routes?.forEach(route => this.trieRouter.insert(route));
     }
@@ -59,7 +61,9 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         } else {
             route = arg as Route;
         }
-        this.trieRouter.insert(route);
+        if (this.trieRouter.insert(route)) {
+            this.routes.push(route);
+        }
         callback?.(route);
         return this;
     }
@@ -155,19 +159,31 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             .getMethodDefines(m => m && m.metadata.method && isString(m.metadata.route))
             .sort((ra, rb) => (ra.metadata.route || '').length - (rb.metadata.route || '').length) as DecorDefine<RouteMappingMetadata>[];
 
+        const anno = invocation.class.getAnnotation<MappingDef>();
+
         return sortRoutes.map(m => {
+            const options = { ...m.metadata };
+            if (anno.interceptors) {
+                options.interceptors = [anno.interceptors, ...options.interceptors ?? Empty];
+            }
+            if (anno.guards) {
+                options.guards = [...anno.guards, ...options.guards ?? Empty]
+            }
+            if (anno.filters) {
+                options.filters = [...anno.filters, ...options.filters ?? Empty]
+            }
             return {
                 path: this.formatter.format(m.metadata.route as Pattern),
                 prefix,
                 method: m.metadata.method,
                 pathParams: pathParams ? { ...pathParams } : undefined,
-                handler: createRouteHandler(invocation, { ...m.metadata }, m.propertyKey)
+                handler: createRouteHandler(invocation, options, m.propertyKey)
             };
         })
     }
 
 
-    protected async parse(route: Route): Promise<HandlerFn | undefined> {
+    protected parse(route: Route): HandlerFn | undefined {
         if (route.handler) {
             let handler: Handler;
             if (isFunction(route.handler)) {
@@ -187,22 +203,61 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
     async getRoute(ctx: RequestContext): Promise<Route | undefined> {
         const url = ctx.url;
-        if (this.cache.has(url)) {
-            const params = this.params.get(url)?.get(ctx.method || '*');
-            if (params) {
-                ctx.request.path = params;
-            }
-            return this.cache.get(url)?.find(ctx.method);
+        let parts: string[] | undefined;
+        let trieRoute = this.cache.get(url);
+        if (trieRoute == undefined) {
+            parts = urlToParts(url);
+            trieRoute = await this.trieRouter.match(parts);
+            this.cache.set(url, trieRoute || null);
         }
 
-        const parts = url.split('/').filter(part => part)
-        const trieRoute = await this.trieRouter.match(parts);
-        this.cache.set(url, trieRoute);
-        const route = trieRoute?.find(ctx.method);
-        if (route?.pathParams) {
+        if (!trieRoute) return;
+        if (this.microservice) {
+            const routes = trieRoute.filter(ctx.method);
+            if (!routes.length) return;
+            if (routes.length == 1) {
+                const route = routes[0];
+                if (route) this.initPaths(ctx, route, url, parts, ctx.method || '*')
+                return route;
+            }
+            if (routes.length > 1) {
+                if (!parts) {
+                    parts = urlToParts(url);
+                }
+                const handles = routes.map(route => {
+                    return (input: RequestContext, context?: any) => {
+                        this.initPaths(input, route, url, parts, ctx.method);
+                        if (!route.handle) {
+                            route.handle = this.parse(route)!;
+                        }
+                        return route.handle(input, context);
+                    }
+                });
+                return {
+                    path: url,
+                    handle: composeHandlers(handles)
+                }
+            }
+        }
+
+        const route = trieRoute.find(ctx.method);
+        if (route) this.initPaths(ctx, route, url, parts, ctx.method || '*')
+        return route;
+    }
+
+
+    private initPaths(ctx: RequestContext, route: Route, url: string, parts?: string[], method?: string) {
+        const params = method ? this.params.get(url)?.get(method) : undefined;
+
+        if (params) {
+            ctx.request.path = params;
+        } else if (route?.pathParams) {
             const params: Record<string, string> = {};
+            if (!parts) {
+                parts = urlToParts(url);
+            }
             Object.entries(route.pathParams).forEach(([v, k]) => {
-                params[v] = parts[k];
+                params[v] = parts![k];
             })
             ctx.request.path = params;
             let paths = this.params.get(url);
@@ -210,10 +265,11 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
                 paths = new Map();
                 this.params.set(url, paths);
             }
-            paths.set(ctx.method || '*', params);
+            if (method) paths.set(method, params);
         }
-        return route;
     }
+
+
 
     onDestroy(): void {
         this.cache.clear();

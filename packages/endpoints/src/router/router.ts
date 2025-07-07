@@ -3,7 +3,7 @@ import { ApplicationInterceptor, Backend, ApplicationHandler } from '@tsdi/core'
 import { Pattern, Protocols, PatternFormatter } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { RequestContext } from '../RequestContext';
-import { Route, RouteOptions } from './route';
+import { Route, RouteOptions, Routes } from './route';
 
 
 /**
@@ -27,6 +27,8 @@ export abstract class Router<T = RouteHanlder> implements Backend<RequestContext
     asDefault?: boolean;
 
     abstract handle(input: RequestContext): Observable<any>;
+
+    abstract get routes(): Routes;
     /**
      * route prefix.
      */
