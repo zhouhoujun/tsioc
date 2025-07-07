@@ -14,7 +14,7 @@ export class BrowserResponseStatusFormater extends ResponseStatusFormater {
         return hrtime ? [
             this.outgoing,
             ctx.method ?? '',
-            ctx.url,
+            ctx.originalUrl ?? ctx.url,
             status,
             this.htime.format(hrtime),
             this.formatSize(ctx.length),
@@ -22,7 +22,7 @@ export class BrowserResponseStatusFormater extends ResponseStatusFormater {
         ] : [
             this.incoming,
             ctx.method ?? '',
-            ctx.url
+            ctx.originalUrl ?? ctx.url,
         ]
     }
 
