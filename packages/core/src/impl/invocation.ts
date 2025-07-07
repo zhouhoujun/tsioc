@@ -21,7 +21,7 @@ export class DefaultInvocationHandler<
     constructor(
         readonly invocation: Invocation<T>,
         options: TOptions,
-        protected propertyKey?: string | symbol) {
+        readonly propertyKey?: string | symbol) {
         super(createContext(invocation.context, options), options)
         this.limit = options.limit;
 

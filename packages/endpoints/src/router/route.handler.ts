@@ -1,15 +1,15 @@
-import { Abstract, Token } from '@tsdi/ioc';
-import { InvocationHandler, InvocationHandlerOptions } from '@tsdi/core';
-import { Pattern } from '@tsdi/common';
+import { Abstract } from '@tsdi/ioc';
+import { DefaultInvocationHandler } from '@tsdi/core';
+import { RouteOptions } from './route';
 
 
 /**
  * Route handler
  */
 @Abstract()
-export abstract class RouteHandler extends InvocationHandler<any, any, RouteHandlerOptions> {
+export abstract class RouteHandler<TInput = any, TOutput = any> extends DefaultInvocationHandler<TInput, TOutput, RouteOptions> {
 
-    abstract options: RouteHandlerOptions;
+    abstract options: RouteOptions;
 
     /**
      * route prefix.
@@ -17,20 +17,3 @@ export abstract class RouteHandler extends InvocationHandler<any, any, RouteHand
     abstract get prefix(): string;
 }
 
-/**
- * Route handler options.
- */
-export interface RouteHandlerOptions<T = any> extends InvocationHandlerOptions<T> {
-    /**
-     * route
-     */
-    route?: Pattern;
-    /**
-     * route prefix
-     */
-    prefix?: string;
-    /**
-     * dynamic tokens for path of topic.  
-     */
-    paths?: Record<string, Token>;
-}

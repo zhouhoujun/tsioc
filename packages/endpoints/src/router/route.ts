@@ -1,6 +1,7 @@
-import { Handler, HandlerFn, HandlerLike, Invocation, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { Handler, HandlerFn, HandlerLike, Invocation, Token, tokenId, Type, TypeOf } from '@tsdi/ioc';
 import { InvocationHandlerOptions } from '@tsdi/core';
 import { Observable } from 'rxjs';
+import { Pattern, Protocols } from '@tsdi/common';
 
 /**
  * Route.
@@ -19,6 +20,11 @@ export interface Route<TArg = any> extends InvocationHandlerOptions<TArg> {
      * request method.
      */
     method?: string | string[];
+
+    /**
+     * dynamic tokens for path of topic.  
+     */
+    paths?: Record<string, Token>;
     /**
      * path params.
      */
@@ -80,3 +86,39 @@ export type Routes<T = any> = Route<T>[];
  * ROUTES
  */
 export const ROUTES = tokenId<Routes>('ROUTES');
+
+/**
+ * route options
+ */
+export interface RouteOptions<T = any> extends Partial<Route<T>> {
+    /**
+     * pipe extends args.
+     */
+    args?: any[];
+    /**
+     * dynamic tokens for path of topic.  
+     */
+    paths?: Record<string, Token>;
+
+    /**
+     * route.
+     *
+     * @type {Pattern}
+     * @memberof RouteMappingMetadata
+     */
+    route?: Pattern;
+
+    /**
+     * transport protocol
+     */
+    protocol?: Protocols;
+
+    /**
+     * http content type.
+     *
+     * @type {string}
+     * @memberof RouteMappingMetadata
+     */
+    contentType?: string;
+}
+

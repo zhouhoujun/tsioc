@@ -1,17 +1,15 @@
 import {
     isArray, isString, lang, Type, TypeOf, createDecorator, ActionTypes, InjectFlags,
     ClassMethodDecorator, createParamDecorator, Exception, isMetadataObject, DecorDefine,
-    ProvidedInMetadata, AnnotationMetadata, Handler,
-    ClassType
+    AnnotationMetadata, Handler, ClassType
 } from '@tsdi/ioc';
 import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike } from '@tsdi/core';
 import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Protocols } from '@tsdi/common';
-import { MappingDef, ProtocolRouteMappingMetadata, ProtocolRouteMappingOptions, ProtocolRouteOptions, RouteMappingMetadata, RouteOptions, Router } from './router/router';
+import { RouteOptions } from './router/route';
+import { MappingDef, RouteMappingMetadata, RouteMappingOptions, Router } from './router/router';
 import { Middleware, MiddlewareFn } from './middleware/middleware';
 import { createRouteHandler } from './impl/route.handler';
 import { getRouter } from './router/router.providers';
-// import { ControllerRoute } from './router/controller';
-
 
 export { Topic, Payload } from '@tsdi/core';
 
@@ -47,7 +45,7 @@ export interface Subscribe {
  */
 export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe', {
     actionType: [ActionTypes.annoation, ActionTypes.runnable],
-    props: (route: string, arg1?: Protocols | ProtocolRouteOptions, option?: RouteOptions) =>
+    props: (route: string, arg1?: Protocols | RouteOptions, option?: RouteOptions) =>
         (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata,
     design: {
         method: (ctx) => {
@@ -57,15 +55,16 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
 
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
-
-            const prefix = joinPath(mapping.prefix, mapping.version, mapping.route);
             const invocation = ctx.class.createInvocation(injector);
 
             defines.forEach(def => {
                 const metadata = def.metadata;
                 const router = getRouter(injector, metadata.protocol, true);
-                const endpoint = createRouteHandler(invocation, { ...metadata, prefix }, def.propertyKey);
-                router.use(metadata.route!, endpoint, (r) => {
+                const prefix = joinPath(mapping.prefix, mapping.version, router.formatter.format(mapping.route!));
+
+                const path = router.formatter.format(metadata.route!);
+                const endpoint = createRouteHandler(invocation, { ...metadata, path, prefix }, def.propertyKey);
+                router.use(path, endpoint, (r) => {
                     invocation.onDestroy(() => router.unuse(r));
                 });
             });
@@ -87,21 +86,21 @@ export interface Handle {
      *
      * @param {RouteMappingMetadata} option message match option.
      */
-    (option: ProtocolRouteMappingMetadata): HandleDecorator;
+    (option: RouteMappingMetadata): HandleDecorator;
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
      * @param {string} pattern message match pattern.
-     * @param {ProtocolRouteOptions} option message match option.
+     * @param {RouteOptions} option message match option.
      */
-    (pattern: Pattern, option?: ProtocolRouteOptions): MethodDecorator;
+    (pattern: Pattern, option?: RouteOptions): MethodDecorator;
     /**
      * message handle. use to handle route message event, in class with decorator {@link RouteMapping}.
      *
      * @param {Pattern} pattern message match pattern.
      * @param {cmd?: string, pattern?: string } option message match option.
      */
-    (pattern: Pattern, protocol?: Protocols, option?: RouteOptions): MethodDecorator;
+    (pattern: Pattern, protocol?: Protocols, option?: Omit<RouteOptions, 'protocol'>): MethodDecorator;
 }
 
 /**
@@ -115,7 +114,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
     isMatadata: (args) => {
         return isMetadataObject(args) && isString(args.route)
     },
-    props: (route: Pattern, arg1?: Protocols | ProtocolRouteOptions, option?: RouteOptions) =>
+    props: (route: Pattern, arg1?: Protocols | RouteOptions, option?: RouteOptions) =>
         (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata<any>,
     def: {
         class: (ctx) => {
@@ -130,16 +129,16 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
 
             const injector = ctx.injector;
             const mapping = ctx.class.getAnnotation<MappingDef>();
-
-            const prefix = joinPath(mapping.prefix, mapping.version, mapping.route);
             const invocation = ctx.class.createInvocation(injector);
 
             defines.forEach(def => {
                 const metadata = def.metadata;
                 const router = getRouter(injector, metadata.protocol, true);
+                const prefix = joinPath(mapping.prefix, mapping.version, router.formatter.format(mapping.route!));
                 if (!router || !(router instanceof Router)) throw new Exception(metadata.protocol + ' microservice router has not register.');
-                const endpoint = createRouteHandler(invocation, { ...metadata, prefix }, def.propertyKey);
-                router.use(metadata.route!, endpoint, (r) => {
+                const path = router.formatter.format(metadata.route!);
+                const endpoint = createRouteHandler(invocation, { ...metadata, path, prefix }, def.propertyKey);
+                router.use(path, endpoint, (r) => {
                     invocation.onDestroy(() => router.unuse(r));
                 });
             });
@@ -151,13 +150,13 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             const type = ctx.type as ClassType<Handler>;
 
             const router = mapping.router ? injector.get(mapping.router) : getRouter(injector, mapping.protocol);
-            const route = mapping.route!;
+            const route = mapping.route;
             if (!route) throw new Exception(lang.getTypeName(ctx.type) + 'has not route!');
             if (!router) throw new Exception(lang.getTypeName(parent) + 'has not registered!');
             if (!(router instanceof Router)) throw new Exception(lang.getTypeName(router) + 'is not router!');
 
             router.use({
-                path: route,
+                path: router.formatter.format(route),
                 handle: (input, ctx) => {
                     return injector.get(type).handle(input, ctx);
                 },
@@ -196,7 +195,7 @@ export interface RouteMapping {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: ProtocolRouteMappingOptions & ProvidedInMetadata): ClassDecorator;
+    (route: string, options: RouteMappingMetadata): ClassDecorator;
     /**
      * route decorator. define the controller method as an route.
      *
@@ -216,9 +215,9 @@ export interface RouteMapping {
     /**
      * route decorator. define the controller as an route.
      *
-     * @param {ProtocolRouteMappingMetadata} [metadata] route metadata.
+     * @param {RouteMappingMetadata} [metadata] route metadata.
      */
-    (metadata: ProtocolRouteMappingMetadata): ClassDecorator;
+    (metadata: RouteMappingMetadata): ClassDecorator;
     /**
      * route decorator. define the method as an route.
      *
@@ -228,7 +227,7 @@ export interface RouteMapping {
 }
 
 
-export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<any>>(name: string, controllerOnly?: boolean) {
+export function createMappingDecorator<T extends RouteMappingMetadata<any>>(name: string, controllerOnly?: boolean) {
     return createDecorator<T>(name, {
         props: (route: string, arg2?: Type<Router> | Type<CanHandle>[] | string | T) => {
             route = normalize(route);
@@ -242,12 +241,12 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 return { ...arg2 as T, route };
             }
         },
-        appendProps: (meta) => {
-            if (meta.route) {
-                const regExp = createRestfulMatcher(meta.route);
-                if (regExp) (meta as RouteMappingMetadata).regExp = regExp;
-            }
-        },
+        // appendProps: (meta) => {
+        //     if (meta.route) {
+        //         const regExp = createRestfulMatcher(meta.route);
+        //         if (regExp) (meta as RouteMappingMetadata).regExp = regExp;
+        //     }
+        // },
         def: controllerOnly ? undefined : {
             class: (ctx) => {
                 ctx.class.setAnnotation(ctx.define.metadata);
@@ -264,7 +263,7 @@ export function createMappingDecorator<T extends ProtocolRouteMappingMetadata<an
                 if (!(router instanceof Router)) throw new Exception(lang.getTypeName(router) + 'is not router!');
 
                 const route = {
-                    path: joinPath(mapping.prefix, mapping.version, mapping.route),
+                    path: joinPath(mapping.prefix, mapping.version, router.formatter.format(mapping.route!)),
                     controller: ctx.class.createInvocation(injector)
                 };
                 router.use(route);
@@ -388,13 +387,13 @@ export interface Controller {
      * @param {string} route route sub path.
      * @param options route metedata options.
      */
-    (route: string, options: Omit<ProtocolRouteMappingOptions, 'route' | 'response'>): ClassDecorator;
+    (route: string, options: Omit<RouteMappingOptions, 'route' | 'response'>): ClassDecorator;
     /**
      * controller decorator. define the controller method as an route.
      *
      * @param {RouteMetadata} [metadata] route metadata.
      */
-    (metadata: Omit<ProtocolRouteMappingOptions, 'response'>): ClassMethodDecorator;
+    (metadata: Omit<RouteMappingOptions, 'response'>): ClassMethodDecorator;
 }
 
 
@@ -447,30 +446,30 @@ export function createRouteDecorator(method: RequestMethod) {
             arg2?: string | { middlewares: (Middleware | MiddlewareFn)[], guards?: Type<CanHandle>[], contentType?: string, method?: string }
         ) => {
             route = normalize(route);
-            const regExp = createRestfulMatcher(route);
-            return (isString(arg2) ? { route, regExp, contentType: arg2, method } : { route, regExp, ...arg2, method }) as ProtocolRouteMappingMetadata
+            // const regExp = createRestfulMatcher(route);
+            return (isString(arg2) ? { route, contentType: arg2, method } : { route, ...arg2, method }) as RouteMappingMetadata
         }
     });
 }
 
-const rest$ = /(^:\w+)|(\/:\w+)/g;
-const endRest$ = /:\w+$/g;
-const pthRest = '[^/]*';
-const endRest = '[^/]+';
+// const rest$ = /(^:\w+)|(\/:\w+)/g;
+// const endRest$ = /:\w+$/g;
+// const pthRest = '[^/]*';
+// const endRest = '[^/]+';
 
-// 缓存编译后的正则表达式
-const cache = new Map<string, RegExp>();
-function createRestfulMatcher(route: string) {
-    if (rest$.test(route)) {
-        if (cache.has(route)) {
-            return cache.get(route)!;
-        }
-        const regExp = new RegExp('^' + route.replace(rest$, pthRest).replace(endRest$, endRest) + '$');
-        cache.set(route, regExp);
-        return regExp;
-    }
-    return undefined;
-}
+// // 缓存编译后的正则表达式
+// const cache = new Map<string, RegExp>();
+// function createRestfulMatcher(route: string) {
+//     if (rest$.test(route)) {
+//         if (cache.has(route)) {
+//             return cache.get(route)!;
+//         }
+//         const regExp = new RegExp('^' + route.replace(rest$, pthRest).replace(endRest$, endRest) + '$');
+//         cache.set(route, regExp);
+//         return regExp;
+//     }
+//     return undefined;
+// }
 
 
 /**

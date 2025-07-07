@@ -1,6 +1,7 @@
 import {
     ClassType, composeHandlers, DecorDefine, Empty, getClass, Handler, HandlerFn, Injector, Invocation,
-    isArray, isClassType, isFunction, isString, isType, ModuleRef, OnDestroy
+    isArray, isClassType, isFunction, isString, isType, ModuleRef, OnDestroy,
+    TypeOf
 } from '@tsdi/ioc';
 import { ApplicationHandler } from '@tsdi/core';
 import { Pattern, PatternFormatter, Protocols } from '@tsdi/common';
@@ -12,27 +13,9 @@ import { RouteHanlder, RouteMappingMetadata, Router } from './router';
 import { TrieRoute, TrieRouter, Wlidcard } from './trie';
 import { RestfulRequestContext } from '../RestfulRequestContext';
 import { createRouteHandler } from '../impl/route.handler';
+import { RouteHandler } from './route.handler';
 
 
-
-const resetfulEquals = (r1: Route, r2: Route) => {
-    if (!r1 || !r2) {
-        return false;
-    }
-    if (r1 === r2) {
-        return true;
-    }
-    return r1.path === r2.path
-        && r1.method === r2.method
-        && !!(
-            (r1.redirectTo && r1.redirectTo === r2.redirectTo)
-            || (r1.handler && r1.handler === r2.handler)
-            || (r1.handle && r1.handle === r2.handle)
-            || (r1.controller && (r1.controller === r2.controller || (r1.controller instanceof Invocation && (r1.controller as Invocation).type === (r2.controller as Invocation).type)))
-            || (r1.loadController && r1.loadController === r2.loadController)
-            || (r1.loadChildren && r1.loadChildren === r2.loadChildren)
-        );
-}
 
 
 export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
@@ -48,10 +31,11 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         readonly protocol: Protocols | null = null,
         equals?: (r1: Route, r2: Route) => boolean,
         wlidcards?: Wlidcard[],
-        routes?: Routes
+        routes?: Routes,
+        private microservice?: boolean
     ) {
         super()
-        this.trieRouter = new TrieRouter(r => this.load(r), equals ?? resetfulEquals, wlidcards)
+        this.trieRouter = new TrieRouter(r => this.load(r), equals ?? (microservice ? microEquals : resetfulEquals), wlidcards ?? (microservice ? microWildcards : restWildcards));
         routes?.forEach(route => this.trieRouter.insert(route));
     }
 
@@ -208,13 +192,13 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             if (params) {
                 ctx.request.path = params;
             }
-            return this.cache.get(url)?.get(ctx.method);
+            return this.cache.get(url)?.find(ctx.method);
         }
 
         const parts = url.split('/').filter(part => part)
         const trieRoute = await this.trieRouter.match(parts);
         this.cache.set(url, trieRoute);
-        const route = trieRoute?.get(ctx.method);
+        const route = trieRoute?.find(ctx.method);
         if (route?.pathParams) {
             const params: Record<string, string> = {};
             Object.entries(route.pathParams).forEach(([v, k]) => {
@@ -245,3 +229,56 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         (ctx as RestfulRequestContext).redirect(url, alt)
     }
 }
+
+function handlerEquals(r1: TypeOf<Handler>, r2: TypeOf<Handler>) {
+    return r1 === r2 ||
+        (r1 instanceof RouteHandler
+            && r2 instanceof RouteHandler
+            && (r1.invocation === r2.invocation || (r1.invocation.type === r2.invocation.type && r1.propertyKey === r2.propertyKey)))
+}
+
+function routeEquals(r1: Route, r2: Route) {
+    return r1.method === r2.method
+        && !!(
+            (r1.redirectTo && r1.redirectTo === r2.redirectTo)
+            || (r1.handler && handlerEquals(r1.handler, r2.handler!))
+            || (r1.handle && r1.handle === r2.handle)
+            || (r1.controller && (r1.controller === r2.controller || (r1.controller instanceof Invocation && (r1.controller as Invocation).type === (r2.controller as Invocation).type)))
+            || (r1.loadController && r1.loadController === r2.loadController)
+            || (r1.loadChildren && r1.loadChildren === r2.loadChildren)
+        );
+}
+function resetfulEquals(r1: Route, r2: Route) {
+    if (!r1 || !r2) {
+        return false;
+    }
+    if (r1 === r2) {
+        return true;
+    }
+    return r1.path === r2.path && routeEquals(r1, r2);
+}
+
+
+function microEquals(r1: Route, r2: Route) {
+    if (!r1 || !r2) {
+        return false;
+    }
+    if (r1 === r2) {
+        return true;
+    }
+    return routeEquals(r1, r2);
+}
+
+
+const microWildcards: Wlidcard[] = [
+    { wlidcard: ':', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
+    { wlidcard: '*', match: (part: string) => part === '*' },
+    { wlidcard: '+', match: (part: string) => part === '+' },
+    { wlidcard: '#', match: (part: string, parts: string[], idx: number) => part == '#' && (idx == parts.length - 1), startWith: true },
+    { wlidcard: '**', match: (part: string, parts: string[], idx: number) => part === '**' && (idx == parts.length - 1), startWith: true }
+];
+
+
+const restWildcards: Wlidcard[] = [
+    { wlidcard: '*', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
+];

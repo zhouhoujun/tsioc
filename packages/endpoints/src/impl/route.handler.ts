@@ -1,21 +1,22 @@
-import { ClassType, Exception, Invocation } from '@tsdi/ioc';
-import { DefaultInvocationHandler, normalizeConfigableHandlerOptions } from '@tsdi/core';
-import { normalize, patternToPath } from '@tsdi/common';
-import { ForbiddenException } from '@tsdi/common/transport';
+import { ClassType, Empty, Exception, getToken, Invocation } from '@tsdi/ioc';
+import { ApplicationHandlerFn, ApplicationInterceptorLike, normalizeConfigableHandlerOptions } from '@tsdi/core';
+import { ForbiddenException, NotFoundException } from '@tsdi/common/transport';
+import { throwError } from 'rxjs';
 import { RequestContext } from '../RequestContext';
-import { RouteHandler, RouteHandlerOptions } from '../router/route.handler';
+import { RouteHandler } from '../router/route.handler';
+import { RouteOptions } from '../router/route';
 
 
 
 
-export class RouteHandlerImpl<TInput extends RequestContext = RequestContext, TOutput = any> extends DefaultInvocationHandler<TInput, TOutput> implements RouteHandler {
+export class RouteHandlerImpl<TInput extends RequestContext = RequestContext, TOutput = any> extends RouteHandler<TInput, TOutput> {
 
     private _prefix: string;
     readonly route: string;
-    constructor(invocation: Invocation, readonly options: RouteHandlerOptions = {}, propertyKey?: string | symbol) {
-        super(invocation, options, propertyKey);
-        this._prefix = options.prefix || '';
-        this.route = patternToPath(options.route || '');
+    constructor(invocation: Invocation, readonly options: RouteOptions, propertyKey?: string | symbol) {
+        super(invocation, normalizeRouteOptions(invocation, options, propertyKey), propertyKey);
+        this._prefix = options.prefix || '';        
+        this.route = options.path!;
     }
 
     get prefix(): string {
@@ -33,13 +34,42 @@ export class RouteHandlerImpl<TInput extends RequestContext = RequestContext, TO
     }
 }
 
+export function pathInterceptor(invocation: Invocation, route: RouteOptions) {
+
+    return (input: RequestContext, next: ApplicationHandlerFn<RequestContext>, ctx?: any) => {
+        if (route.paths && input.request.path) {
+            if (Object.entries(route.paths).some(([key, value]) => {
+                const filters: any[] = invocation.injector.get(value, Empty);
+                return !filters.length || !filters.includes(input.request.path[key])
+
+            })) {
+                return throwError(() => new NotFoundException())
+            }
+        }
+        return next(input, ctx);
+    }
+}
+
+function normalizeRouteOptions(invocation: Invocation, options: RouteOptions, propertyKey?: string | symbol) {
+    if (options.interceptors || options.paths) {
+        if (!options.interceptorsToken) {
+            options.interceptorsToken = getToken<ApplicationInterceptorLike[]>(invocation.type, (propertyKey?.toString() || ''))
+        }
+        if (options.paths) {
+            options.interceptors = options.interceptors || [];
+            options.interceptors.unshift(pathInterceptor(invocation, options));
+        }
+    }
+    return options;
+}
+
 // const isRest = /(^:\w+)|(\/:\w+)/;
 // const restParms = /^:\w+/;
 
 
 export function createRouteHandler<TInput, TClass extends RouteHandler, T>(
     invocation: Invocation<T>,
-    options: RouteHandlerOptions<TInput>,
+    options: RouteOptions<TInput>,
     propertyKey?: string | symbol,
     type?: ClassType<TClass>): TClass {
     const Hanlder = type ?? RouteHandlerImpl;

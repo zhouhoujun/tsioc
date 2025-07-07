@@ -1,9 +1,9 @@
-import { Abstract, HandlerLike, ProvidedInMetadata, Token, Type, TypeDef } from '@tsdi/ioc';
-import { ApplicationInterceptor, Backend, ApplicationHandler, InvocationHandlerOptions } from '@tsdi/core';
-import { RequestMethod, Pattern, Protocols, PatternFormatter } from '@tsdi/common';
+import { Abstract, HandlerLike, ProvidedInMetadata, Type, TypeDef } from '@tsdi/ioc';
+import { ApplicationInterceptor, Backend, ApplicationHandler } from '@tsdi/core';
+import { Pattern, Protocols, PatternFormatter } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { RequestContext } from '../RequestContext';
-import { Route } from './route';
+import { Route, RouteOptions } from './route';
 
 
 /**
@@ -153,62 +153,49 @@ export abstract class Router<T = RouteHanlder> implements Backend<RequestContext
 // }
 
 
-/**
- * route options
- */
-export interface RouteOptions<T = any> extends InvocationHandlerOptions<T> {
-    /**
-     * pipe extends args.
-     */
-    args?: any[];
-    /**
-     * dynamic tokens for path of topic.  
-     */
-    paths?: Record<string, Token>;
-}
+
+// /**
+//  * route mapping metadata.
+//  */
+// export interface RouteMappingMetadata<T = any> extends RouteOptions<T> {
+//     /**
+//      * route.
+//      *
+//      * @type {Pattern}
+//      * @memberof RouteMappingMetadata
+//      */
+//     route?: Pattern;
+//     /**
+//      * route `RegExp` matcher.
+//      */
+//     regExp?: RegExp;
+//     /**
+//      * request method.
+//      */
+//     method?: RequestMethod;
+//     /**
+//      * http content type.
+//      *
+//      * @type {string}
+//      * @memberof RouteMappingMetadata
+//      */
+//     contentType?: string;
+// }
+
+// /**
+//  * Protocol route options.
+//  */
+// export interface ProtocolRouteOptions<T = any> extends RouteOptions<T> {
+//     /**
+//      * transport protocol
+//      */
+//     protocol?: Protocols;
+// }
 
 /**
- * route mapping metadata.
+ * route mapping options.
  */
-export interface RouteMappingMetadata<T = any> extends RouteOptions<T> {
-    /**
-     * route.
-     *
-     * @type {Pattern}
-     * @memberof RouteMappingMetadata
-     */
-    route?: Pattern;
-    /**
-     * route `RegExp` matcher.
-     */
-    regExp?: RegExp;
-    /**
-     * request method.
-     */
-    method?: RequestMethod;
-    /**
-     * http content type.
-     *
-     * @type {string}
-     * @memberof RouteMappingMetadata
-     */
-    contentType?: string;
-}
-
-/**
- * Protocol route options.
- */
-export interface ProtocolRouteOptions<T = any> extends RouteOptions<T> {
-    /**
-     * transport protocol
-     */
-    protocol?: Protocols;
-}
-
-/**
- * Protocol route mapping options.
- */
-export interface ProtocolRouteMappingOptions<T = any> extends ProtocolRouteOptions<T> {
+export interface RouteMappingOptions<T = any> extends RouteOptions<T> {
     /**
      * parent router.
      * default register in root handle queue.
@@ -226,27 +213,16 @@ export interface ProtocolRouteMappingOptions<T = any> extends ProtocolRouteOptio
 }
 
 /**
- * protocol route mapping metadata.
+ * route mapping metadata.
  */
-export interface ProtocolRouteMappingMetadata<T = any> extends ProtocolRouteMappingOptions<T>, ProvidedInMetadata {
-    /**
-     * route.
-     *
-     * @type {string}
-     * @memberof ProtocolRouteMappingMetadata
-     */
-    route?: string;
+export interface RouteMappingMetadata<T = any> extends RouteMappingOptions<T>, ProvidedInMetadata {
 
-    /**
-     * request method.
-     */
-    method?: RequestMethod;
 }
 
 /**
  * mapping type def.
  */
-export interface MappingDef<T = any> extends TypeDef<T>, ProtocolRouteMappingMetadata<any> {
+export interface MappingDef<T = any> extends TypeDef<T>, RouteMappingMetadata<any> {
 
 }
 

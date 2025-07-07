@@ -14,8 +14,12 @@ export class TrieRoute {
     ) { }
 
 
-    get(method: string) {
+    find(method: string) {
         return this.routes.find(route => (route.handler || route.handle) && (!route.method || route.method === '*' || route.method === method || route.method?.includes(method)));
+    }
+
+    filter(method: string) {
+        return this.routes.filter(route => (route.handler || route.handle) && (!route.method || route.method === '*' || route.method === method || route.method?.includes(method)));
     }
 
     has(route: Route) {
@@ -162,9 +166,6 @@ export interface Wlidcard {
 }
 
 
-export const restWildcards: Wlidcard[] = [
-    { wlidcard: '*', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
-];
 
 
 export class TrieRouter {
@@ -173,7 +174,7 @@ export class TrieRouter {
     constructor(
         private loader: (route: Route) => Promise<Routes>,
         private equals: (r1: Route, r2: Route) => boolean,
-        private wlidcards: Wlidcard[] = restWildcards
+        private wlidcards: Wlidcard[]
     ) {
         this.root = new TrieRoute(this.wlidcards, this.loader, this.equals);
     }

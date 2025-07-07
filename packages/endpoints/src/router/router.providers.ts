@@ -38,15 +38,6 @@ export function getRouter(injector: Injector, protocol?: string, microservice?: 
 }
 
 
-export const microWildcards: Wlidcard[] = [
-    { wlidcard: '*', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
-    { wlidcard: '*', match: (part: string) => part === '*' },
-    { wlidcard: '+', match: (part: string) => part === '+' },
-    { wlidcard: '#', match: (part: string, parts: string[], idx: number) => part == '#' && (idx == parts.length - 1), startWith: true },
-    { wlidcard: '**', match: (part: string, parts: string[], idx: number) => part === '**' && (idx == parts.length - 1), startWith: true }
-];
-
-
 export function getRouterToken(protocol: Protocols, microservice?: boolean): Token<Router> {
     return getToken(microservice ? 'MicroRouter' : Router, protocol)
 }
@@ -64,8 +55,9 @@ export function createRouteProviders(protocol: Protocols, microservice: boolean,
                     opts.prefix,
                     protocol,
                     opts.equals,
-                    microservice ? opts.wildcards ?? microWildcards : opts.wildcards,
-                    opts.routes
+                    opts.wildcards,
+                    opts.routes,
+                    microservice
                 )
                 // microservice,
                 // asDefault)
