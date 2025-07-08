@@ -1,5 +1,5 @@
-import { Pattern, PatternFormatter, normalize, patternToPath } from '@tsdi/common';
 import { Injectable } from '@tsdi/ioc';
+import { Pattern, PatternFormatter, normalize, patternToPath } from '@tsdi/common';
 
 @Injectable()
 export class RedisPatternFormatter extends PatternFormatter {

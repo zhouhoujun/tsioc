@@ -215,7 +215,7 @@ describe('Nats hybrid Http Server & Nats Client & Http', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        expect(r.status).toEqual(400);
+        expect(r.status).toEqual(404);
     })
 
     it('route with request restful param pipe throw argument err', async () => {

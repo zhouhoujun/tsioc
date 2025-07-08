@@ -385,17 +385,21 @@ const microWildcards: Wlidcard[] = [
 
 const mqttWildcards: Wlidcard[] = [
     { wlidcard: ':', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
-    // { wlidcard: '*', match: (part: string) => part === '*' },
     { wlidcard: '+', match: (part: string) => part === '+' },
-    { wlidcard: '#', match: (part: string, parts: string[], idx: number) => part == '#' && (idx == parts.length - 1), startWith: true },
-    // { wlidcard: '**', match: (part: string, parts: string[], idx: number) => part === '**' && (idx == parts.length - 1), startWith: true }
+    { wlidcard: '#', match: (part: string, parts: string[], idx: number) => part == '#' && (idx == parts.length - 1), startWith: true }
 ];
 
 const redisWildcards: Wlidcard[] = [
     { wlidcard: ':', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
     { wlidcard: '?', match: (part: string) => part === '?' },
-    { wlidcard: '*', match: (part: string) => part === '*', startWith: true },
-    { wlidcard: ':*', match: (part: string) => part === ':*', startWith: true }
+    { wlidcard: '*', match: (part: string, parts: string[], idx: number) => part === '*' && (idx == parts.length - 1), startWith: true },
+    { wlidcard: ':*', match: (part: string, parts: string[], idx: number) => part === ':*' && (idx == parts.length - 1), startWith: true }
+];
+
+const natsWildcards: Wlidcard[] = [
+    { wlidcard: ':', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
+    { wlidcard: '*', match: (part: string) => part === '*' },
+    { wlidcard: '>', match: (part: string, parts: string[], idx: number) => part == '>' && (idx == parts.length - 1), startWith: true }
 ];
 
 function getMicroWildcardsBy(protocol: Protocols | null): Wlidcard[] {
@@ -407,6 +411,9 @@ function getMicroWildcardsBy(protocol: Protocols | null): Wlidcard[] {
         case 'redis':
             return redisWildcards;
 
+        case 'nats':
+            return natsWildcards;
+
         default:
             return microWildcards
     }
@@ -417,15 +424,6 @@ const restWildcards: Wlidcard[] = [
     { wlidcard: '*', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
 ];
 
-// const microToParts = (path: string) => {
-//     if (path.indexOf('/') >= 0) {
-//         return path.split('/').filter(part => part);
-//     }
-//     if (path.indexOf('.') >= 0) {
-//         return path.split('.').filter(part => part);
-//     }
-//     return path ? [path] : [];
-// }
 
 function getMicroToPartsBy(protocol: Protocols | null): (url: string) => string[] {
     switch (protocol) {
@@ -435,6 +433,10 @@ function getMicroToPartsBy(protocol: Protocols | null): (url: string) => string[
 
         case 'redis':
             return redisToParts;
+
+        case 'nats':
+            return dotParts;
+
         default:
             return urlToParts;
 
@@ -443,7 +445,7 @@ function getMicroToPartsBy(protocol: Protocols | null): (url: string) => string[
 }
 const redisToParts = (url: string) => {
     if (url.indexOf('.') >= 0) {
-        return url.split('.').filter(part => part);
+        return dotParts(url)
     }
     if (url.indexOf(':') >= 0) {
         return url.split(':').filter(part => part).map((r, idx) => idx ? ':' + r : r);
@@ -451,5 +453,7 @@ const redisToParts = (url: string) => {
     return url ? [url] : [];
 
 };
+
+const dotParts = (url: string) => url.split('.').filter(part => part);
 const mqttToParts = (url: string) => url.split('/');
 const urlToParts = (url: string) => url.split('/').filter(part => part);

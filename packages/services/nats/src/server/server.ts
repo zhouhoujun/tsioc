@@ -38,18 +38,20 @@ export class NatsServer extends Server<RequestContext, NatsServConfig> {
 
         const injector = this.handler.injector;
         const router = getRouter(injector, options.protocol ?? 'nats', true);
+
+        const { routes } = router.getPatterns();
+
         if (options.content?.prefix) {
             const content = router.formatter.format(`${options.content.prefix}.>`);
-            router.matcher.register(content, true);
+            routes.push(content);
         }
 
 
         const socket = this.socket;
-        const subs = router.matcher.getPatterns();
 
         const transport = this._transport = injector.get(ServerTransportFactory).create(injector, socket, options);
 
-        subs.map(sub => {
+        routes.map(sub => {
             socket.subscribe(sub, options.subscriptionOpts)
         });
 
@@ -57,7 +59,7 @@ export class NatsServer extends Server<RequestContext, NatsServConfig> {
 
         this.logger.info(
             `Subscribed successfully! This server is currently subscribed topics.`,
-            subs
+            routes
         );
 
     }
