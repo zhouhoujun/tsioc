@@ -80,7 +80,7 @@ export class AmqpServer extends Server<RequestContext, AmqpServConfig> {
 
         this.logger.info(
             `Subscribed successfully! This server is currently subscribed topics.`,
-            router.matcher.getPatterns()
+            router.getPatterns()
         );
     }
 

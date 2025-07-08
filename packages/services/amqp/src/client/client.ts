@@ -98,11 +98,7 @@ export class AmqpClient extends AbstractClient<TopicRequestOptions, AmqpRequest<
 
 
     protected createRequest(pattern: Pattern, options: RequestInitOpts<any, TopicRequestOptions>): AmqpRequest<any> {
-        if (isString(pattern)) {
-            return new AmqpRequest(pattern, null, options);
-        } else {
-            return new AmqpRequest(this.formatter.format(pattern), pattern, options);
-        }
+        return new AmqpRequest(this.formatter.format(pattern), pattern, options);
     }
 
 

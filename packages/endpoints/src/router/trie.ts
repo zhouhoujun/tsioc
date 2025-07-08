@@ -131,8 +131,9 @@ export class TrieRoute {
         }
 
         const part = parts[index];
+        let nextIdx = index + 1;
         if (node.children.has(part)) {
-            const result = await this.recursive(node.children.get(part)!, parts, index + 1);
+            const result = await this.recursive(node.children.get(part)!, parts, nextIdx);
             if (result) {
                 return result;
             }
@@ -141,14 +142,33 @@ export class TrieRoute {
 
         for (const wlidcard of this.options.wlidcards) {
             if (node.children.has(wlidcard.wlidcard)) {
-                const result = await this.recursive(node.children.get(wlidcard.wlidcard)!, parts, index + 1);
+                const subNode = node.children.get(wlidcard.wlidcard)!;
+                const result = await this.recursive(subNode, parts, nextIdx);
                 if (result) {
                     return result;
                 }
 
-                if (wlidcard.startWith) {
-                    return node;
+                if (wlidcard.startWith && parts.length == nextIdx) {
+                    return subNode;
                 }
+
+                if (wlidcard.endWith && parts.length > nextIdx + 1) {
+                    let endNode: TrieRoute | undefined;
+                    while (nextIdx < parts.length) {
+                        if (subNode.children.has(parts[nextIdx])) {
+                            endNode = subNode.children.get(parts[nextIdx])!;
+                            break;
+                        }
+                        nextIdx++;
+                    }
+                    if (endNode) {
+                        const result = await this.recursive(endNode, parts, nextIdx);
+                        if (result) {
+                            return result;
+                        }
+                    }
+                }
+
             }
         }
 
@@ -172,6 +192,7 @@ export interface Wlidcard {
     match: (part: string, parts: string[], index: number) => boolean;
     toPath?: (part: string) => string;
     startWith?: boolean;
+    endWith?: boolean;
 }
 
 

@@ -402,6 +402,12 @@ const natsWildcards: Wlidcard[] = [
     { wlidcard: '>', match: (part: string, parts: string[], idx: number) => part == '>' && (idx == parts.length - 1), startWith: true }
 ];
 
+const amqpWildcards: Wlidcard[] = [
+    { wlidcard: ':', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
+    { wlidcard: '*', match: (part: string) => part === '*' },
+    { wlidcard: '#', match: (part: string) => part == '#', startWith: true, endWith: true }
+];
+
 function getMicroWildcardsBy(protocol: Protocols | null): Wlidcard[] {
     switch (protocol) {
         case 'mqtt':
@@ -413,6 +419,9 @@ function getMicroWildcardsBy(protocol: Protocols | null): Wlidcard[] {
 
         case 'nats':
             return natsWildcards;
+
+        case 'amqp':
+            return amqpWildcards;
 
         default:
             return microWildcards
@@ -434,6 +443,7 @@ function getMicroToPartsBy(protocol: Protocols | null): (url: string) => string[
         case 'redis':
             return redisToParts;
 
+        case 'amqp':
         case 'nats':
             return dotParts;
 

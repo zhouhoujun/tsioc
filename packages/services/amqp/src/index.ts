@@ -1,4 +1,5 @@
 export * from './options';
+export * from './pattern';
 export * from './client/request';
 export * from './client/options';
 export * from './client/handler';

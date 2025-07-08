@@ -29,6 +29,7 @@ import { AMQP_SERV_FILTERS, AMQP_SERV_GUARDS, AMQP_SERV_INTERCEPTORS, AmqpServCo
 import { AmqpRequestHandler } from './server/handler';
 import { AmqpRequest } from './client/request';
 import { Channel, ConsumeMessage } from 'amqplib';
+import { AmqpPatternFormatter } from './pattern';
 
 
 const AMQP_MESSAGE = new ContextToken<ConsumeMessage>(() => null!);
@@ -55,7 +56,10 @@ const attachIncomingHeaders: ApplicationInterceptorFn = (input: any, next: Appli
                     pkg.params = parseQueryString(headers['params'] as string);
                 }
                 if (headers['status']) {
-                    pkg.status = headers['status']
+                    pkg.status = headers['status'];
+                }
+                if(headers['pattern']) {
+                    pkg.pattern = headers['pattern'];
                 }
                 if (headers['statusMessage']) {
                     pkg.statusMessage = headers['statusMessage']
@@ -96,6 +100,7 @@ export class AmqpConfiguration {
                 handlerType: AmqpHandler,
                 interceptorsToken: AMQP_CLIENT_INTERCEPTORS,
                 filtersToken: AMQP_CLIENT_FILTERS,
+                formatter: AmqpPatternFormatter,
                 connectOpts: 'amqp://localhost',
                 queue: 'amqp.queue',
                 replyQueue: 'amqp.queue.reply',
@@ -150,6 +155,9 @@ export class AmqpConfiguration {
 
                                         if (req.params.size) {
                                             headers['params'] = req.params.toString();
+                                        }
+                                        if(isString(req.pattern) && req.pattern !== req.topic) {
+                                            headers['pattern'] = req.pattern;
                                         }
 
                                         socket.sendToQueue(options.queue!, isString(msg) ? Buffer.from(msg) : msg ?? Buffer.alloc(0), {
@@ -334,7 +342,10 @@ export class AmqpConfiguration {
                 interceptors: [
                     JsonInterceptor,
                     BodyparserInterceptor
-                ]
+                ],
+                routes: {
+                    formatter: AmqpPatternFormatter
+                }
             } as AmqpServConfig
         }
     }
