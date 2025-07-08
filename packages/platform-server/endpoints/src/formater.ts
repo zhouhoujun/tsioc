@@ -1,4 +1,4 @@
-import { Injectable } from '@tsdi/ioc';
+import { hasProps, Injectable } from '@tsdi/ioc';
 import { Logger, ConsoleLog } from '@tsdi/logger';
 import { RequestContext, ResponseStatusFormater } from '@tsdi/endpoints';
 import * as chalk from 'chalk';
@@ -24,7 +24,7 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
                 withColor ? chalk.gray(this.outgoing) : this.outgoing,
                 withColor ? chalk.cyan(ctx.method ?? '') : ctx.method ?? '',
                 ctx.url,
-                `params: ${ctx.query ? JSON.stringify(ctx.query) : '{}'}`,
+                ctx.query && hasProps(ctx.query) ? `params: ${JSON.stringify(ctx.query)}` : '',
                 status?.toString() ?? '',
                 withColor ? chalk.gray(hrtimeStr) : hrtimeStr,
                 withColor ? chalk.gray(sizeStr) : sizeStr,
@@ -35,7 +35,7 @@ export class NodeResponseStatusFormater extends ResponseStatusFormater {
                 withColor ? chalk.gray(this.incoming) : this.incoming,
                 withColor ? chalk.cyan(ctx.method ?? '') : ctx.method ?? '',
                 ctx.url,
-                `params: ${ctx.query ? JSON.stringify(ctx.query) : '{}'}`,
+                ctx.query && hasProps(ctx.query)? `params: ${JSON.stringify(ctx.query)}` : '',
             ]
         }
     }

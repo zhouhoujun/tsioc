@@ -1,4 +1,4 @@
-import { Injectable } from '@tsdi/ioc';
+import { hasProps, Injectable } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
 import { RequestContext, ResponseStatusFormater } from '@tsdi/endpoints';
 
@@ -15,7 +15,7 @@ export class BrowserResponseStatusFormater extends ResponseStatusFormater {
             this.outgoing,
             ctx.method ?? '',
             ctx.url,
-            `params: ${ctx.query ? JSON.stringify(ctx.query) : '{}'}`,
+            ctx.query && hasProps(ctx.query) ? `params: ${JSON.stringify(ctx.query)}` : '',
             status,
             this.htime.format(hrtime),
             this.formatSize(ctx.length),
@@ -24,7 +24,7 @@ export class BrowserResponseStatusFormater extends ResponseStatusFormater {
             this.incoming,
             ctx.method ?? '',
             ctx.url,
-            `params: ${ctx.query ? JSON.stringify(ctx.query) : '{}'}`,
+            ctx.query && hasProps(ctx.query) ? `params: ${JSON.stringify(ctx.query)}` : '',
         ]
     }
 
