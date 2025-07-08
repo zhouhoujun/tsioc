@@ -4,6 +4,6 @@ import { Injectable } from '@tsdi/ioc';
 @Injectable()
 export class RedisPatternFormatter extends PatternFormatter {
     format(pattern: Pattern): string {
-        return normalize(patternToPath(pattern, '/', '='))
+        return normalize(patternToPath(pattern, '.', ':')).replace(/\//ig, '.')
     }
 }

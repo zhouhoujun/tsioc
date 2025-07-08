@@ -74,7 +74,7 @@ export class RedisServer extends Server<RequestContext, RedisServConfig> {
         const {paths, patterns} = router.getPatterns();
 
         if (options.content?.prefix) {
-            const content = router.formatter.format(`${options.content.prefix}/**`);
+            const content = router.formatter.format(`${options.content.prefix}.*`);
             patterns.push(content);
         }
 

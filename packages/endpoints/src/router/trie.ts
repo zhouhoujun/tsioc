@@ -1,4 +1,4 @@
-import { isString } from '@tsdi/ioc';
+import { isArray, isString } from '@tsdi/ioc';
 import { Route, Routes } from './route';
 
 
@@ -138,9 +138,17 @@ export class TrieRoute {
             }
         }
 
+
         for (const wlidcard of this.options.wlidcards) {
             if (node.children.has(wlidcard.wlidcard)) {
-                return await this.recursive(node.children.get(wlidcard.wlidcard)!, parts, index + 1);
+                const result = await this.recursive(node.children.get(wlidcard.wlidcard)!, parts, index + 1);
+                if (result) {
+                    return result;
+                }
+
+                if (wlidcard.startWith) {
+                    return node;
+                }
             }
         }
 
@@ -172,6 +180,7 @@ export interface TrieOptions {
     toParts: (path: string) => string[];
     equals: (r1: Route, r2: Route) => boolean;
     wlidcards: Wlidcard[];
+    microservice?: boolean
 }
 
 

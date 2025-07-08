@@ -14,7 +14,8 @@ export class BrowserResponseStatusFormater extends ResponseStatusFormater {
         return hrtime ? [
             this.outgoing,
             ctx.method ?? '',
-            ctx.originalUrl ?? ctx.url,
+            ctx.url,
+            `params: ${ctx.query ? JSON.stringify(ctx.query) : '{}'}`,
             status,
             this.htime.format(hrtime),
             this.formatSize(ctx.length),
@@ -22,7 +23,8 @@ export class BrowserResponseStatusFormater extends ResponseStatusFormater {
         ] : [
             this.incoming,
             ctx.method ?? '',
-            ctx.originalUrl ?? ctx.url,
+            ctx.url,
+            `params: ${ctx.query ? JSON.stringify(ctx.query) : '{}'}`,
         ]
     }
 

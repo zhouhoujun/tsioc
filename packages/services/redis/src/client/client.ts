@@ -77,9 +77,6 @@ export class RedisClient extends AbstractClient<TopicRequestOptions, RedisReques
     }
 
     protected createRequest(pattern: Pattern, options: RequestInitOpts<any, TopicRequestOptions>): RedisRequest<any> {
-        if (isString(pattern)) {
-            return new RedisRequest(pattern, null, options);
-        }
         return new RedisRequest(this.formatter.format(pattern), pattern, options);
     }
 

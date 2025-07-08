@@ -23,7 +23,7 @@ export class RedisService {
     }
 
 
-    @Handle({ cmd: 'xxx' })
+    @Handle({ cmd: 'xxx', flag: 1 })
     async handleMessage(@Payload() message: string) {
         return message;
     }
@@ -148,7 +148,7 @@ describe('Redis Micro Service', () => {
     })
 
     it('cmd message', async () => {
-        const a = await lastValueFrom(client.send({ cmd: 'xxx' }, {
+        const a = await lastValueFrom(client.send({ cmd: 'xxx', flag: 1  }, {
             payload: {
                 message: 'ble'
             }
