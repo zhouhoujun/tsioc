@@ -1,23 +1,23 @@
 import { Injectable } from '@tsdi/ioc';
 import { Pattern, PatternFormatter, patternToPath, normalize } from '@tsdi/common';
-import { DefaultRouteMatcher } from '@tsdi/endpoints';
+// import { DefaultRouteMatcher } from '@tsdi/endpoints';
 
 @Injectable()
 export class KafkaPatternFormatter extends PatternFormatter {
     format(pattern: Pattern): string {
-        return normalize(patternToPath(pattern, '/', '-')).replace(/\//g, '-')
+        return normalize(patternToPath(pattern, '.', '-')).replace(/\//g, '.')
     }
 }
 
-@Injectable()
-export class KafkaRouteMatcher extends DefaultRouteMatcher {
+// @Injectable()
+// export class KafkaRouteMatcher extends DefaultRouteMatcher {
 
-    protected override registerPattern(route: string, patterns?: string[], regExp?: RegExp | undefined): void {
-        if (regExp) {
-            this.patterns.set(route, regExp);
-        } else {
-            patterns ? patterns.forEach(p => this.patterns.set(p, p))
-                : this.patterns.set(route, route);
-        }
-    }
-}
+//     protected override registerPattern(route: string, patterns?: string[], regExp?: RegExp | undefined): void {
+//         if (regExp) {
+//             this.patterns.set(route, regExp);
+//         } else {
+//             patterns ? patterns.forEach(p => this.patterns.set(p, p))
+//                 : this.patterns.set(route, route);
+//         }
+//     }
+// }

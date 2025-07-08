@@ -408,6 +408,15 @@ const amqpWildcards: Wlidcard[] = [
     { wlidcard: '#', match: (part: string) => part == '#', startWith: true, endWith: true }
 ];
 
+// const kafkaPipe =/^\(\w+(\|\w)+\)$/;
+
+const kafkaWildcards: Wlidcard[] = [
+    { wlidcard: ':', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
+    { wlidcard: '+', match: (part: string) => part === '+' },
+    { wlidcard: '*', match: (part: string) => part == '*', startWith: true, endWith: true },
+    // { wlidcard: '-*', match: (part: string) => part == '-*', startWith: true, endWith: true }
+];
+
 function getMicroWildcardsBy(protocol: Protocols | null): Wlidcard[] {
     switch (protocol) {
         case 'mqtt':
@@ -416,6 +425,9 @@ function getMicroWildcardsBy(protocol: Protocols | null): Wlidcard[] {
 
         case 'redis':
             return redisWildcards;
+
+        case 'kafka':
+            return kafkaWildcards;
 
         case 'nats':
             return natsWildcards;
@@ -443,6 +455,9 @@ function getMicroToPartsBy(protocol: Protocols | null): (url: string) => string[
         case 'redis':
             return redisToParts;
 
+        case 'kafka':
+            return dotParts;
+
         case 'amqp':
         case 'nats':
             return dotParts;
@@ -463,6 +478,15 @@ const redisToParts = (url: string) => {
     return url ? [url] : [];
 
 };
+// const kafkaToParts = (url: string) => {
+//     if (url.indexOf('.') >= 0) {
+//         return dotParts(url)
+//     }
+//     if (url.indexOf('-') >= 0) {
+//         return url.split('-').filter(part => part).map((r, idx) => idx ? '-' + r : r);
+//     }
+//     return url ? [url] : [];
+// };
 
 const dotParts = (url: string) => url.split('.').filter(part => part);
 const mqttToParts = (url: string) => url.split('/');

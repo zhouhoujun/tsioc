@@ -123,10 +123,16 @@ export class KafkaClient extends AbstractClient<TopicRequestOptions, KafkaReques
         this._transport = injector.get(ClientTransportFactory).create(injector, this.socket, options);
 
         if (!options.producerOnlyMode) {
-            const topics = options.topics ? options.topics.map(t => {
-                if (t instanceof RegExp) return t;
-                return this.formatter.format(t);
-            }) : getRouter(injector, options.protocol ?? 'kafka', true).matcher.getPatterns();
+            let topics: (string | RegExp)[];
+            if (options.topics) {
+                topics = options.topics.map(t => {
+                    if (t instanceof RegExp) return t;
+                    return this.formatter.format(t);
+                });
+            } else {
+                const { regExps, routes} = getRouter(injector, options.protocol ?? 'kafka', true).getPatterns();
+                topics = [...routes, ...regExps];
+            }
 
             const reply$ = topics.map(t => this.getReplyTopic(t));
             console.log(reply$);

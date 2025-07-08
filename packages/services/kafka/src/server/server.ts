@@ -101,15 +101,17 @@ export class KafkaServer extends Server<RequestContext, KafkaServConfig> {
         const options = this.getOptions();
 
         const router = getRouter(injector, options.protocol ?? 'kafka', true);
+        const { routes, regExps } = router.getPatterns();
         if (options.content?.prefix) {
-            const content = injector.get(PatternFormatter, defaultFormatter).format(`${options.content.prefix}-**`);
-            router.matcher.register(content, true);
+            const content = router.formatter.format(`${options.content.prefix}.*`);
+            routes.push(content);
         }
-        const topics = router.matcher.getPatterns<string | RegExp>();
+        const topics = [...routes, ...regExps];
 
         const transport = this._transport = injector.get(ServerTransportFactory).create(injector, this.socket, options);
 
-        await this.socket.subscribe(topics, { fromBeginning: options.fromBeginning });
+        
+        await this.socket.subscribe(topics, { fromBeginning: options.fromBeginning ?? true });
 
         transport.handle(this.handler, this.destroy$);
 
@@ -117,11 +119,11 @@ export class KafkaServer extends Server<RequestContext, KafkaServConfig> {
             `Subscribed successfully! This server is currently subscribed topics.`,
             topics
         );
-        router.matcher.eachPattern((topic, pattern) => {
-            if (topic !== pattern) {
-                this.logger.info('Transform pattern', pattern, 'to topic', topic)
-            }
-        });
+        // router.matcher.eachPattern((topic, pattern) => {
+        //     if (topic !== pattern) {
+        //         this.logger.info('Transform pattern', pattern, 'to topic', topic)
+        //     }
+        // });
 
     }
 

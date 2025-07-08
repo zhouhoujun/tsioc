@@ -31,7 +31,7 @@ import { KAFKA_SERV_FILTERS, KAFKA_SERV_GUARDS, KAFKA_SERV_INTERCEPTORS, KafkaSe
 import { KafkaRequestHandler } from './server/handler';
 import { KafkaRequest } from './client/request';
 import { KafkaSocket, KAFKA_MESSAGE, parseHead, generHead } from './socket';
-import { KafkaPatternFormatter, KafkaRouteMatcher } from './pattern';
+import { KafkaPatternFormatter } from './pattern';
 import { DEFAULT_BROKERS, KafkaHeaders } from './const';
 
 
@@ -318,8 +318,7 @@ export class KafkaConfiguration {
                     BodyparserInterceptor
                 ],
                 routes: {
-                    formatter: KafkaPatternFormatter,
-                    matcher: KafkaRouteMatcher
+                    formatter: KafkaPatternFormatter
                 }
             }
         }

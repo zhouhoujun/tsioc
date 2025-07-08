@@ -1,7 +1,7 @@
 import { ContextToken, isArray, isNumber, isString } from '@tsdi/ioc';
 import { isBuffer, BadRequestException, TransportContext } from '@tsdi/common/transport';
 import { IHeaders, Consumer, Producer, ConsumerSubscribeTopics, ConsumerRunConfig, EachMessagePayload, Message, ProducerRecord } from 'kafkajs';
-import { BehaviorSubject, filter, map, Observable } from 'rxjs';
+import { BehaviorSubject, catchError, filter, map, Observable } from 'rxjs';
 
 
 export const KAFKA_MESSAGE = new ContextToken<EachMessagePayload>(() => null!);
@@ -10,7 +10,7 @@ export class KafkaSocket {
 
     private regTopics?: RegExp[];
     private subj$ = new BehaviorSubject<EachMessagePayload>(null!);
-    constructor(readonly consumer: Consumer|null, readonly producer: Producer, private runOptions: ConsumerRunConfig) {
+    constructor(readonly consumer: Consumer | null, readonly producer: Producer, private runOptions: ConsumerRunConfig) {
 
     }
 
@@ -18,10 +18,17 @@ export class KafkaSocket {
         if (!this.consumer) {
             return;
         }
-        await this.consumer.subscribe({
-            topics,
-            ...options,
-        });
+
+        try {
+            await this.consumer.subscribe({
+                topics,
+                ...options,
+            });
+
+        } catch (err) {
+            console.error(err);
+            throw err;
+        }
 
         this.regTopics = topics.filter(t => t instanceof RegExp) as RegExp[];
 
