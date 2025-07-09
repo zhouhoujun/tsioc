@@ -23,6 +23,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     private cache: Map<string, TrieRoute | null> = new Map();
     private params: Map<string, Map<string, Record<string, string>>> = new Map();
     private regExps: Map<RegExp, Route> = new Map();
+    private regCache: Map<string, Route> = new Map();
 
     readonly routes: Routes;
     readonly options: TrieOptions;
@@ -257,7 +258,24 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             this.cache.set(url, trieRoute || null);
         }
 
-        if (!trieRoute) return;
+        if (!trieRoute) {
+            if (!this.regExps.size) return;
+            let route = this.regCache.get(url);
+            if (route) return route;
+            for (const regExp of this.regExps.keys()) {
+                if (regExp.test(url)) {
+                    route = this.regExps.get(regExp);
+                    break;
+                }
+            }
+
+            if (route) {
+                this.regCache.set(url, route);
+                return route;
+            }
+            return;
+        }
+
         if (this.microservice) {
             const routes = trieRoute.filter(ctx.method);
             if (!routes.length) return;
@@ -318,9 +336,11 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
 
     onDestroy(): void {
+        this.regCache.clear();
+        this.regExps.clear();
         this.cache.clear();
         this.params.clear();
-        this.trieRouter.remove('/');
+        this.trieRouter.remove();
     }
 
 
@@ -524,7 +544,7 @@ function getMicroToPartsBy(protocol: Protocols | null): (url: string) => string[
             return redisToParts;
 
         case 'kafka':
-            return dotParts;
+            return kafkaToParts;
 
         case 'amqp':
         case 'nats':
@@ -546,16 +566,17 @@ const redisToParts = (url: string) => {
     return url ? [url] : [];
 
 };
-// const kafkaToParts = (url: string) => {
-//     if (url.indexOf('.') >= 0) {
-//         return dotParts(url)
-//     }
-//     if (url.indexOf('-') >= 0) {
-//         return url.split('-').filter(part => part).map((r, idx) => idx ? '-' + r : r);
-//     }
-//     return url ? [url] : [];
-// };
+const kafkaToParts = (url: string) => {
+    if (url.indexOf('.') >= 0) {
+        return dotParts(url)
+    }
+    if (url.indexOf('-') >= 0) {
+        return url.split('-').filter(part => part).map((r, idx) => idx ? '-' + r : r);
+    }
+    return url ? [url] : [];
+};
 
+// const kafkaToParts = (url: string) => url.split('-').filter(part => part);
 const dotParts = (url: string) => url.split('.').filter(part => part);
 const mqttToParts = (url: string) => url.split('/');
 const urlToParts = (url: string) => url.split('/').filter(part => part);

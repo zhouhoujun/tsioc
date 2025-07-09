@@ -58,32 +58,25 @@ export class TrieRoute {
 
     }
 
-    remove(pathParts: string[], index: number, route?: Route): boolean {
-        if (index === pathParts.length) {
-            // 到达目标节点，删除路由
+    async remove(pathParts?: string[], index = 0, route?: Route) {
+        if (!pathParts) {
             if (route) {
-                this.routes.splice(this.routes.findIndex(r => this.options.equals(r, route)), 1);
-            } else {
-                this.routes = [];
+                this.routes.splice(this.routes.indexOf(route), 1);
             }
-            return this.children.size === 0 && this.routes.length === 0;
+            this.routes = [];
+            this.children.clear();
+            return;
         }
 
-        const part = pathParts[index];
-        const child = this.children.get(part);
-        if (!child) {
-            return false; // 路径不存在
+        if (route) {
+            const troute = await this.match(pathParts, index);
+            troute?.routes?.splice(troute.routes.indexOf(route), 1);
+        } else {
+            const parts = pathParts.slice(0, pathParts.length - 1);
+            const part = pathParts[pathParts.length - 1];
+            const parent = await this.match(parts, index);
+            parent?.children.delete(part);
         }
-
-        // 递归删除子节点
-        const shouldDeleteChild = child.remove(pathParts, index + 1, route);
-        if (shouldDeleteChild) {
-            // 子节点没有路由且没有其他子节点，可以删除
-            this.children.delete(part);
-        }
-
-        // 如果当前节点没有路由且没有子节点，可以删除
-        return this.routes.length === 0 && this.children.size === 0;
     }
 
     forEach(cb: (route: Route) => void | false): void | false {
@@ -148,7 +141,7 @@ export class TrieRoute {
                 }
 
                 if (wlidcard.mutil) {
-                    if(!subNode.children.size || wlidcard.includeParent) return subNode;
+                    if (!subNode.children.size || wlidcard.includeParent) return subNode;
 
                     let endNode: TrieRoute | undefined;
                     while (nextIdx < parts.length) {
@@ -224,16 +217,19 @@ export class TrieRouter {
         return this.root.match(parts, 0);
     }
 
+    remove(): void
     remove(route: Route): void;
     remove(path: string): void;
-    remove(arg: string | Route) {
-        const path = isString(arg) ? arg : arg.path;
-        const parts = this.options.toParts(path);
-        const wparts = parts.map((part, idx) => {
-            const wildcard = this.options.wlidcards.find(w => w.match(part, parts, idx));
-            return wildcard ? wildcard.wlidcard : part;
-        });
-        this.root.remove(wparts, 0, isString(arg) ? undefined : arg);
+    remove(arg?: string | Route) {
+        if (!arg) {
+            return this.root.remove();
+        }
+        if (isString(arg)) {
+            return this.root.remove(this.options.toParts(arg))
+        } else {
+            return this.root.remove(this.options.toParts(arg.path), 0, arg)
+        }
+
     }
 
     forEach(cb: (route: Route) => void | false): void | false {
