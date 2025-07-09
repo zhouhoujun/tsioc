@@ -22,7 +22,7 @@ export interface Route {
     /**
      * route path regExp.
      */
-    regExp?: RegExp;
+    regExp?: RegExp | null;
     /**
      * path is wildcard or not.
      */

@@ -73,6 +73,9 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         } else {
             route = arg as Route;
         }
+        if (this.formatter.parseRegExp) {
+            route.regExp = this.formatter.parseRegExp(route.path);
+        }
         if (route.regExp) {
             this.regExps.set(route.regExp, route);
         } else if (this.trieRouter.insert(route)) {

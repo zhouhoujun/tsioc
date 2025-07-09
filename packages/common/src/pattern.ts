@@ -47,6 +47,8 @@ export abstract class PatternFormatter {
      * @param pattern 
      */
     abstract format(pattern: Pattern): string;
+
+    parseRegExp?(pattern: string): RegExp | null;
 }
 
 export const defaultFormatter: PatternFormatter = {
@@ -74,7 +76,7 @@ export function patternToPath(pattern: Pattern | undefined, joinby = '/', keyVal
     if (isNumber(pattern)) {
         return `${pattern}`;
     }
-    if(isRegExp(pattern)) {
+    if (isRegExp(pattern)) {
         return pattern.source
     }
     if (!isPlainObject(pattern)) {
