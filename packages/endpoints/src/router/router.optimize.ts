@@ -1,5 +1,5 @@
 import {
-    ClassType, composeHandlers, DecorDefine, Empty, getClass, Handler, HandlerFn, Injector, Invocation,
+    ClassType, composeHandlers, DecorDefine, Empty, Exception, getClass, Handler, HandlerFn, Injector, Invocation,
     isArray, isClassType, isFunction, isString, isType, ModuleRef, OnDestroy, TypeOf
 } from '@tsdi/ioc';
 import { ApplicationHandler } from '@tsdi/core';
@@ -352,6 +352,12 @@ function routeEquals(r1: Route, r2: Route) {
             || (r1.loadChildren && r1.loadChildren === r2.loadChildren)
         );
 }
+
+
+const restWildcards: Wlidcard[] = [
+    { wlidcard: '*', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
+];
+
 function resetfulEquals(r1: Route, r2: Route) {
     if (!r1 || !r2) {
         return false;
@@ -374,47 +380,114 @@ function microEquals(r1: Route, r2: Route) {
 }
 
 
+export function matchWildcard(wlidcard: string,
+    match: 'start' | 'end' | 'equals' | 'startEnd' | 'startWith' | ((part: string, parts: string[], index: number) => boolean),
+    toPath?: (part: string) => string): Wlidcard;
+export function matchWildcard(wlidcard: string,
+    match: 'start' | 'end' | 'equals' | 'startEnd' | 'startWith' | ((part: string, parts: string[], index: number) => boolean),
+    mutil?: boolean,
+    includeParent?: boolean,
+    toPath?: (part: string) => string): Wlidcard;
+export function matchWildcard(wlidcard: string,
+    match: 'start' | 'end' | 'equals' | 'startEnd' | 'startWith' | ((part: string, parts: string[], index: number) => boolean),
+    mutilOrPath?: boolean | ((part: string) => string),
+    includeParent?: boolean,
+    toPath?: (part: string) => string): Wlidcard {
+
+    let mutil: boolean | undefined;
+    if (isFunction(mutilOrPath)) {
+        toPath = mutilOrPath;
+    } else {
+        mutil = mutilOrPath;
+    }
+    if (isString(match)) {
+        switch (match) {
+            case 'start':
+                match = (part: string, parts: string[], index: number) => {
+                    if (wlidcard === part) {
+                        if (index == 0) return true;
+                        throw new Exception(`topic [${parts.toString()}] start wildcards must be first part.`);
+                    }
+                    return false
+                }
+                break;
+            case 'end':
+                match = (part: string, parts: string[], index: number) => {
+                    if (wlidcard === part) {
+                        if (index == parts.length - 1) return true;
+                        throw new Exception(`topic [${parts.toString()}] end wildcards must be last part.`);
+                    }
+                    return false
+                }
+                break;
+            case 'startEnd':
+                match = (part: string, parts: string[], index: number) => {
+                    if (wlidcard === part) {
+                        if (index == 0 || index == parts.length - 1) return true;
+                        throw new Exception(`topic [${parts.toString()}] start end wildcards must be first or last part.`);
+                    }
+                    return false
+                }
+                break;
+            case 'startWith':
+                match = (part: string, parts: string[], index: number) => part.startsWith(wlidcard);
+                toPath = (part: string) => part.slice(1);
+                break;
+
+            case 'equals':
+                match = (part: string, parts: string[], index: number) => part == wlidcard;
+                break;
+        }
+    }
+    return {
+        wlidcard,
+        match,
+        mutil,
+        includeParent,
+        toPath
+    } as Wlidcard
+}
+
 const microWildcards: Wlidcard[] = [
-    { wlidcard: ':', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
-    { wlidcard: '${}', match: (part: string) => part.startsWith('${') && part.endsWith('}'), toPath: (part: string) => part.slice(2, -1) },
-    { wlidcard: '*', match: (part: string) => part === '*' },
-    { wlidcard: '+', match: (part: string) => part === '+' },
-    { wlidcard: '#', match: (part: string, parts: string[], idx: number) => part == '#' && (idx == parts.length - 1), startWith: true },
-    { wlidcard: '**', match: (part: string, parts: string[], idx: number) => part === '**' && (idx == parts.length - 1), startWith: true }
+    matchWildcard(':', 'startWith'),
+    matchWildcard('${}', (part: string) => part.startsWith('${') && part.endsWith('}'), (part: string) => part.slice(2, -1)),
+    matchWildcard('*', 'equals'),
+    matchWildcard('+', 'equals'),
+    matchWildcard('#', 'end', true, true),
+    matchWildcard('**', 'end', true, true)
 ];
 
 const mqttWildcards: Wlidcard[] = [
-    { wlidcard: ':', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
-    { wlidcard: '+', match: (part: string) => part === '+' },
-    { wlidcard: '#', match: (part: string, parts: string[], idx: number) => part == '#' && (idx == parts.length - 1), startWith: true }
+    matchWildcard(':', 'startWith'),
+    matchWildcard('+', 'equals'),
+    matchWildcard('#', 'end', true, true)
 ];
 
 const redisWildcards: Wlidcard[] = [
-    { wlidcard: ':', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
-    { wlidcard: '?', match: (part: string) => part === '?' },
-    { wlidcard: '*', match: (part: string, parts: string[], idx: number) => part === '*' && (idx == parts.length - 1), startWith: true },
-    { wlidcard: ':*', match: (part: string, parts: string[], idx: number) => part === ':*' && (idx == parts.length - 1), startWith: true }
+    matchWildcard(':', 'startWith'),
+    // { wlidcard: '?', match: (part: string) => part === '?' },
+    matchWildcard('*', 'end', true, true),
+    matchWildcard(':*', 'end', true, true)
 ];
 
 const natsWildcards: Wlidcard[] = [
-    { wlidcard: ':', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
-    { wlidcard: '*', match: (part: string) => part === '*' },
-    { wlidcard: '>', match: (part: string, parts: string[], idx: number) => part == '>' && (idx == parts.length - 1), startWith: true }
+    matchWildcard(':', 'startWith'),
+    matchWildcard('*', 'equals'),
+    matchWildcard('>', 'end', true),
 ];
 
 const amqpWildcards: Wlidcard[] = [
-    { wlidcard: ':', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
-    { wlidcard: '*', match: (part: string) => part === '*' },
-    { wlidcard: '#', match: (part: string) => part == '#', startWith: true, endWith: true }
+    matchWildcard(':', 'startWith'),
+    matchWildcard('*', 'equals'),
+    matchWildcard('#', 'startEnd', true, true)
 ];
 
 // const kafkaPipe =/^\(\w+(\|\w)+\)$/;
 
 const kafkaWildcards: Wlidcard[] = [
-    { wlidcard: ':', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
-    { wlidcard: '+', match: (part: string) => part === '+' },
-    { wlidcard: '*', match: (part: string) => part == '*', startWith: true, endWith: true },
-    // { wlidcard: '-*', match: (part: string) => part == '-*', startWith: true, endWith: true }
+    matchWildcard(':', 'startWith'),
+    matchWildcard('+', 'equals'),
+    matchWildcard('*', 'startEnd', true, true)
 ];
 
 function getMicroWildcardsBy(protocol: Protocols | null): Wlidcard[] {
@@ -439,11 +512,6 @@ function getMicroWildcardsBy(protocol: Protocols | null): Wlidcard[] {
             return microWildcards
     }
 }
-
-
-const restWildcards: Wlidcard[] = [
-    { wlidcard: '*', match: (part: string) => part.startsWith(':'), toPath: (part: string) => part.slice(1) },
-];
 
 
 function getMicroToPartsBy(protocol: Protocols | null): (url: string) => string[] {

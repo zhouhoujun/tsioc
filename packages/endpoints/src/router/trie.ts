@@ -1,4 +1,4 @@
-import { isArray, isString } from '@tsdi/ioc';
+import { isString } from '@tsdi/ioc';
 import { Route, Routes } from './route';
 
 
@@ -29,20 +29,19 @@ export class TrieRoute {
         let node = this as TrieRoute;
 
         const start = route.prefix ? this.options.toParts(route.prefix).length : 0;
-        let i = start;
+        let i = 0;
         for (const part of parts) {
-            const wildcard = this.options.wlidcards.find(w => w.match(part, parts, i - start));
+            const wildcard = this.options.wlidcards.find(w => w.match(part, parts, i));
             if (wildcard) {
                 route.isWildcard = true;
                 if (wildcard.toPath) {
                     if (!route.pathParams) {
                         route.pathParams = {};
                     }
-                    route.pathParams[wildcard.toPath(part)] = i;
+                    route.pathParams[wildcard.toPath(part)] = i + start;
                 }
                 if (!node.children.has(wildcard.wlidcard)) {
                     const newNode = new TrieRoute(this.options);
-
                     node.children.set(wildcard.wlidcard, newNode);
                 }
                 node = node.children.get(wildcard.wlidcard)!;
@@ -148,11 +147,9 @@ export class TrieRoute {
                     return result;
                 }
 
-                if (wlidcard.startWith && parts.length == nextIdx) {
-                    return subNode;
-                }
+                if (wlidcard.mutil) {
+                    if(!subNode.children.size || wlidcard.includeParent) return subNode;
 
-                if (wlidcard.endWith && parts.length > nextIdx + 1) {
                     let endNode: TrieRoute | undefined;
                     while (nextIdx < parts.length) {
                         if (subNode.children.has(parts[nextIdx])) {
@@ -191,8 +188,9 @@ export interface Wlidcard {
     wlidcard: string;
     match: (part: string, parts: string[], index: number) => boolean;
     toPath?: (part: string) => string;
-    startWith?: boolean;
-    endWith?: boolean;
+    includeParent?: boolean;
+    mutil?: boolean;
+    startMutil?: boolean;
 }
 
 
