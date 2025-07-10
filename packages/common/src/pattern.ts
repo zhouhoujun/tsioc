@@ -48,7 +48,7 @@ export abstract class PatternFormatter {
      */
     abstract format(pattern: Pattern): string;
 
-    parseRegExp?(pattern: string): RegExp | null;
+    parseRegExp?(pattern: string, params?: Record<string, any>): RegExp | null;
 }
 
 export const defaultFormatter: PatternFormatter = {

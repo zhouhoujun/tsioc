@@ -60,10 +60,6 @@ export abstract class Router<T = RouteHanlder> implements Backend<RequestContext
      * pattern formatter.
      */
     abstract get formatter(): PatternFormatter;
-    // /**
-    // * route matcher.
-    // */
-    // abstract get matcher(): RouteMatcher;
     /**
      * use route.
      * @param route 
@@ -98,122 +94,6 @@ export abstract class Router<T = RouteHanlder> implements Backend<RequestContext
 
 }
 
-
-// /**
-//  * math url path with register route.
-//  */
-// @Abstract()
-// export abstract class RouteMatcher {
-//     /**
-//      * get register topic patterns.
-//      */
-//     abstract getPatterns<T = string>(): T[]
-
-//     /**
-//      * each topic patterns.
-//      */
-//     abstract eachPattern<T = string>(callback: (transformed: T, pattern: string) => void): void
-//     /**
-//      * is pattern route or not.
-//      * @param route 
-//      */
-//     abstract isPattern(route: string): boolean;
-//     /**
-//      * register route matcher. 
-//      * @param route The path to match against. Cannot be used together with a custom `matcher` function.
-//      * A URL string that uses router matching notation.
-//      * Can be a wild card (`**`) that matches any URL (see Usage Notes below).
-//      * @param params dynamic token values for route path.  
-//      * 
-//      * #### Examples
-//      * 
-//      * ```ts
-//      * 'path/#'
-//      * 'path/**'
-//      * 'path/*'
-//      * 'path/+'
-//      * 'path/:id'
-//      * 'path/${id}'
-//      * 
-//      * ```
-//      *  
-//      * @returns subscribe topics. 
-//      */
-//     abstract register(route: string, subscribe?: boolean): void;
-//     /**
-//      * register route matcher. 
-//      * @param route The path to match against. Cannot be used together with a custom `matcher` function.
-//      * A URL string that uses router matching notation.
-//      * Can be a wild card (`**`) that matches any URL (see Usage Notes below).
-//      * @param params dynamic token values for route path.  
-//      * 
-//      * #### Examples
-//      * 
-//      * ```ts
-//      * 'path/#'
-//      * 'path/**'
-//      * 'path/*'
-//      * 'path/+'
-//      * 'path/:id'
-//      * 'path/${id}'
-//      * 
-//      * ```
-//      *  
-//      * @returns subscribe topics. 
-//      */
-//     abstract register(route: string, params?: Record<string, any>, subscribe?: boolean): void;
-
-//     /**
-//      * get the url path match route
-//      * @param path url path
-//      * @returns matched route.
-//      */
-//     abstract match(path: string): string | null;
-
-//     abstract unregister(route: string): void;
-
-//     abstract clear(): void;
-// }
-
-
-
-// /**
-//  * route mapping metadata.
-//  */
-// export interface RouteMappingMetadata<T = any> extends RouteOptions<T> {
-//     /**
-//      * route.
-//      *
-//      * @type {Pattern}
-//      * @memberof RouteMappingMetadata
-//      */
-//     route?: Pattern;
-//     /**
-//      * route `RegExp` matcher.
-//      */
-//     regExp?: RegExp;
-//     /**
-//      * request method.
-//      */
-//     method?: RequestMethod;
-//     /**
-//      * http content type.
-//      *
-//      * @type {string}
-//      * @memberof RouteMappingMetadata
-//      */
-//     contentType?: string;
-// }
-
-// /**
-//  * Protocol route options.
-//  */
-// export interface ProtocolRouteOptions<T = any> extends RouteOptions<T> {
-//     /**
-//      * transport protocol
-//      */
-//     protocol?: Protocols;
-// }
 
 /**
  * route mapping options.

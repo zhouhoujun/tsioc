@@ -264,8 +264,8 @@ describe('Kafka hybrid Tcp Server & Kafka Client & TcpClient', () => {
                     ctx.getLogger().error(err);
                     return of(err);
                 })));
-        // expect(r.status).toEqual(400);
-        expect(r.statusText).toEqual('Bad Request');
+        // expect(r.status).toEqual(404);
+        expect(r.statusText).toEqual('Not Found');
     })
 
     it('route with request restful param pipe throw argument err', async () => {

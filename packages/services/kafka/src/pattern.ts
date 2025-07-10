@@ -8,19 +8,20 @@ export class KafkaPatternFormatter extends PatternFormatter {
         return normalize(patternToPath(pattern, '.', '-')).replace(/\//g, '.')
     }
 
-    parseRegExp(pattern: string): RegExp | null {
+    parseRegExp(pattern: string, params?: Record<string, any>): RegExp | null {
         if (!pattern$.test(pattern)) return null;
         let $exp = this.replaceTopic(pattern);
-        // if (params) {
-        //     let opts = { match: tval$, start: 2, end: 1, subs };
-        //     $exp = this.replaceWithParams($exp, params, opts);
-        //     opts = { ...opts, match: rest$, start: 1, end: 0 };
-        //     $exp = this.replaceWithParams($exp, params, opts);
-        //     subs = opts.subs
-        // } else {
-        $exp = $exp.replace(tval$, tplPth)
-            .replace(rest$, tplPth)
-        // }
+        if (params) {
+            let subs: string[] = [pattern.slice(0)]
+            let opts = { match: tval$, start: 2, end: 1, subs };
+            $exp = this.replaceWithParams($exp, params, opts);
+            opts = { ...opts, match: rest$, start: 1, end: 0 };
+            $exp = this.replaceWithParams($exp, params, opts);
+            subs = opts.subs
+        } else {
+            $exp = $exp.replace(tval$, tplPth)
+                .replace(rest$, tplPth)
+        }
 
         return new RegExp('^' + $exp + '$');
     }
