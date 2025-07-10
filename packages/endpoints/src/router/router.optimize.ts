@@ -1,6 +1,6 @@
 import {
     ClassType, composeHandlers, DecorDefine, Empty, Exception, getClass, Handler, HandlerFn, Injector, Invocation,
-    isArray, isClassType, isFunction, isString, isType, ModuleRef, OnDestroy, TypeOf
+    isArray, isClassType, isFunction, isRegExp, isString, isType, ModuleRef, OnDestroy, TypeOf
 } from '@tsdi/ioc';
 import { ApplicationHandler } from '@tsdi/core';
 import { Pattern, PatternFormatter, Protocols } from '@tsdi/common';
@@ -57,11 +57,9 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         let route: Route;
         if (handler) {
             route = {
-                path: this.formatter.format(arg as Pattern)
+                path: this.formatter.format(arg as Pattern),
+                pattern: arg as Pattern
             };
-            if (arg instanceof RegExp) {
-                route.regExp = arg;
-            }
             if (isArray(handler)) {
                 route.handlers = handler;
                 route.handle = composeHandlers(handler);
@@ -83,10 +81,11 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
                     params![n] = injector.get(paths[n]);
                 })
             }
-            route.regExp = this.formatter.parseRegExp(route.path, params);
+            route.pattern = this.formatter.parseRegExp(route.path, params);
         }
-        if (route.regExp) {
-            this.regExps.set(route.regExp, route);
+        if (isRegExp(route.pattern)) {
+            this.regExps.set(route.pattern, route);
+            this.routes.push(route);
         } else if (this.trieRouter.insert(route)) {
             this.routes.push(route);
         }
@@ -112,24 +111,24 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         const patterns: string[] = [];
         const regExps: RegExp[] = Array.from(this.regExps.keys());
         this.routes.forEach(r => {
-            if (r.path) {
-                if (r.paths && r.pathParams && r.handler instanceof RouteHandler) {
-                    const injector = r.handler.injector;
-                    Object.entries(r.paths).forEach(([key, val]) => {
-                        const pathValues: any[] = injector.get(val, Empty);
-                        pathValues.forEach(p => {
-                            paths.push(r.path.replace(`:${key}`, p));
-                        })
-                    })
-                } else {
-                    if (r.isWildcard) {
-                        patterns.push(r.path);
-                    } else {
-                        paths.push(r.path);
-                    }
+            if (isRegExp(r.pattern)) return;
 
+            if (r.paths && r.pathParams && r.handler instanceof RouteHandler) {
+                const injector = r.handler.injector;
+                Object.entries(r.paths).forEach(([key, val]) => {
+                    const pathValues: any[] = injector.get(val, Empty);
+                    pathValues.forEach(p => {
+                        paths.push(r.path.replace(`:${key}`, p));
+                    })
+                })
+            } else {
+                if (r.isWildcard) {
+                    patterns.push(r.path);
+                } else {
+                    paths.push(r.path);
                 }
             }
+
         });
         return {
             routes: paths.concat(patterns),
@@ -138,11 +137,6 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             regExps
         };
     }
-
-    forEach(cb: (route: Route) => void | false): void | false {
-        return this.trieRouter.forEach(cb);
-    }
-
 
     handle(ctx: RequestContext, noFound?: () => Observable<any>): Observable<any> {
         if (ctx.headersSent || (ctx.status && ctx.statusAdapter && !ctx.statusAdapter.isNotFound(ctx.status))) return of(ctx);
@@ -232,6 +226,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             }
             return {
                 path: this.formatter.format(m.metadata.route as Pattern),
+                pattern: m.metadata.route,
                 prefix,
                 method: m.metadata.method,
                 pathParams: pathParams ? { ...pathParams } : undefined,

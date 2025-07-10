@@ -11,9 +11,5 @@ export abstract class RouteHandler<TInput = any, TOutput = any> extends DefaultI
 
     abstract options: RouteOptions;
 
-    /**
-     * route prefix.
-     */
-    abstract get prefix(): string;
 }
 

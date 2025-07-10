@@ -20,9 +20,9 @@ export interface Route {
      */
     path: string;
     /**
-     * route path regExp.
+     * route pattern
      */
-    regExp?: RegExp | null;
+    pattern?: Pattern|null;
     /**
      * path is wildcard or not.
      */

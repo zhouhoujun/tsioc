@@ -11,17 +11,14 @@ import { RouteOptions } from '../router/route';
 
 export class RouteHandlerImpl<TInput extends RequestContext = RequestContext, TOutput = any> extends RouteHandler<TInput, TOutput> {
 
-    private _prefix: string;
+
     readonly route: string;
     constructor(invocation: Invocation, readonly options: RouteOptions, propertyKey?: string | symbol) {
         super(invocation, normalizeRouteOptions(invocation, options, propertyKey), propertyKey);
-        this._prefix = options.prefix || '';        
+   
         this.route = options.path!;
     }
 
-    get prefix(): string {
-        return this._prefix;
-    }
 
     protected override defaultRespond(ctx: TInput, res: any): void {
         if (ctx instanceof RequestContext) {

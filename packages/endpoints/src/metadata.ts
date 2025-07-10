@@ -54,24 +54,22 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
             if (!defines || !defines.length) return;
 
             const injector = ctx.injector;
-            const mapping = ctx.class.getAnnotation<MappingDef>();
             const invocation = ctx.class.createInvocation(injector);
 
             defines.forEach(def => {
                 const metadata = def.metadata;
                 const router = getRouter(injector, metadata.protocol, true);
-                const prefix = joinPath(mapping.prefix, mapping.version, router.formatter.format(mapping.route!));
 
+                const prefix = joinPath(metadata.prefix, metadata.version);
                 const path = router.formatter.format(metadata.route!);
                 const handler = createRouteHandler(invocation, { ...metadata, path, prefix }, def.propertyKey);
                 const route = {
+                    prefix,
                     path,
+                    pattern: metadata.route,
                     paths: metadata.paths,
                     handler
                 } as Route;
-                if (metadata.route instanceof RegExp) {
-                    route.regExp = metadata.route;
-                }
                 router.use(route);
                 invocation.onDestroy(() => router.unuse(route));
             });
@@ -135,24 +133,23 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             if (!defines || !defines.length) return;
 
             const injector = ctx.injector;
-            const mapping = ctx.class.getAnnotation<MappingDef>();
             const invocation = ctx.class.createInvocation(injector);
 
             defines.forEach(def => {
                 const metadata = def.metadata;
                 const router = getRouter(injector, metadata.protocol, true);
-                const prefix = joinPath(mapping.prefix, mapping.version, router.formatter.format(mapping.route!));
+
+                const prefix = joinPath(metadata.prefix, metadata.version);
                 if (!router || !(router instanceof Router)) throw new Exception(metadata.protocol + ' microservice router has not register.');
                 const path = router.formatter.format(metadata.route!);
                 const handler = createRouteHandler(invocation, { ...metadata, path, prefix }, def.propertyKey);
                 const route = {
+                    prefix,
                     path,
+                    pattern: metadata.route,
                     paths: metadata.paths,
                     handler
                 } as Route;
-                if (metadata.route instanceof RegExp) {
-                    route.regExp = metadata.route;
-                }
                 router.use(route);
                 invocation.onDestroy(() => router.unuse(route));
             });
@@ -170,9 +167,10 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             if (!(router instanceof Router)) throw new Exception(lang.getTypeName(router) + 'is not router!');
 
             router.use({
+                prefix: joinPath(mapping.prefix, mapping.version),
                 path: router.formatter.format(route),
                 paths: mapping.paths,
-                regExp: mapping.route instanceof RegExp ? mapping.route : undefined,
+                pattern: mapping.route,
                 handle: (input, ctx) => {
                     return injector.get(type).handle(input, ctx);
                 },
@@ -273,7 +271,9 @@ export function createMappingDecorator<T extends RouteMappingMetadata<any>>(name
                 if (!(router instanceof Router)) throw new Exception(lang.getTypeName(router) + 'is not router!');
 
                 const route = {
-                    path: joinPath(mapping.prefix, mapping.version, router.formatter.format(mapping.route!)),
+                    prefix: joinPath(mapping.prefix, mapping.version),
+                    path: router.formatter.format(mapping.route!),
+                    pattern: mapping.route,
                     controller: ctx.class.createInvocation(injector)
                 };
                 router.use(route);

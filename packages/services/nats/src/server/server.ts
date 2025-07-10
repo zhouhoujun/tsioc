@@ -62,6 +62,12 @@ export class NatsServer extends Server<RequestContext, NatsServConfig> {
             routes
         );
 
+        router.routes.forEach(route => {
+            if (route.path !== route.pattern) {
+                this.logger.info('Transform pattern', route.pattern, 'to topic', route.path)
+            }
+        });
+
     }
 
 

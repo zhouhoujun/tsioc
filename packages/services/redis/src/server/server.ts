@@ -112,11 +112,11 @@ export class RedisServer extends Server<RequestContext, RedisServConfig> {
 
         transport.handle(this.handler, merge(this.destroy$, fromEvent(this.subscriber, ev.ERROR)).pipe(first()))
 
-        // router.matcher.eachPattern((topic, pattern) => {
-        //     if (topic !== pattern) {
-        //         this.logger.info('Transform pattern', pattern, 'to topic', topic)
-        //     }
-        // });
+        router.routes.forEach(route => {
+            if (route.path !== route.pattern) {
+                this.logger.info('Transform pattern', route.pattern, 'to topic', route.path)
+            }
+        });
     }
 
     protected async onShutdown(): Promise<any> {

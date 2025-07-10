@@ -120,11 +120,11 @@ export class KafkaServer extends Server<RequestContext, KafkaServConfig> {
             `Subscribed successfully! This server is currently subscribed topics.`,
             topics
         );
-        // router.matcher.eachPattern((topic, pattern) => {
-        //     if (topic !== pattern) {
-        //         this.logger.info('Transform pattern', pattern, 'to topic', topic)
-        //     }
-        // });
+        router.routes.forEach(route => {
+            if (route.path !== route.pattern) {
+                this.logger.info('Transform pattern', route.pattern, 'to topic', route.path)
+            }
+        });
 
     }
 

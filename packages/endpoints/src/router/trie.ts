@@ -24,11 +24,14 @@ export class TrieRoute {
         return this.routes.some(r => this.options.equals(r, route));
     }
 
-    insert(route: Route): boolean {
-        const parts = this.options.toParts(route.path);
+    insert(route: Route, prefix?: string): boolean {
+        let parts = this.options.toParts(route.path);
+        if(prefix) {
+            parts = this.options.toParts(prefix).concat(parts);
+        }
         let node = this as TrieRoute;
 
-        const start = route.prefix ? this.options.toParts(route.prefix).length : 0;
+        const start = (route.prefix && route.prefix != prefix) ? this.options.toParts(route.prefix).length : 0;
         let i = 0;
         for (const part of parts) {
             const wildcard = this.options.wlidcards.find(w => w.match(part, parts, i));
@@ -79,14 +82,14 @@ export class TrieRoute {
         }
     }
 
-    forEach(cb: (route: Route) => void | false): void | false {
-        if (this.routes?.length) {
-            if (this.routes.some(route => cb(route) === false)) return false;
-        }
-        for (const child of this.children.values()) {
-            if (child.forEach(cb) === false) return false;
-        }
-    }
+    // forEach(cb: (route: Route) => void | false): void | false {
+    //     if (this.routes?.length) {
+    //         if (this.routes.some(route => cb(route) === false)) return false;
+    //     }
+    //     for (const child of this.children.values()) {
+    //         if (child.forEach(cb) === false) return false;
+    //     }
+    // }
 
     bind(route: Route): boolean {
         let ret = false;
@@ -207,7 +210,7 @@ export class TrieRouter {
 
 
     insert(route: Route): boolean {
-        return this.root.insert(route);
+        return this.root.insert(route, route.prefix);
     }
 
     match(path: string): Promise<TrieRoute | undefined>;
@@ -232,8 +235,8 @@ export class TrieRouter {
 
     }
 
-    forEach(cb: (route: Route) => void | false): void | false {
-        return this.root.forEach(cb);
-    }
+    // forEach(cb: (route: Route) => void | false): void | false {
+    //     return this.root.forEach(cb);
+    // }
 
 }

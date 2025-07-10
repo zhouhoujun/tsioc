@@ -82,6 +82,12 @@ export class AmqpServer extends Server<RequestContext, AmqpServConfig> {
             `Subscribed successfully! This server is currently subscribed topics.`,
             router.getPatterns()
         );
+
+        router.routes.forEach(route => {
+            if (route.path !== route.pattern) {
+                this.logger.info('Transform pattern', route.pattern, 'to topic', route.path)
+            }
+        });
     }
 
     protected async createConnection(options: AmqpServConfig, retrys: number, retryDelay: number): Promise<amqp.Connection> {

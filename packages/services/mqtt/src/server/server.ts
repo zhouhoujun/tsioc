@@ -65,10 +65,6 @@ export class MqttServer extends Server<RequestContext, MqttServConfig> {
         const options = this.getOptions();
         const injector = this.handler.injector;
         const router = getRouter(injector, options.protocol ?? 'mqtt', true);
-        // if (options.content?.prefix) {
-        //     const content = router.formatter.format(`${options.content.prefix}/#`);
-        //     router.matcher.register(content, true);
-        // }
 
         const { routes } = router.getPatterns();
         if (options.content?.prefix) {
@@ -96,11 +92,12 @@ export class MqttServer extends Server<RequestContext, MqttServConfig> {
             `Subscribed successfully! This server is currently subscribed topics.`,
             routes
         );
-        // router.matcher.eachPattern((topic, pattern) => {
-        //     if (topic !== pattern) {
-        //         this.logger.info('Transform pattern', pattern, 'to topic', topic)
-        //     }
-        // });
+
+        router.routes.forEach(route => {
+            if (route.path !== route.pattern) {
+                this.logger.info('Transform pattern', route.pattern, 'to topic', route.path)
+            }
+        });
 
     }
 
