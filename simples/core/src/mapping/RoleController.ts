@@ -45,6 +45,7 @@ export class RoleController {
     }
 
     @ApiOperation('get role by name', Role)
+    @Transactional()
     @RouteMapping('/:name', 'GET')
     async getRole(@RequestPath() name: string) {
         this.logger.log('name:', name);
@@ -54,10 +55,11 @@ export class RoleController {
 
 
     @ApiOperation('get roles', Role)
+    // @Transactional()
     @RouteMapping('/', 'GET')
     find(@RequestParam({ nullable: true }) name: string) {
         this.logger.log('name:', name);
-        console.log('getRole isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
+        // console.log('getRole isTransactionActive:', this.repo.queryRunner?.isTransactionActive);
         return name? this.repo.findAndCount({ where: { name: Like(`%${name}%`) } }) : this.repo.findAndCount();
     }
 

@@ -3,6 +3,9 @@ import { InvocationHandlerOptions } from '@tsdi/core';
 import { Pattern, Protocols, RequestMethod } from '@tsdi/common';
 import { Observable } from 'rxjs';
 
+/**
+ * assets route.
+ */
 export interface AssetRoute {
     /**
      * route prefix.

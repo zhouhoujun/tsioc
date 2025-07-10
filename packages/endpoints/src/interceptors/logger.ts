@@ -1,5 +1,5 @@
 import { Abstract, Inject, InjectFlags, Injectable, Nullable, isNumber } from '@tsdi/ioc';
-import { ApplicationInterceptor, ApplicationHandler, Filter, BytesFormatPipe, TimeFormatPipe, HrtimeFormatter } from '@tsdi/core';
+import { ApplicationInterceptor, ApplicationHandler, Filter, BytesFormatPipe, HrtimeFormatter } from '@tsdi/core';
 import { Level, InjectLog, Logger, matchLevel } from '@tsdi/logger';
 import { Observable, map } from 'rxjs';
 import { RequestContext } from '../RequestContext';

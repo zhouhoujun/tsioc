@@ -555,8 +555,6 @@ const amqpWildcards: Wlidcard[] = [
     matchWildcard('#', 'startEnd', true, true)
 ];
 
-// const kafkaPipe =/^\(\w+(\|\w)+\)$/;
-
 const kafkaWildcards: Wlidcard[] = [
     matchWildcard(':', 'startWith'),
     matchWildcard('+', 'equals'),

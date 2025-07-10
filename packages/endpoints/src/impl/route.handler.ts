@@ -60,9 +60,6 @@ function normalizeRouteOptions(invocation: Invocation, options: RouteOptions, pr
     return options;
 }
 
-// const isRest = /(^:\w+)|(\/:\w+)/;
-// const restParms = /^:\w+/;
-
 
 export function createRouteHandler<TInput, TClass extends RouteHandler, T>(
     invocation: Invocation<T>,

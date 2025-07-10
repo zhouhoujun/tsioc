@@ -1,11 +1,11 @@
 import { Injector, InstanceOf, Provider, Token, TypeOf, getToken, isFunction, isType, tokenId } from '@tsdi/ioc';
 import { PatternFormatter, Protocols, defaultFormatter } from '@tsdi/common';
 import { InternalServerException } from '@tsdi/common/transport';
-import { Route, Routes } from './route';
+import { Routes } from './route';
 import { Router } from './router';
 
 import { OptimizedRouter } from './router.optimize';
-import { TrieOptions, Wlidcard } from './trie';
+import { TrieOptions } from './trie';
 
 
 
@@ -50,7 +50,6 @@ export function createRouteProviders(protocol: Protocols, microservice: boolean,
             useFactory: (injector: Injector) => {
                 const opts = isFunction(optsify) ? optsify(injector)! : optsify;
                 return new OptimizedRouter(injector,
-                    // opts.matcher ? (isType(opts.matcher) ? injector.get(opts.matcher) : opts.matcher) : new DefaultRouteMatcher(),
                     opts.formatter ? (isType(opts.formatter) ? injector.get(opts.formatter) : opts.formatter) : injector.get(PatternFormatter, defaultFormatter),
                     opts.prefix,
                     protocol,
@@ -58,8 +57,6 @@ export function createRouteProviders(protocol: Protocols, microservice: boolean,
                     opts.routes,
                     microservice
                 )
-                // microservice,
-                // asDefault)
             },
             deps: [Injector],
         },
@@ -73,7 +70,6 @@ export function createRouteProviders(protocol: Protocols, microservice: boolean,
 
 
 export interface RouteOpts {
-    // matcher?: TypeOf<RouteMatcher>;
     formatter?: TypeOf<PatternFormatter>;
     prefix?: string;
     options?: Partial<TrieOptions>;

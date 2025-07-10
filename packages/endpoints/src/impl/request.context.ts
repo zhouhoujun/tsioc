@@ -1,5 +1,5 @@
 import { Injector } from '@tsdi/ioc';
-import { HeaderMappings, joinPath, LOCALHOST, normalize, parseQueryString } from '@tsdi/common';
+import { HeaderMappings, LOCALHOST, normalize, parseQueryString } from '@tsdi/common';
 import { Incoming, MessageException, Outgoing, TopicIncoming, UrlIncoming } from '@tsdi/common/transport';
 import { lastValueFrom } from 'rxjs';
 import { RequestContext } from '../RequestContext';
