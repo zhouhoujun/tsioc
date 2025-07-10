@@ -100,14 +100,21 @@ export class KafkaServer extends Server<RequestContext, KafkaServConfig> {
         const injector = this.handler.injector;
         const options = this.getOptions();
 
-        const router = getRouter(injector, options.protocol ?? 'kafka', true);
+        const router = getRouter(injector, options.protocol ?? 'kafka', true);    
+        if (options.content?.prefix) {
+            const content = router.formatter.parseRegExp?.(`${options.content.prefix}.**`);
+            if(content) {
+                router.use({
+                    path: '',
+                    pattern: content,
+                    assets: true
+                })
+            }
+        }
         const { routes, regExps } = router.getPatterns();
         const topics = [...routes, ...regExps];
 
-        if (options.content?.prefix) {
-            const content = router.formatter.parseRegExp?.(`${options.content.prefix}.**`);
-            content && topics.push(content);
-        }
+    
 
         const transport = this._transport = injector.get(ServerTransportFactory).create(injector, this.socket, options);
 

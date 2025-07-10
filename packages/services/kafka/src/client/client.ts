@@ -126,32 +126,33 @@ export class KafkaClient extends AbstractClient<TopicRequestOptions, KafkaReques
             let topics: (string | RegExp)[];
             if (options.topics) {
                 topics = options.topics.map(t => {
-                    if (t instanceof RegExp) return t;
-                    return this.formatter.format(t);
+                    if (t instanceof RegExp) return this.getReplyRegExpTopic(t);
+                    return this.getReplyTopic(this.formatter.format(t));
                 });
             } else {
-                const { regExps, routes} = getRouter(injector, options.protocol ?? 'kafka', true).getPatterns();
-                topics = [...routes, ...regExps];
+                const { regExps, routes } = getRouter(injector, options.protocol ?? 'kafka', true).getPatterns();
+                topics = [...routes.map(t => this.getReplyTopic(t)), ...regExps.map(e => this.getReplyRegExpTopic(e))];
             }
-
-            const reply$ = topics.map(t => this.getReplyTopic(t));
-            console.log(reply$);
-            await this.socket.subscribe(reply$, options)
+            console.log(topics);
+            await this.socket.subscribe(topics, options)
         }
 
     }
 
-    protected getReplyTopic(topic: string | RegExp): string | RegExp {
-        if (topic instanceof RegExp) {
-            let source = topic.source;
-            if (topic.source.endsWith('$')) {
-                source = source.slice(0, source.length - 1) + '\\.reply' + '$'
-            } else {
-                source = source + '\\.reply'
-            }
-            return new RegExp(source);
-        }
+    protected getReplyTopic(topic: string): string {
         return topic + '.reply'
+    }
+
+    protected getReplyRegExpTopic(topic: RegExp): RegExp {
+
+        let source = topic.source;
+        if (topic.source.endsWith('$')) {
+            source = source.slice(0, source.length - 1) + '\\.reply' + '$'
+        } else {
+            source = source + '\\.reply'
+        }
+        return new RegExp(source);
+
     }
 
     protected override initContext(context: Context): void {

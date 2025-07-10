@@ -3,7 +3,7 @@ import { ApplicationInterceptor, Backend, ApplicationHandler } from '@tsdi/core'
 import { Pattern, Protocols, PatternFormatter } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { RequestContext } from '../RequestContext';
-import { Route, RouteOptions, Routes } from './route';
+import { AssetRoute, Route, RouteOptions, Routes } from './route';
 
 
 /**
@@ -60,6 +60,11 @@ export abstract class Router<T = RouteHanlder> implements Backend<RequestContext
      * pattern formatter.
      */
     abstract get formatter(): PatternFormatter;
+    /**
+     * use route.
+     * @param route 
+     */
+    abstract use(route: AssetRoute): this;
     /**
      * use route.
      * @param route 

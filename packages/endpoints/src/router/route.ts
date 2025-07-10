@@ -3,6 +3,29 @@ import { InvocationHandlerOptions } from '@tsdi/core';
 import { Pattern, Protocols, RequestMethod } from '@tsdi/common';
 import { Observable } from 'rxjs';
 
+export interface AssetRoute {
+    /**
+     * route prefix.
+     */
+    prefix?: string;
+    /**
+     * The path to match against. Cannot be used together with a custom `matcher` function.
+     * A URL string that uses router matching notation.
+     * Can be a wild card (`**`) that matches any URL (see Usage Notes below).
+     * Default is "/" (the root path).
+     *
+     */
+    path: string;
+    /**
+     * route pattern
+     */
+    pattern?: Pattern|null;
+    /**
+     * static assets or not.
+     */
+    assets: boolean;
+}
+
 /**
  * Route.
  */

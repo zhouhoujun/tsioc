@@ -1,5 +1,5 @@
 import {
-    ClassType, composeHandlers, DecorDefine, Empty, Exception, getClass, Handler, HandlerFn, Injector, Invocation,
+    ClassType, composeHandlers, DecorDefine, Empty, Exception, getClass, Handler, HandlerFn, hasProps, Injector, Invocation,
     isArray, isClassType, isFunction, isRegExp, isString, isType, ModuleRef, OnDestroy, TypeOf
 } from '@tsdi/ioc';
 import { ApplicationHandler } from '@tsdi/core';
@@ -7,7 +7,7 @@ import { Pattern, PatternFormatter, Protocols } from '@tsdi/common';
 import { BadRequestException, NotFoundException } from '@tsdi/common/transport';
 import { defer, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { RequestContext } from '../RequestContext';
-import { Route, ROUTES, Routes } from './route';
+import { AssetRoute, Route, ROUTES, Routes } from './route';
 import { MappingDef, RouteHanlder, RouteMappingMetadata, RoutePatterns, Router } from './router';
 import { TrieOptions, TrieRoute, TrieRouter, Wlidcard } from './trie';
 import { RestfulRequestContext } from '../RestfulRequestContext';
@@ -24,8 +24,13 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     private params: Map<string, Map<string, Record<string, string>>> = new Map();
     private regExps: Map<RegExp, Route> = new Map();
     private regCache: Map<string, Route> = new Map();
+    private assets: AssetRoute[] = [];
 
-    readonly routes: Routes;
+    private _routes: Routes = [];
+    get routes(): Routes {
+        return this._routes;
+    }
+
     readonly options: TrieOptions;
 
     constructor(
@@ -38,7 +43,6 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         private microservice?: boolean
     ) {
         super()
-        this.routes = [];
         this.options = {
             loader: r => this.load(r),
             equals: microservice ? microEquals : resetfulEquals,
@@ -51,6 +55,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     }
 
 
+    use(asset: AssetRoute): this;
     use(route: Route): this;
     use(route: Pattern, handler: RouteHanlder, callback?: (route: Route) => void): this;
     use(arg: Route | Pattern, handler?: RouteHanlder, callback?: (route: Route) => void): this {
@@ -71,8 +76,27 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         } else {
             route = arg as Route;
         }
+        if ((route as AssetRoute).assets) {
+            this.assets.push(route as AssetRoute);
+            this.routes.push(route);
+            callback?.(route);
+            return this;
+        }
         if (this.formatter.isRegExp && this.formatter.parseRegExp) {
             if (this.formatter.isRegExp(route.path)) {
+                const wlidcard = this.options.wlidcards.find(r => r.toPath);
+                if (wlidcard && wlidcard.toPath) {
+                    const pathParams: Record<string, number> = {};
+                    const parts = this.options.toParts(route.path);
+                    parts.forEach((r, idx) => {
+                        if (wlidcard.match(r, parts, idx)) {
+                            pathParams[wlidcard.toPath!(r)] = idx;
+                        }
+                    });
+                    if (hasProps(pathParams)) {
+                        route.pathParams = pathParams;
+                    }
+                }
                 let params: Record<string, any> | undefined;
                 if (route.paths && route.handler instanceof RouteHandler) {
                     params = {};
@@ -112,6 +136,12 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         const paths: string[] = [];
         const patterns: string[] = [];
         const regExps: RegExp[] = Array.from(this.regExps.keys());
+        this.assets.forEach(r => {
+            if (isRegExp(r.pattern)) {
+                regExps.push(r.pattern);
+            }
+        });
+
         this.routes.forEach(r => {
             if (isRegExp(r.pattern)) return;
 
@@ -259,6 +289,9 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
     async getRoute(ctx: RequestContext): Promise<Route | undefined> {
         const url = ctx.url;
+        if (this.assets.length && this.assets.some(r => (r.path && url.startsWith(r.path)) || (isRegExp(r.pattern) && r.pattern.test(url)))) {
+            return;
+        }
         let parts: string[] | undefined;
         let trieRoute = this.cache.get(url);
         if (trieRoute == undefined) {
@@ -270,19 +303,28 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         if (!trieRoute) {
             if (!this.regExps.size) return;
             let route = this.regCache.get(url);
-            if (route) return route;
-            for (const regExp of this.regExps.keys()) {
-                if (regExp.test(url)) {
-                    route = this.regExps.get(regExp);
-                    break;
+            if (!route) {
+                for (const regExp of this.regExps.keys()) {
+                    if (regExp.test(url)) {
+                        route = this.regExps.get(regExp);
+                        break;
+                    }
+                }
+                if (route) {
+                    this.regCache.set(url, route);
                 }
             }
-
-            if (route) {
-                this.regCache.set(url, route);
-                return route;
+            if (route?.pathParams) {
+                const params: Record<string, string> = {};
+                if (!parts) {
+                    parts = this.options.toParts(url);
+                }
+                Object.entries(route.pathParams).forEach(([v, k]) => {
+                    params[v] = parts![k];
+                })
+                ctx.request.path = params;
             }
-            return;
+            return route;
         }
 
         if (this.microservice) {
@@ -349,6 +391,8 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         this.regExps.clear();
         this.cache.clear();
         this.params.clear();
+        this.assets = [];
+        this._routes = [];
         this.trieRouter.remove();
     }
 
@@ -494,7 +538,7 @@ const mqttWildcards: Wlidcard[] = [
 
 const redisWildcards: Wlidcard[] = [
     matchWildcard(':', 'startWith'),
-    // { wlidcard: '?', match: (part: string) => part === '?' },
+    matchWildcard('?', 'equals'),
     matchWildcard('*', 'end', true, true),
     matchWildcard(':*', 'end', true, true)
 ];
