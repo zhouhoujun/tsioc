@@ -137,7 +137,7 @@ export class SwaggerService {
 
 
     buildDoc(router: Router, jsonDoc: OpenAPIObject, modelResolver: (type: any) => ModelArgumentResolver | undefined, prefix?: string) {
-        router.forEach(v => {
+        router.routes.forEach(v => {
             // if (route.endsWith('**')) route = route.substring(0, route.length - 2);
             if (v.controller instanceof Invocation) {
                 const route = v.path;
