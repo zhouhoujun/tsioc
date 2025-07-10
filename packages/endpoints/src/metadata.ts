@@ -169,8 +169,8 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             router.use({
                 prefix: joinPath(mapping.prefix, mapping.version),
                 path: router.formatter.format(route),
-                paths: mapping.paths,
                 pattern: mapping.route,
+                paths: mapping.paths,
                 handle: (input, ctx) => {
                     return injector.get(type).handle(input, ctx);
                 },

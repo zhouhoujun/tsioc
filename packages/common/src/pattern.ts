@@ -48,6 +48,7 @@ export abstract class PatternFormatter {
      */
     abstract format(pattern: Pattern): string;
 
+    isRegExp?(pattern: string): boolean;
     parseRegExp?(pattern: string, params?: Record<string, any>): RegExp | null;
 }
 

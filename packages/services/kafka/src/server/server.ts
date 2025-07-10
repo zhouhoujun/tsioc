@@ -122,7 +122,11 @@ export class KafkaServer extends Server<RequestContext, KafkaServConfig> {
         );
         router.routes.forEach(route => {
             if (route.path !== route.pattern) {
-                this.logger.info('Transform pattern', route.pattern, 'to topic', route.path)
+                if(route.pattern instanceof RegExp && route.pattern.source != route.path) {
+                    this.logger.info('Transform pattern', route.path, 'to RegExp topic', route.pattern)
+                } else {
+                    this.logger.info('Transform pattern', route.pattern, 'to topic', route.path)
+                }
             }
         });
 

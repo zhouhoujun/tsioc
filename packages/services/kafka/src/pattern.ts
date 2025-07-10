@@ -8,6 +8,10 @@ export class KafkaPatternFormatter extends PatternFormatter {
         return normalize(patternToPath(pattern, '.', '-')).replace(/\//g, '.')
     }
 
+    isRegExp(pattern: string): boolean {
+        return pattern$.test(pattern);
+    }
+
     parseRegExp(pattern: string, params?: Record<string, any>): RegExp | null {
         if (!pattern$.test(pattern)) return null;
         let $exp = this.replaceTopic(pattern);

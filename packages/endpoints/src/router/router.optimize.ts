@@ -71,17 +71,19 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         } else {
             route = arg as Route;
         }
-        if (this.formatter.parseRegExp) {
-            let params: Record<string, any> | undefined;
-            if (route.paths && route.handler instanceof RouteHandler) {
-                params = {};
-                const paths = route.paths;
-                const injector = route.handler.injector;
-                Object.keys(paths).forEach(n => {
-                    params![n] = injector.get(paths[n]);
-                })
+        if (this.formatter.isRegExp && this.formatter.parseRegExp) {
+            if (this.formatter.isRegExp(route.path)) {
+                let params: Record<string, any> | undefined;
+                if (route.paths && route.handler instanceof RouteHandler) {
+                    params = {};
+                    const paths = route.paths;
+                    const injector = route.handler.injector;
+                    Object.keys(paths).forEach(n => {
+                        params![n] = injector.get(paths[n]);
+                    })
+                }
+                route.pattern = this.formatter.parseRegExp(route.path, params);
             }
-            route.pattern = this.formatter.parseRegExp(route.path, params);
         }
         if (isRegExp(route.pattern)) {
             this.regExps.set(route.pattern, route);
