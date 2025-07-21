@@ -2,7 +2,7 @@ import { ReactiveEffect } from '../ReactiveEffect';
 import { ViewBuilder } from '../template/builder';
 
 export class ViewBuilderImpl extends ViewBuilder {
-    constructor(protected effect: ReactiveEffect) {
+    constructor(readonly effect: ReactiveEffect) {
         super();
     }
 

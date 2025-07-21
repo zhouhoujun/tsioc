@@ -56,7 +56,6 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
         return this._instance;
     }
 
-
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation

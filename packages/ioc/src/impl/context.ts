@@ -3,7 +3,7 @@ import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getTypeName, getTypeChain } from '../utils/lang';
 import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getType } from '../utils/chk';
 import { OperationArgumentResolver, Parameter, composeResolver, composeResolvers } from '../resolver';
-import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL } from '../context';
+import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeArguments } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token, tokenId } from '../tokens';
 import { createInjector, Injector, isInjector } from '../injector';
@@ -70,8 +70,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             })
         }
 
-        // options.request && this.initArgs(options.request);
-        this.request = options.request!;
+        this.request = options.request || options.parent?.request;
 
         getTypeChain(getType(this)).forEach(c => {
             this.setValue(c, this);
@@ -82,13 +81,28 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
         injector.onDestroy(this);
     }
 
-    // protected initArgs(args: ProvdierOf<T>): void {
-    //     this.injector.inject(toProvider(CONTEXT_PAYLOAD, args));
-    //     if (!isFunction(args)) {
-    //         const argType = getType(args);
-    //         this.injector.setValue(argType, args);
-    //     }
-    // }
+    attach(option: InvocationContext | InvokeArguments): void {
+
+        if (option instanceof InvocationContext) {
+            this.addRef(option);
+            this.onDestroy(() => this.removeRef(option));
+        } else {
+            if (option.values) {
+                option.values.forEach(par => {
+                    this.injector.setValue(par[0], par[1]);
+                })
+            }
+            if (option.providers) {
+                this.injector.inject(option.providers);
+            }
+            if (option.resolvers) {
+                const resls = option.resolvers?.map(r => isFunction(r) ? (r as Function)(this.injector) : r);
+                if (resls?.length) {
+                    this.getResolvers().push(composeResolvers(resls));
+                }
+            }
+        }
+    }
 
     /**
      * get context arguments resolvers.
@@ -113,6 +127,12 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
             if (resls?.length) {
                 resolvers.push(composeResolvers(resls));
             }
+            // if (this.options.parent) {
+            //     const prsv = this.options.parent.getResolvers();
+            //     if (prsv?.length) {
+            //         resolvers.push(composeResolvers(prsv));
+            //     }
+            // }
             const defaultResls = this.getDefaultResolvers();
             if (defaultResls?.length) {
                 resolvers.push(composeResolvers(defaultResls));
@@ -338,11 +358,6 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
     }
 
 }
-
-/**
- * context payload token.
- */
-export const CONTEXT_PAYLOAD = tokenId('CONTEXT_PAYLOAD');
 
 /**
  * Missing argument execption.

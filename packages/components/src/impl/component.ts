@@ -1,4 +1,4 @@
-import { AbstractInvocation, AbstractInvocationFactory, Class, createInjector, Empty, Exception, Injectable, Injector, InvocationContext, InvokeArguments, Platform, Type } from '@tsdi/ioc';
+import { AbstractInvocation, AbstractInvocationFactory, Class, createContext, createInjector, Empty, Exception, Injectable, Injector, InvocationContext, InvokeArguments, Platform, Type } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentOptions, ComponentRef, ComponentFactory } from '../refs/component';
 import { ViewRef } from '../refs/view';
@@ -15,15 +15,6 @@ export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptio
         super(_class, context, options);
     }
 
-    private _compiler?: TemplateCompiler;
-    get compiler(): TemplateCompiler {
-        if(!this._compiler) {
-            this._compiler = this.context.get(TemplateCompiler);
-        }
-        return this._compiler;
-    }
-
-
     get hostView(): ViewRef {
         throw new Error('Method not implemented.');
     }
@@ -39,9 +30,14 @@ export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptio
 
     async render(option?: InvocationContext | InvokeArguments): Promise<void> {
         const def = this.class.getAnnotation<ComponentDef>();
-        if(!/\[\w+\]/.test(def.selector || '') && !def.template && !def.templateUrl) throw new Exception(this.class.className + ' template or templateUrl is required.')
+        if (!/\[\w+\]/.test(def.selector || '') && !def.template && !def.templateUrl) throw new Exception(this.class.className + ' template or templateUrl is required.')
         const template = def.template || await fetchTemplate(def.templateUrl!);
-        this.compiler.compile(template, this);
+        if (option) {
+            this.context.attach(option);
+        }
+        const compiler = this.context.get(TemplateCompiler);
+        const fragment = compiler.compile(template, this);
+        this.hostView;
     }
 
     protected override process(option?: InvocationContext | InvokeArguments) {

@@ -1,4 +1,3 @@
-import {  } from '@tsdi/ioc';
 import { Abstract, ModuleRef, Injector, InvocationContext, Type, TypeDef } from '@tsdi/ioc';
 import { ComponentRef } from './component';
 import { ElementRef } from './element';

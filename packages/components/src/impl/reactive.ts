@@ -18,7 +18,7 @@ export function reactive(target: any, effect: ReactiveEffect) {
             // Reflect.get保证this指向正确
             const res = Reflect.get(target, key, receiver)
 
-            // Vue3会对嵌套对象也进行响应式处理（懒代理）
+            // 嵌套对象也进行响应式处理（懒代理）
             if (isObject(res)) {
                 return reactive(res, effect)
             }

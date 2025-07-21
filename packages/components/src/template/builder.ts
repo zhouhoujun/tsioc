@@ -3,7 +3,8 @@ import { ReactiveEffect } from '../ReactiveEffect';
 
 @Abstract()
 export abstract class ViewBuilder {
-    protected abstract effect: ReactiveEffect;
+
+    abstract get effect(): ReactiveEffect;
     
     abstract create(
         selector: string, 

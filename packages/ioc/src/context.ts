@@ -3,7 +3,7 @@ import { InjectFlags, Token } from './tokens';
 import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
 import { Injector, InstanceOf } from './injector';
-import { ArgumentResolver, Parameter } from './resolver';
+import { ArgumentResolver, OperationArgumentResolver, Parameter } from './resolver';
 import { ProvdierOf, Provider } from './providers';
 import { Exception } from './exception';
 import { Invocation } from './invocation';
@@ -52,6 +52,8 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      * @param context 
      */
     abstract hasRef(context: InvocationContext): boolean;
+
+    abstract attach(options: InvocationContext | InvokeArguments): void;
     /**
      * the invocation argument.
      */
