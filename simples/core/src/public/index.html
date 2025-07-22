@@ -1,15 +1,212 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Webapp</title>
-  <base href=".">
 
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<head>
+  <meta charset="UTF-8">
+  <title>俄罗斯方块</title>
+  <style>
+    body {
+      background: #202028;
+      color: #fff;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    canvas {
+      border: 2px solid #fff;
+    }
+
+    .score {
+      margin-top: 20px;
+      font-size: 24px;
+    }
+  </style>
 </head>
+
 <body>
-  <div>
-      Html5 test.
-  </div>
+  <canvas id="game" width="300" height="600"></canvas>
+  <div class="score">得分: <span id="score">0</span></div>
+
+  <script>
+    let isPaused = false; // 新增暂停状态变量
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const BLOCK_SIZE = 30;
+    const SHAPES = [
+      [[1, 1, 1, 1]], // I
+      [[1, 1, 1], [0, 1, 0]], // T
+      [[1, 1, 1], [1, 0, 0]], // L
+      [[1, 1, 1], [0, 0, 1]], // J
+      [[1, 1], [1, 1]], // O
+      [[1, 1, 0], [0, 1, 1]], // S
+      [[0, 1, 1], [1, 1, 0]]  // Z
+    ];
+    const COLORS = ['#FF0D72', '#0DC2FF', '#0DFF72',
+      '#F538FF', '#FF8E0D', '#FFE138', '#3877FF'];
+
+    let score = 0;
+    let board = Array(20).fill().map(() => Array(10).fill(0));
+    let currentPiece = null;
+    let currentPos = { x: 0, y: 0 };
+
+    function createPiece() {
+      const idx = Math.floor(Math.random() * SHAPES.length);
+      currentPiece = {
+        shape: SHAPES[idx],
+        color: COLORS[idx]
+      };
+      currentPos.x = Math.floor(10 / 2) - Math.floor(currentPiece.shape[0].length / 2);
+      currentPos.y = 0;
+    }
+
+    function drawBlock(x, y, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE,
+        BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+    }
+
+    function draw() {
+      ctx.fillStyle = '#202028';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 绘制当前方块
+      currentPiece.shape.forEach((row, y) => {
+        row.forEach((value, x) => {
+          if (value) {
+            drawBlock(currentPos.x + x, currentPos.y + y, currentPiece.color);
+          }
+        });
+      });
+
+      // 绘制已落下的方块
+      board.forEach((row, y) => {
+        row.forEach((value, x) => {
+          if (value) {
+            drawBlock(x, y, COLORS[value - 1]);
+          }
+        });
+      });
+
+      // 新增暂停状态提示
+      if (isPaused) {
+          ctx.fillStyle = '#FFF';
+          ctx.font = '48px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('已暂停', canvas.width/2, canvas.height/2);
+      }
+    }
+
+    function collision() {
+      return currentPiece.shape.some((row, y) => {
+        return row.some((value, x) => {
+          if (!value) return false;
+          const newX = currentPos.x + x;
+          const newY = currentPos.y + y;
+          return newX < 0 || newX >= 10 ||
+            newY >= 20 || board[newY]?.[newX];
+        });
+      });
+    }
+
+    function merge() {
+      currentPiece.shape.forEach((row, y) => {
+        row.forEach((value, x) => {
+          if (value) {
+            board[currentPos.y + y][currentPos.x + x] = COLORS.indexOf(currentPiece.color) + 1;
+          }
+        });
+      });
+    }
+
+    function rotate() {
+      const rotated = currentPiece.shape[0].map((_, i) =>
+        currentPiece.shape.map(row => row[i]).reverse()
+      );
+      const previousShape = currentPiece.shape;
+      currentPiece.shape = rotated;
+      if (collision()) {
+        currentPiece.shape = previousShape;
+      }
+    }
+
+    function clearLines() {
+      let linesCleared = 0;
+      for (let y = board.length - 1; y >= 0; y--) {
+        if (board[y].every(value => value)) {
+          board.splice(y, 1);
+          board.unshift(Array(10).fill(0));
+          linesCleared++;
+          y++;
+        }
+      }
+      if (linesCleared) {
+        score += linesCleared * 100;
+        document.getElementById('score').textContent = score;
+      }
+    }
+
+
+
+    document.addEventListener('keydown', event => {
+      if (event.keyCode === 32) { // 新增空格键暂停
+        isPaused = !isPaused;
+        return;
+      }
+      if (isPaused) return; // 暂停时阻止操作
+      if (event.keyCode === 37) { // 左
+        currentPos.x--;
+        if (collision()) currentPos.x++;
+      } else if (event.keyCode === 39) { // 右
+        currentPos.x++;
+        if (collision()) currentPos.x--;
+      } else if (event.keyCode === 40) { // 下
+        currentPos.y++;
+        if (collision()) {
+          currentPos.y--;
+          merge();
+          clearLines();
+          createPiece();
+        }
+      } else if (event.keyCode === 38) { // 上（旋转）
+        rotate();
+      }
+    });
+
+    let lastTime = 0;
+    const dropInterval = 1000;
+    function gameLoop(timestamp) {
+      if (!isPaused) { // 只在非暂停时处理下落逻辑
+        // 计算时间差
+        const deltaTime = timestamp - lastTime;
+
+        if (deltaTime >= dropInterval) {
+          // 执行下落逻辑
+          currentPos.y++;
+          if (collision()) {
+            currentPos.y--;
+            merge();
+            clearLines();
+            createPiece();
+            if (collision()) {
+              alert('游戏结束！得分: ' + score);
+              board = Array(20).fill().map(() => Array(10).fill(0));
+              score = 0;
+              document.getElementById('score').textContent = score;
+            }
+          }
+          lastTime = timestamp; // 重置计时
+        }
+      }
+
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    createPiece();
+    gameLoop();
+  </script>
 </body>
+
 </html>

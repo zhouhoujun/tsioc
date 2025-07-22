@@ -29,10 +29,13 @@ export class BrowserContentSendAdapter extends ContentSendAdapter {
         }
 
         let index = opts.index;
-        if (index && isBoolean(index)) {
-            index = 'index.html';
+        if (isBoolean(index)) {
+            if (index) {
+                index = 'index.html';
+            } else if (path.endsWith('index.html')) {
+                return '';
+            }
         }
-        
         if (index && endSlash) path += index;
         if (absPath.test(path)) {
             throw new BadRequestException('Malicious Path');
@@ -41,14 +44,14 @@ export class BrowserContentSendAdapter extends ContentSendAdapter {
 
         const baseUrl = ctx.get(PROCESS_ROOT);
         const fsdir = new FileSystemDirectoryEntry();
-        let flieEntry: FileSystemEntry|undefined;
+        let flieEntry: FileSystemEntry | undefined;
         await lang.some(roots.map(root => () => {
             const defer = lang.defer();
             const rpath = isString(opts.baseUrl) ? joinPath(opts.baseUrl, root, path!) : (opts.baseUrl === false) ? joinPath(root, path!) : joinPath(baseUrl, root, path!);
             fsdir.getFile(rpath, {
                 create: false
             }, (entry) => {
-                if(!entry.isFile) defer.resolve()
+                if (!entry.isFile) defer.resolve()
                 flieEntry = entry;
                 defer.resolve(entry);
             }, defer.reject);
@@ -56,10 +59,10 @@ export class BrowserContentSendAdapter extends ContentSendAdapter {
         }), (v) => !!v);
 
         if (!flieEntry) return '';
-        
-        
+
+
         const handle = new FileSystemDirectoryHandle();
-    
+
         const filehandle = await handle.getFileHandle(flieEntry.fullPath);
         const file = await filehandle.getFile();
         ctx.body = file;

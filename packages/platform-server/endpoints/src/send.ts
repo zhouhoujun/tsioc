@@ -30,10 +30,14 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
             throw new BadRequestException('failed to decode url');
         }
         let index = opts.index;
-        if (index && isBoolean(index)) {
-            index = 'index.html';
+        if (isBoolean(index)) {
+            if (index) {
+                index = 'index.html';
+            } else if (path.endsWith('index.html')) {
+                return '';
+            }
         }
-        if (index && endSlash) path += index;
+        if (isString(index) && endSlash) path += index;
         const baseUrl = ctx.get(PROCESS_ROOT);
         if (isAbsolute(path) || winAbsPath.test(path)) {
             throw new BadRequestException('Malicious Path');
