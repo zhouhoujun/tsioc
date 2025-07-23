@@ -23,7 +23,7 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
         }
         const endSlash = path[path.length - 1] === '/';
         path = path.substring(parse(path).root.length);
-        const roots = isArray(opts.root) ? opts.root : [opts.root];
+        const roots = isArray(opts.root) ? opts.root : [opts.root ?? ''];
         try {
             path = decodeURIComponent(path)
         } catch {
@@ -85,8 +85,8 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
             // and not require a trailing slash for directories,
             // so that you can do both `/directory` and `/directory/`
             if (stats.isDirectory()) {
-                if (opts.format && index) {
-                    path += `/${index}`;
+                if (opts.format && isString(index)) {
+                    filename += `/${index}`;
                     stats = await statify(filename)
                 } else {
                     return ''

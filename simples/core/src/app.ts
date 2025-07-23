@@ -121,7 +121,10 @@ export class CheckRightAspect {
                 majorVersion: 2,
                 serverOpts: {
                     cert,
-                    key
+                    key,
+                },
+                content: {
+                    index: true
                 },
                 interceptors: [
                     CorsInterceptor,
@@ -130,7 +133,7 @@ export class CheckRightAspect {
                     BodyparserInterceptor,
                 ]
             }
-        }),        
+        }),
         provideSwagger({
             title: 'api document',
             description: 'platform basic api',

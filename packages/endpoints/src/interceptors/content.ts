@@ -66,7 +66,7 @@ export class ContentInterceptor implements ApplicationInterceptor<RequestContext
 }
 
 export interface SendOptions<TStats = any> {
-    root: string | string[];
+    root?: string | string[];
     prefix?: string;
     baseUrl?: string | boolean;
     index?: string | boolean;
@@ -109,6 +109,7 @@ export const defOpts: ContentOptions = {
     root: 'public',
     index: 'index.html',
     maxAge: 0,
+    format: true,
     defer: false,
     immutable: false,
 
