@@ -33,7 +33,7 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
         if (isBoolean(index)) {
             if (index) {
                 index = 'index.html';
-            } else if (path.endsWith('index.html')) {
+            } else if (INDEX_REGEXP.test(path)) {
                 return '';
             }
         }
@@ -138,3 +138,4 @@ function isHidden(root: string, path: string) {
 const notfound = [ENOENT, ENAMETOOLONG, ENOTDIR];
 const winAbsPath = /^[a-zA-Z]+:\//;
 const UP_REGEXP = /(?:^|[\\/])\.\.(?:[\\/]|$)/;
+const INDEX_REGEXP = /index(\.\w+)*$/;

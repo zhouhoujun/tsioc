@@ -32,7 +32,7 @@ export class BrowserContentSendAdapter extends ContentSendAdapter {
         if (isBoolean(index)) {
             if (index) {
                 index = 'index.html';
-            } else if (path.endsWith('index.html')) {
+            } else if (INDEX_REGEXP.test(path)) {
                 return '';
             }
         }
@@ -73,3 +73,4 @@ export class BrowserContentSendAdapter extends ContentSendAdapter {
 }
 
 const absPath = /^[a-zA-Z]+:\//;
+const INDEX_REGEXP = /index(\.\w+)*$/;
