@@ -1,5 +1,5 @@
 import { PROCESS_ROOT } from '@tsdi/core';
-import { Injectable, isArray, isBoolean, isNil, isString, TypeException } from '@tsdi/ioc';
+import { Injectable, isArray, isNil, isString, TypeException } from '@tsdi/ioc';
 import { BadRequestException, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenException, InternalServerException, NotFoundException } from '@tsdi/common/transport';
 import { RequestContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
 import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
@@ -29,13 +29,9 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
         } catch {
             throw new BadRequestException('failed to decode url');
         }
-        let index = opts.index;
-        if (isBoolean(index)) {
-            if (index) {
-                index = 'index.html';
-            } else if (INDEX_REGEXP.test(path)) {
-                return '';
-            }
+        const index = opts.index;
+        if (!index && INDEX_REGEXP.test(path)) {
+            return '';
         }
         if (isString(index) && endSlash) path += index;
         const baseUrl = ctx.get(PROCESS_ROOT);
@@ -47,7 +43,7 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
         }
         let filename = '', encodingExt = '';
         roots.some(root => {
-            const rpath = isString(opts.baseUrl) ? this.resolvePath(opts.baseUrl, root, path!) : (opts.baseUrl === false) ? this.resolvePath(root, path!) : this.resolvePath(baseUrl, root, path!);
+            const rpath = isString(opts.baseUrl) ? this.joinPath(opts.baseUrl, root, path!) : (opts.baseUrl === false) ? this.joinPath(root, path!) : this.joinPath(baseUrl, root, path!);
             if (!opts.hidden && isHidden(root, rpath)) return false;
             // serve brotli file when possible otherwise gzipped file when possible
             if (ctx.acceptsEncodings('br', 'identity') === 'br' && opts.brotli && existsSync(rpath + '.br')) {
@@ -85,11 +81,18 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
             // and not require a trailing slash for directories,
             // so that you can do both `/directory` and `/directory/`
             if (stats.isDirectory()) {
-                if (opts.format && isString(index)) {
-                    filename += `/${index}`;
+                if (!opts.format || !index) return '';
+                if (isString(index)) {
+                    filename = this.joinPath(filename, index);
+                    if (!existsSync(filename)) {
+                        return ''
+                    }
                     stats = await statify(filename)
-                } else {
-                    return ''
+                } else if(index) {
+                    const idxFile = indexFiles.find(idx => existsSync(this.joinPath(filename, idx)));
+                    if (!idxFile) return '';
+                    filename = this.joinPath(filename, idxFile);
+                    stats = await statify(filename)
                 }
             }
         } catch (err) {
@@ -122,7 +125,7 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
 
     }
 
-    private resolvePath(root: string, ...path: string[]): string {
+    private joinPath(root: string, ...path: string[]): string {
         return normalize(join(resolve(root), ...path))
     }
 }
@@ -136,6 +139,7 @@ function isHidden(root: string, path: string) {
 }
 
 const notfound = [ENOENT, ENAMETOOLONG, ENOTDIR];
+const indexFiles = ['index.html', 'index.htm', 'index.php', 'default.html', 'default.htm'];
 const winAbsPath = /^[a-zA-Z]+:\//;
 const UP_REGEXP = /(?:^|[\\/])\.\.(?:[\\/]|$)/;
 const INDEX_REGEXP = /index(\.\w+)*$/;
