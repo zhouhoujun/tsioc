@@ -23,7 +23,7 @@ export class ContentSendAdapterImpl extends ContentSendAdapter {
         }
         const endSlash = path[path.length - 1] === '/';
         path = path.substring(parse(path).root.length);
-        const roots = isArray(opts.root) ? opts.root : [opts.root ?? ''];
+        const roots = isArray(opts.root) ? opts.root : [opts.root ?? 'public'];
         try {
             path = decodeURIComponent(path)
         } catch {
