@@ -28,6 +28,12 @@
 <body>
   <canvas id="game" width="300" height="600"></canvas>
   <div class="score">得分: <span id="score">0</span></div>
+  
+  <!-- 添加音频元素 -->
+  <audio id="rotateSound" src="./assets/rotateSound.m4a" preload="auto"></audio>
+  <audio id="moveSound" src="./assets/moveSound.m4a" preload="auto"></audio>
+  <audio id="clearSound" src="./assets/clearSound.m4a" preload="auto"></audio>
+  <audio id="gameOverSound" src="./assets/gameOverSound.m4a" preload="auto"></audio>
 
   <script>
     let isPaused = false; // 新增暂停状态变量
@@ -120,6 +126,12 @@
       });
     }
 
+    // 添加音频变量
+    const rotateSound = document.getElementById('rotateSound');
+    const moveSound = document.getElementById('moveSound');
+    const clearSound = document.getElementById('clearSound');
+    const gameOverSound = document.getElementById('gameOverSound');
+
     function rotate() {
       const rotated = currentPiece.shape[0].map((_, i) =>
         currentPiece.shape.map(row => row[i]).reverse()
@@ -128,6 +140,9 @@
       currentPiece.shape = rotated;
       if (collision()) {
         currentPiece.shape = previousShape;
+      } else {
+        rotateSound.currentTime = 0;
+        rotateSound.play();
       }
     }
 
@@ -144,23 +159,32 @@
       if (linesCleared) {
         score += linesCleared * 100;
         document.getElementById('score').textContent = score;
+        clearSound.currentTime = 0;
+        clearSound.play();
       }
     }
-
-
 
     document.addEventListener('keydown', event => {
       if (event.keyCode === 32) { // 新增空格键暂停
         isPaused = !isPaused;
         return;
       }
-      if (isPaused) return; // 暂停时阻止操作
+      if (isPaused) return;
+      
       if (event.keyCode === 37) { // 左
         currentPos.x--;
         if (collision()) currentPos.x++;
+        else {
+          moveSound.currentTime = 0;
+          moveSound.play();
+        }
       } else if (event.keyCode === 39) { // 右
         currentPos.x++;
         if (collision()) currentPos.x--;
+        else {
+          moveSound.currentTime = 0;
+          moveSound.play();
+        }
       } else if (event.keyCode === 40) { // 下
         currentPos.y++;
         if (collision()) {
@@ -168,6 +192,9 @@
           merge();
           clearLines();
           createPiece();
+        } else {
+          moveSound.currentTime = 0;
+          moveSound.play();
         }
       } else if (event.keyCode === 38) { // 上（旋转）
         rotate();
@@ -190,7 +217,8 @@
             clearLines();
             createPiece();
             if (collision()) {
-              alert('游戏结束！得分: ' + score);
+              gameOverSound.play();
+              // alert('游戏结束！得分: ' + score);
               board = Array(20).fill().map(() => Array(10).fill(0));
               score = 0;
               document.getElementById('score').textContent = score;
