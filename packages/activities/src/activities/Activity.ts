@@ -12,7 +12,7 @@ export interface ActivityResult<T = any> {
 
 @Abstract()
 export abstract class Activity<TContext extends ActivityContext = ActivityContext> {
-    abstract name: string;
+
     abstract execute(context: TContext): Promise<ActivityResult>;
     
     compensate?(context: ActivityContext): Promise<void>;

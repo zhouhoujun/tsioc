@@ -1,4 +1,7 @@
-import { AbstractInvocation, AbstractInvocationFactory, Class, createContext, createInjector, Empty, Exception, Injectable, Injector, InvocationContext, InvokeArguments, Platform, Type } from '@tsdi/ioc';
+import {
+    AbstractInvocation, AbstractInvocationFactory, Class, createContext, createInjector, 
+    Empty, Exception, Injectable, Injector, InvocationContext, InvokeArguments, Platform, Type
+} from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentOptions, ComponentRef, ComponentFactory } from '../refs/component';
 import { ViewRef } from '../refs/view';
@@ -37,7 +40,7 @@ export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptio
         }
         const compiler = this.context.get(TemplateCompiler);
         const fragment = compiler.compile(template, this);
-        this.hostView;
+        // this.hostView = fragment;
     }
 
     protected override process(option?: InvocationContext | InvokeArguments) {
