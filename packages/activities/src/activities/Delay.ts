@@ -44,7 +44,7 @@ export class DelayActivity extends Activity {
 
     async compensate(context: ActivityContext): Promise<void> {
         // 中断当前延迟
-        if (context.interruptible && this.abortController) {
+        if (this.abortController) {
             this.abortController.abort();
         }
     }
