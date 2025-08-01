@@ -1,5 +1,5 @@
-import { ModuleType, AnnotationType, noPointcut, getModuleType, ActionTypes, PropertyMetadata, createPropDecorator } from '@tsdi/ioc';
-import { ComponentFactory } from '../refs/component';
+import { PropertyMetadata, createPropDecorator } from '@tsdi/ioc';
+
 
 
 export interface AtteributeMetadata extends PropertyMetadata {

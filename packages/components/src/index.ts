@@ -10,6 +10,6 @@ export * from './lifecycle';
 
 export * from './decorators/component';
 
-export * from './decorators/prop';
+export * from './decorators/atteribute';
 
 export * from './components';
