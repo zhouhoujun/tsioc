@@ -1,5 +1,6 @@
-import { Injectable } from '@tsdi/ioc';
+import { Atteribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
+
 
 export interface TryCatchActivityContext extends ActivityContext {
     /**
@@ -43,20 +44,29 @@ export interface TryCatchActivityOptions {
     defaultRethrow?: boolean;
 }
 
-@Injectable()
-export class TryCatchActivity implements Activity<TryCatchActivityContext> {
-    name = 'try_catch';
+@Component({ selector: 'try_catch'})
+export class TryCatchActivity extends Activity {
 
-    constructor(private options: TryCatchActivityOptions = {}) {
-        this.options = {
-            defaultErrorTypes: [Error],
-            defaultRethrow: false,
-            ...options
-        };
-    }
+    /**
+     * try 块中的活动
+     */
+    @Atteribute() tryActivity!: Activity;
+    /**
+     * catch 块中的活动
+     */
+    @Atteribute() catchActivity?: Activity|null;
+    /**
+     * finally 块中的活动
+     */
+    @Atteribute() finallyActivity?: Activity|null;
+    /**
+     * 错误类型过滤器
+     */
+    @Atteribute() errorTypes?: (new (...args: any[]) => Error)[];
 
-    async execute(context: TryCatchActivityContext): Promise<ActivityResult> {
-        if (!context.tryActivity) {
+
+    async execute(context: ActivityContext): Promise<ActivityResult> {
+        if (!this.tryActivity) {
             return {
                 success: false,
                 error: new Error('Try activity is required')
@@ -70,28 +80,28 @@ export class TryCatchActivity implements Activity<TryCatchActivityContext> {
 
         try {
             // 执行 try 块
-            tryResult = await context.tryActivity.execute(context);
+            tryResult = await this.tryActivity.execute(context);
         } catch (error) {
             const caughtError = error as Error;
 
             // 检查错误类型是否匹配
-            const errorTypes = context.errorTypes ?? this.options.defaultErrorTypes;
+            const errorTypes = this.errorTypes;
             const shouldCatch = errorTypes?.some(errorType => 
                 caughtError instanceof errorType
             );
 
-            if (shouldCatch && context.catchActivity) {
+            if (shouldCatch && this.catchActivity) {
                 // 执行 catch 块
                 try {
-                    catchResult = await context.catchActivity.execute({
+                    catchResult = await this.catchActivity.execute({
                         ...context,
                         error: caughtError
                     });
 
-                    // 如果配置了重新抛出，则抛出错误
-                    if (context.rethrow ?? this.options.defaultRethrow) {
-                        throw caughtError;
-                    }
+                    // // 如果配置了重新抛出，则抛出错误
+                    // if (this.rethrow ?? this.options.defaultRethrow) {
+                    //     throw caughtError;
+                    // }
                 } catch (catchError) {
                     return {
                         success: false,
@@ -108,9 +118,9 @@ export class TryCatchActivity implements Activity<TryCatchActivityContext> {
             }
         } finally {
             // 执行 finally 块
-            if (context.finallyActivity) {
+            if (this.finallyActivity) {
                 try {
-                    finallyResult = await context.finallyActivity.execute(context);
+                    finallyResult = await this.finallyActivity.execute(context);
                 } catch (finallyError) {
                     finallyErrorResult = {
                         success: false,
@@ -128,26 +138,26 @@ export class TryCatchActivity implements Activity<TryCatchActivityContext> {
             return finallyErrorResult;
         }
 
-        // 如果有自定义错误处理器，使用它处理任何错误
-        if (context.errorHandler) {
-            const error = tryResult?.error || catchResult?.error || finallyResult?.error;
-            if (error) {
-                try {
-                    return await context.errorHandler(error);
-                } catch (handlerError) {
-                    return {
-                        success: false,
-                        error: handlerError as Error,
-                        data: {
-                            tryResult,
-                            catchResult,
-                            finallyResult,
-                            handlerError: handlerError as Error
-                        }
-                    };
-                }
-            }
-        }
+        // // 如果有自定义错误处理器，使用它处理任何错误
+        // if (context.errorHandler) {
+        //     const error = tryResult?.error || catchResult?.error || finallyResult?.error;
+        //     if (error) {
+        //         try {
+        //             return await context.errorHandler(error);
+        //         } catch (handlerError) {
+        //             return {
+        //                 success: false,
+        //                 error: handlerError as Error,
+        //                 data: {
+        //                     tryResult,
+        //                     catchResult,
+        //                     finallyResult,
+        //                     handlerError: handlerError as Error
+        //                 }
+        //             };
+        //         }
+        //     }
+        // }
 
         // 返回执行结果
         return {

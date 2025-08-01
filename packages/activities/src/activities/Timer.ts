@@ -38,7 +38,7 @@ export class TimerActivity extends Activity {
     @Atteribute() body!: Activity;
 
     async execute(context: ActivityContext): Promise<ActivityResult> {
-        if (!context.type) {
+        if (!this.type) {
             return {
                 success: false,
                 error: new Error('Timer type is required')
@@ -59,7 +59,7 @@ export class TimerActivity extends Activity {
                 default:
                     return {
                         success: false,
-                        error: new Error(`Unsupported timer type: ${context.type}`)
+                        error: new Error(`Unsupported timer type: ${this.type}`)
                     };
             }
         } catch (error) {
@@ -67,7 +67,7 @@ export class TimerActivity extends Activity {
                 success: false,
                 error: error as Error,
                 data: {
-                    type: context.type,
+                    type: this.type,
                     executionCount
                 }
             };
@@ -80,10 +80,10 @@ export class TimerActivity extends Activity {
         return new Promise<ActivityResult>((resolve) => {
             this.timerId = setTimeout(async () => {
                 try {
-                    if (context.callback) {
-                        await context.callback(context);
-                    }
-                    context.onComplete?.();
+                    // if (context.callback) {
+                    //     await context.callback(context);
+                    // }
+                    // context.onComplete?.();
                     resolve({
                         success: true,
                         data: {
@@ -137,7 +137,7 @@ export class TimerActivity extends Activity {
 
                     if (maxRepeats && executionCount >= maxRepeats) {
                         this.cleanup();
-                        context.onComplete?.();
+                        // context.onComplete?.();
                         resolve({
                             success: true,
                             data: {
@@ -174,7 +174,7 @@ export class TimerActivity extends Activity {
     }
 
     private async executeDate(context: ActivityContext): Promise<ActivityResult> {
-        if (!context.targetDate) {
+        if (!this.targetDate) {
             return {
                 success: false,
                 error: new Error('Target date is required for date timer type')
@@ -182,20 +182,20 @@ export class TimerActivity extends Activity {
         }
 
         const now = Date.now();
-        const targetTime = context.targetDate.getTime();
+        const targetTime = this.targetDate.getTime();
         const delay = Math.max(0, targetTime - now);
 
         if (delay === 0) {
             try {
-                if (context.callback) {
-                    await context.callback(context);
-                }
-                context.onComplete?.();
+                // if (context.callback) {
+                //     await context.callback(context);
+                // }
+                // context.onComplete?.();
                 return {
                     success: true,
                     data: {
                         type: 'date',
-                        targetDate: context.targetDate,
+                        targetDate: this.targetDate,
                         executed: true
                     }
                 };
@@ -205,7 +205,7 @@ export class TimerActivity extends Activity {
                     error: error as Error,
                     data: {
                         type: 'date',
-                        targetDate: context.targetDate,
+                        targetDate: this.targetDate,
                         executed: false
                     }
                 };
@@ -215,15 +215,15 @@ export class TimerActivity extends Activity {
         return new Promise<ActivityResult>((resolve) => {
             this.timerId = setTimeout(async () => {
                 try {
-                    if (context.callback) {
-                        await context.callback(context);
-                    }
-                    context.onComplete?.();
+                    // if (context.callback) {
+                    //     await context.callback(context);
+                    // }
+                    // context.onComplete?.();
                     resolve({
                         success: true,
                         data: {
                             type: 'date',
-                            targetDate: context.targetDate,
+                            targetDate: this.targetDate,
                             executed: true
                         }
                     });
@@ -233,7 +233,7 @@ export class TimerActivity extends Activity {
                         error: error as Error,
                         data: {
                             type: 'date',
-                            targetDate: context.targetDate,
+                            targetDate: this.targetDate,
                             executed: false
                         }
                     });
