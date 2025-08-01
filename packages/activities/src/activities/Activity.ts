@@ -1,7 +1,7 @@
-import { Abstract, Injectable, Token } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 
 export interface ActivityContext {
-    [key: string]: any;
+
 }
 
 export interface ActivityResult<T = any> {
@@ -11,9 +11,10 @@ export interface ActivityResult<T = any> {
 }
 
 @Abstract()
-export abstract class Activity<TContext extends ActivityContext = ActivityContext> {
+export abstract class Activity {
 
-    abstract execute(context: TContext): Promise<ActivityResult>;
-    
+    abstract execute(context: ActivityContext): Promise<ActivityResult>;
+
     compensate?(context: ActivityContext): Promise<void>;
-} 
+
+}

@@ -1,10 +1,10 @@
-import { Injectable } from '@tsdi/ioc';
+import { Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 
-@Injectable()
+
+@Component({ selector: 'end'})
 export class EndActivity extends Activity {
-    name = 'end';
     
     async execute(context: ActivityContext): Promise<ActivityResult> {
         return {

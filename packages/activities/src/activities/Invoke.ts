@@ -1,82 +1,32 @@
-import { Empty, Injectable } from '@tsdi/ioc';
+import { Empty, Injectable, Invocation, Type } from '@tsdi/ioc';
+import { Atteribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 export type InvokeFn = (context: ActivityContext, ...args: any[]) => Promise<any>;
 
-export interface InvokeActivityContext extends ActivityContext {
-    /**
-     * 要调用的活动或函数
-     */
-    target: Activity | InvokeFn;
-    /**
-     * 调用参数
-     */
-    args?: any[];
-    /**
-     * 结果转换函数
-     */
-    resultMapper?: (result: any) => any;
-    /**
-     * 错误处理函数
-     */
-    errorHandler?: (error: Error) => Promise<ActivityResult>;
-    /**
-     * 重试配置
-     */
-    retry?: {
-        maxAttempts: number;
-        delay: number;
-        backoff?: number;
-    };
-}
 
-export interface InvokeActivityOptions {
-    /**
-     * 默认重试配置
-     */
-    defaultRetry?: {
-        maxAttempts: number;
-        delay: number;
-        backoff: number;
-    };
-}
+@Component({ selector: 'invoke' })
+export class InvokeActivity extends Activity {
 
-@Injectable()
-export class InvokeActivity implements Activity<InvokeActivityContext> {
-    name = 'invoke';
 
-    constructor(private options: InvokeActivityOptions = {}) {
-        this.options = {
-            defaultRetry: {
-                maxAttempts: 3,
-                delay: 1000,
-                backoff: 2
-            },
-            ...options
-        };
-    }
+    @Atteribute() target: Type | Invocation| undefined;
+    @Atteribute() invoke!: string | InvokeFn;
+    @Atteribute() maxAttempts!: number;
+    @Atteribute() delay!: number;
+    @Atteribute() backoff!: number;
 
-    async execute(context: InvokeActivityContext): Promise<ActivityResult> {
-        if (!context.target) {
-            return {
-                success: false,
-                error: new Error('No target activity or function provided')
-            };
-        }
 
-        const retry = {
-            ...this.options.defaultRetry,
-            ...context.retry
-        };
+
+    async execute(context: ActivityContext): Promise<ActivityResult> {
 
         let attempt = 0;
         let lastError: Error | null = null;
 
-        while (attempt < retry.maxAttempts!) {
+        while (attempt < this.maxAttempts!) {
             try {
                 // 如果不是第一次尝试，等待指定延迟
                 if (attempt > 0) {
-                    const delay = retry.delay! * Math.pow(retry.backoff!, attempt - 1);
+                    const delay = this.delay! * Math.pow(this.backoff!, attempt - 1);
                     await new Promise(resolve => setTimeout(resolve, delay));
                 }
 
@@ -103,7 +53,7 @@ export class InvokeActivity implements Activity<InvokeActivityContext> {
                 }
 
                 // 如果是最后一次尝试，返回错误
-                if (attempt >= retry.maxAttempts!) {
+                if (attempt >= this.maxAttempts!) {
                     return {
                         success: false,
                         error: lastError,
@@ -123,10 +73,10 @@ export class InvokeActivity implements Activity<InvokeActivityContext> {
         };
     }
 
-    private async invokeTarget(context: InvokeActivityContext): Promise<any> {
+    private async invokeTarget(context: ActivityContext): Promise<any> {
         let result: any;
 
-        if (this.isActivity(context.target)) {
+        if (this.target) {
             // 调用活动
             const activityResult = await context.target.execute(context);
             if (!activityResult.success) {
@@ -135,7 +85,7 @@ export class InvokeActivity implements Activity<InvokeActivityContext> {
             result = activityResult.data;
         } else {
             // 调用函数
-            result = await context.target(context, ...(context.args || Empty));
+            result = await this.invoke(context, ...(context.args || Empty));
         }
 
         // 如果有结果转换函数，使用它

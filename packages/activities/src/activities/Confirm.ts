@@ -1,5 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
+import { Component } from '@tsdi/components';
 
 
 
@@ -26,11 +27,8 @@ export interface ConfirmActivityOptions {
     cancelText?: string;
 }
 
-@Injectable()
-export class ConfirmActivity implements Activity<ConfirmActivityContext> {
-    name = 'confirm';
-
-    constructor(private options?: ConfirmActivityOptions) {}
+@Component({ selector: 'confirm' })
+export class ConfirmActivity extends Activity {
 
     async execute(context: ConfirmActivityContext): Promise<ActivityResult> {
         try {

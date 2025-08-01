@@ -1,7 +1,6 @@
-import { Injectable, isFunction } from '@tsdi/ioc';
-import { Activity, ActivityContext, ActivityResult } from './Activity';
 import { Atteribute, Component } from '@tsdi/components';
-import { lastValueFrom, Observable } from 'rxjs';
+import { Activity, ActivityContext, ActivityResult } from './Activity';
+import { ConditionalActivity } from './Conditional';
 
 
 export interface IfActivityOptions {
@@ -14,33 +13,19 @@ export interface IfActivityOptions {
 @Component({
     selector: 'if'
 })
-export class IfActivity implements Activity {
+export class IfActivity extends ConditionalActivity implements Activity {
 
-    @Atteribute()
-    condition!: boolean | Promise<boolean> | Observable<boolean> | ((context: ActivityContext) => boolean | Promise<boolean> | Observable<boolean>);
-
-    @Atteribute()
+    @Atteribute('then')
     thenActivity!: Activity;
 
-    @Atteribute()
+    @Atteribute('else')
     elseActivity?: Activity;
 
     @Atteribute()
-    errorHandler?: (error: Error) => Promise<ActivityResult>;
+    onError?: (error: Error) => Promise<ActivityResult>;
 
 
-    protected async evaluateCondition(context: ActivityContext): Promise<boolean> {
-        const condition = isFunction(this.condition) ? this.condition(context) : this.condition;
-        if (condition instanceof Promise) {
-            return await condition;
-        } else if (condition instanceof Observable) {
-            return await lastValueFrom(condition);
-        } else {
-            return condition;
-        }
-    }
-
-    async execute(context: ActivityContext): Promise<ActivityResult> {
+    override async execute(context: ActivityContext): Promise<ActivityResult> {
 
         if (!this.thenActivity) {
             return {
@@ -50,11 +35,8 @@ export class IfActivity implements Activity {
         }
 
         try {
-            // 评估条件
-            const conditionResult = await this.evaluateCondition(context);
-
             // 根据条件选择要执行的活动
-            const activityToExecute = conditionResult ? this.thenActivity : this.elseActivity;
+            const activityToExecute = this.condition ? this.thenActivity : this.elseActivity;
 
             // 如果没有 else 活动且条件为 false，返回成功结果
             if (!activityToExecute) {
@@ -70,15 +52,15 @@ export class IfActivity implements Activity {
                 success: result.success,
                 error: result.error,
                 data: {
-                    condition: conditionResult,
+                    condition: this.condition,
                     result: result.data
                 }
             };
         } catch (error) {
             // 如果有自定义错误处理器，使用它
-            if (this.errorHandler) {
+            if (this.onError) {
                 try {
-                    return await this.errorHandler(error as Error);
+                    return await this.onError(error as Error);
                 } catch (handlerError) {
                     return {
                         success: false,
@@ -100,8 +82,7 @@ export class IfActivity implements Activity {
 
     async compensate(context: ActivityContext): Promise<void> {
         // 根据条件执行补偿操作
-        const conditionResult = await this.evaluateCondition(context);
-        const activityToCompensate = conditionResult ? this.thenActivity : this.elseActivity;
+        const activityToCompensate = this.condition ? this.thenActivity : this.elseActivity;
 
         if (activityToCompensate?.compensate) {
             await activityToCompensate.compensate(context);

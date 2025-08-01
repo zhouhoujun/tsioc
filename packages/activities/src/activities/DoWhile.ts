@@ -36,7 +36,7 @@ export interface DoWhileActivityOptions {
 }
 
 @Injectable()
-export class DoWhileActivity implements Activity<DoWhileActivityContext> {
+export class DoWhileActivity implements Activity {
     name = 'do_while';
     private isRunning = false;
 

@@ -1,68 +1,43 @@
-import { Injectable } from '@tsdi/ioc';
+import { Component, Atteribute } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
-export interface TimerActivityContext extends ActivityContext {
+
+@Component({ selector: 'timer' })
+export class TimerActivity extends Activity {
+
+    private timerId: any = null;
+    private intervalId: any = null;
+    private isRunning = false;
+
     /**
      * 定时器类型：'timeout' | 'interval' | 'date'
      */
-    type: 'timeout' | 'interval' | 'date';
+    @Atteribute() type!: 'timeout' | 'interval' | 'date';
     /**
      * 延迟时间（毫秒，用于 timeout 和 interval）
      */
-    delay?: number;
+    @Atteribute() delay?: number;
     /**
      * 目标日期（用于 date 类型）
      */
-    targetDate?: Date;
+    @Atteribute() targetDate?: Date;
     /**
      * 重复间隔（毫秒，用于 interval）
      */
-    interval?: number;
+    @Atteribute() interval?: number;
     /**
      * 最大重复次数（用于 interval）
      */
-    maxRepeats?: number;
-    /**
-     * 定时器回调函数
-     */
-    callback?: (context: ActivityContext) => Promise<void>;
+    @Atteribute() maxRepeats?: number;
     /**
      * 是否立即执行第一次（用于 interval）
      */
-    immediate?: boolean;
-    /**
-     * 定时器完成回调
-     */
-    onComplete?: () => void;
-}
+    @Atteribute() immediate?: boolean;
 
-export interface TimerActivityOptions {
-    /**
-     * 默认延迟时间
-     */
-    defaultDelay?: number;
-    /**
-     * 默认是否立即执行
-     */
-    defaultImmediate?: boolean;
-}
 
-@Injectable()
-export class TimerActivity implements Activity<TimerActivityContext> {
-    name = 'timer';
-    private timerId: NodeJS.Timeout | null = null;
-    private intervalId: NodeJS.Timeout | null = null;
-    private isRunning = false;
+    @Atteribute() body!: Activity;
 
-    constructor(private options: TimerActivityOptions = {}) {
-        this.options = {
-            defaultDelay: 1000,
-            defaultImmediate: false,
-            ...options
-        };
-    }
-
-    async execute(context: TimerActivityContext): Promise<ActivityResult> {
+    async execute(context: ActivityContext): Promise<ActivityResult> {
         if (!context.type) {
             return {
                 success: false,
@@ -74,7 +49,7 @@ export class TimerActivity implements Activity<TimerActivityContext> {
         const executionCount = 0;
 
         try {
-            switch (context.type) {
+            switch (this.type) {
                 case 'timeout':
                     return await this.executeTimeout(context);
                 case 'interval':
@@ -99,8 +74,8 @@ export class TimerActivity implements Activity<TimerActivityContext> {
         }
     }
 
-    private async executeTimeout(context: TimerActivityContext): Promise<ActivityResult> {
-        const delay = context.delay ?? this.options.defaultDelay;
+    private async executeTimeout(context: ActivityContext): Promise<ActivityResult> {
+        const delay = this.delay;
         
         return new Promise<ActivityResult>((resolve) => {
             this.timerId = setTimeout(async () => {
@@ -133,12 +108,12 @@ export class TimerActivity implements Activity<TimerActivityContext> {
     }
 
     private async executeInterval(
-        context: TimerActivityContext,
+        context: ActivityContext,
         executionCount: number
     ): Promise<ActivityResult> {
-        const interval = context.interval ?? context.delay ?? this.options.defaultDelay;
-        const immediate = context.immediate ?? this.options.defaultImmediate;
-        const maxRepeats = context.maxRepeats;
+        const interval = this.interval;
+        const immediate = this.immediate;
+        const maxRepeats = this.maxRepeats;
 
         return new Promise<ActivityResult>((resolve) => {
             const executeInterval = async () => {
@@ -157,9 +132,7 @@ export class TimerActivity implements Activity<TimerActivityContext> {
                 }
 
                 try {
-                    if (context.callback) {
-                        await context.callback(context);
-                    }
+                    await this.body.execute(context);
                     executionCount++;
 
                     if (maxRepeats && executionCount >= maxRepeats) {
@@ -200,7 +173,7 @@ export class TimerActivity implements Activity<TimerActivityContext> {
         });
     }
 
-    private async executeDate(context: TimerActivityContext): Promise<ActivityResult> {
+    private async executeDate(context: ActivityContext): Promise<ActivityResult> {
         if (!context.targetDate) {
             return {
                 success: false,
@@ -269,7 +242,7 @@ export class TimerActivity implements Activity<TimerActivityContext> {
         });
     }
 
-    async compensate(context: TimerActivityContext): Promise<void> {
+    async compensate(context: ActivityContext): Promise<void> {
         this.cleanup();
     }
 

@@ -1,5 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
+import { Component } from '@tsdi/components';
 
 export interface ThrowActivityContext extends ActivityContext {
     /**
@@ -27,16 +28,8 @@ export interface ThrowActivityOptions {
     defaultErrorCode?: string | number;
 }
 
-@Injectable()
-export class ThrowActivity implements Activity<ThrowActivityContext> {
-    name = 'throw';
-
-    constructor(private options: ThrowActivityOptions = {}) {
-        this.options = {
-            defaultErrorCode: 'THROW_ERROR',
-            ...options
-        };
-    }
+@Component({ selector: 'throw' })
+export class ThrowActivity extends Activity {
 
     async execute(context: ThrowActivityContext): Promise<ActivityResult> {
         if (!context.error) {
@@ -44,11 +37,6 @@ export class ThrowActivity implements Activity<ThrowActivityContext> {
                 success: false,
                 error: new Error('No error specified to throw')
             };
-        }
-
-        // 如果需要，先执行补偿操作
-        if (context.compensateBeforeThrow && context.compensate) {
-            await context.compensate(context);
         }
 
         // 创建错误对象

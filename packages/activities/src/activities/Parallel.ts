@@ -1,5 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
+import { Atteribute, Component } from '@tsdi/components';
 
 export interface ParallelActivityContext extends ActivityContext {
     /**
@@ -35,17 +36,26 @@ export interface ParallelActivityOptions {
     defaultErrorStrategy?: 'continue' | 'stop' | 'throw';
 }
 
-@Injectable()
-export class ParallelActivity implements Activity<ParallelActivityContext> {
-    name = 'parallel';
+@Component({ selector: 'parallel' })
+export class ParallelActivity extends Activity {
+   
+    /**
+     * 要并行执行的活动列表
+     */
+    @Atteribute() activities: Activity[] = [];
 
-    constructor(private options: ParallelActivityOptions = {}) {
-        this.options = {
-            defaultMaxConcurrent: 5,
-            defaultErrorStrategy: 'continue',
-            ...options
-        };
-    }
+     /**
+     * 最大并发数
+     */
+    @Atteribute() maxConcurrent!: number;
+    /**
+     * 是否等待所有活动完成
+     */
+    @Atteribute() waitAll = true;
+    /**
+     * 错误处理策略
+     */
+    @Atteribute() errorStrategy: 'continue' | 'stop' | 'throw' = 'continue';
 
     async execute(context: ParallelActivityContext): Promise<ActivityResult> {
         if (!context.activities || context.activities.length === 0) {
@@ -55,9 +65,9 @@ export class ParallelActivity implements Activity<ParallelActivityContext> {
             };
         }
 
-        const maxConcurrent = context.maxConcurrent ?? this.options.defaultMaxConcurrent;
-        const errorStrategy = context.errorStrategy ?? this.options.defaultErrorStrategy;
-        const waitAll = context.waitAll ?? true;
+        const maxConcurrent = this.maxConcurrent ?? 5;
+        const errorStrategy = this.errorStrategy;
+        const waitAll = this.waitAll;
 
         const results: Map<Activity, ActivityResult> = new Map();
         const errors: Error[] = [];
@@ -65,7 +75,7 @@ export class ParallelActivity implements Activity<ParallelActivityContext> {
 
         try {
             // 创建活动执行队列
-            const queue = [...context.activities];
+            const queue = [...this.activities];
             const running = new Set<Promise<void>>();
 
             while (queue.length > 0 || running.size > 0) {

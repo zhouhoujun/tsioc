@@ -1,60 +1,38 @@
-import { Injectable } from '@tsdi/ioc';
+import { Atteribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
-export interface SequenceActivityContext extends ActivityContext {
+
+@Component({ selector: 'sequence' })
+export class SequenceActivity extends Activity {
+
     /**
      * 要按顺序执行的活动列表
      */
-    activities: Activity[];
+    @Atteribute() activities: Activity[] = [];
     /**
      * 是否在错误时继续执行
      */
-    continueOnError?: boolean;
-    /**
-     * 活动执行回调
-     */
-    onActivityComplete?: (activity: Activity, result: ActivityResult) => void;
-    /**
-     * 错误处理函数
-     */
-    errorHandler?: (activity: Activity, error: Error) => Promise<ActivityResult>;
-}
+    @Atteribute() continueOnError?: boolean;
 
-export interface SequenceActivityOptions {
-    /**
-     * 默认是否在错误时继续执行
-     */
-    defaultContinueOnError?: boolean;
-}
+    @Atteribute() onError?: (error: Error) =>  Promise<ActivityResult>;
 
-@Injectable()
-export class SequenceActivity implements Activity<SequenceActivityContext> {
-    name = 'sequence';
-
-    constructor(private options: SequenceActivityOptions = {}) {
-        this.options = {
-            defaultContinueOnError: false,
-            ...options
-        };
-    }
-
-    async execute(context: SequenceActivityContext): Promise<ActivityResult> {
-        if (!context.activities || context.activities.length === 0) {
+    async execute(context: ActivityContext): Promise<ActivityResult> {
+        if (!this.activities || this.activities.length === 0) {
             return {
                 success: true,
                 data: { completed: true }
             };
         }
 
-        const continueOnError = context.continueOnError ?? this.options.defaultContinueOnError;
+        const continueOnError = this.continueOnError;
         const results: Map<Activity, ActivityResult> = new Map();
         const errors: Error[] = [];
         let currentIndex = 0;
 
         try {
-            for (const activity of context.activities) {
+            for (const activity of this.activities) {
                 try {
-                    const result = await this.executeActivity(activity, context);
+                    const result = await activity.execute(context);
                     results.set(activity, result);
 
                     // 如果活动执行失败且不继续执行，返回错误
@@ -66,7 +44,7 @@ export class SequenceActivity implements Activity<SequenceActivityContext> {
                                 completed: false,
                                 results,
                                 errors: [result.error!],
-                                lastActivity: activity.name
+                                lastActivity: activity
                             }
                         };
                     }
@@ -79,9 +57,9 @@ export class SequenceActivity implements Activity<SequenceActivityContext> {
                     currentIndex++;
                 } catch (error) {
                     // 如果有自定义错误处理器，使用它
-                    if (context.errorHandler) {
+                    if (this.onError) {
                         try {
-                            const handledResult = await context.errorHandler(activity, error as Error);
+                            const handledResult = await this.onError(error as Error);
                             results.set(activity, handledResult);
                             
                             if (!handledResult.success && !continueOnError) {
@@ -92,7 +70,7 @@ export class SequenceActivity implements Activity<SequenceActivityContext> {
                                         completed: false,
                                         results,
                                         errors: [handledResult.error!],
-                                        lastActivity: activity.name
+                                        lastActivity: activity
                                     }
                                 };
                             }
@@ -112,7 +90,7 @@ export class SequenceActivity implements Activity<SequenceActivityContext> {
                                 completed: false,
                                 results,
                                 errors,
-                                lastActivity: activity.name
+                                lastActivity: activity
                             }
                         };
                     }
@@ -120,7 +98,7 @@ export class SequenceActivity implements Activity<SequenceActivityContext> {
             }
 
             // 检查是否所有活动都完成
-            const allCompleted = currentIndex === context.activities.length;
+            const allCompleted = currentIndex === this.activities.length;
             const hasErrors = errors.length > 0;
 
             return {
@@ -129,7 +107,7 @@ export class SequenceActivity implements Activity<SequenceActivityContext> {
                     completed: allCompleted,
                     results,
                     errors: hasErrors ? errors : undefined,
-                    lastActivity: context.activities[currentIndex - 1]?.name
+                    lastActivity: this.activities[currentIndex - 1]
                 }
             };
         } catch (error) {
@@ -140,24 +118,16 @@ export class SequenceActivity implements Activity<SequenceActivityContext> {
                     completed: false,
                     results,
                     errors: [error as Error],
-                    lastActivity: context.activities[currentIndex]?.name
+                    lastActivity: this.activities[currentIndex]
                 }
             };
         }
     }
 
-    private async executeActivity(
-        activity: Activity,
-        context: SequenceActivityContext
-    ): Promise<ActivityResult> {
-        const result = await activity.execute(context);
-        context.onActivityComplete?.(activity, result);
-        return result;
-    }
 
-    async compensate(context: SequenceActivityContext): Promise<void> {
+    async compensate(context: ActivityContext): Promise<void> {
         // 按相反顺序执行所有活动的补偿操作
-        const compensations = [...context.activities]
+        const compensations =this.activities
             .reverse()
             .filter(activity => activity.compensate)
             .map(activity => activity.compensate!(context));
