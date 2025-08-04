@@ -122,7 +122,7 @@ export abstract class TypedRespond<TInput = any> {
  * 
  * 终结点配置
  */
-export interface InvocationHandlerOptions<T = any, TArg= any> extends Omit<ConfigableHandlerOptions<T>, 'backend'>, Omit<InvocationOptions, 'propertyKey'>, ProvidedInMetadata {
+export interface InvocationHandlerOptions<T = any> extends Omit<ConfigableHandlerOptions<T>, 'backend'>, Omit<InvocationOptions, 'propertyKey'>, ProvidedInMetadata {
     /**
      * the endpoint run times limit. 
      */

@@ -25,7 +25,7 @@ export abstract class ApplicationRunners implements HandlerService, OnDestroy {
    * attach runner
    * @param type 
    */
-  abstract attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationHandlerOptions<T, TArg>): Invocation<T>;
+  abstract attach<T>(type: Type<T> | Class<T>, options: InvocationHandlerOptions<T>): Invocation<T>;
 
   /**
    * detach runner

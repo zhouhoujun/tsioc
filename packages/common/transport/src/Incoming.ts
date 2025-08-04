@@ -1,6 +1,6 @@
 import { Header, HeaderAccess, HeaderMappings, HeadersLike, ParameterCodec, StatusOptions } from '@tsdi/common';
 import { IReadable } from './stream';
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, InvocationRequest } from '@tsdi/ioc';
 import { StreamAdapter } from './StreamAdapter';
 import { Outgoing } from './Outgoing';
 import { TransportContext } from './context';
@@ -9,7 +9,7 @@ import { TransportContext } from './context';
 /**
  * Incoming message
  */
-export interface IncomingMessage<T = any, TMsg = any, THead extends Header = Header> extends HeaderAccess<THead> {
+export interface IncomingMessage<T = any, TMsg = any, THead extends Header = Header> extends HeaderAccess<THead>, InvocationRequest {
 
     id?: number | string;
     /**

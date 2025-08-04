@@ -71,19 +71,19 @@ export interface DBPropertyMetadata<T = any> extends PropertyMetadata {
 /**
  * Resolver filed of an model.
  */
-export interface ModelFieldResolver<C = any> {
+export interface ModelFieldResolver {
     /**
      * Return whether an argument of the given {@code prop} can be resolved.
      * @param prop argument type
      * @param args gave field values
      */
-    canResolve(prop: DBPropertyMetadata, ctx: InvocationContext<C>, fields: Record<string, any>, target?: Type): boolean;
+    canResolve(prop: DBPropertyMetadata, ctx: InvocationContext, fields: Record<string, any>, target?: Type): boolean;
     /**
      * Resolves an argument of the given {@code prop}.
      * @param prop argument type
      * @param fields gave field values
      */
-    resolve<T>(prop: DBPropertyMetadata<T>, ctx: InvocationContext<C>, args: Record<string, any>, target?: Type): T | null;
+    resolve<T>(prop: DBPropertyMetadata<T>, ctx: InvocationContext, args: Record<string, any>, target?: Type): T | null;
 }
 
 /**

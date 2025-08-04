@@ -5,7 +5,7 @@ import { HandleContext } from './context';
 /**
  * transport parameter options.
  */
-export interface TransportParameterOptions<T = any> extends Parameter<T> {
+export interface TransportParameterOptions<T = object> extends Parameter<T> {
     /**
      * field of request query params or body.
      */
@@ -28,7 +28,7 @@ export interface TransportParameterOptions<T = any> extends Parameter<T> {
 /**
  * transport parameter argument of an {@link TransportArgumentResolver}.
  */
-export interface TransportParameter<T = any> extends TransportParameterOptions<T> {
+export interface TransportParameter<T = object> extends TransportParameterOptions<T>, Parameter<T> {
     /**
      * field scope.
      */
@@ -38,19 +38,19 @@ export interface TransportParameter<T = any> extends TransportParameterOptions<T
 /**
  * Resolver for an transport argument of an {@link Invocation}.
  */
-export interface TransportArgumentResolver<T = any> extends OperationArgumentResolver<T> {
+export interface TransportArgumentResolver<TParameter extends TransportParameter = TransportParameter, TCtx extends HandleContext = HandleContext> extends OperationArgumentResolver<TParameter, TCtx> {
     /**
      * Return whether an argument of the given {@code parameter} can be resolved.
      * @param parameter argument type
-     * @param ctx InvocationContext
+     * @param ctx instanceof HandleContext
      */
-    canResolve(parameter: TransportParameter, ctx: HandleContext): boolean;
+    canResolve(parameter: TParameter, ctx: TCtx): boolean;
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
-     * @param ctx InvocationContext
+     * @param ctx instanceof HandleContext
      */
-    resolve<T>(parameter: TransportParameter<T>, ctx: HandleContext): T;
+    resolve<T>(parameter: TParameter, ctx: TCtx): T | null;
 }
 
 
@@ -69,7 +69,7 @@ export function getResolverToken(type: TypeOf<any>, propertyKey?: string): Token
  * @param ctx 
  * @returns 
  */
-export function getPipe(parameter: TransportParameter, ctx: HandleContext, isPrimitive?: boolean): PipeTransform | null {
+export function getPipe<T>(parameter: TransportParameter<T>, ctx: HandleContext, isPrimitive?: boolean): PipeTransform | null {
     if (parameter.pipe) {
         if (isToken(parameter.pipe)) return ctx.get<PipeTransform>(parameter.pipe);
         return parameter.pipe;

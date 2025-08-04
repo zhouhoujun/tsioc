@@ -9,11 +9,11 @@ import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldException, m
  * abstract model argument resolver. base implements {@link ModelArgumentResolver}.
  */
 @Abstract()
-export abstract class AbstractModelArgumentResolver<C = any> implements ModelArgumentResolver<C> {
+export abstract class AbstractModelArgumentResolver implements ModelArgumentResolver {
 
     abstract get resolvers(): ModelFieldResolver[] | null;
 
-    canResolve(parameter: Parameter, ctx: HandleContext): boolean {
+    canResolve<T>(parameter: Parameter<T>, ctx: HandleContext): boolean {
         return this.hasModel(parameter.provider as Type ?? parameter.type) && this.hasFields(parameter, ctx)
     }
 
@@ -99,11 +99,11 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
     /**
      * has model fields in context or not.
      */
-    protected abstract hasFields(parameter: Parameter, ctx: HandleContext): boolean;
+    protected abstract hasFields<T>(parameter: Parameter<T>, ctx: HandleContext): boolean;
     /**
      * get model fields in context.
      */
-    protected abstract getFields(parameter: Parameter, ctx: HandleContext): Record<string, any>;
+    protected abstract getFields<T>(parameter: Parameter<T>, ctx: HandleContext): Record<string, any>;
 }
 
 
@@ -111,9 +111,9 @@ export abstract class AbstractModelArgumentResolver<C = any> implements ModelArg
 /**
  * model resolver.
  */
-class ModelResolver<C = any> extends AbstractModelArgumentResolver<C> {
+class ModelResolver extends AbstractModelArgumentResolver {
 
-    constructor(private option: ModelResolveOption<C>) {
+    constructor(private option: ModelResolveOption) {
         super()
     }
 
@@ -121,7 +121,7 @@ class ModelResolver<C = any> extends AbstractModelArgumentResolver<C> {
         return this.option.createInstance ? this.option.createInstance(model) : super.createInstance(model as ClassType)
     }
 
-    get resolvers(): ModelFieldResolver<C>[] | null {
+    get resolvers(): ModelFieldResolver[] | null {
         return this.option.fieldResolvers ?? null
     }
     hasModel(type: Type<any>): boolean {
@@ -143,7 +143,7 @@ class ModelResolver<C = any> extends AbstractModelArgumentResolver<C> {
 /**
  * model resolve option.
  */
-export interface ModelResolveOption<C> {
+export interface ModelResolveOption {
     /**
      * the type is model or not.
      * @param type class type.
@@ -177,6 +177,6 @@ export interface ModelResolveOption<C> {
  * @param option create option, type of {@link ModelResolveOption}.
  * @returns model resolver instance of {@link ModelArgumentResolver}.
  */
-export function createModelResolver<C = any>(option: ModelResolveOption<C>): ModelArgumentResolver<C> {
-    return new ModelResolver<C>(option)
+export function createModelResolver(option: ModelResolveOption): ModelArgumentResolver {
+    return new ModelResolver(option)
 }

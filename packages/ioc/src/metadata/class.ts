@@ -387,10 +387,10 @@ export class Class<T = any> {
     hasMethodOptions(method: string | symbol): boolean {
         return this.methodOptions.has(method)
     }
-    getMethodOptions<T>(method: string | symbol): InvokeArguments<T> | undefined {
+    getMethodOptions<T>(method: string | symbol): InvokeArguments | undefined {
         return this.methodOptions.get(method) ?? this.parent?.getMethodOptions(method)
     }
-    setMethodOptions<T>(method: string | symbol, options: InvokeArguments<T>) {
+    setMethodOptions<T>(method: string | symbol, options: InvokeArguments) {
         if (this.methodOptions.has(method)) {
             const eopt = this.methodOptions.get(method)!;
             if (hasItem(options.providers)) {

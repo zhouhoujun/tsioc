@@ -850,7 +850,7 @@ export interface Autorun {
      * @param {string} [autorun] the special method name when define to class.
      * @param {InvokeArguments} [args] invoke arguments {@link InvokeArguments}.
      */
-    <T>(autorun: string, args?: InvokeArguments<T>): ClassDecorator;
+    (autorun: string, args?: InvokeArguments): ClassDecorator;
     /**
      * Autorun decorator, for class or method. use to define the class auto run (via a method or not) after registered.
      * for class, to auto create singleton instance and call this method.
@@ -859,7 +859,7 @@ export interface Autorun {
      *
      * @param {RunnableMetadata} [metadata] metadata map.
      */
-    <T>(metadata: RunnableMetadata<T>): ClassMethodDecorator;
+    (metadata: RunnableMetadata): ClassMethodDecorator;
 
     /**
      * Autorun decorator, for method.  to auto this method after create new instance.
@@ -868,7 +868,7 @@ export interface Autorun {
      * @param {string} [autorun] the special method name when define to class.
      * @param {InvokeArguments} [args] invoke arguments {@link InvokeArguments}.
      */
-    <T>(order?: number, args?: InvokeArguments<T>): MethodDecorator;
+    (order?: number, args?: InvokeArguments): MethodDecorator;
 }
 
 /**
@@ -876,8 +876,8 @@ export interface Autorun {
  *
  * @Autorun
  */
-export const Autorun: Autorun = createDecorator<RunnableMetadata<any>>('Autorun', {
-    props: (arg: string | number, args?: InvokeArguments<any>) => {
+export const Autorun: Autorun = createDecorator<RunnableMetadata>('Autorun', {
+    props: (arg: string | number, args?: InvokeArguments) => {
         if (isString(arg)) {
             return { method: arg, args }
         }

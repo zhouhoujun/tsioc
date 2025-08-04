@@ -1,4 +1,4 @@
-import { Abstract, OperationArgumentResolver, composeResolvers, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
+import { Abstract, InvocationRequest, OperationArgumentResolver, TargetInvokeArguments, composeResolvers, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
 import { HandleContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
 import { HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess } from '@tsdi/common';
 import {
@@ -22,7 +22,13 @@ export abstract class RequestContext<
     TResponse extends Outgoing<any> = Outgoing<any>,
     TSocket = any,
     TOptions extends ServiceConfig = ServiceConfig,
-    TStatus = any> extends HandleContext<TRequest> {
+    TStatus = any> extends HandleContext {
+    
+    request!: TRequest;
+
+    protected override initRequest(options: TOptions): void {
+
+    }
 
     protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
         const res = [composeResolvers(primitiveResolvers)];
@@ -795,7 +801,7 @@ export function getScopeValue(req: any, scope: string) {
 
 const primitiveResolvers = createPayloadResolver(
     (ctx, scope, field) => {
-        let data = ctx.request;
+        let data = ctx.request as any;
 
         if (field && !scope) {
             scope = 'query'

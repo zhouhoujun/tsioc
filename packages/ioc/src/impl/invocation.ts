@@ -173,7 +173,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
     }
 
 
-    protected createInvokeContext<TArg>(propertyKey: string | symbol, option?: InvokeArguments<TArg> | InvocationContext): [InvocationContext, Function | undefined] {
+    protected createInvokeContext(propertyKey: string | symbol, option?: InvokeArguments | InvocationContext): [InvocationContext, Function | undefined] {
         const ctx = this.getMethodContext(propertyKey);
         let context: InvocationContext;
         let destroy: Function | undefined;

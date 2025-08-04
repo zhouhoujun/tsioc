@@ -26,19 +26,19 @@ export interface Parameter<T = any> extends ParameterMetadata {
  * 
  * 调用参数解析器。
  */
-export interface OperationArgumentResolver<C = any> {
+export interface OperationArgumentResolver<TParameter extends Parameter = Parameter, TCtx extends InvocationContext = InvocationContext> {
     /**
      * Return whether an argument of the given {@code parameter} can be resolved.
      * @param parameter argument type
      * @param args gave arguments
      */
-    canResolve(parameter: Parameter, ctx: InvocationContext<C>): boolean;
+    canResolve(parameter: TParameter, ctx: TCtx): boolean;
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param args gave arguments
      */
-    resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<C>, target?: Type): T;
+    resolve<T>(parameter: TParameter, ctx: TCtx, target?: Type): T | null;
 }
 
 /**
@@ -57,18 +57,18 @@ export type ArgumentResolver = TypeOf<OperationArgumentResolver>;
  * @param resolvers resolves of the group.
  * @returns 
  */
-export function composeResolver<T extends OperationArgumentResolver<any>, TP extends Parameter = Parameter, TCtx extends InvocationContext = InvocationContext>(
-    filter: (parameter: TP, ctx: TCtx) => boolean, ...resolvers: T[]): OperationArgumentResolver {
+export function composeResolver<TCtx extends InvocationContext = InvocationContext, TParameter extends Parameter = Parameter>(
+    filter: (parameter: TParameter, ctx: TCtx) => boolean, ...resolvers: OperationArgumentResolver<TParameter, TCtx>[]): OperationArgumentResolver {
     return composeResolvers(resolvers, filter)
 }
 
-export function composeResolvers<T extends OperationArgumentResolver<any>, TP extends Parameter = Parameter, TCtx extends InvocationContext = InvocationContext>(
-    resolvers: T[], filter?: (parameter: TP, ctx: TCtx) => boolean): OperationArgumentResolver {
+export function composeResolvers<TCtx extends InvocationContext = InvocationContext, TParameter extends Parameter = Parameter>(
+    resolvers: OperationArgumentResolver<TParameter, TCtx>[], filter?: (parameter: TParameter, ctx: TCtx) => boolean): OperationArgumentResolver {
     if (resolvers.length === 1) return resolvers[0];
     return {
-        canResolve: (parameter: TP, ctx: TCtx) => filter ? filter(parameter, ctx) : resolvers.some(r => r.canResolve(parameter, ctx)),
-        resolve: (parameter: TP, ctx: TCtx) => {
-            let result: any;
+        canResolve: (parameter: TParameter, ctx: TCtx) => filter ? filter(parameter, ctx) : resolvers.some(r => r.canResolve(parameter, ctx)),
+        resolve: <T>(parameter: TParameter, ctx: TCtx) => {
+            let result: T | null = null;
             resolvers.some(r => {
                 if (r.canResolve(parameter, ctx)) {
                     result = r.resolve(parameter, ctx);
@@ -76,7 +76,7 @@ export function composeResolvers<T extends OperationArgumentResolver<any>, TP ex
                 }
                 return false
             });
-            return result ?? null
+            return result
         }
     }
 }

@@ -11,11 +11,11 @@ export abstract class RepositoryArgumentResolver implements OperationArgumentRes
      * @param parameter argument type
      * @param args gave arguments
      */
-    abstract canResolve(parameter: Parameter<any>, ctx: InvocationContext<any>): boolean;
+    abstract canResolve(parameter: Parameter<any>, ctx: InvocationContext): boolean;
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param args gave arguments
      */
-    abstract resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<any>): T;
+    abstract resolve<T>(parameter: Parameter<T>, ctx: InvocationContext): T;
 }

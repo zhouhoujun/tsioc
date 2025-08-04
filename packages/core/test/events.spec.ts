@@ -126,7 +126,7 @@ class MainModule {
 
 describe('Application Event', () => {
 
-    let ctx: ApplicationContext<MainModule, ApplicationArguments>;
+    let ctx: ApplicationContext<MainModule>;
     before(async () => {
         ctx = await Application.run(MainModule);
     })

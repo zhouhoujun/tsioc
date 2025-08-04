@@ -1,6 +1,6 @@
 import {
-    Type, Injector, Provider, InvokeArguments, DefaultInvocationContext,
-    Class, ModuleDef, ModuleRef, Invocation, ProvdierOf, noPointcut
+    Type, Injector, Provider, DefaultInvocationContext,
+    Class, ModuleDef, ModuleRef, Invocation, noPointcut,
 } from '@tsdi/ioc';
 import { Logger, LoggerManagers } from '@tsdi/logger';
 import { Observable } from 'rxjs';
@@ -22,14 +22,19 @@ import { setHandlerOptions } from '../handlers/configable.impl';
  * @class BootContext
  * @extends {HandleContext}
  */
-export class DefaultApplicationContext<T = any, TArg = ApplicationArguments> extends DefaultInvocationContext implements ApplicationContext<T, TArg> {
+export class DefaultApplicationContext<T = any> extends DefaultInvocationContext implements ApplicationContext<T> {
 
     private _multicaster: ApplicationEventMulticaster;
     exit = true;
 
     private _runners: ApplicationRunners;
 
-    constructor(readonly injector: ModuleRef, options: EnvironmentOption<TArg> = {}) {
+    /**
+     * application arguments.
+     */
+    request!: ApplicationArguments;
+
+    constructor(readonly injector: ModuleRef, options: EnvironmentOption = {}) {
         super(injector, options);
         this._multicaster = injector.get(ApplicationEventMulticaster);
         injector.setValue(ApplicationContext, this);
@@ -41,6 +46,10 @@ export class DefaultApplicationContext<T = any, TArg = ApplicationArguments> ext
         if (options.runnersOptions) {
             setHandlerOptions(this.runners, options.runnersOptions);
         }
+    }
+
+    protected override initRequest(options: EnvironmentOption): void {
+        this.request = options.request!
     }
 
     protected override createInjector(injector: Injector, providers?: Provider[]): Injector {
@@ -64,7 +73,7 @@ export class DefaultApplicationContext<T = any, TArg = ApplicationArguments> ext
         return this._multicaster;
     }
 
-    async bootstrap<C, TArg>(type: Type<C> | Class<C>, option?: BootstrapOption<TArg>): Promise<Invocation<C>> {
+    async bootstrap<C>(type: Type<C> | Class<C>, option?: BootstrapOption): Promise<Invocation<C>> {
         const typeRef = this.runners.attach(type, { parent: this, ...option });
         if (typeRef) {
             await this.runners.run(typeRef.type);
@@ -109,7 +118,7 @@ export class DefaultApplicationContextFactory extends ApplicationContextFactory 
      */
     static [noPointcut] = true;
 
-    create<T, TArg = ApplicationArguments>(root: ModuleRef<T>, option?: EnvironmentOption<TArg>): ApplicationContext<T, TArg> {
+    create<T>(root: ModuleRef<T>, option?: EnvironmentOption): ApplicationContext<T> {
         const ann = root.moduleReflect.getAnnotation<ModuleDef>();
         if (ann?.baseURL) {
             root.setValue(PROCESS_ROOT, ann.baseURL)
@@ -118,13 +127,13 @@ export class DefaultApplicationContextFactory extends ApplicationContextFactory 
             option = {};
         }
         if (!option.request) {
-            option.request = root.get(ApplicationArguments, null) as TArg;
+            option.request = root.get(ApplicationArguments, null);
         }
         const ctx = this.createInstance(root, option);
         return ctx
     }
 
-    protected createInstance<TArg>(inj: ModuleRef, option?: InvokeArguments<TArg>) {
+    protected createInstance(inj: ModuleRef, option?: EnvironmentOption) {
         return new DefaultApplicationContext(inj, option)
     }
 }

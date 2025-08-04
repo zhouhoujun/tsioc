@@ -1,17 +1,17 @@
-import { ArgumentException, Type, composeResolver, getType, isArray, isBasic, isDefined, isPrimitiveType, isString, Parameter, Empty } from '@tsdi/ioc';
+import { ArgumentException, Type, composeResolver, getType, isArray, isBasic, isDefined, isPrimitiveType, isString, Parameter, Empty, OperationArgumentResolver } from '@tsdi/ioc';
 import { getPipe, TransportArgumentResolver, TransportParameter } from './resolver';
 import { HandleContext } from './context';
 
 
-export function missingPipeException(parameter: Parameter, type?: Type, method?: string | symbol) {
+export function missingPipeException<T>(parameter: Parameter<T>, type?: Type, method?: string | symbol) {
     return new ArgumentException(`missing pipe to transform argument ${parameter.name} type, method ${method?.toString()} of class ${type}`)
 }
 
-export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx: T, scope?: string, filed?: string) => any, canResolve: (param: TransportParameter, payload: any, ctx: T) => boolean): TransportArgumentResolver[] {
+export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx: T, scope?: string, filed?: string) => any, canResolve: <TP>(param: TransportParameter<TP>, payload: any, ctx: T) => boolean): OperationArgumentResolver[] {
     return [
-        composeResolver<TransportArgumentResolver, TransportParameter, T>(
+        composeResolver<T, TransportParameter>(
             (parameter, ctx) => canResolve(parameter, getPayload(ctx), ctx),
-            composeResolver<TransportArgumentResolver, TransportParameter, T>(
+            composeResolver<T, TransportParameter>(
                 (parameter, ctx) => isPrimitiveType(parameter.type),
                 {
                     canResolve(parameter, ctx) {
@@ -28,14 +28,14 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
                         const val = getPayload(ctx as T, parameter.scope);
                         return !parameter.field && (isBasic(val) || parameter.type == getType(val))
                     },
-                    resolve(parameter, ctx) {
+                    resolve(parameter: TransportParameter, ctx) {
                         const pipe = getPipe(parameter, ctx, true);
                         if (!pipe) throw missingPipeException(parameter, ctx.targetType, ctx.propertyKey)
                         return pipe.transform(getPayload(ctx as T, parameter.scope), ...parameter.args || Empty)
                     }
                 }
-            ),
-            composeResolver<TransportArgumentResolver, TransportParameter>(
+            ) ,
+            composeResolver<T, TransportParameter>(
                 (parameter) => isPrimitiveType(parameter.provider) && (parameter.multi === true || parameter.type === Array),
                 {
                     canResolve(parameter, ctx) {

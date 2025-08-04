@@ -11,9 +11,9 @@ import { toObservable } from '../handlers';
  * 
  * 异常处理上下文
  */
-export class ExceptionContext<T = any, TArg extends Error = Error> extends DefaultInvocationContext<TArg> {
+export class ExceptionContext<T = any> extends DefaultInvocationContext {
 
-    constructor(public execption: TArg, readonly host: T, injector: Injector, options?: InvokeArguments) {
+    constructor(public execption: Error, readonly host: T, injector: Injector, options?: InvokeArguments) {
         super(injector, { ...options })
 
         this.setValue(getType(execption), execption);

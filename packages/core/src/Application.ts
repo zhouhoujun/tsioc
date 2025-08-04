@@ -16,7 +16,7 @@ import { TransformModule } from './pipes/transform';
  * @export
  * @class Application
  */
-export class Application<T = any, TArg = ApplicationArguments> {
+export class Application<T = any> {
 
     private _loads?: Type[];
     /**
@@ -30,7 +30,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
      * 
      * 应用程序上下文
      */
-    protected context!: ApplicationContext<T, TArg>;
+    protected context!: ApplicationContext<T>;
 
     /**
      * module loader
@@ -38,7 +38,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
     protected loader!: ModuleLoader;
 
 
-    constructor(protected target: ClassType<T> | ApplicationOption<T, TArg>, loader?: ModuleLoader) {
+    constructor(protected target: ClassType<T> | ApplicationOption<T>, loader?: ModuleLoader) {
         if (loader) {
             this.loader = loader;
         }
@@ -77,7 +77,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
      *
      * @returns instance of {@link ApplicationContext}.
      */
-    getContext(): ApplicationContext<T, TArg> {
+    getContext(): ApplicationContext<T> {
         return this.context
     }
 
@@ -90,7 +90,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
      * @param {ApplicationOption} option option of type {@link ApplicationOption}
      * @returns async returnning instance of {@link ApplicationContext}.
      */
-    static run<T, TArg extends ApplicationArguments>(option: ApplicationOption<T, TArg>): Promise<ApplicationContext<T, TArg>>
+    static run<T>(option: ApplicationOption<T>): Promise<ApplicationContext<T>>
     /**
      * bootstrap application.
      * 
@@ -101,9 +101,9 @@ export class Application<T = any, TArg = ApplicationArguments> {
      * @param {EnvironmentOption} [option] option {@link EnvironmentOption} application run depdences.
      * @returns async returnning instance of {@link ApplicationContext}.
      */
-    static run<T, TArg extends ApplicationArguments>(target: Type<T>, option?: EnvironmentOption<TArg>): Promise<ApplicationContext<T, TArg>>;
-    static run<T, TArg extends ApplicationArguments>(target: any, option?: EnvironmentOption<any>): Promise<ApplicationContext<T, TArg>> {
-        return new Application<T, TArg>(option ? { module: target, ...option } as ApplicationOption : target).run();
+    static run<T>(target: Type<T>, option?: EnvironmentOption): Promise<ApplicationContext<T>>;
+    static run<T>(target: any, option?: EnvironmentOption): Promise<ApplicationContext<T>> {
+        return new Application<T>(option ? { module: target, ...option } as ApplicationOption : target).run();
     }
 
     /**
@@ -114,7 +114,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
      * @param {...string[]} args
      * @returns {Promise<ApplicationContext<T, TArg>>}
      */
-    async run(): Promise<ApplicationContext<T, TArg>> {
+    async run(): Promise<ApplicationContext<T>> {
         try {
             const ctx = await this.createContext();
             await this.prepareContext(ctx);
@@ -147,7 +147,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
     }
 
 
-    protected createInjector<T, TArg>(providers: Provider[], option: ApplicationOption<T, TArg>) {
+    protected createInjector<T>(providers: Provider[], option: ApplicationOption<T>) {
         const container = option.injector ?? createInjector(providers);
         if (option.baseURL) {
             container.setValue(PROCESS_ROOT, option.baseURL)
@@ -164,7 +164,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
         return this.createModuleRef(container, option);
     }
 
-    protected createModuleRef<T, TArg>(container: Injector, option: ApplicationOption<T, TArg>) {
+    protected createModuleRef<T, TArg>(container: Injector, option: ApplicationOption<T>) {
         return createModuleRef(this.moduleify(option.module), container, option)
     }
 
@@ -205,7 +205,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
         }
     }
 
-    protected async createContext(): Promise<ApplicationContext<T, TArg>> {
+    protected async createContext(): Promise<ApplicationContext<T>> {
         if (!this.context) {
             const target = this.target;
             const root = this.root;
@@ -225,7 +225,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
         return this.context
     }
 
-    protected prepareContext(ctx: ApplicationContext<T, TArg>): any {
+    protected prepareContext(ctx: ApplicationContext<T>): any {
         const bootstraps = this.root.moduleReflect.getAnnotation<ModuleDef>().bootstrap;
         if (bootstraps && bootstraps.length) {
             bootstraps.forEach((type, order) => {
@@ -234,15 +234,15 @@ export class Application<T = any, TArg = ApplicationArguments> {
         }
     }
 
-    protected refreshContext(ctx: ApplicationContext<T, TArg>): any {
+    protected refreshContext(ctx: ApplicationContext<T>): any {
         return ctx.refresh()
     }
 
-    protected callRunners(ctx: ApplicationContext<T, TArg>): Promise<void> {
+    protected callRunners(ctx: ApplicationContext<T>): Promise<void> {
         return ctx.runners.run()
     }
 
-    protected async handleRunFailure(ctx: ApplicationContext<T, TArg>, error: Error | any): Promise<void> {
+    protected async handleRunFailure(ctx: ApplicationContext<T>, error: Error | any): Promise<void> {
         if (ctx) {
             const logger = ctx.getLogger();
             logger ? logger.error(error) : console.error(error);
@@ -262,7 +262,7 @@ export class Application<T = any, TArg = ApplicationArguments> {
  * @param {ApplicationOption} option option of type {@link ApplicationOption}
  * @returns async returnning instance of {@link ApplicationContext}.
  */
-export function bootstrapApplication<T, TArg extends ApplicationArguments>(option: ApplicationOption<T, TArg>): Promise<ApplicationContext<T, TArg>>;
+export function bootstrapApplication<T>(option: ApplicationOption<T>): Promise<ApplicationContext<T>>;
 /**
  * bootstrap application.
  * 
@@ -272,9 +272,9 @@ export function bootstrapApplication<T, TArg extends ApplicationArguments>(optio
  * @param {EnvironmentOption} [option] option {@link EnvironmentOption} application run depdences.
  * @returns async returnning instance of {@link ApplicationContext}.
  */
-export function bootstrapApplication<T, TArg extends ApplicationArguments>(target: Type<T>, option?: EnvironmentOption<TArg>): Promise<ApplicationContext<T, TArg>>;
-export function bootstrapApplication<T, TArg extends ApplicationArguments>(target: any, option?: EnvironmentOption<any>): Promise<ApplicationContext<T, TArg>> {
-    return new Application<T, TArg>(option ? { module: target, ...option } as ApplicationOption : target).run();
+export function bootstrapApplication<T>(target: Type<T>, option?: EnvironmentOption): Promise<ApplicationContext<T>>;
+export function bootstrapApplication<T>(target: any, option?: EnvironmentOption): Promise<ApplicationContext<T>> {
+    return new Application<T>(option ? { module: target, ...option } as ApplicationOption : target).run();
 }
 
 class DynamicModule { }

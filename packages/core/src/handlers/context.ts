@@ -4,18 +4,18 @@ import { getResolverToken } from './resolver';
 /**
  * handle context options.
  */
-export interface HandleContextOpts<T = any> extends InvokeArguments<T> {
+export interface HandleContextOpts extends InvokeArguments {
     bootstrap?: boolean;
 }
 
 /**
  * invoke handle context.
  */
-export class HandleContext<TInput = any> extends DefaultInvocationContext<TInput> {
+export class HandleContext extends DefaultInvocationContext {
     readonly bootstrap: boolean;
     constructor(
         injector: Injector,
-        options: HandleContextOpts<TInput> = {}) {
+        options: HandleContextOpts = {}) {
         super(injector, options);
         this.bootstrap = options.bootstrap === true;
         this.setValue(getType(this), this);
@@ -35,7 +35,7 @@ export class HandleContext<TInput = any> extends DefaultInvocationContext<TInput
 
     protected onException(err: any) { }
 
-    protected override getArgumentResolver(): OperationArgumentResolver<any>[] {
+    protected override getArgumentResolver(): OperationArgumentResolver[] {
         const res: OperationArgumentResolver[] = [];
         const defRels = this.playloadDefaultResolvers();
         if (defRels?.length) {
@@ -50,7 +50,7 @@ export class HandleContext<TInput = any> extends DefaultInvocationContext<TInput
         return res;
     }
 
-    protected playloadDefaultResolvers(): OperationArgumentResolver<any>[] | null {
+    protected playloadDefaultResolvers(): OperationArgumentResolver[] | null {
         return null
     }
 

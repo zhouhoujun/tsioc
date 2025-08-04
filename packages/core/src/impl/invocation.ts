@@ -1,10 +1,10 @@
-import { InvocationContext, Invocation, createContext, getType, isFunction, isString, Injector, ClassType, Context, invokeTail } from '@tsdi/ioc';
+import { InvocationContext, Invocation, createContext, getType, isFunction, isString, Injector, ClassType, Context, invokeTail, InvocationRequest } from '@tsdi/ioc';
 import { BackendFn } from '../ApplicationHandler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
 import { ResultValue } from '../handlers/ResultValue';
 import { getResolverToken } from '../handlers/resolver';
-import { toObservable } from '../handlers';
+import { HandleContext, toObservable } from '../handlers';
 
 
 
@@ -45,13 +45,13 @@ export class DefaultInvocationHandler<
      * before `Invocation` invoke 
      * @param ctx 
      */
-    protected beforeInvoke(ctx: TInput): any { }
+    protected beforeInvoke(ctx: TInput | InvocationContext): any { }
     /**
      * respond.
      * @param input 
      * @returns 
      */
-    protected respond(input: any, context?: TContext) {
+    protected respond(input: TInput | InvocationContext, context?: TContext) {
         let newCtx = false;
         if (input instanceof InvocationContext) {
             if (context) this.attchContext(input, context);
@@ -61,7 +61,7 @@ export class DefaultInvocationHandler<
                 input = context;
             } else {
                 newCtx = true;
-                const ctx = createContext(this.context, { request: input, resolvers: this.context.injector.get(getResolverToken(input), []) });
+                const ctx = createContext(this.context, { request: input as InvocationRequest, resolvers: this.context.injector.get(getResolverToken(input), []) });
                 ctx.setValue(getType(input), input);
                 if (context) this.attchContext(ctx, context, input)
                 input = ctx;
@@ -73,7 +73,7 @@ export class DefaultInvocationHandler<
                 {
                     next: (res) => {
                         if (res instanceof ResultValue) {
-                            return res.sendValue(input);
+                            return res.sendValue(input as HandleContext);
                         }
                         return this.respondAs(input, res);
                     },
@@ -102,9 +102,10 @@ export class DefaultInvocationHandler<
             const trespond = ctx.get(TypedRespond);
             if (trespond) {
                 trespond.respond(ctx, res, this.options.response);
-            } else {
-                ctx.request[this.options.response] = res;
-            }
+            } 
+            // else {
+            //     ctx.request[this.options.response] = res;
+            // }
         } else if (this.options.response) {
             const respond = ctx.get(this.options.response) ?? this.options.response;
             if (isFunction(respond)) {

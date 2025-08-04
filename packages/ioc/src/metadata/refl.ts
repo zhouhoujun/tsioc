@@ -346,7 +346,7 @@ export const decorAnnoAction = (ctx: DecorContext, next: HandlerFn, context: Con
 const runnableDecors: Record<string, boolean> = { '@Autorun': true, '@IocExt': true };
 export const decorRunnable = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (runnableDecors[ctx.define.decor.toString()]) {
-        const metadata = ctx.define.metadata as RunnableMetadata<any>;
+        const metadata = ctx.define.metadata as RunnableMetadata;
         (metadata as any).decorType = ctx.define.decorType,
             metadata.method = metadata.method ?? ctx.define.propertyKey,
             metadata.order = ctx.define.decorType === Decors.CLASS ? 0 : metadata.order

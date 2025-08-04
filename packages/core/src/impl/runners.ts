@@ -82,7 +82,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         return this;
     }
 
-    attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationHandlerOptions<T, TArg> = {}): Invocation<T> {
+    attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationHandlerOptions<T> = {}): Invocation<T> {
         const target = getClassify(type);
 
         let ends = this._maps.get(target.type);
@@ -175,7 +175,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         this._types = null!;
     }
 
-    handle(context: HandleContext<any>): Observable<any> {
+    handle(context: HandleContext): Observable<any> {
         let handlers: HandlerLike[] | undefined;
         if (isFunction(context.request)) {
             handlers = this._maps.get(context.request)
@@ -190,7 +190,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         if (handlers && handlers.length) {
             return toObservable(composeHandlers(handlers)(context));
         }
-        return throwError(() => new NotHandleException(context, context.request));
+        return throwError(() => new NotHandleException(context, context.targetType!));
     }
 
     protected startup(): Observable<any> {

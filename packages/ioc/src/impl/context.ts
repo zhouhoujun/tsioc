@@ -3,7 +3,7 @@ import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getTypeName, getTypeChain } from '../utils/lang';
 import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getType } from '../utils/chk';
 import { OperationArgumentResolver, Parameter, composeResolver, composeResolvers } from '../resolver';
-import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeArguments } from '../context';
+import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeArguments, InvocationRequest } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token, tokenId } from '../tokens';
 import { createInjector, Injector, isInjector } from '../injector';
@@ -18,7 +18,7 @@ import { Invocation } from '../invocation';
 /**
  * The context for the {@link Invocation invocation of an operation}.
  */
-export class DefaultInvocationContext<T = any> extends InvocationContext<T> implements Destroyable, OnDestroy {
+export class DefaultInvocationContext extends InvocationContext implements Destroyable, OnDestroy {
 
     protected _refs: InvocationContext[] | null;
     private _injected = false;
@@ -42,14 +42,14 @@ export class DefaultInvocationContext<T = any> extends InvocationContext<T> impl
 
     readonly isResolve: boolean;
 
-    readonly request: T;
+    request: InvocationRequest | null | undefined;
     /**
      * get the invocation arguments resolver.
      */
 
     constructor(
         injector: Injector,
-        private options: TargetInvokeArguments<T> = {},
+        private options: TargetInvokeArguments = {},
         private injectorScope: Type | 'static' = 'static'
     ) {
         super();
@@ -70,7 +70,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext<T> impl
             })
         }
 
-        this.request = options.request || options.parent?.request;
+        this.initRequest(options);
 
         getTypeChain(getType(this)).forEach(c => {
             this.setValue(c, this);
@@ -79,6 +79,10 @@ export class DefaultInvocationContext<T = any> extends InvocationContext<T> impl
         this.targetType = options.targetType;
         this.propertyKey = options.propertyKey;
         injector.onDestroy(this);
+    }
+
+    protected initRequest(options: TargetInvokeArguments) {
+        this.request = options.request || options.parent?.request;
     }
 
     attach(option: InvocationContext | InvokeArguments): void {
@@ -237,7 +241,7 @@ export class DefaultInvocationContext<T = any> extends InvocationContext<T> impl
      * @param meta property or parameter metadata type of {@link Parameter}.
      * @returns undefined or resolver of type {@link OperationArgumentResolver}.
      */
-    getMetaReolver(meta: Parameter): OperationArgumentResolver | undefined {
+    getMetaReolver<T>(meta: Parameter<T>): OperationArgumentResolver | undefined {
         if (isFunction(meta.resolver)) {
             return this.injector.get<OperationArgumentResolver>(meta.resolver)
         }
@@ -393,7 +397,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
 }
 
 
-INVOCATION_CONTEXT_IMPL.create = <TArg>(parent: Injector | InvocationContext, options?: TargetInvokeArguments<TArg>, scope?: Type | 'static') => {
+INVOCATION_CONTEXT_IMPL.create = (parent: Injector | InvocationContext, options?: TargetInvokeArguments, scope?: Type | 'static') => {
     if (isInjector(parent)) {
         return new DefaultInvocationContext(parent, options, scope)
     } else {

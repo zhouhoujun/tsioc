@@ -12,7 +12,7 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
         super()
     }
 
-    canResolve(parameter: Parameter<any>, ctx: InvocationContext<any>): boolean {
+    canResolve(parameter: Parameter<any>, ctx: InvocationContext): boolean {
         const { model, connection } = parameter as RepositoryMetadata;
 
         if (!parameter.type || !lang.isExtends(parameter.type, Repository)) {
@@ -25,12 +25,12 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
         return true
     }
 
-    resolve<T>(parameter: Parameter<T>, ctx: InvocationContext<any>): T {
+    resolve<T>(parameter: Parameter<T>, ctx: InvocationContext): T {
         const { model, type, connection } = parameter as RepositoryMetadata;
         return this.getRepository(model, type, connection) as T;
     }
 
-    protected getLocal(parameter: Parameter<any>, ctx: InvocationContext<any>) {
+    protected getLocal(parameter: Parameter<any>, ctx: InvocationContext) {
         let local: string;
         if (parameter.propertyKey && parameter.name) {
             local = ` method ${ctx.propertyKey?.toString()} param ${parameter.name} of class `
@@ -70,7 +70,7 @@ export class TypeormTransactionResolver extends TransactionResolver {
             (param, ctx) => ctx instanceof JoinPoint && isArray(ctx.annotations) && ctx.annotations.length > 0,
             {
                 canResolve: (param, ctx: JoinPoint) => {
-                    return param.provider === TransactionManager || param.type === TransactionManager
+                    return param.provider as Type<any> === TransactionManager || param.type as Type<any> === TransactionManager
                 },
                 resolve(param, ctx: JoinPoint): any {
                     if (ctx.has(TransactionManager)) {
@@ -84,12 +84,12 @@ export class TypeormTransactionResolver extends TransactionResolver {
             })
     }
 
-    canResolve(parameter: Parameter, ctx: InvocationContext<any>): boolean {
+    canResolve(parameter: Parameter, ctx: InvocationContext): boolean {
         return this.resolver.canResolve(parameter, ctx)
     }
 
-    resolve(parameter: Parameter, ctx: InvocationContext<any>) {
-        return this.resolver.resolve(parameter, ctx)
+    resolve<T>(parameter: Parameter, ctx: InvocationContext): T | null {
+        return this.resolver.resolve<T>(parameter, ctx)
     }
 
 }

@@ -330,7 +330,7 @@ export type AutoWiredMetadata = MethodParamPropMetadata;
  * @export
  * @interface RunnableMetadata
  */
-export interface RunnableMetadata<TArg> extends Omit<AnnotationMetadata, 'abstract' | 'declaration'> {
+export interface RunnableMetadata extends Omit<AnnotationMetadata, 'abstract' | 'declaration'> {
     /**
      * the method as runnable.
      */
@@ -342,7 +342,7 @@ export interface RunnableMetadata<TArg> extends Omit<AnnotationMetadata, 'abstra
     /**
      * runnable invoke args.
      */
-    args?: InvokeArguments<TArg>;
+    args?: InvokeArguments;
     /**
      * is auto run when created instance.
      */

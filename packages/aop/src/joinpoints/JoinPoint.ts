@@ -48,7 +48,7 @@ export interface ReturnDefer {
  * JoinPoint of aop.
  */
 @Abstract()
-export class JoinPoint extends DefaultInvocationContext<any[]> implements IocContext {
+export class JoinPoint extends DefaultInvocationContext implements IocContext {
     /**
      * custom proxy invoke origin method.
      */

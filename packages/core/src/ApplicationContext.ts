@@ -19,8 +19,8 @@ import { ApplicationEvent } from './ApplicationEvent';
  * 应用上下文环境
  */
 @Abstract()
-export abstract class ApplicationContext<T = any, TArg = ApplicationArguments>
-    extends InvocationContext<TArg> implements ApplicationEventPublisher, Destroyable {
+export abstract class ApplicationContext<T = object>
+    extends InvocationContext implements ApplicationEventPublisher, Destroyable {
     /**
      * application root module injector.
      */
@@ -38,9 +38,9 @@ export abstract class ApplicationContext<T = any, TArg = ApplicationArguments>
     /**
      * application args of type {@link ApplicationArguments}.
      *
-     * @type {TArg}
+     * @type {ApplicationArguments}
      */
-    abstract get request(): TArg;
+    abstract get request(): ApplicationArguments;
     /**
      * application runners.
      *
@@ -56,7 +56,7 @@ export abstract class ApplicationContext<T = any, TArg = ApplicationArguments>
      * @param type bootstrap type.
      * @param option bootstrap option.
      */
-    abstract bootstrap<C, TArg>(type: Type<C> | Class<C>, option?: BootstrapOption<TArg>): Promise<Invocation<C>>;
+    abstract bootstrap<C, TArg>(type: Type<C> | Class<C>, option?: BootstrapOption): Promise<Invocation<C>>;
     /**
      * get logger.
      * @param name 
@@ -92,7 +92,7 @@ export abstract class ApplicationContext<T = any, TArg = ApplicationArguments>
 /**
  * bootstrap option for {@link RunnableRef}.
  */
-export interface BootstrapOption<TArg = any> extends InvocationHandlerOptions<any, TArg> {
+export interface BootstrapOption extends InvocationHandlerOptions<any> {
 }
 
 
@@ -104,7 +104,7 @@ export const PROCESS_ROOT: Token<string> = tokenId<string>('PROCESS_ROOT');
 /**
  * Environment option.
  */
-export interface EnvironmentOption<TArg = any> extends ModuleOption, InvokeArguments<TArg> {
+export interface EnvironmentOption extends ModuleOption, InvokeArguments {
     /**
      * boot base url.
      *
@@ -128,6 +128,10 @@ export interface EnvironmentOption<TArg = any> extends ModuleOption, InvokeArgum
      */
     loads?: LoadType[];
     /**
+     * application arguments.
+     */
+    request?: ApplicationArguments | null;
+    /**
      * application deps.
      */
     platformDeps?: Modules[];
@@ -138,17 +142,17 @@ export interface EnvironmentOption<TArg = any> extends ModuleOption, InvokeArgum
     /**
      * Application runners invocation options.
      */
-    runnersOptions?: InvocationHandlerOptions<TArg>;
+    runnersOptions?: InvocationHandlerOptions;
     /**
      * Application events invocation options.
      */
-    eventsOptions?: InvocationHandlerOptions<TArg>;
+    eventsOptions?: InvocationHandlerOptions;
 }
 
 /**
  * ApplicationOption option.
  */
-export interface ApplicationOption<T = any, TArg = any> extends EnvironmentOption<TArg> {
+export interface ApplicationOption<T = object> extends EnvironmentOption {
     /**
      * target module type.
      *
@@ -169,5 +173,5 @@ export abstract class ApplicationContextFactory {
      * @param option application option.
      * @returns instance of {@link EnvironmentOption}
      */
-    abstract create<T, TArg = ApplicationArguments>(root: ModuleRef<T>, option?: EnvironmentOption<TArg>): ApplicationContext<T, TArg>;
+    abstract create<T>(root: ModuleRef<T>, option?: EnvironmentOption): ApplicationContext<T>;
 }

@@ -8,7 +8,14 @@ import { Provider } from './providers';
 import { Exception } from './exception';
 import { Invocation } from './invocation';
 import { hasItem } from './utils/lang';
+import { isDefined } from './utils/chk';
 
+/**
+ * request
+ */
+export interface InvocationRequest {
+
+}
 
 /**
  * The context for the {@link Invocation invocation of an operation}.
@@ -16,7 +23,7 @@ import { hasItem } from './utils/lang';
  * 执行操作调用的接口上下文
  */
 @Abstract()
-export abstract class InvocationContext<T = any> implements Destroyable, OnDestroy {
+export abstract class InvocationContext implements Destroyable, OnDestroy {
     /**
      * is resolve context or not.
      */
@@ -58,9 +65,9 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
      */
     abstract attach(options: InvocationContext | InvokeArguments): void;
     /**
-     * the invocation argument.
+     * the invocation request.
      */
-    abstract get request(): T;
+    abstract get request(): InvocationRequest | null | undefined;
     /**
      * has token in the context or not.
      * 
@@ -134,7 +141,7 @@ export abstract class InvocationContext<T = any> implements Destroyable, OnDestr
  * @param options 
  * @returns 
  */
-export function createContext<TArg>(parent: Injector | InvocationContext, options?: TargetInvokeArguments<TArg>, scope?: Type | 'static'): InvocationContext {
+export function createContext(parent: Injector | InvocationContext, options?: TargetInvokeArguments, scope?: Type | 'static'): InvocationContext {
     return INVOCATION_CONTEXT_IMPL.create(parent, options, scope)
 }
 
@@ -147,7 +154,7 @@ export const INVOCATION_CONTEXT_IMPL = {
      * @param parent parent context or parent injector. 
      * @param options invocation options.
      */
-    create<TArg>(parent: Injector | InvocationContext, options?: TargetInvokeArguments<TArg>, scope?: Type | 'static'): InvocationContext {
+    create(parent: Injector | InvocationContext, options?: TargetInvokeArguments, scope?: Type | 'static'): InvocationContext {
         throw new Exception('not implemented.')
     }
 };
@@ -212,13 +219,13 @@ export interface InvokeOptions extends InvokeProviders {
  * 
  * 调用接口配置项及负载
  */
-export interface InvokeArguments<T = any> extends InvokeOptions, InvokeParentContext {
+export interface InvokeArguments extends InvokeOptions, InvokeParentContext {
     /**
      * invocation request.
      * 
      * 调用接口负载对象
      */
-    request?: T;
+    request?: InvocationRequest | null;
 }
 
 /**
@@ -226,7 +233,7 @@ export interface InvokeArguments<T = any> extends InvokeOptions, InvokeParentCon
  * 
  * 调用接口配置项及负载
  */
-export interface TargetInvokeArguments<T = any> extends InvokeArguments<T> {
+export interface TargetInvokeArguments extends InvokeArguments {
     /**
      * invocation invoke target type.
      */
@@ -241,7 +248,7 @@ export interface TargetInvokeArguments<T = any> extends InvokeArguments<T> {
 /**
  * InvocationOptions
  */
-export interface InvocationOptions<T = any, TArg = any> extends InvokeParentContext, InvokeArguments<TArg> {
+export interface InvocationOptions<T = any> extends InvokeParentContext, InvokeArguments {
     /**
      * injector
      */
@@ -262,7 +269,8 @@ export interface InvocationOptions<T = any, TArg = any> extends InvokeParentCont
 
 
 
-export function hasContextOptions(option?: InvokeArguments) {
-    return option && (hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || option.request)
+export function hasContextOptions(option?: InvokeArguments): boolean {
+    if (!option) return false;
+    return hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || isDefined(option.request)
 }
 
