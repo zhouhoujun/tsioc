@@ -262,7 +262,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
 
             const matcher = new RegExp(full + '$');
             return (name, fullName, targetRef, target, options?: MatchOptions) => {
-                if (exp.startsWith('*.*')  && targetRef.getAnnotation<AopDef>().aspect) {
+                if (exp.startsWith('*.*') && targetRef.getAnnotation<AopDef>().aspect) {
                     return false;
                 }
                 if (options?.way) {
@@ -284,7 +284,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         const fns = exp.tokens.map(t => this.expressToFunc(t, metadata));
         const argnames = exp.tokens.map((t, i) => 'arg' + i);
         const boolexp = new Function(...argnames, `return ${exp.toString((t, i, tkidx) => 'arg' + tkidx + '()')}`);
-        return (method: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions) => {
+        return (method: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions) => {
             const args = fns.map(fn => () => fn(method, fullName, targetRef, target, options));
             return boolexp(...args)
         }
@@ -292,7 +292,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
 }
 
 export class BoolExpression {
-    private _parsed: { type: string, value: any }[];
+    private _parsed: { type: string, value: string }[];
     constructor(express: string, isToken: (exp: string) => boolean = isAdviceToken) {
         const parts = express.split(boolOper);
         const keys: string[] = [];
@@ -337,17 +337,17 @@ export class BoolExpression {
         this._parsed = keys.filter(Boolean).reduce(rewrite, [])
     }
 
-    private _tokens!: any[];
+    private _tokens!: string[];
     get tokens() {
         if (!this._tokens) {
             this._tokens = this._parsed
                 .map(e => e.type === 'token' ? e.value : undefined)
-                .filter(Boolean)
+                .filter(Boolean) as string[]
         }
         return this._tokens
     }
 
-    toString(map?: (token: string, idx?: number, tokenIdx?: number, exp?: { type: string, value: any }[]) => string) {
+    toString(map?: (token: string, idx?: number, tokenIdx?: number, exp?: ExpToken[]) => string) {
         let idx = 0;
         return this._parsed.map((t, i, exp) => {
             if (t.type === 'operator') return t.value;
@@ -355,113 +355,13 @@ export class BoolExpression {
         }).join(' ')
     }
 }
-
-// export class BoolExpression {
-//     private _parsed: { type: string, value: any }[];
-//     constructor(express: string, isToken: (exp: string) => boolean = isAdviceToken) {
-//         const tokens = this.tokenize(express, isToken);
-//         this._parsed = this.parseTokens(tokens);
-//     }
-
-//     private tokenize(express: string, isToken: (exp: string) => boolean): string[] {
-//         // 使用正则表达式拆分表达式为token
-//         return express.match(/(@\w+\([^)]*\)|\(|\)|\|\||&&|!|AND|OR|NOT|[\w.]+|\S)/g) || [];
-//     }
-
-//     private parseTokens(tokens: string[]): any[] {
-//         const output: any[] = [];
-//         const operators: string[] = [];
-
-//         tokens.forEach(token => {
-//             token = token.trim();
-//             if (!token) return;
-
-//             if (token === '(') {
-//                 operators.push(token);
-//             } else if (token === ')') {
-//                 // 处理括号闭合
-//                 while (operators.length && operators[operators.length - 1] !== '(') {
-//                     output.push({ type: 'operator', value: operators.pop() });
-//                 }
-//                 operators.pop(); // 移除 '('
-//             } else if (boolOper.test(token)) {
-//                 // 处理操作符优先级
-//                 const op = operatorMap[token] || token;
-//                 while (operators.length && this.getPrecedence(operators[operators.length - 1]) >= this.getPrecedence(op)) {
-//                     output.push({ type: 'operator', value: operators.pop() });
-//                 }
-//                 operators.push(op);
-//             } else {
-//                 // 处理普通token
-//                 output.push({ type: 'token', value: token });
-//             }
-//         });
-
-//         // 添加剩余操作符
-//         while (operators.length) {
-//             output.push({ type: 'operator', value: operators.pop() });
-//         }
-
-//         return output;
-//     }
-
-//     private getPrecedence(op: string): number {
-//         switch (op) {
-//             case '!': return 3;
-//             case '&&': return 2;
-//             case '||': return 1;
-//             default: return 0;
-//         }
-//     }
-
-//     private _tokens!: any[];
-//     get tokens() {
-//         if (!this._tokens) {
-//             this._tokens = this._parsed
-//                 .filter(t => t.type === 'token')
-//                 .map(t => t.value);
-//         }
-//         return this._tokens;
-//     }
-
-//     toString(map?: (token: string, idx?: number, tokenIdx?: number) => string): string {
-//         const stack: {value: string, precedence: number}[] = [];
-//         let tokenIdx = 0;
-
-//         this._parsed.forEach(item => {
-//             if (item.type === 'token') {
-//                 const mapped = map ? map(item.value, tokenIdx, tokenIdx++) : item.value;
-//                 stack.push({value: mapped, precedence: 0});
-//             } else {
-//                 const right = stack.pop()!;
-//                 const left = stack.pop()!;
-//                 const currentPrecedence = this.getPrecedence(item.value);
-
-//                 // 处理括号分组
-//                 const leftValue = left.precedence < currentPrecedence ? `(${left.value})` : left.value;
-//                 const rightValue = right.precedence < currentPrecedence ? `(${right.value})` : right.value;
-
-//                 stack.push({
-//                     value: `${leftValue} ${item.value} ${rightValue}`,
-//                     precedence: currentPrecedence
-//                 });
-//             }
-//         });
-
-//         // 最终格式化处理
-//         return stack[0].value
-//             .replace(/\(\s+/g, '(')
-//             .replace(/\s+\)/g, ')')
-//             .replace(/\s+/g, ' ')
-//             .trim();
-//     }
-// }
+type ExpToken = { type: string, value: string };
 
 const boolOper = /(!|&&| AND | OR | NOT |\|\|)/g;
 const allOperators = /(,|!|&&| AND | OR | NOT |\|\||\(|\)| )/g;
 const nativeOperators = /^(,|!|&&|\|\||\(|\))$/
-const operatorMap: any = { OR: '||', AND: '&&', NOT: '!' }
-function rewrite(ex: any[], el: string) {
+const operatorMap: Record<string, string> = { OR: '||', AND: '&&', NOT: '!' }
+function rewrite(ex: ExpToken[], el: string) {
     let t = el.trim()
     if (!t) return ex;
     if (operatorMap[t]) {

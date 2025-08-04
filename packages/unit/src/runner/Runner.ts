@@ -5,7 +5,7 @@ import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
  * suite runner interface.
  */
 @Abstract()
-export abstract class UnitRunner<T = any> {
+export abstract class UnitRunner<T = object> {
 
     abstract get type(): Type<T>;
     /**

@@ -24,10 +24,4 @@ export interface IPointcut {
 
     type?: Type;
 
-    /**
-     * method
-     *
-     * @type {(TypedPropertyDescriptor<any> | PropertyDescriptor)}
-     */
-    descriptor?: TypedPropertyDescriptor<any> | PropertyDescriptor;
 }

@@ -13,13 +13,13 @@ import { UnitRunner } from './Runner';
  * @implements {UnitRunner<T>}
  */
 @Injectable({ static: false })
-export class SuiteRunner<T = any> implements UnitRunner<T> {
+export class SuiteRunner<T = object> implements UnitRunner<T> {
 
     constructor(readonly invocation: Invocation) {
 
     }
 
-    get type(): Type<any> {
+    get type(): Type<T> {
         return this.invocation.type
     }
 

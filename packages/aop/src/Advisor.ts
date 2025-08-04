@@ -101,7 +101,7 @@ export class Advisor implements OnDestroy {
     }
 
 
-    match(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions): boolean {
+    match(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions): boolean {
         return Array.from(this.advices.values()).some(r => {
             return r.some(a => a.match(name, fullName, targetRef, target, options))
         })
@@ -112,7 +112,7 @@ export class Advisor implements OnDestroy {
     }
 
 
-    hasPointcut(instance: any, typeRef: Class, withConstructor?: boolean): boolean {
+    hasPointcut(instance: object, typeRef: Class, withConstructor?: boolean): boolean {
         const names = Object.keys(instance);
 
         const decorators = typeRef?.getPropertyDescriptors()
@@ -138,32 +138,32 @@ export class Advisor implements OnDestroy {
         }, [] as Advicer[]);
     }
 
-    getProceeding(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions) {
+    getProceeding(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions) {
         return this.proceedings.filter(adv => adv.match(name, fullName, targetRef, target, options))
     }
 
-    getBefore(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions): Advicer[] {
+    getBefore(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions): Advicer[] {
         return this.getAdvicers('Around', 'Before')
             .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }
 
 
-    getPointcut(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions): Advicer[] {
+    getPointcut(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions): Advicer[] {
         return this.getAdvicers('Pointcut')
             .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }
 
-    getAfter(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions): Advicer[] {
+    getAfter(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions): Advicer[] {
         return this.getAdvicers('Around', 'After')
             .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }
 
-    getAfterReturning(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions): Advicer[] {
+    getAfterReturning(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions): Advicer[] {
         return this.getAdvicers('Around', 'AfterReturning')
             .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }
 
-    getAfterThrowing(name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions): Advicer[] {
+    getAfterThrowing(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions): Advicer[] {
         return this.getAdvicers('Around', 'AfterThrowing')
             .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }

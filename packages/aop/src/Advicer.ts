@@ -11,7 +11,7 @@ export interface MatchOptions {
 /**
  * match express.
  */
-export type MatchExpress = (name: string | symbol, fullName: string, targetRef: Class, target?: any, options?: MatchOptions) => boolean;
+export type MatchExpress = (name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions) => boolean;
 
 
 

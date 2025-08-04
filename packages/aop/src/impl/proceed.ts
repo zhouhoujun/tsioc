@@ -156,7 +156,7 @@ export class ProceedingScope implements Proceeding {
         return proxy;
     }
 
-    protected proxy(originMethod: Function, propertyKey: string | symbol, fullName: string, advisor: Advisor, receiver: any, target: any, targetRef: Class, parent?: InvocationContext) {
+    protected proxy<T>(originMethod: Function, propertyKey: string | symbol, fullName: string, advisor: Advisor, receiver: T, target: any, targetRef: Class, parent?: InvocationContext) {
         const platform = this.platform;
         return (...args: any[]) => {
             if (!platform || !platform.injector || platform.injector.destroyed) {

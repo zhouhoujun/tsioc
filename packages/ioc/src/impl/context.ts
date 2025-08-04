@@ -18,7 +18,7 @@ import { Invocation } from '../invocation';
 /**
  * The context for the {@link Invocation invocation of an operation}.
  */
-export class DefaultInvocationContext<T = any> extends InvocationContext implements Destroyable, OnDestroy {
+export class DefaultInvocationContext<T = any> extends InvocationContext<T> implements Destroyable, OnDestroy {
 
     protected _refs: InvocationContext[] | null;
     private _injected = false;
@@ -165,31 +165,17 @@ export class DefaultInvocationContext<T = any> extends InvocationContext impleme
 
     /**
      * remove reference resolver.
-     * @param context instance of {@link InvocationContext}.
+     * @param contexts instance of {@link InvocationContext}.
      */
-    removeRef(context: InvocationContext): void {
+    removeRef(...contexts: InvocationContext[]): void {
         this.assertNotDestroyed();
-        remove(this._refs, context)
+        contexts.forEach(context => remove(this._refs, context));
     }
 
     hasRef(ctx: InvocationContext): boolean {
         this.assertNotDestroyed();
         return ctx === this && this._refs!.indexOf(ctx) >= 0;
     }
-
-
-    // protected _request?: T;
-    // /**
-    //  * the invocation context arguments.
-    //  * 
-    //  * 上下文负载参数
-    //  */
-    // get request(): T {
-    //     if (!this._request) {
-    //         this._request = this.injector.get(CONTEXT_PAYLOAD);
-    //     }
-    //     return this._request!;
-    // }
 
     get used(): boolean {
         return this._injected
