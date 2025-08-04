@@ -13,11 +13,11 @@ export abstract class AbstractModelArgumentResolver implements ModelArgumentReso
 
     abstract get resolvers(): ModelFieldResolver[] | null;
 
-    canResolve<T>(parameter: Parameter<T>, ctx: HandleContext): boolean {
+    canResolve(parameter: Parameter, ctx: HandleContext): boolean {
         return this.hasModel(parameter.provider as Type ?? parameter.type) && this.hasFields(parameter, ctx)
     }
 
-    resolve<T>(parameter: Parameter<T>, ctx: HandleContext): T {
+    resolve<T>(parameter: Parameter, ctx: HandleContext): T {
         const classType = (parameter.provider ?? parameter.type) as Type;
         const fields = this.getFields(parameter, ctx);
         if (!fields) {

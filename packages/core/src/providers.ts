@@ -44,17 +44,15 @@ export const ROOT_DEPENDENCE_PROVIDERS: Provider[] = [
         provide: getResolverToken(PayloadApplicationEvent),
         useValue: createPayloadResolver(
             (ctx, scope, field) => {
-                let payload = ctx.request as any;
-                if(!payload) return null;
+                if (!ctx.request) return null;
                 if (scope) {
-                    payload = payload[scope];
+                    const scopeVal = ctx.request.payload[scope];
                     if (field) {
-                        payload = isDefined(payload) ? payload[field] : null;
+                        return isDefined(scopeVal) ? scopeVal[field] : null;
                     }
                 } else if (field) {
-                    payload = null;
+                    return null;
                 }
-                return payload;
             },
             (param, payload) => payload && param.scope && isDefined(payload[param.scope])
         )

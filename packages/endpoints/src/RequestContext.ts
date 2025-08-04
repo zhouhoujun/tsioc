@@ -1,5 +1,5 @@
 import { Abstract, InvocationRequest, OperationArgumentResolver, TargetInvokeArguments, composeResolvers, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
-import { HandleContext, MODEL_RESOLVERS, createPayloadResolver } from '@tsdi/core';
+import { HandleContext, HandleRequest, MODEL_RESOLVERS, ParameterScope, createPayloadResolver } from '@tsdi/core';
 import { HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess } from '@tsdi/common';
 import {
     FileAdapter, Incoming, InternalServerException, MessageException, MimeAdapter, Outgoing,
@@ -788,7 +788,10 @@ export abstract class RequestContext<
 }
 
 
-export function getScopeValue(req: any, scope: string) {
+export function getScopeValue(req: HandleRequest|null|undefined, scope: ParameterScope) {
+    if(!req) {
+        return null;
+    }
     switch (scope) {
         case 'body':
             return req['body'] ?? req['payload'];
@@ -801,18 +804,19 @@ export function getScopeValue(req: any, scope: string) {
 
 const primitiveResolvers = createPayloadResolver(
     (ctx, scope, field) => {
-        let data = ctx.request as any;
+        // let data = ctx.request as any;
 
         if (field && !scope) {
             scope = 'query'
         }
         if (scope) {
-            data = getScopeValue(data, scope);
+            const data = getScopeValue(ctx.request, scope);
             if (field) {
-                data = isDefined(data) ? data[field] : null;
+                return isDefined(data) ? data[field] : null;
             }
+            return data;
         }
-        return data;
+        return ctx.request;
     },
     (param, req) => req && isDefined(getScopeValue(req, param.scope ?? 'query')));
 

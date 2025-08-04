@@ -24,7 +24,7 @@ export interface TransportParameterOptions<T = object> extends Parameter<T> {
     args?: any[];
 }
 
-
+export type ParameterScope = 'headers' | 'query' | 'path' | 'payload' | 'body' | 'topic';
 /**
  * transport parameter argument of an {@link TransportArgumentResolver}.
  */
@@ -32,7 +32,7 @@ export interface TransportParameter<T = object> extends TransportParameterOption
     /**
      * field scope.
      */
-    scope?: 'headers' | 'query' | 'path' | 'payload' | 'body' | 'topic';
+    scope?: ParameterScope;
 }
 
 /**

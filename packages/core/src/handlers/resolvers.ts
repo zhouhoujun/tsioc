@@ -1,5 +1,5 @@
 import { ArgumentException, Type, composeResolver, getType, isArray, isBasic, isDefined, isPrimitiveType, isString, Parameter, Empty, OperationArgumentResolver } from '@tsdi/ioc';
-import { getPipe, TransportParameter } from './resolver';
+import { getPipe, ParameterScope, TransportParameter } from './resolver';
 import { HandleContext } from './context';
 
 
@@ -7,7 +7,7 @@ export function missingPipeException<T>(parameter: Parameter<T>, type?: Type, me
     return new ArgumentException(`missing pipe to transform argument ${parameter.name} type, method ${method?.toString()} of class ${type}`)
 }
 
-export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx: T, scope?: string, filed?: string) => any, canResolve: <TP>(param: TransportParameter<TP>, payload: any, ctx: T) => boolean): OperationArgumentResolver[] {
+export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx: T, scope?: ParameterScope, filed?: string) => any, canResolve: <TP>(param: TransportParameter<TP>, payload: any, ctx: T) => boolean): OperationArgumentResolver[] {
     return [
         composeResolver<T, TransportParameter>(
             (parameter, ctx) => canResolve(parameter, getPayload(ctx), ctx),

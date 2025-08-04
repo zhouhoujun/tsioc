@@ -11,7 +11,7 @@ import { HandleContext } from './context';
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    canResolve<T>(parameter: Parameter, ctx: HandleContext): boolean;
+    canResolve(parameter: Parameter, ctx: HandleContext): boolean;
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type

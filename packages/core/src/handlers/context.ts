@@ -1,5 +1,5 @@
-import { DefaultInvocationContext, Injector, InvokeArguments, OperationArgumentResolver, composeResolvers, getType } from '@tsdi/ioc';
-import { getResolverToken } from './resolver';
+import { DefaultInvocationContext, Injector, InvocationRequest, InvokeArguments, OperationArgumentResolver, composeResolvers, getType } from '@tsdi/ioc';
+import { getResolverToken, ParameterScope } from './resolver';
 
 /**
  * handle context options.
@@ -8,11 +8,19 @@ export interface HandleContextOpts extends InvokeArguments {
     bootstrap?: boolean;
 }
 
+let a: Record<string, any>;
+
+export interface HandleRequest extends InvocationRequest, Partial<Record<ParameterScope, any>> {
+}
+
 /**
  * invoke handle context.
  */
 export class HandleContext extends DefaultInvocationContext {
     readonly bootstrap: boolean;
+
+    request: HandleRequest | null | undefined;
+
     constructor(
         injector: Injector,
         options: HandleContextOpts = {}) {
@@ -20,6 +28,11 @@ export class HandleContext extends DefaultInvocationContext {
         this.bootstrap = options.bootstrap === true;
         this.setValue(getType(this), this);
     }
+
+    protected override initRequest(options: HandleContextOpts): void {
+        this.request = options.request ?? {};
+    }
+
     private _execption: any;
     /**
      * execption.
