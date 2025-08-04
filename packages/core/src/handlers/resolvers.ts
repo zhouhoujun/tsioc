@@ -1,5 +1,5 @@
 import { ArgumentException, Type, composeResolver, getType, isArray, isBasic, isDefined, isPrimitiveType, isString, Parameter, Empty, OperationArgumentResolver } from '@tsdi/ioc';
-import { getPipe, TransportArgumentResolver, TransportParameter } from './resolver';
+import { getPipe, TransportParameter } from './resolver';
 import { HandleContext } from './context';
 
 

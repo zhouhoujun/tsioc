@@ -4,17 +4,17 @@ import { Abstract, InvocationContext, OperationArgumentResolver, Parameter } fro
  * transaction resolvers.
  */
 @Abstract()
-export abstract class TransactionResolver<TParameter extends Parameter = Parameter, TCtx extends InvocationContext = InvocationContext> implements OperationArgumentResolver<TParameter, TCtx> {
+export abstract class TransactionResolver implements OperationArgumentResolver<Parameter, InvocationContext> {
     /**
      * Return whether an argument of the given {@code parameter} can be resolved.
      * @param parameter argument type
      * @param ctx instanceof InvocationContext
      */
-    abstract canResolve(parameter: TParameter, ctx: TCtx): boolean;
+    abstract canResolve(parameter: Parameter, ctx: InvocationContext): boolean;
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param ctx instanceof InvocationContext
      */
-    abstract resolve<T>(parameter: TParameter, ctx: TCtx): T | null;
+    abstract resolve<T>(parameter: Parameter, ctx: InvocationContext): T | null;
 }

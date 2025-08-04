@@ -38,19 +38,19 @@ export interface TransportParameter<T = object> extends TransportParameterOption
 /**
  * Resolver for an transport argument of an {@link Invocation}.
  */
-export interface TransportArgumentResolver<TParameter extends TransportParameter = TransportParameter, TCtx extends HandleContext = HandleContext> extends OperationArgumentResolver<TParameter, TCtx> {
+export interface TransportArgumentResolver extends OperationArgumentResolver<TransportParameter, HandleContext> {
     /**
      * Return whether an argument of the given {@code parameter} can be resolved.
      * @param parameter argument type
      * @param ctx instanceof HandleContext
      */
-    canResolve(parameter: TParameter, ctx: TCtx): boolean;
+    canResolve(parameter: TransportParameter, ctx: HandleContext): boolean;
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param ctx instanceof HandleContext
      */
-    resolve<T>(parameter: TParameter, ctx: TCtx): T | null;
+    resolve<T>(parameter: TransportParameter, ctx: HandleContext): T | null;
 }
 
 

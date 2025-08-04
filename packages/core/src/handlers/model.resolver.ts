@@ -5,19 +5,19 @@ import { HandleContext } from './context';
 /**
  * model parameter argument of an {@link Invocation}.
  */
- export interface ModelArgumentResolver<TParameter extends Parameter = Parameter, TCtx extends HandleContext = HandleContext> extends OperationArgumentResolver<TParameter, TCtx>  {
+ export interface ModelArgumentResolver extends OperationArgumentResolver<Parameter, HandleContext>  {
     /**
      * Return whether an argument of the given {@code parameter} can be resolved.
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    canResolve<T>(parameter: TParameter, ctx: TCtx): boolean;
+    canResolve<T>(parameter: Parameter, ctx: HandleContext): boolean;
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    resolve<T>(parameter: TParameter, ctx: TCtx): T | null;
+    resolve<T>(parameter: Parameter, ctx: HandleContext): T | null;
 
     /**
      * has the model type or not.

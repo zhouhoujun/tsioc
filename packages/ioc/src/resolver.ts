@@ -68,7 +68,7 @@ export function composeResolvers<TCtx extends InvocationContext = InvocationCont
     return {
         canResolve: (parameter: TParameter, ctx: TCtx) => filter ? filter(parameter, ctx) : resolvers.some(r => r.canResolve(parameter, ctx)),
         resolve: <T>(parameter: TParameter, ctx: TCtx) => {
-            let result: T | null = null;
+            let result: T | null | undefined;
             resolvers.some(r => {
                 if (r.canResolve(parameter, ctx)) {
                     result = r.resolve(parameter, ctx);
@@ -76,7 +76,7 @@ export function composeResolvers<TCtx extends InvocationContext = InvocationCont
                 }
                 return false
             });
-            return result
+            return result ?? null;
         }
     }
 }
