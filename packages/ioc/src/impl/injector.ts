@@ -92,6 +92,9 @@ export class DefaultInjector implements Injector {
                 break;
             case 'static':
                 this._plat = this.parent!.platform();
+                if(!this._plat) {
+                    console.log('no parent');
+                }
                 this._plat.register(this);
                 break;
             default:

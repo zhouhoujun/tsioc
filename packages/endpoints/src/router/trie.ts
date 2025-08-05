@@ -26,7 +26,7 @@ export class TrieRoute {
 
     insert(route: Route, prefix?: string): boolean {
         let parts = this.options.toParts(route.path);
-        if(prefix) {
+        if (prefix) {
             parts = this.options.toParts(prefix).concat(parts);
         }
         let node = this as TrieRoute;
@@ -72,12 +72,16 @@ export class TrieRoute {
         }
 
         if (route) {
-            const troute = await this.match(pathParts, index);
-            troute?.routes?.splice(troute.routes.indexOf(route), 1);
+            const troute = await this.recursive(this, pathParts, index, false);
+            if (troute) {
+                troute.routes?.splice(troute.routes.indexOf(route), 1);
+                route.children?.forEach(child => troute.remove(this.options.toParts(child.path), 0));
+            }
+
         } else {
             const parts = pathParts.slice(0, pathParts.length - 1);
             const part = pathParts[pathParts.length - 1];
-            const parent = await this.match(parts, index);
+            const parent = await this.recursive(this, parts, index, false);
             parent?.children.delete(part);
         }
     }
@@ -114,10 +118,10 @@ export class TrieRoute {
     }
 
 
-    protected async recursive(node: TrieRoute, parts: string[], index: number): Promise<TrieRoute | undefined> {
+    protected async recursive(node: TrieRoute, parts: string[], index: number, loading = true): Promise<TrieRoute | undefined> {
         if (!node) return;
 
-        if (!node.loaded) {
+        if (loading && !node.loaded) {
             await node.load();
         }
 
@@ -128,7 +132,7 @@ export class TrieRoute {
         const part = parts[index];
         let nextIdx = index + 1;
         if (node.children.has(part)) {
-            const result = await this.recursive(node.children.get(part)!, parts, nextIdx);
+            const result = await this.recursive(node.children.get(part)!, parts, nextIdx, loading);
             if (result) {
                 return result;
             }
@@ -138,7 +142,7 @@ export class TrieRoute {
         for (const wlidcard of this.options.wlidcards) {
             if (node.children.has(wlidcard.wlidcard)) {
                 const subNode = node.children.get(wlidcard.wlidcard)!;
-                const result = await this.recursive(subNode, parts, nextIdx);
+                const result = await this.recursive(subNode, parts, nextIdx, loading);
                 if (result) {
                     return result;
                 }
@@ -155,7 +159,7 @@ export class TrieRoute {
                         nextIdx++;
                     }
                     if (endNode) {
-                        const result = await this.recursive(endNode, parts, nextIdx);
+                        const result = await this.recursive(endNode, parts, nextIdx, loading);
                         if (result) {
                             return result;
                         }
@@ -171,6 +175,7 @@ export class TrieRoute {
         const unloadeds = this.routes.filter(r => r.loaded === false);
         for (const route of unloadeds) {
             const routers = await this.options.loader(route);
+            route.children = routers;
             routers?.forEach(route => this.insert(route));
             route.loaded = true;
         }
