@@ -287,14 +287,16 @@ export function getTypes<T extends Type>(mds: Modules<T> | Modules<T>[]): T[] {
     return types
 }
 
+const cleanKeys = ['injector', 'platform', 'context'];
 /**
  * clean object.
  * @param obj.
  */
-export function cleanObj(obj: any) {
+export function cleanObj(obj: any, keys: string[] =  cleanKeys) {
     if (!obj) return;
-    for (const k in obj) {
-        obj[k] = null
+    
+    for (const k of keys) {
+        if(obj[k]) obj[k] = null
     }
 }
 

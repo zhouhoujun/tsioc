@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { AnnotationType, ClassType, Type } from '../types';
+import { ClassType, Type } from '../types';
 
 
 export { isObservable } from 'rxjs';
@@ -29,10 +29,10 @@ const fncallErr = `cannot be invoked without 'new'`;
  */
 export function isNewable(fn: Function) {
     if (!fn.prototype || fn.prototype.constructor !== fn) return false;
-    if (typeof Symbol !== 'undefined' && typeof Symbol.hasInstance !== 'undefined') {
+    if (typeof Symbol.hasInstance !== 'undefined') {
         return fn[Symbol.hasInstance] ? true : false;
     }
-    
+
     const str = String(fn);
     if (class$.test(str)) return true;
     if (fnc$.test(str)) return false;
@@ -210,8 +210,7 @@ export function isArray(target: any): target is Array<any> {
  * @returns {target is object}
  */
 export function isObject(target: any): boolean {
-    if (isNull(target)) return false;
-    return target instanceof Object;
+    return !!target && target instanceof Object;
 }
 
 
@@ -312,13 +311,6 @@ function isBasicType(target: Function): boolean {
         || target === Symbol
 }
 
-export function isAnnotation(target: any): target is AnnotationType {
-    if (!isFunction(target)) return false;
-    if (!target.name || !target.prototype) return false;
-    if (target.prototype.constructor !== target) return false;
-
-    return (target as AnnotationType).ƿAnn?.()?.type === target
-}
 
 /**
  * get class type of object.
