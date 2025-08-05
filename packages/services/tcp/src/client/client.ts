@@ -102,7 +102,7 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
             });
     }
 
-    protected isValid(connection: tls.TLSSocket | net.Socket): boolean {
+    protected isValid(connection: (tls.TLSSocket | net.Socket) & { destroyed: boolean, closed: boolean }): boolean {
         return !connection.destroyed && connection.closed !== true
     }
 
