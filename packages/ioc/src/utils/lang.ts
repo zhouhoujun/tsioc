@@ -16,17 +16,14 @@ import { getClassAnnotation } from './util';
  * @returns {*}
  */
 export function omit(target: any, ...fields: string[]): any {
-    if (target) {
-        const result: any = {};
-        for (const key in target) {
-            if (fields.indexOf(key) < 0) {
-                result[key] = target[key]
-            }
+    if(!target) return null;
+    const result: any = {};
+    for (const key in target) {
+        if (fields.indexOf(key) < 0) {
+            result[key] = target[key]
         }
-        return result
-    } else {
-        return target
     }
+    return result
 }
 
 /**

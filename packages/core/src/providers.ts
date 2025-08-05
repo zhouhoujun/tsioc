@@ -46,13 +46,15 @@ export const ROOT_DEPENDENCE_PROVIDERS: Provider[] = [
             (ctx, scope, field) => {
                 if (!ctx.request) return null;
                 if (scope) {
-                    const scopeVal = ctx.request.payload[scope];
+                    const scopeVal = ctx.request[scope];
                     if (field) {
                         return isDefined(scopeVal) ? scopeVal[field] : null;
                     }
+                    return scopeVal;
                 } else if (field) {
                     return null;
                 }
+                return ctx.request;
             },
             (param, payload) => payload && param.scope && isDefined(payload[param.scope])
         )

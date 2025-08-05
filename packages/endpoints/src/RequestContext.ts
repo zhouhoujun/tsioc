@@ -804,8 +804,6 @@ export function getScopeValue(req: HandleRequest|null|undefined, scope: Paramete
 
 const primitiveResolvers = createPayloadResolver(
     (ctx, scope, field) => {
-        // let data = ctx.request as any;
-
         if (field && !scope) {
             scope = 'query'
         }
