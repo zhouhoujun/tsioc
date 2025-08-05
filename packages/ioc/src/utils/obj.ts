@@ -3,6 +3,8 @@ import { InjectToken } from '../tokens';
 import { isString } from './chk';
 
 
+const objTag = '[object Object]';
+const objName = 'Object';
 /**
  * is custom class type instance or not.
  *
@@ -11,10 +13,11 @@ import { isString } from './chk';
  * @returns {boolean}
  */
 export function isTypeObject(target: any): boolean {
-    return toString.call(target) === '[object Object]' && target.constructor.name !== 'Object' && !(target instanceof InjectToken)
+    return toString.call(target) === objTag && target.constructor.name !== objName && !(target instanceof InjectToken)
 }
 
 
+const moduleTag = '[object Module]';
 /**
  * is target base object or not.
  * eg. {}, have not self constructor;
@@ -27,7 +30,7 @@ export function isTypeObject(target: any): boolean {
  */
 export function isPlainObject(target: any): target is Record<string, any> {
     const ty = toString.call(target);
-    return (ty === '[object Object]' || ty === '[object Module]') && target.constructor.name === 'Object';
+    return (ty === objTag || ty === moduleTag) && target.constructor.name === objName;
 }
 
 /**
