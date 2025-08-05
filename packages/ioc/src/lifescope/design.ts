@@ -126,8 +126,7 @@ export const dependencyInterceptor = (input: DesignContext, next: HandlerFn, con
 
 
 export const registerHandler: HandlerFn = (ctx: DesignContext, context: Context) => {
-    const { type, injector, platform } = ctx;
-    const provide = ctx.provide || ctx.type;
+    const { type, injector, platform, provide } = ctx;
     const singleton = ctx.singleton ?? ctx.class.getAnnotation().singleton === true;
     const isStatic = ctx.static ?? ctx.class.getAnnotation().static;
 
@@ -178,7 +177,7 @@ export const registerHandler: HandlerFn = (ctx: DesignContext, context: Context)
         stic: isStatic,
         fy: FnType.Inj
     } as FactoryRecord;
-    ctx.getRecords().set(provide, recd)
+    ctx.getRecords().set(provide ?? type, recd)
 }
 
 export const DESIGN_INTERECPTORS = [

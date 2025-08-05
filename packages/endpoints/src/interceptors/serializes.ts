@@ -206,11 +206,11 @@ export const noBodySerializeInterceptor: ApplicationInterceptorFn<RequestContext
  */
 export const lengthLimitSerializeInterceptor: ApplicationInterceptorFn<RequestContext> = (input: RequestContext, next: ApplicationHandlerFn<RequestContext, Packet>, context: TransportContext) => {
     if (!input.execption) {
-        const { injector, options } = context.transport as AbstractTransport;
+        const transport = context.transport as AbstractTransport;
         const length = input.length;
-        const sizeLimit = options.maxSize ?? options.limit;
+        const sizeLimit = transport.options.maxSize ?? transport.options.limit;
         if (length && sizeLimit && length > sizeLimit) {
-            const btpipe = injector.get<PipeTransform>('bytes-format');
+            const btpipe = transport.injector.get<PipeTransform>('bytes-format');
             return throwError(() => new PacketLengthException(`Packet length ${btpipe.transform(length)} great than max size ${btpipe.transform(sizeLimit)}`));
         }
     }

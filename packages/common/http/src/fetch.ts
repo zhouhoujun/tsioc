@@ -95,20 +95,20 @@ export class FetchBackend implements HttpBackend {
 
       lang.nextTick(async () => {
         while (true) {
-          const { done, value } = await reader.read();
+          const result = await reader.read();
 
-          if (done) {
+          if (result.done) {
             break;
           }
 
-          chunks.push(value);
-          receivedLength += value.length;
+          chunks.push(result.value);
+          receivedLength += result.value.length;
 
           if (request.reportProgress) {
             partialText =
               request.responseType === 'text'
                 ? (partialText ?? '') +
-                (decoder ??= new TextDecoder()).decode(value, { stream: true })
+                (decoder ??= new TextDecoder()).decode(result.value, { stream: true })
                 : undefined;
 
             const reportProgress = () =>

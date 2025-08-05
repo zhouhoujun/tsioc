@@ -92,9 +92,6 @@ export class DefaultInjector implements Injector {
                 break;
             case 'static':
                 this._plat = this.parent!.platform();
-                if(!this._plat) {
-                    console.log('no parent');
-                }
                 this._plat.register(this);
                 break;
             default:
@@ -187,7 +184,7 @@ export class DefaultInjector implements Injector {
         this.assertNotDestroyed();
         if (providers.length) {
             const platform = this.platform();
-            return eachProvider(providers, p => this.processProvider(platform, p, providers))
+            return eachProvider(providers, p => this.processProvider(platform, p))
         }
     }
 
@@ -206,7 +203,7 @@ export class DefaultInjector implements Injector {
         }, v => isPlainObject(v) && !(isFunction(v.module) && isArray(v.providers)));
     }
 
-    protected processProvider(platform: Platform, p: TypeOption | StaticProvider | DynamicProvider, providers?: Provider[]): void | Promise<void> {
+    protected processProvider(platform: Platform, p: TypeOption | StaticProvider | DynamicProvider): void | Promise<void> {
         if (isFunction(p)) {
             this.registerType(platform, p)
         } else if (isPlainObject(p)) {
@@ -253,7 +250,7 @@ export class DefaultInjector implements Injector {
         if (option?.injectorType) {
             injectorType = (regType, typeRef) => processInjectorType(
                 type, [],
-                (pdr, pdrs) => this.processProvider(platform, pdr, pdrs), (tyref, ty) => {
+                (pdr) => this.processProvider(platform, pdr), (tyref, ty) => {
                     if (ty !== regType) {
                         this.registerReflect(platform, tyref)
                     }
@@ -344,7 +341,7 @@ export class DefaultInjector implements Injector {
 
     protected processInjectorType(platform: Platform, typeOrDef: Type | ModuleWithProviders, dedupStack: Type[], moduleRefl?: Class) {
         return processInjectorType(typeOrDef, dedupStack,
-            (pdr, pdrs) => this.processProvider(platform, pdr, pdrs),
+            (pdr) => this.processProvider(platform, pdr),
             (tyref, type, options) => {
                 this.registerReflect(platform, tyref, options)
             }, moduleRefl)
@@ -641,11 +638,16 @@ export function mergePromise(ps1: Promise<any> | undefined | void, ps2: () => an
     return ps2();
 }
 
-export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedupStack: Type[],
-    processProvider: (provider: StaticProvider | DynamicProvider, providers?: any[]) => void,
-    regType: (typeRef: Class, type: Type, option?: RegOption) => void, moduleRefl?: Class, imported?: boolean): void | Promise<void> {
+export function processInjectorType(
+    typeOrDef: Type | ModuleWithProviders,
+    dedupStack: Type[],
+    processProvider: (provider: StaticProvider | DynamicProvider) => void,
+    regType: (typeRef: Class, type: Type, option?: RegOption) => void,
+    moduleRefl?: Class,
+    imported?: boolean): void | Promise<void> {
     // 提前检查重复处理
-    const type = isFunction(typeOrDef) ? typeOrDef : typeOrDef.module;
+    const isFn = isFunction(typeOrDef);
+    const type = isFn ? typeOrDef : typeOrDef.module;
     if (dedupStack.includes(type)) {
         return;
     }
@@ -654,8 +656,8 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
     let ps: Promise<any> | void | undefined;
 
     // 处理ModuleWithProviders情况
-    if (!isFunction(typeOrDef) && typeOrDef.providers?.length) {
-        ps = eachProvider(typeOrDef.providers, pdr => processProvider(pdr, typeOrDef.providers));
+    if (!isFn && typeOrDef.providers?.length) {
+        ps = eachProvider(typeOrDef.providers, pdr => processProvider(pdr));
     }
 
 
@@ -670,7 +672,7 @@ export function processInjectorType(typeOrDef: Type | ModuleWithProviders, dedup
             const providers = annotation.providers;
             ps = mergePromise(ps, () => eachProvider(
                 providers,
-                pdr => processProvider(pdr, providers)
+                pdr => processProvider(pdr)
             ))
         }
 

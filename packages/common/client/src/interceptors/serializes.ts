@@ -34,27 +34,26 @@ export const readabeRequestBodyerializeInterceptor: ApplicationInterceptorFn<Abs
     if (transport.streamAdapter.isReadable(input.body)) {
         const pkg = parseToOutgoing(input, context);
         let contentLength = transport.headerAdapter.getContentLength(input) ?? 0;
-        const { id, headers } = pkg;
-        if (id) {
+        if (pkg.id) {
             const idLen = transport.options.idLen ?? 2;
             const idBuff = Buffer.alloc(idLen);
             if (idLen > 4) {
-                idBuff.write(id.toString());
+                idBuff.write(pkg.id.toString());
             } else {
-                idBuff.writeUIntBE(id as number, 0, idLen);
+                idBuff.writeUIntBE(pkg.id as number, 0, idLen);
             }
             input.body.unshift(idBuff);
             contentLength += idLen;
         }
         return of(
             {
-                id,
-                headers,
+                id: pkg.id,
+                headers: pkg.headers,
                 payload: Buffer.from(JSON.stringify(pkg))
             },
             {
-                id,
-                headers,
+                id: pkg.id,
+                headers: pkg.headers,
                 payload: input.body,
                 contentLength
             }

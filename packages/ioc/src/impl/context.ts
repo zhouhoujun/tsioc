@@ -5,7 +5,7 @@ import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isTyp
 import { OperationArgumentResolver, Parameter, composeResolver, composeResolvers } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeArguments, InvocationRequest } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
-import { InjectFlags, Token, tokenId } from '../tokens';
+import { InjectFlags, Token } from '../tokens';
 import { createInjector, Injector, isInjector } from '../injector';
 import { Exception } from '../exception';
 import { Class } from '../metadata/class';

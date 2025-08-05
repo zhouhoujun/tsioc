@@ -71,10 +71,9 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
         },
         design: {
             beforeAnnoation: (context) => {
-                const { type, class: typeRef } = context;
                 // use as dependence inject module.
                 if (context.injectorType) {
-                    context.injectorType(type, typeRef);
+                    context.injectorType(context.type, context.class);
                 }
             }
         },
