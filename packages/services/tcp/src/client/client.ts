@@ -35,7 +35,7 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
 
     protected connect(): Observable<tls.TLSSocket | net.Socket> {
         return new Observable<tls.TLSSocket | net.Socket>((observer) => {
-            const valid = this.connection && this.isValid(this.connection);
+            const valid = this.connection && this.isValid(this.connection as (tls.TLSSocket | net.Socket) & { destroyed: boolean, closed: boolean });
             if (!valid) {
                 if (this.connection) this.connection.removeAllListeners();
                 this.connection = this.createConnection(this.getOptions());
