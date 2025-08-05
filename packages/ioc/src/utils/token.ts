@@ -1,4 +1,4 @@
-import { isInjectToken, Token } from '../tokens';
+import { InjectToken, Token } from '../tokens';
 import { isNewable } from './chk';
 
 
@@ -10,11 +10,8 @@ import { isNewable } from './chk';
  * @returns {target is Token}
  */
 export function isToken(target: any): target is Token {
-    if (!target) {
-        return false
-    }
-    const type = typeof target;
-    switch (type) {
+    if (!target) return false
+    switch (typeof target) {
         case 'function':
             return isNewable(target);
         case 'string':
@@ -23,5 +20,5 @@ export function isToken(target: any): target is Token {
             return true
     }
 
-    return isInjectToken(target)
+    return target instanceof InjectToken
 }

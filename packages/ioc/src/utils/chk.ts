@@ -32,6 +32,7 @@ export function isNewable(fn: Function) {
     if (typeof Symbol !== 'undefined' && typeof Symbol.hasInstance !== 'undefined') {
         return fn[Symbol.hasInstance] ? true : false;
     }
+    
     const str = String(fn);
     if (class$.test(str)) return true;
     if (fnc$.test(str)) return false;

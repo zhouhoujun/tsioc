@@ -102,14 +102,6 @@ export function getTokenOf<T>(type: TypeOf<any>, alias: string, propertyKey?: st
     return getToken<T>(getType(type), propertyKey ? `${propertyKey}_${alias}` : alias)
 }
 
-/**
- * is target instance of {@link InjectToken} or not.
- * @param target 
- * @returns 
- */
-export function isInjectToken<T>(target: any): target is InjectToken<T> {
-    return target instanceof InjectToken
-}
 
 /**
  * Injection flags for DI.
