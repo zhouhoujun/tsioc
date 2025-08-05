@@ -82,7 +82,7 @@ export function isNodejsEnv(): boolean {
  * @returns {target is Promise<any>}
  */
 export function isPromise(target: any): target is Promise<any> {
-    return target instanceof Promise // || (target && isFunction(target.then) && isFunction(target.catch))
+    return !!target && target instanceof Promise // || (target && isFunction(target.then) && isFunction(target.catch))
 }
 
 /**
@@ -243,7 +243,7 @@ export function hasProps(target: any): boolean {
  * @returns {target is Date}
  */
 export function isDate(target: any): target is Date {
-    return target instanceof Date //|| toString.call(target) === '[object Date]'
+    return !!target && target instanceof Date //|| toString.call(target) === '[object Date]'
 }
 
 /**
@@ -266,7 +266,7 @@ export function isSymbol(target: any): target is symbol {
  * @returns {target is RegExp}
  */
 export function isRegExp(target: any): target is RegExp {
-    return target instanceof RegExp // || toString.call(target) === '[object RegExp]'
+    return !!target && target instanceof RegExp // || toString.call(target) === '[object RegExp]'
 }
 
 

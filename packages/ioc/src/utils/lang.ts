@@ -54,13 +54,14 @@ export function pick(target: any, ...fields: string[]): any {
 export function forIn<T = any>(target: Record<string, T>, iterator: (item: T, idx: string) => void | boolean): void
 export function forIn<T = any>(target: T[], iterator: (item: T, idx: number) => void | boolean): void;
 export function forIn(target: any, iterator: (item: any, idx?: any) => void | boolean): void {
+    if(!target) return;
     if (isArray(target)) {
         for (let i = 0, len = target.length; i < len; i++) {
             if (iterator(it, i) === false) {
                 break
             }
         }
-    } else if (target) {
+    } else {
         for (const key in target) {
             if (iterator(target[key], key) === false) {
                 break
@@ -137,7 +138,7 @@ export function deepClone<T>(input: T, defaultValue?: any, mergeArray?: (name: s
  * @returns {T}
  */
 export function first<T>(list: T[] | null | undefined): T {
-    if (isArray(list) && list.length) {
+    if (list?.length) {
         return list[0]
     }
     return null!
@@ -149,7 +150,7 @@ export function first<T>(list: T[] | null | undefined): T {
  * @param el remove item.
  */
 export function remove<T>(list: T[] | null | undefined, el: T) {
-    if (!isArray(list) || !list.length || isNil(el)) {
+    if (!list?.length || isNil(el)) {
         return null
     }
     const idx = list.indexOf(el);
@@ -165,7 +166,7 @@ export function remove<T>(list: T[] | null | undefined, el: T) {
  * @returns {T}
  */
 export function last<T>(list?: T[]): T {
-    if (isArray(list) && list.length) {
+    if (list?.length) {
         return list[list.length - 1]
     }
     return null!
