@@ -1,10 +1,9 @@
-import { AnnotationType, classRef, Type, typeFac } from '../types';
+import { AnnotationType, Type, typeFac } from '../types';
 import { cleanObj, getParentType } from '../utils/lang';
 import { getType, isArray, isBoolean, isFunction } from '../utils/chk';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, AnnotationMetadata,
-    RunnableMetadata, MethodMetadata,
-    PatternMetadata
+    RunnableMetadata, MethodMetadata
 } from './meta';
 import {
     ctorName, DecoratorType, DecorDefine, Decors, ActionTypes,
@@ -356,7 +355,7 @@ export const decorRunnable = (ctx: DecorContext, next: HandlerFn, context: Conte
     return next(ctx, context)
 }
 
-const declarations: Record<string, boolean> = {  };
+const declarations: Record<string, boolean> = {};
 export const declarationFactory = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (declarations[ctx.define.decor.toString()]) {
         const factory = (ctx.class.type as AnnotationType)[typeFac] ?? ctx.options.factory;
@@ -498,26 +497,24 @@ export function getDef<T extends TypeDef>(type: Type): T {
     return tagAnn as T
 }
 
-
+const classMaps = new WeakMap<Type, Class>();
 /**
  * get type class reflective {@link Class}.
  * @param type type.
  */
 export function getClass<T = any>(type: Type): Class<T> {
     if (!type || type === Object) return null!;
-    let tyRef = (type as AnnotationType)[classRef]?.() as Class<T>;
-    if (tyRef?.type !== type) {
-        let prRef: Class = tyRef;
-        if (!prRef) {
-            const parentType = getParentType(type);
-            if (parentType) {
-                prRef = getClass(parentType)
-            }
+    let tyRef = classMaps.get(type) as Class<T>;
+    if (!tyRef) {
+        let prRef: Class | undefined;
+        const parentType = getParentType(type);
+        if (parentType) {
+            prRef = getClass(parentType)
         }
         tyRef = new Class(type, getDef(type), prRef);
-        (type as AnnotationType)[classRef] = () => tyRef;
-
+        classMaps.set(type, tyRef);
     }
+
     return tyRef;
 }
 

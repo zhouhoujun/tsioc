@@ -64,16 +64,16 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @returns {boolean}
      */
     abstract has<T>(token: Token<T>, flags?: InjectFlags): boolean;
-    /**
-     * get token factory resolve instace in current.
-     *
-     * 获取标记令牌的实例。
-     * @template T
-     * @param {Token<T>} token token id {@link Token}.
-     * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
-     * @returns {T} token value.
-     */
-    abstract get<T>(token: Token<T>, flags?: InjectFlags): T;
+    // /**
+    //  * get token factory resolve instace in current.
+    //  *
+    //  * 获取标记令牌的实例。
+    //  * @template T
+    //  * @param {Token<T>} token token id {@link Token}.
+    //  * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
+    //  * @returns {T} token value.
+    //  */
+    // abstract get<T>(token: Token<T>, flags?: InjectFlags): T;
     /**
      * get token factory resolve instace in current.
      *
@@ -82,21 +82,22 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @param {Token<T>} token token id {@link Token}.
      * @param {T} notFoundValue not found token, return this value.
      * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
-     * @returns {T} token value.
-     */
-    abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags): T;
-    /**
-     * get token factory resolve instace in current.
-     *
-     * 获取标记令牌的实例。
-     * @template T
-     * @param {Token<T>} token token id.
      * @param {InvocationContext} context invocation context. type of {@link InvocationContext}, use to resolve with token.
-     * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
-     * @param {T} notFoundValue not found token, return this value.
-     * @returns {T} the token value.
+     * @returns {T} token value.
      */
-    abstract get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags, notFoundValue?: T): T;
+    abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, context?: InvocationContext): T;
+    // /**
+    //  * get token factory resolve instace in current.
+    //  *
+    //  * 获取标记令牌的实例。
+    //  * @template T
+    //  * @param {Token<T>} token token id.
+    //  * @param {InvocationContext} context invocation context. type of {@link InvocationContext}, use to resolve with token.
+    //  * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
+    //  * @param {T} notFoundValue not found token, return this value.
+    //  * @returns {T} the token value.
+    //  */
+    // abstract get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags, notFoundValue?: T): T;
     /**
      * resolve token instance with token and param provider.
      * 

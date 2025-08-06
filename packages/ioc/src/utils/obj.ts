@@ -1,6 +1,6 @@
 
 import { InjectToken } from '../tokens';
-import { isString } from './chk';
+import { isArray } from './chk';
 
 
 const objTag = '[object Object]';
@@ -49,15 +49,31 @@ export const isBaseObject = isPlainObject;
  * @param {...(string|string[])[]} props
  * @returns {boolean}
  */
-export function isMetadataObject(target: any, ...props: (string | string[])[]): boolean {
+export function isMetadataObject(target: any, props: string[]): boolean;
+
+/**
+ * is metadata object or not.
+ *
+ * @export
+ * @param {*} target
+ * @param {...(string|string[])[]} props
+ * @returns {boolean}
+ */
+export function isMetadataObject(target: any, ...props: string[]): boolean
+/**
+ * is metadata object or not.
+ *
+ * @export
+ * @param {*} target
+ * @param {...(string|string[])[]} props
+ * @returns {boolean}
+ */
+export function isMetadataObject(target: any, ...args: (string | string[])[]): boolean {
     if (!isPlainObject(target)) return false;
-    if (props.length) {
-        for (const n in target) {
-            if (props.some(ps => isString(ps) ? ps === n : ps.includes(n))) {
-                return true
-            }
-        }
-        return false
+    if (args.length) {
+        const props = isArray(args[0]) ? args[0] : args as string[];
+        const keys = Object.keys(target);
+        return props.some(p => keys.includes(p))
     }
 
     return true

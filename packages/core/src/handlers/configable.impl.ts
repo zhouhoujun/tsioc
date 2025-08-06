@@ -262,7 +262,7 @@ export class ConfigableHandler<
     protected getBackend(): BackendFn {
         if (!this.options.backend) throw new ArgumentException('backend is Empty.');
         if (!this.backendFn) {
-            const backend = isToken(this.options.backend) ? this.injector.get(this.options.backend, this.context, InjectFlags.Default, this.options.backend as any) : this.options.backend;
+            const backend = isToken(this.options.backend) ? this.injector.get(this.options.backend, this.options.backend as any, InjectFlags.Default, this.context) : this.options.backend;
             this.backendFn = (isFunction(backend) ? backend : (req, ctx) => (backend as Backend).handle(req, ctx)) as BackendFn;
         }
         return this.backendFn;

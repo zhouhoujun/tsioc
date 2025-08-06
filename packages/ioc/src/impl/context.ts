@@ -209,7 +209,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      */
     get<T>(token: Token<T>, flags?: InjectFlags): T {
         this.assertNotDestroyed();
-        return (flags != InjectFlags.HostOnly ? this.injector.get(token, this, flags, null) : null)
+        return (flags != InjectFlags.HostOnly ? this.injector.get(token, null, flags, this) : null)
             ?? this.getFormRef(token, flags) ?? null as T;
     }
 

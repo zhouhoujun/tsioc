@@ -4,7 +4,7 @@ import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { cleanObj, deepForEach, defer, immediate } from '../utils/lang';
-import { isArray, isDefined, isFunction, isNumber, getType, isString, isUndefined, isNil, isType, isPromise } from '../utils/chk';
+import { isArray, isDefined, isFunction, isNumber, getType, isString, isNil, isType, isPromise } from '../utils/chk';
 import {
     MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, InjectorEvent,
     Injector, INJECT_IMPL, DependencyRecord, OptionFlags, RegOption, TypeOption
@@ -383,23 +383,16 @@ export class DefaultInjector implements Injector {
         return this.isAlias ? this.isAlias(token) : false
     }
 
-    get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags): T;
-    get<T>(token: Token<T>, context?: InvocationContext, flags?: InjectFlags, notFoundValue?: T): T;
-    get<T>(token: Token<T>, arg1?: InvocationContext, flags = InjectFlags.Default, notFoundValue?: T): T {
+    get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, context?: InvocationContext): T {
         this.assertNotDestroyed();
         if (this.isself(token)) return this as any;
         const platform = this.platform();
-        let context: InvocationContext | undefined;
-        if (arg1 instanceof InvocationContext || !isUndefined(notFoundValue)) {
-            context = arg1;
-            if (isUndefined(notFoundValue)) {
-                notFoundValue = THROW_FLAGE as T
-            }
-        } else {
-            notFoundValue = (isUndefined(arg1) ? THROW_FLAGE : arg1) as T
-        }
         if (platform.hasSingleton(token)) return platform.getSingleton(token);
-        return this.tryResolve(token, this.records.get(token), platform, this.parent, context, notFoundValue, flags, this.onResolved.bind(this))
+
+        return this.tryResolve(token, this.records.get(token), platform, this.parent, context,
+            notFoundValue === undefined ? THROW_FLAGE : notFoundValue,
+            flags ?? InjectFlags.Default,
+            (v, k) => this.onResolved(v, k))
     }
 
     protected tryResolve(token: Token, record: FactoryRecord | undefined, platform: Platform, parent: Injector | undefined,
@@ -435,7 +428,7 @@ export class DefaultInjector implements Injector {
             context = createContext(this, { isResolve, providers: args });
         }
 
-        const result = (context && !isCtx) ? context.resolve(token, InjectFlags.Resolve) : this.get(token, context, InjectFlags.Resolve);
+        const result = (context && !isCtx) ? context.resolve(token, InjectFlags.Resolve) : this.get(token, null, InjectFlags.Resolve, context);
 
         if (context && !isCtx && !context.used) {
             immediate(() => context!.destroy());
@@ -518,12 +511,6 @@ export class DefaultInjector implements Injector {
 
         return tgRefl.invoke(tgRefl.getMethodName(propertyKey), context, instance)
 
-        //this.get(InvocationFactory).create(tgRefl, { ...option, propertyKey, parent: context, instance }).invoke();
-        // const refti = this.get(InvocationFactory).create(tgRefl, {  parent: context, instance} as TargetInvokeArguments);
-        // const val = refti.invoke(propertyKey, context, instance);
-        // immediate(() => refti.destroy());
-
-        // return val;
     }
 
     protected assertNotDestroyed(): void {
@@ -873,7 +860,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
         const deps = [];
         if (rd.fn === MUTIL) {
             if (parent && !(flags & InjectFlags.Self)) {
-                const values = parent.get(token, context, InjectFlags.Default, null);
+                const values = parent.get(token, null, InjectFlags.Default, context);
                 if (values) {
                     deps.push(...values)
                 }
