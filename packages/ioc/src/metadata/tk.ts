@@ -16,7 +16,3 @@ export const CONTAINER: Token<Injector> = tokenId<Injector>('CONTAINER');
  */
 export const ROOT_INJECTOR: Token<Injector> = tokenId<Injector>('ROOT_INJECTOR');
 
-/**
- * resolve target token.
- */
-export const TARGET = tokenId<any>('TARGET');

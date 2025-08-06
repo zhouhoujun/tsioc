@@ -103,7 +103,7 @@ export function deepForEach<T>(
         }
     }
 
-    if (ps.length) return Promise.all(ps) as Promise<any>;
+    if (ps.length) return Promise.all(ps).then();
 
 }
 
@@ -124,7 +124,7 @@ export function deepClone<T>(input: T, defaultValue?: any, mergeArray?: (name: s
             result[key] = value;
         }
         return result;
-    }, { ...defaultValue } as any);
+    }, { ...defaultValue });
 
 }
 
