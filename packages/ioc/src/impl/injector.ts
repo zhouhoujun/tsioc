@@ -911,7 +911,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                 return rd.fn?.(...deps)
         }
     } else if (parent && !(flags & InjectFlags.Self)) {
-        return parent.get(token, context, (flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default, notFoundValue)
+        return parent.get(token, notFoundValue, (flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default, context)
     } else if (!(flags & InjectFlags.Optional)) {
         if (notFoundValue === THROW_FLAGE) {
             throw new NullInjectorException(token)
