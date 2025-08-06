@@ -22,12 +22,8 @@ const fnc$ = /^function\s+\(|^function\s+anonymous\(/;
 const class$ = /^[\s\S]*class\s+/;
 const fncallErr = `cannot be invoked without 'new'`;
 
-/**
- * this fn can use new or not.
- * @param fn 
- * @returns 
- */
-export function isNewable(fn: Function) {
+
+function newable(fn: Function) {
     if (!fn.prototype || fn.prototype.constructor !== fn) return false;
     if (typeof Symbol.hasInstance !== 'undefined') {
         return fn[Symbol.hasInstance] ? true : false;
@@ -46,13 +42,28 @@ export function isNewable(fn: Function) {
     }
 }
 
+const typpMaps = new WeakMap<Function, boolean>();
+
+/**
+ * this fn can use new or not.
+ * @param fn 
+ * @returns 
+ */
+export function isNewable(t: Function): boolean {
+    let is = typpMaps.get(t);
+    if (is === undefined) {
+        is = newable(t);
+        typpMaps.set(t, is);
+    }
+    return is;
+}
 /**
  * is type or not.
  * @param t 
  * @returns 
  */
 export function isType(t: any): t is Type<any> {
-    return typeof t === 'function' && isNewable(t)
+    return typeof t === 'function' && isNewable(t);
 }
 
 /**
