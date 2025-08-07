@@ -24,15 +24,16 @@ export class UserController {
         return this.usrService.search(name);
     }
 
-    @ApiOperation('get user by name', User)
-    @Get('/:name')
+    @ApiOperation('get user by account', User)
+    @Get('/:account')
     getUser(
-        @ApiParam({ name: 'name', description: 'user name', required: true }) @RequestPath() name: string) {
-        this.logger.log('name:', name);
-        if (name == 'error') {
+        @ApiParam({ name: 'name', description: 'user account', required: true }) 
+        @RequestPath() account: string) {
+        this.logger.log('account:', account);
+        if (account == 'error') {
             throw new InternalServerException('error');
         }
-        return this.usrService.findByAccount(name);
+        return this.usrService.findByAccount(account);
     }
 
     @ApiOperation('save user with transactional in control', User)
