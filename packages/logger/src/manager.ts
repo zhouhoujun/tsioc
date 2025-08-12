@@ -1,6 +1,6 @@
 import {
     ArgumentException, getToken, Inject, Injectable,
-    Injector, isString, noPointcut, Nullable, Token, Type
+    Injector, isString, noPointcut, Nullable, Token, AbstractType
 } from '@tsdi/ioc';
 import { HeaderFormater, Logger } from './logger';
 import { LOG_CONFIGURES, LogConfigure } from './LogConfigure';
@@ -28,15 +28,15 @@ export class LoggerManagers implements LoggerManager {
         this.cfgs = new Map();
     }
 
-    hasConfigure(adapter?: string | Type): boolean {
+    hasConfigure(adapter?: string | AbstractType): boolean {
         return adapter ? this.cfgs.has(adapter) : this.cfgs.size > 0;
     }
 
-    getConfigure(adapter?: string | Type): LogConfigure {
+    getConfigure(adapter?: string | AbstractType): LogConfigure {
         return adapter ? this.cfgs.get(adapter)! : this._defaultCfg;
     }
 
-    getLoggerManager(adapter?: string | Type): LoggerManager {
+    getLoggerManager(adapter?: string | AbstractType): LoggerManager {
         this.init();
         if (!adapter) {
             this._defaultCfg.config && this._defaultLogMgr.configure(this._defaultCfg.config);
@@ -52,11 +52,11 @@ export class LoggerManagers implements LoggerManager {
     }
 
 
-    configure(config: LoggerConfig, adapter?: string | Type) {
+    configure(config: LoggerConfig, adapter?: string | AbstractType) {
         this.getLoggerManager(adapter).configure(config)
     }
 
-    getLogger(name?: string, adapter?: string | Type): Logger {
+    getLogger(name?: string, adapter?: string | AbstractType): Logger {
         return this.getLoggerManager(adapter)?.getLogger(name)
     }
 

@@ -1,4 +1,4 @@
-import { Type, ClassType, Annotation, Empty } from '../types';
+import { AbstractType, Type, Annotation, Empty } from '../types';
 import { ModuleWithProviders, Provider } from '../providers';
 import {
     ProvidersMetadata, PropertyMetadata, ParameterMetadata, AnnotationMetadata
@@ -159,19 +159,19 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
     /**
      * imports types.
      */
-    imports?: (ClassType | ModuleWithProviders)[];
+    imports?: (Type | ModuleWithProviders)[];
     /**
      * exports.
      */
-    exports?: ClassType[];
+    exports?: Type[];
     /**
      *  components, directives, pipes ... of current module.
      */
-    declarations?: ClassType[];
+    declarations?: Type[];
     /**
      * the module bootstraps.
      */
-    bootstrap?: Type[] | null;
+    bootstrap?: AbstractType[] | null;
     /**
     * module extends providers.
     */
@@ -235,7 +235,7 @@ export class Class<T = any> {
      *
      * @type {Map<IParameter[]>}
      */
-    private methodReturns: Map<string | symbol, Type>;
+    private methodReturns: Map<string | symbol, AbstractType>;
     /**
      * method providers.
      *
@@ -249,7 +249,7 @@ export class Class<T = any> {
 
     private invocationFactory?: Resolve<InvocationFactory>;
 
-    constructor(public readonly type: Type<T>, annotation: TypeDef<T>, private parent?: Class) {
+    constructor(public readonly type: AbstractType<T>, annotation: TypeDef<T>, private parent?: Class) {
         this.annotation = annotation ?? getClassAnnotation(type)! ?? {};
         this.className = this.annotation?.name || type.name;
         // this.classDefs = new Map();
@@ -350,11 +350,11 @@ export class Class<T = any> {
         return this.methodReturns.has(method)
     }
 
-    getReturnning(method: string | symbol): Type | undefined {
+    getReturnning(method: string | symbol): AbstractType | undefined {
         return this.methodReturns.get(method) ?? this.parent?.getReturnning(method)
     }
 
-    setReturnning(method: string | symbol, returnType: Type) {
+    setReturnning(method: string | symbol, returnType: AbstractType) {
         this.methodReturns.set(method, returnType)
     }
 
@@ -704,8 +704,8 @@ export class Class<T = any> {
     }
 
 
-    private _extends!: Type[];
-    get extendTypes(): Type[] {
+    private _extends!: AbstractType[];
+    get extendTypes(): AbstractType[] {
         if (!this._extends) {
             if (this.parent) {
                 this._extends = this.parent.extendTypes.slice(0);
@@ -800,7 +800,7 @@ export class Class<T = any> {
         return this.descriptos
     }
 
-    isExtends(type: Type): boolean {
+    isExtends(type: AbstractType): boolean {
         return this.extendTypes.indexOf(type) >= 0
     }
 }

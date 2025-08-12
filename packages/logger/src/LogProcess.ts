@@ -1,4 +1,4 @@
-import { Abstract, Injector, Inject, Type, noPointcut } from '@tsdi/ioc';
+import { Abstract, Injector, Inject, AbstractType, noPointcut } from '@tsdi/ioc';
 import { JoinPoint } from '@tsdi/aop';
 import { Logger } from './logger';
 import { Level } from './Level';
@@ -18,7 +18,7 @@ export abstract class LogProcess {
     @Inject() mangers!: LoggerManagers;
     @Inject() protected injector!: Injector
 
-    protected getLogger(name?: string, adapter?: string| Type): Logger {
+    protected getLogger(name?: string, adapter?: string| AbstractType): Logger {
         return name ? this.mangers.getLogger(name, adapter) : this.logger
     }
 

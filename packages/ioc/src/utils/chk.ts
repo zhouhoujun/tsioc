@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { ClassType, Type } from '../types';
+import { Type, AbstractType } from '../types';
 
 
 export { isObservable } from 'rxjs';
@@ -58,21 +58,21 @@ export function isNewable(t: Function): boolean {
     return is;
 }
 /**
+ * is abstract type or not.
+ * @param t 
+ * @returns 
+ */
+export function isAbstractType(t: any): t is AbstractType<any> {
+    return typeof t === 'function' && isNewable(t);
+}
+
+/**
  * is type or not.
  * @param t 
  * @returns 
  */
 export function isType(t: any): t is Type<any> {
-    return typeof t === 'function' && isNewable(t);
-}
-
-/**
- * is class type or not.
- * @param t 
- * @returns 
- */
-export function isClassType(t: any): t is ClassType<any> {
-    return isType(t) && !isPrimit(t)
+    return isAbstractType(t) && !isPrimit(t)
 }
 
 
@@ -324,7 +324,7 @@ function isBasicType(target: Function): boolean {
 
 
 /**
- * get class type of object.
+ * get type of object.
  *
  * @export
  * @param {*} target

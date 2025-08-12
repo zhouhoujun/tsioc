@@ -1,4 +1,4 @@
-import { Empty, Type } from '../types';
+import { Empty, AbstractType } from '../types';
 import { createContext, hasContextOptions, InvocationContext, InvocationOptions, InvokeArguments } from '../context';
 import { Invocation, InvocationFactory } from '../invocation';
 import { getType, isArray, isFunction, isPromise, isString, isSymbol } from '../utils/chk';
@@ -37,7 +37,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
     }
 
 
-    get type(): Type<T> {
+    get type(): AbstractType<T> {
         return this._class?.type;
     }
 
@@ -319,7 +319,7 @@ export abstract class AbstractInvocationFactory<TOpts extends InvocationOptions 
 
     }
 
-    create<T>(type: Type<T> | Class<T>, options?: TOpts): Invocation<T> {
+    create<T>(type: AbstractType<T> | Class<T>, options?: TOpts): Invocation<T> {
         const cls = getClassify(type);
         const context = this.createContext(cls, options);
         return this.createInstance(cls, context, options);

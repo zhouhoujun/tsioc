@@ -1,6 +1,6 @@
 import {
-    isNumber, Type, Injectable, tokenId, Injector, Class, isFunction, getClassify, ProvdierOf, Invocation,
-    isArray, ArgumentException, StaticProvider, HandlerLike, composeHandlers, ClassType
+    isNumber, AbstractType, Injectable, tokenId, Injector, Class, isFunction, getClassify, ProvdierOf, Invocation,
+    isArray, ArgumentException, StaticProvider, HandlerLike, composeHandlers, Type
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { ApplicationRunners } from '../ApplicationRunners';
@@ -38,9 +38,9 @@ export const APP_RUNNERS_GUARDS = tokenId<CanHandle[]>('APP_RUNNERS_GUARDS');
 
 @Injectable()
 export class DefaultApplicationRunners extends ApplicationRunners implements ApplicationHandler {
-    private _types: Type[];
-    private _maps: Map<Type, HandlerLike[]>;
-    private _refs: Map<Type, Invocation[]>;
+    private _types: AbstractType[];
+    private _maps: Map<AbstractType, HandlerLike[]>;
+    private _refs: Map<AbstractType, Invocation[]>;
     private _handler: ConfigableHandler;
     constructor(
         private injector: Injector,
@@ -82,7 +82,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         return this;
     }
 
-    attach<T, TArg>(type: Type<T> | Class<T>, options: InvocationHandlerOptions<T> = {}): Invocation<T> {
+    attach<T, TArg>(type: AbstractType<T> | Class<T>, options: InvocationHandlerOptions<T> = {}): Invocation<T> {
         const target = getClassify(type);
 
         let ends = this._maps.get(target.type);
@@ -93,7 +93,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         let injector = this.injector.platform().getRegisterIn(target.type);
         if (!injector) {
             injector = this.injector;
-            injector.register(target.type as ClassType);
+            injector.register(target.type as Type);
         }
         const invocation = target.createInvocation(injector, options);
         this.attachRef(invocation, options.order);
@@ -119,7 +119,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
 
     }
 
-    detach<T>(type: Type<T>): void {
+    detach<T>(type: AbstractType<T>): void {
         if (this._destroyed) return;
         this._maps.delete(type);
         this._refs.delete(type);
@@ -129,19 +129,19 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         }
     }
 
-    has<T>(type: Type<T>): boolean {
+    has<T>(type: AbstractType<T>): boolean {
         return this._maps.has(type);
     }
 
-    getRef<T>(type: Type<T>, idx = 0): Invocation<T> {
+    getRef<T>(type: AbstractType<T>, idx = 0): Invocation<T> {
         return this._refs.get(type)?.[idx] ?? null!;
     }
 
-    getRefs<T>(type: Type<T>): Invocation<T>[] {
+    getRefs<T>(type: AbstractType<T>): Invocation<T>[] {
         return this._refs.get(type) ?? [];
     }
 
-    run(type?: Type | Type[]): Promise<void> {
+    run(type?: AbstractType | AbstractType[]): Promise<void> {
         if (type) {
             return lastValueFrom(this._handler.handle(new HandleContext(this.injector, { request:  type  })));
         }

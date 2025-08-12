@@ -1,7 +1,7 @@
 // use core-js in browser.
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
-import { Type, Modules } from '../types';
-import { getType, isArray, isFunction, isNil, isObject, isClassType, isPromise, isType, isUndefined } from './chk';
+import { AbstractType, Modules, Type } from '../types';
+import { getType, isArray, isFunction, isNil, isObject, isType, isPromise, isAbstractType, isUndefined } from './chk';
 import { isPlainObject } from './obj';
 import { getClassAnnotation } from './util';
 
@@ -191,10 +191,10 @@ export function getTypeName(target: any): string {
  * get target type parent type.
  *
  * @export
- * @param {Type} target
- * @returns {Type}
+ * @param {AbstractType} target
+ * @returns {AbstractType}
  */
-export function getParentType(target: Type): Type {
+export function getParentType(target: AbstractType): AbstractType {
     const ty = Object.getPrototypeOf(target?.prototype)?.constructor ?? Object.getPrototypeOf(target);
     return ty === Object ? null! : ty
 }
@@ -203,11 +203,11 @@ export function getParentType(target: Type): Type {
  * get all parent type in chain.
  *
  * @export
- * @param {Type} target
- * @returns {Type[]}
+ * @param {AbstractType} target
+ * @returns {AbstractType[]}
  */
-export function getTypeChain(target: Type): Type[] {
-    const types: Type[] = [];
+export function getTypeChain(target: AbstractType): AbstractType[] {
+    const types: AbstractType[] = [];
     forInTypeChain(target, type => {
         types.push(type)
     });
@@ -218,10 +218,10 @@ export function getTypeChain(target: Type): Type[] {
  * iterate base classes of target in chain. return false will break iterate.
  *
  * @export
- * @param {Type} target
- * @param {(token: Type) => any} express
+ * @param {AbstractType} target
+ * @param {(token: AbstractType) => any} express
  */
-export function forInTypeChain(target: Type, express: (token: Type) => any): void {
+export function forInTypeChain(target: AbstractType, express: (token: AbstractType) => any): void {
     while (target) {
         if (express(target) === false) {
             break
@@ -244,7 +244,7 @@ export function hasItem(arr: any): boolean {
  * @param target target type
  * @param baseType base class type.
  */
-export function isBaseOf<T>(target: any, baseType: Type<T>): target is Type<T> {
+export function isBaseOf<T>(target: any, baseType: AbstractType<T>): target is AbstractType<T> {
     return isFunction(target) && (Object.getPrototypeOf(target.prototype) instanceof baseType || Object.getPrototypeOf(target) === baseType)
 }
 
@@ -253,13 +253,13 @@ export function isBaseOf<T>(target: any, baseType: Type<T>): target is Type<T> {
  *
  * @export
  * @param {Token} target
- * @param {(Type | ((type: Type) => boolean))} baseType
+ * @param {(AbstractType | ((type: AbstractType) => boolean))} baseType
  * @returns {boolean}
  */
-export function isExtends<T extends Type>(target: Type, baseType: T | ((type: T) => boolean)): target is T {
+export function isExtends<T extends AbstractType>(target: AbstractType, baseType: T | ((type: T) => boolean)): target is T {
     let isExtnds = false;
     if (isFunction(target) && baseType) {
-        const isCls = isClassType(baseType);
+        const isCls = isType(baseType);
         forInTypeChain(target, t => {
             if (isCls) {
                 isExtnds = t === baseType
@@ -272,6 +272,7 @@ export function isExtends<T extends Type>(target: Type, baseType: T | ((type: T)
     return isExtnds
 }
 
+
 /**
  * get all class types in modules.
  *
@@ -279,10 +280,11 @@ export function isExtends<T extends Type>(target: Type, baseType: T | ((type: T)
  * @param {...Express<Type, boolean>[]} filters
  * @returns {Type[]}
  */
-export function getTypes<T extends Type>(mds: Modules<T> | Modules<T>[]): T[] {
+export function getTypes<T extends AbstractType>(mds: Modules | Modules[], typeOnly?: boolean): T[] {
     const types: T[] = [];
+    const typFn = typeOnly? isType: isAbstractType;
     mds && deepForEach(isArray(mds) ? mds : isPlainObject(mds) ? Object.values(mds) : [mds], ty => {
-        isType(ty) && types.push(ty as T)
+        typFn(ty) && types.push(ty as T)
     }, v => isPlainObject(v));
     return types
 }

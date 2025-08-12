@@ -8,7 +8,7 @@ import { AnnotationType, typeAnn } from '../types';
  * @param {ClassType} target
  * @returns
  */
-export function getClassAnnotation(target: AnnotationType) {
+export function getClassAnnotation<T>(target: AnnotationType<T>) {
     const annf = target[typeAnn];
     return typeof annf === 'function' ? (annf as Function).call(target) : null
 }
@@ -20,6 +20,6 @@ export function getClassAnnotation(target: AnnotationType) {
  * @param {ClassType} target
  * @returns {boolean}
  */
-export function hasClassAnnotation(target: AnnotationType): boolean {
+export function hasClassAnnotation<T>(target: AnnotationType<T>): boolean {
     return typeof target[typeAnn] === 'function'
 }

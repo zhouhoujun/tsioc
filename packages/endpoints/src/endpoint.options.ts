@@ -1,4 +1,4 @@
-import { ModuleType, ProvdierOf, Provider, Type } from '@tsdi/ioc';
+import { ModuleType, ProvdierOf, Provider, AbstractType } from '@tsdi/ioc';
 import { InvocationHandlerOptions } from '@tsdi/core';
 import { CommonProtocols, Protocols } from '@tsdi/common';
 import { TransportConfigure } from '@tsdi/common/transport';
@@ -147,7 +147,7 @@ export type ServerModuleOpts = CommonServiceOpts & {
     /**
      * server type.
      */
-    serverType: Type<Server>;
+    serverType: AbstractType<Server>;
     /**
      * server default config.
      */
@@ -162,7 +162,7 @@ export type MicroServerModuleOpts = MicroServiceOpts & {
     /**
      * server type.
      */
-    serverType: Type<Server>;
+    serverType: AbstractType<Server>;
     /**
      * server default options.
      */

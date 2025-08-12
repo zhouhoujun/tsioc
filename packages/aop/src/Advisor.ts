@@ -1,4 +1,4 @@
-import { Type, lang, Invocation, OnDestroy, Class, getTypeName, ctorName, Empty, Context, HandlerFn } from '@tsdi/ioc';
+import { AbstractType, lang, Invocation, OnDestroy, Class, getTypeName, ctorName, Empty, Context, HandlerFn } from '@tsdi/ioc';
 import { Advicer, AroundProceeding, MatchOptions } from './Advicer';
 import { AdviceMatcher } from './AdviceMatcher';
 import { AopDef } from './metadata/ref';
@@ -31,7 +31,7 @@ export class Advisor implements OnDestroy {
     /**
      * add aspect.
      *
-     * @param {Type} aspect
+     * @param {AbstractType} aspect
      * @param {Container} raiseContainer
      */
     add(aspect: Invocation): void {
@@ -96,7 +96,7 @@ export class Advisor implements OnDestroy {
         this.unregisterAspect(aspect);
     }
 
-    get(type: Type): Invocation | undefined {
+    get(type: AbstractType): Invocation | undefined {
         return this.aspects.find(r => r.type === type)
     }
 

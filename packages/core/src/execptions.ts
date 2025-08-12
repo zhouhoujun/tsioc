@@ -1,4 +1,4 @@
-import { Exception, Type } from '@tsdi/ioc';
+import { Exception, AbstractType } from '@tsdi/ioc';
 
 
 
@@ -24,7 +24,7 @@ export class InvalidStreamException extends Exception {
  * Not handled execption.
  */
 export class NotHandleException extends Exception {
-    constructor(readonly target: any, readonly targetType: Type | string, message = 'Not handle') {
+    constructor(readonly target: any, readonly targetType: AbstractType | string, message = 'Not handle') {
         super(message)
     }
 }

@@ -1,7 +1,7 @@
 import {
-    isArray, isString, lang, Type, TypeOf, createDecorator, ActionTypes, InjectFlags,
+    isArray, isString, lang, AbstractType, TypeOf, createDecorator, ActionTypes, InjectFlags,
     ClassMethodDecorator, createParamDecorator, Exception, isMetadataObject, DecorDefine,
-    AnnotationMetadata, Handler, ClassType
+    AnnotationMetadata, Handler, Type
 } from '@tsdi/ioc';
 import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike } from '@tsdi/core';
 import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Protocols } from '@tsdi/common';
@@ -77,7 +77,7 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
     }
 });
 
-export type HandleDecorator = <TFunction extends Type<Handler>>(target: TFunction) => TFunction | void;
+export type HandleDecorator = <TFunction extends AbstractType<Handler>>(target: TFunction) => TFunction | void;
 
 /**
  * Handle decorator. use to define the class as middleware or define method as message handler.
@@ -158,7 +158,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
         afterAnnoation: (ctx) => {
             const mapping = ctx.class.getAnnotation<MappingDef>();
             const injector = ctx.injector;
-            const type = ctx.type as ClassType<Handler>;
+            const type = ctx.type as Type<Handler>;
 
             const router = mapping.router ? injector.get(mapping.router) : getRouter(injector, mapping.protocol);
             const route = mapping.route;
@@ -192,14 +192,14 @@ export interface RouteMapping {
      * route decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {Type<Router>} [parent] the middlewares for the route.
+     * @param {AbstractType<Router>} [parent] the middlewares for the route.
      */
     (route: string, parent?: TypeOf<Router>): ClassDecorator;
     /**
      * route decorator. define the controller method as an route.
      *
      * @param {string} route route sub path.
-     * @param {Type<CanHandle>[]} [guards] the guards for the route.
+     * @param {AbstractType<CanHandle>[]} [guards] the guards for the route.
      */
     (route: string, guards?: TypeOf<CanHandle>[]): ClassMethodDecorator;
 
@@ -243,7 +243,7 @@ export interface RouteMapping {
 
 export function createMappingDecorator<T extends RouteMappingMetadata<any>>(name: string, controllerOnly?: boolean) {
     return createDecorator<T>(name, {
-        props: (route: string, arg2?: Type<Router> | Type<CanHandle>[] | string | T) => {
+        props: (route: string, arg2?: AbstractType<Router> | AbstractType<CanHandle>[] | string | T) => {
             route = normalize(route);
             if (isArray(arg2)) {
                 return { route, guards: arg2 } as T;
@@ -298,7 +298,7 @@ export const RouteMapping: RouteMapping = createMappingDecorator('RouteMapping')
  * @exports {@link TransportParameterDecorator}
  */
 export const RequestHeader: TransportParameterDecorator = createParamDecorator('RequestHeader', {
-    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
+    props: (field: string, pipe?: { pipe: string | AbstractType<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
         if (meta.flags) {
             meta.flags |= InjectFlags.Request;
@@ -316,7 +316,7 @@ export const RequestHeader: TransportParameterDecorator = createParamDecorator('
  * @exports {@link TransportParameterDecorator}
  */
 export const RequestPath: TransportParameterDecorator = createParamDecorator('RequestPath', {
-    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
+    props: (field: string, pipe?: { pipe: string | AbstractType<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
         if (meta.flags) {
             meta.flags |= InjectFlags.Request;
@@ -333,7 +333,7 @@ export const RequestPath: TransportParameterDecorator = createParamDecorator('Re
  * @exports {@link TransportParameterDecorator}
  */
 export const RequestParam: TransportParameterDecorator = createParamDecorator('RequestParam', {
-    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
+    props: (field: string, pipe?: { pipe: string | AbstractType<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
         if (meta.flags) {
             meta.flags |= InjectFlags.Request;
@@ -350,7 +350,7 @@ export const RequestParam: TransportParameterDecorator = createParamDecorator('R
  * @exports {@link TransportParameterDecorator}
  */
 export const RequestBody: TransportParameterDecorator = createParamDecorator('RequestBody', {
-    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
+    props: (field: string, pipe?: { pipe: string | AbstractType<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
         if (meta.flags) {
             meta.flags |= InjectFlags.Request;
@@ -374,7 +374,7 @@ export interface Controller {
      * @param {string} route route sub path.
      * @param {TypeOf<Router>} [parent] the middlewares for the route.
      */
-    (route?: string, parent?: Type<Router>): ClassDecorator;
+    (route?: string, parent?: AbstractType<Router>): ClassDecorator;
     /**
      * controller decorator. define the controller method as an route.
      *
@@ -445,7 +445,7 @@ export function createRouteDecorator(method: RequestMethod) {
     return createDecorator<RouteMappingMetadata>('Route', {
         props: (
             route: string,
-            arg2?: string | { middlewares: (Middleware | MiddlewareFn)[], guards?: Type<CanHandle>[], contentType?: string, method?: string }
+            arg2?: string | { middlewares: (Middleware | MiddlewareFn)[], guards?: AbstractType<CanHandle>[], contentType?: string, method?: string }
         ) => {
             route = normalize(route);
             return (isString(arg2) ? { route, contentType: arg2, method } : { route, ...arg2, method }) as RouteMappingMetadata
@@ -692,7 +692,7 @@ export interface HandleMetadata<TArg = any> extends AnnotationMetadata, RouteOpt
      */
     route?: Pattern;
 
-    router?: Type<Router>;
+    router?: AbstractType<Router>;
 
     /**
      * version of api.

@@ -1,4 +1,4 @@
-import { Abstract, chainEndFn, chainFactory, getTokenOf, HandlerFn, isFunction, ProvdierOf, Token, tokenId, Type, TypeOf, HandlerLike } from '@tsdi/ioc';
+import { Abstract, chainEndFn, chainFactory, getTokenOf, HandlerFn, isFunction, ProvdierOf, Token, tokenId, AbstractType, TypeOf, HandlerLike } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ApplicationHandler } from '../ApplicationHandler';
 import { ApplicationInterceptorFn } from '../ApplicationInterceptor';
@@ -81,20 +81,20 @@ export abstract class FilterResolver {
      * resolve hanlde filter.
      * @param target 
      */
-    abstract resolve<T>(target: Type<T> | T | string): FilterLike[];
+    abstract resolve<T>(target: AbstractType<T> | T | string): FilterLike[];
     /**
      * add handle filter.
      * @param target filter for the target type
      * @param filter handler filter.
      * @param order order.
      */
-    abstract addFilter(target: Type | string, filter: FilterLike, order?: number): this;
+    abstract addFilter(target: AbstractType | string, filter: FilterLike, order?: number): this;
     /**
      * remove handle filter.
      * @param target filter for the target type
      * @param filter handler filter.
      */
-    abstract removeFilter(target: Type | string, filter: FilterLike): this;
+    abstract removeFilter(target: AbstractType | string, filter: FilterLike): this;
 }
 
 
@@ -107,20 +107,20 @@ export abstract class FilterHandlerResolver {
      * resolve filter hanlde.
      * @param filter 
      */
-    abstract resolve<T>(filter: Type<T> | T | string): HandlerLike[];
+    abstract resolve<T>(filter: AbstractType<T> | T | string): HandlerLike[];
     /**
      * add filter handle.
      * @param filter filter type
      * @param handler filter handler.
      * @param order order.
      */
-    abstract addHandle(filter: Type | string, handler: HandlerLike, order?: number): this;
+    abstract addHandle(filter: AbstractType | string, handler: HandlerLike, order?: number): this;
     /**
      * remove filter handle.
      * @param filter filter type.
      * @param handler filter handler.
      */
-    abstract removeHandle(filter: Type | string, handler: HandlerLike): this;
+    abstract removeHandle(filter: AbstractType | string, handler: HandlerLike): this;
 }
 
 

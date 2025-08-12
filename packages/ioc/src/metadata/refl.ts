@@ -1,4 +1,4 @@
-import { AnnotationType, Type, typeFac } from '../types';
+import { AnnotationType, AbstractType, typeFac, Type } from '../types';
 import { cleanObj, getParentType } from '../utils/lang';
 import { getType, isArray, isBoolean, isFunction } from '../utils/chk';
 import {
@@ -382,7 +382,7 @@ export const decorMethodDesignParams = (ctx: DecorContext, next: HandlerFn, cont
     if (!reflective.hasParameters(method)) {
         const names = reflective.getParamNames(method);
         reflective.setParameters(method,
-            (Reflect.getMetadata('design:paramtypes', ctx.target, method) as Type[])?.map((type, idx) => ({ type, name: names[idx] })))
+            (Reflect.getMetadata('design:paramtypes', ctx.target, method) as AbstractType[])?.map((type, idx) => ({ type, name: names[idx] })))
     }
     const meta = ctx.define.metadata as MethodMetadata;
     if (!meta.type) {
@@ -432,7 +432,7 @@ export const paramDecorLifeScope: LifeScope<DecorContext> = new LifeScope(null, 
 ]);
 
 
-function dispatch(lifescope: LifeScope<DecorContext>, target: any, type: Type, define: DecorDefine, options: DecoratorOption<any>) {
+function dispatch(lifescope: LifeScope<DecorContext>, target: any, type: AbstractType, define: DecorDefine, options: DecoratorOption<any>) {
     const ctx = {
         define,
         target,
@@ -455,7 +455,7 @@ function dispatch(lifescope: LifeScope<DecorContext>, target: any, type: Type, d
     });
 }
 
-export function dispatchTypeDecor(type: Type, define: DecorDefine, options: DecoratorOption<any>) {
+export function dispatchTypeDecor(type: AbstractType, define: DecorDefine, options: DecoratorOption<any>) {
     dispatch(typeDecorLifeScope, type, type, define, options)
 }
 
@@ -484,7 +484,7 @@ export function dispatchParamDecor(type: any, define: DecorDefine, options: Deco
  * get type def.
  * @param type class type.
  */
-export function getDef<T extends TypeDef>(type: Type): T {
+export function getDef<T extends TypeDef>(type: AbstractType): T {
     let tagAnn = (type as AnnotationType).ƿAnn?.() as TypeDef;
     if (tagAnn?.type !== type) {
         tagAnn = {
@@ -497,13 +497,13 @@ export function getDef<T extends TypeDef>(type: Type): T {
     return tagAnn as T
 }
 
-const classMaps = new WeakMap<Type, Class>();
+const classMaps = new WeakMap<AbstractType, Class>();
 /**
  * get type class reflective {@link Class}.
  * @param type type.
  */
-export function getClass<T = any>(type: Type): Class<T> {
-    if (!type || type === Object) return null!;
+export function getClass<T = any>(type: AbstractType<T>|Type<T>): Class<T> {
+    if (!type) return null!;
     let tyRef = classMaps.get(type) as Class<T>;
     if (!tyRef) {
         let prRef: Class | undefined;
@@ -518,6 +518,6 @@ export function getClass<T = any>(type: Type): Class<T> {
     return tyRef;
 }
 
-export function getClassify<T>(type: Type<T> | Class<T> | T): Class<T> {
+export function getClassify<T>(type: AbstractType<T> | Class<T> | T): Class<T> {
     return type instanceof Class ? type : getClass(isFunction(type) ? type : getType(type))
 }

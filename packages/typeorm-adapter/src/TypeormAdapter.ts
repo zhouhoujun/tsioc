@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Type, isString, Injector, isNil, isType, Static, isFunction, Inject, ROOT_INJECTOR, Empty } from '@tsdi/ioc';
+import { AbstractType, isString, Injector, isNil, isAbstractType, Static, isFunction, Inject, ROOT_INJECTOR, Empty, Type, isType } from '@tsdi/ioc';
 import { Startup, PipeTransform, TransportParameter, PROCESS_ROOT, MODEL_RESOLVERS, ModuleLoader, Dispose, HandleContext } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { ConnectionOptions, createModelResolver, DBPropertyMetadata, missingPropPipe, CONNECTIONS, toPrimitType } from '@tsdi/repository';
@@ -43,8 +43,8 @@ export class TypeormAdapter {
         }
     }
 
-    private mdlmap = new Map<Type, DBPropertyMetadata[]>();
-    protected getModelPropertyMetadata(type: Type) {
+    private mdlmap = new Map<AbstractType, DBPropertyMetadata[]>();
+    protected getModelPropertyMetadata(type: AbstractType) {
         let props = this.mdlmap.get(type);
         if (!props) {
             props = [];
@@ -52,9 +52,9 @@ export class TypeormAdapter {
             getMetadataArgsStorage().filterColumns(type)
                 .forEach(col => {
                     const opType = col.options.type;
-                    let type: Type;
+                    let type: AbstractType;
                     if (opType) {
-                        if (isType(opType)) {
+                        if (isAbstractType(opType)) {
                             type = opType;
                         } else if (isString(opType)) {
                             type = isString(col.target) ? toPrimitType(opType) : Reflect.getMetadata("design:type", col.target.prototype, col.propertyName) ?? toPrimitType(opType);
@@ -217,11 +217,11 @@ export class TypeormAdapter {
     }
 
 
-    getRepository<T extends ObjectLiteral>(type: Type<T>, connectName?: string): Repository<T> {
+    getRepository<T extends ObjectLiteral>(type: AbstractType<T>, connectName?: string): Repository<T> {
         return this.getConnection(connectName).getRepository<T>(type)
     }
 
-    getTreeRepository<T extends ObjectLiteral>(type: Type<T>, connectName?: string): TreeRepository<T> {
+    getTreeRepository<T extends ObjectLiteral>(type: AbstractType<T>, connectName?: string): TreeRepository<T> {
         return this.getConnection(connectName).getTreeRepository<T>(type)
     }
 
@@ -232,11 +232,11 @@ export class TypeormAdapter {
      * @param connectName 
      * @returns 
      */
-    getCustomRepository<T extends Repository<any>>(type: Type<T>, connectName?: string): T {
+    getCustomRepository<T extends Repository<any>>(type: AbstractType<T>, connectName?: string): T {
         return this.getConnection(connectName).getCustomRepository(type)
     }
 
-    getMongoRepository<T extends ObjectLiteral>(type: Type<T>, connectName?: string): MongoRepository<T> {
+    getMongoRepository<T extends ObjectLiteral>(type: AbstractType<T>, connectName?: string): MongoRepository<T> {
         return this.getConnection(connectName).getMongoRepository<T>(type)
     }
 

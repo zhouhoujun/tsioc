@@ -1,4 +1,4 @@
-import { lang, Injectable, Invocation, Type, AbstractInvocation, InvocationContext, InvokeArguments, AbstractInvocationFactory, InvocationOptions, Class } from '@tsdi/ioc';
+import { lang, Injectable, Invocation, AbstractType, AbstractInvocation, InvocationContext, InvokeArguments, AbstractInvocationFactory, InvocationOptions, Class } from '@tsdi/ioc';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
@@ -19,7 +19,7 @@ export class SuiteRunner<T = object> implements UnitRunner<T> {
 
     }
 
-    get type(): Type<T> {
+    get type(): AbstractType<T> {
         return this.invocation.type
     }
 

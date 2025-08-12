@@ -1,4 +1,4 @@
-import { Abstract, InvocationRequest, OperationArgumentResolver, TargetInvokeArguments, composeResolvers, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
+import { Abstract, OperationArgumentResolver, composeResolvers, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
 import { HandleContext, HandleRequest, MODEL_RESOLVERS, ParameterScope, createPayloadResolver } from '@tsdi/core';
 import { HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess } from '@tsdi/common';
 import {
@@ -47,6 +47,11 @@ export abstract class RequestContext<
     abstract get transport(): ServerTransport<TSocket>;
 
     /**
+     * response.
+     */
+    abstract get response(): TResponse;
+
+    /**
      * mime adapter.
      */
     get mimeAdapter(): MimeAdapter | null {
@@ -82,15 +87,6 @@ export abstract class RequestContext<
     get fileAdapter(): FileAdapter {
         return this.transport.fileAdapter
     }
-
-    // /**
-    //  * request.
-    //  */
-    // abstract get request(): TRequest;
-    /**
-     * response.
-     */
-    abstract get response(): TResponse;
 
     private _session?: Session;
     get session(): Session {

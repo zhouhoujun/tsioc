@@ -5,7 +5,7 @@ import { PropertyMetadata } from '../metadata/meta';
 import { ctorName, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
 import { Platform } from '../platform';
 import { Parameter } from '../resolver';
-import { Type } from '../types';
+import { AbstractType } from '../types';
 import { isDefined } from '../utils/chk';
 import { initReflectInterceptor } from './commom';
 import { RuntimeContext } from './ctx';
@@ -151,7 +151,7 @@ export function getRuntimePropertyScope(platform: Platform): LifeScope<RuntimeCo
 }
 
 
-const onError = (target: Type, propertyKey: string) => {
+const onError = (target: AbstractType, propertyKey: string) => {
     throw new ArgumentException(`can not autowride property ${propertyKey} of class ${target}`)
 }
 

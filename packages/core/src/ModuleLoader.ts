@@ -1,4 +1,4 @@
-import { Injector, Modules, Type, Abstract } from '@tsdi/ioc';
+import { Injector, Modules, Abstract, Type } from '@tsdi/ioc';
 
 
 /**
@@ -36,14 +36,14 @@ export abstract class ModuleLoader {
      * load all class types in modules
      *
      * @param {LoadType[]} mdl
-     * @returns {Promise<Type[]>}
+     * @returns {Promise<AbstractType[]>}
      */
     abstract loadType(mdl: LoadType): Promise<Type[]>;
     /**
      * load all class types in modules
      *
      * @param {LoadType[]} modules
-     * @returns {Promise<Type[]>}
+     * @returns {Promise<AbstractType[]>}
      */
     abstract loadTypes(modules: LoadType[]): Promise<Type[][]>;
 }

@@ -1,5 +1,5 @@
 import {
-    Type, Injector, Provider, DefaultInvocationContext,
+    AbstractType, Injector, Provider, DefaultInvocationContext,
     Class, ModuleDef, ModuleRef, Invocation, noPointcut,
 } from '@tsdi/ioc';
 import { Logger, LoggerManagers } from '@tsdi/logger';
@@ -73,7 +73,7 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
         return this._multicaster;
     }
 
-    async bootstrap<C>(type: Type<C> | Class<C>, option?: BootstrapOption): Promise<Invocation<C>> {
+    async bootstrap<C>(type: AbstractType<C> | Class<C>, option?: BootstrapOption): Promise<Invocation<C>> {
         const typeRef = this.runners.attach(type, { parent: this, ...option });
         if (typeRef) {
             await this.runners.run(typeRef.type);
@@ -81,7 +81,7 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
         return typeRef;
     }
 
-    getLogger(name?: string, adapter?: string | Type): Logger {
+    getLogger(name?: string, adapter?: string | AbstractType): Logger {
         return this.injector.get(LoggerManagers, null)?.getLogger(name, adapter) ?? null!;
     }
 

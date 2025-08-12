@@ -1,4 +1,4 @@
-import { Type, TypeOf } from './types';
+import { AbstractType, TypeOf } from './types';
 import { getType, isString } from './utils/chk';
 import { getTypeName } from './utils/lang';
 
@@ -15,7 +15,7 @@ import { getTypeName } from './utils/lang';
 export class InjectToken<T = any> {
     constructor(
         protected desc: string,
-        readonly providedIn: Type | 'root' | 'platform' | string = '') { }
+        readonly providedIn: AbstractType | 'root' | 'platform' | string = '') { }
 
     toString(): string {
         return `Token ${this.desc}`
@@ -31,12 +31,12 @@ export class InjectToken<T = any> {
  * 
  * 标记令牌
  */
-export type Token<T = any> = string | symbol | InjectToken<T> | Type<T>;
+export type Token<T = any> = string | symbol | InjectToken<T> | AbstractType<T>;
 
 /**
  * provide token
  */
-export type ProvideToken<T> = string | symbol | InjectToken<T> | Type<T>;
+export type ProvideToken<T> = string | symbol | InjectToken<T> | AbstractType<T>;
 
 /**
  * parse id string to token, type of {@link Token}.

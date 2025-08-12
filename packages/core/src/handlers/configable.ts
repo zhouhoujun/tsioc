@@ -1,4 +1,4 @@
-import { Injector, ProvdierOf, StaticProvider, ClassType, Abstract, Token, Type, InvokeProviders } from '@tsdi/ioc';
+import { Injector, ProvdierOf, StaticProvider, Type, Abstract, Token, AbstractType, InvokeProviders } from '@tsdi/ioc';
 import { GuardLike, GuardsService } from '../guard';
 import { ApplicationInterceptorLike, InterceptorService } from '../ApplicationInterceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
@@ -87,7 +87,7 @@ export interface ConfigableHandlerOptions<TInput = any> extends InvokeProviders 
     /**
      * handler type.
      */
-    handlerType?: Type<ApplicationHandler>;
+    handlerType?: AbstractType<ApplicationHandler>;
     /**
      * enable input type filters and interceptors chain for handler.
      */
@@ -95,7 +95,7 @@ export interface ConfigableHandlerOptions<TInput = any> extends InvokeProviders 
     /**
      * execption handlers
      */
-    execptionHandlers?: ClassType<any> | ClassType[] | null;
+    execptionHandlers?: Type<any> | Type[] | null;
     
     /**
      * An array of dependency-injection tokens used to look up `GuardLike()`

@@ -1,4 +1,4 @@
-import { Type } from '@tsdi/ioc';
+import { AbstractType } from '@tsdi/ioc';
 import { TestReport } from './reports/interface';
 
 /**
@@ -27,14 +27,14 @@ export interface UnitTestConfigure {
     /**
      * test source
      *
-     * @type {(string | Type | (string | Type)[])}
+     * @type {(string | AbstractType | (string | AbstractType)[])}
      */
-    src?: string | Type | (string | Type)[];
+    src?: string | AbstractType | (string | AbstractType)[];
     /**
      * resports.
      *
      * @type {Token<TestReport>[]}
      */
-    reporters?: Type<TestReport>[];
+    reporters?: AbstractType<TestReport>[];
 }
 

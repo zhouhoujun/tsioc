@@ -1,7 +1,7 @@
-import { Type, ClassType } from '../types';
+import { AbstractType, Type } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getTypeName, getTypeChain } from '../utils/lang';
-import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isType, getType } from '../utils/chk';
+import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isAbstractType, getType } from '../utils/chk';
 import { OperationArgumentResolver, Parameter, composeResolver, composeResolvers } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeArguments, InvocationRequest } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
@@ -33,7 +33,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
     /**
      * invocation target type.
      */
-    readonly targetType: Type | undefined;
+    readonly targetType: AbstractType | undefined;
 
     /**
      * named of invocation method.
@@ -50,7 +50,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
     constructor(
         injector: Injector,
         private options: TargetInvokeArguments = {},
-        private injectorScope: Type | 'static' = 'static'
+        private injectorScope: AbstractType | 'static' = 'static'
     ) {
         super();
         this._refs = [];
@@ -266,7 +266,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      * @param meta property or parameter metadata type of {@link Parameter}.
      * @returns the parameter value in this context.
      */
-    resolveArgument<T>(meta: Parameter<T>, target?: Type, failed?: (target: Type, propertyKey: string) => void): T | null {
+    resolveArgument<T>(meta: Parameter<T>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null {
         this.assertNotDestroyed();
         let result: T | null | undefined;
         const metaRvr = this.getMetaReolver(meta);
@@ -302,7 +302,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
         return null;
     }
 
-    protected missingException(missings: Parameter<any>[], type: Type<any>, method: string): Exception {
+    protected missingException(missings: Parameter<any>[], type: AbstractType<any>, method: string): Exception {
         throw new MissingParameterException(missings, type, method)
     }
 
@@ -353,7 +353,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
  * Missing argument execption.
  */
 export class MissingParameterException extends Exception {
-    constructor(parameters: Parameter[], type: Type, method: string) {
+    constructor(parameters: Parameter[], type: AbstractType, method: string) {
         super(`ailed to invoke operation because the following required parameters were missing: [ ${parameters.map(p => object2string(p)).join(',\n')} ], method ${method} of class ${object2string(type)}`)
     }
 }
@@ -375,7 +375,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
         return `[${obj.map(v => object2string(v, options)).join(', ')}]`
     } else if (isString(obj)) {
         return `"${obj}"`
-    } else if (isType(obj)) {
+    } else if (isAbstractType(obj)) {
         return 'Type<' + getTypeName(obj) + '>'
     } else if (obj instanceof Class) {
         return `[${obj.className} TypeReflect]`
@@ -397,7 +397,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
 }
 
 
-INVOCATION_CONTEXT_IMPL.create = (parent: Injector | InvocationContext, options?: TargetInvokeArguments, scope?: Type | 'static') => {
+INVOCATION_CONTEXT_IMPL.create = (parent: Injector | InvocationContext, options?: TargetInvokeArguments, scope?: AbstractType | 'static') => {
     if (isInjector(parent)) {
         return new DefaultInvocationContext(parent, options, scope)
     } else {
@@ -427,7 +427,7 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
                 const pdr = parameter.provider!;
                 if (parameter.name || parameter.propertyKey) {
                     const injector = ctx.injector.parent ?? ctx.injector;
-                    injector.register(pdr as ClassType);
+                    injector.register(pdr as Type);
                 }
                 return ctx.get(pdr, parameter.flags)
             }
@@ -463,7 +463,7 @@ export const BASE_RESOLVERS: OperationArgumentResolver[] = [
                 const ty = parameter.type!;
                 if (parameter.name || parameter.propertyKey) {
                     const injector = ctx.injector.parent ?? ctx.injector;
-                    injector.register(ty as ClassType);
+                    injector.register(ty as Type);
                 }
                 return ctx.get(ty, parameter.flags)
             }

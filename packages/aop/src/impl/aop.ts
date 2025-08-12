@@ -1,4 +1,4 @@
-import { Type, RuntimeContext, AnnotationType, HandlerFn, Context, noPointcut } from '@tsdi/ioc';
+import { AbstractType, RuntimeContext, AnnotationType, HandlerFn, Context, noPointcut } from '@tsdi/ioc';
 import { Proceeding } from '../Proceeding';
 
 
@@ -33,9 +33,9 @@ export const matchInterceptor = (ctx: RuntimeContext, next: HandlerFn, context: 
  * is target can aspect or not.
  *
  * @export
- * @param {Type} targetType
+ * @param {AbstractType} targetType
  * @returns {boolean}
  */
-function isValAspect(targetType: Type): boolean {
+function isValAspect(targetType: AbstractType): boolean {
     return !(targetType as AnnotationType)[noPointcut]
 }

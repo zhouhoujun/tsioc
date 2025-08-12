@@ -1,4 +1,4 @@
-import { InvocationContext, isDefined, isFunction, isNil, PropertyMetadata, Type, object2string, ArgumentException } from '@tsdi/ioc';
+import { InvocationContext, isDefined, isFunction, isNil, PropertyMetadata, AbstractType, object2string, ArgumentException, Type } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 
 /**
@@ -19,7 +19,7 @@ export interface DBPropertyMetadata<T = any> extends PropertyMetadata {
     /**
      * property type.
      */
-    type: Type;
+    type: AbstractType;
     /**
      * property key.
      */
@@ -77,20 +77,20 @@ export interface ModelFieldResolver {
      * @param prop argument type
      * @param args gave field values
      */
-    canResolve(prop: DBPropertyMetadata, ctx: InvocationContext, fields: Record<string, any>, target?: Type): boolean;
+    canResolve(prop: DBPropertyMetadata, ctx: InvocationContext, fields: Record<string, any>, target?: AbstractType): boolean;
     /**
      * Resolves an argument of the given {@code prop}.
      * @param prop argument type
      * @param fields gave field values
      */
-    resolve<T>(prop: DBPropertyMetadata<T>, ctx: InvocationContext, args: Record<string, any>, target?: Type): T | null;
+    resolve<T>(prop: DBPropertyMetadata<T>, ctx: InvocationContext, args: Record<string, any>, target?: AbstractType): T | null;
 }
 
 /**
  * Missing model field execption.
  */
 export class MissingModelFieldException extends ArgumentException {
-    constructor(fields: DBPropertyMetadata[], type: Type) {
+    constructor(fields: DBPropertyMetadata[], type: AbstractType) {
         super(`ailed to resolve model class ${object2string(type)} because the following required fields were missing: [ ${fields.map(p => object2string(p)).join(',\n')} ]`)
     }
 }
@@ -134,7 +134,7 @@ const clob = /^\w*clob$/;
 
 const jsonExp = /^(\s|\w)*json(b)?$/;
 
-export function toPrimitType(dbtype: string): Type {
+export function toPrimitType(dbtype: string): AbstractType {
     if(dbtype == 'bigint') return BigInt;
     if(strExp.test(dbtype)) return String;
     if(boolExp.test(dbtype)) return Boolean;
@@ -151,7 +151,7 @@ export function toPrimitType(dbtype: string): Type {
  * @param type target type.
  * @returns instance of {@link MessageArgumentException}
  */
-export function missingPropPipe(prop: DBPropertyMetadata, type?: Type) {
+export function missingPropPipe(prop: DBPropertyMetadata, type?: AbstractType) {
     return new ArgumentException(`missing pipe to transform property ${prop.name} of class ${type}`)
 }
 
@@ -302,7 +302,7 @@ export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
  * @param type 
  * @returns argument execption {@link MessageArgumentException}.
  */
-export function missingPropException(type?: Type) {
+export function missingPropException(type?: AbstractType) {
     return new ArgumentException(`missing modle properties of class ${type}`)
 }
 

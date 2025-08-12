@@ -1,4 +1,4 @@
-import { Type, Abstract, Injector, tokenId, Token, Provider } from '@tsdi/ioc';
+import { AbstractType, Abstract, Injector, tokenId, Token, Provider } from '@tsdi/ioc';
 import { LoadType } from '@tsdi/core';
 import { Transport } from '@tsdi/common/transport';
 import { LogConfigure } from '@tsdi/logger';
@@ -97,12 +97,12 @@ export interface BootServiceOptions extends SecureContextOptions, Record<string,
     /**
      * boot service type.
      */
-    transport: Transport | Type;
+    transport: Transport | AbstractType;
     /**
      * service controllers via dynamic loading. 
      * simple as `['./controllers/**\/*.(ts|js)']`
      */
-    controllers?: Array<string | Type>;
+    controllers?: Array<string | AbstractType>;
     /**
      * service port
      */

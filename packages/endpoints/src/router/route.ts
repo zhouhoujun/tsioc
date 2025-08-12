@@ -1,4 +1,4 @@
-import { Handler, HandlerFn, HandlerLike, Invocation, Token, tokenId, Type, TypeOf } from '@tsdi/ioc';
+import { Handler, HandlerFn, HandlerLike, Invocation, Token, tokenId, AbstractType, TypeOf } from '@tsdi/ioc';
 import { InvocationHandlerOptions } from '@tsdi/core';
 import { Pattern, Protocols, RequestMethod } from '@tsdi/common';
 import { Observable } from 'rxjs';
@@ -88,7 +88,7 @@ export interface Route {
      * The controller to instantiate when the path matches.
      * Can be empty if child routes specify controller.
      */
-    controller?: Type | Invocation;
+    controller?: AbstractType | Invocation;
     /**
      * load controller.
      */
@@ -113,9 +113,9 @@ export interface Route {
 
 }
 
-export type LoadChildren = () => Type | Routes | Promise<Type | Routes> | Observable<Type | Routes>;
+export type LoadChildren = () => AbstractType | Routes | Promise<AbstractType | Routes> | Observable<AbstractType | Routes>;
 
-export type LoadController = () => Type | Promise<Type> | Observable<Type>;
+export type LoadController = () => AbstractType | Promise<AbstractType> | Observable<AbstractType>;
 
 export type Routes = Route[];
 

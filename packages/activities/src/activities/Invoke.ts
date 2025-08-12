@@ -1,4 +1,4 @@
-import { Empty, Injectable, Invocation, isFunction, isString, Type } from '@tsdi/ioc';
+import { Empty, Injectable, Invocation, isFunction, isString, AbstractType } from '@tsdi/ioc';
 import { Atteribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
@@ -9,7 +9,7 @@ export type InvokeFn = (context: ActivityContext, ...args: any[]) => Promise<any
 export class InvokeActivity extends Activity {
 
 
-    @Atteribute() target: Type | Invocation| undefined;
+    @Atteribute() target: AbstractType | Invocation| undefined;
     @Atteribute() invoke!: string | InvokeFn;
     @Atteribute() maxAttempts!: number;
     @Atteribute() delay!: number;

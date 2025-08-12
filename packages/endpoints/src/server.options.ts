@@ -1,4 +1,4 @@
-import { ProvdierOf, Type } from '@tsdi/ioc';
+import { ProvdierOf, AbstractType } from '@tsdi/ioc';
 import { RequestMethod } from '@tsdi/common';
 import { MimeSource, TransportConfigure } from '@tsdi/common/transport';
 import { RequestHandlerOptions } from './AbstractRequestHandler';
@@ -41,7 +41,7 @@ export interface ServiceConfig<TSerOpts = any> extends RequestHandlerOptions<any
     /**
      * server request handler type
      */
-    handlerType?: Type<RequestHandler>;
+    handlerType?: AbstractType<RequestHandler>;
 
     /**
      * service transport factory.
@@ -158,7 +158,7 @@ export interface HttpBasicServConfig<TSerOpts> extends ServiceConfig<TSerOpts> {
     cors?: boolean | CorsOpts;
     mimeDb?: Record<string, MimeSource>;
     content?: ContentOptions;
-    controllers?: string[] | Type[];
+    controllers?: string[] | AbstractType[];
     listenOpts?: ListenOpts;
     csrf?: boolean | CsrfOps;
 }

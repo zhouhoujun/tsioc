@@ -1,6 +1,6 @@
 import {
-    ClassType, composeHandlers, DecorDefine, Empty, Exception, getClass, Handler, HandlerFn, hasProps, Injector, Invocation,
-    isArray, isClassType, isFunction, isRegExp, isString, isType, ModuleRef, OnDestroy, TypeOf
+    Type, composeHandlers, DecorDefine, Empty, Exception, getClass, Handler, HandlerFn, hasProps, Injector, Invocation,
+    isArray, isType, isFunction, isRegExp, isString, isAbstractType, ModuleRef, OnDestroy, TypeOf
 } from '@tsdi/ioc';
 import { ApplicationHandler } from '@tsdi/core';
 import { Pattern, PatternFormatter, Protocols } from '@tsdi/common';
@@ -210,7 +210,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         } else if (route.loadController) {
             const res = route.loadController();
             const controller = await (isObservable(res) ? lastValueFrom(res) : res);
-            this.injector.register(controller as ClassType);
+            this.injector.register(controller as Type);
 
             const ctrRef = getClass(controller);
             const invocation = ctrRef.createInvocation(this.injector);
@@ -220,7 +220,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         } else if (route.loadChildren) {
             const res = route.loadChildren();
             const module = await (isObservable(res) ? lastValueFrom(res) : res);
-            if (isType(module)) {
+            if (isAbstractType(module)) {
                 const platform = this.injector.platform();
                 if (!platform.modules.has(module)) {
                     await this.injector.get(ModuleRef).import(module, true);
@@ -273,7 +273,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         if (route.handler) {
             let handler: Handler;
             if (isFunction(route.handler)) {
-                if (isClassType(route.handler) && !this.injector.has(route.handler)) {
+                if (isType(route.handler) && !this.injector.has(route.handler)) {
                     this.injector.register(route.handler);
                 }
                 handler = this.injector.get(route.handler)

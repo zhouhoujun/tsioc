@@ -1,5 +1,5 @@
 import { InjectFlags, Token } from '../tokens';
-import { Type, Empty } from '../types';
+import { AbstractType, Empty } from '../types';
 import { isFunction } from '../utils/chk';
 import { getClassify } from '../metadata/refl';
 import { Class } from '../metadata/class';
@@ -20,11 +20,11 @@ import { InvocationFactory } from '../invocation';
 export class DefaultPlatform implements Platform {
 
     private _singls: Map<Token, any>;
-    private _pdrs: Map<Type, Provider[]>;
-    private _scopes: Map<string | Type, Injector>;
+    private _pdrs: Map<AbstractType, Provider[]>;
+    private _scopes: Map<string | AbstractType, Injector>;
 
-    readonly modules = new Map<Type, ModuleRef>();
-    readonly factories = new Map<Type, InvocationFactory>();
+    readonly modules = new Map<AbstractType, ModuleRef>();
+    readonly factories = new Map<AbstractType, InvocationFactory>();
     private injectors: Injector[];
     private _runtime?: LifeScope;
     private _design?: LifeScope;
@@ -94,7 +94,7 @@ export class DefaultPlatform implements Platform {
         return this._singls.has(token)
     }
 
-    setInjector(scope: Type | string, injector: Injector) {
+    setInjector(scope: AbstractType | string, injector: Injector) {
         this._scopes.set(scope, injector)
     }
 
@@ -122,7 +122,7 @@ export class DefaultPlatform implements Platform {
      * get type provider.
      * @param type
      */
-    getTypeProvider(type: Type | Class) {
+    getTypeProvider(type: AbstractType | Class) {
         const tyRef = getClassify(type);
         const pdrs = tyRef.providers.slice(0);
         tyRef.extendTypes.forEach(t => {
@@ -139,7 +139,7 @@ export class DefaultPlatform implements Platform {
      * @param type 
      * @param providers 
      */
-    setTypeProvider(type: Type | Class, ...providers: StaticProvider[]) {
+    setTypeProvider(type: AbstractType | Class, ...providers: StaticProvider[]) {
         const ty = isFunction(type) ? type : type.type;
         const prds = this._pdrs.get(ty);
         if (prds) {
@@ -149,7 +149,7 @@ export class DefaultPlatform implements Platform {
         }
     }
 
-    removeTypeProvider(type: Type | Class, ...providers: Provider[]): void {
+    removeTypeProvider(type: AbstractType | Class, ...providers: Provider[]): void {
         const ty = isFunction(type) ? type : type.type;
         if (!providers.length) {
             this.clearTypeProvider(ty);
@@ -164,7 +164,7 @@ export class DefaultPlatform implements Platform {
 
     }
 
-    clearTypeProvider(type: Type) {
+    clearTypeProvider(type: AbstractType) {
         this._pdrs.delete(type)
     }
 

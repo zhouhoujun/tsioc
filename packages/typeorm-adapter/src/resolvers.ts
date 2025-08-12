@@ -1,4 +1,4 @@
-import { Parameter, InvocationContext, Type, lang, ArgumentException, OperationArgumentResolver, isArray, composeResolver, Injectable } from '@tsdi/ioc';
+import { Parameter, InvocationContext, AbstractType, lang, ArgumentException, OperationArgumentResolver, isArray, composeResolver, Injectable } from '@tsdi/ioc';
 import { JoinPoint } from '@tsdi/aop';
 import { RepositoryArgumentResolver, RepositoryMetadata, TransactionManager, TransactionResolver } from '@tsdi/repository';
 import { MongoRepository, Repository, TreeRepository } from 'typeorm';
@@ -42,7 +42,7 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
         return local
     }
 
-    protected getRepository(model: Type | undefined, rep: Type | undefined, connection: string | undefined) {
+    protected getRepository(model: AbstractType | undefined, rep: AbstractType | undefined, connection: string | undefined) {
         if (!model) {
             return this.adapter.getCustomRepository(rep!, connection)
         }
@@ -70,7 +70,7 @@ export class TypeormTransactionResolver extends TransactionResolver {
             (param, ctx) => ctx instanceof JoinPoint && isArray(ctx.annotations) && ctx.annotations.length > 0,
             {
                 canResolve: (param, ctx: JoinPoint) => {
-                    return param.provider as Type<any> === TransactionManager || param.type as Type<any> === TransactionManager
+                    return param.provider as AbstractType<any> === TransactionManager || param.type as AbstractType<any> === TransactionManager
                 },
                 resolve(param, ctx: JoinPoint): any {
                     if (ctx.has(TransactionManager)) {

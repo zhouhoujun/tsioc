@@ -1,6 +1,6 @@
 import {
-    Provider, Injector, Abstract, Type, Destroyable, Modules, ModuleOption, ModuleRef,
-    InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class, Invocation, InvokeArguments, ClassType
+    Provider, Injector, Abstract, AbstractType, Destroyable, Modules, ModuleOption, ModuleRef,
+    InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, Class, Invocation, InvokeArguments, Type
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
@@ -56,12 +56,12 @@ export abstract class ApplicationContext<T = object>
      * @param type bootstrap type.
      * @param option bootstrap option.
      */
-    abstract bootstrap<C, TArg>(type: Type<C> | Class<C>, option?: BootstrapOption): Promise<Invocation<C>>;
+    abstract bootstrap<C, TArg>(type: AbstractType<C> | Class<C>, option?: BootstrapOption): Promise<Invocation<C>>;
     /**
      * get logger.
      * @param name 
      */
-    abstract getLogger(name?: string, adapter?: string | Type): Logger;
+    abstract getLogger(name?: string, adapter?: string | AbstractType): Logger;
     /**
      * Notify all <strong>matching</strong> listeners registered with this
      * application of an application event. Events may be framework events
@@ -156,9 +156,9 @@ export interface ApplicationOption<T = object> extends EnvironmentOption {
     /**
      * target module type.
      *
-     * @type {ClassType}
+     * @type {Type}
      */
-    module: ClassType<T> | ModuleDef<T> | ModuleMetadata;
+    module: Type<T> | ModuleDef<T> | ModuleMetadata;
 }
 
 

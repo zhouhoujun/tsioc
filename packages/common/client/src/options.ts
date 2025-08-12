@@ -1,7 +1,7 @@
 import { AbstractRequest, PatternFormatter } from '@tsdi/common';
 import { TransportConfigure } from '@tsdi/common/transport';
 import { ConfigableHandlerOptions } from '@tsdi/core';
-import { ProvdierOf, Token, Type } from '@tsdi/ioc';
+import { ProvdierOf, Token, AbstractType } from '@tsdi/ioc';
 import { ClientBackend } from './backend';
 import { ClientTransportFactory } from './transport/transport';
 import { ClientHandler } from './handler';
@@ -38,7 +38,7 @@ export interface ClientConfig<TConnOpts = any> extends ConfigableHandlerOptions<
     /**
      * client handler type.
      */
-    handlerType?: Type<ClientHandler>;
+    handlerType?: AbstractType<ClientHandler>;
     /**
      * service transport factory.
      */

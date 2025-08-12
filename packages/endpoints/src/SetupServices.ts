@@ -1,10 +1,10 @@
-import { Injectable, Provider, Invocation, Type, tokenId } from '@tsdi/ioc';
+import { Injectable, Provider, Invocation, AbstractType, tokenId } from '@tsdi/ioc';
 import { ApplicationContext, Startup } from '@tsdi/core';
 import { Server } from './Server';
 
 
 export interface RegisterService {
-    service: Type<any>;
+    service: AbstractType<any>;
     bootstrap?: boolean;
     microservice?: boolean;
     providers: Provider[]
@@ -24,7 +24,7 @@ export class SetupServices {
     private context!: ApplicationContext;
 
     private services: Invocation<Server>[] = [];
-    private unboots = new Set<Type>();
+    private unboots = new Set<AbstractType>();
 
     @Startup()
     protected async setup(context: ApplicationContext): Promise<any> {

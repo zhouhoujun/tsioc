@@ -1,4 +1,4 @@
-import { ArgumentException, composeHandlers, getType, InjectFlags, Handler as IHandler, HandlerLike, Injector, ProvdierOf, StaticProvider, tokenId, Type } from '@tsdi/ioc';
+import { ArgumentException, composeHandlers, getType, InjectFlags, Handler as IHandler, HandlerLike, Injector, ProvdierOf, StaticProvider, tokenId, AbstractType } from '@tsdi/ioc';
 import { forkJoin, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanHandle } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
@@ -32,7 +32,7 @@ export const EVENT_MULTICASTER_GUARDS = tokenId<CanHandle[]>('EVENT_MULTICASTER_
 export class DefaultEventMulticaster extends ApplicationEventMulticaster implements ApplicationHandler<ApplicationEvent> {
 
     private _handler: ConfigableHandler<ApplicationEvent>;
-    private maps: Map<Type, HandlerLike[]>;
+    private maps: Map<AbstractType, HandlerLike[]>;
     protected _children: ApplicationEventMulticaster[];
 
     readonly parent: ApplicationEventMulticaster | null;
@@ -90,7 +90,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    addListener(event: Type<ApplicationEvent>, handler: HandlerLike, order = -1): this {
+    addListener(event: AbstractType<ApplicationEvent>, handler: HandlerLike, order = -1): this {
         const handlers = this.maps.get(event);
         if (handlers) {
             if (handlers.some(i => (i as IHandler).equals ? (i as IHandler).equals?.(handler) : i === handler)) return this;
@@ -101,7 +101,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    removeListener(event: Type<ApplicationEvent>, handler: ApplicationHandler): this {
+    removeListener(event: AbstractType<ApplicationEvent>, handler: ApplicationHandler): this {
         const handlers = this.maps.get(event);
         if (handlers) {
             const idx = handlers.findIndex(i => (i as IHandler).equals ? (i as IHandler).equals?.(handler) : i === handler);

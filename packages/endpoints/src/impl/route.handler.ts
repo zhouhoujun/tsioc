@@ -1,4 +1,4 @@
-import { ClassType, Empty, Exception, getToken, Invocation } from '@tsdi/ioc';
+import { Type, Empty, Exception, getToken, Invocation } from '@tsdi/ioc';
 import { ApplicationHandlerFn, ApplicationInterceptorLike, normalizeConfigableHandlerOptions } from '@tsdi/core';
 import { ForbiddenException, NotFoundException } from '@tsdi/common/transport';
 import { throwError } from 'rxjs';
@@ -65,7 +65,7 @@ export function createRouteHandler<TInput, TClass extends RouteHandler, T>(
     invocation: Invocation<T>,
     options: RouteOptions<TInput>,
     propertyKey?: string | symbol,
-    type?: ClassType<TClass>): TClass {
+    type?: Type<TClass>): TClass {
     const Hanlder = type ?? RouteHandlerImpl;
     options = normalizeConfigableHandlerOptions(options);
     return new Hanlder(invocation, options, propertyKey) as TClass;

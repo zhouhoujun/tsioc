@@ -1,6 +1,6 @@
 import {
     AbstractInvocation, AbstractInvocationFactory, Class, createContext, createInjector, 
-    Empty, Exception, Injectable, Injector, InvocationContext, InvokeArguments, Platform, Type
+    Empty, Exception, Injectable, Injector, InvocationContext, InvokeArguments, Platform, AbstractType
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentOptions, ComponentRef, ComponentFactory } from '../refs/component';
@@ -67,7 +67,7 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         return new ComponentRefImpl(typeRef, context, options);
     }
 
-    override create<T>(type: Type<T> | Class<T>, options?: ComponentOptions): ComponentRef<T> {
+    override create<T>(type: AbstractType<T> | Class<T>, options?: ComponentOptions): ComponentRef<T> {
         return super.create(type, options) as ComponentRef<T>;
     }
 

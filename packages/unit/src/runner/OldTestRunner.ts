@@ -1,4 +1,4 @@
-import { lang, Singleton, isFunction, Injector, Type } from '@tsdi/ioc';
+import { lang, Singleton, isFunction, Injector, AbstractType } from '@tsdi/ioc';
 import { global as globals } from '@tsdi/common';
 import { Assert } from '../assert/assert';
 import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
@@ -42,7 +42,7 @@ export class OldTestRunner implements UnitRunner {
         this.timeout = (3 * 60 * 60 * 1000) as number
     }
 
-    get type(): Type<any> {
+    get type(): AbstractType<any> {
         return null!
     }
 

@@ -1,4 +1,4 @@
-import { Injectable, Type } from '@tsdi/ioc';
+import { Injectable, AbstractType } from '@tsdi/ioc';
 import { Activity, ActivityContext, ActivityResult } from './activities/Activity';
 
 export interface WorkflowDefinition {
@@ -22,7 +22,7 @@ export interface WorkflowDefinition {
      * 是否启用工作流监控
      */
     enableMonitoring?: boolean;
-    activities: Type<Activity>[];
+    activities: AbstractType<Activity>[];
     transitions: WorkflowTransition[];
     initialState: string;
     finalStates: string[];

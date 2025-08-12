@@ -1,5 +1,5 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
-import { Type, ClassType, Empty } from './types';
+import { AbstractType, Type, Empty } from './types';
 import { ClassProvider, ExistingProvider, FactoryProvider, ModuleType, Provider, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
@@ -131,7 +131,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @param value the vaule provider for the token.
      * @param provider the value type.
      */
-    abstract setValue<T>(token: Token<T>, value: T, provider?: Type<T>): this;
+    abstract setValue<T>(token: Token<T>, value: T, provider?: AbstractType<T>): this;
     /**
      * set gloabl singleton.
      * 
@@ -148,9 +148,9 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @template T
      * @param {Token<T>} token
      * @param {InjectFlags} flags get token strategy.
-     * @returns {Type<T>}
+     * @returns {AbstractType<T>}
      */
-    abstract getTokenProvider<T>(token: Token<T>, flags?: InjectFlags): Type<T>;
+    abstract getTokenProvider<T>(token: Token<T>, flags?: InjectFlags): AbstractType<T>;
     /**
      * cache instance.
      * @param token 
@@ -202,16 +202,16 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * 
      * 注册类
      * 
-     * @param {ClassType<any>[]} types class type array.
+     * @param {Type<any>[]} types class type array.
      */
-    abstract register(types: (ClassType | RegisterOption)[]): this;
+    abstract register(types: (Type | RegisterOption)[]): this;
     /**
      * register types.
      * 
      * 注册类
      * @param types class type params.
      */
-    abstract register(...types: (ClassType | RegisterOption)[]): this;
+    abstract register(...types: (Type | RegisterOption)[]): this;
     /**
      * unregister the token
      *
@@ -227,49 +227,49 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * 调用类方法
      * @deprecated  use `ReflectiveRef` instead.
      * @template T
-     * @param {(T | Type<T> | Class<T>)} target type of class or instance.
+     * @param {(T | AbstractType<T> | Class<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
      * @param {T} [instance] instance of target type.
      * @param {...Provider[]} providers ...params of {@link Provider}.
      * @returns {TR} the returnning of invoked method.
      */
-    abstract invoke<T, TR = any>(target: T | Type<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
+    abstract invoke<T, TR = any>(target: T | AbstractType<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
     /**
      * invoke method.
      *
      * 调用类方法
      * @deprecated  use `ReflectiveRef` instead.
      * @template T
-     * @param {(T | Type<T> | Class<T>)} target type of class or instance.
+     * @param {(T | AbstractType<T> | Class<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
      * @param {Provider[]} providers array of {@link Provider}.
      * @returns {TR} the returnning of invoked method.
      */
-    abstract invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, providers: Provider[]): TR;
+    abstract invoke<T, TR = any>(target: T | AbstractType<T> | Class<T>, propertyKey: MethodType<T>, providers: Provider[]): TR;
     /**
      * invoke method.
      *
      * 调用类方法
      * @deprecated  use `ReflectiveRef` instead.
      * @template T
-     * @param {(T | Type<T> | Class<T>)} target type of class or instance.
+     * @param {(T | AbstractType<T> | Class<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
      * @param {InvokeOptions} option ivacation arguments, type of {@link InvokeOptions}.
      * @returns {TR} the returnning of invoked method.
      */
-    abstract invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
+    abstract invoke<T, TR = any>(target: T | AbstractType<T> | Class<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
     /**
      * invoke method.
      * 
      * 调用类方法
      * @deprecated  use `ReflectiveRef` instead.
      * @template T
-     * @param {(T | Type<T> | Class<T>)} target type of class or instance
+     * @param {(T | AbstractType<T> | Class<T>)} target type of class or instance
      * @param {MethodType} propertyKey method name.
      * @param {InvocationContext} context ivacation context.
      * @returns {TR} the returnning of invoked method.
      */
-    abstract invoke<T, TR = any>(target: T | Type<T> | Class<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
+    abstract invoke<T, TR = any>(target: T | AbstractType<T> | Class<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
 
     /**
      * injector has destoryed or not.
@@ -425,7 +425,7 @@ export interface RegOption<T = any> extends ProvidedInMetadata {
  * type register option.
  */
 export interface TypeOption<T = any> extends RegOption<T> {
-    type: Type<T>;
+    type: AbstractType<T>;
 }
 
 /**
@@ -450,7 +450,7 @@ export const enum FnType {
 /**
  * injector scope.
  */
-export type InjectorScope = Type | 'platform' | 'root' | 'static';
+export type InjectorScope = AbstractType | 'platform' | 'root' | 'static';
 
 
 export const enum OptionFlags {
@@ -489,7 +489,7 @@ export interface FactoryRecord<T = any> {
     /**
      * token provider type.
      */
-    type?: Type<T>;
+    type?: AbstractType<T>;
     /**
      * is static for fn create once.
      */

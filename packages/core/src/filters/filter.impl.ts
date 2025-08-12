@@ -1,15 +1,15 @@
-import { getType, isFunction, isString, Type, ArgumentException, Injector, InjectFlags, HandlerLike } from '@tsdi/ioc';
+import { getType, isFunction, isString, AbstractType, ArgumentException, Injector, InjectFlags, HandlerLike } from '@tsdi/ioc';
 import { ApplicationHandler } from '../ApplicationHandler';
 import { Filter, FilterHandlerResolver, FilterLike, FilterResolver } from './filter';
 import { ApplicationInterceptor, ApplicationInterceptorLike, InterceptorResolver } from '../ApplicationInterceptor';
 
 
 export class DefaultInterceptorResolver implements InterceptorResolver {
-    private maps = new Map<Type | string, ApplicationInterceptorLike[]>();
+    private maps = new Map<AbstractType | string, ApplicationInterceptorLike[]>();
 
     constructor(private injector: Injector) { }
 
-    resolve<T>(target: Type<T> | T | string): ApplicationInterceptorLike[] {
+    resolve<T>(target: AbstractType<T> | T | string): ApplicationInterceptorLike[] {
         const interceptors = this.maps.get(isString(target) ? target : (isFunction(target) ? target : getType(target))) ?? [];
         const resolver = this.injector.get(InterceptorResolver, null, InjectFlags.SkipSelf);
 
@@ -21,7 +21,7 @@ export class DefaultInterceptorResolver implements InterceptorResolver {
 
         return interceptors;
     }
-    addInterceptor(target: Type | string, interceptor: ApplicationInterceptorLike, order?: number): this {
+    addInterceptor(target: AbstractType | string, interceptor: ApplicationInterceptorLike, order?: number): this {
         if (!interceptor) {
             throw new ArgumentException('filter missing');
         }
@@ -34,7 +34,7 @@ export class DefaultInterceptorResolver implements InterceptorResolver {
         }
         return this
     }
-    removeInterceptor(target: Type | string, interceptor: ApplicationInterceptorLike): this {
+    removeInterceptor(target: AbstractType | string, interceptor: ApplicationInterceptorLike): this {
         const hds = this.maps.get(target);
         if (!hds) return this;
         const idx = hds.findIndex(h => h === interceptor || ((h as ApplicationInterceptor).equals ? (h as ApplicationInterceptor).equals!(interceptor) : false));
@@ -46,11 +46,11 @@ export class DefaultInterceptorResolver implements InterceptorResolver {
 
 
 export class DefaultFilterResolver implements FilterResolver {
-    private maps = new Map<Type | string, FilterLike[]>();
+    private maps = new Map<AbstractType | string, FilterLike[]>();
 
     constructor(private injector: Injector) { }
 
-    resolve<T>(target: Type<T> | T | string): FilterLike[] {
+    resolve<T>(target: AbstractType<T> | T | string): FilterLike[] {
         const filters = this.maps.get(isString(target) ? target : (isFunction(target) ? target : getType(target))) ?? [];
         const resolver = this.injector.get(FilterResolver, null, InjectFlags.SkipSelf);
 
@@ -62,7 +62,7 @@ export class DefaultFilterResolver implements FilterResolver {
 
         return filters;
     }
-    addFilter(target: Type | string, filter: FilterLike, order?: number): this {
+    addFilter(target: AbstractType | string, filter: FilterLike, order?: number): this {
         if (!filter) {
             throw new ArgumentException('filter missing');
         }
@@ -75,7 +75,7 @@ export class DefaultFilterResolver implements FilterResolver {
         }
         return this
     }
-    removeFilter(target: Type | string, filter: FilterLike): this {
+    removeFilter(target: AbstractType | string, filter: FilterLike): this {
         const hds = this.maps.get(target);
         if (!hds) return this;
         const idx = hds.findIndex(h => h === filter || ((h as Filter).equals ? (h as Filter).equals!(filter) : false));
@@ -89,11 +89,11 @@ export class DefaultFilterResolver implements FilterResolver {
  */
 export class DefaultFiterHandlerMethodResolver implements FilterHandlerResolver {
 
-    private maps = new Map<Type | string, HandlerLike[]>();
+    private maps = new Map<AbstractType | string, HandlerLike[]>();
 
     constructor(private injector: Injector) { }
 
-    resolve<T>(target: Type<T> | T | string): HandlerLike[] {
+    resolve<T>(target: AbstractType<T> | T | string): HandlerLike[] {
         const handlers = this.maps.get(isString(target) ? target : (isFunction(target) ? target : getType(target))) ?? [];
         const resolver = this.injector.get(FilterHandlerResolver, null, InjectFlags.SkipSelf);
 
@@ -106,7 +106,7 @@ export class DefaultFiterHandlerMethodResolver implements FilterHandlerResolver 
         return handlers;
     }
 
-    addHandle(filter: Type | string, handler: HandlerLike, order?: number): this {
+    addHandle(filter: AbstractType | string, handler: HandlerLike, order?: number): this {
         if (!handler) {
             throw new ArgumentException('handler missing');
         }
@@ -120,7 +120,7 @@ export class DefaultFiterHandlerMethodResolver implements FilterHandlerResolver 
         return this
     }
 
-    removeHandle(filter: Type | string, handler: ApplicationHandler): this {
+    removeHandle(filter: AbstractType | string, handler: ApplicationHandler): this {
         const hds = this.maps.get(filter);
         if (!hds) return this;
         const idx = hds.findIndex(h => (h as ApplicationHandler).equals ? (h as ApplicationHandler).equals?.(handler) : h === handler);

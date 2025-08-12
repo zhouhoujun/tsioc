@@ -1,9 +1,8 @@
-import { isFunction, Type, ClassType, Provider, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, Empty, createInjector, getClass } from '@tsdi/ioc';
+import { isFunction, AbstractType, Type, Provider, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, Empty, createInjector, getClass } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationContextFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEPENDENCE_PROVIDERS, } from './providers';
 import { ModuleLoader } from './ModuleLoader';
 import { DefaultModuleLoader } from './impl/loader';
-import { ApplicationArguments } from './ApplicationArguments';
 import { TransformModule } from './pipes/transform';
 
 
@@ -18,7 +17,7 @@ import { TransformModule } from './pipes/transform';
  */
 export class Application<T = any> {
 
-    private _loads?: Type[];
+    private _loads?: AbstractType[];
     /**
      * root module ref.
      * 
@@ -38,7 +37,7 @@ export class Application<T = any> {
     protected loader!: ModuleLoader;
 
 
-    constructor(protected target: ClassType<T> | ApplicationOption<T>, loader?: ModuleLoader) {
+    constructor(protected target: Type<T> | ApplicationOption<T>, loader?: ModuleLoader) {
         if (loader) {
             this.loader = loader;
         }
@@ -97,11 +96,11 @@ export class Application<T = any> {
      * 根据模块，环境变量启动运行应用程序
      *
      * @static
-     * @param {Type<T>} target target class type.
+     * @param {AbstractType<T>} target target class type.
      * @param {EnvironmentOption} [option] option {@link EnvironmentOption} application run depdences.
      * @returns async returnning instance of {@link ApplicationContext}.
      */
-    static run<T>(target: Type<T>, option?: EnvironmentOption): Promise<ApplicationContext<T>>;
+    static run<T>(target: AbstractType<T>, option?: EnvironmentOption): Promise<ApplicationContext<T>>;
     static run<T>(target: any, option?: EnvironmentOption): Promise<ApplicationContext<T>> {
         return new Application<T>(option ? { module: target, ...option } as ApplicationOption : target).run();
     }
@@ -138,7 +137,7 @@ export class Application<T = any> {
         return this.context.destroy();
     }
 
-    get loadTypes(): Type[] {
+    get loadTypes(): AbstractType[] {
         return this._loads ?? Empty
     }
 
@@ -164,18 +163,18 @@ export class Application<T = any> {
         return this.createModuleRef(container, option);
     }
 
-    protected createModuleRef<T, TArg>(container: Injector, option: ApplicationOption<T>) {
+    protected createModuleRef<T>(container: Injector, option: ApplicationOption<T>) {
         return createModuleRef(this.moduleify(option.module), container, option)
     }
 
-    protected moduleify(module: Type | Class | ModuleMetadata | ModuleDef): Type | Class {
+    protected moduleify(module: AbstractType | Class | ModuleMetadata | ModuleDef): Type | Class {
         if (isFunction(module)) {
             module = getClass(module);
         }
 
         if (module instanceof Class) {
             if (!module.getAnnotation<ModuleDef>().module) {
-                const bootstrapType = module.type as ClassType;
+                const bootstrapType = module.type as Type;
                 return new Class(DynamicModule, {
                     name: 'DynamicModule',
                     type: DynamicModule,
@@ -193,7 +192,7 @@ export class Application<T = any> {
             ...module,
             module: true,
             imports: module.imports ? getModuleType(module.imports) : Empty,
-            exports: module.exports ? lang.getTypes<ClassType>(module.exports) : Empty,
+            exports: module.exports ? lang.getTypes<Type>(module.exports, true) : Empty,
             bootstrap: module.bootstrap ? lang.getTypes(module.bootstrap) : null
         } as ModuleDef);
     }
@@ -268,11 +267,11 @@ export function bootstrapApplication<T>(option: ApplicationOption<T>): Promise<A
  * 
  * 根据模块，环境变量启动运行应用程序
  *
- * @param {Type<T>} target target class type.
+ * @param {AbstractType<T>} target target class type.
  * @param {EnvironmentOption} [option] option {@link EnvironmentOption} application run depdences.
  * @returns async returnning instance of {@link ApplicationContext}.
  */
-export function bootstrapApplication<T>(target: Type<T>, option?: EnvironmentOption): Promise<ApplicationContext<T>>;
+export function bootstrapApplication<T>(target: AbstractType<T>, option?: EnvironmentOption): Promise<ApplicationContext<T>>;
 export function bootstrapApplication<T>(target: any, option?: EnvironmentOption): Promise<ApplicationContext<T>> {
     return new Application<T>(option ? { module: target, ...option } as ApplicationOption : target).run();
 }

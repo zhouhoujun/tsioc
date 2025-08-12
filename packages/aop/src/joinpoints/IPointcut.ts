@@ -1,4 +1,4 @@
-import { Type } from '@tsdi/ioc';
+import { AbstractType } from '@tsdi/ioc';
 
 /**
  * pointcut.
@@ -22,6 +22,6 @@ export interface IPointcut {
 
     accessor?: 'get' | 'set' | 'value';
 
-    type?: Type;
+    type?: AbstractType;
 
 }

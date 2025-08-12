@@ -1,4 +1,4 @@
-import { ActionTypes, createDecorator, ParamPropMetadata, PropParamDecorator, Type } from '@tsdi/ioc';
+import { ActionTypes, createDecorator, ParamPropMetadata, PropParamDecorator, AbstractType } from '@tsdi/ioc';
 import { RepositoryArgumentResolver } from './repository';
 
 /**
@@ -8,7 +8,7 @@ export interface RepositoryMetadata extends ParamPropMetadata {
     /**
      * model type.
      */
-    model: Type;
+    model: AbstractType;
     /**
      * connection
      */
@@ -24,7 +24,7 @@ export interface RepositoryDecorator {
      * @param modle the model type.
      * @param connection the multi connection name.
      */
-    (model?: Type, connection?: string): PropParamDecorator;
+    (model?: AbstractType, connection?: string): PropParamDecorator;
 }
 
 /**
@@ -33,7 +33,7 @@ export interface RepositoryDecorator {
  */
 export const Repository: RepositoryDecorator = createDecorator<RepositoryMetadata>('Repository', {
     actionType: ActionTypes.inject,
-    props: (model: Type, connection?: string) => ({ model, connection, resolver: RepositoryArgumentResolver })
+    props: (model: AbstractType, connection?: string) => ({ model, connection, resolver: RepositoryArgumentResolver })
 });
 
 /**

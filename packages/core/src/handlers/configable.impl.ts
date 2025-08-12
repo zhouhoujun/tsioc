@@ -1,5 +1,5 @@
 import {
-    InjectFlags, Injector, ProvdierOf, StaticProvider, ClassType, promiseOf, Exception, toProvider, Type, getType, Token, isClassType,
+    InjectFlags, Injector, ProvdierOf, StaticProvider, Type, promiseOf, Exception, toProvider, AbstractType, getType, Token, isType,
     InvocationContext, createContext, ArgumentException, isToken, isArray, isFunction, composeInterceptors, chainFactory, Empty, some
 } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
@@ -23,7 +23,7 @@ export class ConfigableHandler<
 
     private destroy$ = new Subject<void>();
     private chain?: ApplicationInterceptorFn<TInput, TOutput, TContext> | null;
-    private chains: Map<Type | string, ApplicationInterceptorFn<TInput, TOutput, TContext> | null>;
+    private chains: Map<AbstractType | string, ApplicationInterceptorFn<TInput, TOutput, TContext> | null>;
 
     private _guards?: GuardLike[] | null;
 
@@ -63,7 +63,7 @@ export class ConfigableHandler<
         options: TOptions) {
 
         this.options = this.initOptions(options);
-        if (this.options.backend && isClassType(this.options.backend) && !this.injector.has(this.options.backend, InjectFlags.Self)) {
+        if (this.options.backend && isType(this.options.backend) && !this.injector.has(this.options.backend, InjectFlags.Self)) {
             this.injector.inject(this.options.backend);
         }
 
@@ -190,7 +190,7 @@ export class ConfigableHandler<
      * @param type 
      * @returns 
      */
-    protected getChainOf(type: Type | string): ApplicationInterceptorFn<TInput, TOutput> {
+    protected getChainOf(type: AbstractType | string): ApplicationInterceptorFn<TInput, TOutput> {
         let chain = this.chains.get(type);
         if (chain === undefined) {
             chain = this.composeTypeChain(type);
@@ -205,7 +205,7 @@ export class ConfigableHandler<
      * @param type 
      * @returns 
      */
-    protected composeTypeChain(type: Type | string): ApplicationInterceptorFn<TInput, TOutput> | null {
+    protected composeTypeChain(type: AbstractType | string): ApplicationInterceptorFn<TInput, TOutput> | null {
         const filters = this.filterResolver.resolve(type);
         const inteceptors = this.interceptorResolver.resolve(type);
         if (!(filters.length || inteceptors.length)) return null;
@@ -249,7 +249,7 @@ export class ConfigableHandler<
         return composeInterceptors(fns);
     }
 
-    protected getHandlerType(): Type {
+    protected getHandlerType(): AbstractType {
         return this.getOptions().handlerType ?? getType(this)
     }
 
@@ -343,18 +343,18 @@ export function createHandler<TInput, TOutput, TClass extends ConfigableHandler>
     /**
      * execption handlers
      */
-    execptionHandlers?: ClassType<any> | ClassType[] | null,
+    execptionHandlers?: Type<any> | Type[] | null,
     enableTypeChain?: boolean
 ): ConfigableHandler<TInput, TOutput>;
 export function createHandler<TInput, TOutput>(context: Injector | InvocationContext, arg: ConfigableHandlerOptions<TInput> | Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>,
-    interceptorsToken?: Token<ApplicationInterceptor<TInput, TOutput>[]> | ClassType<ConfigableHandler>,
+    interceptorsToken?: Token<ApplicationInterceptor<TInput, TOutput>[]> | Type<ConfigableHandler>,
     guardsToken?: Token<CanHandle[]>,
     filtersToken?: Token<Filter<TInput, TOutput>[]>,
-    execptionHandlers?: ClassType<any> | ClassType[] | null,
+    execptionHandlers?: Type<any> | Type[] | null,
     enableTypeChain?: boolean,
-    type?: ClassType<ConfigableHandler>
+    type?: Type<ConfigableHandler>
 ): ConfigableHandler<TInput, TOutput> {
-    let options: ConfigableHandlerOptions<TInput> & { classType?: ClassType<ConfigableHandler> };
+    let options: ConfigableHandlerOptions<TInput> & { classType?: Type<ConfigableHandler> };
     let Type = type ?? ConfigableHandler;
     if (interceptorsToken && !isFunction(interceptorsToken)) {
         options = {
@@ -368,7 +368,7 @@ export function createHandler<TInput, TOutput>(context: Injector | InvocationCon
     } else {
         options = arg as ConfigableHandlerOptions<TInput>;
         if (interceptorsToken) {
-            Type = interceptorsToken as ClassType;
+            Type = interceptorsToken as Type;
         }
     }
     options = normalizeConfigableHandlerOptions(options);

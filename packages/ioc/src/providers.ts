@@ -1,8 +1,8 @@
-import { ClassType, Modules, Type } from './types';
+import { Type, Modules, AbstractType } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Injector, OptionFlags } from './injector';
 import { isPlainObject } from './utils/obj';
-import { isArray, isBoolean, isDefined, isFunction, isType } from './utils/chk';
+import { isArray, isBoolean, isDefined, isFunction, isAbstractType } from './utils/chk';
 import { ArgumentException } from './exception';
 import { getTypeName } from './utils/lang';
 
@@ -60,10 +60,10 @@ export interface UseClass<T> extends ProviderExts, UseAsStatic {
     /**
      * use class for provide.
      *
-     * @type {ClassType}
+     * @type {Type}
      * @memberof ClassProvider
      */
-    useClass: ClassType<T>;
+    useClass: Type<T>;
     /**
      * A list of `token`s which need to be resolved by the injector.
      * 
@@ -158,9 +158,9 @@ export interface FactoryProvider<T = any> extends Provide<T>, UseFactory<T> { }
  */
 export interface ConstructorProvider<T = any> {
     /**
-     * An injection token. Typically an instance of `CtorType` or `InjectionToken`, but can be `any`.
+     * An injection token. Typically an instance of `Type` or `InjectionToken`, but can be `any`.
      */
-    provide: ClassType<T>;
+    provide: Type<T>;
     /**
      * A list of `token`s which need to be resolved by the injector.
      */
@@ -197,7 +197,7 @@ export interface ExistingProvider<T = any> extends Provide<T>, UseExisting<T> { 
 /**
  * type provider.
  */
-export type TypeProvider<T = any> = ClassType<T>;
+export type TypeProvider<T = any> = Type<T>;
 
 /**
  * dynamic provider.
@@ -238,14 +238,14 @@ export interface ModuleWithProviders<T = any> {
     /**
      * module type
      */
-    module: ClassType<T>;
+    module: Type<T>;
     /**
      * providers for the module
      */
     providers: Provider[];
 }
 
-export type ModuleType<T extends Type = Type> = Modules<T> | ModuleWithProviders | Array<ModuleType>;
+export type ModuleType<T extends AbstractType = AbstractType> = Modules<T> | ModuleWithProviders | Array<ModuleType>;
 
 /**
  * is module providers or not.
@@ -283,9 +283,9 @@ export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: bool
         onRegistered?: (injector: Injector) => void
     };
 
-    if (isType(useOf)) {
+    if (isAbstractType(useOf)) {
         if (provide == useOf) throw new ArgumentException(getTypeName(provide) + ': provide is equals to provider')
-        return { ...options, provide, useClass: useOf as ClassType };
+        return { ...options, provide, useClass: useOf as Type };
     } else if (isPlainObject(useOf) && (isDefined((useOf as UseClass<T>).useClass)
         || isDefined((useOf as UseValue<T>).useValue)
         || isDefined((useOf as UseFactory<T>).useFactory)
@@ -413,7 +413,7 @@ export function toFactory<T>(provide: Token, useOf: ProvdierOf<T>, multi?: boole
             const val = injector.get(useExisting);
             return init ? init(val, injector) : val;
         }
-    } else if (isType(useOf)) {
+    } else if (isAbstractType(useOf)) {
         deps.push(Injector);
         useFactory = (injector: Injector) => {
             const val = injector.get(useOf);

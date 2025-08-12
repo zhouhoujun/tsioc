@@ -2,7 +2,7 @@ import { Abstract } from './metadata/fac';
 import { Class } from './metadata/class';
 import { OnDestroy } from './destroy';
 import { Token } from './tokens';
-import { Type } from './types';
+import { AbstractType } from './types';
 import { Provider } from './providers';
 import { Injector, InjectorScope } from './injector';
 import { ModuleRef } from './module.ref';
@@ -17,7 +17,7 @@ export abstract class Platform implements OnDestroy {
     /**
      * registered modules.
      */
-    abstract get modules(): Map<Type, ModuleRef>;
+    abstract get modules(): Map<AbstractType, ModuleRef>;
     /*
      * platform injector.
      */
@@ -76,24 +76,24 @@ export abstract class Platform implements OnDestroy {
      * get the type private providers.
      * @param type
      */
-    abstract getTypeProvider(type: Type | Class): Provider[];
+    abstract getTypeProvider(type: AbstractType | Class): Provider[];
     /**
      * set type providers.
      * @param type
      * @param providers
      */
-    abstract setTypeProvider(type: Type | Class, ...providers: Provider[]): void;
+    abstract setTypeProvider(type: AbstractType | Class, ...providers: Provider[]): void;
     /**
      * remove type providers.
      * @param type
      * @param providers
      */
-    abstract removeTypeProvider(type: Type | Class, ...providers: Provider[]): void;
+    abstract removeTypeProvider(type: AbstractType | Class, ...providers: Provider[]): void;
     /**
      * clear type provider.
      * @param type 
      */
-    abstract clearTypeProvider(type: Type): void;
+    abstract clearTypeProvider(type: AbstractType): void;
     /**
      * destroy hook.
      */

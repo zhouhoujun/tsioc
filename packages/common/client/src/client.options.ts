@@ -1,5 +1,5 @@
 import { Protocols } from '@tsdi/common';
-import { ModuleType, ProvdierOf, Provider, Token, Type } from '@tsdi/ioc';
+import { ModuleType, ProvdierOf, Provider, Token, AbstractType } from '@tsdi/ioc';
 import { ClientBackend } from './backend';
 import { ClientConfig } from './options';
 import { AbstractClient } from './AbstractClient';
@@ -161,7 +161,7 @@ export type ClientModuleOpts = ClientOpts & {
     /**
      * client type
      */
-    clientType: Type<AbstractClient>;
+    clientType: AbstractType<AbstractClient>;
     /**
      * client provider
      */

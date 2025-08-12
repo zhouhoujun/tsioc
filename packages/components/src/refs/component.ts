@@ -1,4 +1,4 @@
-import { Abstract, Class, Type, InvocationFactory, InvocationOptions, Invocation } from '@tsdi/ioc';
+import { Abstract, Class, AbstractType, InvocationFactory, InvocationOptions, Invocation } from '@tsdi/ioc';
 import { TemplateCompilerOptions } from '../template/compiler';
 import { ViewRef } from './view';
 
@@ -43,7 +43,7 @@ export abstract class ComponentFactory<TOpts extends ComponentOptions = Componen
      * @param option target type invoke option {@link ComponentOptions}
      * @returns instance of {@link ComponentRef}
      */
-    abstract create<T>(type: Type<T> | Class<T>, option?: TOpts): ComponentRef<T>;
+    abstract create<T>(type: AbstractType<T> | Class<T>, option?: TOpts): ComponentRef<T>;
 
 }
 

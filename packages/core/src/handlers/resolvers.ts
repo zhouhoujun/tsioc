@@ -1,9 +1,9 @@
-import { ArgumentException, Type, composeResolver, getType, isArray, isBasic, isDefined, isPrimitiveType, isString, Parameter, Empty, OperationArgumentResolver } from '@tsdi/ioc';
+import { ArgumentException, AbstractType, composeResolver, getType, isArray, isBasic, isDefined, isPrimitiveType, isString, Parameter, Empty, OperationArgumentResolver } from '@tsdi/ioc';
 import { getPipe, ParameterScope, TransportParameter } from './resolver';
 import { HandleContext } from './context';
 
 
-export function missingPipeException<T>(parameter: Parameter<T>, type?: Type, method?: string | symbol) {
+export function missingPipeException<T>(parameter: Parameter<T>, type?: AbstractType, method?: string | symbol) {
     return new ArgumentException(`missing pipe to transform argument ${parameter.name} type, method ${method?.toString()} of class ${type}`)
 }
 

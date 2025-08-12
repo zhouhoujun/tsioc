@@ -1,4 +1,4 @@
-import { Type, ActionTypes, createDecorator, MethodMetadata } from '@tsdi/ioc';
+import { AbstractType, ActionTypes, createDecorator, MethodMetadata } from '@tsdi/ioc';
 import { TransactionResolver } from './resolver';
 
 /**
@@ -78,6 +78,6 @@ export interface TransactionalMetadata extends MethodMetadata {
     /**
      * rollback for.
      */
-    rollbackFor?: Type | Type[];
+    rollbackFor?: AbstractType | AbstractType[];
 }
 

@@ -1,4 +1,4 @@
-import { Type, TypeOf } from './types';
+import { AbstractType, TypeOf } from './types';
 import { Token } from './tokens';
 import { ParameterMetadata } from './metadata/meta';
 import { InvocationContext } from './context';
@@ -14,7 +14,7 @@ export interface Parameter<T = any> extends ParameterMetadata {
     /**
      * type.
      */
-    type?: Type<T>;
+    type?: AbstractType<T>;
     /**
      * provider type
      */
@@ -38,7 +38,7 @@ export interface OperationArgumentResolver<TParameter extends Parameter = Parame
      * @param parameter argument type
      * @param args gave arguments
      */
-    resolve<T>(parameter: TParameter, ctx: TCtx, target?: Type): T | null;
+    resolve<T>(parameter: TParameter, ctx: TCtx, target?: AbstractType): T | null;
 }
 
 /**

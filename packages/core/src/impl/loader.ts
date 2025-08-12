@@ -1,4 +1,4 @@
-import { Injector, isArray, isMetadataObject, isString, lang, Modules, noPointcut, Type } from '@tsdi/ioc';
+import { Injector, isArray, isMetadataObject, isString, lang, Modules, noPointcut, AbstractType, Type, isType } from '@tsdi/ioc';
 import { LoadType, ModuleLoader, PathModules } from '../ModuleLoader';
 
 /**
@@ -58,7 +58,7 @@ export class DefaultModuleLoader extends ModuleLoader {
      */
     async loadType(mdl: LoadType): Promise<Type[]> {
         const mdls = await this.getMoudle(mdl);
-        return lang.getTypes(mdls)
+        return lang.getTypes(mdls, true)
     }
 
     /**
@@ -69,7 +69,7 @@ export class DefaultModuleLoader extends ModuleLoader {
      */
     async loadTypes(modules: LoadType[]): Promise<Type[][]> {
         const mdls = await this.load(modules);
-        return mdls.map(md => lang.getTypes(md))
+        return mdls.map(md => lang.getTypes(md, true))
     }
 
     require(moduleName: string): Promise<any> {

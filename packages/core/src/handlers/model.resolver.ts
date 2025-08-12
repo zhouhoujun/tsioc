@@ -1,4 +1,4 @@
-import { Parameter, tokenId, Invocation, Type, PropertyMetadata, OperationArgumentResolver } from '@tsdi/ioc';
+import { Parameter, tokenId, Invocation, AbstractType, PropertyMetadata, OperationArgumentResolver } from '@tsdi/ioc';
 import { HandleContext } from './context';
 
 
@@ -24,9 +24,9 @@ import { HandleContext } from './context';
      * @param type model type.
      * @returns boolean.
      */
-    hasModel(type: Type | undefined): boolean;
+    hasModel(type: AbstractType | undefined): boolean;
     
-    getPropertyMeta(type: Type): PropertyMetadata[];
+    getPropertyMeta(type: AbstractType): PropertyMetadata[];
 }
 
 /**

@@ -1,4 +1,4 @@
-import { Abstract, Type } from '@tsdi/ioc';
+import { Abstract, AbstractType } from '@tsdi/ioc';
 import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
 
 /**
@@ -7,7 +7,7 @@ import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
 @Abstract()
 export abstract class UnitRunner<T = object> {
 
-    abstract get type(): Type<T>;
+    abstract get type(): AbstractType<T>;
     /**
      * run test.
      */

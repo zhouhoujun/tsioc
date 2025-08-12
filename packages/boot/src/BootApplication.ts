@@ -1,4 +1,4 @@
-import { ClassType, Modules, Provider, StaticProviders, Type } from '@tsdi/ioc';
+import { Type, Modules, Provider, StaticProviders, AbstractType } from '@tsdi/ioc';
 import { Application, ApplicationArguments, ApplicationContextFactory, DEFAULTA_PROVIDERS, ModuleLoader, PROCESS_ROOT } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { ConfigureMergerImpl, DefaultConfigureManager } from './configure/manager';
@@ -18,7 +18,7 @@ import { MvcModule } from './mvc/mvc.module';
  */
 export class BootApplication<T = any, TArg = ApplicationArguments> extends Application<T, TArg> {
 
-    constructor(target: ClassType<T> | BootApplicationOption<T>, loader?: ModuleLoader) {
+    constructor(target: Type<T> | BootApplicationOption<T>, loader?: ModuleLoader) {
         super(target, loader)
     }
 
@@ -81,11 +81,11 @@ export class BootApplication<T = any, TArg = ApplicationArguments> extends Appli
      * run application.
      *
      * @static
-     * @param {Type<T>} target
+     * @param {AbstractType<T>} target
      * @param {BootApplicationOption} [option]  application run depdences.
      * @returns {Promise<IBootContext>}
      */
-    static run<T, TArg extends ApplicationArguments>(target: Type<T>, option?: BootEnvironmentOption<TArg>): Promise<BootApplicationContext<T, TArg>>;
+    static run<T, TArg extends ApplicationArguments>(target: AbstractType<T>, option?: BootEnvironmentOption<TArg>): Promise<BootApplicationContext<T, TArg>>;
     static run<T, TArg extends ApplicationArguments>(target: any, option?: BootEnvironmentOption<TArg>): Promise<BootApplicationContext<T, TArg>> {
         return new BootApplication<T, TArg>(option ? { module: target, ...option } as BootApplicationOption<T, TArg> : target).run() as Promise<BootApplicationContext<T, TArg>>
     }

@@ -1,5 +1,5 @@
 import { ApplicationArguments, ApplicationContext, ApplicationOption, EnvironmentOption } from '@tsdi/core';
-import { Abstract, ClassType, ModuleDef, ModuleMetadata, Type } from '@tsdi/ioc';
+import { Abstract, Type, ModuleDef, ModuleMetadata, AbstractType } from '@tsdi/ioc';
 import { ApplicationConfiguration, ConfigureManager } from './configure/config';
 
 @Abstract()
@@ -43,8 +43,8 @@ export interface BootApplicationOption<T = any, TArg = any> extends BootEnvironm
     /**
      * target module type.
      *
-     * @type {ClassType}
+     * @type {Type}
      */
-    module: ClassType<T> | ModuleDef<T> | ModuleMetadata;
+    module: Type<T> | ModuleDef<T> | ModuleMetadata;
 
 }

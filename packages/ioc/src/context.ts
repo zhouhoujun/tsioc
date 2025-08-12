@@ -1,4 +1,4 @@
-import { Type } from './types';
+import { AbstractType } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
@@ -39,7 +39,7 @@ export abstract class InvocationContext implements Destroyable, OnDestroy {
     /**
      * invocation target.
      */
-    abstract get targetType(): Type | undefined;
+    abstract get targetType(): AbstractType | undefined;
     /**
      * named of invocation method.
      */
@@ -110,7 +110,7 @@ export abstract class InvocationContext implements Destroyable, OnDestroy {
      * @param target resolve parameter for target type. 
      * @returns the parameter value in this context.
      */
-    abstract resolveArgument<T>(meta: Parameter<T>, target?: Type, failed?: (target: Type, propertyKey: string) => void): T | null;
+    abstract resolveArgument<T>(meta: Parameter<T>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null;
     /**
      * context destroyed or not.
      * 
@@ -141,7 +141,7 @@ export abstract class InvocationContext implements Destroyable, OnDestroy {
  * @param options 
  * @returns 
  */
-export function createContext(parent: Injector | InvocationContext, options?: TargetInvokeArguments, scope?: Type | 'static'): InvocationContext {
+export function createContext(parent: Injector | InvocationContext, options?: TargetInvokeArguments, scope?: AbstractType | 'static'): InvocationContext {
     return INVOCATION_CONTEXT_IMPL.create(parent, options, scope)
 }
 
@@ -154,7 +154,7 @@ export const INVOCATION_CONTEXT_IMPL = {
      * @param parent parent context or parent injector. 
      * @param options invocation options.
      */
-    create(parent: Injector | InvocationContext, options?: TargetInvokeArguments, scope?: Type | 'static'): InvocationContext {
+    create(parent: Injector | InvocationContext, options?: TargetInvokeArguments, scope?: AbstractType | 'static'): InvocationContext {
         throw new Exception('not implemented.')
     }
 };
@@ -237,7 +237,7 @@ export interface TargetInvokeArguments extends InvokeArguments {
     /**
      * invocation invoke target type.
      */
-    targetType?: Type;
+    targetType?: AbstractType;
     /**
      * named of invocation target propertyKey.
      */
@@ -256,7 +256,7 @@ export interface InvocationOptions<T = any> extends InvokeParentContext, InvokeA
     /**
      * invocation invoke target type.
      */
-    targetType?: Type<T>;
+    targetType?: AbstractType<T>;
     /**
      * instance or instance factory of target type.
      */

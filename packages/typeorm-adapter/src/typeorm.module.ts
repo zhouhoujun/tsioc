@@ -1,4 +1,4 @@
-import { Module, ModuleWithProviders, ProvdierOf, Type, toProvider } from '@tsdi/ioc';
+import { Module, ModuleWithProviders, ProvdierOf, AbstractType, toProvider, Type } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { ConnectionOptions, CONNECTIONS, RepositoryArgumentResolver, TransactionManager, TransactionResolver } from '@tsdi/repository';
 import { DataSource, DataSourceOptions } from 'typeorm';

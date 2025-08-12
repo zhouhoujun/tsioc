@@ -1,4 +1,4 @@
-import { Abstract, HandlerLike, ProvidedInMetadata, Type, TypeDef } from '@tsdi/ioc';
+import { Abstract, HandlerLike, ProvidedInMetadata, AbstractType, TypeDef } from '@tsdi/ioc';
 import { ApplicationInterceptor, Backend, ApplicationHandler } from '@tsdi/core';
 import { Pattern, Protocols, PatternFormatter } from '@tsdi/common';
 import { Observable } from 'rxjs';
@@ -106,7 +106,7 @@ export interface RouteMappingOptions<T = any> extends RouteOptions<T> {
      * parent router.
      * default register in root handle queue.
      */
-    router?: Type<Router>;
+    router?: AbstractType<Router>;
     /**
      * version of api.
      */

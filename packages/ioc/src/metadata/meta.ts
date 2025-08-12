@@ -1,4 +1,4 @@
-import { Type, ClassType, DesignParam, Modules } from '../types';
+import { AbstractType, Type, DesignParam, Modules } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { ModuleType, Provider } from '../providers';
 import { ArgumentResolver } from '../resolver';
@@ -14,7 +14,7 @@ export interface TypeMetadata {
     /**
      * class type.
      */
-    type?: Type;
+    type?: AbstractType;
 }
 
 
@@ -73,7 +73,7 @@ export interface RefProvider {
      *
      * @type {Token}
      */
-    target: Type;
+    target: AbstractType;
 
     /**
      * ref provide
@@ -95,7 +95,7 @@ export interface ProvidedInTargetMetadata {
      *
      * @type {Token}
      */
-    target: Type;
+    target: AbstractType;
 
     /**
      * ref provide
@@ -133,7 +133,7 @@ export interface PropertyMetadata extends ProvideMetadata {
      *
      * @type {SymbolType}
      */
-    type?: Type;
+    type?: AbstractType;
     /**
      * property name
      *
@@ -153,7 +153,7 @@ export interface MethodMetadata extends Record<string, any> {
     /**
      * method returnning type.
      */
-    type?: Type;
+    type?: AbstractType;
     /**
      * param providers
      *
@@ -222,7 +222,7 @@ export interface ProvidedInMetadata {
     /**
      * the token provided in.
      */
-    providedIn?: Type | 'root' | 'platform';
+    providedIn?: AbstractType | 'root' | 'platform';
 }
 
 
@@ -304,17 +304,17 @@ export interface ModuleMetadata extends ProvidedInMetadata, ProvidersMetadata {
      *
      * @type {Modules[]}
      */
-    imports?: ModuleType<ClassType>[];
+    imports?: ModuleType<Type>[];
     /**
      * exports modules
      *
      * @type {Modules[]}
      */
-    exports?: Modules<ClassType>[];
+    exports?: Modules<Type>[];
     /**
      * declaration the set of components, directives, pipes ... of this module.
      */
-    declarations?: Modules<ClassType>[];
+    declarations?: Modules<Type>[];
 }
 
 /**

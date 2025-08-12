@@ -3,7 +3,7 @@ import { ModuleType, ModuleWithProviders, Provider } from './providers';
 import { Injector } from './injector';
 import { Abstract } from './metadata/fac';
 import { Class } from './metadata/class';
-import { Type, ClassType } from './types';
+import { AbstractType, Type } from './types';
 import { isType } from './utils/chk';
 import { deepForEach } from './utils/lang';
 import { isPlainObject } from './utils/obj';
@@ -68,7 +68,7 @@ export interface ModuleOption {
     /**
      * dependence modules. register before module injector init.
      */
-    deps?: ModuleType[];
+    deps?: ModuleType<Type>[];
     /**
      * moduel scope.
      */
@@ -81,11 +81,11 @@ export interface ModuleOption {
 
 }
 
-export function getModuleType(input: any[]): (ClassType | ModuleWithProviders)[] {
-    const types: (ClassType | ModuleWithProviders)[] = [];
-    deepForEach<Type | ModuleWithProviders>(input, ty => {
+export function getModuleType(input: any[]): (Type | ModuleWithProviders)[] {
+    const types: (Type | ModuleWithProviders)[] = [];
+    deepForEach<AbstractType | ModuleWithProviders>(input, ty => {
         if (isType(ty) || (ty as ModuleWithProviders).module) {
-            types.push(ty as ClassType | ModuleWithProviders)
+            types.push(ty as Type | ModuleWithProviders)
         }
     }, v => isPlainObject(v) && !(v as ModuleWithProviders).module);
     return types

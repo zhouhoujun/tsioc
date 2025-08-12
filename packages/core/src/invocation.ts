@@ -1,4 +1,4 @@
-import { Abstract, Type, Invocation, ProvidedInMetadata, ProvdierOf, StaticProvider, InvocationOptions, InvocationFactory, Injector } from '@tsdi/ioc';
+import { Abstract, AbstractType, Invocation, ProvidedInMetadata, ProvdierOf, StaticProvider, InvocationOptions, InvocationFactory, Injector } from '@tsdi/ioc';
 import { ConfigableHandlerOptions, HandlerService } from './handlers/configable';
 import { Observable } from 'rxjs';
 import { PipeTransform } from './pipes/pipe';
@@ -138,6 +138,6 @@ export interface InvocationHandlerOptions<T = any> extends Omit<ConfigableHandle
     /**
      * endpoint handler response as.
      */
-    response?: 'body' | 'header' | 'response' | Type<Respond<T>> | ((input: T, returnning: any) => void);
+    response?: 'body' | 'header' | 'response' | AbstractType<Respond<T>> | ((input: T, returnning: any) => void);
 
 }

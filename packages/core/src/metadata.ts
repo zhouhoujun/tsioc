@@ -1,8 +1,8 @@
 import {
-    isUndefined, Type, createDecorator, Provider, InjectableMetadata, PropertyMetadata, ActionTypes, InjectFlags,
+    isUndefined, AbstractType, createDecorator, Provider, InjectableMetadata, PropertyMetadata, ActionTypes, InjectFlags,
     MethodPropDecorator, Token, ArgumentException, object2string, InvokeArguments,
     isString, Parameter, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
-    ModuleType, ClassType, MutilProvider, Class, Injector, ProvidedInMetadata, AnnotationMetadata,
+    ModuleType, Type, MutilProvider, Class, Injector, ProvidedInMetadata, AnnotationMetadata,
     Invocation
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
@@ -76,7 +76,7 @@ export const Runner: Runner = createDecorator('Runner', {
 /**
  * pipe decorator.
  */
-export type PipeDecorator = <TFunction extends Type<PipeTransform>>(target: TFunction) => TFunction | void;
+export type PipeDecorator = <TFunction extends AbstractType<PipeTransform>>(target: TFunction) => TFunction | void;
 
 /**
  * Pipe decorator.
@@ -89,7 +89,7 @@ export interface Pipe {
      * Pipe decorator, define the class as pipe.
      *
      * @Pipe
-     * @param {Type} toType the type transform to.
+     * @param {AbstractType} toType the type transform to.
      * @param {boolean} pure If Pipe is pure (its output depends only on its input.) defaut true.
      */
     (name: string, pure?: boolean): PipeDecorator;
@@ -161,7 +161,7 @@ export interface ConfgiurationMetadata extends InjectableMetadata {
      *
      * @type {Modules[]}
      */
-    imports?: ModuleType<ClassType>[];
+    imports?: ModuleType<Type>[];
 }
 
 /**
@@ -255,15 +255,15 @@ export interface EventHandler {
     /**
      * `EventHandler` dectorator, event message handle. use to handle event message of {@link  ApplicationEventPublisher}.
      *
-     * @param {Type} event message match pattern.
+     * @param {AbstractType} event message match pattern.
      * @param {order?: number } option message match option.
      */
-    (event: Type<ApplicationEvent>, option?: InvocationHandlerOptions): MethodDecorator;
+    (event: AbstractType<ApplicationEvent>, option?: InvocationHandlerOptions): MethodDecorator;
 }
 
-function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string, runtime?: boolean) {
+function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name: string, runtime?: boolean) {
     return createDecorator(name, {
-        props: (filter?: Type | string, options?: { order?: number }) => ({ filter, ...options }),
+        props: (filter?: AbstractType | string, options?: { order?: number }) => ({ filter, ...options }),
         design: {
             method: runtime === true ? undefined : (ctx) => {
                 const typeRef = ctx.class;
@@ -274,7 +274,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                 const invocation = typeRef.createInvocation(injector);
                 const currMulticaster = injector.get(ApplicationEventMulticaster);
                 decors.forEach(decor => {
-                    const { filter, order, providedIn, ...options } = decor.metadata as InvocationHandlerOptions & { filter: Type<ApplicationEvent> & { getStrategy?: () => string } };
+                    const { filter, order, providedIn, ...options } = decor.metadata as InvocationHandlerOptions & { filter: AbstractType<ApplicationEvent> & { getStrategy?: () => string } };
                     const handler = createInvocationHandler(invocation, options, decor.propertyKey);
                     const event = filter ?? defaultFilter;
                     const isFILO = isFunction(event.getStrategy) && event.getStrategy() == 'FILO';
@@ -298,7 +298,7 @@ function createEventHandler(defaultFilter: Type<ApplicationEvent>, name: string,
                 const invocation = typeRef.createInvocation(injector, { instance: ctx.instance });
                 const currMulticaster = injector.get(ApplicationEventMulticaster);
                 decors.forEach(decor => {
-                    const { filter, order, providedIn, ...options } = decor.metadata as InvocationHandlerOptions & { filter: Type<ApplicationEvent> & { getStrategy?: () => string } };
+                    const { filter, order, providedIn, ...options } = decor.metadata as InvocationHandlerOptions & { filter: AbstractType<ApplicationEvent> & { getStrategy?: () => string } };
                     const handler = createInvocationHandler(invocation, options, decor.propertyKey);
                     const event = filter ?? defaultFilter;
                     const isFILO = isFunction(event.getStrategy) && event.getStrategy() == 'FILO';
@@ -326,7 +326,7 @@ export interface EventHandlerMetadata<TArg> extends InvocationHandlerOptions<TAr
     /**
      * execption type.
      */
-    filter: Type;
+    filter: AbstractType;
 }
 
 /**
@@ -466,10 +466,10 @@ export interface Interceptable {
     /**
      * Interceptable decorator, for class. use to define the class as interceptor register in global interceptor.
      *
-     * @param {Type} target intercept target.
+     * @param {AbstractType} target intercept target.
      * @param  {Omit<InterceptMetadata, 'target'>} option intercept options.
      */
-    (target: Type | string, option?: Omit<InterceptMetadata, 'target'>): InterceptDecorator;
+    (target: AbstractType | string, option?: Omit<InterceptMetadata, 'target'>): InterceptDecorator;
 
 }
 
@@ -482,7 +482,7 @@ export interface Interceptable {
  * @exports {@link Interceptable}
  */
 export const Interceptable: Interceptable = createDecorator('Interceptable', {
-    props: (target: Type | string, options?: InvocationHandlerOptions) => ({ target, ...options }),
+    props: (target: AbstractType | string, options?: InvocationHandlerOptions) => ({ target, ...options }),
     design: {
         method: (ctx) => {
             const typeRef = ctx.class;
@@ -498,8 +498,8 @@ export const Interceptable: Interceptable = createDecorator('Interceptable', {
                     providedIn ? injector.platform().getInjector(providedIn).inject(provider) : injector.inject(provider);
                 } else {
                     const resolver = providedIn ? injector.platform().getInjector(providedIn).get(InterceptorResolver) : currResolver;
-                    resolver.addInterceptor(target as Type | string, interceptor, order);
-                    invocation.onDestroy(() => resolver.removeInterceptor(target as Type | string, interceptor));
+                    resolver.addInterceptor(target as AbstractType | string, interceptor, order);
+                    invocation.onDestroy(() => resolver.removeInterceptor(target as AbstractType | string, interceptor));
 
                 }
             });
@@ -516,10 +516,10 @@ export interface Filterable {
     /**
      * Filterable decorator, for class. use to define the class as filter register in global filter.
      *
-     * @param {Type} target filter target.
+     * @param {AbstractType} target filter target.
      * @param { Omit<InterceptMetadata, 'filter'>} option filter options.
      */
-    (target: Type | string, option?: Omit<InterceptMetadata, 'target'>): FilterDecorator;
+    (target: AbstractType | string, option?: Omit<InterceptMetadata, 'target'>): FilterDecorator;
 }
 
 
@@ -531,7 +531,7 @@ export interface Filterable {
  * @exports {@link Filterable}
  */
 export const Filterable: Filterable = createDecorator('Filterable', {
-    props: (target: Type | string, options?: InvocationHandlerOptions) => ({ target, ...options }),
+    props: (target: AbstractType | string, options?: InvocationHandlerOptions) => ({ target, ...options }),
     design: {
         method: (ctx) => {
             const typeRef = ctx.class;
@@ -547,8 +547,8 @@ export const Filterable: Filterable = createDecorator('Filterable', {
                     providedIn ? injector.platform().getInjector(providedIn).inject(provider) : injector.inject(provider);
                 } else {
                     const resolver = providedIn ? injector.platform().getInjector(providedIn).get(FilterResolver) : currResolver;
-                    resolver.addFilter(target as Type | string, filter, order);
-                    invocation.onDestroy(() => resolver.removeFilter(target as Type | string, filter));
+                    resolver.addFilter(target as AbstractType | string, filter, order);
+                    invocation.onDestroy(() => resolver.removeFilter(target as AbstractType | string, filter));
                 }
             });
         }
@@ -565,7 +565,7 @@ export interface FilterHandlerMetadata<TArg> extends InvocationHandlerOptions<TA
     /**
      * filter type.
      */
-    filter: Type | string;
+    filter: AbstractType | string;
 }
 
 
@@ -579,10 +579,10 @@ export interface FilterHandler {
     /**
      * FilterHandler decorator, for class. use to define the class as handler handle register in global filter.
      *
-     * @param {Type} filter message match pattern.
+     * @param {AbstractType} filter message match pattern.
      * @param {order?: number } option message match option.
      */
-    <TArg = any>(filter: Type | string, option?: InvocationHandlerOptions<TArg>): MethodDecorator;
+    <TArg = any>(filter: AbstractType | string, option?: InvocationHandlerOptions<TArg>): MethodDecorator;
 }
 
 /**
@@ -592,7 +592,7 @@ export interface FilterHandler {
  * @exports {@link FilterHandler}
  */
 export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
-    props: (filter?: Type | string, options?: InvocationHandlerOptions) => ({ filter, ...options }),
+    props: (filter?: AbstractType | string, options?: InvocationHandlerOptions) => ({ filter, ...options }),
     design: {
         method: (ctx) => {
             const typeRef = ctx.class;
@@ -625,7 +625,7 @@ export interface ExceptionHandler {
      * @param {string} pattern message match pattern.
      * @param {order?: number } option message match option.
      */
-    (execption: Type<Error>, option?: InvocationHandlerOptions): MethodDecorator;
+    (execption: AbstractType<Error>, option?: InvocationHandlerOptions): MethodDecorator;
 }
 
 /**
@@ -648,7 +648,7 @@ export interface PipeMetadata extends AnnotationMetadata {
     /**
      * pipe class type.
      */
-    type?: Type;
+    type?: AbstractType;
     /**
      * name of pipe.
      */
@@ -709,7 +709,7 @@ export const Payload: TransportParameterDecorator = createParamDecorator('Payloa
  * @exports {@link TransportParameterDecorator}
  */
 export const Topic: TransportParameterDecorator = createParamDecorator('Topic', {
-    props: (field: string, pipe?: { pipe: string | Type<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
+    props: (field: string, pipe?: { pipe: string | AbstractType<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
         if (meta.flags) {
             meta.flags |= InjectFlags.Request;

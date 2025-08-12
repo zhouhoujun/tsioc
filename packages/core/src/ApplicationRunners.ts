@@ -1,4 +1,4 @@
-import { Abstract, Class, noPointcut, OnDestroy, ProvdierOf, Invocation, StaticProvider, Type, InvocationOptions } from '@tsdi/ioc';
+import { Abstract, Class, noPointcut, OnDestroy, ProvdierOf, Invocation, StaticProvider, AbstractType, InvocationOptions } from '@tsdi/ioc';
 import { CanHandle } from './guard';
 import { ApplicationInterceptor } from './ApplicationInterceptor';
 import { PipeTransform } from './pipes/pipe';
@@ -25,35 +25,35 @@ export abstract class ApplicationRunners implements HandlerService, OnDestroy {
    * attach runner
    * @param type 
    */
-  abstract attach<T>(type: Type<T> | Class<T>, options: InvocationHandlerOptions<T>): Invocation<T>;
+  abstract attach<T>(type: AbstractType<T> | Class<T>, options: InvocationHandlerOptions<T>): Invocation<T>;
 
   /**
    * detach runner
    * @param type 
    */
-  abstract detach<T>(type: Type<T> | Class<T>): void;
+  abstract detach<T>(type: AbstractType<T> | Class<T>): void;
 
   /**
    * has operation or not.
    * @param type 
    */
-  abstract has<T>(type: Type<T>): boolean;
+  abstract has<T>(type: AbstractType<T>): boolean;
 
   /**
    * get Invocation of type.
    * @param type 
    */
-  abstract getRef<T>(type: Type<T>, idx?: number): Invocation<T>;
+  abstract getRef<T>(type: AbstractType<T>, idx?: number): Invocation<T>;
   /**
    * get Invocation of type.
    * @param type 
    */
-  abstract getRefs<T>(type: Type<T>): Invocation<T>[];
+  abstract getRefs<T>(type: AbstractType<T>): Invocation<T>[];
 
   /**
    * run all runners.
    */
-  abstract run(type?: Type|Type[]): Promise<void>;
+  abstract run(type?: AbstractType|AbstractType[]): Promise<void>;
 
   /**
    * stop all runners.

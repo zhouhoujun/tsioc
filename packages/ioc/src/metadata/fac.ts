@@ -4,7 +4,7 @@ import { DecoratorOption, dispatchMethodDecor, dispatchParamDecor, dispatchPrope
 import { Decors, ActionTypes, DecoratorType, DecoratorFn } from './class';
 import { isUndefined, isNumber, isString, isArray } from '../utils/chk';
 import { getToken, Token } from '../tokens';
-import { Type } from '../types';
+import { AbstractType } from '../types';
 import { isMetadataObject } from '../utils/obj';
 import { Exception } from '../exception';
 import { composeHandlers, HandlerFn } from '../handler';
@@ -126,7 +126,7 @@ export interface IClassDecorator {
 /**
  * class method decorator.
  */
-export type ClassMethodDecorator = (target: Object | Type, propertyKey?: string | symbol | undefined, descriptor?: TypedPropertyDescriptor<any>) => void;
+export type ClassMethodDecorator = (target: Object | AbstractType, propertyKey?: string | symbol | undefined, descriptor?: TypedPropertyDescriptor<any>) => void;
 
 /**
  * method property decorator.

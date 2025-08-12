@@ -5,7 +5,7 @@ import { Class, ModuleDef } from '../metadata/class';
 import { ModuleOption, ModuleRef } from '../module.ref';
 import { Platform } from '../platform';
 import { isModuleProviders, ModuleWithProviders, Provider } from '../providers';
-import { Type, Empty } from '../types';
+import { AbstractType, Empty, Type } from '../types';
 import { DefaultInjector, mergePromise } from './injector';
 
 
@@ -14,14 +14,14 @@ import { DefaultInjector, mergePromise } from './injector';
  */
 export class DefaultModuleRef<T = any> extends DefaultInjector implements ModuleRef<T> {
     private _instance!: T;
-    private _type: Type;
-    private _typeRefl: Class;
+    private _type: Type<T>;
+    private _typeRefl: Class<T>;
 
-    constructor(moduleType: Class, parent: Injector, option: ModuleOption = {}) {
+    constructor(moduleType: Class<T>, parent: Injector, option: ModuleOption = {}) {
         super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type);
         this.isStatic = (moduleType.getAnnotation().static || option.isStatic) !== false;
         this._typeRefl = moduleType;
-        this._type = moduleType.type;
+        this._type = moduleType.type as Type<T>;
 
         this.setValue(ModuleRef, this);
         this.initWithOptions(option);
@@ -100,7 +100,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
  */
 export function createModuleRef<T>(module: Type<T> | Class<T> | ModuleWithProviders<T>, parent: Injector, option?: ModuleOption): ModuleRef<T> {
     if (isModuleProviders(module)) {
-        return new DefaultModuleRef(getClass<ModuleDef>(module.module), parent, {
+        return new DefaultModuleRef(getClass(module.module), parent, {
             ...option,
             providers: option?.providers?.length ? [module.providers ?? Empty, option?.providers] : module.providers
         })

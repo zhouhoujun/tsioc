@@ -2,7 +2,7 @@
 /**
  * module object.
  */
-export type Modules<T extends Type = Type> = T | T[] | Record<string, T | Object>;
+export type Modules<T extends AbstractType = AbstractType> = T | T[] | Record<string, T | Object>;
 
 /**
  * object map. 
@@ -23,7 +23,7 @@ export interface DesignParam {
     /**
      * param design type.
      */
-    type?: Type;
+    type?: AbstractType;
 }
 
 /**
@@ -31,7 +31,7 @@ export interface DesignParam {
  */
 export interface MethodAnnotation {
     params: DesignParam[];
-    returnType?: Type;
+    returnType?: AbstractType;
 }
 
 /**
@@ -56,7 +56,7 @@ export interface Annotation<T = any> {
     /**
      * class type.
      */
-    readonly type: Type<T>;
+    readonly type: AbstractType<T>;
     /**
      * class params declaration.
      *
@@ -69,29 +69,29 @@ export interface Annotation<T = any> {
 
 
 /**
- * type
+ * abstract type
  * 
  * 类
  * @export
- * @interface Type
+ * @interface AbstractType
  * @extends {Function}
  * @template T
  */
-export interface Type<T = any> extends Function {
+export interface AbstractType<T = any> extends Function {
     new?(...args: any[]): T;
     prototype: T;
 }
 
 /**
- * class type
+ * type
  * 
  * 可实例化类
  * @export
- * @interface CtorType
- * @extends {Type}
+ * @interface Type
+ * @extends {AbstractType}
  * @template T
  */
-export interface ClassType<T = any> extends Type<T> {
+export interface Type<T = any> extends AbstractType<T> {
     new(...args: any[]): T;
 }
 
@@ -104,7 +104,7 @@ export const typeFac = 'ƿFac';
  * 
  * 带注解的类
  */
-export interface AnnotationType<T = any> extends Type<T> {
+export interface AnnotationType<T = any> extends AbstractType<T> {
     /**
      * class design annotation
      */
@@ -123,7 +123,7 @@ export interface AnnotationType<T = any> extends Type<T> {
 /**
  * type or type instance.
  */
-export type TypeOf<T> = Type<T> | Exclude<T, Function>;
+export type TypeOf<T> = AbstractType<T> | Exclude<T, Function>;
 /**
  * arrayify.
  */

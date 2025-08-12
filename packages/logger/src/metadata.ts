@@ -1,5 +1,5 @@
 import {
-    TypeMetadata, createDecorator, OperationArgumentResolver, Type, isString,
+    TypeMetadata, createDecorator, OperationArgumentResolver, AbstractType, isString,
     lang, PropParamDecorator, ArgumentException, Decors, ActionTypes, isDefined
 } from '@tsdi/ioc';
 import { Level } from './Level';
@@ -23,11 +23,11 @@ export interface LogMetadata extends TypeMetadata {
     /**
      * adapter manager name
      */
-    adapter?: string | Type;
+    adapter?: string | AbstractType;
     /**
      * log for target type.
      */
-    target?: Type;
+    target?: AbstractType;
     /**
      * param name.
      */
@@ -74,7 +74,7 @@ export interface Log<T extends LogMetadata> {
      * @param {string} name the logger name.  Default current class name.
      * @param options the logger options.
      */
-    (name?: string | Type): PropParamDecorator;
+    (name?: string | AbstractType): PropParamDecorator;
     /**
      * inject logger for property or parameter with the name in {@link ILoggerManager}.
      * @Log
@@ -85,11 +85,11 @@ export interface Log<T extends LogMetadata> {
         /**
          * {string} name the logger name.  Default current class name.
          */
-        logname?: string | Type,
+        logname?: string | AbstractType,
         /**
          * adapter manager name
          */
-        adapter?: string | Type;
+        adapter?: string | AbstractType;
         /**
          * [level] set the logger level.
          */
@@ -120,11 +120,11 @@ export interface Log<T extends LogMetadata> {
         /**
          * use the logger with name.  Default current class name.
          */
-        logname?: string | Type;
+        logname?: string | AbstractType;
         /**
          * adapter manager name
          */
-        adapter?: string | Type;
+        adapter?: string | AbstractType;
         /**
          * set log level to this message.
          */
@@ -166,7 +166,7 @@ const loggerResolver = {
 
         return isDefined(pr.logname || pr.target)
     },
-    resolve: (pr: LogMetadata, ctx, target?: Type) => {
+    resolve: (pr: LogMetadata, ctx, target?: AbstractType) => {
         const managers = ctx.get(LoggerManagers);
         const level = pr.level;
         const logger = managers.getLogger(pr.logname ?? lang.getTypeName(target ?? pr.target), pr.adapter);

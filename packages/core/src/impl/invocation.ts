@@ -1,4 +1,4 @@
-import { InvocationContext, Invocation, createContext, getType, isFunction, isString, Injector, ClassType, Context, invokeTail, InvocationRequest } from '@tsdi/ioc';
+import { InvocationContext, Invocation, createContext, getType, isFunction, isString, Injector, Type, Context, invokeTail, InvocationRequest } from '@tsdi/ioc';
 import { BackendFn } from '../ApplicationHandler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
@@ -128,7 +128,7 @@ export function createInvocationHandler<TInput, TOutput, TClass extends Invocati
     invocation: Invocation<T>,
     options: InvocationHandlerOptions<TInput>,
     propertyKey?: string | symbol,
-    type?: ClassType<TClass>): TClass {
+    type?: Type<TClass>): TClass {
     const Hanlder = type ?? DefaultInvocationHandler;
     options = normalizeConfigableHandlerOptions(options);
     return new Hanlder(invocation, options, propertyKey) as TClass;

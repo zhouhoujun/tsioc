@@ -1,4 +1,4 @@
-import { Abstract, StaticProvider, Type, ProvdierOf, HandlerLike, noPointcut } from '@tsdi/ioc';
+import { Abstract, StaticProvider, AbstractType, ProvdierOf, HandlerLike, noPointcut } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
@@ -61,13 +61,13 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * @param event 
      * @param handler 
      */
-    abstract addListener(event: Type<ApplicationEvent>, handler: HandlerLike, order?: number): this;
+    abstract addListener(event: AbstractType<ApplicationEvent>, handler: HandlerLike, order?: number): this;
     /**
      * add event handler.
      * @param event 
      * @param handler 
      */
-    abstract removeListener(event: Type<ApplicationEvent>, handler: HandlerLike): this;
+    abstract removeListener(event: AbstractType<ApplicationEvent>, handler: HandlerLike): this;
     /**
      * emit event. ailas name of publishEvent
      * @param event the event to publish

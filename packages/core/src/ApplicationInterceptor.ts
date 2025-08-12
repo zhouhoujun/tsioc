@@ -1,5 +1,5 @@
 import {
-    getTokenOf, Token, ProvdierOf, TypeOf, tokenId, Abstract, Type,
+    getTokenOf, Token, ProvdierOf, TypeOf, tokenId, Abstract, AbstractType,
     Interceptor, InterceptorFn, InterceptorLike
 } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
@@ -64,18 +64,18 @@ export abstract class InterceptorResolver {
      * resolve hanlde interceptor.
      * @param target 
      */
-    abstract resolve<T>(target: Type<T> | T | string): ApplicationInterceptorLike[];
+    abstract resolve<T>(target: AbstractType<T> | T | string): ApplicationInterceptorLike[];
     /**
      * add handle interceptor.
      * @param target interceptor for the target type
      * @param interceptor handler interceptor.
      * @param order order.
      */
-    abstract addInterceptor(target: Type | string, interceptor: ApplicationInterceptorLike, order?: number): this;
+    abstract addInterceptor(target: AbstractType | string, interceptor: ApplicationInterceptorLike, order?: number): this;
     /**
      * remove handle interceptor.
      * @param target interceptor for the target type
      * @param interceptor handler interceptor.
      */
-    abstract removeInterceptor(target: Type | string, interceptor: ApplicationInterceptorLike): this;
+    abstract removeInterceptor(target: AbstractType | string, interceptor: ApplicationInterceptorLike): this;
 }

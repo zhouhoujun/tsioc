@@ -1,4 +1,4 @@
-import { Type, ctorName, Injectable, lang } from '@tsdi/ioc';
+import { AbstractType, ctorName, Injectable, lang } from '@tsdi/ioc';
 import { JoinPoint } from '@tsdi/aop';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { InjectRepository, RepositoryMetadata, TransactionalMetadata, TransactionException, TransactionManager, TransactionStatus } from '@tsdi/repository';
@@ -37,18 +37,18 @@ export class TypeormTransactionStatus extends TransactionStatus {
                 if (dec.decorType === 'parameter' && dec.propertyKey === joinPoint.propertyKey) {
                     if (dec.decor === InjectRepository) {
                         joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager))
-                    } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
+                    } else if ((dec.metadata.provider as AbstractType || dec.metadata.type) === EntityManager) {
                         joinPoint.args?.splice(dec.parameterIndex || 0, 1, entityManager)
-                    } else if (isRepository(dec.metadata.provider as Type || dec.metadata.type)) {
-                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as Type || dec.metadata.type, entityManager))
+                    } else if (isRepository(dec.metadata.provider as AbstractType || dec.metadata.type)) {
+                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as AbstractType || dec.metadata.type, entityManager))
                     }
                 } else if (dec.decorType === 'property') {
                     if (dec.decor === InjectRepository) {
                         context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager)
-                    } else if ((dec.metadata.provider as Type || dec.metadata.type) === EntityManager) {
+                    } else if ((dec.metadata.provider as AbstractType || dec.metadata.type) === EntityManager) {
                         context[dec.propertyKey] = entityManager
-                    } else if (isRepository(dec.metadata.provider as Type || dec.metadata.type)) {
-                        context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as Type || dec.metadata.type, entityManager)
+                    } else if (isRepository(dec.metadata.provider as AbstractType || dec.metadata.type)) {
+                        context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as AbstractType || dec.metadata.type, entityManager)
                     }
                 }
             });
@@ -60,7 +60,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
                     if (filed instanceof EntityManager) {
                         context[paramName] = entityManager
                     } else if (filed instanceof Repository) {
-                        context[paramName] = this.getRepository((metadata as RepositoryMetadata).model, metadata.provider as Type || metadata.type, entityManager)
+                        context[paramName] = this.getRepository((metadata as RepositoryMetadata).model, metadata.provider as AbstractType || metadata.type, entityManager)
                     }
                 }
             });
@@ -129,7 +129,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
         }
     }
 
-    protected getRepository<T>(model: Type<T> | undefined, rep: Type | undefined, entityManager: EntityManager) {
+    protected getRepository<T>(model: AbstractType<T> | undefined, rep: AbstractType | undefined, entityManager: EntityManager) {
         if (!model) {
             return entityManager.getCustomRepository(rep!)
         }
@@ -173,6 +173,6 @@ export class TypeormTransactionManager extends TransactionManager {
 
 }
 
-function isRepository(type?: Type) {
+function isRepository(type?: AbstractType) {
     return type && (type === Repository || type === TreeRepository || type === MongoRepository || lang.isExtends(type, Repository))
 }

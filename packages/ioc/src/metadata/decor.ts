@@ -1,4 +1,4 @@
-import { Type, ClassType } from '../types';
+import { AbstractType, Type } from '../types';
 import { isArray, isString } from '../utils/chk';
 import { Token, getToken, InjectFlags } from '../tokens';
 import {
@@ -62,8 +62,8 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
                     def.debug = metadata.debug;
                     def.providers = metadata.providers;
                     if (metadata.imports) def.imports = getModuleType(metadata.imports);
-                    if (metadata.exports) def.exports = getTypes<ClassType>(metadata.exports);
-                    if (metadata.declarations) def.declarations = getTypes<ClassType>(metadata.declarations);
+                    if (metadata.exports) def.exports = getTypes<Type>(metadata.exports, true);
+                    if (metadata.declarations) def.declarations = getTypes<Type>(metadata.declarations, true);
                     if (metadata.bootstrap) def.bootstrap = getTypes(metadata.bootstrap);
                 },
                 ...isArray(hd) ? hd : [hd]
@@ -704,20 +704,20 @@ export interface ProvidedIn {
      *
      * @Refs
      *
-     * @param {Type} target reference to target token.
+     * @param {AbstractType} target reference to target token.
      */
-    (target: Type): ClassDecorator;
+    (target: AbstractType): ClassDecorator;
 
     /**
      * ProvidedIn decorator, for class. use to define the class as service provider for target type.
      *
      * @Refs
      *
-     * @param {Type} target reference to target token.
+     * @param {AbstractType} target reference to target token.
      * @param {Token} provide define this class ref provider for provide.
      * @param {string} [alias] define this class ref provider with alias for provide.
     */
-    (target: Type, provide: Token, alias?: string): ClassDecorator;
+    (target: AbstractType, provide: Token, alias?: string): ClassDecorator;
 
     /**
      * ProvidedIn decorator, for class. use to define the class as service provider for target type.
@@ -735,7 +735,7 @@ export interface ProvidedIn {
  * @ProvidedIn
  */
 export const ProvidedIn: ProvidedIn = createDecorator<ProvidedInTargetMetadata>('ProvidedIn', {
-    props: (target: Type, provide?: Token, alias?: string) => ({ target, provide: getToken(provide!, alias) }),
+    props: (target: AbstractType, provide?: Token, alias?: string) => ({ target, provide: getToken(provide!, alias) }),
     design: {
         afterAnnoation: (ctx) => {
             const meta = ctx.class.getMetadata<ProvidedInTargetMetadata>(ctx.currDecor);
