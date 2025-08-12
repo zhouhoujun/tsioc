@@ -43,6 +43,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
     readonly isResolve: boolean;
 
     request: InvocationRequest | null | undefined;
+    private cache = new Map<Token, Map<InjectFlags, any>>();
     /**
      * get the invocation arguments resolver.
      */
@@ -131,12 +132,6 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
             if (resls?.length) {
                 resolvers.push(composeResolvers(resls));
             }
-            // if (this.options.parent) {
-            //     const prsv = this.options.parent.getResolvers();
-            //     if (prsv?.length) {
-            //         resolvers.push(composeResolvers(prsv));
-            //     }
-            // }
             const defaultResls = this.getDefaultResolvers();
             if (defaultResls?.length) {
                 resolvers.push(composeResolvers(defaultResls));
@@ -165,6 +160,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
                 this._refs!.unshift(j)
             }
         })
+        this.clearCache();
     }
 
     /**
@@ -174,6 +170,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
     removeRef(...contexts: InvocationContext[]): void {
         this.assertNotDestroyed();
         contexts.forEach(context => remove(this._refs, context));
+        this.clearCache();
     }
 
     hasRef(ctx: InvocationContext): boolean {
@@ -195,7 +192,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      */
     has(token: Token, flags?: InjectFlags): boolean {
         this.assertNotDestroyed();
-        return (flags != InjectFlags.HostOnly && this.injector.has(token, flags))
+        return this.cache.get(token)?.has(flags||InjectFlags.Default) || (flags != InjectFlags.HostOnly && this.injector.has(token, flags))
             || this._refs!.some(i => i.has(token, flags))
     }
 
@@ -209,8 +206,18 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      */
     get<T>(token: Token<T>, flags?: InjectFlags): T {
         this.assertNotDestroyed();
-        return (flags != InjectFlags.HostOnly ? this.injector.get(token, null, flags, this) : null)
-            ?? this.getFormRef(token, flags) ?? null as T;
+        let cache = this.cache.get(token);
+        let data = cache?.get(flags || InjectFlags.Default);
+        if (data === undefined) {
+            data = (flags != InjectFlags.HostOnly ? this.injector.get(token, null, flags, this) : null)
+                ?? this.getFormRef(token, flags) ?? null as T;
+            if (!cache) {
+                cache = new Map();
+                this.cache.set(token, cache);
+            }
+            cache.set(flags || InjectFlags.Default, data);
+        }
+        return data;
     }
 
     protected getFormRef<T>(token: Token<T>, flags?: InjectFlags): T | undefined {
@@ -342,7 +349,13 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
         }
     }
 
+    private clearCache() {
+        this.cache.forEach(r=> r?.clear());
+        this.cache.clear();
+    }
+
     protected clear() {
+        this.clearCache()
         this._resolvers = null;
         this._refs = null;
     }
