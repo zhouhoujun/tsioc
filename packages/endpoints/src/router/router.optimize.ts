@@ -1,6 +1,6 @@
 import {
     Type, composeHandlers, DecorDefine, Empty, Exception, getClass, Handler, HandlerFn, hasProps, Injector, Invocation,
-    isArray, isType, isFunction, isRegExp, isString, isAbstractType, ModuleRef, OnDestroy, TypeOf
+    isArray, isType, isFunction, isRegExp, isString, ModuleRef, OnDestroy, TypeOf
 } from '@tsdi/ioc';
 import { ApplicationHandler } from '@tsdi/core';
 import { Pattern, PatternFormatter, Protocols } from '@tsdi/common';
@@ -220,7 +220,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         } else if (route.loadChildren) {
             const res = route.loadChildren();
             const module = await (isObservable(res) ? lastValueFrom(res) : res);
-            if (isAbstractType(module)) {
+            if (isType(module)) {
                 const platform = this.injector.platform();
                 if (!platform.modules.has(module)) {
                     await this.injector.get(ModuleRef).import(module, true);
