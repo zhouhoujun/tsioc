@@ -44,6 +44,9 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
 
     request: InvocationRequest | null | undefined;
     private cache = new Map<Token, Map<InjectFlags, any>>();
+    private rcache = new Map<Token, Map<InjectFlags, any>>();
+    
+    private pcache = new WeakMap<Parameter, any>();
     /**
      * get the invocation arguments resolver.
      */
@@ -192,7 +195,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      */
     has(token: Token, flags?: InjectFlags): boolean {
         this.assertNotDestroyed();
-        return this.cache.get(token)?.has(flags||InjectFlags.Default) || (flags != InjectFlags.HostOnly && this.injector.has(token, flags))
+        return (flags != InjectFlags.HostOnly && this.injector.has(token, flags))
             || this._refs!.some(i => i.has(token, flags))
     }
 
@@ -206,18 +209,8 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      */
     get<T>(token: Token<T>, flags?: InjectFlags): T {
         this.assertNotDestroyed();
-        let cache = this.cache.get(token);
-        let data = cache?.get(flags || InjectFlags.Default);
-        if (data === undefined) {
-            data = (flags != InjectFlags.HostOnly ? this.injector.get(token, null, flags, this) : null)
-                ?? this.getFormRef(token, flags) ?? null as T;
-            if (!cache) {
-                cache = new Map();
-                this.cache.set(token, cache);
-            }
-            cache.set(flags || InjectFlags.Default, data);
-        }
-        return data;
+        return (flags != InjectFlags.HostOnly ? this.injector.get(token, null, flags, this) : null)
+                ?? this.getFormRef(token, flags) ?? null as T
     }
 
     protected getFormRef<T>(token: Token<T>, flags?: InjectFlags): T | undefined {
@@ -263,7 +256,19 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      * @returns 
      */
     resolve<T>(token: Token<T>, flags?: InjectFlags): T {
-        return this.resolveArgument({ provider: token, flags }) as T;
+        this.assertNotDestroyed();
+        let cache = this.rcache.get(token);
+        let data = cache?.get(flags || InjectFlags.Default);
+        if (data === undefined) {
+            data = this.doResolveArgument({ provider: token, flags }) as T;
+            if (!cache) {
+                cache = new Map();
+                this.cache.set(token, cache);
+            }
+            cache.set(flags || InjectFlags.Default, data);
+
+        }
+        return data;
     }
 
     /**
@@ -275,6 +280,20 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      */
     resolveArgument<T>(meta: Parameter<T>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null {
         this.assertNotDestroyed();
+        if(!this.pcache.has(meta)){
+            this.pcache.set(meta, this.doResolveArgument(meta, target, failed)); 
+        }
+        return this.pcache.get(meta)
+    }
+
+    /**
+     * resolve the parameter value.
+     * 
+     * 解析调用参数
+     * @param meta property or parameter metadata type of {@link Parameter}.
+     * @returns the parameter value in this context.
+     */
+    protected doResolveArgument<T>(meta: Parameter<T>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null {
         let result: T | null | undefined;
         const metaRvr = this.getMetaReolver(meta);
         if (metaRvr?.canResolve(meta, this)) {
@@ -350,8 +369,10 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
     }
 
     private clearCache() {
-        this.cache.forEach(r=> r?.clear());
+        this.cache.forEach(r => r?.clear());
         this.cache.clear();
+        this.rcache.forEach(r => r?.clear());
+        this.rcache.clear();
     }
 
     protected clear() {
