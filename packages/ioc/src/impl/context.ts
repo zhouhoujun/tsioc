@@ -44,7 +44,6 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
 
     request: InvocationRequest | null | undefined;
     private cache = new Map<Token, Map<InjectFlags, any>>();
-    private rcache = new Map<Token, Map<InjectFlags, any>>();
     
     private pcache = new WeakMap<Parameter, any>();
     /**
@@ -257,7 +256,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      */
     resolve<T>(token: Token<T>, flags?: InjectFlags): T {
         this.assertNotDestroyed();
-        let cache = this.rcache.get(token);
+        let cache = this.cache.get(token);
         let data = cache?.get(flags || InjectFlags.Default);
         if (data === undefined) {
             data = this.doResolveArgument({ provider: token, flags }) as T;
@@ -371,8 +370,6 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
     private clearCache() {
         this.cache.forEach(r => r?.clear());
         this.cache.clear();
-        this.rcache.forEach(r => r?.clear());
-        this.rcache.clear();
     }
 
     protected clear() {
