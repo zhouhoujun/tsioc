@@ -1,6 +1,5 @@
 import { ResolveInterceptorLike, Parameter, Invocation, TypeOf, Token, getTokenOf, isToken, getTypeName } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
-import { HandleContext } from './context';
 
 /**
  * transport parameter options.
@@ -63,16 +62,16 @@ export function getResolverToken(type: TypeOf<any>, propertyKey?: string): Token
     return getTokenOf(type, 'RESOLVERS', propertyKey);
 }
 
-/**
- * get pipe of transport parameter.
- * @param parameter 
- * @param ctx 
- * @returns 
- */
-export function getPipe<T>(parameter: TransportParameter<T>, ctx: HandleContext, isPrimitive?: boolean): PipeTransform | null {
-    if (parameter.pipe) {
-        if (isToken(parameter.pipe)) return ctx.get<PipeTransform>(parameter.pipe);
-        return parameter.pipe;
-    }
-    return parameter.type ? ctx.get<PipeTransform>(isPrimitive ? parameter.type.name.toLowerCase() : getTypeName(parameter.type)) : null;
-}
+// /**
+//  * get pipe of transport parameter.
+//  * @param parameter 
+//  * @param ctx 
+//  * @returns 
+//  */
+// export function getPipe<T>(parameter: TransportParameter<T>, ctx: HandleContext, isPrimitive?: boolean): PipeTransform | null {
+//     if (parameter.pipe) {
+//         if (isToken(parameter.pipe)) return ctx.get<PipeTransform>(parameter.pipe);
+//         return parameter.pipe;
+//     }
+//     return parameter.type ? ctx.get<PipeTransform>(isPrimitive ? parameter.type.name.toLowerCase() : getTypeName(parameter.type)) : null;
+// }

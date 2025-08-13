@@ -1,7 +1,7 @@
 import { AbstractType, Empty, Type } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getTypeName, getTypeChain } from '../utils/lang';
-import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isAbstractType, getType, isType } from '../utils/chk';
+import { isArray, isDefined, isFunction, isString, isNil, isAbstractType, getType, isType } from '../utils/chk';
 import { ResolveInterceptorLike, Parameter } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeArguments, InvocationRequest } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
@@ -297,18 +297,27 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      * @returns the parameter value in this context.
      */
     protected doResolveArgument<T>(meta: Parameter<T>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null {
-        let result: T | null | undefined;
+        // let result: T | null | undefined;
         const metaRvr = meta.resolver;
+        let resolver: HandlerScope|null;
         if (metaRvr?.length) {
             const platform = this.injector.platform();
-            const scope = new HandlerScope(platform, () => undefined, metaRvr);
-            const result = scope.handle(meta, this);
-            if (!isNil(result)) {
-                return result;
-            }
+            resolver = new HandlerScope(platform, this.getResolver() ?? (() => undefined), metaRvr);
+        } else {
+            resolver = this.getResolver()
         }
 
-        return this.getResolver()?.handle(meta, this, {
+        return resolver?.handle(meta, this, {
+            // next: (res, context) => {
+            //     if (res === undefined) {
+            //         if (failed) {
+            //             failed(target!, meta.propertyKey!)
+            //         } else {
+            //             this.missingException([meta], target!, meta.propertyKey!);
+            //         }
+            //     }
+            //     return res;
+            // },
             error: (error) => {
                 if (failed) {
                     failed(target!, meta.propertyKey!)
@@ -494,9 +503,9 @@ export function getParameterResolver(platform: Platform): HandlerScope<Parameter
             (input, context) => undefined,
             [
                 (input, next, context) => {
-                    if ( input.provider && !input.multi) {
+                    if (input.provider && !input.multi) {
                         return getTokenResolver(platform).handle([input.provider, input.flags], context)
-                    } else if(input.type) {
+                    } else if (input.type) {
                         return getTokenResolver(platform).handle([input.type, input.flags], context)
                     }
                     return next(input, context);

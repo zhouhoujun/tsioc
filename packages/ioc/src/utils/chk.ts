@@ -72,7 +72,7 @@ export function isAbstractType(t: any): t is AbstractType<any> {
  * @returns 
  */
 export function isType(t: any): t is Type<any> {
-    return isAbstractType(t) && !isPrimit(t)
+    return isAbstractType(t) && !isPrimitive(t)
 }
 
 
@@ -289,14 +289,18 @@ export function isRegExp(target: any): target is RegExp {
  * @returns {boolean}
  */
 export function isPrimitiveType(target: any): boolean {
-    return isFunction(target) && isPrimit(target)
+    return isFunction(target) && isPrimitive(target)
 }
 
-export function isPrimitive(target: any): boolean {
-    return isPrimit(getType(target));
+export function isIterableType(target: Function): boolean {
+    return target === Array
+        || target === Set
+        || target === Map
+        || target === WeakMap
+        || target === WeakSet
 }
 
-function isPrimit(target: Function): boolean {
+export function isPrimitive(target: Function): boolean {
     return isBasicType(target)
         || target === Object
         || target === Promise
@@ -317,7 +321,6 @@ function isBasicType(target: Function): boolean {
         || target === Number
         || target === BigInt
         || target === Boolean
-        || target === Array
         || target === Date
         || target === Symbol
 }

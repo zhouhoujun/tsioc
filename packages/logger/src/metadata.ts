@@ -1,6 +1,7 @@
 import {
-    TypeMetadata, createDecorator, OperationArgumentResolver, AbstractType, isString,
-    lang, PropParamDecorator, ArgumentException, Decors, ActionTypes, isDefined
+    TypeMetadata, createDecorator, ResolveInterceptorLike, AbstractType, isString,
+    lang, PropParamDecorator, ArgumentException, Decors, ActionTypes, isDefined,
+    isNil
 } from '@tsdi/ioc';
 import { Level } from './Level';
 import { LoggerManagers } from './manager';
@@ -39,7 +40,7 @@ export interface LogMetadata extends TypeMetadata {
     /**
      * operation argument resolver.
      */
-    resolver?: OperationArgumentResolver;
+    resolver?: ResolveInterceptorLike[];
     /**
      * log level
      */
@@ -137,8 +138,11 @@ export interface Log<T extends LogMetadata> {
 
 }
 
-const loggerResolver = {
-    canResolve: (pr: LogMetadata, ctx) => {
+const loggerResolvers = [
+    (pr: LogMetadata, next, ctx) => {
+        if (isNil(pr.logname || pr.target)) {
+            return next(pr, ctx);
+        }
         const managers = ctx.get(LoggerManagers);
         if (!managers) {
             let local: string;
@@ -163,17 +167,47 @@ const loggerResolver = {
             }
             throw new ArgumentException(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on '${adapter}' adapter,  please register LogConfigure first. `)
         }
-
-        return isDefined(pr.logname || pr.target)
-    },
-    resolve: (pr: LogMetadata, ctx, target?: AbstractType) => {
-        const managers = ctx.get(LoggerManagers);
         const level = pr.level;
-        const logger = managers.getLogger(pr.logname ?? lang.getTypeName(target ?? pr.target), pr.adapter);
+        const logger = managers.getLogger(pr.logname ?? lang.getTypeName(pr.target ?? ctx.targetType), pr.adapter);
         if (level) logger.level = level;
         return logger
-    }
-} as OperationArgumentResolver;
+    },
+    // canResolve: (pr: LogMetadata, ctx) => {
+    //     const managers = ctx.get(LoggerManagers);
+    //     if (!managers) {
+    //         let local: string;
+    //         if (pr.propertyKey && pr.paramName) {
+    //             local = ` method ${ctx.propertyKey?.toString()} param ${pr.paramName} of class `
+    //         } else if (pr.propertyKey) {
+    //             local = ` field ${pr.propertyKey} of class `
+    //         } else {
+    //             local = ' '
+    //         }
+    //         throw new ArgumentException(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on LoggerModule in package '@tsdi/logger',  please register LoggerModule first. `)
+    //     }
+    //     const adapter = pr.adapter;
+    //     if (!managers.getLoggerManager(adapter)) {
+    //         let local: string;
+    //         if (pr.propertyKey && pr.paramName) {
+    //             local = ` method ${ctx.propertyKey?.toString()} param ${pr.paramName} of class `
+    //         } else if (pr.propertyKey) {
+    //             local = ` field ${pr.propertyKey} of class `
+    //         } else {
+    //             local = ' '
+    //         }
+    //         throw new ArgumentException(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on '${adapter}' adapter,  please register LogConfigure first. `)
+    //     }
+
+    //     return isDefined(pr.logname || pr.target)
+    // },
+    // resolve: (pr: LogMetadata, ctx, target?: AbstractType) => {
+    //     const managers = ctx.get(LoggerManagers);
+    //     const level = pr.level;
+    //     const logger = managers.getLogger(pr.logname ?? lang.getTypeName(target ?? pr.target), pr.adapter);
+    //     if (level) logger.level = level;
+    //     return logger
+    // }
+] as ResolveInterceptorLike[];
 
 
 /**
@@ -190,7 +224,7 @@ export const InjectLog: Log<LogMetadata> = createDecorator<LogMetadata>('InjectL
             const metadata = ctx.define.metadata as LogMetadata;
             if (!metadata.logname) {
                 metadata.target = ctx.class.type;
-                metadata.resolver = loggerResolver
+                metadata.resolver = loggerResolvers
             }
             metadata.propertyKey = ctx.define.propertyKey
         }
@@ -200,7 +234,7 @@ export const InjectLog: Log<LogMetadata> = createDecorator<LogMetadata>('InjectL
             const logname = isString(args[0]) ? args[0] : lang.getTypeName(args[0]);
             return {
                 logname,
-                resolver: loggerResolver
+                resolver: loggerResolvers
             }
         } else if (args.length >= 2) {
             const [message, logname, level] = args;

@@ -23,7 +23,7 @@ export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> im
         }
     }
 
-    handle(input: TInput, context?: TContext): Observable<TOutput> {
+    handle(input: TInput, context: TContext): Observable<TOutput> {
         if (!this.chain) {
             this.chain = this.compose();
         }

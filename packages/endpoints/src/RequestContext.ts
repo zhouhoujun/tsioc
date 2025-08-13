@@ -812,7 +812,8 @@ const primitiveResolvers = createPayloadResolver(
         }
         return ctx.request;
     },
-    (param, req) => req && isDefined(getScopeValue(req, param.scope ?? 'query')));
+    // (param, req) => req && isDefined(getScopeValue(req, param.scope ?? 'query'))
+    );
 
 
 /**

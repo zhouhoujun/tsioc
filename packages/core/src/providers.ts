@@ -56,7 +56,7 @@ export const ROOT_DEPENDENCE_PROVIDERS: Provider[] = [
                 }
                 return ctx.request;
             },
-            (param, payload) => payload && param.scope && isDefined(payload[param.scope])
+            // (param, payload) => payload && param.scope && isDefined(payload[param.scope])
         )
     },
     { provide: ApplicationRunners, useClass: DefaultApplicationRunners, static: true },
