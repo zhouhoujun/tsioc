@@ -1,23 +1,17 @@
-import { Parameter, tokenId, Invocation, AbstractType, PropertyMetadata, OperationArgumentResolver } from '@tsdi/ioc';
+import { Parameter, tokenId, Invocation, AbstractType, PropertyMetadata, Interceptor, Handler } from '@tsdi/ioc';
 import { HandleContext } from './context';
 
 
 /**
  * model parameter argument of an {@link Invocation}.
  */
- export interface ModelArgumentResolver extends OperationArgumentResolver<Parameter, HandleContext>  {
-    /**
-     * Return whether an argument of the given {@code parameter} can be resolved.
-     * @param parameter argument type
-     * @param ctx InvocationContext
-     */
-    canResolve(parameter: Parameter, ctx: HandleContext): boolean;
+ export interface ModelArgumentResolver extends Interceptor<Parameter, HandleContext>  {
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    resolve<T>(parameter: Parameter, ctx: HandleContext): T | null;
+    handle<T>(parameter: Parameter, next: Handler<Parameter, HandleContext>, ctx: HandleContext): T | null;
 
     /**
      * has the model type or not.

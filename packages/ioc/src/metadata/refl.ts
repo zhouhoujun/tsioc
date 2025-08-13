@@ -11,7 +11,7 @@ import {
 } from './class';
 import { InvokeOptions } from '../context';
 import { Context, HandlerFn } from '../handler';
-import { LifeScope } from '../lifescope/lifescope';
+import { HandlerScope } from '../lifescope/lifescope';
 import { DesignContext, RuntimeContext } from '../lifescope/ctx';
 import { Resolve } from '../injector';
 import { InvocationFactory } from '../invocation';
@@ -411,28 +411,28 @@ export const decorExtendHandler = (ctx: DecorContext, context: Context) => {
     }
 }
 
-export const typeDecorLifeScope: LifeScope<DecorContext> = new LifeScope(null, decorExtendHandler, [
+export const typeDecorLifeScope: HandlerScope<DecorContext> = new HandlerScope(null, decorExtendHandler, [
     decorCtorDesignParams,
     decorAnnoAction,
     decorProviders,
     declarationFactory,
     decorRunnable
 ]);
-export const methodDecorLifeScope: LifeScope<DecorContext> = new LifeScope(null, decorExtendHandler, [
+export const methodDecorLifeScope: HandlerScope<DecorContext> = new HandlerScope(null, decorExtendHandler, [
     decorMethodDesignParams,
     decorMethodProviders,
     decorRunnable
 ]);
-export const propDecorLifeScope: LifeScope<DecorContext> = new LifeScope(null, decorExtendHandler, [
+export const propDecorLifeScope: HandlerScope<DecorContext> = new HandlerScope(null, decorExtendHandler, [
     decorInitProp,
     decorPropInject
 ]);
-export const paramDecorLifeScope: LifeScope<DecorContext> = new LifeScope(null, decorExtendHandler, [
+export const paramDecorLifeScope: HandlerScope<DecorContext> = new HandlerScope(null, decorExtendHandler, [
     decorParamInject
 ]);
 
 
-function dispatch(lifescope: LifeScope<DecorContext>, target: any, type: AbstractType, define: DecorDefine, options: DecoratorOption<any>) {
+function dispatch(lifescope: HandlerScope<DecorContext>, target: any, type: AbstractType, define: DecorDefine, options: DecoratorOption<any>) {
     const ctx = {
         define,
         target,

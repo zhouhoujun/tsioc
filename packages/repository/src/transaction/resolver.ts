@@ -1,20 +1,15 @@
-import { Abstract, InvocationContext, OperationArgumentResolver, Parameter } from '@tsdi/ioc';
+import { Abstract, InvocationContext, Interceptor, Parameter, Handler } from '@tsdi/ioc';
 
 /**
  * transaction resolvers.
  */
 @Abstract()
-export abstract class TransactionResolver implements OperationArgumentResolver<Parameter, InvocationContext> {
-    /**
-     * Return whether an argument of the given {@code parameter} can be resolved.
-     * @param parameter argument type
-     * @param ctx instanceof InvocationContext
-     */
-    abstract canResolve(parameter: Parameter, ctx: InvocationContext): boolean;
+export abstract class TransactionResolver implements Interceptor<Parameter, InvocationContext> {
+
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param ctx instanceof InvocationContext
      */
-    abstract resolve<T>(parameter: Parameter, ctx: InvocationContext): T | null;
+    abstract intercept(parameter: Parameter,  next: Handler<Parameter, InvocationContext>, ctx: InvocationContext): any;
 }

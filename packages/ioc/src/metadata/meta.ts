@@ -1,7 +1,7 @@
 import { AbstractType, Type, DesignParam, Modules } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { ModuleType, Provider } from '../providers';
-import { ArgumentResolver } from '../resolver';
+import { ResolveInterceptorLike } from '../resolver';
 import { InvokeArguments } from '../context';
 
 /**
@@ -46,7 +46,7 @@ export interface ProvideMetadata {
     /**
      * custom resolver to resolve property or parameter.
      */
-    resolver?: ArgumentResolver;
+    resolver?: ResolveInterceptorLike[];
     /**
      * null able or not.
      */

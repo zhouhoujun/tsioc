@@ -9,7 +9,7 @@ import { AbstractType } from '../types';
 import { isDefined } from '../utils/chk';
 import { initReflectInterceptor } from './commom';
 import { RuntimeContext } from './ctx';
-import { LifeScope } from './lifescope';
+import { HandlerScope } from './lifescope';
 
 
 export const cleanContextInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
@@ -40,7 +40,7 @@ export const runtimeAutorunInterceptor: InterceptorFn<RuntimeContext, void> = (i
 }
 
 
-const RUNTIME_CLASS_SCOPE = new ContextToken<LifeScope>(() => null!);
+const RUNTIME_CLASS_SCOPE = new ContextToken<HandlerScope>(() => null!);
 export const runtimeAnnoInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
     return invokeTail(() => next(input, context), () => getRuntimeClassScope(input.platform).handle(input, context));
 }
@@ -52,10 +52,10 @@ function invokeRuntimeHandler(decors: DecoratorFn[], ctx: RuntimeContext, scope:
     });
 }
 
-export function getRuntimeClassScope(platform: Platform): LifeScope<RuntimeContext> {
+export function getRuntimeClassScope(platform: Platform): HandlerScope<RuntimeContext> {
     let scope = platform.context.get(RUNTIME_CLASS_SCOPE);
     if (!scope) {
-        scope = new LifeScope<RuntimeContext>(platform, (ctx, context) => {
+        scope = new HandlerScope<RuntimeContext>(platform, (ctx, context) => {
             invokeRuntimeHandler(ctx.class.classDecors, ctx, Decors.CLASS, context);
         });
         platform.context.set(RUNTIME_CLASS_SCOPE, scope);
@@ -94,11 +94,11 @@ export const methodInterceptor: InterceptorFn<RuntimeContext, void> = (input: Ru
     })
 }
 
-const RUNTIME_METHOD_SCOPE = new ContextToken<LifeScope>(() => null!);
-export function getRuntimeMethodScope(platform: Platform): LifeScope<RuntimeContext> {
+const RUNTIME_METHOD_SCOPE = new ContextToken<HandlerScope>(() => null!);
+export function getRuntimeMethodScope(platform: Platform): HandlerScope<RuntimeContext> {
     let scope = platform.context.get(RUNTIME_METHOD_SCOPE);
     if (!scope) {
-        scope = new LifeScope<RuntimeContext>(platform, (ctx, context) => {
+        scope = new HandlerScope<RuntimeContext>(platform, (ctx, context) => {
             invokeRuntimeHandler(ctx.class.methodDecors, ctx, Decors.method, context)
 
         });
@@ -138,11 +138,11 @@ export const propertyInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
 
 }
 
-const RUNTIME_PROPERTY_SCOPE = new ContextToken<LifeScope>(() => null!);
-export function getRuntimePropertyScope(platform: Platform): LifeScope<RuntimeContext> {
+const RUNTIME_PROPERTY_SCOPE = new ContextToken<HandlerScope>(() => null!);
+export function getRuntimePropertyScope(platform: Platform): HandlerScope<RuntimeContext> {
     let scope = platform.context.get(RUNTIME_PROPERTY_SCOPE);
     if (!scope) {
-        scope = new LifeScope<RuntimeContext>(platform, (ctx, context) => {
+        scope = new HandlerScope<RuntimeContext>(platform, (ctx, context) => {
             invokeRuntimeHandler(ctx.class.propDecors, ctx, Decors.property, context)
         });
         platform.context.set(RUNTIME_PROPERTY_SCOPE, scope);

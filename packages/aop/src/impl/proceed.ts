@@ -1,9 +1,8 @@
 import {
-    isFunction, lang, Platform, ctorName, InvocationContext, LifeScope, HandlerFn,
+    isFunction, lang, Platform, ctorName, InvocationContext, HandlerScope, HandlerFn,
     Context, ContextToken, invokeTail, RuntimeContext, InterceptorLike, isDefined,
-    ParameterMetadata, Class, proxyTag, isObject,
-    composeHandlers, isNil, object2string, getClassify,
-    composeInterceptors
+    ParameterMetadata, Class, proxyTag, isObject, isNil, object2string, getClassify,
+    composeHandlers, composeInterceptors
 } from '@tsdi/ioc';
 import { JoinPoint } from '../joinpoints/JoinPoint';
 import { JoinpointState } from '../joinpoints/state';
@@ -60,21 +59,6 @@ export class ProceedingScope implements Proceeding {
             }
         });
     }
-
-    // attach<T>(typeRef: Class<T>, instance: T, parent?: InvocationContext, advisor?: Advisor): T {
-    //     //es5 proxy-polyfill
-    //     if (!advisor) {
-    //         advisor = this.platform.context.get(Advisor);
-    //     }
-    //     if (advisor && isDefined(instance) && advisor.hasPointcut(instance, typeRef, true)) {
-    //         return this.createProxy(typeRef.className, typeRef, instance, typeRef, instance, advisor, parent) as T;
-    //     }
-    //     return instance;
-    // }
-
-    // detach<T>(typeRef: Class<T>, instance: T): T {
-    //     return instance;
-    // }
 
     protected createProxy(prefix: string, rootRef: Class, root: any, typeRef: Class | null, instance: any, advisor: Advisor, parent?: InvocationContext) {
         const descriptors = typeRef?.getPropertyDescriptors();
@@ -211,11 +195,11 @@ export class ProceedingScope implements Proceeding {
 
 
 
-const ADVICES_SCOPE = new ContextToken<LifeScope>(() => null!);
-export function getAdvicesLifeScope(platform: Platform): LifeScope<JoinPoint> {
+const ADVICES_SCOPE = new ContextToken<HandlerScope>(() => null!);
+export function getAdvicesLifeScope(platform: Platform): HandlerScope<JoinPoint> {
     let scope = platform.context.get(ADVICES_SCOPE);
     if (!scope) {
-        scope = new LifeScope<JoinPoint>(platform, adviceHanlder, ADVICES_INTERCEPTORS);
+        scope = new HandlerScope<JoinPoint>(platform, adviceHanlder, ADVICES_INTERCEPTORS);
         platform.context.set(ADVICES_SCOPE, scope);
     }
     return scope;

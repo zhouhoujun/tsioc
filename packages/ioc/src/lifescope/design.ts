@@ -7,7 +7,7 @@ import { isFunction } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
 import { initReflectInterceptor } from './commom';
 import { DesignContext, RuntimeContext } from './ctx';
-import { LifeScope } from './lifescope';
+import { HandlerScope } from './lifescope';
 
 export const autorunInterceptor = (ctx: DesignContext, next: HandlerFn, context: Context) => {
     return invokeTail(() => next(ctx, context), (res) => {
@@ -30,11 +30,11 @@ function invokeHandler(decors: DecoratorFn[], ctx: DesignContext, scope: Decorat
     });
 }
 
-const BEFORE_ANNOATION_SCOPE = new ContextToken<LifeScope>(() => null!);
-export function getDesignBeforeAnnoationScope(platform: Platform): LifeScope<DesignContext> {
+const BEFORE_ANNOATION_SCOPE = new ContextToken<HandlerScope>(() => null!);
+export function getDesignBeforeAnnoationScope(platform: Platform): HandlerScope<DesignContext> {
     let scope = platform.context.get(BEFORE_ANNOATION_SCOPE);
     if (!scope) {
-        scope = new LifeScope<DesignContext>(platform, (ctx, context) => {
+        scope = new HandlerScope<DesignContext>(platform, (ctx, context) => {
             invokeHandler(ctx.class.classDecors, ctx, Decors.beforeAnnoation, context)
         });
         platform.context.set(BEFORE_ANNOATION_SCOPE, scope);
@@ -43,11 +43,11 @@ export function getDesignBeforeAnnoationScope(platform: Platform): LifeScope<Des
 }
 
 
-const AFTER_ANNOATION_SCOPE = new ContextToken<LifeScope>(() => null!);
-export function getDesignAfterAnnoationScope(platform: Platform): LifeScope<DesignContext> {
+const AFTER_ANNOATION_SCOPE = new ContextToken<HandlerScope>(() => null!);
+export function getDesignAfterAnnoationScope(platform: Platform): HandlerScope<DesignContext> {
     let scope = platform.context.get(AFTER_ANNOATION_SCOPE);
     if (!scope) {
-        scope = new LifeScope<DesignContext>(platform, (ctx, context) => {
+        scope = new HandlerScope<DesignContext>(platform, (ctx, context) => {
             invokeHandler(ctx.class.classDecors, ctx, Decors.afterAnnoation, context)
         });
         platform.context.set(AFTER_ANNOATION_SCOPE, scope);
@@ -56,11 +56,11 @@ export function getDesignAfterAnnoationScope(platform: Platform): LifeScope<Desi
 }
 
 
-const DESIGN_PROPERTY_SCOPE = new ContextToken<LifeScope>(() => null!);
-export function getDesignPropertyScope(platform: Platform): LifeScope<DesignContext> {
+const DESIGN_PROPERTY_SCOPE = new ContextToken<HandlerScope>(() => null!);
+export function getDesignPropertyScope(platform: Platform): HandlerScope<DesignContext> {
     let scope = platform.context.get(DESIGN_PROPERTY_SCOPE);
     if (!scope) {
-        scope = new LifeScope<DesignContext>(platform, (ctx, context) => {
+        scope = new HandlerScope<DesignContext>(platform, (ctx, context) => {
             invokeHandler(ctx.class.propDecors, ctx, Decors.property, context)
         });
         platform.context.set(DESIGN_PROPERTY_SCOPE, scope);
@@ -68,12 +68,12 @@ export function getDesignPropertyScope(platform: Platform): LifeScope<DesignCont
     return scope;
 }
 
-const DESIGN_METHOD_SCOPE = new ContextToken<LifeScope>(() => null!);
+const DESIGN_METHOD_SCOPE = new ContextToken<HandlerScope>(() => null!);
 
-export function getDesignMethodScope(platform: Platform): LifeScope<DesignContext> {
+export function getDesignMethodScope(platform: Platform): HandlerScope<DesignContext> {
     let scope = platform.context.get(DESIGN_METHOD_SCOPE);
     if (!scope) {
-        scope = new LifeScope<DesignContext>(platform, (ctx, context) => {
+        scope = new HandlerScope<DesignContext>(platform, (ctx, context) => {
             invokeHandler(ctx.class.methodDecors, ctx, Decors.method, context);
         });
         platform.context.set(DESIGN_METHOD_SCOPE, scope);

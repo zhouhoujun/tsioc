@@ -1,4 +1,4 @@
-import { DefaultInvocationContext, Injector, InvocationRequest, InvokeArguments, OperationArgumentResolver, composeResolvers, getType } from '@tsdi/ioc';
+import { DefaultInvocationContext, Injector, InvocationRequest, InvokeArguments,  ResolveInterceptorLike,  getType } from '@tsdi/ioc';
 import { getResolverToken, ParameterScope } from './resolver';
 
 /**
@@ -48,22 +48,22 @@ export class HandleContext extends DefaultInvocationContext {
 
     protected onException(err: any) { }
 
-    protected override getArgumentResolver(): OperationArgumentResolver[] {
-        const res: OperationArgumentResolver[] = [];
+    protected override getArgumentResolver(): ResolveInterceptorLike[] {
+        const res: ResolveInterceptorLike[] = [];
         const defRels = this.playloadDefaultResolvers();
         if (defRels?.length) {
-            res.push(composeResolvers(defRels));
+            res.push(...defRels);
         }
         if (this.request) {
             const args = this.injector.get(getResolverToken(this.request), null);
             if (args?.length) {
-                res.unshift(composeResolvers(args));
+                res.unshift(...args);
             }
         }
         return res;
     }
 
-    protected playloadDefaultResolvers(): OperationArgumentResolver[] | null {
+    protected playloadDefaultResolvers(): ResolveInterceptorLike[] | null {
         return null
     }
 

@@ -1,8 +1,8 @@
-import { AbstractType, Type } from '../types';
+import { AbstractType, Empty, Type } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getTypeName, getTypeChain } from '../utils/lang';
-import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isAbstractType, getType } from '../utils/chk';
-import { OperationArgumentResolver, Parameter, composeResolver, composeResolvers } from '../resolver';
+import { isPrimitiveType, isArray, isDefined, isFunction, isString, isNil, isAbstractType, getType, isType } from '../utils/chk';
+import { ResolveInterceptorLike, Parameter } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeArguments, InvocationRequest } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token } from '../tokens';
@@ -12,6 +12,9 @@ import { Class } from '../metadata/class';
 import { getDef } from '../metadata/refl';
 import { Provider } from '../providers';
 import { Invocation } from '../invocation';
+import { ContextToken } from '../handler';
+import { HandlerScope } from '../lifescope/lifescope';
+import { Platform } from '../platform';
 
 
 
@@ -43,9 +46,10 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
     readonly isResolve: boolean;
 
     request: InvocationRequest | null | undefined;
+
     private cache = new Map<Token, Map<InjectFlags, any>>();
-    
     private pcache = new WeakMap<Parameter, any>();
+
     /**
      * get the invocation arguments resolver.
      */
@@ -103,11 +107,12 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
                 this.injector.inject(option.providers);
             }
             if (option.resolvers) {
-                const resls = option.resolvers?.map(r => isFunction(r) ? (r as Function)(this.injector) : r);
-                if (resls?.length) {
-                    this.getResolvers().push(composeResolvers(resls));
+                if (option.resolvers?.length) {
+                    this._resolvers = null;
+                    this.options.resolvers = [...option.resolvers, ...this.options.resolvers || Empty]
                 }
             }
+            this.clearCache();
         }
     }
 
@@ -115,37 +120,36 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      * get context arguments resolvers.
      * @returns 
      */
-    protected getArgumentResolver(): OperationArgumentResolver[] {
+    protected getArgumentResolver(): ResolveInterceptorLike[] {
         return [];
     }
 
-    private _resolvers?: OperationArgumentResolver[] | null;
+    private _resolvers?: HandlerScope<Parameter, InvocationContext> | null;
     /**
      * the invocation arguments resolver.
      */
-    protected getResolvers(): OperationArgumentResolver[] {
-        if (!this._resolvers) {
-            const resolvers: OperationArgumentResolver[] = [];
+    protected getResolver(): HandlerScope<Parameter, InvocationContext> | null {
+        if (this._resolvers === undefined) {
+            const resolvers: ResolveInterceptorLike[] = [];
             const args = this.getArgumentResolver();
             if (args?.length) {
-                resolvers.push(composeResolvers(args));
+                resolvers.push(...args);
             }
-            const resls = this.options.resolvers?.map(r => isFunction(r) ? (r as Function)(this.injector) : r);
+            const resls = this.options.resolvers; //?.map(r => isFunction(r) ? (r as Function)(this.injector) : r);
             if (resls?.length) {
-                resolvers.push(composeResolvers(resls));
+                resolvers.push(...resls);
             }
-            const defaultResls = this.getDefaultResolvers();
-            if (defaultResls?.length) {
-                resolvers.push(composeResolvers(defaultResls));
+            const platform = this.injector.platform();
+            if (resolvers.length) {
+                this._resolvers = new HandlerScope(platform, getParameterResolver(platform), resolvers);
+            } else {
+                this._resolvers = getParameterResolver(platform);
             }
-            this._resolvers = resolvers;
         }
         return this._resolvers;
     }
 
-    protected getDefaultResolvers(): OperationArgumentResolver[] {
-        return BASE_RESOLVERS
-    }
+
 
     protected createInjector(injector: Injector, providers?: Provider[]) {
         return createInjector(providers, injector, this.injectorScope)
@@ -209,7 +213,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
     get<T>(token: Token<T>, flags?: InjectFlags): T {
         this.assertNotDestroyed();
         return (flags != InjectFlags.HostOnly ? this.injector.get(token, null, flags, this) : null)
-                ?? this.getFormRef(token, flags) ?? null as T
+            ?? this.getFormRef(token, flags) ?? null as T
     }
 
     protected getFormRef<T>(token: Token<T>, flags?: InjectFlags): T | undefined {
@@ -235,17 +239,17 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
         return this
     }
 
-    /**
-     * get resolver in the property or parameter metadata. configured in class design.
-     * @param meta property or parameter metadata type of {@link Parameter}.
-     * @returns undefined or resolver of type {@link OperationArgumentResolver}.
-     */
-    getMetaReolver<T>(meta: Parameter<T>): OperationArgumentResolver | undefined {
-        if (isFunction(meta.resolver)) {
-            return this.injector.get<OperationArgumentResolver>(meta.resolver)
-        }
-        return meta.resolver
-    }
+    // /**
+    //  * get resolver in the property or parameter metadata. configured in class design.
+    //  * @param meta property or parameter metadata type of {@link Parameter}.
+    //  * @returns undefined or resolver of type {@link OperationArgumentResolver}.
+    //  */
+    // getMetaReolver<T>(meta: Parameter<T>): OperationArgumentResolver | undefined {
+    //     if (isFunction(meta.resolver)) {
+    //         return this.injector.get<OperationArgumentResolver>(meta.resolver)
+    //     }
+    //     return meta.resolver
+    // }
 
     /**
      * resolve token.
@@ -279,8 +283,8 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      */
     resolveArgument<T>(meta: Parameter<T>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null {
         this.assertNotDestroyed();
-        if(!this.pcache.has(meta)){
-            this.pcache.set(meta, this.doResolveArgument(meta, target, failed)); 
+        if (!this.pcache.has(meta)) {
+            this.pcache.set(meta, this.doResolveArgument(meta, target, failed));
         }
         return this.pcache.get(meta)
     }
@@ -294,37 +298,49 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      */
     protected doResolveArgument<T>(meta: Parameter<T>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null {
         let result: T | null | undefined;
-        const metaRvr = this.getMetaReolver(meta);
-        if (metaRvr?.canResolve(meta, this)) {
-            result = metaRvr.resolve(meta, this, target);
+        const metaRvr = meta.resolver;
+        if (metaRvr?.length) {
+            const platform = this.injector.platform();
+            const scope = new HandlerScope(platform, () => undefined, metaRvr);
+            const result = scope.handle(meta, this);
             if (!isNil(result)) {
                 return result;
             }
         }
 
-        let canResolved = meta.nullable || (meta.flags && (meta.flags & InjectFlags.Optional));
-        if (this.getResolvers().some(r => {
-            if (r.canResolve(meta, this)) {
-                result = r.resolve(meta, this, target);
-                if (!isNil(result)) {
-                    canResolved = true;
-                    return true;
+        return this.getResolver()?.handle(meta, this, {
+            error: (error) => {
+                if (failed) {
+                    failed(target!, meta.propertyKey!)
+                } else {
+                    this.missingException([meta], target!, meta.propertyKey!);
                 }
-            }
-            return false
-        })) {
-            return result!;
-        }
+            },
+        })
 
-        if (!canResolved) {
-            if (failed) {
-                failed(target!, meta.propertyKey!)
-            } else {
-                this.missingException([meta], target!, meta.propertyKey!);
-            }
-        }
+        // let canResolved = meta.nullable || (meta.flags && (meta.flags & InjectFlags.Optional));
+        // if (this.getResolver().some(r => {
+        //     if (r.canResolve(meta, this)) {
+        //         result = r.resolve(meta, this);
+        //         if (!isNil(result)) {
+        //             canResolved = true;
+        //             return true;
+        //         }
+        //     }
+        //     return false
+        // })) {
+        //     return result!;
+        // }
 
-        return null;
+        // if (!canResolved) {
+        //     if (failed) {
+        //         failed(target!, meta.propertyKey!)
+        //     } else {
+        //         this.missingException([meta], target!, meta.propertyKey!);
+        //     }
+        // }
+
+        // return null;
     }
 
     protected missingException(missings: Parameter<any>[], type: AbstractType<any>, method: string): Exception {
@@ -373,7 +389,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
     }
 
     protected clear() {
-        this.clearCache()
+        this.clearCache();
         this._resolvers = null;
         this._refs = null;
     }
@@ -437,76 +453,145 @@ INVOCATION_CONTEXT_IMPL.create = (parent: Injector | InvocationContext, options?
 }
 
 
-export const BASE_RESOLVERS: OperationArgumentResolver[] = [
-    composeResolver(
-        (parameter, ctx) => isDefined(parameter.provider),
-        {
-            canResolve(parameter, ctx) {
-                return ctx.has(parameter.provider as Token, parameter.flags)
-            },
-            resolve(parameter, ctx) {
-                return ctx.get(parameter.provider as Token, parameter.flags)
-            }
-        },
-        {
-            canResolve(parameter, ctx) {
-                if (parameter.multi || !isFunction(parameter.provider) || isPrimitiveType(parameter.provider)
-                    || getDef(parameter.provider).abstract) return false;
-                return isDefined(parameter.flags) ? !ctx.injector.has(parameter.provider!, parameter.flags) : true
-            },
-            resolve(parameter, ctx) {
-                const pdr = parameter.provider!;
-                if (parameter.name || parameter.propertyKey) {
-                    const injector = ctx.injector.parent ?? ctx.injector;
-                    injector.register(pdr as Type);
-                }
-                return ctx.get(pdr, parameter.flags)
-            }
-        }
-    ),
-    composeResolver(
-        (parameter, ctx) => isDefined(parameter.name),
-        {
-            canResolve(parameter, ctx) {
-                return ctx.has(parameter.name!, parameter.flags)
-            },
-            resolve(parameter, ctx) {
-                return ctx.get(parameter.name!, parameter.flags) as any
-            }
-        }
-    ),
-    composeResolver(
-        (parameter, ctx) => isDefined(parameter.type),
-        {
-            canResolve(parameter, ctx) {
-                return ctx.has(parameter.type!, parameter.flags)
-            },
-            resolve(parameter, ctx) {
-                return ctx.get(parameter.type!, parameter.flags)
-            }
-        },
-        {
-            canResolve(parameter, ctx) {
-                if (!isFunction(parameter.type) || isPrimitiveType(parameter.type) || getDef(parameter.type!).abstract) return false;
-                return isDefined(parameter.flags) ? !ctx.injector.has(parameter.type!, parameter.flags) : true
-            },
-            resolve(parameter, ctx) {
-                const ty = parameter.type!;
-                if (parameter.name || parameter.propertyKey) {
-                    const injector = ctx.injector.parent ?? ctx.injector;
-                    injector.register(ty as Type);
-                }
-                return ctx.get(ty, parameter.flags)
-            }
-        }
-    ),
-    // default value
-    {
-        canResolve(parameter) {
-            return isDefined(parameter.defaultValue) || parameter.nullable === true || (parameter.flags && !!(parameter.flags & InjectFlags.Optional)) as boolean
-        },
-        resolve(parameter) {
-            return parameter.defaultValue ?? null
-        }
+const TOKER_RESOLVER = new ContextToken<HandlerScope>(() => null!);
+export function getTokenResolver(platform: Platform): HandlerScope<[Token, InjectFlags | undefined], InvocationContext> {
+    let scope = platform.context.get(TOKER_RESOLVER);
+    if (!scope) {
+        scope = new HandlerScope<[Token, InjectFlags | undefined], InvocationContext>(
+            platform,
+            (input, context) => undefined,
+            [
+                (input, next, context) => {
+                    if (context.has(input[0], input[1])) {
+                        return context.get(input[0], input[1])
+                    }
+                    return next(input, context);
+                },
+                (input, next, context) => {
+                    const type = input[0]
+                    if (!isType(type) || getDef(type).abstract) {
+                        return next(input, context);
+                    }
+                    const injector = context.injector.parent ?? context.injector;
+                    injector.register(type);
+                    return context.get(type, input[1])
+                },
+
+
+            ]
+        );
+        platform.context.set(TOKER_RESOLVER, scope);
     }
-];
+    return scope;
+}
+
+const PARAMETER_RESOLVER = new ContextToken<HandlerScope>(() => null!);
+export function getParameterResolver(platform: Platform): HandlerScope<Parameter, InvocationContext> {
+    let scope = platform.context.get(PARAMETER_RESOLVER);
+    if (!scope) {
+        scope = new HandlerScope<Parameter, InvocationContext>(
+            platform,
+            (input, context) => undefined,
+            [
+                (input, next, context) => {
+                    if ( input.provider && !input.multi) {
+                        return getTokenResolver(platform).handle([input.provider, input.flags], context)
+                    } else if(input.type) {
+                        return getTokenResolver(platform).handle([input.type, input.flags], context)
+                    }
+                    return next(input, context);
+                },
+
+                (input, next, context) => {
+
+                    if (isDefined(input.defaultValue)) {
+                        return input.defaultValue;
+                    }
+                    if (input.nullable === true || (input.flags && !!(input.flags & InjectFlags.Optional))) {
+                        return null;
+                    }
+
+                    return next(input, context);
+                }
+            ]
+        );
+        platform.context.set(PARAMETER_RESOLVER, scope);
+    }
+    return scope;
+}
+
+
+
+// export const BASE_RESOLVERS: OperationArgumentResolver[] = [
+//     composeResolver(
+//         (parameter, ctx) => isDefined(parameter.provider),
+//         {
+//             canResolve(parameter, ctx) {
+//                 return ctx.has(parameter.provider as Token, parameter.flags)
+//             },
+//             resolve(parameter, ctx) {
+//                 return ctx.get(parameter.provider as Token, parameter.flags)
+//             }
+//         },
+//         {
+//             canResolve(parameter, ctx) {
+//                 if (parameter.multi || !isFunction(parameter.provider) || isPrimitiveType(parameter.provider)
+//                     || getDef(parameter.provider).abstract) return false;
+//                 return isDefined(parameter.flags) ? !ctx.injector.has(parameter.provider!, parameter.flags) : true
+//             },
+//             resolve(parameter, ctx) {
+//                 const pdr = parameter.provider!;
+//                 if (parameter.name || parameter.propertyKey) {
+//                     const injector = ctx.injector.parent ?? ctx.injector;
+//                     injector.register(pdr as Type);
+//                 }
+//                 return ctx.get(pdr, parameter.flags)
+//             }
+//         }
+//     ),
+//     composeResolver(
+//         (parameter, ctx) => isDefined(parameter.name),
+//         {
+//             canResolve(parameter, ctx) {
+//                 return ctx.has(parameter.name!, parameter.flags)
+//             },
+//             resolve(parameter, ctx) {
+//                 return ctx.get(parameter.name!, parameter.flags) as any
+//             }
+//         }
+//     ),
+//     composeResolver(
+//         (parameter, ctx) => isDefined(parameter.type),
+//         {
+//             canResolve(parameter, ctx) {
+//                 return ctx.has(parameter.type!, parameter.flags)
+//             },
+//             resolve(parameter, ctx) {
+//                 return ctx.get(parameter.type!, parameter.flags)
+//             }
+//         },
+//         {
+//             canResolve(parameter, ctx) {
+//                 if (!isFunction(parameter.type) || isPrimitiveType(parameter.type) || getDef(parameter.type!).abstract) return false;
+//                 return isDefined(parameter.flags) ? !ctx.injector.has(parameter.type!, parameter.flags) : true
+//             },
+//             resolve(parameter, ctx) {
+//                 const ty = parameter.type!;
+//                 if (parameter.name || parameter.propertyKey) {
+//                     const injector = ctx.injector.parent ?? ctx.injector;
+//                     injector.register(ty as Type);
+//                 }
+//                 return ctx.get(ty, parameter.flags)
+//             }
+//         }
+//     ),
+//     // default value
+//     {
+//         canResolve(parameter) {
+//             return isDefined(parameter.defaultValue) || parameter.nullable === true || (parameter.flags && !!(parameter.flags & InjectFlags.Optional)) as boolean
+//         },
+//         resolve(parameter) {
+//             return parameter.defaultValue ?? null
+//         }
+//     }
+// ];

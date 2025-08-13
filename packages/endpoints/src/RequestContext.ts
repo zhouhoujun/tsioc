@@ -1,5 +1,5 @@
-import { Abstract, OperationArgumentResolver, composeResolvers, isArray, isDefined, isNil, isString, lang } from '@tsdi/ioc';
-import { HandleContext, HandleRequest, MODEL_RESOLVERS, ParameterScope, createPayloadResolver } from '@tsdi/core';
+import { Abstract, isArray, isDefined, isNil, isString, lang, ResolveInterceptorLike } from '@tsdi/ioc';
+import { HandleContext, HandleRequest, MODEL_RESOLVERS, ParameterScope, TransportParameter, createPayloadResolver } from '@tsdi/core';
 import { HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess } from '@tsdi/common';
 import {
     FileAdapter, Incoming, InternalServerException, MessageException, MimeAdapter, Outgoing,
@@ -30,13 +30,13 @@ export abstract class RequestContext<
 
     }
 
-    protected override playloadDefaultResolvers(): OperationArgumentResolver[] {
-        const res = [composeResolvers(primitiveResolvers)];
+    protected override playloadDefaultResolvers(): ResolveInterceptorLike[] {
+        const res = [...primitiveResolvers];
         const modelResolvers = this.injector.get(MODEL_RESOLVERS, null);
         if (modelResolvers?.length) {
-            res.unshift(composeResolvers(modelResolvers));
+            res.unshift(...modelResolvers);
         }
-        return res;
+        return res as ResolveInterceptorLike[];
     }
 
     abstract get serverOptions(): TOptions;

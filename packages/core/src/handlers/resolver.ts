@@ -1,4 +1,4 @@
-import { OperationArgumentResolver, Parameter, Invocation, TypeOf, Token, getTokenOf, isToken, getTypeName } from '@tsdi/ioc';
+import { ResolveInterceptorLike, Parameter, Invocation, TypeOf, Token, getTokenOf, isToken, getTypeName } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
 import { HandleContext } from './context';
 
@@ -17,7 +17,7 @@ export interface TransportParameterOptions<T = object> extends Parameter<T> {
     /**
      * custom resolver to resolve the value for the property or parameter.
      */
-    resolver?: TypeOf<OperationArgumentResolver>;
+    resolver?: ResolveInterceptorLike[];
     /**
      * pipe extends args
      */
@@ -35,23 +35,23 @@ export interface TransportParameter<T = object> extends TransportParameterOption
     scope?: ParameterScope;
 }
 
-/**
- * Resolver for an transport argument of an {@link Invocation}.
- */
-export interface TransportArgumentResolver extends OperationArgumentResolver<TransportParameter, HandleContext> {
-    /**
-     * Return whether an argument of the given {@code parameter} can be resolved.
-     * @param parameter argument type
-     * @param ctx instanceof HandleContext
-     */
-    canResolve(parameter: TransportParameter, ctx: HandleContext): boolean;
-    /**
-     * Resolves an argument of the given {@code parameter}.
-     * @param parameter argument type
-     * @param ctx instanceof HandleContext
-     */
-    resolve<T>(parameter: TransportParameter, ctx: HandleContext): T | null;
-}
+// /**
+//  * Resolver for an transport argument of an {@link Invocation}.
+//  */
+// export interface TransportArgumentResolver extends OperationArgumentResolver<TransportParameter, HandleContext> {
+//     /**
+//      * Return whether an argument of the given {@code parameter} can be resolved.
+//      * @param parameter argument type
+//      * @param ctx instanceof HandleContext
+//      */
+//     canResolve(parameter: TransportParameter, ctx: HandleContext): boolean;
+//     /**
+//      * Resolves an argument of the given {@code parameter}.
+//      * @param parameter argument type
+//      * @param ctx instanceof HandleContext
+//      */
+//     resolve<T>(parameter: TransportParameter, ctx: HandleContext): T | null;
+// }
 
 
 /**
@@ -59,7 +59,7 @@ export interface TransportArgumentResolver extends OperationArgumentResolver<Tra
  * @param type 
  * @returns 
  */
-export function getResolverToken(type: TypeOf<any>, propertyKey?: string): Token<TransportArgumentResolver[]> {
+export function getResolverToken(type: TypeOf<any>, propertyKey?: string): Token<ResolveInterceptorLike[]> {
     return getTokenOf(type, 'RESOLVERS', propertyKey);
 }
 

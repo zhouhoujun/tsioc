@@ -6,7 +6,7 @@ import { AbstractType } from './types';
 import { Provider } from './providers';
 import { Injector, InjectorScope } from './injector';
 import { ModuleRef } from './module.ref';
-import { LifeScope } from './lifescope/lifescope';
+import { HandlerScope } from './lifescope/lifescope';
 import { Context } from './handler';
 
 /**
@@ -23,8 +23,8 @@ export abstract class Platform implements OnDestroy {
      */
     abstract get injector(): Injector;
 
-    abstract get runtime(): LifeScope;
-    abstract get design(): LifeScope;
+    abstract get runtime(): HandlerScope;
+    abstract get design(): HandlerScope;
 
     abstract get context(): Context;
 

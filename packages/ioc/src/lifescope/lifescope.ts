@@ -1,27 +1,27 @@
-import { composeInterceptors, Handler, HandlerFn, InterceptorFn, InterceptorLike, invokeTail, NextOpter } from '../handler';
+import { composeInterceptors, Handler, HandlerFn, InterceptorFn, InterceptorLike, invokeTail, NextOpter, toHandlerFn } from '../handler';
 import { Platform } from '../platform';
 import { Empty } from '../types';
-import { isNumber } from '../utils/chk';
+import { isFunction, isNumber } from '../utils/chk';
 
 /**
- * Life scope.
+ * handler scope.
  */
-export class LifeScope<TInput = any> implements Handler<TInput> {
+export class HandlerScope<TInput = any, TContext= any> implements Handler<TInput> {
 
     private _chain?: InterceptorFn<TInput> | null;
     private interceptors: InterceptorLike<TInput>[]
 
     constructor(
         readonly platform: Platform | null,
-        private backend: HandlerFn<TInput>,
-        interceptors: InterceptorLike<TInput>[] = Empty
+        private backend: HandlerFn<TInput> | Handler<TInput>,
+        interceptors: InterceptorLike<TInput, TContext>[] = Empty
     ) {
         this.interceptors = interceptors.slice();
     }
 
-    handle(input: any, context?: any, next?: NextOpter<any> | ((input: TInput) => any)) {
+    handle(input: TInput, context?: TContext, next?: NextOpter<TInput, TContext> | ((input: TInput) => any)) {
         const chain = this.getChain();
-        return invokeTail(() => chain(input, this.backend, context ?? this.platform?.context), next);
+        return invokeTail<any>(() => chain(input, isFunction(this.backend)? this.backend : toHandlerFn(this.backend), context ?? this.platform?.context), next);
     }
 
     /**

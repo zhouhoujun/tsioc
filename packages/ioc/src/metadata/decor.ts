@@ -7,7 +7,7 @@ import {
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { Provider, StaticProvider } from '../providers';
-import { OperationArgumentResolver } from '../resolver';
+import { ResolveInterceptorLike } from '../resolver';
 import { InvokeArguments, InvokeOptions } from '../context';
 import { getModuleType } from '../module.ref';
 import { getTypes } from '../utils/lang';
@@ -134,7 +134,7 @@ export interface Autowired {
         /**
         * custom resolver to resolve the value for the property or parameter.
         */
-        resolver?: OperationArgumentResolver;
+        resolver?: ResolveInterceptorLike;
         /**
          * is multi provider or not
          */
@@ -173,7 +173,7 @@ export interface Autowired {
         /**
         * custom resolver to resolve the value for the property or parameter.
         */
-        resolver?: OperationArgumentResolver;
+        resolver?: ResolveInterceptorLike;
         /**
          * is multi provider or not
          */
@@ -255,7 +255,7 @@ export interface Inject {
         /**
         * custom resolver to resolve the value for the property or parameter.
         */
-        resolver?: OperationArgumentResolver;
+        resolver?: ResolveInterceptorLike;
         /**
          * is multi provider or not
          */
@@ -294,7 +294,7 @@ export interface Inject {
         /**
         * custom resolver to resolve the value for the property or parameter.
         */
-        resolver?: OperationArgumentResolver;
+        resolver?: ResolveInterceptorLike;
         /**
          * is multi provider or not
          */
@@ -392,7 +392,7 @@ export interface Param {
         /**
         * custom resolver to resolve the value for the property or parameter.
         */
-        resolver?: OperationArgumentResolver;
+        resolver?: ResolveInterceptorLike;
         /**
          * is multi provider or not
          */
@@ -431,7 +431,7 @@ export interface Param {
         /**
         * custom resolver to resolve the value for the property or parameter.
         */
-        resolver?: OperationArgumentResolver;
+        resolver?: ResolveInterceptorLike;
         /**
          * is multi provider or not
          */

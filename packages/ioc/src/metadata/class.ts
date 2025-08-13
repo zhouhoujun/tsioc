@@ -5,7 +5,7 @@ import {
 } from './meta';
 import { InvocationContext, InvocationOptions, InvokeArguments } from '../context';
 import { Token } from '../tokens';
-import { ArgumentResolver } from '../resolver';
+import { ResolveInterceptorLike } from '../resolver';
 import { forIn, hasItem } from '../utils/lang';
 import { getClassAnnotation } from '../utils/util';
 import { isFunction, isString } from '../utils/chk';
@@ -217,7 +217,7 @@ export class Class<T = any> {
      *
      * @type {InstanceOf<ArgumentResolver>[]}
      */
-    readonly resolvers: InstanceOf<ArgumentResolver>[];
+    readonly resolvers: ResolveInterceptorLike[];
     /**
      * property metadata.
      *

@@ -54,7 +54,7 @@ export interface Interceptor<TInput = any, TOutput = any, TContext = any> {
      * @param context interceptor with context.
      * @returns An observable of the event stream.
      */
-    intercept(input: TInput, next: Handler<any, TOutput, TContext>, context?: TContext): TOutput;
+    intercept(input: TInput, next: Handler<any, TOutput, TContext>, context: TContext): TOutput;
 
     /**
      * is this equals to target or not
@@ -69,7 +69,7 @@ export interface Interceptor<TInput = any, TOutput = any, TContext = any> {
  * interceptor fn.
  * 拦截方法，用于链接多个处理器，组合成处理器串。
  */
-export type InterceptorFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, next: HandlerFn<any, TOutput, TContext>, context?: TContext) => TOutput;
+export type InterceptorFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, next: HandlerFn<any, TOutput, TContext>, context: TContext) => TOutput;
 
 
 /**
@@ -161,8 +161,8 @@ export function toInterceptorFn(interceptor: Interceptor & { [interceptorFn]?: I
 
 
 
-export interface NextOpter<T> {
-    next?: (res: T, context?: any) => any;
+export interface NextOpter<T, TContext =any> {
+    next?: (res: T, context?: TContext) => any;
     error?: (error: any) => any;
     finally?: () => any;
 }

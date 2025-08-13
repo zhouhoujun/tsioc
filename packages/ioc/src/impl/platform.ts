@@ -8,7 +8,7 @@ import { Injector, InjectorScope } from '../injector';
 import { Exception } from '../exception';
 import { Platform } from '../platform';
 import { ModuleRef } from '../module.ref';
-import { LifeScope } from '../lifescope/lifescope';
+import { HandlerScope } from '../lifescope/lifescope';
 import { Context } from '../handler';
 import { RUNTIME_INTERCEPTORS } from '../lifescope/runtime';
 import { DESIGN_INTERECPTORS, registerHandler } from '../lifescope/design';
@@ -26,8 +26,8 @@ export class DefaultPlatform implements Platform {
     readonly modules = new Map<AbstractType, ModuleRef>();
     readonly factories = new Map<AbstractType, InvocationFactory>();
     private injectors: Injector[];
-    private _runtime?: LifeScope;
-    private _design?: LifeScope;
+    private _runtime?: HandlerScope;
+    private _design?: HandlerScope;
 
     readonly context: Context;
 
@@ -42,9 +42,9 @@ export class DefaultPlatform implements Platform {
     }
 
 
-    get runtime(): LifeScope {
+    get runtime(): HandlerScope {
         if (!this._runtime) {
-            this._runtime = new LifeScope(this, (ctx) => {
+            this._runtime = new HandlerScope(this, (ctx) => {
                 ctx.instance = new ctx.type(...ctx.args || Empty);
                 return ctx.instance;
             }, RUNTIME_INTERCEPTORS);
@@ -52,9 +52,9 @@ export class DefaultPlatform implements Platform {
         return this._runtime;
     }
 
-    get design(): LifeScope {
+    get design(): HandlerScope {
         if (!this._design) {
-            this._design = new LifeScope(this, registerHandler, DESIGN_INTERECPTORS);
+            this._design = new HandlerScope(this, registerHandler, DESIGN_INTERECPTORS);
         }
         return this._design;
     }
