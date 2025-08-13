@@ -58,7 +58,7 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
                 let pipe: PipeTransform | undefined;
                 if (parameter.pipe) {
                     pipe = isToken(parameter.pipe) ? ctx.get<PipeTransform>(parameter.pipe) : parameter.pipe;
-                } else if (isFunction(parameter.provider)) {
+                } else if (parameter.multi && isFunction(parameter.provider)) {
                     pipe = ctx.get<PipeTransform>(isPrimitive(parameter.provider) ? parameter.provider.name.toLowerCase() : getTypeName(parameter.provider));
                 } else if (parameter.type && isPrimitive(parameter.type)) {
                     pipe = ctx.get<PipeTransform>(parameter.type.name.toLowerCase());

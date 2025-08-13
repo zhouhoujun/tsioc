@@ -299,7 +299,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
     protected doResolveArgument<T>(meta: Parameter<T>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null {
         // let result: T | null | undefined;
         const metaRvr = meta.resolver;
-        let resolver: HandlerScope|null;
+        let resolver: HandlerScope | null;
         if (metaRvr?.length) {
             const platform = this.injector.platform();
             resolver = new HandlerScope(platform, this.getResolver() ?? (() => undefined), metaRvr);
@@ -477,13 +477,15 @@ export function getTokenResolver(platform: Platform): HandlerScope<[Token, Injec
                     return next(input, context);
                 },
                 (input, next, context) => {
-                    const type = input[0]
+                    const [type, flags] = input
                     if (!isType(type) || getDef(type).abstract) {
                         return next(input, context);
                     }
-                    const injector = context.injector.parent ?? context.injector;
-                    injector.register(type);
-                    return context.get(type, input[1])
+                    if (!context.has(type, flags)) {
+                        const injector = context.injector.parent ?? context.injector;
+                        injector.register(type);
+                    }
+                    return context.get(type, flags)
                 },
 
 
@@ -510,7 +512,12 @@ export function getParameterResolver(platform: Platform): HandlerScope<Parameter
                     }
                     return next(input, context);
                 },
-
+                (input, next, context) => {
+                    if (!input.name || !context.has(input.name, input.flags)) {
+                        return next(input, context);
+                    }
+                    return context.get(input.name, input.flags)
+                },
                 (input, next, context) => {
 
                     if (isDefined(input.defaultValue)) {
