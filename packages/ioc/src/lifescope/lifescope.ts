@@ -6,7 +6,7 @@ import { isFunction, isNumber } from '../utils/chk';
 /**
  * handler scope.
  */
-export class HandlerScope<TInput = any, TContext= any> implements Handler<TInput> {
+export class HandlerScope<TInput = any, TOutput = any, TContext= any> implements Handler<TInput, TOutput, TContext> {
 
     private _chain?: InterceptorFn<TInput> | null;
     private interceptors: InterceptorLike<TInput>[]
@@ -19,7 +19,7 @@ export class HandlerScope<TInput = any, TContext= any> implements Handler<TInput
         this.interceptors = interceptors.slice();
     }
 
-    handle(input: TInput, context?: TContext, next?: NextOpter<TInput, TContext> | ((input: TInput) => any)) {
+    handle(input: TInput, context?: TContext, next?: NextOpter<TInput, TContext> | ((input: TInput) => any)): TOutput {
         const chain = this.getChain();
         return invokeTail<any>(() => chain(input, isFunction(this.backend)? this.backend : toHandlerFn(this.backend), context ?? this.platform?.context), next);
     }

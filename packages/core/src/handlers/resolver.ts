@@ -1,4 +1,4 @@
-import { ResolveInterceptorLike, Parameter, Invocation, TypeOf, Token, getTokenOf, isToken, getTypeName } from '@tsdi/ioc';
+import { ResolveInterceptorLike, Parameter, TypeOf, Token, getTokenOf } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
 
 /**
@@ -16,7 +16,7 @@ export interface TransportParameterOptions<T = object> extends Parameter<T> {
     /**
      * custom resolver to resolve the value for the property or parameter.
      */
-    resolver?: ResolveInterceptorLike[];
+    resolver?: TypeOf<ResolveInterceptorLike<TransportParameter>>[];
     /**
      * pipe extends args
      */
@@ -32,6 +32,11 @@ export interface TransportParameter<T = object> extends TransportParameterOption
      * field scope.
      */
     scope?: ParameterScope;
+    
+    /**
+     * custom resolver to resolve the value for the property or parameter.
+     */
+    resolver?: TypeOf<ResolveInterceptorLike<TransportParameter>>[];
 }
 
 // /**

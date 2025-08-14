@@ -12,7 +12,7 @@ import { Class } from '../metadata/class';
 import { getDef } from '../metadata/refl';
 import { Provider } from '../providers';
 import { Invocation } from '../invocation';
-import { ContextToken } from '../handler';
+import { ContextToken, HandlerLike, InterceptorLike } from '../handler';
 import { HandlerScope } from '../lifescope/lifescope';
 import { Platform } from '../platform';
 
@@ -302,23 +302,27 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
         let resolver: HandlerScope | null;
         if (metaRvr?.length) {
             const platform = this.injector.platform();
-            resolver = new HandlerScope(platform, this.getResolver() ?? (() => undefined), metaRvr);
+            resolver = createResolveScope(platform, metaRvr.map(r => isType(r) ? this.resolve(r) : r), this.getResolver());
         } else {
             resolver = this.getResolver()
         }
 
         return resolver?.handle(meta, this, {
-            // next: (res, context) => {
-            //     if (res === undefined) {
-            //         if (failed) {
-            //             failed(target!, meta.propertyKey!)
-            //         } else {
-            //             this.missingException([meta], target!, meta.propertyKey!);
-            //         }
-            //     }
-            //     return res;
-            // },
+            next: (res, context) => {
+                if (res === UNRESOLVED) {
+                    if (failed) {
+                        failed(target!, meta.propertyKey!)
+                    } else {
+                        this.missingException([meta], target!, meta.propertyKey!);
+                    }
+                    return null;
+                }
+                return res;
+            },
             error: (error) => {
+                if (error instanceof Exception) {
+                    throw error;
+                }
                 if (failed) {
                     failed(target!, meta.propertyKey!)
                 } else {
@@ -461,14 +465,23 @@ INVOCATION_CONTEXT_IMPL.create = (parent: Injector | InvocationContext, options?
     }
 }
 
+const UNRESOLVED = {};
+const unResolve = <TInput, TContext extends InvocationContext>(input: TInput, context: TContext) => UNRESOLVED;
+
+export function isResolved(value: any) {
+    return value !== UNRESOLVED;
+}
+
+export function createResolveScope<TInput, TContext extends InvocationContext, TOutput = any>(platform: Platform, interceptors: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): HandlerScope<TInput, TContext, TOutput> {
+    return new HandlerScope(platform, backend ?? unResolve, interceptors)
+}
 
 const TOKER_RESOLVER = new ContextToken<HandlerScope>(() => null!);
 export function getTokenResolver(platform: Platform): HandlerScope<[Token, InjectFlags | undefined], InvocationContext> {
     let scope = platform.context.get(TOKER_RESOLVER);
     if (!scope) {
-        scope = new HandlerScope<[Token, InjectFlags | undefined], InvocationContext>(
+        scope = createResolveScope(
             platform,
-            (input, context) => undefined,
             [
                 (input, next, context) => {
                     if (context.has(input[0], input[1])) {
@@ -500,15 +513,16 @@ const PARAMETER_RESOLVER = new ContextToken<HandlerScope>(() => null!);
 export function getParameterResolver(platform: Platform): HandlerScope<Parameter, InvocationContext> {
     let scope = platform.context.get(PARAMETER_RESOLVER);
     if (!scope) {
-        scope = new HandlerScope<Parameter, InvocationContext>(
+        scope = createResolveScope(
             platform,
-            (input, context) => undefined,
             [
                 (input, next, context) => {
                     if (input.provider && !input.multi) {
-                        return getTokenResolver(platform).handle([input.provider, input.flags], context)
+                        const value = getTokenResolver(platform).handle([input.provider, input.flags], context);
+                        if (isResolved(value)) return value;
                     } else if (input.type) {
-                        return getTokenResolver(platform).handle([input.type, input.flags], context)
+                        const value = getTokenResolver(platform).handle([input.type, input.flags], context);
+                        if (isResolved(value)) return value;
                     }
                     return next(input, context);
                 },

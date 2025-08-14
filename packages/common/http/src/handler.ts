@@ -1,4 +1,4 @@
-import { Abstract } from '@tsdi/ioc';
+import { Abstract, Context } from '@tsdi/ioc';
 import { Backend, ApplicationHandler } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { HttpRequest } from './request';
@@ -12,7 +12,6 @@ export abstract class HttpHandler implements ApplicationHandler<HttpRequest<any>
     /**
      * http transport handler.
      * @param req http request input.
-     * @param context request with context for interceptor
      */
     abstract handle(req: HttpRequest<any>): Observable<HttpEvent<any>>;
 }

@@ -1,8 +1,8 @@
-import { AbstractType } from './types';
+import { AbstractType, TypeOf } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
-import { Injector, InstanceOf } from './injector';
+import { Injector } from './injector';
 import { ResolveInterceptorLike, Parameter } from './resolver';
 import { Provider } from './providers';
 import { Exception } from './exception';

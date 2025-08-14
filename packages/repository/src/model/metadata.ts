@@ -33,7 +33,7 @@ export interface RepositoryDecorator {
  */
 export const Repository: RepositoryDecorator = createDecorator<RepositoryMetadata>('Repository', {
     actionType: ActionTypes.inject,
-    props: (model: AbstractType, connection?: string) => ({ model, connection, resolver: RepositoryArgumentResolver })
+    props: (model: AbstractType, connection?: string) => ({ model, connection, resolver: [RepositoryArgumentResolver] })
 });
 
 /**

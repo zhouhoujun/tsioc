@@ -5,13 +5,13 @@ import { HandleContext } from './context';
 /**
  * model parameter argument of an {@link Invocation}.
  */
- export interface ModelArgumentResolver extends Interceptor<Parameter, HandleContext>  {
+export interface ModelArgumentResolver<TOutput = any> extends Interceptor<Parameter, TOutput, HandleContext> {
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param ctx InvocationContext
      */
-    handle<T>(parameter: Parameter, next: Handler<Parameter, HandleContext>, ctx: HandleContext): T | null;
+    intercept(parameter: Parameter, next: Handler<Parameter, TOutput, HandleContext>, ctx: HandleContext): TOutput;
 
     /**
      * has the model type or not.
@@ -19,7 +19,7 @@ import { HandleContext } from './context';
      * @returns boolean.
      */
     hasModel(type: AbstractType | undefined): boolean;
-    
+
     getPropertyMeta(type: AbstractType): PropertyMetadata[];
 }
 

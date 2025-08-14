@@ -6,7 +6,7 @@ import { TypeormAdapter } from './TypeormAdapter';
 
 
 @Injectable()
-export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolver {
+export class TypeormRepositoryArgumentResolver<TOutput = any> extends RepositoryArgumentResolver<TOutput> {
 
     constructor(private adapter: TypeormAdapter) {
         super()
@@ -25,9 +25,11 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
         return true
     }
 
-    resolve<T>(parameter: Parameter<T>, ctx: InvocationContext): T {
+    intercept(parameter: Parameter, next: Handler<Parameter, TOutput, InvocationContext>, ctx: InvocationContext): TOutput {
+        if (!this.canResolve(parameter, ctx)) return next.handle(parameter, ctx);
+
         const { model, type, connection } = parameter as RepositoryMetadata;
-        return this.getRepository(model, type, connection) as T;
+        return this.getRepository(model, type, connection) as TOutput;
     }
 
     protected getLocal(parameter: Parameter<any>, ctx: InvocationContext) {
@@ -63,38 +65,19 @@ export class TypeormRepositoryArgumentResolver extends RepositoryArgumentResolve
 @Injectable()
 export class TypeormTransactionResolver extends TransactionResolver {
 
-    protected resolver: ResolveInterceptorLike;
-    constructor() {
-        super();
-        // this.resolver = composeResolver(
-        //     (param, ctx) => ctx instanceof JoinPoint && isArray(ctx.annotations) && ctx.annotations.length > 0,
-        //     {
-        //         canResolve: (param, ctx: JoinPoint) => {
-        //             return param.provider as AbstractType<any> === TransactionManager || param.type as AbstractType<any> === TransactionManager
-        //         },
-        //         resolve(param, ctx: JoinPoint): any {
-        //             if (ctx.has(TransactionManager)) {
-        //                 return ctx.get(TransactionManager)
-        //             } else {
-        //                 const manager = ctx.get(TransactionManager);
-        //                 ctx.setValue(TransactionManager, manager);
-        //                 return manager
-        //             }
-        //         }
-        //     })
-    }
-    
     intercept(parameter: Parameter, next: Handler<Parameter, InvocationContext>, ctx: InvocationContext) {
-        throw new Error('Method not implemented.');
+        if (ctx instanceof JoinPoint && isArray(ctx.annotations) && ctx.annotations.length > 0
+            && (parameter.provider as AbstractType<any> === TransactionManager || parameter.type as AbstractType<any> === TransactionManager)) {
+            if (ctx.has(TransactionManager)) {
+                return ctx.get(TransactionManager)
+            } else {
+                const manager = ctx.get(TransactionManager);
+                ctx.setValue(TransactionManager, manager);
+                return manager
+            }
+        }
+
+        return next.handle(parameter, ctx)
     }
-
-
-    // canResolve(parameter: Parameter, ctx: InvocationContext): boolean {
-    //     return this.resolver.canResolve(parameter, ctx)
-    // }
-
-    // resolve<T>(parameter: Parameter, ctx: InvocationContext): T | null {
-    //     return this.resolver.resolve<T>(parameter, ctx)
-    // }
 
 }

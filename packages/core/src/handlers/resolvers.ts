@@ -1,4 +1,4 @@
-import { ArgumentException, AbstractType, getType, isArray, isBasic, isDefined, isString, Parameter, Empty, ResolveInterceptorLike, ContextToken, HandlerScope, Platform, isToken, isPrimitive, isFunction, isIterableType, getTypeName } from '@tsdi/ioc';
+import { ArgumentException, AbstractType, isArray, isString, Parameter, Empty, ResolveInterceptorLike, ContextToken, HandlerScope, Platform, isToken, isPrimitive, isFunction, isIterableType, getTypeName, createResolveScope, isResolved, isNil, isObject } from '@tsdi/ioc';
 import { ParameterScope, TransportParameter } from './resolver';
 import { HandleContext } from './context';
 import { PipeTransform } from '../pipes/pipe';
@@ -13,9 +13,8 @@ const ITERABLE_RESOLVER = new ContextToken<HandlerScope>(() => null!);
 export function getIterableResolver(platform: Platform): HandlerScope<[any, PipeTransform, TransportParameter], HandleContext> {
     let scope = platform.context.get(ITERABLE_RESOLVER);
     if (!scope) {
-        scope = new HandlerScope<[any, PipeTransform, TransportParameter], HandleContext>(
+        scope = createResolveScope<[any, PipeTransform, TransportParameter], any, HandleContext>(
             platform,
-            (input, context) => undefined,
             [
                 (input, next, context): any => {
                     const [payload, pipe, parameter] = input;
@@ -53,32 +52,55 @@ export function getIterableResolver(platform: Platform): HandlerScope<[any, Pipe
 export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx: T, scope?: ParameterScope, filed?: string) => any): ResolveInterceptorLike<TransportParameter, T>[] {
     return [
         (parameter, next, ctx) => {
-            const payload = getPayload(ctx, parameter.scope, parameter.field ?? parameter.name);
-            if (isDefined(payload)) {
-                let pipe: PipeTransform | undefined;
-                if (parameter.pipe) {
-                    pipe = isToken(parameter.pipe) ? ctx.get<PipeTransform>(parameter.pipe) : parameter.pipe;
-                } else if (parameter.multi && isFunction(parameter.provider)) {
-                    pipe = ctx.get<PipeTransform>(isPrimitive(parameter.provider) ? parameter.provider.name.toLowerCase() : getTypeName(parameter.provider));
-                } else if (parameter.type && isPrimitive(parameter.type)) {
-                    pipe = ctx.get<PipeTransform>(parameter.type.name.toLowerCase());
-                }
-                // const pipe = getPipe(parameter, ctx, true);
-                if (!pipe) throw missingPipeException(parameter, ctx.targetType, ctx.propertyKey)
-                if (parameter.multi && parameter.type) {
-                    return getIterableResolver(ctx.injector.platform()).handle([payload, pipe, parameter], ctx)
-                }
-                return pipe.transform(payload, ...parameter.args || Empty)
+
+            let pipe: PipeTransform | undefined;
+            if(parameter.pipe) {
+                pipe = isToken(parameter.pipe) ? ctx.get<PipeTransform>(parameter.pipe) : parameter.pipe;
+            }  else if (parameter.multi && isFunction(parameter.provider)) {
+                pipe = ctx.get<PipeTransform>(isPrimitive(parameter.provider) ? parameter.provider.name.toLowerCase() : getTypeName(parameter.provider));
+            } else if (parameter.type && isPrimitive(parameter.type)) {
+                pipe = ctx.get<PipeTransform>(parameter.type.name.toLowerCase());
+            } else {
+                return next(parameter, ctx);
             }
 
-            return next(parameter, ctx);
-        },
-        (parameter, next, ctx) => {
-            if (parameter.nullable === true) {
-                return null;
+            if (!pipe) throw missingPipeException(parameter, ctx.targetType, ctx.propertyKey);
+
+            let payload = getPayload(ctx, parameter.scope, parameter.field ?? parameter.name);
+            if(isNil(payload)) { 
+                const data = getPayload(ctx, parameter.scope);
+                if(!isObject(data)){
+                    payload = data;
+                } else {
+                    return next(parameter, ctx);
+                }
             }
-            return next(parameter, ctx);
+
+    
+
+
+            if (parameter.multi) {
+                const value = getIterableResolver(ctx.injector.platform()).handle([isString(payload) ? payload.split(',') : payload, pipe, parameter], ctx);
+                if (isResolved(value)) return value;
+            } else {
+                return pipe.transform(payload, ...parameter.args || Empty)
+            }
         },
+        // (parameter, next, ctx) => {
+        //     const payload = getPayload(ctx, parameter.scope, parameter.field);
+        //     if (isDefined(payload) && parameter.pipe) {
+        //         const pipe = isToken(parameter.pipe) ? ctx.get<PipeTransform>(parameter.pipe) : parameter.pipe;
+        //         if (!pipe) throw missingPipeException(parameter, ctx.targetType, ctx.propertyKey);
+        //         return pipe.transform(payload, ...parameter.args || Empty)
+        //     }
+        //     return next(parameter, ctx);
+        // },
+        // (parameter, next, ctx) => {
+        //     if (parameter.nullable === true) {
+        //         return null;
+        //     }
+        //     return next(parameter, ctx);
+        // },
         // composeResolver<T, TransportParameter>(
         //     (parameter, ctx) => canResolve(parameter, getPayload(ctx), ctx),
         //     composeResolver<T, TransportParameter>(
@@ -151,8 +173,4 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
  */
 export function isList(target: any) {
     return isArray(target) || isString(target);
-}
-
-function isBasicType(type: AbstractType<object>) {
-    throw new Error('Function not implemented.');
 }

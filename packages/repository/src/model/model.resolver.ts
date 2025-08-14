@@ -1,4 +1,4 @@
-import { Abstract, isArray, isDefined, AbstractType, Type, Parameter, Invocation, Empty } from '@tsdi/ioc';
+import { Abstract, isArray, isDefined, AbstractType, Type, Parameter, Invocation, Empty, Interceptor, Handler } from '@tsdi/ioc';
 import { ModelArgumentResolver, HandleContext } from '@tsdi/core';
 import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldException, missingPropException, ModelFieldResolver, MODEL_FIELD_RESOLVERS } from './field.resolver';
 
@@ -9,7 +9,7 @@ import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldException, m
  * abstract model argument resolver. base implements {@link ModelArgumentResolver}.
  */
 @Abstract()
-export abstract class AbstractModelArgumentResolver implements ModelArgumentResolver {
+export abstract class AbstractModelArgumentResolver<TOutput = any> implements Interceptor<Parameter, TOutput, HandleContext> {
 
     abstract get resolvers(): ModelFieldResolver[] | null;
 
@@ -17,7 +17,9 @@ export abstract class AbstractModelArgumentResolver implements ModelArgumentReso
         return this.hasModel(parameter.provider as AbstractType ?? parameter.type) && this.hasFields(parameter, ctx)
     }
 
-    resolve<T>(parameter: Parameter, ctx: HandleContext): T {
+    intercept(parameter: Parameter, next: Handler<Parameter, TOutput, HandleContext>, ctx: HandleContext): TOutput {
+        if (!this.canResolve(parameter, ctx)) return next.handle(parameter, ctx);
+
         const classType = (parameter.provider ?? parameter.type) as AbstractType;
         const fields = this.getFields(parameter, ctx);
         if (!fields) {
@@ -111,7 +113,7 @@ export abstract class AbstractModelArgumentResolver implements ModelArgumentReso
 /**
  * model resolver.
  */
-class ModelResolver extends AbstractModelArgumentResolver {
+class ModelResolver<TOutput = any> extends AbstractModelArgumentResolver<TOutput> {
 
     constructor(private option: ModelResolveOption) {
         super()
@@ -177,6 +179,6 @@ export interface ModelResolveOption {
  * @param option create option, type of {@link ModelResolveOption}.
  * @returns model resolver instance of {@link ModelArgumentResolver}.
  */
-export function createModelResolver(option: ModelResolveOption): ModelArgumentResolver {
-    return new ModelResolver(option)
+export function createModelResolver<TOutput>(option: ModelResolveOption): ModelArgumentResolver<TOutput> {
+    return new ModelResolver<TOutput>(option)
 }

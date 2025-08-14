@@ -3,6 +3,7 @@ import {
     Interceptor, InterceptorFn, InterceptorLike
 } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
+import { ApplicationHandler } from './ApplicationHandler';
 
 /**
  * Application interceptor is a chainable behavior modifier for `hanlders`.
@@ -11,13 +12,24 @@ import { Observable } from 'rxjs';
  */
 export interface ApplicationInterceptor<TInput = any, TOutput = any, TContext = any> extends Interceptor<TInput, Observable<TOutput>, TContext> {
 
+    /**
+     * the method to implemet interceptor.
+     * 
+     * 实现拦截处理的方法
+     * @param input  request input.
+     * @param next The next handler in the chain, or the backend
+     * if no interceptors remain in the chain.
+     * @param context interceptor with context.
+     * @returns An observable of the event stream.
+     */
+    intercept(input: TInput, next: ApplicationHandler<TInput, TOutput, TContext>, context?: TContext): Observable<TOutput>;
 }
 
 /**
  * Application interceptor function is a chainable behavior modifier for `hanlders`.
  * 拦截方法，用于链接多个处理器，组合成处理器串。
  */
-export type ApplicationInterceptorFn<TInput = any, TOutput = any, TContext = any> = InterceptorFn<TInput, Observable<TOutput>, TContext>;
+export type ApplicationInterceptorFn<TInput = any, TOutput = any, TContext = any> = InterceptorFn<TInput, Observable<TOutput>, TContext|undefined>;
 
 /**
  * Application interceptor like.
