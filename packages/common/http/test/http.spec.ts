@@ -411,7 +411,15 @@ describe('HttpClient', () => {
 
 
     it('response with Observable', async () => {
-        const r = await lastValueFrom(ctx.resolve(HttpClient).get('/device/status', { observe: 'response', responseType: 'text' }));
+        const r = await lastValueFrom(
+            ctx.resolve(HttpClient).get('/device/status', { observe: 'response', responseType: 'text' })
+                .pipe(
+                    catchError(err=> {
+                        console.log(err);
+                        return err;
+                    })
+                )
+        ) as any;
         expect(r.status).toEqual(200);
         expect(r.body).toEqual('working');
     })

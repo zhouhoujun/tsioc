@@ -1,4 +1,4 @@
-import { ArgumentException, AbstractType, isArray, isString, Parameter, Empty, ResolveInterceptorLike, ContextToken, HandlerScope, Platform, isToken, isPrimitive, isFunction, isIterableType, getTypeName, createResolveScope, isResolved, isNil, isObject } from '@tsdi/ioc';
+import { ArgumentException, AbstractType, isArray, isString, Parameter, Empty, ResolveInterceptorLike, ContextToken, HandlerScope, Platform, isToken, isPrimitive, isFunction, isIterableType, getTypeName, createResolveScope, isResolved, isNil, isObject, isDefined } from '@tsdi/ioc';
 import { ParameterScope, TransportParameter } from './resolver';
 import { HandleContext } from './context';
 import { PipeTransform } from '../pipes/pipe';
@@ -54,9 +54,9 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
         (parameter, next, ctx) => {
 
             let pipe: PipeTransform | undefined;
-            if(parameter.pipe) {
+            if (parameter.pipe) {
                 pipe = isToken(parameter.pipe) ? ctx.get<PipeTransform>(parameter.pipe) : parameter.pipe;
-            }  else if (parameter.multi && isFunction(parameter.provider)) {
+            } else if (parameter.multi && isFunction(parameter.provider)) {
                 pipe = ctx.get<PipeTransform>(isPrimitive(parameter.provider) ? parameter.provider.name.toLowerCase() : getTypeName(parameter.provider));
             } else if (parameter.type && isPrimitive(parameter.type)) {
                 pipe = ctx.get<PipeTransform>(parameter.type.name.toLowerCase());
@@ -67,16 +67,16 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
             if (!pipe) throw missingPipeException(parameter, ctx.targetType, ctx.propertyKey);
 
             let payload = getPayload(ctx, parameter.scope, parameter.field ?? parameter.name);
-            if(isNil(payload)) { 
+            if (isNil(payload)) {
                 const data = getPayload(ctx, parameter.scope);
-                if(!isObject(data)){
+                if (isDefined(data) && !isObject(data)) {
                     payload = data;
+                } else if (parameter.nullable) {
+                    return parameter.defaultValue ?? null;
                 } else {
                     return next(parameter, ctx);
                 }
             }
-
-    
 
 
             if (parameter.multi) {
@@ -86,21 +86,7 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
                 return pipe.transform(payload, ...parameter.args || Empty)
             }
         },
-        // (parameter, next, ctx) => {
-        //     const payload = getPayload(ctx, parameter.scope, parameter.field);
-        //     if (isDefined(payload) && parameter.pipe) {
-        //         const pipe = isToken(parameter.pipe) ? ctx.get<PipeTransform>(parameter.pipe) : parameter.pipe;
-        //         if (!pipe) throw missingPipeException(parameter, ctx.targetType, ctx.propertyKey);
-        //         return pipe.transform(payload, ...parameter.args || Empty)
-        //     }
-        //     return next(parameter, ctx);
-        // },
-        // (parameter, next, ctx) => {
-        //     if (parameter.nullable === true) {
-        //         return null;
-        //     }
-        //     return next(parameter, ctx);
-        // },
+        
         // composeResolver<T, TransportParameter>(
         //     (parameter, ctx) => canResolve(parameter, getPayload(ctx), ctx),
         //     composeResolver<T, TransportParameter>(
