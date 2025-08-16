@@ -64,7 +64,7 @@ export class TypeormAdapter {
                     } else {
                         type = Object;
                     }
-                    
+
                     props!.push({
                         name: col.propertyName,
                         primary: col.options.primary,
@@ -127,22 +127,33 @@ export class TypeormAdapter {
         }
 
         const entities = options.entities ?? Empty;
-        const resovler = createModelResolver({
+        const resovler = createModelResolver(injector.platform(), {
             isModel: (type) => entities.indexOf(type) >= 0,
             getPropertyMeta: (type) => this.getModelPropertyMetadata(type),
             hasField: (parameter, ctx) => ctx.request?.body,
             getFields: (parameter: TransportParameter, ctx: HandleContext) => parameter.field ? ctx.request!.body[parameter.field] : ctx.request!.body,
             fieldResolvers: [
-                {
-                    canResolve: (prop, ctx, fields) => prop.dbtype === 'objectId',
-                    resolve: (prop, ctx, fields, target) => {
-                        const value = fields[prop.name];
+
+                (input, next, context) => {
+                    if (input[0].dbtype === 'objectId') {
+                        const [prop, args, target] = input;
+                        const value = args[prop.name] ?? prop.default;
                         if (isNil(value)) return null;
-                        const pipe = ctx.get<PipeTransform>('objectId');
+                        const pipe = context.get<PipeTransform>('objectId');
                         if (!pipe) throw missingPropPipe(prop, target)
-                        return pipe.transform(value, prop.enum)
+                        return pipe.transform(value)
                     }
-                }
+                    return next(input, context);
+                },
+                // canResolve: (prop, ctx, fields) => prop.dbtype === 'objectId',
+                // resolve: (prop, ctx, fields, target) => {
+                //     const value = fields[prop.name];
+                //     if (isNil(value)) return null;
+                //     const pipe = ctx.get<PipeTransform>('objectId');
+                //     if (!pipe) throw missingPropPipe(prop, target)
+                //     return pipe.transform(value, prop.enum)
+                // }
+
             ]
         });
         injector.inject({ provide: MODEL_RESOLVERS, useValue: resovler, multi: true });

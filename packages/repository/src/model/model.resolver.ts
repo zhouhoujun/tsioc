@@ -1,6 +1,6 @@
-import { Abstract, isArray, isDefined, AbstractType, Type, Parameter, Invocation, Empty, Interceptor, Handler } from '@tsdi/ioc';
+import { Abstract, isArray, isDefined, AbstractType, Type, Parameter, Invocation, Empty, Interceptor, Handler, Platform, createResolveScope, isFunction, isResolved } from '@tsdi/ioc';
 import { ModelArgumentResolver, HandleContext } from '@tsdi/core';
-import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldException, missingPropException, ModelFieldResolver, MODEL_FIELD_RESOLVERS } from './field.resolver';
+import { DBPropertyMetadata, FieldResolveInterceptor, getModelFieldResolver, MissingModelFieldException, missingPropException, ModelFieldResolver } from './field.resolver';
 
 
 
@@ -11,16 +11,17 @@ import { composeFieldResolver, DBPropertyMetadata, MissingModelFieldException, m
 @Abstract()
 export abstract class AbstractModelArgumentResolver<TOutput = any> implements Interceptor<Parameter, TOutput, HandleContext> {
 
-    abstract get resolvers(): ModelFieldResolver[] | null;
+    abstract get platform(): Platform;
+    abstract get fieldResolves(): FieldResolveInterceptor[] | null;
 
-    canResolve(parameter: Parameter, ctx: HandleContext): boolean {
-        return this.hasModel(parameter.provider as AbstractType ?? parameter.type) && this.hasFields(parameter, ctx)
+    private canResolve(parameter: Parameter, ctx: HandleContext): boolean {
+        return this.hasModel(isFunction(parameter.provider) ? parameter.provider ?? parameter.type : parameter.type) && this.hasFields(parameter, ctx)
     }
 
     intercept(parameter: Parameter, next: Handler<Parameter, TOutput, HandleContext>, ctx: HandleContext): TOutput {
         if (!this.canResolve(parameter, ctx)) return next.handle(parameter, ctx);
 
-        const classType = (parameter.provider ?? parameter.type) as AbstractType;
+        const classType = (parameter.provider ?? parameter.type) as Type;
         const fields = this.getFields(parameter, ctx);
         if (!fields) {
             throw missingPropException(classType)
@@ -31,16 +32,16 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
         return this.resolveModel(classType, ctx, fields)
     }
 
-    canResolveModel(modelType: AbstractType, ctx: HandleContext, args: Record<string, any>, nullable?: boolean): boolean {
-        return nullable || !this.getPropertyMeta(modelType).some(p => {
-            if (this.hasModel(p.provider ?? p.type)) {
-                return !this.canResolveModel(p.provider ?? p.type, ctx, args[p.name], p.nullable)
-            }
-            return !this.fieldResolver.canResolve(p, ctx, args, modelType)
-        })
-    }
+    // canResolveModel(modelType: AbstractType, ctx: HandleContext, args: Record<string, any>, nullable?: boolean): boolean {
+    //     return nullable || !this.getPropertyMeta(modelType).some(p => {
+    //         if (this.hasModel(p.provider ?? p.type)) {
+    //             return !this.canResolveModel(p.provider ?? p.type, ctx, args[p.name], p.nullable)
+    //         }
+    //         return !this.fieldResolver.canResolve(p, ctx, args, modelType)
+    //     })
+    // }
 
-    resolveModel(modelType: AbstractType, ctx: HandleContext, fields: Record<string, any>, nullable?: boolean): any {
+    resolveModel(modelType: Type, ctx: HandleContext, fields: Record<string, any>, nullable?: boolean): any {
         if (nullable && (!fields || Object.keys(fields).length < 1)) {
             return null
         }
@@ -49,25 +50,40 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
         }
 
         const props = this.getPropertyMeta(modelType);
-        const missings = props.filter(p => !(this.hasModel(p.provider ?? p.type) ?
-            this.canResolveModel(p.provider ?? p.type, ctx, fields[p.name], p.nullable)
-            : this.fieldResolver.canResolve(p, ctx, fields, modelType)));
-        if (missings.length) {
-            throw new MissingModelFieldException(missings, modelType)
-        }
+        // const missings = props.filter(p => !(this.hasModel(p.provider ?? p.type) ?
+        //     this.canResolveModel(p.provider ?? p.type, ctx, fields[p.name], p.nullable)
+        //     : this.fieldResolver.canResolve(p, ctx, fields, modelType)));
+        // if (missings.length) {
+        //     throw new MissingModelFieldException(missings, modelType)
+        // }
 
+        const missings: DBPropertyMetadata[] = [];
         const model = this.createInstance(modelType as Type);
         props.forEach(prop => {
             let val: any;
             if (this.hasModel(prop.provider ?? prop.type)) {
-                val = this.resolveModel(prop.provider ?? prop.type, ctx, fields[prop.name], prop.nullable)
+                val = this.resolveModel(prop.provider ?? prop.type as Type, ctx, fields[prop.name], prop.nullable)
             } else {
-                val = this.fieldResolver.resolve(prop, ctx, fields, modelType)
+                val = this.fieldResolver.handle([prop, fields, modelType], ctx, {
+                    next: (res) => {
+                        if (isResolved(res)) {
+                            return res
+                        } else {
+                            missings.push(prop);
+                        }
+                    },
+                    error: (err) => {
+                        throw err
+                    }
+                })
             }
             if (isDefined(val)) {
                 model[prop.name] = val
             }
         });
+        if (missings.length) {
+            throw new MissingModelFieldException(missings, modelType)
+        }
         return model
     }
 
@@ -78,12 +94,20 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
     private _resolver!: ModelFieldResolver;
     protected get fieldResolver(): ModelFieldResolver {
         if (!this._resolver) {
-            this._resolver = composeFieldResolver(
-                (p, ctx, fields) => p.nullable === true
-                    || (fields && isDefined(fields[p.name] ?? p.default))
-                    || ((ctx as any).method?.toUpperCase() !== 'PUT' && p.primary === true),
-                ...this.resolvers ?? Empty,
-                ...MODEL_FIELD_RESOLVERS)
+            this._resolver = createResolveScope(this.platform, [
+                (input, next, context) => {
+                    const [prop, fields, target] = input;
+                    if (prop.nullable === true
+                        || (fields && isDefined(fields[prop.name] ?? prop.default))
+                        || (context as { method: string }).method?.toUpperCase() !== 'PUT' && prop.primary === true
+                    ) {
+                        return next(input, context);
+                    }
+                },
+                ...this.fieldResolves ?? Empty,
+            ],
+                getModelFieldResolver(this.platform)
+            )
         }
         return this._resolver
     }
@@ -115,7 +139,7 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
  */
 class ModelResolver<TOutput = any> extends AbstractModelArgumentResolver<TOutput> {
 
-    constructor(private option: ModelResolveOption) {
+    constructor(readonly platform: Platform, private option: ModelResolveOption) {
         super()
     }
 
@@ -123,7 +147,7 @@ class ModelResolver<TOutput = any> extends AbstractModelArgumentResolver<TOutput
         return this.option.createInstance ? this.option.createInstance(model) : super.createInstance(model as Type)
     }
 
-    get resolvers(): ModelFieldResolver[] | null {
+    get fieldResolves(): FieldResolveInterceptor[] | null {
         return this.option.fieldResolvers ?? null
     }
     hasModel(type: AbstractType<any>): boolean {
@@ -171,14 +195,14 @@ export interface ModelResolveOption {
     /**
      * custom field resolvers.
      */
-    fieldResolvers?: ModelFieldResolver[];
+    fieldResolvers?: FieldResolveInterceptor[];
 }
 
 /**
  * model resolver factory. create resolver for {@link Invocation}.
- * @param option create option, type of {@link ModelResolveOption}.
+ * @param platform platform.
  * @returns model resolver instance of {@link ModelArgumentResolver}.
  */
-export function createModelResolver<TOutput>(option: ModelResolveOption): ModelArgumentResolver<TOutput> {
-    return new ModelResolver<TOutput>(option)
+export function createModelResolver<TOutput>(platform: Platform,option: ModelResolveOption): ModelArgumentResolver<TOutput> {
+    return new ModelResolver<TOutput>(platform, option)
 }
