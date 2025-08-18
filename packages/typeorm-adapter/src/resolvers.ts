@@ -1,4 +1,4 @@
-import { Parameter, InvocationContext, AbstractType, lang, ArgumentException, isArray, Injectable, ResolveInterceptorLike, Handler } from '@tsdi/ioc';
+import { Parameter, InvocationContext, AbstractType, lang, ArgumentException, isArray, Injectable, Handler } from '@tsdi/ioc';
 import { JoinPoint } from '@tsdi/aop';
 import { RepositoryArgumentResolver, RepositoryMetadata, TransactionManager, TransactionResolver } from '@tsdi/repository';
 import { MongoRepository, Repository, TreeRepository } from 'typeorm';

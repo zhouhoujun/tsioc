@@ -19,7 +19,7 @@ export const Transactional: Transactional = createDecorator<TransactionalMetadat
     def: {
         method: [
             (ctx) => {
-                ctx.class.setMethodOptions(ctx.define.propertyKey, { resolvers: [(parameter, next, context) => context!.injector.get(TransactionResolver)] });
+                ctx.class.setMethodOptions(ctx.define.propertyKey, { resolvers: [TransactionResolver] });
             }
         ]
     },

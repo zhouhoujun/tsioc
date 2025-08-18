@@ -1,7 +1,7 @@
 import { AbstractType, Empty, Type } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getTypeName, getTypeChain } from '../utils/lang';
-import { isArray, isDefined, isFunction, isString, isNil, isAbstractType, getType, isType } from '../utils/chk';
+import { isArray, isDefined, isFunction, isString, isAbstractType, getType, isType } from '../utils/chk';
 import { ResolveInterceptorLike, Parameter } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeArguments, InvocationRequest } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
@@ -135,7 +135,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
             if (args?.length) {
                 resolvers.push(...args);
             }
-            const resls = this.options.resolvers; //?.map(r => isFunction(r) ? (r as Function)(this.injector) : r);
+            const resls = this.options.resolvers?.map(r => isType(r) ? this.injector.get(r) : r);
             if (resls?.length) {
                 resolvers.push(...resls);
             }
