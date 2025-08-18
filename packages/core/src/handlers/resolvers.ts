@@ -85,69 +85,7 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
             } else {
                 return pipe.transform(payload, ...parameter.args || Empty)
             }
-        },
-        
-        // composeResolver<T, TransportParameter>(
-        //     (parameter, ctx) => canResolve(parameter, getPayload(ctx), ctx),
-        //     composeResolver<T, TransportParameter>(
-        //         (parameter, ctx) => isPrimitiveType(parameter.type),
-        //         {
-        //             canResolve(parameter, ctx) {
-        //                 return isDefined(getPayload(ctx as T, parameter.scope, parameter.field ?? parameter.name))
-        //             },
-        //             resolve(parameter, ctx) {
-        //                 const pipe = getPipe(parameter, ctx, true);
-        //                 if (!pipe) throw missingPipeException(parameter, ctx.targetType, ctx.propertyKey)
-        //                 return pipe.transform(getPayload(ctx as T, parameter.scope, parameter.field ?? parameter.name), ...parameter.args || Empty)
-        //             }
-        //         },
-        //         {
-        //             canResolve(parameter, ctx) {
-        //                 const val = getPayload(ctx as T, parameter.scope);
-        //                 return !parameter.field && (isBasic(val) || parameter.type == getType(val))
-        //             },
-        //             resolve(parameter: TransportParameter, ctx) {
-        //                 const pipe = getPipe(parameter, ctx, true);
-        //                 if (!pipe) throw missingPipeException(parameter, ctx.targetType, ctx.propertyKey)
-        //                 return pipe.transform(getPayload(ctx as T, parameter.scope), ...parameter.args || Empty)
-        //             }
-        //         }
-        //     ) ,
-        //     composeResolver<T, TransportParameter>(
-        //         (parameter) => isPrimitiveType(parameter.provider) && (parameter.multi === true || parameter.type === Array),
-        //         {
-        //             canResolve(parameter, ctx) {
-        //                 return isList(getPayload(ctx as T, parameter.scope, parameter.field ?? parameter.name))
-        //             },
-        //             resolve(parameter, ctx) {
-        //                 const value = getPayload(ctx as T, parameter.scope, parameter.field ?? parameter.name);
-        //                 const values: any[] = isString(value) ? value.split(',') : value;
-        //                 const pipe = getPipe(parameter, ctx, true);
-        //                 if (!pipe) throw missingPipeException(parameter, ctx.targetType, ctx.propertyKey)
-        //                 return values.map(val => pipe.transform(val, ...parameter.args || Empty)) as any
-        //             }
-        //         }
-        //     ),
-        //     {
-        //         canResolve(parameter, ctx) {
-        //             return isDefined(parameter.pipe) && isDefined(getPayload(ctx as T, parameter.scope, parameter.field))
-        //         },
-        //         resolve(parameter, ctx) {
-        //             const value = getPayload(ctx as T, parameter.scope, parameter.field);
-        //             const pipe = getPipe(parameter, ctx);
-        //             if (!pipe) throw missingPipeException(parameter, ctx.targetType, ctx.propertyKey)
-        //             return pipe.transform(value, ...parameter.args || Empty)
-        //         }
-        //     },
-        //     {
-        //         canResolve(parameter, ctx) {
-        //             return parameter.nullable === true
-        //         },
-        //         resolve(parameter, ctx) {
-        //             return null!
-        //         }
-        //     }
-        // )
+        }
     ];
 }
 

@@ -1,5 +1,5 @@
 import { ApplicationContext, MODEL_RESOLVERS, ModelArgumentResolver, Started, TransportParameter } from '@tsdi/core';
-import { Exception, InjectFlags, Injectable, Invocation, Type, getTypeName, isFunction, isNil, isString, isType, lang } from '@tsdi/ioc';
+import { AbstractType, Exception, InjectFlags, Injectable, Invocation, Type, getTypeName, isFunction, isNil, isString, isType, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, joinPath } from '@tsdi/common';
 import { ctype } from '@tsdi/common/transport';
@@ -354,7 +354,7 @@ export class SwaggerService {
         }
     }
 
-    regSchema(jsonDoc: OpenAPIObject, type: Type, modelResolver: ModelArgumentResolver | ((type?: Type) => ModelArgumentResolver | undefined)) {
+    regSchema(jsonDoc: OpenAPIObject, type: AbstractType, modelResolver: ModelArgumentResolver | ((type?: AbstractType) => ModelArgumentResolver | undefined)) {
         if (type === Object) return;
         const resovler = isFunction(modelResolver) ? modelResolver(type) : modelResolver;
         if (!resovler || !resovler.hasModel(type)) return;
@@ -389,7 +389,7 @@ export class SwaggerService {
         };
     }
 
-    toModelSchema(jsonDoc: OpenAPIObject, type: Type, modelResolver: ModelArgumentResolver | ((type?: Type) => ModelArgumentResolver | undefined)): any {
+    toModelSchema(jsonDoc: OpenAPIObject, type: AbstractType, modelResolver: ModelArgumentResolver | ((type?: AbstractType) => ModelArgumentResolver | undefined)): any {
         const modelName = getTypeName(type);
         if (!jsonDoc.components.schemas[modelName]) {
             this.regSchema(jsonDoc, type, modelResolver);
@@ -399,7 +399,7 @@ export class SwaggerService {
         };
     }
 
-    toDocType(type?: Type): string {
+    toDocType(type?: AbstractType): string {
         if (!type) return '';
         if (type === String) return 'string';
         if (type === Number) return 'number';

@@ -1,4 +1,4 @@
-import { InvocationContext, isDefined, isFunction, isNil, PropertyMetadata, AbstractType, object2string, ArgumentException, Type, ContextToken, HandlerScope, Platform, createResolveScope, Interceptor, InterceptorLike } from '@tsdi/ioc';
+import { InvocationContext, isFunction, isNil, PropertyMetadata, AbstractType, object2string, ArgumentException, Type, ContextToken, HandlerScope, Platform, createResolveScope, Interceptor, InterceptorLike, getType } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 
 /**
@@ -361,17 +361,17 @@ export function getModelFieldResolver(platform: Platform): HandlerScope<[DBPrope
             platform,
             [
                 (input, next, context) => {
-                    if (isDefined(input[0].dbtype)) {
+                    if (input[0].dbtype) {
                         const [prop, args, target] = input;
                         const value = args[prop.name] ?? prop.default;
                         if (isNil(value)) return null;
-                        return parseDbtype(prop.dbtype, value, args, target);
+                        return parseDbtype(value, prop, context, getType(args) ?? target);
                     }
                     return next(input, context);
                 },
                 (input, next, context) => {
                     const [prop, args, target] = input;
-                    if (prop.multi) {
+                    if (!prop.multi) {
                         const value = args[prop.name] ?? prop.default;
                         if (isNil(value)) return null;
                         const type = prop.provider ?? prop.type;
@@ -629,212 +629,3 @@ export function toPrimitType(dbtype: string): AbstractType {
     }
     return Object;
 }
-
-// /**
-//  * Resolver filed of an model.
-//  */
-// export interface ModelFieldResolver {
-//     /**
-//      * Return whether an argument of the given {@code prop} can be resolved.
-//      * @param prop argument type
-//      * @param args gave field values
-//      */
-//     canResolve(prop: DBPropertyMetadata, ctx: InvocationContext, fields: Record<string, any>, target?: AbstractType): boolean;
-//     /**
-//      * Resolves an argument of the given {@code prop}.
-//      * @param prop argument type
-//      * @param fields gave field values
-//      */
-//     resolve<T>(prop: DBPropertyMetadata<T>, ctx: InvocationContext, args: Record<string, any>, target?: AbstractType): T | null;
-// }
-
-// /**
-//  * compose resolver for an field of an model.
-//  * @param filter compose fiter
-//  * @param resolvers resolves of the group.
-//  * @returns 
-//  */
-// export function composeFieldResolver<T extends ModelFieldResolver, TP extends DBPropertyMetadata = DBPropertyMetadata>(
-//     filter: (prop: TP, ctx: InvocationContext, fields: Record<string, any>) => boolean,
-//     ...resolvers: T[]): ModelFieldResolver {
-//     return {
-//         canResolve: (prop: TP, ctx, fields, target) => filter(prop, ctx, fields) && resolvers.some(r => r.canResolve(prop, ctx, fields, target)),
-//         resolve: (prop: TP, ctx, fields, target) => {
-//             let result: any;
-//             resolvers.some(r => {
-//                 if (r.canResolve(prop, ctx, fields, target)) {
-//                     result = r.resolve(prop, ctx, fields, target);
-//                     return isDefined(result)
-//                 }
-//                 return false
-//             });
-//             return result ?? null
-//         }
-//     }
-// }
-
-// const intExp = /^((tiny|small|medium)?int\w*|long)$/;
-// const floatExp = /^float\d*$/;
-// const doubleExp = /^double(\sprecision)?$/;
-// const decExp = /^(\w*decimal|dec|real|numeric|number)$/;
-// const dateExp = /^((\s|\w)*time(\s|\w)*|\w*date)$/;
-// const boolExp = /^(bool|boolean|bit|varbit)$/;
-// const strExp = /^(uuid|string|\w*text|(\s|\w)*char(\s|\w)*)$/;
-// const bufferExp = /^(\w*binary|\w*blob|\w*bytes|(\s|\w)*raw|image|\w*clob)$/;
-// const row = /^(\s|\w)*raw$/;
-// const blob = /^\w*blob$/;
-// const clob = /^\w*clob$/;
-
-// const jsonExp = /^(\s|\w)*json(b)?$/;
-
-// export function toPrimitType(dbtype: string): AbstractType {
-//     if (dbtype == 'bigint') return BigInt;
-//     if (strExp.test(dbtype)) return String;
-//     if (boolExp.test(dbtype)) return Boolean;
-//     if (dateExp.test(dbtype)) return Date;
-//     if (intExp.test(dbtype) || floatExp.test(dbtype) || doubleExp.test(dbtype) || decExp.test(dbtype)) {
-//         return Number;
-//     }
-//     return Object;
-// }
-
-// /**
-//  * defauts model field resolvers.
-//  */
-// export const MODEL_FIELD_RESOLVERS: ModelFieldResolver[] = [
-//     composeFieldResolver(
-//         (prop, ctx, args) => isDefined(prop.dbtype),
-//         {
-//             canResolve: (prop, ctx, args) => prop.dbtype === 'enum',
-//             resolve: (prop, ctx, args, target) => {
-//                 const value = args[prop.name] ?? prop.default;
-//                 if (isNil(value)) return null;
-//                 const pipe = ctx.get<PipeTransform>('enum');
-//                 if (!pipe) throw missingPropPipe(prop, target)
-//                 return pipe.transform(value, prop.enum)
-//             }
-//         },
-//         {
-//             canResolve: (prop, ctx, args) => boolExp.test(prop.dbtype!),
-//             resolve: (prop, ctx, args, target) => {
-//                 const value = args[prop.name];
-//                 if (isNil(value)) return null;
-//                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('boolean');
-//                 if (!pipe) throw missingPropPipe(prop, target);
-//                 return pipe.transform(value)
-//             }
-//         },
-//         {
-//             canResolve: (prop, ctx, args) => prop.dbtype === 'bigint',
-//             resolve: (prop, ctx, args, target) => {
-//                 const value = args[prop.name] ?? prop.default;
-//                 if (isNil(value)) return null;
-//                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('bigint');
-//                 if (!pipe) throw missingPropPipe(prop, target);
-//                 return pipe.transform(value)
-//             }
-//         },
-//         {
-//             canResolve: (prop, ctx, args) => intExp.test(prop.dbtype!),
-//             resolve: (prop, ctx, args, target) => {
-//                 const value = args[prop.name] ?? prop.default;
-//                 if (isNil(value)) return null;
-//                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('int');
-//                 if (!pipe) throw missingPropPipe(prop, target);
-//                 return pipe.transform(value)
-//             }
-//         },
-//         {
-//             canResolve: (prop, ctx, args) => floatExp.test(prop.dbtype!),
-//             resolve: (prop, ctx, args, target) => {
-//                 const value = args[prop.name] ?? prop.default;
-//                 if (isNil(value)) return null;
-//                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('float');
-//                 if (!pipe) throw missingPropPipe(prop, target);
-//                 return pipe.transform(value, prop.precision)
-//             }
-//         },
-//         {
-//             canResolve: (prop, ctx, args) => doubleExp.test(prop.dbtype!),
-//             resolve: (prop, ctx, args, target) => {
-//                 const value = args[prop.name] ?? prop.default;
-//                 if (isNil(value)) return null;
-//                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('double');
-//                 if (!pipe) throw missingPropPipe(prop, target);
-//                 return pipe.transform(value, prop.precision)
-//             }
-//         },
-//         {
-//             canResolve: (prop, ctx, args) => decExp.test(prop.dbtype!),
-//             resolve: (prop, ctx, args, target) => {
-//                 const value = args[prop.name] ?? prop.default;
-//                 if (isNil(value)) return null;
-//                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('number');
-//                 if (!pipe) throw missingPropPipe(prop, target);
-//                 return pipe.transform(value, prop.precision)
-//             }
-//         },
-//         {
-//             canResolve: (prop, ctx, args) => strExp.test(prop.dbtype!),
-//             resolve: (prop, ctx, args, target) => {
-//                 const value = args[prop.name] ?? prop.default;
-//                 if (isNil(value)) return null;
-//                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('string');
-//                 if (!pipe) throw missingPropPipe(prop, target);
-//                 return pipe.transform(value, prop.length)
-//             }
-//         },
-//         {
-//             canResolve: (prop, ctx, args) => jsonExp.test(prop.dbtype!),
-//             resolve: (prop, ctx, args, target) => {
-//                 const value = args[prop.name] ?? prop.default;
-//                 if (isNil(value)) return null;
-//                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('json');
-//                 if (!pipe) throw missingPropPipe(prop, target);
-//                 return pipe.transform(value)
-//             }
-//         },
-//         {
-//             canResolve: (prop, ctx, args) => bufferExp.test(prop.dbtype!),
-//             resolve: (prop, ctx, args, target) => {
-//                 const value = args[prop.name] ?? prop.default;
-//                 const dbtype = prop.dbtype!;
-//                 if (isNil(value)) return null;
-//                 let pipeName = 'buffer';
-//                 if (dbtype === 'image') {
-//                     pipeName = 'image'
-//                 } else if (row.test(dbtype)) {
-//                     pipeName = 'row';
-//                 } else if (blob.test(dbtype)) {
-//                     pipeName = 'blob'
-//                 } else if (clob.test(dbtype)) {
-//                     pipeName = 'clob'
-//                 }
-
-//                 const pipe = ctx.get<PipeTransform>(dbtype) ?? ctx.get<PipeTransform>(pipeName);
-//                 if (!pipe) throw missingPropPipe(prop, target);
-//                 return pipe.transform(value)
-//             }
-//         },
-//         {
-//             canResolve: (prop, ctx, args) => dateExp.test(prop.dbtype!),
-//             resolve: (prop, ctx, args, target) => {
-//                 const value = args[prop.name] ?? prop.default;
-//                 if (isNil(value)) return null;
-//                 const pipe = ctx.get<PipeTransform>(prop.dbtype!) ?? ctx.get<PipeTransform>('date');
-//                 if (!pipe) throw missingPropPipe(prop, target);
-//                 return pipe.transform(value)
-//             }
-//         }
-//     ),
-//     {
-//         canResolve: (prop, ctx, args) => !prop.multi && isFunction(prop.provider ?? prop.type),
-//         resolve: (prop, ctx, args, target) => {
-//             const value = args[prop.name] ?? prop.default;
-//             if (isNil(value)) return null;
-//             const pipe = ctx.get<PipeTransform>((prop.provider ?? prop.type)?.name.toLowerCase());
-//             if (!pipe) throw missingPropPipe(prop, target);
-//             return pipe.transform(value)
-//         }
-//     }
-// ];

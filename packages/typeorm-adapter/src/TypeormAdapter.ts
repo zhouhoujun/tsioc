@@ -53,12 +53,17 @@ export class TypeormAdapter {
                 .forEach(col => {
                     const opType = col.options.type;
                     let type: AbstractType;
+                    let dbtype: string | undefined;
                     if (opType) {
                         if (isAbstractType(opType)) {
                             type = opType;
                         } else if (isString(opType)) {
+                            dbtype = opType;
                             type = isString(col.target) ? toPrimitType(opType) : Reflect.getMetadata("design:type", col.target.prototype, col.propertyName) ?? toPrimitType(opType);
                         } else {
+                            if (col.mode === 'objectId') {
+                                dbtype = 'objectId';
+                            }
                             type = (opType as PropertyDescriptor).value ?? Object
                         }
                     } else {
@@ -66,14 +71,9 @@ export class TypeormAdapter {
                     }
 
                     props!.push({
+                        ...col.options,
                         name: col.propertyName,
-                        primary: col.options.primary,
-                        nullable: col.options.nullable,
-                        precision: col.options.precision,
-                        length: col.options.length,
-                        width: col.options.width,
-                        default: col.options.default,
-                        dbtype: isString(opType) ? opType : (col.mode === 'objectId' ? 'objectId' : ''),
+                        dbtype,
                         type
                     })
                 });
@@ -145,15 +145,6 @@ export class TypeormAdapter {
                     }
                     return next(input, context);
                 },
-                // canResolve: (prop, ctx, fields) => prop.dbtype === 'objectId',
-                // resolve: (prop, ctx, fields, target) => {
-                //     const value = fields[prop.name];
-                //     if (isNil(value)) return null;
-                //     const pipe = ctx.get<PipeTransform>('objectId');
-                //     if (!pipe) throw missingPropPipe(prop, target)
-                //     return pipe.transform(value, prop.enum)
-                // }
-
             ]
         });
         injector.inject({ provide: MODEL_RESOLVERS, useValue: resovler, multi: true });

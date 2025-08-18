@@ -520,17 +520,13 @@ export function getParameterResolver(platform: Platform): HandlerScope<Parameter
                     if (input.provider && !input.multi) {
                         const value = getTokenResolver(platform).handle([input.provider, input.flags], context);
                         if (isResolved(value)) return value;
+                    } else if(!input.multi && input.name && context.has(input.name, input.flags)) {
+                        return context.get(input.name, input.flags)
                     } else if (input.type) {
                         const value = getTokenResolver(platform).handle([input.type, input.flags], context);
                         if (isResolved(value)) return value;
                     }
                     return next(input, context);
-                },
-                (input, next, context) => {
-                    if (!input.name || !context.has(input.name, input.flags)) {
-                        return next(input, context);
-                    }
-                    return context.get(input.name, input.flags)
                 },
                 (input, next, context) => {
 
@@ -551,77 +547,3 @@ export function getParameterResolver(platform: Platform): HandlerScope<Parameter
 }
 
 
-
-// export const BASE_RESOLVERS: OperationArgumentResolver[] = [
-//     composeResolver(
-//         (parameter, ctx) => isDefined(parameter.provider),
-//         {
-//             canResolve(parameter, ctx) {
-//                 return ctx.has(parameter.provider as Token, parameter.flags)
-//             },
-//             resolve(parameter, ctx) {
-//                 return ctx.get(parameter.provider as Token, parameter.flags)
-//             }
-//         },
-//         {
-//             canResolve(parameter, ctx) {
-//                 if (parameter.multi || !isFunction(parameter.provider) || isPrimitiveType(parameter.provider)
-//                     || getDef(parameter.provider).abstract) return false;
-//                 return isDefined(parameter.flags) ? !ctx.injector.has(parameter.provider!, parameter.flags) : true
-//             },
-//             resolve(parameter, ctx) {
-//                 const pdr = parameter.provider!;
-//                 if (parameter.name || parameter.propertyKey) {
-//                     const injector = ctx.injector.parent ?? ctx.injector;
-//                     injector.register(pdr as Type);
-//                 }
-//                 return ctx.get(pdr, parameter.flags)
-//             }
-//         }
-//     ),
-//     composeResolver(
-//         (parameter, ctx) => isDefined(parameter.name),
-//         {
-//             canResolve(parameter, ctx) {
-//                 return ctx.has(parameter.name!, parameter.flags)
-//             },
-//             resolve(parameter, ctx) {
-//                 return ctx.get(parameter.name!, parameter.flags) as any
-//             }
-//         }
-//     ),
-//     composeResolver(
-//         (parameter, ctx) => isDefined(parameter.type),
-//         {
-//             canResolve(parameter, ctx) {
-//                 return ctx.has(parameter.type!, parameter.flags)
-//             },
-//             resolve(parameter, ctx) {
-//                 return ctx.get(parameter.type!, parameter.flags)
-//             }
-//         },
-//         {
-//             canResolve(parameter, ctx) {
-//                 if (!isFunction(parameter.type) || isPrimitiveType(parameter.type) || getDef(parameter.type!).abstract) return false;
-//                 return isDefined(parameter.flags) ? !ctx.injector.has(parameter.type!, parameter.flags) : true
-//             },
-//             resolve(parameter, ctx) {
-//                 const ty = parameter.type!;
-//                 if (parameter.name || parameter.propertyKey) {
-//                     const injector = ctx.injector.parent ?? ctx.injector;
-//                     injector.register(ty as Type);
-//                 }
-//                 return ctx.get(ty, parameter.flags)
-//             }
-//         }
-//     ),
-//     // default value
-//     {
-//         canResolve(parameter) {
-//             return isDefined(parameter.defaultValue) || parameter.nullable === true || (parameter.flags && !!(parameter.flags & InjectFlags.Optional)) as boolean
-//         },
-//         resolve(parameter) {
-//             return parameter.defaultValue ?? null
-//         }
-//     }
-// ];
