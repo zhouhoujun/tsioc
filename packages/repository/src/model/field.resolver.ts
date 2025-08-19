@@ -109,12 +109,12 @@ export function parseDbtype(value: any, prop: DBPropertyMetadata, ctx: Invocatio
         case 'int4':
         case 'int8':
         case 'int32':
-            ctx.get<PipeTransform>(prop.dbtype) ?? ctx.get<PipeTransform>('int');
+            pipe = ctx.get<PipeTransform>(prop.dbtype) ?? ctx.get<PipeTransform>('int');
             break;
 
         case 'long':
         case 'int64':
-            ctx.get<PipeTransform>(prop.dbtype) ?? ctx.get<PipeTransform>('int');
+            pipe = ctx.get<PipeTransform>(prop.dbtype) ?? ctx.get<PipeTransform>('long');
             break;
 
         case 'float':
@@ -261,6 +261,7 @@ export function parseDbtype(value: any, prop: DBPropertyMetadata, ctx: Invocatio
         case 'hstore': //'color => "black", storage => "64GB", weight => "150g"'
             // string
             pipe = ctx.get<PipeTransform>(prop.dbtype) ?? ctx.get<PipeTransform>('string');
+            args.push(prop.length);
             break;
 
         case 'inet': //IPv4 或 IPv6 地址
@@ -270,12 +271,14 @@ export function parseDbtype(value: any, prop: DBPropertyMetadata, ctx: Invocatio
         case 'macaddr': //'08:00:2b:01:02:03'
             // string
             pipe = ctx.get<PipeTransform>(prop.dbtype) ?? ctx.get<PipeTransform>('string');
+            args.push(prop.length);
             break;
 
         case 'point':
             // [x, y, z?] number array
             pipe = ctx.get<PipeTransform>(prop.dbtype) ?? ctx.get<PipeTransform>('array');
             args.push('number');
+            args.push(3);
             break;
 
         case 'geometry':
@@ -299,6 +302,7 @@ export function parseDbtype(value: any, prop: DBPropertyMetadata, ctx: Invocatio
         case 'geometrycollection':
             //string
             pipe = ctx.get<PipeTransform>(prop.dbtype) ?? ctx.get<PipeTransform>('string');
+            args.push(prop.length);
             break;
 
         case 'int4range':
@@ -315,6 +319,7 @@ export function parseDbtype(value: any, prop: DBPropertyMetadata, ctx: Invocatio
         case 'tstzmultirange':
             //string
             pipe = ctx.get<PipeTransform>(prop.dbtype) ?? ctx.get<PipeTransform>('string');
+            args.push(prop.length);
             break
 
         // array（数组类型）
@@ -327,26 +332,31 @@ export function parseDbtype(value: any, prop: DBPropertyMetadata, ctx: Invocatio
         case 'array':
             // Array<T>
             pipe = ctx.get<PipeTransform>(prop.dbtype) ?? ctx.get<PipeTransform>('array');
+            if(prop.type && prop.type !== Array) args.push(prop.type);
             break;
 
 
         case 'cube': //多维立方体类型 '(1,2,3),(4,5,6)'
             pipe = ctx.get<PipeTransform>(prop.dbtype) ?? ctx.get<PipeTransform>('string');
+            args.push(prop.length);
             break;
 
         case 'ltree': //('Top'), ('Top.Science'), ('Top.Science.Astronomy')
             //这些特殊数据类型使PostgreSQL能够高效处理特定场景下的数据，超越了传统关系型数据库的功能限制。
             pipe = ctx.get<PipeTransform>(prop.dbtype) ?? ctx.get<PipeTransform>('string');
+            args.push(prop.length);
             break;
 
         case 'xml':
             pipe = ctx.get<PipeTransform>(prop.dbtype) ?? ctx.get<PipeTransform>('string');
+            args.push(prop.length);
             break;
 
         case 'json':
         case 'jsonb':
         case 'simple-json':
             pipe = ctx.get<PipeTransform>('json');
+            args.push(prop.length);
             break;
     }
     if (!pipe) throw missingPropPipe(prop, target);
@@ -365,7 +375,7 @@ export function getModelFieldResolver(platform: Platform): HandlerScope<[DBPrope
                         const [prop, args, target] = input;
                         const value = args[prop.name] ?? prop.default;
                         if (isNil(value)) return null;
-                        return parseDbtype(value, prop, context, getType(args) ?? target);
+                        return parseDbtype(value, prop, context, target ?? getType(args));
                     }
                     return next(input, context);
                 },
@@ -566,7 +576,7 @@ export function toPrimitType(dbtype: string): AbstractType {
             return Array;
 
         case 'geometry':
-        case 'geography':            
+        case 'geography':
             return String;
 
         case 'lseg': //'[(1,1), (4,5)]'

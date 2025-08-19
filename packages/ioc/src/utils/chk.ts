@@ -315,7 +315,7 @@ export function isPrimitive(target: Function): boolean {
 export function isBasic(target: any): boolean {
     return isBasicType(getType(target))
 }
-function isBasicType(target: Function): boolean {
+export function isBasicType(target: Function): boolean {
     return target === Function
         || target === String
         || target === Number

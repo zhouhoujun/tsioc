@@ -5,7 +5,7 @@ import { invalidPipeArgument, PipeTransform } from '../pipe';
 /**
  * format times with unit us, ns, ms, s, min, h... 
  */
-@Pipe('times')
+@Pipe('times-format')
 export class TimeFormatPipe implements PipeTransform<string> {
 
     transform(ms: number, precise = 2): string {
