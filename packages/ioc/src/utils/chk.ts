@@ -23,11 +23,22 @@ const class$ = /^[\s\S]*class\s+/;
 const fncallErr = `cannot be invoked without 'new'`;
 
 
-function newable(fn: Function) {
+const newable = Symbol('newable');
+interface Newable extends Function {
+    [newable]?: boolean;
+}
+
+/**
+ * this fn can use new or not.
+ * @param fn 
+ * @returns 
+ */
+export function isNewable(fn: Function): boolean {
     if (!fn.prototype || fn.prototype.constructor !== fn) return false;
     if (typeof Symbol.hasInstance !== 'undefined') {
         return fn[Symbol.hasInstance] ? true : false;
     }
+    if (isBoolean((fn as Newable)[newable])) return (fn as Newable)[newable] as boolean;
 
     const str = String(fn);
     if (class$.test(str)) return true;
@@ -35,28 +46,18 @@ function newable(fn: Function) {
 
     try {
         fn();
+        (fn as Newable)[newable] = false;
         return false;
     } catch (err: any) {
-        if (err.toString().indexOf(fncallErr) > 0) return true;
+        if (err.toString().indexOf(fncallErr) > 0) {
+            (fn as Newable)[newable] = true;
+            return true;
+        }
+        (fn as Newable)[newable] = false;
         return false;
     }
 }
 
-const typpMaps = new WeakMap<Function, boolean>();
-
-/**
- * this fn can use new or not.
- * @param fn 
- * @returns 
- */
-export function isNewable(t: Function): boolean {
-    let is = typpMaps.get(t);
-    if (is === undefined) {
-        is = newable(t);
-        typpMaps.set(t, is);
-    }
-    return is;
-}
 /**
  * is abstract type or not.
  * @param t 

@@ -47,9 +47,6 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
 
     request: InvocationRequest | null | undefined;
 
-    private cache = new Map<Token, Map<InjectFlags, any>>();
-    private pcache = new WeakMap<Parameter, any>();
-
     /**
      * get the invocation arguments resolver.
      */
@@ -112,7 +109,6 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
                     this.options.resolvers = [...option.resolvers, ...this.options.resolvers || Empty]
                 }
             }
-            this.clearCache();
         }
     }
 
@@ -166,7 +162,6 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
                 this._refs!.unshift(j)
             }
         })
-        this.clearCache();
     }
 
     /**
@@ -176,7 +171,6 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
     removeRef(...contexts: InvocationContext[]): void {
         this.assertNotDestroyed();
         contexts.forEach(context => remove(this._refs, context));
-        this.clearCache();
     }
 
     hasRef(ctx: InvocationContext): boolean {
@@ -239,18 +233,6 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
         return this
     }
 
-    // /**
-    //  * get resolver in the property or parameter metadata. configured in class design.
-    //  * @param meta property or parameter metadata type of {@link Parameter}.
-    //  * @returns undefined or resolver of type {@link OperationArgumentResolver}.
-    //  */
-    // getMetaReolver<T>(meta: Parameter<T>): OperationArgumentResolver | undefined {
-    //     if (isFunction(meta.resolver)) {
-    //         return this.injector.get<OperationArgumentResolver>(meta.resolver)
-    //     }
-    //     return meta.resolver
-    // }
-
     /**
      * resolve token.
      * 
@@ -259,20 +241,10 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      * @returns 
      */
     resolve<T>(token: Token<T>, flags?: InjectFlags): T {
-        this.assertNotDestroyed();
-        let cache = this.cache.get(token);
-        let data = cache?.get(flags || InjectFlags.Default);
-        if (data === undefined) {
-            data = this.doResolveArgument({ provider: token, flags }) as T;
-            if (!cache) {
-                cache = new Map();
-                this.cache.set(token, cache);
-            }
-            cache.set(flags || InjectFlags.Default, data);
-
-        }
-        return data;
+        return this.resolveArgument({ provider: token, flags }) as T;
     }
+
+
 
     /**
      * resolve the parameter value.
@@ -283,21 +255,6 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      */
     resolveArgument<T>(meta: Parameter<T>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null {
         this.assertNotDestroyed();
-        if (!this.pcache.has(meta)) {
-            this.pcache.set(meta, this.doResolveArgument(meta, target, failed));
-        }
-        return this.pcache.get(meta)
-    }
-
-    /**
-     * resolve the parameter value.
-     * 
-     * 解析调用参数
-     * @param meta property or parameter metadata type of {@link Parameter}.
-     * @returns the parameter value in this context.
-     */
-    protected doResolveArgument<T>(meta: Parameter<T>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null {
-        // let result: T | null | undefined;
         const metaRvr = meta.resolver;
         let resolver: HandlerScope | null;
         if (metaRvr?.length) {
@@ -331,29 +288,6 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
             },
         })
 
-        // let canResolved = meta.nullable || (meta.flags && (meta.flags & InjectFlags.Optional));
-        // if (this.getResolver().some(r => {
-        //     if (r.canResolve(meta, this)) {
-        //         result = r.resolve(meta, this);
-        //         if (!isNil(result)) {
-        //             canResolved = true;
-        //             return true;
-        //         }
-        //     }
-        //     return false
-        // })) {
-        //     return result!;
-        // }
-
-        // if (!canResolved) {
-        //     if (failed) {
-        //         failed(target!, meta.propertyKey!)
-        //     } else {
-        //         this.missingException([meta], target!, meta.propertyKey!);
-        //     }
-        // }
-
-        // return null;
     }
 
     protected missingException(missings: Parameter<any>[], type: AbstractType<any>, method: string): Exception {
@@ -396,13 +330,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
         }
     }
 
-    private clearCache() {
-        this.cache.forEach(r => r?.clear());
-        this.cache.clear();
-    }
-
     protected clear() {
-        this.clearCache();
         this._resolvers = null;
         this._refs = null;
     }

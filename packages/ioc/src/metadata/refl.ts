@@ -1,6 +1,6 @@
 import { AnnotationType, AbstractType, typeFac, Type } from '../types';
 import { cleanObj, getParentType } from '../utils/lang';
-import { getType, isArray, isBoolean, isFunction } from '../utils/chk';
+import { getType, isArray, isBoolean, isFunction, isPrimitive } from '../utils/chk';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, AnnotationMetadata,
     RunnableMetadata, MethodMetadata
@@ -497,24 +497,30 @@ export function getDef<T extends TypeDef>(type: AbstractType): T {
     return tagAnn as T
 }
 
-const classMaps = new WeakMap<AbstractType, Class>();
+// const classMaps = new WeakMap<AbstractType, Class>();
+const CLASS = Symbol('Class');
+interface ClassType<T> extends AbstractType<T> {
+    [CLASS]?: Class<T>;
+}
 /**
  * get type class reflective {@link Class}.
  * @param type type.
  */
-export function getClass<T = any>(type: AbstractType<T>|Type<T>): Class<T> {
-    if (!type) return null!;
-    let tyRef = classMaps.get(type) as Class<T>;
-    if (!tyRef) {
-        let prRef: Class | undefined;
-        const parentType = getParentType(type);
-        if (parentType) {
-            prRef = getClass(parentType)
+export function getClass<T = any>(type: AbstractType<T>): Class<T> {
+    if (!type || isPrimitive(type)) return null!;
+    let tyRef = (type as ClassType<T>)[CLASS];
+    if (tyRef?.type !== type) {
+        let prRef = tyRef as Class;
+        if (!prRef) {
+            const parentType = getParentType(type);
+            if (parentType) {
+                prRef = getClass(parentType)
+            }
         }
         tyRef = new Class(type, getDef(type), prRef);
-        classMaps.set(type, tyRef);
-    }
+        (type as ClassType<T>)[CLASS] = tyRef;
 
+    }
     return tyRef;
 }
 
