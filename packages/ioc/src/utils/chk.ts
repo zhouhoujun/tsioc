@@ -297,12 +297,13 @@ export function isIterableType(target: Function): boolean {
     return target === Array
         || target === Set
         || target === Map
-        || target === WeakMap
-        || target === WeakSet
+        // || target === WeakMap
+        // || target === WeakSet
 }
 
 export function isPrimitive(target: Function): boolean {
     return isBasicType(target)
+        || isIterableType(target)
         || target === Object
         || target === Promise
         || target === Observable
