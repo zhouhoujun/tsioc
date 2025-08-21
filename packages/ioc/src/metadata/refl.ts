@@ -497,7 +497,6 @@ export function getDef<T extends TypeDef>(type: AbstractType): T {
     return tagAnn as T
 }
 
-// const classMaps = new WeakMap<AbstractType, Class>();
 const CLASS = Symbol('Class');
 interface ClassType<T> extends AbstractType<T> {
     [CLASS]?: Class<T>;
