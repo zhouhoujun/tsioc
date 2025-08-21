@@ -2,41 +2,47 @@ import { isObject } from '@tsdi/ioc';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
+import { Node } from '../renderer/Node';
+import { ViewRef } from '../refs/view';
+import { ViewContainerRef } from '../refs/container';
+import { RootViewRef } from './view';
+import { Renderer } from '../renderer/Renderer';
 
 
 export class TemplateCompilerImpl implements TemplateCompiler {
 
     private options: TemplateCompilerOptions;
 
-    constructor(readonly effect: ReactiveEffect, options?: TemplateCompilerOptions) {
+    constructor(readonly effect: ReactiveEffect, readonly renderer: Renderer, options?: TemplateCompilerOptions) {
         this.effect = effect;
         this.options = options || {};
     }
 
-    compile(template: string, context: any): DocumentFragment {
+    compile(template: string, context: any): ViewRef {
         // jsdom, fast-xml-parser 解析模板
-        const fragment = document.createDocumentFragment();
         const parser = new DOMParser();
         const doc = parser.parseFromString(template, 'text/html');
-        
-        // 处理动态内容
-        this.walkNodes(doc.body.childNodes, context);
-        
-        fragment.append(...Array.from(doc.body.childNodes));
-        // ...解析模板逻辑...
-        this.processBindings(fragment, context);
 
-        return fragment;
+        const viewRef = new RootViewRef(Array.from(doc.body.childNodes) as any[], context, this.effect);
+        // 处理动态内容
+        this.walkNodes(viewRef.rootNodes, context);
+
+        // ...解析模板逻辑...
+        viewRef.rootNodes.forEach(node => this.processBindings(node, context));
+
+        return viewRef;
     }
 
-    private walkNodes(nodes: NodeList, context: any) {
+    private walkNodes(nodes: NodeList | Node[], context: any) {
         nodes.forEach(node => {
             if (node.nodeType === Node.ELEMENT_NODE) {
                 this.processElement(node as HTMLElement, context);
             } else if (node.nodeType === Node.TEXT_NODE) {
                 this.processText(node as Text, context);
             }
+            this.processBindings(node as any, context);
         });
+
     }
 
     private processElement(el: HTMLElement, context: any) {
@@ -96,7 +102,7 @@ export class TemplateCompilerImpl implements TemplateCompiler {
 
     private handleSpecialAttribute(el: HTMLElement, name: string, value: any) {
         if (name === 'class') {
-            el.className = isObject(value) 
+            el.className = isObject(value)
                 ? Object.keys(value).filter(k => (value as any)[k]).join(' ')
                 : value;
         } else if (name === 'style') {
@@ -108,11 +114,11 @@ export class TemplateCompilerImpl implements TemplateCompiler {
 
     private processBindings(node: Node, context: any) {
         if (node.nodeType === Node.ELEMENT_NODE) {
-            const el = node as HTMLElement;
-            
+            const el = node;
+
             // 处理v-model双向绑定
-            if (el.hasAttribute('v-model')) {
-                const prop = el.getAttribute('v-model')!;
+            if (this.renderer.hasAttribute(el, 'v-model')) {
+                const prop = this.renderer.getAttribute(el, 'v-model') as string;
                 this.effect.run(() => {
                     if (el instanceof HTMLInputElement) {
                         el.value = context[prop];
@@ -122,10 +128,10 @@ export class TemplateCompilerImpl implements TemplateCompiler {
                     }
                 });
             }
-            
+
             // 处理其他指令...
         }
-        
+
         // 递归处理子节点
         node.childNodes.forEach(child => this.processBindings(child, context));
     }

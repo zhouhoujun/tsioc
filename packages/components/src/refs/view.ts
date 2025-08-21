@@ -10,6 +10,8 @@ import { Abstract, Destroyable } from '@tsdi/ioc';
 @Abstract()
 export abstract class ViewRef implements Destroyable {
 
+  abstract get rootNodes(): any[];
+
   /**
    * has destoryed or not.
    */

@@ -1,6 +1,7 @@
 import {
     AbstractInvocation, AbstractInvocationFactory, Class, createContext, createInjector, 
-    Empty, Exception, Injectable, Injector, InvocationContext, InvokeArguments, Platform, AbstractType
+    Empty, Exception, Injectable, Injector, InvocationContext, InvokeArguments, Platform, AbstractType,
+    Provider
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentOptions, ComponentRef, ComponentFactory } from '../refs/component';
@@ -8,9 +9,11 @@ import { ViewRef } from '../refs/view';
 import { TemplateCompiler } from '../template/compiler';
 import { ComponentDef } from '../decorators/component';
 import { reactive } from './reactive';
+import { Renderer } from '../renderer/Renderer';
 
 export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptions> extends AbstractInvocation<T, TOpts> implements ComponentRef<T> {
 
+    private _hostView?: ViewRef;
     constructor(
         _class: Class<T>,
         context: InvocationContext,
@@ -19,7 +22,7 @@ export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptio
     }
 
     get hostView(): ViewRef {
-        throw new Error('Method not implemented.');
+        return this._hostView!;
     }
 
     private _inst?: T;
@@ -39,8 +42,8 @@ export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptio
             this.context.attach(option);
         }
         const compiler = this.context.get(TemplateCompiler);
-        const fragment = compiler.compile(template, this);
-        // this.hostView = fragment;
+        this._hostView= compiler.compile(template, this);
+ 
     }
 
     protected override process(option?: InvocationContext | InvokeArguments) {
@@ -60,25 +63,32 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
     constructor(
         platform: Platform
     ) {
-        super(platform)
-    }
-
-    protected override createInstance<T>(typeRef: Class<T>, context: InvocationContext, options?: ComponentOptions): ComponentRef<T> {
-        return new ComponentRefImpl(typeRef, context, options);
-    }
-
-    override create<T>(type: AbstractType<T> | Class<T>, options?: ComponentOptions): ComponentRef<T> {
-        return super.create(type, options) as ComponentRef<T>;
+        super(platform);
     }
 
     protected override getInjector<T>(typeRef: Class<T>, options?: ComponentOptions): Injector {
         let injector = super.getInjector(typeRef, options);
+        // 注入Renderer
         const def = typeRef.getAnnotation<ComponentDef>();
         if (def.imports?.length) {
             injector = createInjector(Empty, injector);
             injector.use(def.imports);
         }
         return injector;
+    }
+
+    protected override createInstance<T>(typeRef: Class<T>, context: InvocationContext, options?: ComponentOptions): ComponentRef<T> {
+        return new ComponentRefImpl(typeRef, context, options);
+    }
+
+    protected override normalize(providers: Provider[], options?: ComponentOptions) {
+        if(options?.renderer){
+            providers.push({ provide: Renderer, useValue: options.renderer });
+        }
+    }
+
+    override create<T>(type: AbstractType<T> | Class<T>, options?: ComponentOptions): ComponentRef<T> {
+        return super.create(type, options) as ComponentRef<T>;
     }
 
 }
@@ -88,4 +98,3 @@ async function fetchTemplate(url: string): Promise<string> {
     const response = await fetch(url);
     return await response.text();
 }
-

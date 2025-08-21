@@ -1,6 +1,7 @@
 import { Abstract, Class, AbstractType, InvocationFactory, InvocationOptions, Invocation } from '@tsdi/ioc';
 import { TemplateCompilerOptions } from '../template/compiler';
 import { ViewRef } from './view';
+import { Renderer } from '../renderer/Renderer';
 
 /**
  * ComponentRef.
@@ -27,7 +28,7 @@ export abstract class ComponentRef<T> extends Invocation<T> {
  * Component options.
  */
 export interface ComponentOptions extends TemplateCompilerOptions, InvocationOptions {
-
+    renderer?: Renderer;
 }
 
 

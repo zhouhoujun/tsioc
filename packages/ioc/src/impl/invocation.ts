@@ -11,6 +11,7 @@ import { immediate } from '../utils/lang';
 import { composeHandlers } from '../handler';
 import { getClassify } from '../metadata/refl';
 import { Platform } from '../platform';
+import { Provider } from '../providers';
 
 /**
  * abstract invocation 
@@ -334,12 +335,18 @@ export abstract class AbstractInvocationFactory<TOpts extends InvocationOptions 
         } else {
             resolvers = typeRef.resolvers;
         }
+        const providers = [this.platform.getTypeProvider(typeRef) ?? Empty, options?.providers ?? Empty];
+        this.normalize(providers, options);
         return createContext(this.getInjector(typeRef, options), {
             ...options,
-            providers: [this.platform.getTypeProvider(typeRef) ?? Empty, options?.providers ?? Empty],
+            providers,
             resolvers,
             targetType: typeRef.type
         }, typeRef.type);
+
+    }
+
+    protected normalize(providers: Provider[], options?: TOpts) {
 
     }
 

@@ -5,9 +5,6 @@ import { TemplateCompiler } from './template/compiler';
 import { TemplateCompilerImpl } from './impl/compiler';
 import { ReactiveEffect } from './ReactiveEffect';
 import { DefaultReactiveEffect } from './impl/effect';
-import { ViewBuilder } from './template/builder';
-import { ViewBuilderImpl } from './impl/view_builder';
-
 
 
 /**
@@ -20,8 +17,7 @@ import { ViewBuilderImpl } from './impl/view_builder';
     providers: [
         { provide: ComponentFactory, useClass: ComponentFactoryImpl },
         { provide: TemplateCompiler, useClass: TemplateCompilerImpl },
-        { provide: ReactiveEffect, useClass: DefaultReactiveEffect },
-        { provide: ViewBuilder, useClass: ViewBuilderImpl  }
+        { provide: ReactiveEffect, useClass: DefaultReactiveEffect }
     ],
     exports: [
 
