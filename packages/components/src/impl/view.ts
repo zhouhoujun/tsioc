@@ -1,6 +1,6 @@
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ViewRef } from '../refs/view';
-import { Node } from '../renderer/Node';
+import { RNode } from '../renderer/Node';
 
 export class RootViewRef extends ViewRef {
 
@@ -14,7 +14,7 @@ export class RootViewRef extends ViewRef {
         throw new Error('Method not implemented.');
     }
     
-    constructor(readonly rootNodes: Node[], readonly context: any, readonly effect: ReactiveEffect) {
+    constructor(readonly rootNodes: RNode[], readonly context: any, readonly effect: ReactiveEffect) {
         super()
     }
 
