@@ -9,7 +9,6 @@ import { ViewRef } from '../refs/view';
 import { TemplateCompiler } from '../template/compiler';
 import { ComponentDef } from '../decorators/component';
 import { reactive } from './reactive';
-import { Renderer } from '../renderer/Renderer';
 
 export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptions> extends AbstractInvocation<T, TOpts> implements ComponentRef<T> {
 
@@ -82,8 +81,8 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
     }
 
     protected override normalize(providers: Provider[], options?: ComponentOptions) {
-        if(options?.renderer){
-            providers.push({ provide: Renderer, useValue: options.renderer });
+        if(options?.compiler){
+            providers.push({ provide: TemplateCompiler, useValue: options.compiler });
         }
     }
 

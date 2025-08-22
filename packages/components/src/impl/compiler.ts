@@ -1,46 +1,30 @@
-import { isArray, isObject } from '@tsdi/ioc';
-import { XMLBuilder, XMLParser } from 'fast-xml-parser';
-import { ReactiveEffect } from '../ReactiveEffect';
+import { Abstract, isObject } from '@tsdi/ioc';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
-import { NodeType, RElement, RNode, RNodeList, RText } from '../renderer/Node';
+import { NodeType, RElement, RNode, RText } from '../renderer/Node';
 import { ViewRef } from '../refs/view';
 import { RootViewRef } from './view';
-import { Renderer } from '../renderer/Renderer';
 import { TemplateParser } from '../template/parser';
 
 
-// XML模板解析器实现示例
-export class XmlTemplateParser implements TemplateParser {
-    parse(template: string): RNode[] {
-        const parser = new XMLParser();
-        const jsonObj = parser.parse(template);
-        // 将JSON对象转换为虚拟DOM节点
-        return this.convertToNodes(jsonObj);
-    }
+// // 默认HTML模板解析器实现
+// export class HtmlTemplateParser implements TemplateParser {
+//     parse(template: string): RNode[] {
+//         const parser = new DOMParser();
+//         const doc = parser.parseFromString(template, 'text/html');
+//         return Array.from(doc.body.childNodes) as any[];
+//     }
+// }
 
-    private convertToNodes(jsonObj: any): RNode[] {
-        // 实现JSON到节点的转换逻辑
-        // ...
-        return isArray(jsonObj)? jsonObj : [jsonObj];
-    }
-}
+@Abstract()
+export abstract class AbstractTemplateCompiler extends TemplateCompiler {
+    
+    protected abstract get options(): TemplateCompilerOptions;
 
-// 默认HTML模板解析器实现
-export class HtmlTemplateParser implements TemplateParser {
-    parse(template: string): RNode[] {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(template, 'text/html');
-        return Array.from(doc.body.childNodes) as any[];
-    }
-}
+    abstract get parser(): TemplateParser
 
-export class TemplateCompilerImpl implements TemplateCompiler {
-    private options: TemplateCompilerOptions;
-
-    constructor(readonly effect: ReactiveEffect, readonly renderer: Renderer, readonly parser: TemplateParser, options?: TemplateCompilerOptions) {
-        this.effect = effect;
-        this.options = options || {};
-    }
+    // constructor(readonly effect: ReactiveEffect, readonly renderer: Renderer, readonly parser: TemplateParser, options?: TemplateCompilerOptions) {
+    //     this.options = options || {};
+    // }
 
     compile(template: string, context: any): ViewRef {
         // 使用模板解析器解析模板
@@ -56,7 +40,7 @@ export class TemplateCompilerImpl implements TemplateCompiler {
         return viewRef;
     }
 
-    private walkNodes(nodes: RNodeList | RNode[], context: any) {
+    private walkNodes(nodes: RNode[], context: any) {
         nodes.forEach(node => {
             if (node.nodeType === NodeType.Element) {
                 this.processElement(node as RElement, context);
@@ -70,17 +54,18 @@ export class TemplateCompilerImpl implements TemplateCompiler {
 
     private processElement(el: RElement, context: any) {
         // 处理属性
-        Array.from(el.attributes).forEach(attr => {
-            if (attr.name.startsWith('@')) {
+        el.getAttributeNames().forEach(name => {
+            const attrVal = el.getAttribute(name)!;
+            if (name.startsWith('@')) {
                 // 事件绑定
-                const eventName = attr.name.substring(1);
-                const handler = this.effect.run(() => context[attr.value]);
+                const eventName = name.substring(1);
+                const handler = this.effect.run(() => context[attrVal]);
                 el.addEventListener(eventName, handler);
-            } else if (attr.name.startsWith(':')) {
+            } else if (name.startsWith(':')) {
                 // 属性绑定
-                const propName = attr.name.substring(1);
+                const propName = name.substring(1);
                 this.effect.run(() => {
-                    const value = context[attr.value];
+                    const value = context[attrVal];
                     if (propName === 'class' || propName === 'style') {
                         this.handleSpecialAttribute(el, propName, value);
                     } else {

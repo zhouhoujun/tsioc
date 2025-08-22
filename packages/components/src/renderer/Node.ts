@@ -73,7 +73,7 @@ export interface RNode {
      */
     nextSibling: RNode | null;
 
-    childNodes: RNode[] | RNodeListOf<RNode>;
+    childNodes: RNode[];
 
     textContent: string | null;
 
@@ -92,90 +92,6 @@ export interface RNode {
     appendChild(newChild: RNode): RNode;
 }
 
-/**
- * **`RNodeList`** objects are collections of nodes, usually returned by properties such as Node.childNodes and methods such as document.querySelectorAll().
- *
- * [MDN Reference](https://developer.mozilla.org/docs/Web/API/NodeList)
- */
-export interface RNodeList {
-    /**
-     * The **`NodeList.length`** property returns the number of items in a NodeList.
-     *
-     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/NodeList/length)
-     */
-    readonly length: number;
-    /**
-     * Returns a node from a `NodeList` by index.
-     *
-     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/NodeList/item)
-     */
-    item(index: number): RNode | null;
-    forEach(callbackfn: (value: RNode, key: number, parent: RNodeList) => void, thisArg?: any): void;
-    [index: number]: RNode;
-}
-
-export interface RNodeListOf<T extends RNode> extends RNodeList {
-    item(index: number): T;
-    forEach(callbackfn: (value: T, key: number, parent: RNodeListOf<T>) => void, thisArg?: any): void;
-    [index: number]: T;
-}
-
-/**
- * The **`NamedNodeMap`** interface represents a collection of Attr objects.
- *
- * [MDN Reference](https://developer.mozilla.org/docs/Web/API/NamedNodeMap)
- */
-export interface RNamedMap {
-    /**
-     * The read-only **`length`** property of the NamedNodeMap interface is the number of objects stored in the map.
-     *
-     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/length)
-     */
-    readonly length: number;
-    /**
-     * The **`getNamedItem()`** method of the NamedNodeMap interface returns the Attr corresponding to the given name, or `null` if there is no corresponding attribute.
-     *
-     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/getNamedItem)
-     */
-    getNamedItem(qualifiedName: string): Attr | null;
-    /**
-     * The **`getNamedItemNS()`** method of the NamedNodeMap interface returns the Attr corresponding to the given local name in the given namespace, or `null` if there is no corresponding attribute.
-     *
-     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/getNamedItemNS)
-     */
-    getNamedItemNS(namespace: string | null, localName: string): Attr | null;
-    /**
-     * The **`item()`** method of the NamedNodeMap interface returns the item in the map matching the index.
-     *
-     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/item)
-     */
-    item(index: number): Attr | null;
-    /**
-     * The **`removeNamedItem()`** method of the NamedNodeMap interface removes the Attr corresponding to the given name from the map.
-     *
-     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/removeNamedItem)
-     */
-    removeNamedItem(qualifiedName: string): Attr;
-    /**
-     * The **`removeNamedItemNS()`** method of the NamedNodeMap interface removes the Attr corresponding to the given namespace and local name from the map.
-     *
-     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/removeNamedItemNS)
-     */
-    removeNamedItemNS(namespace: string | null, localName: string): Attr;
-    /**
-     * The **`setNamedItem()`** method of the NamedNodeMap interface puts the Attr identified by its name in the map.
-     *
-     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/setNamedItem)
-     */
-    setNamedItem(attr: Attr): Attr | null;
-    /**
-     * The **`setNamedItemNS()`** method of the NamedNodeMap interface puts the Attr identified by its name in the map.
-     *
-     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/setNamedItemNS)
-     */
-    setNamedItemNS(attr: Attr): Attr | null;
-    [index: number]: Attr;
-}
 
 
 /**
@@ -189,6 +105,8 @@ export interface RElement extends RNode {
   className: string;
   tagName: string;
   textContent: string | null;
+  attributes: Map<string, any>;
+  getAttributeNames(): string[];
   hasAttribute(name: string): boolean;
   getAttribute(name: string): string | null;
   setAttribute(name: string, value: string): void;
@@ -220,11 +138,6 @@ export interface RText extends RNode {
 
 export interface RComment extends RNode {
   textContent: string | null;
-}
-
-
-export interface RElement extends RNode {
-    attributes: RNamedMap;
 }
 
 export interface RTemplate extends RElement {
