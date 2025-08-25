@@ -31,13 +31,13 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         this.walkNodes(viewRef.rootNodes, context);
 
         // ...解析模板逻辑...
-        viewRef.rootNodes.forEach(node => this.processBindings(node, context));
+        viewRef.rootNodes?.forEach(node => this.processBindings(node, context));
 
         return viewRef;
     }
 
     private walkNodes(nodes: RNode[], context: any) {
-        nodes.forEach(node => {
+        nodes?.forEach(node => {
             if (node.nodeType === NodeType.Element) {
                 this.processElement(node as RElement, context);
             } else if (node.nodeType === NodeType.Text) {
@@ -50,7 +50,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
     private processElement(el: RElement, context: any) {
         // 处理属性
-        el.getAttributeNames().forEach(name => {
+        el.getAttributeNames()?.forEach(name => {
             const attrVal = el.getAttribute(name)!;
             if (name.startsWith('@')) {
                 // 事件绑定

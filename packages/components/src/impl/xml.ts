@@ -9,67 +9,6 @@ import { COMPILER_OPTIONS, TemplateCompiler, TemplateCompilerOptions } from '../
 import { Renderer, RendererStyleFlags2 } from '../renderer/Renderer';
 
 
-// XML模板解析器实现示例
-@Injectable()
-export class XmlTemplateParser implements TemplateParser {
-    parse(template: string): XmlNode[] {
-        const parser = new XMLParser({
-            ignoreAttributes: false,
-            preserveOrder: false,
-            parseAttributeValue: false,
-            // parseNodeValue: true,
-        });
-        const jsonObj = parser.parse(template);
-        // 将JSON对象转换为虚拟DOM节点
-        return this.convertToNodes(jsonObj);
-    }
-
-    private convertToNodes(jsonObj: any): XmlNode[] {
-        // 实现JSON到节点的转换逻辑
-        // Handle text nodes
-        if (typeof jsonObj === 'string') {
-            const textNode = new XmlText(jsonObj);
-            return [textNode];
-        }
-
-         // 处理数组节点
-        if (Array.isArray(jsonObj)) {
-            return jsonObj.flatMap(item => this.convertToNodes(item));
-        }
-
-         // 处理对象节点
-        if (jsonObj && typeof jsonObj === 'object') {
-            // 提取标签名和属性
-            const tagName = jsonObj['#name'] || 'unknown';
-            const attributes = jsonObj['@_'] || {};
-            const node = new XmlNode(tagName, attributes);
-
-            // 处理子节点
-            const childNodes: any[] = [];
-            for (const key in jsonObj) {
-                // 跳过特殊属性
-                if (key === '#name' || key === '@_' || key === '#text') continue;
-                childNodes.push(jsonObj[key]);
-            }
-
-            // 处理文本内容
-            if ('#text' in jsonObj) {
-                node.textContent = jsonObj['#text'];
-            }
-
-            // 递归转换子节点
-            node.childNodes = childNodes.flatMap(child => this.convertToNodes(child));
-            // 设置父节点引用
-            node.childNodes.forEach(child => child.parentNode = node);
-
-            return [node];
-        }
-
-        // Handle other node types
-        return [];
-    }
-}
-
 
 
 export class XmlNode implements RNode {
@@ -220,12 +159,12 @@ export class XmlElement extends XmlNode implements RElement {
 @Injectable()
 export class XmlRenderer implements Renderer {
     // 创建XML注释节点
-    createComment(value: string): RComment {
+    createComment(value: string): XmlComment {
         return new XmlComment(value);
     }
 
     // 创建XML元素节点（支持命名空间）
-    createElement(name: string, namespace?: string | null): RElement {
+    createElement(name: string, namespace?: string | null): XmlElement {
         const element = new XmlElement(name);
         if (namespace) {
             element.setAttributeNS(namespace, name, namespace);
@@ -234,7 +173,7 @@ export class XmlRenderer implements Renderer {
     }
 
     // 创建XML文本节点
-    createText(value: string): RText {
+    createText(value: string): XmlText {
         return new XmlText(value)
     }
 
@@ -302,6 +241,78 @@ export class XmlRenderer implements Renderer {
 
 }
 
+
+// XML模板解析器实现示例
+@Injectable()
+export class XmlTemplateParser implements TemplateParser {
+
+    constructor(
+        private renderer: XmlRenderer
+    ) { }
+
+    parse(template: string): XmlNode[] {
+        const parser = new XMLParser({
+            ignoreAttributes: false,
+            preserveOrder: false,
+            parseAttributeValue: false,
+            // parseNodeValue: true,
+        });
+        const jsonObj = parser.parse(template);
+        // 将JSON对象转换为虚拟DOM节点
+        return this.convertToNodes(jsonObj);
+    }
+
+    private convertToNodes(jsonObj: any): XmlNode[] {
+        // 实现JSON到节点的转换逻辑
+        // Handle text nodes
+        if (typeof jsonObj === 'string') {
+            const textNode = this.renderer.createText(jsonObj);
+            return [textNode];
+        }
+
+         // 处理数组节点
+        if (Array.isArray(jsonObj)) {
+            return jsonObj.flatMap(item => this.convertToNodes(item));
+        }
+
+         // 处理对象节点
+        if (jsonObj && typeof jsonObj === 'object') {
+            // 提取标签名和属性
+            const tagName = jsonObj['#name'] || 'unknown';
+            const attributes = jsonObj['@_'] || {};
+            const node = this.renderer.createElement(tagName);
+            // 设置属性
+            for (const key in attributes) {
+                node.setAttribute(key, attributes[key]);
+            }
+
+            // 处理子节点
+            const childNodes: any[] = [];
+            for (const key in jsonObj) {
+                // 跳过特殊属性
+                if (key === '#name' || key === '@_' || key === '#text') continue;
+                childNodes.push(jsonObj[key]);
+            }
+
+            // 处理文本内容
+            if ('#text' in jsonObj) {
+                node.textContent = jsonObj['#text'];
+            }
+
+            // 递归转换子节点
+            node.childNodes = childNodes.flatMap(child => this.convertToNodes(child));
+            // 设置父节点引用
+            node.childNodes.forEach(child => child.parentNode = node);
+
+            return [node];
+        }
+
+        // Handle other node types
+        return [];
+    }
+}
+
+
 const xmlDefaultOptions = {
     delimiters: ['{{', '}}'],
     directives: {
@@ -326,9 +337,9 @@ export class XmlTemplateCompiler extends AbstractTemplateCompiler {
 
 @Module({
     providers: [
-        XmlTemplateCompiler,
-        XmlTemplateParser,
         XmlRenderer,
+        XmlTemplateParser,
+        XmlTemplateCompiler,
         { provide: TemplateCompiler, useClass: XmlTemplateCompiler, asDefault: true }
     ]
 })

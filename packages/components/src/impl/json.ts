@@ -8,21 +8,6 @@ import { COMPILER_OPTIONS, TemplateCompiler, TemplateCompilerOptions } from '../
 import { Renderer, RendererStyleFlags2 } from '../renderer/Renderer';
 
 
-// XML模板解析器实现示例
-@Injectable()
-export class JsonTemplateParser implements TemplateParser {
-    parse(template: string): JsonNode[] {
-        const jsonObj = JSON.parse(template);
-        // 将JSON对象转换为虚拟DOM节点
-        return this.convertToNodes(jsonObj);
-    }
-
-    private convertToNodes(jsonObj: any): JsonNode[] {
-        // 实现JSON到节点的转换逻辑
-        // ...
-        return isArray(jsonObj) ? jsonObj : [jsonObj];
-    }
-}
 
 export class JsonNode implements RNode {
 
@@ -255,6 +240,26 @@ export class JsonRenderer implements Renderer {
 }
 
 
+// XML模板解析器实现示例
+@Injectable()
+export class JsonTemplateParser implements TemplateParser {
+    constructor(
+        private renderer: JsonRenderer
+    ) { }
+    parse(template: string): JsonNode[] {
+        const jsonObj = JSON.parse(template);
+        // 将JSON对象转换为虚拟DOM节点
+        return this.convertToNodes(jsonObj);
+    }
+
+    private convertToNodes(jsonObj: any): JsonNode[] {
+        // 实现JSON到节点的转换逻辑
+        // ...
+        return isArray(jsonObj) ? jsonObj : [jsonObj];
+    }
+}
+
+
 const jsonDefaultOptions = {
     delimiters: ['{{', '}}'],
     directives: {
@@ -279,9 +284,9 @@ export class JsonTemplateCompiler extends AbstractTemplateCompiler {
 
 @Module({
     providers: [
-        JsonTemplateCompiler,
-        JsonTemplateParser,
         JsonRenderer,
+        JsonTemplateParser,
+        JsonTemplateCompiler,
         { provide: TemplateCompiler, useClass: JsonTemplateCompiler, asDefault: true }
     ]
 })

@@ -41,7 +41,7 @@ export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptio
             this.context.attach(option);
         }
         const compiler = this.context.get(TemplateCompiler);
-        this._hostView = compiler.compile(template, this);
+        this._hostView = compiler.compile(template, this.instance);
 
     }
 

@@ -48,9 +48,11 @@ export class CTest {
         const appcomRef = this.ctx.runners.getRef(ExampleComponent) as ComponentRef<ExampleComponent>;
         expect(appcomRef.instance.title).toEqual('Example Component');
         expect(appcomRef.instance.value).toEqual('test');
-        expect(appcomRef.hostView.rootNodes[0].childNodes[2].value).toEqual('test');
+        expect(appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[2].textContent).toEqual('Value: test');
         appcomRef.instance.value = 'test1';
-        expect(appcomRef.hostView.rootNodes[0].childNodes[2].value).toEqual('test1');
+        await Promise.resolve();
+        
+        expect(appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[2].textContent).toEqual('Value: test1');
     }
 
 }
