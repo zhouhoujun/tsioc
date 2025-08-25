@@ -1,7 +1,6 @@
 import {
     AbstractInvocation, AbstractInvocationFactory, Class, createInjector, Empty, Exception, Injectable,
-    Injector, InvocationContext, InvokeArguments, Platform, AbstractType, Provider,
-    toProvider
+    Injector, InvocationContext, InvokeArguments, Platform, AbstractType, Provider, toProvider
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentOptions, ComponentRef, ComponentFactory } from '../refs/component';

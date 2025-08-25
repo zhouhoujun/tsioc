@@ -1,10 +1,10 @@
 import { TemplateParser } from '../template/parser';
 import { RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, EventListener } from '../renderer/Node';
-import { Empty, Inject, Injectable, isArray, lang, Module } from '@tsdi/ioc';
+import { Empty, Inject, Injectable, isArray, lang, Module, ModuleWithProviders } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { AbstractTemplateCompiler } from './compiler';
 import { ReactiveEffect } from '../ReactiveEffect';
-import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
+import { COMPILER_OPTIONS, TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { Renderer, RendererStyleFlags2 } from '../renderer/Renderer';
 
 
@@ -254,6 +254,16 @@ export class JsonRenderer implements Renderer {
 
 }
 
+
+const jsonDefaultOptions = {
+    delimiters: ['{{', '}}'],
+    directives: {
+        'text': JText,
+        'comment': JComment,
+        'element': JElement,
+    }
+} as TemplateCompilerOptions;
+
 @Injectable()
 export class JsonTemplateCompiler extends AbstractTemplateCompiler {
 
@@ -261,7 +271,7 @@ export class JsonTemplateCompiler extends AbstractTemplateCompiler {
         readonly effect: ReactiveEffect,
         readonly renderer: JsonRenderer,
         readonly parser: JsonTemplateParser,
-        protected options: TemplateCompilerOptions = {}) {
+        @Inject(COMPILER_OPTIONS, { defaultValue: jsonDefaultOptions }) protected options: TemplateCompilerOptions) {
         super()
     }
 }
@@ -277,4 +287,12 @@ export class JsonTemplateCompiler extends AbstractTemplateCompiler {
 })
 export class JsonTemplateModule {
 
+    static withOptions(options: TemplateCompilerOptions): ModuleWithProviders<JsonTemplateModule> {
+        return {
+            module: JsonTemplateModule,
+            providers: [
+                { provide: COMPILER_OPTIONS, useValue: options }
+            ]
+        }
+    }
 }

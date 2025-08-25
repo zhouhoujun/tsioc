@@ -1,11 +1,11 @@
 import { XMLParser } from 'fast-xml-parser';
 import { TemplateParser } from '../template/parser';
 import { RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList } from '../renderer/Node';
-import { Empty, Inject, Injectable, isArray, lang, Module } from '@tsdi/ioc';
+import { Empty, Inject, Injectable, isArray, lang, Module, ModuleWithProviders } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { AbstractTemplateCompiler } from './compiler';
 import { ReactiveEffect } from '../ReactiveEffect';
-import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
+import { COMPILER_OPTIONS, TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { Renderer, RendererStyleFlags2 } from '../renderer/Renderer';
 
 
@@ -258,6 +258,15 @@ export class XmlRenderer implements Renderer {
 
 }
 
+const xmlDefaultOptions = {
+    delimiters: ['{{', '}}'],
+    directives: {
+        'text': XmlText,
+        'comment': XmlComment,
+        'element': XmlElement,
+    }
+} as TemplateCompilerOptions;
+
 @Injectable()
 export class XmlTemplateCompiler extends AbstractTemplateCompiler {
 
@@ -265,7 +274,7 @@ export class XmlTemplateCompiler extends AbstractTemplateCompiler {
         readonly effect: ReactiveEffect,
         readonly renderer: XmlRenderer,
         readonly parser: XmlTemplateParser,
-        protected options: TemplateCompilerOptions = {}) {
+        @Inject(COMPILER_OPTIONS, { defaultValue: xmlDefaultOptions }) protected options: TemplateCompilerOptions) {
         super()
     }
 }
@@ -280,5 +289,12 @@ export class XmlTemplateCompiler extends AbstractTemplateCompiler {
     ]
 })
 export class XmlTemplateModule {
-
+    static withOptions(options: TemplateCompilerOptions): ModuleWithProviders<XmlTemplateModule> {
+        return {
+            module: XmlTemplateModule,
+            providers: [
+                { provide: COMPILER_OPTIONS, useValue: options }
+            ]
+        }
+    }
 }

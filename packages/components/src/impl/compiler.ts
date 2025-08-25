@@ -20,11 +20,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     
     protected abstract get options(): TemplateCompilerOptions;
 
-    abstract get parser(): TemplateParser
-
-    // constructor(readonly effect: ReactiveEffect, readonly renderer: Renderer, readonly parser: TemplateParser, options?: TemplateCompilerOptions) {
-    //     this.options = options || {};
-    // }
+    abstract get parser(): TemplateParser;
 
     compile(template: string, context: any): ViewRef {
         // 使用模板解析器解析模板
@@ -139,7 +135,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         }
 
         // 递归处理子节点
-        node.childNodes.forEach(child => this.processBindings(child, context));
+        node.childNodes?.forEach(child => this.processBindings(child, context));
     }
 }
 
