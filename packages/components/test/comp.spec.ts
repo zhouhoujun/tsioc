@@ -6,6 +6,7 @@ import { ComponentsModule } from '../src';
 import { JsonTemplateModule } from '../src/impl/json';
 import { XmlTemplateModule } from '../src/impl/xml';
 import { ComponentRef } from '../src/refs/component';
+import { lang } from '@tsdi/ioc';
 
 
 
@@ -34,14 +35,18 @@ export class CTest {
         expect(appcomRef.instance.count).toEqual(0);
     }
 
-    // @Test('can bind bootsrap component')
-    // async test2() {
-    //     const appcomRef = await this.ctx.bootstrap(Components) as ReflectiveRef<Components>;
-    //     expect(appcomRef.getInstance() instanceof AppComponent).toBeTruthy();
-    //     appcomRef.getInstance().name = 'name';
-    //     expect(appcomRef.getInstance().name).toEqual('name');
-    //     expect(appcomRef.getInstance().se1.nativeElement.name).toEqual('name');
-    // }
+    @Test('can bind event component')
+    async test2() {
+         const appcomRef = this.ctx.runners.getRef(ExampleComponent) as ComponentRef<ExampleComponent>;
+        expect(appcomRef.instance.title).toEqual('Example Component');
+        expect(appcomRef.instance.value).toEqual('test');
+        expect(appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[1].textContent).toEqual('Count: 0');
+        appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[4].events.emit('click');
+
+        await Promise.resolve();
+        
+        expect(appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[1].textContent).toEqual('Count: 1');
+    }
 
     @Test('refresh app component by mapping')
     async refreshbyMapping() {
@@ -49,10 +54,12 @@ export class CTest {
         expect(appcomRef.instance.title).toEqual('Example Component');
         expect(appcomRef.instance.value).toEqual('test');
         expect(appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[2].textContent).toEqual('Value: test');
+        expect(appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[3].getAttribute('value')).toEqual('test');
         appcomRef.instance.value = 'test1';
         await Promise.resolve();
         
         expect(appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[2].textContent).toEqual('Value: test1');
+        expect(appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[3].getAttribute('value')).toEqual('test1');
     }
 
 }

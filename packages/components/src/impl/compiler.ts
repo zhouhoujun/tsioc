@@ -55,7 +55,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
             if (name.startsWith('@')) {
                 // 事件绑定
                 const eventName = name.substring(1);
-                const handler = this.effect.run(() => context[attrVal]);
+                const handler = this.effect.run(() => context[attrVal].bind(context));
                 el.addEventListener(eventName, handler);
             } else if (name.startsWith(':')) {
                 // 属性绑定
@@ -122,10 +122,11 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
             if (el.hasAttribute('v-model')) {
                 const prop = el.getAttribute('v-model') as string;
                 this.effect.run(() => {
-                    if (el instanceof HTMLInputElement) {
-                        el.value = context[prop];
+                    if (el.setAttribute) {
+                        el.setAttribute('value', context[prop])
+                        this.renderer.setAttribute(el, 'value', context[prop]);
                         el.addEventListener('input', () => {
-                            context[prop] = el.value;
+                            context[prop] = el.getAttribute('value');
                         });
                     }
                 });

@@ -255,6 +255,7 @@ export class XmlTemplateParser implements TemplateParser {
             ignoreAttributes: false,
             preserveOrder: false,
             parseAttributeValue: false,
+            parseTagValue: true,
             // parseNodeValue: true,
         });
         const jsonObj = parser.parse(template);
@@ -270,20 +271,21 @@ export class XmlTemplateParser implements TemplateParser {
             return [textNode];
         }
 
-         // 处理数组节点
+        // 处理数组节点
         if (Array.isArray(jsonObj)) {
             return jsonObj.flatMap(item => this.convertToNodes(item));
         }
 
-         // 处理对象节点
+        // 处理对象节点
         if (jsonObj && typeof jsonObj === 'object') {
             // 提取标签名和属性
             const tagName = jsonObj['#name'] || 'unknown';
-            const attributes = jsonObj['@_'] || {};
             const node = this.renderer.createElement(tagName);
             // 设置属性
-            for (const key in attributes) {
-                node.setAttribute(key, attributes[key]);
+            for (const key in jsonObj) {
+                if (key.startsWith('@_')) {
+                    node.setAttribute(key.slice(2), jsonObj[key]);
+                }
             }
 
             // 处理子节点
