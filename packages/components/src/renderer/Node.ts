@@ -76,13 +76,19 @@ export interface RNode {
     childNodes: RNode[];
 
     textContent: string | null;
+    
+    /**
+     * Removes a child from the current node and returns the removed node
+     * @param oldChild the child node to remove
+     */
+    removeChild(oldChild: RNode): RNode;
 
     /**
      * Insert a child node.
      *
      * Used exclusively for adding View root nodes into ViewAnchor location.
      */
-    insertBefore(newChild: RNode, refChild: RNode | null, isViewRoot: boolean): void;
+    insertBefore(newChild: RNode, refChild: RNode | null, isViewRoot?: boolean): void;
 
     /**
      * Append a child node.
@@ -92,7 +98,9 @@ export interface RNode {
     appendChild(newChild: RNode): RNode;
 }
 
-
+export interface EventListener {
+    (evt: Event): void;
+}
 
 /**
  * Subset of API needed for writing attributes, properties, and setting up
@@ -105,7 +113,6 @@ export interface RElement extends RNode {
   className: string;
   tagName: string;
   textContent: string | null;
-  attributes: Map<string, any>;
   getAttributeNames(): string[];
   hasAttribute(name: string): boolean;
   getAttribute(name: string): string | null;
@@ -118,7 +125,6 @@ export interface RElement extends RNode {
   ): void;
   addEventListener(type: string, listener: EventListener, useCapture?: boolean): void;
   removeEventListener(type: string, listener?: EventListener, options?: boolean): void;
-  remove(): void;
   setProperty?(name: string, value: any): void;
 }
 

@@ -1,7 +1,7 @@
 import {
-    AbstractInvocation, AbstractInvocationFactory, Class, createContext, createInjector, 
-    Empty, Exception, Injectable, Injector, InvocationContext, InvokeArguments, Platform, AbstractType,
-    Provider
+    AbstractInvocation, AbstractInvocationFactory, Class, createInjector, Empty, Exception, Injectable,
+    Injector, InvocationContext, InvokeArguments, Platform, AbstractType, Provider,
+    toProvider
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentOptions, ComponentRef, ComponentFactory } from '../refs/component';
@@ -9,6 +9,7 @@ import { ViewRef } from '../refs/view';
 import { TemplateCompiler } from '../template/compiler';
 import { ComponentDef } from '../decorators/component';
 import { reactive } from './reactive';
+
 
 export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptions> extends AbstractInvocation<T, TOpts> implements ComponentRef<T> {
 
@@ -41,8 +42,8 @@ export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptio
             this.context.attach(option);
         }
         const compiler = this.context.get(TemplateCompiler);
-        this._hostView= compiler.compile(template, this);
- 
+        this._hostView = compiler.compile(template, this);
+
     }
 
     protected override process(option?: InvocationContext | InvokeArguments) {
@@ -81,8 +82,8 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
     }
 
     protected override normalize(providers: Provider[], options?: ComponentOptions) {
-        if(options?.compiler){
-            providers.push({ provide: TemplateCompiler, useValue: options.compiler });
+        if (options?.compiler) {
+            providers.push(toProvider(TemplateCompiler, options.compiler));
         }
     }
 

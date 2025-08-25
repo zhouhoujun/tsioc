@@ -873,7 +873,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
 
                 let val: any;
                 if (context) {
-                    val = context.resolveArgument(isString(dep.token) ? { name: dep.token } : { provider: dep.token })
+                    val = context.resolveArgument(isString(dep.token) ? { name: dep.token, flags } : { provider: dep.token, flags })
                 }
                 deps.push(val ?? tryResolveToken(
                     dep.token,
@@ -883,7 +883,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                     !chlrd && !(dep.options & OptionFlags.CheckParent) ? undefined : parent,
                     context,
                     dep.options & OptionFlags.Optional ? null : THROW_FLAGE,
-                    InjectFlags.Default,
+                    flags,
                     lifecycle,
                     isStatic))
             }

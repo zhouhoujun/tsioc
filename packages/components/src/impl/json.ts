@@ -1,6 +1,5 @@
-import { XMLParser } from 'fast-xml-parser';
 import { TemplateParser } from '../template/parser';
-import { RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList } from '../renderer/Node';
+import { RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, EventListener } from '../renderer/Node';
 import { Empty, Inject, Injectable, isArray, lang, Module } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { AbstractTemplateCompiler } from './compiler';
@@ -11,44 +10,41 @@ import { Renderer, RendererStyleFlags2 } from '../renderer/Renderer';
 
 // XML模板解析器实现示例
 @Injectable()
-export class XmlTemplateParser implements TemplateParser {
+export class JsonTemplateParser implements TemplateParser {
     parse(template: string): RNode[] {
-        const parser = new XMLParser();
-        const jsonObj = parser.parse(template);
+        const jsonObj = JSON.parse(template);
         // 将JSON对象转换为虚拟DOM节点
         return this.convertToNodes(jsonObj);
     }
 
-    private convertToNodes(jsonObj: any): XmlNode[] {
+    private convertToNodes(jsonObj: any): RNode[] {
         // 实现JSON到节点的转换逻辑
         // ...
         return isArray(jsonObj) ? jsonObj : [jsonObj];
     }
 }
 
+export class JNode implements RNode {
 
-
-export class XmlNode implements RNode {
-
-    get parentElement(): XmlElement | null {
-        return this.parentNode instanceof XmlElement ? this.parentNode : null;
+    get parentElement(): JElement | null {
+        return this.parentNode instanceof JElement ? this.parentNode : null;
     }
 
     constructor(
         readonly nodeType: number,
         public textContent: string | null = null,
-        public parentNode: XmlNode | null = null,
-        readonly childNodes: XmlNode[] = [],
-        public nextSibling: XmlNode | null = null) {
+        public parentNode: JNode | null = null,
+        readonly childNodes: JNode[] = [],
+        public nextSibling: JNode | null = null) {
 
     }
 
-    removeChild(oldChild: XmlNode): XmlNode {
+    removeChild(oldChild: JNode): JNode {
         const [removed] = lang.remove(this.childNodes, oldChild) ?? Empty;
         return removed;
     }
 
-    insertBefore(newChild: XmlNode, refChild: XmlNode | null, isViewRoot?: boolean): void {
+    insertBefore(newChild: JNode, refChild: JNode | null, isViewRoot?: boolean): void {
         const index = refChild ? this.childNodes.indexOf(refChild) : 0;
         if (index !== -1) {
             this.childNodes.splice(index, 0, newChild);
@@ -56,25 +52,25 @@ export class XmlNode implements RNode {
             this.childNodes.push(newChild);
         }
     }
-    appendChild(newChild: XmlNode): XmlNode {
+    appendChild(newChild: JNode): JNode {
         this.childNodes.push(newChild);
         return this;
     }
 }
 
-export class XmlText extends XmlNode implements RText {
+export class JText extends JNode implements RText {
     constructor(text: string) {
         super(NodeType.Text, text)
     }
 }
 
-export class XmlComment extends XmlNode implements RComment {
+export class JComment extends JNode implements RComment {
     constructor(text: string) {
         super(NodeType.Comment, text)
     }
 }
 
-export class XmlCssStyleDeclaration implements RCssStyleDeclaration {
+export class JCssStyleDeclaration implements RCssStyleDeclaration {
 
     constructor(private stylies: Record<string, string> = {}) {
 
@@ -96,7 +92,7 @@ export class XmlCssStyleDeclaration implements RCssStyleDeclaration {
 
 }
 
-export class XmlDomTokenList implements RDomTokenList {
+export class JDomTokenList implements RDomTokenList {
 
     constructor(private tokens: string[] = []) {
 
@@ -113,19 +109,19 @@ export class XmlDomTokenList implements RDomTokenList {
 
 }
 
-export class XmlElement extends XmlNode implements RElement {
+export class JElement extends JNode implements RElement {
     private events = new EventEmitter();
     firstChild: RNode | null = null;
-    style = new XmlCssStyleDeclaration();
-    classList = new XmlDomTokenList();
+    style: RCssStyleDeclaration = new JCssStyleDeclaration();
+    classList = new JDomTokenList();
     attributes = new Map<string, any>();
     constructor(
         readonly tagName: string,
         readonly className: string = '',
         nodeType: number = NodeType.Element,
-        parentNode: XmlNode | null = null,
-        childNodes: XmlNode[] = [],
-        nextSibling: XmlNode | null = null,
+        parentNode: JNode | null = null,
+        childNodes: JNode[] = [],
+        nextSibling: JNode | null = null,
         textContent: string | null = null) {
         super(nodeType, textContent, parentNode, childNodes, nextSibling)
 
@@ -172,30 +168,30 @@ export class XmlElement extends XmlNode implements RElement {
 
 }
 
-
 @Injectable()
-export class XmlRenderer implements Renderer {
-    // 创建XML注释节点
+export class JsonRenderer implements Renderer {
+
+    // 创建Json注释节点
     createComment(value: string): RComment {
-        return new XmlComment(value);
+        return new JComment(value);
     }
 
-    // 创建XML元素节点（支持命名空间）
-    createElement(name: string, namespace?: string | null): RElement {
-        const element = new XmlElement(name);
+    // 创建Json元素节点（支持命名空间）
+    createElement(name: string, namespace?: string | null): JElement {
+        const element = new JElement(name);
         if (namespace) {
             element.setAttributeNS(namespace, name, namespace);
         }
         return element;
     }
 
-    // 创建XML文本节点
+    // 创建Json文本节点
     createText(value: string): RText {
-        return new XmlText(value)
+        return new JText(value);
     }
 
     // 实现节点.appendChild
-    appendChild(parent: RElement, newChild: RNode): void {
+    appendChild(parent: JElement, newChild: JNode): void {
         newChild.parentNode = parent;
         if (parent.firstChild === null) {
             parent.firstChild = newChild;
@@ -207,64 +203,64 @@ export class XmlRenderer implements Renderer {
     }
 
     // 实现节点.insertBefore
-    insertBefore(parent: XmlNode, newChild: XmlNode, refChild: XmlNode | null): void {
+    insertBefore(parent: JNode, newChild: JNode, refChild: JNode | null): void {
         parent.insertBefore(newChild, refChild);
     }
 
-    removeChild(parent: XmlElement | null, oldChild: XmlNode, isHostElement?: boolean): void {
+    removeChild(parent: JElement | null, oldChild: JNode, isHostElement?: boolean): void {
         parent?.removeChild(oldChild)
     }
-    selectRootElement(selectorOrNode: string | any, preserveContent?: boolean): XmlElement {
+    selectRootElement(selectorOrNode: string | any, preserveContent?: boolean): JElement {
         throw new Error('Method not implemented.');
     }
-    parentNode(node: XmlNode): XmlElement | null {
+    parentNode(node: JNode): JElement | null {
         return node.parentElement
     }
-    nextSibling(node: XmlNode): XmlNode | null {
+    nextSibling(node: JNode): JNode | null {
         return node.nextSibling;
     }
-    setAttribute(el: XmlElement, name: string, value: string, namespace?: string | null): void {
+    setAttribute(el: JElement, name: string, value: string, namespace?: string | null): void {
         if (namespace) {
             el.setAttributeNS(namespace, name, value)
         } else {
             el.setAttribute(name, value)
         }
     }
-    removeAttribute(el: XmlElement, name: string, namespace?: string | null): void {
+    removeAttribute(el: JElement, name: string, namespace?: string | null): void {
         if (namespace) {
             el.setAttributeNS(namespace, name, '')
         } else {
             el.removeAttribute(name)
         }
     }
-    addClass(el: XmlElement, name: string): void {
+    addClass(el: JElement, name: string): void {
         el.classList.add(name);
     }
-    removeClass(el: XmlElement, name: string): void {
+    removeClass(el: JElement, name: string): void {
         el.classList.remove(name);
     }
-    setStyle(el: XmlElement, style: string, value: any, flags?: RendererStyleFlags2): void {
+    setStyle(el: JElement, style: string, value: any, flags?: RendererStyleFlags2): void {
         el.style.setProperty(style, value);
     }
-    removeStyle(el: XmlElement, style: string, flags?: RendererStyleFlags2): void {
+    removeStyle(el: JElement, style: string, flags?: RendererStyleFlags2): void {
         el.style.removeProperty(style);
     }
-    setProperty(el: XmlElement, name: string, value: any): void {
+    setProperty(el: JElement, name: string, value: any): void {
         el.setProperty?.(name, value);
     }
-    setValue(node: XmlText | XmlComment, value: string): void {
+    setValue(node: JText | JComment, value: string): void {
         node.textContent = value;
     }
 
 }
 
 @Injectable()
-export class XmlTemplateCompiler extends AbstractTemplateCompiler {
+export class JsonTemplateCompiler extends AbstractTemplateCompiler {
 
     constructor(
         readonly effect: ReactiveEffect,
-        readonly renderer: XmlRenderer,
-        readonly parser: XmlTemplateParser,
+        readonly renderer: JsonRenderer,
+        readonly parser: JsonTemplateParser,
         protected options: TemplateCompilerOptions = {}) {
         super()
     }
@@ -273,12 +269,12 @@ export class XmlTemplateCompiler extends AbstractTemplateCompiler {
 
 @Module({
     providers: [
-        XmlTemplateCompiler,
-        XmlTemplateParser,
-        XmlRenderer,
-        { provide: TemplateCompiler, useClass: XmlTemplateCompiler, asDefault: true }
+        JsonTemplateCompiler,
+        JsonTemplateParser,
+        JsonRenderer,
+        { provide: TemplateCompiler, useClass: JsonTemplateCompiler, asDefault: true }
     ]
 })
-export class XmlTemplateModule {
+export class JsonTemplateModule {
 
 }

@@ -3,6 +3,7 @@ import { Before, Suite, Test } from '@tsdi/unit';
 import { ApplicationContext, Application } from '@tsdi/core';
 import { ExampleComponent } from './app';
 import { ComponentsModule } from '../src';
+import { JsonTemplateModule } from '../src/impl/json';
 
 
 
@@ -15,6 +16,7 @@ export class CTest {
     async init() {
         this.ctx = await Application.run(ExampleComponent, {
             deps: [
+                JsonTemplateModule,
                 ComponentsModule
             ]
         });
