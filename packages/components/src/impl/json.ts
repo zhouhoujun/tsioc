@@ -11,40 +11,40 @@ import { Renderer, RendererStyleFlags2 } from '../renderer/Renderer';
 // XML模板解析器实现示例
 @Injectable()
 export class JsonTemplateParser implements TemplateParser {
-    parse(template: string): RNode[] {
+    parse(template: string): JsonNode[] {
         const jsonObj = JSON.parse(template);
         // 将JSON对象转换为虚拟DOM节点
         return this.convertToNodes(jsonObj);
     }
 
-    private convertToNodes(jsonObj: any): RNode[] {
+    private convertToNodes(jsonObj: any): JsonNode[] {
         // 实现JSON到节点的转换逻辑
         // ...
         return isArray(jsonObj) ? jsonObj : [jsonObj];
     }
 }
 
-export class JNode implements RNode {
+export class JsonNode implements RNode {
 
-    get parentElement(): JElement | null {
-        return this.parentNode instanceof JElement ? this.parentNode : null;
+    get parentElement(): JsonElement | null {
+        return this.parentNode instanceof JsonElement ? this.parentNode : null;
     }
 
     constructor(
         readonly nodeType: number,
         public textContent: string | null = null,
-        public parentNode: JNode | null = null,
-        readonly childNodes: JNode[] = [],
-        public nextSibling: JNode | null = null) {
+        public parentNode: JsonNode | null = null,
+        readonly childNodes: JsonNode[] = [],
+        public nextSibling: JsonNode | null = null) {
 
     }
 
-    removeChild(oldChild: JNode): JNode {
+    removeChild(oldChild: JsonNode): JsonNode {
         const [removed] = lang.remove(this.childNodes, oldChild) ?? Empty;
         return removed;
     }
 
-    insertBefore(newChild: JNode, refChild: JNode | null, isViewRoot?: boolean): void {
+    insertBefore(newChild: JsonNode, refChild: JsonNode | null, isViewRoot?: boolean): void {
         const index = refChild ? this.childNodes.indexOf(refChild) : 0;
         if (index !== -1) {
             this.childNodes.splice(index, 0, newChild);
@@ -52,19 +52,19 @@ export class JNode implements RNode {
             this.childNodes.push(newChild);
         }
     }
-    appendChild(newChild: JNode): JNode {
+    appendChild(newChild: JsonNode): JsonNode {
         this.childNodes.push(newChild);
         return this;
     }
 }
 
-export class JText extends JNode implements RText {
+export class JsonText extends JsonNode implements RText {
     constructor(text: string) {
         super(NodeType.Text, text)
     }
 }
 
-export class JComment extends JNode implements RComment {
+export class JsonComment extends JsonNode implements RComment {
     constructor(text: string) {
         super(NodeType.Comment, text)
     }
@@ -109,7 +109,7 @@ export class JDomTokenList implements RDomTokenList {
 
 }
 
-export class JElement extends JNode implements RElement {
+export class JsonElement extends JsonNode implements RElement {
     private events = new EventEmitter();
     firstChild: RNode | null = null;
     style: RCssStyleDeclaration = new JCssStyleDeclaration();
@@ -119,9 +119,9 @@ export class JElement extends JNode implements RElement {
         readonly tagName: string,
         readonly className: string = '',
         nodeType: number = NodeType.Element,
-        parentNode: JNode | null = null,
-        childNodes: JNode[] = [],
-        nextSibling: JNode | null = null,
+        parentNode: JsonNode | null = null,
+        childNodes: JsonNode[] = [],
+        nextSibling: JsonNode | null = null,
         textContent: string | null = null) {
         super(nodeType, textContent, parentNode, childNodes, nextSibling)
 
@@ -172,13 +172,13 @@ export class JElement extends JNode implements RElement {
 export class JsonRenderer implements Renderer {
 
     // 创建Json注释节点
-    createComment(value: string): RComment {
-        return new JComment(value);
+    createComment(value: string): JsonComment {
+        return new JsonComment(value);
     }
 
     // 创建Json元素节点（支持命名空间）
-    createElement(name: string, namespace?: string | null): JElement {
-        const element = new JElement(name);
+    createElement(name: string, namespace?: string | null): JsonElement {
+        const element = new JsonElement(name);
         if (namespace) {
             element.setAttributeNS(namespace, name, namespace);
         }
@@ -186,12 +186,12 @@ export class JsonRenderer implements Renderer {
     }
 
     // 创建Json文本节点
-    createText(value: string): RText {
-        return new JText(value);
+    createText(value: string): JsonText {
+        return new JsonText(value);
     }
 
     // 实现节点.appendChild
-    appendChild(parent: JElement, newChild: JNode): void {
+    appendChild(parent: JsonElement, newChild: JsonNode): void {
         newChild.parentNode = parent;
         if (parent.firstChild === null) {
             parent.firstChild = newChild;
@@ -203,52 +203,52 @@ export class JsonRenderer implements Renderer {
     }
 
     // 实现节点.insertBefore
-    insertBefore(parent: JNode, newChild: JNode, refChild: JNode | null): void {
+    insertBefore(parent: JsonNode, newChild: JsonNode, refChild: JsonNode | null): void {
         parent.insertBefore(newChild, refChild);
     }
 
-    removeChild(parent: JElement | null, oldChild: JNode, isHostElement?: boolean): void {
+    removeChild(parent: JsonElement | null, oldChild: JsonNode, isHostElement?: boolean): void {
         parent?.removeChild(oldChild)
     }
-    selectRootElement(selectorOrNode: string | any, preserveContent?: boolean): JElement {
+    selectRootElement(selectorOrNode: string | any, preserveContent?: boolean): JsonElement {
         throw new Error('Method not implemented.');
     }
-    parentNode(node: JNode): JElement | null {
+    parentNode(node: JsonNode): JsonElement | null {
         return node.parentElement
     }
-    nextSibling(node: JNode): JNode | null {
+    nextSibling(node: JsonNode): JsonNode | null {
         return node.nextSibling;
     }
-    setAttribute(el: JElement, name: string, value: string, namespace?: string | null): void {
+    setAttribute(el: JsonElement, name: string, value: string, namespace?: string | null): void {
         if (namespace) {
             el.setAttributeNS(namespace, name, value)
         } else {
             el.setAttribute(name, value)
         }
     }
-    removeAttribute(el: JElement, name: string, namespace?: string | null): void {
+    removeAttribute(el: JsonElement, name: string, namespace?: string | null): void {
         if (namespace) {
             el.setAttributeNS(namespace, name, '')
         } else {
             el.removeAttribute(name)
         }
     }
-    addClass(el: JElement, name: string): void {
+    addClass(el: JsonElement, name: string): void {
         el.classList.add(name);
     }
-    removeClass(el: JElement, name: string): void {
+    removeClass(el: JsonElement, name: string): void {
         el.classList.remove(name);
     }
-    setStyle(el: JElement, style: string, value: any, flags?: RendererStyleFlags2): void {
+    setStyle(el: JsonElement, style: string, value: any, flags?: RendererStyleFlags2): void {
         el.style.setProperty(style, value);
     }
-    removeStyle(el: JElement, style: string, flags?: RendererStyleFlags2): void {
+    removeStyle(el: JsonElement, style: string, flags?: RendererStyleFlags2): void {
         el.style.removeProperty(style);
     }
-    setProperty(el: JElement, name: string, value: any): void {
+    setProperty(el: JsonElement, name: string, value: any): void {
         el.setProperty?.(name, value);
     }
-    setValue(node: JText | JComment, value: string): void {
+    setValue(node: JsonText | JsonComment, value: string): void {
         node.textContent = value;
     }
 
@@ -258,9 +258,9 @@ export class JsonRenderer implements Renderer {
 const jsonDefaultOptions = {
     delimiters: ['{{', '}}'],
     directives: {
-        'text': JText,
-        'comment': JComment,
-        'element': JElement,
+        'text': JsonText,
+        'comment': JsonComment,
+        'element': JsonElement,
     }
 } as TemplateCompilerOptions;
 

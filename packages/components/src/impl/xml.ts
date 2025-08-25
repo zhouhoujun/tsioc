@@ -12,8 +12,13 @@ import { Renderer, RendererStyleFlags2 } from '../renderer/Renderer';
 // XML模板解析器实现示例
 @Injectable()
 export class XmlTemplateParser implements TemplateParser {
-    parse(template: string): RNode[] {
-        const parser = new XMLParser();
+    parse(template: string): XmlNode[] {
+        const parser = new XMLParser({
+            ignoreAttributes: false,
+            preserveOrder: false,
+            parseAttributeValue: false,
+            // parseNodeValue: true,
+        });
         const jsonObj = parser.parse(template);
         // 将JSON对象转换为虚拟DOM节点
         return this.convertToNodes(jsonObj);
@@ -21,8 +26,47 @@ export class XmlTemplateParser implements TemplateParser {
 
     private convertToNodes(jsonObj: any): XmlNode[] {
         // 实现JSON到节点的转换逻辑
-        // ...
-        return isArray(jsonObj) ? jsonObj : [jsonObj];
+        // Handle text nodes
+        if (typeof jsonObj === 'string') {
+            const textNode = new XmlText(jsonObj);
+            return [textNode];
+        }
+
+         // 处理数组节点
+        if (Array.isArray(jsonObj)) {
+            return jsonObj.flatMap(item => this.convertToNodes(item));
+        }
+
+         // 处理对象节点
+        if (jsonObj && typeof jsonObj === 'object') {
+            // 提取标签名和属性
+            const tagName = jsonObj['#name'] || 'unknown';
+            const attributes = jsonObj['@_'] || {};
+            const node = new XmlNode(tagName, attributes);
+
+            // 处理子节点
+            const childNodes: any[] = [];
+            for (const key in jsonObj) {
+                // 跳过特殊属性
+                if (key === '#name' || key === '@_' || key === '#text') continue;
+                childNodes.push(jsonObj[key]);
+            }
+
+            // 处理文本内容
+            if ('#text' in jsonObj) {
+                node.textContent = jsonObj['#text'];
+            }
+
+            // 递归转换子节点
+            node.childNodes = childNodes.flatMap(child => this.convertToNodes(child));
+            // 设置父节点引用
+            node.childNodes.forEach(child => child.parentNode = node);
+
+            return [node];
+        }
+
+        // Handle other node types
+        return [];
     }
 }
 
@@ -38,7 +82,7 @@ export class XmlNode implements RNode {
         readonly nodeType: number,
         public textContent: string | null = null,
         public parentNode: XmlNode | null = null,
-        readonly childNodes: XmlNode[] = [],
+        public childNodes: XmlNode[] = [],
         public nextSibling: XmlNode | null = null) {
 
     }

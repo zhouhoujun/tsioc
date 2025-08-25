@@ -1,4 +1,4 @@
-import { Abstract, isObject } from '@tsdi/ioc';
+import { Abstract, isArray, isObject } from '@tsdi/ioc';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { NodeType, RElement, RNode, RText } from '../renderer/Node';
 import { ViewRef } from '../refs/view';
@@ -17,7 +17,7 @@ import { TemplateParser } from '../template/parser';
 
 @Abstract()
 export abstract class AbstractTemplateCompiler extends TemplateCompiler {
-    
+
     protected abstract get options(): TemplateCompilerOptions;
 
     abstract get parser(): TemplateParser;
