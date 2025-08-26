@@ -313,15 +313,8 @@ export class XmlTemplateParser implements TemplateParser {
                 }
             }
 
-
-            // for (const key in jsonObj) {
-            //     // 跳过特殊属性
-            //     if (key === '#name' || key === '@_' || key === '#text') continue;
-            //     childNodes.push(jsonObj[key]);
-            // }
-
             // 处理文本内容
-            if (keys.includes('#text')) {
+            if ('#text' in jsonObj) {
                 node.textContent = jsonObj['#text'];
             }
 

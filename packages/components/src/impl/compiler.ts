@@ -37,9 +37,10 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
     private walkNodes(nodes: RNode[], context: any, viewRef: ViewRef, environument: InvocationContext) {
         nodes?.forEach(node => {
+            
             if (node.nodeType === NodeType.Element) {
                 this.processElement(node as RElement, context, viewRef, environument);
-            } else if (node.nodeType === NodeType.Text) {
+            } else if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
                 this.processText(node as RText, context, viewRef, environument);
             }
             // ...解析模板逻辑...
