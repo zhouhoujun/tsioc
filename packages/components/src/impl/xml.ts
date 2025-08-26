@@ -253,15 +253,19 @@ export class XmlTemplateParser implements TemplateParser {
     parse(template: string): XmlNode[] {
         const parser = new XMLParser({
             ignoreAttributes: false,
-            preserveOrder: false,
+            allowBooleanAttributes: true,
+            preserveOrder: true,
             parseAttributeValue: false,
-            parseTagValue: true,
+            parseTagValue: false,
+            commentPropName: '#comment',
             // parseNodeValue: true,
         });
         const jsonObj = parser.parse(template);
         // 将JSON对象转换为虚拟DOM节点
         return this.convertToNodes(jsonObj);
     }
+
+
 
     private convertToNodes(jsonObj: any): XmlNode[] {
         // 实现JSON到节点的转换逻辑
@@ -278,26 +282,46 @@ export class XmlTemplateParser implements TemplateParser {
 
         // 处理对象节点
         if (jsonObj && typeof jsonObj === 'object') {
-            // 提取标签名和属性
-            const tagName = jsonObj['#name'] || 'unknown';
-            const node = this.renderer.createElement(tagName);
-            // 设置属性
-            for (const key in jsonObj) {
-                if (key.startsWith('@_')) {
-                    node.setAttribute(key.slice(2), jsonObj[key]);
+            const keys = Object.keys(jsonObj);
+            if (keys.length == 1) {
+                if (keys[0] == '#text') {
+                    return [this.renderer.createText(jsonObj['#text'])]
+                } else if (keys[0] === '#comment') {
+                    return [this.renderer.createComment(jsonObj['#comment'])]
                 }
             }
+            // 提取标签名和属性
+            const tagName = keys.find(key => !key.startsWith('@_') && !key.startsWith('#') && !key.startsWith(':@')) ?? 'unkonw';
+            const node = this.renderer.createElement(tagName);
 
             // 处理子节点
             const childNodes: any[] = [];
-            for (const key in jsonObj) {
-                // 跳过特殊属性
-                if (key === '#name' || key === '@_' || key === '#text') continue;
-                childNodes.push(jsonObj[key]);
+
+            // 设置属性
+            for (const key of keys) {
+                const datan = jsonObj[key];
+                if (key.startsWith('@_') || key.startsWith('#')) {
+                    node.setAttribute(key.slice(2), datan);
+                } else if (key === ':@') {
+                    for (const attr in datan) {
+                        if (attr.startsWith('@_') || attr.startsWith('#')) {
+                            node.setAttribute(attr.slice(2), datan[attr]);
+                        }
+                    }
+                } else {
+                    childNodes.push(datan);
+                }
             }
 
+
+            // for (const key in jsonObj) {
+            //     // 跳过特殊属性
+            //     if (key === '#name' || key === '@_' || key === '#text') continue;
+            //     childNodes.push(jsonObj[key]);
+            // }
+
             // 处理文本内容
-            if ('#text' in jsonObj) {
+            if (keys.includes('#text')) {
                 node.textContent = jsonObj['#text'];
             }
 
@@ -317,11 +341,11 @@ export class XmlTemplateParser implements TemplateParser {
 
 const xmlDefaultOptions = {
     delimiters: ['{{', '}}'],
-    directives: {
-        'text': XmlText,
-        'comment': XmlComment,
-        'element': XmlElement,
-    }
+    // directives: {
+    //     'text': XmlText,
+    //     'comment': XmlComment,
+    //     'element': XmlElement,
+    // }
 } as TemplateCompilerOptions;
 
 @Injectable()

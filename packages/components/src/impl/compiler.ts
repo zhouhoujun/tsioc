@@ -4,6 +4,7 @@ import { NodeType, RElement, RNode, RText } from '../renderer/Node';
 import { ViewRef } from '../refs/view';
 import { RootViewRef } from './view';
 import { TemplateParser } from '../template/parser';
+import { ComponentFactory, ComponentRef } from '../refs/component';
 
 
 // // 默认HTML模板解析器实现
@@ -27,11 +28,9 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         const nodes = this.parser.parse(template);
 
         const viewRef = new RootViewRef(nodes, context, this.effect);
+        
         // 处理动态内容
         this.walkNodes(viewRef.rootNodes, context, viewRef);
-
-        // ...解析模板逻辑...
-        viewRef.rootNodes?.forEach(node => this.processBindings(node, context, viewRef));
 
         return viewRef;
     }
@@ -43,12 +42,20 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
             } else if (node.nodeType === NodeType.Text) {
                 this.processText(node as RText, context, viewRef);
             }
-            this.processBindings(node as any, context, viewRef);
+            // ...解析模板逻辑...
+            this.processBindings(node, context, viewRef);
         });
 
     }
 
     private processElement(el: RElement, context: any, viewRef: ViewRef) {
+
+        // const component = //this.options.directives?.[el.tagName];
+        // if (component) {
+        //     this.processComponent(el, component, context, viewRef);
+        //     return; // 组件处理后不再执行普通元素逻辑
+        // }
+
         // 处理属性
         el.getAttributeNames()?.forEach(name => {
             const attrVal = el.getAttribute(name)!;
@@ -96,6 +103,48 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                 node.textContent = text.replace(regex, value);
             });
         }
+    }
+
+
+    private async processComponent(el: RElement, factory: ()=> ComponentRef<any>, context: any, viewRef: ViewRef) {
+        // 创建组件实例
+        const componentRef = factory();
+
+        // 解析组件属性作为props
+        const props: Record<string, any> = {};
+        el.getAttributeNames()?.forEach(name => {
+            if (!name.startsWith('@') && !name.startsWith('#') && !name.startsWith(':')) {
+                props[name] = el.getAttribute(name);
+            }
+        });
+
+        // 处理组件事件绑定
+        const events: Record<string, EventListener> = {};
+        el.getAttributeNames()?.forEach(name => {
+            if (name.startsWith('@')) {
+                const eventName = name.substring(1);
+                events[eventName] = this.parseEventExpression(el.getAttribute(name)!, context, viewRef);
+            }
+        });
+
+        // 将props和events传递给组件
+        // componentInstance.props = props;
+        // componentInstance.events = events;
+
+        // 渲染组件并替换当前节点
+        await componentRef.render();
+
+        // const parentNode = el.parentNode;
+        // if (parentNode) {
+        //     // 替换原节点为组件渲染结果
+        //     const index = Array.from(parentNode.childNodes).indexOf(el);
+        //     parentNode.removeChild(el);
+        //     componentRef.hostView.rootNodes.forEach((node, i) => {
+        //         parentNode.insertBefore(node, parentNode.childNodes[index + i] || null);
+        //     });
+        //     // 处理组件渲染节点的绑定
+        //     componentRef.hostView.rootNodes.forEach(node => this.processBindings(node, context, viewRef));
+        // }
     }
 
     private evaluateExpression(expr: string, context: any, viewRef: ViewRef): any {
@@ -167,6 +216,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                 funcTarget = obj;
                 return obj && obj[prop];
             }, context);
+
             if (typeof func !== 'function') {
                 throw new Error(`Event handler ${funcPath} is not a function`);
             }

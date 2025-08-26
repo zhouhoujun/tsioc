@@ -262,11 +262,11 @@ export class JsonTemplateParser implements TemplateParser {
 
 const jsonDefaultOptions = {
     delimiters: ['{{', '}}'],
-    directives: {
-        'text': JsonText,
-        'comment': JsonComment,
-        'element': JsonElement,
-    }
+    // directives: {
+    //     'text': JsonText,
+    //     'comment': JsonComment,
+    //     'element': JsonElement,
+    // }
 } as TemplateCompilerOptions;
 
 @Injectable()

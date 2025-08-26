@@ -40,12 +40,12 @@ export class CTest {
          const appcomRef = this.ctx.runners.getRef(ExampleComponent) as ComponentRef<ExampleComponent>;
         expect(appcomRef.instance.title).toEqual('Example Component');
         expect(appcomRef.instance.value).toEqual('test');
-        expect(appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[1].textContent).toEqual('Count: 0');
-        appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[4].events.emit('click');
+        expect(appcomRef.hostView.rootNodes[0].childNodes[1].childNodes[0].textContent).toEqual('Count: 0');
+        appcomRef.hostView.rootNodes[0].childNodes[4].events.emit('click');
 
         await Promise.resolve();
         
-        expect(appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[1].textContent).toEqual('Count: 1');
+        expect(appcomRef.hostView.rootNodes[0].childNodes[1].childNodes[0].textContent).toEqual('Count: 1');
     }
 
     @Test('can bind event with args')
@@ -55,7 +55,7 @@ export class CTest {
         expect(appcomRef.instance.value).toEqual('test');
 
         expect(appcomRef.instance.item.checked).toBeFalsy();
-        appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[5].events.emit('click');
+        appcomRef.hostView.rootNodes[0].childNodes[5].events.emit('click');
 
         await Promise.resolve();
         
@@ -67,13 +67,13 @@ export class CTest {
         const appcomRef = this.ctx.runners.getRef(ExampleComponent) as ComponentRef<ExampleComponent>;
         expect(appcomRef.instance.title).toEqual('Example Component');
         expect(appcomRef.instance.value).toEqual('test');
-        expect(appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[2].textContent).toEqual('Value: test');
-        expect(appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[3].getAttribute('value')).toEqual('test');
+        expect(appcomRef.hostView.rootNodes[0].childNodes[3].childNodes[0].textContent).toEqual('Value: test');
+        expect(appcomRef.hostView.rootNodes[0].childNodes[2].getAttribute('value')).toEqual('test');
         appcomRef.instance.value = 'test1';
         await Promise.resolve();
         
-        expect(appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[2].textContent).toEqual('Value: test1');
-        expect(appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[3].getAttribute('value')).toEqual('test1');
+        expect(appcomRef.hostView.rootNodes[0].childNodes[3].childNodes[0].textContent).toEqual('Value: test1');
+        expect(appcomRef.hostView.rootNodes[0].childNodes[2].getAttribute('value')).toEqual('test1');
     }
 
 }
