@@ -35,7 +35,7 @@ export class CTest {
         expect(appcomRef.instance.count).toEqual(0);
     }
 
-    @Test('can bind event component')
+    @Test('can bind event')
     async test2() {
          const appcomRef = this.ctx.runners.getRef(ExampleComponent) as ComponentRef<ExampleComponent>;
         expect(appcomRef.instance.title).toEqual('Example Component');
@@ -46,6 +46,20 @@ export class CTest {
         await Promise.resolve();
         
         expect(appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[1].textContent).toEqual('Count: 1');
+    }
+
+    @Test('can bind event with args')
+    async test3() {
+         const appcomRef = this.ctx.runners.getRef(ExampleComponent) as ComponentRef<ExampleComponent>;
+        expect(appcomRef.instance.title).toEqual('Example Component');
+        expect(appcomRef.instance.value).toEqual('test');
+
+        expect(appcomRef.instance.item.checked).toBeFalsy();
+        appcomRef.hostView.rootNodes[0].childNodes[0].childNodes[5].events.emit('click');
+
+        await Promise.resolve();
+        
+        expect(appcomRef.instance.item.checked).toBeTruthy();
     }
 
     @Test('refresh app component by mapping')

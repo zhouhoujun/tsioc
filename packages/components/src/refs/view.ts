@@ -1,4 +1,5 @@
 import { Abstract, Destroyable } from '@tsdi/ioc';
+import { RNode } from '../renderer/Node';
 
 
 
@@ -11,6 +12,9 @@ import { Abstract, Destroyable } from '@tsdi/ioc';
 export abstract class ViewRef implements Destroyable {
 
   abstract get rootNodes(): any[];
+
+  abstract registerNodeRef(id: string, node: RNode): void;
+  abstract getNodeRef(id: string): RNode | undefined;
 
   /**
    * has destoryed or not.

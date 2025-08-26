@@ -45,6 +45,11 @@ export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptio
 
     }
 
+    protected override clean(): void {
+        super.clean();
+        this.hostView?.destroy();
+    }
+
     protected override process(option?: InvocationContext | InvokeArguments) {
         return this.render(option);
     }

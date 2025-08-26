@@ -70,6 +70,7 @@ export class AppComponent implements OnInit {
         <input v-model="value" />
         <p>Value: {{ value }}</p>
         <button @click="increment">Increment</button>
+        <button @click="clickWithData($event, item)">Increment</button>
       </div>
     `,
     styles: [
@@ -81,9 +82,18 @@ export class AppComponent implements OnInit {
     title = 'Example Component';
     count = 0;
     value = 'test';
+
+    item = {
+      name: 'zhangsan',
+      checked: false
+    }
   
     increment() {
       this.count++;
+    }
+
+    clickWithData(event: any, item:any) {
+      item.checked = true;
     }
   
     onInit() {
