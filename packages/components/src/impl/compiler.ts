@@ -1,4 +1,4 @@
-import { Abstract, isArray, isObject } from '@tsdi/ioc';
+import { Abstract, InvocationContext, isArray, isObject } from '@tsdi/ioc';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { NodeType, RElement, RNode, RText } from '../renderer/Node';
 import { ViewRef } from '../refs/view';
@@ -23,24 +23,24 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
     abstract get parser(): TemplateParser;
 
-    compile(template: string, context: any): ViewRef {
+    compile(template: string, context: any, environument: InvocationContext): ViewRef {
         // 使用模板解析器解析模板
         const nodes = this.parser.parse(template);
 
         const viewRef = new RootViewRef(nodes, context, this.effect);
-        
+
         // 处理动态内容
-        this.walkNodes(viewRef.rootNodes, context, viewRef);
+        this.walkNodes(viewRef.rootNodes, context, viewRef, environument);
 
         return viewRef;
     }
 
-    private walkNodes(nodes: RNode[], context: any, viewRef: ViewRef) {
+    private walkNodes(nodes: RNode[], context: any, viewRef: ViewRef, environument: InvocationContext) {
         nodes?.forEach(node => {
             if (node.nodeType === NodeType.Element) {
-                this.processElement(node as RElement, context, viewRef);
+                this.processElement(node as RElement, context, viewRef, environument);
             } else if (node.nodeType === NodeType.Text) {
-                this.processText(node as RText, context, viewRef);
+                this.processText(node as RText, context, viewRef, environument);
             }
             // ...解析模板逻辑...
             this.processBindings(node, context, viewRef);
@@ -48,7 +48,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
     }
 
-    private processElement(el: RElement, context: any, viewRef: ViewRef) {
+    private processElement(el: RElement, context: any, viewRef: ViewRef, environument: InvocationContext) {
 
         // const component = //this.options.directives?.[el.tagName];
         // if (component) {
@@ -66,7 +66,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
             } else if (name.startsWith('@')) {
                 // 事件绑定
                 const eventName = name.substring(1);
-                const handler = this.parseEventExpression(attrVal, context, viewRef);
+                const handler = this.parseEventExpression(attrVal, context, viewRef, environument);
                 el.addEventListener(eventName, handler);
             } else if (name.startsWith(':')) {
                 // 属性绑定
@@ -84,11 +84,11 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
         // 递归处理子节点
         if (el.childNodes.length > 0) {
-            this.walkNodes(el.childNodes, context, viewRef);
+            this.walkNodes(el.childNodes, context, viewRef, environument);
         }
     }
 
-    private processText(node: RText, context: any, viewRef: ViewRef) {
+    private processText(node: RText, context: any, viewRef: ViewRef, environument: InvocationContext) {
         const text = node.textContent;
         if (!text) return;
 
@@ -99,14 +99,14 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         for (const match of matches) {
             const expr = match[1].trim();
             this.effect.run(() => {
-                const value = this.evaluateExpression(expr, context, viewRef);
+                const value = this.evaluateExpression(expr, context, viewRef, environument);
                 node.textContent = text.replace(regex, value);
             });
         }
     }
 
 
-    private async processComponent(el: RElement, factory: ()=> ComponentRef<any>, context: any, viewRef: ViewRef) {
+    private async processComponent(el: RElement, factory: () => ComponentRef<any>, context: any, viewRef: ViewRef, environument: InvocationContext) {
         // 创建组件实例
         const componentRef = factory();
 
@@ -123,7 +123,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         el.getAttributeNames()?.forEach(name => {
             if (name.startsWith('@')) {
                 const eventName = name.substring(1);
-                events[eventName] = this.parseEventExpression(el.getAttribute(name)!, context, viewRef);
+                events[eventName] = this.parseEventExpression(el.getAttribute(name)!, context, viewRef, environument);
             }
         });
 
@@ -147,10 +147,36 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         // }
     }
 
-    private evaluateExpression(expr: string, context: any, viewRef: ViewRef): any {
+    // 解析管道表达式转换为函数调用
+    private parsePipes(parts: string[]): string[] {
+        let result = parts[0];
+        const results: string[] = [];
+        for (let i = 1; i < parts.length; i++) {
+            const pipePart = parts[i];
+            const [pipeName, ...params] = pipePart.split(':').map(p => p.trim());
+            if (!pipeName) continue;
+            results.push(pipeName)
+            result = `pipes.${pipeName}.transform(${result}${params.length ? ', ' + params.join(', ') : ''})`;
+        }
+        results.unshift(result);
+        return results;
+    }
+
+    private evaluateExpression(expr: string, context: any, viewRef: ViewRef, environument: InvocationContext): any {
         try {
-            // 简单表达式求值
-            return new Function('ctx', `with(ctx){return ${expr}}`)(context);
+            const parts = expr.split('|').map(part => part.trim());
+            if (parts.length <= 1) {
+                // 简单表达式求值
+                return new Function('ctx', `with(ctx){return ${expr}}`)(context);
+            } else {
+                const [expression, ...pipeNames] = this.parsePipes(parts);
+                const pipes = pipeNames.reduce((obj, name) => {
+                    obj[name] = environument.get(name);
+                    return obj;
+                }, {} as any);
+                // 将管道函数添加到执行上下文中
+                return new Function('ctx', 'pipes', `with(ctx){return ${expression}}`)(context, pipes);
+            }
         } catch (e) {
             console.error(`Error evaluating expression: ${expr}`, e);
             return '';
@@ -192,7 +218,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         node.childNodes?.forEach(child => this.processBindings(child, context, viewRef));
     }
 
-    private parseEventExpression(expr: string, context: any, viewRef: ViewRef): EventListener {
+    private parseEventExpression(expr: string, context: any, viewRef: ViewRef, environument: InvocationContext): EventListener {
         // 改进正则以支持带命名空间的函数名和复杂参数
         const funcCallRegex = /^\s*([_$a-zA-Z\w.]+)\s*\(\s*(.*?)\s*\)\s*$/;
         const match = expr.match(funcCallRegex);
@@ -207,7 +233,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         }
 
         const [, funcPath, argsStr] = match;
-        const args = this.parseArguments(argsStr);
+        const args = this.parseArguments(argsStr, context, viewRef, environument);
 
         return this.effect.run(() => {
             // 解析函数路径 (支持嵌套对象，如: user.service.handleClick)
@@ -236,7 +262,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
     // 解析参数列表，支持字符串、数字、布尔值和变量引用
-    private parseArguments(argsStr: string): any[] {
+    private parseArguments(argsStr: string, context: any, viewRef: ViewRef, environument: InvocationContext): any[] {
         if (!argsStr.trim()) return [];
 
         // 使用状态机解析参数，支持嵌套括号和引号
@@ -256,7 +282,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                 parenDepth--;
                 currentArg += char;
             } else if (char === ',' && parenDepth === 0) {
-                args.push(this.evaluateArg(currentArg.trim()));
+                args.push(this.evaluateArg(currentArg.trim(), context, viewRef, environument));
                 currentArg = '';
             } else if (char === '"' || char === '\'') {
                 quoteChar = char;
@@ -267,14 +293,14 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         }
 
         if (currentArg.trim()) {
-            args.push(this.evaluateArg(currentArg.trim()));
+            args.push(this.evaluateArg(currentArg.trim(), context, viewRef, environument));
         }
 
         return args;
     }
 
     // 计算参数值 (字符串/数字/布尔值/变量引用)
-    private evaluateArg(arg: string): any {
+    private evaluateArg(arg: string, context: any, viewRef: ViewRef, environument: InvocationContext): any {
         if (!arg) return undefined;
 
         // 字符串字面量
@@ -295,8 +321,10 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         if (arg === 'null') return null;
         if (arg === 'undefined') return undefined;
 
-        // 变量引用 (支持 $ 前缀，如 $user 或 $event)
-        return arg;
+        if(arg == '$event') return arg;
+
+        // 复杂表达式，委托给evaluateExpression处理
+        return this.evaluateExpression(arg, context, viewRef, environument);
     }
 }
 
