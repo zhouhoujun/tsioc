@@ -1,11 +1,11 @@
 import { parseFragment, TreeAdapter, defaultTreeAdapter } from 'parse5';
 import { TemplateParser } from '../template/parser';
 import { RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList } from '../renderer/Node';
-import { Abstract, Empty, Inject, Injectable, isArray, lang, Module, ModuleWithProviders } from '@tsdi/ioc';
+import { Abstract, Empty, Inject, Injectable, isArray, lang, Module, ModuleWithProviders, ProvdierOf, tokenId } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { AbstractTemplateCompiler } from './compiler';
 import { ReactiveEffect } from '../ReactiveEffect';
-import { COMPILER_OPTIONS, TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
+import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { Renderer, RendererStyleFlags2 } from '../renderer/Renderer';
 
 
@@ -124,6 +124,13 @@ export abstract class HtmlRenderer extends Renderer {
 
 }
 
+export interface HtmlTemplateCompilerOptions extends TemplateCompilerOptions {
+    renderer?: ProvdierOf<HtmlRenderer>;
+}
+
+export const HTML_COMPILER_OPTIONS = tokenId<HtmlTemplateCompilerOptions>('HTML_COMPILER_OPTIONS');
+
+
 @Injectable()
 export class HtmlTemplateCompiler extends AbstractTemplateCompiler {
 
@@ -131,10 +138,12 @@ export class HtmlTemplateCompiler extends AbstractTemplateCompiler {
         readonly effect: ReactiveEffect,
         readonly renderer: HtmlRenderer,
         readonly parser: HtmlTemplateParser,
-        @Inject(COMPILER_OPTIONS, { defaultValue: htmlDefaultOptions }) protected options: TemplateCompilerOptions) {
+        @Inject(HTML_COMPILER_OPTIONS, { defaultValue: htmlDefaultOptions }) protected options: HtmlTemplateCompilerOptions) {
         super()
     }
 }
+
+
 
 
 @Module({
@@ -145,11 +154,11 @@ export class HtmlTemplateCompiler extends AbstractTemplateCompiler {
     ]
 })
 export class HtmlTemplateModule {
-    static withOptions(options: TemplateCompilerOptions): ModuleWithProviders<HtmlTemplateModule> {
+    static withOptions(options: HtmlTemplateCompilerOptions): ModuleWithProviders<HtmlTemplateModule> {
         return {
             module: HtmlTemplateModule,
             providers: [
-                { provide: COMPILER_OPTIONS, useValue: options }
+                { provide: HTML_COMPILER_OPTIONS, useValue: options }
             ]
         }
     }

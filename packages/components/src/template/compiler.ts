@@ -7,8 +7,6 @@ export interface TemplateCompilerOptions {
     delimiters?: [string, string];
 }
 
-export const COMPILER_OPTIONS = tokenId<TemplateCompilerOptions>('COMPILER_OPTIONS');
-
 @Abstract()
 export abstract class TemplateCompiler {
 
