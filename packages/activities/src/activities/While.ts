@@ -1,4 +1,4 @@
-import { Atteribute, Component } from '@tsdi/components';
+import { Attribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 
@@ -64,19 +64,19 @@ export class WhileActivity extends Activity {
     /**
      * 循环条件函数
      */
-    @Atteribute() condition!: (context: ActivityContext) => Promise<boolean>;
+    @Attribute() condition!: (context: ActivityContext) => Promise<boolean>;
     /**
      * 循环体活动
      */
-    @Atteribute() body!: Activity;
+    @Attribute() body!: Activity;
     /**
      * 最大迭代次数
      */
-    @Atteribute() maxIterations?: number;
+    @Attribute() maxIterations?: number;
     /**
      * 迭代间隔（毫秒）
      */
-    @Atteribute() interval?: number;
+    @Attribute() interval?: number;
 
     async execute(context: ActivityContext): Promise<ActivityResult> {
         if (!this.condition) {

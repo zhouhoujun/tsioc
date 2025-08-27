@@ -1,4 +1,4 @@
-import { Atteribute, Component } from '@tsdi/components';
+import { Attribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 
@@ -10,9 +10,9 @@ export class DelayActivity extends Activity {
     /**
      * 延迟时间（毫秒）
      */
-    @Atteribute() duration!: number;
+    @Attribute() duration!: number;
 
-    @Atteribute() body: Activity | undefined;
+    @Attribute() body: Activity | undefined;
 
 
     private abortController: AbortController | null = null;

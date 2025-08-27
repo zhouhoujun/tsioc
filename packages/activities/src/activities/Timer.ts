@@ -1,4 +1,4 @@
-import { Component, Atteribute } from '@tsdi/components';
+import { Component, Attribute } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 
@@ -12,30 +12,30 @@ export class TimerActivity extends Activity {
     /**
      * 定时器类型：'timeout' | 'interval' | 'date'
      */
-    @Atteribute() type!: 'timeout' | 'interval' | 'date';
+    @Attribute() type!: 'timeout' | 'interval' | 'date';
     /**
      * 延迟时间（毫秒，用于 timeout 和 interval）
      */
-    @Atteribute() delay?: number;
+    @Attribute() delay?: number;
     /**
      * 目标日期（用于 date 类型）
      */
-    @Atteribute() targetDate?: Date;
+    @Attribute() targetDate?: Date;
     /**
      * 重复间隔（毫秒，用于 interval）
      */
-    @Atteribute() interval?: number;
+    @Attribute() interval?: number;
     /**
      * 最大重复次数（用于 interval）
      */
-    @Atteribute() maxRepeats?: number;
+    @Attribute() maxRepeats?: number;
     /**
      * 是否立即执行第一次（用于 interval）
      */
-    @Atteribute() immediate?: boolean;
+    @Attribute() immediate?: boolean;
 
 
-    @Atteribute() body!: Activity;
+    @Attribute() body!: Activity;
 
     async execute(context: ActivityContext): Promise<ActivityResult> {
         if (!this.type) {

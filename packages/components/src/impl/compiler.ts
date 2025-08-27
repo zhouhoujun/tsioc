@@ -1,10 +1,10 @@
-import { Abstract, InvocationContext, isArray, isObject } from '@tsdi/ioc';
+import { Abstract, Empty, InvocationContext, isArray, isObject } from '@tsdi/ioc';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { NodeType, RElement, RNode, RText } from '../renderer/Node';
 import { ViewRef } from '../refs/view';
 import { RootViewRef } from './view';
 import { TemplateParser } from '../template/parser';
-import { ComponentFactory, ComponentRef } from '../refs/component';
+import { ComponentRef } from '../refs/component';
 
 
 // // 默认HTML模板解析器实现
@@ -23,21 +23,21 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
     abstract get parser(): TemplateParser;
 
-    compile(template: string, context: any, environument: InvocationContext): ViewRef {
+    async compile(template: string, context: any, environument: InvocationContext): Promise<ViewRef> {
         // 使用模板解析器解析模板
         const nodes = this.parser.parse(template);
 
         const viewRef = new RootViewRef(nodes, context, this.effect);
 
         // 处理动态内容
-        this.walkNodes(viewRef.rootNodes, context, viewRef, environument);
+        await this.walkNodes(viewRef.rootNodes, context, viewRef, environument);
 
         return viewRef;
     }
 
-    private walkNodes(nodes: RNode[], context: any, viewRef: ViewRef, environument: InvocationContext) {
-        nodes?.forEach(node => {
-            
+    private async walkNodes(nodes: RNode[], context: any, viewRef: ViewRef, environument: InvocationContext) {
+        for (const node of nodes || Empty) {
+            // await this.processComponent(node, context, viewRef, environument);
             if (node.nodeType === NodeType.Element) {
                 this.processElement(node as RElement, context, viewRef, environument);
             } else if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
@@ -45,7 +45,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
             }
             // ...解析模板逻辑...
             this.processBindings(node, context, viewRef);
-        });
+        }
 
     }
 
@@ -63,7 +63,6 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
             if (name.startsWith('#')) {
                 const refId = name.substring(1);
                 viewRef.registerNodeRef(refId, el);
-                // delete el.attributes[attrName]; // 移除#属性
             } else if (name.startsWith('@')) {
                 // 事件绑定
                 const eventName = name.substring(1);
@@ -322,7 +321,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         if (arg === 'null') return null;
         if (arg === 'undefined') return undefined;
 
-        if(arg == '$event') return arg;
+        if (arg == '$event') return arg;
 
         // 复杂表达式，委托给evaluateExpression处理
         return this.evaluateExpression(arg, context, viewRef, environument);

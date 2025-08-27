@@ -1,4 +1,4 @@
-import { Atteribute, Component } from '@tsdi/components';
+import { Attribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 
@@ -17,17 +17,17 @@ export class ProcessActivity extends Activity {
     /**
      * 进度回调函数
      */
-    @Atteribute() onProgress?: (progress: number, current: number, total: number) => void;
+    @Attribute() onProgress?: (progress: number, current: number, total: number) => void;
     /**
      * 错误处理函数
      */
-    @Atteribute() onError?: (error: Error) => Promise<ActivityResult>;
+    @Attribute() onError?: (error: Error) => Promise<ActivityResult>;
     /**
      * 验证函数
      */
-    @Atteribute() validator?: (data: any) => Promise<boolean>;
+    @Attribute() validator?: (data: any) => Promise<boolean>;
 
-    @Atteribute() body!: Activity;
+    @Attribute() body!: Activity;
 
 
     async execute(context: ActivityContext): Promise<ActivityResult> {

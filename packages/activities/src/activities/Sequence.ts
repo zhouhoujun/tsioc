@@ -1,4 +1,4 @@
-import { Atteribute, Component } from '@tsdi/components';
+import { Attribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 
@@ -8,13 +8,13 @@ export class SequenceActivity extends Activity {
     /**
      * 要按顺序执行的活动列表
      */
-    @Atteribute() activities: Activity[] = [];
+    @Attribute() activities: Activity[] = [];
     /**
      * 是否在错误时继续执行
      */
-    @Atteribute() continueOnError?: boolean;
+    @Attribute() continueOnError?: boolean;
 
-    @Atteribute() onError?: (error: Error) =>  Promise<ActivityResult>;
+    @Attribute() onError?: (error: Error) =>  Promise<ActivityResult>;
 
     async execute(context: ActivityContext): Promise<ActivityResult> {
         if (!this.activities || this.activities.length === 0) {

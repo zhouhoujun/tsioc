@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
-import { Atteribute, Component } from '@tsdi/components';
+import { Attribute, Component } from '@tsdi/components';
 
 export interface ParallelActivityContext extends ActivityContext {
     /**
@@ -42,20 +42,20 @@ export class ParallelActivity extends Activity {
     /**
      * 要并行执行的活动列表
      */
-    @Atteribute() activities: Activity[] = [];
+    @Attribute() activities: Activity[] = [];
 
      /**
      * 最大并发数
      */
-    @Atteribute() maxConcurrent!: number;
+    @Attribute() maxConcurrent!: number;
     /**
      * 是否等待所有活动完成
      */
-    @Atteribute() waitAll = true;
+    @Attribute() waitAll = true;
     /**
      * 错误处理策略
      */
-    @Atteribute() errorStrategy: 'continue' | 'stop' | 'throw' = 'continue';
+    @Attribute() errorStrategy: 'continue' | 'stop' | 'throw' = 'continue';
 
     async execute(context: ParallelActivityContext): Promise<ActivityResult> {
         if (!context.activities || context.activities.length === 0) {

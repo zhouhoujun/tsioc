@@ -36,7 +36,7 @@ export interface OnInit {
      *
      * @memberof OnInit
      */
-    onInit(): void;
+    onInit(): void | Promise<void>;
 }
 
 /**
@@ -51,7 +51,7 @@ export interface AfterContentInit {
      *
      * @memberof AfterInit
      */
-    onAfterContentInit(): void;
+    onAfterContentInit(): void | Promise<void>;
 }
 
 /**
@@ -119,7 +119,7 @@ export interface AfterViewInit {
     /**
      * A callback method that is invoked immediately afater view initialization.
      */
-    onAfterViewInit(): void;
+    onAfterViewInit(): void | Promise<void>;
 }
 
 /**

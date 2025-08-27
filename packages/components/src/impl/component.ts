@@ -42,9 +42,9 @@ export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptio
             this.context.attach(option);
         }
         const compiler = this.context.get(TemplateCompiler);
-        (this.instance as OnInit).onInit?.();
-        this._hostView = compiler.compile(template, this.instance, this.context);
-        (this.instance as AfterViewInit).onAfterViewInit?.();
+        await (this.instance as OnInit).onInit?.();
+        this._hostView = await compiler.compile(template, this.instance, this.context);
+        await (this.instance as AfterViewInit).onAfterViewInit?.();
     }
 
     protected override clean(): void {

@@ -1,4 +1,4 @@
-import { Atteribute, Component } from '@tsdi/components';
+import { Attribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 import { CaseActivity } from './Case';
 
@@ -11,7 +11,7 @@ export class SwitchActivity<T> extends Activity {
     /**
      * case 活动列表
      */
-    @Atteribute() cases: CaseActivity<T>[] = [];
+    @Attribute() cases: CaseActivity<T>[] = [];
     /**
      * 默认活动（当所有 case 都不匹配时执行）
      */

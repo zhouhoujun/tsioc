@@ -1,4 +1,4 @@
-import { Atteribute, Component } from '@tsdi/components';
+import { Attribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 
@@ -9,7 +9,7 @@ import { Activity, ActivityContext, ActivityResult } from './Activity';
 export class ConditionalActivity extends Activity {
 
 
-    @Atteribute()
+    @Attribute()
     condition!: boolean;
 
     async execute(context: ActivityContext): Promise<ActivityResult> {

@@ -1,4 +1,4 @@
-import { Atteribute, Component } from '@tsdi/components';
+import { Attribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 
@@ -50,19 +50,19 @@ export class TryCatchActivity extends Activity {
     /**
      * try 块中的活动
      */
-    @Atteribute() tryActivity!: Activity;
+    @Attribute() tryActivity!: Activity;
     /**
      * catch 块中的活动
      */
-    @Atteribute() catchActivity?: Activity|null;
+    @Attribute() catchActivity?: Activity|null;
     /**
      * finally 块中的活动
      */
-    @Atteribute() finallyActivity?: Activity|null;
+    @Attribute() finallyActivity?: Activity|null;
     /**
      * 错误类型过滤器
      */
-    @Atteribute() errorTypes?: (new (...args: any[]) => Error)[];
+    @Attribute() errorTypes?: (new (...args: any[]) => Error)[];
 
 
     async execute(context: ActivityContext): Promise<ActivityResult> {

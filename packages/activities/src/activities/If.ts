@@ -1,4 +1,4 @@
-import { Atteribute, Component } from '@tsdi/components';
+import { Attribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 import { ConditionalActivity } from './Conditional';
 
@@ -15,13 +15,13 @@ export interface IfActivityOptions {
 })
 export class IfActivity extends ConditionalActivity implements Activity {
 
-    @Atteribute('then')
+    @Attribute('then')
     thenActivity!: Activity;
 
-    @Atteribute('else')
+    @Attribute('else')
     elseActivity?: Activity;
 
-    @Atteribute()
+    @Attribute()
     onError?: (error: Error) => Promise<ActivityResult>;
 
 

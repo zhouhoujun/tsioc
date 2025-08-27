@@ -2,12 +2,12 @@ import { PropertyMetadata, createPropDecorator } from '@tsdi/ioc';
 
 
 
-export interface AtteributeMetadata extends PropertyMetadata {
+export interface AttributeMetadata extends PropertyMetadata {
     alias?: string;
     required?: boolean;
 }
 
-export interface Atteribute {
+export interface Attribute {
     (alias?: string, required?: boolean): PropertyDecorator;
     (options?: {
         alias?: string;
@@ -15,7 +15,7 @@ export interface Atteribute {
     }): PropertyDecorator;
 }
 
-export const Atteribute: Atteribute = createPropDecorator<AtteributeMetadata>('Atteribute', {
+export const Attribute: Attribute = createPropDecorator<AttributeMetadata>('Attribute', {
     props: (alias?: string,
         required?: boolean
     ) => {

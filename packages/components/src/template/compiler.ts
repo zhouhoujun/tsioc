@@ -16,5 +16,5 @@ export abstract class TemplateCompiler {
 
     abstract get renderer(): Renderer;
 
-    abstract compile(template: string, context: any, environument: InvocationContext): ViewRef;
+    abstract compile(template: string, context: any, environument: InvocationContext): Promise<ViewRef>;
 }

@@ -1,4 +1,4 @@
-import { Atteribute, Component } from '@tsdi/components';
+import { Attribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 
@@ -6,10 +6,10 @@ import { Activity, ActivityContext, ActivityResult } from './Activity';
 @Component({ selector: 'case' })
 export class CaseActivity<T> extends Activity {
 
-    @Atteribute('case') caseFlag!: T;
-    @Atteribute() body!: Activity;
+    @Attribute('case') caseFlag!: T;
+    @Attribute() body!: Activity;
 
-    @Atteribute() onError?: (context: ActivityContext) => Promise<ActivityResult>
+    @Attribute() onError?: (context: ActivityContext) => Promise<ActivityResult>
 
     async execute(context: ActivityContext): Promise<ActivityResult> {
 

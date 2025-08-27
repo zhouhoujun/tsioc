@@ -246,6 +246,7 @@ export class JsonTemplateParser implements TemplateParser {
     constructor(
         private renderer: JsonRenderer
     ) { }
+
     parse(template: string): JsonNode[] {
         const jsonObj = JSON.parse(template);
         // 将JSON对象转换为虚拟DOM节点

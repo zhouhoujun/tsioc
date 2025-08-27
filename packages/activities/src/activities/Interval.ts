@@ -1,4 +1,4 @@
-import { Atteribute, Component } from '@tsdi/components';
+import { Attribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 
 
@@ -14,19 +14,19 @@ export class IntervalActivity extends Activity {
     /**
      * 间隔时间（毫秒）
      */
-    @Atteribute() interval!: number;
+    @Attribute() interval!: number;
     /**
      * 要执行的活动
      */
-    @Atteribute() body!: Activity;
+    @Attribute() body!: Activity;
     /**
      * 最大执行次数（可选，undefined表示无限执行）
      */
-    @Atteribute() maxExecutions: number | undefined;
+    @Attribute() maxExecutions: number | undefined;
     /**
      * 是否立即执行第一次
      */
-    @Atteribute() immediate = false;
+    @Attribute() immediate = false;
 
 
     async execute(context: ActivityContext): Promise<ActivityResult> {
