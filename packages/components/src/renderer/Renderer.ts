@@ -1,4 +1,4 @@
-import { RComment, RElement, RNode, RText } from './Node';
+import { RAttr, RComment, RElement, RNode, RText } from './Node';
 
 /**
  * Flags for renderer-specific style modifiers.
@@ -45,6 +45,9 @@ export abstract class Renderer {
         namespace?: string | null,
     ): void;
     abstract removeAttribute(el: RElement, name: string, namespace?: string | null): void;
+
+    abstract getAttributes(el: RElement): RAttr[];
+
     abstract addClass(el: RElement, name: string): void;
     abstract removeClass(el: RElement, name: string): void;
     abstract setStyle(el: RElement, style: string, value: any, flags?: RendererStyleFlags2): void;

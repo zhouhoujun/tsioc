@@ -1,7 +1,7 @@
 import { XMLParser } from 'fast-xml-parser';
 import { TemplateParser } from '../template/parser';
-import { RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList } from '../renderer/Node';
-import { Empty, Inject, Injectable, isArray, lang, Module, ModuleWithProviders } from '@tsdi/ioc';
+import { RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, RAttr } from '../renderer/Node';
+import { Empty, Inject, Injectable, lang, Module, ModuleWithProviders } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { AbstractTemplateCompiler } from './compiler';
 import { ReactiveEffect } from '../ReactiveEffect';
@@ -20,7 +20,7 @@ export class XmlNode implements RNode {
     constructor(
         readonly nodeType: number,
         public textContent: string | null = null,
-        public parentNode: XmlNode | null = null,
+        public parentNode: XmlElement | null = null,
         public childNodes: XmlNode[] = [],
         public nextSibling: XmlNode | null = null) {
 
@@ -101,12 +101,12 @@ export class XmlElement extends XmlNode implements RElement {
     firstChild: RNode | null = null;
     style = new XmlCssStyleDeclaration();
     classList = new XmlDomTokenList();
-    attributes = new Map<string, any>();
+    attributes = new Map<string, RAttr>();
     constructor(
         readonly tagName: string,
         readonly className: string = '',
         nodeType: number = NodeType.Element,
-        parentNode: XmlNode | null = null,
+        parentNode: XmlElement | null = null,
         childNodes: XmlNode[] = [],
         nextSibling: XmlNode | null = null,
         textContent: string | null = null) {
@@ -114,30 +114,33 @@ export class XmlElement extends XmlNode implements RElement {
 
     }
 
-
-
-    getAttributeNames(): string[] {
-        return Array.from(this.attributes.keys());
+    hasAttributeNS(namespace: string, localName: string): boolean {
+        return this.attributes.has(`${localName}:${namespace}`);
     }
+
+    getAttributeNS(namespace: string | null, localName: string): string | null {
+        return this.attributes.get(`${localName}:${namespace}`)?.value ?? null;
+    }   
+    setAttributeNS(namespace: string, name: string, value: string): void {
+        this.attributes.set(`${name}:${namespace}`, { name, namespace, value});
+    }
+    removeAttributeNS(namespace: string, localName: string): void {
+        this.attributes.delete(`${localName}:${namespace}`);
+    }
+
     hasAttribute(name: string): boolean {
         return this.attributes.has(name)
     }
     getAttribute(name: string): string | null {
-        return this.attributes.get(name) ?? null
+        return this.attributes.get(name)?.value ?? null
     }
     setAttribute(name: string, value: string): void {
-        this.attributes.set(name, value);
+        this.attributes.set(name, { name, value });
     }
     removeAttribute(name: string): void {
         this.attributes.delete(name)
     }
-    setAttributeNS(namespaceURI: string, qualifiedName: string, value: string): void {
-        if (value) {
-            this.attributes.set(`${qualifiedName}:${namespaceURI}`, value);
-        } else {
-            this.removeAttribute(`${qualifiedName}:${namespaceURI}`)
-        }
-    }
+ 
     addEventListener(type: string, listener: EventListener, useCapture?: boolean): void {
         this.events.addListener(type, listener)
     }
@@ -193,7 +196,7 @@ export class XmlRenderer implements Renderer {
     insertBefore(parent: XmlNode, newChild: XmlNode, refChild: XmlNode | null): void {
         parent.insertBefore(newChild, refChild);
     }
-
+    
     removeChild(parent: XmlElement | null, oldChild: XmlNode, isHostElement?: boolean): void {
         parent?.removeChild(oldChild)
     }
@@ -213,9 +216,13 @@ export class XmlRenderer implements Renderer {
             el.setAttribute(name, value)
         }
     }
+    getAttributes(el: XmlElement): RAttr[] {
+        return Array.from(el.attributes.values());
+    }
+
     removeAttribute(el: XmlElement, name: string, namespace?: string | null): void {
         if (namespace) {
-            el.setAttributeNS(namespace, name, '')
+            el.removeAttributeNS(namespace, name)
         } else {
             el.removeAttribute(name)
         }
@@ -241,6 +248,24 @@ export class XmlRenderer implements Renderer {
 
 }
 
+const htmlParsingOptions = {
+    ignoreAttributes: false,
+    preserveOrder: true,
+    unpairedTags: ["hr", "br", "link", "meta"],
+    stopNodes: ["*.pre", "*.script"],
+    processEntities: true,
+    htmlEntities: true,
+    allowBooleanAttributes: true
+};
+
+// const htmlBuilderOptions = {
+//     ignoreAttributes: false,
+//     format: true,
+//     preserveOrder: true,
+//     suppressEmptyNode: true,
+//     unpairedTags: ["hr", "br", "link", "meta"],
+//     stopNodes: ["*.pre", "*.script"],
+// }
 
 // XML模板解析器实现示例
 @Injectable()
@@ -251,15 +276,7 @@ export class XmlTemplateParser implements TemplateParser {
     ) { }
 
     parse(template: string): XmlNode[] {
-        const parser = new XMLParser({
-            ignoreAttributes: false,
-            allowBooleanAttributes: true,
-            preserveOrder: true,
-            parseAttributeValue: false,
-            parseTagValue: false,
-            commentPropName: '#comment',
-            // parseNodeValue: true,
-        });
+        const parser = new XMLParser(htmlParsingOptions);
         const jsonObj = parser.parse(template);
         // 将JSON对象转换为虚拟DOM节点
         return this.convertToNodes(jsonObj);
@@ -334,11 +351,6 @@ export class XmlTemplateParser implements TemplateParser {
 
 const xmlDefaultOptions = {
     delimiters: ['{{', '}}'],
-    // directives: {
-    //     'text': XmlText,
-    //     'comment': XmlComment,
-    //     'element': XmlElement,
-    // }
 } as TemplateCompilerOptions;
 
 @Injectable()

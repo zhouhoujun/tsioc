@@ -7,14 +7,6 @@ import { TemplateParser } from '../template/parser';
 import { ComponentRef } from '../refs/component';
 
 
-// // 默认HTML模板解析器实现
-// export class HtmlTemplateParser implements TemplateParser {
-//     parse(template: string): RNode[] {
-//         const parser = new DOMParser();
-//         const doc = parser.parseFromString(template, 'text/html');
-//         return Array.from(doc.body.childNodes) as any[];
-//     }
-// }
 
 @Abstract()
 export abstract class AbstractTemplateCompiler extends TemplateCompiler {
@@ -37,46 +29,40 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
     private async walkNodes(nodes: RNode[], context: any, viewRef: ViewRef, environument: InvocationContext) {
         for (const node of nodes || Empty) {
-            // await this.processComponent(node, context, viewRef, environument);
-            if (node.nodeType === NodeType.Element) {
-                this.processElement(node as RElement, context, viewRef, environument);
-            } else if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
+            if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
                 this.processText(node as RText, context, viewRef, environument);
+            } else {                
+                // await this.processComponent(node, context, viewRef, environument);
+                if (node.nodeType === NodeType.Element) {
+                    this.processElement(node as RElement, context, viewRef, environument);
+                }
+                // ...解析模板逻辑...
+                this.processBindings(node, context, viewRef);
             }
-            // ...解析模板逻辑...
-            this.processBindings(node, context, viewRef);
         }
 
     }
 
     private processElement(el: RElement, context: any, viewRef: ViewRef, environument: InvocationContext) {
-
-        // const component = //this.options.directives?.[el.tagName];
-        // if (component) {
-        //     this.processComponent(el, component, context, viewRef);
-        //     return; // 组件处理后不再执行普通元素逻辑
-        // }
-
         // 处理属性
-        el.getAttributeNames()?.forEach(name => {
-            const attrVal = el.getAttribute(name)!;
+         this.renderer.getAttributes(el).forEach(({ name, value }) => {
             if (name.startsWith('#')) {
                 const refId = name.substring(1);
                 viewRef.registerNodeRef(refId, el);
             } else if (name.startsWith('@')) {
                 // 事件绑定
                 const eventName = name.substring(1);
-                const handler = this.parseEventExpression(attrVal, context, viewRef, environument);
+                const handler = this.parseEventExpression(value, context, viewRef, environument);
                 el.addEventListener(eventName, handler);
             } else if (name.startsWith(':')) {
                 // 属性绑定
                 const propName = name.substring(1);
                 this.effect.run(() => {
-                    const value = context[attrVal];
+                    const attValue = context[value];
                     if (propName === 'class' || propName === 'style') {
-                        this.handleSpecialAttribute(el, propName, value);
+                        this.handleSpecialAttribute(el, propName, attValue);
                     } else {
-                        el.setAttribute(propName, value);
+                        el.setAttribute(propName, attValue);
                     }
                 });
             }
@@ -112,18 +98,18 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
         // 解析组件属性作为props
         const props: Record<string, any> = {};
-        el.getAttributeNames()?.forEach(name => {
+        this.renderer.getAttributes(el).forEach(({ name, value }) => {
             if (!name.startsWith('@') && !name.startsWith('#') && !name.startsWith(':')) {
-                props[name] = el.getAttribute(name);
+                props[name] = value;
             }
         });
 
         // 处理组件事件绑定
         const events: Record<string, EventListener> = {};
-        el.getAttributeNames()?.forEach(name => {
+        this.renderer.getAttributes(el).forEach(({ name, value }) => {
             if (name.startsWith('@')) {
                 const eventName = name.substring(1);
-                events[eventName] = this.parseEventExpression(el.getAttribute(name)!, context, viewRef, environument);
+                events[eventName] = this.parseEventExpression(value, context, viewRef, environument);
             }
         });
 

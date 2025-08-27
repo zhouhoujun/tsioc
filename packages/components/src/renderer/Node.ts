@@ -61,20 +61,33 @@ export enum NodeType {
   AnyContainer = 0b1100, // Container | ElementContainer
 }
 
+/**
+ * A node in the DOM tree.
+ */
 export interface RNode {
+    /**
+     * The type of node.
+     */
     nodeType: number;
-    parentNode: RNode | null;
+    /**
+     * The parent node of this node.
+     */
+    parentNode: RParentNode | null;
     /**
      * Returns the parent Element if there is one
      */
-    parentElement: RElement | null;
+    parentElement?: RElement | null;
     /**
      * Gets the Node immediately following this one in the parent's childNodes
      */
-    nextSibling: RNode | null;
-
+    nextSibling?: RNode | null;
+    /**
+     * The child nodes of this node.
+     */
     childNodes: RNode[];
-
+    /**
+     * The text content of this node.
+     */
     textContent: string | null;
     
     /**
@@ -99,7 +112,22 @@ export interface RNode {
 }
 
 export interface EventListener {
-    (evt: Event): void;
+    (event: Event): void;
+}
+
+
+/**
+ * An attribute on an element.
+ */
+export interface RAttr {
+    /** The name of the attribute. */
+    name: string;
+    /** The namespace of the attribute. */
+    namespace?: string;
+    /** The namespace-related prefix of the attribute. */
+    prefix?: string;
+    /** The value of the attribute. */
+    value: string;
 }
 
 /**
@@ -108,45 +136,130 @@ export interface EventListener {
  */
 export interface RElement extends RNode {
   firstChild: RNode | null;
+  /**
+   * The style declaration of this element.
+   */
   style: RCssStyleDeclaration;
+  /**
+   * The class list of this element.
+   */
   classList: RDomTokenList;
+  /**
+   * The class name of this element.
+   */
   className: string;
+  /**
+   * The tag name of this element.
+   */
   tagName: string;
+  /**
+   * The text content of this element.
+   */
   textContent: string | null;
-  getAttributeNames(): string[];
+
+  /**
+   * Returns true if the element has the specified attribute.
+   */
   hasAttribute(name: string): boolean;
+  /**
+   * Returns the value of the specified attribute.
+   */
   getAttribute(name: string): string | null;
+  /**
+   * Sets the value of the specified attribute.
+   */
   setAttribute(name: string, value: string): void;
+  /**
+   * Removes the specified attribute.
+   */
   removeAttribute(name: string): void;
-  setAttributeNS(
-    namespaceURI: string,
-    qualifiedName: string,
-    value: string,
-  ): void;
+  /**
+   * Returns true if the element has the specified attribute namespace.
+   */
+  hasAttributeNS?(namespaceURI: string, localName: string): boolean;
+  /**
+   * Returns the value of the specified attribute namespace.
+   */
+  getAttributeNS?(namespace: string | null, localName: string): string | null;
+  /**
+   * Sets the value of the specified attribute namespace.
+   */ 
+  setAttributeNS?(namespaceURI: string,qualifiedName: string, value: string): void;
+  /**
+   * Removes the specified attribute namespace.
+   */
+  removeAttributeNS?(namespaceURI: string, localName: string): void;
+  /**
+   * Adds an event listener to the element.
+   */
   addEventListener(type: string, listener: EventListener, useCapture?: boolean): void;
+  /**
+   * Removes an event listener from the element.
+   */
   removeEventListener(type: string, listener?: EventListener, options?: boolean): void;
+  /**
+   * Sets the value of the specified property.
+   */
   setProperty?(name: string, value: any): void;
 }
-
+/**
+ * Subset of API needed for writing styles on Element.
+ */
 export interface RCssStyleDeclaration {
+  /**
+   * Removes the specified property.
+   */
   removeProperty(propertyName: string): string;
+  /**
+   * Sets the value of the specified property.
+   */
   setProperty(propertyName: string, value: string | null, priority?: string): void;
 }
-
+/**
+ * Subset of API needed for writing classList on Element.
+ */
 export interface RDomTokenList {
+  /**
+   * Adds the specified token to the list.
+   */
   add(token: string): void;
+  /**
+   * Removes the specified token from the list.
+   */
   remove(token: string): void;
 }
-
+/**
+ * Renderer text node.
+ */
 export interface RText extends RNode {
+  /**
+   * The text content of this node.
+   */
   textContent: string | null;
 }
-
+/**
+ * Renderer comment node.
+ */
 export interface RComment extends RNode {
+  /**
+   * The text content of this node.
+   */
   textContent: string | null;
 }
 
+/**
+ * Renderer template node.
+ */
 export interface RTemplate extends RElement {
+  /**
+   * The tag name of this element.
+   */
   tagName: 'TEMPLATE';
+  /**
+   * The content of this template.
+   */
   content: RNode;
 }
+
+
+export type RParentNode = RElement | RTemplate;

@@ -118,3 +118,23 @@ export class ExampleComponent implements OnInit, OnDestroy {
   }
 
 }
+
+
+// @Component({
+//   selector: 'app-comp2',
+//   template: {
+//     '#text': '123',
+//     a: '123',
+//     b: '456',
+//     c: '789',
+//     childNodes:[
+//       { $tag: 'Text', a: '123'},  
+//       { $tag: 'Text', a: '456'},
+//       { $tag: 'Text', a: '789'},
+//       { $tag: 'Field', a: '123'},
+//     ]
+//   }
+// })
+// export class AppComponent2 {
+
+// }

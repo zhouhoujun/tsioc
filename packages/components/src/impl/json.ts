@@ -1,5 +1,5 @@
 import { TemplateParser } from '../template/parser';
-import { RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, EventListener } from '../renderer/Node';
+import { RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, EventListener, RAttr } from '../renderer/Node';
 import { Empty, Inject, Injectable, isArray, lang, Module, ModuleWithProviders } from '@tsdi/ioc';
 import { EventEmitter } from 'events';
 import { AbstractTemplateCompiler } from './compiler';
@@ -18,7 +18,7 @@ export class JsonNode implements RNode {
     constructor(
         readonly nodeType: number,
         public textContent: string | null = null,
-        public parentNode: JsonNode | null = null,
+        public parentNode: JsonElement | null = null,
         readonly childNodes: JsonNode[] = [],
         public nextSibling: JsonNode | null = null) {
 
@@ -104,7 +104,7 @@ export class JsonElement extends JsonNode implements RElement {
         readonly tagName: string,
         readonly className: string = '',
         nodeType: number = NodeType.Element,
-        parentNode: JsonNode | null = null,
+        parentNode: JsonElement | null = null,
         childNodes: JsonNode[] = [],
         nextSibling: JsonNode | null = null,
         textContent: string | null = null) {
@@ -113,29 +113,33 @@ export class JsonElement extends JsonNode implements RElement {
     }
 
 
-
-    getAttributeNames(): string[] {
-        return Array.from(this.attributes.keys());
+    hasAttributeNS(namespace: string, localName: string): boolean {
+        return this.attributes.has(`${localName}:${namespace}`);
     }
+
+    getAttributeNS(namespace: string | null, localName: string): string | null {
+        return this.attributes.get(`${localName}:${namespace}`)?.value ?? null;
+    }   
+    setAttributeNS(namespace: string, name: string, value: string): void {
+        this.attributes.set(`${name}:${namespace}`, { name, namespace, value});
+    }
+    removeAttributeNS(namespace: string, localName: string): void {
+        this.attributes.delete(`${localName}:${namespace}`);
+    }
+
     hasAttribute(name: string): boolean {
         return this.attributes.has(name)
     }
     getAttribute(name: string): string | null {
-        return this.attributes.get(name) ?? null
+        return this.attributes.get(name)?.value ?? null
     }
     setAttribute(name: string, value: string): void {
-        this.attributes.set(name, value);
+        this.attributes.set(name, { name, value });
     }
     removeAttribute(name: string): void {
         this.attributes.delete(name)
     }
-    setAttributeNS(namespaceURI: string, qualifiedName: string, value: string): void {
-        if (value) {
-            this.attributes.set(`${qualifiedName}:${namespaceURI}`, value);
-        } else {
-            this.removeAttribute(`${qualifiedName}:${namespaceURI}`)
-        }
-    }
+    
     addEventListener(type: string, listener: EventListener, useCapture?: boolean): void {
         this.events.addListener(type, listener)
     }
@@ -195,6 +199,7 @@ export class JsonRenderer implements Renderer {
     removeChild(parent: JsonElement | null, oldChild: JsonNode, isHostElement?: boolean): void {
         parent?.removeChild(oldChild)
     }
+
     selectRootElement(selectorOrNode: string | any, preserveContent?: boolean): JsonElement {
         throw new Error('Method not implemented.');
     }
@@ -211,13 +216,19 @@ export class JsonRenderer implements Renderer {
             el.setAttribute(name, value)
         }
     }
+
+    getAttributes(el: JsonElement): RAttr[] {
+        return Array.from(el.attributes.values());
+    }
+
     removeAttribute(el: JsonElement, name: string, namespace?: string | null): void {
         if (namespace) {
-            el.setAttributeNS(namespace, name, '')
+            el.removeAttributeNS(namespace, name)
         } else {
             el.removeAttribute(name)
         }
     }
+
     addClass(el: JsonElement, name: string): void {
         el.classList.add(name);
     }
@@ -263,11 +274,6 @@ export class JsonTemplateParser implements TemplateParser {
 
 const jsonDefaultOptions = {
     delimiters: ['{{', '}}'],
-    // directives: {
-    //     'text': JsonText,
-    //     'comment': JsonComment,
-    //     'element': JsonElement,
-    // }
 } as TemplateCompilerOptions;
 
 @Injectable()
