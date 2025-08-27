@@ -1,4 +1,4 @@
-import { hasOwn, isObject } from '@tsdi/ioc';
+import { hasOwn, isBasic, isObject } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 
 export const isReactive = Symbol('__reactive');
@@ -19,7 +19,7 @@ export function reactive(target: any, effect: ReactiveEffect) {
             const res = Reflect.get(target, key, receiver)
 
             // 嵌套对象也进行响应式处理（懒代理）
-            if (isObject(res)) {
+            if (isObject(res) && !res[isReactive] && !isBasic(res)) {
                 return reactive(res, effect)
             }
 

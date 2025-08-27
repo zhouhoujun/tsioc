@@ -8,6 +8,7 @@ import { ViewRef } from '../refs/view';
 import { TemplateCompiler } from '../template/compiler';
 import { ComponentDef } from '../decorators/component';
 import { reactive } from './reactive';
+import { AfterViewInit, OnInit, OnDestroy } from '../lifecycle';
 
 
 export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptions> extends AbstractInvocation<T, TOpts> implements ComponentRef<T> {
@@ -41,11 +42,13 @@ export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptio
             this.context.attach(option);
         }
         const compiler = this.context.get(TemplateCompiler);
+        (this.instance as OnInit).onInit?.();
         this._hostView = compiler.compile(template, this.instance, this.context);
-
+        (this.instance as AfterViewInit).onAfterViewInit?.();
     }
 
     protected override clean(): void {
+        (this.instance as OnDestroy)?.onDestroy?.();
         super.clean();
         this.hostView?.destroy();
     }

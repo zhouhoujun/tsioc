@@ -73,6 +73,8 @@ function getWeek(date: Date): number {
 export class DateFormatPipe implements PipeTransform<string> {
 
     transform(value: any, ...args: any[]): string {
+        if(!value) return '';
+
         let date: Date | null = null;
         if (isString(value) || isNumber(value)) {
             date = new Date(value)
@@ -80,10 +82,11 @@ export class DateFormatPipe implements PipeTransform<string> {
             date = value
         }
 
-        if (isDate(value)) {
-            return formatDate(date as Date, args.length ? args[0] : 'yyyy-MM-dd')
+        if (date) {
+            return formatDate(date, args.length ? args[0] : 'yyyy-MM-dd')
         } else {
             throw invalidPipeArgument(this, value)
+            // return '';
         }
     }
 }

@@ -157,7 +157,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
             const [pipeName, ...params] = pipePart.split(':').map(p => p.trim());
             if (!pipeName) continue;
             results.push(pipeName)
-            result = `pipes.${pipeName}.transform(${result}${params.length ? ', ' + params.join(', ') : ''})`;
+            result = `pipes['${pipeName}'].transform(${result}${params.length ? ', ' + params.join(', ') : ''})`;
         }
         results.unshift(result);
         return results;

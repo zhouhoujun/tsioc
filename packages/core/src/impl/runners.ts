@@ -122,6 +122,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
     detach<T>(type: AbstractType<T>): void {
         if (this._destroyed) return;
         this._maps.delete(type);
+        this.getRefs(type).forEach(ref => ref.destroy());
         this._refs.delete(type);
         const idx = this._types.indexOf(type);
         if (idx >= 0) {
@@ -170,6 +171,8 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         if (this._destroyed) return;
         this._destroyed = true;
         this._maps.clear();
+        this._refs.forEach(refs => refs.forEach(ref => ref.destroy()));
+        this._refs.clear();
         this.multicaster.clear();
         this._handler.onDestroy();
         this._types = null!;

@@ -1,4 +1,4 @@
-import { Component, OnInit } from "../src";
+import { Component, OnDestroy, OnInit } from "../src";
 
 @Component({
     selector: 'app-root',
@@ -71,6 +71,7 @@ export class AppComponent implements OnInit {
         <p>Value: {{ value }}</p>
         <button @click="increment">Increment</button>
         <button @click="clickWithData($event, item)">Increment</button>
+        <p>Today: {{ today | date-format:'yyyy-MM-dd' }}</p>
       </div>
     `,
     styles: [
@@ -78,10 +79,13 @@ export class AppComponent implements OnInit {
       `button { padding: 5px 10px; }`
     ]
   })
-  export class ExampleComponent implements OnInit {
+  export class ExampleComponent implements OnInit, OnDestroy {
+
     title = 'Example Component';
     count = 0;
     value = 'test';
+
+    today?: Date;
 
     item = {
       name: 'zhangsan',
@@ -97,7 +101,12 @@ export class AppComponent implements OnInit {
     }
   
     onInit() {
+      this.today = new Date('2023-01-01');
       console.log('Component initialized');
+    }    
+    
+    onDestroy(): void {
+      console.log('Component destroyed');
     }
   
   }

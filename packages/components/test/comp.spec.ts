@@ -1,12 +1,11 @@
 import expect = require('expect');
-import { Before, Suite, Test } from '@tsdi/unit';
-import { ApplicationContext, Application } from '@tsdi/core';
+import { Before, Suite, Test, After } from '@tsdi/unit';
+import { ApplicationContext, Application, formatDate } from '@tsdi/core';
 import { ExampleComponent } from './app';
 import { ComponentsModule } from '../src';
 import { JsonTemplateModule } from '../src/impl/json';
 import { XmlTemplateModule } from '../src/impl/xml';
 import { ComponentRef } from '../src/refs/component';
-import { lang } from '@tsdi/ioc';
 
 
 
@@ -62,6 +61,7 @@ export class CTest {
         expect(appcomRef.instance.item.checked).toBeTruthy();
     }
 
+
     @Test('refresh app component by mapping')
     async refreshbyMapping() {
         const appcomRef = this.ctx.runners.getRef(ExampleComponent) as ComponentRef<ExampleComponent>;
@@ -74,6 +74,26 @@ export class CTest {
         
         expect(appcomRef.hostView.rootNodes[0].childNodes[3].childNodes[0].textContent).toEqual('Value: test1');
         expect(appcomRef.hostView.rootNodes[0].childNodes[2].getAttribute('value')).toEqual('test1');
+    }
+
+    @Test('can refresh text with pipe')
+    async test4() {
+         const appcomRef = this.ctx.runners.getRef(ExampleComponent) as ComponentRef<ExampleComponent>;
+        expect(appcomRef.instance.title).toEqual('Example Component');
+
+        expect(appcomRef.hostView.rootNodes[0].childNodes[6].childNodes[0].textContent).toEqual('Today: 2023-01-01');
+
+        appcomRef.instance.today = new Date();
+
+        await Promise.resolve();
+        
+        expect(appcomRef.hostView.rootNodes[0].childNodes[6].childNodes[0].textContent).toEqual('Today: ' + formatDate(appcomRef.instance.today, 'yyyy-MM-dd'));
+
+    }
+
+    @After()
+    async afterClean() {
+        await this.ctx.close();
     }
 
 }
