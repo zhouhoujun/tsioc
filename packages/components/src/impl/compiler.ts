@@ -6,6 +6,7 @@ import { RootViewRef } from './view';
 import { TemplateParser } from '../template/parser';
 import { ComponentRef } from '../refs/component';
 import { ComponentDef } from '../decorators/component';
+import { EventEmitter } from '../EventEmitter';
 
 
 
@@ -32,8 +33,8 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         for (const node of nodes || Empty) {
             if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
                 this.processText(node as RText, context, viewRef, environument);
-            } else {              
-                const factory = node.tagName? this.getComponentBySelector(node.tagName): null;
+            } else {
+                const factory = node.tagName ? this.getComponentBySelector(node.tagName) : null;
                 if (factory) {
                     await this.processComponent(node as RElement, factory, context, viewRef, environument);
                 } else if (node.nodeType === NodeType.Element) {
@@ -52,7 +53,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
     private processElement(el: RElement, context: any, viewRef: ViewRef, environument: InvocationContext) {
         // 处理属性
-         this.renderer.getAttributes(el).forEach(({ name, value }) => {
+        this.renderer.getAttributes(el).forEach(({ name, value }) => {
             if (name.startsWith('#')) {
                 const refId = name.substring(1);
                 viewRef.registerNodeRef(refId, el);
@@ -106,19 +107,38 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         const componentDef = componentRef.class.getAnnotation<ComponentDef>();
         const attributes = componentDef?.attributes || [];
 
-
         // 解析组件属性绑定
-        const props: Record<string, any> = {};
         this.renderer.getAttributes(el).forEach(({ name, value }) => {
             if (name.startsWith('@')) {
+                // 事件绑定
                 const eventName = name.substring(1);
                 // 查找是否为输入属性
                 const inputDef = attributes.find(attr => attr.alias === eventName || attr.propertyKey === eventName);
                 if (inputDef) {
                     // 解析绑定表达式并创建响应式依赖
                     this.effect.run(() => {
-                        const propValue =  this.evaluateExpression(value, context, viewRef, environument)
-                        componentRef.instance[inputDef.propertyKey] = propValue;
+                        const handler = this.evaluateExpression(value, context, viewRef, environument);
+                        // 绑定事件处理函数
+                        if (componentRef.instance[inputDef.propertyKey] instanceof EventEmitter) {
+                            componentRef.instance[inputDef.propertyKey].subscribe(handler);
+                        } else if (!componentRef.instance[inputDef.propertyKey]) {
+                            componentRef.instance[inputDef.propertyKey] = handler;
+                        }
+                    });
+                }
+            } else if (name.startsWith(':')) {
+                // 属性绑定
+                const propName = name.substring(1);
+                // 查找是否为输入属性
+                const inputDef = attributes.find(attr => attr.alias === propName || attr.propertyKey === propName);
+                if (inputDef) {
+                    this.effect.run(() => {
+                        const attValue = context[value];
+                        if (propName === 'class' || propName === 'style') {
+                            this.handleSpecialAttribute(el, propName, attValue);
+                        } else {
+                            componentRef.instance[inputDef.propertyKey] = attValue;
+                        }
                     });
                 }
             }
