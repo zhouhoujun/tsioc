@@ -130,7 +130,7 @@ export interface DecorRegisterOption<T = any> {
 /**
  * metadata factory. parse args to metadata.
  */
-export interface MetadataFactory<T = any> extends ProvidersMetadata {
+export interface MetadataFactory<T = any> {
     /**
      * is metadata or not.
      */
@@ -164,6 +164,16 @@ export interface MetadataFactory<T = any> extends ProvidersMetadata {
  */
 export interface DecoratorOption<T> extends MetadataFactory<T>, DecorRegisterOption<T> { }
 
+// 添加元数据工具函数
+export const MetadataKeys = {
+    CLASS_METADATA: 'ioc:class:metadata',
+    PROPERTY_METADATA: 'ioc:property:metadata',
+    METHOD_METADATA: 'ioc:method:metadata',
+    METHOD_PARAMS: 'ioc:method:params',
+    METHOD_RETURNS: 'ioc:method:returns'
+};
+
+
 /**
  * decorator context.
  */
@@ -188,15 +198,16 @@ export interface DecorContext<T = any> {
  */
 export function toDefine<T>(decor: DecoratorFn, metadata: T, decorType: DecoratorType, options: MetadataFactory<any>, propertyKey?: string, parameterIndex?: number): DecorDefine<T> {
 
-    const providers = options.providers;
+    // const providers = options.providers;
+
 
     return {
         decor,
         propertyKey: propertyKey!,
         parameterIndex,
         decorType,
-        metadata,
-        providers
+        metadata
+        // providers
     }
 }
 
@@ -331,9 +342,9 @@ export const decorAnnoAction = (ctx: DecorContext, next: HandlerFn, context: Con
             def.getAnnotation().expires = meta.expires
         }
 
-        if (ctx.define.providers?.length) {
-            def.providers.push(ctx.define.providers)
-        }
+        // if (ctx.define.providers?.length) {
+        //     def.providers.push(ctx.define.providers)
+        // }
 
         if (meta.providedIn) {
             def.getAnnotation().providedIn = meta.providedIn
@@ -347,7 +358,7 @@ export const decorRunnable = (ctx: DecorContext, next: HandlerFn, context: Conte
     if (runnableDecors[ctx.define.decor.toString()]) {
         const metadata = ctx.define.metadata as RunnableMetadata;
         (metadata as any).decorType = ctx.define.decorType;
-        if(!metadata.propertyKey) metadata.propertyKey = ctx.define.propertyKey;
+        if (!metadata.propertyKey) metadata.propertyKey = ctx.define.propertyKey;
         metadata.order = ctx.define.decorType === Decors.CLASS ? 0 : metadata.order;
         ctx.class.runnables.push(ctx.define.metadata);
         ctx.class.runnables.sort((au1, au2) => au1.order! - au2.order!)
@@ -431,8 +442,42 @@ export const paramDecorLifeScope: HandlerScope<DecorContext> = new HandlerScope(
     decorParamInject
 ]);
 
+function storageDefine(define: DecorDefine, type: AbstractType) {
+    let metaKey: string;
+    let unshift = false;
+    switch (define.decorType) {
+        case 'class':
+            metaKey = MetadataKeys.CLASS_METADATA;
+            unshift = true;
+            break;
+
+        case 'property':
+            metaKey = MetadataKeys.PROPERTY_METADATA;
+            break;
+
+        case 'method':
+            metaKey = MetadataKeys.METHOD_METADATA;
+            break;
+
+        case 'parameter':
+            metaKey = MetadataKeys.METHOD_PARAMS;
+            unshift = true;
+            break;
+    }
+    if (metaKey) {
+        const defines = Reflect.getMetadata(metaKey, type);
+        if (defines) {
+            unshift ? defines.unshift(define) : defines.push(define);
+        } else {
+            Reflect.defineMetadata(metaKey, [define], type);
+        }
+    }
+}
 
 function dispatch(lifescope: HandlerScope<DecorContext>, target: any, type: AbstractType, define: DecorDefine, options: DecoratorOption<any>) {
+
+    storageDefine(define, type);
+
     const ctx = {
         define,
         target,

@@ -112,7 +112,7 @@ export namespace ActionTypes {
 /**
  * decorator define.
  */
-export interface DecorDefine<T = any> extends ProvidersMetadata {
+export interface DecorDefine<T = any> {
     /**
      * decorator Fn
      */
@@ -133,6 +133,13 @@ export interface DecorDefine<T = any> extends ProvidersMetadata {
      * decorator metadata.
      */
     readonly metadata: T;
+
+    // /**
+    //  * provider services of the class.
+    //  *
+    //  * @type {KeyValue<Token, Token>}
+    //  */
+    // providers?: Provider[];
 }
 
 
@@ -285,7 +292,7 @@ export class Class<T = any> {
 
     createInvocation(injector: Injector, options?: InvocationOptions): Invocation<T> {
         const factory = this.getInvocationFactory(injector);
-        return factory.create(this, {...options, injector, targetType: this.type});
+        return factory.create(this, { ...options, injector, targetType: this.type });
     }
 
     getAnnotation<TAnn extends TypeDef<T>>(): TAnn {
