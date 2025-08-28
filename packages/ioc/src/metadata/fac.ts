@@ -25,7 +25,7 @@ import { composeHandlers, HandlerFn } from '../handler';
 export function createDecorator<T>(name: string, option: DecoratorOption<T>): any {
     const decor = `@${name}`;
     const factory = (...args: any[]) => {
-        let metadata: T;
+        let metadata: Partial<T>;
         if (args.length) {
             if (args.length === 1 && (option.isMatadata ? option.isMatadata(args[0]) : isMetadataObject(args[0]))) {
                 metadata = args[0]

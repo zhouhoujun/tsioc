@@ -23,7 +23,7 @@ export interface DBPropertyMetadata<T = any> extends PropertyMetadata {
     /**
      * property key.
      */
-    name: string;
+    propertyKey: string;
     /**
      * db type.
      */
@@ -86,7 +86,7 @@ export class MissingModelFieldException extends ArgumentException {
  * @returns instance of {@link MessageArgumentException}
  */
 export function missingPropPipe(prop: DBPropertyMetadata, type?: Type) {
-    return new ArgumentException(`missing pipe to transform property ${prop.name} of class ${type}`)
+    return new ArgumentException(`missing pipe to transform property ${prop.propertyKey} of class ${type}`)
 }
 
 export function parseDbtype(value: any, prop: DBPropertyMetadata, ctx: InvocationContext, target: Type) {
@@ -373,7 +373,7 @@ export function getModelFieldResolver(platform: Platform): HandlerScope<[DBPrope
                 (input, next, context) => {
                     if (input[0].dbtype) {
                         const [prop, args, target] = input;
-                        const value = args[prop.name] ?? prop.default;
+                        const value = args[prop.propertyKey] ?? prop.default;
                         if (isNil(value)) return null;
                         return parseDbtype(value, prop, context, target ?? getType(args));
                     }
@@ -382,7 +382,7 @@ export function getModelFieldResolver(platform: Platform): HandlerScope<[DBPrope
                 (input, next, context) => {
                     const [prop, args, target] = input;
                     if (!prop.multi) {
-                        const value = args[prop.name] ?? prop.default;
+                        const value = args[prop.propertyKey] ?? prop.default;
                         if (isNil(value)) return null;
                         const type = prop.provider ?? prop.type;
                         if (isFunction(type)) {

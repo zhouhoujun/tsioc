@@ -878,7 +878,7 @@ export interface Autorun {
 export const Autorun: Autorun = createDecorator<RunnableMetadata>('Autorun', {
     props: (arg: string | number, args?: InvokeArguments) => {
         if (isString(arg)) {
-            return { method: arg, args }
+            return { propertyKey: arg, args }
         }
         return { order: arg, args }
     },

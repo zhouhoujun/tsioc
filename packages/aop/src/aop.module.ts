@@ -10,7 +10,7 @@ import { AdviceMatcher } from './AdviceMatcher';
 
 @Autorun({
     providedIn: 'root',
-    method: 'setup'
+    propertyKey: 'setup'
 })
 export class AopProvider {
 

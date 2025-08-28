@@ -66,6 +66,10 @@ export enum NodeType {
  */
 export interface RNode {
     /**
+     * The tag name of this node.
+     */
+    tagName?: string;
+    /**
      * The type of node.
      */
     nodeType: number;

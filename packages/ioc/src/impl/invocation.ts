@@ -300,7 +300,7 @@ export class DefaultInvocation<T = any, TOpts extends InvocationOptions<T> = Inv
         const runnables = this.class.runnables.filter(r => !r.auto);
         if (runnables && runnables.length) {
             const handler = composeHandlers(runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
-                return (option) => this.invokeMethod(runnable.method, option)
+                return (option) => this.invokeMethod(runnable.propertyKey, option)
             }));
             return handler(this.context);
         } else {

@@ -18,7 +18,7 @@ export const autorunInterceptor = (ctx: DesignContext, next: HandlerFn, context:
 
         const invocation = ctx.class.createInvocation(ctx.injector);
         runs.forEach(meta => {
-            invocation.invoke(meta.method);
+            invocation.invoke(meta.propertyKey);
         });
     })
 }

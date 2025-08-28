@@ -139,7 +139,7 @@ export interface PropertyMetadata extends ProvideMetadata {
      *
      * @type {string}
      */
-    name?: string;
+    propertyKey: string;
 
 }
 
@@ -334,7 +334,7 @@ export interface RunnableMetadata extends Omit<AnnotationMetadata, 'abstract' | 
     /**
      * the method as runnable.
      */
-    method?: string;
+    propertyKey: string;
     /**
      * run order.
      */

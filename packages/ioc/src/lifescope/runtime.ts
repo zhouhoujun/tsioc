@@ -32,7 +32,7 @@ export const runtimeAutorunInterceptor: InterceptorFn<RuntimeContext, void> = (i
             const { injector, class: def, instance, context } = input;
             const invocation = def.createInvocation(injector, { instance, parent: context });
             autos.forEach(aut => {
-                invocation.invoke(aut.method);
+                invocation.invoke(aut.propertyKey);
             })
         }
     });

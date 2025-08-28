@@ -139,7 +139,7 @@ export interface MetadataFactory<T = any> extends ProvidersMetadata {
      * parse args as metadata props.
      * @param args
      */
-    props?(...args: any[]): T;
+    props?(...args: any[]): Partial<T>;
     /**
      * append metadata.
      * @param metadata
@@ -346,9 +346,9 @@ const runnableDecors: Record<string, boolean> = { '@Autorun': true, '@IocExt': t
 export const decorRunnable = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (runnableDecors[ctx.define.decor.toString()]) {
         const metadata = ctx.define.metadata as RunnableMetadata;
-        (metadata as any).decorType = ctx.define.decorType,
-            metadata.method = metadata.method ?? ctx.define.propertyKey,
-            metadata.order = ctx.define.decorType === Decors.CLASS ? 0 : metadata.order
+        (metadata as any).decorType = ctx.define.decorType;
+        if(!metadata.propertyKey) metadata.propertyKey = ctx.define.propertyKey;
+        metadata.order = ctx.define.decorType === Decors.CLASS ? 0 : metadata.order;
         ctx.class.runnables.push(ctx.define.metadata);
         ctx.class.runnables.sort((au1, au2) => au1.order! - au2.order!)
     }
@@ -378,18 +378,18 @@ export const decorProviders = (ctx: DecorContext, next: HandlerFn, context: Cont
 
 export const decorMethodDesignParams = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     const reflective = ctx.class;
-    const method = ctx.define.propertyKey;
-    if (!reflective.hasParameters(method)) {
-        const names = reflective.getParamNames(method);
-        reflective.setParameters(method,
-            (Reflect.getMetadata('design:paramtypes', ctx.target, method) as AbstractType[])?.map((type, idx) => ({ type, name: names[idx] })))
+    const propertyKey = ctx.define.propertyKey;
+    if (!reflective.hasParameters(propertyKey)) {
+        const names = reflective.getParamNames(propertyKey);
+        reflective.setParameters(propertyKey,
+            (Reflect.getMetadata('design:paramtypes', ctx.target, propertyKey) as AbstractType[])?.map((type, idx) => ({ type, name: names[idx] })))
     }
     const meta = ctx.define.metadata as MethodMetadata;
     if (!meta.type) {
-        meta.type = Reflect.getMetadata('design:returntype', ctx.target, method)
+        meta.type = Reflect.getMetadata('design:returntype', ctx.target, propertyKey)
     }
-    if (!reflective.hasReturnning(method) && meta.type) {
-        reflective.setReturnning(method, meta.type)
+    if (!reflective.hasReturnning(propertyKey) && meta.type) {
+        reflective.setReturnning(propertyKey, meta.type)
     }
     return next(ctx, context)
 }

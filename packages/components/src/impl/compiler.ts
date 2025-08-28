@@ -5,6 +5,7 @@ import { ViewRef } from '../refs/view';
 import { RootViewRef } from './view';
 import { TemplateParser } from '../template/parser';
 import { ComponentRef } from '../refs/component';
+import { ComponentDef } from '../decorators/component';
 
 
 
@@ -31,9 +32,11 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         for (const node of nodes || Empty) {
             if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
                 this.processText(node as RText, context, viewRef, environument);
-            } else {                
-                // await this.processComponent(node, context, viewRef, environument);
-                if (node.nodeType === NodeType.Element) {
+            } else {              
+                const factory = node.tagName? this.getComponentBySelector(node.tagName): null;
+                if (factory) {
+                    await this.processComponent(node as RElement, factory, context, viewRef, environument);
+                } else if (node.nodeType === NodeType.Element) {
                     this.processElement(node as RElement, context, viewRef, environument);
                 }
                 // ...解析模板逻辑...
@@ -41,6 +44,10 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
             }
         }
 
+    }
+
+    getComponentBySelector(tagName: string) {
+        return null;
     }
 
     private processElement(el: RElement, context: any, viewRef: ViewRef, environument: InvocationContext) {
@@ -96,13 +103,27 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         // 创建组件实例
         const componentRef = factory();
 
-        // 解析组件属性作为props
+        const componentDef = componentRef.class.getAnnotation<ComponentDef>();
+        const attributes = componentDef?.attributes || [];
+
+
+        // 解析组件属性绑定
         const props: Record<string, any> = {};
         this.renderer.getAttributes(el).forEach(({ name, value }) => {
-            if (!name.startsWith('@') && !name.startsWith('#') && !name.startsWith(':')) {
-                props[name] = value;
+            if (name.startsWith('@')) {
+                const eventName = name.substring(1);
+                // 查找是否为输入属性
+                const inputDef = attributes.find(attr => attr.alias === eventName || attr.propertyKey === eventName);
+                if (inputDef) {
+                    // 解析绑定表达式并创建响应式依赖
+                    this.effect.run(() => {
+                        const propValue =  this.evaluateExpression(value, context, viewRef, environument)
+                        componentRef.instance[inputDef.propertyKey] = propValue;
+                    });
+                }
             }
         });
+
 
         // 处理组件事件绑定
         const events: Record<string, EventListener> = {};

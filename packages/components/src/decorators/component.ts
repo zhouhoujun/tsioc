@@ -1,5 +1,6 @@
 import { ModuleType, createDecorator, AnnotationType, noPointcut, getModuleType, TypeDef, ActionTypes } from '@tsdi/ioc';
 import { ComponentFactory } from '../refs/component';
+import { Attribute, AttributeMetadata } from './atteribute';
 
 export interface ComponentDef<T = any> extends TypeDef<T> {
     imports?: ModuleType[],
@@ -9,6 +10,7 @@ export interface ComponentDef<T = any> extends TypeDef<T> {
     styles?: string[];
     styleUrls?: string[];
     providers?: any[];
+    attributes?: AttributeMetadata[];
 }
 
 
@@ -25,6 +27,7 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
             Object.assign(def, metadata);
             def.providers = metadata.providers;
             if (metadata.imports) def.imports = getModuleType(metadata.imports);
+            def.attributes = ctx.class.getMetadatas(f => f.decor === Attribute);
         }
     },
     factory: (injector) => {

@@ -57,7 +57,7 @@ export interface RunableDefine {
     /**
      * the method as runnable.
      */
-    method: string;
+    propertyKey: string;
     /**
      * run order.
      */
@@ -617,6 +617,14 @@ export class Class<T = any> {
     getParamDefines(...args: any[]) {
         args.unshift(Decors.parameter);
         return (this.getDefines as Function).apply(this, args);
+    }
+
+    /**
+     * get metadatas.
+     * @param decor decoractor or decoractor name.
+     */
+    getMetadatas<T = any>(filter: (d: DecorDefine<T>) => boolean): T[] {
+        return this.defs.filter(filter).map(d => d.metadata);
     }
 
     /**

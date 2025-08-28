@@ -72,7 +72,7 @@ export class TypeormAdapter {
 
                     props!.push({
                         ...col.options,
-                        name: col.propertyName,
+                        propertyKey: col.propertyName,
                         dbtype,
                         type
                     })
@@ -100,7 +100,7 @@ export class TypeormAdapter {
                     //     relaModel = col.type.type as Type;
                     // }
                     props?.push({
-                        name: col.propertyName,
+                        propertyKey: col.propertyName,
                         provider: relaModel,
                         nullable: col.options.nullable,
                         multi: (col.relationType === 'one-to-many' || col.relationType === 'many-to-many'),
@@ -137,7 +137,7 @@ export class TypeormAdapter {
                 (input, next, context) => {
                     if (input[0].dbtype === 'objectId') {
                         const [prop, args, target] = input;
-                        const value = args[prop.name] ?? prop.default;
+                        const value = args[prop.propertyKey] ?? prop.default;
                         if (isNil(value)) return null;
                         const pipe = context.get<PipeTransform>('objectId');
                         if (!pipe) throw missingPropPipe(prop, target)

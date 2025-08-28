@@ -62,7 +62,7 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
         props.forEach(prop => {
             let val: any;
             if (this.hasModel(prop.provider ?? prop.type)) {
-                val = this.resolveModel(prop.provider ?? prop.type as Type, ctx, fields[prop.name], prop.nullable)
+                val = this.resolveModel(prop.provider ?? prop.type as Type, ctx, fields[prop.propertyKey], prop.nullable)
             } else {
                 val = this.fieldResolver.handle([prop, fields, modelType], ctx, {
                     next: (res) => {
@@ -78,7 +78,7 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
                 })
             }
             if (isDefined(val)) {
-                model[prop.name] = val
+                model[prop.propertyKey] = val
             }
         });
         if (missings.length) {
@@ -98,7 +98,7 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
                 (input, next, context) => {
                     const [prop, fields, target] = input;
                     if (prop.nullable === true
-                        || (fields && isDefined(fields[prop.name] ?? prop.default))
+                        || (fields && isDefined(fields[prop.propertyKey] ?? prop.default))
                         || (context as { method: string }).method?.toUpperCase() !== 'PUT' && prop.primary === true
                     ) {
                         return next(input, context);
