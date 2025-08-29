@@ -50,7 +50,7 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
     design: {
         method: (ctx) => {
 
-            const defines = ctx.class.getMethodDefines(ctx.currDecor) as DecorDefine<HandleMetadata>[];
+            const defines = ctx.class.getDefines<HandleMetadata>(ctx.currDecor);
             if (!defines || !defines.length) return;
 
             const injector = ctx.injector;
@@ -129,7 +129,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
     design: {
         method: (ctx) => {
 
-            const defines = ctx.class.getMethodDefines(ctx.currDecor) as DecorDefine<HandleMetadata>[];
+            const defines = ctx.class.getDefines<HandleMetadata>(ctx.currDecor);
             if (!defines || !defines.length) return;
 
             const injector = ctx.injector;

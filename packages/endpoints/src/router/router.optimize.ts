@@ -240,7 +240,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
     protected parseCtrl(invocation: Invocation, prefix: string, pathParams: any): Routes {
         const sortRoutes = invocation.class
-            .getMethodDefines(m => m && m.metadata.method && isString(m.metadata.route))
+            .getMethodDefines(m => m.metadata && m.metadata.method && isString(m.metadata.route))
             .sort((ra, rb) => (ra.metadata.route || '').length - (rb.metadata.route || '').length) as DecorDefine<RouteMappingMetadata>[];
 
         const anno = invocation.class.getAnnotation<MappingDef>();

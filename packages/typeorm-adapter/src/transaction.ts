@@ -33,23 +33,23 @@ export class TypeormTransactionStatus extends TransactionStatus {
             joinPoint.setValue(EntityManager, entityManager);
 
             const context = {} as any;
-            targetRef?.defs.forEach(dec => {
-                if (dec.decorType === 'parameter' && dec.propertyKey === joinPoint.propertyKey) {
-                    if (dec.decor === InjectRepository) {
-                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager))
-                    } else if ((dec.metadata.provider as AbstractType || dec.metadata.type) === EntityManager) {
-                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, entityManager)
-                    } else if (isRepository(dec.metadata.provider as AbstractType || dec.metadata.type)) {
-                        joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as AbstractType || dec.metadata.type, entityManager))
-                    }
-                } else if (dec.decorType === 'property') {
-                    if (dec.decor === InjectRepository) {
-                        context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager)
-                    } else if ((dec.metadata.provider as AbstractType || dec.metadata.type) === EntityManager) {
-                        context[dec.propertyKey] = entityManager
-                    } else if (isRepository(dec.metadata.provider as AbstractType || dec.metadata.type)) {
-                        context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as AbstractType || dec.metadata.type, entityManager)
-                    }
+            // targetRef.getPropDefines()
+            targetRef?.getParamDefines(joinPoint.propertyKey).forEach(dec => {
+                if (dec.decor === InjectRepository) {
+                    joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager))
+                } else if ((dec.metadata.provider as AbstractType || dec.metadata.type) === EntityManager) {
+                    joinPoint.args?.splice(dec.parameterIndex || 0, 1, entityManager)
+                } else if (isRepository(dec.metadata.provider as AbstractType || dec.metadata.type)) {
+                    joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as AbstractType || dec.metadata.type, entityManager))
+                }
+            });
+            targetRef.getPropDefines().forEach(dec => {
+                if (dec.decor === InjectRepository) {
+                    context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager)
+                } else if ((dec.metadata.provider as AbstractType || dec.metadata.type) === EntityManager) {
+                    context[dec.propertyKey] = entityManager
+                } else if (isRepository(dec.metadata.provider as AbstractType || dec.metadata.type)) {
+                    context[dec.propertyKey] = this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.provider as AbstractType || dec.metadata.type, entityManager)
                 }
             });
 
@@ -66,7 +66,7 @@ export class TypeormTransactionStatus extends TransactionStatus {
             });
 
             let target = joinPoint.target;
-            if (Object.keys(context).length) {                
+            if (Object.keys(context).length) {
                 target = { ...target, ...context }
             }
 

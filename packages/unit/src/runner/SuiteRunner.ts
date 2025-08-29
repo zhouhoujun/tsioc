@@ -91,7 +91,7 @@ export class SuiteRunner<T = object> implements UnitRunner<T> {
     }
 
     async runBefore(describe: SuiteDescribe) {
-        const befores = this.invocation.class.getMethodDefines<BeforeTestMetadata>(Before);
+        const befores = this.invocation.class.getDefines<BeforeTestMetadata>(Before);
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -105,7 +105,7 @@ export class SuiteRunner<T = object> implements UnitRunner<T> {
     }
 
     async runBeforeEach() {
-        const befores = this.invocation.class.getMethodDefines<BeforeEachTestMetadata>(BeforeEach);
+        const befores = this.invocation.class.getDefines<BeforeEachTestMetadata>(BeforeEach);
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -116,7 +116,7 @@ export class SuiteRunner<T = object> implements UnitRunner<T> {
     }
 
     async runAfterEach() {
-        const afters = this.invocation.class.getMethodDefines<BeforeEachTestMetadata>(AfterEach);
+        const afters = this.invocation.class.getDefines<BeforeEachTestMetadata>(AfterEach);
         await lang.step(afters.map(df => () => {
             return this.runTimeout(
                 df.propertyKey,
@@ -126,7 +126,7 @@ export class SuiteRunner<T = object> implements UnitRunner<T> {
     }
 
     async runAfter(describe: SuiteDescribe) {
-        const afters = this.invocation.class.getMethodDefines<BeforeTestMetadata>(After);
+        const afters = this.invocation.class.getDefines<BeforeTestMetadata>(After);
         await lang.step(
             afters.map(df => () => {
                 return this.runTimeout(
@@ -137,7 +137,7 @@ export class SuiteRunner<T = object> implements UnitRunner<T> {
     }
 
     async runTest(desc: SuiteDescribe) {
-        const tests = this.invocation.class.getMethodDefines<TestCaseMetadata>(Test);
+        const tests = this.invocation.class.getDefines<TestCaseMetadata>(Test);
         await lang.step(
             tests.map(df => {
                 return {

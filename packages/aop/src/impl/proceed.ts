@@ -182,7 +182,7 @@ export class ProceedingScope implements Proceeding {
             propertyKey,
             fullName,
             advisor,
-            annotations: targetRef?.defs.filter(d => d.propertyKey === propertyKey),
+            annotations: targetRef?.getMethodDefines(propertyKey) ?? targetRef?.getPropDefines(propertyKey) //.defines.filter(d => d.propertyKey === propertyKey),
         });
         if (options.parent) {
             joinPoint.onDestroy(options.parent)

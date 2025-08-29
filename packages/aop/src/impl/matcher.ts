@@ -40,7 +40,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
             if (aspectMeta.annotation) {
                 const annotation = aspectMeta.annotation.toString();
                 const anno = (annPreChkExp.test(annotation) ? '' : '@') + annotation;
-                if (!targetRef || !targetRef.defs.some(d => d.decor.toString() === anno)) {
+                if (!targetRef || !targetRef.hasDecor(anno)) {
                     return false
                 }
             }
@@ -97,7 +97,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         } else {
             const reg = metadata.pointcut;
             if (annPreChkExp.test(reg.source)) {
-                return (method, fullName, targetRef) => targetRef.defs.some(n => reg.test(n.decor.toString()));
+                return (method, fullName, targetRef) => targetRef.hasSomeDecor(n => reg.test(n.decorator!));
             } else {
                 return (name, fullName) => reg.test(fullName!)
             }

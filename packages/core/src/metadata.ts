@@ -67,7 +67,7 @@ export const Runner: Runner = createDecorator('Runner', {
     afterInit: (ctx) => {
         const meta = ctx.define.metadata as { method: string, args: RunnerOption<any> };
         if (meta.args?.parameters) {
-            ctx.class.setParameters(meta.method, meta.args.parameters)
+            ctx.class.setMethodOptions(meta.method, meta.args)
         }
     }
 });
@@ -214,7 +214,7 @@ function injectBean(injector: Injector, typeRef: Class<any>, meta: Confgiuration
 
     if (meta.providers) invocation.context.injector.inject(meta.providers);
 
-    typeRef.defs.filter(d => d.decor === Bean)
+    typeRef.getDefines(Bean)
         .forEach(d => {
             const key = d.propertyKey;
             const { provide, static: stac, multi, multiOrder, providedIn } = d.metadata as BeanMetadata;
@@ -269,11 +269,11 @@ function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name:
                 const typeRef = ctx.class;
                 if (typeRef.getAnnotation().static === false && !typeRef.getAnnotation().singleton) return;
 
-                const decors = typeRef.getMethodDefines(ctx.currDecor);
+                const defines = typeRef.getDefines(ctx.currDecor);
                 const injector = ctx.injector;
                 const invocation = typeRef.createInvocation(injector);
                 const currMulticaster = injector.get(ApplicationEventMulticaster);
-                decors.forEach(decor => {
+                defines.forEach(decor => {
                     const { filter, order, providedIn, ...options } = decor.metadata as InvocationHandlerOptions & { filter: AbstractType<ApplicationEvent> & { getStrategy?: () => string } };
                     const handler = createInvocationHandler(invocation, options, decor.propertyKey);
                     const event = filter ?? defaultFilter;
@@ -293,11 +293,11 @@ function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name:
                     || typeRef.getAnnotation().singleton
                 )) return;
 
-                const decors = typeRef.getMethodDefines(ctx.currDecor);
+                const defines = typeRef.getDefines(ctx.currDecor);
                 const injector = ctx.injector;
                 const invocation = typeRef.createInvocation(injector, { instance: ctx.instance });
                 const currMulticaster = injector.get(ApplicationEventMulticaster);
-                decors.forEach(decor => {
+                defines.forEach(decor => {
                     const { filter, order, providedIn, ...options } = decor.metadata as InvocationHandlerOptions & { filter: AbstractType<ApplicationEvent> & { getStrategy?: () => string } };
                     const handler = createInvocationHandler(invocation, options, decor.propertyKey);
                     const event = filter ?? defaultFilter;
@@ -486,7 +486,7 @@ export const Interceptable: Interceptable = createDecorator('Interceptable', {
     design: {
         method: (ctx) => {
             const typeRef = ctx.class;
-            const decors = typeRef.getMethodDefines<InterceptMetadata>(ctx.currDecor);
+            const decors = typeRef.getDefines<InterceptMetadata>(ctx.currDecor);
             const injector = ctx.injector;
             const invocation = typeRef.createInvocation(injector);
             const currResolver = injector.get(InterceptorResolver);
@@ -535,7 +535,7 @@ export const Filterable: Filterable = createDecorator('Filterable', {
     design: {
         method: (ctx) => {
             const typeRef = ctx.class;
-            const decors = typeRef.getMethodDefines<InterceptMetadata>(ctx.currDecor);
+            const decors = typeRef.getDefines<InterceptMetadata>(ctx.currDecor);
             const injector = ctx.injector;
             const invocation = typeRef.createInvocation(injector);
             const currResolver = injector.get(FilterResolver);
@@ -596,7 +596,7 @@ export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
     design: {
         method: (ctx) => {
             const typeRef = ctx.class;
-            const decors = typeRef.getMethodDefines<FilterHandlerMetadata<any>>(ctx.currDecor);
+            const decors = typeRef.getDefines<FilterHandlerMetadata<any>>(ctx.currDecor);
             const injector = ctx.injector;
             const invocation = typeRef.createInvocation(injector);
             const currResolver = injector.get(FilterHandlerResolver);

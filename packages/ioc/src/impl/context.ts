@@ -277,7 +277,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
                 return res;
             },
             error: (error) => {
-                if (error instanceof Exception) {
+                if (error instanceof Error) {
                     throw error;
                 }
                 if (failed) {

@@ -170,6 +170,7 @@ export const MetadataKeys = {
     PROPERTY_METADATA: 'ioc:property:metadata',
     METHOD_METADATA: 'ioc:method:metadata',
     METHOD_PARAMS: 'ioc:method:params',
+    METHOD_PARAMS_METADATA: 'ioc:method:params:metadata',
     METHOD_RETURNS: 'ioc:method:returns'
 };
 
@@ -259,7 +260,7 @@ export const decorParamInject = (ctx: DecorContext, next: HandlerFn, context: Co
         const def = ctx.class;
         const meta = ctx.define.metadata as ParameterMetadata;
         const propertyKey = ctx.define.propertyKey;
-        let params = def.hasParameters(propertyKey) ? def.getParameters(propertyKey) : null;
+        let params = def.hasOwnParameters(propertyKey) ? def.getParameters(propertyKey) : null;
         if (!params) {
             const names = def.getParamNames(propertyKey);
             let paramTypes: any[];
@@ -270,7 +271,8 @@ export const decorParamInject = (ctx: DecorContext, next: HandlerFn, context: Co
             }
             if (paramTypes) {
                 params = paramTypes.map((type, index) => ({ type, name: names[index] }));
-                def.setParameters(propertyKey, params)
+                Reflect.defineMetadata(MetadataKeys.METHOD_PARAMS, params, def.type, propertyKey);
+                // def.setParameters(propertyKey, params)
             }
         }
         if (params) {
@@ -301,20 +303,26 @@ export const decorInitProp = (ctx: DecorContext, next: HandlerFn, context: Conte
 const propInjectDecors: Record<string, boolean> = { '@Inject': true, '@Autowired': true };
 export const decorPropInject = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (propInjectDecors[ctx.define.decor.toString()]) {
-        ctx.class.setProperyProviders(ctx.define.propertyKey, [ctx.define.metadata])
+        const defines = Reflect.getMetadata(MetadataKeys.PROPERTY_METADATA, ctx.class.type);
+        if (defines) {
+            defines.push(ctx.define);
+        } else {
+            Reflect.defineMetadata(MetadataKeys.PROPERTY_METADATA, [ctx.define], ctx.class.type);
+        }
     }
     return next(ctx, context)
 }
 
 
 export const decorCtorDesignParams = (ctx: DecorContext, next: HandlerFn, context: Context) => {
-    if (!ctx.class.hasParameters(ctorName)) {
+    if (!ctx.class.hasOwnParameters(ctorName)) {
         const paramTypes: any[] = Reflect.getMetadata('design:paramtypes', ctx.class.type);
         if (paramTypes) {
             const names = ctx.class.getParamNames(ctorName);
-            ctx.class.setParameters(ctorName, paramTypes.map((type, index) => {
+
+            Reflect.defineMetadata(MetadataKeys.METHOD_PARAMS, paramTypes.map((type, index) => {
                 return { type, name: names[index] }
-            }))
+            }), ctx.class.type, ctorName);
         }
     }
     return next(ctx, context)
@@ -390,17 +398,20 @@ export const decorProviders = (ctx: DecorContext, next: HandlerFn, context: Cont
 export const decorMethodDesignParams = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     const reflective = ctx.class;
     const propertyKey = ctx.define.propertyKey;
-    if (!reflective.hasParameters(propertyKey)) {
+    if (!reflective.hasOwnParameters(propertyKey)) {
         const names = reflective.getParamNames(propertyKey);
-        reflective.setParameters(propertyKey,
-            (Reflect.getMetadata('design:paramtypes', ctx.target, propertyKey) as AbstractType[])?.map((type, idx) => ({ type, name: names[idx] })))
+        Reflect.defineMetadata(MetadataKeys.METHOD_PARAMS,
+            (Reflect.getMetadata('design:paramtypes', ctx.target, propertyKey) as AbstractType[])?.map((type, idx) => ({ type, name: names[idx] })),
+            reflective.type,
+            propertyKey
+        )
     }
     const meta = ctx.define.metadata as MethodMetadata;
     if (!meta.type) {
-        meta.type = Reflect.getMetadata('design:returntype', ctx.target, propertyKey)
+        meta.type = Reflect.getMetadata('design:returntype', ctx.target, propertyKey);
     }
-    if (!reflective.hasReturnning(propertyKey) && meta.type) {
-        reflective.setReturnning(propertyKey, meta.type)
+    if (meta.type && !Reflect.hasMetadata(MetadataKeys.METHOD_RETURNS, ctx.class.type, propertyKey)) {
+        Reflect.defineMetadata(MetadataKeys.METHOD_RETURNS, meta.type, ctx.class.type, propertyKey);
     }
     return next(ctx, context)
 }
@@ -442,47 +453,61 @@ export const paramDecorLifeScope: HandlerScope<DecorContext> = new HandlerScope(
     decorParamInject
 ]);
 
-function storageDefine(define: DecorDefine, type: AbstractType) {
+function storageDefine(define: DecorDefine, classRef: Class) {
     let metaKey: string;
     let unshift = false;
+    let propertyKey: string | symbol | undefined;
     switch (define.decorType) {
         case 'class':
             metaKey = MetadataKeys.CLASS_METADATA;
             unshift = true;
+            classRef.classDecors.push(define.decor);
             break;
 
         case 'property':
             metaKey = MetadataKeys.PROPERTY_METADATA;
+            classRef.propDecors.push(define.decor);
             break;
 
         case 'method':
             metaKey = MetadataKeys.METHOD_METADATA;
+            classRef.methodDecors.push(define.decor);
             break;
 
         case 'parameter':
-            metaKey = MetadataKeys.METHOD_PARAMS;
+            metaKey = MetadataKeys.METHOD_PARAMS_METADATA;
             unshift = true;
+            propertyKey = define.propertyKey;
+            classRef.paramDecors.push(define.decor);
             break;
     }
     if (metaKey) {
-        const defines = Reflect.getMetadata(metaKey, type);
+        const defines = propertyKey ? Reflect.getMetadata(metaKey, classRef.type, propertyKey) : Reflect.getMetadata(metaKey, classRef.type);
         if (defines) {
             unshift ? defines.unshift(define) : defines.push(define);
         } else {
-            Reflect.defineMetadata(metaKey, [define], type);
+            propertyKey ? Reflect.defineMetadata(metaKey, [define], classRef.type, propertyKey) : Reflect.defineMetadata(metaKey, [define], classRef.type);
         }
     }
+    const defines = Reflect.getMetadata(define.decor, classRef.type);
+    if (defines) {
+        unshift ? defines.unshift(define) : defines.push(define);
+    } else {
+        Reflect.defineMetadata(define.decor, [define], classRef.type);
+    }
+
 }
 
 function dispatch(lifescope: HandlerScope<DecorContext>, target: any, type: AbstractType, define: DecorDefine, options: DecoratorOption<any>) {
 
-    storageDefine(define, type);
+    const classRef = getClass(type);
+    storageDefine(define, classRef);
 
     const ctx = {
         define,
         target,
         options,
-        class: getClass(type)
+        class: classRef
     } as DecorContext;
     if (options.actionType) {
         if (isArray(options.actionType)) {
@@ -494,7 +519,7 @@ function dispatch(lifescope: HandlerScope<DecorContext>, target: any, type: Abst
     options.init && options.init(ctx);
 
     lifescope.handle(ctx, null, () => {
-        ctx.class.addDefine(define);
+        // ctx.class.addDefine(define);
         options.afterInit && options.afterInit(ctx);
         cleanObj(ctx)
     });

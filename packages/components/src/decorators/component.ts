@@ -27,7 +27,7 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
             Object.assign(def, metadata);
             def.providers = metadata.providers;
             if (metadata.imports) def.imports = getModuleType(metadata.imports);
-            def.attributes = ctx.class.getMetadatas(f => f.decor === Attribute);
+            def.attributes = ctx.class.getDefines(Attribute).map(d => d as AttributeMetadata);
         }
     },
     factory: (injector) => {
