@@ -142,88 +142,87 @@ export class SwaggerService {
             if (v.controller instanceof Invocation) {
                 const route = v.path;
                 const cls = v.controller.class;
-                cls.defs.forEach(df => {
-                    if (df.decorType == 'class' && isString((df.metadata as RouteMappingMetadata).route)) {
-                        const description = cls.getMetadata(d => !!d.metadata?.description)?.description;
+                cls.getClassdDefines(df => isString((df.metadata as RouteMappingMetadata).route))
+                    .forEach(df => {
+                        const description = cls.getClassdDefines().find(d => !!d.metadata?.description)?.metadata?.description;
 
                         jsonDoc.tags?.push({
                             name: cls.className,
                             description
                         })
-                        return;
-                    }
+                    });
 
-                    if (df.decorType !== 'method' || !isString((df.metadata as RouteMappingMetadata).route)) return;
-
-                    let path = joinPath(prefix, route, df.metadata.route as string);
-                    if (!absReg.test(path)) {
-                        path = '/' + path;
-                    }
-
-                    if (restReg.test(path)) {
-                        path = path.replace(restReg, p => `/{${p.substring(2)}}`);
-                    }
-
-                    if (!jsonDoc.paths[path]) {
-                        jsonDoc.paths[path] = {};
-                    }
-                    const api: Record<string, any> = jsonDoc.paths[path];
-                    const method = df.metadata.method?.toLowerCase() ?? 'get';
-                    if (api[method]) throw new Exception(`has mutil route address ${path}, with same method ${method}`);
-
-                    const returnType = cls.getMethodMetadata(null, df.propertyKey, r => isType(r.metadata.response))?.response ?? df.metadata.returnType ?? df.metadata.type;
-                    let returnTypeName = '';
-                    if (returnType && returnType != Object && returnType != Promise) {
-                        returnTypeName = getTypeName(returnType);
-                        if (!jsonDoc.components.schemas[returnTypeName]) {
-                            this.regSchema(jsonDoc, returnType, modelResolver);
+                cls.getMethodDefines(df => isString((df.metadata as RouteMappingMetadata).route))
+                    .forEach(df => {
+                        let path = joinPath(prefix, route, df.metadata.route as string);
+                        if (!absReg.test(path)) {
+                            path = '/' + path;
                         }
-                    }
 
-                    const paramMatedatas = cls.getParameters(df.propertyKey) as TransportParameter[]
-                    api[method] = {
-                        "x-swagger-router-controller": cls.className,
-                        summary: (cls.getMethodMetadata(null, df.propertyKey, r => r.metadata.summary) as any)?.summary ?? '',
-                        description: (cls.getMethodMetadata(null, df.propertyKey, r => r.metadata.description) as any)?.description ?? '',
-                        operationId: df.propertyKey + '-' + method,
-                        tags: [cls.className],
-                        parameters: paramMatedatas?.filter(p => ((!p.scope || p.scope == 'query' || p.scope == 'path') && p.flags && (p.flags & InjectFlags.Request)))?.map(p => this.toParamObject(jsonDoc, p as TransportParameter, modelResolver)),
-                        requestBody: this.toBodyObject(jsonDoc, paramMatedatas?.filter(p => (p.scope == 'body' || p.scope == 'payload') || (!p.provider && modelResolver(p.type))), modelResolver),
-                        responses: df.metadata.responses ?? {
-                            '200': {
-                                description: "Success",
-                                content: {
-                                    "text/plain": {
-                                        "schema": returnTypeName ? {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": `#/components/schemas/${returnTypeName}`
-                                            }
-                                        } : undefined
-                                    },
-                                    "application/json": {
-                                        "schema": returnTypeName ? {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": `#/components/schemas/${returnTypeName}`
-                                            }
-                                        } : undefined
-                                    },
-                                    "text/json": {
-                                        "schema": returnTypeName ? {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": `#/components/schemas/${returnTypeName}`
-                                            }
-                                        } : undefined
+                        if (restReg.test(path)) {
+                            path = path.replace(restReg, p => `/{${p.substring(2)}}`);
+                        }
+
+                        if (!jsonDoc.paths[path]) {
+                            jsonDoc.paths[path] = {};
+                        }
+                        const api: Record<string, any> = jsonDoc.paths[path];
+                        const method = df.metadata.method?.toLowerCase() ?? 'get';
+                        if (api[method]) throw new Exception(`has mutil route address ${path}, with same method ${method}`);
+
+                        const returnType = cls.getReturnning(df.propertyKey) //cls.getMethodMetadata(null, df.propertyKey, r => isType(r.metadata.response))?.response ?? df.metadata.returnType ?? df.metadata.type;
+                        let returnTypeName = '';
+                        if (returnType && returnType != Object && returnType != Promise) {
+                            returnTypeName = getTypeName(returnType);
+                            if (!jsonDoc.components.schemas[returnTypeName]) {
+                                this.regSchema(jsonDoc, returnType, modelResolver);
+                            }
+                        }
+
+                        const paramMatedatas = cls.getParameters(df.propertyKey) as TransportParameter[]
+                        api[method] = {
+                            "x-swagger-router-controller": cls.className,
+                            summary: (cls.getMethodDefines(df.propertyKey, r => r.metadata.summary)).at(0)?.metadata?.summary ?? '',
+                            description: (cls.getMethodDefines(df.propertyKey, r => r.metadata.description)?.at(0)?.metadata?.description ?? ''),
+                            operationId: df.propertyKey + '-' + method,
+                            tags: [cls.className],
+                            parameters: paramMatedatas?.filter(p => ((!p.scope || p.scope == 'query' || p.scope == 'path') && p.flags && (p.flags & InjectFlags.Request)))?.map(p => this.toParamObject(jsonDoc, p as TransportParameter, modelResolver)),
+                            requestBody: this.toBodyObject(jsonDoc, paramMatedatas?.filter(p => (p.scope == 'body' || p.scope == 'payload') || (!p.provider && modelResolver(p.type))), modelResolver),
+                            responses: df.metadata.responses ?? {
+                                '200': {
+                                    description: "Success",
+                                    content: {
+                                        "text/plain": {
+                                            "schema": returnTypeName ? {
+                                                "type": "array",
+                                                "items": {
+                                                    "$ref": `#/components/schemas/${returnTypeName}`
+                                                }
+                                            } : undefined
+                                        },
+                                        "application/json": {
+                                            "schema": returnTypeName ? {
+                                                "type": "array",
+                                                "items": {
+                                                    "$ref": `#/components/schemas/${returnTypeName}`
+                                                }
+                                            } : undefined
+                                        },
+                                        "text/json": {
+                                            "schema": returnTypeName ? {
+                                                "type": "array",
+                                                "items": {
+                                                    "$ref": `#/components/schemas/${returnTypeName}`
+                                                }
+                                            } : undefined
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                });
-                
-            } 
+                    });
+
+            }
             // else if (v instanceof Router) {
             //     this.buildDoc(v, jsonDoc, modelResolver, route);
             // }
