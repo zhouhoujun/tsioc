@@ -461,24 +461,32 @@ function storageDefine(define: DecorDefine, classRef: Class) {
         case 'class':
             metaKey = MetadataKeys.CLASS_METADATA;
             unshift = true;
-            classRef.classDecors.push(define.decor);
+            if (!classRef.classDecors.includes(define.decor)) {
+                classRef.classDecors.push(define.decor);
+            }
             break;
 
         case 'property':
             metaKey = MetadataKeys.PROPERTY_METADATA;
-            classRef.propDecors.push(define.decor);
+            if (!classRef.propDecors.includes(define.decor)) {
+                classRef.propDecors.push(define.decor);
+            }
             break;
 
         case 'method':
             metaKey = MetadataKeys.METHOD_METADATA;
-            classRef.methodDecors.push(define.decor);
+            if (!classRef.methodDecors.includes(define.decor)) {
+                classRef.methodDecors.push(define.decor);
+            }
             break;
 
         case 'parameter':
             metaKey = MetadataKeys.METHOD_PARAMS_METADATA;
             unshift = true;
             propertyKey = define.propertyKey;
-            classRef.paramDecors.push(define.decor);
+            if (!classRef.paramDecors.includes(define.decor)) {
+                classRef.paramDecors.push(define.decor);
+            }
             break;
     }
     if (metaKey) {
