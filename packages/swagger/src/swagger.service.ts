@@ -363,9 +363,9 @@ export class SwaggerService {
             type: 'object',
             properties: resovler.getPropertyMeta(type).reduceRight((ps, prop) => {
                 const p = prop as DBPropertyMetadata & ApiModelPropertyMetadata;
-                if (!p.name) throw new MissingModelFieldException([p], type)
+                if (!p.propertyKey) throw new MissingModelFieldException([p], type)
                 const fType = this.toDocType(p.type);
-                const pobj = ps[p.name] = { ...lang.omit(p, 'type', 'provider', 'default', 'dbtype', 'length', 'width', 'update'), type: fType, nullable: p.nullable } as any;
+                const pobj = ps[p.propertyKey] = { ...lang.omit(p, 'type', 'provider', 'default', 'dbtype', 'length', 'width', 'update'), type: fType, nullable: p.nullable } as any;
                 if (p.length && !pobj.maxLenght) {
                     pobj.maxLenght = p.length;
                 }
