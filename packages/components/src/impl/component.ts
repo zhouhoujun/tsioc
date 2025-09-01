@@ -1,5 +1,5 @@
 import {
-    AbstractInvocation, AbstractInvocationFactory, Class, createInjector, Empty, Exception, Injectable,
+    AbstractInvocationFactory, Class, createInjector, Empty, Exception, Injectable,
     Injector, InvocationContext, InvokeArguments, Platform, AbstractType, Provider, toProvider
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
@@ -11,13 +11,13 @@ import { reactive } from './reactive';
 import { AfterViewInit, OnInit, OnDestroy } from '../lifecycle';
 
 
-export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptions> extends AbstractInvocation<T, TOpts> implements ComponentRef<T> {
+export class ComponentRefImpl<T> extends ComponentRef<T> {
 
     private _hostView?: ViewRef;
     constructor(
         _class: Class<T>,
         context: InvocationContext,
-        options?: TOpts) {
+        options?: ComponentOptions) {
         super(_class, context, options);
     }
 
@@ -34,13 +34,10 @@ export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptio
     }
 
 
-    async render(option?: InvocationContext | InvokeArguments): Promise<void> {
+    async render(): Promise<void> {
         const def = this.class.getAnnotation<ComponentDef>();
         if (!/\[\w+\]/.test(def.selector || '') && !def.template && !def.templateUrl) throw new Exception(this.class.className + ' template or templateUrl is required.')
         const template = def.template || await fetchTemplate(def.templateUrl!);
-        if (option) {
-            this.context.attach(option);
-        }
         const compiler = this.context.get(TemplateCompiler);
         await (this.instance as OnInit).onInit?.();
         this._hostView = await compiler.compile(template, this.instance, this.context);
@@ -53,8 +50,8 @@ export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptio
         this.hostView?.destroy();
     }
 
-    protected override process(option?: InvocationContext | InvokeArguments) {
-        return this.render(option);
+    protected override process() {
+        return this.render();
     }
 
     protected override createInstance(): T {

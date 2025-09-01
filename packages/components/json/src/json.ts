@@ -40,6 +40,13 @@ export class JsonNode implements RNode {
         this.childNodes.push(newChild);
         return this;
     }
+
+        querySelector(selector: string): JsonNode | null {
+            return null;
+        }
+        querySelectorAll(selector: string): JsonNode[] | null {
+            return null;
+        }
 }
 
 export class JsonText extends JsonNode implements RText {

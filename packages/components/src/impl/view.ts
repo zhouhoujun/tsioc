@@ -1,4 +1,5 @@
 import { ReactiveEffect } from '../ReactiveEffect';
+import { ComponentRef } from '../refs/component';
 import { ViewRef } from '../refs/view';
 import { RNode } from '../renderer/Node';
 
@@ -6,6 +7,8 @@ export class RootViewRef extends ViewRef {
     private _isDestroyed = false;
     private _destroyCallbacks: (() => void)[] = [];
     private nodeRefs: Map<string, RNode> = new Map();
+    readonly directives = new Set<ComponentRef<any>>;
+    readonly components = new Set<ComponentRef<any>>;
 
     get destroyed(): boolean {
         return this._isDestroyed;
@@ -16,6 +19,9 @@ export class RootViewRef extends ViewRef {
 
         // 标记为已销毁
         this._isDestroyed = true;
+
+        this.directives?.forEach(d => d.destroy());
+        this.components?.forEach(d => d.destroy());
 
         // 执行所有销毁回调
         this._destroyCallbacks.forEach(callback => callback());

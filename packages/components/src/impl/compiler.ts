@@ -1,5 +1,5 @@
 import { Abstract, Empty, InvocationContext, isArray, isObject } from '@tsdi/ioc';
-import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
+import { COMPONENTS, DIRECTIVES, TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { NodeType, RElement, RNode, RText } from '../renderer/Node';
 import { ViewRef } from '../refs/view';
 import { RootViewRef } from './view';
@@ -29,17 +29,18 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         return viewRef;
     }
 
-    private async walkNodes(nodes: RNode[], context: any, viewRef: ViewRef, environument: InvocationContext) {
+    private async walkNodes(nodes: RNode[], context: any, viewRef: RootViewRef, environument: InvocationContext) {
         for (const node of nodes || Empty) {
             if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
                 this.processText(node as RText, context, viewRef, environument);
             } else {
                 const factory = this.getComponentBySelector(node, environument);
                 if (factory) {
-                    await this.processComponent(node as RElement, factory, context, viewRef, environument);
+                    await this.processComponent(node as RElement, factory(environument), context, viewRef, environument);
                 } else if (node.nodeType === NodeType.Element) {
                     this.processElement(node as RElement, context, viewRef, environument);
                 }
+
                 // ...解析模板逻辑...
                 this.processBindings(node, context, viewRef);
             }
@@ -48,13 +49,22 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
     getComponentBySelector(node: RNode, environument: InvocationContext) {
-        if(node.tagName){
-            environument;
+        if (node.tagName) {
+            const components = environument.get(COMPONENTS);
+            const compfac = components?.find(c => c.name === node.tagName);
+            if (compfac) return compfac;
+
+            const directives = environument.get(DIRECTIVES);
+            const attrs = this.renderer.getAttributes(node as RElement);
+            if (directives?.length && attrs?.length) {
+                return directives.find(d => attrs.some(a => a.name === d.name));
+            }
+            return null;
         }
         return null;
     }
 
-    private processElement(el: RElement, context: any, viewRef: ViewRef, environument: InvocationContext) {
+    private processElement(el: RElement, context: any, viewRef: RootViewRef, environument: InvocationContext) {
         // 处理属性
         this.renderer.getAttributes(el).forEach(({ name, value }) => {
             if (name.startsWith('#')) {
@@ -103,9 +113,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
 
-    private async processComponent(el: RElement, factory: () => ComponentRef<any>, context: any, viewRef: ViewRef, environument: InvocationContext) {
-        // 创建组件实例
-        const componentRef = factory();
+    private async processComponent(el: RElement, componentRef: ComponentRef<any>, context: any, viewRef: RootViewRef, environument: InvocationContext) {
 
         const componentDef = componentRef.class.getAnnotation<ComponentDef>();
         const attributes = componentDef?.attributes || [];
@@ -157,24 +165,9 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
             }
         });
 
-        // 将props和events传递给组件
-        // componentInstance.props = props;
-        // componentInstance.events = events;
-
         // 渲染组件并替换当前节点
         await componentRef.render();
 
-        // const parentNode = el.parentNode;
-        // if (parentNode) {
-        //     // 替换原节点为组件渲染结果
-        //     const index = Array.from(parentNode.childNodes).indexOf(el);
-        //     parentNode.removeChild(el);
-        //     componentRef.hostView.rootNodes.forEach((node, i) => {
-        //         parentNode.insertBefore(node, parentNode.childNodes[index + i] || null);
-        //     });
-        //     // 处理组件渲染节点的绑定
-        //     componentRef.hostView.rootNodes.forEach(node => this.processBindings(node, context, viewRef));
-        // }
     }
 
     // 解析管道表达式转换为函数调用
@@ -248,7 +241,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         node.childNodes?.forEach(child => this.processBindings(child, context, viewRef));
     }
 
-    private parseEventExpression(expr: string, context: any, viewRef: ViewRef, environument: InvocationContext): EventListener {
+    private parseEventExpression(expr: string, context: any, viewRef: RootViewRef, environument: InvocationContext): EventListener {
         // 改进正则以支持带命名空间的函数名和复杂参数
         const funcCallRegex = /^\s*([_$a-zA-Z\w.]+)\s*\(\s*(.*?)\s*\)\s*$/;
         const match = expr.match(funcCallRegex);

@@ -1,10 +1,10 @@
 import { Empty, Inject, Injectable, InvocationContext, lang, Module, ModuleWithProviders, tokenId } from '@tsdi/ioc';
 import { XMLParser } from 'fast-xml-parser';
-import { 
-    TemplateParser,AbstractTemplateCompiler, ReactiveEffect, Renderer, RendererStyleFlags2,
+import {
+    TemplateParser, AbstractTemplateCompiler, ReactiveEffect, Renderer, RendererStyleFlags2,
     RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, RAttr,
-    TemplateCompiler, TemplateCompilerOptions 
- } from '@tsdi/components';
+    TemplateCompiler, TemplateCompilerOptions
+} from '@tsdi/components';
 import { EventEmitter } from 'events';
 
 
@@ -41,6 +41,13 @@ export class XmlNode implements RNode {
     appendChild(newChild: XmlNode): XmlNode {
         this.childNodes.push(newChild);
         return this;
+    }
+
+    querySelector(selector: string): XmlNode | null {
+        return null;
+    }
+    querySelectorAll(selector: string): XmlNode[] | null {
+        return null;
     }
 }
 
@@ -119,9 +126,9 @@ export class XmlElement extends XmlNode implements RElement {
 
     getAttributeNS(namespace: string | null, localName: string): string | null {
         return this.attributes.get(`${localName}:${namespace}`)?.value ?? null;
-    }   
+    }
     setAttributeNS(namespace: string, name: string, value: string): void {
-        this.attributes.set(`${name}:${namespace}`, { name, namespace, value});
+        this.attributes.set(`${name}:${namespace}`, { name, namespace, value });
     }
     removeAttributeNS(namespace: string, localName: string): void {
         this.attributes.delete(`${localName}:${namespace}`);
@@ -139,7 +146,7 @@ export class XmlElement extends XmlNode implements RElement {
     removeAttribute(name: string): void {
         this.attributes.delete(name)
     }
- 
+
     addEventListener(type: string, listener: EventListener, useCapture?: boolean): void {
         this.events.addListener(type, listener)
     }
@@ -195,7 +202,7 @@ export class XmlRenderer implements Renderer {
     insertBefore(parent: XmlNode, newChild: XmlNode, refChild: XmlNode | null): void {
         parent.insertBefore(newChild, refChild);
     }
-    
+
     removeChild(parent: XmlElement | null, oldChild: XmlNode, isHostElement?: boolean): void {
         parent?.removeChild(oldChild)
     }

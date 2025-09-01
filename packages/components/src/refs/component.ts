@@ -1,4 +1,4 @@
-import { Abstract, Class, AbstractType, InvocationFactory, InvocationOptions, Invocation, ProvdierOf } from '@tsdi/ioc';
+import { Abstract, Class, AbstractType, InvocationFactory, InvocationOptions, AbstractInvocation, ProvdierOf, InvocationContext, InvokeArguments } from '@tsdi/ioc';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { ViewRef } from './view';
 
@@ -7,7 +7,7 @@ import { ViewRef } from './view';
  * ComponentRef.
  */
 @Abstract()
-export abstract class ComponentRef<T> extends Invocation<T> {
+export abstract class ComponentRef<T> extends AbstractInvocation<T, ComponentOptions>  {
 
     /**
      * The host view defined by the template
