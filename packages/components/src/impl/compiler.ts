@@ -19,7 +19,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
     async compile(template: string, context: any, environument: InvocationContext): Promise<ViewRef> {
         // 使用模板解析器解析模板
-        const nodes = this.parser.parse(template);
+        const nodes = this.parser.parse(template, environument);
 
         const viewRef = new RootViewRef(nodes, context, this.effect);
 
@@ -34,7 +34,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
             if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
                 this.processText(node as RText, context, viewRef, environument);
             } else {
-                const factory = node.tagName ? this.getComponentBySelector(node.tagName) : null;
+                const factory = this.getComponentBySelector(node, environument);
                 if (factory) {
                     await this.processComponent(node as RElement, factory, context, viewRef, environument);
                 } else if (node.nodeType === NodeType.Element) {
@@ -47,7 +47,10 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
     }
 
-    getComponentBySelector(tagName: string) {
+    getComponentBySelector(node: RNode, environument: InvocationContext) {
+        if(node.tagName){
+            environument;
+        }
         return null;
     }
 

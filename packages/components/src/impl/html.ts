@@ -1,8 +1,8 @@
-import { parseFragment, TreeAdapter, defaultTreeAdapter } from 'parse5';
+// import { parseFragment, TreeAdapter, defaultTreeAdapter } from 'parse5';
 import { TemplateParser } from '../template/parser';
 import { RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList } from '../renderer/Node';
-import { Abstract, Empty, Inject, Injectable, isArray, lang, Module, ModuleWithProviders, ProvdierOf, tokenId } from '@tsdi/ioc';
-import { EventEmitter } from 'events';
+import { Abstract, Empty, Inject, Injectable, InvocationContext, isArray, lang, Module, ModuleWithProviders, ProvdierOf, tokenId } from '@tsdi/ioc';
+// import { EventEmitter } from 'events';
 import { AbstractTemplateCompiler } from './compiler';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
@@ -97,19 +97,15 @@ import { Renderer, RendererStyleFlags2 } from '../renderer/Renderer';
 
 
 
-export class HtmlTemplateParser implements TemplateParser {
+@Abstract()
+export abstract class HtmlTemplateParser implements TemplateParser {
 
     constructor(
         private renderer: HtmlRenderer
     ) { }
 
 
-    parse(template: string): RNode[] {
-        const fragment = parseFragment(template, {
-            treeAdapter: defaultTreeAdapter
-        });
-        return fragment.childNodes as any[];
-    }
+    abstract parse(template: string, environument: InvocationContext): RNode[];
 
 }
 
@@ -123,6 +119,7 @@ const htmlDefaultOptions = {
 export abstract class HtmlRenderer extends Renderer {
 
 }
+
 
 export interface HtmlTemplateCompilerOptions extends TemplateCompilerOptions {
     renderer?: ProvdierOf<HtmlRenderer>;
@@ -148,7 +145,6 @@ export class HtmlTemplateCompiler extends AbstractTemplateCompiler {
 
 @Module({
     providers: [
-        HtmlTemplateParser,
         HtmlTemplateCompiler,
         { provide: TemplateCompiler, useClass: HtmlTemplateCompiler, asDefault: true }
     ]

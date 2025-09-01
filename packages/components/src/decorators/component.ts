@@ -1,6 +1,7 @@
 import { ModuleType, createDecorator, AnnotationType, noPointcut, getModuleType, TypeDef, ActionTypes } from '@tsdi/ioc';
 import { ComponentFactory } from '../refs/component';
 import { Attribute, AttributeMetadata } from './atteribute';
+import { SchemaMetadata } from '../template/schema';
 
 export interface ComponentDef<T = any> extends TypeDef<T> {
     imports?: ModuleType[],
@@ -11,6 +12,7 @@ export interface ComponentDef<T = any> extends TypeDef<T> {
     styleUrls?: string[];
     providers?: any[];
     attributes?: AttributeMetadata[];
+    schemas?: SchemaMetadata[];
 }
 
 

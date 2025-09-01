@@ -1,11 +1,10 @@
-import { TemplateParser } from '../template/parser';
-import { RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, EventListener, RAttr } from '../renderer/Node';
-import { Empty, Inject, Injectable, isArray, lang, Module, ModuleWithProviders, tokenId } from '@tsdi/ioc';
+import { Empty, Inject, Injectable, InvocationContext, isArray, lang, Module, ModuleWithProviders, tokenId } from '@tsdi/ioc';
+import { 
+    TemplateParser,AbstractTemplateCompiler, ReactiveEffect, Renderer, RendererStyleFlags2,
+    RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, RAttr,
+    TemplateCompiler, TemplateCompilerOptions 
+ } from '@tsdi/components';
 import { EventEmitter } from 'events';
-import { AbstractTemplateCompiler } from './compiler';
-import { ReactiveEffect } from '../ReactiveEffect';
-import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
-import { Renderer, RendererStyleFlags2 } from '../renderer/Renderer';
 
 
 
@@ -258,7 +257,7 @@ export class JsonTemplateParser implements TemplateParser {
         private renderer: JsonRenderer
     ) { }
 
-    parse(template: string): JsonNode[] {
+    parse(template: string, environument: InvocationContext): JsonNode[] {
         const jsonObj = JSON.parse(template);
         // 将JSON对象转换为虚拟DOM节点
         return this.convertToNodes(jsonObj);

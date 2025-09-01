@@ -7,6 +7,8 @@ export interface TemplateCompilerOptions {
     delimiters?: [string, string];
 }
 
+export const DIRECTIVES = tokenId<Function[]>('DIRECTIVES');
+
 @Abstract()
 export abstract class TemplateCompiler {
 

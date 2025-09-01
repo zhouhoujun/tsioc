@@ -1,12 +1,11 @@
+import { Empty, Inject, Injectable, InvocationContext, lang, Module, ModuleWithProviders, tokenId } from '@tsdi/ioc';
 import { XMLParser } from 'fast-xml-parser';
-import { TemplateParser } from '../template/parser';
-import { RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, RAttr } from '../renderer/Node';
-import { Empty, Inject, Injectable, lang, Module, ModuleWithProviders, tokenId } from '@tsdi/ioc';
+import { 
+    TemplateParser,AbstractTemplateCompiler, ReactiveEffect, Renderer, RendererStyleFlags2,
+    RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, RAttr,
+    TemplateCompiler, TemplateCompilerOptions 
+ } from '@tsdi/components';
 import { EventEmitter } from 'events';
-import { AbstractTemplateCompiler } from './compiler';
-import { ReactiveEffect } from '../ReactiveEffect';
-import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
-import { Renderer, RendererStyleFlags2 } from '../renderer/Renderer';
 
 
 
@@ -275,7 +274,7 @@ export class XmlTemplateParser implements TemplateParser {
         private renderer: XmlRenderer
     ) { }
 
-    parse(template: string): XmlNode[] {
+    parse(template: string, environument: InvocationContext): XmlNode[] {
         const parser = new XMLParser(htmlParsingOptions);
         const jsonObj = parser.parse(template);
         // 将JSON对象转换为虚拟DOM节点

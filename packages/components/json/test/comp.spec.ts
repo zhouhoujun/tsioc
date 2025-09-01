@@ -1,11 +1,9 @@
 import expect = require('expect');
 import { Before, Suite, Test, After } from '@tsdi/unit';
 import { ApplicationContext, Application, formatDate } from '@tsdi/core';
+import { ComponentsModule, ComponentRef } from '@tsdi/components';
 import { ExampleComponent } from './app';
-import { ComponentsModule } from '../src';
-// import { JsonTemplateModule } from '../src/impl/json';
-// import { XmlTemplateModule } from '../src/impl/xml';
-import { ComponentRef } from '../src/refs/component';
+import { JsonTemplateModule } from '../src';
 
 
 
@@ -18,7 +16,7 @@ export class CTest {
     async init() {
         this.ctx = await Application.run(ExampleComponent, {
             deps: [
-                // JsonTemplateModule,
+                JsonTemplateModule,
                 // XmlTemplateModule,
                 ComponentsModule
             ]
