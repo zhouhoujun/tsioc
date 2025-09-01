@@ -1,4 +1,4 @@
-import { AbstractType, Type, Annotation, Empty } from '../types';
+import { AbstractType, Type, Annotation } from '../types';
 import { ModuleWithProviders, Provider } from '../providers';
 import {
     ProvidersMetadata, PropertyMetadata, ParameterMetadata, AnnotationMetadata
@@ -272,9 +272,7 @@ export class Class<T = any> {
 
     setAnnotation(records: Record<string, any>) {
         if (!records) return;
-        for (const key in records) {
-            (this.annotation as any)[key] = records[key]
-        }
+        Object.assign(this.annotation, records);
     }
 
     /**
@@ -311,7 +309,7 @@ export class Class<T = any> {
      * @param context invocation context.
      */
     resolveArguments(method: string | symbol, context: InvocationContext): any[] {
-        const parameters = this.getParameters(method) ?? Empty;
+        const parameters = this.getParameters(method) ?? [];
         const args = parameters.map(p => context.resolveArgument(p, this.type));
         return args;
     }
@@ -530,7 +528,7 @@ export class Class<T = any> {
 
     getParamNames(method: string | symbol): string[] {
         const prop = method ?? ctorName;
-        return this.getParams().get(prop) || Empty
+        return this.getParams().get(prop) || []
     }
 
     getParams(): Map<string | symbol, any[]> {

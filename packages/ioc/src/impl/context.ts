@@ -1,4 +1,4 @@
-import { AbstractType, Empty, Type } from '../types';
+import { AbstractType } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getTypeName, getTypeChain } from '../utils/lang';
 import { isArray, isDefined, isFunction, isString, isAbstractType, getType, isType } from '../utils/chk';
@@ -106,7 +106,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
             if (option.resolvers) {
                 if (option.resolvers?.length) {
                     this._resolvers = null;
-                    this.options.resolvers = [...option.resolvers, ...this.options.resolvers || Empty]
+                    this.options.resolvers = option.resolvers.concat(this.options.resolvers ?? [])
                 }
             }
         }
@@ -394,17 +394,17 @@ INVOCATION_CONTEXT_IMPL.create = (parent: Injector | InvocationContext, options?
 }
 
 const UNRESOLVED = {};
-const unResolve = <TInput, TContext extends InvocationContext>(input: TInput, context: TContext) => UNRESOLVED;
+const unResolve = <TInput, TOutput = any, TContext = any>(input: TInput, context: TContext) => UNRESOLVED as TOutput;
 
 export function isResolved(value: any) {
     return value !== UNRESOLVED;
 }
 
-export function createResolveScope<TInput, TContext extends InvocationContext, TOutput = any>(platform: Platform, interceptors: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): HandlerScope<TInput, TContext, TOutput> {
-    return new HandlerScope(platform, backend ?? unResolve, interceptors)
+export function createResolveScope<TInput, TContext = any, TOutput = any>(platform: Platform, interceptors: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): HandlerScope<TInput, TContext, TOutput> {
+    return new HandlerScope<TInput, TContext, TOutput>(platform, backend ?? unResolve, interceptors)
 }
 
-const TOKER_RESOLVER = new ContextToken<HandlerScope>(() => null!);
+const TOKER_RESOLVER = new ContextToken<HandlerScope<[Token, InjectFlags | undefined], InvocationContext>>(() => null!);
 export function getTokenResolver(platform: Platform): HandlerScope<[Token, InjectFlags | undefined], InvocationContext> {
     let scope = platform.context.get(TOKER_RESOLVER);
     if (!scope) {
@@ -448,7 +448,7 @@ export function getParameterResolver(platform: Platform): HandlerScope<Parameter
                     if (input.provider && !input.multi) {
                         const value = getTokenResolver(platform).handle([input.provider, input.flags], context);
                         if (isResolved(value)) return value;
-                    } else if(!input.multi && input.name && context.has(input.name, input.flags)) {
+                    } else if (!input.multi && input.name && context.has(input.name, input.flags)) {
                         return context.get(input.name, input.flags)
                     } else if (input.type) {
                         const value = getTokenResolver(platform).handle([input.type, input.flags], context);

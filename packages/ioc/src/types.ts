@@ -130,4 +130,3 @@ export type TypeOf<T> = AbstractType<T> | Exclude<T, Function>;
 export type Arrayify<T> = Array<T> | T;
 
 
-export const Empty: any[] = [];

@@ -427,29 +427,29 @@ export const decorMethodProviders = (ctx: DecorContext, next: HandlerFn, context
     return next(ctx, context)
 }
 
-export const decorExtendHandler = (ctx: DecorContext, context: Context) => {
+export const decorExtendHandler = (ctx: DecorContext, context: Context|undefined) => {
     if (ctx.define.decor.getHandler) {
         ctx.define.decor.getHandler(ctx.define.decorType)?.(ctx, context);
     }
 }
 
-export const typeDecorLifeScope: HandlerScope<DecorContext> = new HandlerScope(null, decorExtendHandler, [
+export const typeDecorLifeScope: HandlerScope<DecorContext, Context> = new HandlerScope(null, decorExtendHandler, [
     decorCtorDesignParams,
     decorAnnoAction,
     decorProviders,
     declarationFactory,
     decorRunnable
 ]);
-export const methodDecorLifeScope: HandlerScope<DecorContext> = new HandlerScope(null, decorExtendHandler, [
+export const methodDecorLifeScope: HandlerScope<DecorContext, Context> = new HandlerScope(null, decorExtendHandler, [
     decorMethodDesignParams,
     decorMethodProviders,
     decorRunnable
 ]);
-export const propDecorLifeScope: HandlerScope<DecorContext> = new HandlerScope(null, decorExtendHandler, [
+export const propDecorLifeScope: HandlerScope<DecorContext, Context> = new HandlerScope(null, decorExtendHandler, [
     decorInitProp,
     decorPropInject
 ]);
-export const paramDecorLifeScope: HandlerScope<DecorContext> = new HandlerScope(null, decorExtendHandler, [
+export const paramDecorLifeScope: HandlerScope<DecorContext, Context> = new HandlerScope(null, decorExtendHandler, [
     decorParamInject
 ]);
 

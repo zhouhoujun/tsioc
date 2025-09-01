@@ -1,6 +1,6 @@
 import {
-    AbstractInvocationFactory, Class, createInjector, Empty, Exception, Injectable,
-    Injector, InvocationContext, InvokeArguments, Platform, AbstractType, Provider, toProvider
+    AbstractInvocationFactory, Class, createInjector, Exception, Injectable,
+    Injector, InvocationContext, Platform, AbstractType, Provider, toProvider
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentOptions, ComponentRef, ComponentFactory } from '../refs/component';
@@ -75,13 +75,14 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         // 注入Renderer
         const def = typeRef.getAnnotation<ComponentDef>();
         if (def.imports?.length) {
-            injector = createInjector(Empty, injector);
+            injector = createInjector(options?.providers, injector);
             injector.use(def.imports);
         }
         return injector;
     }
 
     protected override createInstance<T>(typeRef: Class<T>, context: InvocationContext, options?: ComponentOptions): ComponentRef<T> {
+
         return new ComponentRefImpl(typeRef, context, options);
     }
 

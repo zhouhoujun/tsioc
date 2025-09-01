@@ -1,4 +1,4 @@
-import { Empty, Inject, Injectable, InvocationContext, isArray, lang, Module, ModuleWithProviders, tokenId } from '@tsdi/ioc';
+import { Inject, Injectable, InvocationContext, isArray, lang, Module, ModuleWithProviders, tokenId } from '@tsdi/ioc';
 import { 
     TemplateParser,AbstractTemplateCompiler, ReactiveEffect, Renderer, RendererStyleFlags2,
     RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, RAttr,
@@ -24,7 +24,7 @@ export class JsonNode implements RNode {
     }
 
     removeChild(oldChild: JsonNode): JsonNode {
-        const [removed] = lang.remove(this.childNodes, oldChild) ?? Empty;
+        const [removed] = lang.remove(this.childNodes, oldChild) ?? [];
         return removed;
     }
 

@@ -1,5 +1,5 @@
 import {
-    Arrayify, Empty, Injector, Module, ModuleRef, ModuleWithProviders,
+    Arrayify, Injector, Module, ModuleRef, ModuleWithProviders,
     Provider, isArray, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { ConfigMissingException, TypedRespond } from '@tsdi/core';
@@ -100,7 +100,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
 
     const microservice = isMicroTransport(options);
     return [
-        options.providers ?? Empty,
+        options.providers ?? [],
         {
             provider: async (injector) => {
                 const transportName = toTransportModuleName(options.transport);
@@ -113,7 +113,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
                         const transportModuleName = transportName.charAt(0).toUpperCase() + transportName.slice(1) + 'Module';
                         if (m[transportModuleName]) {
                             await injector.get(ModuleRef).import(m[transportModuleName]);
-                            mdopts = injector.get(SERVER_MODULES, Empty).find(r => (r.transport === options.transport || r.transport == transportName) && ((microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r)))));
+                            mdopts = injector.get(SERVER_MODULES, []).find(r => (r.transport === options.transport || r.transport == transportName) && ((microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r)))));
                         }
                         if (!mdopts) {
                             throw new Error(m[transportModuleName] ? 'has not implemented' : 'not found this transport module!')
@@ -186,7 +186,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
                 });
 
                 return [
-                    moduleOpts.providers ?? Empty,
+                    moduleOpts.providers ?? [],
                     createRouteProviders(moduleOpts.transport, microservice, serverOpts.routes),
                     { provide: REGISTER_SERVICES, useValue: { service: moduleOpts.serverType, bootstrap: serverOpts.bootstrap, microservice: serverOpts.microservice, providers }, multi: true }
                 ];

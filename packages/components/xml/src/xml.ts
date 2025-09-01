@@ -1,4 +1,4 @@
-import { Empty, Inject, Injectable, InvocationContext, lang, Module, ModuleWithProviders, tokenId } from '@tsdi/ioc';
+import { Inject, Injectable, InvocationContext, lang, Module, ModuleWithProviders, tokenId } from '@tsdi/ioc';
 import { XMLParser } from 'fast-xml-parser';
 import {
     TemplateParser, AbstractTemplateCompiler, ReactiveEffect, Renderer, RendererStyleFlags2,
@@ -26,7 +26,7 @@ export class XmlNode implements RNode {
     }
 
     removeChild(oldChild: XmlNode): XmlNode {
-        const [removed] = lang.remove(this.childNodes, oldChild) ?? Empty;
+        const [removed] = lang.remove(this.childNodes, oldChild) ?? [];
         return removed;
     }
 

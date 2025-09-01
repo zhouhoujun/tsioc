@@ -1,4 +1,4 @@
-import { AbstractType, lang, Invocation, OnDestroy, Class, getTypeName, ctorName, Empty, Context, HandlerFn } from '@tsdi/ioc';
+import { AbstractType, lang, Invocation, OnDestroy, Class, getTypeName, ctorName, Context, HandlerFn } from '@tsdi/ioc';
 import { Advicer, AroundProceeding, MatchOptions } from './Advicer';
 import { AdviceMatcher } from './AdviceMatcher';
 import { AopDef } from './metadata/ref';
@@ -131,7 +131,7 @@ export class Advisor implements OnDestroy {
     }
 
     protected getAdvicers(...types: AdviceTypes[]): Advicer[] {
-        if (types?.length === 1) return this.advices.get(types[0]) ?? Empty;
+        if (types?.length === 1) return this.advices.get(types[0]) ?? [];
         return types.reduce((pre, cur) => {
             const advicers = this.advices.get(cur);
             return advicers?.length ? pre.concat(advicers) : pre;

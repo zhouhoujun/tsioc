@@ -23,13 +23,14 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
     actionType: ActionTypes.declaration,
     def: {
         class: (ctx) => {
-            (ctx.class.type as AnnotationType)[noPointcut] = true;
-            const def = ctx.class.getAnnotation<ComponentDef>();
+            const typeRef = ctx.class;
+            (typeRef.type as AnnotationType)[noPointcut] = true;
+            typeRef.setAnnotation(ctx.define.metadata);
+            const def = typeRef.getAnnotation<ComponentDef>();
             const metadata = ctx.define.metadata;
-            Object.assign(def, metadata);
             def.providers = metadata.providers;
             if (metadata.imports) def.imports = getModuleType(metadata.imports);
-            def.attributes = ctx.class.getDefines(Attribute).map(d => d as AttributeMetadata);
+            def.attributes = typeRef.getDefines(Attribute).map(d => d as AttributeMetadata);
         }
     },
     factory: (injector) => {

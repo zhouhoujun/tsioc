@@ -1,4 +1,4 @@
-import { Empty, Injectable, Invocation, isFunction, isString, AbstractType } from '@tsdi/ioc';
+import { Invocation, isFunction, isString, AbstractType } from '@tsdi/ioc';
 import { Attribute, Component } from '@tsdi/components';
 import { Activity, ActivityContext, ActivityResult } from './Activity';
 

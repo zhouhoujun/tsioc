@@ -1,4 +1,4 @@
-import { Empty, AbstractType } from '../types';
+import { AbstractType } from '../types';
 import { createContext, hasContextOptions, InvocationContext, InvocationOptions, InvokeArguments } from '../context';
 import { Invocation, InvocationFactory } from '../invocation';
 import { getType, isArray, isFunction, isPromise, isString, isSymbol } from '../utils/chk';
@@ -335,7 +335,7 @@ export abstract class AbstractInvocationFactory<TOpts extends InvocationOptions 
         } else {
             resolvers = typeRef.resolvers;
         }
-        const providers = [this.platform.getTypeProvider(typeRef) ?? Empty, options?.providers ?? Empty];
+        const providers = [this.platform.getTypeProvider(typeRef) ?? [], options?.providers ?? []];
         this.normalize(providers, options);
         return createContext(this.getInjector(typeRef, options), {
             ...options,

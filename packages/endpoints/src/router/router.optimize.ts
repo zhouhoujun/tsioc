@@ -1,5 +1,5 @@
 import {
-    Type, composeHandlers, DecorDefine, Empty, Exception, getClass, Handler, HandlerFn, hasProps, Injector, Invocation,
+    Type, composeHandlers, DecorDefine, Exception, getClass, Handler, HandlerFn, hasProps, Injector, Invocation,
     isArray, isType, isFunction, isRegExp, isString, ModuleRef, OnDestroy, TypeOf
 } from '@tsdi/ioc';
 import { ApplicationHandler } from '@tsdi/core';
@@ -148,7 +148,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             if (r.paths && r.pathParams && r.handler instanceof RouteHandler) {
                 const injector = r.handler.injector;
                 Object.entries(r.paths).forEach(([key, val]) => {
-                    const pathValues: any[] = injector.get(val, Empty);
+                    const pathValues: any[] = injector.get(val, []);
                     pathValues.forEach(p => {
                         paths.push(r.path.replace(`:${key}`, p));
                     })
@@ -232,10 +232,10 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
                         r.pathParams = { ...route.pathParams };
                     }
                     return r;
-                }) ?? Empty
+                }) ?? []
             }
         }
-        return Empty;
+        return [];
     }
 
     protected parseCtrl(invocation: Invocation, prefix: string, pathParams: any): Routes {
@@ -248,13 +248,13 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         return sortRoutes.map(m => {
             const options = { ...m.metadata };
             if (anno.interceptors) {
-                options.interceptors = [anno.interceptors, ...options.interceptors ?? Empty];
+                options.interceptors = [...anno.interceptors ?? [], ...options.interceptors ?? []];
             }
             if (anno.guards) {
-                options.guards = [...anno.guards, ...options.guards ?? Empty]
+                options.guards = [...anno.guards, ...options.guards ?? []]
             }
             if (anno.filters) {
-                options.filters = [...anno.filters, ...options.filters ?? Empty]
+                options.filters = [...anno.filters, ...options.filters ?? []]
             }
             return {
                 path: this.formatter.format(m.metadata.route as Pattern),

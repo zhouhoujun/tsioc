@@ -1,6 +1,6 @@
 import {
     InjectFlags, Injector, ProvdierOf, StaticProvider, Type, promiseOf, Exception, toProvider, AbstractType, getType, Token, isType,
-    InvocationContext, createContext, ArgumentException, isToken, isArray, isFunction, composeInterceptors, chainFactory, Empty, some
+    InvocationContext, createContext, ArgumentException, isToken, isArray, isFunction, composeInterceptors, chainFactory, some
 } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
@@ -236,8 +236,8 @@ export class ConfigableHandler<
      */
     protected compose(): ApplicationInterceptorFn<TInput, TOutput> {
         const type = this.getHandlerType();
-        const hdlFilters = this.filterResolver.resolve(type) ?? Empty;
-        const hdlInteceptors = this.interceptorResolver.resolve(type) ?? Empty;
+        const hdlFilters = this.filterResolver.resolve(type) ?? [];
+        const hdlInteceptors = this.interceptorResolver.resolve(type) ?? [];
 
         const filters = this.getFilters();
         const inteceptors = this.getInterceptors();
@@ -272,7 +272,7 @@ export class ConfigableHandler<
      *  get filters. 
      */
     protected getFilters(): FilterLike<TInput, TOutput>[] {
-        return this.options.filtersToken ? this.injector.get(this.options.filtersToken, Empty) : Empty;
+        return this.options.filtersToken ? this.injector.get(this.options.filtersToken, []) : [];
     }
 
     /**
@@ -280,7 +280,7 @@ export class ConfigableHandler<
      * @returns 
      */
     protected getInterceptors(): ApplicationInterceptorLike<TInput, TOutput>[] {
-        return this.injector.get(this.options.interceptorsToken!, Empty);
+        return this.injector.get(this.options.interceptorsToken!, []);
     }
 
 

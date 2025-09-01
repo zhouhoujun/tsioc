@@ -1,4 +1,4 @@
-import { Abstract, Empty, InvocationContext, isArray, isObject } from '@tsdi/ioc';
+import { Abstract, InvocationContext, isObject } from '@tsdi/ioc';
 import { COMPONENTS, DIRECTIVES, TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { NodeType, RElement, RNode, RText } from '../renderer/Node';
 import { ViewRef } from '../refs/view';
@@ -24,13 +24,13 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         const viewRef = new RootViewRef(nodes, context, this.effect);
 
         // 处理动态内容
-        await this.walkNodes(viewRef.rootNodes, context, viewRef, environument);
+        await this.walkNodes(viewRef.rootNodes ?? [], context, viewRef, environument);
 
         return viewRef;
     }
 
     private async walkNodes(nodes: RNode[], context: any, viewRef: RootViewRef, environument: InvocationContext) {
-        for (const node of nodes || Empty) {
+        for (const node of nodes) {
             if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
                 this.processText(node as RText, context, viewRef, environument);
             } else {

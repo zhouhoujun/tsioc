@@ -161,8 +161,8 @@ export function toInterceptorFn(interceptor: Interceptor & { [interceptorFn]?: I
 
 
 
-export interface NextOpter<T, TContext =any> {
-    next?: (res: T, context?: TContext) => any;
+export interface NextOpter<TOutput, TContext =any> {
+    next?: (res: TOutput, context?: TContext) => any;
     error?: (error: any) => any;
     finally?: () => any;
 }

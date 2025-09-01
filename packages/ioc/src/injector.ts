@@ -1,5 +1,5 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
-import { AbstractType, Type, Empty } from './types';
+import { AbstractType, Type } from './types';
 import { ClassProvider, ExistingProvider, FactoryProvider, ModuleType, Provider, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
@@ -358,7 +358,7 @@ export function createInjector(
     options: Provider[] | Injector | { providers: Provider[], parent?: Injector, scope?: InjectorScope } | undefined,
     parent?: Injector | InjectorScope, scope?: InjectorScope): Injector {
     if (!options) {
-        options = Empty
+        options = []
     }
     return isArray(options) ? INJECT_IMPL.create(options, parent as Injector, scope) :
         (isInjector(options) ? INJECT_IMPL.create(undefined, options, parent as InjectorScope) : INJECT_IMPL.create(options.providers, options.parent, options.scope))

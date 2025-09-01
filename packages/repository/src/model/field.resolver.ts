@@ -332,7 +332,7 @@ export function parseDbtype(value: any, prop: DBPropertyMetadata, ctx: Invocatio
         case 'array':
             // Array<T>
             pipe = ctx.get<PipeTransform>(prop.dbtype) ?? ctx.get<PipeTransform>('array');
-            if(prop.type && prop.type !== Array) args.push(prop.type);
+            if (prop.type && prop.type !== Array) args.push(prop.type);
             break;
 
 
@@ -401,7 +401,7 @@ export function getModelFieldResolver(platform: Platform): HandlerScope<[DBPrope
     return scope;
 }
 
-export type ModelFieldResolver = HandlerScope<[DBPropertyMetadata, any, Type], any, InvocationContext>;
+export type ModelFieldResolver = HandlerScope<[DBPropertyMetadata, any, Type], InvocationContext>;
 export type FieldResolveInterceptor = InterceptorLike<[DBPropertyMetadata, any, Type], any, InvocationContext>;
 
 /**

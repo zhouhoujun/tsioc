@@ -5,7 +5,7 @@ import { Class, ModuleDef } from '../metadata/class';
 import { ModuleOption, ModuleRef } from '../module.ref';
 import { Platform } from '../platform';
 import { isModuleProviders, ModuleWithProviders, Provider } from '../providers';
-import { AbstractType, Empty, Type } from '../types';
+import { Type } from '../types';
 import { DefaultInjector, mergePromise } from './injector';
 
 
@@ -102,7 +102,7 @@ export function createModuleRef<T>(module: Type<T> | Class<T> | ModuleWithProvid
     if (isModuleProviders(module)) {
         return new DefaultModuleRef(getClass(module.module), parent, {
             ...option,
-            providers: option?.providers?.length ? [module.providers ?? Empty, option?.providers] : module.providers
+            providers: option?.providers?.length ? [module.providers ?? [], option?.providers] : module.providers
         })
     }
     const moduleDef =  getClassify(module);

@@ -1,4 +1,4 @@
-import { Empty, Module, ModuleWithProviders } from '@tsdi/ioc';
+import { Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
 import { HttpBackend, HttpHandler } from './handler';
 import { HttpClient } from './client';
 import { HttpXhrBackend } from './xhr';
@@ -54,12 +54,16 @@ export class HttpClientXsrfModule {
         cookieName?: string,
         headerName?: string,
     } = {}): ModuleWithProviders<HttpClientXsrfModule> {
+        const providers: Provider[] = [];
+        if(options.cookieName) {
+            providers.push({ provide: XSRF_COOKIE_NAME, useValue: options.cookieName });
+        }
+        if(options.headerName) {
+            providers.push({ provide: XSRF_HEADER_NAME, useValue: options.headerName });
+        }
         return {
             module: HttpClientXsrfModule,
-            providers: [
-                options.cookieName ? { provide: XSRF_COOKIE_NAME, useValue: options.cookieName } : Empty,
-                options.headerName ? { provide: XSRF_HEADER_NAME, useValue: options.headerName } : Empty,
-            ]
+            providers
         };
     }
 }

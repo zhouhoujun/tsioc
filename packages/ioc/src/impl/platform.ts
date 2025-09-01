@@ -1,5 +1,5 @@
 import { InjectFlags, Token } from '../tokens';
-import { AbstractType, Empty } from '../types';
+import { AbstractType } from '../types';
 import { isFunction } from '../utils/chk';
 import { getClassify } from '../metadata/refl';
 import { Class } from '../metadata/class';
@@ -45,7 +45,7 @@ export class DefaultPlatform implements Platform {
     get runtime(): HandlerScope {
         if (!this._runtime) {
             this._runtime = new HandlerScope(this, (ctx) => {
-                ctx.instance = new ctx.type(...ctx.args || Empty);
+                ctx.instance = new ctx.type(...ctx.args || []);
                 return ctx.instance;
             }, RUNTIME_INTERCEPTORS);
         }

@@ -1,5 +1,5 @@
 /* eslint-disable no-case-declarations */
-import { AbstractType, Type, Empty, noPointcut } from '../types';
+import { AbstractType, Type, noPointcut } from '../types';
 import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { isPlainObject, isTypeObject } from '../utils/obj';
@@ -22,6 +22,8 @@ import { DefaultInvocationFactory } from './invocation';
 import { InvocationFactory } from '../invocation';
 
 export const SCOPE_PRODIDERS: Provider[] = [];
+
+const Empty: any[] = [];
 
 /**
  * Default Injector
@@ -61,7 +63,7 @@ export class DefaultInjector implements Injector {
         return this._readyDefer.promise
     }
 
-    constructor(providers: Provider[] = Empty, readonly parent?: Injector, readonly scope?: InjectorScope) {
+    constructor(providers: Provider[] = [], readonly parent?: Injector, readonly scope?: InjectorScope) {
 
         this.records = new Map();
         if (parent) {
