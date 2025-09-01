@@ -2,11 +2,11 @@
 export * from './EventEmitter';
 export * from './ReactiveEffect';
 
-// util
+export * from './lifecycle';
 
+// util
 export * from './util/stringify';
 
-export * from './lifecycle';
 
 export * from './refs/component';
 export * from './refs/container';
@@ -31,3 +31,5 @@ export * from './impl/effect';
 export * from './impl/reactive';
 
 export * from './components';
+
+export * from './impl/html';

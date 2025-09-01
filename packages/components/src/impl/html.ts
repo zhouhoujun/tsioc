@@ -95,13 +95,16 @@ import { Renderer, RendererStyleFlags2 } from '../renderer/Renderer';
 
 // }
 
+@Abstract()
+export abstract class HtmlRenderer extends Renderer {
 
+}
 
 @Abstract()
 export abstract class HtmlTemplateParser implements TemplateParser {
 
     constructor(
-        private renderer: HtmlRenderer
+        protected renderer: HtmlRenderer
     ) { }
 
 
@@ -115,10 +118,7 @@ const htmlDefaultOptions = {
 } as TemplateCompilerOptions;
 
 
-@Abstract()
-export abstract class HtmlRenderer extends Renderer {
 
-}
 
 
 export interface HtmlTemplateCompilerOptions extends TemplateCompilerOptions {
