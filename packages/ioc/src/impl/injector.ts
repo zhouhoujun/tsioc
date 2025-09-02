@@ -825,7 +825,7 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
         if (isDef && token !== Injector && token !== INJECTOR && rd && rd.fn !== IDENT && rd.fn !== MUTIL && lifecycle && isTypeObject(value)) {
             lifecycle(value, token)
         }
-        if (isDef && isStatic && rd?.fn !== MUTIL) {
+        if (isDef && isStatic) { // && rd?.fn !== MUTIL) {
             if (rd) {
                 if (isNil(rd.value) && (rd.stic || !(flags & InjectFlags.Resolve))) {
                     rd.value = value
@@ -874,7 +874,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                 const chlrd = isPlainObject(dep.token) ? dep.token : (dep.options & OptionFlags.CheckSelf ? records.get(dep.token) : undefined);
 
                 let val: any;
-                if (context) {
+                if (context && !(dep.token as FactoryRecord)?.fn) {
                     val = context.resolveArgument(isString(dep.token) ? { name: dep.token } : { provider: dep.token })
                 }
                 deps.push(val ?? tryResolveToken(
