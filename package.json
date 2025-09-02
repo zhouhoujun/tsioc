@@ -55,6 +55,7 @@
     "chokidar": "^3.4.0",
     "commander": "^12.1.0",
     "core-js": "^3.42.0",
+    "css-select": "^6.0.0",
     "del": "^8.0.0",
     "eslint": "^8.15.0",
     "eslint-config-google": "^0.14.0",

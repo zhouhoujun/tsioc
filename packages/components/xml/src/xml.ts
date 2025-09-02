@@ -1,5 +1,6 @@
 import { Inject, Injectable, InvocationContext, lang, Module, ModuleWithProviders, tokenId } from '@tsdi/ioc';
 import { XMLParser } from 'fast-xml-parser';
+import * as cssSelect from 'css-select';
 import {
     TemplateParser, AbstractTemplateCompiler, ReactiveEffect, Renderer, RendererStyleFlags2,
     RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, RAttr,
@@ -44,10 +45,37 @@ export class XmlNode implements RNode {
     }
 
     querySelector(selector: string): XmlNode | null {
-        return null;
+        return cssSelect.selectOne<XmlNode, XmlElement>(selector, this, {
+            adapter: {
+                getAttributeValue: (el: XmlElement, name: string) => el.getAttribute(name) ?? undefined,
+                getChildren: (el: XmlNode) => el.childNodes,
+                getName: (el: XmlElement) => el.tagName.toLowerCase(),
+                getText: (el: XmlNode) => el.textContent ?? '',
+                getParent: (el: XmlNode) => el.parentElement,
+                removeSubsets: (nodes: XmlNode[]) => nodes,
+                getSiblings: (el: XmlNode) => el.nextSibling ? [el, el.nextSibling] : [el],
+                prevElementSibling: () => null,
+                hasAttrib: (el: XmlElement, name: string) => el.hasAttribute(name),
+                isTag: (el: XmlNode): el is XmlElement => el.nodeType === NodeType.Element
+            }
+        });
     }
+
     querySelectorAll(selector: string): XmlNode[] | null {
-        return null;
+        return cssSelect.selectAll<XmlNode, XmlElement>(selector, this, {
+            adapter: {
+                getAttributeValue: (el: XmlElement, name: string) => el.getAttribute(name) ?? undefined,
+                getChildren: (el: XmlNode) => el.childNodes,
+                getName: (el: XmlElement) => el.tagName.toLowerCase(),
+                getText: (el: XmlNode) => el.textContent ?? '',
+                getParent: (el: XmlNode) => el.parentElement,
+                removeSubsets: (nodes: XmlNode[]) => nodes,
+                getSiblings: (el: XmlNode) => el.nextSibling ? [el, el.nextSibling] : [el],
+                prevElementSibling: () => null,
+                hasAttrib: (el: XmlElement, name: string) => el.hasAttribute(name),
+                isTag: (el: XmlNode): el is XmlElement => el.nodeType === NodeType.Element
+            }
+        });
     }
 }
 
