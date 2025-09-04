@@ -231,7 +231,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
 
     protected resolve<R>(token: Token<R>, flags?: InjectFlags): R {
         this.assertNotDestroyed();
-        return this.context.resolveArgument({ provider: token, flags, nullable: true, propertyKey: 'constructor' })!
+        return this.context.resolveArgument({ provider: token, flags, nullable: true } as Parameter)!
     }
 
     equals(target: Invocation): boolean {

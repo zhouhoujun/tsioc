@@ -241,7 +241,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      * @returns 
      */
     resolve<T>(token: Token<T>, flags?: InjectFlags): T {
-        return this.resolveArgument({ provider: token, flags, propertyKey: 'constructor' }) as T;
+        return this.resolveArgument({ provider: token, flags } as Parameter<T>) as T;
     }
 
 
