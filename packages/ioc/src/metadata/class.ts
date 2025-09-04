@@ -619,11 +619,11 @@ function getParamNames(func: Function) {
     return result ?? []
 }
 
-function getDectorId(decor: string | Function): string {
-    return isString(decor) ? decor : decor.toString()
-}
+// function getDectorId(decor: string | Function): string {
+//     return isString(decor) ? decor : decor.toString()
+// }
 
-function isEqual(decor1: string | DecoratorFn, decor2: string | DecoratorFn) {
-    if (decor1 == decor2) return true;
-    return getDectorId(decor1) == getDectorId(decor2);
-}
+// function isEqual(decor1: string | DecoratorFn, decor2: string | DecoratorFn) {
+//     if (decor1 == decor2) return true;
+//     return getDectorId(decor1) == getDectorId(decor2);
+// }
