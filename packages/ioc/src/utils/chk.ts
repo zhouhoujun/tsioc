@@ -269,6 +269,11 @@ export function isSymbol(target: any): target is symbol {
     return typeof target === 'symbol' // || toString.call(target) === '[object Symbol]'
 }
 
+export function isProxy(obj: any): boolean {
+    return !!obj
+        && toString.call(obj) === '[object Object]'
+        && obj.__proto__ === Proxy;
+}
 
 /**
  * check target is regexp or not.
@@ -297,8 +302,8 @@ export function isIterableType(target: Function): boolean {
     return target === Array
         || target === Set
         || target === Map
-        // || target === WeakMap
-        // || target === WeakSet
+    // || target === WeakMap
+    // || target === WeakSet
 }
 
 export function isPrimitive(target: Function): boolean {

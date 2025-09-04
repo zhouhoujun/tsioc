@@ -25,6 +25,7 @@ export * from './template/compiler';
 
 export * from './decorators/component';
 export * from './decorators/atteribute';
+export * from './decorators/computed';
 
 export * from './impl/compiler';
 export * from './impl/effect';
