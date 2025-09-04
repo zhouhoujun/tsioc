@@ -1,21 +1,11 @@
-import { AbstractType, MethodPropDecorator, createDecorator } from '@tsdi/ioc';
+import { PropertyMetadata, MethodPropDecorator, createDecorator } from '@tsdi/ioc';
 
 /**
  * Computed metadata
  */
-export interface ComputedMetadata<T = any> {
-    /**
-     * property type
-     *
-     * @type {SymbolType}
-     */
-    type?: AbstractType;
-    /**
-     * property name
-     *
-     * @type {string}
-     */
-    propertyKey: string;
+export interface ComputedMetadata<T = any> extends PropertyMetadata {
+    alias?: string;
+    required?: boolean;
     /**
      * compute expression or function
      */
@@ -44,7 +34,7 @@ export interface Computed {
      * Computed decorator with metadata
      * @param metadata computed metadata
      */
-    <T>(metadata: Partial<ComputedMetadata<T>>): MethodPropDecorator;
+    <T>(metadata: Omit<ComputedMetadata<T>, 'propertyKey'| 'mutil'>): MethodPropDecorator;
 }
 
 /**

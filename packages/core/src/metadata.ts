@@ -15,7 +15,7 @@ import { InvocationHandlerOptions } from './invocation';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
-import { TransportParameter, TransportParameterOptions } from './handlers/resolver';
+import { TransportParameter } from './handlers/resolver';
 import { ApplicationInterceptorFn, InterceptorResolver } from './ApplicationInterceptor';
 import { createInvocationHandler } from './impl/invocation';
 
@@ -678,12 +678,12 @@ export interface TransportParameterDecorator {
      * @param {string} field field of request query params or body.
      * @param options route metedata options.
      */
-    (field?: string, option?: TransportParameterOptions): ParameterDecorator;
+    (field?: string, option?: Omit<TransportParameter, 'propertyKey' | 'field'>): ParameterDecorator;
     /**
      * Transport Parameter decorator
      * @param meta.
      */
-    (meta: TransportParameter): ParameterDecorator;
+    (meta: Omit<TransportParameter, 'propertyKey'>): ParameterDecorator;
 }
 
 /**

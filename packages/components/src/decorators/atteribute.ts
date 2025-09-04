@@ -2,17 +2,14 @@ import { MethodPropDecorator, PropertyMetadata, createDecorator } from '@tsdi/io
 
 
 
-export interface AttributeMetadata extends PropertyMetadata {
+export interface AttributeMetadata<T = any> extends PropertyMetadata<T> {
     alias?: string;
     required?: boolean;
 }
 
 export interface Attribute {
     (alias?: string, required?: boolean): MethodPropDecorator;
-    (options?: {
-        alias?: string;
-        required?: boolean;
-    }): MethodPropDecorator;
+    (options?: Omit<AttributeMetadata, 'propertyKey'|'mutil'>): MethodPropDecorator;
 }
 
 export const Attribute: Attribute = createDecorator<AttributeMetadata>('Attribute', {

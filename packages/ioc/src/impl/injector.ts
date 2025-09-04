@@ -20,6 +20,7 @@ import { DefaultPlatform } from './platform';
 import { DesignContext } from '../lifescope/ctx';
 import { DefaultInvocationFactory } from './invocation';
 import { InvocationFactory } from '../invocation';
+import { Parameter } from '../resolver';
 
 export const SCOPE_PRODIDERS: Provider[] = [];
 
@@ -875,7 +876,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
 
                 let val: any;
                 if (context && !(dep.token as FactoryRecord)?.fn) {
-                    val = context.resolveArgument(isString(dep.token) ? { name: dep.token } : { provider: dep.token })
+                    val = context.resolveArgument((isString(dep.token) ? { name: dep.token } : { provider: dep.token }) as Parameter)
                 }
                 deps.push(val ?? tryResolveToken(
                     dep.token,

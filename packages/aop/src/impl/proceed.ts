@@ -332,7 +332,7 @@ function invokeAdvice(joinPoint: JoinPoint, advicer: Advicer) {
         joinPoint.addRef(context)
     }
 
-    return invokeTail(() => advicer.aspect.invoke(advicer.advice.name!, joinPoint), {
+    return invokeTail(() => advicer.aspect.invoke(advicer.advice.propertyKey!, joinPoint), {
         finally: () => {
             context && joinPoint.removeRef(context);
         }

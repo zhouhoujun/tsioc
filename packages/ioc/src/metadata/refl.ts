@@ -270,7 +270,7 @@ export const decorParamInject = (ctx: DecorContext, next: HandlerFn, context: Co
                 paramTypes = Reflect.getMetadata('design:paramtypes', ctx.target, propertyKey)
             }
             if (paramTypes) {
-                params = paramTypes.map((type, index) => ({ type, name: names[index] }));
+                params = paramTypes.map((type, index) => ({ type, name: names[index], propertyKey }));
                 Reflect.defineMetadata(MetadataKeys.METHOD_PARAMS, params, def.type, propertyKey);
                 // def.setParameters(propertyKey, params)
             }

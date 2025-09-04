@@ -95,9 +95,9 @@ export class RedisClient extends AbstractClient<TopicRequestOptions, RedisReques
 
     protected async onShutdown(): Promise<void> {
         await this._transport?.destroy();
-        this.publisher?.quit();
+        await this.publisher?.quit();
         this.publisher?.removeAllListeners();
-        this.subscriber?.quit();
+        await this.subscriber?.quit();
         this.subscriber?.removeAllListeners();
 
         this.publisher = this.subscriber = null;

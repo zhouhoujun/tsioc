@@ -25,14 +25,14 @@ export interface TypeMetadata {
  * @interface Provide
  * @extends {MetaType}
  */
-export interface ProvideMetadata {
+export interface ProvideMetadata<T = any> {
     /**
      * this type provide from.
      *
      * @type {Token}
      * @memberof Provide
      */
-    provider?: Token;
+    provider?: Token<T>;
 
     /**
      * is multi provider or not
@@ -127,13 +127,13 @@ export interface ProvidersMetadata {
  * @export
  * @interface PropMetadata
  */
-export interface PropertyMetadata extends ProvideMetadata {
+export interface PropertyMetadata<T = any> extends ProvideMetadata<T> {
     /**
      * property type
      *
      * @type {SymbolType}
      */
-    type?: AbstractType;
+    type?: AbstractType<T>;
     /**
      * property name
      *
@@ -149,7 +149,7 @@ export interface PropertyMetadata extends ProvideMetadata {
  * @export
  * @interface PropMetadata
  */
-export interface MethodMetadata extends Record<string, any> {
+export interface MethodMetadata {
     /**
      * method returnning type.
      */
@@ -165,19 +165,14 @@ export interface MethodMetadata extends Record<string, any> {
      *
      * @type {string}
      */
-    name?: string;
+    propertyKey: string;
 }
 
 
 /**
  * method prorerty metadata.
- *
- * @export
- * @interface MethodPropMetadata
- * @extends {PropertyMetadata}
- * @extends {MethodMetadata}
  */
-export interface MethodPropMetadata extends PropertyMetadata, MethodMetadata { }
+export type MethodPropMetadata<T = any> = PropertyMetadata<T> | MethodMetadata;
 
 
 /**
@@ -187,13 +182,14 @@ export interface MethodPropMetadata extends PropertyMetadata, MethodMetadata { }
  * @interface ParameterMetadata
  * @extends {PropertyMetadata}
  */
-export interface ParameterMetadata extends ProvideMetadata, DesignParam {
+export interface ParameterMetadata<T = any> extends ProvideMetadata<T>, DesignParam<T> {
+
     /**
      * method property key
      *
      * @type {string}
      */
-    propertyKey?: string;
+    propertyKey: string;
 }
 
 
@@ -201,18 +197,18 @@ export interface ParameterMetadata extends ProvideMetadata, DesignParam {
  * Inject metadata.
  *
  */
-export type InjectMetadata = ParameterMetadata;
+export type InjectMetadata<T = any> = PropertyMetadata<T> | ParameterMetadata<T>;
 
 /**
  * parameter property metadata.
  *
  */
-export type ParamPropMetadata = ParameterMetadata;
+export type ParamPropMetadata<T = any> = PropertyMetadata<T> | ParameterMetadata<T>;
 
 /**
  * method param property metadata.
  */
-export interface MethodParamPropMetadata extends ParamPropMetadata, MethodMetadata { }
+export type MethodParamPropMetadata = PropertyMetadata | MethodMetadata | ParamPropMetadata;
 
 
 /**

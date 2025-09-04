@@ -207,8 +207,8 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
                 if (!ctx.class.getAnnotation<AopDef>().advices) {
                     ctx.class.getAnnotation<AopDef>().advices = []
                 }
-                if (!ctx.define.metadata.name) {
-                    ctx.define.metadata.name = ctx.define.propertyKey;
+                if (!ctx.define.metadata.propertyKey) {
+                    ctx.define.metadata.propertyKey = ctx.define.propertyKey;
                 }
                 ctx.class.getAnnotation<AopDef>().advices.push(ctx.define.metadata);
             }

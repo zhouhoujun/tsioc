@@ -1,4 +1,5 @@
 import { MethodMetadata, AbstractType, AnnotationMetadata, MethodPropMetadata } from '@tsdi/ioc';
+import { MatchExpress } from '../Advicer';
 
 
 /**
@@ -74,6 +75,8 @@ export interface AdviceMetadata extends PointcutAnnotation, MethodMetadata {
      */
     within?: AbstractType | AbstractType[];
 
+    without?: AbstractType | AbstractType[];
+
     /**
      * advice type name.
      * eg. `Before`, `Pointcut`, `Around`, `After`, `AfterThrowing`, `AfterReturning`
@@ -81,6 +84,8 @@ export interface AdviceMetadata extends PointcutAnnotation, MethodMetadata {
      * @type {string}
      */
     adviceName?: AdviceTypes;
+
+    matchFn?: MatchExpress|null;
 }
 
 /**

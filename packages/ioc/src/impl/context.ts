@@ -241,7 +241,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      * @returns 
      */
     resolve<T>(token: Token<T>, flags?: InjectFlags): T {
-        return this.resolveArgument({ provider: token, flags }) as T;
+        return this.resolveArgument({ provider: token, flags, propertyKey: 'constructor' }) as T;
     }
 
 
@@ -268,7 +268,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
             next: (res, context) => {
                 if (res === UNRESOLVED) {
                     if (failed) {
-                        failed(target!, meta.propertyKey!)
+                        failed(target!, meta.propertyKey)
                     } else {
                         this.missingException([meta], target!, meta.propertyKey!);
                     }

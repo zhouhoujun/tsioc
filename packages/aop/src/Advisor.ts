@@ -47,7 +47,7 @@ export class Advisor implements OnDestroy {
                 advice.type = aspect.type;
             }
             const match = this.matcher.parse(advice);
-            if (advice.name && advice.adviceName === 'Around' && aspect.class.getParameters(advice.name)?.some(r => r.type === ProceedingJoinPoint || r.provider === ProceedingJoinPoint)) {
+            if (advice.propertyKey && advice.adviceName === 'Around' && aspect.class.getParameters(advice.propertyKey)?.some(r => r.type === ProceedingJoinPoint || r.provider === ProceedingJoinPoint)) {
                 this.proceedings.push({
                     advice,
                     match,
@@ -55,7 +55,7 @@ export class Advisor implements OnDestroy {
                     interceptor: (ctx: JoinPoint, next: HandlerFn, context: Context) => {
                         const proceeding = new ProceedingJoinPoint(ctx, next, context);
                         ctx.setValue(ProceedingJoinPoint, proceeding);
-                        return aspect.invoke(advice.name!, ctx);
+                        return aspect.invoke(advice.propertyKey!, ctx);
                     }
                 });
                 return;
@@ -68,7 +68,7 @@ export class Advisor implements OnDestroy {
             }
 
             if (!advices.some(r => r.advice.type == advice.type
-                && r.advice.name === advice.name
+                && r.advice.propertyKey === advice.propertyKey
                 && r.advice.pointcut === advice.pointcut)) {
                 advices.push({
                     advice,

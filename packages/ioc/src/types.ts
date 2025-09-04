@@ -15,7 +15,7 @@ export type ObjectMap<T = any> = Record<string, T>;
 /**
  * design param
  */
-export interface DesignParam {
+export interface DesignParam<T = any> {
     /**
      * param name
      */
@@ -23,7 +23,7 @@ export interface DesignParam {
     /**
      * param design type.
      */
-    type?: AbstractType;
+    type?: AbstractType<T>;
 }
 
 /**

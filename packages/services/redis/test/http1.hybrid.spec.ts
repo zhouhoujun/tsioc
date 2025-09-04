@@ -55,12 +55,12 @@ describe('Redis hybrid Http Server & Redis Client & Http', () => {
     let injector: Injector;
 
     let client: Http;
-    let mqttClient: RedisClient
+    let redisClient: RedisClient
 
     before(async () => {
         ctx = await Application.run(RedisTestModule);
         injector = ctx.injector;
-        mqttClient = injector.get(RedisClient);
+        redisClient = injector.get(RedisClient);
         client = injector.get(Http);
     });
 
@@ -251,7 +251,7 @@ describe('Redis hybrid Http Server & Redis Client & Http', () => {
 
     it('xxx micro message', async () => {
         const result = 'reload2';
-        const r = await lastValueFrom(mqttClient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(redisClient.send({ cmd: 'xxx' }, { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);
@@ -263,7 +263,7 @@ describe('Redis hybrid Http Server & Redis Client & Http', () => {
 
     it('dd micro message', async () => {
         const result = 'reload';
-        const r = await lastValueFrom(mqttClient.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
+        const r = await lastValueFrom(redisClient.send('/dd/status', { observe: 'response', payload: { message: result }, responseType: 'text' }).pipe(
             catchError((err, ct) => {
                 ctx.getLogger().error(err);
                 return of(err);
