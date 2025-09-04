@@ -10,6 +10,10 @@ export class RootViewRef extends ViewRef {
     readonly directives = new Set<ComponentRef<any>>;
     readonly components = new Set<ComponentRef<any>>;
 
+    // 添加计算属性缓存
+    readonly computedCache = new Map<string, { value: any, deps: Set<any> }>();
+
+
     get destroyed(): boolean {
         return this._isDestroyed;
     }

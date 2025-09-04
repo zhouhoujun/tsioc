@@ -95,7 +95,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         }
     }
 
-    private processText(node: RText, context: any, viewRef: ViewRef, environument: InvocationContext) {
+    private processText(node: RText, context: any, viewRef: RootViewRef, environument: InvocationContext) {
         const text = node.textContent;
         if (!text) return;
 
@@ -185,8 +185,35 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         return results;
     }
 
-    private evaluateExpression(expr: string, context: any, viewRef: ViewRef, environument: InvocationContext): any {
+    private evaluateExpression(expr: string, context: any, viewRef: RootViewRef, environument: InvocationContext): any {
         try {
+            // 检查是否为计算属性访问
+            const isComputed = this.isComputedProperty(expr, context);
+            if (isComputed) {
+                const cacheKey = `${context.constructor.name}-${expr}`;
+                let cacheEntry = viewRef.computedCache.get(cacheKey);
+
+                if (!cacheEntry) {
+                    // 创建新的缓存条目
+                    cacheEntry = { value: undefined, deps: new Set() };
+                    viewRef.computedCache.set(cacheKey, cacheEntry);
+                }
+
+                // 使用effect跟踪依赖并计算值
+                return this.effect.run(() => {
+                    // 清除旧依赖
+                    cacheEntry!.deps.clear();
+                    
+                    // 计算新值
+                    const value = this.evaluateComputedExpression(expr, context, viewRef, environument);
+                    cacheEntry!.value = value;
+                    
+                    // 收集新依赖（这里需要实际实现依赖收集逻辑）
+                    this.trackDependencies(expr, context, cacheEntry!.deps);
+                    
+                    return value;
+                });
+            }
             const parts = expr.split('|').map(part => part.trim());
             if (parts.length <= 1) {
                 // 简单表达式求值
@@ -285,7 +312,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
     // 解析参数列表，支持字符串、数字、布尔值和变量引用
-    private parseArguments(argsStr: string, context: any, viewRef: ViewRef, environument: InvocationContext): any[] {
+    private parseArguments(argsStr: string, context: any, viewRef: RootViewRef, environument: InvocationContext): any[] {
         if (!argsStr.trim()) return [];
 
         // 使用状态机解析参数，支持嵌套括号和引号
@@ -323,7 +350,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
     // 计算参数值 (字符串/数字/布尔值/变量引用)
-    private evaluateArg(arg: string, context: any, viewRef: ViewRef, environument: InvocationContext): any {
+    private evaluateArg(arg: string, context: any, viewRef: RootViewRef, environument: InvocationContext): any {
         if (!arg) return undefined;
 
         // 字符串字面量
@@ -348,6 +375,33 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
         // 复杂表达式，委托给evaluateExpression处理
         return this.evaluateExpression(arg, context, viewRef, environument);
+    }
+
+    private isComputedProperty(expr: string, context: any): boolean {
+        // 检查上下文对象是否有该计算属性的元数据
+        const propName = expr.trim();
+        return !!Reflect.getMetadata('computed', context.constructor.prototype, propName);
+    }
+
+    private evaluateComputedExpression(expr: string, context: any, viewRef: RootViewRef, environument: InvocationContext): any {
+        // 计算属性表达式求值
+        return new Function('ctx', `with(ctx){return ${expr}}`)(context);
+    }
+
+    private trackDependencies(expr: string, context: any, deps: Set<any>): void {
+        // 实现依赖跟踪逻辑
+        // 这里需要解析表达式，找出所有依赖的响应式属性
+        const dependencies = this.parseDependencies(expr);
+        dependencies.forEach(dep => {
+            deps.add(dep);
+        });
+    }
+
+    private parseDependencies(expr: string): string[] {
+        // 简单的依赖解析，实际实现可能需要更复杂的表达式解析
+        const propRegex = /([a-zA-Z_$][\w$]*)/g;
+        const matches = expr.match(propRegex) || [];
+        return [...new Set(matches)]; // 返回唯一的属性名
     }
 }
 

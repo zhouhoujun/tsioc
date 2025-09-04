@@ -1,4 +1,4 @@
-import { Attribute, Component, OnDestroy, OnInit } from '@tsdi/components';
+import { Attribute, Component, Computed, OnDestroy, OnInit } from '@tsdi/components';
 
 @Component({
   selector: 'app-root',
@@ -55,8 +55,26 @@ export class AppComponent2 implements OnInit {
   selector: 'Field'
 })
 export class FieldComponet {
+
+  user = 'zhangsan';
+  role = 'admin';
+  
+  // 简洁模式：指定依赖和缓存策略
+  @Computed(['user', 'role'], true)
+  get fullName() { return `${this.user} (${this.role})`; }
+
+  // 完整模式：指定元数据对象
+  @Computed({
+    dependencies: ['user', 'role'],
+    cache: true,
+    // getter: `{{this.user}} {{this.role}}`
+    compute: (inst: FieldComponet) => `${inst.user} ${inst.role}`
+  })
+  fullName1: string | undefined;
+
   @Attribute() label!: string;
   @Attribute() value!: string;
+
 }
 
 
