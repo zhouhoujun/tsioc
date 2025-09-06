@@ -253,7 +253,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      * @param meta property or parameter metadata type of {@link Parameter}.
      * @returns the parameter value in this context.
      */
-    resolveArgument<T>(meta: Parameter<T>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null {
+    resolveArgument<T>(meta: Partial<Parameter<T>>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null {
         this.assertNotDestroyed();
         const metaRvr = meta.resolver;
         let resolver: HandlerScope | null;
@@ -268,7 +268,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
             next: (res, context) => {
                 if (res === UNRESOLVED) {
                     if (failed) {
-                        failed(target!, meta.propertyKey)
+                        failed(target!, meta.propertyKey!)
                     } else {
                         this.missingException([meta], target!, meta.propertyKey!);
                     }
@@ -290,7 +290,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
 
     }
 
-    protected missingException(missings: Parameter<any>[], type: AbstractType<any>, method: string): Exception {
+    protected missingException(missings: Partial<Parameter>[], type: AbstractType<any>, method: string): Exception {
         throw new MissingParameterException(missings, type, method)
     }
 
@@ -341,7 +341,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
  * Missing argument execption.
  */
 export class MissingParameterException extends Exception {
-    constructor(parameters: Parameter[], type: AbstractType, method: string) {
+    constructor(parameters: Partial<Parameter>[], type: AbstractType, method: string) {
         super(`ailed to invoke operation because the following required parameters were missing: [ ${parameters.map(p => object2string(p)).join(',\n')} ], method ${method} of class ${object2string(type)}`)
     }
 }

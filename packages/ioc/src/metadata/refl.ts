@@ -1,4 +1,4 @@
-import { AnnotationType, AbstractType, typeFac, Type } from '../types';
+import { AnnotationType, AbstractType, typeFac } from '../types';
 import { cleanObj, getParentType } from '../utils/lang';
 import { getType, isArray, isBoolean, isFunction, isPrimitive } from '../utils/chk';
 import {
@@ -468,6 +468,7 @@ function storageDefine(define: DecorDefine, classRef: Class) {
 
         case 'property':
             metaKey = MetadataKeys.PROPERTY_METADATA;
+            unshift = true;
             if (!classRef.propDecors.includes(define.decor)) {
                 classRef.propDecors.push(define.decor);
             }

@@ -876,7 +876,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
 
                 let val: any;
                 if (context && !(dep.token as FactoryRecord)?.fn) {
-                    val = context.resolveArgument((isString(dep.token) ? { name: dep.token } : { provider: dep.token }) as Parameter)
+                    val = context.resolveArgument(isString(dep.token) ? { name: dep.token } : { provider: dep.token })
                 }
                 deps.push(val ?? tryResolveToken(
                     dep.token,

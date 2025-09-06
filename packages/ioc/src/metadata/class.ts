@@ -1,8 +1,6 @@
 import { AbstractType, Type, Annotation } from '../types';
 import { ModuleWithProviders, Provider } from '../providers';
-import {
-    ProvidersMetadata, PropertyMetadata, ParameterMetadata, AnnotationMetadata
-} from './meta';
+import { PropertyMetadata, ParameterMetadata, AnnotationMetadata } from './meta';
 import { InvocationContext, InvocationOptions, InvokeArguments } from '../context';
 import { Token } from '../tokens';
 import { ResolveInterceptorLike } from '../resolver';
@@ -11,7 +9,7 @@ import { getClassAnnotation } from '../utils/util';
 import { isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { Exception } from '../exception';
-import { Injector, InstanceOf, MethodType, Resolve } from '../injector';
+import { Injector, MethodType, Resolve } from '../injector';
 import { HandlerFn } from '../handler';
 import { DesignContext, RuntimeContext } from '../lifescope/ctx';
 import { Invocation, InvocationFactory } from '../invocation';
@@ -438,11 +436,10 @@ export class Class<T = any> {
      */
     getMethodDefines<T = any>(propertyKey: string | symbol, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
     getMethodDefines<T = any>(arg?: any, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[] {
-        let propertyKey: string | symbol | undefined;
         if (isFunction(arg)) {
             filter = arg;
-        } else {
-            propertyKey = arg;
+        } else if (arg) {
+            const propertyKey = arg;
             if (filter) {
                 const perFlter = filter;
                 filter = (d: DecorDefine<T>) => d.propertyKey === propertyKey && perFlter(d);
@@ -451,9 +448,12 @@ export class Class<T = any> {
             }
         }
 
-        let defines = Reflect.getMetadata(MetadataKeys.METHOD_METADATA, this.type)?.filter(filter) ?? [];
+        let defines: DecorDefine<T>[] = Reflect.getMetadata(MetadataKeys.METHOD_METADATA, this.type) ?? [];
+        if (defines.length && filter) {
+            defines = defines.filter(filter);
+        }
         if (this.parent) {
-            defines = defines.concat(this.parent.getMethodDefines(filter));
+            defines = defines.concat(this.parent.getMethodDefines(p => !defines.some(d => d.propertyKey === p.propertyKey) && (filter ? filter(p) : true)));
         }
         return defines;
 
@@ -471,11 +471,10 @@ export class Class<T = any> {
      */
     getPropDefines<T = any>(propertyKey: string | symbol, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
     getPropDefines(arg?: any, filter?: (d: DecorDefine<T>) => boolean) {
-        let propertyKey: string | symbol | undefined;
         if (isFunction(arg)) {
             filter = arg;
-        } else {
-            propertyKey = arg;
+        } else if(arg) {
+            const propertyKey = arg;
             if (filter) {
                 const perFlter = filter;
                 filter = (d: DecorDefine<T>) => d.propertyKey === propertyKey && perFlter(d);
@@ -484,9 +483,12 @@ export class Class<T = any> {
             }
         }
 
-        let defines = Reflect.getMetadata(MetadataKeys.PROPERTY_METADATA, this.type)?.filter(filter) ?? [];
+       let defines: DecorDefine<T>[] = Reflect.getMetadata(MetadataKeys.PROPERTY_METADATA, this.type) ?? [];
+        if (defines.length && filter) {
+            defines = defines.filter(filter);
+        }
         if (this.parent) {
-            defines = defines.concat(this.parent.getPropDefines(filter));
+            defines = defines.concat(this.parent.getPropDefines(p => !defines.some(d => d.propertyKey === p.propertyKey) && (filter ? filter(p) : true)));
         }
         return defines;
     }

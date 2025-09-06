@@ -4,7 +4,6 @@ import { Context, ContextToken, HandlerFn, InterceptorFn, InterceptorLike, invok
 import { PropertyMetadata } from '../metadata/meta';
 import { ctorName, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
 import { Platform } from '../platform';
-import { Parameter } from '../resolver';
 import { AbstractType } from '../types';
 import { isDefined } from '../utils/chk';
 import { initReflectInterceptor } from './commom';
@@ -115,8 +114,8 @@ export const propertyInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
         if (!ictx || !input.instance) throw new Exception('autowride property need InvocationContext');
         let meta: PropertyMetadata, key: string, val;
 
-        input.class.eachProperty(define => {
-            if(!(define.metadata.type || define.metadata.provider)) return;
+        input.class.getPropDefines().forEach(define => {
+            if (!(define.metadata.type || define.metadata.provider)) return;
             key = `${define.propertyKey.toString()}_INJECTED`;
             meta = define.metadata; //.find(m => m.provider)!;
             // if (!meta) {
@@ -124,7 +123,7 @@ export const propertyInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
             // }
             if (!(input as any)[key]) {
 
-                val = ictx.resolveArgument(meta as Parameter, input.type, onError);
+                val = ictx.resolveArgument(meta, input.type, onError);
 
                 if (isDefined(val)) {
                     input.instance[define.propertyKey] = val;

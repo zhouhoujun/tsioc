@@ -12,7 +12,6 @@ import { composeHandlers } from '../handler';
 import { getClassify } from '../metadata/refl';
 import { Platform } from '../platform';
 import { Provider } from '../providers';
-import { Parameter } from '../resolver';
 
 /**
  * abstract invocation 
@@ -231,7 +230,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
 
     protected resolve<R>(token: Token<R>, flags?: InjectFlags): R {
         this.assertNotDestroyed();
-        return this.context.resolveArgument({ provider: token, flags, nullable: true } as Parameter)!
+        return this.context.resolveArgument({ provider: token, flags, nullable: true })!
     }
 
     equals(target: Invocation): boolean {

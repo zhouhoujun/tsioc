@@ -110,7 +110,7 @@ export abstract class InvocationContext implements Destroyable, OnDestroy {
      * @param target resolve parameter for target type. 
      * @returns the parameter value in this context.
      */
-    abstract resolveArgument<T>(meta: Parameter<T>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null;
+    abstract resolveArgument<T>(meta: Partial<Parameter<T>>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null;
     /**
      * context destroyed or not.
      * 
