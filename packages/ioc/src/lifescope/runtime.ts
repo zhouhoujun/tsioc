@@ -114,7 +114,7 @@ export const propertyInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
         if (!ictx || !input.instance) throw new Exception('autowride property need InvocationContext');
         let meta: PropertyMetadata, key: string, val;
 
-        input.class.getPropDefines().forEach(define => {
+        input.class.eachProperty(define => {
             if (!(define.metadata.type || define.metadata.provider)) return;
             key = `${define.propertyKey.toString()}_INJECTED`;
             meta = define.metadata; //.find(m => m.provider)!;
@@ -171,6 +171,7 @@ export const ctorArgsInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
             targetType: input.type,
             parent: uctx,
             providers,
+            resolvers: input.class.resolvers,
             propertyKey: ctorName
         });
         input.context = newCtx;

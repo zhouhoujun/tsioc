@@ -1,6 +1,6 @@
 import { AbstractType, Type, Annotation } from '../types';
 import { ModuleWithProviders, Provider } from '../providers';
-import { PropertyMetadata, ParameterMetadata, AnnotationMetadata } from './meta';
+import { PropertyMetadata, ParameterMetadata, AnnotationMetadata, MethodMetadata } from './meta';
 import { InvocationContext, InvocationOptions, InvokeArguments } from '../context';
 import { Token } from '../tokens';
 import { ResolveInterceptorLike } from '../resolver';
@@ -324,10 +324,7 @@ export class Class<T = any> {
         return Reflect.getMetadata(MetadataKeys.METHOD_RETURNS, this.type, method) ?? this.parent?.getReturnning(method)
     }
 
-    eachProperty(callback: (value: DecorDefine<PropertyMetadata>) => void) {
-        (Reflect.getMetadata(MetadataKeys.PROPERTY_METADATA, this.type) as DecorDefine<PropertyMetadata>[])?.forEach(callback)
-        this.parent?.eachProperty(callback)
-    }
+
 
     hasMethodOptions(method: string | symbol): boolean {
         return this.methodOptions.has(method)
@@ -415,6 +412,37 @@ export class Class<T = any> {
         return propertyKey ? defines.some(d => d.propertyKey == propertyKey) : defines.length > 0;
     }
 
+    eachProperty(callback: (value: DecorDefine<PropertyMetadata>) => void, excludes?: (string | symbol)[]) {
+        const props = Reflect.getMetadata(MetadataKeys.PROPERTY_METADATA, this.type) as DecorDefine<PropertyMetadata>[];
+        const upexc = excludes ? excludes.slice(0) : [];
+        props?.forEach(p => {
+            if (!excludes?.includes(p.propertyKey)) {
+                callback(p);
+            }
+            if (!this.parent && !upexc.includes(p.propertyKey)) {
+                upexc.push(p.propertyKey);
+            }
+        });
+
+        this.parent?.eachProperty(callback, upexc);
+    }
+
+    eachMethod(callback: (value: DecorDefine<MethodMetadata>) => void, excludes?: (string | symbol)[]) {
+        const props = Reflect.getMetadata(MetadataKeys.METHOD_METADATA, this.type) as DecorDefine<MethodMetadata>[];
+        const upexc = excludes ? excludes.slice(0) : [];
+        props?.forEach(p => {
+            if (!excludes?.includes(p.propertyKey)) {
+                callback(p);
+            }
+            if (!this.parent && !upexc.includes(p.propertyKey)) {
+                upexc.push(p.propertyKey);
+            }
+        });
+
+        this.parent?.eachMethod(callback, upexc);
+    }
+
+
     /**
      * get class defines.
      * @param filter custom filter.
@@ -436,24 +464,25 @@ export class Class<T = any> {
      */
     getMethodDefines<T = any>(propertyKey: string | symbol, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
     getMethodDefines<T = any>(arg?: any, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[] {
+        let propertyKey: string | symbol | undefined;
         if (isFunction(arg)) {
             filter = arg;
         } else if (arg) {
-            const propertyKey = arg;
-            if (filter) {
-                const perFlter = filter;
-                filter = (d: DecorDefine<T>) => d.propertyKey === propertyKey && perFlter(d);
-            } else {
-                filter = (d: DecorDefine<T>) => d.propertyKey === propertyKey;
-            }
+            propertyKey = arg;
         }
 
         let defines: DecorDefine<T>[] = Reflect.getMetadata(MetadataKeys.METHOD_METADATA, this.type) ?? [];
-        if (defines.length && filter) {
-            defines = defines.filter(filter);
+        if (defines.length) {
+             if (filter && propertyKey) {
+                defines = defines.filter(d => d.propertyKey === propertyKey && filter(d));
+            } else if (propertyKey) {
+                defines = defines.filter(d => d.propertyKey === propertyKey);
+            } else if (filter) {
+                defines = defines.filter(filter);
+            }
         }
         if (this.parent) {
-            defines = defines.concat(this.parent.getMethodDefines(p => !defines.some(d => d.propertyKey === p.propertyKey) && (filter ? filter(p) : true)));
+            defines = defines.concat(this.parent.getMethodDefines(propertyKey!, filter && !propertyKey && defines.length ? (p => !defines.some(d => d.propertyKey === p.propertyKey) && filter(p)) : filter));
         }
         return defines;
 
@@ -471,24 +500,25 @@ export class Class<T = any> {
      */
     getPropDefines<T = any>(propertyKey: string | symbol, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
     getPropDefines(arg?: any, filter?: (d: DecorDefine<T>) => boolean) {
+        let propertyKey: string | symbol | undefined;
         if (isFunction(arg)) {
             filter = arg;
-        } else if(arg) {
-            const propertyKey = arg;
-            if (filter) {
-                const perFlter = filter;
-                filter = (d: DecorDefine<T>) => d.propertyKey === propertyKey && perFlter(d);
-            } else {
-                filter = (d: DecorDefine<T>) => d.propertyKey === propertyKey;
-            }
+        } else if (arg) {
+            propertyKey = arg;
         }
 
-       let defines: DecorDefine<T>[] = Reflect.getMetadata(MetadataKeys.PROPERTY_METADATA, this.type) ?? [];
-        if (defines.length && filter) {
-            defines = defines.filter(filter);
+        let defines: DecorDefine<T>[] = Reflect.getMetadata(MetadataKeys.PROPERTY_METADATA, this.type) ?? [];
+        if (defines.length) {
+            if (filter && propertyKey) {
+                defines = defines.filter(d => d.propertyKey === propertyKey && filter(d));
+            } else if (propertyKey) {
+                defines = defines.filter(d => d.propertyKey === propertyKey);
+            } else if (filter) {
+                defines = defines.filter(filter);
+            }
         }
         if (this.parent) {
-            defines = defines.concat(this.parent.getPropDefines(p => !defines.some(d => d.propertyKey === p.propertyKey) && (filter ? filter(p) : true)));
+            defines = defines.concat(this.parent.getPropDefines(propertyKey!, filter && !propertyKey && defines.length ? (p => !defines.some(d => d.propertyKey === p.propertyKey) && filter(p)) : filter));
         }
         return defines;
     }
