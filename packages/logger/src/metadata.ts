@@ -223,7 +223,7 @@ export const InjectLog: Log<LogMetadata> = createDecorator<LogMetadata>('InjectL
         if (ctx.define.decorType === Decors.parameter || ctx.define.decorType === Decors.property) {
             const metadata = ctx.define.metadata as LogMetadata;
             if (!metadata.logname) {
-                metadata.target = ctx.class.type;
+                metadata.target = ctx.classRef.type;
                 metadata.resolver = loggerResolvers
             }
             metadata.propertyKey = ctx.define.propertyKey

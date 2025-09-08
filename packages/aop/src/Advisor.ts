@@ -1,4 +1,4 @@
-import { AbstractType, lang, Invocation, OnDestroy, Class, getTypeName, ctorName, Context, HandlerFn } from '@tsdi/ioc';
+import { AbstractType, lang, Invocation, OnDestroy, ClassRef, getTypeName, ctorName, Context, HandlerFn } from '@tsdi/ioc';
 import { Advicer, AroundProceeding, MatchOptions } from './Advicer';
 import { AdviceMatcher } from './AdviceMatcher';
 import { AopDef } from './metadata/ref';
@@ -101,18 +101,18 @@ export class Advisor implements OnDestroy {
     }
 
 
-    match(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions): boolean {
+    match(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): boolean {
         return Array.from(this.advices.values()).some(r => {
             return r.some(a => a.match(name, fullName, targetRef, target, options))
         })
     }
 
-    hasCtor(tagref: Class): boolean {
+    hasCtor(tagref: ClassRef): boolean {
         return this.match(ctorName, `${tagref.className}.${ctorName}`, tagref)
     }
 
 
-    hasPointcut(instance: object, typeRef: Class, withConstructor?: boolean): boolean {
+    hasPointcut(instance: object, typeRef: ClassRef, withConstructor?: boolean): boolean {
         const names = Object.keys(instance);
 
         const decorators = typeRef?.getPropertyDescriptors()
@@ -138,32 +138,32 @@ export class Advisor implements OnDestroy {
         }, [] as Advicer[]);
     }
 
-    getProceeding(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions) {
+    getProceeding(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions) {
         return this.proceedings.filter(adv => adv.match(name, fullName, targetRef, target, options))
     }
 
-    getBefore(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions): Advicer[] {
+    getBefore(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): Advicer[] {
         return this.getAdvicers('Around', 'Before')
             .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }
 
 
-    getPointcut(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions): Advicer[] {
+    getPointcut(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): Advicer[] {
         return this.getAdvicers('Pointcut')
             .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }
 
-    getAfter(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions): Advicer[] {
+    getAfter(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): Advicer[] {
         return this.getAdvicers('Around', 'After')
             .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }
 
-    getAfterReturning(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions): Advicer[] {
+    getAfterReturning(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): Advicer[] {
         return this.getAdvicers('Around', 'AfterReturning')
             .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }
 
-    getAfterThrowing(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions): Advicer[] {
+    getAfterThrowing(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): Advicer[] {
         return this.getAdvicers('Around', 'AfterThrowing')
             .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }

@@ -1,7 +1,7 @@
 import {
     isFunction, lang, Platform, ctorName, InvocationContext, HandlerScope, HandlerFn,
     Context, ContextToken, invokeTail, RuntimeContext, InterceptorLike, isDefined,
-    ParameterMetadata, Class, proxyTag, isObject, isNil, object2string, getClassify,
+    ParameterMetadata, ClassRef, proxyTag, isObject, isNil, object2string, getClassify,
     composeHandlers, composeInterceptors
 } from '@tsdi/ioc';
 import { JoinPoint } from '../joinpoints/JoinPoint';
@@ -60,7 +60,7 @@ export class ProceedingScope implements Proceeding {
         });
     }
 
-    protected createProxy(prefix: string, rootRef: Class, root: any, typeRef: Class | null, instance: any, advisor: Advisor, parent?: InvocationContext) {
+    protected createProxy(prefix: string, rootRef: ClassRef, root: any, typeRef: ClassRef | null, instance: any, advisor: Advisor, parent?: InvocationContext) {
         const descriptors = typeRef?.getPropertyDescriptors();
 
         const weekMap = new WeakMap();
@@ -140,7 +140,7 @@ export class ProceedingScope implements Proceeding {
         return proxy;
     }
 
-    protected proxy<T>(originMethod: Function, propertyKey: string | symbol, fullName: string, advisor: Advisor, receiver: T, target: any, targetRef: Class, parent?: InvocationContext) {
+    protected proxy<T>(originMethod: Function, propertyKey: string | symbol, fullName: string, advisor: Advisor, receiver: T, target: any, targetRef: ClassRef, parent?: InvocationContext) {
         const platform = this.platform;
         return (...args: any[]) => {
             if (!platform || !platform.injector || platform.injector.destroyed) {
@@ -160,7 +160,7 @@ export class ProceedingScope implements Proceeding {
         }
     }
 
-    private handle(targetRef: Class, fullName: string, propertyKey: string | symbol, receiver: any, advisor: Advisor, platform: Platform, options: {
+    private handle(targetRef: ClassRef, fullName: string, propertyKey: string | symbol, receiver: any, advisor: Advisor, platform: Platform, options: {
         target?: any,
         originMethod?: Function,
         args?: any[];

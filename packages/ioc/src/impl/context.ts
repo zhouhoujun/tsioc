@@ -8,7 +8,7 @@ import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token } from '../tokens';
 import { createInjector, Injector, isInjector } from '../injector';
 import { Exception } from '../exception';
-import { Class } from '../metadata/class';
+import { ClassRef } from '../metadata/class';
 import { getDef } from '../metadata/refl';
 import { Provider } from '../providers';
 import { Invocation } from '../invocation';
@@ -365,7 +365,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
         return `"${obj}"`
     } else if (isAbstractType(obj)) {
         return 'Type<' + getTypeName(obj) + '>'
-    } else if (obj instanceof Class) {
+    } else if (obj instanceof ClassRef) {
         return `[${obj.className} TypeReflect]`
     } else if (isPlainObject(obj)) {
         const str: string[] = [];

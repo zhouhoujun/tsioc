@@ -131,13 +131,6 @@ export interface DecorDefine<T = any> {
      * decorator metadata.
      */
     readonly metadata: T;
-
-    // /**
-    //  * provider services of the class.
-    //  *
-    //  * @type {KeyValue<Token, Token>}
-    //  */
-    // providers?: Provider[];
 }
 
 
@@ -190,7 +183,7 @@ export const proxyTag = Symbol('__proxy');
  * 
  * 类反射
  */
-export class Class<T = any> {
+export class ClassRef<T = any> {
 
     /**
      * class name.
@@ -231,7 +224,7 @@ export class Class<T = any> {
 
     private invocationFactory?: Resolve<InvocationFactory>;
 
-    constructor(public readonly type: AbstractType<T>, annotation: TypeDef<T>, private parent?: Class) {
+    constructor(public readonly type: AbstractType<T>, annotation: TypeDef<T>, private parent?: ClassRef) {
         this.annotation = annotation ?? getClassAnnotation(type)! ?? {};
         this.className = this.annotation?.name || type.name;
         this.classDecors = [];
@@ -650,12 +643,3 @@ function getParamNames(func: Function) {
     const result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
     return result ?? []
 }
-
-// function getDectorId(decor: string | Function): string {
-//     return isString(decor) ? decor : decor.toString()
-// }
-
-// function isEqual(decor1: string | DecoratorFn, decor2: string | DecoratorFn) {
-//     if (decor1 == decor2) return true;
-//     return getDectorId(decor1) == getDectorId(decor2);
-// }

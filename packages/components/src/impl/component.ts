@@ -1,5 +1,5 @@
 import {
-    AbstractInvocationFactory, Class, createInjector, Exception, Injectable,
+    AbstractInvocationFactory, ClassRef, createInjector, Exception, Injectable,
     Injector, InvocationContext, Platform, AbstractType, Provider, toProvider
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
@@ -15,7 +15,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
 
     private _hostView?: ViewRef;
     constructor(
-        _class: Class<T>,
+        _class: ClassRef<T>,
         context: InvocationContext,
         options?: ComponentOptions) {
         super(_class, context, options);
@@ -70,7 +70,7 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         super(platform);
     }
 
-    protected override getInjector<T>(typeRef: Class<T>, options?: ComponentOptions): Injector {
+    protected override getInjector<T>(typeRef: ClassRef<T>, options?: ComponentOptions): Injector {
         let injector = super.getInjector(typeRef, options);
         // 注入Renderer
         const def = typeRef.getAnnotation<ComponentDef>();
@@ -81,7 +81,7 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         return injector;
     }
 
-    protected override createInstance<T>(typeRef: Class<T>, context: InvocationContext, options?: ComponentOptions): ComponentRef<T> {
+    protected override createInstance<T>(typeRef: ClassRef<T>, context: InvocationContext, options?: ComponentOptions): ComponentRef<T> {
 
         return new ComponentRefImpl(typeRef, context, options);
     }
@@ -92,7 +92,7 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         }
     }
 
-    override create<T>(type: AbstractType<T> | Class<T>, options?: ComponentOptions): ComponentRef<T> {
+    override create<T>(type: AbstractType<T> | ClassRef<T>, options?: ComponentOptions): ComponentRef<T> {
         return super.create(type, options) as ComponentRef<T>;
     }
 

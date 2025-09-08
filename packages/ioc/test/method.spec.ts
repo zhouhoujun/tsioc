@@ -1,4 +1,4 @@
-import { Inject, Autowired, Injectable, isFunction, Container, Providers, getClass, InvocationFactory } from '../src';
+import { Inject, Autowired, Injectable, isFunction, Container, Providers, getClassRef, InvocationFactory } from '../src';
 import expect = require('expect');
 // import { AnnotationAspect } from './aop/AnnotationAspect';
 // import { CheckRightAspect } from './aop/CheckRightAspect';
@@ -80,7 +80,7 @@ describe('method exec test', () => {
     });
 
     it('show has prop metadata', () => {
-        const refs = getClass(MethodTest2);
+        const refs = getClassRef(MethodTest2);
         expect(refs.hasMetadata(Inject, 'property')).toBeTruthy();
         expect(refs.hasMetadata(Inject, 'property', 'testAt')).toBeTruthy();
         expect(refs.hasMetadata(Inject, 'property', 'tester')).toBeFalsy();
@@ -88,7 +88,7 @@ describe('method exec test', () => {
     });
 
     it('show has method metadata', () => {
-        const refs = getClass(MethodTest3);
+        const refs = getClassRef(MethodTest3);
         expect(refs.hasMetadata(Autowired, 'method')).toBeTruthy();
         expect(refs.hasMetadata(Autowired, 'method', 'sayHello')).toBeTruthy();
         expect(refs.hasMetadata(Autowired, 'method', 'sayHello2')).toBeFalsy();

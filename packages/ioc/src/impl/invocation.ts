@@ -3,7 +3,7 @@ import { createContext, hasContextOptions, InvocationContext, InvocationOptions,
 import { Invocation, InvocationFactory } from '../invocation';
 import { getType, isArray, isFunction, isPromise, isString, isSymbol } from '../utils/chk';
 import { DestroyCallback, OnDestroy } from '../destroy';
-import { Class } from '../metadata/class';
+import { ClassRef } from '../metadata/class';
 import { Injector, MethodType } from '../injector';
 import { ArgumentException, Exception } from '../exception';
 import { InjectFlags, Token } from '../tokens';
@@ -26,7 +26,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
     order?: number | undefined;
 
     constructor(
-        private _class: Class<T>,
+        private _class: ClassRef<T>,
         readonly context: InvocationContext,
         protected options?: TOpts) {
         super();
@@ -42,7 +42,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
         return this._class?.type;
     }
 
-    get class(): Class<T> {
+    get class(): ClassRef<T> {
         return this._class;
     }
 
@@ -290,7 +290,7 @@ export class DefaultInvocation<T = any, TOpts extends InvocationOptions<T> = Inv
 
 
     constructor(
-        _class: Class<T>,
+        _class: ClassRef<T>,
         context: InvocationContext,
         options: TOpts = {} as TOpts) {
         super(_class, context, options);
@@ -320,15 +320,15 @@ export abstract class AbstractInvocationFactory<TOpts extends InvocationOptions 
 
     }
 
-    create<T>(type: AbstractType<T> | Class<T>, options?: TOpts): Invocation<T> {
+    create<T>(type: AbstractType<T> | ClassRef<T>, options?: TOpts): Invocation<T> {
         const cls = getClassify(type);
         const context = this.createContext(cls, options);
         return this.createInstance(cls, context, options);
     }
 
-    protected abstract createInstance<T>(typeRef: Class<T>, context: InvocationContext, options?: TOpts): Invocation<T>;
+    protected abstract createInstance<T>(typeRef: ClassRef<T>, context: InvocationContext, options?: TOpts): Invocation<T>;
 
-    protected createContext<T>(typeRef: Class<T>, options?: TOpts): InvocationContext {
+    protected createContext<T>(typeRef: ClassRef<T>, options?: TOpts): InvocationContext {
         let resolvers = options?.resolvers;
         if (resolvers) {
             if (typeRef.resolvers) resolvers = resolvers.concat(typeRef.resolvers)
@@ -350,7 +350,7 @@ export abstract class AbstractInvocationFactory<TOpts extends InvocationOptions 
 
     }
 
-    protected getInjector<T>(typeRef: Class<T>, options?: TOpts): Injector {
+    protected getInjector<T>(typeRef: ClassRef<T>, options?: TOpts): Injector {
         return options?.injector ?? this.platform.getRegisterIn(typeRef.type)!
     }
 
@@ -359,7 +359,7 @@ export abstract class AbstractInvocationFactory<TOpts extends InvocationOptions 
 
 export class DefaultInvocationFactory extends AbstractInvocationFactory implements InvocationFactory {
 
-    protected override createInstance<T>(typeRef: Class<T>, context: InvocationContext, options?: InvocationOptions<T>): Invocation<T> {
+    protected override createInstance<T>(typeRef: ClassRef<T>, context: InvocationContext, options?: InvocationOptions<T>): Invocation<T> {
         return new DefaultInvocation(typeRef, context, options);
     }
 

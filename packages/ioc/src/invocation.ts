@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 import { InvocationContext, InvocationOptions, InvokeArguments } from './context';
-import { Class } from './metadata/class';
+import { ClassRef } from './metadata/class';
 import { AbstractType } from './types';
 import { Injector, MethodType } from './injector';
 import { DestroyCallback } from './destroy';
@@ -28,7 +28,7 @@ export abstract class Invocation<T = any, TRes = any> {
      * 
      * 类反射
      */
-    abstract get class(): Class<T>;
+    abstract get class(): ClassRef<T>;
     /**
      * the invoke instance.
      *
@@ -124,7 +124,7 @@ export abstract class Invocation<T = any, TRes = any> {
  * 用于创建执行操作调用的接口。
  */
 export abstract class InvocationFactory<TOpts extends InvocationOptions = InvocationOptions> {
-    abstract create<T>(type: AbstractType<T> | Class<T>, options?: TOpts): Invocation<T>;
+    abstract create<T>(type: AbstractType<T> | ClassRef<T>, options?: TOpts): Invocation<T>;
 }
 
 

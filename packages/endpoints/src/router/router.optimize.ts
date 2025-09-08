@@ -1,5 +1,5 @@
 import {
-    Type, composeHandlers, DecorDefine, Exception, getClass, Handler, HandlerFn, hasProps, Injector, Invocation,
+    Type, composeHandlers, DecorDefine, Exception, getClassRef, Handler, HandlerFn, hasProps, Injector, Invocation,
     isArray, isType, isFunction, isRegExp, isString, ModuleRef, OnDestroy, TypeOf
 } from '@tsdi/ioc';
 import { ApplicationHandler } from '@tsdi/core';
@@ -202,7 +202,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
                 return this.parseCtrl(route.controller, route.path, route.pathParams);
             }
 
-            const ctrRef = getClass(route.controller);
+            const ctrRef = getClassRef(route.controller);
             const invocation = ctrRef.createInvocation(this.injector.platform().getInjector(ctrRef.type, this.injector));
 
             return this.parseCtrl(invocation, route.path, route.pathParams)
@@ -212,7 +212,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             const controller = await (isObservable(res) ? lastValueFrom(res) : res);
             this.injector.register(controller as Type);
 
-            const ctrRef = getClass(controller);
+            const ctrRef = getClassRef(controller);
             const invocation = ctrRef.createInvocation(this.injector);
 
             return this.parseCtrl(invocation, route.path, route.pathParams)

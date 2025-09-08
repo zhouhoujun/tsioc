@@ -2,7 +2,7 @@ import {
     isUndefined, AbstractType, createDecorator, Provider, InjectableMetadata, PropertyMetadata, ActionTypes, InjectFlags,
     MethodPropDecorator, Token, ArgumentException, object2string, InvokeArguments,
     isString, Parameter, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
-    ModuleType, Type, MutilProvider, Class, Injector, ProvidedInMetadata, AnnotationMetadata,
+    ModuleType, Type, MutilProvider, ClassRef, Injector, ProvidedInMetadata, AnnotationMetadata,
     Invocation
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
@@ -67,7 +67,7 @@ export const Runner: Runner = createDecorator('Runner', {
     afterInit: (ctx) => {
         const meta = ctx.define.metadata as { method: string, args: RunnerOption<any> };
         if (meta.args?.parameters) {
-            ctx.class.setMethodOptions(meta.method, meta.args)
+            ctx.classRef.setMethodOptions(meta.method, meta.args)
         }
     }
 });
@@ -113,7 +113,7 @@ export const Pipe: Pipe = createDecorator<PipeMetadata>('Pipe', {
     actionType: [ActionTypes.annoation, ActionTypes.providers],
     def: {
         class: (ctx) => {
-            ctx.class.setAnnotation(ctx.define.metadata);
+            ctx.classRef.setAnnotation(ctx.define.metadata);
         }
     },
     props: (name: string, pure?: boolean) => ({ name, provide: name, pure }),
@@ -149,7 +149,7 @@ export const Bean: BeanDecorator = createDecorator<BeanMetadata>('Bean', {
             if (metadata.type !== Object) {
                 metadata.provide = metadata.type as any
             } else {
-                throw new ArgumentException(`the property has no design Type, named ${ctx.define.propertyKey} with @Bean decorator in type ${object2string(ctx.class.type)}`)
+                throw new ArgumentException(`the property has no design Type, named ${ctx.define.propertyKey} with @Bean decorator in type ${object2string(ctx.classRef.type)}`)
             }
         }
     }
@@ -206,7 +206,7 @@ export const Configuration: ConfigurationDecorator = createDecorator<Confgiurati
     }
 });
 
-function injectBean(injector: Injector, typeRef: Class<any>, meta: ConfgiurationMetadata, invocation?: Invocation<any>) {
+function injectBean(injector: Injector, typeRef: ClassRef<any>, meta: ConfgiurationMetadata, invocation?: Invocation<any>) {
     if (!invocation) {
         invocation = typeRef.createInvocation(injector);
     }

@@ -1,6 +1,6 @@
 import {
     tokenId, Injector, IocContext, DefaultInvocationContext, ParameterMetadata, lang, AbstractType,
-    DecorDefine, Defer, TargetInvokeArguments, Class, HandlerFn, Context, noPointcut,
+    DecorDefine, Defer, TargetInvokeArguments, ClassRef, HandlerFn, Context, noPointcut,
     Abstract, 
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
@@ -10,7 +10,7 @@ import { Advisor } from '../Advisor';
  * joinpoint option.
  */
 export interface JoinpointOption extends TargetInvokeArguments {
-    targetRef: Class;
+    targetRef: ClassRef;
     propertyKey: string | symbol;
     targetType?: AbstractType;
     fullName?: string;
@@ -69,7 +69,7 @@ export class JoinPoint extends DefaultInvocationContext implements IocContext {
     accessor?: 'get' | 'set' | 'value';
     readonly propertyKey: string | symbol;
     readonly fullName: string;
-    readonly targetRef: Class;
+    readonly targetRef: ClassRef;
     readonly targetType: AbstractType | undefined;
     readonly advisor: Advisor;
     readonly originMethod?: Function;

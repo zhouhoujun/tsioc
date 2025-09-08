@@ -1,5 +1,5 @@
 /* eslint-disable no-useless-escape */
-import { isString, isRegExp, isArray, ctorName, Decors, Platform, Class, DecoratorType } from '@tsdi/ioc';
+import { isString, isRegExp, isArray, ctorName, Decors, Platform, ClassRef, DecoratorType } from '@tsdi/ioc';
 import { AdviceMatcher } from '../AdviceMatcher';
 import { AdviceMetadata } from '../metadata/meta';
 import { AopDef } from '../metadata/ref';
@@ -284,7 +284,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         const fns = exp.tokens.map(t => this.expressToFunc(t, metadata));
         const argnames = exp.tokens.map((t, i) => 'arg' + i);
         const boolexp = new Function(...argnames, `return ${exp.toString((t, i, tkidx) => 'arg' + tkidx + '()')}`);
-        return (method: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions) => {
+        return (method: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions) => {
             const args = fns.map(fn => () => fn(method, fullName, targetRef, target, options));
             return boolexp(...args)
         }

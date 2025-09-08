@@ -24,7 +24,7 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
     actionType: ActionTypes.declaration,
     def: {
         class: (ctx) => {
-            const typeRef = ctx.class;
+            const typeRef = ctx.classRef;
             (typeRef.type as AnnotationType)[noPointcut] = true;
             typeRef.setAnnotation(ctx.define.metadata);
             const def = typeRef.getAnnotation<ComponentDef>();

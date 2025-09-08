@@ -42,7 +42,7 @@ export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
     actionType: ActionTypes.annoation,
     def: {
         class: (ctx) => {
-            ctx.class.getAnnotation<AopDef>().aspect = ctx.define.metadata;
+            ctx.classRef.getAnnotation<AopDef>().aspect = ctx.define.metadata;
         }
     },
     design: {
@@ -89,7 +89,7 @@ export interface NonePointcut {
 export const NonePointcut: NonePointcut = createDecorator<AnnotationMetadata>('NonePointcut', {
     def: {
         class: (ctx) => {
-            (ctx.class.type as AnnotationType)[noPointcut] = true;
+            (ctx.classRef.type as AnnotationType)[noPointcut] = true;
         }
     }
 });
@@ -204,13 +204,13 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
         ...options,
         def: {
             method: (ctx) => {
-                if (!ctx.class.getAnnotation<AopDef>().advices) {
-                    ctx.class.getAnnotation<AopDef>().advices = []
+                if (!ctx.classRef.getAnnotation<AopDef>().advices) {
+                    ctx.classRef.getAnnotation<AopDef>().advices = []
                 }
                 if (!ctx.define.metadata.propertyKey) {
                     ctx.define.metadata.propertyKey = ctx.define.propertyKey;
                 }
-                ctx.class.getAnnotation<AopDef>().advices.push(ctx.define.metadata);
+                ctx.classRef.getAnnotation<AopDef>().advices.push(ctx.define.metadata);
             }
         },
         appendProps: (metadata) => {

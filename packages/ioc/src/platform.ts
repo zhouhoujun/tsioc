@@ -1,5 +1,5 @@
 import { Abstract } from './metadata/fac';
-import { Class } from './metadata/class';
+import { ClassRef } from './metadata/class';
 import { OnDestroy } from './destroy';
 import { Token } from './tokens';
 import { AbstractType } from './types';
@@ -76,19 +76,19 @@ export abstract class Platform implements OnDestroy {
      * get the type private providers.
      * @param type
      */
-    abstract getTypeProvider(type: AbstractType | Class): Provider[];
+    abstract getTypeProvider(type: AbstractType | ClassRef): Provider[];
     /**
      * set type providers.
      * @param type
      * @param providers
      */
-    abstract setTypeProvider(type: AbstractType | Class, ...providers: Provider[]): void;
+    abstract setTypeProvider(type: AbstractType | ClassRef, ...providers: Provider[]): void;
     /**
      * remove type providers.
      * @param type
      * @param providers
      */
-    abstract removeTypeProvider(type: AbstractType | Class, ...providers: Provider[]): void;
+    abstract removeTypeProvider(type: AbstractType | ClassRef, ...providers: Provider[]): void;
     /**
      * clear type provider.
      * @param type 

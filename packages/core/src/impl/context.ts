@@ -1,6 +1,6 @@
 import {
     AbstractType, Injector, Provider, DefaultInvocationContext,
-    Class, ModuleDef, ModuleRef, Invocation, noPointcut,
+    ClassRef, ModuleDef, ModuleRef, Invocation, noPointcut,
 } from '@tsdi/ioc';
 import { Logger, LoggerManagers } from '@tsdi/logger';
 import { Observable } from 'rxjs';
@@ -73,7 +73,7 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
         return this._multicaster;
     }
 
-    async bootstrap<C>(type: AbstractType<C> | Class<C>, option?: BootstrapOption): Promise<Invocation<C>> {
+    async bootstrap<C>(type: AbstractType<C> | ClassRef<C>, option?: BootstrapOption): Promise<Invocation<C>> {
         const typeRef = this.runners.attach(type, { parent: this, ...option });
         if (typeRef) {
             await this.runners.run(typeRef.type);

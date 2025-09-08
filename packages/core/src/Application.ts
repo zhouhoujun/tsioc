@@ -1,4 +1,4 @@
-import { isFunction, AbstractType, Type, Provider, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType,createInjector, getClass } from '@tsdi/ioc';
+import { isFunction, AbstractType, Type, Provider, Injector, Modules, ModuleDef, ModuleMetadata, ClassRef, lang, ModuleRef, getModuleType, createModuleRef, ModuleType,createInjector, getClassRef } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationContextFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEPENDENCE_PROVIDERS, } from './providers';
 import { ModuleLoader } from './ModuleLoader';
@@ -167,15 +167,15 @@ export class Application<T = any> {
         return createModuleRef(this.moduleify(option.module), container, option)
     }
 
-    protected moduleify(module: AbstractType | Class | ModuleMetadata | ModuleDef): Type | Class {
+    protected moduleify(module: AbstractType | ClassRef | ModuleMetadata | ModuleDef): Type | ClassRef {
         if (isFunction(module)) {
-            module = getClass(module);
+            module = getClassRef(module);
         }
 
-        if (module instanceof Class) {
+        if (module instanceof ClassRef) {
             if (!module.getAnnotation<ModuleDef>().module) {
                 const bootstrapType = module.type as Type;
-                return new Class(DynamicModule, {
+                return new ClassRef(DynamicModule, {
                     name: 'DynamicModule',
                     type: DynamicModule,
                     module: true,
@@ -186,7 +186,7 @@ export class Application<T = any> {
             return module;
         }
 
-        return new Class(DynamicModule, {
+        return new ClassRef(DynamicModule, {
             name: 'DynamicModule',
             type: DynamicModule,
             ...module,

@@ -1,5 +1,5 @@
 import {
-    isNumber, AbstractType, Injectable, tokenId, Injector, Class, isFunction, getClassify, ProvdierOf, Invocation,
+    isNumber, AbstractType, Injectable, tokenId, Injector, ClassRef, isFunction, getClassify, ProvdierOf, Invocation,
     isArray, ArgumentException, StaticProvider, HandlerLike, composeHandlers, Type
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
@@ -82,7 +82,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         return this;
     }
 
-    attach<T, TArg>(type: AbstractType<T> | Class<T>, options: InvocationHandlerOptions<T> = {}): Invocation<T> {
+    attach<T, TArg>(type: AbstractType<T> | ClassRef<T>, options: InvocationHandlerOptions<T> = {}): Invocation<T> {
         const target = getClassify(type);
 
         let ends = this._maps.get(target.type);
