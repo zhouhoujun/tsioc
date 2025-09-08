@@ -11,12 +11,12 @@ import { HandlerScope } from './lifescope';
 
 export const autorunInterceptor = (ctx: DesignContext, next: HandlerFn, context: Context) => {
     return invokeTail(() => next(ctx, context), (res) => {
-        const runs = ctx.class.runnables.filter(c => c.auto && c.decorType === Decors.CLASS);
+        const runs = ctx.classRef.runnables.filter(c => c.auto && c.decorType === Decors.CLASS);
         if (runs.length < 1) {
             return
         }
 
-        const invocation = ctx.class.createInvocation(ctx.injector);
+        const invocation = ctx.classRef.createInvocation(ctx.injector);
         runs.forEach(meta => {
             invocation.invoke(meta.propertyKey);
         });
@@ -35,7 +35,7 @@ export function getDesignBeforeAnnoationScope(platform: Platform): HandlerScope<
     let scope = platform.context.get(BEFORE_ANNOATION_SCOPE);
     if (!scope) {
         scope = new HandlerScope<DesignContext>(platform, (ctx, context) => {
-            invokeHandler(ctx.class.classDecors, ctx, Decors.beforeAnnoation, context)
+            invokeHandler(ctx.classRef.classDecors, ctx, Decors.beforeAnnoation, context)
         });
         platform.context.set(BEFORE_ANNOATION_SCOPE, scope);
     }
@@ -48,7 +48,7 @@ export function getDesignAfterAnnoationScope(platform: Platform): HandlerScope<D
     let scope = platform.context.get(AFTER_ANNOATION_SCOPE);
     if (!scope) {
         scope = new HandlerScope<DesignContext>(platform, (ctx, context) => {
-            invokeHandler(ctx.class.classDecors, ctx, Decors.afterAnnoation, context)
+            invokeHandler(ctx.classRef.classDecors, ctx, Decors.afterAnnoation, context)
         });
         platform.context.set(AFTER_ANNOATION_SCOPE, scope);
     }
@@ -61,7 +61,7 @@ export function getDesignPropertyScope(platform: Platform): HandlerScope<DesignC
     let scope = platform.context.get(DESIGN_PROPERTY_SCOPE);
     if (!scope) {
         scope = new HandlerScope<DesignContext>(platform, (ctx, context) => {
-            invokeHandler(ctx.class.propDecors, ctx, Decors.property, context)
+            invokeHandler(ctx.classRef.propDecors, ctx, Decors.property, context)
         });
         platform.context.set(DESIGN_PROPERTY_SCOPE, scope);
     }
@@ -74,7 +74,7 @@ export function getDesignMethodScope(platform: Platform): HandlerScope<DesignCon
     let scope = platform.context.get(DESIGN_METHOD_SCOPE);
     if (!scope) {
         scope = new HandlerScope<DesignContext>(platform, (ctx, context) => {
-            invokeHandler(ctx.class.methodDecors, ctx, Decors.method, context);
+            invokeHandler(ctx.classRef.methodDecors, ctx, Decors.method, context);
         });
         platform.context.set(DESIGN_METHOD_SCOPE, scope);
     }
@@ -111,13 +111,13 @@ export const dependencyInterceptor = (input: DesignContext, next: HandlerFn, con
                 });
             }
         }
-        input.class.provides.forEach(provide => {
+        input.classRef.provides.forEach(provide => {
             if (provide != provide && regProvides !== false) {
                 injector.inject({ provide, useExisting: provide })
             }
         })
     } else {
-        input.class.provides.forEach(provide => {
+        input.classRef.provides.forEach(provide => {
             regProvides !== false && injector.inject({ provide, useClass: type })
         })
     }
@@ -127,8 +127,8 @@ export const dependencyInterceptor = (input: DesignContext, next: HandlerFn, con
 
 export const registerHandler: HandlerFn = (ctx: DesignContext, context: Context) => {
     const { type, injector, platform, provide } = ctx;
-    const singleton = ctx.singleton ?? ctx.class.getAnnotation().singleton === true;
-    const isStatic = ctx.static ?? ctx.class.getAnnotation().static;
+    const singleton = ctx.singleton ?? ctx.classRef.getAnnotation().singleton === true;
+    const isStatic = ctx.static ?? ctx.classRef.getAnnotation().static;
 
     const recd = {
         type,

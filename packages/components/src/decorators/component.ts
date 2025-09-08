@@ -37,7 +37,7 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
     },
     design: {
         afterAnnoation: (ctx) => {
-            const typeRef = ctx.class;
+            const typeRef = ctx.classRef;
             const def = typeRef.getAnnotation<ComponentDef>();
             if (!def.selector) return;
             const selectors = def.selector.split(',');

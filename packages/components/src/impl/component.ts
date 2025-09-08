@@ -15,10 +15,10 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
 
     private _hostView?: ViewRef;
     constructor(
-        _class: ClassRef<T>,
+        _classRef: ClassRef<T>,
         context: InvocationContext,
         options?: ComponentOptions) {
-        super(_class, context, options);
+        super(_classRef, context, options);
     }
 
     get hostView(): ViewRef {

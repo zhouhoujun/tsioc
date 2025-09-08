@@ -27,9 +27,9 @@ export class ProceedingScope implements Proceeding {
 
     pointcutCtor(ctx: RuntimeContext, next: HandlerFn, context: Context) {
         const advisor = context.get(Advisor);
-        if (!advisor.hasCtor(ctx.class)) {
+        if (!advisor.hasCtor(ctx.classRef)) {
             return invokeTail(() => next(ctx, context), () => {
-                if (advisor.hasPointcut(ctx.instance, ctx.class, true)) {
+                if (advisor.hasPointcut(ctx.instance, ctx.classRef, true)) {
                     ctx.hasPointcut = true;
                     ctx.isNewContext = false;
                 }
@@ -37,7 +37,7 @@ export class ProceedingScope implements Proceeding {
         }
 
         ctx.isNewContext = false;
-        return this.handle(ctx.class, `${ctx.class.className}.${ctorName}`, ctorName, null, advisor, ctx.platform, {
+        return this.handle(ctx.classRef, `${ctx.classRef.className}.${ctorName}`, ctorName, null, advisor, ctx.platform, {
             parent: ctx.context,
             args: ctx.args,
             params: ctx.params,
@@ -54,8 +54,8 @@ export class ProceedingScope implements Proceeding {
     pointcutProperty(ctx: RuntimeContext, next: HandlerFn, context: Context) {
         return invokeTail(() => next(ctx, context), () => {
             const advisor = context.get(Advisor);
-            if (isDefined(ctx.instance) && (ctx.hasPointcut || advisor.hasPointcut(ctx.instance, ctx.class, true))) {
-                ctx.instance = this.createProxy(ctx.class.className, ctx.class, ctx.instance, ctx.class, ctx.instance, advisor, ctx.context)
+            if (isDefined(ctx.instance) && (ctx.hasPointcut || advisor.hasPointcut(ctx.instance, ctx.classRef, true))) {
+                ctx.instance = this.createProxy(ctx.classRef.className, ctx.classRef, ctx.instance, ctx.classRef, ctx.instance, advisor, ctx.context)
             }
         });
     }

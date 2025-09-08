@@ -290,10 +290,10 @@ export class DefaultInvocation<T = any, TOpts extends InvocationOptions<T> = Inv
 
 
     constructor(
-        _class: ClassRef<T>,
+        _classRef: ClassRef<T>,
         context: InvocationContext,
         options: TOpts = {} as TOpts) {
-        super(_class, context, options);
+        super(_classRef, context, options);
     }
 
     protected process(option?: InvocationContext | InvokeArguments) {

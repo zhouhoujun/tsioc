@@ -41,7 +41,7 @@ export interface RegContext extends IocContext {
     /**
      * type Class reflective.
      */
-    class: ClassRef;
+    classRef: ClassRef;
     /**
      * current decoractor.
      */

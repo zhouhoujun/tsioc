@@ -184,7 +184,7 @@ export const Configuration: ConfigurationDecorator = createDecorator<Confgiurati
     actionType: ActionTypes.annoation,
     design: {
         afterAnnoation: (ctx) => {
-            const { class: typeRef, injector } = ctx;
+            const { classRef: typeRef, injector } = ctx;
             const meta = typeRef.getMetadata<ConfgiurationMetadata>(ctx.currDecor);
             if (meta.imports) {
                 injector.inject({
@@ -266,7 +266,7 @@ function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name:
         props: (filter?: AbstractType | string, options?: { order?: number }) => ({ filter, ...options }),
         design: {
             method: runtime === true ? undefined : (ctx) => {
-                const typeRef = ctx.class;
+                const typeRef = ctx.classRef;
                 if (typeRef.getAnnotation().static === false && !typeRef.getAnnotation().singleton) return;
 
                 const defines = typeRef.getDefines(ctx.currDecor);
@@ -286,7 +286,7 @@ function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name:
         },
         runtime: {
             method: (ctx) => {
-                const typeRef = ctx.class;
+                const typeRef = ctx.classRef;
                 if (!runtime && (
                     !ctx.context?.isResolve
                     || typeRef.getAnnotation().static === true
@@ -485,7 +485,7 @@ export const Interceptable: Interceptable = createDecorator('Interceptable', {
     props: (target: AbstractType | string, options?: InvocationHandlerOptions) => ({ target, ...options }),
     design: {
         method: (ctx) => {
-            const typeRef = ctx.class;
+            const typeRef = ctx.classRef;
             const decors = typeRef.getDefines<InterceptMetadata>(ctx.currDecor);
             const injector = ctx.injector;
             const invocation = typeRef.createInvocation(injector);
@@ -534,7 +534,7 @@ export const Filterable: Filterable = createDecorator('Filterable', {
     props: (target: AbstractType | string, options?: InvocationHandlerOptions) => ({ target, ...options }),
     design: {
         method: (ctx) => {
-            const typeRef = ctx.class;
+            const typeRef = ctx.classRef;
             const decors = typeRef.getDefines<InterceptMetadata>(ctx.currDecor);
             const injector = ctx.injector;
             const invocation = typeRef.createInvocation(injector);
@@ -595,7 +595,7 @@ export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
     props: (filter?: AbstractType | string, options?: InvocationHandlerOptions) => ({ filter, ...options }),
     design: {
         method: (ctx) => {
-            const typeRef = ctx.class;
+            const typeRef = ctx.classRef;
             const decors = typeRef.getDefines<FilterHandlerMetadata<any>>(ctx.currDecor);
             const injector = ctx.injector;
             const invocation = typeRef.createInvocation(injector);

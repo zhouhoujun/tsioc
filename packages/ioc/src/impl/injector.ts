@@ -241,14 +241,14 @@ export class DefaultInjector implements Injector {
         platform.getInjector<DefaultInjector>(providedIn, this).processRegister(platform, def, option)
     }
 
-    protected processRegister(platform: Platform, def: ClassRef, option?: RegOption) {
+    protected processRegister(platform: Platform, classRef: ClassRef, option?: RegOption) {
         // make sure class register once.
-        const type = def.type;
-        if (this.has(def.type, InjectFlags.Default)) {
+        const type = classRef.type;
+        if (this.has(classRef.type, InjectFlags.Default)) {
             return false
         }
 
-        this.onRegister(def);
+        this.onRegister(classRef);
         let injectorType: ((type: AbstractType, typeRef: ClassRef) => void | Promise<void>) | undefined;
         if (option?.injectorType) {
             injectorType = (regType, typeRef) => processInjectorType(
@@ -267,7 +267,7 @@ export class DefaultInjector implements Injector {
             getRecords,
             ...option,
             injectorType,
-            class: def,
+            classRef,
             platform,
             type
         } as DesignContext;
@@ -275,7 +275,7 @@ export class DefaultInjector implements Injector {
         platform.design.handle(ctx, null, {
             finally: () => {
                 cleanObj(ctx);
-                this.onRegistered(def);
+                this.onRegistered(classRef);
             }
         });
         return true

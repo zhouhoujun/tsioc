@@ -6,10 +6,10 @@ import { RegContext } from './ctx';
 
 
 export const initReflectInterceptor: InterceptorFn<RegContext, void> = (input: RegContext, next: HandlerFn, context: Context) => {
-    if (!input.class) {
-        input.class = getClassRef(input.type)
+    if (!input.classRef) {
+        input.classRef = getClassRef(input.type)
     }
-    const singleton = input.class.getAnnotation().singleton;
+    const singleton = input.classRef.getAnnotation().singleton;
     if (singleton) {
         input.singleton = singleton;
     }

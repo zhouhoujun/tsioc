@@ -50,11 +50,11 @@ export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe',
     design: {
         method: (ctx) => {
 
-            const defines = ctx.class.getDefines<HandleMetadata>(ctx.currDecor);
+            const defines = ctx.classRef.getDefines<HandleMetadata>(ctx.currDecor);
             if (!defines || !defines.length) return;
 
             const injector = ctx.injector;
-            const invocation = ctx.class.createInvocation(injector);
+            const invocation = ctx.classRef.createInvocation(injector);
 
             defines.forEach(def => {
                 const metadata = def.metadata;
@@ -129,11 +129,11 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
     design: {
         method: (ctx) => {
 
-            const defines = ctx.class.getDefines<HandleMetadata>(ctx.currDecor);
+            const defines = ctx.classRef.getDefines<HandleMetadata>(ctx.currDecor);
             if (!defines || !defines.length) return;
 
             const injector = ctx.injector;
-            const invocation = ctx.class.createInvocation(injector);
+            const invocation = ctx.classRef.createInvocation(injector);
 
             defines.forEach(def => {
                 const metadata = def.metadata;
@@ -156,7 +156,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
         },
 
         afterAnnoation: (ctx) => {
-            const mapping = ctx.class.getAnnotation<MappingDef>();
+            const mapping = ctx.classRef.getAnnotation<MappingDef>();
             const injector = ctx.injector;
             const type = ctx.type as Type<Handler>;
 
@@ -264,7 +264,7 @@ export function createMappingDecorator<T extends RouteMappingMetadata<any>>(name
             afterAnnoation: (ctx) => {
 
                 const injector = ctx.injector;
-                const mapping = ctx.class.getAnnotation<MappingDef>();
+                const mapping = ctx.classRef.getAnnotation<MappingDef>();
 
                 const router = mapping.router ? injector.get(mapping.router) : getRouter(injector, mapping.protocol);
                 if (!router) throw new Exception(lang.getTypeName(parent) + 'has not registered!');
@@ -274,7 +274,7 @@ export function createMappingDecorator<T extends RouteMappingMetadata<any>>(name
                     prefix: joinPath(mapping.prefix, mapping.version),
                     path: router.formatter.format(mapping.route!),
                     pattern: mapping.route,
-                    controller: ctx.class.createInvocation(injector)
+                    controller: ctx.classRef.createInvocation(injector)
                 };
                 router.use(route);
                 route.controller.onDestroy(() => {

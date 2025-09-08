@@ -73,7 +73,7 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
             beforeAnnoation: (context) => {
                 // use as dependence inject module.
                 if (context.injectorType) {
-                    context.injectorType(context.type, context.class);
+                    context.injectorType(context.type, context.classRef);
                 }
             }
         },
@@ -738,7 +738,7 @@ export const ProvidedIn: ProvidedIn = createDecorator<ProvidedInTargetMetadata>(
     props: (target: AbstractType, provide?: Token, alias?: string) => ({ target, provide: getToken(provide!, alias) }),
     design: {
         afterAnnoation: (ctx) => {
-            const meta = ctx.class.getMetadata<ProvidedInTargetMetadata>(ctx.currDecor);
+            const meta = ctx.classRef.getMetadata<ProvidedInTargetMetadata>(ctx.currDecor);
             const type = ctx.type;
             const prds = meta.provide ? { provide: meta.provide, useClass: type } : type;
             const platform = ctx.injector.platform();

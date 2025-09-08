@@ -141,7 +141,7 @@ export class SwaggerService {
             // if (route.endsWith('**')) route = route.substring(0, route.length - 2);
             if (v.controller instanceof Invocation) {
                 const route = v.path;
-                const cls = v.controller.class;
+                const cls = v.controller.classRef;
                 cls.getClassdDefines(df => isString((df.metadata as RouteMappingMetadata).route))
                     .forEach(df => {
                         const description = cls.getClassdDefines().find(d => !!d.metadata?.description)?.metadata?.description;
