@@ -115,7 +115,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
     private async processComponent(el: RElement, componentRef: ComponentRef<any>, context: any, viewRef: RootViewRef, environument: InvocationContext) {
 
-        const componentDef = componentRef.class.getAnnotation<ComponentDef>();
+        const componentDef = componentRef.classRef.getAnnotation<ComponentDef>();
         const attributes = componentDef?.attributes || [];
 
         // 解析组件属性绑定

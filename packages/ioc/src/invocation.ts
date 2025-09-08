@@ -28,7 +28,7 @@ export abstract class Invocation<T = any, TRes = any> {
      * 
      * 类反射
      */
-    abstract get class(): ClassRef<T>;
+    abstract get classRef(): ClassRef<T>;
     /**
      * the invoke instance.
      *

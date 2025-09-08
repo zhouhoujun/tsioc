@@ -35,8 +35,8 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
 
 
     async render(): Promise<void> {
-        const def = this.class.getAnnotation<ComponentDef>();
-        if (!/\[\w+\]/.test(def.selector || '') && !def.template && !def.templateUrl) throw new Exception(this.class.className + ' template or templateUrl is required.')
+        const def = this.classRef.getAnnotation<ComponentDef>();
+        if (!/\[\w+\]/.test(def.selector || '') && !def.template && !def.templateUrl) throw new Exception(this.classRef.className + ' template or templateUrl is required.')
         const template = def.template || await fetchTemplate(def.templateUrl!);
         const compiler = this.context.get(TemplateCompiler);
         await (this.instance as OnInit).onInit?.();

@@ -42,12 +42,12 @@ export class Advisor implements OnDestroy {
     protected registerAspect(aspect: Invocation): void {
         this.aspects.push(aspect);
         aspect.onDestroy(() => this.remove(aspect));
-        aspect.class.getAnnotation<AopDef>().advices?.forEach(advice => {
+        aspect.classRef.getAnnotation<AopDef>().advices?.forEach(advice => {
             if (!advice.type) {
                 advice.type = aspect.type;
             }
             const match = this.matcher.parse(advice);
-            if (advice.propertyKey && advice.adviceName === 'Around' && aspect.class.getParameters(advice.propertyKey)?.some(r => r.type === ProceedingJoinPoint || r.provider === ProceedingJoinPoint)) {
+            if (advice.propertyKey && advice.adviceName === 'Around' && aspect.classRef.getParameters(advice.propertyKey)?.some(r => r.type === ProceedingJoinPoint || r.provider === ProceedingJoinPoint)) {
                 this.proceedings.push({
                     advice,
                     match,

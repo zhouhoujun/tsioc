@@ -37,9 +37,9 @@ export class SuiteRunner<T = object> implements UnitRunner<T> {
      * @returns {SuiteDescribe}
      */
     getSuiteDescribe(): SuiteDescribe {
-        const meta = this.invocation.class.getAnnotation() as SuiteMetadata;
+        const meta = this.invocation.classRef.getAnnotation() as SuiteMetadata;
         this.timeout = (meta && meta.timeout) ? meta.timeout : (3 * 60 * 60 * 1000);
-        this.describe = meta.describe || this.invocation.class.className;
+        this.describe = meta.describe || this.invocation.classRef.className;
         return {
             timeout: this.timeout,
             describe: this.describe,
@@ -91,7 +91,7 @@ export class SuiteRunner<T = object> implements UnitRunner<T> {
     }
 
     async runBefore(describe: SuiteDescribe) {
-        const befores = this.invocation.class.getDefines<BeforeTestMetadata>(Before);
+        const befores = this.invocation.classRef.getDefines<BeforeTestMetadata>(Before);
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -105,7 +105,7 @@ export class SuiteRunner<T = object> implements UnitRunner<T> {
     }
 
     async runBeforeEach() {
-        const befores = this.invocation.class.getDefines<BeforeEachTestMetadata>(BeforeEach);
+        const befores = this.invocation.classRef.getDefines<BeforeEachTestMetadata>(BeforeEach);
         await lang.step(
             befores.map(df => () => {
                 return this.runTimeout(
@@ -116,7 +116,7 @@ export class SuiteRunner<T = object> implements UnitRunner<T> {
     }
 
     async runAfterEach() {
-        const afters = this.invocation.class.getDefines<BeforeEachTestMetadata>(AfterEach);
+        const afters = this.invocation.classRef.getDefines<BeforeEachTestMetadata>(AfterEach);
         await lang.step(afters.map(df => () => {
             return this.runTimeout(
                 df.propertyKey,
@@ -126,7 +126,7 @@ export class SuiteRunner<T = object> implements UnitRunner<T> {
     }
 
     async runAfter(describe: SuiteDescribe) {
-        const afters = this.invocation.class.getDefines<BeforeTestMetadata>(After);
+        const afters = this.invocation.classRef.getDefines<BeforeTestMetadata>(After);
         await lang.step(
             afters.map(df => () => {
                 return this.runTimeout(
@@ -137,7 +137,7 @@ export class SuiteRunner<T = object> implements UnitRunner<T> {
     }
 
     async runTest(desc: SuiteDescribe) {
-        const tests = this.invocation.class.getDefines<TestCaseMetadata>(Test);
+        const tests = this.invocation.classRef.getDefines<TestCaseMetadata>(Test);
         await lang.step(
             tests.map(df => {
                 return {
