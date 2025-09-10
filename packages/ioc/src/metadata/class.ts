@@ -133,6 +133,65 @@ export interface DecorDefine<T = any> {
     readonly metadata: T;
 }
 
+export class MetadataDef<T = any> {
+    constructor(
+        readonly type: AbstractType<T>,
+        /**
+         * the type class name
+         */
+        readonly name: string,
+        /**
+         * the type provided in.
+         */
+        readonly providedIn?: AbstractType | 'root' | 'platform',
+        /**
+         * the type is abstract or not.
+         */
+        readonly abstract?: boolean,
+        /**
+         * static provider or not.
+         */
+        readonly isStatic?: boolean,
+        /**
+         * is singleton or not.
+         *
+         * @type {boolean}
+         */
+        readonly singleton?: boolean,
+        /**
+         * the type cache timeout when not used.
+         *
+         * @type {number}
+         */
+        readonly expires?: number,
+        /**
+         * the type provide tokens
+         */
+        readonly provides: Token[] = [],
+        /**
+         * the providers for the type.
+         */
+        readonly providers: Provider[] = [],
+        /**
+         * resolvers for the type
+         */
+        readonly resolvers: ResolveInterceptorLike[] = [],
+        /**
+         * runnable defines.
+         */
+        readonly runnables: RunableDefine[] = [],
+        readonly propProviders : DecorDefine[] = [],
+        readonly methodProviders: Record<string | symbol, InvokeArguments> = {}, 
+        readonly paramProviders: Record<string | symbol, ParameterMetadata[]> = {},
+
+
+        readonly classDefs: DecorDefine[] = [],
+        readonly propDefs: DecorDefine[] = [],
+        readonly methodDefs: DecorDefine[] = [],
+        readonly paramDefs: Record<string | symbol, DecorDefine[]> = {},
+
+    ) { }
+}
 
 /**
  * type def metadata.
@@ -178,6 +237,7 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
 
 export const proxyTag = Symbol('__proxy');
 
+
 /**
  * type class reflective.
  * 
@@ -196,6 +256,7 @@ export class ClassRef<T = any> {
     readonly paramDecors: DecoratorFn[];
 
     private annotation: TypeDef<T>;
+
     private params!: Map<string, any[]>;
     /**
      * class provides.
@@ -451,7 +512,7 @@ export class ClassRef<T = any> {
 
         let defines: DecorDefine<T>[] = Reflect.getMetadata(MetadataKeys.METHOD_METADATA, this.type) ?? [];
         if (defines.length) {
-             if (filter && propertyKey) {
+            if (filter && propertyKey) {
                 defines = defines.filter(d => d.propertyKey === propertyKey && filter(d));
             } else if (propertyKey) {
                 defines = defines.filter(d => d.propertyKey === propertyKey);

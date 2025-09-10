@@ -33,7 +33,6 @@ export class TypeormTransactionStatus extends TransactionStatus {
             joinPoint.setValue(EntityManager, entityManager);
 
             const context = {} as any;
-            // targetRef.getPropDefines()
             targetRef?.getParamDefines(joinPoint.propertyKey).forEach(dec => {
                 if (dec.decor === InjectRepository) {
                     joinPoint.args?.splice(dec.parameterIndex || 0, 1, this.getRepository((dec.metadata as RepositoryMetadata).model, dec.metadata.type, entityManager))
