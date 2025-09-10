@@ -170,9 +170,9 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
     onDestroy(): void {
         if (this._destroyed) return;
         this._destroyed = true;
-        this._maps.clear();
         this._refs.forEach(refs => refs.forEach(ref => ref.destroy()));
         this._refs.clear();
+        this._maps.clear();
         this.multicaster.clear();
         this._handler.onDestroy();
         this._types = null!;
