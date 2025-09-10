@@ -114,7 +114,7 @@ export const propertyInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
         if (!ictx || !input.instance) throw new Exception('autowride property need InvocationContext');
         let meta: PropertyMetadata, key: string, val;
 
-        input.classRef.eachProperty(define => {
+        input.classRef.eachPropertyProviders(define => {
             if (!(define.metadata.type || define.metadata.provider)) return;
             key = `${define.propertyKey.toString()}_INJECTED`;
             meta = define.metadata; //.find(m => m.provider)!;

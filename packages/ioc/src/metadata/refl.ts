@@ -167,10 +167,11 @@ export interface DecoratorOption<T> extends MetadataFactory<T>, DecorRegisterOpt
 // 添加元数据工具函数
 export const MetadataKeys = {
     CLASS_METADATA: 'ioc:class:metadata',
+    PROPERTY_PROVIDERS: 'ioc:property:providers',
     PROPERTY_METADATA: 'ioc:property:metadata',
     METHOD_METADATA: 'ioc:method:metadata',
-    METHOD_PARAMS: 'ioc:method:params',
     METHOD_PARAMS_METADATA: 'ioc:method:params:metadata',
+    METHOD_PARAMS: 'ioc:method:params',
     METHOD_RETURNS: 'ioc:method:returns'
 };
 
@@ -272,7 +273,6 @@ export const decorParamInject = (ctx: DecorContext, next: HandlerFn, context: Co
             if (paramTypes) {
                 params = paramTypes.map((type, index) => ({ type, name: names[index], propertyKey }));
                 Reflect.defineMetadata(MetadataKeys.METHOD_PARAMS, params, def.type, propertyKey);
-                // def.setParameters(propertyKey, params)
             }
         }
         if (params) {
@@ -302,13 +302,9 @@ export const decorInitProp = (ctx: DecorContext, next: HandlerFn, context: Conte
 
 const propInjectDecors: Record<string, boolean> = { '@Inject': true, '@Autowired': true };
 export const decorPropInject = (ctx: DecorContext, next: HandlerFn, context: Context) => {
-    if (propInjectDecors[ctx.define.decor.toString()]) {
-        const defines = Reflect.getMetadata(MetadataKeys.PROPERTY_METADATA, ctx.classRef.type);
-        if (defines) {
-            defines.push(ctx.define);
-        } else {
-            Reflect.defineMetadata(MetadataKeys.PROPERTY_METADATA, [ctx.define], ctx.classRef.type);
-        }
+    const define = ctx.define as DecorDefine<PropertyMetadata>;
+    if (propInjectDecors[define.decor.toString()]) {
+        saveMetadata(MetadataKeys.PROPERTY_PROVIDERS, ctx.classRef.type, define, !!define.metadata.provider);
     }
     return next(ctx, context)
 }
@@ -349,10 +345,6 @@ export const decorAnnoAction = (ctx: DecorContext, next: HandlerFn, context: Con
         if (meta.expires) {
             def.getAnnotation().expires = meta.expires
         }
-
-        // if (ctx.define.providers?.length) {
-        //     def.providers.push(ctx.define.providers)
-        // }
 
         if (meta.providedIn) {
             def.getAnnotation().providedIn = meta.providedIn
@@ -427,7 +419,7 @@ export const decorMethodProviders = (ctx: DecorContext, next: HandlerFn, context
     return next(ctx, context)
 }
 
-export const decorExtendHandler = (ctx: DecorContext, context: Context|undefined) => {
+export const decorExtendHandler = (ctx: DecorContext, context: Context | undefined) => {
     if (ctx.define.decor.getHandler) {
         ctx.define.decor.getHandler(ctx.define.decorType)?.(ctx, context);
     }
@@ -454,57 +446,49 @@ export const paramDecorLifeScope: HandlerScope<DecorContext, Context> = new Hand
 ]);
 
 function storageDefine(define: DecorDefine, classRef: ClassRef) {
-    let metaKey: string;
-    let unshift = false;
-    let propertyKey: string | symbol | undefined;
     switch (define.decorType) {
         case 'class':
-            metaKey = MetadataKeys.CLASS_METADATA;
-            unshift = true;
             if (!classRef.classDecors.includes(define.decor)) {
                 classRef.classDecors.push(define.decor);
             }
+            saveMetadata(MetadataKeys.CLASS_METADATA, classRef.type, define, true);
+            saveMetadata(define.decor, classRef.type, define, true);
             break;
 
         case 'property':
-            metaKey = MetadataKeys.PROPERTY_METADATA;
-            unshift = true;
             if (!classRef.propDecors.includes(define.decor)) {
                 classRef.propDecors.push(define.decor);
             }
+            saveMetadata(MetadataKeys.PROPERTY_METADATA, classRef.type, define);
+            saveMetadata(define.decor, classRef.type, define);
             break;
 
         case 'method':
-            metaKey = MetadataKeys.METHOD_METADATA;
             if (!classRef.methodDecors.includes(define.decor)) {
                 classRef.methodDecors.push(define.decor);
             }
+            saveMetadata(MetadataKeys.METHOD_METADATA, classRef.type, define);
+            saveMetadata(define.decor, classRef.type, define);
             break;
 
         case 'parameter':
-            metaKey = MetadataKeys.METHOD_PARAMS_METADATA;
-            unshift = true;
-            propertyKey = define.propertyKey;
             if (!classRef.paramDecors.includes(define.decor)) {
                 classRef.paramDecors.push(define.decor);
             }
+            saveMetadata(MetadataKeys.METHOD_PARAMS_METADATA, classRef.type, define, true, define.propertyKey);
+            saveMetadata(define.decor, classRef.type, define, true);
             break;
     }
-    if (metaKey) {
-        const defines = propertyKey ? Reflect.getMetadata(metaKey, classRef.type, propertyKey) : Reflect.getMetadata(metaKey, classRef.type);
-        if (defines) {
-            unshift ? defines.unshift(define) : defines.push(define);
-        } else {
-            propertyKey ? Reflect.defineMetadata(metaKey, [define], classRef.type, propertyKey) : Reflect.defineMetadata(metaKey, [define], classRef.type);
-        }
-    }
-    const defines = Reflect.getMetadata(define.decor, classRef.type);
+
+}
+
+function saveMetadata(metaKey: any, type: AbstractType, define: DecorDefine, unshift?: boolean, propertyKey?: string | symbol) {
+    const defines = propertyKey ? Reflect.getMetadata(metaKey, type, propertyKey) : Reflect.getMetadata(metaKey, type);
     if (defines) {
         unshift ? defines.unshift(define) : defines.push(define);
     } else {
-        Reflect.defineMetadata(define.decor, [define], classRef.type);
+        propertyKey ? Reflect.defineMetadata(metaKey, [define], type, propertyKey) : Reflect.defineMetadata(metaKey, [define], type);
     }
-
 }
 
 function dispatch(lifescope: HandlerScope<DecorContext>, target: any, type: AbstractType, define: DecorDefine, options: DecoratorOption<any>) {

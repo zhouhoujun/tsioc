@@ -1,6 +1,6 @@
 import { AbstractType, Type, Annotation } from '../types';
 import { ModuleWithProviders, Provider } from '../providers';
-import { PropertyMetadata, ParameterMetadata, AnnotationMetadata, MethodMetadata } from './meta';
+import { PropertyMetadata, ParameterMetadata, AnnotationMetadata } from './meta';
 import { InvocationContext, InvocationOptions, InvokeArguments } from '../context';
 import { Token } from '../tokens';
 import { ResolveInterceptorLike } from '../resolver';
@@ -405,8 +405,8 @@ export class ClassRef<T = any> {
         return propertyKey ? defines.some(d => d.propertyKey == propertyKey) : defines.length > 0;
     }
 
-    eachProperty(callback: (value: DecorDefine<PropertyMetadata>) => void, excludes?: (string | symbol)[]) {
-        const props = Reflect.getMetadata(MetadataKeys.PROPERTY_METADATA, this.type) as DecorDefine<PropertyMetadata>[];
+    eachPropertyProviders(callback: (value: DecorDefine<PropertyMetadata>) => void, excludes?: (string | symbol)[]) {
+        const props = Reflect.getMetadata(MetadataKeys.PROPERTY_PROVIDERS, this.type) as DecorDefine<PropertyMetadata>[];
         const upexc = excludes ? excludes.slice(0) : [];
         props?.forEach(p => {
             if (!excludes?.includes(p.propertyKey)) {
@@ -417,22 +417,7 @@ export class ClassRef<T = any> {
             }
         });
 
-        this.parent?.eachProperty(callback, upexc);
-    }
-
-    eachMethod(callback: (value: DecorDefine<MethodMetadata>) => void, excludes?: (string | symbol)[]) {
-        const props = Reflect.getMetadata(MetadataKeys.METHOD_METADATA, this.type) as DecorDefine<MethodMetadata>[];
-        const upexc = excludes ? excludes.slice(0) : [];
-        props?.forEach(p => {
-            if (!excludes?.includes(p.propertyKey)) {
-                callback(p);
-            }
-            if (!this.parent && !upexc.includes(p.propertyKey)) {
-                upexc.push(p.propertyKey);
-            }
-        });
-
-        this.parent?.eachMethod(callback, upexc);
+        this.parent?.eachPropertyProviders(callback, upexc);
     }
 
 
