@@ -120,6 +120,7 @@ export class RedisServer extends Server<RequestContext, RedisServConfig> {
     }
 
     protected async onShutdown(): Promise<any> {
+        if(!this.publisher || !this.subscriber) return;
         this.destroy$.next();
         this.destroy$.complete();
         

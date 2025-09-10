@@ -59,10 +59,8 @@ export class RedisClient extends AbstractClient<TopicRequestOptions, RedisReques
         });
         this.publisher.on(ev.ERROR, (err) => this.logger.error(err));
 
-        await Promise.all([
-            this.subscriber.connect(),
-            this.publisher.connect()
-        ]);
+        await this.subscriber.connect();
+        await this.publisher.connect();
 
         this._transport = this.handler.injector.get(ClientTransportFactory).create(this.handler.injector, {
             subscriber: this.subscriber,
@@ -94,6 +92,7 @@ export class RedisClient extends AbstractClient<TopicRequestOptions, RedisReques
     }
 
     protected async onShutdown(): Promise<void> {
+        if(!this.publisher || !this.subscriber) return;
         await this._transport?.destroy();
         await this.publisher?.quit();
         this.publisher?.removeAllListeners();
