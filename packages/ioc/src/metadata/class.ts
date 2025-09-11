@@ -133,71 +133,36 @@ export interface DecorDefine<T = any> {
     readonly metadata: T;
 }
 
-export class MetadataDef<T = any> {
-    constructor(
-        readonly type: AbstractType<T>,
-        /**
-         * the type class name
-         */
-        readonly name: string,
-        /**
-         * the type provided in.
-         */
-        readonly providedIn?: AbstractType | 'root' | 'platform',
-        /**
-         * the type is abstract or not.
-         */
-        readonly abstract?: boolean,
-        /**
-         * static provider or not.
-         */
-        readonly isStatic?: boolean,
-        /**
-         * is singleton or not.
-         *
-         * @type {boolean}
-         */
-        readonly singleton?: boolean,
-        /**
-         * the type cache timeout when not used.
-         *
-         * @type {number}
-         */
-        readonly expires?: number,
-        /**
-         * the type provide tokens
-         */
-        readonly provides: Token[] = [],
-        /**
-         * the providers for the type.
-         */
-        readonly providers: Provider[] = [],
-        /**
-         * resolvers for the type
-         */
-        readonly resolvers: ResolveInterceptorLike[] = [],
-        /**
-         * runnable defines.
-         */
-        readonly runnables: RunableDefine[] = [],
-        readonly propProviders : DecorDefine[] = [],
-        readonly methodProviders: Record<string | symbol, InvokeArguments> = {}, 
-        readonly paramProviders: Record<string | symbol, ParameterMetadata[]> = {},
-
-
-        readonly classDefs: DecorDefine[] = [],
-        readonly propDefs: DecorDefine[] = [],
-        readonly methodDefs: DecorDefine[] = [],
-        readonly paramDefs: Record<string | symbol, DecorDefine[]> = {},
-
-    ) { }
-}
-
 /**
  * type def metadata.
  */
 export interface TypeDef<T = any> extends Annotation<T>, AnnotationMetadata {
+    
+        /**
+         * the type provide tokens
+         */
+        provides?: Token[];
+        /**
+         * the providers for the type.
+         */
+        providers?: Provider[];
+        /**
+         * resolvers for the type
+         */
+        resolvers?: ResolveInterceptorLike[];
+        /**
+         * runnable defines.
+         */
+        runnables?: RunableDefine[];
+        propProviders? : DecorDefine[];
+        methodProviders?: Record<string | symbol, InvokeArguments>;
+        paramProviders?: Record<string | symbol, ParameterMetadata[]>;
 
+
+        classDefs?: DecorDefine[];
+        propDefs?: DecorDefine[];
+        methodDefs?: DecorDefine[];
+        paramDefs?: Record<string | symbol, DecorDefine[]>;
 }
 
 
