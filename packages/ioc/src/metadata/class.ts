@@ -1,4 +1,4 @@
-import { AbstractType, Type, Annotation } from '../types';
+import { AbstractType, Type, Annotation, TypeOf } from '../types';
 import { ModuleWithProviders, Provider } from '../providers';
 import { PropertyMetadata, ParameterMetadata, AnnotationMetadata } from './meta';
 import { InvocationContext, InvocationOptions, InvokeArguments } from '../context';
@@ -138,31 +138,31 @@ export interface DecorDefine<T = any> {
  */
 export interface TypeDef<T = any> extends Annotation<T>, AnnotationMetadata {
     
-        /**
-         * the type provide tokens
-         */
-        provides?: Token[];
-        /**
-         * the providers for the type.
-         */
-        providers?: Provider[];
-        /**
-         * resolvers for the type
-         */
-        resolvers?: ResolveInterceptorLike[];
-        /**
-         * runnable defines.
-         */
-        runnables?: RunableDefine[];
-        propProviders? : DecorDefine[];
-        methodProviders?: Record<string | symbol, InvokeArguments>;
-        paramProviders?: Record<string | symbol, ParameterMetadata[]>;
+    /**
+     * the type provide tokens
+     */
+    provides?: Token[];
+    /**
+     * the providers for the type.
+     */
+    providers?: Provider[];
+    /**
+     * resolvers for the type
+     */
+    resolvers?: TypeOf<ResolveInterceptorLike>[];
+    /**
+     * runnable defines.
+     */
+    runnables?: RunableDefine[];
+    propProviders? : DecorDefine[];
+    methodProviders?: Record<string | symbol, InvokeArguments>;
+    paramProviders?: Record<string | symbol, ParameterMetadata[]>;
 
 
-        classDefs?: DecorDefine[];
-        propDefs?: DecorDefine[];
-        methodDefs?: DecorDefine[];
-        paramDefs?: Record<string | symbol, DecorDefine[]>;
+    classDefs?: DecorDefine[];
+    propDefs?: DecorDefine[];
+    methodDefs?: DecorDefine[];
+    paramDefs?: Record<string | symbol, DecorDefine[]>;
 }
 
 

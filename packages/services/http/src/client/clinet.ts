@@ -9,9 +9,9 @@ import { ev } from '@tsdi/common/transport';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
 import { HttpRequest, HttpEvent, HttpParams, HttpResponse } from '@tsdi/common/http';
 import { Observable, of } from 'rxjs';
-import * as http from 'http';
-import * as https from 'https';
-import * as http2 from 'http2';
+import * as http from 'node:http';
+import * as https from 'node:https';
+import * as http2 from 'node:http2';
 import { HttpHandler } from './handler';
 import { HttpClientConfig } from './options';
 

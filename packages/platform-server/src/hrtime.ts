@@ -1,6 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { HrtimeFormatter } from '@tsdi/core';
-import { hrtime } from 'process';
+import { hrtime } from 'node:process';
 
 @Injectable()
 export class ServerHrtimeFormatter extends HrtimeFormatter {

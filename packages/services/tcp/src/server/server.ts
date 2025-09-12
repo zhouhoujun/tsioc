@@ -5,8 +5,8 @@ import { LOCALHOST, ListenOpts, ListenService } from '@tsdi/common';
 import { InternalServerException, ev } from '@tsdi/common/transport';
 import { BindServerEvent, RequestContext, Server, ServerTransportFactory } from '@tsdi/endpoints';
 import { Subject, first, fromEvent, lastValueFrom, merge } from 'rxjs';
-import * as net from 'net';
-import * as tls from 'tls';
+import * as net from 'node:net';
+import * as tls from 'node:tls';
 import { TCP_BIND_FILTERS, TCP_BIND_GUARDS, TCP_BIND_INTERCEPTORS, TcpServConfig } from './options';
 import { TcpRequestHandler } from './handler';
 

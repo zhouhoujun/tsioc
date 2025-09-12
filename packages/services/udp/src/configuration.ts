@@ -19,7 +19,7 @@ import {
     contextSerializeBackend
 } from '@tsdi/endpoints';
 import { fromEvent } from 'rxjs';
-import { RemoteInfo, Socket } from 'dgram';
+import { RemoteInfo, Socket } from 'node:dgram';
 
 import { UdpClient } from './client/client';
 import { UdpHandler } from './client/handler';

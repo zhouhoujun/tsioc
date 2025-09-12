@@ -2,9 +2,9 @@ import { PROCESS_ROOT } from '@tsdi/core';
 import { Injectable, isArray, isNil, isString, TypeException } from '@tsdi/ioc';
 import { BadRequestException, ENAMETOOLONG, ENOENT, ENOTDIR, ForbiddenException, InternalServerException, NotFoundException } from '@tsdi/common/transport';
 import { RequestContext, ContentSendAdapter, SendOptions } from '@tsdi/endpoints';
-import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'path';
-import { existsSync, Stats, stat, createReadStream } from 'fs';
-import { promisify } from 'util';
+import { normalize, resolve, basename, extname, parse, sep, isAbsolute, join } from 'node:path';
+import { existsSync, Stats, stat, createReadStream } from 'node:fs';
+import { promisify } from 'node:util';
 
 const statify = promisify(stat);
 

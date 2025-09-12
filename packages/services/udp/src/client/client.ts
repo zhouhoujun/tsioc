@@ -2,7 +2,7 @@ import { Injectable, Context, isString, promisify } from '@tsdi/ioc';
 import { Pattern, RequestInitOpts, ResponseEvent } from '@tsdi/common';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { AbstractClient, ClientTransport, ClientTransportFactory } from '@tsdi/common/client';
-import { Socket, createSocket, SocketOptions } from 'dgram';
+import { Socket, createSocket, SocketOptions } from 'node:dgram';
 import { UdpHandler } from './handler';
 import { UdpClientConfig } from './options';
 import { sizeLimit } from '../consts';

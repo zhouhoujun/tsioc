@@ -6,7 +6,6 @@ import { Client, connect, IClientSubscribeOptions } from 'mqtt';
 import { MqttServConfig } from './options';
 import { MqttRequestHandler } from './handler';
 import { Subject } from 'rxjs';
-import { RouteHandler } from '@tsdi/endpoints/src/router/route.handler';
 
 
 /**

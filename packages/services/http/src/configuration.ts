@@ -24,8 +24,8 @@ import {
     HttpExceptionHandlers,
     HttpStatusAdapter
 } from '@tsdi/endpoints';
-import { request as httpRequest, IncomingMessage, ClientRequest, Server } from 'http';
-import { request as httpsRequest, Server as HttpsServer } from 'https';
+import { request as httpRequest, IncomingMessage, ClientRequest, Server } from 'node:http';
+import { request as httpsRequest, Server as HttpsServer } from 'node:https';
 import {
     ClientHttp2Session, ClientHttp2Stream, constants, OutgoingHttpHeaders,
     ClientSessionRequestOptions, Http2Server
