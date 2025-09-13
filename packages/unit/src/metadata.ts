@@ -1,4 +1,4 @@
-import { ActionTypes, AnnotationMetadata, createDecorator, DecoratorOption, TypeDef, ClassRef } from '@tsdi/ioc';
+import { ActionType, AnnotationMetadata, createDecorator, DecoratorOption, TypeDef } from '@tsdi/ioc';
 import { SuiteInvocationFactory } from './runner/SuiteRunner';
 
 
@@ -32,7 +32,7 @@ export interface Suite {
  * @Suite decorator.
  */
 export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
-    actionType: ActionTypes.declaration,
+    actionType: ActionType.declaration,
     def: {
         class: (ctx) => {
             ctx.classRef.setAnnotation(ctx.define.metadata);

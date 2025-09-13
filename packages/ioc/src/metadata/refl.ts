@@ -6,7 +6,7 @@ import {
     RunnableMetadata, MethodMetadata
 } from './meta';
 import {
-    ctorName, DecoratorType, DecorDefine, Decors, ActionTypes,
+    ctorName, DecoratorType, DecorDefine, Decors,
     ClassRef, TypeDef, DecoratorFn, ActionType
 } from './class';
 import { InvokeOptions } from '../context';
@@ -107,7 +107,7 @@ export interface DecorRegisterOption<T = any> {
     /**
      * decorator basic action type.
      */
-    actionType?: ActionType | ActionType[];
+    actionType?: ActionType;
     /**
      * set def handles.
      * raise when init decorator metadate of Type.
@@ -198,66 +198,22 @@ export interface DecorContext<T = any> {
  * @param parameterIndex 
  * @returns decorator define
  */
-export function toDefine<T>(decor: DecoratorFn, metadata: T, decorType: DecoratorType, options: MetadataFactory<any>, propertyKey?: string, parameterIndex?: number): DecorDefine<T> {
-
-    // const providers = options.providers;
-
+export function toDefine<T>(decor: DecoratorFn, metadata: T, decorType: DecoratorType, options: DecoratorOption<any>, propertyKey?: string, parameterIndex?: number): DecorDefine<T> {
 
     return {
         decor,
         propertyKey: propertyKey!,
         parameterIndex,
         decorType,
-        metadata
-        // providers
+        metadata,
+        actionType: options.actionType
     }
 }
 
 
-
-function regActionType(decor: string, type: ActionType, decType: DecoratorType) {
-    let records: Record<string, boolean> | undefined;
-    switch (type) {
-        case ActionTypes.annoation:
-            records = typeAnnoDecors;
-            break;
-
-        case ActionTypes.declaration:
-            records = declarations;
-            break;
-        case ActionTypes.inject:
-            switch (decType) {
-                case 'parameter':
-                    records = paramInjectDecors;
-                    break;
-                case 'property':
-                    records = propInjectDecors;
-                    break;
-            }
-            break;
-        case ActionTypes.runnable:
-            records = runnableDecors;
-            break;
-        case ActionTypes.providers:
-            switch (decType) {
-                case 'class':
-                    records = typeProvidersDecors;
-                    break;
-                case 'method':
-                    records = methodProvidersDecors;
-                    break;
-            }
-            break;
-        default:
-            return
-    }
-
-    if (records && !records[decor]) records[decor] = true;
-}
-
-const paramInjectDecors: Record<string, boolean> = { '@Inject': true, '@Autowired': true, '@Param': true, '@Nullable': true };
+// const paramInjectDecors: Record<string, boolean> = { '@Inject': true, '@Autowired': true, '@Param': true, '@Nullable': true };
 export const decorParamInject = (ctx: DecorContext, next: HandlerFn, context: Context) => {
-    if (paramInjectDecors[ctx.define.decor.toString()]) {
+    if (ctx.define.actionType && ctx.define.actionType & ActionType.inject) {
         const def = ctx.classRef;
         const meta = ctx.define.metadata as ParameterMetadata;
         const propertyKey = ctx.define.propertyKey;
@@ -300,10 +256,10 @@ export const decorInitProp = (ctx: DecorContext, next: HandlerFn, context: Conte
 
 
 
-const propInjectDecors: Record<string, boolean> = { '@Inject': true, '@Autowired': true };
+// const propInjectDecors: Record<string, boolean> = { '@Inject': true, '@Autowired': true };
 export const decorPropInject = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     const define = ctx.define as DecorDefine<PropertyMetadata>;
-    if (propInjectDecors[define.decor.toString()]) {
+    if (define.actionType && define.actionType & ActionType.inject) {
         saveMetadata(MetadataKeys.PROPERTY_PROVIDERS, ctx.classRef.type, define, !!define.metadata.provider);
     }
     return next(ctx, context)
@@ -324,9 +280,9 @@ export const decorCtorDesignParams = (ctx: DecorContext, next: HandlerFn, contex
     return next(ctx, context)
 }
 
-const typeAnnoDecors: Record<string, boolean> = { '@Injectable': true, '@Singleton': true, '@Abstract': true, '@Static': true };
+// const typeAnnoDecors: Record<string, boolean> = { '@Injectable': true, '@Singleton': true, '@Abstract': true, '@Static': true };
 export const decorAnnoAction = (ctx: DecorContext, next: HandlerFn, context: Context) => {
-    if (typeAnnoDecors[ctx.define.decor.toString()]) {
+    if (ctx.define.actionType && ctx.define.actionType & ActionType.annoation) {
         const def = ctx.classRef;
         const meta = ctx.define.metadata as AnnotationMetadata;
         if (isBoolean(meta.abstract)) {
@@ -353,9 +309,9 @@ export const decorAnnoAction = (ctx: DecorContext, next: HandlerFn, context: Con
     return next(ctx, context)
 };
 
-const runnableDecors: Record<string, boolean> = { '@Autorun': true, '@IocExt': true };
+// const runnableDecors: Record<string, boolean> = { '@Autorun': true, '@IocExt': true };
 export const decorRunnable = (ctx: DecorContext, next: HandlerFn, context: Context) => {
-    if (runnableDecors[ctx.define.decor.toString()]) {
+    if (ctx.define.actionType && ctx.define.actionType & ActionType.runnable) {
         const metadata = ctx.define.metadata as RunnableMetadata;
         (metadata as any).decorType = ctx.define.decorType;
         if (!metadata.propertyKey) metadata.propertyKey = ctx.define.propertyKey;
@@ -366,9 +322,9 @@ export const decorRunnable = (ctx: DecorContext, next: HandlerFn, context: Conte
     return next(ctx, context)
 }
 
-const declarations: Record<string, boolean> = {};
+// const declarations: Record<string, boolean> = {};
 export const declarationFactory = (ctx: DecorContext, next: HandlerFn, context: Context) => {
-    if (declarations[ctx.define.decor.toString()]) {
+    if (ctx.define.actionType && ctx.define.actionType & ActionType.declaration) {
         const factory = (ctx.classRef.type as AnnotationType)[typeFac] ?? ctx.options.factory;
         if (factory) {
             ctx.classRef.setInvocationFactory(factory);
@@ -377,9 +333,9 @@ export const declarationFactory = (ctx: DecorContext, next: HandlerFn, context: 
     return next(ctx, context)
 }
 
-const typeProvidersDecors: Record<string, boolean> = { '@Injectable': true, '@Providers': true };
+// const typeProvidersDecors: Record<string, boolean> = { '@Injectable': true, '@Providers': true };
 export const decorProviders = (ctx: DecorContext, next: HandlerFn, context: Context) => {
-    if (typeProvidersDecors[ctx.define.decor.toString()]) {
+    if (ctx.define.actionType && ctx.define.actionType & ActionType.providers) {
         if ((ctx.define.metadata as ProvidersMetadata).providers?.length) {
             ctx.classRef.providers.push((ctx.define.metadata as ProvidersMetadata).providers!)
         }
@@ -408,9 +364,9 @@ export const decorMethodDesignParams = (ctx: DecorContext, next: HandlerFn, cont
     return next(ctx, context)
 }
 
-const methodProvidersDecors: Record<string, boolean> = { '@Providers': true, '@Autowired': true };
+// const methodProvidersDecors: Record<string, boolean> = { '@Providers': true, '@Autowired': true };
 export const decorMethodProviders = (ctx: DecorContext, next: HandlerFn, context: Context) => {
-    if (methodProvidersDecors[ctx.define.decor.toString()]) {
+    if (ctx.define.actionType && ctx.define.actionType & ActionType.providers) {
         const mpdrs = (ctx.define.metadata as MethodMetadata) as InvokeOptions;
         if (mpdrs) {
             ctx.classRef.setMethodOptions(ctx.define.propertyKey, mpdrs)
@@ -494,6 +450,7 @@ function saveMetadata(metaKey: any, type: AbstractType, define: DecorDefine, uns
 function dispatch(lifescope: HandlerScope<DecorContext>, target: any, type: AbstractType, define: DecorDefine, options: DecoratorOption<any>) {
 
     const classRef = getClassRef(type);
+    // classRef.storage(define);
     storageDefine(define, classRef);
 
     const ctx = {
@@ -502,17 +459,9 @@ function dispatch(lifescope: HandlerScope<DecorContext>, target: any, type: Abst
         options,
         classRef
     } as DecorContext;
-    if (options.actionType) {
-        if (isArray(options.actionType)) {
-            options.actionType.forEach(ty => regActionType(define.decor.toString(), ty, define.decorType))
-        } else {
-            regActionType(define.decor.toString(), options.actionType, define.decorType)
-        }
-    }
     options.init && options.init(ctx);
 
     lifescope.handle(ctx, null, () => {
-        // ctx.class.addDefine(define);
         options.afterInit && options.afterInit(ctx);
         cleanObj(ctx)
     });

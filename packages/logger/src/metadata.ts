@@ -1,7 +1,6 @@
 import {
     TypeMetadata, createDecorator, ResolveInterceptorLike, AbstractType, isString,
-    lang, PropParamDecorator, ArgumentException, Decors, ActionTypes, isDefined,
-    isNil
+    lang, PropParamDecorator, ArgumentException, Decors, ActionType, isNil
 } from '@tsdi/ioc';
 import { Level } from './Level';
 import { LoggerManagers } from './manager';
@@ -218,7 +217,7 @@ const loggerResolvers = [
  * @InjectLog
  */
 export const InjectLog: Log<LogMetadata> = createDecorator<LogMetadata>('InjectLog', {
-    actionType: ActionTypes.inject,
+    actionType: ActionType.inject,
     init: (ctx) => {
         if (ctx.define.decorType === Decors.parameter || ctx.define.decorType === Decors.property) {
             const metadata = ctx.define.metadata as LogMetadata;

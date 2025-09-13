@@ -97,14 +97,14 @@ export namespace Decors {
     export const afterAnnoation = 'afterAnnoation';
 }
 
-export type ActionType = 'inject' | 'annoation' | 'declaration' | 'runnable' | 'providers';
 
-export namespace ActionTypes {
-    export const inject = 'inject';
-    export const annoation = 'annoation';
-    export const declaration = 'declaration';
-    export const runnable = 'runnable';
-    export const providers = 'providers';
+export enum ActionType {
+    inject = 0b0001,
+    annoation = 0b0010,
+    declaration = 0b0100,
+    runnable = 0b1000,
+    providers = 0b10000,
+    module = 0b100000,
 }
 
 /**
@@ -119,6 +119,10 @@ export interface DecorDefine<T = any> {
      * current decorator type.
      */
     readonly decorType: DecoratorType;
+    /**
+     * action type.
+     */
+    actionType?: ActionType;
     /**
      * property key.
      */
@@ -137,7 +141,7 @@ export interface DecorDefine<T = any> {
  * type def metadata.
  */
 export interface TypeDef<T = any> extends Annotation<T>, AnnotationMetadata {
-    
+
     /**
      * the type provide tokens
      */
@@ -154,7 +158,7 @@ export interface TypeDef<T = any> extends Annotation<T>, AnnotationMetadata {
      * runnable defines.
      */
     runnables?: RunableDefine[];
-    propProviders? : DecorDefine[];
+    propProviders?: DecorDefine[];
     methodProviders?: Record<string | symbol, InvokeArguments>;
     paramProviders?: Record<string | symbol, ParameterMetadata[]>;
 
@@ -248,6 +252,17 @@ export class ClassRef<T = any> {
      */
     readonly runnables: RunableDefine[];
 
+    // protected decDefs: Map<DecoratorFn, DecorDefine[]> = new Map();
+
+    // protected classDefs: DecorDefine[] = [];
+    // protected propDefs: DecorDefine[] = [];
+    // protected methodDefs: DecorDefine[] = [];
+    // protected paramDefs: Map<string | symbol, DecorDefine[]> = new Map();
+
+    // protected propProviders: DecorDefine[] = [];
+    // protected methodProviders: Map<string | symbol, InvokeArguments> = new Map();
+    // protected paramProviders: Map<string | symbol, ParameterMetadata[]> = new Map();
+
     private invocationFactory?: Resolve<InvocationFactory>;
 
     constructor(public readonly type: AbstractType<T>, annotation: TypeDef<T>, private parent?: ClassRef) {
@@ -314,6 +329,54 @@ export class ClassRef<T = any> {
         }
         return inst[method](...args);
     }
+
+    // storage(define: DecorDefine) {
+    //     switch (define.decorType) {
+    //         case 'class':
+    //             if (!this.classDecors.includes(define.decor)) {
+    //                 this.classDecors.push(define.decor);
+    //             }
+    //             this.saveMetadata(this.classDefs, define, true);
+    //             this.saveMetadata(this.decDefs, define, true, define.decor);
+    //             break;
+
+    //         case 'property':
+    //             if (!this.propDecors.includes(define.decor)) {
+    //                 this.propDecors.push(define.decor);
+    //             }
+    //             this.saveMetadata(this.propDefs, define);
+    //             this.saveMetadata(this.decDefs, define, false, define.decor);
+    //             break;
+
+    //         case 'method':
+    //             if (!this.methodDecors.includes(define.decor)) {
+    //                 this.methodDecors.push(define.decor);
+    //             }
+    //             this.saveMetadata(this.methodDefs, define);
+    //             this.saveMetadata(this.decDefs, define, false, define.decor);
+    //             break;
+
+    //         case 'parameter':
+    //             if (!this.paramDecors.includes(define.decor)) {
+    //                 this.paramDecors.push(define.decor);
+    //             }
+    //             this.saveMetadata(this.paramDefs, define, true, define.propertyKey);
+    //             this.saveMetadata(this.decDefs, define, true, define.decor);
+    //             break;
+    //     }
+
+    // }
+
+    // protected saveMetadata(maps: DecorDefine[], define: DecorDefine, unshift?: boolean): void
+    // protected saveMetadata(maps: Map<any, DecorDefine[]>, define: DecorDefine, unshift: boolean, key: any): void
+    // protected saveMetadata(maps: DecorDefine[] | Map<any, DecorDefine[]>, define: DecorDefine, unshift?: boolean, key?: any) {
+    //     const defines = key ? (maps as Map<any, DecorDefine[]>).get(key) : maps as DecorDefine[];
+    //     if (defines) {
+    //         unshift ? defines.unshift(define) : defines.push(define);
+    //     } else if (key) {
+    //         (maps as Map<any, DecorDefine[]>).set(key, [define])
+    //     }
+    // }
 
     getDefines<T = any>(decor: DecoratorFn): DecorDefine<T>[] {
         return (Reflect.getMetadata(decor, this.type) ?? []).concat(this.parent?.getDefines(decor) ?? []);

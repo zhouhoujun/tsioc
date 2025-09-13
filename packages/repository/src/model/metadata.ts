@@ -1,4 +1,4 @@
-import { ActionTypes, createDecorator, PropParamDecorator, AbstractType, ParameterMetadata } from '@tsdi/ioc';
+import { ActionType, createDecorator, PropParamDecorator, AbstractType, ParameterMetadata } from '@tsdi/ioc';
 import { RepositoryArgumentResolver } from './repository';
 
 /**
@@ -32,7 +32,7 @@ export interface RepositoryDecorator {
  * @Repository
  */
 export const Repository: RepositoryDecorator = createDecorator<RepositoryMetadata>('Repository', {
-    actionType: ActionTypes.inject,
+    actionType: ActionType.inject,
     props: (model: AbstractType, connection?: string) => ({ model, connection, resolver: [RepositoryArgumentResolver] })
 });
 

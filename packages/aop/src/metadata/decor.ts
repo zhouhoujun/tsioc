@@ -1,4 +1,4 @@
-import { isString, AbstractType, AnnotationMetadata, DecoratorOption, createDecorator, ActionTypes, noPointcut, AnnotationType } from '@tsdi/ioc';
+import { isString, AbstractType, AnnotationMetadata, DecoratorOption, createDecorator, ActionType, noPointcut, AnnotationType } from '@tsdi/ioc';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata, PointcutAnnotation, AdviceTypes } from './meta';
 import { Advisor } from '../Advisor';
 import { AopDef } from './ref';
@@ -39,7 +39,7 @@ export interface Aspect {
  * @Aspect()
  */
 export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
-    actionType: ActionTypes.annoation,
+    actionType: ActionType.annoation,
     def: {
         class: (ctx) => {
             ctx.classRef.getAnnotation<AopDef>().aspect = ctx.define.metadata;

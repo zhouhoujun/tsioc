@@ -1,9 +1,8 @@
 import {
-    isUndefined, AbstractType, createDecorator, Provider, InjectableMetadata, PropertyMetadata, ActionTypes, InjectFlags,
-    MethodPropDecorator, Token, ArgumentException, object2string, InvokeArguments,
+    isUndefined, AbstractType, createDecorator, Provider, InjectableMetadata, PropertyMetadata, InjectFlags,
+    MethodPropDecorator, Token, ArgumentException, object2string, InvokeArguments, ActionType,
     isString, Parameter, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
-    ModuleType, Type, MutilProvider, ClassRef, Injector, ProvidedInMetadata, AnnotationMetadata,
-    Invocation
+    ModuleType, Type, MutilProvider, ClassRef, Injector, ProvidedInMetadata, AnnotationMetadata, Invocation
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import {
@@ -60,7 +59,7 @@ export interface Runner {
  * @Runner decorator.
  */
 export const Runner: Runner = createDecorator('Runner', {
-    actionType: ActionTypes.runnable,
+    actionType: ActionType.runnable,
     props: <TArg>(method: string | RunnerOption<TArg>, args?: RunnerOption<TArg>) =>
         (isString(method) ? { method, args } : { args: method }),
 
@@ -110,7 +109,7 @@ export interface Pipe {
  * @expors {@link Pipe}
  */
 export const Pipe: Pipe = createDecorator<PipeMetadata>('Pipe', {
-    actionType: [ActionTypes.annoation, ActionTypes.providers],
+    actionType: ActionType.annoation | ActionType.providers,
     def: {
         class: (ctx) => {
             ctx.classRef.setAnnotation(ctx.define.metadata);
@@ -181,7 +180,7 @@ export interface ConfigurationDecorator {
  * @Configuartion
  */
 export const Configuration: ConfigurationDecorator = createDecorator<ConfgiurationMetadata>('Configuration', {
-    actionType: ActionTypes.annoation,
+    actionType: ActionType.annoation,
     design: {
         afterAnnoation: (ctx) => {
             const { classRef: typeRef, injector } = ctx;
@@ -692,6 +691,7 @@ export interface TransportParameterDecorator {
  * @exports {@link TransportParameterDecorator}
  */
 export const Payload: TransportParameterDecorator = createParamDecorator('Payload', {
+    actionType: ActionType.inject,
     props: (field: string, pipe?: { pipe: string | TypeOf<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
         if (meta.flags) {
@@ -709,6 +709,7 @@ export const Payload: TransportParameterDecorator = createParamDecorator('Payloa
  * @exports {@link TransportParameterDecorator}
  */
 export const Topic: TransportParameterDecorator = createParamDecorator('Topic', {
+    actionType: ActionType.inject,
     props: (field: string, pipe?: { pipe: string | AbstractType<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
         if (meta.flags) {

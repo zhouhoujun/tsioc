@@ -12,7 +12,7 @@ import { InvokeArguments, InvokeOptions } from '../context';
 import { getModuleType } from '../module.ref';
 import { getTypes } from '../utils/lang';
 import { DecoratorOption } from './refl';
-import { ModuleDef } from './class';
+import { ActionType, ModuleDef } from './class';
 
 
 
@@ -50,6 +50,7 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
     const append = options.appendProps;
     return createDecorator<T>(name, {
         ...options,
+        actionType: ActionType.module,
         def: {
             ...options.def,
             class: [
@@ -206,6 +207,7 @@ export interface Autowired {
  * @Autowired()
  */
 export const Autowired: Autowired = createDecorator<AutoWiredMetadata>('Autowired', {
+    actionType: ActionType.inject | ActionType.providers,
     props: (provider: Token, alias?: string | Record<string, any>) => {
         if (alias) {
             return isString(alias) ? { provider: getToken(provider, alias) } : { provider: getToken(provider, alias.alias), ...alias, alias: undefined }
@@ -327,6 +329,7 @@ export interface Inject {
  * @Inject()
  */
 export const Inject: Inject = createDecorator<InjectMetadata>('Inject', {
+    actionType: ActionType.inject,
     props: (provider: Token, alias?: string | Record<string, any>) => {
         if (alias) {
             return isString(alias) ? { provider: getToken(provider, alias) } : { provider: getToken(provider, alias.alias), ...alias, alias: undefined }
@@ -352,6 +355,7 @@ export interface Nullable {
  * @Nullable decoator. define param can enable null.
  */
 export const Nullable: Nullable = createDecorator<InjectMetadata>('Nullable', {
+    actionType: ActionType.inject,
     appendProps: (meta) => {
         meta.nullable = true;
         return meta
@@ -455,7 +459,9 @@ export interface Param {
  *
  * @Param()
  */
-export const Param: Param = createParamDecorator<ParameterMetadata>('Param');
+export const Param: Param = createParamDecorator<ParameterMetadata>('Param', {
+    actionType: ActionType.inject
+});
 
 /**
  * Type of the Optional metadata.
@@ -479,6 +485,7 @@ export interface Optional {
 }
 
 export const Optional: Optional = createParamDecorator('Optional', {
+    actionType: ActionType.inject,
     appendProps: (meta) => {
         if (meta.flags) {
             meta.flags = meta.flags & InjectFlags.Optional
@@ -641,6 +648,7 @@ export interface Injectable {
  * @Injectable()
  */
 export const Injectable: Injectable = createDecorator<InjectableMetadata>('Injectable', {
+    actionType: ActionType.annoation | ActionType.providers,
     props: (provide: Token, arg2: any, arg3?: any) => {
         if (isString(arg2)) {
             return { provide: getToken(provide, arg2), ...arg3 }
@@ -685,6 +693,7 @@ export interface Providers {
  * @Providers
  */
 export const Providers: Providers = createDecorator<ProvidersMetadata>('Providers', {
+    actionType: ActionType.providers,
     props: (providers: StaticProvider[]) => ({ providers }),
 });
 
@@ -784,6 +793,7 @@ export interface Static {
  * @Static()
  */
 export const Static: Static = createDecorator<AnnotationMetadata>('Static', {
+    actionType: ActionType.annoation,
     props: (provide: Token, alias?: string) => ({ provide: getToken(provide, alias) }),
     appendProps: (meta) => {
         meta.static = true
@@ -828,6 +838,7 @@ export interface Singleton {
  * @Singleton()
  */
 export const Singleton: Singleton = createDecorator<SingletonMetadata>('Singleton', {
+    actionType: ActionType.annoation,
     props: (provide: Token, alias?: string) => ({ provide: getToken(provide, alias) }),
     appendProps: (meta) => {
         meta.singleton = true
@@ -876,6 +887,7 @@ export interface Autorun {
  * @Autorun
  */
 export const Autorun: Autorun = createDecorator<RunnableMetadata>('Autorun', {
+    actionType: ActionType.runnable,
     props: (arg: string | number, args?: InvokeArguments) => {
         if (isString(arg)) {
             return { propertyKey: arg, args }
