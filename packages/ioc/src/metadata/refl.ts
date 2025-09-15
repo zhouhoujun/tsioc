@@ -337,6 +337,9 @@ export function getDef<T extends TypeDef>(type: AbstractType): T {
         tagAnn = {
             name: type.name,
             type,
+            provides: [],
+            providers: [],
+            resolvers: [],
             propMetadatas: new Map(),
             methodMetadatas: new Map(),
             decDefs: new Map(),
