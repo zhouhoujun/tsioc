@@ -20,7 +20,7 @@ import { DefaultPlatform } from './platform';
 import { DesignContext } from '../lifescope/ctx';
 import { DefaultInvocationFactory } from './invocation';
 import { InvocationFactory } from '../invocation';
-import { Parameter } from '../resolver';
+
 
 export const SCOPE_PRODIDERS: Provider[] = [];
 

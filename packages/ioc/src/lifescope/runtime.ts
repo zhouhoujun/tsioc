@@ -114,19 +114,20 @@ export const propertyInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
         if (!ictx || !input.instance) throw new Exception('autowride property need InvocationContext');
         let meta: PropertyMetadata, key: string, val;
 
-        input.classRef.eachPropertyProviders(define => {
-            if (!(define.metadata.type || define.metadata.provider)) return;
-            key = `${define.propertyKey.toString()}_INJECTED`;
-            meta = define.metadata; //.find(m => m.provider)!;
-            // if (!meta) {
-            //     meta = metas.find(m => m.type)!
-            // }
+        input.classRef.eachPropertyProviders((metas, propertyKey) => {
+            // if (!(define.metadata.type || define.metadata.provider)) return;
+            key = `${propertyKey.toString()}_INJECTED`;
+            meta = metas.find(m => m.provider)!;
+            if (!meta) {
+                meta = metas.find(m => m.type)!
+            }
+            if (!meta) return;
             if (!(input as any)[key]) {
 
                 val = ictx.resolveArgument(meta, input.type, onError);
 
                 if (isDefined(val)) {
-                    input.instance[define.propertyKey] = val;
+                    input.instance[propertyKey] = val;
                     (input as any)[key] = true
                 }
             }

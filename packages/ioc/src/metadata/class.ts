@@ -25,7 +25,9 @@ export class ClassRef<T = any> {
     /**
      * class name.
      */
-    className: string;
+    get className(): string {
+        return this.annotation.name;
+    }
 
     readonly classDecors: DecoratorFn[];
     readonly propDecors: DecoratorFn[];
@@ -38,44 +40,51 @@ export class ClassRef<T = any> {
     /**
      * class provides.
      */
-    readonly provides: Token[];
+    get provides(): Token[] {
+        return this.annotation.provides!;
+    }
     /**
      * class extends providers.
      */
-    readonly providers: Provider[];
+    get providers(): Provider[] {
+        return this.annotation.providers!;
+    }
     /**
      * class resolvers.
      *
      * @type {InstanceOf<ArgumentResolver>[]}
      */
-    readonly resolvers: ResolveInterceptorLike[];
-    /**
-     * method providers.
-     *
-     * @type {Map<string, InvokeArguments>}
-     */
-    private methodOptions: Map<string | symbol, InvokeArguments>;
+    get resolvers(): TypeOf<ResolveInterceptorLike>[] {
+        return this.annotation.resolvers!;
+    }
+    // /**
+    //  * method providers.
+    //  *
+    //  * @type {Map<string, InvokeArguments>}
+    //  */
+    // private methodOptions: Map<string | symbol, InvokeArguments>;
     /**
      * runnable defines.
      */
-    readonly runnables: RunableDefine[];
+    get runnables(): RunableDefine[] {
+        return this.annotation.runnables!;
+    }
 
-    protected decDefs: Map<DecoratorFn, DecorDefine[]> = new Map();
+    // protected decDefs: Map<DecoratorFn, DecorDefine[]> = new Map();
 
-    protected classDefs: DecorDefine[] = [];
-    protected propDefs: DecorDefine[] = [];
-    protected methodDefs: DecorDefine[] = [];
-    protected paramDefs: Map<string | symbol, DecorDefine[]> = new Map();
+    // protected classDefs: DecorDefine[] = [];
+    // protected propDefs: DecorDefine[] = [];
+    // protected methodDefs: DecorDefine[] = [];
+    // protected paramDefs: Map<string | symbol, DecorDefine[]> = new Map();
 
-    protected propProviders: DecorDefine[] = [];
-    protected methodProviders: Map<string | symbol, InvokeArguments> = new Map();
-    protected paramProviders: Map<string | symbol, ParameterMetadata[]> = new Map();
+    // protected propProviders: DecorDefine[] = [];
+    // protected methodProviders: Map<string | symbol, InvokeArguments> = new Map();
+    // protected paramProviders: Map<string | symbol, ParameterMetadata[]> = new Map();
 
     private invocationFactory?: Resolve<InvocationFactory>;
 
-    constructor(public readonly type: AbstractType<T>, annotation: TypeDef<T>, private parent?: ClassRef) {
-        this.annotation = annotation ?? getClassAnnotation(type)! ?? {};
-        this.className = this.annotation?.name || type.name;
+    constructor(public readonly type: AbstractType<T>, annotation: Partial<TypeDef<T>>, private parent?: ClassRef) {
+        this.annotation = this.initAnnotation(annotation ?? getClassAnnotation(type)! ?? {});
         this.classDecors = [];
         if (parent) {
             this.propDecors = parent.propDecors.slice(0);
@@ -86,12 +95,10 @@ export class ClassRef<T = any> {
             this.methodDecors = [];
             this.paramDecors = []
         }
-        this.provides = [];
-        this.providers = parent ? parent.providers.slice(0) : [];
-        this.resolvers = parent ? parent.resolvers.slice(0) : [];
-        this.runnables = parent ? parent.runnables.slice(0) : [];
-        this.methodOptions = new Map();
+
+        // this.methodOptions = new Map();
     }
+
 
     setInvocationFactory(factory: Resolve<InvocationFactory>) {
         this.invocationFactory = factory;
@@ -106,13 +113,51 @@ export class ClassRef<T = any> {
         return factory.create(this, { ...options, injector, targetType: this.type });
     }
 
+    protected initAnnotation(annotation: Partial<TypeDef<T>>): TypeDef<T> {
+        if (!annotation.name) {
+            annotation.name = this.type.name;
+        }
+        if (!annotation.decDefs) {
+            annotation.decDefs = new Map();
+        }
+        if (!annotation.classDefs) {
+            annotation.classDefs = [];
+        }
+        if (!annotation.propDefs) {
+            annotation.propDefs = [];
+        }
+        if (!annotation.methodDefs) {
+            annotation.methodDefs = [];
+        }
+        if (!annotation.paramDefs) {
+            annotation.paramDefs = new Map();
+        }
+        if (!annotation.propMetadatas) {
+            annotation.propMetadatas = new Map();
+        }
+        if (!annotation.methodMetadatas) {
+            annotation.methodMetadatas = new Map();
+        }
+
+        if (!annotation.providers) {
+            annotation.provides = [];
+        }
+
+        annotation.providers = [...(this.parent?.providers ?? []), ...(annotation.providers ?? [])];
+        annotation.resolvers = [...(this.parent?.resolvers ?? []), ...(annotation.resolvers ?? [])];
+        annotation.runnables = [...(this.parent?.runnables ?? []), ...(annotation.runnables ?? [])];
+        return annotation as TypeDef<T>;
+    }
+
     getAnnotation<TAnn extends TypeDef<T>>(): TAnn {
         return this.annotation as TAnn;
     }
 
+
+
     assignAnnotation(records: Record<string, any>) {
         if (!records) return;
-        Object.assign(this.annotation, pick(records, 'name', 'classDefs', 'propDefs', 'methodDefs', 'paramDefs', 'propMetadatas', 'methodMetadatas'));
+        Object.assign(this.annotation, records); // pick(records, 'name', 'classDefs', 'propDefs', 'methodDefs', 'paramDefs', 'propMetadatas', 'methodMetadatas'));
     }
 
     /**
@@ -139,37 +184,39 @@ export class ClassRef<T = any> {
     }
 
     storage(define: DecorDefine) {
+
+        const annotation = this.getAnnotation();
         switch (define.decorType) {
             case 'class':
                 if (!this.classDecors.includes(define.decor)) {
                     this.classDecors.push(define.decor);
                 }
-                this.saveMetadata(this.classDefs, define, true);
-                this.saveMetadata(this.decDefs, define, true, define.decor);
+                this.saveMetadata(annotation.classDefs, define, true);
+                this.saveMetadata(annotation.decDefs, define, true, define.decor);
                 break;
 
             case 'property':
                 if (!this.propDecors.includes(define.decor)) {
                     this.propDecors.push(define.decor);
                 }
-                this.saveMetadata(this.propDefs, define);
-                this.saveMetadata(this.decDefs, define, false, define.decor);
+                this.saveMetadata(annotation.propDefs, define);
+                this.saveMetadata(annotation.decDefs, define, false, define.decor);
                 break;
 
             case 'method':
                 if (!this.methodDecors.includes(define.decor)) {
                     this.methodDecors.push(define.decor);
                 }
-                this.saveMetadata(this.methodDefs, define);
-                this.saveMetadata(this.decDefs, define, false, define.decor);
+                this.saveMetadata(annotation.methodDefs, define);
+                this.saveMetadata(annotation.decDefs, define, false, define.decor);
                 break;
 
             case 'parameter':
                 if (!this.paramDecors.includes(define.decor)) {
                     this.paramDecors.push(define.decor);
                 }
-                this.saveMetadata(this.paramDefs, define, true, define.propertyKey);
-                this.saveMetadata(this.decDefs, define, true, define.decor);
+                this.saveMetadata(annotation.paramDefs, define, true, define.propertyKey);
+                this.saveMetadata(annotation.decDefs, define, true, define.decor);
                 break;
         }
 
@@ -187,7 +234,7 @@ export class ClassRef<T = any> {
     }
 
     getDefines<T = any>(decor: DecoratorFn): DecorDefine<T>[] {
-        return (Reflect.getMetadata(decor, this.type) ?? []).concat(this.parent?.getDefines(decor) ?? []);
+        return (this.annotation.decDefs?.get(decor) ?? []).concat(this.parent?.getDefines(decor) ?? []);
     }
 
     /**
@@ -203,45 +250,53 @@ export class ClassRef<T = any> {
     }
 
     hasOwnParameters(method: string | symbol): boolean {
-        return Reflect.hasOwnMetadata(MetadataKeys.METHOD_PARAMS, this.type, method);
+        return !!this.annotation.methodMetadatas?.get(method)?.params
+        // Reflect.hasOwnMetadata(MetadataKeys.METHOD_PARAMS, this.type, method);
     }
 
     getParameters(method: string | symbol): ParameterMetadata[] | undefined {
-        return Reflect.getMetadata(MetadataKeys.METHOD_PARAMS, this.type, method) ?? this.parent?.getParameters(method)
+        return this.annotation.methodMetadatas?.get(method)?.params ?? this.parent?.getParameters(method)
+        // return Reflect.getMetadata(MetadataKeys.METHOD_PARAMS, this.type, method) ?? this.parent?.getParameters(method)
     }
 
     getReturnning(method: string | symbol): AbstractType | undefined {
-        return Reflect.getMetadata(MetadataKeys.METHOD_RETURNS, this.type, method) ?? this.parent?.getReturnning(method)
+        return this.annotation.methodMetadatas?.get(method)?.returnType ?? this.parent?.getReturnning(method)
+        // return Reflect.getMetadata(MetadataKeys.METHOD_RETURNS, this.type, method) ?? this.parent?.getReturnning(method)
     }
 
 
 
-    hasMethodOptions(method: string | symbol): boolean {
-        return this.methodOptions.has(method)
-    }
+    // hasMethodOptions(method: string | symbol): boolean {
+    //     return this.annotation.methodOptions.has(method)
+    // }
     getMethodOptions<T>(method: string | symbol): InvokeArguments | undefined {
-        return this.methodOptions.get(method) ?? this.parent?.getMethodOptions(method)
+        return this.annotation.methodMetadatas.get(method)?.invokeEnv ?? this.parent?.getMethodOptions(method)
     }
     setMethodOptions<T>(method: string | symbol, options: InvokeArguments) {
-        if (this.methodOptions.has(method)) {
-            const eopt = this.methodOptions.get(method)!;
-            if (hasItem(options.providers)) {
-                if (!eopt.providers) eopt.providers = [];
-                eopt.providers.push(options.providers!)
-            }
-            if (hasItem(options.resolvers)) {
-                if (!eopt.resolvers) eopt.resolvers = [];
-                eopt.resolvers.push(...options.resolvers!)
-            }
-            if (hasItem(options.values)) {
-                if (!eopt.values) eopt.values = [];
-                eopt.values.push(...options.values!);
-            }
-            if (options.request) {
-                eopt.request = eopt.request ? { ...eopt.request, ...options.request } : options.request
-            }
-        } else {
-            this.methodOptions.set(method, options)
+
+        let meta = this.annotation.methodMetadatas.get(method);
+        if (!meta) {
+            meta = { invokeEnv: {} as InvokeArguments };
+            this.annotation.methodMetadatas.set(method, meta);
+        }
+        if (!meta.invokeEnv) {
+            meta.invokeEnv = {} as InvokeArguments;
+        }
+        const env = meta.invokeEnv;
+        if (hasItem(options.providers)) {
+            if (!env.providers) env.providers = [];
+            env.providers.push(options.providers!)
+        }
+        if (hasItem(options.resolvers)) {
+            if (!env.resolvers) env.resolvers = [];
+            env.resolvers.push(...options.resolvers!)
+        }
+        if (hasItem(options.values)) {
+            if (!env.values) env.values = [];
+            env.values.push(...options.values!);
+        }
+        if (options.request) {
+            env.request = env.request ? { ...env.request, ...options.request } : options.request
         }
     }
 
@@ -302,15 +357,15 @@ export class ClassRef<T = any> {
         return propertyKey ? defines.some(d => d.propertyKey == propertyKey) : defines.length > 0;
     }
 
-    eachPropertyProviders(callback: (value: DecorDefine<PropertyMetadata>) => void, excludes?: (string | symbol)[]) {
-        const props = Reflect.getMetadata(MetadataKeys.PROPERTY_PROVIDERS, this.type) as DecorDefine<PropertyMetadata>[];
+    eachPropertyProviders(callback: (value: PropertyMetadata[], key: string | symbol) => void, excludes?: (string | symbol)[]) {
+        // const props = this.annotation.propMetadatas as DecorDefine<PropertyMetadata>[];
         const upexc = excludes ? excludes.slice(0) : [];
-        props?.forEach(p => {
-            if (!excludes?.includes(p.propertyKey)) {
-                callback(p);
+        this.annotation.propMetadatas?.forEach((p, key) => {
+            if (!excludes?.includes(key)) {
+                callback(p, key);
             }
-            if (!this.parent && !upexc.includes(p.propertyKey)) {
-                upexc.push(p.propertyKey);
+            if (!this.parent && !upexc.includes(key)) {
+                upexc.push(key);
             }
         });
 
@@ -323,7 +378,7 @@ export class ClassRef<T = any> {
      * @param filter custom filter.
      */
     getClassdDefines<T = any>(filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[] {
-        const defines = Reflect.getMetadata(MetadataKeys.CLASS_METADATA, this.type) ?? [];
+        const defines = this.annotation.classDefs;
         return filter ? defines.filter(filter) : defines;
     }
 
@@ -346,7 +401,7 @@ export class ClassRef<T = any> {
             propertyKey = arg;
         }
 
-        let defines: DecorDefine<T>[] = Reflect.getMetadata(MetadataKeys.METHOD_METADATA, this.type) ?? [];
+        let defines: DecorDefine<T>[] = this.annotation.methodDefs;
         if (defines.length) {
             if (filter && propertyKey) {
                 defines = defines.filter(d => d.propertyKey === propertyKey && filter(d));
@@ -382,7 +437,7 @@ export class ClassRef<T = any> {
             propertyKey = arg;
         }
 
-        let defines: DecorDefine<T>[] = Reflect.getMetadata(MetadataKeys.PROPERTY_METADATA, this.type) ?? [];
+        let defines: DecorDefine<T>[] = this.annotation.propDefs;
         if (defines.length) {
             if (filter && propertyKey) {
                 defines = defines.filter(d => d.propertyKey === propertyKey && filter(d));
@@ -399,7 +454,7 @@ export class ClassRef<T = any> {
     }
 
     getParamDefines<T extends ParameterMetadata>(method: string | symbol): DecorDefine<T>[] {
-        return Reflect.getMetadata(MetadataKeys.METHOD_PARAMS_METADATA, this.type, method) ?? this.parent?.getParamDefines(method) ?? []
+        return this.annotation.paramDefs.get(method) ?? this.parent?.getParamDefines(method) ?? []
     }
 
 
@@ -528,16 +583,16 @@ function getParamNames(func: Function) {
 
 
 
-// 添加元数据工具函数
-export const MetadataKeys = {
-    CLASS_METADATA: 'ioc:class:metadata',
-    PROPERTY_PROVIDERS: 'ioc:property:providers',
-    PROPERTY_METADATA: 'ioc:property:metadata',
-    METHOD_METADATA: 'ioc:method:metadata',
-    METHOD_PARAMS_METADATA: 'ioc:method:params:metadata',
-    METHOD_PARAMS: 'ioc:method:params',
-    METHOD_RETURNS: 'ioc:method:returns'
-};
+// // 添加元数据工具函数
+// export const MetadataKeys = {
+//     CLASS_METADATA: 'ioc:class:metadata',
+//     PROPERTY_PROVIDERS: 'ioc:property:providers',
+//     PROPERTY_METADATA: 'ioc:property:metadata',
+//     METHOD_METADATA: 'ioc:method:metadata',
+//     METHOD_PARAMS_METADATA: 'ioc:method:params:metadata',
+//     METHOD_PARAMS: 'ioc:method:params',
+//     METHOD_RETURNS: 'ioc:method:returns'
+// };
 
 
 /**
@@ -861,17 +916,18 @@ export interface TypeDef<T = any> extends Annotation<T>, AnnotationMetadata {
      */
     runnables?: RunableDefine[];
 
-    propMetadatas?: Map<string | symbol, PropertyMetadata[]>;
-    methodMetadatas?:Map<string | symbol, {
+    propMetadatas: Map<string | symbol, PropertyMetadata[]>;
+    methodMetadatas: Map<string | symbol, {
         invokeEnv?: InvokeArguments;
         params?: ParameterMetadata[];
         returnType?: AbstractType;
-    }>
+    }>;
 
-    classDefs?: DecorDefine[];
-    propDefs?: DecorDefine[];
-    methodDefs?: DecorDefine[];
-    paramDefs?: Map<string | symbol, DecorDefine[]>;
+    decDefs: Map<DecoratorFn, DecorDefine[]>;
+    classDefs: DecorDefine[];
+    propDefs: DecorDefine[];
+    methodDefs: DecorDefine[];
+    paramDefs: Map<string | symbol, DecorDefine[]>;
 }
 
 

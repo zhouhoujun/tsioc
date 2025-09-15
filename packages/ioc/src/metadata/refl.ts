@@ -8,9 +8,7 @@ import {
 import {
     ctorName, DecorDefine, Decors,
     ClassRef, TypeDef, ActionType,
-    DecorContext,
-    MetadataKeys,
-    DecoratorOption
+    DecorContext, DecoratorOption
 } from './class';
 import { InvokeOptions } from '../context';
 import { Context, HandlerFn } from '../handler';
@@ -37,28 +35,33 @@ function saveMetadata(maps: DecorDefine[] | Map<any, any[]>, define: DecorDefine
 
 const decorParamInject = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (ctx.define.actionType && ctx.define.actionType & ActionType.inject) {
-        const def = ctx.classRef;
-        const meta = ctx.define.metadata as ParameterMetadata;
+        const typeRef = ctx.classRef;
         const propertyKey = ctx.define.propertyKey;
-        let params = def.hasOwnParameters(propertyKey) ? def.getParameters(propertyKey) : null;
+        let meta = typeRef.getAnnotation().methodMetadatas.get(propertyKey);
+        if (!meta) {
+            meta = {};
+            typeRef.getAnnotation().methodMetadatas.set(propertyKey, meta);
+        }
+        const dmeta = ctx.define.metadata as ParameterMetadata;
+        let params = meta.params;
         if (!params) {
-            const names = def.getParamNames(propertyKey);
+            const names = typeRef.getParamNames(propertyKey);
             let paramTypes: any[];
             if (propertyKey === ctorName) {
-                paramTypes = Reflect.getMetadata('design:paramtypes', def.type)
+                paramTypes = Reflect.getMetadata('design:paramtypes', typeRef.type)
             } else {
                 paramTypes = Reflect.getMetadata('design:paramtypes', ctx.target, propertyKey)
             }
             if (paramTypes) {
                 params = paramTypes.map((type, index) => ({ type, name: names[index], propertyKey }));
-                Reflect.defineMetadata(MetadataKeys.METHOD_PARAMS, params, def.type, propertyKey);
+                meta.params = params;
             }
         }
         if (params) {
             const idx = ctx.define.parameterIndex || 0;
             const desgmeta = params[idx] || {};
-            Object.assign(meta, desgmeta);
-            params.splice(idx, 1, meta)
+            Object.assign(dmeta, desgmeta);
+            params.splice(idx, 1, dmeta)
         }
     }
     return next(ctx, context)
@@ -83,9 +86,6 @@ const decorPropInject = (ctx: DecorContext, next: HandlerFn, context: Context) =
     const define = ctx.define as DecorDefine<PropertyMetadata>;
     if (define.actionType && define.actionType & ActionType.inject) {
         const ann = ctx.classRef.getAnnotation();
-        if (!ann.propMetadatas) {
-            ann.propMetadatas = new Map();
-        }
         saveMetadata(ann.propMetadatas!, define, !define.metadata.provider, define.propertyKey, true);
     }
     return next(ctx, context)
@@ -98,9 +98,15 @@ const decorCtorDesignParams = (ctx: DecorContext, next: HandlerFn, context: Cont
         if (paramTypes) {
             const names = ctx.classRef.getParamNames(ctorName);
 
-            Reflect.defineMetadata(MetadataKeys.METHOD_PARAMS, paramTypes.map((type, index) => {
+            const params = paramTypes.map((type, index) => {
                 return { type, name: names[index] }
-            }), ctx.classRef.type, ctorName);
+            }) as ParameterMetadata[];
+            let meta = ctx.classRef.getAnnotation().methodMetadatas.get(ctorName);
+            if (!meta) {
+                meta = {};
+                ctx.classRef.getAnnotation().methodMetadatas.set(ctorName, meta);
+            }
+            meta.params = params;
         }
     }
     return next(ctx, context)
@@ -170,23 +176,26 @@ const decorProviders = (ctx: DecorContext, next: HandlerFn, context: Context) =>
 }
 
 const decorMethodDesignParams = (ctx: DecorContext, next: HandlerFn, context: Context) => {
-    const reflective = ctx.classRef;
+    const typeRef = ctx.classRef;
     const propertyKey = ctx.define.propertyKey;
-    if (!reflective.hasOwnParameters(propertyKey)) {
-        const names = reflective.getParamNames(propertyKey);
-        Reflect.defineMetadata(MetadataKeys.METHOD_PARAMS,
-            (Reflect.getMetadata('design:paramtypes', ctx.target, propertyKey) as AbstractType[])?.map((type, idx) => ({ type, name: names[idx] })),
-            reflective.type,
-            propertyKey
-        )
+    let meta = typeRef.getAnnotation().methodMetadatas.get(propertyKey);
+    if (!meta) {
+        meta = {};
+        typeRef.getAnnotation().methodMetadatas.set(propertyKey, meta);
     }
-    const meta = ctx.define.metadata as MethodMetadata;
-    if (!meta.type) {
-        meta.type = Reflect.getMetadata('design:returntype', ctx.target, propertyKey);
+    if (!meta.params) {
+        const names = typeRef.getParamNames(propertyKey);
+        const params = (Reflect.getMetadata('design:paramtypes', ctx.target, propertyKey) as AbstractType[])?.map((type, idx) => ({ type, name: names[idx] })) as ParameterMetadata[];
+        meta.params = params;
+
     }
-    if (meta.type && !Reflect.hasMetadata(MetadataKeys.METHOD_RETURNS, ctx.classRef.type, propertyKey)) {
-        Reflect.defineMetadata(MetadataKeys.METHOD_RETURNS, meta.type, ctx.classRef.type, propertyKey);
+    if (meta.returnType !== undefined) {
+        meta.returnType = Reflect.getMetadata('design:returntype', ctx.target, propertyKey) ?? null;
     }
+    if (!ctx.define.metadata.type) {
+        ctx.define.metadata.type = meta.returnType;
+    }
+
     return next(ctx, context)
 }
 
@@ -327,7 +336,14 @@ export function getDef<T extends TypeDef>(type: AbstractType): T {
     if (tagAnn?.type !== type) {
         tagAnn = {
             name: type.name,
-            type
+            type,
+            propMetadatas: new Map(),
+            methodMetadatas: new Map(),
+            decDefs: new Map(),
+            classDefs: [],
+            propDefs: [],
+            methodDefs: [],
+            paramDefs: new Map(),
         };
         (type as AnnotationType).ƿAnn = () => tagAnn;
 

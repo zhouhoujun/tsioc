@@ -181,7 +181,7 @@ export class Application<T = any> {
                     module: true,
                     declarations: [bootstrapType],
                     bootstrap: [bootstrapType],
-                } as ModuleDef);
+                } as Partial<ModuleDef>);
             }
             return module;
         }
