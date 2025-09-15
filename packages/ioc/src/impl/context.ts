@@ -1,4 +1,4 @@
-import { AbstractType, Empty, Type } from '../types';
+import { AbstractType } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getTypeName, getTypeChain } from '../utils/lang';
 import { isArray, isDefined, isFunction, isString, isAbstractType, getType, isType } from '../utils/chk';
@@ -8,7 +8,7 @@ import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token } from '../tokens';
 import { createInjector, Injector, isInjector } from '../injector';
 import { Exception } from '../exception';
-import { Class } from '../metadata/class';
+import { ClassRef } from '../metadata/class';
 import { getDef } from '../metadata/refl';
 import { Provider } from '../providers';
 import { Invocation } from '../invocation';
@@ -106,7 +106,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
             if (option.resolvers) {
                 if (option.resolvers?.length) {
                     this._resolvers = null;
-                    this.options.resolvers = [...option.resolvers, ...this.options.resolvers || Empty]
+                    this.options.resolvers = option.resolvers.concat(this.options.resolvers ?? [])
                 }
             }
         }
@@ -241,7 +241,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      * @returns 
      */
     resolve<T>(token: Token<T>, flags?: InjectFlags): T {
-        return this.resolveArgument({ provider: token, flags }) as T;
+        return this.resolveArgument({ provider: token, flags } as Parameter<T>) as T;
     }
 
 
@@ -253,7 +253,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      * @param meta property or parameter metadata type of {@link Parameter}.
      * @returns the parameter value in this context.
      */
-    resolveArgument<T>(meta: Parameter<T>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null {
+    resolveArgument<T>(meta: Partial<Parameter<T>>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null {
         this.assertNotDestroyed();
         const metaRvr = meta.resolver;
         let resolver: HandlerScope | null;
@@ -277,7 +277,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
                 return res;
             },
             error: (error) => {
-                if (error instanceof Exception) {
+                if (error instanceof Error) {
                     throw error;
                 }
                 if (failed) {
@@ -290,7 +290,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
 
     }
 
-    protected missingException(missings: Parameter<any>[], type: AbstractType<any>, method: string): Exception {
+    protected missingException(missings: Partial<Parameter>[], type: AbstractType<any>, method: string): Exception {
         throw new MissingParameterException(missings, type, method)
     }
 
@@ -341,7 +341,7 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
  * Missing argument execption.
  */
 export class MissingParameterException extends Exception {
-    constructor(parameters: Parameter[], type: AbstractType, method: string) {
+    constructor(parameters: Partial<Parameter>[], type: AbstractType, method: string) {
         super(`ailed to invoke operation because the following required parameters were missing: [ ${parameters.map(p => object2string(p)).join(',\n')} ], method ${method} of class ${object2string(type)}`)
     }
 }
@@ -365,7 +365,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
         return `"${obj}"`
     } else if (isAbstractType(obj)) {
         return 'Type<' + getTypeName(obj) + '>'
-    } else if (obj instanceof Class) {
+    } else if (obj instanceof ClassRef) {
         return `[${obj.className} TypeReflect]`
     } else if (isPlainObject(obj)) {
         const str: string[] = [];
@@ -394,17 +394,17 @@ INVOCATION_CONTEXT_IMPL.create = (parent: Injector | InvocationContext, options?
 }
 
 const UNRESOLVED = {};
-const unResolve = <TInput, TContext extends InvocationContext>(input: TInput, context: TContext) => UNRESOLVED;
+const unResolve = <TInput, TOutput = any, TContext = any>(input: TInput, context: TContext) => UNRESOLVED as TOutput;
 
 export function isResolved(value: any) {
     return value !== UNRESOLVED;
 }
 
-export function createResolveScope<TInput, TContext extends InvocationContext, TOutput = any>(platform: Platform, interceptors: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): HandlerScope<TInput, TContext, TOutput> {
-    return new HandlerScope(platform, backend ?? unResolve, interceptors)
+export function createResolveScope<TInput, TContext = any, TOutput = any>(platform: Platform, interceptors: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): HandlerScope<TInput, TContext, TOutput> {
+    return new HandlerScope<TInput, TContext, TOutput>(platform, backend ?? unResolve, interceptors)
 }
 
-const TOKER_RESOLVER = new ContextToken<HandlerScope>(() => null!);
+const TOKER_RESOLVER = new ContextToken<HandlerScope<[Token, InjectFlags | undefined], InvocationContext>>(() => null!);
 export function getTokenResolver(platform: Platform): HandlerScope<[Token, InjectFlags | undefined], InvocationContext> {
     let scope = platform.context.get(TOKER_RESOLVER);
     if (!scope) {
@@ -448,7 +448,7 @@ export function getParameterResolver(platform: Platform): HandlerScope<Parameter
                     if (input.provider && !input.multi) {
                         const value = getTokenResolver(platform).handle([input.provider, input.flags], context);
                         if (isResolved(value)) return value;
-                    } else if(!input.multi && input.name && context.has(input.name, input.flags)) {
+                    } else if (!input.multi && input.name && context.has(input.name, input.flags)) {
                         return context.get(input.name, input.flags)
                     } else if (input.type) {
                         const value = getTokenResolver(platform).handle([input.type, input.flags], context);

@@ -1,208 +1,31 @@
-import { AbstractType, Type, Annotation, Empty } from '../types';
+import { AbstractType, Type, Annotation, TypeOf } from '../types';
 import { ModuleWithProviders, Provider } from '../providers';
-import {
-    ProvidersMetadata, PropertyMetadata, ParameterMetadata, AnnotationMetadata
-} from './meta';
+import { PropertyMetadata, ParameterMetadata, AnnotationMetadata } from './meta';
 import { InvocationContext, InvocationOptions, InvokeArguments } from '../context';
 import { Token } from '../tokens';
 import { ResolveInterceptorLike } from '../resolver';
-import { forIn, hasItem } from '../utils/lang';
+import { forIn, hasItem, pick } from '../utils/lang';
 import { getClassAnnotation } from '../utils/util';
 import { isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { Exception } from '../exception';
-import { Injector, InstanceOf, MethodType, Resolve } from '../injector';
-import { HandlerFn } from '../handler';
+import { Injector, MethodType, Resolve } from '../injector';
+import { Context, HandlerFn } from '../handler';
 import { DesignContext, RuntimeContext } from '../lifescope/ctx';
 import { Invocation, InvocationFactory } from '../invocation';
-import { DecorContext } from './refl';
 
-
-
-
-/**
- * decorator funcation.
- */
-export interface DecoratorFn extends Function {
-    /**
-     * decorator name.
-     */
-    decorator?: string;
-    /**
-     * decorator name
-     */
-    toString(): string;
-    /**
-     * get decorator handlers.
-     * @param type decorator type.
-     */
-    getHandler?(type: DecoratorType): HandlerFn<DecorContext> | undefined;
-    /**
-     * get decorator runtime handlers.
-     * @param type decorator type.
-     */
-    getRuntimeHandler?(type: DecoratorScope): HandlerFn<RuntimeContext> | undefined;
-    /**
-     * get decorator design handlers.
-     * @param type decorator type.
-     */
-    getDesignHandler?(type: DecoratorScope): HandlerFn<DesignContext> | undefined;
-}
-
-
-/**
- * auto run define.
- */
-export interface RunableDefine {
-    /**
-     * the method as runnable.
-     */
-    propertyKey: string;
-    /**
-     * run order.
-     */
-    order?: number;
-    // /**
-    //  * runnable invoke args.
-    //  */
-    // args?: InvokeArguments<any>;
-    /**
-     * is auto run when created instance.
-     */
-    auto?: boolean;
-    /**
-     * decorator type.
-     */
-    decorType?: DecoratorType;
-}
-
-export type DecorMemberType = 'property' | 'method' | 'parameter';
-export type DecoratorType = 'class' | DecorMemberType;
-
-
-/**
- * decorator scopes.
- *
- * Annoation: annoation actions for design time.
- * AfterAnnoation: after annoation actions for design time.
- */
-export type DecoratorScope = DecoratorType
-    | 'beforeAnnoation' | 'afterAnnoation';
-
-export const ctorName = 'constructor';
-export namespace Decors {
-    export const CLASS = 'class';
-    export const property = 'property';
-    export const method = 'method';
-    export const parameter = 'parameter';
-    export const beforeAnnoation = 'beforeAnnoation';
-    export const afterAnnoation = 'afterAnnoation';
-}
-
-export type ActionType = 'inject' | 'annoation' | 'declaration' | 'runnable' | 'providers';
-
-export namespace ActionTypes {
-    export const inject = 'inject';
-    export const annoation = 'annoation';
-    export const declaration = 'declaration';
-    export const runnable = 'runnable';
-    export const providers = 'providers';
-}
-
-/**
- * decorator define.
- */
-export interface DecorDefine<T = any> {
-    /**
-     * decorator Fn
-     */
-    readonly decor: DecoratorFn;
-    /**
-     * current decorator type.
-     */
-    readonly decorType: DecoratorType;
-    /**
-     * property key.
-     */
-    propertyKey: string;
-    /**
-     * paramter index.
-     */
-    readonly parameterIndex?: number;
-    /**
-     * decorator metadata.
-     */
-    readonly metadata: T;
-
-    // /**
-    //  * provider services of the class.
-    //  *
-    //  * @type {KeyValue<Token, Token>}
-    //  */
-    // providers?: Provider[];
-}
-
-
-/**
- * type def metadata.
- */
-export interface TypeDef<T = any> extends Annotation<T>, AnnotationMetadata {
-
-}
-
-
-/**
- * module def metadata.
- * 
- * 模块元数据
- */
-export interface ModuleDef<T = any> extends TypeDef<T> {
-    /**
-     * is module or not.
-     */
-    module?: boolean;
-    baseURL?: string,
-    debug?: boolean,
-    /**
-     * imports types.
-     */
-    imports?: (Type | ModuleWithProviders)[];
-    /**
-     * exports.
-     */
-    exports?: Type[];
-    /**
-     *  components, directives, pipes ... of current module.
-     */
-    declarations?: Type[];
-    /**
-     * the module bootstraps.
-     */
-    bootstrap?: AbstractType[] | null;
-    /**
-    * module extends providers.
-    */
-    providers?: Provider[];
-}
-
-export const proxyTag = Symbol('__proxy');
 
 /**
  * type class reflective.
  * 
  * 类反射
  */
-export class Class<T = any> {
+export class ClassRef<T = any> {
 
     /**
      * class name.
      */
     className: string;
-
-    /**
-     * all decorator defines.
-     */
-    readonly defs: DecorDefine[];
 
     readonly classDecors: DecoratorFn[];
     readonly propDecors: DecoratorFn[];
@@ -210,6 +33,7 @@ export class Class<T = any> {
     readonly paramDecors: DecoratorFn[];
 
     private annotation: TypeDef<T>;
+
     private params!: Map<string, any[]>;
     /**
      * class provides.
@@ -226,24 +50,6 @@ export class Class<T = any> {
      */
     readonly resolvers: ResolveInterceptorLike[];
     /**
-     * property metadata.
-     *
-     * @type {Map<string, PropertyMetadata[]>}
-     */
-    private propMetadatas: Map<string | symbol, PropertyMetadata[]>;
-    /**
-     * method params.
-     *
-     * @type {Map<IParameter[]>}
-     */
-    private methodParams: Map<string | symbol, ParameterMetadata[]>;
-    /**
-     * method resturn type.
-     *
-     * @type {Map<IParameter[]>}
-     */
-    private methodReturns: Map<string | symbol, AbstractType>;
-    /**
      * method providers.
      *
      * @type {Map<string, InvokeArguments>}
@@ -254,20 +60,28 @@ export class Class<T = any> {
      */
     readonly runnables: RunableDefine[];
 
+    protected decDefs: Map<DecoratorFn, DecorDefine[]> = new Map();
+
+    protected classDefs: DecorDefine[] = [];
+    protected propDefs: DecorDefine[] = [];
+    protected methodDefs: DecorDefine[] = [];
+    protected paramDefs: Map<string | symbol, DecorDefine[]> = new Map();
+
+    protected propProviders: DecorDefine[] = [];
+    protected methodProviders: Map<string | symbol, InvokeArguments> = new Map();
+    protected paramProviders: Map<string | symbol, ParameterMetadata[]> = new Map();
+
     private invocationFactory?: Resolve<InvocationFactory>;
 
-    constructor(public readonly type: AbstractType<T>, annotation: TypeDef<T>, private parent?: Class) {
+    constructor(public readonly type: AbstractType<T>, annotation: TypeDef<T>, private parent?: ClassRef) {
         this.annotation = annotation ?? getClassAnnotation(type)! ?? {};
         this.className = this.annotation?.name || type.name;
-        // this.classDefs = new Map();
         this.classDecors = [];
         if (parent) {
-            this.defs = parent.defs.filter(d => d.decorType !== Decors.CLASS);
             this.propDecors = parent.propDecors.slice(0);
             this.methodDecors = parent.methodDecors.slice(0);
             this.paramDecors = parent.paramDecors.slice(0)
         } else {
-            this.defs = [];
             this.propDecors = [];
             this.methodDecors = [];
             this.paramDecors = []
@@ -276,10 +90,7 @@ export class Class<T = any> {
         this.providers = parent ? parent.providers.slice(0) : [];
         this.resolvers = parent ? parent.resolvers.slice(0) : [];
         this.runnables = parent ? parent.runnables.slice(0) : [];
-        this.propMetadatas = new Map();
-        this.methodParams = new Map();
         this.methodOptions = new Map();
-        this.methodReturns = new Map()
     }
 
     setInvocationFactory(factory: Resolve<InvocationFactory>) {
@@ -299,11 +110,9 @@ export class Class<T = any> {
         return this.annotation as TAnn;
     }
 
-    setAnnotation(records: Record<string, any>) {
+    assignAnnotation(records: Record<string, any>) {
         if (!records) return;
-        for (const key in records) {
-            (this.annotation as any)[key] = records[key]
-        }
+        Object.assign(this.annotation, pick(records, 'name', 'classDefs', 'propDefs', 'methodDefs', 'paramDefs', 'propMetadatas', 'methodMetadatas'));
     }
 
     /**
@@ -329,6 +138,58 @@ export class Class<T = any> {
         return inst[method](...args);
     }
 
+    storage(define: DecorDefine) {
+        switch (define.decorType) {
+            case 'class':
+                if (!this.classDecors.includes(define.decor)) {
+                    this.classDecors.push(define.decor);
+                }
+                this.saveMetadata(this.classDefs, define, true);
+                this.saveMetadata(this.decDefs, define, true, define.decor);
+                break;
+
+            case 'property':
+                if (!this.propDecors.includes(define.decor)) {
+                    this.propDecors.push(define.decor);
+                }
+                this.saveMetadata(this.propDefs, define);
+                this.saveMetadata(this.decDefs, define, false, define.decor);
+                break;
+
+            case 'method':
+                if (!this.methodDecors.includes(define.decor)) {
+                    this.methodDecors.push(define.decor);
+                }
+                this.saveMetadata(this.methodDefs, define);
+                this.saveMetadata(this.decDefs, define, false, define.decor);
+                break;
+
+            case 'parameter':
+                if (!this.paramDecors.includes(define.decor)) {
+                    this.paramDecors.push(define.decor);
+                }
+                this.saveMetadata(this.paramDefs, define, true, define.propertyKey);
+                this.saveMetadata(this.decDefs, define, true, define.decor);
+                break;
+        }
+
+    }
+
+    protected saveMetadata(maps: DecorDefine[], define: DecorDefine, unshift?: boolean): void
+    protected saveMetadata(maps: Map<any, DecorDefine[]>, define: DecorDefine, unshift: boolean, key: any): void
+    protected saveMetadata(maps: DecorDefine[] | Map<any, DecorDefine[]>, define: DecorDefine, unshift?: boolean, key?: any) {
+        const defines = key ? (maps as Map<any, DecorDefine[]>).get(key) : maps as DecorDefine[];
+        if (defines) {
+            unshift ? defines.unshift(define) : defines.push(define);
+        } else if (key) {
+            (maps as Map<any, DecorDefine[]>).set(key, [define])
+        }
+    }
+
+    getDefines<T = any>(decor: DecoratorFn): DecorDefine<T>[] {
+        return (Reflect.getMetadata(decor, this.type) ?? []).concat(this.parent?.getDefines(decor) ?? []);
+    }
+
     /**
      * resolve args.
      * 
@@ -336,59 +197,23 @@ export class Class<T = any> {
      * @param context invocation context.
      */
     resolveArguments(method: string | symbol, context: InvocationContext): any[] {
-        const parameters = this.getParameters(method) ?? Empty;
+        const parameters = this.getParameters(method) ?? [];
         const args = parameters.map(p => context.resolveArgument(p, this.type));
         return args;
     }
 
-    hasParameters(method: string | symbol): boolean {
-        return this.methodParams.has(method)
+    hasOwnParameters(method: string | symbol): boolean {
+        return Reflect.hasOwnMetadata(MetadataKeys.METHOD_PARAMS, this.type, method);
     }
 
     getParameters(method: string | symbol): ParameterMetadata[] | undefined {
-        return this.methodParams.get(method) ?? this.parent?.getParameters(method)
-    }
-
-    setParameters(method: string | symbol, metadatas: ParameterMetadata[]) {
-        this.methodParams.set(method, metadatas)
-    }
-
-    hasReturnning(method: string | symbol): boolean {
-        return this.methodReturns.has(method)
+        return Reflect.getMetadata(MetadataKeys.METHOD_PARAMS, this.type, method) ?? this.parent?.getParameters(method)
     }
 
     getReturnning(method: string | symbol): AbstractType | undefined {
-        return this.methodReturns.get(method) ?? this.parent?.getReturnning(method)
+        return Reflect.getMetadata(MetadataKeys.METHOD_RETURNS, this.type, method) ?? this.parent?.getReturnning(method)
     }
 
-    setReturnning(method: string | symbol, returnType: AbstractType) {
-        this.methodReturns.set(method, returnType)
-    }
-
-    hasProperyProviders(prop: string | symbol): boolean {
-        return this.propMetadatas.has(prop)
-    }
-    getProperyProviders(prop: string | symbol): PropertyMetadata[] | undefined {
-        return this.propMetadatas.get(prop) ?? this.parent?.getProperyProviders(prop)
-    }
-    setProperyProviders(prop: string | symbol, metadatas: PropertyMetadata[]) {
-        if (this.propMetadatas.has(prop)) {
-            this.propMetadatas.get(prop)?.push(...metadatas)
-        } else {
-            this.propMetadatas.set(prop, metadatas)
-        }
-    }
-
-    eachProperty(callback: (value: PropertyMetadata[], key: string | symbol) => void) {
-        this.propMetadatas.size && this.propMetadatas.forEach(callback);
-        this.parent?.eachProperty(callback)
-    }
-
-    getPropertyKeys(): Array<string | symbol> {
-        const props = this.parent?.getPropertyKeys() ?? [];
-        props.push(...this.propMetadatas.keys())
-        return props
-    }
 
 
     hasMethodOptions(method: string | symbol): boolean {
@@ -420,33 +245,39 @@ export class Class<T = any> {
         }
     }
 
-    addDefine(define: DecorDefine) {
-        let unshift = false;
-        switch (define.decorType) {
-            case Decors.CLASS:
-                if (this.classDecors.indexOf(define.decor) < 0) {
-                    this.classDecors.push(define.decor);
-                }
-                unshift = true;
-                break;
-            case Decors.method:
-                if (this.methodDecors.indexOf(define.decor) < 0) {
-                    this.methodDecors.push(define.decor);
-                }
-                break;
-            case Decors.property:
-                if (this.propDecors.indexOf(define.decor) < 0) {
-                    this.propDecors.push(define.decor);
-                }
-                break;
-            case Decors.parameter:
-                if (this.paramDecors.indexOf(define.decor) < 0) {
-                    this.paramDecors.push(define.decor);
-                }
-                unshift = true;
-                break;
+    hasDecor(decor: string | DecoratorFn) {
+        if (typeof decor === 'string') {
+            return this.hasSomeDecor(d => d.decorator === decor);
         }
-        unshift ? this.defs.unshift(define) : this.defs.push(define);
+        return this.hasSomeDecor(d => d === decor);
+    }
+
+    hasSomeDecor(predicate: (value: DecoratorFn) => boolean): boolean {
+        return this.classDecors.some(r => predicate(r))
+            || this.methodDecors.some(r => predicate(r))
+            || this.propDecors.some(r => predicate(r))
+            || this.paramDecors.some(r => predicate(r));
+    }
+
+    findDecor(predicate: (value: DecoratorFn) => boolean, type?: DecoratorType | null): DecoratorFn | undefined {
+        if (type) {
+            switch (type) {
+                case 'class':
+                    return this.classDecors.find(r => predicate(r));
+                case 'method':
+                    return this.methodDecors.find(r => predicate(r));
+                case 'property':
+                    return this.propDecors.find(r => predicate(r));
+                case 'parameter':
+                    return this.paramDecors.find(r => predicate(r));
+                default:
+                    break;
+            }
+        }
+        return this.classDecors.find(r => predicate(r))
+            ?? this.methodDecors.find(r => predicate(r))
+            ?? this.propDecors.find(r => predicate(r))
+            ?? this.paramDecors.find(r => predicate(r))
     }
 
     /**
@@ -463,259 +294,121 @@ export class Class<T = any> {
     hasMetadata(decor: string | DecoratorFn, type: DecoratorType | null, propertyKey?: string | symbol): boolean;
     hasMetadata(decor: string | DecoratorFn, type?: DecoratorType | null, propertyKey?: string | symbol): boolean {
         type = (type === null) ? null : (type ?? Decors.CLASS);
-        return this.defs.some(d => isEqual(d.decor, decor) && (type ? d.decorType == type : true) && (propertyKey ? d.propertyKey == propertyKey : true));
-    }
-
-    /**
-     * get one decorator define.
-     * @param type decorator type
-     * @param decor decorator
-     */
-    getDefine<T = any>(type: DecoratorType | null, filter: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
-    /**
-     * get one decorator define.
-     * @param type decorator type
-     * @param decor decorator
-     * @param filter custom filter.
-     */
-    getDefine<T = any>(type: DecoratorType | null, decor: string | DecoratorFn | undefined, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
-    /**
-     * get one decorator define.
-     * @param type decorator type
-     * @param decor decorator
-     * @param propertyKey the property, mothod or paramter key
-     * @param filter custom filter.
-     */
-    getDefine<T = any>(type: DecorMemberType | null, decor: string | DecoratorFn | undefined, propertyKey: string | symbol, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T> | undefined;
-    getDefine<T = any>(type: DecoratorType | null, arg: any, propertyKeyOrFilter?: string | symbol | ((d: DecorDefine<T>) => boolean), filter?: (d: DecorDefine<T>) => boolean): DecorDefine | undefined {
-        let decor: string | DecoratorFn | undefined;
-        let propertyKey: string | symbol | undefined;
-        if (isFunction(arg) && !(arg as DecoratorFn).decorator) {
-            filter = arg;
-        } else {
-            decor = arg;
-            if (isFunction(propertyKeyOrFilter)) {
-                filter = propertyKeyOrFilter
-            } else {
-                propertyKey = propertyKeyOrFilter;
-            }
+        const decorator = this.findDecor(isString(decor) ? d => d.decorator === decor : d => d === decor, type);
+        if (!decorator) {
+            return false;
         }
-        return this.defs.find(d => (decor ? isEqual(d.decor, decor) : true) && (type ? d.decorType == type : true) && (propertyKey ? d.propertyKey == propertyKey : true) && (filter ? filter(d) : true))
+        const defines = this.getDefines(decorator);
+        return propertyKey ? defines.some(d => d.propertyKey == propertyKey) : defines.length > 0;
     }
 
-    /**
-     * get decorator defines.
-     * @param type decorator type
-     * @param decor decorator
-     */
-    getDefines(type: DecoratorType | null, filter: (d: DecorDefine<T>) => boolean): DecorDefine[];
-    /**
-     * get decorator defines.
-     * @param type decorator type
-     * @param decor decorator
-     * @param filter custom filter.
-     */
-    getDefines(type?: DecoratorType | null, decor?: string | DecoratorFn, filter?: (d: DecorDefine<T>) => boolean): DecorDefine[];
-    /**
-     * get decorator defines.
-     * @param type decorator type
-     * @param decor decorator
-     * @param propertyKey the property, mothod or paramter key
-     * @param filter custom filter.
-     */
-    getDefines<T = any>(type: DecorMemberType | null, decor?: string | DecoratorFn | undefined, propertyKey?: string | symbol, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
-    getDefines(type: DecoratorType | null, arg: any, propertyKeyOrFilter?: string | symbol | ((d: DecorDefine<T>) => boolean), filter?: (d: DecorDefine<T>) => boolean): DecorDefine[] {
-        let decor: string | DecoratorFn | undefined;
-        let propertyKey: string | symbol | undefined;
-        if (isFunction(arg) && !(arg as DecoratorFn).decorator) {
-            filter = arg;
-        } else {
-            decor = arg;
-            if (isFunction(propertyKeyOrFilter)) {
-                filter = propertyKeyOrFilter
-            } else {
-                propertyKey = propertyKeyOrFilter;
+    eachPropertyProviders(callback: (value: DecorDefine<PropertyMetadata>) => void, excludes?: (string | symbol)[]) {
+        const props = Reflect.getMetadata(MetadataKeys.PROPERTY_PROVIDERS, this.type) as DecorDefine<PropertyMetadata>[];
+        const upexc = excludes ? excludes.slice(0) : [];
+        props?.forEach(p => {
+            if (!excludes?.includes(p.propertyKey)) {
+                callback(p);
             }
-        }
-        return this.defs.filter(d => (decor ? isEqual(d.decor, decor) : true) && (type ? d.decorType == type : true) && (propertyKey ? d.propertyKey == propertyKey : true) && (filter ? filter(d) : true))
+            if (!this.parent && !upexc.includes(p.propertyKey)) {
+                upexc.push(p.propertyKey);
+            }
+        });
 
+        this.parent?.eachPropertyProviders(callback, upexc);
     }
+
 
     /**
      * get class defines.
      * @param filter custom filter.
      */
-    getClassdDefines<T = any>(filter: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
-    /**
-     * get class metadata.
-     * @param decor decoractor or decoractor name.
-     * @param filter custom filter.
-     */
-    getClassdDefines<T = any>(decor: string | DecoratorFn | null, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
-    getClassdDefines(...args: any[]) {
-        args.unshift(Decors.CLASS);
-        return (this.getDefines as Function).apply(this, args);
+    getClassdDefines<T = any>(filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[] {
+        const defines = Reflect.getMetadata(MetadataKeys.CLASS_METADATA, this.type) ?? [];
+        return filter ? defines.filter(filter) : defines;
     }
 
     /**
      * get method defines.
      * @param filter custom filter.
      */
-    getMethodDefines<T = any>(filter: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
+    getMethodDefines<T = any>(filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
     /**
      * get method metadata.
      * @param decor decoractor or decoractor name.
-     * @param filter custom filter.
+     * @param propertyKey custom filter.
      */
-    getMethodDefines<T = any>(decor: string | DecoratorFn | null, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
-    /**
-     * get method metadata.
-     * @param decor decoractor or decoractor name.
-     * @param propertyKey method name
-     * @param filter custom filter.
-     */
-    getMethodDefines<T = any>(decor: string | DecoratorFn | null, propertyKey?: string | symbol, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
-    getMethodDefines(...args: any[]) {
-        args.unshift(Decors.method);
-        return (this.getDefines as Function).apply(this, args);
+    getMethodDefines<T = any>(propertyKey: string | symbol, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
+    getMethodDefines<T = any>(arg?: any, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[] {
+        let propertyKey: string | symbol | undefined;
+        if (isFunction(arg)) {
+            filter = arg;
+        } else if (arg) {
+            propertyKey = arg;
+        }
+
+        let defines: DecorDefine<T>[] = Reflect.getMetadata(MetadataKeys.METHOD_METADATA, this.type) ?? [];
+        if (defines.length) {
+            if (filter && propertyKey) {
+                defines = defines.filter(d => d.propertyKey === propertyKey && filter(d));
+            } else if (propertyKey) {
+                defines = defines.filter(d => d.propertyKey === propertyKey);
+            } else if (filter) {
+                defines = defines.filter(filter);
+            }
+        }
+        if (this.parent) {
+            defines = defines.concat(this.parent.getMethodDefines(propertyKey!, filter && !propertyKey && defines.length ? (p => !defines.some(d => d.propertyKey === p.propertyKey) && filter(p)) : filter));
+        }
+        return defines;
+
     }
 
     /**
      * get property defines.
      * @param filter custom filter.
      */
-    getPropDefines<T = any>(filter: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
+    getPropDefines<T = any>(filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
     /**
      * get property metadata.
-     * @param decor decoractor or decoractor name.
-     * @param filter custom filter.
-     */
-    getPropDefines<T = any>(decor: string | DecoratorFn | null, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
-    /**
-     * get property metadata.
-     * @param decor decoractor or decoractor name.
      * @param propertyKey property name
      * @param filter custom filter.
      */
-    getPropDefines<T = any>(decor: string | DecoratorFn | null, propertyKey?: string | symbol, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
-    getPropDefines(...args: any[]) {
-        args.unshift(Decors.property);
-        return (this.getDefines as Function).apply(this, args);
+    getPropDefines<T = any>(propertyKey: string | symbol, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
+    getPropDefines(arg?: any, filter?: (d: DecorDefine<T>) => boolean) {
+        let propertyKey: string | symbol | undefined;
+        if (isFunction(arg)) {
+            filter = arg;
+        } else if (arg) {
+            propertyKey = arg;
+        }
+
+        let defines: DecorDefine<T>[] = Reflect.getMetadata(MetadataKeys.PROPERTY_METADATA, this.type) ?? [];
+        if (defines.length) {
+            if (filter && propertyKey) {
+                defines = defines.filter(d => d.propertyKey === propertyKey && filter(d));
+            } else if (propertyKey) {
+                defines = defines.filter(d => d.propertyKey === propertyKey);
+            } else if (filter) {
+                defines = defines.filter(filter);
+            }
+        }
+        if (this.parent) {
+            defines = defines.concat(this.parent.getPropDefines(propertyKey!, filter && !propertyKey && defines.length ? (p => !defines.some(d => d.propertyKey === p.propertyKey) && filter(p)) : filter));
+        }
+        return defines;
     }
 
-    /**
-     * get parameter defines.
-     * @param filter custom filter.
-     */
-    getParamDefines<T = any>(filter: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
-    /**
-     * get parameter metadata.
-     * @param decor decoractor or decoractor name.
-     * @param filter custom filter.
-     */
-    getParamDefines<T = any>(decor: string | DecoratorFn | null, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
-    /**
-     * get parameter metadata.
-     * @param decor decoractor or decoractor name.
-     * @param propertyKey method name
-     * @param filter custom filter.
-     */
-    getParamDefines<T = any>(decor: string | DecoratorFn | null, propertyKey?: string | symbol, filter?: (d: DecorDefine<T>) => boolean): DecorDefine<T>[];
-    getParamDefines(...args: any[]) {
-        args.unshift(Decors.parameter);
-        return (this.getDefines as Function).apply(this, args);
+    getParamDefines<T extends ParameterMetadata>(method: string | symbol): DecorDefine<T>[] {
+        return Reflect.getMetadata(MetadataKeys.METHOD_PARAMS_METADATA, this.type, method) ?? this.parent?.getParamDefines(method) ?? []
     }
 
-    /**
-     * get metadatas.
-     * @param decor decoractor or decoractor name.
-     */
-    getMetadatas<T = any>(filter: (d: DecorDefine<T>) => boolean): T[] {
-        return this.defs.filter(filter).map(d => d.metadata);
-    }
 
     /**
      * get class metadata.
      * @param decor decoractor or decoractor name.
      */
-    getMetadata<T = any>(filter: (d: DecorDefine<T>) => boolean): T;
-    /**
-     * get class metadata.
-     * @param decor decoractor or decoractor name.
-     */
-    getMetadata<T = any>(decor: string | DecoratorFn | null, filter?: (d: DecorDefine<T>) => boolean): T;
-    getMetadata(...args: any[]) {
-        args.unshift(Decors.CLASS);
-        return (this.getDefine as Function).apply(this, args)?.metadata;
-    }
-
-    /**
-     * get method metadata.
-     * @param decor decoractor or decoractor name.
-     */
-    getMethodMetadata<T = any>(filter: (d: DecorDefine<T>) => boolean): T;
-    /**
-     * get method metadata.
-     * @param decor decoractor or decoractor name.
-     */
-    getMethodMetadata<T = any>(decor: string | DecoratorFn | null, filter?: (d: DecorDefine<T>) => boolean): T;
-    /**
-     * get method metadata.
-     * @param decor decoractor or decoractor name.
-     * @param propertyKey method name
-     * @param filter custom filter
-     */
-    getMethodMetadata(decor: string | DecoratorFn | null, propertyKey?: string | symbol, filter?: (d: DecorDefine<T>) => boolean): T;
-    getMethodMetadata(...args: any[]) {
-        args.unshift(Decors.method);
-        return (this.getDefine as Function).apply(this, args)?.metadata;
-    }
-
-    /**
-     * get property metadata.
-     * @param filter decoractor or decoractor name.
-     */
-    getPropMetadata<T = any>(filter: (d: DecorDefine<T>) => boolean): T;
-    /**
-     * get property metadata.
-     * @param decor decoractor or decoractor name.
-     * 
-     */
-    getPropMetadata<T = any>(decor: string | DecoratorFn | null, filter?: (d: DecorDefine<T>) => boolean): T;
-    /**
-     * get property metadata.
-     * @param decor decoractor or decoractor name.
-     * @param propertyKey property name
-     * @param filter custom filter
-     */
-    getPropMetadata(decor: string | DecoratorFn | null, propertyKey?: string | symbol, filter?: (d: DecorDefine<T>) => boolean): T;
-    getPropMetadata(...args: any[]) {
-        args.unshift(Decors.property);
-        return (this.getDefine as Function).apply(this, args)?.metadata;
-    }
-
-
-    /**
-     * get parameter metadata.
-     * @param filter decoractor or decoractor name.
-     */
-    getParamMetadata<T = any>(filter: (d: DecorDefine<T>) => boolean): T;
-    /**
-     * get parameter metadata.
-     * @param decor decoractor or decoractor name.
-     * 
-     */
-    getParamMetadata<T = any>(decor: string | DecoratorFn | null, filter?: (d: DecorDefine<T>) => boolean): T;
-    /**
-     * get parameter metadata.
-     * @param decor decoractor or decoractor name.
-     * @param propertyKey method name
-     * @param filter custom filter
-     */
-    getParamMetadata(decor: string | DecoratorFn | null, propertyKey?: string | symbol, filter?: (d: DecorDefine<T>) => boolean): T;
-    getParamMetadata(...args: any[]) {
-        args.unshift(Decors.parameter);
-        return (this.getDefine as Function).apply(this, args)?.metadata;
+    getMetadata<T = any>(decor: DecoratorFn): T {
+        return this.getDefines(decor).find(d => d.decorType === 'class' && d.metadata)?.metadata;
     }
 
 
@@ -742,7 +435,7 @@ export class Class<T = any> {
 
     getParamNames(method: string | symbol): string[] {
         const prop = method ?? ctorName;
-        return this.getParams().get(prop) || Empty
+        return this.getParams().get(prop) || []
     }
 
     getParams(): Map<string | symbol, any[]> {
@@ -833,11 +526,387 @@ function getParamNames(func: Function) {
     return result ?? []
 }
 
-function getDectorId(decor: string | Function): string {
-    return isString(decor) ? decor : decor.toString()
+
+
+// 添加元数据工具函数
+export const MetadataKeys = {
+    CLASS_METADATA: 'ioc:class:metadata',
+    PROPERTY_PROVIDERS: 'ioc:property:providers',
+    PROPERTY_METADATA: 'ioc:property:metadata',
+    METHOD_METADATA: 'ioc:method:metadata',
+    METHOD_PARAMS_METADATA: 'ioc:method:params:metadata',
+    METHOD_PARAMS: 'ioc:method:params',
+    METHOD_RETURNS: 'ioc:method:returns'
+};
+
+
+/**
+ * decorator context.
+ */
+export interface DecorContext<T = any> {
+    readonly define: DecorDefine<T>,
+    readonly target: any;
+    readonly classRef: ClassRef;
+    readonly options: DecoratorOption<any>
 }
 
-function isEqual(decor1: string | DecoratorFn, decor2: string | DecoratorFn) {
-    if (decor1 == decor2) return true;
-    return getDectorId(decor1) == getDectorId(decor2);
+
+
+
+/**
+ * decorator def hanldes.
+ */
+export interface DecorDefHandles<T = any> {
+    /**
+     * class decorator def handle.
+     */
+    class?: HandlerFn<DecorContext<T>, void, Context> | HandlerFn<DecorContext<T>, void, Context>[];
+    /**
+     * method decorator def handle.
+     */
+    method?: HandlerFn<DecorContext<T>, void, Context> | HandlerFn<DecorContext<T>, void, Context>[];
+    /**
+     * property decorator def handle.
+     */
+    property?: HandlerFn<DecorContext<T>, void, Context> | HandlerFn<DecorContext<T>, void, Context>[];
+    /**
+     * parameter decorator def handle.
+     */
+    parameter?: HandlerFn<DecorContext<T>, void, Context> | HandlerFn<DecorContext<T>, void, Context>[];
+}
+
+/**
+ * design action scope hanldes.
+ * raise handles order by beforeAnnoation -> class -> property -> method -> afterAnnoation
+ */
+export interface DesignScopeHandles<T> {
+    /**
+     * decorator BeforeAnnoation action handles.
+     * raise handles order by beforeAnnoation -> property -> method -> afterAnnoation
+     */
+    beforeAnnoation?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
+
+    /**
+     * decorator Property action handles.
+     * raise handles order by beforeAnnoation -> property -> method -> afterAnnoation
+     */
+    property?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
+
+    /**
+     * decorator Method action handles.
+     * raise handles order by beforeAnnoation -> class -> property -> method -> afterAnnoation
+     */
+    method?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
+
+    /**
+     * decorator AfterAnnoation action handles.
+     * raise handles order by beforeAnnoation -> property -> method -> afterAnnoation
+     */
+    afterAnnoation?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
+}
+
+/**
+ * runtime action scope hanldes.
+ * raise handles order by property -> method -> class
+ */
+export interface RuntimeScopeHandles<T> {
+    /**
+     * decorator Property action handles.
+     * raise handles order by property -> method -> class
+     */
+    property?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
+
+    /**
+     * decorator Method action handles.
+     * raise handles order by property -> method -> class
+     */
+    method?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
+
+    /**
+     * decorator Class action handles.
+     * raise handles order by  property -> method -> class
+     */
+    class?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
+
+}
+
+
+/**
+ * decorator register options.
+ */
+export interface DecorRegisterOption<T = any> {
+    /**
+     * decorator basic action type.
+     */
+    actionType?: ActionType;
+    /**
+     * set def handles.
+     * raise when init decorator metadate of Type.
+     */
+    def?: DecorDefHandles<T>;
+    /**
+     * set design action scope handles.
+     * raise when Type inject.
+     * raise design handles order by beforeAnnoation -> class -> property -> method -> afterAnnoation
+     */
+    design?: DesignScopeHandles<DesignContext>
+    /**
+     * set runtime action scope handles.
+     * raise when resolve instance of Type.
+     * raise runtime handles order by beforeConstructor -> afterConstructor -> property -> method -> class
+     */
+    runtime?: RuntimeScopeHandles<RuntimeContext>;
+}
+
+/**
+ * metadata factory. parse args to metadata.
+ */
+export interface MetadataFactory<T = any> {
+    /**
+     * is metadata or not.
+     */
+    isMatadata?(arg: any): boolean;
+    /**
+     * parse args as metadata props.
+     * @param args
+     */
+    props?(...args: any[]): Partial<T>;
+    /**
+     * append metadata.
+     * @param metadata
+     */
+    appendProps?(metadata: T): void;
+    /**
+     * init decor context.
+     */
+    init?: (ctx: DecorContext<T>) => void;
+    /**
+     * after init decor context.
+     */
+    afterInit?: (ctx: DecorContext<T>) => void;
+    /**
+     * set invocation factory.
+     */
+    factory?: Resolve<InvocationFactory>;
+}
+
+/**
+ * decorator option.
+ */
+export interface DecoratorOption<T> extends MetadataFactory<T>, DecorRegisterOption<T> { }
+
+
+/**
+ * create decorator define.
+ * @param name 
+ * @param decor 
+ * @param metadata 
+ * @param decorType 
+ * @param options 
+ * @param propertyKey 
+ * @param parameterIndex 
+ * @returns decorator define
+ */
+export function toDefine<T>(decor: DecoratorFn, metadata: T, decorType: DecoratorType, options: DecoratorOption<any>, propertyKey?: string, parameterIndex?: number): DecorDefine<T> {
+
+    return {
+        decor,
+        propertyKey: propertyKey!,
+        parameterIndex,
+        decorType,
+        metadata,
+        actionType: options.actionType
+    }
+}
+
+
+/**
+ * decorator funcation.
+ */
+export interface DecoratorFn extends Function {
+    /**
+     * decorator name.
+     */
+    decorator?: string;
+    /**
+     * decorator name
+     */
+    toString(): string;
+    /**
+     * get decorator handlers.
+     * @param type decorator type.
+     */
+    getHandler?(type: DecoratorType): HandlerFn<DecorContext> | undefined;
+    /**
+     * get decorator runtime handlers.
+     * @param type decorator type.
+     */
+    getRuntimeHandler?(type: DecoratorScope): HandlerFn<RuntimeContext> | undefined;
+    /**
+     * get decorator design handlers.
+     * @param type decorator type.
+     */
+    getDesignHandler?(type: DecoratorScope): HandlerFn<DesignContext> | undefined;
+}
+
+
+/**
+ * auto run define.
+ */
+export interface RunableDefine {
+    /**
+     * the method as runnable.
+     */
+    propertyKey: string;
+    /**
+     * run order.
+     */
+    order?: number;
+    // /**
+    //  * runnable invoke args.
+    //  */
+    // args?: InvokeArguments<any>;
+    /**
+     * is auto run when created instance.
+     */
+    auto?: boolean;
+    /**
+     * decorator type.
+     */
+    decorType?: DecoratorType;
+}
+
+export type DecorMemberType = 'property' | 'method' | 'parameter';
+export type DecoratorType = 'class' | DecorMemberType;
+
+
+/**
+ * decorator scopes.
+ *
+ * Annoation: annoation actions for design time.
+ * AfterAnnoation: after annoation actions for design time.
+ */
+export type DecoratorScope = DecoratorType
+    | 'beforeAnnoation' | 'afterAnnoation';
+
+export const ctorName = 'constructor';
+export namespace Decors {
+    export const CLASS = 'class';
+    export const property = 'property';
+    export const method = 'method';
+    export const parameter = 'parameter';
+    export const beforeAnnoation = 'beforeAnnoation';
+    export const afterAnnoation = 'afterAnnoation';
+}
+
+
+export enum ActionType {
+    inject = 0b0001,
+    annoation = 0b0010,
+    declaration = 0b0100,
+    runnable = 0b1000,
+    providers = 0b10000,
+    module = 0b100000,
+}
+
+/**
+ * decorator define.
+ */
+export interface DecorDefine<T = any> {
+    /**
+     * decorator Fn
+     */
+    readonly decor: DecoratorFn;
+    /**
+     * current decorator type.
+     */
+    readonly decorType: DecoratorType;
+    /**
+     * action type.
+     */
+    actionType?: ActionType;
+    /**
+     * property key.
+     */
+    propertyKey: string;
+    /**
+     * paramter index.
+     */
+    readonly parameterIndex?: number;
+    /**
+     * decorator metadata.
+     */
+    readonly metadata: T;
+}
+
+/**
+ * type def metadata.
+ */
+export interface TypeDef<T = any> extends Annotation<T>, AnnotationMetadata {
+
+    /**
+     * the type provide tokens
+     */
+    provides?: Token[];
+    /**
+     * the providers for the type.
+     */
+    providers?: Provider[];
+    /**
+     * resolvers for the type
+     */
+    resolvers?: TypeOf<ResolveInterceptorLike>[];
+    /**
+     * runnable defines.
+     */
+    runnables?: RunableDefine[];
+
+    propMetadatas?: Map<string | symbol, PropertyMetadata[]>;
+    methodMetadatas?:Map<string | symbol, {
+        invokeEnv?: InvokeArguments;
+        params?: ParameterMetadata[];
+        returnType?: AbstractType;
+    }>
+
+    classDefs?: DecorDefine[];
+    propDefs?: DecorDefine[];
+    methodDefs?: DecorDefine[];
+    paramDefs?: Map<string | symbol, DecorDefine[]>;
+}
+
+
+export const proxyTag = Symbol('__proxy');
+
+/**
+ * module def metadata.
+ * 
+ * 模块元数据
+ */
+export interface ModuleDef<T = any> extends TypeDef<T> {
+    /**
+     * is module or not.
+     */
+    module?: boolean;
+    baseURL?: string,
+    debug?: boolean,
+    /**
+     * imports types.
+     */
+    imports?: (Type | ModuleWithProviders)[];
+    /**
+     * exports.
+     */
+    exports?: Type[];
+    /**
+     *  components, directives, pipes ... of current module.
+     */
+    declarations?: Type[];
+    /**
+     * the module bootstraps.
+     */
+    bootstrap?: AbstractType[] | null;
+    /**
+    * module extends providers.
+    */
+    providers?: Provider[];
 }

@@ -2,7 +2,7 @@
 /* eslint-disable no-misleading-character-class */
 import { Exception, isNumber, isPromise, isString } from '@tsdi/ioc';
 import { ev } from '@tsdi/common/transport';
-import { Readable } from 'stream';
+import { Readable } from 'node:stream';
 
 export class JsonStreamStringify extends Readable {
     private visited!: VisitedWeakMap | VisitedWeakSet;

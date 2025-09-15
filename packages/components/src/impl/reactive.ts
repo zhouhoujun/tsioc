@@ -1,7 +1,18 @@
-import { hasOwn, isBasic, isObject } from '@tsdi/ioc';
+import { getType, hasOwn, isFunction, isObject } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 
 export const isReactive = Symbol('__reactive');
+
+
+// const native$ = /\[native code\]/;
+function isNative(target: any) {
+    // return !!target && native$.test(getType(target)?.toString()??'')
+    return target instanceof Date
+    || target instanceof Map
+    || target instanceof Set
+    || target instanceof WeakMap
+    || target instanceof WeakSet
+}
 
 export function reactive(target: any, effect: ReactiveEffect) {
     // 如果target已经是响应式的，直接返回
@@ -16,10 +27,15 @@ export function reactive(target: any, effect: ReactiveEffect) {
             effect.track(target, key)
 
             // Reflect.get保证this指向正确
-            const res = Reflect.get(target, key, receiver)
+            let res = Reflect.get(target, key, receiver);
 
-            // 嵌套对象也进行响应式处理（懒代理）
-            if (isObject(res) && !res[isReactive] && !isBasic(res)) {
+            if (isFunction(res)) {
+                if (isNative(target)) {
+                    res = res.bind(target);
+                }
+            } else if (isObject(res) && !res[isReactive]) {
+
+                // 嵌套对象也进行响应式处理（懒代理）
                 return reactive(res, effect)
             }
 
@@ -49,9 +65,15 @@ export function reactive(target: any, effect: ReactiveEffect) {
             }
 
             return result
-        }
+        },
 
         // ...其他代理方法如has、ownKeys等
+        ownKeys(target) {
+            return target.keys();
+        },
+        has(target, key) {
+            return key in target || Reflect.has(target, key);
+        }
     })
 
     proxy[isReactive] = true

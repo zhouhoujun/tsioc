@@ -1,6 +1,6 @@
 import {
-    AbstractInvocation, AbstractInvocationFactory, Class, createInjector, Empty, Exception, Injectable,
-    Injector, InvocationContext, InvokeArguments, Platform, AbstractType, Provider, toProvider
+    AbstractInvocationFactory, ClassRef, createInjector, Exception, Injectable,
+    Injector, InvocationContext, Platform, AbstractType, Provider, toProvider
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentOptions, ComponentRef, ComponentFactory } from '../refs/component';
@@ -11,14 +11,14 @@ import { reactive } from './reactive';
 import { AfterViewInit, OnInit, OnDestroy } from '../lifecycle';
 
 
-export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptions> extends AbstractInvocation<T, TOpts> implements ComponentRef<T> {
+export class ComponentRefImpl<T> extends ComponentRef<T> {
 
     private _hostView?: ViewRef;
     constructor(
-        _class: Class<T>,
+        _classRef: ClassRef<T>,
         context: InvocationContext,
-        options?: TOpts) {
-        super(_class, context, options);
+        options?: ComponentOptions) {
+        super(_classRef, context, options);
     }
 
     get hostView(): ViewRef {
@@ -34,13 +34,10 @@ export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptio
     }
 
 
-    async render(option?: InvocationContext | InvokeArguments): Promise<void> {
-        const def = this.class.getAnnotation<ComponentDef>();
-        if (!/\[\w+\]/.test(def.selector || '') && !def.template && !def.templateUrl) throw new Exception(this.class.className + ' template or templateUrl is required.')
+    async render(): Promise<void> {
+        const def = this.classRef.getAnnotation<ComponentDef>();
+        if (!/\[\w+\]/.test(def.selector || '') && !def.template && !def.templateUrl) throw new Exception(this.classRef.className + ' template or templateUrl is required.')
         const template = def.template || await fetchTemplate(def.templateUrl!);
-        if (option) {
-            this.context.attach(option);
-        }
         const compiler = this.context.get(TemplateCompiler);
         await (this.instance as OnInit).onInit?.();
         this._hostView = await compiler.compile(template, this.instance, this.context);
@@ -53,8 +50,8 @@ export class ComponentRefImpl<T, TOpts extends ComponentOptions = ComponentOptio
         this.hostView?.destroy();
     }
 
-    protected override process(option?: InvocationContext | InvokeArguments) {
-        return this.render(option);
+    protected override process() {
+        return this.render();
     }
 
     protected override createInstance(): T {
@@ -73,18 +70,19 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         super(platform);
     }
 
-    protected override getInjector<T>(typeRef: Class<T>, options?: ComponentOptions): Injector {
+    protected override getInjector<T>(typeRef: ClassRef<T>, options?: ComponentOptions): Injector {
         let injector = super.getInjector(typeRef, options);
         // 注入Renderer
         const def = typeRef.getAnnotation<ComponentDef>();
         if (def.imports?.length) {
-            injector = createInjector(Empty, injector);
+            injector = createInjector(options?.providers, injector);
             injector.use(def.imports);
         }
         return injector;
     }
 
-    protected override createInstance<T>(typeRef: Class<T>, context: InvocationContext, options?: ComponentOptions): ComponentRef<T> {
+    protected override createInstance<T>(typeRef: ClassRef<T>, context: InvocationContext, options?: ComponentOptions): ComponentRef<T> {
+
         return new ComponentRefImpl(typeRef, context, options);
     }
 
@@ -94,7 +92,7 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         }
     }
 
-    override create<T>(type: AbstractType<T> | Class<T>, options?: ComponentOptions): ComponentRef<T> {
+    override create<T>(type: AbstractType<T> | ClassRef<T>, options?: ComponentOptions): ComponentRef<T> {
         return super.create(type, options) as ComponentRef<T>;
     }
 

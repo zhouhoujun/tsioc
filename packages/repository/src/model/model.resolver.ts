@@ -1,4 +1,4 @@
-import { Abstract, isArray, isDefined, AbstractType, Type, Parameter, Invocation, Empty, Interceptor, Handler, Platform, createResolveScope, isFunction, isResolved } from '@tsdi/ioc';
+import { Abstract, isArray, isDefined, AbstractType, Type, Parameter, Invocation, Interceptor, Handler, Platform, createResolveScope, isFunction, isResolved } from '@tsdi/ioc';
 import { ModelArgumentResolver, HandleContext } from '@tsdi/core';
 import { DBPropertyMetadata, FieldResolveInterceptor, getModelFieldResolver, MissingModelFieldException, missingPropException, ModelFieldResolver } from './field.resolver';
 
@@ -94,20 +94,21 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
     private _resolver!: ModelFieldResolver;
     protected get fieldResolver(): ModelFieldResolver {
         if (!this._resolver) {
-            this._resolver = createResolveScope(this.platform, [
-                (input, next, context) => {
-                    const [prop, fields, target] = input;
-                    if (prop.nullable === true
-                        || (fields && isDefined(fields[prop.propertyKey] ?? prop.default))
-                        || (context as { method: string }).method?.toUpperCase() !== 'PUT' && prop.primary === true
-                    ) {
-                        return next(input, context);
-                    }
-                },
-                ...this.fieldResolves ?? Empty,
-            ],
+            this._resolver = createResolveScope(this.platform,
+                [
+                    (input, next, context) => {
+                        const [prop, fields, target] = input;
+                        if (prop.nullable === true
+                            || (fields && isDefined(fields[prop.propertyKey] ?? prop.default))
+                            || (context.request as { method: string })?.method?.toUpperCase() !== 'PUT' && prop.primary === true
+                        ) {
+                            return next(input, context);
+                        }
+                    },
+                    ...this.fieldResolves ?? [],
+                ],
                 getModelFieldResolver(this.platform)
-            )
+            );
         }
         return this._resolver
     }
@@ -203,6 +204,6 @@ export interface ModelResolveOption {
  * @param platform platform.
  * @returns model resolver instance of {@link ModelArgumentResolver}.
  */
-export function createModelResolver<TOutput>(platform: Platform,option: ModelResolveOption): ModelArgumentResolver<TOutput> {
+export function createModelResolver<TOutput>(platform: Platform, option: ModelResolveOption): ModelArgumentResolver<TOutput> {
     return new ModelResolver<TOutput>(platform, option)
 }

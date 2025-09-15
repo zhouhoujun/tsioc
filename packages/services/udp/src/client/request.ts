@@ -1,6 +1,6 @@
 import { BaseUrlRequest, Pattern, RequestCloneOpts, RequestInitOpts, UrlRequestOptions } from '@tsdi/common';
 import { isIPv4 } from '@tsdi/common/transport';
-import { RemoteInfo } from 'dgram';
+import { RemoteInfo } from 'node:dgram';
 import { udpUrl$ } from '../consts';
 
 

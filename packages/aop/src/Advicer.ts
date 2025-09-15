@@ -1,4 +1,4 @@
-import { Class, Invocation, InterceptorFn } from '@tsdi/ioc';
+import { ClassRef, Invocation, InterceptorFn } from '@tsdi/ioc';
 import { AdviceMetadata } from './metadata/meta';
 import { JoinPoint } from './joinpoints/JoinPoint';
 
@@ -11,7 +11,7 @@ export interface MatchOptions {
 /**
  * match express.
  */
-export type MatchExpress = (name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions) => boolean;
+export type MatchExpress = (name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions) => boolean;
 
 
 

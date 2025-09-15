@@ -2,7 +2,7 @@ import { Token, tokenId } from '@tsdi/ioc';
 import { Filter, ApplicationInterceptor } from '@tsdi/core';
 import { HttpEvent, HttpRequest } from '@tsdi/common/http';
 import { AbstractClient, ClientConfig } from '@tsdi/common/client';
-import { ClientSessionOptions, SecureClientSessionOptions, ClientSessionRequestOptions } from 'http2';
+import { ClientSessionOptions, SecureClientSessionOptions, ClientSessionRequestOptions } from 'node:http2';
 
 /**
  * http serssion options.

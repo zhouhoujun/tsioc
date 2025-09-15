@@ -4,7 +4,6 @@ import { Context, ContextToken, HandlerFn, InterceptorFn, InterceptorLike, invok
 import { PropertyMetadata } from '../metadata/meta';
 import { ctorName, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
 import { Platform } from '../platform';
-import { Parameter } from '../resolver';
 import { AbstractType } from '../types';
 import { isDefined } from '../utils/chk';
 import { initReflectInterceptor } from './commom';
@@ -27,9 +26,9 @@ export const cleanContextInterceptor: InterceptorFn<RuntimeContext, void> = (inp
 export const runtimeAutorunInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
 
     return invokeTail(() => next(input, context), (res) => {
-        const autos = input.class.runnables.filter(c => c.auto && c.decorType === Decors.method)
+        const autos = input.classRef.runnables.filter(c => c.auto && c.decorType === Decors.method)
         if (autos.length) {
-            const { injector, class: def, instance, context } = input;
+            const { injector, classRef: def, instance, context } = input;
             const invocation = def.createInvocation(injector, { instance, parent: context });
             autos.forEach(aut => {
                 invocation.invoke(aut.propertyKey);
@@ -56,7 +55,7 @@ export function getRuntimeClassScope(platform: Platform): HandlerScope<RuntimeCo
     let scope = platform.context.get(RUNTIME_CLASS_SCOPE);
     if (!scope) {
         scope = new HandlerScope<RuntimeContext>(platform, (ctx, context) => {
-            invokeRuntimeHandler(ctx.class.classDecors, ctx, Decors.CLASS, context);
+            invokeRuntimeHandler(ctx.classRef.classDecors, ctx, Decors.CLASS, context);
         });
         platform.context.set(RUNTIME_CLASS_SCOPE, scope);
     }
@@ -78,7 +77,7 @@ export const cacheInterceptor: InterceptorFn<RuntimeContext, void> = (input: Run
     return invokeTail(() => next(input, context), () => {
 
         if (!input.instance || input.singleton) return;
-        const ann = input.class.getAnnotation();
+        const ann = input.classRef.getAnnotation();
         if (!ann.expires || ann.expires! <= 0) return;
 
         input.injector.cache(input.type, input.instance, ann.expires!);
@@ -99,7 +98,7 @@ export function getRuntimeMethodScope(platform: Platform): HandlerScope<RuntimeC
     let scope = platform.context.get(RUNTIME_METHOD_SCOPE);
     if (!scope) {
         scope = new HandlerScope<RuntimeContext>(platform, (ctx, context) => {
-            invokeRuntimeHandler(ctx.class.methodDecors, ctx, Decors.method, context)
+            invokeRuntimeHandler(ctx.classRef.methodDecors, ctx, Decors.method, context)
 
         });
         platform.context.set(RUNTIME_METHOD_SCOPE, scope);
@@ -115,18 +114,19 @@ export const propertyInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
         if (!ictx || !input.instance) throw new Exception('autowride property need InvocationContext');
         let meta: PropertyMetadata, key: string, val;
 
-        input.class.eachProperty((metas, propertyKey) => {
-            key = `${propertyKey.toString()}_INJECTED`;
-            meta = metas.find(m => m.provider)!;
-            if (!meta) {
-                meta = metas.find(m => m.type)!
-            }
-            if (meta && !(input as any)[key]) {
+        input.classRef.eachPropertyProviders(define => {
+            if (!(define.metadata.type || define.metadata.provider)) return;
+            key = `${define.propertyKey.toString()}_INJECTED`;
+            meta = define.metadata; //.find(m => m.provider)!;
+            // if (!meta) {
+            //     meta = metas.find(m => m.type)!
+            // }
+            if (!(input as any)[key]) {
 
-                val = ictx.resolveArgument(meta as Parameter, input.type, onError);
+                val = ictx.resolveArgument(meta, input.type, onError);
 
                 if (isDefined(val)) {
-                    input.instance[propertyKey] = val;
+                    input.instance[define.propertyKey] = val;
                     (input as any)[key] = true
                 }
             }
@@ -143,7 +143,7 @@ export function getRuntimePropertyScope(platform: Platform): HandlerScope<Runtim
     let scope = platform.context.get(RUNTIME_PROPERTY_SCOPE);
     if (!scope) {
         scope = new HandlerScope<RuntimeContext>(platform, (ctx, context) => {
-            invokeRuntimeHandler(ctx.class.propDecors, ctx, Decors.property, context)
+            invokeRuntimeHandler(ctx.classRef.propDecors, ctx, Decors.property, context)
         });
         platform.context.set(RUNTIME_PROPERTY_SCOPE, scope);
     }
@@ -160,17 +160,18 @@ const onError = (target: AbstractType, propertyKey: string) => {
  */
 export const ctorArgsInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
     if (!input.params) {
-        input.params = input.class.getParameters(ctorName)
+        input.params = input.classRef.getParameters(ctorName)
     }
 
     const uctx = input.context;
-    const providers = input.class.providers;
+    const providers = input.classRef.providers;
     let newCtx: InvocationContext | undefined;
     if (!uctx || (uctx.targetType && uctx.targetType !== input.type)) {
         newCtx = createContext(input.injector, {
             targetType: input.type,
             parent: uctx,
             providers,
+            resolvers: input.classRef.resolvers,
             propertyKey: ctorName
         });
         input.context = newCtx;
@@ -180,7 +181,7 @@ export const ctorArgsInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
     }
 
     if (!input.args) {
-        input.args = input.class.resolveArguments(ctorName, input.context!)
+        input.args = input.classRef.resolveArguments(ctorName, input.context!)
     }
 
     return next(input, context);

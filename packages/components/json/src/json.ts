@@ -1,11 +1,11 @@
-import { TemplateParser } from '../template/parser';
-import { RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, EventListener, RAttr } from '../renderer/Node';
-import { Empty, Inject, Injectable, isArray, lang, Module, ModuleWithProviders, tokenId } from '@tsdi/ioc';
+import { Inject, Injectable, InvocationContext, isArray, lang, Module, ModuleWithProviders, tokenId } from '@tsdi/ioc';
+import {
+    TemplateParser, AbstractTemplateCompiler, ReactiveEffect, Renderer, RendererStyleFlags2,
+    RComment, RElement, RNode, RText, NodeType, RCssStyleDeclaration, RDomTokenList, RAttr,
+    TemplateCompiler, TemplateCompilerOptions
+} from '@tsdi/components';
+import * as cssSelect from 'css-select';
 import { EventEmitter } from 'events';
-import { AbstractTemplateCompiler } from './compiler';
-import { ReactiveEffect } from '../ReactiveEffect';
-import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
-import { Renderer, RendererStyleFlags2 } from '../renderer/Renderer';
 
 
 
@@ -25,7 +25,7 @@ export class JsonNode implements RNode {
     }
 
     removeChild(oldChild: JsonNode): JsonNode {
-        const [removed] = lang.remove(this.childNodes, oldChild) ?? Empty;
+        const [removed] = lang.remove(this.childNodes, oldChild) ?? [];
         return removed;
     }
 
@@ -40,6 +40,40 @@ export class JsonNode implements RNode {
     appendChild(newChild: JsonNode): JsonNode {
         this.childNodes.push(newChild);
         return this;
+    }
+
+    querySelector(selector: string): JsonNode | null {
+        return cssSelect.selectOne<JsonNode, JsonElement>(selector, this, {
+            adapter: {
+                getAttributeValue: (el: JsonElement, name: string) => el.getAttribute(name) ?? undefined,
+                getChildren: (el: JsonNode) => el.childNodes,
+                getName: (el: JsonElement) => el.tagName.toLowerCase(),
+                getText: (el: JsonNode) => el.textContent ?? '',
+                getParent: (el: JsonNode) => el.parentElement,
+                removeSubsets: (nodes: JsonNode[]) => nodes,
+                getSiblings: (el: JsonNode) => el.nextSibling ? [el, el.nextSibling] : [el],
+                prevElementSibling: () => null,
+                hasAttrib: (el: JsonElement, name: string) => el.hasAttribute(name),
+                isTag: (el: JsonNode): el is JsonElement => el.nodeType === NodeType.Element
+            }
+        });
+    }
+
+    querySelectorAll(selector: string): JsonNode[] | null {
+        return cssSelect.selectAll<JsonNode, JsonElement>(selector, this, {
+            adapter: {
+                getAttributeValue: (el: JsonElement, name: string) => el.getAttribute(name) ?? undefined,
+                getChildren: (el: JsonNode) => el.childNodes,
+                getName: (el: JsonElement) => el.tagName.toLowerCase(),
+                getText: (el: JsonNode) => el.textContent ?? '',
+                getParent: (el: JsonNode) => el.parentElement,
+                removeSubsets: (nodes: JsonNode[]) => nodes,
+                getSiblings: (el: JsonNode) => el.nextSibling ? [el, el.nextSibling] : [el],
+                prevElementSibling: () => null,
+                hasAttrib: (el: JsonElement, name: string) => el.hasAttribute(name),
+                isTag: (el: JsonNode): el is JsonElement => el.nodeType === NodeType.Element
+            }
+        });
     }
 }
 
@@ -119,9 +153,9 @@ export class JsonElement extends JsonNode implements RElement {
 
     getAttributeNS(namespace: string | null, localName: string): string | null {
         return this.attributes.get(`${localName}:${namespace}`)?.value ?? null;
-    }   
+    }
     setAttributeNS(namespace: string, name: string, value: string): void {
-        this.attributes.set(`${name}:${namespace}`, { name, namespace, value});
+        this.attributes.set(`${name}:${namespace}`, { name, namespace, value });
     }
     removeAttributeNS(namespace: string, localName: string): void {
         this.attributes.delete(`${localName}:${namespace}`);
@@ -139,7 +173,7 @@ export class JsonElement extends JsonNode implements RElement {
     removeAttribute(name: string): void {
         this.attributes.delete(name)
     }
-    
+
     addEventListener(type: string, listener: EventListener, useCapture?: boolean): void {
         this.events.addListener(type, listener)
     }
@@ -258,7 +292,7 @@ export class JsonTemplateParser implements TemplateParser {
         private renderer: JsonRenderer
     ) { }
 
-    parse(template: string): JsonNode[] {
+    parse(template: string, environument: InvocationContext): JsonNode[] {
         const jsonObj = JSON.parse(template);
         // 将JSON对象转换为虚拟DOM节点
         return this.convertToNodes(jsonObj);

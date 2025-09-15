@@ -1,7 +1,7 @@
 import {
     isFunction, lang, Platform, ctorName, InvocationContext, HandlerScope, HandlerFn,
     Context, ContextToken, invokeTail, RuntimeContext, InterceptorLike, isDefined,
-    ParameterMetadata, Class, proxyTag, isObject, isNil, object2string, getClassify,
+    ParameterMetadata, ClassRef, proxyTag, isObject, isNil, object2string, getClassify,
     composeHandlers, composeInterceptors
 } from '@tsdi/ioc';
 import { JoinPoint } from '../joinpoints/JoinPoint';
@@ -27,9 +27,9 @@ export class ProceedingScope implements Proceeding {
 
     pointcutCtor(ctx: RuntimeContext, next: HandlerFn, context: Context) {
         const advisor = context.get(Advisor);
-        if (!advisor.hasCtor(ctx.class)) {
+        if (!advisor.hasCtor(ctx.classRef)) {
             return invokeTail(() => next(ctx, context), () => {
-                if (advisor.hasPointcut(ctx.instance, ctx.class, true)) {
+                if (advisor.hasPointcut(ctx.instance, ctx.classRef, true)) {
                     ctx.hasPointcut = true;
                     ctx.isNewContext = false;
                 }
@@ -37,7 +37,7 @@ export class ProceedingScope implements Proceeding {
         }
 
         ctx.isNewContext = false;
-        return this.handle(ctx.class, `${ctx.class.className}.${ctorName}`, ctorName, null, advisor, ctx.platform, {
+        return this.handle(ctx.classRef, `${ctx.classRef.className}.${ctorName}`, ctorName, null, advisor, ctx.platform, {
             parent: ctx.context,
             args: ctx.args,
             params: ctx.params,
@@ -54,13 +54,13 @@ export class ProceedingScope implements Proceeding {
     pointcutProperty(ctx: RuntimeContext, next: HandlerFn, context: Context) {
         return invokeTail(() => next(ctx, context), () => {
             const advisor = context.get(Advisor);
-            if (isDefined(ctx.instance) && (ctx.hasPointcut || advisor.hasPointcut(ctx.instance, ctx.class, true))) {
-                ctx.instance = this.createProxy(ctx.class.className, ctx.class, ctx.instance, ctx.class, ctx.instance, advisor, ctx.context)
+            if (isDefined(ctx.instance) && (ctx.hasPointcut || advisor.hasPointcut(ctx.instance, ctx.classRef, true))) {
+                ctx.instance = this.createProxy(ctx.classRef.className, ctx.classRef, ctx.instance, ctx.classRef, ctx.instance, advisor, ctx.context)
             }
         });
     }
 
-    protected createProxy(prefix: string, rootRef: Class, root: any, typeRef: Class | null, instance: any, advisor: Advisor, parent?: InvocationContext) {
+    protected createProxy(prefix: string, rootRef: ClassRef, root: any, typeRef: ClassRef | null, instance: any, advisor: Advisor, parent?: InvocationContext) {
         const descriptors = typeRef?.getPropertyDescriptors();
 
         const weekMap = new WeakMap();
@@ -140,7 +140,7 @@ export class ProceedingScope implements Proceeding {
         return proxy;
     }
 
-    protected proxy<T>(originMethod: Function, propertyKey: string | symbol, fullName: string, advisor: Advisor, receiver: T, target: any, targetRef: Class, parent?: InvocationContext) {
+    protected proxy<T>(originMethod: Function, propertyKey: string | symbol, fullName: string, advisor: Advisor, receiver: T, target: any, targetRef: ClassRef, parent?: InvocationContext) {
         const platform = this.platform;
         return (...args: any[]) => {
             if (!platform || !platform.injector || platform.injector.destroyed) {
@@ -160,7 +160,7 @@ export class ProceedingScope implements Proceeding {
         }
     }
 
-    private handle(targetRef: Class, fullName: string, propertyKey: string | symbol, receiver: any, advisor: Advisor, platform: Platform, options: {
+    private handle(targetRef: ClassRef, fullName: string, propertyKey: string | symbol, receiver: any, advisor: Advisor, platform: Platform, options: {
         target?: any,
         originMethod?: Function,
         args?: any[];
@@ -182,7 +182,7 @@ export class ProceedingScope implements Proceeding {
             propertyKey,
             fullName,
             advisor,
-            annotations: targetRef?.defs.filter(d => d.propertyKey === propertyKey),
+            annotations: targetRef?.getMethodDefines(propertyKey) //?? targetRef?.getPropDefines(propertyKey) //.defines.filter(d => d.propertyKey === propertyKey),
         });
         if (options.parent) {
             joinPoint.onDestroy(options.parent)
@@ -332,7 +332,7 @@ function invokeAdvice(joinPoint: JoinPoint, advicer: Advicer) {
         joinPoint.addRef(context)
     }
 
-    return invokeTail(() => advicer.aspect.invoke(advicer.advice.name!, joinPoint), {
+    return invokeTail(() => advicer.aspect.invoke(advicer.advice.propertyKey!, joinPoint), {
         finally: () => {
             context && joinPoint.removeRef(context);
         }

@@ -102,7 +102,7 @@ export class DefaultInvocationHandler<
             const trespond = ctx.get(TypedRespond);
             if (trespond) {
                 trespond.respond(ctx, res, this.options.response);
-            } 
+            }
             // else {
             //     ctx.request[this.options.response] = res;
             // }
@@ -120,6 +120,13 @@ export class DefaultInvocationHandler<
     }
 
     protected defaultRespond(ctx: InvocationContext, res: any): void { }
+
+    equals(other: InvocationHandler): boolean {
+        return this.invocation.type === other.invocation.type
+            && this.injector === other.injector
+            && this.options.response === (other as DefaultInvocationHandler).options.response
+            && this.propertyKey === (other as DefaultInvocationHandler).propertyKey;
+    }
 
 }
 

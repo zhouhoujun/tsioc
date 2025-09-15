@@ -1,9 +1,8 @@
 import {
-    isUndefined, AbstractType, createDecorator, Provider, InjectableMetadata, PropertyMetadata, ActionTypes, InjectFlags,
-    MethodPropDecorator, Token, ArgumentException, object2string, InvokeArguments,
+    isUndefined, AbstractType, createDecorator, Provider, InjectableMetadata, PropertyMetadata, InjectFlags,
+    MethodPropDecorator, Token, ArgumentException, object2string, InvokeArguments, ActionType,
     isString, Parameter, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
-    ModuleType, Type, MutilProvider, Class, Injector, ProvidedInMetadata, AnnotationMetadata,
-    Invocation
+    ModuleType, Type, MutilProvider, ClassRef, Injector, ProvidedInMetadata, AnnotationMetadata, Invocation
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import {
@@ -15,7 +14,7 @@ import { InvocationHandlerOptions } from './invocation';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
-import { TransportParameter, TransportParameterOptions } from './handlers/resolver';
+import { TransportParameter } from './handlers/resolver';
 import { ApplicationInterceptorFn, InterceptorResolver } from './ApplicationInterceptor';
 import { createInvocationHandler } from './impl/invocation';
 
@@ -60,14 +59,14 @@ export interface Runner {
  * @Runner decorator.
  */
 export const Runner: Runner = createDecorator('Runner', {
-    actionType: ActionTypes.runnable,
+    actionType: ActionType.runnable,
     props: <TArg>(method: string | RunnerOption<TArg>, args?: RunnerOption<TArg>) =>
         (isString(method) ? { method, args } : { args: method }),
 
     afterInit: (ctx) => {
         const meta = ctx.define.metadata as { method: string, args: RunnerOption<any> };
         if (meta.args?.parameters) {
-            ctx.class.setParameters(meta.method, meta.args.parameters)
+            ctx.classRef.setMethodOptions(meta.method, meta.args)
         }
     }
 });
@@ -110,10 +109,10 @@ export interface Pipe {
  * @expors {@link Pipe}
  */
 export const Pipe: Pipe = createDecorator<PipeMetadata>('Pipe', {
-    actionType: [ActionTypes.annoation, ActionTypes.providers],
+    actionType: ActionType.annoation | ActionType.providers,
     def: {
         class: (ctx) => {
-            ctx.class.setAnnotation(ctx.define.metadata);
+            ctx.classRef.assignAnnotation(ctx.define.metadata);
         }
     },
     props: (name: string, pure?: boolean) => ({ name, provide: name, pure }),
@@ -149,7 +148,7 @@ export const Bean: BeanDecorator = createDecorator<BeanMetadata>('Bean', {
             if (metadata.type !== Object) {
                 metadata.provide = metadata.type as any
             } else {
-                throw new ArgumentException(`the property has no design Type, named ${ctx.define.propertyKey} with @Bean decorator in type ${object2string(ctx.class.type)}`)
+                throw new ArgumentException(`the property has no design Type, named ${ctx.define.propertyKey} with @Bean decorator in type ${object2string(ctx.classRef.type)}`)
             }
         }
     }
@@ -181,10 +180,10 @@ export interface ConfigurationDecorator {
  * @Configuartion
  */
 export const Configuration: ConfigurationDecorator = createDecorator<ConfgiurationMetadata>('Configuration', {
-    actionType: ActionTypes.annoation,
+    actionType: ActionType.annoation,
     design: {
         afterAnnoation: (ctx) => {
-            const { class: typeRef, injector } = ctx;
+            const { classRef: typeRef, injector } = ctx;
             const meta = typeRef.getMetadata<ConfgiurationMetadata>(ctx.currDecor);
             if (meta.imports) {
                 injector.inject({
@@ -206,7 +205,7 @@ export const Configuration: ConfigurationDecorator = createDecorator<Confgiurati
     }
 });
 
-function injectBean(injector: Injector, typeRef: Class<any>, meta: ConfgiurationMetadata, invocation?: Invocation<any>) {
+function injectBean(injector: Injector, typeRef: ClassRef<any>, meta: ConfgiurationMetadata, invocation?: Invocation<any>) {
     if (!invocation) {
         invocation = typeRef.createInvocation(injector);
     }
@@ -214,7 +213,7 @@ function injectBean(injector: Injector, typeRef: Class<any>, meta: Confgiuration
 
     if (meta.providers) invocation.context.injector.inject(meta.providers);
 
-    typeRef.defs.filter(d => d.decor === Bean)
+    typeRef.getDefines(Bean)
         .forEach(d => {
             const key = d.propertyKey;
             const { provide, static: stac, multi, multiOrder, providedIn } = d.metadata as BeanMetadata;
@@ -266,14 +265,14 @@ function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name:
         props: (filter?: AbstractType | string, options?: { order?: number }) => ({ filter, ...options }),
         design: {
             method: runtime === true ? undefined : (ctx) => {
-                const typeRef = ctx.class;
+                const typeRef = ctx.classRef;
                 if (typeRef.getAnnotation().static === false && !typeRef.getAnnotation().singleton) return;
 
-                const decors = typeRef.getMethodDefines(ctx.currDecor);
+                const defines = typeRef.getDefines(ctx.currDecor);
                 const injector = ctx.injector;
                 const invocation = typeRef.createInvocation(injector);
                 const currMulticaster = injector.get(ApplicationEventMulticaster);
-                decors.forEach(decor => {
+                defines.forEach(decor => {
                     const { filter, order, providedIn, ...options } = decor.metadata as InvocationHandlerOptions & { filter: AbstractType<ApplicationEvent> & { getStrategy?: () => string } };
                     const handler = createInvocationHandler(invocation, options, decor.propertyKey);
                     const event = filter ?? defaultFilter;
@@ -286,18 +285,18 @@ function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name:
         },
         runtime: {
             method: (ctx) => {
-                const typeRef = ctx.class;
+                const typeRef = ctx.classRef;
                 if (!runtime && (
                     !ctx.context?.isResolve
                     || typeRef.getAnnotation().static === true
                     || typeRef.getAnnotation().singleton
                 )) return;
 
-                const decors = typeRef.getMethodDefines(ctx.currDecor);
+                const defines = typeRef.getDefines(ctx.currDecor);
                 const injector = ctx.injector;
                 const invocation = typeRef.createInvocation(injector, { instance: ctx.instance });
                 const currMulticaster = injector.get(ApplicationEventMulticaster);
-                decors.forEach(decor => {
+                defines.forEach(decor => {
                     const { filter, order, providedIn, ...options } = decor.metadata as InvocationHandlerOptions & { filter: AbstractType<ApplicationEvent> & { getStrategy?: () => string } };
                     const handler = createInvocationHandler(invocation, options, decor.propertyKey);
                     const event = filter ?? defaultFilter;
@@ -485,8 +484,8 @@ export const Interceptable: Interceptable = createDecorator('Interceptable', {
     props: (target: AbstractType | string, options?: InvocationHandlerOptions) => ({ target, ...options }),
     design: {
         method: (ctx) => {
-            const typeRef = ctx.class;
-            const decors = typeRef.getMethodDefines<InterceptMetadata>(ctx.currDecor);
+            const typeRef = ctx.classRef;
+            const decors = typeRef.getDefines<InterceptMetadata>(ctx.currDecor);
             const injector = ctx.injector;
             const invocation = typeRef.createInvocation(injector);
             const currResolver = injector.get(InterceptorResolver);
@@ -534,8 +533,8 @@ export const Filterable: Filterable = createDecorator('Filterable', {
     props: (target: AbstractType | string, options?: InvocationHandlerOptions) => ({ target, ...options }),
     design: {
         method: (ctx) => {
-            const typeRef = ctx.class;
-            const decors = typeRef.getMethodDefines<InterceptMetadata>(ctx.currDecor);
+            const typeRef = ctx.classRef;
+            const decors = typeRef.getDefines<InterceptMetadata>(ctx.currDecor);
             const injector = ctx.injector;
             const invocation = typeRef.createInvocation(injector);
             const currResolver = injector.get(FilterResolver);
@@ -595,8 +594,8 @@ export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
     props: (filter?: AbstractType | string, options?: InvocationHandlerOptions) => ({ filter, ...options }),
     design: {
         method: (ctx) => {
-            const typeRef = ctx.class;
-            const decors = typeRef.getMethodDefines<FilterHandlerMetadata<any>>(ctx.currDecor);
+            const typeRef = ctx.classRef;
+            const decors = typeRef.getDefines<FilterHandlerMetadata<any>>(ctx.currDecor);
             const injector = ctx.injector;
             const invocation = typeRef.createInvocation(injector);
             const currResolver = injector.get(FilterHandlerResolver);
@@ -678,12 +677,12 @@ export interface TransportParameterDecorator {
      * @param {string} field field of request query params or body.
      * @param options route metedata options.
      */
-    (field?: string, option?: TransportParameterOptions): ParameterDecorator;
+    (field?: string, option?: Omit<TransportParameter, 'propertyKey' | 'field'>): ParameterDecorator;
     /**
      * Transport Parameter decorator
      * @param meta.
      */
-    (meta: TransportParameter): ParameterDecorator;
+    (meta: Omit<TransportParameter, 'propertyKey'>): ParameterDecorator;
 }
 
 /**
@@ -692,6 +691,7 @@ export interface TransportParameterDecorator {
  * @exports {@link TransportParameterDecorator}
  */
 export const Payload: TransportParameterDecorator = createParamDecorator('Payload', {
+    actionType: ActionType.inject,
     props: (field: string, pipe?: { pipe: string | TypeOf<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
         if (meta.flags) {
@@ -709,6 +709,7 @@ export const Payload: TransportParameterDecorator = createParamDecorator('Payloa
  * @exports {@link TransportParameterDecorator}
  */
 export const Topic: TransportParameterDecorator = createParamDecorator('Topic', {
+    actionType: ActionType.inject,
     props: (field: string, pipe?: { pipe: string | AbstractType<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
         if (meta.flags) {

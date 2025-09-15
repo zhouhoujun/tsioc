@@ -1,5 +1,5 @@
 import {
-    Arrayify, Empty, Injector, Module, ModuleRef, ModuleWithProviders,
+    Arrayify, Injector, Module, ModuleRef, ModuleWithProviders,
     Provider, isArray, lang, toProvider, tokenId
 } from '@tsdi/ioc';
 import { ConfigMissingException, createHandler } from '@tsdi/core';
@@ -93,7 +93,7 @@ export const CLIENT_MODULES = tokenId<(ClientModuleOpts)[]>('CLIENT_MODULES');
 function clientProviders(options: ClientOptions, idx?: number) {
     const microservice = isMicroTransport(options);
     return [
-        options.providers ?? Empty,
+        options.providers ?? [],
         {
             provider: async (injector) => {
                 const transportName = toTransportModuleName(options.transport);
@@ -104,7 +104,7 @@ function clientProviders(options: ClientOptions, idx?: number) {
                         const transportModuleName = transportName.charAt(0).toUpperCase() + transportName.slice(1) + 'Module';
                         if (m[transportModuleName]) {
                             await injector.get(ModuleRef).import(m[transportModuleName]);
-                            defts = injector.get(CLIENT_MODULES, Empty).find(r => (r.transport === options.transport || r.transport == transportName) && (microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r))));
+                            defts = injector.get(CLIENT_MODULES, []).find(r => (r.transport === options.transport || r.transport == transportName) && (microservice ? isMicroTransport(r) : (r.asDefault || !isMicroTransport(r))));
                         }
                         if (!defts) {
                             throw new Error(m[transportModuleName] ? 'has not implemented' : 'not found transport module!')

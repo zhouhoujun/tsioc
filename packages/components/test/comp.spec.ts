@@ -3,8 +3,8 @@ import { Before, Suite, Test, After } from '@tsdi/unit';
 import { ApplicationContext, Application, formatDate } from '@tsdi/core';
 import { ExampleComponent } from './app';
 import { ComponentsModule } from '../src';
-import { JsonTemplateModule } from '../src/impl/json';
-import { XmlTemplateModule } from '../src/impl/xml';
+// import { JsonTemplateModule } from '../src/impl/json';
+// import { XmlTemplateModule } from '../src/impl/xml';
 import { ComponentRef } from '../src/refs/component';
 
 
@@ -19,7 +19,7 @@ export class CTest {
         this.ctx = await Application.run(ExampleComponent, {
             deps: [
                 // JsonTemplateModule,
-                XmlTemplateModule,
+                // XmlTemplateModule,
                 ComponentsModule
             ]
         });

@@ -1,11 +1,11 @@
 import { Exception } from '../exception';
 import { Injector, InjectorScope } from '../injector';
-import { getClass, getClassify } from '../metadata/refl';
-import { Class, ModuleDef } from '../metadata/class';
+import { getClassRef, getClassify } from '../metadata/refl';
+import { ClassRef, ModuleDef } from '../metadata/class';
 import { ModuleOption, ModuleRef } from '../module.ref';
 import { Platform } from '../platform';
 import { isModuleProviders, ModuleWithProviders, Provider } from '../providers';
-import { AbstractType, Empty, Type } from '../types';
+import { Type } from '../types';
 import { DefaultInjector, mergePromise } from './injector';
 
 
@@ -15,9 +15,9 @@ import { DefaultInjector, mergePromise } from './injector';
 export class DefaultModuleRef<T = any> extends DefaultInjector implements ModuleRef<T> {
     private _instance!: T;
     private _type: Type<T>;
-    private _typeRefl: Class<T>;
+    private _typeRefl: ClassRef<T>;
 
-    constructor(moduleType: Class<T>, parent: Injector, option: ModuleOption = {}) {
+    constructor(moduleType: ClassRef<T>, parent: Injector, option: ModuleOption = {}) {
         super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type);
         this.isStatic = (moduleType.getAnnotation().static || option.isStatic) !== false;
         this._typeRefl = moduleType;
@@ -98,11 +98,11 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 /**
  * create module ref.
  */
-export function createModuleRef<T>(module: Type<T> | Class<T> | ModuleWithProviders<T>, parent: Injector, option?: ModuleOption): ModuleRef<T> {
+export function createModuleRef<T>(module: Type<T> | ClassRef<T> | ModuleWithProviders<T>, parent: Injector, option?: ModuleOption): ModuleRef<T> {
     if (isModuleProviders(module)) {
-        return new DefaultModuleRef(getClass(module.module), parent, {
+        return new DefaultModuleRef(getClassRef(module.module), parent, {
             ...option,
-            providers: option?.providers?.length ? [module.providers ?? Empty, option?.providers] : module.providers
+            providers: option?.providers?.length ? [module.providers ?? [], option?.providers] : module.providers
         })
     }
     const moduleDef =  getClassify(module);

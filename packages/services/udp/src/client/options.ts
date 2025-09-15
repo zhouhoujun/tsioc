@@ -3,7 +3,7 @@ import { tokenId } from '@tsdi/ioc';
 import { ResponseEvent } from '@tsdi/common';
 import { TransportOptions } from '@tsdi/common/transport';
 import { ClientConfig } from '@tsdi/common/client';
-import { SocketOptions } from 'dgram';
+import { SocketOptions } from 'node:dgram';
 import { UdpRequest } from './request';
 
 

@@ -1,4 +1,4 @@
-import { AbstractType, ActionTypes, createDecorator, MethodMetadata } from '@tsdi/ioc';
+import { AbstractType, ActionType, createDecorator, MethodMetadata } from '@tsdi/ioc';
 import { TransactionResolver } from './resolver';
 
 /**
@@ -15,11 +15,11 @@ export interface Transactional {
 }
 
 export const Transactional: Transactional = createDecorator<TransactionalMetadata>('Transactional', {
-    actionType: ActionTypes.providers,
+    actionType: ActionType.providers,
     def: {
         method: [
             (ctx) => {
-                ctx.class.setMethodOptions(ctx.define.propertyKey, { resolvers: [TransactionResolver] });
+                ctx.classRef.setMethodOptions(ctx.define.propertyKey, { resolvers: [TransactionResolver] });
             }
         ]
     },

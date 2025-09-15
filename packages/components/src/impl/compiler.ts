@@ -1,5 +1,5 @@
-import { Abstract, Empty, InvocationContext, isArray, isObject } from '@tsdi/ioc';
-import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
+import { Abstract, InvocationContext, isObject } from '@tsdi/ioc';
+import { COMPONENTS, DIRECTIVES, TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { NodeType, RElement, RNode, RText } from '../renderer/Node';
 import { ViewRef } from '../refs/view';
 import { RootViewRef } from './view';
@@ -19,27 +19,28 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
     async compile(template: string, context: any, environument: InvocationContext): Promise<ViewRef> {
         // 使用模板解析器解析模板
-        const nodes = this.parser.parse(template);
+        const nodes = this.parser.parse(template, environument);
 
         const viewRef = new RootViewRef(nodes, context, this.effect);
 
         // 处理动态内容
-        await this.walkNodes(viewRef.rootNodes, context, viewRef, environument);
+        await this.walkNodes(viewRef.rootNodes ?? [], context, viewRef, environument);
 
         return viewRef;
     }
 
-    private async walkNodes(nodes: RNode[], context: any, viewRef: ViewRef, environument: InvocationContext) {
-        for (const node of nodes || Empty) {
+    private async walkNodes(nodes: RNode[], context: any, viewRef: RootViewRef, environument: InvocationContext) {
+        for (const node of nodes) {
             if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
                 this.processText(node as RText, context, viewRef, environument);
             } else {
-                const factory = node.tagName ? this.getComponentBySelector(node.tagName) : null;
+                const factory = this.getComponentBySelector(node, environument);
                 if (factory) {
-                    await this.processComponent(node as RElement, factory, context, viewRef, environument);
+                    await this.processComponent(node as RElement, factory(environument), context, viewRef, environument);
                 } else if (node.nodeType === NodeType.Element) {
                     this.processElement(node as RElement, context, viewRef, environument);
                 }
+
                 // ...解析模板逻辑...
                 this.processBindings(node, context, viewRef);
             }
@@ -47,11 +48,23 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
     }
 
-    getComponentBySelector(tagName: string) {
+    getComponentBySelector(node: RNode, environument: InvocationContext) {
+        if (node.tagName) {
+            const components = environument.get(COMPONENTS);
+            const compfac = components?.find(c => c.name === node.tagName);
+            if (compfac) return compfac;
+
+            const directives = environument.get(DIRECTIVES);
+            const attrs = this.renderer.getAttributes(node as RElement);
+            if (directives?.length && attrs?.length) {
+                return directives.find(d => attrs.some(a => a.name === d.name));
+            }
+            return null;
+        }
         return null;
     }
 
-    private processElement(el: RElement, context: any, viewRef: ViewRef, environument: InvocationContext) {
+    private processElement(el: RElement, context: any, viewRef: RootViewRef, environument: InvocationContext) {
         // 处理属性
         this.renderer.getAttributes(el).forEach(({ name, value }) => {
             if (name.startsWith('#')) {
@@ -82,7 +95,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         }
     }
 
-    private processText(node: RText, context: any, viewRef: ViewRef, environument: InvocationContext) {
+    private processText(node: RText, context: any, viewRef: RootViewRef, environument: InvocationContext) {
         const text = node.textContent;
         if (!text) return;
 
@@ -100,11 +113,9 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
 
-    private async processComponent(el: RElement, factory: () => ComponentRef<any>, context: any, viewRef: ViewRef, environument: InvocationContext) {
-        // 创建组件实例
-        const componentRef = factory();
+    private async processComponent(el: RElement, componentRef: ComponentRef<any>, context: any, viewRef: RootViewRef, environument: InvocationContext) {
 
-        const componentDef = componentRef.class.getAnnotation<ComponentDef>();
+        const componentDef = componentRef.classRef.getAnnotation<ComponentDef>();
         const attributes = componentDef?.attributes || [];
 
         // 解析组件属性绑定
@@ -154,24 +165,9 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
             }
         });
 
-        // 将props和events传递给组件
-        // componentInstance.props = props;
-        // componentInstance.events = events;
-
         // 渲染组件并替换当前节点
         await componentRef.render();
 
-        // const parentNode = el.parentNode;
-        // if (parentNode) {
-        //     // 替换原节点为组件渲染结果
-        //     const index = Array.from(parentNode.childNodes).indexOf(el);
-        //     parentNode.removeChild(el);
-        //     componentRef.hostView.rootNodes.forEach((node, i) => {
-        //         parentNode.insertBefore(node, parentNode.childNodes[index + i] || null);
-        //     });
-        //     // 处理组件渲染节点的绑定
-        //     componentRef.hostView.rootNodes.forEach(node => this.processBindings(node, context, viewRef));
-        // }
     }
 
     // 解析管道表达式转换为函数调用
@@ -189,8 +185,35 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         return results;
     }
 
-    private evaluateExpression(expr: string, context: any, viewRef: ViewRef, environument: InvocationContext): any {
+    private evaluateExpression(expr: string, context: any, viewRef: RootViewRef, environument: InvocationContext): any {
         try {
+            // 检查是否为计算属性访问
+            const isComputed = this.isComputedProperty(expr, context);
+            if (isComputed) {
+                const cacheKey = `${context.constructor.name}-${expr}`;
+                let cacheEntry = viewRef.computedCache.get(cacheKey);
+
+                if (!cacheEntry) {
+                    // 创建新的缓存条目
+                    cacheEntry = { value: undefined, deps: new Set() };
+                    viewRef.computedCache.set(cacheKey, cacheEntry);
+                }
+
+                // 使用effect跟踪依赖并计算值
+                return this.effect.run(() => {
+                    // 清除旧依赖
+                    cacheEntry!.deps.clear();
+                    
+                    // 计算新值
+                    const value = this.evaluateComputedExpression(expr, context, viewRef, environument);
+                    cacheEntry!.value = value;
+                    
+                    // 收集新依赖（这里需要实际实现依赖收集逻辑）
+                    this.trackDependencies(expr, context, cacheEntry!.deps);
+                    
+                    return value;
+                });
+            }
             const parts = expr.split('|').map(part => part.trim());
             if (parts.length <= 1) {
                 // 简单表达式求值
@@ -245,7 +268,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         node.childNodes?.forEach(child => this.processBindings(child, context, viewRef));
     }
 
-    private parseEventExpression(expr: string, context: any, viewRef: ViewRef, environument: InvocationContext): EventListener {
+    private parseEventExpression(expr: string, context: any, viewRef: RootViewRef, environument: InvocationContext): EventListener {
         // 改进正则以支持带命名空间的函数名和复杂参数
         const funcCallRegex = /^\s*([_$a-zA-Z\w.]+)\s*\(\s*(.*?)\s*\)\s*$/;
         const match = expr.match(funcCallRegex);
@@ -289,7 +312,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
     // 解析参数列表，支持字符串、数字、布尔值和变量引用
-    private parseArguments(argsStr: string, context: any, viewRef: ViewRef, environument: InvocationContext): any[] {
+    private parseArguments(argsStr: string, context: any, viewRef: RootViewRef, environument: InvocationContext): any[] {
         if (!argsStr.trim()) return [];
 
         // 使用状态机解析参数，支持嵌套括号和引号
@@ -327,7 +350,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
     // 计算参数值 (字符串/数字/布尔值/变量引用)
-    private evaluateArg(arg: string, context: any, viewRef: ViewRef, environument: InvocationContext): any {
+    private evaluateArg(arg: string, context: any, viewRef: RootViewRef, environument: InvocationContext): any {
         if (!arg) return undefined;
 
         // 字符串字面量
@@ -352,6 +375,33 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
         // 复杂表达式，委托给evaluateExpression处理
         return this.evaluateExpression(arg, context, viewRef, environument);
+    }
+
+    private isComputedProperty(expr: string, context: any): boolean {
+        // 检查上下文对象是否有该计算属性的元数据
+        const propName = expr.trim();
+        return !!Reflect.getMetadata('computed', context.constructor.prototype, propName);
+    }
+
+    private evaluateComputedExpression(expr: string, context: any, viewRef: RootViewRef, environument: InvocationContext): any {
+        // 计算属性表达式求值
+        return new Function('ctx', `with(ctx){return ${expr}}`)(context);
+    }
+
+    private trackDependencies(expr: string, context: any, deps: Set<any>): void {
+        // 实现依赖跟踪逻辑
+        // 这里需要解析表达式，找出所有依赖的响应式属性
+        const dependencies = this.parseDependencies(expr);
+        dependencies.forEach(dep => {
+            deps.add(dep);
+        });
+    }
+
+    private parseDependencies(expr: string): string[] {
+        // 简单的依赖解析，实际实现可能需要更复杂的表达式解析
+        const propRegex = /([a-zA-Z_$][\w$]*)/g;
+        const matches = expr.match(propRegex) || [];
+        return [...new Set(matches)]; // 返回唯一的属性名
     }
 }
 

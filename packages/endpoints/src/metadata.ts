@@ -1,7 +1,8 @@
 import {
-    isArray, isString, lang, AbstractType, TypeOf, createDecorator, ActionTypes, InjectFlags,
-    ClassMethodDecorator, createParamDecorator, Exception, isMetadataObject, DecorDefine,
-    AnnotationMetadata, Handler, Type
+    isArray, isString, lang, AbstractType, TypeOf, createDecorator, InjectFlags,
+    ClassMethodDecorator, createParamDecorator, Exception, isMetadataObject,
+    AnnotationMetadata, Handler, Type,
+    ActionType
 } from '@tsdi/ioc';
 import { CanHandle, PipeTransform, TransportParameterDecorator, TransportParameter, GuardLike } from '@tsdi/core';
 import { joinPath, normalize, DELETE, GET, HEAD, PATCH, POST, Pattern, PUT, RequestMethod, Protocols } from '@tsdi/common';
@@ -44,17 +45,17 @@ export interface Subscribe {
  * @exports {@link Handle}
  */
 export const Subscribe: Subscribe = createDecorator<HandleMetadata>('Subscribe', {
-    actionType: [ActionTypes.annoation, ActionTypes.runnable],
+    actionType: ActionType.annoation | ActionType.runnable,
     props: (route: string, arg1?: Protocols | RouteOptions, option?: RouteOptions) =>
         (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata,
     design: {
         method: (ctx) => {
 
-            const defines = ctx.class.getMethodDefines(ctx.currDecor) as DecorDefine<HandleMetadata>[];
+            const defines = ctx.classRef.getDefines<HandleMetadata>(ctx.currDecor);
             if (!defines || !defines.length) return;
 
             const injector = ctx.injector;
-            const invocation = ctx.class.createInvocation(injector);
+            const invocation = ctx.classRef.createInvocation(injector);
 
             defines.forEach(def => {
                 const metadata = def.metadata;
@@ -115,7 +116,7 @@ export interface Handle {
  * @exports {@link Handle}
  */
 export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
-    actionType: [ActionTypes.annoation, ActionTypes.runnable],
+    actionType: ActionType.annoation | ActionType.runnable,
     isMatadata: (args) => {
         return isMetadataObject(args) && isString(args.route)
     },
@@ -123,17 +124,17 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
         (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata<any>,
     def: {
         class: (ctx) => {
-            ctx.class.setAnnotation(ctx.define.metadata);
+            ctx.classRef.assignAnnotation(ctx.define.metadata);
         }
     },
     design: {
         method: (ctx) => {
 
-            const defines = ctx.class.getMethodDefines(ctx.currDecor) as DecorDefine<HandleMetadata>[];
+            const defines = ctx.classRef.getDefines<HandleMetadata>(ctx.currDecor);
             if (!defines || !defines.length) return;
 
             const injector = ctx.injector;
-            const invocation = ctx.class.createInvocation(injector);
+            const invocation = ctx.classRef.createInvocation(injector);
 
             defines.forEach(def => {
                 const metadata = def.metadata;
@@ -156,7 +157,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
         },
 
         afterAnnoation: (ctx) => {
-            const mapping = ctx.class.getAnnotation<MappingDef>();
+            const mapping = ctx.classRef.getAnnotation<MappingDef>();
             const injector = ctx.injector;
             const type = ctx.type as Type<Handler>;
 
@@ -257,14 +258,14 @@ export function createMappingDecorator<T extends RouteMappingMetadata<any>>(name
         },
         def: controllerOnly ? undefined : {
             class: (ctx) => {
-                ctx.class.setAnnotation(ctx.define.metadata);
+                ctx.classRef.assignAnnotation(ctx.define.metadata);
             }
         },
         design: {
             afterAnnoation: (ctx) => {
 
                 const injector = ctx.injector;
-                const mapping = ctx.class.getAnnotation<MappingDef>();
+                const mapping = ctx.classRef.getAnnotation<MappingDef>();
 
                 const router = mapping.router ? injector.get(mapping.router) : getRouter(injector, mapping.protocol);
                 if (!router) throw new Exception(lang.getTypeName(parent) + 'has not registered!');
@@ -274,7 +275,7 @@ export function createMappingDecorator<T extends RouteMappingMetadata<any>>(name
                     prefix: joinPath(mapping.prefix, mapping.version),
                     path: router.formatter.format(mapping.route!),
                     pattern: mapping.route,
-                    controller: ctx.class.createInvocation(injector)
+                    controller: ctx.classRef.createInvocation(injector)
                 };
                 router.use(route);
                 route.controller.onDestroy(() => {
@@ -298,6 +299,7 @@ export const RouteMapping: RouteMapping = createMappingDecorator('RouteMapping')
  * @exports {@link TransportParameterDecorator}
  */
 export const RequestHeader: TransportParameterDecorator = createParamDecorator('RequestHeader', {
+    actionType: ActionType.inject,
     props: (field: string, pipe?: { pipe: string | AbstractType<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
         if (meta.flags) {
@@ -316,6 +318,7 @@ export const RequestHeader: TransportParameterDecorator = createParamDecorator('
  * @exports {@link TransportParameterDecorator}
  */
 export const RequestPath: TransportParameterDecorator = createParamDecorator('RequestPath', {
+    actionType: ActionType.inject,
     props: (field: string, pipe?: { pipe: string | AbstractType<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
         if (meta.flags) {
@@ -333,6 +336,7 @@ export const RequestPath: TransportParameterDecorator = createParamDecorator('Re
  * @exports {@link TransportParameterDecorator}
  */
 export const RequestParam: TransportParameterDecorator = createParamDecorator('RequestParam', {
+    actionType: ActionType.inject,
     props: (field: string, pipe?: { pipe: string | AbstractType<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
         if (meta.flags) {
@@ -350,6 +354,7 @@ export const RequestParam: TransportParameterDecorator = createParamDecorator('R
  * @exports {@link TransportParameterDecorator}
  */
 export const RequestBody: TransportParameterDecorator = createParamDecorator('RequestBody', {
+    actionType: ActionType.inject,
     props: (field: string, pipe?: { pipe: string | AbstractType<PipeTransform>, args?: any[], defaultValue?: any }) => ({ field, ...pipe } as TransportParameter),
     appendProps: meta => {
         if (meta.flags) {

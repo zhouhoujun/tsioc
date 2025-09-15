@@ -1,10 +1,13 @@
 import { ResolveInterceptorLike, Parameter, TypeOf, Token, getTokenOf } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
 
+
+export type ParameterScope = 'headers' | 'query' | 'path' | 'payload' | 'body' | 'topic';
 /**
- * transport parameter options.
+ * transport parameter argument.
  */
-export interface TransportParameterOptions<T = object> extends Parameter<T> {
+export interface TransportParameter<T = object> extends Parameter<T> {
+
     /**
      * field of request query params or body.
      */
@@ -14,20 +17,9 @@ export interface TransportParameterOptions<T = object> extends Parameter<T> {
      */
     pipe?: string | TypeOf<PipeTransform>;
     /**
-     * custom resolver to resolve the value for the property or parameter.
-     */
-    resolver?: TypeOf<ResolveInterceptorLike<TransportParameter>>[];
-    /**
      * pipe extends args
      */
     args?: any[];
-}
-
-export type ParameterScope = 'headers' | 'query' | 'path' | 'payload' | 'body' | 'topic';
-/**
- * transport parameter argument of an {@link TransportArgumentResolver}.
- */
-export interface TransportParameter<T = object> extends TransportParameterOptions<T>, Parameter<T> {
     /**
      * field scope.
      */

@@ -1,4 +1,4 @@
-import { isFunction, AbstractType, Type, Provider, Injector, Modules, ModuleDef, ModuleMetadata, Class, lang, ModuleRef, getModuleType, createModuleRef, ModuleType, Empty, createInjector, getClass } from '@tsdi/ioc';
+import { isFunction, AbstractType, Type, Provider, Injector, Modules, ModuleDef, ModuleMetadata, ClassRef, lang, ModuleRef, getModuleType, createModuleRef, ModuleType,createInjector, getClassRef } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationContextFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEPENDENCE_PROVIDERS, } from './providers';
 import { ModuleLoader } from './ModuleLoader';
@@ -44,11 +44,11 @@ export class Application<T = any> {
         if (!isFunction(target)) {
             if (!this.loader && target.loader) this.loader = target.loader;
             const providers = target.platformProviders?.length ? [this.getPlatformDefaultProviders(), target.platformProviders] : this.getPlatformDefaultProviders();
-            target.deps = [this.getDeps() ?? Empty, target.deps ?? Empty];
+            target.deps = [this.getDeps(), target.deps ?? []];
             target.scope = 'root';
             this.root = this.createInjector(providers, target)
         } else {
-            const option = { module: target, deps: this.getDeps() ?? Empty, scope: 'root' };
+            const option = { module: target, deps: this.getDeps(), scope: 'root' } as ApplicationOption<T>;
             this.root = this.createInjector(this.getPlatformDefaultProviders(), option)
         }
     }
@@ -57,16 +57,16 @@ export class Application<T = any> {
         return DEFAULTA_PROVIDERS
     }
 
-    protected getRootDependencies(): ModuleType[] | null {
-        return null;
+    protected getRootDependencies(): ModuleType[] {
+        return [];
     }
 
     protected getRootDependenceProviders(): Provider[] {
         return ROOT_DEPENDENCE_PROVIDERS;
     }
 
-    protected getRootDefaultProviders(): Provider[] | null {
-        return null;
+    protected getRootDefaultProviders(): Provider[] {
+        return [];
     }
 
     /**
@@ -138,10 +138,10 @@ export class Application<T = any> {
     }
 
     get loadTypes(): AbstractType[] {
-        return this._loads ?? Empty
+        return this._loads ?? []
     }
 
-    protected getDeps(): Modules[] | null {
+    protected getDeps(): Modules[] {
         return [TransformModule]
     }
 
@@ -158,8 +158,8 @@ export class Application<T = any> {
         }
         option.platformDeps && container.use(option.platformDeps);
         // option.depProviders = [this.getRootDependenceProviders() ?? Empty, option.depProviders ?? Empty];
-        option.deps = [this.getRootDependencies() ?? Empty, option.deps ?? Empty];
-        option.providers = [this.getRootDependenceProviders() ?? Empty, this.getRootDefaultProviders() ?? Empty, option.providers ?? Empty];
+        option.deps = [this.getRootDependencies(), option.deps ?? []];
+        option.providers = [this.getRootDependenceProviders(), this.getRootDefaultProviders(), option.providers ?? []];
         return this.createModuleRef(container, option);
     }
 
@@ -167,15 +167,15 @@ export class Application<T = any> {
         return createModuleRef(this.moduleify(option.module), container, option)
     }
 
-    protected moduleify(module: AbstractType | Class | ModuleMetadata | ModuleDef): Type | Class {
+    protected moduleify(module: AbstractType | ClassRef | ModuleMetadata | ModuleDef): Type | ClassRef {
         if (isFunction(module)) {
-            module = getClass(module);
+            module = getClassRef(module);
         }
 
-        if (module instanceof Class) {
+        if (module instanceof ClassRef) {
             if (!module.getAnnotation<ModuleDef>().module) {
                 const bootstrapType = module.type as Type;
-                return new Class(DynamicModule, {
+                return new ClassRef(DynamicModule, {
                     name: 'DynamicModule',
                     type: DynamicModule,
                     module: true,
@@ -186,13 +186,13 @@ export class Application<T = any> {
             return module;
         }
 
-        return new Class(DynamicModule, {
+        return new ClassRef(DynamicModule, {
             name: 'DynamicModule',
             type: DynamicModule,
             ...module,
             module: true,
-            imports: module.imports ? getModuleType(module.imports) : Empty,
-            exports: module.exports ? lang.getTypes<Type>(module.exports, true) : Empty,
+            imports: module.imports ? getModuleType(module.imports) : [],
+            exports: module.exports ? lang.getTypes<Type>(module.exports, true) : [],
             bootstrap: module.bootstrap ? lang.getTypes(module.bootstrap) : null
         } as ModuleDef);
     }
@@ -218,7 +218,7 @@ export class Application<T = any> {
                 if (target.loads) {
                     this._loads = await this.loader.register(this.root, target.loads);
                 }
-                this.context = root.resolve(ApplicationContextFactory).create(root, { ...target, providers: Empty });
+                this.context = root.resolve(ApplicationContextFactory).create(root, { ...target, providers: [] });
             }
         }
         return this.context

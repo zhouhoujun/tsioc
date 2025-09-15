@@ -1,4 +1,4 @@
-import { AbstractType, lang, Invocation, OnDestroy, Class, getTypeName, ctorName, Empty, Context, HandlerFn } from '@tsdi/ioc';
+import { AbstractType, lang, Invocation, OnDestroy, ClassRef, getTypeName, ctorName, Context, HandlerFn } from '@tsdi/ioc';
 import { Advicer, AroundProceeding, MatchOptions } from './Advicer';
 import { AdviceMatcher } from './AdviceMatcher';
 import { AopDef } from './metadata/ref';
@@ -42,12 +42,12 @@ export class Advisor implements OnDestroy {
     protected registerAspect(aspect: Invocation): void {
         this.aspects.push(aspect);
         aspect.onDestroy(() => this.remove(aspect));
-        aspect.class.getAnnotation<AopDef>().advices?.forEach(advice => {
+        aspect.classRef.getAnnotation<AopDef>().advices?.forEach(advice => {
             if (!advice.type) {
                 advice.type = aspect.type;
             }
             const match = this.matcher.parse(advice);
-            if (advice.name && advice.adviceName === 'Around' && aspect.class.getParameters(advice.name)?.some(r => r.type === ProceedingJoinPoint || r.provider === ProceedingJoinPoint)) {
+            if (advice.propertyKey && advice.adviceName === 'Around' && aspect.classRef.getParameters(advice.propertyKey)?.some(r => r.type === ProceedingJoinPoint || r.provider === ProceedingJoinPoint)) {
                 this.proceedings.push({
                     advice,
                     match,
@@ -55,7 +55,7 @@ export class Advisor implements OnDestroy {
                     interceptor: (ctx: JoinPoint, next: HandlerFn, context: Context) => {
                         const proceeding = new ProceedingJoinPoint(ctx, next, context);
                         ctx.setValue(ProceedingJoinPoint, proceeding);
-                        return aspect.invoke(advice.name!, ctx);
+                        return aspect.invoke(advice.propertyKey!, ctx);
                     }
                 });
                 return;
@@ -68,7 +68,7 @@ export class Advisor implements OnDestroy {
             }
 
             if (!advices.some(r => r.advice.type == advice.type
-                && r.advice.name === advice.name
+                && r.advice.propertyKey === advice.propertyKey
                 && r.advice.pointcut === advice.pointcut)) {
                 advices.push({
                     advice,
@@ -101,18 +101,18 @@ export class Advisor implements OnDestroy {
     }
 
 
-    match(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions): boolean {
+    match(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): boolean {
         return Array.from(this.advices.values()).some(r => {
             return r.some(a => a.match(name, fullName, targetRef, target, options))
         })
     }
 
-    hasCtor(tagref: Class): boolean {
+    hasCtor(tagref: ClassRef): boolean {
         return this.match(ctorName, `${tagref.className}.${ctorName}`, tagref)
     }
 
 
-    hasPointcut(instance: object, typeRef: Class, withConstructor?: boolean): boolean {
+    hasPointcut(instance: object, typeRef: ClassRef, withConstructor?: boolean): boolean {
         const names = Object.keys(instance);
 
         const decorators = typeRef?.getPropertyDescriptors()
@@ -131,39 +131,39 @@ export class Advisor implements OnDestroy {
     }
 
     protected getAdvicers(...types: AdviceTypes[]): Advicer[] {
-        if (types?.length === 1) return this.advices.get(types[0]) ?? Empty;
+        if (types?.length === 1) return this.advices.get(types[0]) ?? [];
         return types.reduce((pre, cur) => {
             const advicers = this.advices.get(cur);
             return advicers?.length ? pre.concat(advicers) : pre;
         }, [] as Advicer[]);
     }
 
-    getProceeding(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions) {
+    getProceeding(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions) {
         return this.proceedings.filter(adv => adv.match(name, fullName, targetRef, target, options))
     }
 
-    getBefore(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions): Advicer[] {
+    getBefore(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): Advicer[] {
         return this.getAdvicers('Around', 'Before')
             .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }
 
 
-    getPointcut(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions): Advicer[] {
+    getPointcut(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): Advicer[] {
         return this.getAdvicers('Pointcut')
             .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }
 
-    getAfter(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions): Advicer[] {
+    getAfter(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): Advicer[] {
         return this.getAdvicers('Around', 'After')
             .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }
 
-    getAfterReturning(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions): Advicer[] {
+    getAfterReturning(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): Advicer[] {
         return this.getAdvicers('Around', 'AfterReturning')
             .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }
 
-    getAfterThrowing(name: string | symbol, fullName: string, targetRef: Class, target?: object, options?: MatchOptions): Advicer[] {
+    getAfterThrowing(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): Advicer[] {
         return this.getAdvicers('Around', 'AfterThrowing')
             .filter(adv => adv.match(name, fullName, targetRef, target, options));
     }

@@ -1,7 +1,7 @@
 import { Token } from '../tokens';
 import { AbstractType, Type } from '../types';
 import { ParameterMetadata, ProvidedInMetadata } from '../metadata/meta';
-import { Class, DecoratorFn } from '../metadata/class';
+import { ClassRef, DecoratorFn } from '../metadata/class';
 import { FactoryRecord, Injector } from '../injector';
 import { InvocationContext } from '../context';
 import { Platform } from '../platform';
@@ -41,7 +41,7 @@ export interface RegContext extends IocContext {
     /**
      * type Class reflective.
      */
-    class: Class;
+    classRef: ClassRef;
     /**
      * current decoractor.
      */
@@ -61,7 +61,7 @@ export interface RegContext extends IocContext {
  */
 export interface DesignContext extends RegContext, ProvidedInMetadata {
     platform: Platform;
-    injectorType?: (type: AbstractType, typeReflect: Class) => void | Promise<void>;
+    injectorType?: (type: AbstractType, typeReflect: ClassRef) => void | Promise<void>;
     regProvides?: boolean;
     getRecords: () => Map<Token, FactoryRecord>;
 }

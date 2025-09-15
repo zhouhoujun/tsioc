@@ -1,15 +1,15 @@
 import { Context, HandlerFn, InterceptorFn } from '../handler';
-import { getClass } from '../metadata/refl';
+import { getClassRef } from '../metadata/refl';
 import { RegContext } from './ctx';
 
 
 
 
 export const initReflectInterceptor: InterceptorFn<RegContext, void> = (input: RegContext, next: HandlerFn, context: Context) => {
-    if (!input.class) {
-        input.class = getClass(input.type)
+    if (!input.classRef) {
+        input.classRef = getClassRef(input.type)
     }
-    const singleton = input.class.getAnnotation().singleton;
+    const singleton = input.classRef.getAnnotation().singleton;
     if (singleton) {
         input.singleton = singleton;
     }

@@ -1,5 +1,4 @@
 import { Abstract, Destroyable } from '@tsdi/ioc';
-import { RNode } from '../renderer/Node';
 
 
 
@@ -12,10 +11,6 @@ import { RNode } from '../renderer/Node';
 export abstract class ViewRef implements Destroyable {
 
   abstract get rootNodes(): any[];
-
-  abstract registerNodeRef(id: string, node: RNode): void;
-  abstract getNodeRef(id: string): RNode | undefined;
-
   /**
    * has destoryed or not.
    */
@@ -99,18 +94,3 @@ export abstract class EmbeddedViewRef<C> extends ViewRef {
   abstract get rootNodes(): any[];
 }
 
-
-export interface InternalViewRef extends ViewRef {
-  detachFromAppRef(): void;
-  attachToAppRef(appRef: ViewRefTracker): void;
-}
-
-/**
- * Interface for tracking root `ViewRef`s in `ApplicationRef`.
- *
- * NOTE: Importing `ApplicationRef` here directly creates circular dependency, which is why we have
- * a subset of the `ApplicationRef` interface `ViewRefTracker` here.
- */
-export interface ViewRefTracker {
-  detachView(viewRef: ViewRef): void;
-}

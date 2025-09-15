@@ -1,7 +1,7 @@
 import { ContextToken, isArray, isNumber, isString } from '@tsdi/ioc';
 import { isBuffer, BadRequestException, TransportContext } from '@tsdi/common/transport';
-import { IHeaders, Consumer, Producer, ConsumerSubscribeTopics, ConsumerRunConfig, EachMessagePayload, Message, ProducerRecord } from 'kafkajs';
-import { BehaviorSubject, catchError, filter, map, Observable } from 'rxjs';
+import { Consumer, Producer, ConsumerSubscribeTopics, ConsumerRunConfig, EachMessagePayload, Message, ProducerRecord } from 'kafkajs';
+import { BehaviorSubject, filter, map, Observable } from 'rxjs';
 
 
 export const KAFKA_MESSAGE = new ContextToken<EachMessagePayload>(() => null!);

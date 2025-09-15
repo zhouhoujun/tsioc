@@ -2,7 +2,7 @@ import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
 import { ModuleType, ModuleWithProviders, Provider } from './providers';
 import { Injector } from './injector';
 import { Abstract } from './metadata/fac';
-import { Class } from './metadata/class';
+import { ClassRef } from './metadata/class';
 import { AbstractType, Type } from './types';
 import { isType } from './utils/chk';
 import { deepForEach } from './utils/lang';
@@ -27,7 +27,7 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
     /**
      * module type
      */
-    abstract get moduleReflect(): Class<T>;
+    abstract get moduleReflect(): ClassRef<T>;
     /**
      * The injector that contains all of the providers of the `Module`.
      */

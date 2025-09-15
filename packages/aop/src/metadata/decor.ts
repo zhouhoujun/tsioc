@@ -1,4 +1,4 @@
-import { isString, AbstractType, AnnotationMetadata, DecoratorOption, createDecorator, ActionTypes, noPointcut, AnnotationType } from '@tsdi/ioc';
+import { isString, AbstractType, AnnotationMetadata, DecoratorOption, createDecorator, ActionType, noPointcut, AnnotationType } from '@tsdi/ioc';
 import { AdviceMetadata, AfterReturningMetadata, AfterThrowingMetadata, AspectMetadata, AroundMetadata, PointcutAnnotation, AdviceTypes } from './meta';
 import { Advisor } from '../Advisor';
 import { AopDef } from './ref';
@@ -39,17 +39,17 @@ export interface Aspect {
  * @Aspect()
  */
 export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
-    actionType: ActionTypes.annoation,
+    actionType: ActionType.annoation,
     def: {
         class: (ctx) => {
-            ctx.class.getAnnotation<AopDef>().aspect = ctx.define.metadata;
+            ctx.classRef.getAnnotation<AopDef>().aspect = ctx.define.metadata;
         }
     },
     design: {
         afterAnnoation: (ctx) => {
             const advisor = ctx.platform.context.get(Advisor);
             if (advisor) {
-                const invocation = ctx.class.createInvocation(ctx.injector);
+                const invocation = ctx.classRef.createInvocation(ctx.injector);
                 ctx.injector.onDestroy(() => {
                     advisor.remove(invocation);
                     invocation.destroy();
@@ -89,7 +89,7 @@ export interface NonePointcut {
 export const NonePointcut: NonePointcut = createDecorator<AnnotationMetadata>('NonePointcut', {
     def: {
         class: (ctx) => {
-            (ctx.class.type as AnnotationType)[noPointcut] = true;
+            (ctx.classRef.type as AnnotationType)[noPointcut] = true;
         }
     }
 });
@@ -204,13 +204,13 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
         ...options,
         def: {
             method: (ctx) => {
-                if (!ctx.class.getAnnotation<AopDef>().advices) {
-                    ctx.class.getAnnotation<AopDef>().advices = []
+                if (!ctx.classRef.getAnnotation<AopDef>().advices) {
+                    ctx.classRef.getAnnotation<AopDef>().advices = []
                 }
-                if (!ctx.define.metadata.name) {
-                    ctx.define.metadata.name = ctx.define.propertyKey;
+                if (!ctx.define.metadata.propertyKey) {
+                    ctx.define.metadata.propertyKey = ctx.define.propertyKey;
                 }
-                ctx.class.getAnnotation<AopDef>().advices.push(ctx.define.metadata);
+                ctx.classRef.getAnnotation<AopDef>().advices.push(ctx.define.metadata);
             }
         },
         appendProps: (metadata) => {

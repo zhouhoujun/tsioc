@@ -1,9 +1,9 @@
-import { Empty, AbstractType } from '../types';
+import { AbstractType } from '../types';
 import { createContext, hasContextOptions, InvocationContext, InvocationOptions, InvokeArguments } from '../context';
 import { Invocation, InvocationFactory } from '../invocation';
 import { getType, isArray, isFunction, isPromise, isString, isSymbol } from '../utils/chk';
 import { DestroyCallback, OnDestroy } from '../destroy';
-import { Class } from '../metadata/class';
+import { ClassRef } from '../metadata/class';
 import { Injector, MethodType } from '../injector';
 import { ArgumentException, Exception } from '../exception';
 import { InjectFlags, Token } from '../tokens';
@@ -26,7 +26,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
     order?: number | undefined;
 
     constructor(
-        private _class: Class<T>,
+        private _classRef: ClassRef<T>,
         readonly context: InvocationContext,
         protected options?: TOpts) {
         super();
@@ -39,11 +39,11 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
 
 
     get type(): AbstractType<T> {
-        return this._class?.type;
+        return this._classRef?.type;
     }
 
-    get class(): Class<T> {
-        return this._class;
+    get classRef(): ClassRef<T> {
+        return this._classRef;
     }
 
     get injector(): Injector {
@@ -115,7 +115,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
                 option = optionOrArgs;
             }
         } else if (isFunction(arg)) {
-            name = this.class.getMethodName(arg);
+            name = this.classRef.getMethodName(arg);
             if (isArray(optionOrArgs)) {
                 args = optionOrArgs;
             } else {
@@ -139,10 +139,10 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
 
         const [context, destroy] = args ? [this.context] : this.createInvokeContext(name, option);
         if (!args) {
-            args = this.class.resolveArguments(name, context);
+            args = this.classRef.resolveArguments(name, context);
         }
 
-        const result = this.class.invoke(name, context, this.instance, args);
+        const result = this.classRef.invoke(name, context, this.instance, args);
 
         if (destroy) {
             const act = destroy as (() => void);
@@ -161,7 +161,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
     protected getMethodContext(propertyKey: string | symbol): InvocationContext {
         let ctx = this._mthCtx.get(propertyKey);
         if (ctx === undefined) {
-            const opts = this.class.getMethodOptions(propertyKey);
+            const opts = this.classRef.getMethodOptions(propertyKey);
             if (opts) {
                 ctx = createContext(this.context, opts);
                 this.context.onDestroy(ctx);
@@ -234,9 +234,9 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
     }
 
     equals(target: Invocation): boolean {
-        if (!target || !this._class) return false;
+        if (!target || !this._classRef) return false;
         if (target === this) return true;
-        if (target?.class !== this.class) return false;
+        if (target?.classRef !== this.classRef) return false;
         if ((target as AbstractInvocation).options?.propertyKey !== this.options?.propertyKey) return false;
         return target.instance !== this._instance;
     }
@@ -259,7 +259,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
 
     protected clean() {
         // this._tagPdrs = null!;
-        this._class = null!;
+        this._classRef = null!;
         this._instance = null!;
         this._mthCtx.clear();
     }
@@ -277,7 +277,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
 
     protected assertNotDestroyed(): void {
         if (this.destroyed) {
-            throw new Exception(`ReflectiveRef of ${this._class?.className} has already been destroyed.`)
+            throw new Exception(`ReflectiveRef of ${this._classRef?.className} has already been destroyed.`)
         }
     }
 }
@@ -290,21 +290,21 @@ export class DefaultInvocation<T = any, TOpts extends InvocationOptions<T> = Inv
 
 
     constructor(
-        _class: Class<T>,
+        _classRef: ClassRef<T>,
         context: InvocationContext,
         options: TOpts = {} as TOpts) {
-        super(_class, context, options);
+        super(_classRef, context, options);
     }
 
     protected process(option?: InvocationContext | InvokeArguments) {
-        const runnables = this.class.runnables.filter(r => !r.auto);
+        const runnables = this.classRef.runnables.filter(r => !r.auto);
         if (runnables && runnables.length) {
             const handler = composeHandlers(runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
                 return (option) => this.invokeMethod(runnable.propertyKey, option)
             }));
             return handler(this.context);
         } else {
-            throw new ArgumentException(this.class.className + ' is invaild runnable, can not invocation without method param.');
+            throw new ArgumentException(this.classRef.className + ' is invaild runnable, can not invocation without method param.');
         }
     }
 
@@ -320,22 +320,22 @@ export abstract class AbstractInvocationFactory<TOpts extends InvocationOptions 
 
     }
 
-    create<T>(type: AbstractType<T> | Class<T>, options?: TOpts): Invocation<T> {
+    create<T>(type: AbstractType<T> | ClassRef<T>, options?: TOpts): Invocation<T> {
         const cls = getClassify(type);
         const context = this.createContext(cls, options);
         return this.createInstance(cls, context, options);
     }
 
-    protected abstract createInstance<T>(typeRef: Class<T>, context: InvocationContext, options?: TOpts): Invocation<T>;
+    protected abstract createInstance<T>(typeRef: ClassRef<T>, context: InvocationContext, options?: TOpts): Invocation<T>;
 
-    protected createContext<T>(typeRef: Class<T>, options?: TOpts): InvocationContext {
+    protected createContext<T>(typeRef: ClassRef<T>, options?: TOpts): InvocationContext {
         let resolvers = options?.resolvers;
         if (resolvers) {
             if (typeRef.resolvers) resolvers = resolvers.concat(typeRef.resolvers)
         } else {
             resolvers = typeRef.resolvers;
         }
-        const providers = [this.platform.getTypeProvider(typeRef) ?? Empty, options?.providers ?? Empty];
+        const providers = [this.platform.getTypeProvider(typeRef) ?? [], options?.providers ?? []];
         this.normalize(providers, options);
         return createContext(this.getInjector(typeRef, options), {
             ...options,
@@ -350,7 +350,7 @@ export abstract class AbstractInvocationFactory<TOpts extends InvocationOptions 
 
     }
 
-    protected getInjector<T>(typeRef: Class<T>, options?: TOpts): Injector {
+    protected getInjector<T>(typeRef: ClassRef<T>, options?: TOpts): Injector {
         return options?.injector ?? this.platform.getRegisterIn(typeRef.type)!
     }
 
@@ -359,7 +359,7 @@ export abstract class AbstractInvocationFactory<TOpts extends InvocationOptions 
 
 export class DefaultInvocationFactory extends AbstractInvocationFactory implements InvocationFactory {
 
-    protected override createInstance<T>(typeRef: Class<T>, context: InvocationContext, options?: InvocationOptions<T>): Invocation<T> {
+    protected override createInstance<T>(typeRef: ClassRef<T>, context: InvocationContext, options?: InvocationOptions<T>): Invocation<T> {
         return new DefaultInvocation(typeRef, context, options);
     }
 

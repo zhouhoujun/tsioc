@@ -1,4 +1,4 @@
-import { ArgumentException, AbstractType, isArray, isString, Parameter, Empty, ResolveInterceptorLike, ContextToken, HandlerScope, Platform, isToken, isPrimitive, isFunction, getTypeName, createResolveScope, isResolved, isNil, isObject, isDefined } from '@tsdi/ioc';
+import { ArgumentException, AbstractType, isArray, isString, Parameter, ResolveInterceptorLike, ContextToken, HandlerScope, Platform, isToken, isPrimitive, isFunction, getTypeName, createResolveScope, isResolved, isNil, isObject, isDefined } from '@tsdi/ioc';
 import { ParameterScope, TransportParameter } from './resolver';
 import { HandleContext } from './context';
 import { PipeTransform } from '../pipes/pipe';
@@ -20,21 +20,21 @@ export function getIterableResolver(platform: Platform): HandlerScope<[any, Pipe
                     const [payload, pipe, parameter] = input;
                     if (parameter.type === Array) {
                         if (isArray(payload)) {
-                            return payload.map((val: any) => pipe.transform(val, ...parameter.args || Empty))
+                            return payload.map((val: any) => pipe.transform(val, ...parameter.args || []))
                         }
                     } else if (parameter.type === Set) {
                         if (isArray(payload)) {
-                            return new Set(payload.map((val: any) => pipe.transform(val, ...parameter.args || Empty)))
+                            return new Set(payload.map((val: any) => pipe.transform(val, ...parameter.args || [])))
                         } else if (payload instanceof Set) {
-                            return new Set([...payload].map((val: any) => pipe.transform(val, ...parameter.args || Empty)))
+                            return new Set([...payload].map((val: any) => pipe.transform(val, ...parameter.args || [])))
                         }
                     } else if (parameter.type === Map) {
                         if (isArray(payload)) {
-                            return new Map(payload.map((val: any) => pipe.transform(val, ...parameter.args || Empty)))
+                            return new Map(payload.map((val: any) => pipe.transform(val, ...parameter.args || [])))
                         } else if (payload instanceof Map) {
-                            return new Map([...payload].map((val: any) => pipe.transform(val, ...parameter.args || Empty)))
+                            return new Map([...payload].map((val: any) => pipe.transform(val, ...parameter.args || [])))
                         } else if (payload) {
-                            return new Map(Object.entries(payload).map(([key, val]) => [key, pipe.transform(val, ...parameter.args || Empty)]))
+                            return new Map(Object.entries(payload).map(([key, val]) => [key, pipe.transform(val, ...parameter.args || [])]))
                         }
                     }
 
@@ -83,7 +83,7 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
                 const value = getIterableResolver(ctx.injector.platform()).handle([isString(payload) ? payload.split(',') : payload, pipe, parameter], ctx);
                 if (isResolved(value)) return value;
             } else {
-                return pipe.transform(payload, ...parameter.args || Empty)
+                return pipe.transform(payload, ...parameter.args || [])
             }
         }
     ];

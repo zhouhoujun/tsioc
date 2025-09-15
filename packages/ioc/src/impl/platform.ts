@@ -1,8 +1,8 @@
 import { InjectFlags, Token } from '../tokens';
-import { AbstractType, Empty } from '../types';
+import { AbstractType } from '../types';
 import { isFunction } from '../utils/chk';
 import { getClassify } from '../metadata/refl';
-import { Class } from '../metadata/class';
+import { ClassRef } from '../metadata/class';
 import { Provider, StaticProvider } from '../providers';
 import { Injector, InjectorScope } from '../injector';
 import { Exception } from '../exception';
@@ -45,7 +45,7 @@ export class DefaultPlatform implements Platform {
     get runtime(): HandlerScope {
         if (!this._runtime) {
             this._runtime = new HandlerScope(this, (ctx) => {
-                ctx.instance = new ctx.type(...ctx.args || Empty);
+                ctx.instance = new ctx.type(...ctx.args || []);
                 return ctx.instance;
             }, RUNTIME_INTERCEPTORS);
         }
@@ -122,7 +122,7 @@ export class DefaultPlatform implements Platform {
      * get type provider.
      * @param type
      */
-    getTypeProvider(type: AbstractType | Class) {
+    getTypeProvider(type: AbstractType | ClassRef) {
         const tyRef = getClassify(type);
         const pdrs = tyRef.providers.slice(0);
         tyRef.extendTypes.forEach(t => {
@@ -139,7 +139,7 @@ export class DefaultPlatform implements Platform {
      * @param type 
      * @param providers 
      */
-    setTypeProvider(type: AbstractType | Class, ...providers: StaticProvider[]) {
+    setTypeProvider(type: AbstractType | ClassRef, ...providers: StaticProvider[]) {
         const ty = isFunction(type) ? type : type.type;
         const prds = this._pdrs.get(ty);
         if (prds) {
@@ -149,7 +149,7 @@ export class DefaultPlatform implements Platform {
         }
     }
 
-    removeTypeProvider(type: AbstractType | Class, ...providers: Provider[]): void {
+    removeTypeProvider(type: AbstractType | ClassRef, ...providers: Provider[]): void {
         const ty = isFunction(type) ? type : type.type;
         if (!providers.length) {
             this.clearTypeProvider(ty);

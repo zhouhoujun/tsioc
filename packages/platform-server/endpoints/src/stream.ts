@@ -1,11 +1,11 @@
 import { Injectable, isFunction, isString, promisify } from '@tsdi/ioc';
 import { isFormData } from '@tsdi/common';
 import { StreamAdapter, ev, isBuffer, BrotliOptions, PipeSource, ZipOptions, IStream, IReadable, IWritable, IDuplex, IPassThrough } from '@tsdi/common/transport';
-import { EventEmitter } from 'events';
-import { Stream, Writable, WritableOptions, Readable, Duplex, PassThrough, Transform, PipelineSource, isReadable, TransformCallback, pipeline } from 'stream';
+import { EventEmitter } from 'node:events';
+import { Stream, Writable, WritableOptions, Readable, Duplex, PassThrough, Transform, PipelineSource, isReadable, TransformCallback, pipeline } from 'node:stream';
 import * as rstm from 'readable-stream'
 import { pipeline as pmPipeline } from 'stream/promises';
-import * as zlib from 'zlib';
+import * as zlib from 'node:zlib';
 import * as FormData from 'form-data';
 import * as rawBody from 'raw-body';
 import { JsonStreamStringify } from './stringify';

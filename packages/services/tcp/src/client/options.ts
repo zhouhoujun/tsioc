@@ -2,8 +2,8 @@ import { tokenId } from '@tsdi/ioc';
 import { ApplicationInterceptor, Filter } from '@tsdi/core';
 import { ResponseEvent } from '@tsdi/common';
 import { ClientConfig } from '@tsdi/common/client';
-import { ConnectionOptions } from 'tls';
-import { SocketConstructorOpts, NetConnectOpts } from 'net';
+import { ConnectionOptions } from 'node:tls';
+import { SocketConstructorOpts, NetConnectOpts } from 'node:net';
 import { TcpRequest } from './request';
 
 

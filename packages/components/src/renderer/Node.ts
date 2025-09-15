@@ -65,58 +65,73 @@ export enum NodeType {
  * A node in the DOM tree.
  */
 export interface RNode {
-    /**
-     * The tag name of this node.
-     */
-    tagName?: string;
-    /**
-     * The type of node.
-     */
-    nodeType: number;
-    /**
-     * The parent node of this node.
-     */
-    parentNode: RParentNode | null;
-    /**
-     * Returns the parent Element if there is one
-     */
-    parentElement?: RElement | null;
-    /**
-     * Gets the Node immediately following this one in the parent's childNodes
-     */
-    nextSibling?: RNode | null;
-    /**
-     * The child nodes of this node.
-     */
-    childNodes: RNode[];
-    /**
-     * The text content of this node.
-     */
-    textContent: string | null;
-    
-    /**
-     * Removes a child from the current node and returns the removed node
-     * @param oldChild the child node to remove
-     */
-    removeChild(oldChild: RNode): RNode;
+  /**
+   * The tag name of this node.
+   */
+  tagName?: string;
+  /**
+   * The type of node.
+   */
+  nodeType: number;
+  /**
+   * The parent node of this node.
+   */
+  parentNode: RParentNode | null;
+  /**
+   * Returns the parent Element if there is one
+   */
+  parentElement?: RElement | null;
+  /**
+   * Gets the Node immediately following this one in the parent's childNodes
+   */
+  nextSibling?: RNode | null;
+  /**
+   * The child nodes of this node.
+   */
+  childNodes: RNode[];
+  /**
+   * The text content of this node.
+   */
+  textContent: string | null;
 
-    /**
-     * Insert a child node.
-     *
-     * Used exclusively for adding View root nodes into ViewAnchor location.
-     */
-    insertBefore(newChild: RNode, refChild: RNode | null, isViewRoot?: boolean): void;
+  /**
+   * Removes a child from the current node and returns the removed node
+   * @param oldChild the child node to remove
+   */
+  removeChild(oldChild: RNode): RNode;
 
-    /**
-     * Append a child node.
-     *
-     * Used exclusively for building up DOM which are static (ie not View roots)
-     */
-    appendChild(newChild: RNode): RNode;
+  /**
+   * Insert a child node.
+   *
+   * Used exclusively for adding View root nodes into ViewAnchor location.
+   */
+  insertBefore(newChild: RNode, refChild: RNode | null, isViewRoot?: boolean): void;
+
+  /**
+   * Append a child node.
+   *
+   * Used exclusively for building up DOM which are static (ie not View roots)
+   */
+  appendChild(newChild: RNode): RNode;
+
+  /**
+   * Returns the first element that is a descendant of node that matches selectors.
+   *
+   * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/querySelector)
+   */
+  querySelector(selector: string): RNode | null;
+  /**
+   * Returns all element descendants of node that match selectors.
+   *
+   * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Document/querySelectorAll)
+   */
+  querySelectorAll(selector: string): RNode[] | null;
+
 }
 
+
 export interface EventListener {
-    (event: Event): void;
+  (event: Event): void;
 }
 
 
@@ -124,14 +139,14 @@ export interface EventListener {
  * An attribute on an element.
  */
 export interface RAttr {
-    /** The name of the attribute. */
-    name: string;
-    /** The namespace of the attribute. */
-    namespace?: string;
-    /** The namespace-related prefix of the attribute. */
-    prefix?: string;
-    /** The value of the attribute. */
-    value: string;
+  /** The name of the attribute. */
+  name: string;
+  /** The namespace of the attribute. */
+  namespace?: string;
+  /** The namespace-related prefix of the attribute. */
+  prefix?: string;
+  /** The value of the attribute. */
+  value: string;
 }
 
 /**
@@ -187,8 +202,8 @@ export interface RElement extends RNode {
   getAttributeNS?(namespace: string | null, localName: string): string | null;
   /**
    * Sets the value of the specified attribute namespace.
-   */ 
-  setAttributeNS?(namespaceURI: string,qualifiedName: string, value: string): void;
+   */
+  setAttributeNS?(namespaceURI: string, qualifiedName: string, value: string): void;
   /**
    * Removes the specified attribute namespace.
    */

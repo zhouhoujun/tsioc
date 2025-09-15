@@ -3,7 +3,7 @@ import { LOCALHOST } from '@tsdi/common';
 import { InternalServerException, ev } from '@tsdi/common/transport';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { RequestContext, Server, ServerTransportFactory } from '@tsdi/endpoints';
-import { Socket, createSocket, SocketOptions } from 'dgram';
+import { Socket, createSocket, SocketOptions } from 'node:dgram';
 import { Subject, first, fromEvent, merge } from 'rxjs';
 import { UdpServConfig } from './options';
 import { UdpRequestHandler } from './handler';

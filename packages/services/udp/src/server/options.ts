@@ -1,7 +1,7 @@
 import { tokenId } from '@tsdi/ioc';
 import { GuardLike, Filter, ApplicationInterceptor } from '@tsdi/core';
 import { ServiceConfig } from '@tsdi/endpoints';
-import { SocketOptions, BindOptions } from 'dgram';
+import { SocketOptions, BindOptions } from 'node:dgram';
 
 
 
