@@ -112,7 +112,7 @@ export const Pipe: Pipe = createDecorator<PipeMetadata>('Pipe', {
     actionType: ActionType.annoation | ActionType.providers,
     def: {
         class: (ctx) => {
-            ctx.classRef.setAnnotation(ctx.define.metadata);
+            ctx.classRef.assignAnnotation(ctx.define.metadata);
         }
     },
     props: (name: string, pure?: boolean) => ({ name, provide: name, pure }),

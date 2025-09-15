@@ -124,7 +124,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
         (isString(arg1) ? ({ route, protocol: arg1, ...option }) : ({ route, ...arg1 })) as HandleMetadata<any>,
     def: {
         class: (ctx) => {
-            ctx.classRef.setAnnotation(ctx.define.metadata);
+            ctx.classRef.assignAnnotation(ctx.define.metadata);
         }
     },
     design: {
@@ -258,7 +258,7 @@ export function createMappingDecorator<T extends RouteMappingMetadata<any>>(name
         },
         def: controllerOnly ? undefined : {
             class: (ctx) => {
-                ctx.classRef.setAnnotation(ctx.define.metadata);
+                ctx.classRef.assignAnnotation(ctx.define.metadata);
             }
         },
         design: {

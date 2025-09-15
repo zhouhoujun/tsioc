@@ -21,8 +21,7 @@ export * as lang from './utils/lang';
 // metadata
 export * from './metadata/meta';
 export * from './metadata/class';
-export * from './metadata/refl';
-export { DecoratorOption, MetadataFactory } from './metadata/refl';
+export { getDef, getClassRef, getClassify } from './metadata/refl';
 export * from './metadata/fac';
 export * from './metadata/decor';
 export * from './metadata/tk';

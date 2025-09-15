@@ -26,7 +26,7 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
         class: (ctx) => {
             const typeRef = ctx.classRef;
             (typeRef.type as AnnotationType)[noPointcut] = true;
-            typeRef.setAnnotation(ctx.define.metadata);
+            typeRef.assignAnnotation(ctx.define.metadata);
             const def = typeRef.getAnnotation<ComponentDef>();
             if (!def.selector) def.selector = typeRef.className;
             const metadata = ctx.define.metadata;

@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { AnnotationMetadata, ParameterMetadata, PatternMetadata, PropertyMetadata } from './meta';
-import { DecoratorOption, dispatchMethodDecor, dispatchParamDecor, dispatchPropertyDecor, dispatchTypeDecor, MetadataFactory, toDefine } from './refl';
-import { Decors, DecoratorType, DecoratorFn, ActionType } from './class';
+import { dispatchMethodDecor, dispatchParamDecor, dispatchPropertyDecor, dispatchTypeDecor } from './refl';
+import { Decors, DecoratorType, DecoratorFn, ActionType, DecoratorOption, MetadataFactory, toDefine } from './class';
 import { isUndefined, isNumber, isString, isArray } from '../utils/chk';
 import { getToken, Token } from '../tokens';
 import { AbstractType } from '../types';
