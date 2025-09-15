@@ -139,7 +139,7 @@ export class ClassRef<T = any> {
             annotation.methodMetadatas = new Map();
         }
 
-        if (!annotation.providers) {
+        if (!annotation.provides) {
             annotation.provides = [];
         }
 
