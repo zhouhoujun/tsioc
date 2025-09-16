@@ -117,10 +117,10 @@ export const propertyInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
         input.classRef.eachPropertyProviders((metas, propertyKey) => {
             // if (!(define.metadata.type || define.metadata.provider)) return;
             key = `${propertyKey.toString()}_INJECTED`;
-            meta = metas.find(m => m.provider)!;
-            if (!meta) {
-                meta = metas.find(m => m.type)!
-            }
+            meta = metas.find(m => m.type || m.provider)!;
+            // if (!meta) {
+            //     meta = metas.find(m => m.type)!
+            // }
             if (!meta) return;
             if (!(input as any)[key]) {
 
