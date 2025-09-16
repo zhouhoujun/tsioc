@@ -157,7 +157,7 @@ export class ClassRef<T = any> {
 
     assignAnnotation(records: Record<string, any>) {
         if (!records) return;
-        Object.assign(this.annotation, records); // pick(records, 'name', 'classDefs', 'propDefs', 'methodDefs', 'paramDefs', 'propMetadatas', 'methodMetadatas'));
+        Object.assign(this.annotation, pick(records, 'name', 'classDefs', 'propDefs', 'methodDefs', 'paramDefs', 'propMetadatas', 'methodMetadatas'));
     }
 
     /**
