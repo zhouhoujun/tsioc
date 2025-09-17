@@ -287,17 +287,21 @@ export function getDef<T extends TypeDef>(type: AbstractType): Partial<T> {
     return tagAnn as T
 }
 
-const CLASS = Symbol('Class');
-interface ClassType<T> extends AbstractType<T> {
-    [CLASS]?: ClassRef<T>;
-}
+// const CLASS = Symbol('Class');
+// interface ClassType<T> extends AbstractType<T> {
+//     [CLASS]?: ClassRef<T>;
+// }
+
+const CLASS_REF = Symbol('CLASS_REF');
+
 /**
  * get type class reflective {@link ClassRef}.
  * @param type type.
  */
 export function getClassRef<T = any>(type: AbstractType<T>): ClassRef<T> {
     if (!type || isPrimitive(type)) return null!;
-    let tyRef = (type as ClassType<T>)[CLASS];
+    let tyRef = Reflect.getMetadata(CLASS_REF, type) as ClassRef;
+  
     if (tyRef?.type !== type) {
         let prRef = tyRef as ClassRef;
         if (!prRef) {
@@ -307,7 +311,7 @@ export function getClassRef<T = any>(type: AbstractType<T>): ClassRef<T> {
             }
         }
         tyRef = new ClassRef(type, getDef(type), prRef);
-        (type as ClassType<T>)[CLASS] = tyRef;
+        Reflect.defineMetadata(CLASS_REF, tyRef, type);
 
     }
     return tyRef;

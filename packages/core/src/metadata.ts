@@ -88,10 +88,10 @@ export interface Pipe {
      * Pipe decorator, define the class as pipe.
      *
      * @Pipe
-     * @param {AbstractType} toType the type transform to.
+     * @param {AbstractType} selector the transform selector.
      * @param {boolean} pure If Pipe is pure (its output depends only on its input.) defaut true.
      */
-    (name: string, pure?: boolean): PipeDecorator;
+    (selector: string, pure?: boolean): PipeDecorator;
     /**
      * Pipe decorator, define the class as pipe.
      *
@@ -115,7 +115,7 @@ export const Pipe: Pipe = createDecorator<PipeMetadata>('Pipe', {
             ctx.classRef.assignAnnotation(ctx.define.metadata);
         }
     },
-    props: (name: string, pure?: boolean) => ({ name, provide: name, pure }),
+    props: (selector: string, pure?: boolean) => ({ selector, provide: selector, pure }),
     appendProps: meta => {
         if (isUndefined(meta.pure)) {
             meta.pure = true
@@ -649,9 +649,9 @@ export interface PipeMetadata extends AnnotationMetadata {
      */
     type?: AbstractType;
     /**
-     * name of pipe.
+     * selector of pipe.
      */
-    name: string;
+    selector: string;
     /**
      * If Pipe is pure (its output depends only on its input.)
      */

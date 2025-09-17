@@ -5,7 +5,6 @@ import { InvocationContext, InvocationOptions, InvokeArguments } from '../contex
 import { Token } from '../tokens';
 import { ResolveInterceptorLike } from '../resolver';
 import { forIn, hasItem, assign } from '../utils/lang';
-import { getClassAnnotation } from '../utils/util';
 import { isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { Exception } from '../exception';
@@ -41,13 +40,13 @@ export class ClassRef<T = any> {
      * class provides.
      */
     get provides(): Token[] {
-        return this.annotation.provides!;
+        return this.annotation.provides ?? [];
     }
     /**
      * class extends providers.
      */
     get providers(): Provider[] {
-        return this.annotation.providers!;
+        return this.annotation.providers ?? [];
     }
     /**
      * class resolvers.
@@ -55,19 +54,19 @@ export class ClassRef<T = any> {
      * @type {InstanceOf<ArgumentResolver>[]}
      */
     get resolvers(): TypeOf<ResolveInterceptorLike>[] {
-        return this.annotation.resolvers!;
+        return this.annotation.resolvers ?? [];
     }
     /**
      * runnable defines.
      */
     get runnables(): RunableDefine[] {
-        return this.annotation.runnables!;
+        return this.annotation.runnables ?? [];
     }
 
     private invocationFactory?: Resolve<InvocationFactory>;
 
     constructor(public readonly type: AbstractType<T>, annotation: Partial<TypeDef<T>>, private parent?: ClassRef) {
-        this.annotation = this.initAnnotation(annotation ?? getClassAnnotation(type)! ?? {});
+        this.annotation = this.initAnnotation(annotation);
         this.classDecors = [];
         if (parent) {
             this.propDecors = parent.propDecors.slice(0);
@@ -121,6 +120,10 @@ export class ClassRef<T = any> {
             annotation.methodMetadatas = new Map();
         }
 
+        if (!annotation.providers) {
+            annotation.providers = [];
+        }
+
         if (!annotation.provides) {
             annotation.provides = [];
         }
@@ -139,7 +142,8 @@ export class ClassRef<T = any> {
 
     assignAnnotation(records: Record<string, any>) {
         if (!records) return;
-        assign(this.annotation, records, 'name', 'classDefs', 'propDefs', 'methodDefs', 'paramDefs', 'propMetadatas', 'methodMetadatas');
+        assign(this.annotation, records, 'classDefs', 'resolvers', 'runnables', 'providers', 'propDefs', 'methodDefs', 'paramDefs', 'propMetadatas', 'methodMetadatas');
+
     }
 
     /**
@@ -340,7 +344,6 @@ export class ClassRef<T = any> {
     }
 
     eachPropertyProviders(callback: (value: PropertyMetadata[], key: string | symbol) => void, excludes?: (string | symbol)[]) {
-        // const props = this.annotation.propMetadatas as DecorDefine<PropertyMetadata>[];
         const upexc = excludes ? excludes.slice(0) : [];
         this.annotation.propMetadatas?.forEach((p, key) => {
             if (!excludes?.includes(key)) {
@@ -562,19 +565,6 @@ function getParamNames(func: Function) {
     const result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
     return result ?? []
 }
-
-
-
-// // 添加元数据工具函数
-// export const MetadataKeys = {
-//     CLASS_METADATA: 'ioc:class:metadata',
-//     PROPERTY_PROVIDERS: 'ioc:property:providers',
-//     PROPERTY_METADATA: 'ioc:property:metadata',
-//     METHOD_METADATA: 'ioc:method:metadata',
-//     METHOD_PARAMS_METADATA: 'ioc:method:params:metadata',
-//     METHOD_PARAMS: 'ioc:method:params',
-//     METHOD_RETURNS: 'ioc:method:returns'
-// };
 
 
 /**
@@ -946,5 +936,5 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
     /**
     * module extends providers.
     */
-    providers?: Provider[];
+    providers: Provider[];
 }

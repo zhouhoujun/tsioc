@@ -30,7 +30,9 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
             const def = typeRef.getAnnotation<ComponentDef>();
             if (!def.selector) def.selector = typeRef.className;
             const metadata = ctx.define.metadata;
-            def.providers = metadata.providers;
+            if (metadata.providers) {
+                def.providers?.push(...metadata.providers);
+            }
             if (metadata.imports) def.imports = getModuleType(metadata.imports);
             def.attributes = typeRef.getDefines(Attribute).map(d => d as AttributeMetadata);
         }

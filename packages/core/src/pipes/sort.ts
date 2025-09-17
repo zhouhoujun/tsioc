@@ -15,7 +15,7 @@ import { PipeTransform } from './pipe';
  * 
  */
 @Pipe({
-    name: 'sort'
+    selector: 'sort'
 })
 export class SortPipe implements PipeTransform {
     transform(value: any[], option?: 'asc' | 'desc' | { sort: string, order: 'asc' | 'desc' }, orderby?: string): any {

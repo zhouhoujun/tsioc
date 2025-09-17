@@ -60,7 +60,9 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
                     def.providedIn = metadata.providedIn;
                     def.baseURL = metadata.baseURL;
                     def.debug = metadata.debug;
-                    def.providers = metadata.providers;
+                    if (metadata.providers) {
+                        def.providers.push(...metadata.providers);
+                    }
                     if (metadata.imports) def.imports = getModuleType(metadata.imports);
                     if (metadata.exports) def.exports = getTypes<Type>(metadata.exports, true);
                     if (metadata.declarations) def.declarations = getTypes<Type>(metadata.declarations, true);
