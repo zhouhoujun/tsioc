@@ -4,7 +4,7 @@ import { PropertyMetadata, ParameterMetadata, AnnotationMetadata } from './meta'
 import { InvocationContext, InvocationOptions, InvokeArguments } from '../context';
 import { Token } from '../tokens';
 import { ResolveInterceptorLike } from '../resolver';
-import { forIn, hasItem, pick } from '../utils/lang';
+import { forIn, hasItem, assign } from '../utils/lang';
 import { getClassAnnotation } from '../utils/util';
 import { isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
@@ -57,29 +57,12 @@ export class ClassRef<T = any> {
     get resolvers(): TypeOf<ResolveInterceptorLike>[] {
         return this.annotation.resolvers!;
     }
-    // /**
-    //  * method providers.
-    //  *
-    //  * @type {Map<string, InvokeArguments>}
-    //  */
-    // private methodOptions: Map<string | symbol, InvokeArguments>;
     /**
      * runnable defines.
      */
     get runnables(): RunableDefine[] {
         return this.annotation.runnables!;
     }
-
-    // protected decDefs: Map<DecoratorFn, DecorDefine[]> = new Map();
-
-    // protected classDefs: DecorDefine[] = [];
-    // protected propDefs: DecorDefine[] = [];
-    // protected methodDefs: DecorDefine[] = [];
-    // protected paramDefs: Map<string | symbol, DecorDefine[]> = new Map();
-
-    // protected propProviders: DecorDefine[] = [];
-    // protected methodProviders: Map<string | symbol, InvokeArguments> = new Map();
-    // protected paramProviders: Map<string | symbol, ParameterMetadata[]> = new Map();
 
     private invocationFactory?: Resolve<InvocationFactory>;
 
@@ -96,7 +79,6 @@ export class ClassRef<T = any> {
             this.paramDecors = []
         }
 
-        // this.methodOptions = new Map();
     }
 
 
@@ -157,7 +139,7 @@ export class ClassRef<T = any> {
 
     assignAnnotation(records: Record<string, any>) {
         if (!records) return;
-        Object.assign(this.annotation, pick(records, 'name', 'classDefs', 'propDefs', 'methodDefs', 'paramDefs', 'propMetadatas', 'methodMetadatas'));
+        assign(this.annotation, records, 'name', 'classDefs', 'propDefs', 'methodDefs', 'paramDefs', 'propMetadatas', 'methodMetadatas');
     }
 
     /**

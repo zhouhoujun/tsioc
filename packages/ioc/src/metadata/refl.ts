@@ -1,6 +1,6 @@
-import { AnnotationType, AbstractType, typeFac } from '../types';
+import { AnnotationType, AbstractType, typeFac, Annotation } from '../types';
 import { cleanObj, getParentType } from '../utils/lang';
-import { getType, isArray, isBoolean, isDefined, isFunction, isPrimitive } from '../utils/chk';
+import { getType, isBoolean, isFunction, isPrimitive } from '../utils/chk';
 import {
     ParameterMetadata, PropertyMetadata, ProvidersMetadata, AnnotationMetadata,
     RunnableMetadata, MethodMetadata
@@ -14,23 +14,6 @@ import { InvokeOptions } from '../context';
 import { Context, HandlerFn } from '../handler';
 import { HandlerScope } from '../lifescope/lifescope';
 
-
-
-function saveMetadata(maps: DecorDefine[], define: DecorDefine, unshift?: boolean, metadata?: boolean): void
-function saveMetadata(maps: Map<any, any[]>, define: DecorDefine, unshift: boolean, key: string | symbol, metadata?: boolean): void
-function saveMetadata(maps: DecorDefine[] | Map<any, any[]>, define: DecorDefine, unshift?: boolean, key?: string | symbol | boolean, metadata?: boolean) {
-    if (isBoolean(key)) {
-        metadata = key;
-        key = undefined;
-    }
-    const defines = key ? (maps as Map<any, DecorDefine[]>).get(key) : maps as DecorDefine[];
-    const data = metadata ? define.metadata : define;
-    if (defines) {
-        unshift ? defines.unshift(data) : defines.push(data);
-    } else if (isDefined(key)) {
-        (maps as Map<any, DecorDefine[]>).set(key, [data])
-    }
-}
 
 
 const decorParamInject = (ctx: DecorContext, next: HandlerFn, context: Context) => {
@@ -86,7 +69,13 @@ const decorPropInject = (ctx: DecorContext, next: HandlerFn, context: Context) =
     const define = ctx.define as DecorDefine<PropertyMetadata>;
     if (define.actionType && define.actionType & ActionType.inject) {
         const ann = ctx.classRef.getAnnotation();
-        saveMetadata(ann.propMetadatas!, define, !define.metadata.provider, define.propertyKey, true);
+        let metas = ann.propMetadatas.get(define.propertyKey);
+        if(!metas) {
+            metas = [define.metadata];
+            ann.propMetadatas.set(define.propertyKey, metas);
+        } else {
+            metas.unshift(define.metadata);
+        }
     }
     return next(ctx, context)
 }
@@ -236,57 +225,11 @@ export const paramDecorLifeScope: HandlerScope<DecorContext, Context> = new Hand
     decorParamInject
 ]);
 
-// function storageDefine(define: DecorDefine, classRef: ClassRef) {
-//     switch (define.decorType) {
-//         case 'class':
-//             if (!classRef.classDecors.includes(define.decor)) {
-//                 classRef.classDecors.push(define.decor);
-//             }
-//             saveMetadata(MetadataKeys.CLASS_METADATA, classRef.type, define, true);
-//             saveMetadata(define.decor, classRef.type, define, true);
-//             break;
-
-//         case 'property':
-//             if (!classRef.propDecors.includes(define.decor)) {
-//                 classRef.propDecors.push(define.decor);
-//             }
-//             saveMetadata(MetadataKeys.PROPERTY_METADATA, classRef.type, define);
-//             saveMetadata(define.decor, classRef.type, define);
-//             break;
-
-//         case 'method':
-//             if (!classRef.methodDecors.includes(define.decor)) {
-//                 classRef.methodDecors.push(define.decor);
-//             }
-//             saveMetadata(MetadataKeys.METHOD_METADATA, classRef.type, define);
-//             saveMetadata(define.decor, classRef.type, define);
-//             break;
-
-//         case 'parameter':
-//             if (!classRef.paramDecors.includes(define.decor)) {
-//                 classRef.paramDecors.push(define.decor);
-//             }
-//             saveMetadata(MetadataKeys.METHOD_PARAMS_METADATA, classRef.type, define, true, define.propertyKey);
-//             saveMetadata(define.decor, classRef.type, define, true);
-//             break;
-//     }
-
-// }
-
-// function saveMetadata(metaKey: any, type: AbstractType, define: DecorDefine, unshift?: boolean, propertyKey?: string | symbol) {
-//     const defines = propertyKey ? Reflect.getMetadata(metaKey, type, propertyKey) : Reflect.getMetadata(metaKey, type);
-//     if (defines) {
-//         unshift ? defines.unshift(define) : defines.push(define);
-//     } else {
-//         propertyKey ? Reflect.defineMetadata(metaKey, [define], type, propertyKey) : Reflect.defineMetadata(metaKey, [define], type);
-//     }
-// }
 
 function dispatch(lifescope: HandlerScope<DecorContext>, target: any, type: AbstractType, define: DecorDefine, options: DecoratorOption<any>) {
 
     const classRef = getClassRef(type);
     classRef.storage(define);
-    // storageDefine(define, classRef);
 
     const ctx = {
         define,
@@ -331,24 +274,14 @@ export function dispatchParamDecor(type: any, define: DecorDefine, options: Deco
  * get type def.
  * @param type class type.
  */
-export function getDef<T extends TypeDef>(type: AbstractType): T {
-    let tagAnn = (type as AnnotationType).ƿAnn?.() as TypeDef;
+export function getDef<T extends TypeDef>(type: AbstractType): Partial<T> {
+    let tagAnn = (type as AnnotationType).ƿAnn?.() as Partial<T>;
     if (tagAnn?.type !== type) {
         tagAnn = {
             name: type.name,
-            type,
-            provides: [],
-            providers: [],
-            resolvers: [],
-            propMetadatas: new Map(),
-            methodMetadatas: new Map(),
-            decDefs: new Map(),
-            classDefs: [],
-            propDefs: [],
-            methodDefs: [],
-            paramDefs: new Map(),
-        };
-        (type as AnnotationType).ƿAnn = () => tagAnn;
+            type
+        } as Partial<T>;
+        (type as AnnotationType).ƿAnn = () => tagAnn as Annotation;
 
     }
     return tagAnn as T

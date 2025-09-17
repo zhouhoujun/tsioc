@@ -6,20 +6,40 @@ import { isPlainObject } from './obj';
 import { getClassAnnotation } from './util';
 
 
+/**
+ * assign source object to target object.
+ *
+ * @export
+ * @param {any} target target object
+ * @param {any} source source object
+ * @param {...string[]} excludes  exclude fields
+ * @returns {*}
+ */
+export function assign(target: any, source: any, ...excludes: string[]): any {
+    if (!target || !source) return null;
+
+    for (const key in source) {
+        if (!excludes.includes(key)) {
+            target[key] = source[key]
+        }
+    }
+    return target
+}
+
 
 /**
  * create an new object from target object omit some field.
  *
  * @export
  * @param {any} target
- * @param {...string[]} fields
+ * @param {...string[]} excludes  exclude fields
  * @returns {*}
  */
-export function omit(target: any, ...fields: string[]): any {
-    if(!target) return null;
+export function omit(target: any, ...excludes: string[]): any {
+    if (!target) return null;
     const result: any = {};
     for (const key in target) {
-        if (fields.indexOf(key) < 0) {
+        if (!excludes.includes(key)) {
             result[key] = target[key]
         }
     }
@@ -54,7 +74,7 @@ export function pick(target: any, ...fields: string[]): any {
 export function forIn<T = any>(target: Record<string, T>, iterator: (item: T, idx: string) => void | boolean): void
 export function forIn<T = any>(target: T[], iterator: (item: T, idx: number) => void | boolean): void;
 export function forIn(target: any, iterator: (item: any, idx?: any) => void | boolean): void {
-    if(!target) return;
+    if (!target) return;
     if (isArray(target)) {
         for (let i = 0, len = target.length; i < len; i++) {
             if (iterator(it, i) === false) {
@@ -282,7 +302,7 @@ export function isExtends<T extends AbstractType>(target: AbstractType, baseType
  */
 export function getTypes<T extends AbstractType>(mds: Modules | Modules[], typeOnly?: boolean): T[] {
     const types: T[] = [];
-    const typFn = typeOnly? isType: isAbstractType;
+    const typFn = typeOnly ? isType : isAbstractType;
     mds && deepForEach(isArray(mds) ? mds : isPlainObject(mds) ? Object.values(mds) : [mds], ty => {
         typFn(ty) && types.push(ty as T)
     }, v => isPlainObject(v));
@@ -294,11 +314,11 @@ const cleanKeys = ['injector', 'platform', 'context'];
  * clean object.
  * @param obj.
  */
-export function cleanObj(obj: any, keys: string[] =  cleanKeys) {
+export function cleanObj(obj: any, keys: string[] = cleanKeys) {
     if (!obj) return;
-    
+
     for (const k of keys) {
-        if(obj[k]) obj[k] = null
+        if (obj[k]) obj[k] = null
     }
 }
 
@@ -390,22 +410,16 @@ export const nextTick = typeof process !== 'undefined' ? process.nextTick : (cal
  * @param {(val: T) => boolean} guard can step next.
  * @returns
  */
-export function step<T>(promises: (T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[], initVal?: T, guard?: (val: T) => boolean): Promise<T> {
-    function stepFn(val: T, idx: number): Promise<T> {
-        let handle: T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>);
-        if (idx < promises.length) {
-            handle = promises[idx]
-        } else {
-            return Promise.resolve(val);
+export async function step<T>(promises: (T | PromiseLike<T> | ((value: T) => T | PromiseLike<T>))[], initVal?: T, guard?: (val: T) => boolean): Promise<T> {
+    let val: T|null = initVal ?? null;
+    for (let i = 0; i < promises.length; i++) {
+        const handle = promises[i];
+        val = await (isFunction(handle) ?  handle(val!) : handle) as T;
+        if (guard && !guard(val)) {
+            break;
         }
-
-        return Promise.resolve(isFunction(handle) ? handle(val) : handle)
-            .then(v => {
-                if (guard && !guard(v)) return v;
-                return stepFn(v, idx + 1)
-            })
     }
-    return stepFn(initVal ?? null!, 0);
+    return val as T;
 }
 
 /**
