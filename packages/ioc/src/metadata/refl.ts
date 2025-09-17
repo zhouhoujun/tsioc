@@ -106,25 +106,26 @@ const decorAnnoAction = (ctx: DecorContext, next: HandlerFn, context: Context) =
     if (ctx.define.actionType && ctx.define.actionType & ActionType.annoation) {
         const def = ctx.classRef;
         const meta = ctx.define.metadata as AnnotationMetadata;
+        const ann = def.getAnnotation() as TypeDef;
         if (isBoolean(meta.abstract)) {
-            def.getAnnotation().abstract = meta.abstract
+            ann.abstract = meta.abstract
         }
 
         if (isBoolean(meta.singleton)) {
-            def.getAnnotation().singleton = meta.singleton
+            ann.singleton = meta.singleton
         }
         if (isBoolean(meta.static)) {
-            def.getAnnotation().static = meta.static
+            ann.static = meta.static
         }
         if (meta.provide && def.provides.indexOf(meta.provide) < 0) {
             def.provides.push(meta.provide)
         }
         if (meta.expires) {
-            def.getAnnotation().expires = meta.expires
+            ann.expires = meta.expires
         }
 
         if (meta.providedIn) {
-            def.getAnnotation().providedIn = meta.providedIn
+            ann.providedIn = meta.providedIn
         }
     }
     return next(ctx, context)

@@ -129,7 +129,7 @@ export interface RouteMappingMetadata<T = any> extends RouteMappingOptions<T>, P
  * mapping type def.
  */
 export interface MappingDef<T = any> extends TypeDef<T>, RouteMappingMetadata<any> {
-
+    
 }
 
 

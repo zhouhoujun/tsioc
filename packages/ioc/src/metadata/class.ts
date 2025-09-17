@@ -28,10 +28,37 @@ export class ClassRef<T = any> {
         return this.annotation.name;
     }
 
-    readonly classDecors: DecoratorFn[];
-    readonly propDecors: DecoratorFn[];
-    readonly methodDecors: DecoratorFn[];
-    readonly paramDecors: DecoratorFn[];
+    private _classDecors?: DecoratorFn[];
+    get classDecors(): DecoratorFn[] {
+        if (!this._classDecors) {
+            this._classDecors = [];
+        }
+        return this._classDecors;
+    }
+
+    private _propDecors?: DecoratorFn[];
+    get propDecors(): DecoratorFn[] {
+        if (!this._propDecors) {
+            this._propDecors = this.parent ? [...this.parent.propDecors] : [];
+        }
+        return this._propDecors;
+    }
+
+    private _methodDecors?: DecoratorFn[];
+    get methodDecors(): DecoratorFn[] {
+        if (!this._methodDecors) {
+            this._methodDecors = this.parent ? [...this.parent.methodDecors] : [];
+        }
+        return this._methodDecors;
+    }
+
+    private _paramDecors?: DecoratorFn[];
+    get paramDecors(): DecoratorFn[] {
+        if (!this._paramDecors) {
+            this._paramDecors = this.parent ? [...this.parent.paramDecors] : [];
+        }
+        return this._paramDecors;
+    }
 
     private annotation: TypeDef<T>;
 
@@ -40,13 +67,13 @@ export class ClassRef<T = any> {
      * class provides.
      */
     get provides(): Token[] {
-        return this.annotation.provides ?? [];
+        return this.annotation.provides!;
     }
     /**
      * class extends providers.
      */
     get providers(): Provider[] {
-        return this.annotation.providers ?? [];
+        return this.annotation.providers!;
     }
     /**
      * class resolvers.
@@ -54,30 +81,19 @@ export class ClassRef<T = any> {
      * @type {InstanceOf<ArgumentResolver>[]}
      */
     get resolvers(): TypeOf<ResolveInterceptorLike>[] {
-        return this.annotation.resolvers ?? [];
+        return this.annotation.resolvers!;
     }
     /**
      * runnable defines.
      */
     get runnables(): RunableDefine[] {
-        return this.annotation.runnables ?? [];
+        return this.annotation.runnables!;
     }
 
     private invocationFactory?: Resolve<InvocationFactory>;
 
     constructor(public readonly type: AbstractType<T>, annotation: Partial<TypeDef<T>>, private parent?: ClassRef) {
         this.annotation = this.initAnnotation(annotation);
-        this.classDecors = [];
-        if (parent) {
-            this.propDecors = parent.propDecors.slice(0);
-            this.methodDecors = parent.methodDecors.slice(0);
-            this.paramDecors = parent.paramDecors.slice(0)
-        } else {
-            this.propDecors = [];
-            this.methodDecors = [];
-            this.paramDecors = []
-        }
-
     }
 
 
@@ -120,21 +136,17 @@ export class ClassRef<T = any> {
             annotation.methodMetadatas = new Map();
         }
 
-        if (!annotation.providers) {
-            annotation.providers = [];
-        }
-
         if (!annotation.provides) {
             annotation.provides = [];
         }
 
-        annotation.providers = [...(this.parent?.providers ?? []), ...(annotation.providers ?? [])];
-        annotation.resolvers = [...(this.parent?.resolvers ?? []), ...(annotation.resolvers ?? [])];
-        annotation.runnables = [...(this.parent?.runnables ?? []), ...(annotation.runnables ?? [])];
+        annotation.providers = this.parent?.providers ? [...this.parent.providers, ...(annotation.providers ?? [])] : annotation.providers ?? [];
+        annotation.resolvers = this.parent?.resolvers ? [...this.parent.resolvers, ...(annotation.resolvers ?? [])] : annotation.resolvers ?? [];
+        annotation.runnables = this.parent?.runnables ? [...this.parent.runnables, ...(annotation.runnables ?? [])] : annotation.runnables ?? [];
         return annotation as TypeDef<T>;
     }
 
-    getAnnotation<TAnn extends TypeDef<T>>(): TAnn {
+    getAnnotation<TAnn extends TypeDef<T>>(): Readonly<TAnn> {
         return this.annotation as TAnn;
     }
 
@@ -237,27 +249,20 @@ export class ClassRef<T = any> {
 
     hasOwnParameters(method: string | symbol): boolean {
         return !!this.annotation.methodMetadatas?.get(method)?.params
-        // Reflect.hasOwnMetadata(MetadataKeys.METHOD_PARAMS, this.type, method);
     }
 
     getParameters(method: string | symbol): ParameterMetadata[] | undefined {
         return this.annotation.methodMetadatas?.get(method)?.params ?? this.parent?.getParameters(method)
-        // return Reflect.getMetadata(MetadataKeys.METHOD_PARAMS, this.type, method) ?? this.parent?.getParameters(method)
     }
 
     getReturnning(method: string | symbol): AbstractType | undefined {
         return this.annotation.methodMetadatas?.get(method)?.returnType ?? this.parent?.getReturnning(method)
-        // return Reflect.getMetadata(MetadataKeys.METHOD_RETURNS, this.type, method) ?? this.parent?.getReturnning(method)
     }
 
-
-
-    // hasMethodOptions(method: string | symbol): boolean {
-    //     return this.annotation.methodOptions.has(method)
-    // }
     getMethodOptions<T>(method: string | symbol): InvokeArguments | undefined {
         return this.annotation.methodMetadatas.get(method)?.invokeEnv ?? this.parent?.getMethodOptions(method)
     }
+
     setMethodOptions<T>(method: string | symbol, options: InvokeArguments) {
 
         let meta = this.annotation.methodMetadatas.get(method);

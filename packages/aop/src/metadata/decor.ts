@@ -42,7 +42,7 @@ export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
     actionType: ActionType.annoation,
     def: {
         class: (ctx) => {
-            ctx.classRef.getAnnotation<AopDef>().aspect = ctx.define.metadata;
+            ctx.classRef.assignAnnotation({ aspect: ctx.define.metadata });
         }
     },
     design: {
@@ -205,7 +205,7 @@ export function createAdviceDecorator<T extends AdviceMetadata>(adviceName: stri
         def: {
             method: (ctx) => {
                 if (!ctx.classRef.getAnnotation<AopDef>().advices) {
-                    ctx.classRef.getAnnotation<AopDef>().advices = []
+                    ctx.classRef.assignAnnotation({ advices: [] });
                 }
                 if (!ctx.define.metadata.propertyKey) {
                     ctx.define.metadata.propertyKey = ctx.define.propertyKey;

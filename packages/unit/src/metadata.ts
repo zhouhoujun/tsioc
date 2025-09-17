@@ -35,11 +35,11 @@ export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
     actionType: ActionType.declaration,
     def: {
         class: (ctx) => {
+            ctx.define.metadata.suite = true;
             ctx.classRef.assignAnnotation(ctx.define.metadata);
-            ctx.classRef.getAnnotation<SuiteDef>().suite = true;
         }
     },
-    props: (describe: string, timeout?: number) => ({ describe, timeout }),
+    props: (describe: string, timeout?: number) => ({ describe, timeout}),
     factory: (injector) => {
         return new SuiteInvocationFactory(injector.platform())
     }
@@ -290,5 +290,12 @@ export interface SuiteMetadata extends AnnotationMetadata {
      * @type {number}
      */
     timeout?: number;
+
+    /**
+     * suite define.
+     *
+     * @type {boolean}
+     */
+    suite?: boolean;
 
 }
