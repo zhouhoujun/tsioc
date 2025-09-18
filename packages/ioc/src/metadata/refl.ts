@@ -271,30 +271,28 @@ export function dispatchParamDecor(type: any, define: DecorDefine, options: Deco
     dispatch(paramDecorLifeScope, target, type, define, options)
 }
 
+const TYEP_DEF = Symbol('TYEP_DEF');
 /**
  * get type def.
  * @param type class type.
  */
 export function getDef<T extends TypeDef>(type: AbstractType): Partial<T> {
-    let tagAnn = (type as AnnotationType).ƿAnn?.() as Partial<T>;
+    let tagAnn = Reflect.getMetadata(TYEP_DEF, type) as Partial<T>;
     if (tagAnn?.type !== type) {
-        tagAnn = {
-            name: type.name,
-            type
-        } as Partial<T>;
-        (type as AnnotationType).ƿAnn = () => tagAnn as Annotation;
-
+        tagAnn = (type as AnnotationType).ƿAnn?.() as Partial<T>;
+        if (tagAnn?.type !== type) {
+            tagAnn = {
+                name: type.name,
+                type
+            } as Partial<T>;
+            Reflect.defineMetadata(TYEP_DEF, tagAnn, type);
+        }
     }
     return tagAnn as T
 }
 
-// const CLASS = Symbol('Class');
-// interface ClassType<T> extends AbstractType<T> {
-//     [CLASS]?: ClassRef<T>;
-// }
 
 const CLASS_REF = Symbol('CLASS_REF');
-
 /**
  * get type class reflective {@link ClassRef}.
  * @param type type.

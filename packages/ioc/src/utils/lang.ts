@@ -1,10 +1,8 @@
 // use core-js in browser.
 import { isObservable, lastValueFrom, Observable } from 'rxjs';
-import { AbstractType, Modules, Type } from '../types';
+import { AbstractType, AnnotationType, Modules, Type } from '../types';
 import { getType, isArray, isFunction, isNil, isObject, isType, isPromise, isAbstractType, isUndefined } from './chk';
 import { isPlainObject } from './obj';
-import { getClassAnnotation } from './util';
-
 
 /**
  * assign source object to target object.
@@ -204,7 +202,7 @@ export function getTypeName(target: any): string {
     if (!classType) {
         return ''
     }
-    return getClassAnnotation(classType)?.name ?? classType.name
+    return (classType as AnnotationType).ƿAnn?.()?.name ?? classType.name
 }
 
 /**
@@ -241,7 +239,7 @@ export function getTypeChain(target: AbstractType): AbstractType[] {
  * @param {AbstractType} target
  * @param {(token: AbstractType) => any} express
  */
-export function forInTypeChain(target: AbstractType, express: (token: AbstractType) => any): void {
+function forInTypeChain(target: AbstractType, express: (token: AbstractType) => any): void {
     while (target) {
         if (express(target) === false) {
             break
