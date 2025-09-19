@@ -2,13 +2,14 @@ import { Attribute, Component, OnDestroy, OnInit } from '@tsdi/components';
 
 @Component({
   selector: 'app-root',
-  template: `
-        <div>
-            <h1>{{title}}</h1>
-            <button @click="handleClick">Click me</button>
-            <p :class="{active: isActive}">Status: {{status}}</p>
-        </div>
-    `
+  template: {
+    $tag: 'div',
+    childNodes: [
+      { $tag: 'h1', '#text': '{{title}}' },
+      { $tag: 'button', '@click': 'handleClick', '#text': 'Click me' },
+      { $tag: 'p', ':class': '{active: isActive}', '#text': 'Status: {{status}}' }
+    ]
+  }
 })
 export class AppComponent implements OnInit {
   title = 'Hello World';
@@ -29,11 +30,14 @@ export class AppComponent implements OnInit {
 
 @Component({
   selector: 'app-comp',
-  template: `
-        <Text [text]="'Well come'"></Text>
-        <Field #fie [label]="label" [(value)]="value"></Field>
-        <app-example></app-example>
-    `
+  template: {
+    $tag: 'div',
+    childNodes: [
+      { $tag: 'Text', '[text]': "'Well come'" },
+      { $tag: 'Field', '#fie': true, '[label]': 'label', '[(value)]': 'value' },
+      { $tag: 'app-example' }
+    ]
+  }
 })
 export class AppComponent2 implements OnInit {
   onInit(): void {
@@ -71,17 +75,18 @@ export class TextComponet {
 
 @Component({
   selector: 'app-example',
-  template: `
-      <div>
-        <h1>{{ title }}</h1>
-        <p>Count: {{ count }}</p>
-        <input v-model="value" />
-        <p>Value: {{ value }}</p>
-        <button @click="increment">Increment</button>
-        <button @click="clickWithData($event, item)">Increment</button>
-        <p>Today: {{ today | date-format:'yyyy-MM-dd' }}</p>
-      </div>
-    `,
+  template: {
+    $tag: 'div',
+    childNodes: [
+      { $tag: 'h1', '#text': '{{ title }}' },
+      { $tag: 'p', '#text': 'Count: {{ count }}' },
+      { $tag: 'input', 'v-model': 'value' },
+      { $tag: 'p', '#text': 'Value: {{ value }}' },
+      { $tag: 'button', '@click': 'increment', '#text': 'Increment' },
+      { $tag: 'button', '@click': 'clickWithData($event, item)', '#text': 'Increment' },
+      { $tag: 'p', '#text': 'Today: {{ today | date-format:\'yyyy-MM-dd\' }}' }
+    ]
+  },
   styles: [
     `h1 { color: blue; }`,
     `button { padding: 5px 10px; }`
@@ -120,21 +125,21 @@ export class ExampleComponent implements OnInit, OnDestroy {
 }
 
 
-// @Component({
-//   selector: 'app-comp2',
-//   template: {
-//     '#text': '123',
-//     a: '123',
-//     b: '456',
-//     c: '789',
-//     childNodes:[
-//       { $tag: 'Text', a: '123'},  
-//       { $tag: 'Text', a: '456'},
-//       { $tag: 'Text', a: '789'},
-//       { $tag: 'Field', a: '123'},
-//     ]
-//   }
-// })
-// export class AppComponent2 {
+@Component({
+  selector: 'app-comp2',
+  template: {
+    '#text': '123',
+    a: '123',
+    b: '456',
+    c: '789',
+    childNodes:[
+      { $tag: 'Text', a: '123'},
+      { $tag: 'Text', a: '456'},
+      { $tag: 'Text', a: '789'},
+      { $tag: 'Field', a: '123'},
+    ]
+  }
+})
+export class JsonTemplateComponent {
 
-// }
+}

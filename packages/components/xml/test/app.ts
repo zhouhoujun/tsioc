@@ -137,22 +137,59 @@ export class ExampleComponent implements OnInit, OnDestroy {
 
 }
 
+// 添加专门用于测试的复杂组件
+@Component({
+  selector: 'complex-component',
+  template: `
+    <div class="complex-container">
+      <h2>{{ title }}</h2>
+      <div class="nested-components">
+        <Text text="Nested Text Component"></Text>
+        <Field label="Nested Field" value="Nested Value"></Field>
+      </div>
+      <div class="dynamic-content">
+        <div v-for="item in items" :key="item.id">
+          <p>{{ item.name }}: {{ item.value }}</p>
+        </div>
+      </div>
+      <div class="conditional-content">
+        <p v-if="showConditional">This is conditional content</p>
+        <p v-else>This is the alternate content</p>
+      </div>
+      <button @click="toggleConditional">Toggle Content</button>
+    </div>
+  `
+})
+export class ComplexComponent implements OnInit {
+  title = 'Complex Test Component';
+  showConditional = true;
+  items = [
+    { id: 1, name: 'Item 1', value: 'Value 1' },
+    { id: 2, name: 'Item 2', value: 'Value 2' },
+    { id: 3, name: 'Item 3', value: 'Value 3' }
+  ];
 
-// @Component({
-//   selector: 'app-comp2',
-//   template: {
-//     '#text': '123',
-//     a: '123',
-//     b: '456',
-//     c: '789',
-//     childNodes:[
-//       { $tag: 'Text', a: '123'},  
-//       { $tag: 'Text', a: '456'},
-//       { $tag: 'Text', a: '789'},
-//       { $tag: 'Field', a: '123'},
-//     ]
-//   }
-// })
-// export class AppComponent2 {
+  onInit() {
+    console.log('ComplexComponent initialized');
+  }
 
-// }
+  toggleConditional() {
+    this.showConditional = !this.showConditional;
+  }
+}
+
+// 添加测试命名空间属性的组件
+@Component({
+  selector: 'svg-component',
+  template: `
+    <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+      <rect x="10" y="10" width="180" height="180" fill="blue" />
+      <circle cx="100" cy="100" r="50" fill="red" />
+      <text x="100" y="105" text-anchor="middle" fill="white">SVG Test</text>
+    </svg>
+  `
+})
+export class SvgComponent {
+  // SVG组件的逻辑
+}
+

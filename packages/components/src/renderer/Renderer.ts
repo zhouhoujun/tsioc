@@ -1,3 +1,4 @@
+import { Abstract } from '@tsdi/ioc';
 import { RAttr, RComment, RElement, RNode, RText } from './Node';
 
 /**
@@ -19,6 +20,7 @@ export enum RendererStyleFlags2 {
 }
 
 
+@Abstract()
 export abstract class Renderer {
     abstract createComment(value: string): RComment;
     abstract createElement(name: string, namespace?: string | null): RElement;

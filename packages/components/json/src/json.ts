@@ -17,6 +17,7 @@ export class JsonNode implements RNode {
 
     constructor(
         readonly nodeType: number,
+        readonly tagName?: string,
         public textContent: string | null = null,
         public parentNode: JsonElement | null = null,
         readonly childNodes: JsonNode[] = [],
@@ -142,7 +143,7 @@ export class JsonElement extends JsonNode implements RElement {
         childNodes: JsonNode[] = [],
         nextSibling: JsonNode | null = null,
         textContent: string | null = null) {
-        super(nodeType, textContent, parentNode, childNodes, nextSibling)
+        super(nodeType, tagName, textContent, parentNode, childNodes, nextSibling)
 
     }
 
@@ -300,8 +301,81 @@ export class JsonTemplateParser implements TemplateParser {
 
     private convertToNodes(jsonObj: any): JsonNode[] {
         // 实现JSON到节点的转换逻辑
-        // ...
-        return isArray(jsonObj) ? jsonObj : [jsonObj];
+        // Handle text nodes
+        if (typeof jsonObj === 'string') {
+            const textNode = this.renderer.createText(jsonObj);
+            return [textNode];
+        }
+
+        // 处理数组节点
+        if (Array.isArray(jsonObj)) {
+            return jsonObj.flatMap(item => this.convertToNodes(item));
+        }
+
+        // 处理对象节点
+        if (jsonObj && typeof jsonObj === 'object') {
+            // JSON节点格式约定：
+            // - 如果有tagName属性，则创建元素节点
+            // - 如果有textContent属性，则创建文本节点
+            // - 如果有comment属性，则创建注释节点
+            // - 属性存储在attrs对象中
+            // - 子节点存储在children数组中
+
+            // 处理注释节点
+            if ('comment' in jsonObj) {
+                return [this.renderer.createComment(jsonObj.comment)];
+            }
+
+            // 处理文本节点
+            if ('textContent' in jsonObj && !('tagName' in jsonObj)) {
+                return [this.renderer.createText(jsonObj.textContent)];
+            }
+
+            // 处理元素节点
+            if ('tagName' in jsonObj) {
+                const node = this.renderer.createElement(jsonObj.tagName) as JsonElement;
+
+                // 设置文本内容
+                if ('textContent' in jsonObj) {
+                    node.textContent = jsonObj.textContent;
+                }
+
+                // 设置属性
+                if ('attrs' in jsonObj && typeof jsonObj.attrs === 'object') {
+                    for (const [key, value] of Object.entries(jsonObj.attrs as Record<string, any>)) {
+                        if (typeof value === 'string') {
+                            node.setAttribute(key, value);
+                        } else if (typeof value === 'object' && value !== null && 'namespace' in value && 'value' in value) {
+                            node.setAttributeNS(value.namespace, key, value.value);
+                        }
+                    }
+                }
+
+                // 处理className
+                if ('className' in jsonObj) {
+                    node.classList.add(jsonObj.className);
+                }
+
+                // 处理样式
+                if ('style' in jsonObj && typeof jsonObj.style === 'object') {
+                    for (const [prop, value] of Object.entries(jsonObj.style as Record<string, any>)) {
+                        node.style.setProperty(prop, value);
+                    }
+                }
+
+                // 递归处理子节点
+                if ('children' in jsonObj && Array.isArray(jsonObj.children)) {
+                    node.childNodes.push(...jsonObj.children.flatMap((child: any) => this.convertToNodes(child)));
+                    // 设置父节点引用
+                    node.childNodes.forEach(child => child.parentNode = node);
+                }
+
+                return [node];
+            }
+        }
+
+        // 对于其他类型，返回空数组
+        return [];
     }
 }
 
@@ -317,7 +391,6 @@ export class JsonTemplateCompiler extends AbstractTemplateCompiler {
     constructor(
         readonly effect: ReactiveEffect,
         readonly renderer: JsonRenderer,
-        readonly parser: JsonTemplateParser,
         @Inject(JSON_COMPILER_OPTIONS, { defaultValue: jsonDefaultOptions }) protected options: TemplateCompilerOptions) {
         super()
     }
@@ -329,6 +402,7 @@ export class JsonTemplateCompiler extends AbstractTemplateCompiler {
         JsonRenderer,
         JsonTemplateParser,
         JsonTemplateCompiler,
+        { provide: TemplateParser, useClass:  JsonTemplateParser, asDefault: true },
         { provide: TemplateCompiler, useClass: JsonTemplateCompiler, asDefault: true }
     ]
 })

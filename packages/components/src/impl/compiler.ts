@@ -15,11 +15,9 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
     protected abstract get options(): TemplateCompilerOptions;
 
-    abstract get parser(): TemplateParser;
-
     async compile(template: string, context: any, environument: InvocationContext): Promise<ViewRef> {
         // 使用模板解析器解析模板
-        const nodes = this.parser.parse(template, environument);
+        const nodes =  environument.get(TemplateParser).parse(template, environument);
 
         const viewRef = new RootViewRef(nodes, context, this.effect);
 

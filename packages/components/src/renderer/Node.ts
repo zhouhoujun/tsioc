@@ -89,10 +89,6 @@ export interface RNode {
    * The child nodes of this node.
    */
   childNodes: RNode[];
-  /**
-   * The text content of this node.
-   */
-  textContent: string | null;
 
   /**
    * Removes a child from the current node and returns the removed node

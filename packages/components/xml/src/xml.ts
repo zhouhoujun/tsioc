@@ -10,19 +10,17 @@ import { EventEmitter } from 'events';
 
 
 
-
 export class XmlNode implements RNode {
-
     get parentElement(): XmlElement | null {
         return this.parentNode instanceof XmlElement ? this.parentNode : null;
     }
 
     constructor(
         readonly nodeType: number,
-        public textContent: string | null = null,
         public parentNode: XmlElement | null = null,
         public childNodes: XmlNode[] = [],
-        public nextSibling: XmlNode | null = null) {
+        public nextSibling: XmlNode | null = null,
+    ) {
 
     }
 
@@ -50,7 +48,7 @@ export class XmlNode implements RNode {
                 getAttributeValue: (el: XmlElement, name: string) => el.getAttribute(name) ?? undefined,
                 getChildren: (el: XmlNode) => el.childNodes,
                 getName: (el: XmlElement) => el.tagName.toLowerCase(),
-                getText: (el: XmlNode) => el.textContent ?? '',
+                getText: (el: XmlNode) => (el as XmlText).textContent ?? '',
                 getParent: (el: XmlNode) => el.parentElement,
                 removeSubsets: (nodes: XmlNode[]) => nodes,
                 getSiblings: (el: XmlNode) => el.nextSibling ? [el, el.nextSibling] : [el],
@@ -67,7 +65,7 @@ export class XmlNode implements RNode {
                 getAttributeValue: (el: XmlElement, name: string) => el.getAttribute(name) ?? undefined,
                 getChildren: (el: XmlNode) => el.childNodes,
                 getName: (el: XmlElement) => el.tagName.toLowerCase(),
-                getText: (el: XmlNode) => el.textContent ?? '',
+                getText: (el: XmlNode) => (el as XmlText).textContent ?? '',
                 getParent: (el: XmlNode) => el.parentElement,
                 removeSubsets: (nodes: XmlNode[]) => nodes,
                 getSiblings: (el: XmlNode) => el.nextSibling ? [el, el.nextSibling] : [el],
@@ -80,14 +78,14 @@ export class XmlNode implements RNode {
 }
 
 export class XmlText extends XmlNode implements RText {
-    constructor(text: string) {
-        super(NodeType.Text, text)
+    constructor(public textContent: string) {
+        super(NodeType.Text)
     }
 }
 
 export class XmlComment extends XmlNode implements RComment {
-    constructor(text: string) {
-        super(NodeType.Comment, text)
+    constructor(public textContent: string) {
+        super(NodeType.Comment)
     }
 }
 
@@ -142,10 +140,14 @@ export class XmlElement extends XmlNode implements RElement {
         nodeType: number = NodeType.Element,
         parentNode: XmlElement | null = null,
         childNodes: XmlNode[] = [],
-        nextSibling: XmlNode | null = null,
-        textContent: string | null = null) {
-        super(nodeType, textContent, parentNode, childNodes, nextSibling)
+        nextSibling: XmlNode | null = null) {
+        super(nodeType, parentNode, childNodes, nextSibling)
 
+    }
+
+
+    get textContent(): string | null {
+        return this.childNodes.filter(r => r.nodeType === NodeType.Text && (r as XmlText).textContent).map(r => (r as XmlText).textContent).join(' ') ?? null;
     }
 
     hasAttributeNS(namespace: string, localName: string): boolean {
@@ -364,10 +366,10 @@ export class XmlTemplateParser implements TemplateParser {
                 }
             }
 
-            // 处理文本内容
-            if ('#text' in jsonObj) {
-                node.textContent = jsonObj['#text'];
-            }
+            // // 处理文本内容
+            // if ('#text' in jsonObj) {
+            //     node.textContent = jsonObj['#text'];
+            // }
 
             // 递归转换子节点
             node.childNodes = childNodes.flatMap(child => this.convertToNodes(child));
@@ -395,7 +397,6 @@ export class XmlTemplateCompiler extends AbstractTemplateCompiler {
     constructor(
         readonly effect: ReactiveEffect,
         readonly renderer: XmlRenderer,
-        readonly parser: XmlTemplateParser,
         @Inject(XML_COMPILER_OPTIONS, { defaultValue: xmlDefaultOptions }) protected options: TemplateCompilerOptions) {
         super()
     }
@@ -407,6 +408,7 @@ export class XmlTemplateCompiler extends AbstractTemplateCompiler {
         XmlRenderer,
         XmlTemplateParser,
         XmlTemplateCompiler,
+        { provide: TemplateParser, useClass: XmlTemplateParser, asDefault: true },
         { provide: TemplateCompiler, useClass: XmlTemplateCompiler, asDefault: true }
     ]
 })

@@ -9,6 +9,7 @@ import { TemplateCompiler } from '../template/compiler';
 import { ComponentDef } from '../decorators/component';
 import { reactive } from './reactive';
 import { AfterViewInit, OnInit, OnDestroy } from '../lifecycle';
+import { TemplateParser } from '../template/parser';
 
 
 export class ComponentRefImpl<T> extends ComponentRef<T> {
