@@ -1,7 +1,9 @@
+import { getDef, isString, Type } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentRef } from '../refs/component';
 import { ViewRef } from '../refs/view';
 import { RNode } from '../renderer/Node';
+import { ComponentDef } from '../decorators/component';
 
 export class RootViewRef extends ViewRef {
     private _isDestroyed = false;
@@ -38,6 +40,28 @@ export class RootViewRef extends ViewRef {
 
         // 清理节点引用
         this.nodeRefs.clear();
+    }
+
+    query<T>(selector: string | Type<T>): T | null {
+        const sel = isString(selector) ? selector : getDef<ComponentDef>(selector).selector;
+        if (!sel) {
+            return null;
+        }
+        for (const r of this.rootNodes) {
+            const node = r.querySelector(sel);
+            if (node) {
+                return node as T;
+            }
+        }
+        return null;
+    }
+
+    queryAll<T>(selector: string | Type<T>): T[] {
+        const sel = isString(selector) ? selector : getDef<ComponentDef>(selector).selector;
+        if (!sel) {
+            return [];
+        }
+        return this.rootNodes.flatMap(r => r.querySelectorAll(sel) as T[]);
     }
 
     onDestroy(callback: () => void): void {

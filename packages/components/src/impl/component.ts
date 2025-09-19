@@ -1,6 +1,7 @@
 import {
     AbstractInvocationFactory, ClassRef, createInjector, Exception, Injectable,
-    Injector, InvocationContext, Platform, AbstractType, Provider, toProvider
+    Injector, InvocationContext, Platform, AbstractType, Provider, toProvider,
+    Type
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentOptions, ComponentRef, ComponentFactory } from '../refs/component';
@@ -10,11 +11,12 @@ import { ComponentDef } from '../decorators/component';
 import { reactive } from './reactive';
 import { AfterViewInit, OnInit, OnDestroy } from '../lifecycle';
 import { TemplateParser } from '../template/parser';
+import { RootViewRef } from './view';
 
 
 export class ComponentRefImpl<T> extends ComponentRef<T> {
 
-    private _hostView?: ViewRef;
+    private _hostView?: RootViewRef;
     constructor(
         _classRef: ClassRef<T>,
         context: InvocationContext,
@@ -22,8 +24,15 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         super(_classRef, context, options);
     }
 
-    get hostView(): ViewRef {
+    get hostView(): RootViewRef {
         return this._hostView!;
+    }
+
+    query<T>(selector: string | Type<T>): T | null {
+        return this.hostView.query<T>(selector);
+    }
+    queryAll<T>(selector: string | Type<T>): T[] {
+        return this.hostView.queryAll(selector);
     }
 
     private _inst?: T;
@@ -41,7 +50,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         const template = def.template || await fetchTemplate(def.templateUrl!);
         const compiler = this.context.get(TemplateCompiler);
         await (this.instance as OnInit).onInit?.();
-        this._hostView = await compiler.compile(template, this.instance, this.context);
+        this._hostView = await compiler.compile(template, this.instance, this.context) as RootViewRef;
         await (this.instance as AfterViewInit).onAfterViewInit?.();
     }
 
