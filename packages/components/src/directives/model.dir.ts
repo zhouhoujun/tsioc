@@ -3,6 +3,7 @@ import { Directive } from '../decorators/directive';
 import { ElementRef } from '../refs/element';
 import { RElement } from '../renderer/Node';
 import { ReactiveEffect } from '../ReactiveEffect';
+import { Attribute } from '../decorators/atteribute';
 
 /**
  * v-model directive component.
@@ -24,6 +25,7 @@ export class VModelDirective {
         
     ) { }
 
+    @Attribute('v-model')
     set model(propExpr: string) {
         // 解析属性表达式
         this._propName = propExpr;

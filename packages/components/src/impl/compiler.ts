@@ -191,6 +191,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                 for (const paris of dirs) {
                     await this.processDirective(el, paris[1], paris[0], attrs, context, viewRef, environment);
                 }
+                this.processElement(el, attrs.filter(a => dirs.some(d=> d[0] !== a)), context, viewRef, environment);
                 return true;
             }
 
