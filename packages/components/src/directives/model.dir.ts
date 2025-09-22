@@ -33,7 +33,7 @@ export class VModelDirective {
     }
 
     private setupBinding() {
-        const element = this.elementRef.nativeElement;
+        const element = this.elementRef.nativeElement as RElement;
 
         // 设置初始值
         if (this._context && this._propName) {

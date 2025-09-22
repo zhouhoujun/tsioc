@@ -1,6 +1,6 @@
 import { createDecorator, ActionType, AnnotationType, getModuleType, noPointcut, tokenId, InvocationContext } from '@tsdi/ioc';
 import { Attribute, AttributeMetadata } from './atteribute';
-import { DirectiveDef, DirectiveOptions, Factoriable, factoryKey } from '../refs/directive';
+import { DirectiveDef, DirectiveFactory, DirectiveOptions, Factoriable, factoryKey } from '../refs/directive';
 
 
 export const DIRECTIVES = tokenId<DirectiveDef[]>('DIRECTIVES');
@@ -27,7 +27,7 @@ export interface Directive {
  * @param {DirectiveMetadata} metadata Directive metadata.
  */
 export const Directive: Directive = createDecorator<Partial<DirectiveDef>>('Directive', {
-    actionType: ActionType.decoration,
+    actionType: ActionType.declaration | ActionType.directive,
     def: {
         class: (ctx) => {
             const typeRef = ctx.classRef;
@@ -66,5 +66,8 @@ export const Directive: Directive = createDecorator<Partial<DirectiveDef>>('Dire
             }
             injector.inject({ provide: DIRECTIVES, useValue: def, multi: true });
         }
+    },
+    factory: (injector) => {
+        return injector.get(DirectiveFactory)
     }
 });

@@ -6,6 +6,8 @@ import { DefaultReactiveEffect } from './impl/effect';
 import { VForDirective } from './directives/for.dir';
 import { VIfDirective } from './directives/if.dir';
 import { VModelDirective } from './directives/model.dir';
+import { DirectiveFactory } from './refs/directive';
+import { DirectiveFactoryImpl } from './impl/directive';
 
 /**
  * components module.
@@ -16,12 +18,13 @@ import { VModelDirective } from './directives/model.dir';
 @Module({
     providers: [
         { provide: ComponentFactory, useClass: ComponentFactoryImpl },
+        { provide: DirectiveFactory, useClass: DirectiveFactoryImpl },
         { provide: ReactiveEffect, useClass: DefaultReactiveEffect }
     ],
-    exports:[
+    exports: [
         VForDirective,
         VIfDirective,
-        VModelDirective
+        // VModelDirective
     ]
 })
 export class ComponentsModule {

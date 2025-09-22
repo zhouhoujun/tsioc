@@ -840,7 +840,7 @@ export enum ActionType {
     providers = 0b10000,
     module = 0b100000,
     component = 0b1000000,
-    decoration = 0b10000000,
+    directive = 0b10000000,
 
 }
 

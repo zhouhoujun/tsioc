@@ -70,6 +70,18 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
             }
         });
 
+        // 处理v-model双向绑定
+        if (el.hasAttribute('v-model')) {
+            const prop = el.getAttribute('v-model') as string;
+            this.effect.run(() => {
+                el.setAttribute('value', context[prop]);
+                // this.renderer.setAttribute(el, 'value', context[prop]);
+                el.addEventListener('input', () => {
+                    context[prop] = el.getAttribute('value');
+                });
+            });
+        }
+
         // 递归处理子节点
         if (el.childNodes.length > 0) {
             this.walkNodes(el.childNodes, context, viewRef, environment);
@@ -188,26 +200,10 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                 return true;
             }
 
-            // // 处理v-model双向绑定
-            // if (el.hasAttribute('v-model')) {
-            //     const prop = el.getAttribute('v-model') as string;
-            //     this.effect.run(() => {
-            //         if (el.setAttribute) {
-            //             el.setAttribute('value', context[prop])
-            //             this.renderer.setAttribute(el, 'value', context[prop]);
-            //             el.addEventListener('input', () => {
-            //                 context[prop] = el.getAttribute('value');
-            //             });
-            //         }
-            //     });
-            // }
-
             // 处理其他指令...
             this.processElement(el, attrs, context, viewRef, environment);
-        }
 
-        // 递归处理子节点
-        node.childNodes?.forEach(child => this.processBindings(child, context, viewRef, environment, processChild));
+        }
     }
 
     protected getComponentBySelector(node: RNode, environment: InvocationContext) {
