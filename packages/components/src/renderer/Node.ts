@@ -150,6 +150,7 @@ export interface RAttr {
  * listeners on Element.
  */
 export interface RElement extends RNode {
+  type?: string;
   firstChild: RNode | null;
   /**
    * The style declaration of this element.

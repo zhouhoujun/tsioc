@@ -9,5 +9,5 @@ export abstract class TemplateParser {
      * @param template 模板字符串
      * @returns 解析后的节点列表
      */
-    abstract parse(template: string, environument: InvocationContext): RNode[];
+    abstract parse(template: string, environment: InvocationContext): RNode[];
 }

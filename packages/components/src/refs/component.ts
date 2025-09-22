@@ -1,7 +1,13 @@
-import { Abstract, ClassRef, AbstractType, InvocationFactory, InvocationOptions, AbstractInvocation, ProvdierOf, InvocationContext, InvokeArguments, Type } from '@tsdi/ioc';
+import { Abstract, ClassRef, AbstractType, InvocationFactory, InvocationOptions, AbstractInvocation, ProvdierOf, Type, InvocationContext } from '@tsdi/ioc';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { ViewRef } from './view';
+import { DirectiveDef, factoryKey } from './directive';
 
+export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof factoryKey> {
+    template?: any;
+    templateUrl?: string;
+    ƿFac?: (ctx: InvocationContext, options: ComponentOptions) => ComponentRef<T>;
+}
 
 /**
  * ComponentRef.
@@ -47,7 +53,7 @@ export abstract class ComponentFactory<TOpts extends ComponentOptions = Componen
      * @param option target type invoke option {@link ComponentOptions}
      * @returns instance of {@link ComponentRef}
      */
-    abstract create<T>(type: AbstractType<T> | ClassRef<T>, option?: TOpts): ComponentRef<T>;
+    abstract create<T>(type: AbstractType<T> | ClassRef<T> | ComponentDef<T>, option?: TOpts): ComponentRef<T>;
 
 }
 

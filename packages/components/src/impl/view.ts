@@ -1,9 +1,8 @@
 import { getDef, isString, Type } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
-import { ComponentRef } from '../refs/component';
+import { ComponentDef, ComponentRef } from '../refs/component';
 import { ViewRef } from '../refs/view';
 import { RNode } from '../renderer/Node';
-import { ComponentDef } from '../decorators/component';
 
 export class RootViewRef extends ViewRef {
     private _isDestroyed = false;

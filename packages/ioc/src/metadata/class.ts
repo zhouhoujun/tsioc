@@ -839,6 +839,9 @@ export enum ActionType {
     runnable = 0b1000,
     providers = 0b10000,
     module = 0b100000,
+    component = 0b1000000,
+    decoration = 0b10000000,
+
 }
 
 /**

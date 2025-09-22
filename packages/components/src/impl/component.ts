@@ -1,16 +1,12 @@
 import {
     AbstractInvocationFactory, ClassRef, createInjector, Exception, Injectable,
-    Injector, InvocationContext, Platform, AbstractType, Provider, toProvider,
-    Type
+    Injector, InvocationContext, Platform, AbstractType, Provider, toProvider, Type
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
-import { ComponentOptions, ComponentRef, ComponentFactory } from '../refs/component';
-import { ViewRef } from '../refs/view';
+import { ComponentOptions, ComponentRef, ComponentFactory, ComponentDef } from '../refs/component';
 import { TemplateCompiler } from '../template/compiler';
-import { ComponentDef } from '../decorators/component';
 import { reactive } from './reactive';
 import { AfterViewInit, OnInit, OnDestroy } from '../lifecycle';
-import { TemplateParser } from '../template/parser';
 import { RootViewRef } from './view';
 
 

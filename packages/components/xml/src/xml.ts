@@ -311,7 +311,7 @@ export class XmlTemplateParser implements TemplateParser {
         private renderer: XmlRenderer
     ) { }
 
-    parse(template: string, environument: InvocationContext): XmlNode[] {
+    parse(template: string, environment: InvocationContext): XmlNode[] {
         const parser = new XMLParser(htmlParsingOptions);
         const jsonObj = parser.parse(template);
         // 将JSON对象转换为虚拟DOM节点
