@@ -224,8 +224,8 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         }
     }
 
-    protected getComponentBySelector(node: RNode, environment: InvocationContext) {
-        if (node.tagName) {
+    protected getComponentBySelector(node: RElement, environment: InvocationContext) {
+        if (node.nodeType === NodeType.Element && node.tagName) {
             const components = environment.get(COMPONENTS);
             const compfac = components?.find(c => c.name === node.tagName);
             if (compfac) return compfac;

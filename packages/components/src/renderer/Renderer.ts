@@ -25,6 +25,7 @@ export abstract class Renderer {
     abstract createComment(value: string): RComment;
     abstract createElement(name: string, namespace?: string | null): RElement;
     abstract createText(value: string): RText;
+    abstract cloneNode(element: RElement): RElement;
 
     /**
      * This property is allowed to be null / undefined,

@@ -2,13 +2,11 @@ import { InvocationContext } from '@tsdi/ioc';
 import { TemplateRef } from '../refs/template';
 import { EmbeddedViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
-import { NodeType, RNode, RText } from '../renderer/Node';
+import { NodeType, RNode, RText, RElement, RAttr, RTemplate } from '../renderer/Node';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ViewContainerRef } from '../refs/container';
 import { Renderer } from '../renderer/Renderer';
 import { EmbeddedViewRefImpl } from './view';
-
-
 
 /**
  * Template ref implement.
@@ -52,36 +50,11 @@ export class TemplateRefImpl<C = any> implements TemplateRef<C> {
      */
     createEmbeddedView(context: C, environment?: InvocationContext): EmbeddedViewRef<C> {
         const renderer = this.environment.get(Renderer);
-        const container = this.environment.get(ViewContainerRef);
-        
-        // 创建模板的根节点
         const templateElement = this.elementRef.nativeElement;
         const rootNodes: RNode[] = [];
 
-        // 克隆模板内容
-        templateElement.childNodes.forEach(node => {
-            if(node.nodeType == NodeType.Text || node.nodeType == NodeType.Comment) {
-                rootNodes.push(renderer.createText((node as RText).textContent || ''));
-            } else {
-                rootNodes.push(renderer.createElement(node.tagName || ''));
-            }
-        });
-
-        // if (templateElement.content) {
-            
-        //     const fragment = templateElement.content.cloneNode(true) as DocumentFragment;
-        //     // 收集所有子节点
-        //     let child = fragment.firstChild;
-        //     while (child) {
-        //         const next = child.nextSibling;
-        //         if (child.nodeType === Node.ELEMENT_NODE || 
-        //             child.nodeType === Node.TEXT_NODE || 
-        //             child.nodeType === Node.COMMENT_NODE) {
-        //             rootNodes.push(child);
-        //         }
-        //         child = next;
-        //     }
-        // }
+        // 默认处理抽象节点
+        this.cloneTemplate(templateElement, rootNodes, renderer);
 
         // 创建响应式副作用
         const effect = this.environment.get(ReactiveEffect);
@@ -90,5 +63,66 @@ export class TemplateRefImpl<C = any> implements TemplateRef<C> {
         const embeddedView = new EmbeddedViewRefImpl<C>(rootNodes, context || {} as C, effect);
 
         return embeddedView;
+    }
+
+    /**
+     * 默认模板克隆策略（处理HTML等标准格式）
+     */
+    private cloneTemplate(templateElement:any, rootNodes: RNode[], renderer: Renderer): void {
+        if (templateElement.content) {
+            // 针对标准template元素的优化处理
+            const fragment = templateElement.content.cloneNode(true)
+
+            // 收集所有子节点
+            let child = fragment.firstChild;
+            while (child) {
+                const next = child.nextSibling;
+
+                if (child.nodeType === NodeType.Element ||
+                    child.nodeType === NodeType.Text ||
+                    child.nodeType === NodeType.Comment) {
+                    // 根据节点类型创建对应的抽象节点
+                    if (child.nodeType === NodeType.Element) {
+                        const clonedElement = this.cloneElementWithAttributes(child, renderer);
+                        rootNodes.push(clonedElement);
+                    } else if (child.nodeType === NodeType.Text) {
+                        rootNodes.push(renderer.createText((child as RText).textContent || ''));
+                    } else if (child.nodeType === NodeType.Comment) {
+                        rootNodes.push(renderer.createComment(child.textContent || ''));
+                    }
+                }
+
+                child = next;
+            }
+        } else if (templateElement.childNodes) {
+            // 处理普通元素的子节点
+            templateElement.childNodes.forEach((node: any) => {
+                if (node.nodeType === NodeType.Element) {
+                    const clonedElement = this.cloneElementWithAttributes(node, renderer);
+                    rootNodes.push(clonedElement);
+                } else if (node.nodeType === NodeType.Text) {
+                    rootNodes.push(renderer.createText((node as RText).textContent || ''));
+                } else if (node.nodeType === NodeType.Comment) {
+                    rootNodes.push(renderer.createComment(node.textContent || ''));
+                }
+            });
+        }
+    }
+
+    /**
+     * 深度克隆元素及其所有属性
+     */
+    private cloneElementWithAttributes(element: any, renderer: Renderer): RElement {
+        const tagName = element.tagName && element.tagName.toLowerCase ? element.tagName.toLowerCase() : element.tagName;
+        const clonedElement = renderer.createElement(tagName);
+
+        // 克隆所有属性
+        if (element.attributes) {
+            Array.from(element.attributes).forEach((attr: any) => {
+                renderer.setAttribute(clonedElement, attr.name, attr.value, attr.namespace);
+            });
+        }
+
+        return clonedElement;
     }
 }

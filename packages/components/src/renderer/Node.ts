@@ -23,12 +23,12 @@ export enum NodeType {
   Container = 0b10000,
 
   /**
-   * The TNode contains information about an `<c-container>` element {@link RNode}.
+   * The TNode contains information about an `<v-container>` element {@link RNode}.
    */
   ElementContainer = 0b100000,
 
   /**
-   * The TNode contains information about an `<c-content>` projection
+   * The TNode contains information about an `<v-content>` projection
    */
   Projection = 0b1000000,
 
@@ -65,10 +65,6 @@ export enum NodeType {
  * A node in the DOM tree.
  */
 export interface RNode {
-  /**
-   * The tag name of this node.
-   */
-  tagName?: string;
   /**
    * The type of node.
    */
