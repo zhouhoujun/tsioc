@@ -1,3 +1,4 @@
+import { RElement } from '../renderer/Node';
 
 /**
  * A wrapper around a native element inside of a View.
@@ -10,7 +11,7 @@
  *
  * @publicApi
  */
-export class ElementRef<T = any> {
+export class ElementRef<T extends RElement = RElement> {
     /**
      * The underlying native element or `null` if direct access to native elements is not supported
      * (e.g. when the application runs in a web worker).

@@ -1,8 +1,7 @@
-import { Host } from '@tsdi/ioc';
 import { Directive } from '../decorators/directive';
 import { TemplateRef } from '../refs/template';
 import { ViewContainerRef } from '../refs/container';
-import { ElementRef } from '../refs/element';
+import { Attribute } from '../decorators/atteribute';
 
 /**
  * v-if directive component.
@@ -17,11 +16,11 @@ export class VIfDirective {
     private _hasView = false;
 
     constructor(
-        @Host() private viewContainer: ViewContainerRef,
-        @Host() private templateRef: TemplateRef<any>,
-        @Host() private elementRef: ElementRef
+        private viewContainer: ViewContainerRef,
+        private templateRef: TemplateRef<any>,
     ) { }
 
+    @Attribute()
     set if(condition: boolean) {
         if (condition && !this._hasView) {
             this.createView();

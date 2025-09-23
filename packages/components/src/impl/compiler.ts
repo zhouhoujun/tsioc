@@ -61,11 +61,8 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                 const propName = name.substring(1);
                 this.effect.run(() => {
                     const attValue = context[value];
-                    if (propName === 'class' || propName === 'style') {
-                        this.handleSpecialAttribute(el, propName, attValue);
-                    } else {
-                        el.setAttribute(propName, attValue);
-                    }
+                    // 移除特殊属性处理，让指令来处理
+                    el.setAttribute(propName, attValue);
                 });
             }
         });
@@ -75,7 +72,6 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
             const prop = el.getAttribute('v-model') as string;
             this.effect.run(() => {
                 el.setAttribute('value', context[prop]);
-                // this.renderer.setAttribute(el, 'value', context[prop]);
                 el.addEventListener('input', () => {
                     context[prop] = el.getAttribute('value');
                 });
@@ -184,25 +180,46 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         if (node.nodeType === NodeType.Element) {
             const el = node as RElement;
 
+
             const attrs = this.renderer.getAttributes(el);
+            const componentDef = this.getComponentBySelector(el, environment);
+            if (componentDef) {
+                await this.processComponent(el, componentDef, attrs, context, viewRef, environment);
+            }
+
+            // 获取并处理class和style属性作为指令
+            const classAttrs = attrs.filter(attr => attr.name === 'class');
+            const styleAttrs = attrs.filter(attr => attr.name === 'style');
+
+            // 处理class指令
+            classAttrs.forEach(attr => {
+                if (attr.value && (attr.value.includes('{{') || attr.value.includes('}}'))) {
+                    // 创建v-class指令
+                    const vClassAttr = { name: 'v-class', value: attr.value.replace(/[{}]/g, '').trim() } as RAttr;
+                    this.processDirective(el, { selector: '[v-class]' } as DirectiveDef, vClassAttr, attrs, context, viewRef, environment);
+                }
+            });
+
+            // 处理style指令
+            styleAttrs.forEach(attr => {
+                if (attr.value && (attr.value.includes('{{') || attr.value.includes('}}'))) {
+                    // 创建v-style指令
+                    const vStyleAttr = { name: 'v-style', value: attr.value.replace(/[{}]/g, '').trim() } as RAttr;
+                    this.processDirective(el, { selector: '[v-style]' } as DirectiveDef, vStyleAttr, attrs, context, viewRef, environment);
+                }
+            });
+
             const dirs = this.getDirectiveBySelector(node, attrs, environment);
+
             // 优先处理指令组件
             if (dirs && dirs.length) {
                 for (const paris of dirs) {
                     await this.processDirective(el, paris[1], paris[0], attrs, context, viewRef, environment);
                 }
-                this.processElement(el, attrs.filter(a => dirs.some(d=> d[0] !== a)), context, viewRef, environment);
-                return true;
+                this.processElement(el, attrs.filter(a => dirs.some(d => d[0] !== a)), context, viewRef, environment);
+            } else {
+                this.processElement(el, attrs, context, viewRef, environment);
             }
-
-            const componentDef = this.getComponentBySelector(el, environment);
-            if (componentDef) {
-                await this.processComponent(el, componentDef, attrs, context, viewRef, environment);
-                return true;
-            }
-
-            // 处理其他指令...
-            this.processElement(el, attrs, context, viewRef, environment);
 
         }
     }
@@ -584,4 +601,3 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         return [...new Set(matches)]; // 返回唯一的属性名
     }
 }
-

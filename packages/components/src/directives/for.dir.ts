@@ -3,6 +3,7 @@ import { Directive } from '../decorators/directive';
 import { TemplateRef } from '../refs/template';
 import { ViewContainerRef } from '../refs/container';
 import { ElementRef } from '../refs/element';
+import { Attribute } from '../decorators/atteribute';
 
 /**
  * VFor directive metadata.
@@ -39,13 +40,15 @@ export interface VForDirectiveMetadata {
 export class VForDirective {
     private _viewRefs: any[] = [];
     private _prevValue: any = null;
+    private _itemNames: string[] = []; // 保存循环变量名
+    private _collectionExpr = ''; // 保存集合表达式
 
     constructor(
-        @Host() private viewContainer: ViewContainerRef,
-        @Host() private templateRef: TemplateRef<any>,
-        @Host() private elementRef: ElementRef
+        private viewContainer: ViewContainerRef,
+        private templateRef: TemplateRef<any>,
     ) { }
 
+    @Attribute()
     set for(expr: string) {
         if (expr) {
             this.processForExpression(expr);
@@ -58,10 +61,22 @@ export class VForDirective {
 
     private processForExpression(expr: string) {
         // 解析v-for表达式，支持"item in items"和"(item, index) in items"格式
-        const inMatch = expr.match(/^(\([^)]+\)|[^)]+)\s+(?:in|of)\s+([^]+)$/);
+        const inMatch = expr.match(/^\s*((?:\([^)]+\)|[^)])+)\s+(?:in|of)\s+([^]+)$/);
         if (inMatch) {
-            // 保存表达式解析结果供后续使用
-            // 实际应用中需要更复杂的解析逻辑
+            const [, itemPart, collectionPart] = inMatch;
+            this._collectionExpr = collectionPart.trim();
+            
+            // 解析循环变量名
+            if (itemPart.trim().startsWith('(')) {
+                // 处理格式如 (item, index) 的情况
+                const innerMatch = itemPart.trim().match(/^\(\s*([^,]+)\s*(?:,\s*([^)]+))?\s*\)$/);
+                if (innerMatch) {
+                    this._itemNames = [innerMatch[1].trim(), innerMatch[2]?.trim() || ''].filter(Boolean);
+                }
+            } else {
+                // 处理格式如 item 的情况
+                this._itemNames = [itemPart.trim()];
+            }
         }
     }
 
@@ -80,14 +95,25 @@ export class VForDirective {
         // 处理数组
         if (Array.isArray(collection)) {
             for (let i = 0; i < collection.length; i++) {
-                this.createView({
+                // 创建上下文对象，确保item和index等变量正确设置
+                const context: any = {
                     $implicit: collection[i],
                     index: i,
                     first: i === 0,
                     last: i === collection.length - 1,
                     even: i % 2 === 0,
                     odd: i % 2 === 1
-                });
+                };
+                
+                // 设置用户定义的循环变量名
+                if (this._itemNames.length > 0) {
+                    context[this._itemNames[0]] = collection[i];
+                }
+                if (this._itemNames.length > 1) {
+                    context[this._itemNames[1]] = i;
+                }
+                
+                this.createView(context);
             }
         }
         // 处理对象
@@ -97,7 +123,8 @@ export class VForDirective {
             const len = keys.length;
             
             for (const key of keys) {
-                this.createView({
+                // 创建上下文对象，确保key、value等变量正确设置
+                const context: any = {
                     $implicit: collection[key],
                     key: key,
                     index: index,
@@ -105,7 +132,20 @@ export class VForDirective {
                     last: index === len - 1,
                     even: index % 2 === 0,
                     odd: index % 2 === 1
-                });
+                };
+                
+                // 设置用户定义的循环变量名
+                if (this._itemNames.length > 0) {
+                    context[this._itemNames[0]] = collection[key];
+                }
+                if (this._itemNames.length > 1) {
+                    context[this._itemNames[1]] = key;
+                }
+                if (this._itemNames.length > 2) {
+                    context[this._itemNames[2]] = index;
+                }
+                
+                this.createView(context);
                 index++;
             }
         }

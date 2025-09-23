@@ -1,4 +1,4 @@
-import { Abstract, Injector } from '@tsdi/ioc';
+import { Abstract, InvocationContext } from '@tsdi/ioc';
 import { ElementRef } from './element';
 import { EmbeddedViewRef } from './view';
 
@@ -34,16 +34,16 @@ export abstract class TemplateRef<C = any> {
      * data-binding and injection context from the original location.
      *
      */
-    abstract get elementRef(): ElementRef;
+    abstract get element(): ElementRef;
 
     /**
      * Instantiates an embedded view based on this template,
      * and attaches it to the view container.
      * @param context The data-binding context of the embedded view, as declared
      * in the `<template>` usage.
-     * @param injector Injector to be used within the embedded view.
+     * @param environment InvocationContext to be used within the embedded view.
      * @returns The new embedded view object.
      */
-    abstract createEmbeddedView(context: C, injector?: Injector): EmbeddedViewRef<C>;
+    abstract createEmbeddedView(context: C, environment?: InvocationContext): EmbeddedViewRef<C>;
 
 }

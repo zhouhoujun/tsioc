@@ -1,0 +1,220 @@
+import { Host, Optional, Self } from '@tsdi/ioc';
+import { Directive } from '../decorators/directive';
+import { TemplateRef } from '../refs/template';
+import { ViewContainerRef } from '../refs/container';
+import { ElementRef } from '../refs/element';
+import { Attribute } from '../decorators/atteribute';
+
+/**
+ * v-switch directive component.
+ *
+ * @export
+ * @class SwitchDirective
+ */
+@Directive({
+    selector: '[v-switch],[*switch]'
+})
+export class SwitchDirective {
+    private _value: any;
+    private _caseDirectives: CaseDirective[] = [];
+    private _defaultDirective: DefaultDirective | null = null;
+
+    set switch(value: any) {
+        this._value = value;
+        this.updateCases();
+    }
+
+    /**
+     * Register case directive to switch directive.
+     * @param caseDirective
+     */
+    registerCase(caseDirective: CaseDirective) {
+        if (this._caseDirectives.indexOf(caseDirective) === -1) {
+            this._caseDirectives.push(caseDirective);
+            // Update the case view immediately after registration
+            caseDirective.updateView(this._value);
+        }
+    }
+
+    /**
+     * Unregister case directive from switch directive.
+     * @param caseDirective
+     */
+    unregisterCase(caseDirective: CaseDirective) {
+        const index = this._caseDirectives.indexOf(caseDirective);
+        if (index > -1) {
+            this._caseDirectives.splice(index, 1);
+        }
+    }
+
+    /**
+     * Register default directive to switch directive.
+     * @param defaultDirective
+     */
+    registerDefault(defaultDirective: DefaultDirective) {
+        this._defaultDirective = defaultDirective;
+    }
+
+    /**
+     * Unregister default directive from switch directive.
+     */
+    unregisterDefault() {
+        this._defaultDirective = null;
+    }
+
+    /**
+     * Update all cases view according to current switch value.
+     */
+    private updateCases() {
+        let matchFound = false;
+        
+        this._caseDirectives.forEach(caseDirective => {
+            const matched = caseDirective.updateView(this._value);
+            if (matched) {
+                matchFound = true;
+            }
+        });
+        
+        // Update default directive
+        if (this._defaultDirective) {
+            this._defaultDirective.updateView(!matchFound);
+        }
+    }
+
+    ngOnDestroy() {
+        // Clean up all registered case directives
+        this._caseDirectives.forEach(caseDirective => {
+            caseDirective.clearView();
+        });
+        
+        if (this._defaultDirective) {
+            this._defaultDirective.clearView();
+        }
+        
+        this._caseDirectives = [];
+        this._defaultDirective = null;
+    }
+}
+
+/**
+ * v-case directive component.
+ *
+ * @export
+ * @class CaseDirective
+ */
+@Directive({
+    selector: '[v-case],[*case]'
+})
+export class CaseDirective {
+    private _hasView = false;
+    private _caseValue: any;
+    private _switchDirective: SwitchDirective | null = null;
+
+    constructor(
+        private viewContainer: ViewContainerRef,
+        private templateRef: TemplateRef<any>,
+        // Get parent switch directive
+        @Optional() @Host() switchDirective?: SwitchDirective
+    ) {
+        if (switchDirective) {
+            this._switchDirective = switchDirective;
+            this._switchDirective.registerCase(this);
+        }
+    }
+
+    @Attribute()
+    set case(value: any) {
+        this._caseValue = value;
+        if (this._switchDirective) {
+            this.updateView(this._switchDirective['_value']);
+        }
+    }
+
+    /**
+     * Update view based on switch value.
+     * @param switchValue
+     * @returns whether the case matched
+     */
+    updateView(switchValue: any): boolean {
+        const isMatch = this._caseValue === switchValue;
+        if (isMatch && !this._hasView) {
+            this.createView();
+        } else if (!isMatch && this._hasView) {
+            this.clearView();
+        }
+        return isMatch;
+    }
+
+    private createView() {
+        this.viewContainer.createEmbeddedView(this.templateRef);
+        this._hasView = true;
+    }
+
+    clearView() {
+        this.viewContainer.clear();
+        this._hasView = false;
+    }
+
+    ngOnDestroy() {
+        if (this._switchDirective) {
+            this._switchDirective.unregisterCase(this);
+        }
+        this.clearView();
+    }
+}
+
+/**
+ * v-default directive component.
+ *
+ * @export
+ * @class DefaultDirective
+ */
+@Directive({
+    selector: '[v-default],[*default]'
+})
+export class DefaultDirective {
+    private _hasView = false;
+    private _switchDirective: SwitchDirective | null = null;
+
+    constructor(
+        @Host() private viewContainer: ViewContainerRef,
+        @Host() private templateRef: TemplateRef<any>,
+        @Host() private elementRef: ElementRef,
+        // Get parent switch directive
+        @Self() @Host() switchDirective?: SwitchDirective
+    ) {
+        if (switchDirective) {
+            this._switchDirective = switchDirective;
+            this._switchDirective.registerDefault(this);
+        }
+    }
+
+    /**
+     * Update default view when no case matched.
+     * @param shouldShow whether to show the default view
+     */
+    updateView(shouldShow: boolean) {
+        if (shouldShow && !this._hasView) {
+            this.createView();
+        } else if (!shouldShow && this._hasView) {
+            this.clearView();
+        }
+    }
+
+    private createView() {
+        this.viewContainer.createEmbeddedView(this.templateRef);
+        this._hasView = true;
+    }
+
+    clearView() {
+        this.viewContainer.clear();
+        this._hasView = false;
+    }
+
+    ngOnDestroy() {
+        if (this._switchDirective) {
+            this._switchDirective.unregisterDefault();
+        }
+        this.clearView();
+    }
+}
