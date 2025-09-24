@@ -4,12 +4,10 @@ import { NodeType, RAttr, RElement, RNode, RText } from '../renderer/Node';
 import { ViewRef } from '../refs/view';
 import { RootViewRef } from './view';
 import { TemplateParser } from '../template/parser';
-import { ComponentRef, ComponentFactory, ComponentDef } from '../refs/component';
+import { ComponentDef } from '../refs/component';
 import { COMPONENTS } from '../decorators/component';
 import { EventEmitter } from '../EventEmitter';
 import { ElementRef } from '../refs/element';
-import { ViewContainerRef } from '../refs/container';
-import { TemplateRef } from '../refs/template';
 import { DIRECTIVES } from '../decorators/directive';
 import { DirectiveDef, DirectiveRef, Factoriable } from '../refs/directive';
 
@@ -425,8 +423,6 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         // 这里简化处理
         try {
             // 从环境中获取必要的依赖
-            // const viewContainerRef = this.getViewContainerRef(element);
-            // const templateRef = this.getTemplateRef(element);
             const elementRef = new ElementRef(element);
 
             // 创建指令实例并注入依赖
@@ -437,33 +433,6 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         }
     }
 
-    /**
-     * Get view container ref of element.
-     *
-     * @protected
-     * @param {RElement} element
-     * @returns {ViewContainerRef}
-     * @memberof AbstractTemplateCompiler
-     */
-    protected getViewContainerRef(element: RElement): ViewContainerRef {
-        // 实际实现需要根据框架的视图容器机制获取对应的ViewContainerRef
-        // 这里简化处理
-        return null as any;
-    }
-
-    /**
-     * Get template ref of element.
-     *
-     * @protected
-     * @param {RElement} element
-     * @returns {TemplateRef<any>}
-     * @memberof AbstractTemplateCompiler
-     */
-    protected getTemplateRef(element: RElement): TemplateRef<any> {
-        // 实际实现需要根据框架的模板机制获取对应的TemplateRef
-        // 这里简化处理
-        return null as any;
-    }
 
     private parseEventExpression(expr: string, context: any, viewRef: RootViewRef, environment: InvocationContext): EventListener {
         // 改进正则以支持带命名空间的函数名和复杂参数

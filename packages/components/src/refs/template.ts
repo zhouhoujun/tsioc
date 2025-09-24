@@ -34,7 +34,7 @@ export abstract class TemplateRef<C = any> {
      * data-binding and injection context from the original location.
      *
      */
-    abstract get element(): ElementRef;
+    abstract get elementRef(): ElementRef;
 
     /**
      * Instantiates an embedded view based on this template,

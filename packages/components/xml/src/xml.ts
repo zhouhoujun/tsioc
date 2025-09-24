@@ -197,9 +197,7 @@ export class XmlElement extends XmlNode implements RElement {
 
 @Injectable()
 export class XmlRenderer implements Renderer {
-    cloneNode(element: RElement): RElement {
-        throw new Error('Method not implemented.');
-    }
+
     destroyNode?: ((node: RNode) => void) | null | undefined;
     // 创建XML注释节点
     createComment(value: string): XmlComment {

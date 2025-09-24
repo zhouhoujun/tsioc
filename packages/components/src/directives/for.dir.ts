@@ -1,8 +1,6 @@
-import { Host } from '@tsdi/ioc';
 import { Directive } from '../decorators/directive';
 import { TemplateRef } from '../refs/template';
 import { ViewContainerRef } from '../refs/container';
-import { ElementRef } from '../refs/element';
 import { Attribute } from '../decorators/atteribute';
 
 /**

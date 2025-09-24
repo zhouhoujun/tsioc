@@ -17,7 +17,7 @@ import { RNode } from '../renderer/Node';
  * @class ViewContainerRefImpl
  * @implements {ViewContainerRef}
  */
-export class ViewContainerRefImpl implements ViewContainerRef {
+class ViewContainerRefImpl implements ViewContainerRef {
 
     /**
      * view list.
@@ -31,15 +31,20 @@ export class ViewContainerRefImpl implements ViewContainerRef {
      * Creates an instance of ViewContainerRefImpl.
      * @param {ElementRef} element
      * @param {InvocationContext} environment
-     * @param {Renderer} renderer
      * @memberof ViewContainerRefImpl
      */
     constructor(
         readonly element: ElementRef,
         readonly environment: InvocationContext,
-        private renderer: Renderer
     ) { }
 
+    private _renderer?: Renderer;
+    get renderer(): Renderer {
+        if (!this._renderer) {
+            this._renderer = this.environment.get(Renderer);
+        }
+        return this._renderer;
+    }
     /**
      * Returns the number of views currently attached to this container.
      *
@@ -98,7 +103,10 @@ export class ViewContainerRefImpl implements ViewContainerRef {
         const def = isFunction(componentType) ? getDef(componentType) : componentType;
         const componentRef = (def as Factoriable).ƿfac!(options?.environment || this.environment, {}) as ComponentRef<C>;
         const insertIndex = options?.index !== undefined ? options?.index : this.views.length;
-        this.insert(componentRef.hostView, insertIndex);
+        componentRef.render()
+            .then(() => {
+                this.insert(componentRef.hostView, insertIndex);
+            });
         return componentRef;
     }
 
@@ -243,4 +251,8 @@ export class ViewContainerRefImpl implements ViewContainerRef {
         const nextViewNodes = nextView.rootNodes;
         return nextViewNodes.length > 0 ? nextViewNodes[0] : null;
     }
+}
+
+export function createViewContainerRef(elementRef: ElementRef, environment: InvocationContext): ViewContainerRef {
+    return new ViewContainerRefImpl(elementRef, environment);
 }

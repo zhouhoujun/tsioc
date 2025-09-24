@@ -25,14 +25,20 @@ export abstract class Renderer {
     abstract createComment(value: string): RComment;
     abstract createElement(name: string, namespace?: string | null): RElement;
     abstract createText(value: string): RText;
-    abstract cloneNode(element: RElement): RElement;
 
+    /**
+     * clone node.
+     * @param node node to clone.
+     * @returns cloned node.
+     */
+    abstract cloneNode?(node: RNode): RNode;
     /**
      * This property is allowed to be null / undefined,
      * in which case the view engine won't call it.
      * This is used as a performance optimization for production mode.
      */
     abstract destroyNode?: ((node: RNode) => void) | null;
+
     abstract appendChild(parent: RElement, newChild: RNode): void;
     abstract insertBefore(parent: RNode, newChild: RNode, refChild: RNode | null, isMove?: boolean): void;
     abstract removeChild(parent: RElement | null, oldChild: RNode, isHostElement?: boolean): void;

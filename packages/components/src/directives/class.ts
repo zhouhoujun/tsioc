@@ -1,9 +1,8 @@
-import { Directive } from '../decorators/directive';
-import { Host } from '@tsdi/ioc';
-import { ElementRef } from '../refs/element';
 import { isObject } from '@tsdi/ioc';
-import { Renderer } from '../renderer/Renderer';
+import { Directive } from '../decorators/directive';
 import { Attribute } from '../decorators/atteribute';
+import { ElementRef } from '../refs/element';
+import { Renderer } from '../renderer/Renderer';
 
 /**
  * Css class directive metadata.
