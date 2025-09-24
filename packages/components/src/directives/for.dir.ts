@@ -2,6 +2,7 @@ import { Directive } from '../decorators/directive';
 import { TemplateRef } from '../refs/template';
 import { ViewContainerRef } from '../refs/container';
 import { Attribute } from '../decorators/atteribute';
+import { NodeType } from '../renderer/Node';
 
 /**
  * VFor directive metadata.
@@ -33,7 +34,8 @@ export interface VForDirectiveMetadata {
  * @class VForDirective
  */
 @Directive({
-    selector: '[v-for],[*for]'
+    selector: '[v-for],[*for]',
+    nodeType: NodeType.AnyContainer
 })
 export class VForDirective {
     private _viewRefs: any[] = [];

@@ -2,6 +2,7 @@ import { Abstract, ClassRef, AbstractType, InvocationFactory, InvocationOptions,
 import { AttributeMetadata } from '../decorators/atteribute';
 import { SchemaMetadata } from '../template/schema';
 import { ElementRef } from './element';
+import { NodeType } from '../renderer/Node';
 
 
 export const factoryKey = 'ƿfac';
@@ -13,6 +14,7 @@ export interface DirectiveDef<T = any> extends TypeDef<T> {
     styles?: string[];
     styleUrls?: string[];
     providers?: any[];
+    nodeType?: NodeType;
     // states?: StateMetadata[];
     attributes?: AttributeMetadata[];
     schemas?: SchemaMetadata[];

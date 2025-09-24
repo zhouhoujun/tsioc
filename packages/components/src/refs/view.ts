@@ -1,4 +1,5 @@
-import { Abstract, Destroyable } from '@tsdi/ioc';
+import { Abstract, Destroyable, Type } from '@tsdi/ioc';
+import { RNode } from '../renderer/Node';
 
 
 
@@ -92,5 +93,19 @@ export abstract class EmbeddedViewRef<C> extends ViewRef {
    * The root nodes for this embedded view.
    */
   abstract get rootNodes(): any[];
+
+  // 添加计算属性缓存
+  abstract get computedCache(): Map<string, { value: any, deps: Set<any> }>;
+
+
+  abstract registerNodeRef(id: string, node: RNode): void;
+
+  abstract getNodeRef(id: string): RNode | undefined;
+  
+
+  abstract query<T>(selector: string | Type<T>): T | null;
+
+  abstract queryAll<T>(selector: string | Type<T>): T[];
+
 }
 

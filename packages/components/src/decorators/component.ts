@@ -5,6 +5,7 @@ import { DIRECTIVES } from './directive';
 // import { State, StateMetadata } from './state';
 import { ComponentDef } from '../refs/component';
 import { Factoriable, factoryKey } from '../refs/directive';
+import { NodeType } from '../renderer/Node';
 
 
 
@@ -21,6 +22,7 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
             (typeRef.type as AnnotationType)[noPointcut] = true;
             typeRef.assignAnnotation(ctx.define.metadata);
             const def = typeRef.getAnnotation<ComponentDef>() as ComponentDef;
+            def.nodeType = NodeType.Container;
             if (!def.selector) def.selector = typeRef.className;
             const metadata = ctx.define.metadata;
             if (metadata.providers) {

@@ -69,7 +69,7 @@ export function reactive(target: any, effect: ReactiveEffect) {
 
         // ...其他代理方法如has、ownKeys等
         ownKeys(target) {
-            return target.keys();
+            return Reflect.ownKeys(target);
         },
         has(target, key) {
             return key in target || Reflect.has(target, key);

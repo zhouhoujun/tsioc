@@ -19,6 +19,8 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
     private nodeRefs: Map<string, RNode> = new Map();
     readonly directives = new Set<any>();
     readonly components = new Set<any>();
+    // 添加计算属性缓存
+    readonly computedCache = new Map<string, { value: any, deps: Set<any> }>();
 
     /**
      * Creates an instance of EmbeddedViewRefImpl.
@@ -114,14 +116,6 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
     getNodeRef(id: string): RNode | undefined {
         return this.nodeRefs.get(id);
     }
-}
-
-
-export class RootViewRef<C = any> extends EmbeddedViewRefImpl<C> {
-
-    // 添加计算属性缓存
-    readonly computedCache = new Map<string, { value: any, deps: Set<any> }>();
-
 
     query<T>(selector: string | Type<T>): T | null {
         const sel = isString(selector) ? selector : getDef<ComponentDef>(selector).selector;
@@ -144,6 +138,12 @@ export class RootViewRef<C = any> extends EmbeddedViewRefImpl<C> {
         }
         return this.rootNodes.flatMap(r => r.querySelectorAll(sel) as T[]);
     }
+
+}
+
+
+export class RootViewRef<C = any> extends EmbeddedViewRefImpl<C> {
+
 
 
 
