@@ -61,7 +61,7 @@ export const Directive: Directive = createDecorator<Partial<DirectiveDef>>('Dire
             const def = typeRef.getAnnotation<DirectiveDef>() as DirectiveDef & Factoriable;
             if (!def[factoryKey]) {
                 def[factoryKey] = (ctx: InvocationContext, options: DirectiveOptions) => {
-                    return typeRef.createInvocation(injector, { ...options, parent: ctx })
+                    return typeRef.createInvocation(ctx.injector, options)
                 }
             }
             injector.inject({ provide: DIRECTIVES, useValue: def, multi: true });

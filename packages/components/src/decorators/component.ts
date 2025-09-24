@@ -43,7 +43,7 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
 
             if (!def[factoryKey]) {
                 def[factoryKey] = (ctx: InvocationContext, options: ComponentOptions) => {
-                    return typeRef.createInvocation(injector, { ...options, parent: ctx }) as ComponentRef<any>
+                    return typeRef.createInvocation(ctx.injector, options) as ComponentRef<any>
                 }
             }
             if (selectors.some(r => dir$.test(r))) {
