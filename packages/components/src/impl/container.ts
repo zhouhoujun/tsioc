@@ -9,6 +9,7 @@ import { Renderer } from '../renderer/Renderer';
 import { TemplateRef } from '../refs/template';
 import { Factoriable } from '../refs/directive';
 import { RNode } from '../renderer/Node';
+import { EnvironmentContext } from '../refs/environment';
 
 /**
  * View container ref implement.
@@ -30,12 +31,12 @@ class ViewContainerRefImpl implements ViewContainerRef {
     /**
      * Creates an instance of ViewContainerRefImpl.
      * @param {ElementRef} element
-     * @param {InvocationContext} environment
+     * @param {EnvironmentContext} environment
      * @memberof ViewContainerRefImpl
      */
     constructor(
         readonly element: ElementRef,
-        readonly environment: InvocationContext,
+        readonly environment: EnvironmentContext,
     ) { }
 
     private _renderer?: Renderer;
@@ -83,12 +84,12 @@ class ViewContainerRefImpl implements ViewContainerRef {
     createEmbeddedView<C>(templateRef: TemplateRef<C>, context?: C, index?: number): EmbeddedViewRef<C>;
     createEmbeddedView<C>(templateRef: TemplateRef<C>, context?: C, options?: {
         index?: number,
-        environment?: InvocationContext
+        environment?: EnvironmentContext
     }): EmbeddedViewRef<C>;
     createEmbeddedView<C>(templateRef: TemplateRef<C>, context?: C, opts?: { index?: number } | number): EmbeddedViewRef<C> {
         const options = (isNumber(opts) ? { index: opts } : opts) as {
             index?: number,
-            environment?: InvocationContext
+            environment?: EnvironmentContext
         };
         const view = templateRef.createEmbeddedView(context!, options?.environment || this.environment);
         const index = options?.index !== undefined ? options.index : this.views.length;
@@ -98,7 +99,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
 
     createComponent<C>(componentType: Type<C> | ComponentDef<C>, options?: {
         index?: number,
-        environment?: InvocationContext,
+        environment?: EnvironmentContext,
     }): ComponentRef<C> {
         const def = isFunction(componentType) ? getDef(componentType) : componentType;
         const componentRef = (def as Factoriable).ƿfac!(options?.environment || this.environment, {}) as ComponentRef<C>;
@@ -253,6 +254,6 @@ class ViewContainerRefImpl implements ViewContainerRef {
     }
 }
 
-export function createViewContainerRef(elementRef: ElementRef, environment: InvocationContext): ViewContainerRef {
+export function createViewContainerRef(elementRef: ElementRef, environment: EnvironmentContext): ViewContainerRef {
     return new ViewContainerRefImpl(elementRef, environment);
 }

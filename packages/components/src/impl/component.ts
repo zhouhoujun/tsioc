@@ -7,13 +7,14 @@ import { ComponentOptions, ComponentRef, ComponentFactory, ComponentDef } from '
 import { TemplateCompiler } from '../template/compiler';
 import { reactive } from './reactive';
 import { AfterViewInit, OnInit, OnDestroy } from '../lifecycle';
-import { RootViewRef } from './view';
+import { createEmbeddedViewRef } from './view';
 import { EnvironmentContext } from '../refs/environment';
+import { EmbeddedViewRef } from '../refs/view';
 
 
 export class ComponentRefImpl<T> extends ComponentRef<T> {
 
-    private _hostView?: RootViewRef;
+    private _hostView?: EmbeddedViewRef<T>;
     constructor(
         _classRef: ClassRef<T>,
         context: EnvironmentContext,
@@ -21,7 +22,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         super(_classRef, context, options);
     }
 
-    get hostView(): RootViewRef {
+    get hostView(): EmbeddedViewRef<T> {
         return this._hostView!;
     }
 
@@ -47,7 +48,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         const template = def.template || await fetchTemplate(def.templateUrl!);
         const compiler = this.context.get(TemplateCompiler);
         await (this.instance as OnInit).onInit?.();
-        this._hostView = await compiler.compile(template, this.instance, this.context) as RootViewRef;
+        this._hostView = await compiler.compile(template, this.instance, this.context);
         await (this.instance as AfterViewInit).onAfterViewInit?.();
     }
 

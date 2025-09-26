@@ -2,7 +2,7 @@ import { Abstract, Exception, isObject } from '@tsdi/ioc';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { NodeType, RAttr, RElement, RNode, RText } from '../renderer/Node';
 import { ViewRef, EmbeddedViewRef } from '../refs/view';
-import { RootViewRef } from './view';
+import { createEmbeddedViewRef } from './view';
 import { TemplateParser } from '../template/parser';
 import { ComponentDef } from '../refs/component';
 import { COMPONENTS } from '../decorators/component';
@@ -20,11 +20,11 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
     protected abstract get options(): TemplateCompilerOptions;
 
-    async compile(template: string, context: any, environment: EnvironmentContext): Promise<ViewRef> {
+    async compile<C>(template: string, context: C, environment: EnvironmentContext): Promise<EmbeddedViewRef<C>> {
         // 使用模板解析器解析模板
         const nodes = environment.get(TemplateParser).parse(template, environment);
 
-        const viewRef = new RootViewRef(nodes, context, this.effect);
+        const viewRef = createEmbeddedViewRef(nodes, context, this.effect);
 
         const rootNodes = viewRef.rootNodes ?? [];
 
@@ -37,7 +37,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
             components.forEach(r => {
                 const nodes = node.querySelectorAll(r.selector);
                 nodes?.forEach(n => {
-                    if(compMap.has(n)) {
+                    if (compMap.has(n)) {
                         throw new Exception('has dup component selector')
                     }
                     compMap.set(n, r);
@@ -46,7 +46,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
             directives.forEach(r => {
                 const nodes = node.querySelectorAll(r.selector);
                 nodes?.forEach(n => {
-                    if(compMap.has(n)) {
+                    if (compMap.has(n)) {
                         return;
                     }
                     const dirs = dirMap.get(n);
@@ -234,7 +234,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
         const attrs = this.renderer.getAttributes(el);
         let isContainer = false;
-        const componentDef =  compMap.get(el);
+        const componentDef = compMap.get(el);
         if (componentDef) {
             isContainer = true;
             await this.processComponent(el, componentDef, attrs, context, viewRef, environment);

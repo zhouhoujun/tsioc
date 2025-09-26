@@ -1,6 +1,6 @@
 import { Abstract } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
-import { ViewRef } from '../refs/view';
+import { EmbeddedViewRef, ViewRef } from '../refs/view';
 import { Renderer } from '../renderer/Renderer';
 import { EnvironmentContext } from '../refs/environment';
 
@@ -17,5 +17,5 @@ export abstract class TemplateCompiler {
 
     abstract get renderer(): Renderer;
 
-    abstract compile(template: string, context: any, environment: EnvironmentContext): Promise<ViewRef>;
+    abstract compile<C>(template: string, context: C, environment: EnvironmentContext): Promise<EmbeddedViewRef<C>>;
 }

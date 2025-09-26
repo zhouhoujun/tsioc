@@ -114,7 +114,7 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         return null;
     }
 
-    
+
     queryAll<T>(selector: Type<T>): Array<ComponentRef<T> | DirectiveRef<T>>;
     queryAll<C>(selector: string): Array<ElementRef<C> | ViewRef<C> | TemplateRef<C>>;
     queryAll(selector: string | Type): Array<any> {
@@ -127,10 +127,10 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
 
 }
 
-
-export class RootViewRef<C = any> extends EmbeddedViewRefImpl<C> {
-
-
-
+export function createEmbeddedViewRef<C>(
+    rootNodes: RNode[],
+    context: C,
+    effect: ReactiveEffect) {
+    return new EmbeddedViewRefImpl(rootNodes, context, effect)
 
 }
