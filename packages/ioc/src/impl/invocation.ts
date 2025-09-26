@@ -17,9 +17,12 @@ import { Provider } from '../providers';
  * abstract invocation 
  * implements {@link Invocation}
  */
-export abstract class AbstractInvocation<T = any, TOpts extends InvocationOptions<T> = InvocationOptions<T>, TRes = any> extends Invocation<T, TRes> implements OnDestroy {
+export abstract class AbstractInvocation<T = any,
+    TOpts extends InvocationOptions<T> = InvocationOptions<T>,
+    TC extends InvocationContext = InvocationContext,
+    TRes = any> extends Invocation<T, TRes, TC> implements OnDestroy {
 
-    private _mthCtx: Map<string | symbol, InvocationContext | null>;
+    private _mthCtx: Map<string | symbol, TC | null>;
     private _instance?: T;
     private _isResolve = false;
 
@@ -27,7 +30,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
 
     constructor(
         private _classRef: ClassRef<T>,
-        readonly context: InvocationContext,
+        readonly context: TC,
         protected options?: TOpts) {
         super();
         this._isResolve = hasContextOptions(options);
@@ -71,7 +74,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
      */
-    invoke(context: InvocationContext): TRes;
+    invoke(context: TC): TRes;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param options invoke arguments.
@@ -87,7 +90,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
      * @param method method name.
      * @param context the context to use to invoke the operation
      */
-    invoke(method: MethodType<T>, context?: InvocationContext): TRes;
+    invoke(method: MethodType<T>, context?: TC): TRes;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param method method name.
@@ -100,11 +103,11 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
      * @param args the arguments to use to invoke the operation
      */
     invoke(method: MethodType<T>, args?: any[]): TRes;
-    invoke(arg?: InvocationContext | InvokeArguments | MethodType<T> | any[], optionOrArgs?: InvocationContext | InvokeArguments | any[]): TRes {
+    invoke(arg?: TC | InvokeArguments | MethodType<T> | any[], optionOrArgs?: TC | InvokeArguments | any[]): TRes {
         this.assertNotDestroyed();
         let name: string | symbol | undefined;
         let args: any[] | undefined;
-        let option: InvokeArguments | InvocationContext | undefined;
+        let option: InvokeArguments | TC | undefined;
         if (isArray(arg)) {
             args = arg;
         } else if (isString(arg) || isSymbol(arg)) {
@@ -133,9 +136,9 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
         return this.invokeMethod(name, option, args);
     }
 
-    protected abstract process(option?: InvocationContext | InvokeArguments, args?: any[]): any;
+    protected abstract process(option?: TC | InvokeArguments, args?: any[]): any;
 
-    protected invokeMethod(name: string | symbol, option?: InvocationContext | InvokeArguments, args?: any[]): any {
+    protected invokeMethod(name: string | symbol, option?: TC | InvokeArguments, args?: any[]): any {
 
         const [context, destroy] = args ? [this.context] : this.createInvokeContext(name, option);
         if (!args) {
@@ -158,12 +161,16 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
         return result;
     }
 
-    protected getMethodContext(propertyKey: string | symbol): InvocationContext {
+    protected createContext(parent: InvocationContext, options?: InvokeArguments): TC {
+        return createContext(parent, options) as TC;
+    }
+
+    protected getMethodContext(propertyKey: string | symbol): TC {
         let ctx = this._mthCtx.get(propertyKey);
         if (ctx === undefined) {
             const opts = this.classRef.getMethodOptions(propertyKey);
             if (opts) {
-                ctx = createContext(this.context, opts);
+                ctx = this.createContext(this.context, opts);
                 this.context.onDestroy(ctx);
                 this._mthCtx.set(propertyKey, ctx);
             } else {
@@ -174,9 +181,9 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
     }
 
 
-    protected createInvokeContext(propertyKey: string | symbol, option?: InvokeArguments | InvocationContext): [InvocationContext, Function | undefined] {
+    protected createInvokeContext(propertyKey: string | symbol, option?: InvokeArguments | TC): [TC, Function | undefined] {
         const ctx = this.getMethodContext(propertyKey);
-        let context: InvocationContext;
+        let context: TC;
         let destroy: Function | undefined;
         if (option instanceof InvocationContext) {
             context = option;
@@ -189,7 +196,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
         } else if (option) {
             if (option.parent && option.parent !== ctx) {
                 if (hasContextOptions(option)) {
-                    context = createContext(option.parent!, option);
+                    context = this.createContext(option.parent!, option);
                     context.addRef(ctx);
                     destroy = () => {
                         if (context.used) return;
@@ -197,7 +204,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
                         context.destroy()
                     }
                 } else {
-                    context = option.parent!;
+                    context = option.parent! as TC;
                     context.addRef(ctx);
                     destroy = () => {
                         if (context.used) return;
@@ -205,7 +212,7 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
                     }
                 }
             } else if (hasContextOptions(option)) {
-                context = createContext(ctx, option);
+                context = this.createContext(ctx, option);
                 destroy = () => {
                     if (context.used) return;
                     context.destroy()
@@ -286,17 +293,20 @@ export abstract class AbstractInvocation<T = any, TOpts extends InvocationOption
  * default invocation.
  * extends {@link AbstractInvocation}
  */
-export class DefaultInvocation<T = any, TOpts extends InvocationOptions<T> = InvocationOptions<T>, TRes = any> extends AbstractInvocation<T, TOpts, TRes> {
+export class DefaultInvocation<T = any,
+    TOpts extends InvocationOptions<T> = InvocationOptions<T>,
+    TC extends InvocationContext = InvocationContext,
+    TRes = any> extends AbstractInvocation<T, TOpts, TC, TRes> {
 
 
     constructor(
         _classRef: ClassRef<T>,
-        context: InvocationContext,
+        context: TC,
         options: TOpts = {} as TOpts) {
         super(_classRef, context, options);
     }
 
-    protected process(option?: InvocationContext | InvokeArguments) {
+    protected process(option?: TC | InvokeArguments) {
         const runnables = this.classRef.runnables.filter(r => !r.auto);
         if (runnables && runnables.length) {
             const handler = composeHandlers(runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {

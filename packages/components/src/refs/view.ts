@@ -1,5 +1,10 @@
 import { Abstract, Destroyable, Type } from '@tsdi/ioc';
 import { RNode } from '../renderer/Node';
+import { ComponentRef } from './component';
+import { DirectiveRef } from './directive';
+import { TemplateRef } from './template';
+import { ViewContainerRef } from './container';
+import { ElementRef } from './element';
 
 
 
@@ -9,7 +14,13 @@ import { RNode } from '../renderer/Node';
  * @publicApi
  */
 @Abstract()
-export abstract class ViewRef implements Destroyable {
+export abstract class ViewRef<C = any> implements Destroyable {
+
+  /**
+   * The context for this view, inherited from the anchor element.
+   */
+  abstract context: C;
+
 
   abstract get rootNodes(): any[];
   /**
@@ -83,12 +94,8 @@ export abstract class ViewRef implements Destroyable {
  * @publicApi
  */
 @Abstract()
-export abstract class EmbeddedViewRef<C> extends ViewRef {
-  /**
-   * The context for this view, inherited from the anchor element.
-   */
-  abstract context: C;
-
+export abstract class EmbeddedViewRef<C> extends ViewRef<C> {
+  
   /**
    * The root nodes for this embedded view.
    */
@@ -97,15 +104,11 @@ export abstract class EmbeddedViewRef<C> extends ViewRef {
   // 添加计算属性缓存
   abstract get computedCache(): Map<string, { value: any, deps: Set<any> }>;
 
+  abstract query<T>(selector: Type<T>): ComponentRef<T> | DirectiveRef<T> | null;
+  abstract query<C>(selector: string): ElementRef<C> | ViewRef<C> | TemplateRef<C> | null;
 
-  abstract registerNodeRef(id: string, node: RNode): void;
-
-  abstract getNodeRef(id: string): RNode | undefined;
-  
-
-  abstract query<T>(selector: string | Type<T>): T | null;
-
-  abstract queryAll<T>(selector: string | Type<T>): T[];
+  abstract queryAll<T>(selector: Type<T>): Array<ComponentRef<T> | DirectiveRef<T>>;
+  abstract queryAll<C>(selector: string): Array<ElementRef<C> | ViewRef<C> | TemplateRef<C>>;
 
 }
 

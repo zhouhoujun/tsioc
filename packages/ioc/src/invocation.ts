@@ -18,7 +18,7 @@ export type AsyncLike<T> = T | Promise<T> | Observable<T>;
  *
  * 用于执行操作调用的接口。
  */
-export abstract class Invocation<T = any, TRes = any> {
+export abstract class Invocation<T = any, TRes = any, TC extends InvocationContext = InvocationContext> {
     /**
      * the invoke type.
      */
@@ -45,7 +45,7 @@ export abstract class Invocation<T = any, TRes = any> {
      * 
      * 调用类方法的上下文环境
      */
-    abstract get context(): InvocationContext;
+    abstract get context(): TC;
 
     /**
      * Invoke the underlying operation using the given {@code context}.
@@ -61,7 +61,7 @@ export abstract class Invocation<T = any, TRes = any> {
      * Invoke the underlying operation using the given {@code context}.
      * @param context the context to use to invoke the operation
      */
-    abstract invoke(context: InvocationContext): TRes;
+    abstract invoke(context: TC): TRes;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param option invoke arguments.
@@ -77,7 +77,7 @@ export abstract class Invocation<T = any, TRes = any> {
      * @param method method name.
      * @param context the context to use to invoke the operation
      */
-    abstract invoke(method: MethodType<T>, context?: InvocationContext): TRes;
+    abstract invoke(method: MethodType<T>, context?: TC): TRes;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param method method name.

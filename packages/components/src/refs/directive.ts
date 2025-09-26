@@ -1,8 +1,9 @@
-import { Abstract, ClassRef, AbstractType, InvocationFactory, InvocationOptions, AbstractInvocation, Type, TypeDef, ModuleType, InvocationContext } from '@tsdi/ioc';
+import { Abstract, ClassRef, AbstractType, InvocationFactory, InvocationOptions, AbstractInvocation, TypeDef, ModuleType } from '@tsdi/ioc';
 import { AttributeMetadata } from '../decorators/atteribute';
 import { SchemaMetadata } from '../template/schema';
 import { ElementRef } from './element';
 import { NodeType } from '../renderer/Node';
+import { EnvironmentContext } from './environment';
 
 
 export const factoryKey = 'ƿfac';
@@ -21,7 +22,7 @@ export interface DirectiveDef<T = any> extends TypeDef<T> {
 }
 
 export interface Factoriable<T = any> {
-    ƿfac?: (ctx: InvocationContext, options: DirectiveOptions) => T;
+    ƿfac?: (ctx: EnvironmentContext, options: DirectiveOptions) => T;
 }
 
 
@@ -29,7 +30,7 @@ export interface Factoriable<T = any> {
  * DirectiveRef.
  */
 @Abstract()
-export abstract class DirectiveRef<T> extends AbstractInvocation<T, DirectiveOptions> {
+export abstract class DirectiveRef<T> extends AbstractInvocation<T, DirectiveOptions, EnvironmentContext> {
 
     /**
      * The host view defined by the template

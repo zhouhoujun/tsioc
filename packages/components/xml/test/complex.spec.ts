@@ -27,7 +27,7 @@ export class CTest {
         // 创建FieldComponent实例
         const complexRef = this.ctx.runners.getRef(ComplexComponent) as ComponentRef<ComplexComponent>;
 
-        const fieldComponent = complexRef.query(FieldComponet);
+        const fieldComponent = complexRef.hostView.query(FieldComponet)?.instance;
 
         expect(fieldComponent).toBeDefined();
         expect(fieldComponent!.fullName).toEqual('zhangsan (admin)');

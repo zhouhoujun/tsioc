@@ -1,4 +1,4 @@
-import { Abstract, Exception, InvocationContext, isObject } from '@tsdi/ioc';
+import { Abstract, Exception, isObject } from '@tsdi/ioc';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
 import { NodeType, RAttr, RElement, RNode, RText } from '../renderer/Node';
 import { ViewRef, EmbeddedViewRef } from '../refs/view';
@@ -7,9 +7,11 @@ import { TemplateParser } from '../template/parser';
 import { ComponentDef } from '../refs/component';
 import { COMPONENTS } from '../decorators/component';
 import { EventEmitter } from '../EventEmitter';
-import { ElementRef } from '../refs/element';
+import { createElementRef, ElementRef } from '../refs/element';
 import { DIRECTIVES } from '../decorators/directive';
 import { DirectiveDef, DirectiveRef, Factoriable } from '../refs/directive';
+import { createTemplateRef } from './template';
+import { EnvironmentContext } from '../refs/environment';
 
 
 
@@ -18,7 +20,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
     protected abstract get options(): TemplateCompilerOptions;
 
-    async compile(template: string, context: any, environment: InvocationContext): Promise<ViewRef> {
+    async compile(template: string, context: any, environment: EnvironmentContext): Promise<ViewRef> {
         // 使用模板解析器解析模板
         const nodes = environment.get(TemplateParser).parse(template, environment);
 
@@ -64,7 +66,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         return viewRef;
     }
 
-    private async walkNodes<C>(nodes: RNode[], context: C, viewRef: EmbeddedViewRef<C>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, environment: InvocationContext) {
+    private async walkNodes<C>(nodes: RNode[], context: C, viewRef: EmbeddedViewRef<C>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, environment: EnvironmentContext) {
         for (const node of nodes) {
             if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
                 this.processText(node as RText, context, viewRef, dirMap, environment);
@@ -77,13 +79,14 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
 
-    private processElement(el: RElement, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, environment: InvocationContext, isContainer?: boolean) {
+    private processElement(el: RElement, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, environment: EnvironmentContext, isContainer?: boolean) {
         // 处理属性
         attrs.forEach(({ name, value }) => {
-            if (name.startsWith('#')) {
-                const refId = name.substring(1);
-                viewRef.registerNodeRef(refId, el);
-            } else if (name.startsWith('@')) {
+            // if (name.startsWith('#')) {
+            //     const refId = name.substring(1);
+            //     viewRef.registerNodeRef(refId, el);
+            // } else 
+            if (name.startsWith('@')) {
                 // 事件绑定
                 const eventName = name.substring(1);
                 const handler = this.parseEventExpression(value, context, viewRef, environment);
@@ -116,7 +119,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         }
     }
 
-    private processText(node: RText, context: any, viewRef: EmbeddedViewRef<any>, dirMap: Map<RNode, DirectiveDef[]>, environment: InvocationContext) {
+    private processText(node: RText, context: any, viewRef: EmbeddedViewRef<any>, dirMap: Map<RNode, DirectiveDef[]>, environment: EnvironmentContext) {
         const text = node.textContent;
         if (!text) return;
 
@@ -159,7 +162,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
     // 修改 evaluateExpression 方法以正确处理模板上下文
-    private evaluateExpression(expr: string, context: any, viewRef: EmbeddedViewRef<any>, environment: InvocationContext): any {
+    private evaluateExpression(expr: string, context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext): any {
         try {
             // 检查是否为计算属性访问
             const isComputed = this.isComputedProperty(expr, context);
@@ -217,10 +220,17 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         }
     }
 
-    protected async processBindings(node: RNode, context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, environment: InvocationContext, processChild?: (node: any) => void) {
+    protected async processBindings(node: RNode, context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, environment: EnvironmentContext, processChild?: (node: any) => void) {
 
         const el = node as RElement;
 
+        const templateTag = this.options.templateTag || 'template';
+        if (el.tagName === templateTag) {
+            el.tagName = el.tagName.toLowerCase();
+            const templateRef = createTemplateRef(el.childNodes, createElementRef(el), context);
+            // viewRef.addEmbeddedView(templateRef);
+            return;
+        }
 
         const attrs = this.renderer.getAttributes(el);
         let isContainer = false;
@@ -271,7 +281,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
 
-    private async processComponent(el: RElement, componentDef: ComponentDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, environment: InvocationContext) {
+    private async processComponent(el: RElement, componentDef: ComponentDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext) {
 
         const elementRef = new ElementRef(el);
         const componentRef = (componentDef as Factoriable).ƿfac?.(environment, { elementRef });
@@ -340,7 +350,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
      * @param {any} environment
      * @memberof AbstractTemplateCompiler
      */
-    protected async processDirective(el: RElement, directive: DirectiveDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, environment: InvocationContext) {
+    protected async processDirective(el: RElement, directive: DirectiveDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext) {
         //提取指令名称和表达式
         const expr = attrs.find(a => a.name === directive.selector)?.value;
         const directiveName = directive.selector.startsWith('v-') ? directive.selector.slice(2) : directive.selector.slice(1);
@@ -421,7 +431,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
      * @returns {*}
      * @memberof AbstractTemplateCompiler
      */
-    protected createDirectiveRef(directive: DirectiveDef, element: RElement, environment: InvocationContext): DirectiveRef<any> | null {
+    protected createDirectiveRef(directive: DirectiveDef, element: RElement, environment: EnvironmentContext): DirectiveRef<any> | null {
         // 实际应用中需要使用注入器创建指令实例
         // 这里简化处理
         try {
@@ -437,7 +447,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
 
-    private parseEventExpression(expr: string, context: any, viewRef: EmbeddedViewRef<any>, environment: InvocationContext): EventListener {
+    private parseEventExpression(expr: string, context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext): EventListener {
         // 改进正则以支持带命名空间的函数名和复杂参数
         const funcCallRegex = /^\s*([_$a-zA-Z\w.]+)\s*\(\s*(.*?)\s*\)\s*$/;
         const match = expr.match(funcCallRegex);
@@ -471,7 +481,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                 const resolvedArgs = args.map(arg => {
                     if (arg === '$event') return event;
                     if (typeof arg === 'string') {
-                        return viewRef.getNodeRef(arg) ?? arg.split('.').reduce((obj, prop) => obj && obj[prop], context) ?? arg;
+                        return viewRef.query(`[#${arg}]`) ?? arg.split('.').reduce((obj, prop) => obj && obj[prop], context) ?? arg;
                     }
                     return arg;
                 });
@@ -481,7 +491,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
     // 解析参数列表，支持字符串、数字、布尔值和变量引用
-    private parseArguments(argsStr: string, context: any, viewRef: EmbeddedViewRef<any>, environment: InvocationContext): any[] {
+    private parseArguments(argsStr: string, context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext): any[] {
         if (!argsStr.trim()) return [];
 
         // 使用状态机解析参数，支持嵌套括号和引号
@@ -519,7 +529,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
     // 计算参数值 (字符串/数字/布尔值/变量引用)
-    private evaluateArg(arg: string, context: any, viewRef: EmbeddedViewRef<any>, environment: InvocationContext): any {
+    private evaluateArg(arg: string, context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext): any {
         if (!arg) return undefined;
 
         // 字符串字面量
@@ -552,7 +562,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         return !!Reflect.getMetadata('computed', context.constructor.prototype, propName);
     }
 
-    private evaluateComputedExpression(expr: string, context: any, viewRef: EmbeddedViewRef<any>, environment: InvocationContext): any {
+    private evaluateComputedExpression(expr: string, context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext): any {
         // 计算属性表达式求值
         return new Function('ctx', `with(ctx){return ${expr}}`)(context);
     }

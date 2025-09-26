@@ -1,8 +1,11 @@
 import { getDef, isString, Type } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
-import { ComponentDef } from '../refs/component';
-import { EmbeddedViewRef } from '../refs/view';
+import { ComponentDef, ComponentRef } from '../refs/component';
+import { EmbeddedViewRef, ViewRef } from '../refs/view';
 import { RNode } from '../renderer/Node';
+import { DirectiveRef } from '../refs/directive';
+import { ElementRef } from '../refs/element';
+import { TemplateRef } from '../refs/template';
 
 /**
  * Embedded view ref implement.
@@ -16,7 +19,7 @@ import { RNode } from '../renderer/Node';
 export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
     private _isDestroyed = false;
     private _destroyCallbacks: (() => void)[] = [];
-    private nodeRefs: Map<string, RNode> = new Map();
+    // private nodeRefs: Map<string, RNode> = new Map();
     readonly directives = new Set<any>();
     readonly components = new Set<any>();
     // 添加计算属性缓存
@@ -79,7 +82,7 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         }
 
         // 清理节点引用
-        this.nodeRefs.clear();
+        // this.nodeRefs.clear();
     }
 
     /**
@@ -95,29 +98,9 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         }
     }
 
-    /**
-     * Register node reference.
-     *
-     * @param {string} id
-     * @param {RNode} node
-     * @memberof EmbeddedViewRefImpl
-     */
-    registerNodeRef(id: string, node: RNode): void {
-        this.nodeRefs.set(id, node);
-    }
-
-    /**
-     * Get node reference by id.
-     *
-     * @param {string} id
-     * @returns {(RNode | undefined)}
-     * @memberof EmbeddedViewRefImpl
-     */
-    getNodeRef(id: string): RNode | undefined {
-        return this.nodeRefs.get(id);
-    }
-
-    query<T>(selector: string | Type<T>): T | null {
+    query<T>(selector: Type<T>): ComponentRef<T> | DirectiveRef<T> | null;
+    query<C>(selector: string): ElementRef<C> | ViewRef<C> | TemplateRef<C> | null;
+    query(selector: string | Type): any {
         const sel = isString(selector) ? selector : getDef<ComponentDef>(selector).selector;
         if (!sel) {
             return null;
@@ -125,18 +108,21 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         for (const r of this.rootNodes) {
             const node = r.querySelector(sel);
             if (node) {
-                return node as T;
+                return node;
             }
         }
         return null;
     }
 
-    queryAll<T>(selector: string | Type<T>): T[] {
+    
+    queryAll<T>(selector: Type<T>): Array<ComponentRef<T> | DirectiveRef<T>>;
+    queryAll<C>(selector: string): Array<ElementRef<C> | ViewRef<C> | TemplateRef<C>>;
+    queryAll(selector: string | Type): Array<any> {
         const sel = isString(selector) ? selector : getDef<ComponentDef>(selector).selector;
         if (!sel) {
             return [];
         }
-        return this.rootNodes.flatMap(r => r.querySelectorAll(sel) as T[]);
+        return this.rootNodes.flatMap(r => r.querySelectorAll(sel));
     }
 
 }

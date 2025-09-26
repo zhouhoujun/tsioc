@@ -1,6 +1,7 @@
-import { Abstract, InvocationContext } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 import { ElementRef } from './element';
 import { EmbeddedViewRef } from './view';
+import { EnvironmentContext } from './environment';
 
 
 /**
@@ -41,9 +42,9 @@ export abstract class TemplateRef<C = any> {
      * and attaches it to the view container.
      * @param context The data-binding context of the embedded view, as declared
      * in the `<template>` usage.
-     * @param environment InvocationContext to be used within the embedded view.
+     * @param environment EnvironmentContext to be used within the embedded view.
      * @returns The new embedded view object.
      */
-    abstract createEmbeddedView(context: C, environment?: InvocationContext): EmbeddedViewRef<C>;
+    abstract createEmbeddedView(context: C, environment?: EnvironmentContext): EmbeddedViewRef<C>;
 
 }

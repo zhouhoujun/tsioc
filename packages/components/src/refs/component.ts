@@ -1,28 +1,26 @@
-import { Abstract, ClassRef, AbstractType, InvocationFactory, InvocationOptions, AbstractInvocation, ProvdierOf, Type, InvocationContext } from '@tsdi/ioc';
+import { Abstract, ClassRef, AbstractType, InvocationFactory, InvocationOptions, AbstractInvocation, ProvdierOf } from '@tsdi/ioc';
 import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler';
-import { ViewRef } from './view';
+import { EmbeddedViewRef } from './view';
 import { DirectiveDef, factoryKey } from './directive';
+import { EnvironmentContext } from './environment';
 
 export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof factoryKey> {
     template?: any;
     templateUrl?: string;
-    ƿFac?: (ctx: InvocationContext, options: ComponentOptions) => ComponentRef<T>;
+    ƿFac?: (ctx: EnvironmentContext, options: ComponentOptions) => ComponentRef<T>;
 }
 
 /**
  * ComponentRef.
  */
 @Abstract()
-export abstract class ComponentRef<T> extends AbstractInvocation<T, ComponentOptions> {
+export abstract class ComponentRef<T> extends AbstractInvocation<T, ComponentOptions, EnvironmentContext> {
 
     /**
      * The host view defined by the template
      * for this component instance.
      */
-    abstract get hostView(): ViewRef;
-
-    abstract query<T>(selector: string | Type<T>): T | null;
-    abstract queryAll<T>(selector: string | Type<T>): T[];
+    abstract get hostView(): EmbeddedViewRef<T>;
 
     /**
      * render component.

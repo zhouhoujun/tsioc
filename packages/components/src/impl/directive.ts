@@ -1,12 +1,13 @@
 import {
     AbstractInvocationFactory, ClassRef, createInjector, Injectable,
-    Injector, InvocationContext, Platform, AbstractType, InvokeArguments
+    Injector, Platform, AbstractType, InvokeArguments
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { DirectiveOptions, DirectiveDef, DirectiveFactory, DirectiveRef } from '../refs/directive';
 import { reactive } from './reactive';
 import { OnDestroy } from '../lifecycle';
 import { ElementRef } from '../refs/element';
+import { EnvironmentContext } from '../refs/environment';
 
 
 export class DirectiveRefImpl<T> extends DirectiveRef<T> {
@@ -14,7 +15,7 @@ export class DirectiveRefImpl<T> extends DirectiveRef<T> {
     private _elementRef: ElementRef;
     constructor(
         _classRef: ClassRef<T>,
-        context: InvocationContext,
+        context: EnvironmentContext,
         options: DirectiveOptions) {
         super(_classRef, context, options);
         this._elementRef = options.elementRef!
@@ -38,7 +39,7 @@ export class DirectiveRefImpl<T> extends DirectiveRef<T> {
         super.clean();
     }
 
-    protected process(option?: InvocationContext | InvokeArguments, args?: any[]) {
+    protected process(option?: EnvironmentContext | InvokeArguments, args?: any[]) {
        
     }
 
@@ -69,7 +70,7 @@ export class DirectiveFactoryImpl extends AbstractInvocationFactory<DirectiveOpt
         return injector;
     }
 
-    protected override createInstance<T>(typeRef: ClassRef<T>, context: InvocationContext, options: DirectiveOptions): DirectiveRef<T> {
+    protected override createInstance<T>(typeRef: ClassRef<T>, context: EnvironmentContext, options: DirectiveOptions): DirectiveRef<T> {
         return new DirectiveRefImpl(typeRef, context, options);
     }
 

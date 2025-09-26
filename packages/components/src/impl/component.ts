@@ -8,6 +8,7 @@ import { TemplateCompiler } from '../template/compiler';
 import { reactive } from './reactive';
 import { AfterViewInit, OnInit, OnDestroy } from '../lifecycle';
 import { RootViewRef } from './view';
+import { EnvironmentContext } from '../refs/environment';
 
 
 export class ComponentRefImpl<T> extends ComponentRef<T> {
@@ -15,7 +16,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     private _hostView?: RootViewRef;
     constructor(
         _classRef: ClassRef<T>,
-        context: InvocationContext,
+        context: EnvironmentContext,
         options?: ComponentOptions) {
         super(_classRef, context, options);
     }
@@ -24,12 +25,12 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         return this._hostView!;
     }
 
-    query<T>(selector: string | Type<T>): T | null {
-        return this.hostView.query<T>(selector);
-    }
-    queryAll<T>(selector: string | Type<T>): T[] {
-        return this.hostView.queryAll(selector);
-    }
+    // query<T>(selector: string | Type<T>): T | null {
+    //     return this.hostView.query<T>(selector);
+    // }
+    // queryAll<T>(selector: string | Type<T>): T[] {
+    //     return this.hostView.queryAll(selector);
+    // }
 
     private _inst?: T;
     get instance(): T {
@@ -87,7 +88,7 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
         return injector;
     }
 
-    protected override createInstance<T>(typeRef: ClassRef<T>, context: InvocationContext, options?: ComponentOptions): ComponentRef<T> {
+    protected override createInstance<T>(typeRef: ClassRef<T>, context: EnvironmentContext, options?: ComponentOptions): ComponentRef<T> {
 
         return new ComponentRefImpl(typeRef, context, options);
     }
