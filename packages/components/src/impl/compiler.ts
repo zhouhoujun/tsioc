@@ -127,12 +127,10 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         const regex = new RegExp(`${open}(.*?)${close}`, 'g');
         const matches = text.matchAll(regex);
 
-
         const dirs = dirMap.get(node);
-        if (dirs?.some(d => d.name === 'text')) {
-
-            // this.processDirective(node, context, viewRef, dirs, environment);
-        }
+        dirs?.forEach(dir=> {
+            this.processDirective(node, dir, [], context, viewRef, environment);
+        });
 
 
         for (const match of matches) {
@@ -210,15 +208,15 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         }
     }
 
-    private handleSpecialAttribute(el: RElement, name: string, value: any) {
-        if (name === 'class') {
-            el.className = isObject(value)
-                ? Object.keys(value).filter(k => (value as any)[k]).join(' ')
-                : value;
-        } else if (name === 'style') {
-            el.style.setProperty(name, value);
-        }
-    }
+    // private handleSpecialAttribute(el: RNode, name: string, value: any) {
+    //     if (name === 'class') {
+    //         el.className = isObject(value)
+    //             ? Object.keys(value).filter(k => (value as any)[k]).join(' ')
+    //             : value;
+    //     } else if (name === 'style') {
+    //         el.style.setProperty(name, value);
+    //     }
+    // }
 
     protected async processBindings(node: RNode, context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, environment: EnvironmentContext, processChild?: (node: any) => void) {
 
@@ -315,11 +313,11 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                 if (inputDef) {
                     this.effect.run(() => {
                         const attValue = context[value];
-                        if (propName === 'class' || propName === 'style') {
-                            this.handleSpecialAttribute(el, propName, attValue);
-                        } else {
+                        // if (propName === 'class' || propName === 'style') {
+                        //     this.handleSpecialAttribute(el, propName, attValue);
+                        // } else {
                             componentRef.instance[inputDef.propertyKey] = attValue;
-                        }
+                        // }
                     });
                 }
             }
@@ -350,7 +348,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
      * @param {any} environment
      * @memberof AbstractTemplateCompiler
      */
-    protected async processDirective(el: RElement, directive: DirectiveDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext) {
+    protected async processDirective(el: RNode, directive: DirectiveDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext) {
         //提取指令名称和表达式
         const expr = attrs.find(a => a.name === directive.selector)?.value;
         const directiveName = directive.selector.startsWith('v-') ? directive.selector.slice(2) : directive.selector.slice(1);
@@ -394,11 +392,11 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                 if (inputDef) {
                     this.effect.run(() => {
                         const attValue = context[value];
-                        if (propName === 'class' || propName === 'style') {
-                            this.handleSpecialAttribute(el, propName, attValue);
-                        } else {
+                        // if (propName === 'class' || propName === 'style') {
+                        //     this.handleSpecialAttribute(el, propName, attValue);
+                        // } else {
                             directiveInstance[inputDef.propertyKey] = attValue;
-                        }
+                        // }
                     });
                 }
             }
@@ -426,17 +424,17 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
      *
      * @protected
      * @param {any} directive
-     * @param {RElement} element
+     * @param {RElement} node
      * @param {any} environment
      * @returns {*}
      * @memberof AbstractTemplateCompiler
      */
-    protected createDirectiveRef(directive: DirectiveDef, element: RElement, environment: EnvironmentContext): DirectiveRef<any> | null {
+    protected createDirectiveRef(directive: DirectiveDef, node: RNode, environment: EnvironmentContext): DirectiveRef<any> | null {
         // 实际应用中需要使用注入器创建指令实例
         // 这里简化处理
         try {
             // 从环境中获取必要的依赖
-            const elementRef = new ElementRef(element);
+            const elementRef = new ElementRef(node);
 
             // 创建指令实例并注入依赖
             return (directive as Factoriable).ƿfac?.(environment, { elementRef }) as DirectiveRef<any> ?? null;
