@@ -20,6 +20,15 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
     protected abstract get options(): TemplateCompilerOptions;
 
+    private _delimiter?: RegExp;
+    protected get delimiter() {
+        if (!this._delimiter) {
+            const [open, close] = this.options.delimiters || ['{{', '}}'];
+            this._delimiter = new RegExp(`${open}(.*?)${close}`, 'g');
+        }
+        return this._delimiter;
+    }
+
     async compile<C>(template: string, context: C, environment: EnvironmentContext): Promise<EmbeddedViewRef<C>> {
         // 使用模板解析器解析模板
         const nodes = environment.get(TemplateParser).parse(template, environment);
@@ -82,10 +91,6 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     private processElement(el: RElement, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, environment: EnvironmentContext, isContainer?: boolean) {
         // 处理属性
         attrs.forEach(({ name, value }) => {
-            // if (name.startsWith('#')) {
-            //     const refId = name.substring(1);
-            //     viewRef.registerNodeRef(refId, el);
-            // } else 
             if (name.startsWith('@')) {
                 // 事件绑定
                 const eventName = name.substring(1);
@@ -95,10 +100,14 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                 // 属性绑定
                 const propName = name.substring(1);
                 this.effect.run(() => {
-                    const attValue = context[value];
+                    const attValue = this.evaluateExpression(value, context, viewRef, environment);//context[value];
                     // 移除特殊属性处理，让指令来处理
                     el.setAttribute(propName, attValue);
                 });
+            } else if (this.delimiter.test(value)) {
+                this.evaluateDelimiterExpression(value, context, (updatedText) => {
+                    el.setAttribute(name, updatedText);
+                }, viewRef, environment);
             }
         });
 
@@ -120,26 +129,74 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
     private processText(node: RText, context: any, viewRef: EmbeddedViewRef<any>, dirMap: Map<RNode, DirectiveDef[]>, environment: EnvironmentContext) {
-        const text = node.textContent;
-        if (!text) return;
+        if (!node.textContent) return;
 
-        const [open, close] = this.options.delimiters || ['{{', '}}'];
-        const regex = new RegExp(`${open}(.*?)${close}`, 'g');
-        const matches = text.matchAll(regex);
+        // 处理插值表达式
+        this.evaluateDelimiterExpression(node.textContent, context, (updatedText) => {
+            node.textContent = updatedText;
+        }, viewRef, environment);
 
-        const dirs = dirMap.get(node);
-        dirs?.forEach(dir=> {
-            this.processDirective(node, dir, [], context, viewRef, environment);
+        // const text = node.textContent;
+        // const matches = text.matchAll(this.delimiter);
+        // const matchesArray = Array.from(matches);
+
+        // // 存储原始文本片段和表达式的映射
+        // const segments: (string | { expr: string, value: any })[] = [];
+        // let lastIndex = 0;
+
+        // // 将文本分割为静态和动态部分
+        // matchesArray.forEach(match => {
+        //     segments.push(text.slice(lastIndex, match.index));
+        //     segments.push({ expr: match[1].trim(), value: null });
+        //     lastIndex = match.index! + match[0].length;
+        // });
+        // segments.push(text.slice(lastIndex));
+
+        // // 为每个表达式创建响应式依赖
+        // segments.forEach(segment => {
+        //     if (typeof segment !== 'string') {
+        //         this.effect.run(() => {
+        //             segment.value = this.evaluateExpression(segment.expr, context, viewRef, environment);
+        //             // 只有在表达式值变化时才更新整个文本
+        //             const updatedText = segments.map(s =>
+        //                 typeof s === 'string' ? s : s.value
+        //             ).join('');
+        //             node.textContent = updatedText;
+        //         });
+        //     }
+        // });
+
+    }
+
+    private evaluateDelimiterExpression(text: string, context: any, complete:(res: string) => void, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext) {
+        const matches = text.matchAll(this.delimiter);
+        const matchesArray = Array.from(matches);
+
+        // 存储原始文本片段和表达式的映射
+        const segments: (string | { expr: string, value: any })[] = [];
+        let lastIndex = 0;
+
+        // 将文本分割为静态和动态部分
+        matchesArray.forEach(match => {
+            segments.push(text.slice(lastIndex, match.index));
+            segments.push({ expr: match[1].trim(), value: null });
+            lastIndex = match.index! + match[0].length;
         });
+        segments.push(text.slice(lastIndex));
 
-
-        for (const match of matches) {
-            const expr = match[1].trim();
-            this.effect.run(() => {
-                const value = this.evaluateExpression(expr, context, viewRef, environment);
-                node.textContent = text.replace(regex, value);
-            });
-        }
+        // 为每个表达式创建响应式依赖
+        segments.forEach(segment => {
+            if (typeof segment !== 'string') {
+                this.effect.run(() => {
+                    segment.value = this.evaluateExpression(segment.expr, context, viewRef, environment);
+                    // 只有在表达式值变化时才更新整个文本
+                    const updatedText = segments.map(s =>
+                        typeof s === 'string' ? s : s.value
+                    ).join('');
+                    complete(updatedText);
+                });
+            }
+        });
     }
 
 
@@ -316,7 +373,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                         // if (propName === 'class' || propName === 'style') {
                         //     this.handleSpecialAttribute(el, propName, attValue);
                         // } else {
-                            componentRef.instance[inputDef.propertyKey] = attValue;
+                        componentRef.instance[inputDef.propertyKey] = attValue;
                         // }
                     });
                 }
@@ -395,7 +452,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                         // if (propName === 'class' || propName === 'style') {
                         //     this.handleSpecialAttribute(el, propName, attValue);
                         // } else {
-                            directiveInstance[inputDef.propertyKey] = attValue;
+                        directiveInstance[inputDef.propertyKey] = attValue;
                         // }
                     });
                 }
@@ -567,7 +624,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
     private trackDependencies(expr: string, context: any, deps: Set<any>): void {
         // 实现依赖跟踪逻辑
-        // 这里需要解析表达式，找出所有依赖的响应式属性
+        // 解析表达式，找出所有依赖的响应式属性
         const dependencies = this.parseDependencies(expr);
         dependencies.forEach(dep => {
             deps.add(dep);

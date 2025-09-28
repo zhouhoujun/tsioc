@@ -111,4 +111,3 @@ export abstract class EmbeddedViewRef<C> extends ViewRef<C> {
   abstract queryAll<C>(selector: string): Array<ElementRef<C> | ViewRef<C> | TemplateRef<C>>;
 
 }
-
