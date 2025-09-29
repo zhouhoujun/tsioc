@@ -52,7 +52,14 @@ export class AppComponent2 implements OnInit {
 // }
 
 @Component({
-  selector: 'Field'
+  selector: 'Field',
+  template: `<p>
+        <span>{{label}}:</span><input v-model="value"/>
+    </p>
+    <p>
+      {{fullName}} / {{fullName1}}
+    </p>
+    `
 })
 export class FieldComponet {
 
@@ -70,19 +77,20 @@ export class FieldComponet {
     // getter: `{{this.user}} {{this.role}}`
     compute: (inst: FieldComponet) => `${inst.user} ${inst.role}`
   })
-  fullName1: string | undefined;
+  fullName1 = '';
 
-  @Attribute() label!: string;
-  @Attribute() value!: string;
+  @Attribute() label = '';
+  @Attribute() value =  '';
 
 }
 
 
 @Component({
-  selector: 'Text'
+  selector: 'Text',
+  template: '<span>{{text}}</span>'
 })
 export class TextComponet {
-  @Attribute() text!: string;
+  @Attribute() text = '';
 }
 
 
@@ -140,6 +148,10 @@ export class ExampleComponent implements OnInit, OnDestroy {
 // 添加专门用于测试的复杂组件
 @Component({
   selector: 'complex-component',
+  imports:[
+    FieldComponet,
+    TextComponet
+  ],
   template: `
     <div class="complex-container">
       <h2>{{ title }}</h2>

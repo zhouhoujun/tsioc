@@ -22,12 +22,17 @@ export class CTest {
 
 
 
-    @Test('should test computed properties in FieldComponent')
+    @Test('should test computed properties in AppComponent2')
     async testComputedProperties() {
         // 创建FieldComponent实例
-        const fieldComponent = this.ctx.runners.getRef(FieldComponet)?.instance;
+        const appCompRef = this.ctx.runners.getRef(AppComponent2) as ComponentRef<AppComponent2>;
+        const fieldComponent = appCompRef.hostView.query(FieldComponet)?.instance;
 
         expect(fieldComponent).toBeDefined();
+        if(!fieldComponent) {
+            throw new Error('FieldComponent not found');
+        }
+        
         expect(fieldComponent.fullName).toEqual('zhangsan (admin)');
         expect(fieldComponent.fullName1).toEqual('zhangsan admin');
 

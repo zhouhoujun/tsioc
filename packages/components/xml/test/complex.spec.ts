@@ -22,12 +22,14 @@ export class CTest {
 
 
 
-    @Test('should test computed properties in FieldComponent')
+    @Test('should test computed properties in ComplexComponent')
     async testComputedProperties() {
         // 创建FieldComponent实例
         const complexRef = this.ctx.runners.getRef(ComplexComponent) as ComponentRef<ComplexComponent>;
 
-        const fieldComponent = complexRef.hostView.query(FieldComponet)?.instance;
+        const fieldComponentRef = complexRef.hostView.query(FieldComponet);
+        expect(fieldComponentRef).toBeInstanceOf(ComponentRef);
+        const fieldComponent = fieldComponentRef?.instance;
 
         expect(fieldComponent).toBeDefined();
         expect(fieldComponent!.fullName).toEqual('zhangsan (admin)');

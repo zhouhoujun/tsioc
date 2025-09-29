@@ -3,6 +3,7 @@ import { TemplateCompiler, TemplateCompilerOptions } from '../template/compiler'
 import { EmbeddedViewRef } from './view';
 import { DirectiveDef, factoryKey } from './directive';
 import { EnvironmentContext } from './environment';
+import { ElementRef } from './element';
 
 export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof factoryKey> {
     template?: any;
@@ -15,6 +16,12 @@ export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof fact
  */
 @Abstract()
 export abstract class ComponentRef<T> extends AbstractInvocation<T, ComponentOptions, EnvironmentContext> {
+
+    /**
+     * The host view defined by the template
+     * for this component instance.
+     */
+    abstract get elementRef(): ElementRef;
 
     /**
      * The host view defined by the template
@@ -36,6 +43,7 @@ export abstract class ComponentRef<T> extends AbstractInvocation<T, ComponentOpt
  */
 export interface ComponentOptions extends TemplateCompilerOptions, InvocationOptions {
     compiler?: ProvdierOf<TemplateCompiler>;
+    elementRef?: ElementRef;
 }
 
 

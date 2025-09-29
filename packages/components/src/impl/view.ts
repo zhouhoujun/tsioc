@@ -2,9 +2,9 @@ import { getDef, isString, Type } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentDef, ComponentRef } from '../refs/component';
 import { EmbeddedViewRef, ViewRef } from '../refs/view';
-import { RNode } from '../renderer/Node';
-import { DirectiveRef } from '../refs/directive';
-import { ElementRef } from '../refs/element';
+import { NodeType, RNode } from '../renderer/Node';
+import { DirectiveDef, DirectiveRef } from '../refs/directive';
+import { createElementRef, ElementRef } from '../refs/element';
 import { TemplateRef } from '../refs/template';
 
 /**
@@ -19,9 +19,14 @@ import { TemplateRef } from '../refs/template';
 export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
     private _isDestroyed = false;
     private _destroyCallbacks: (() => void)[] = [];
-    // private nodeRefs: Map<string, RNode> = new Map();
-    readonly directives = new Set<any>();
-    readonly components = new Set<any>();
+
+    protected elementRefMap = new Map<RNode, ElementRef<any>>();
+    protected directiveRefMap = new Map<RNode, DirectiveRef<any>>();
+    protected componentRefMap = new Map<RNode, ComponentRef<any>>();
+    protected templateRefMap = new Map<RNode, TemplateRef<any>>();
+
+
+
     // 添加计算属性缓存
     readonly computedCache = new Map<string, { value: any, deps: Set<any> }>();
 
@@ -37,6 +42,25 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         public context: C,
         private effect: ReactiveEffect
     ) { }
+
+
+    bindComponentRef<T>(el: RNode, componentRef: ComponentRef<T>): void {
+        componentRef.elementRef && this.elementRefMap.set(el, componentRef.elementRef);
+        this.componentRefMap.set(el, componentRef);
+    }
+    bindDirectiveRef<T>(el: RNode, directiveRef: DirectiveRef<T>): void {
+        this.elementRefMap.set(el, directiveRef.elementRef);
+        this.directiveRefMap.set(el, directiveRef);
+    }
+    bindTemplateRef<T>(el: RNode, templateRef: TemplateRef<T>): void {
+        this.elementRefMap.set(el, templateRef.elementRef);
+        this.templateRefMap.set(el, templateRef);
+    }
+    bindingElementRef<T>(el: RNode, elementRef: ElementRef<T>): void {
+        this.elementRefMap.set(el, elementRef);
+    }
+
+
 
     /**
      * has destoryed or not.
@@ -61,16 +85,16 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         this._isDestroyed = true;
 
         // 清理指令和组件
-        this.directives.forEach(d => {
-            if (d.destroy) {
-                d.destroy();
-            }
-        });
-        this.components.forEach(c => {
-            if (c.destroy) {
-                c.destroy();
-            }
-        });
+        // this.directives.forEach(d => {
+        //     if (d.destroy) {
+        //         d.destroy();
+        //     }
+        // });
+        // this.components.forEach(c => {
+        //     if (c.destroy) {
+        //         c.destroy();
+        //     }
+        // });
 
         // 执行所有销毁回调
         this._destroyCallbacks.forEach(callback => callback());
@@ -101,28 +125,70 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
     query<T>(selector: Type<T>): ComponentRef<T> | DirectiveRef<T> | null;
     query<C>(selector: string): ElementRef<C> | ViewRef<C> | TemplateRef<C> | null;
     query(selector: string | Type): any {
-        const sel = isString(selector) ? selector : getDef<ComponentDef>(selector).selector;
+        let sel: string;
+        let def: ComponentDef | DirectiveDef | undefined;
+        if (isString(selector)) {
+            sel = selector
+        } else {
+            def = getDef(selector) as ComponentDef | DirectiveDef;
+            sel = def.selector;
+        }
         if (!sel) {
             return null;
         }
         for (const r of this.rootNodes) {
             const node = r.querySelector(sel);
             if (node) {
-                return node;
+                if (def) {
+                    if (def.nodeType === NodeType.Container) {
+                        return this.componentRefMap.get(node) ?? this.directiveRefMap.get(node) ?? null
+                    }
+                    return this.directiveRefMap.get(node) ?? null;
+                }
+
+                return this.templateRefMap.get(node) ?? this.getElementRef(node);
             }
         }
         return null;
+    }
+
+    protected getElementRef(node: RNode): ElementRef {
+        let elRef = this.elementRefMap.get(node);
+        if (!elRef) {
+            elRef = createElementRef(node);
+            this.elementRefMap.set(node, elRef);
+        }
+        return elRef;
+
     }
 
 
     queryAll<T>(selector: Type<T>): Array<ComponentRef<T> | DirectiveRef<T>>;
     queryAll<C>(selector: string): Array<ElementRef<C> | ViewRef<C> | TemplateRef<C>>;
     queryAll(selector: string | Type): Array<any> {
-        const sel = isString(selector) ? selector : getDef<ComponentDef>(selector).selector;
+        let sel: string;
+        let def: ComponentDef | DirectiveDef | undefined;
+        if (isString(selector)) {
+            sel = selector
+        } else {
+            def = getDef(selector) as ComponentDef | DirectiveDef;
+            sel = def.selector;
+        }
         if (!sel) {
             return [];
         }
-        return this.rootNodes.flatMap(r => r.querySelectorAll(sel));
+        return this.rootNodes.flatMap(r => r.querySelectorAll(sel))
+            .filter(n=> n !== null)
+            .map(node=> {
+                if (def && def.nodeType) {
+                    if (def.nodeType === NodeType.Container) {
+                        return this.componentRefMap.get(node) ?? this.directiveRefMap.get(node)
+                    }
+                    return this.directiveRefMap.get(node);
+                }
+
+                return this.templateRefMap.get(node) ?? this.getElementRef(node);
+            });
     }
 
 }

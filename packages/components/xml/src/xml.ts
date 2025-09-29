@@ -410,6 +410,7 @@ export class XmlTemplateCompiler extends AbstractTemplateCompiler {
         XmlRenderer,
         XmlTemplateParser,
         XmlTemplateCompiler,
+        { provide: Renderer, useClass: XmlRenderer, asDefault: true },
         { provide: TemplateParser, useClass: XmlTemplateParser, asDefault: true },
         { provide: TemplateCompiler, useClass: XmlTemplateCompiler, asDefault: true }
     ]

@@ -404,7 +404,8 @@ export class JsonTemplateCompiler extends AbstractTemplateCompiler {
         JsonRenderer,
         JsonTemplateParser,
         JsonTemplateCompiler,
-        { provide: TemplateParser, useClass:  JsonTemplateParser, asDefault: true },
+        { provide: Renderer, useClass: JsonRenderer, asDefault: true },
+        { provide: TemplateParser, useClass: JsonTemplateParser, asDefault: true },
         { provide: TemplateCompiler, useClass: JsonTemplateCompiler, asDefault: true }
     ]
 })

@@ -10,28 +10,29 @@ import { AfterViewInit, OnInit, OnDestroy } from '../lifecycle';
 import { createEmbeddedViewRef } from './view';
 import { EnvironmentContext } from '../refs/environment';
 import { EmbeddedViewRef } from '../refs/view';
+import { ElementRef } from '../refs/element';
 
 
 export class ComponentRefImpl<T> extends ComponentRef<T> {
+  
 
     private _hostView?: EmbeddedViewRef<T>;
+    private _elementRef?: ElementRef<any>;
     constructor(
         _classRef: ClassRef<T>,
         context: EnvironmentContext,
         options?: ComponentOptions) {
         super(_classRef, context, options);
+        this._elementRef = options?.elementRef;
+    }
+
+    get elementRef(): ElementRef<any> {
+        return this._elementRef!;    
     }
 
     get hostView(): EmbeddedViewRef<T> {
         return this._hostView!;
     }
-
-    // query<T>(selector: string | Type<T>): T | null {
-    //     return this.hostView.query<T>(selector);
-    // }
-    // queryAll<T>(selector: string | Type<T>): T[] {
-    //     return this.hostView.queryAll(selector);
-    // }
 
     private _inst?: T;
     get instance(): T {

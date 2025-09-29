@@ -1,5 +1,5 @@
 import { Abstract, Destroyable, Type } from '@tsdi/ioc';
-import { RNode } from '../renderer/Node';
+import { RElement, RNode } from '../renderer/Node';
 import { ComponentRef } from './component';
 import { DirectiveRef } from './directive';
 import { TemplateRef } from './template';
@@ -103,6 +103,10 @@ export abstract class EmbeddedViewRef<C> extends ViewRef<C> {
 
   // 添加计算属性缓存
   abstract get computedCache(): Map<string, { value: any, deps: Set<any> }>;
+
+  abstract bindComponentRef<T>(el: RNode, componentRef: ComponentRef<T>): void;
+  abstract bindDirectiveRef<T>(el: RNode, directiveRef: DirectiveRef<T>): void;
+  abstract bindTemplateRef<T>(el: RNode, templateRef: TemplateRef<T>): void;
 
   abstract query<T>(selector: Type<T>): ComponentRef<T> | DirectiveRef<T> | null;
   abstract query<C>(selector: string): ElementRef<C> | ViewRef<C> | TemplateRef<C> | null;

@@ -88,7 +88,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
 
-    private processElement(el: RElement, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, environment: EnvironmentContext, isContainer?: boolean) {
+    private async processElement(el: RElement, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, environment: EnvironmentContext, isContainer?: boolean) {
         // 处理属性
         attrs.forEach(({ name, value }) => {
             if (name.startsWith('@')) {
@@ -124,7 +124,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
         // 递归处理子节点
         if (!isContainer && el.childNodes.length > 0) {
-            this.walkNodes(el.childNodes, context, viewRef, compMap, dirMap, environment);
+           await this.walkNodes(el.childNodes, context, viewRef, compMap, dirMap, environment);
         }
     }
 
@@ -135,40 +135,9 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         this.evaluateDelimiterExpression(node.textContent, context, (updatedText) => {
             node.textContent = updatedText;
         }, viewRef, environment);
-
-        // const text = node.textContent;
-        // const matches = text.matchAll(this.delimiter);
-        // const matchesArray = Array.from(matches);
-
-        // // 存储原始文本片段和表达式的映射
-        // const segments: (string | { expr: string, value: any })[] = [];
-        // let lastIndex = 0;
-
-        // // 将文本分割为静态和动态部分
-        // matchesArray.forEach(match => {
-        //     segments.push(text.slice(lastIndex, match.index));
-        //     segments.push({ expr: match[1].trim(), value: null });
-        //     lastIndex = match.index! + match[0].length;
-        // });
-        // segments.push(text.slice(lastIndex));
-
-        // // 为每个表达式创建响应式依赖
-        // segments.forEach(segment => {
-        //     if (typeof segment !== 'string') {
-        //         this.effect.run(() => {
-        //             segment.value = this.evaluateExpression(segment.expr, context, viewRef, environment);
-        //             // 只有在表达式值变化时才更新整个文本
-        //             const updatedText = segments.map(s =>
-        //                 typeof s === 'string' ? s : s.value
-        //             ).join('');
-        //             node.textContent = updatedText;
-        //         });
-        //     }
-        // });
-
     }
 
-    private evaluateDelimiterExpression(text: string, context: any, complete:(res: string) => void, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext) {
+    private evaluateDelimiterExpression(text: string, context: any, update:(text: string) => void, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext) {
         const matches = text.matchAll(this.delimiter);
         const matchesArray = Array.from(matches);
 
@@ -193,7 +162,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                     const updatedText = segments.map(s =>
                         typeof s === 'string' ? s : s.value
                     ).join('');
-                    complete(updatedText);
+                    update(updatedText);
                 });
             }
         });
@@ -265,15 +234,6 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         }
     }
 
-    // private handleSpecialAttribute(el: RNode, name: string, value: any) {
-    //     if (name === 'class') {
-    //         el.className = isObject(value)
-    //             ? Object.keys(value).filter(k => (value as any)[k]).join(' ')
-    //             : value;
-    //     } else if (name === 'style') {
-    //         el.style.setProperty(name, value);
-    //     }
-    // }
 
     protected async processBindings(node: RNode, context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, environment: EnvironmentContext, processChild?: (node: any) => void) {
 
@@ -283,7 +243,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         if (el.tagName === templateTag) {
             el.tagName = el.tagName.toLowerCase();
             const templateRef = createTemplateRef(el.childNodes, createElementRef(el), context);
-            // viewRef.addEmbeddedView(templateRef);
+            viewRef.bindTemplateRef(el, templateRef);
             return;
         }
 
@@ -327,9 +287,9 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                 }
                 await this.processDirective(el, dirDef, attrs, context, viewRef, environment);
             }
-            this.processElement(el, attrs.filter(a => dirs.some(d => d.selector !== a.name)), context, viewRef, compMap, dirMap, environment, isContainer);
+            await this.processElement(el, attrs.filter(a => dirs.some(d => d.selector !== a.name)), context, viewRef, compMap, dirMap, environment, isContainer);
         } else {
-            this.processElement(el, attrs, context, viewRef, compMap, dirMap, environment, isContainer);
+            await this.processElement(el, attrs, context, viewRef, compMap, dirMap, environment, isContainer);
         }
 
 
@@ -337,10 +297,14 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
 
     private async processComponent(el: RElement, componentDef: ComponentDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext) {
-
         const elementRef = new ElementRef(el);
         const componentRef = (componentDef as Factoriable).ƿfac?.(environment, { elementRef });
-
+        
+        // 注册组件引用到视图
+        if (componentRef) {
+            viewRef.bindComponentRef(el, componentRef);
+        }
+        
         const attributes = componentDef?.attributes || [];
 
         // 解析组件属性绑定
@@ -392,7 +356,6 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
         // 渲染组件并替换当前节点
         await componentRef.render();
-
     }
 
     /**
@@ -413,10 +376,13 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         // 创建指令实例
         const directiveRef = this.createDirectiveRef(directive, el, environment);
         if (!directiveRef) throw new Exception(`directive ${directiveName} has not declaration!`);
+        if (directiveRef) {
+            viewRef.bindDirectiveRef(el, directiveRef);
+        }
         const attributes = directive.attributes ?? [];
         const directiveInstance = directiveRef.instance;
         // 设置指令值
-        if (directiveInstance && typeof directiveInstance.instance[directiveName] === 'function') {
+        if (directiveInstance && typeof directiveInstance[directiveName] === 'function') {
             directiveInstance[directiveName](expr);
         } else if (directiveInstance && directiveName in directiveInstance) {
             (directiveInstance as any)[directiveName] = expr;
