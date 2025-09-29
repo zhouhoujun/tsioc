@@ -37,7 +37,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     private _inst?: T;
     get instance(): T {
         if (!this._inst) {
-            this._inst = this.createInstance()
+            this._inst = this.createInstance();
         }
         return this._inst;
     }

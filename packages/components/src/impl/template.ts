@@ -5,8 +5,9 @@ import { ElementRef } from '../refs/element';
 import { NodeType, RNode, RText, RElement, RAttr, RComment } from '../renderer/Node';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { Renderer } from '../renderer/Renderer';
-import { EmbeddedViewRefImpl } from './view';
+import { createEmbeddedViewRef } from './view';
 import { reactive } from './reactive';
+import { EnvironmentContext } from '../refs/environment';
 
 /**
  * Template ref implement.
@@ -27,7 +28,7 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
     constructor(
         readonly rootNodes: RNode[],
         readonly elementRef: ElementRef,
-        private environment: InvocationContext
+        private environment: EnvironmentContext
     ) { }
 
     /**
@@ -35,10 +36,10 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
      * and attaches it to the view container.
      * @param context The data-binding context of the embedded view, as declared
      * in the `<template>` usage.
-     * @param environment InvocationContext to be used within the embedded view.
+     * @param environment EnvironmentContext to be used within the embedded view.
      * @returns The new embedded view object.
      */
-    createEmbeddedView(context: C, environment?: InvocationContext): EmbeddedViewRef<C> {
+    createEmbeddedView(context: C, environment?: EnvironmentContext): EmbeddedViewRef<C> {
         environment = environment || this.environment;
 
         const renderer = environment.get(Renderer);
@@ -55,7 +56,7 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
 
 
         // 创建嵌入式视图
-        const embeddedView = new EmbeddedViewRefImpl<C>(rootNodes, context, effect);
+        const embeddedView = createEmbeddedViewRef<C>(rootNodes, context, environment, effect);
 
         return embeddedView;
     }
@@ -89,6 +90,6 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
     }
 }
 
-export function createTemplateRef<C = any>(rootNodes: RNode[], elementRef: ElementRef, environment: InvocationContext): TemplateRef<C> {
+export function createTemplateRef<C = any>(rootNodes: RNode[], elementRef: ElementRef, environment: EnvironmentContext): TemplateRef<C> {
     return new TemplateRefImpl<C>(rootNodes, elementRef, environment);
 }

@@ -6,6 +6,7 @@ import { NodeType, RNode } from '../renderer/Node';
 import { DirectiveDef, DirectiveRef } from '../refs/directive';
 import { createElementRef, ElementRef } from '../refs/element';
 import { TemplateRef } from '../refs/template';
+import { EnvironmentContext } from '../refs/environment';
 
 /**
  * Embedded view ref implement.
@@ -26,7 +27,7 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
     protected templateRefMap = new Map<RNode, TemplateRef<any>>();
 
 
-
+    private effect: ReactiveEffect;
     // 添加计算属性缓存
     readonly computedCache = new Map<string, { value: any, deps: Set<any> }>();
 
@@ -38,12 +39,15 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
      * @memberof EmbeddedViewRefImpl
      */
     constructor(
-        public rootNodes: RNode[],
-        public context: C,
-        private effect: ReactiveEffect
-    ) { }
+        readonly rootNodes: RNode[],
+        readonly context: C,
+        readonly environment: EnvironmentContext,
+        effect?: ReactiveEffect
+    ) {
+        this.effect = effect ?? environment.get(ReactiveEffect);
+    }
 
-
+    //TODO use environment to get ComponentRef
     bindComponentRef<T>(el: RNode, componentRef: ComponentRef<T>): void {
         componentRef.elementRef && this.elementRefMap.set(el, componentRef.elementRef);
         this.componentRefMap.set(el, componentRef);
@@ -178,10 +182,11 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
             return [];
         }
         return this.rootNodes.flatMap(r => r.querySelectorAll(sel))
-            .filter(n=> n !== null)
-            .map(node=> {
+            .filter(n => n !== null)
+            .map(node => {
                 if (def && def.nodeType) {
                     if (def.nodeType === NodeType.Container) {
+
                         return this.componentRefMap.get(node) ?? this.directiveRefMap.get(node)
                     }
                     return this.directiveRefMap.get(node);
@@ -196,7 +201,7 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
 export function createEmbeddedViewRef<C>(
     rootNodes: RNode[],
     context: C,
-    effect: ReactiveEffect) {
-    return new EmbeddedViewRefImpl(rootNodes, context, effect)
+    environment: EnvironmentContext, effect?: ReactiveEffect) {
+    return new EmbeddedViewRefImpl(rootNodes, context, environment, effect)
 
 }

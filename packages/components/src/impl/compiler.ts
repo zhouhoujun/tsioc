@@ -33,7 +33,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         // 使用模板解析器解析模板
         const nodes = environment.get(TemplateParser).parse(template, environment);
 
-        const viewRef = createEmbeddedViewRef(nodes, context, this.effect);
+        const viewRef = createEmbeddedViewRef(nodes, context, environment, this.effect);
 
         const rootNodes = viewRef.rootNodes ?? [];
 
@@ -70,44 +70,44 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
 
         // 处理动态内容
-        await this.walkNodes(rootNodes, context, viewRef, compMap, dirMap, environment);
+        await this.walkNodes(rootNodes, context, viewRef, compMap, dirMap);
 
         return viewRef;
     }
 
-    private async walkNodes<C>(nodes: RNode[], context: C, viewRef: EmbeddedViewRef<C>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, environment: EnvironmentContext) {
+    private async walkNodes<C>(nodes: RNode[], context: C, viewRef: EmbeddedViewRef<C>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>) {
         for (const node of nodes) {
             if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
-                this.processText(node as RText, context, viewRef, dirMap, environment);
+                this.processText(node as RText, context, viewRef, dirMap);
             } else {
                 // ...解析模板逻辑...
-                await this.processBindings(node, context, viewRef, compMap, dirMap, environment);
+                await this.processBindings(node, context, viewRef, compMap, dirMap);
             }
         }
 
     }
 
 
-    private async processElement(el: RElement, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, environment: EnvironmentContext, isContainer?: boolean) {
+    private async processElement(el: RElement, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, isContainer?: boolean) {
         // 处理属性
         attrs.forEach(({ name, value }) => {
             if (name.startsWith('@')) {
                 // 事件绑定
                 const eventName = name.substring(1);
-                const handler = this.parseEventExpression(value, context, viewRef, environment);
+                const handler = this.parseEventExpression(value, context, viewRef);
                 el.addEventListener(eventName, handler);
             } else if (name.startsWith(':')) {
                 // 属性绑定
                 const propName = name.substring(1);
                 this.effect.run(() => {
-                    const attValue = this.evaluateExpression(value, context, viewRef, environment);//context[value];
+                    const attValue = this.evaluateExpression(value, context, viewRef);//context[value];
                     // 移除特殊属性处理，让指令来处理
                     el.setAttribute(propName, attValue);
                 });
             } else if (this.delimiter.test(value)) {
                 this.evaluateDelimiterExpression(value, context, (updatedText) => {
                     el.setAttribute(name, updatedText);
-                }, viewRef, environment);
+                }, viewRef);
             }
         });
 
@@ -124,22 +124,22 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
         // 递归处理子节点
         if (!isContainer && el.childNodes.length > 0) {
-            await this.walkNodes(el.childNodes, context, viewRef, compMap, dirMap, environment);
+            await this.walkNodes(el.childNodes, context, viewRef, compMap, dirMap);
         }
     }
 
-    private processText(node: RText, context: any, viewRef: EmbeddedViewRef<any>, dirMap: Map<RNode, DirectiveDef[]>, environment: EnvironmentContext) {
+    private processText(node: RText, context: any, viewRef: EmbeddedViewRef<any>, dirMap: Map<RNode, DirectiveDef[]>) {
         if (!node.textContent) return;
 
         // 处理插值表达式
         this.evaluateDelimiterExpression(node.textContent, context, (updatedText) => {
             node.textContent = updatedText;
-        }, viewRef, environment);
+        }, viewRef);
     }
 
 
 
-    protected async processBindings(node: RNode, context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, environment: EnvironmentContext, processChild?: (node: any) => void) {
+    protected async processBindings(node: RNode, context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, processChild?: (node: any) => void) {
 
         const el = node as RElement;
 
@@ -156,7 +156,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         const componentDef = compMap.get(el);
         if (componentDef) {
             isContainer = true;
-            await this.processComponent(el, componentDef, attrs, context, viewRef, environment);
+            await this.processComponent(el, componentDef, attrs, context, viewRef);
         }
 
         // // 获取并处理class和style属性作为指令
@@ -189,20 +189,20 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                 if (dirDef.nodeType && dirDef.nodeType & NodeType.Container) {
                     isContainer = true;
                 }
-                await this.processDirective(el, dirDef, attrs, context, viewRef, environment);
+                await this.processDirective(el, dirDef, attrs, context, viewRef);
             }
-            await this.processElement(el, attrs.filter(a => dirs.some(d => d.selector !== a.name)), context, viewRef, compMap, dirMap, environment, isContainer);
+            await this.processElement(el, attrs.filter(a => dirs.some(d => d.selector !== a.name)), context, viewRef, compMap, dirMap, isContainer);
         } else {
-            await this.processElement(el, attrs, context, viewRef, compMap, dirMap, environment, isContainer);
+            await this.processElement(el, attrs, context, viewRef, compMap, dirMap, isContainer);
         }
 
 
     }
 
 
-    private async processComponent(el: RElement, componentDef: ComponentDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext) {
+    private async processComponent(el: RElement, componentDef: ComponentDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
         const elementRef = new ElementRef(el);
-        const componentRef = (componentDef as Factoriable).ƿfac?.(environment, { elementRef });
+        const componentRef = (componentDef as Factoriable).ƿfac?.(viewRef.environment, { elementRef });
 
         // 注册组件引用到视图
         if (componentRef) {
@@ -221,7 +221,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                 if (inputDef) {
                     // 解析绑定表达式并创建响应式依赖
                     this.effect.run(() => {
-                        const handler = this.evaluateExpression(value, context, viewRef, environment);
+                        const handler = this.evaluateExpression(value, context, viewRef);
                         // 绑定事件处理函数
                         if (componentRef.instance[inputDef.propertyKey] instanceof EventEmitter) {
                             componentRef.instance[inputDef.propertyKey].subscribe(handler);
@@ -254,7 +254,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         attrs.forEach(({ name, value }) => {
             if (name.startsWith('@')) {
                 const eventName = name.substring(1);
-                events[eventName] = this.parseEventExpression(value, context, viewRef, environment);
+                events[eventName] = this.parseEventExpression(value, context, viewRef);
             }
         });
 
@@ -272,13 +272,13 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
      * @param {any} environment
      * @memberof AbstractTemplateCompiler
      */
-    protected async processDirective(el: RNode, directive: DirectiveDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext) {
+    protected async processDirective(el: RNode, directive: DirectiveDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
         //提取指令名称和表达式
         const expr = attrs.find(a => a.name === directive.selector)?.value;
         const directiveName = directive.selector.startsWith('v-') ? directive.selector.slice(2) : directive.selector.slice(1);
 
         // 创建指令实例
-        const directiveRef = this.createDirectiveRef(directive, el, environment);
+        const directiveRef = this.createDirectiveRef(directive, el, viewRef);
         if (!directiveRef) throw new Exception(`directive ${directiveName} has not declaration!`);
         if (directiveRef) {
             viewRef.bindDirectiveRef(el, directiveRef);
@@ -302,7 +302,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                 if (inputDef) {
                     // 解析绑定表达式并创建响应式依赖
                     this.effect.run(() => {
-                        const handler = this.evaluateExpression(value, context, viewRef, environment);
+                        const handler = this.evaluateExpression(value, context, viewRef);
                         // 绑定事件处理函数
                         if (directiveInstance[inputDef.propertyKey] instanceof EventEmitter) {
                             directiveInstance[inputDef.propertyKey].subscribe(handler);
@@ -335,7 +335,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         attrs.forEach(({ name, value }) => {
             if (name.startsWith('@')) {
                 const eventName = name.substring(1);
-                events[eventName] = this.parseEventExpression(value, context, viewRef, environment);
+                events[eventName] = this.parseEventExpression(value, context, viewRef);
             }
         });
 
@@ -356,21 +356,21 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
      * @returns {*}
      * @memberof AbstractTemplateCompiler
      */
-    protected createDirectiveRef(directive: DirectiveDef, node: RNode, environment: EnvironmentContext): DirectiveRef<any> | null {
+    protected createDirectiveRef(directive: DirectiveDef, node: RNode, viewRef: EmbeddedViewRef<any>): DirectiveRef<any> | null {
         // 实际应用中需要使用注入器创建指令实例
         // 这里简化处理
         try {
             // 从环境中获取必要的依赖
-            const elementRef = new ElementRef(node);
+            const elementRef = new ElementRef(node);            
             // 创建指令实例并注入依赖
-            return (directive as Factoriable).ƿfac?.(environment, { elementRef }) as DirectiveRef<any> ?? null;
+            return (directive as Factoriable).ƿfac?.(viewRef.environment, { elementRef }) as DirectiveRef<any> ?? null;
         } catch (err) {
             console.error('Failed to create directive instance:', err);
             return null;
         }
     }
 
-    private evaluateDelimiterExpression(text: string, context: any, update: (text: string) => void, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext) {
+    private evaluateDelimiterExpression(text: string, context: any, update: (text: string) => void, viewRef: EmbeddedViewRef<any>) {
         const matches = text.matchAll(this.delimiter);
         const matchesArray = Array.from(matches);
 
@@ -390,7 +390,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         segments.forEach(segment => {
             if (typeof segment !== 'string') {
                 this.effect.run(() => {
-                    segment.value = this.evaluateExpression(segment.expr, context, viewRef, environment);
+                    segment.value = this.evaluateExpression(segment.expr, context, viewRef);
                     // 只有在表达式值变化时才更新整个文本
                     const updatedText = segments.map(s =>
                         typeof s === 'string' ? s : s.value
@@ -419,7 +419,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
     // 修改 evaluateExpression 方法以正确处理模板上下文
-    private evaluateExpression(expr: string, context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext): any {
+    private evaluateExpression(expr: string, context: any, viewRef: EmbeddedViewRef<any>): any {
         try {
             // 检查是否为计算属性访问
             const isComputed = this.isComputedProperty(expr, context);
@@ -439,7 +439,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                     cacheEntry!.deps.clear();
 
                     // 计算新值
-                    const value = this.evaluateComputedExpression(expr, context, viewRef, environment);
+                    const value = this.evaluateComputedExpression(expr, context, viewRef);
                     cacheEntry!.value = value;
 
                     // 收集新依赖（这里需要实际实现依赖收集逻辑）
@@ -455,7 +455,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
             } else {
                 const [expression, ...pipeNames] = this.parsePipes(parts);
                 const pipes = pipeNames.reduce((obj, name) => {
-                    obj[name] = environment.get(name);
+                    obj[name] = viewRef.environment.get(name);
                     return obj;
                 }, {} as any);
                 // 将管道函数添加到执行上下文中
@@ -468,7 +468,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
 
-    private parseEventExpression(expr: string, context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext): EventListener {
+    private parseEventExpression(expr: string, context: any, viewRef: EmbeddedViewRef<any>): EventListener {
         // 改进正则以支持带命名空间的函数名和复杂参数
         const funcCallRegex = /^\s*([_$a-zA-Z\w.]+)\s*\(\s*(.*?)\s*\)\s*$/;
         const match = expr.match(funcCallRegex);
@@ -483,7 +483,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         }
 
         const [, funcPath, argsStr] = match;
-        const args = this.parseArguments(argsStr, context, viewRef, environment);
+        const args = this.parseArguments(argsStr, context, viewRef);
 
         return this.effect.run(() => {
             // 解析函数路径 (支持嵌套对象，如: user.service.handleClick)
@@ -512,7 +512,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     }
 
     // 解析参数列表，支持字符串、数字、布尔值和变量引用
-    private parseArguments(argsStr: string, context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext): any[] {
+    private parseArguments(argsStr: string, context: any, viewRef: EmbeddedViewRef<any>): any[] {
         if (!argsStr.trim()) return [];
 
         // 使用状态机解析参数，支持嵌套括号和引号
@@ -532,7 +532,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
                 parenDepth--;
                 currentArg += char;
             } else if (char === ',' && parenDepth === 0) {
-                args.push(this.evaluateArg(currentArg.trim(), context, viewRef, environment));
+                args.push(this.evaluateArg(currentArg.trim(), context, viewRef));
                 currentArg = '';
             } else if (char === '"' || char === '\'') {
                 quoteChar = char;
@@ -543,14 +543,14 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         }
 
         if (currentArg.trim()) {
-            args.push(this.evaluateArg(currentArg.trim(), context, viewRef, environment));
+            args.push(this.evaluateArg(currentArg.trim(), context, viewRef));
         }
 
         return args;
     }
 
     // 计算参数值 (字符串/数字/布尔值/变量引用)
-    private evaluateArg(arg: string, context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext): any {
+    private evaluateArg(arg: string, context: any, viewRef: EmbeddedViewRef<any>): any {
         if (!arg) return undefined;
 
         // 字符串字面量
@@ -574,7 +574,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         if (arg == '$event') return arg;
 
         // 复杂表达式，委托给evaluateExpression处理
-        return this.evaluateExpression(arg, context, viewRef, environment);
+        return this.evaluateExpression(arg, context, viewRef);
     }
 
     private isComputedProperty(expr: string, context: any): boolean {
@@ -583,7 +583,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         return !!Reflect.getMetadata('computed', context.constructor.prototype, propName);
     }
 
-    private evaluateComputedExpression(expr: string, context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext): any {
+    private evaluateComputedExpression(expr: string, context: any, viewRef: EmbeddedViewRef<any>): any {
         // 计算属性表达式求值
         return new Function('ctx', `with(ctx){return ${expr}}`)(context);
     }

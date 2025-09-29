@@ -5,6 +5,7 @@ import { DirectiveRef } from './directive';
 import { TemplateRef } from './template';
 import { ViewContainerRef } from './container';
 import { ElementRef } from './element';
+import { EnvironmentContext } from './environment';
 
 
 
@@ -100,6 +101,10 @@ export abstract class EmbeddedViewRef<C> extends ViewRef<C> {
    * The root nodes for this embedded view.
    */
   abstract get rootNodes(): any[];
+  /**
+   * The environment context for this view.
+   */
+  abstract get environment(): EnvironmentContext;
 
   // 添加计算属性缓存
   abstract get computedCache(): Map<string, { value: any, deps: Set<any> }>;
