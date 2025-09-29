@@ -124,7 +124,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
         // 递归处理子节点
         if (!isContainer && el.childNodes.length > 0) {
-           await this.walkNodes(el.childNodes, context, viewRef, compMap, dirMap, environment);
+            await this.walkNodes(el.childNodes, context, viewRef, compMap, dirMap, environment);
         }
     }
 
@@ -137,102 +137,6 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         }, viewRef, environment);
     }
 
-    private evaluateDelimiterExpression(text: string, context: any, update:(text: string) => void, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext) {
-        const matches = text.matchAll(this.delimiter);
-        const matchesArray = Array.from(matches);
-
-        // 存储原始文本片段和表达式的映射
-        const segments: (string | { expr: string, value: any })[] = [];
-        let lastIndex = 0;
-
-        // 将文本分割为静态和动态部分
-        matchesArray.forEach(match => {
-            segments.push(text.slice(lastIndex, match.index));
-            segments.push({ expr: match[1].trim(), value: null });
-            lastIndex = match.index! + match[0].length;
-        });
-        segments.push(text.slice(lastIndex));
-
-        // 为每个表达式创建响应式依赖
-        segments.forEach(segment => {
-            if (typeof segment !== 'string') {
-                this.effect.run(() => {
-                    segment.value = this.evaluateExpression(segment.expr, context, viewRef, environment);
-                    // 只有在表达式值变化时才更新整个文本
-                    const updatedText = segments.map(s =>
-                        typeof s === 'string' ? s : s.value
-                    ).join('');
-                    update(updatedText);
-                });
-            }
-        });
-    }
-
-
-
-    // 解析管道表达式转换为函数调用
-    private parsePipes(parts: string[]): string[] {
-        let result = parts[0];
-        const results: string[] = [];
-        for (let i = 1; i < parts.length; i++) {
-            const pipePart = parts[i];
-            const [pipeName, ...params] = pipePart.split(':').map(p => p.trim());
-            if (!pipeName) continue;
-            results.push(pipeName)
-            result = `pipes['${pipeName}'].transform(${result}${params.length ? ', ' + params.join(', ') : ''})`;
-        }
-        results.unshift(result);
-        return results;
-    }
-
-    // 修改 evaluateExpression 方法以正确处理模板上下文
-    private evaluateExpression(expr: string, context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext): any {
-        try {
-            // 检查是否为计算属性访问
-            const isComputed = this.isComputedProperty(expr, context);
-            if (isComputed) {
-                const cacheKey = `${context.constructor.name}-${expr}`;
-                let cacheEntry = viewRef.computedCache.get(cacheKey);
-
-                if (!cacheEntry) {
-                    // 创建新的缓存条目
-                    cacheEntry = { value: undefined, deps: new Set() };
-                    viewRef.computedCache.set(cacheKey, cacheEntry);
-                }
-
-                // 使用effect跟踪依赖并计算值
-                return this.effect.run(() => {
-                    // 清除旧依赖
-                    cacheEntry!.deps.clear();
-
-                    // 计算新值
-                    const value = this.evaluateComputedExpression(expr, context, viewRef, environment);
-                    cacheEntry!.value = value;
-
-                    // 收集新依赖（这里需要实际实现依赖收集逻辑）
-                    this.trackDependencies(expr, context, cacheEntry!.deps);
-
-                    return value;
-                });
-            }
-            const parts = expr.split('|').map(part => part.trim());
-            if (parts.length <= 1) {
-                // 简单表达式求值
-                return new Function('ctx', `with(ctx){return ${expr}}`)(context);
-            } else {
-                const [expression, ...pipeNames] = this.parsePipes(parts);
-                const pipes = pipeNames.reduce((obj, name) => {
-                    obj[name] = environment.get(name);
-                    return obj;
-                }, {} as any);
-                // 将管道函数添加到执行上下文中
-                return new Function('ctx', 'pipes', `with(ctx){return ${expression}}`)(context, pipes);
-            }
-        } catch (e) {
-            console.error(`Error evaluating expression: ${expr}`, e);
-            return '';
-        }
-    }
 
 
     protected async processBindings(node: RNode, context: any, viewRef: EmbeddedViewRef<any>, compMap: Map<RNode, ComponentDef>, dirMap: Map<RNode, DirectiveDef[]>, environment: EnvironmentContext, processChild?: (node: any) => void) {
@@ -299,12 +203,12 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
     private async processComponent(el: RElement, componentDef: ComponentDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext) {
         const elementRef = new ElementRef(el);
         const componentRef = (componentDef as Factoriable).ƿfac?.(environment, { elementRef });
-        
+
         // 注册组件引用到视图
         if (componentRef) {
             viewRef.bindComponentRef(el, componentRef);
         }
-        
+
         const attributes = componentDef?.attributes || [];
 
         // 解析组件属性绑定
@@ -458,12 +362,108 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         try {
             // 从环境中获取必要的依赖
             const elementRef = new ElementRef(node);
-
             // 创建指令实例并注入依赖
             return (directive as Factoriable).ƿfac?.(environment, { elementRef }) as DirectiveRef<any> ?? null;
         } catch (err) {
             console.error('Failed to create directive instance:', err);
             return null;
+        }
+    }
+
+    private evaluateDelimiterExpression(text: string, context: any, update: (text: string) => void, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext) {
+        const matches = text.matchAll(this.delimiter);
+        const matchesArray = Array.from(matches);
+
+        // 存储原始文本片段和表达式的映射
+        const segments: (string | { expr: string, value: any })[] = [];
+        let lastIndex = 0;
+
+        // 将文本分割为静态和动态部分
+        matchesArray.forEach(match => {
+            segments.push(text.slice(lastIndex, match.index));
+            segments.push({ expr: match[1].trim(), value: null });
+            lastIndex = match.index! + match[0].length;
+        });
+        segments.push(text.slice(lastIndex));
+
+        // 为每个表达式创建响应式依赖
+        segments.forEach(segment => {
+            if (typeof segment !== 'string') {
+                this.effect.run(() => {
+                    segment.value = this.evaluateExpression(segment.expr, context, viewRef, environment);
+                    // 只有在表达式值变化时才更新整个文本
+                    const updatedText = segments.map(s =>
+                        typeof s === 'string' ? s : s.value
+                    ).join('');
+                    update(updatedText);
+                });
+            }
+        });
+    }
+
+
+
+    // 解析管道表达式转换为函数调用
+    private parsePipes(parts: string[]): string[] {
+        let result = parts[0];
+        const results: string[] = [];
+        for (let i = 1; i < parts.length; i++) {
+            const pipePart = parts[i];
+            const [pipeName, ...params] = pipePart.split(':').map(p => p.trim());
+            if (!pipeName) continue;
+            results.push(pipeName)
+            result = `pipes['${pipeName}'].transform(${result}${params.length ? ', ' + params.join(', ') : ''})`;
+        }
+        results.unshift(result);
+        return results;
+    }
+
+    // 修改 evaluateExpression 方法以正确处理模板上下文
+    private evaluateExpression(expr: string, context: any, viewRef: EmbeddedViewRef<any>, environment: EnvironmentContext): any {
+        try {
+            // 检查是否为计算属性访问
+            const isComputed = this.isComputedProperty(expr, context);
+            if (isComputed) {
+                const cacheKey = `${context.constructor.name}-${expr}`;
+                let cacheEntry = viewRef.computedCache.get(cacheKey);
+
+                if (!cacheEntry) {
+                    // 创建新的缓存条目
+                    cacheEntry = { value: undefined, deps: new Set() };
+                    viewRef.computedCache.set(cacheKey, cacheEntry);
+                }
+
+                // 使用effect跟踪依赖并计算值
+                return this.effect.run(() => {
+                    // 清除旧依赖
+                    cacheEntry!.deps.clear();
+
+                    // 计算新值
+                    const value = this.evaluateComputedExpression(expr, context, viewRef, environment);
+                    cacheEntry!.value = value;
+
+                    // 收集新依赖（这里需要实际实现依赖收集逻辑）
+                    this.trackDependencies(expr, context, cacheEntry!.deps);
+
+                    return value;
+                });
+            }
+            const parts = expr.split('|').map(part => part.trim());
+            if (parts.length <= 1) {
+                // 简单表达式求值
+                return new Function('ctx', `with(ctx){return ${expr}}`)(context);
+            } else {
+                const [expression, ...pipeNames] = this.parsePipes(parts);
+                const pipes = pipeNames.reduce((obj, name) => {
+                    obj[name] = environment.get(name);
+                    return obj;
+                }, {} as any);
+                // 将管道函数添加到执行上下文中
+                return new Function('ctx', 'pipes', `with(ctx){return ${expression}}`)(context, pipes);
+            }
+        } catch (e) {
+            console.error(`Error evaluating expression: ${expr}`, e);
+            return '';
         }
     }
 
