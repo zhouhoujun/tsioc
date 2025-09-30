@@ -1,20 +1,20 @@
 import {
     AbstractInvocationFactory, ClassRef, createInjector, Exception, Injectable,
-    Injector, InvocationContext, Platform, AbstractType, Provider, toProvider, Type
+    Injector, Platform, AbstractType, Provider, toProvider
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentOptions, ComponentRef, ComponentFactory, ComponentDef } from '../refs/component';
 import { TemplateCompiler } from '../template/compiler';
 import { reactive } from './reactive';
 import { AfterViewInit, OnInit, OnDestroy } from '../lifecycle';
-import { createEmbeddedViewRef } from './view';
 import { EnvironmentContext } from '../refs/environment';
 import { EmbeddedViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
+import { Renderer } from '../renderer/Renderer';
 
 
 export class ComponentRefImpl<T> extends ComponentRef<T> {
-  
+
 
     private _hostView?: EmbeddedViewRef<T>;
     private _elementRef?: ElementRef<any>;
@@ -27,7 +27,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     }
 
     get elementRef(): ElementRef<any> {
-        return this._elementRef!;    
+        return this._elementRef!;
     }
 
     get hostView(): EmbeddedViewRef<T> {
@@ -91,14 +91,26 @@ export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOpt
     }
 
     protected override createInstance<T>(typeRef: ClassRef<T>, context: EnvironmentContext, options?: ComponentOptions): ComponentRef<T> {
-
         return new ComponentRefImpl(typeRef, context, options);
     }
 
-    protected override normalize(providers: Provider[], options?: ComponentOptions) {
+
+    protected override mergeProviders<T>(typeRef: ClassRef<T>, options?: ComponentOptions): Provider[] {
+        const providers = super.mergeProviders(typeRef, options);
         if (options?.compiler) {
             providers.push(toProvider(TemplateCompiler, options.compiler));
         }
+        if (options?.renderer) {
+            providers.push(toProvider(Renderer, options.renderer));
+        }
+        if (options?.elementRef) {
+            providers.push({ provide: ElementRef, useValue: options.elementRef });
+        }
+        return providers;
+    }
+
+    protected override createContext<T>(typeRef: ClassRef<T>, injector: Injector, options: ComponentOptions): EnvironmentContext {
+        return new EnvironmentContext(injector, options, typeRef.type);
     }
 
     override create<T>(type: AbstractType<T> | ClassRef<T>, options?: ComponentOptions): ComponentRef<T> {

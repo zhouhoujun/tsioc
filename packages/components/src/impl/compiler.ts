@@ -7,7 +7,6 @@ import { TemplateParser } from '../template/parser';
 import { ComponentDef } from '../refs/component';
 import { COMPONENTS } from '../decorators/component';
 import { EventEmitter } from '../EventEmitter';
-import { createElementRef, ElementRef } from '../refs/element';
 import { DIRECTIVES } from '../decorators/directive';
 import { DirectiveDef, DirectiveRef, Factoriable } from '../refs/directive';
 import { createTemplateRef } from './template';
@@ -146,8 +145,8 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         const templateTag = this.options.templateTag || 'template';
         if (el.tagName === templateTag) {
             el.tagName = el.tagName.toLowerCase();
-            const templateRef = createTemplateRef(el.childNodes, createElementRef(el), context);
-            viewRef.bindTemplateRef(el, templateRef);
+            const templateRef = createTemplateRef(el.childNodes, viewRef.environment.getElementRef(el), viewRef.environment);
+            viewRef.environment.attachTemplate(templateRef);
             return;
         }
 
@@ -201,12 +200,12 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
 
 
     private async processComponent(el: RElement, componentDef: ComponentDef, attrs: RAttr[], context: any, viewRef: EmbeddedViewRef<any>) {
-        const elementRef = new ElementRef(el);
+        const elementRef = viewRef.environment.getElementRef(el);
         const componentRef = (componentDef as Factoriable).ƿfac?.(viewRef.environment, { elementRef });
 
         // 注册组件引用到视图
         if (componentRef) {
-            viewRef.bindComponentRef(el, componentRef);
+            viewRef.environment.attachComponent(componentRef);
         }
 
         const attributes = componentDef?.attributes || [];
@@ -281,7 +280,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         const directiveRef = this.createDirectiveRef(directive, el, viewRef);
         if (!directiveRef) throw new Exception(`directive ${directiveName} has not declaration!`);
         if (directiveRef) {
-            viewRef.bindDirectiveRef(el, directiveRef);
+            viewRef.environment.attachDirective(directiveRef);
         }
         const attributes = directive.attributes ?? [];
         const directiveInstance = directiveRef.instance;
@@ -361,7 +360,7 @@ export abstract class AbstractTemplateCompiler extends TemplateCompiler {
         // 这里简化处理
         try {
             // 从环境中获取必要的依赖
-            const elementRef = new ElementRef(node);            
+            const elementRef = viewRef.environment.getElementRef(node);
             // 创建指令实例并注入依赖
             return (directive as Factoriable).ƿfac?.(viewRef.environment, { elementRef }) as DirectiveRef<any> ?? null;
         } catch (err) {

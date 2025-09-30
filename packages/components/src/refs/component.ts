@@ -4,6 +4,7 @@ import { EmbeddedViewRef } from './view';
 import { DirectiveDef, factoryKey } from './directive';
 import { EnvironmentContext } from './environment';
 import { ElementRef } from './element';
+import { Renderer } from '../renderer/Renderer';
 
 export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof factoryKey> {
     template?: any;
@@ -43,6 +44,7 @@ export abstract class ComponentRef<T> extends AbstractInvocation<T, ComponentOpt
  */
 export interface ComponentOptions extends TemplateCompilerOptions, InvocationOptions {
     compiler?: ProvdierOf<TemplateCompiler>;
+    renderer?: ProvdierOf<Renderer>;
     elementRef?: ElementRef;
 }
 

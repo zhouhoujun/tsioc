@@ -1,6 +1,7 @@
 import {
     AbstractInvocationFactory, ClassRef, createInjector, Injectable,
-    Injector, Platform, AbstractType, InvokeArguments
+    Injector, Platform, AbstractType, InvokeArguments,
+    Provider
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { DirectiveOptions, DirectiveDef, DirectiveFactory, DirectiveRef } from '../refs/directive';
@@ -8,6 +9,7 @@ import { reactive } from './reactive';
 import { OnDestroy } from '../lifecycle';
 import { ElementRef } from '../refs/element';
 import { EnvironmentContext } from '../refs/environment';
+import { TemplateCompiler } from '../template/compiler';
 
 
 export class DirectiveRefImpl<T> extends DirectiveRef<T> {
@@ -40,7 +42,7 @@ export class DirectiveRefImpl<T> extends DirectiveRef<T> {
     }
 
     protected process(option?: EnvironmentContext | InvokeArguments, args?: any[]) {
-       
+
     }
 
     protected override createInstance(): T {
@@ -68,6 +70,19 @@ export class DirectiveFactoryImpl extends AbstractInvocationFactory<DirectiveOpt
             injector.use(def.imports);
         }
         return injector;
+    }
+
+
+    protected override mergeProviders<T>(typeRef: ClassRef<T>, options?: DirectiveOptions): Provider[] {
+        const providers = super.mergeProviders(typeRef, options);
+        if (options?.elementRef) {
+            providers.push({ provide: ElementRef, useValue: options.elementRef });
+        }
+        return providers;
+    }
+
+    protected override createContext<T>(typeRef: ClassRef<T>, injector: Injector, options: DirectiveOptions): EnvironmentContext {
+        return new EnvironmentContext(injector, options, typeRef.type);
     }
 
     protected override createInstance<T>(typeRef: ClassRef<T>, context: EnvironmentContext, options: DirectiveOptions): DirectiveRef<T> {

@@ -36,20 +36,26 @@ export const Component: ComponentDecorator = createDecorator<Partial<ComponentDe
     design: {
         afterAnnoation: (ctx) => {
             const typeRef = ctx.classRef;
-            const injector = ctx.injector;
             const def = typeRef.getAnnotation<ComponentDef>() as ComponentDef & Factoriable;
             if (!def.selector) def.selector = typeRef.className;
-            const selectors = def.selector.split(',');
 
             if (!def[factoryKey]) {
                 def[factoryKey] = (ctx: InvocationContext, options: ComponentOptions) => {
                     return typeRef.createInvocation(ctx.injector, options) as ComponentRef<any>
                 }
             }
-            if (selectors.some(r => dir$.test(r))) {
-                ctx.injector.inject({ provide: DIRECTIVES, useValue: def, multi: true });
-            }
-            if (selectors.some(r => !dir$.test(r))) {
+
+            if (dir$.test(def.selector)) {
+                const selectors = def.selector.split(',');
+                const dirSelector = selectors.filter(r => dir$.test(r)).join(',');
+                const compSelector = selectors.filter(r => !dir$.test(r)).join(',');
+                if (dirSelector) {
+                    ctx.injector.inject({ provide: DIRECTIVES, useValue: { ...def, selector: dirSelector }, multi: true });
+                }
+                if (compSelector) {
+                    ctx.injector.inject({ provide: COMPONENTS, useValue: { ...def, selector: compSelector }, multi: true });
+                }
+            } else {
                 ctx.injector.inject({ provide: COMPONENTS, useValue: def, multi: true });
             }
         }

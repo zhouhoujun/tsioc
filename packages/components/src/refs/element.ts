@@ -38,7 +38,3 @@ export class ElementRef<T = any> {
     }
 
 }
-
-export function createElementRef<T = any>(nativeElement: T): ElementRef<T> {
-    return new ElementRef(nativeElement);
-}

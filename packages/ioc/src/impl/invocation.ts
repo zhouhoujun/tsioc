@@ -1,4 +1,4 @@
-import { AbstractType } from '../types';
+import { AbstractType, TypeOf } from '../types';
 import { createContext, hasContextOptions, InvocationContext, InvocationOptions, InvokeArguments } from '../context';
 import { Invocation, InvocationFactory } from '../invocation';
 import { getType, isArray, isFunction, isPromise, isString, isSymbol } from '../utils/chk';
@@ -12,6 +12,7 @@ import { composeHandlers } from '../handler';
 import { getClassify } from '../metadata/refl';
 import { Platform } from '../platform';
 import { Provider } from '../providers';
+import { ResolveInterceptorLike } from '../resolver';
 
 /**
  * abstract invocation 
@@ -332,32 +333,42 @@ export abstract class AbstractInvocationFactory<TOpts extends InvocationOptions 
 
     create<T>(type: AbstractType<T> | ClassRef<T>, options?: TOpts): Invocation<T> {
         const cls = getClassify(type);
-        const context = this.createContext(cls, options);
+        const resolvers = this.mergeResolvers(cls, options);
+        const providers = this.mergeProviders(cls, options);
+        const context = this.createContext(cls, this.getInjector(cls, options), {
+            ...options,
+            providers,
+            resolvers,
+            targetType: cls.type
+        } as TOpts);
         return this.createInstance(cls, context, options);
     }
 
     protected abstract createInstance<T>(typeRef: ClassRef<T>, context: InvocationContext, options?: TOpts): Invocation<T>;
 
-    protected createContext<T>(typeRef: ClassRef<T>, options?: TOpts): InvocationContext {
+    protected createContext<T>(typeRef: ClassRef<T>, injector: Injector, options: TOpts): InvocationContext {
+        return createContext(injector, options, typeRef.type);
+    }
+    protected mergeProviders<T>(typeRef: ClassRef<T>, options?: TOpts): Provider[] {
+        const providers: Provider[] = [];
+        const typeProviders = this.platform.getTypeProvider(typeRef);
+        if (typeProviders) {
+            providers.push(...typeProviders);
+        }
+        if (options?.providers) {
+            providers.push(...options.providers);
+        }
+        return providers;
+    }
+
+    protected mergeResolvers<T>(typeRef: ClassRef<T>, options?: TOpts): TypeOf<ResolveInterceptorLike>[] {
         let resolvers = options?.resolvers;
         if (resolvers) {
             if (typeRef.resolvers) resolvers = resolvers.concat(typeRef.resolvers)
         } else {
-            resolvers = typeRef.resolvers;
+            resolvers = typeRef.resolvers.slice(0);
         }
-        const providers = [this.platform.getTypeProvider(typeRef) ?? [], options?.providers ?? []];
-        this.normalize(providers, options);
-        return createContext(this.getInjector(typeRef, options), {
-            ...options,
-            providers,
-            resolvers,
-            targetType: typeRef.type
-        }, typeRef.type);
-
-    }
-
-    protected normalize(providers: Provider[], options?: TOpts) {
-
+        return resolvers;
     }
 
     protected getInjector<T>(typeRef: ClassRef<T>, options?: TOpts): Injector {
