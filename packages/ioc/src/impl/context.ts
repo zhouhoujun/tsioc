@@ -83,6 +83,11 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
         this.targetType = options.targetType;
         this.propertyKey = options.propertyKey;
         injector.onDestroy(this);
+        this.afterInit();
+    }
+
+    protected afterInit(): void {
+
     }
 
     protected initRequest(options: TargetInvokeArguments) {

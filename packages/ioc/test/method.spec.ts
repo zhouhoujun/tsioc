@@ -1,4 +1,4 @@
-import { Inject, Autowired, Injectable, isFunction, Container, Providers, getClassRef, InvocationFactory } from '../src';
+import { Inject, Autowired, Injectable, isFunction, Container, Providers, getClassRef, InvocationFactory, createInjector } from '../src';
 import expect = require('expect');
 // import { AnnotationAspect } from './aop/AnnotationAspect';
 // import { CheckRightAspect } from './aop/CheckRightAspect';
@@ -76,7 +76,7 @@ describe('method exec test', () => {
 
     let container: Container;
     beforeEach(() => {
-        container = Container.create();
+        container = createInjector();
     });
 
     it('show has prop metadata', () => {

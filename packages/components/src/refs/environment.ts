@@ -5,6 +5,26 @@ import { RNode } from '../renderer/Node';
 import { DirectiveRef } from './directive';
 import { ComponentRef } from './component';
 
+
+export class EnvironmentState {
+
+    // 私有属性用于存储引用映射
+    readonly componentRefs: Map<RNode, ComponentRef<any>> = new Map();
+    readonly directiveRefs: Map<RNode, DirectiveRef<any>[]> = new Map();
+    readonly templateRefs: Map<RNode, TemplateRef<any>> = new Map();
+    readonly elementRefs: Map<RNode, ElementRef<any>> = new Map();
+    /** computed cache. */
+    readonly computedCache: Map<string, { value: any, deps: Set<any> }> = new Map();
+
+    clear() {
+        this.componentRefs.clear();        
+        this.directiveRefs.clear();
+        this.templateRefs.clear();
+        this.computedCache.clear();
+    }
+
+}
+
 /**
  * Environment context
  */
@@ -12,10 +32,21 @@ import { ComponentRef } from './component';
 export class EnvironmentContext extends DefaultInvocationContext {
 
     // 私有属性用于存储引用映射
-    private _componentRefs: Map<RNode, ComponentRef<any>> = new Map();
-    private _directiveRefs: Map<RNode, DirectiveRef<any>[]> = new Map();
-    private _templateRefs: Map<RNode, TemplateRef<any>> = new Map();
-    private _elementRefs: Map<RNode, ElementRef<any>> = new Map();
+    private state = new EnvironmentState();
+
+
+    protected override afterInit(): void {
+        this.injector.setValue(EnvironmentState, this.state);
+    }
+
+    // /**
+    //  * get computed cache.
+    //  */
+    // getComputed(key: string): Map<string, { value: any, deps: Set<any> }> {
+       
+    // }
+
+
 
     /**
      * attach component ref to element.

@@ -1,4 +1,4 @@
-import { Autowired, Injectable, Param, Inject, Singleton, Container, getToken } from '../src';
+import { Autowired, Injectable, Param, Inject, Singleton, Container, getToken, createInjector } from '../src';
 import { SimppleAutoWried, ClassRoom, MClassRoom, CollegeClassRoom, MiddleSchoolStudent, CollegeStudent, Student, InjMClassRoom, InjCollegeClassRoom, InjCollegeAliasClassRoom, StingMClassRoom, StringIdTest, SymbolIdest, SymbolCollegeClassRoom } from './debug';
 import expect = require('expect');
 
@@ -6,7 +6,7 @@ describe('custom register test', () => {
 
     let container: Container;
     beforeEach(async () => {
-        container = Container.create();
+        container = createInjector();
         container.setValue(Date, new Date());
     });
 
