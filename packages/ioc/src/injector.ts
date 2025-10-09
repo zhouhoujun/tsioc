@@ -221,55 +221,55 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @returns {this} this self.
      */
     abstract unregister<T>(token: Token<T>): this;
-    // /**
-    //  * invoke method.
-    //  * 
-    //  * 调用类方法
-    //  * @deprecated  use `ReflectiveRef` instead.
-    //  * @template T
-    //  * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance.
-    //  * @param {MethodType} propertyKey method name.
-    //  * @param {T} [instance] instance of target type.
-    //  * @param {...Provider[]} providers ...params of {@link Provider}.
-    //  * @returns {TR} the returnning of invoked method.
-    //  */
-    // abstract invoke<T, TR = any>(target: T | AbstractType<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
-    // /**
-    //  * invoke method.
-    //  *
-    //  * 调用类方法
-    //  * @deprecated  use `ReflectiveRef` instead.
-    //  * @template T
-    //  * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance.
-    //  * @param {MethodType} propertyKey method name.
-    //  * @param {Provider[]} providers array of {@link Provider}.
-    //  * @returns {TR} the returnning of invoked method.
-    //  */
-    // abstract invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, providers: Provider[]): TR;
-    // /**
-    //  * invoke method.
-    //  *
-    //  * 调用类方法
-    //  * @deprecated  use `ReflectiveRef` instead.
-    //  * @template T
-    //  * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance.
-    //  * @param {MethodType} propertyKey method name.
-    //  * @param {InvokeOptions} option ivacation arguments, type of {@link InvokeOptions}.
-    //  * @returns {TR} the returnning of invoked method.
-    //  */
-    // abstract invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
-    // /**
-    //  * invoke method.
-    //  * 
-    //  * 调用类方法
-    //  * @deprecated  use `ReflectiveRef` instead.
-    //  * @template T
-    //  * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance
-    //  * @param {MethodType} propertyKey method name.
-    //  * @param {InvocationContext} context ivacation context.
-    //  * @returns {TR} the returnning of invoked method.
-    //  */
-    // abstract invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
+    /**
+     * invoke method.
+     * 
+     * 调用类方法
+     * @deprecated  use `ReflectiveRef` instead.
+     * @template T
+     * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance.
+     * @param {MethodType} propertyKey method name.
+     * @param {T} [instance] instance of target type.
+     * @param {...Provider[]} providers ...params of {@link Provider}.
+     * @returns {TR} the returnning of invoked method.
+     */
+    abstract invoke<T, TR = any>(target: T | AbstractType<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
+    /**
+     * invoke method.
+     *
+     * 调用类方法
+     * @deprecated  use `ReflectiveRef` instead.
+     * @template T
+     * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance.
+     * @param {MethodType} propertyKey method name.
+     * @param {Provider[]} providers array of {@link Provider}.
+     * @returns {TR} the returnning of invoked method.
+     */
+    abstract invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, providers: Provider[]): TR;
+    /**
+     * invoke method.
+     *
+     * 调用类方法
+     * @deprecated  use `ReflectiveRef` instead.
+     * @template T
+     * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance.
+     * @param {MethodType} propertyKey method name.
+     * @param {InvokeOptions} option ivacation arguments, type of {@link InvokeOptions}.
+     * @returns {TR} the returnning of invoked method.
+     */
+    abstract invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
+    /**
+     * invoke method.
+     * 
+     * 调用类方法
+     * @deprecated  use `ReflectiveRef` instead.
+     * @template T
+     * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance
+     * @param {MethodType} propertyKey method name.
+     * @param {InvocationContext} context ivacation context.
+     * @returns {TR} the returnning of invoked method.
+     */
+    abstract invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
 
     /**
      * injector has destoryed or not.

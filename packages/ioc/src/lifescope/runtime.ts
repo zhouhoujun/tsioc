@@ -5,7 +5,6 @@ import { PropertyMetadata } from '../metadata/meta';
 import { ctorName, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
 import { Platform } from '../platform';
 import { AbstractType } from '../types';
-import { isDefined } from '../utils/chk';
 import { initReflectInterceptor } from './commom';
 import { RuntimeContext } from './ctx';
 import { HandlerScope } from './lifescope';

@@ -463,58 +463,58 @@ export class DefaultInjector implements Injector {
         return this
     }
 
-    // invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
-    // invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
-    // invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
-    // invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, providers: Provider[]): TR;
-    // invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
-    //     this.assertNotDestroyed();
-    //     let providers: Provider[] | undefined;
-    //     let context: InvocationContext | undefined;
-    //     let option: any;
-    //     if (args.length === 1) {
-    //         const arg0 = args[0];
-    //         if (arg0 instanceof InvocationContext) {
-    //             context = arg0;
-    //             providers = Empty;
-    //         } else if (isArray(arg0)) {
-    //             providers = arg0
-    //         } else if (isPlainObject(arg0) && !arg0.provide) {
-    //             option = arg0
-    //         } else {
-    //             providers = args
-    //         }
-    //     } else {
-    //         providers = args
-    //     }
+    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
+    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
+    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
+    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, providers: Provider[]): TR;
+    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
+        this.assertNotDestroyed();
+        let providers: Provider[] | undefined;
+        let context: InvocationContext | undefined;
+        let option: any;
+        if (args.length === 1) {
+            const arg0 = args[0];
+            if (arg0 instanceof InvocationContext) {
+                context = arg0;
+                providers = Empty;
+            } else if (isArray(arg0)) {
+                providers = arg0
+            } else if (isPlainObject(arg0) && !arg0.provide) {
+                option = arg0
+            } else {
+                providers = args
+            }
+        } else {
+            providers = args
+        }
 
-    //     let targetClass: AbstractType, instance: any;
-    //     let tgRefl: ClassRef | undefined;
+        let targetClass: AbstractType, instance: any;
+        let tgRefl: ClassRef | undefined;
 
-    //     if (!context) {
-    //         option = { ...option, providers };
-    //         context = createContext(this, option);
-    //     }
-    //     if (isTypeObject(target)) {
-    //         targetClass = getType(target);
-    //         instance = target as T
-    //     } else {
-    //         if (target instanceof ClassRef) {
-    //             tgRefl = target;
-    //             targetClass = target.type
-    //         } else {
-    //             instance = this.get(target as Token, context);
-    //             targetClass = getType(instance);
-    //             if (!targetClass) {
-    //                 throw new Exception((target as Token).toString() + ' is not implements by any class.')
-    //             }
-    //         }
-    //     }
-    //     tgRefl = tgRefl ?? getClassRef(targetClass);
+        if (!context) {
+            option = { ...option, providers };
+            context = createContext(this, option);
+        }
+        if (isTypeObject(target)) {
+            targetClass = getType(target);
+            instance = target as T
+        } else {
+            if (target instanceof ClassRef) {
+                tgRefl = target;
+                targetClass = target.type
+            } else {
+                instance = this.get(target as Token, context);
+                targetClass = getType(instance);
+                if (!targetClass) {
+                    throw new Exception((target as Token).toString() + ' is not implements by any class.')
+                }
+            }
+        }
+        tgRefl = tgRefl ?? getClassRef(targetClass);
 
-    //     return tgRefl.invoke(tgRefl.getMethodName(propertyKey), context, instance)
+        return tgRefl.invoke(tgRefl.getMethodName(propertyKey), context, instance)
 
-    // }
+    }
 
     protected assertNotDestroyed(): void {
         if (this.destroyed) {
