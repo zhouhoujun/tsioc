@@ -339,22 +339,6 @@ export function createInjector(
 
 
 
-@Abstract()
-export abstract class InjectorEvent {
-    abstract on(eventName: 'register', listener: (def: ClassRef) => void): this;
-    abstract on(eventName: 'registered', listener: (def: ClassRef) => void): this;
-    abstract on(eventName: 'resolved', listener: (value: any, token?: Token) => void): this;
-
-    abstract off(eventName: 'register', listener: (def: ClassRef) => void): this;
-    abstract off(eventName: 'registered', listener: (def: ClassRef) => void): this;
-    abstract off(eventName: 'resolved', listener: (value: any, token?: Token) => void): this;
-
-    abstract emit(event: 'register', def: ClassRef): any;
-    abstract emit(event: 'registered', def: ClassRef): any;
-    abstract emit(event: 'resolved', value: any, token?: Token): any;
-}
-
-
 /**
  * injector factory implement.
  */

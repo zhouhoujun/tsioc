@@ -6,7 +6,7 @@ import { isPlainObject, isTypeObject } from '../utils/obj';
 import { cleanObj, deepForEach, defer, immediate } from '../utils/lang';
 import { isArray, isDefined, isFunction, isNumber, getType, isAbstractType, isPromise } from '../utils/chk';
 import {
-    MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord, InjectorEvent,
+    MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord,
     Injector, INJECT_IMPL, OptionFlags, RegOption, TypeOption
 } from '../injector';
 import { Exception } from '../exception';
@@ -29,7 +29,7 @@ export const SCOPE_PRODIDERS: Provider[] = [];
 /**
  * Default Injector
  */
-export class DefaultInjector implements Injector {
+export class DefaultInjector extends Injector {
     /**
      * none poincut for aop.
      * 
@@ -52,20 +52,12 @@ export class DefaultInjector implements Injector {
     protected records: Map<Token, FactoryRecord>;
     private isAlias?: (token: Token) => boolean;
 
-    private _event?: InjectorEvent | null;
-    get event(): InjectorEvent | null {
-        if (this._event === undefined) {
-            this._event = this.get(InjectorEvent, null);
-        }
-        return this._event;
-    }
-
     get ready() {
         return this._readyDefer.promise
     }
 
     constructor(providers: Provider[] = [], readonly parent?: Injector, readonly scope?: InjectorScope) {
-
+        super()
         this.records = new Map();
         if (parent) {
             this.initParent(parent)
@@ -248,7 +240,7 @@ export class DefaultInjector implements Injector {
             return false
         }
 
-        this.onRegister(classRef);
+        // this.onRegister(classRef);
         let injectorType: ((type: AbstractType, typeRef: ClassRef) => void | Promise<void>) | undefined;
         if (option?.injectorType) {
             injectorType = (regType, typeRef) => processInjectorType(
@@ -275,36 +267,9 @@ export class DefaultInjector implements Injector {
         platform.design.handle(ctx, null, {
             finally: () => {
                 cleanObj(ctx);
-                this.onRegistered(classRef);
             }
         });
         return true
-    }
-
-    /**
-     * before register type.
-     * @param def 
-     */
-    protected onRegister(def: ClassRef) {
-        this.event?.emit('register', def);
-    }
-
-    /**
-     * after register type.
-     * @param def 
-     */
-    protected onRegistered(def: ClassRef) {
-        this.event?.emit('registered', def);
-
-    }
-
-    /**
-     * on token resolved.
-     * @param value 
-     * @param token 
-     */
-    protected onResolved(value: any, token?: Token): void {
-        this.event?.emit('resolved', value, token);
     }
 
     /**
@@ -394,13 +359,12 @@ export class DefaultInjector implements Injector {
 
         return this.tryResolve(token, this.records.get(token), platform, this.parent, context,
             notFoundValue === undefined ? THROW_FLAGE : notFoundValue,
-            flags ?? InjectFlags.Default,
-            (v, k) => this.onResolved(v, k))
+            flags ?? InjectFlags.Default)
     }
 
     protected tryResolve(token: Token, record: FactoryRecord | undefined, platform: Platform, parent: Injector | undefined,
-        context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, lifecycle?: (value: any, token: Token) => void) {
-        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, lifecycle, record?.stic ?? this.isStatic)
+        context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags) {
+        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, record?.stic ?? this.isStatic)
     }
 
 
@@ -585,7 +549,7 @@ export class DefaultInjector implements Injector {
         }
         this._plat = null!;
         this.isAlias = null!;
-        if (this._event) this._event = null!;
+        // if (this._event) this._event = null!;
         (this as any).parent = null!;
     }
 }
