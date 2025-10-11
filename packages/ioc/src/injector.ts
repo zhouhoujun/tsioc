@@ -289,33 +289,6 @@ export abstract class Injector implements Destroyable, OnDestroy {
      */
     abstract onDestroy(callback: DestroyCallback): void;
 
-    // /**
-    //  * create platform injector.
-    //  * @param providers
-    // */
-    // static create(providers?: Provider[]): Injector;
-    // /**
-    //  * create injector.
-    //  * @param providers 
-    //  * @param parent 
-    //  * @param scope 
-    //  */
-    // static create(parent: Injector, scope?: InjectorScope): Injector;
-    // /**
-    //  * create injector.
-    //  * @param providers 
-    //  * @param parent 
-    //  * @param scope 
-    //  */
-    // static create(providers: Provider[] | undefined, parent: Injector, scope?: InjectorScope): Injector;
-    // /**
-    //  * create injector with option.
-    //  * @param options 
-    //  */
-    // static create(options: { providers: Provider[], parent?: Injector, scope?: InjectorScope }): Injector;
-    // static create(...args: any): Injector {
-    //     return createInjector(...args)
-    // }
 }
 
 /**

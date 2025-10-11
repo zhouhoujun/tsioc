@@ -6,7 +6,8 @@ import { ModuleOption, ModuleRef } from '../module.ref';
 import { Platform } from '../platform';
 import { isModuleProviders, ModuleWithProviders, Provider } from '../providers';
 import { Type } from '../types';
-import { DefaultInjector, mergePromise } from './injector';
+import { DefaultInjector } from './injector';
+import { mergePromise } from './resolve';
 
 
 /**
