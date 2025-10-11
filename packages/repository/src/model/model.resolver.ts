@@ -1,4 +1,4 @@
-import { Abstract, isArray, isDefined, AbstractType, Type, Parameter, Invocation, Interceptor, Handler, Platform, createResolveScope, isFunction, isResolved } from '@tsdi/ioc';
+import { Abstract, isArray, isDefined, AbstractType, Type, Parameter, Invocation, Interceptor, Handler, Runtime, createResolveScope, isFunction, isResolved } from '@tsdi/ioc';
 import { ModelArgumentResolver, HandleContext } from '@tsdi/core';
 import { DBPropertyMetadata, FieldResolveInterceptor, getModelFieldResolver, MissingModelFieldException, missingPropException, ModelFieldResolver } from './field.resolver';
 
@@ -11,7 +11,7 @@ import { DBPropertyMetadata, FieldResolveInterceptor, getModelFieldResolver, Mis
 @Abstract()
 export abstract class AbstractModelArgumentResolver<TOutput = any> implements Interceptor<Parameter, TOutput, HandleContext> {
 
-    abstract get platform(): Platform;
+    abstract get runtime(): Runtime;
     abstract get fieldResolves(): FieldResolveInterceptor[] | null;
 
     private canResolve(parameter: Parameter, ctx: HandleContext): boolean {
@@ -94,7 +94,7 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
     private _resolver!: ModelFieldResolver;
     protected get fieldResolver(): ModelFieldResolver {
         if (!this._resolver) {
-            this._resolver = createResolveScope(this.platform,
+            this._resolver = createResolveScope(this.runtime,
                 [
                     (input, next, context) => {
                         const [prop, fields, target] = input;
@@ -107,7 +107,7 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
                     },
                     ...this.fieldResolves ?? [],
                 ],
-                getModelFieldResolver(this.platform)
+                getModelFieldResolver(this.runtime)
             );
         }
         return this._resolver
@@ -140,7 +140,7 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
  */
 class ModelResolver<TOutput = any> extends AbstractModelArgumentResolver<TOutput> {
 
-    constructor(readonly platform: Platform, private option: ModelResolveOption) {
+    constructor(readonly runtime: Runtime, private option: ModelResolveOption) {
         super()
     }
 
@@ -201,9 +201,9 @@ export interface ModelResolveOption {
 
 /**
  * model resolver factory. create resolver for {@link Invocation}.
- * @param platform platform.
+ * @param runtime runtime.
  * @returns model resolver instance of {@link ModelArgumentResolver}.
  */
-export function createModelResolver<TOutput>(platform: Platform, option: ModelResolveOption): ModelArgumentResolver<TOutput> {
-    return new ModelResolver<TOutput>(platform, option)
+export function createModelResolver<TOutput>(runtime: Runtime, option: ModelResolveOption): ModelArgumentResolver<TOutput> {
+    return new ModelResolver<TOutput>(runtime, option)
 }

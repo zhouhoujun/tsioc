@@ -3,14 +3,14 @@ import { ArgumentException, Exception } from '../exception';
 import { Context, ContextToken, HandlerFn, InterceptorFn, InterceptorLike, invokeTail } from '../handler';
 import { PropertyMetadata } from '../metadata/meta';
 import { ctorName, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
-import { Platform } from '../platform';
+import { Runtime } from '../runtime';
 import { AbstractType } from '../types';
 import { initReflectInterceptor } from './commom';
-import { RuntimeContext } from './ctx';
+import { InitializeContext } from './ctx';
 import { HandlerScope } from './lifescope';
 
 
-export const cleanContextInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
+export const cleanContextInterceptor: InterceptorFn<InitializeContext, void> = (input: InitializeContext, next: HandlerFn, context: Context) => {
 
     return invokeTail(() => next(input, context), {
         finally: () => {
@@ -22,7 +22,7 @@ export const cleanContextInterceptor: InterceptorFn<RuntimeContext, void> = (inp
     });
 }
 
-export const runtimeAutorunInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
+export const runtimeAutorunInterceptor: InterceptorFn<InitializeContext, void> = (input: InitializeContext, next: HandlerFn, context: Context) => {
 
     return invokeTail(() => next(input, context), (res) => {
         const autos = input.classRef.runnables.filter(c => c.auto && c.decorType === Decors.method)
@@ -39,39 +39,39 @@ export const runtimeAutorunInterceptor: InterceptorFn<RuntimeContext, void> = (i
 
 
 const RUNTIME_CLASS_SCOPE = new ContextToken<HandlerScope>(() => null!);
-export const runtimeAnnoInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
-    return invokeTail(() => next(input, context), () => getRuntimeClassScope(input.platform).handle(input, context));
+export const runtimeAnnoInterceptor: InterceptorFn<InitializeContext, void> = (input: InitializeContext, next: HandlerFn, context: Context) => {
+    return invokeTail(() => next(input, context), () => getRuntimeClassScope(input.runtime).handle(input, context));
 }
 
-function invokeRuntimeHandler(decors: DecoratorFn[], ctx: RuntimeContext, scope: DecoratorScope, context?: any) {
+function invokeRuntimeHandler(decors: DecoratorFn[], ctx: InitializeContext, scope: DecoratorScope, context?: any) {
     decors?.forEach(d => {
         ctx.currDecor = d;
         d.getRuntimeHandler?.(scope)?.(ctx, context);
     });
 }
 
-export function getRuntimeClassScope(platform: Platform): HandlerScope<RuntimeContext> {
-    let scope = platform.context.get(RUNTIME_CLASS_SCOPE);
+export function getRuntimeClassScope(runtime: Runtime): HandlerScope<InitializeContext> {
+    let scope = runtime.context.get(RUNTIME_CLASS_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<RuntimeContext>(platform, (ctx, context) => {
+        scope = new HandlerScope<InitializeContext>(runtime, (ctx, context) => {
             invokeRuntimeHandler(ctx.classRef.classDecors, ctx, Decors.CLASS, context);
         });
-        platform.context.set(RUNTIME_CLASS_SCOPE, scope);
+        runtime.context.set(RUNTIME_CLASS_SCOPE, scope);
     }
     return scope;
 }
 
-export const singletonInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
+export const singletonInterceptor: InterceptorFn<InitializeContext, void> = (input: InitializeContext, next: HandlerFn, context: Context) => {
 
     return invokeTail(() => next(input, context), () => {
         if (input.type && input.instance && input.singleton) {
-            input.platform.setSingleton(input.injector, input.provide || input.type, input.instance)
+            input.runtime.setSingleton(input.injector, input.provide || input.type, input.instance)
         }
     })
 }
 
 
-export const cacheInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
+export const cacheInterceptor: InterceptorFn<InitializeContext, void> = (input: InitializeContext, next: HandlerFn, context: Context) => {
 
     return invokeTail(() => next(input, context), () => {
 
@@ -86,27 +86,27 @@ export const cacheInterceptor: InterceptorFn<RuntimeContext, void> = (input: Run
 
 
 
-export const methodInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
+export const methodInterceptor: InterceptorFn<InitializeContext, void> = (input: InitializeContext, next: HandlerFn, context: Context) => {
     return invokeTail(() => next(input, context), () => {
-        getRuntimeMethodScope(input.platform).handle(input, context);
+        getRuntimeMethodScope(input.runtime).handle(input, context);
     })
 }
 
 const RUNTIME_METHOD_SCOPE = new ContextToken<HandlerScope>(() => null!);
-export function getRuntimeMethodScope(platform: Platform): HandlerScope<RuntimeContext> {
-    let scope = platform.context.get(RUNTIME_METHOD_SCOPE);
+export function getRuntimeMethodScope(runtime: Runtime): HandlerScope<InitializeContext> {
+    let scope = runtime.context.get(RUNTIME_METHOD_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<RuntimeContext>(platform, (ctx, context) => {
+        scope = new HandlerScope<InitializeContext>(runtime, (ctx, context) => {
             invokeRuntimeHandler(ctx.classRef.methodDecors, ctx, Decors.method, context)
 
         });
-        platform.context.set(RUNTIME_METHOD_SCOPE, scope);
+        runtime.context.set(RUNTIME_METHOD_SCOPE, scope);
     }
     return scope;
 }
 
 
-export const propertyInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
+export const propertyInterceptor: InterceptorFn<InitializeContext, void> = (input: InitializeContext, next: HandlerFn, context: Context) => {
 
     return invokeTail(() => next(input, context), () => {
         const ictx = input.context;
@@ -128,20 +128,20 @@ export const propertyInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
             }
         });
 
-        return getRuntimePropertyScope(input.platform).handle(input, context);
+        return getRuntimePropertyScope(input.runtime).handle(input, context);
 
     })
 
 }
 
 const RUNTIME_PROPERTY_SCOPE = new ContextToken<HandlerScope>(() => null!);
-export function getRuntimePropertyScope(platform: Platform): HandlerScope<RuntimeContext> {
-    let scope = platform.context.get(RUNTIME_PROPERTY_SCOPE);
+export function getRuntimePropertyScope(runtime: Runtime): HandlerScope<InitializeContext> {
+    let scope = runtime.context.get(RUNTIME_PROPERTY_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<RuntimeContext>(platform, (ctx, context) => {
+        scope = new HandlerScope<InitializeContext>(runtime, (ctx, context) => {
             invokeRuntimeHandler(ctx.classRef.propDecors, ctx, Decors.property, context)
         });
-        platform.context.set(RUNTIME_PROPERTY_SCOPE, scope);
+        runtime.context.set(RUNTIME_PROPERTY_SCOPE, scope);
     }
     return scope;
 }
@@ -154,7 +154,7 @@ const onError = (target: AbstractType, propertyKey: string) => {
 /**
  * resolve constructor args action.
  */
-export const ctorArgsInterceptor: InterceptorFn<RuntimeContext, void> = (input: RuntimeContext, next: HandlerFn, context: Context) => {
+export const ctorArgsInterceptor: InterceptorFn<InitializeContext, void> = (input: InitializeContext, next: HandlerFn, context: Context) => {
     if (!input.params) {
         input.params = input.classRef.getParameters(ctorName)
     }
@@ -186,7 +186,7 @@ export const ctorArgsInterceptor: InterceptorFn<RuntimeContext, void> = (input: 
 
 
 
-export const RUNTIME_INTERCEPTORS = [
+export const INITIALIZE_INTERCEPTORS = [
     initReflectInterceptor,
     cleanContextInterceptor,
     runtimeAutorunInterceptor,
@@ -196,5 +196,5 @@ export const RUNTIME_INTERCEPTORS = [
     methodInterceptor,
     propertyInterceptor,
     ctorArgsInterceptor
-] as InterceptorLike<RuntimeContext>[]
+] as InterceptorLike<InitializeContext>[]
 

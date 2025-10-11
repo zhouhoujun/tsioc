@@ -5,7 +5,7 @@ import { deepForEach } from '../utils/lang';
 import { isArray, isDefined, isFunction, isNumber, isString, isNil } from '../utils/chk';
 import { FnType,  FactoryRecord, Injector,  DependencyRecord, OptionFlags, RegOption} from '../injector';
 import { Exception } from '../exception';
-import { Platform } from '../platform';
+import { Runtime } from '../runtime';
 import { getClassRef } from '../metadata/refl';
 import { ModuleDef, ClassRef } from '../metadata/class';
 import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders } from '../providers';
@@ -119,7 +119,7 @@ export const CIRCULAR = IDENT;
  * @param provider 
  * @returns 
  */
-export function generateRecord<T>(platfrom: Platform, injector: Injector, provider: StaticProviders): FactoryRecord<T> {
+export function generateRecord<T>(platfrom: Runtime, injector: Injector, provider: StaticProviders): FactoryRecord<T> {
     let fn: Function = IDENT;
     let value: T | undefined;
     let fnType = FnType.Fac;
@@ -218,7 +218,7 @@ export class NullInjectorException extends Exception {
  * @param provider 
  * @returns 
  */
-export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined,
+export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Runtime, parent: Injector | undefined,
     context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     try {
         const value = resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags, isStatic);
@@ -249,7 +249,7 @@ export const THROW_FLAGE = {};
  * @param provider 
  * @returns 
  */
-export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Platform, parent: Injector | undefined,
+export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Runtime, parent: Injector | undefined,
     context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     if (rd && !(flags & InjectFlags.SkipSelf)) {
         let value = rd.value;

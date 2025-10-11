@@ -1,6 +1,6 @@
 import {
     AbstractInvocationFactory, ClassRef, createInjector, Exception, Injectable,
-    Injector, Platform, AbstractType, Provider, toProvider
+    Injector, Runtime, AbstractType, Provider, toProvider
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
 import { ComponentOptions, ComponentRef, ComponentFactory, ComponentDef } from '../refs/component';
@@ -74,9 +74,9 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
 export class ComponentFactoryImpl extends AbstractInvocationFactory<ComponentOptions> implements ComponentFactory<ComponentOptions> {
 
     constructor(
-        platform: Platform
+        runtime: Runtime
     ) {
-        super(platform);
+        super(runtime);
     }
 
     protected override getInjector<T>(typeRef: ClassRef<T>, options?: ComponentOptions): Injector {

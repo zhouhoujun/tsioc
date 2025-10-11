@@ -1,4 +1,4 @@
-import { ArgumentException, AbstractType, isArray, isString, Parameter, ResolveInterceptorLike, ContextToken, HandlerScope, Platform, isToken, isPrimitive, isFunction, getTypeName, createResolveScope, isResolved, isNil, isObject, isDefined } from '@tsdi/ioc';
+import { ArgumentException, AbstractType, isArray, isString, Parameter, ResolveInterceptorLike, ContextToken, HandlerScope, Runtime, isToken, isPrimitive, isFunction, getTypeName, createResolveScope, isResolved, isNil, isObject, isDefined } from '@tsdi/ioc';
 import { ParameterScope, TransportParameter } from './resolver';
 import { HandleContext } from './context';
 import { PipeTransform } from '../pipes/pipe';
@@ -10,11 +10,11 @@ export function missingPipeException<T>(parameter: Parameter<T>, type?: Abstract
 
 
 const ITERABLE_RESOLVER = new ContextToken<HandlerScope>(() => null!);
-export function getIterableResolver(platform: Platform): HandlerScope<[any, PipeTransform, TransportParameter], HandleContext> {
-    let scope = platform.context.get(ITERABLE_RESOLVER);
+export function getIterableResolver(runtime: Runtime): HandlerScope<[any, PipeTransform, TransportParameter], HandleContext> {
+    let scope = runtime.context.get(ITERABLE_RESOLVER);
     if (!scope) {
         scope = createResolveScope<[any, PipeTransform, TransportParameter], any, HandleContext>(
-            platform,
+            runtime,
             [
                 (input, next, context): any => {
                     const [payload, pipe, parameter] = input;
@@ -43,7 +43,7 @@ export function getIterableResolver(platform: Platform): HandlerScope<[any, Pipe
 
             ]
         );
-        platform.context.set(ITERABLE_RESOLVER, scope);
+        runtime.context.set(ITERABLE_RESOLVER, scope);
     }
     return scope;
 }
@@ -80,7 +80,7 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
 
 
             if (parameter.multi) {
-                const value = getIterableResolver(ctx.injector.platform()).handle([isString(payload) ? payload.split(',') : payload, pipe, parameter], ctx);
+                const value = getIterableResolver(ctx.injector.getRuntime()).handle([isString(payload) ? payload.split(',') : payload, pipe, parameter], ctx);
                 if (isResolved(value)) return value;
             } else {
                 return pipe.transform(payload, ...parameter.args || [])

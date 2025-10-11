@@ -41,7 +41,7 @@ export const Suite: Suite = createDecorator<SuiteMetadata>('Suite', {
     },
     props: (describe: string, timeout?: number) => ({ describe, timeout}),
     factory: (injector) => {
-        return new SuiteInvocationFactory(injector.platform())
+        return new SuiteInvocationFactory(injector.getRuntime())
     }
 });
 

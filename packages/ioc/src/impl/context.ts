@@ -14,7 +14,7 @@ import { Provider } from '../providers';
 import { Invocation } from '../invocation';
 import { ContextToken, HandlerLike, InterceptorLike } from '../handler';
 import { HandlerScope } from '../lifescope/lifescope';
-import { Platform } from '../platform';
+import { Runtime } from '../runtime';
 
 
 
@@ -140,11 +140,11 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
             if (resls?.length) {
                 resolvers.push(...resls);
             }
-            const platform = this.injector.platform();
+            const runtime = this.injector.getRuntime();
             if (resolvers.length) {
-                this._resolvers = new HandlerScope(platform, getParameterResolver(platform), resolvers);
+                this._resolvers = new HandlerScope(runtime, getParameterResolver(runtime), resolvers);
             } else {
-                this._resolvers = getParameterResolver(platform);
+                this._resolvers = getParameterResolver(runtime);
             }
         }
         return this._resolvers;
@@ -263,8 +263,8 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
         const metaRvr = meta.resolver;
         let resolver: HandlerScope | null;
         if (metaRvr?.length) {
-            const platform = this.injector.platform();
-            resolver = createResolveScope(platform, metaRvr.map(r => isType(r) ? this.resolve(r) : r), this.getResolver());
+            const runtime = this.injector.getRuntime();
+            resolver = createResolveScope(runtime, metaRvr.map(r => isType(r) ? this.resolve(r) : r), this.getResolver());
         } else {
             resolver = this.getResolver()
         }
@@ -405,16 +405,16 @@ export function isResolved(value: any) {
     return value !== UNRESOLVED;
 }
 
-export function createResolveScope<TInput, TContext = any, TOutput = any>(platform: Platform, interceptors: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): HandlerScope<TInput, TContext, TOutput> {
-    return new HandlerScope<TInput, TContext, TOutput>(platform, backend ?? unResolve, interceptors)
+export function createResolveScope<TInput, TContext = any, TOutput = any>(runtime: Runtime, interceptors: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): HandlerScope<TInput, TContext, TOutput> {
+    return new HandlerScope<TInput, TContext, TOutput>(runtime, backend ?? unResolve, interceptors)
 }
 
 const TOKER_RESOLVER = new ContextToken<HandlerScope<[Token, InjectFlags | undefined], InvocationContext>>(() => null!);
-export function getTokenResolver(platform: Platform): HandlerScope<[Token, InjectFlags | undefined], InvocationContext> {
-    let scope = platform.context.get(TOKER_RESOLVER);
+export function getTokenResolver(runtime: Runtime): HandlerScope<[Token, InjectFlags | undefined], InvocationContext> {
+    let scope = runtime.context.get(TOKER_RESOLVER);
     if (!scope) {
         scope = createResolveScope(
-            platform,
+            runtime,
             [
                 (input, next, context) => {
                     if (context.has(input[0], input[1])) {
@@ -437,13 +437,13 @@ export function getTokenResolver(platform: Platform): HandlerScope<[Token, Injec
 
             ]
         );
-        platform.context.set(TOKER_RESOLVER, scope);
+        runtime.context.set(TOKER_RESOLVER, scope);
     }
     return scope;
 }
 
 const PARAMETER_RESOLVER = new ContextToken<HandlerScope>(() => null!);
-export function getParameterResolver(platform: Platform): HandlerScope<Parameter, InvocationContext> {
+export function getParameterResolver(platform: Runtime): HandlerScope<Parameter, InvocationContext> {
     let scope = platform.context.get(PARAMETER_RESOLVER);
     if (!scope) {
         scope = createResolveScope(

@@ -203,7 +203,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             }
 
             const ctrRef = getClassRef(route.controller);
-            const invocation = ctrRef.createInvocation(this.injector.platform().getInjector(ctrRef.type, this.injector));
+            const invocation = ctrRef.createInvocation(this.injector.getRuntime().getInjector(ctrRef.type, this.injector));
 
             return this.parseCtrl(invocation, route.path, route.pathParams)
 
@@ -221,11 +221,11 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             const res = route.loadChildren();
             const module = await (isObservable(res) ? lastValueFrom(res) : res);
             if (isType(module)) {
-                const platform = this.injector.platform();
-                if (!platform.modules.has(module)) {
+                const runtime = this.injector.getRuntime();
+                if (!runtime.modules.has(module)) {
                     await this.injector.get(ModuleRef).import(module, true);
                 }
-                const routes = platform.modules.get(module)?.injector.get(ROUTES);
+                const routes = runtime.modules.get(module)?.injector.get(ROUTES);
                 return routes?.map(r => {
                     r.prefix = route.path;
                     if (route.pathParams) {

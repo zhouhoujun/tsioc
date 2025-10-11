@@ -4,7 +4,7 @@ import { ParameterMetadata, ProvidedInMetadata } from '../metadata/meta';
 import { ClassRef, DecoratorFn } from '../metadata/class';
 import { FactoryRecord, Injector } from '../injector';
 import { InvocationContext } from '../context';
-import { Platform } from '../platform';
+import { Runtime } from '../runtime';
 
 
 
@@ -60,7 +60,7 @@ export interface RegContext extends IocContext {
  * design action context.
  */
 export interface DesignContext extends RegContext, ProvidedInMetadata {
-    platform: Platform;
+    runtime: Runtime;
     injectorType?: (type: AbstractType, typeReflect: ClassRef) => void | Promise<void>;
     regProvides?: boolean;
     getRecords: () => Map<Token, FactoryRecord>;
@@ -68,15 +68,15 @@ export interface DesignContext extends RegContext, ProvidedInMetadata {
 
 
 /**
- * Ioc Register action context.
+ *  Initialization object action context.
  *
  * @extends {RegContext}
  */
-export interface RuntimeContext extends RegContext {
+export interface InitializeContext extends RegContext {
     /**
-     * platform.
+     * runtime.
      */
-    platform: Platform;
+    runtime: Runtime;
     /**
      * invocation context.
      */

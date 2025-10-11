@@ -1,4 +1,4 @@
-import { InvocationContext, isFunction, isNil, PropertyMetadata, AbstractType, object2string, ArgumentException, Type, ContextToken, HandlerScope, Platform, createResolveScope, Interceptor, InterceptorLike, getType } from '@tsdi/ioc';
+import { InvocationContext, isFunction, isNil, PropertyMetadata, AbstractType, object2string, ArgumentException, Type, ContextToken, HandlerScope, Runtime, createResolveScope, Interceptor, InterceptorLike, getType } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 
 /**
@@ -364,11 +364,11 @@ export function parseDbtype(value: any, prop: DBPropertyMetadata, ctx: Invocatio
 }
 
 const MODEL_FIELD_RESOLVER = new ContextToken<HandlerScope<[DBPropertyMetadata, any, Type], InvocationContext>>(() => null!);
-export function getModelFieldResolver(platform: Platform): HandlerScope<[DBPropertyMetadata, any, Type], InvocationContext> {
-    let scope = platform.context.get(MODEL_FIELD_RESOLVER);
+export function getModelFieldResolver(runtime: Runtime): HandlerScope<[DBPropertyMetadata, any, Type], InvocationContext> {
+    let scope = runtime.context.get(MODEL_FIELD_RESOLVER);
     if (!scope) {
         scope = createResolveScope(
-            platform,
+            runtime,
             [
                 (input, next, context) => {
                     if (input[0].dbtype) {
@@ -396,7 +396,7 @@ export function getModelFieldResolver(platform: Platform): HandlerScope<[DBPrope
 
             ]
         );
-        platform.context.set(MODEL_FIELD_RESOLVER, scope);
+        runtime.context.set(MODEL_FIELD_RESOLVER, scope);
     }
     return scope;
 }

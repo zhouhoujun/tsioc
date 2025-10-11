@@ -6,18 +6,18 @@ import { ClassRef } from '../metadata/class';
 import { Provider, StaticProvider } from '../providers';
 import { Injector, InjectorScope } from '../injector';
 import { Exception } from '../exception';
-import { Platform } from '../platform';
+import { Runtime } from '../runtime';
 import { ModuleRef } from '../module.ref';
 import { HandlerScope } from '../lifescope/lifescope';
 import { Context } from '../handler';
-import { RUNTIME_INTERCEPTORS } from '../lifescope/runtime';
+import { INITIALIZE_INTERCEPTORS } from '../lifescope/initialize';
 import { DESIGN_INTERECPTORS, registerHandler } from '../lifescope/design';
 import { InvocationFactory } from '../invocation';
 
 /**
- * default platform implements {@link Platform}.
+ * default runtime implements {@link Runtime}.
  */
-export class DefaultPlatform implements Platform {
+export class DefaultRuntime implements Runtime {
 
     private _singls: Map<Token, any>;
     private _pdrs: Map<AbstractType, Provider[]>;
@@ -26,7 +26,7 @@ export class DefaultPlatform implements Platform {
     readonly modules = new Map<AbstractType, ModuleRef>();
     readonly factories = new Map<AbstractType, InvocationFactory>();
     private injectors: Injector[];
-    private _runtime?: HandlerScope;
+    private _initialize?: HandlerScope;
     private _design?: HandlerScope;
 
     readonly context: Context;
@@ -37,19 +37,19 @@ export class DefaultPlatform implements Platform {
         this._pdrs = new Map();
         this._singls = new Map();
         this.injectors = [injector];
-        this._singls.set(Platform, this);
+        this._singls.set(Runtime, this);
         injector.onDestroy(this);
     }
 
 
-    get runtime(): HandlerScope {
-        if (!this._runtime) {
-            this._runtime = new HandlerScope(this, (ctx) => {
+    get initialize(): HandlerScope {
+        if (!this._initialize) {
+            this._initialize = new HandlerScope(this, (ctx) => {
                 ctx.instance = new ctx.type(...ctx.args || []);
                 return ctx.instance;
-            }, RUNTIME_INTERCEPTORS);
+            }, INITIALIZE_INTERCEPTORS);
         }
-        return this._runtime;
+        return this._initialize;
     }
 
     get design(): HandlerScope {

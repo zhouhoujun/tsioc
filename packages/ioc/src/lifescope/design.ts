@@ -2,11 +2,11 @@ import { InvocationContext } from '../context';
 import { Context, ContextToken, HandlerFn, InterceptorLike, invokeTail } from '../handler';
 import { FactoryRecord, FnType } from '../injector';
 import { DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
-import { Platform } from '../platform';
+import { Runtime } from '../runtime';
 import { isFunction } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
 import { initReflectInterceptor } from './commom';
-import { DesignContext, RuntimeContext } from './ctx';
+import { DesignContext, InitializeContext } from './ctx';
 import { HandlerScope } from './lifescope';
 
 export const autorunInterceptor = (ctx: DesignContext, next: HandlerFn, context: Context) => {
@@ -31,69 +31,69 @@ function invokeHandler(decors: DecoratorFn[], ctx: DesignContext, scope: Decorat
 }
 
 const BEFORE_ANNOATION_SCOPE = new ContextToken<HandlerScope>(() => null!);
-export function getDesignBeforeAnnoationScope(platform: Platform): HandlerScope<DesignContext> {
-    let scope = platform.context.get(BEFORE_ANNOATION_SCOPE);
+export function getDesignBeforeAnnoationScope(runtime: Runtime): HandlerScope<DesignContext> {
+    let scope = runtime.context.get(BEFORE_ANNOATION_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<DesignContext>(platform, (ctx, context) => {
+        scope = new HandlerScope<DesignContext>(runtime, (ctx, context) => {
             invokeHandler(ctx.classRef.classDecors, ctx, Decors.beforeAnnoation, context)
         });
-        platform.context.set(BEFORE_ANNOATION_SCOPE, scope);
+        runtime.context.set(BEFORE_ANNOATION_SCOPE, scope);
     }
     return scope;
 }
 
 
 const AFTER_ANNOATION_SCOPE = new ContextToken<HandlerScope>(() => null!);
-export function getDesignAfterAnnoationScope(platform: Platform): HandlerScope<DesignContext> {
-    let scope = platform.context.get(AFTER_ANNOATION_SCOPE);
+export function getDesignAfterAnnoationScope(runtime: Runtime): HandlerScope<DesignContext> {
+    let scope = runtime.context.get(AFTER_ANNOATION_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<DesignContext>(platform, (ctx, context) => {
+        scope = new HandlerScope<DesignContext>(runtime, (ctx, context) => {
             invokeHandler(ctx.classRef.classDecors, ctx, Decors.afterAnnoation, context)
         });
-        platform.context.set(AFTER_ANNOATION_SCOPE, scope);
+        runtime.context.set(AFTER_ANNOATION_SCOPE, scope);
     }
     return scope;
 }
 
 
 const DESIGN_PROPERTY_SCOPE = new ContextToken<HandlerScope>(() => null!);
-export function getDesignPropertyScope(platform: Platform): HandlerScope<DesignContext> {
-    let scope = platform.context.get(DESIGN_PROPERTY_SCOPE);
+export function getDesignPropertyScope(runtime: Runtime): HandlerScope<DesignContext> {
+    let scope = runtime.context.get(DESIGN_PROPERTY_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<DesignContext>(platform, (ctx, context) => {
+        scope = new HandlerScope<DesignContext>(runtime, (ctx, context) => {
             invokeHandler(ctx.classRef.propDecors, ctx, Decors.property, context)
         });
-        platform.context.set(DESIGN_PROPERTY_SCOPE, scope);
+        runtime.context.set(DESIGN_PROPERTY_SCOPE, scope);
     }
     return scope;
 }
 
 const DESIGN_METHOD_SCOPE = new ContextToken<HandlerScope>(() => null!);
 
-export function getDesignMethodScope(platform: Platform): HandlerScope<DesignContext> {
-    let scope = platform.context.get(DESIGN_METHOD_SCOPE);
+export function getDesignMethodScope(runtime: Runtime): HandlerScope<DesignContext> {
+    let scope = runtime.context.get(DESIGN_METHOD_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<DesignContext>(platform, (ctx, context) => {
+        scope = new HandlerScope<DesignContext>(runtime, (ctx, context) => {
             invokeHandler(ctx.classRef.methodDecors, ctx, Decors.method, context);
         });
-        platform.context.set(DESIGN_METHOD_SCOPE, scope);
+        runtime.context.set(DESIGN_METHOD_SCOPE, scope);
     }
     return scope;
 }
 
 
 export const afterPropertyAnnoationInterceptor = (input: DesignContext, next: HandlerFn, context: Context) => {
-    return invokeTail(() => next(input, context), () => getDesignPropertyScope(input.platform).handle(input, context));
+    return invokeTail(() => next(input, context), () => getDesignPropertyScope(input.runtime).handle(input, context));
 }
 export const afterMethodAnnoationInterceptor = (input: DesignContext, next: HandlerFn, context: Context) => {
-    return invokeTail(() => next(input, context), () => getDesignMethodScope(input.platform).handle(input, context));
+    return invokeTail(() => next(input, context), () => getDesignMethodScope(input.runtime).handle(input, context));
 }
 export const afterAnnoationInterceptor = (input: DesignContext, next: HandlerFn, context: Context) => {
-    return invokeTail(() => next(input, context), () => getDesignAfterAnnoationScope(input.platform).handle(input, context));
+    return invokeTail(() => next(input, context), () => getDesignAfterAnnoationScope(input.runtime).handle(input, context));
 }
 
 export const beforeAnnoactionInterceptor = (input: DesignContext, next: HandlerFn, context: Context) => {
-    return invokeTail(() => getDesignBeforeAnnoationScope(input.platform).handle(input, context), () => next(input, context));
+    return invokeTail(() => getDesignBeforeAnnoationScope(input.runtime).handle(input, context), () => next(input, context));
 }
 
 
@@ -101,13 +101,13 @@ export const dependencyInterceptor = (input: DesignContext, next: HandlerFn, con
     const { injector, type, provide, regProvides } = input;
     if (provide && provide !== type) {
         if (input.providedIn && isFunction(input.providedIn)) {
-            const platform = injector.platform();
-            if (!platform.getInjector(type)) {
+            const runtime = injector.getRuntime();
+            if (!runtime.getInjector(type)) {
                 const pType = input.providedIn;
                 const prd = { provide, useExisting: type };
-                platform.setTypeProvider(pType, prd);
+                runtime.setTypeProvider(pType, prd);
                 injector.onDestroy(() => {
-                    platform.removeTypeProvider(pType, prd);
+                    runtime.removeTypeProvider(pType, prd);
                 });
             }
         }
@@ -126,7 +126,7 @@ export const dependencyInterceptor = (input: DesignContext, next: HandlerFn, con
 
 
 export const registerHandler: HandlerFn = (ctx: DesignContext, context: Context) => {
-    const { type, injector, platform, provide } = ctx;
+    const { type, injector, runtime: runtime, provide } = ctx;
     const singleton = ctx.singleton ?? ctx.classRef.getAnnotation().singleton === true;
     const isStatic = ctx.static ?? ctx.classRef.getAnnotation().static;
 
@@ -134,8 +134,8 @@ export const registerHandler: HandlerFn = (ctx: DesignContext, context: Context)
         type,
         fn: (...fnArgs: any[]) => {
             // make sure has value.
-            if (singleton && platform.hasSingleton(type)) {
-                return platform.getSingleton(type)
+            if (singleton && runtime.hasSingleton(type)) {
+                return runtime.getSingleton(type)
             }
             let args: any[] | undefined;
             let context: InvocationContext | undefined;
@@ -156,12 +156,12 @@ export const registerHandler: HandlerFn = (ctx: DesignContext, context: Context)
                 type,
                 args,
                 singleton,
-                platform,
+                runtime,
                 context
-            } as RuntimeContext;
+            } as InitializeContext;
 
             let instance: any;
-            platform.runtime.handle(ctx, null, {
+            runtime.initialize.handle(ctx, null, {
                 finally: () => {
                     instance = ctx.instance;
                     if (singleton || isStatic) {

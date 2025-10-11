@@ -19,20 +19,20 @@ export class AopProvider {
      */
     setup(@Inject() injector: Injector) {
 
-        const platform = injector.platform();
-        const context = platform.context;
+        const runtime = injector.getRuntime();
+        const context = runtime.context;
         if (context.has(Advisor)) return;
 
-        const proceeding = new ProceedingScope(platform);
-        const matcher = new DefaultAdviceMatcher(platform);
+        const proceeding = new ProceedingScope(runtime);
+        const matcher = new DefaultAdviceMatcher(runtime);
 
         context.set(Advisor, new Advisor(matcher))
             .set(AdviceMatcher, matcher)
             .set(Proceeding, proceeding)
             .set(ProceedingScope, proceeding);
 
-        platform.runtime.use(matchInterceptor, platform.runtime.getIndexOf(methodInterceptor));
-        platform.runtime.use(pointcutInterceptor, platform.runtime.getIndexOf(ctorArgsInterceptor) + 1);
+        runtime.initialize.use(matchInterceptor, runtime.initialize.getIndexOf(methodInterceptor));
+        runtime.initialize.use(pointcutInterceptor, runtime.initialize.getIndexOf(ctorArgsInterceptor) + 1);
 
     }
 }

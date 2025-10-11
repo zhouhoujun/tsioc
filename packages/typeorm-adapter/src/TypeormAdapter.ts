@@ -127,7 +127,7 @@ export class TypeormAdapter {
         }
 
         const entities = options.entities ?? [];
-        const resovler = createModelResolver(injector.platform(), {
+        const resovler = createModelResolver(injector.getRuntime(), {
             isModel: (type) => entities?.includes(type as Type),
             getPropertyMeta: (type) => this.getModelPropertyMetadata(type),
             hasField: (parameter, ctx) => ctx.request?.body,

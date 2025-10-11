@@ -1,6 +1,6 @@
 import {
-    isFunction, lang, Platform, ctorName, InvocationContext, HandlerScope, HandlerFn,
-    Context, ContextToken, invokeTail, RuntimeContext, InterceptorLike, isDefined,
+    isFunction, lang, Runtime, ctorName, InvocationContext, HandlerScope, HandlerFn,
+    Context, ContextToken, invokeTail, InitializeContext, InterceptorLike, isDefined,
     ParameterMetadata, ClassRef, proxyTag, isObject, isNil, object2string, getClassify,
     composeHandlers, composeInterceptors
 } from '@tsdi/ioc';
@@ -21,11 +21,11 @@ import { AroundMetadata } from '../metadata/meta';
  */
 export class ProceedingScope implements Proceeding {
     constructor(
-        readonly platform: Platform
+        readonly runtime: Runtime
     ) { }
 
 
-    pointcutCtor(ctx: RuntimeContext, next: HandlerFn, context: Context) {
+    pointcutCtor(ctx: InitializeContext, next: HandlerFn, context: Context) {
         const advisor = context.get(Advisor);
         if (!advisor.hasCtor(ctx.classRef)) {
             return invokeTail(() => next(ctx, context), () => {
@@ -37,7 +37,7 @@ export class ProceedingScope implements Proceeding {
         }
 
         ctx.isNewContext = false;
-        return this.handle(ctx.classRef, `${ctx.classRef.className}.${ctorName}`, ctorName, null, advisor, ctx.platform, {
+        return this.handle(ctx.classRef, `${ctx.classRef.className}.${ctorName}`, ctorName, null, advisor, ctx.runtime, {
             parent: ctx.context,
             args: ctx.args,
             params: ctx.params,
@@ -51,7 +51,7 @@ export class ProceedingScope implements Proceeding {
 
     }
 
-    pointcutProperty(ctx: RuntimeContext, next: HandlerFn, context: Context) {
+    pointcutProperty(ctx: InitializeContext, next: HandlerFn, context: Context) {
         return invokeTail(() => next(ctx, context), () => {
             const advisor = context.get(Advisor);
             if (isDefined(ctx.instance) && (ctx.hasPointcut || advisor.hasPointcut(ctx.instance, ctx.classRef, true))) {
@@ -101,7 +101,7 @@ export class ProceedingScope implements Proceeding {
                     return Reflect.get(target, name, receiver);
                 }
 
-                return this.handle(rootRef, fullName, name, receiver ?? proxy, advisor, this.platform, {
+                return this.handle(rootRef, fullName, name, receiver ?? proxy, advisor, this.runtime, {
                     target: root,
                     parent,
                     args: [],
@@ -123,7 +123,7 @@ export class ProceedingScope implements Proceeding {
                 }
 
                 const oldValue = Reflect.get(target, name, receiver);
-                return this.handle(rootRef, fullName, name, receiver ?? proxy, advisor, this.platform, {
+                return this.handle(rootRef, fullName, name, receiver ?? proxy, advisor, this.runtime, {
                     target: root,
                     parent,
                     args: [],
@@ -141,9 +141,9 @@ export class ProceedingScope implements Proceeding {
     }
 
     protected proxy<T>(originMethod: Function, propertyKey: string | symbol, fullName: string, advisor: Advisor, receiver: T, target: any, targetRef: ClassRef, parent?: InvocationContext) {
-        const platform = this.platform;
+        const runtime = this.runtime;
         return (...args: any[]) => {
-            if (!platform || !platform.injector || platform.injector.destroyed) {
+            if (!runtime || !runtime.injector || runtime.injector.destroyed) {
                 return originMethod.call(target, ...args)
             }
             const larg = lang.last(args);
@@ -151,7 +151,7 @@ export class ProceedingScope implements Proceeding {
                 args = args.slice(0, args.length - 1);
                 parent = larg
             }
-            return this.handle(targetRef, fullName, propertyKey, receiver, advisor, platform, {
+            return this.handle(targetRef, fullName, propertyKey, receiver, advisor, runtime, {
                 target,
                 originMethod,
                 args,
@@ -160,7 +160,7 @@ export class ProceedingScope implements Proceeding {
         }
     }
 
-    private handle(targetRef: ClassRef, fullName: string, propertyKey: string | symbol, receiver: any, advisor: Advisor, platform: Platform, options: {
+    private handle(targetRef: ClassRef, fullName: string, propertyKey: string | symbol, receiver: any, advisor: Advisor, runtime: Runtime, options: {
         target?: any,
         originMethod?: Function,
         args?: any[];
@@ -174,7 +174,7 @@ export class ProceedingScope implements Proceeding {
         if (!options.params) {
             options.params = targetRef?.getParameters(propertyKey);
         }
-        const joinPoint = JoinPoint.create(options.parent?.injector ?? platform.getInjector('root') ?? platform.getInjector('platform'), {
+        const joinPoint = JoinPoint.create(options.parent?.injector ?? runtime.getInjector('root') ?? runtime.getInjector('platform'), {
             ...options,
             receiver,
             targetRef,
@@ -188,7 +188,7 @@ export class ProceedingScope implements Proceeding {
             joinPoint.onDestroy(options.parent)
         }
 
-        return getAdvicesLifeScope(platform).handle(joinPoint, platform.context, options.next ?? (() => joinPoint.returning));
+        return getAdvicesLifeScope(runtime).handle(joinPoint, runtime.context, options.next ?? (() => joinPoint.returning));
     }
 
 }
@@ -196,11 +196,11 @@ export class ProceedingScope implements Proceeding {
 
 
 const ADVICES_SCOPE = new ContextToken<HandlerScope>(() => null!);
-export function getAdvicesLifeScope(platform: Platform): HandlerScope<JoinPoint> {
-    let scope = platform.context.get(ADVICES_SCOPE);
+export function getAdvicesLifeScope(runtime: Runtime): HandlerScope<JoinPoint> {
+    let scope = runtime.context.get(ADVICES_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<JoinPoint>(platform, adviceHanlder, ADVICES_INTERCEPTORS);
-        platform.context.set(ADVICES_SCOPE, scope);
+        scope = new HandlerScope<JoinPoint>(runtime, adviceHanlder, ADVICES_INTERCEPTORS);
+        runtime.context.set(ADVICES_SCOPE, scope);
     }
     return scope;
 }

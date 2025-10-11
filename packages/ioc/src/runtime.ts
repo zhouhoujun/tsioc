@@ -10,10 +10,10 @@ import { HandlerScope } from './lifescope/lifescope';
 import { Context } from './handler';
 
 /**
- * platform of {@link Injector}.
+ * Runtime of {@link Injector}.
  */
 @Abstract()
-export abstract class Platform implements OnDestroy {
+export abstract class Runtime implements OnDestroy {
     /**
      * registered modules.
      */
@@ -23,7 +23,7 @@ export abstract class Platform implements OnDestroy {
      */
     abstract get injector(): Injector;
 
-    abstract get runtime(): HandlerScope;
+    abstract get initialize(): HandlerScope;
     abstract get design(): HandlerScope;
 
     abstract get context(): Context;

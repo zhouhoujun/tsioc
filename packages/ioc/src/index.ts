@@ -8,7 +8,7 @@ export * from './context';
 export * from './resolver';
 export * from './invocation';
 
-export * from './platform';
+export * from './runtime';
 
 // utils
 export * from './utils/chk';
@@ -35,7 +35,7 @@ export * from './handler';
 export * from './lifescope/ctx';
 export * from './lifescope/commom';
 export * from './lifescope/lifescope';
-export * from './lifescope/runtime';
+export * from './lifescope/initialize';
 export * from './lifescope/design';
 
 // module

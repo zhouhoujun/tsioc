@@ -90,7 +90,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
             ends = [];
             this._maps.set(target.type, ends);
         }
-        let injector = this.injector.platform().getRegisterIn(target.type);
+        let injector = this.injector.getRuntime().getRegisterIn(target.type);
         if (!injector) {
             injector = this.injector;
             injector.register(target.type as Type);

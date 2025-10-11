@@ -8,7 +8,7 @@ import { ProvidedInMetadata } from './metadata/meta';
 import { isArray } from './utils/chk';
 import { InvocationContext, InvokeOptions } from './context';
 import { Exception } from './exception';
-import { Platform } from './platform';
+import { Runtime } from './runtime';
 
 /**
  * injector.
@@ -32,11 +32,11 @@ export abstract class Injector implements Destroyable, OnDestroy {
      */
     readonly parent?: Injector;
     /**
-     * platform.
+     * get runtime.
      * 
-     * 容器平台环境
+     * 容器运行环境
      */
-    abstract platform(): Platform;
+    abstract getRuntime(): Runtime;
     /**
      * registered tokens.
      * 

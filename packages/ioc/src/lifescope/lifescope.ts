@@ -1,5 +1,5 @@
 import { composeInterceptors, Handler, HandlerFn, InterceptorFn, InterceptorLike, invokeTail, NextOpter, toHandlerFn } from '../handler';
-import { Platform } from '../platform';
+import { Runtime } from '../runtime';
 import { isFunction, isNumber } from '../utils/chk';
 
 /**
@@ -11,7 +11,7 @@ export class HandlerScope<TInput = any, TContext = any, TOutput = any> implement
     private interceptors: InterceptorLike<TInput>[]
 
     constructor(
-        readonly platform: Platform | null,
+        readonly runtime: Runtime | null,
         private backend: HandlerFn<TInput, TOutput, TContext> | Handler<TInput, TOutput, TContext>,
         interceptors: InterceptorLike<TInput, TOutput, TContext>[] = []
     ) {
@@ -20,7 +20,7 @@ export class HandlerScope<TInput = any, TContext = any, TOutput = any> implement
 
     handle(input: TInput, context?: TContext, next?: NextOpter<TOutput, TContext> | ((input: TInput) => any)): TOutput {
         const chain = this.getChain();
-        return invokeTail<any>(() => chain(input, isFunction(this.backend) ? this.backend : toHandlerFn(this.backend), context ?? this.platform?.context), next);
+        return invokeTail<any>(() => chain(input, isFunction(this.backend) ? this.backend : toHandlerFn(this.backend), context ?? this.runtime?.context), next);
     }
 
     /**

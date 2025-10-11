@@ -1,5 +1,5 @@
 /* eslint-disable no-useless-escape */
-import { isString, isRegExp, isArray, ctorName, Decors, Platform, ClassRef, DecoratorType } from '@tsdi/ioc';
+import { isString, isRegExp, isArray, ctorName, Decors, Runtime, ClassRef, DecoratorType } from '@tsdi/ioc';
 import { AdviceMatcher } from '../AdviceMatcher';
 import { AdviceMetadata } from '../metadata/meta';
 import { AopDef } from '../metadata/ref';
@@ -14,7 +14,7 @@ import { MatchExpress, MatchOptions } from '../Advicer';
  */
 export class DefaultAdviceMatcher implements AdviceMatcher {
 
-    constructor(private platform: Platform) { }
+    constructor(private runtime: Runtime) { }
 
 
     parse(aspectMeta: AdviceMetadata): MatchExpress {
@@ -138,8 +138,8 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
 
         if (targetChkExp.test(strExp)) {
             const torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
-            const platform = this.platform;
-            return (name, fullName, targetRef, target, options) => (options?.way != 'host') && platform.getInjector(targetRef.type).getTokenProvider(torken) === targetRef.type
+            const runtime = this.runtime;
+            return (name, fullName, targetRef, target, options) => (options?.way != 'host') && runtime.getInjector(targetRef.type).getTokenProvider(torken) === targetRef.type
         }
 
         if (getPropExp.test(strExp)) {

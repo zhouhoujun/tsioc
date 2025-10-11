@@ -10,7 +10,7 @@ import { InjectFlags, Token } from '../tokens';
 import { immediate } from '../utils/lang';
 import { composeHandlers } from '../handler';
 import { getClassify } from '../metadata/refl';
-import { Platform } from '../platform';
+import { Runtime } from '../runtime';
 import { Provider } from '../providers';
 import { ResolveInterceptorLike } from '../resolver';
 
@@ -326,7 +326,7 @@ export abstract class AbstractInvocationFactory<TOpts extends InvocationOptions 
 
 
     constructor(
-        protected platform: Platform
+        protected runtime: Runtime
     ) {
 
     }
@@ -351,7 +351,7 @@ export abstract class AbstractInvocationFactory<TOpts extends InvocationOptions 
     }
     protected mergeProviders<T>(typeRef: ClassRef<T>, options?: TOpts): Provider[] {
         const providers: Provider[] = [];
-        const typeProviders = this.platform.getTypeProvider(typeRef);
+        const typeProviders = this.runtime.getTypeProvider(typeRef);
         if (typeProviders) {
             providers.push(...typeProviders);
         }
@@ -372,7 +372,7 @@ export abstract class AbstractInvocationFactory<TOpts extends InvocationOptions 
     }
 
     protected getInjector<T>(typeRef: ClassRef<T>, options?: TOpts): Injector {
-        return options?.injector ?? this.platform.getRegisterIn(typeRef.type)!
+        return options?.injector ?? this.runtime.getRegisterIn(typeRef.type)!
     }
 
 }

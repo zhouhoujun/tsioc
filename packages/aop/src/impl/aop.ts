@@ -1,4 +1,4 @@
-import { AbstractType, RuntimeContext, AnnotationType, HandlerFn, Context, noPointcut } from '@tsdi/ioc';
+import { AbstractType, InitializeContext, AnnotationType, HandlerFn, Context, noPointcut } from '@tsdi/ioc';
 import { Proceeding } from '../Proceeding';
 
 
@@ -8,7 +8,7 @@ import { Proceeding } from '../Proceeding';
  *
  * @export
  */
-export const pointcutInterceptor = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
+export const pointcutInterceptor = (ctx: InitializeContext, next: HandlerFn, context: Context) => {
     if (!isValAspect(ctx.type) || !context.has(Proceeding)) return next(ctx, context);
 
     // aspect class do nothing.
@@ -22,7 +22,7 @@ export const pointcutInterceptor = (ctx: RuntimeContext, next: HandlerFn, contex
  *
  * @export
  */
-export const matchInterceptor = (ctx: RuntimeContext, next: HandlerFn, context: Context) => {
+export const matchInterceptor = (ctx: InitializeContext, next: HandlerFn, context: Context) => {
     // aspect class do nothing.
     if (!isValAspect(ctx.type) || !context.has(Proceeding)) return next(ctx, context);
 

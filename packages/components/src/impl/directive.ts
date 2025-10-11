@@ -1,6 +1,6 @@
 import {
     AbstractInvocationFactory, ClassRef, createInjector, Injectable,
-    Injector, Platform, AbstractType, InvokeArguments,
+    Injector, Runtime, AbstractType, InvokeArguments,
     Provider
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
@@ -56,9 +56,9 @@ export class DirectiveRefImpl<T> extends DirectiveRef<T> {
 export class DirectiveFactoryImpl extends AbstractInvocationFactory<DirectiveOptions> implements DirectiveFactory<DirectiveOptions> {
 
     constructor(
-        platform: Platform
+        runtime: Runtime
     ) {
-        super(platform);
+        super(runtime);
     }
 
     protected override getInjector<T>(typeRef: ClassRef<T>, options: DirectiveOptions): Injector {

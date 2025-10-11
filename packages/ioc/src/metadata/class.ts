@@ -10,7 +10,7 @@ import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { Exception } from '../exception';
 import { Injector, MethodType, Resolve } from '../injector';
 import { Context, HandlerFn } from '../handler';
-import { DesignContext, RuntimeContext } from '../lifescope/ctx';
+import { DesignContext, InitializeContext } from '../lifescope/ctx';
 import { Invocation, InvocationFactory } from '../invocation';
 
 
@@ -687,7 +687,7 @@ export interface DecorRegisterOption<T = any> {
      * raise when resolve instance of Type.
      * raise runtime handles order by beforeConstructor -> afterConstructor -> property -> method -> class
      */
-    runtime?: RuntimeScopeHandles<RuntimeContext>;
+    runtime?: RuntimeScopeHandles<InitializeContext>;
 }
 
 /**
@@ -773,7 +773,7 @@ export interface DecoratorFn extends Function {
      * get decorator runtime handlers.
      * @param type decorator type.
      */
-    getRuntimeHandler?(type: DecoratorScope): HandlerFn<RuntimeContext> | undefined;
+    getRuntimeHandler?(type: DecoratorScope): HandlerFn<InitializeContext> | undefined;
     /**
      * get decorator design handlers.
      * @param type decorator type.

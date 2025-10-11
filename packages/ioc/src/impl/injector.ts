@@ -10,13 +10,13 @@ import {
     Injector, INJECT_IMPL, OptionFlags, RegOption, TypeOption
 } from '../injector';
 import { Exception } from '../exception';
-import { Platform } from '../platform';
+import { Runtime } from '../runtime';
 import { getClassRef } from '../metadata/refl';
 import { ClassRef } from '../metadata/class';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
 import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
 import { createContext, InvocationContext, InvokeOptions, hasContextOptions } from '../context';
-import { DefaultPlatform } from './platform';
+import { DefaultRuntime } from './runtime';
 import { DesignContext } from '../lifescope/ctx';
 import { DefaultInvocationFactory } from './invocation';
 import { InvocationFactory } from '../invocation';
@@ -39,7 +39,7 @@ export class DefaultInjector extends Injector {
 
     private _destroyed = false;
     protected _dsryCbs = new Set<DestroyCallback>();
-    protected _plat?: Platform;
+    protected _plat?: Runtime;
     protected isStatic?: boolean;
 
     protected _readyDefer = defer<void>();
@@ -75,22 +75,22 @@ export class DefaultInjector extends Injector {
             case 'platform':
                 platformAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isPlatformAlias;
-                this._plat = new DefaultPlatform(this);
+                this._plat = new DefaultRuntime(this);
                 registerCores(this, this._plat);
                 break;
             case 'root':
-                this._plat = this.parent!.platform();
+                this._plat = this.parent!.getRuntime();
                 this._plat.register(this);
                 this._plat.setInjector(scope, this);
                 rootAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isRootAlias;
                 break;
             case 'static':
-                this._plat = this.parent!.platform();
+                this._plat = this.parent!.getRuntime();
                 this._plat.register(this);
                 break;
             default:
-                this._plat = this.parent!.platform();
+                this._plat = this.parent!.getRuntime();
                 this._plat.register(this);
                 if (scope) {
                     this._plat.setInjector(scope, this);
@@ -123,7 +123,7 @@ export class DefaultInjector extends Injector {
         return Array.from(this.records.keys())
     }
 
-    platform(): Platform {
+    getRuntime(): Runtime {
         return this._plat!
     }
 
@@ -131,9 +131,9 @@ export class DefaultInjector extends Injector {
     register(...types: (AbstractType | RegisterOption)[]): this;
     register(...args: any[]): this {
         this.assertNotDestroyed();
-        const platform = this.platform();
+        const runtime = this.getRuntime();
         deepForEach(args, t => {
-            this.processProvider(platform, t)
+            this.processProvider(runtime, t)
         });
         return this
     }
@@ -178,34 +178,34 @@ export class DefaultInjector extends Injector {
     protected processInject(providers: Provider[]) {
         this.assertNotDestroyed();
         if (providers.length) {
-            const platform = this.platform();
-            return eachProvider(providers, p => this.processProvider(platform, p))
+            const runtime = this.getRuntime();
+            return eachProvider(providers, p => this.processProvider(runtime, p))
         }
     }
 
     protected processUse(args: ModuleType[], types?: AbstractType[]) {
         this.assertNotDestroyed();
-        const platform = this.platform();
+        const runtime = this.getRuntime();
         const stk: AbstractType[] = [];
         return deepForEach(args, (ty: any) => {
             if (isAbstractType(ty)) {
                 types?.push(ty);
-                return this.processInjectorType(platform, ty, stk)
+                return this.processInjectorType(runtime, ty, stk)
             } else if (isFunction(ty.module) && isArray(ty.providers)) {
                 types?.push(ty.module);
-                return this.processInjectorType(platform, ty, stk)
+                return this.processInjectorType(runtime, ty, stk)
             }
         }, v => isPlainObject(v) && !(isFunction(v.module) && isArray(v.providers)));
     }
 
-    protected processProvider(platform: Platform, p: TypeOption | StaticProvider | DynamicProvider): void | Promise<void> {
+    protected processProvider(runtime: Runtime, p: TypeOption | StaticProvider | DynamicProvider): void | Promise<void> {
         if (isFunction(p)) {
-            this.registerType(platform, p)
+            this.registerType(runtime, p)
         } else if (isPlainObject(p)) {
             if ((p as StaticProviders).provide) {
-                this.registerProvider(platform, p as StaticProviders)
+                this.registerProvider(runtime, p as StaticProviders)
             } else if ((p as TypeOption).type) {
-                this.registerType(platform, (p as TypeOption).type, p as TypeOption)
+                this.registerType(runtime, (p as TypeOption).type, p as TypeOption)
             } else if ((p as DynamicProvider).provider) {
                 const pdrs = (p as DynamicProvider).provider(this);
                 if (isPromise(pdrs)) {
@@ -224,16 +224,16 @@ export class DefaultInjector extends Injector {
      * @param option the type register option.
      * @param [singleton]
      */
-    protected registerType(platform: Platform, type: AbstractType, option?: RegOption) {
-        this.registerReflect(platform, getClassRef(type), option)
+    protected registerType(runtime: Runtime, type: AbstractType, option?: RegOption) {
+        this.registerReflect(runtime, getClassRef(type), option)
     }
 
-    protected registerReflect(platform: Platform, def: ClassRef, option?: RegOption) {
+    protected registerReflect(runtime: Runtime, def: ClassRef, option?: RegOption) {
         const providedIn = option?.providedIn ?? def.getAnnotation().providedIn;
-        platform.getInjector<DefaultInjector>(providedIn, this).processRegister(platform, def, option)
+        runtime.getInjector<DefaultInjector>(providedIn, this).processRegister(runtime, def, option)
     }
 
-    protected processRegister(platform: Platform, classRef: ClassRef, option?: RegOption) {
+    protected processRegister(runtime: Runtime, classRef: ClassRef, option?: RegOption) {
         // make sure class register once.
         const type = classRef.type;
         if (this.has(classRef.type, InjectFlags.Default)) {
@@ -245,9 +245,9 @@ export class DefaultInjector extends Injector {
         if (option?.injectorType) {
             injectorType = (regType, typeRef) => processInjectorType(
                 type, [],
-                (pdr) => this.processProvider(platform, pdr), (tyref, ty) => {
+                (pdr) => this.processProvider(runtime, pdr), (tyref, ty) => {
                     if (ty !== regType) {
-                        this.registerReflect(platform, tyref)
+                        this.registerReflect(runtime, tyref)
                     }
                 }, typeRef)
         }
@@ -260,11 +260,11 @@ export class DefaultInjector extends Injector {
             ...option,
             injectorType,
             classRef,
-            platform,
+            runtime,
             type
         } as DesignContext;
 
-        platform.design.handle(ctx, null, {
+        runtime.design.handle(ctx, null, {
             finally: () => {
                 cleanObj(ctx);
             }
@@ -278,7 +278,7 @@ export class DefaultInjector extends Injector {
      * @param provider 
      * @returns 
      */
-    protected registerProvider(platfrom: Platform, provider: StaticProviders) {
+    protected registerProvider(platfrom: Runtime, provider: StaticProviders) {
         if (provider.asDefault && this.has(provider.provide)) {
             return
         }
@@ -307,17 +307,17 @@ export class DefaultInjector extends Injector {
     }
 
 
-    protected processInjectorType(platform: Platform, typeOrDef: AbstractType | ModuleWithProviders, dedupStack: AbstractType[], moduleRefl?: ClassRef) {
+    protected processInjectorType(runtime: Runtime, typeOrDef: AbstractType | ModuleWithProviders, dedupStack: AbstractType[], moduleRefl?: ClassRef) {
         return processInjectorType(typeOrDef, dedupStack,
-            (pdr) => this.processProvider(platform, pdr),
+            (pdr) => this.processProvider(runtime, pdr),
             (tyref, type, options) => {
-                this.registerReflect(platform, tyref, options)
+                this.registerReflect(runtime, tyref, options)
             }, moduleRefl)
     }
 
     has<T>(token: Token<T>, flags = InjectFlags.Default): boolean {
         this.assertNotDestroyed();
-        if (this.platform().hasSingleton(token)) return true;
+        if (this.getRuntime().hasSingleton(token)) return true;
         if (!(flags & InjectFlags.SkipSelf) && (this.records.has(token))) return true;
         if (!(flags & InjectFlags.Self)) {
             return this.parent?.has(token, flags) === true
@@ -340,9 +340,9 @@ export class DefaultInjector extends Injector {
 
     setSingleton<T>(token: Token<T>, value: T): this {
         this.assertNotDestroyed();
-        const platform = this.platform();
-        if (!platform.hasSingleton(token)) {
-            platform.setSingleton(this, token, value)
+        const runtime = this.getRuntime();
+        if (!runtime.hasSingleton(token)) {
+            runtime.setSingleton(this, token, value)
         }
         return this
     }
@@ -354,17 +354,17 @@ export class DefaultInjector extends Injector {
     get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, context?: InvocationContext): T {
         this.assertNotDestroyed();
         if (this.isself(token)) return this as any;
-        const platform = this.platform();
-        if (platform.hasSingleton(token)) return platform.getSingleton(token);
+        const runtime = this.getRuntime();
+        if (runtime.hasSingleton(token)) return runtime.getSingleton(token);
 
-        return this.tryResolve(token, this.records.get(token), platform, this.parent, context,
+        return this.tryResolve(token, this.records.get(token), runtime, this.parent, context,
             notFoundValue === undefined ? THROW_FLAGE : notFoundValue,
             flags ?? InjectFlags.Default)
     }
 
-    protected tryResolve(token: Token, record: FactoryRecord | undefined, platform: Platform, parent: Injector | undefined,
+    protected tryResolve(token: Token, record: FactoryRecord | undefined, runtime: Runtime, parent: Injector | undefined,
         context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags) {
-        return tryResolveToken(token, record, this.records, platform, parent, context, notFoundValue, flags, record?.stic ?? this.isStatic)
+        return tryResolveToken(token, record, this.records, runtime, parent, context, notFoundValue, flags, record?.stic ?? this.isStatic)
     }
 
 
@@ -420,7 +420,7 @@ export class DefaultInjector extends Injector {
         const isp = this.records?.get(token);
         if (isp) {
             this.records.delete(token);
-            if (isp.type) this.platform().clearTypeProvider(isp.type);
+            if (isp.type) this.getRuntime().clearTypeProvider(isp.type);
             cleanObj(isp)
         }
 
@@ -538,9 +538,9 @@ export class DefaultInjector extends Injector {
 
 
     protected clear() {
-        this.scope && this.platform()?.removeInjector(this.scope);
+        this.scope && this.getRuntime()?.removeInjector(this.scope);
         this.records.forEach(r => {
-            if (r?.type) this.platform().clearTypeProvider(r.type);
+            if (r?.type) this.getRuntime().clearTypeProvider(r.type);
         });
         this.records.clear();
         this.records = null!;
@@ -588,6 +588,6 @@ INJECT_IMPL.isInjector = (target) => target instanceof DefaultInjector;
  * @export
  * @param {IContainer} container
  */
-function registerCores(container: Injector, platform: Platform) {
+function registerCores(container: Injector, platform: Runtime) {
     platform.setSingleton(container, InvocationFactory, new DefaultInvocationFactory(platform));
 }

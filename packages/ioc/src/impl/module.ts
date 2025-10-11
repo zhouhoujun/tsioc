@@ -3,7 +3,7 @@ import { Injector, InjectorScope } from '../injector';
 import { getClassRef, getClassify } from '../metadata/refl';
 import { ClassRef, ModuleDef } from '../metadata/class';
 import { ModuleOption, ModuleRef } from '../module.ref';
-import { Platform } from '../platform';
+import { Runtime } from '../runtime';
 import { isModuleProviders, ModuleWithProviders, Provider } from '../providers';
 import { Type } from '../types';
 import { DefaultInjector } from './injector';
@@ -30,7 +30,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     protected initWithOptions(option: ModuleOption) {
         const dedupStack: Type[] = [];
-        const platfrom = this.platform();
+        const platfrom = this.getRuntime();
         platfrom.modules.set(this._type, this);
         let ps: Promise<void> | void | undefined;
         
@@ -51,7 +51,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     }
 
-    private ininModule(platfrom: Platform, dedupStack: Type[], option: ModuleOption, ps: Promise<void> | void | undefined) {
+    private ininModule(platfrom: Runtime, dedupStack: Type[], option: ModuleOption, ps: Promise<void> | void | undefined) {
 
         ps = mergePromise(ps, () => this.processInjectorType(platfrom, this._type, dedupStack, this.moduleReflect));
 
@@ -82,12 +82,12 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
             const modeuleRef = createModuleRef(typeOrDef, this);
             return modeuleRef.ready;
         } else {
-            return this.processInjectorType(this.platform(), typeOrDef, [])
+            return this.processInjectorType(this.getRuntime(), typeOrDef, [])
         }
     }
 
     protected override clear() {
-        this.platform()?.modules.delete(this._type);
+        this.getRuntime()?.modules.delete(this._type);
         super.clear();
         this._type = null!;
         this._typeRefl = null!;

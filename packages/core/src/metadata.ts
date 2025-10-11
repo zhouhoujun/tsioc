@@ -235,7 +235,7 @@ function injectBean(injector: Injector, typeRef: ClassRef<any>, meta: Confgiurat
                     multiOrder
                 } as Provider
             }
-            providedIn ? injector.platform().getInjector(providedIn).inject(provider) : injector.inject(provider);
+            providedIn ? injector.getRuntime().getInjector(providedIn).inject(provider) : injector.inject(provider);
         });
 }
 
@@ -277,7 +277,7 @@ function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name:
                     const handler = createInvocationHandler(invocation, options, decor.propertyKey);
                     const event = filter ?? defaultFilter;
                     const isFILO = isFunction(event.getStrategy) && event.getStrategy() == 'FILO';
-                    const multicaster = providedIn ? injector.platform().getInjector(providedIn).get(ApplicationEventMulticaster) : currMulticaster;
+                    const multicaster = providedIn ? injector.getRuntime().getInjector(providedIn).get(ApplicationEventMulticaster) : currMulticaster;
                     multicaster.addListener(event, handler, isFILO ? order ?? 0 : order);
                     invocation.onDestroy(() => multicaster.removeListener(event, handler))
                 });
@@ -301,7 +301,7 @@ function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name:
                     const handler = createInvocationHandler(invocation, options, decor.propertyKey);
                     const event = filter ?? defaultFilter;
                     const isFILO = isFunction(event.getStrategy) && event.getStrategy() == 'FILO';
-                    const multicaster = providedIn ? injector.platform().getInjector(providedIn).get(ApplicationEventMulticaster) : currMulticaster;
+                    const multicaster = providedIn ? injector.getRuntime().getInjector(providedIn).get(ApplicationEventMulticaster) : currMulticaster;
                     multicaster.addListener(event, handler, isFILO ? order ?? 0 : order);
                     invocation.onDestroy(() => multicaster.removeListener(event, handler))
                 });
@@ -494,9 +494,9 @@ export const Interceptable: Interceptable = createDecorator('Interceptable', {
                 const interceptor = (...args: any[]) => invocation.invoke(decor.propertyKey, args);
                 if (token) {
                     const provider = { provide: interceptor, useValue: interceptor, multi: true, multiOrder: order };
-                    providedIn ? injector.platform().getInjector(providedIn).inject(provider) : injector.inject(provider);
+                    providedIn ? injector.getRuntime().getInjector(providedIn).inject(provider) : injector.inject(provider);
                 } else {
-                    const resolver = providedIn ? injector.platform().getInjector(providedIn).get(InterceptorResolver) : currResolver;
+                    const resolver = providedIn ? injector.getRuntime().getInjector(providedIn).get(InterceptorResolver) : currResolver;
                     resolver.addInterceptor(target as AbstractType | string, interceptor, order);
                     invocation.onDestroy(() => resolver.removeInterceptor(target as AbstractType | string, interceptor));
 
@@ -543,9 +543,9 @@ export const Filterable: Filterable = createDecorator('Filterable', {
                 const filter = (...args: any[]) => invocation.invoke(decor.propertyKey, args);
                 if (token) {
                     const provider = { provide: target, useValue: filter, multi: true, multiOrder: order };
-                    providedIn ? injector.platform().getInjector(providedIn).inject(provider) : injector.inject(provider);
+                    providedIn ? injector.getRuntime().getInjector(providedIn).inject(provider) : injector.inject(provider);
                 } else {
-                    const resolver = providedIn ? injector.platform().getInjector(providedIn).get(FilterResolver) : currResolver;
+                    const resolver = providedIn ? injector.getRuntime().getInjector(providedIn).get(FilterResolver) : currResolver;
                     resolver.addFilter(target as AbstractType | string, filter, order);
                     invocation.onDestroy(() => resolver.removeFilter(target as AbstractType | string, filter));
                 }
@@ -602,7 +602,7 @@ export const FilterHandler: FilterHandler = createDecorator('FilterHandler', {
             decors.forEach(decor => {
                 const { filter, order, providedIn, ...options } = decor.metadata;
                 const handler = createInvocationHandler(invocation, options, decor.propertyKey);
-                const resolver = providedIn ? injector.platform().getInjector(providedIn).get(FilterHandlerResolver) : currResolver;
+                const resolver = providedIn ? injector.getRuntime().getInjector(providedIn).get(FilterHandlerResolver) : currResolver;
                 resolver.addHandle(filter, handler, order);
                 invocation.onDestroy(() => resolver.removeHandle(filter, handler));
             });
