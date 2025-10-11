@@ -30,7 +30,7 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * 
      * 上级容器。
      */
-    readonly parent?: Injector;
+    abstract get parent(): Injector | null;
     /**
      * get runtime.
      * 

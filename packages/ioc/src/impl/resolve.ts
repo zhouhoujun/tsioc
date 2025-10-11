@@ -218,7 +218,7 @@ export class NullInjectorException extends Exception {
  * @param provider 
  * @returns 
  */
-export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Runtime, parent: Injector | undefined,
+export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Runtime, parent: Injector | null,
     context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     try {
         const value = resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags, isStatic);
@@ -249,7 +249,7 @@ export const THROW_FLAGE = {};
  * @param provider 
  * @returns 
  */
-export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Runtime, parent: Injector | undefined,
+export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Runtime, parent: Injector | null,
     context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     if (rd && !(flags & InjectFlags.SkipSelf)) {
         let value = rd.value;
@@ -280,7 +280,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                     chlrd,
                     records,
                     platform,
-                    !chlrd && !(dep.options & OptionFlags.CheckParent) ? undefined : parent,
+                    !chlrd && !(dep.options & OptionFlags.CheckParent) ? null : parent,
                     context,
                     dep.options & OptionFlags.Optional ? null : THROW_FLAGE,
                     flags,

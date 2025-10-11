@@ -39,7 +39,7 @@ export class DefaultInjector extends Injector {
 
     private _destroyed = false;
     protected _dsryCbs = new Set<DestroyCallback>();
-    protected _plat?: Runtime;
+    protected _runtime?: Runtime|null;
     protected isStatic?: boolean;
 
     protected _readyDefer = defer<void>();
@@ -50,18 +50,25 @@ export class DefaultInjector extends Injector {
      * @type {Map<Token, Function>}
      */
     protected records: Map<Token, FactoryRecord>;
-    private isAlias?: (token: Token) => boolean;
+    private isAlias?: null | ((token: Token) => boolean);
 
     get ready() {
         return this._readyDefer.promise
     }
 
-    constructor(providers: Provider[] = [], readonly parent?: Injector, readonly scope?: InjectorScope) {
+    private _parent: Injector|null;
+    get parent(): Injector|null {
+        return this._parent;
+    }
+
+    constructor(providers: Provider[] = [], parent?: Injector, readonly scope?: InjectorScope) {
         super()
         this.records = new Map();
         if (parent) {
+            this._parent = parent;
             this.initParent(parent)
         } else {
+            this._parent = null;
             scope = this.scope = 'platform'
         }
         this.initScope(scope);
@@ -75,25 +82,25 @@ export class DefaultInjector extends Injector {
             case 'platform':
                 platformAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isPlatformAlias;
-                this._plat = new DefaultRuntime(this);
-                registerCores(this, this._plat);
+                this._runtime = new DefaultRuntime(this);
+                registerCores(this, this._runtime);
                 break;
             case 'root':
-                this._plat = this.parent!.getRuntime();
-                this._plat.register(this);
-                this._plat.setInjector(scope, this);
+                this._runtime = this.parent!.getRuntime();
+                this._runtime.register(this);
+                this._runtime.setInjector(scope, this);
                 rootAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isRootAlias;
                 break;
             case 'static':
-                this._plat = this.parent!.getRuntime();
-                this._plat.register(this);
+                this._runtime = this.parent!.getRuntime();
+                this._runtime.register(this);
                 break;
             default:
-                this._plat = this.parent!.getRuntime();
-                this._plat.register(this);
+                this._runtime = this.parent!.getRuntime();
+                this._runtime.register(this);
                 if (scope) {
-                    this._plat.setInjector(scope, this);
+                    this._runtime.setInjector(scope, this);
                     SCOPE_PRODIDERS.length && this.inject(SCOPE_PRODIDERS);
                 }
                 injectAlias.forEach(tk => this.records.set(tk, val));
@@ -124,7 +131,7 @@ export class DefaultInjector extends Injector {
     }
 
     getRuntime(): Runtime {
-        return this._plat!
+        return this._runtime!
     }
 
     register(types: (AbstractType | RegisterOption)[]): this;
@@ -362,7 +369,7 @@ export class DefaultInjector extends Injector {
             flags ?? InjectFlags.Default)
     }
 
-    protected tryResolve(token: Token, record: FactoryRecord | undefined, runtime: Runtime, parent: Injector | undefined,
+    protected tryResolve(token: Token, record: FactoryRecord | undefined, runtime: Runtime, parent: Injector | null,
         context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags) {
         return tryResolveToken(token, record, this.records, runtime, parent, context, notFoundValue, flags, record?.stic ?? this.isStatic)
     }
@@ -547,10 +554,9 @@ export class DefaultInjector extends Injector {
         if (this.parent) {
             !this.parent.destroyed && (this.parent as DefaultInjector).offDestroy?.(this)
         }
-        this._plat = null!;
-        this.isAlias = null!;
-        // if (this._event) this._event = null!;
-        (this as any).parent = null!;
+        this._runtime = null;
+        this.isAlias = null;
+        this._parent = null;
     }
 }
 
