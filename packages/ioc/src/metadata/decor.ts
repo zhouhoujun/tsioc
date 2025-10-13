@@ -94,12 +94,6 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
  * @exports {@link Module}
  */
 export const Module: Module<ModuleMetadata> = createModuleDecorator<ModuleMetadata>('Module');
-/**
- * `DIModule` Decorator, definde class as module.
- * alias of @Module
- * @alias
- */
-export const DIModule = Module;
 
 /**
  * `Autowired` decoator.
@@ -218,14 +212,6 @@ export const Autowired: Autowired = createDecorator<AutoWiredMetadata>('Autowire
     }
 });
 
-/**
- * `Autowired` decorator, for property or param. use to auto wried type instance or value to the instance of one class with the decorator.
- *
- * alias of @Autowired()
- * 
- * @alias
- */
-export const AutoWired = Autowired;
 
 /**
  * inject decoator.

@@ -24,6 +24,7 @@ export * from './metadata/class';
 export { getDef, getClassRef, getClassify } from './metadata/refl';
 export * from './metadata/fac';
 export * from './metadata/decor';
+export { Autowired as AutoWired, Module as DIModule } from './metadata/decor';
 export * from './metadata/tk';
 
 
