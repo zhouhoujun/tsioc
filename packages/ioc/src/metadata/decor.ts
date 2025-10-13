@@ -888,3 +888,21 @@ export const Autorun: Autorun = createDecorator<RunnableMetadata>('Autorun', {
         }
     }
 });
+
+
+
+export function nonEnumerable(target: any, propertyKey: string, descriptor?: PropertyDescriptor): any {
+
+    if (descriptor) {
+        descriptor.enumerable = false;
+        return descriptor;
+    } else {
+        // 对于旧版 TypeScript/ES5，可能需要这种方式
+        Object.defineProperty(target, propertyKey, {
+            enumerable: false,
+            writable: true,
+            configurable: true,
+            value: target[propertyKey]
+        });
+    }
+}

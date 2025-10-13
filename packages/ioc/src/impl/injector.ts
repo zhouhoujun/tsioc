@@ -21,6 +21,7 @@ import { DesignContext } from '../lifescope/ctx';
 import { DefaultInvocationFactory } from './invocation';
 import { InvocationFactory } from '../invocation';
 import { eachProvider, Empty, generateRecord, MUTIL, processInjectorType, THROW_FLAGE, tryResolveToken } from './resolve';
+import { nonEnumerable } from '../metadata/decor';
 
 
 export const SCOPE_PRODIDERS: Provider[] = [];
@@ -38,8 +39,13 @@ export class DefaultInjector extends Injector {
     static [noPointcut] = true;
 
     private _destroyed = false;
+
+    @nonEnumerable
     protected _dsryCbs = new Set<DestroyCallback>();
-    protected _runtime?: Runtime|null;
+
+    @nonEnumerable
+    protected _runtime: Runtime | null = null;
+
     protected isStatic?: boolean;
 
     protected _readyDefer = defer<void>();
@@ -56,8 +62,10 @@ export class DefaultInjector extends Injector {
         return this._readyDefer.promise
     }
 
-    private _parent: Injector|null;
-    get parent(): Injector|null {
+    @nonEnumerable
+    private _parent: Injector | null;
+
+    getParent(): Injector | null {
         return this._parent;
     }
 
@@ -86,18 +94,18 @@ export class DefaultInjector extends Injector {
                 registerCores(this, this._runtime);
                 break;
             case 'root':
-                this._runtime = this.parent!.getRuntime();
+                this._runtime = this._parent!.getRuntime();
                 this._runtime.register(this);
                 this._runtime.setInjector(scope, this);
                 rootAlias.forEach(tk => this.records.set(tk, val));
                 this.isAlias = isRootAlias;
                 break;
             case 'static':
-                this._runtime = this.parent!.getRuntime();
+                this._runtime = this._parent!.getRuntime();
                 this._runtime.register(this);
                 break;
             default:
-                this._runtime = this.parent!.getRuntime();
+                this._runtime = this._parent!.getRuntime();
                 this._runtime.register(this);
                 if (scope) {
                     this._runtime.setInjector(scope, this);
@@ -327,7 +335,7 @@ export class DefaultInjector extends Injector {
         if (this.getRuntime().hasSingleton(token)) return true;
         if (!(flags & InjectFlags.SkipSelf) && (this.records.has(token))) return true;
         if (!(flags & InjectFlags.Self)) {
-            return this.parent?.has(token, flags) === true
+            return this._parent?.has(token, flags) === true
         }
         return false
     }
@@ -364,7 +372,7 @@ export class DefaultInjector extends Injector {
         const runtime = this.getRuntime();
         if (runtime.hasSingleton(token)) return runtime.getSingleton(token);
 
-        return this.tryResolve(token, this.records.get(token), runtime, this.parent, context,
+        return this.tryResolve(token, this.records.get(token), runtime, this._parent, context,
             notFoundValue === undefined ? THROW_FLAGE : notFoundValue,
             flags ?? InjectFlags.Default)
     }
@@ -418,7 +426,7 @@ export class DefaultInjector extends Injector {
             type = rd?.type;
         }
         if (!type && !(flags & InjectFlags.Self)) {
-            type = this.parent?.getTokenProvider(token, flags)
+            type = this._parent?.getTokenProvider(token, flags)
         }
         return type ?? null!
     }
@@ -539,7 +547,7 @@ export class DefaultInjector extends Injector {
             this.clear()
         }
         if (this.scope === 'root') {
-            return this.parent?.destroy()
+            return this._parent?.destroy()
         }
     }
 
@@ -551,8 +559,8 @@ export class DefaultInjector extends Injector {
         });
         this.records.clear();
         this.records = null!;
-        if (this.parent) {
-            !this.parent.destroyed && (this.parent as DefaultInjector).offDestroy?.(this)
+        if (this._parent) {
+            !this._parent.destroyed && (this._parent as DefaultInjector).offDestroy?.(this)
         }
         this._runtime = null;
         this.isAlias = null;

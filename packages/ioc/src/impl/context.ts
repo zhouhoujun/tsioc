@@ -15,6 +15,7 @@ import { Invocation } from '../invocation';
 import { ContextToken, HandlerLike, InterceptorLike } from '../handler';
 import { HandlerScope } from '../lifescope/lifescope';
 import { Runtime } from '../runtime';
+import { nonEnumerable } from '../metadata/decor';
 
 
 
@@ -23,28 +24,32 @@ import { Runtime } from '../runtime';
  */
 export class DefaultInvocationContext<TInj extends Injector = Injector> extends InvocationContext implements Destroyable, OnDestroy {
 
+    @nonEnumerable
     protected _refs: InvocationContext[] | null;
     private _injected = false;
 
+    @nonEnumerable
     private _dsryCbs = new Set<DestroyCallback>();
     private _destroyed = false;
 
-    #injector: TInj|null;
+    @nonEnumerable
+    private _injector: TInj | null;
     /**
      * invocation static injector. 
      */
     get injector(): TInj {
-        return this.#injector!;
+        return this._injector!;
     }
 
-    #parent: InvocationContext|null = null;
+    @nonEnumerable
+    private _parent: InvocationContext | null = null;
     /**
      * parent InvocationContext,
      * 
      * 上级上下文
      */
-    get parent(): InvocationContext|null {
-        return this.#parent;
+    getParent(): InvocationContext | null {
+        return this._parent;
     }
     /**
      * invocation target type.
@@ -72,10 +77,10 @@ export class DefaultInvocationContext<TInj extends Injector = Injector> extends 
         super();
         this._refs = [];
         this.isResolve = options.isResolve == true;
-        this.#injector = this.createInjector(injector, options.providers);
+        this._injector = this.createInjector(injector, options.providers);
         if (options.parent && injector !== options.parent.injector) {
             const parent = options.parent;
-            this.#parent = parent;
+            this._parent = parent;
             this.addRef(parent);
             parent.onDestroy(() => {
                 !this.destroyed && this.removeRef(parent);
@@ -343,8 +348,8 @@ export class DefaultInvocationContext<TInj extends Injector = Injector> extends 
             this._dsryCbs.clear();
             this.clear();
             const injector = this.injector;
-            this.#parent = null;
-            this.#injector = null;
+            this._parent = null;
+            this._injector = null;
             return injector.destroy();
         }
     }
@@ -442,7 +447,7 @@ export function getTokenResolver(runtime: Runtime): HandlerScope<[Token, InjectF
                         return next(input, context);
                     }
                     if (!context.has(type, flags)) {
-                        const injector = context.injector.parent ?? context.injector;
+                        const injector = context.injector.getParent() ?? context.injector;
                         injector.register(type);
                     }
                     return context.get(type, flags)

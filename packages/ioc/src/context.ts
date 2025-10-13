@@ -33,6 +33,10 @@ export abstract class InvocationContext implements Destroyable, OnDestroy {
      */
     abstract get used(): boolean;
     /**
+     * get parent context.
+     */
+    abstract getParent(): InvocationContext|null;
+    /**
      * invocation static injector. 
      */
     abstract get injector(): Injector;
