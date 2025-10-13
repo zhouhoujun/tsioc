@@ -37,12 +37,12 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * 容器运行环境
      */
     abstract getRuntime(): Runtime;
-    /**
-     * registered tokens.
-     * 
-     * 已注册标记令牌。
-     */
-    abstract tokens(): Token<any>[];
+    // /**
+    //  * registered tokens.
+    //  * 
+    //  * 已注册标记令牌。
+    //  */
+    // abstract tokens(): Token<any>[];
     /**
      * init inject ready.
      */

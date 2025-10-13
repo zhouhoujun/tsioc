@@ -1,7 +1,7 @@
-import { AbstractType, Type, DesignParam, Modules, TypeOf } from '../types';
-import { InjectFlags, Token } from '../tokens';
+import { AbstractType, Type, Modules } from '../types';
+import { Token } from '../tokens';
 import { ModuleType, Provider } from '../providers';
-import { ResolveInterceptorLike } from '../resolver';
+import { Parameter } from '../resolver';
 import { InvokeArguments } from '../context';
 
 /**
@@ -15,48 +15,6 @@ export interface TypeMetadata {
      * class type.
      */
     type?: AbstractType;
-}
-
-
-/**
- * provide type from.
- *
- * @export
- * @interface Provide
- * @extends {MetaType}
- */
-export interface ProvideMetadata<T = any> {
-    /**
-     * this type provide from.
-     *
-     * @type {Token}
-     * @memberof Provide
-     */
-    provider?: Token<T>;
-
-    /**
-     * is multi provider or not
-     */
-    multi?: boolean;
-
-    /**
-     * inject flags.
-     */
-    flags?: InjectFlags
-    /**
-     * custom resolver to resolve property or parameter.
-     */
-    resolver?: TypeOf<ResolveInterceptorLike>[];
-    /**
-     * null able or not.
-     */
-    nullable?: boolean;
-    /**
-     * default value
-     *
-     * @type {any}
-     */
-    defaultValue?: any;
 }
 
 
@@ -127,7 +85,7 @@ export interface ProvidersMetadata {
  * @export
  * @interface PropMetadata
  */
-export interface PropertyMetadata<T = any> extends ProvideMetadata<T> {
+export interface PropertyMetadata<T = any> extends Omit<Parameter<T>, 'name'>  {
     /**
      * property type
      *
@@ -182,14 +140,7 @@ export type MethodPropMetadata<T = any> = PropertyMetadata<T> | MethodMetadata;
  * @interface ParameterMetadata
  * @extends {PropertyMetadata}
  */
-export interface ParameterMetadata<T = any> extends ProvideMetadata<T>, DesignParam<T> {
-
-    /**
-     * method property key
-     *
-     * @type {string}
-     */
-    propertyKey: string;
+export interface ParameterMetadata<T = any> extends Parameter<T> {
 }
 
 

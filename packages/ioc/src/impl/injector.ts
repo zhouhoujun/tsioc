@@ -126,9 +126,9 @@ export class DefaultInjector extends Injector {
         return this.records.size
     }
 
-    tokens() {
-        return Array.from(this.records.keys())
-    }
+    // tokens() {
+    //     return Array.from(this.records.keys())
+    // }
 
     getRuntime(): Runtime {
         return this._runtime!

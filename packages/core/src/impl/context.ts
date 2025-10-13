@@ -1,5 +1,5 @@
 import {
-    AbstractType, Injector, Provider, DefaultInvocationContext,
+    AbstractType, Provider, DefaultInvocationContext,
     ClassRef, ModuleDef, ModuleRef, Invocation, noPointcut,
 } from '@tsdi/ioc';
 import { Logger, LoggerManagers } from '@tsdi/logger';
@@ -22,7 +22,7 @@ import { setHandlerOptions } from '../handlers/configable.impl';
  * @class BootContext
  * @extends {HandleContext}
  */
-export class DefaultApplicationContext<T = any> extends DefaultInvocationContext implements ApplicationContext<T> {
+export class DefaultApplicationContext<T = any> extends DefaultInvocationContext<ModuleRef> implements ApplicationContext<T> {
 
     private _multicaster: ApplicationEventMulticaster;
     exit = true;
@@ -34,7 +34,7 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
      */
     request!: ApplicationArguments;
 
-    constructor(readonly injector: ModuleRef, options: EnvironmentOption = {}) {
+    constructor(injector: ModuleRef, options: EnvironmentOption = {}) {
         super(injector, options);
         this._multicaster = injector.get(ApplicationEventMulticaster);
         injector.setValue(ApplicationContext, this);
@@ -52,7 +52,7 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
         this.request = options.request!
     }
 
-    protected override createInjector(injector: Injector, providers?: Provider[]): Injector {
+    protected override createInjector(injector: ModuleRef, providers?: Provider[]): ModuleRef {
         if (providers) injector.inject(providers);
         return injector
     }

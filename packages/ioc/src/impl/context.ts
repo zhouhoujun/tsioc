@@ -21,7 +21,7 @@ import { Runtime } from '../runtime';
 /**
  * The context for the {@link Invocation invocation of an operation}.
  */
-export class DefaultInvocationContext extends InvocationContext implements Destroyable, OnDestroy {
+export class DefaultInvocationContext<TInj extends Injector = Injector> extends InvocationContext implements Destroyable, OnDestroy {
 
     protected _refs: InvocationContext[] | null;
     private _injected = false;
@@ -29,10 +29,23 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
     private _dsryCbs = new Set<DestroyCallback>();
     private _destroyed = false;
 
+    #injector: TInj|null;
     /**
      * invocation static injector. 
      */
-    readonly injector: Injector;
+    get injector(): TInj {
+        return this.#injector!;
+    }
+
+    #parent: InvocationContext|null = null;
+    /**
+     * parent InvocationContext,
+     * 
+     * 上级上下文
+     */
+    get parent(): InvocationContext|null {
+        return this.#parent;
+    }
     /**
      * invocation target type.
      */
@@ -52,16 +65,17 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
      */
 
     constructor(
-        injector: Injector,
+        injector: TInj,
         private options: TargetInvokeArguments = {},
         private injectorScope: AbstractType | 'static' = 'static'
     ) {
         super();
         this._refs = [];
         this.isResolve = options.isResolve == true;
-        this.injector = this.createInjector(injector, options.providers);
+        this.#injector = this.createInjector(injector, options.providers);
         if (options.parent && injector !== options.parent.injector) {
             const parent = options.parent;
+            this.#parent = parent;
             this.addRef(parent);
             parent.onDestroy(() => {
                 !this.destroyed && this.removeRef(parent);
@@ -152,8 +166,8 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
 
 
 
-    protected createInjector(injector: Injector, providers?: Provider[]) {
-        return createInjector(providers, injector, this.injectorScope)
+    protected createInjector(injector: TInj, providers?: Provider[]): TInj {
+        return createInjector(providers, injector, this.injectorScope) as TInj;
     }
 
     /**
@@ -329,8 +343,8 @@ export class DefaultInvocationContext extends InvocationContext implements Destr
             this._dsryCbs.clear();
             this.clear();
             const injector = this.injector;
-            (this as any).parent = null;
-            (this as any).injector = null;
+            this.#parent = null;
+            this.#injector = null;
             return injector.destroy();
         }
     }
