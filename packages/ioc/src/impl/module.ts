@@ -7,7 +7,7 @@ import { Runtime } from '../runtime';
 import { isModuleProviders, ModuleWithProviders, Provider } from '../providers';
 import { Type } from '../types';
 import { DefaultInjector } from './injector';
-import { mergePromise } from './resolve';
+import { mergePromise, processInject } from './resolve';
 
 
 /**
@@ -30,8 +30,8 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     protected initWithOptions(option: ModuleOption) {
         const dedupStack: Type[] = [];
-        const platfrom = this.getRuntime();
-        platfrom.modules.set(this._type, this);
+        const runtime = this.getRuntime();
+        runtime.modules.set(this._type, this);
         let ps: Promise<void> | void | undefined;
         
         if (option.deps?.length) {
@@ -41,10 +41,10 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
         if (option.providers?.length) {
             const providers = option.providers;
-            ps = mergePromise(ps, () => this.processInject(providers))
+            ps = mergePromise(ps, () => processInject(runtime, this, providers))
         }
 
-        return mergePromise(ps, () => this.ininModule(platfrom, dedupStack, option))
+        return mergePromise(ps, () => this.ininModule(runtime, dedupStack, option))
     }
 
     protected override initProviders(providers: Provider[]): void {

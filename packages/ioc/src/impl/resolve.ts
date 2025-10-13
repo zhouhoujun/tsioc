@@ -1,15 +1,16 @@
 import { AbstractType, Type } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { isPlainObject } from '../utils/obj';
-import { deepForEach } from '../utils/lang';
-import { isArray, isDefined, isFunction, isNumber, isString, isNil } from '../utils/chk';
-import { FnType,  FactoryRecord, Injector,  DependencyRecord, OptionFlags, RegOption} from '../injector';
+import { cleanObj, deepForEach } from '../utils/lang';
+import { isArray, isDefined, isFunction, isNumber, isString, isNil, isPromise } from '../utils/chk';
+import { FnType, FactoryRecord, Injector, DependencyRecord, OptionFlags, RegOption, TypeOption } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { getClassRef } from '../metadata/refl';
 import { ModuleDef, ClassRef } from '../metadata/class';
 import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders } from '../providers';
 import { InvocationContext } from '../context';
+import { DesignContext } from '../lifescope/ctx';
 
 
 
@@ -26,6 +27,12 @@ export function mergePromise(ps1: Promise<any> | undefined | void, ps2: () => an
         return ps1.then(ps2);
     }
     return ps2();
+}
+
+export function processInject(runtime: Runtime, injector: Injector, providers: Provider[], injecting: (runtime: Runtime, injector: Injector, provider: StaticProvider | DynamicProvider) => void = processProvider) {
+    if (providers.length) {
+        return eachProvider(providers, p => injecting(runtime, injector, p))
+    }
 }
 
 export function processInjectorType(
@@ -105,6 +112,111 @@ function processInjectoDeclarations(annotation: ModuleDef<any>, dedupStack: Abst
 }
 
 
+export function registerReflect(runtime: Runtime, injector: Injector, def: ClassRef, option?: RegOption) {
+    const providedIn = option?.providedIn ?? def.getAnnotation().providedIn;
+    return processRegister(runtime, runtime.getInjector(providedIn, injector), def, option)
+}
+
+export function processProvider(runtime: Runtime, injector: Injector, p: TypeOption | StaticProvider | DynamicProvider): void | Promise<void> {
+    if (isFunction(p)) {
+        registerReflect(runtime, injector, getClassRef(p))
+    } else if (isPlainObject(p)) {
+        if ((p as StaticProviders).provide) {
+            registerProvider(runtime, injector, p as StaticProviders)
+        } else if ((p as TypeOption).type) {
+
+            registerReflect(runtime, injector, getClassRef((p as TypeOption).type), p as TypeOption)
+
+        } else if ((p as DynamicProvider).provider) {
+            const pdrs = (p as DynamicProvider).provider(injector);
+            if (isPromise(pdrs)) {
+                return pdrs.then(ps => {
+                    if (ps) injector.inject(ps);
+                });
+            }
+            if (pdrs) injector.inject(pdrs);
+        }
+    }
+}
+
+function getRecords(injector: Injector): Map<Token, FactoryRecord> {
+    return (injector as Injector & { records: Map<Token, FactoryRecord> }).records;
+}
+
+/**
+ * register provider.
+ * @param platfrom 
+ * @param provider 
+ * @returns 
+ */
+function registerProvider(platfrom: Runtime, injector: Injector, provider: StaticProviders) {
+    if (provider.asDefault && injector.has(provider.provide)) {
+        return
+    }
+    const records = getRecords(injector);
+    if (provider.multi) {
+        let multiPdr = records.get(provider.provide);
+        if (!multiPdr) {
+            records.set(provider.provide, multiPdr = {
+                fy: FnType.Fac,
+                fn: MUTIL,
+                value: Empty,
+                deps: []
+            })
+        }
+        if (multiPdr.deps) {
+            const mtltk = { token: generateRecord(platfrom, injector, provider), options: OptionFlags.Default };
+            if (isNumber(provider.multiOrder)) {
+                multiPdr.deps.splice(provider.multiOrder, 0, mtltk)
+            } else {
+                multiPdr.deps.push(mtltk)
+            }
+        }
+    } else {
+        records.set(provider.provide, generateRecord(platfrom, injector, provider))
+    }
+    provider.onRegistered?.(injector);
+}
+
+
+export function processRegister(runtime: Runtime, injector: Injector, classRef: ClassRef, option?: RegOption) {
+    // make sure class register once.
+    const type = classRef.type;
+    if (injector.has(classRef.type, InjectFlags.Default)) {
+        return false
+    }
+
+    // this.onRegister(classRef);
+    let injectorType: ((type: AbstractType, typeRef: ClassRef) => void | Promise<void>) | undefined;
+    if (option?.injectorType) {
+        injectorType = (regType, typeRef) => processInjectorType(
+            type, [],
+            (pdr) => processProvider(runtime, injector, pdr), (tyref, ty) => {
+                if (ty !== regType) {
+                    registerReflect(runtime, injector, tyref)
+                }
+            }, typeRef)
+    }
+
+    const ctx = {
+        injector,
+        getRecords: () => getRecords(injector),
+        ...option,
+        injectorType,
+        classRef,
+        runtime,
+        type
+    } as DesignContext;
+
+    runtime.design.handle(ctx, null, {
+        finally: () => {
+            cleanObj(ctx);
+        }
+    });
+    return true
+}
+
+
 export const IDENT = function <T>(value: T): T {
     return value
 };
@@ -119,7 +231,7 @@ export const CIRCULAR = IDENT;
  * @param provider 
  * @returns 
  */
-export function generateRecord<T>(platfrom: Runtime, injector: Injector, provider: StaticProviders): FactoryRecord<T> {
+export function generateRecord<T>(runtime: Runtime, injector: Injector, provider: StaticProviders): FactoryRecord<T> {
     let fn: Function = IDENT;
     let value: T | undefined;
     let fnType = FnType.Fac;

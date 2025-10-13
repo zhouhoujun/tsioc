@@ -14,13 +14,12 @@ import { Runtime } from '../runtime';
 import { getClassRef } from '../metadata/refl';
 import { ClassRef } from '../metadata/class';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
-import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
+import { ModuleWithProviders, Provider, ModuleType } from '../providers';
 import { createContext, InvocationContext, InvokeOptions, hasContextOptions } from '../context';
 import { DefaultRuntime } from './runtime';
-import { DesignContext } from '../lifescope/ctx';
 import { DefaultInvocationFactory } from './invocation';
 import { InvocationFactory } from '../invocation';
-import { eachProvider, Empty, generateRecord, MUTIL, processInjectorType, THROW_FLAGE, tryResolveToken } from './resolve';
+import { Empty, processInject, processInjectorType, processProvider, registerReflect, THROW_FLAGE, tryResolveToken } from './resolve';
 import { nonEnumerable } from '../metadata/decor';
 
 
@@ -118,7 +117,7 @@ export class DefaultInjector extends Injector {
     }
 
     protected initProviders(providers: Provider[]) {
-        const result = this.processInject(providers);
+        const result = processInject(this._runtime!, this, providers);
         if (result) {
             result.then(() => this._readyDefer.resolve())
         } else {
@@ -148,7 +147,7 @@ export class DefaultInjector extends Injector {
         this.assertNotDestroyed();
         const runtime = this.getRuntime();
         deepForEach(args, t => {
-            this.processProvider(runtime, t)
+            processProvider(runtime, this, t)
         });
         return this
     }
@@ -169,7 +168,8 @@ export class DefaultInjector extends Injector {
     inject(providers: Provider | Provider[]): this;
     inject(...providers: Provider[]): this;
     inject(...args: any[]): this {
-        this.processInject(args);
+        this.assertNotDestroyed();
+        processInject(this._runtime!, this, args);
         return this
     }
 
@@ -190,14 +190,6 @@ export class DefaultInjector extends Injector {
         return types;
     }
 
-    protected processInject(providers: Provider[]) {
-        this.assertNotDestroyed();
-        if (providers.length) {
-            const runtime = this.getRuntime();
-            return eachProvider(providers, p => this.processProvider(runtime, p))
-        }
-    }
-
     protected processUse(args: ModuleType[], types?: AbstractType[]) {
         this.assertNotDestroyed();
         const runtime = this.getRuntime();
@@ -213,120 +205,12 @@ export class DefaultInjector extends Injector {
         }, v => isPlainObject(v) && !(isFunction(v.module) && isArray(v.providers)));
     }
 
-    protected processProvider(runtime: Runtime, p: TypeOption | StaticProvider | DynamicProvider): void | Promise<void> {
-        if (isFunction(p)) {
-            this.registerType(runtime, p)
-        } else if (isPlainObject(p)) {
-            if ((p as StaticProviders).provide) {
-                this.registerProvider(runtime, p as StaticProviders)
-            } else if ((p as TypeOption).type) {
-                this.registerType(runtime, (p as TypeOption).type, p as TypeOption)
-            } else if ((p as DynamicProvider).provider) {
-                const pdrs = (p as DynamicProvider).provider(this);
-                if (isPromise(pdrs)) {
-                    return pdrs.then(ps => {
-                        if (ps) this.processInject(isArray(ps) ? ps : [ps]);
-                    });
-                }
-                if (pdrs) this.processInject(isArray(pdrs) ? pdrs : [pdrs]);
-            }
-        }
-    }
-
-    /**
-     * register type class.
-     * @param injector register in the injector.
-     * @param option the type register option.
-     * @param [singleton]
-     */
-    protected registerType(runtime: Runtime, type: AbstractType, option?: RegOption) {
-        this.registerReflect(runtime, getClassRef(type), option)
-    }
-
-    protected registerReflect(runtime: Runtime, def: ClassRef, option?: RegOption) {
-        const providedIn = option?.providedIn ?? def.getAnnotation().providedIn;
-        runtime.getInjector<DefaultInjector>(providedIn, this).processRegister(runtime, def, option)
-    }
-
-    protected processRegister(runtime: Runtime, classRef: ClassRef, option?: RegOption) {
-        // make sure class register once.
-        const type = classRef.type;
-        if (this.has(classRef.type, InjectFlags.Default)) {
-            return false
-        }
-
-        // this.onRegister(classRef);
-        let injectorType: ((type: AbstractType, typeRef: ClassRef) => void | Promise<void>) | undefined;
-        if (option?.injectorType) {
-            injectorType = (regType, typeRef) => processInjectorType(
-                type, [],
-                (pdr) => this.processProvider(runtime, pdr), (tyref, ty) => {
-                    if (ty !== regType) {
-                        this.registerReflect(runtime, tyref)
-                    }
-                }, typeRef)
-        }
-
-        const injector = this as Injector;
-        const getRecords = () => this.records;
-        const ctx = {
-            injector,
-            getRecords,
-            ...option,
-            injectorType,
-            classRef,
-            runtime,
-            type
-        } as DesignContext;
-
-        runtime.design.handle(ctx, null, {
-            finally: () => {
-                cleanObj(ctx);
-            }
-        });
-        return true
-    }
-
-    /**
-     * register provider.
-     * @param platfrom 
-     * @param provider 
-     * @returns 
-     */
-    protected registerProvider(platfrom: Runtime, provider: StaticProviders) {
-        if (provider.asDefault && this.has(provider.provide)) {
-            return
-        }
-        if (provider.multi) {
-            let multiPdr = this.records.get(provider.provide);
-            if (!multiPdr) {
-                this.records.set(provider.provide, multiPdr = {
-                    fy: FnType.Fac,
-                    fn: MUTIL,
-                    value: Empty,
-                    deps: []
-                })
-            }
-            if (multiPdr.deps) {
-                const mtltk = { token: generateRecord(platfrom, this, provider), options: OptionFlags.Default };
-                if (isNumber(provider.multiOrder)) {
-                    multiPdr.deps.splice(provider.multiOrder, 0, mtltk)
-                } else {
-                    multiPdr.deps.push(mtltk)
-                }
-            }
-        } else {
-            this.records.set(provider.provide, generateRecord(platfrom, this, provider))
-        }
-        provider.onRegistered?.(this);
-    }
-
 
     protected processInjectorType(runtime: Runtime, typeOrDef: AbstractType | ModuleWithProviders, dedupStack: AbstractType[], moduleRefl?: ClassRef) {
         return processInjectorType(typeOrDef, dedupStack,
-            (pdr) => this.processProvider(runtime, pdr),
+            (pdr) => processProvider(runtime, this, pdr),
             (tyref, type, options) => {
-                this.registerReflect(runtime, tyref, options)
+                registerReflect(runtime, this, tyref, options)
             }, moduleRefl)
     }
 

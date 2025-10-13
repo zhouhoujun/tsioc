@@ -91,6 +91,18 @@ export abstract class InvocationContext implements Destroyable, OnDestroy {
      */
     abstract get<T>(token: Token<T>, flags?: InjectFlags): T;
     /**
+     * get token factory resolve instace in current.
+     *
+     * 获取标记令牌的实例。
+     * @template T
+     * @param {Token<T>} token token id {@link Token}.
+     * @param {T} notFoundValue not found token, return this value.
+     * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
+     * @returns {T} token value.
+     */
+    abstract get<T>(token: Token<T>, notFoundValue: T, flags: InjectFlags): T;
+
+    /**
      * set value.
      * 
      * 设置上下文中标记指令的实例值
