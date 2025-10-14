@@ -2,13 +2,14 @@ import { AbstractType, Type, TypeOf } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
-import { Injector } from './injector';
+import { Injector, InjectorScope } from './injector';
 import { ResolveInterceptorLike, Parameter } from './resolver';
 import { Provider } from './providers';
 import { Exception } from './exception';
 import { Invocation } from './invocation';
 import { hasItem } from './utils/lang';
 import { isDefined } from './utils/chk';
+import { Runtime } from './runtime';
 
 /**
  * request
@@ -23,7 +24,30 @@ export interface InvocationRequest {
  * 执行操作调用的接口上下文
  */
 @Abstract()
-export abstract class InvocationContext<TParent extends Injector = Injector> extends Injector implements Destroyable, OnDestroy {
+export abstract class InvocationContext<TParent extends Injector = Injector> implements Injector, Destroyable, OnDestroy {
+    /**
+     * injector scope.
+     * 
+     * 容器范围
+     */
+    readonly scope?: InjectorScope;
+    /**
+     * get runtime.
+     * 
+     * 容器运行环境
+     */
+    abstract getRuntime(): Runtime;
+    /**
+     * init inject ready.
+     */
+    abstract get ready(): Promise<void>;
+    /**
+     * token size.
+     * 
+     * 已注册标记令牌长度。
+     */
+    abstract get size(): number;
+
     /**
      * is resolve context or not.
      */
