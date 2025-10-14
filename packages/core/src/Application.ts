@@ -242,7 +242,7 @@ export class Application<T = any> {
     }
 
     protected async handleRunFailure(ctx: ApplicationContext<T>, error: Error | any): Promise<void> {
-        if (ctx) {
+        if (ctx && !ctx.destroyed) {
             const logger = ctx.getLogger();
             logger ? logger.error(error) : console.error(error);
             await ctx.destroy()

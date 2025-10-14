@@ -93,7 +93,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
 
         if (options.values) {
             options.values.forEach(par => {
-                Operator.setValue(this, par[0], par[1]);
+                this.setValue(par[0], par[1]);
             })
         }
 
@@ -272,8 +272,8 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         const runtime = this.getRuntime();
         if (runtime.hasSingleton(token)) return runtime.getSingleton(token);
 
-        return tryResolveToken(token, record, this.records, runtime, this._parent, context?? this,
-            notFoundValue === undefined ? THROW_FLAGE : notFoundValue,
+        return tryResolveToken(token, record, this.records, runtime, this._parent, this,
+            notFoundValue ?? null,
             flags ?? InjectFlags.Default, record?.stic ?? true)
             ?? this.getFormRef(token, flags)
             // ?? (flags != InjectFlags.HostOnly ? this.injector.get(token, null, flags, this) : null) as T;
@@ -483,7 +483,7 @@ export function getTokenResolver(runtime: Runtime): HandlerScope<[Token, InjectF
             [
                 (input, next, context) => {
                     if (context.has(input[0], input[1])) {
-                        return context.get(input[0], input[1])
+                        return context.get(input[0], null, input[1])
                     }
                     return next(input, context);
                 },
@@ -496,7 +496,7 @@ export function getTokenResolver(runtime: Runtime): HandlerScope<[Token, InjectF
                         // const injector = context.getParent() ?? context.injector;
                         Operator.register(context, type);
                     }
-                    return context.get(type, flags)
+                    return context.get(type, null, flags)
                 },
 
 

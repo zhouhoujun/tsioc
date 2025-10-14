@@ -38,7 +38,7 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
     constructor(parent: ModuleRef, options: EnvironmentOption = {}) {
         super(parent, options);
         this._multicaster = parent.get(ApplicationEventMulticaster);
-        Operator.setValue(this, ApplicationContext, this);
+        this.setValue(ApplicationContext, this);
         this._runners = parent.get(ApplicationRunners);
         this.onDestroy(this._runners);
         if (options.eventsOptions) {
@@ -83,7 +83,7 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
     }
 
     getLogger(name?: string, adapter?: string | AbstractType): Logger {
-        return this.getParent().get(LoggerManagers, null)?.getLogger(name, adapter) ?? null!;
+        return this.get(LoggerManagers, null)?.getLogger(name, adapter) ?? null!;
     }
 
     publishEvent(event: ApplicationEvent): Observable<any>;
