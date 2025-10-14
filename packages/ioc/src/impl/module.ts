@@ -3,7 +3,6 @@ import { Injector, InjectorScope } from '../injector';
 import { getClassRef, getClassify } from '../metadata/refl';
 import { ClassRef, ModuleDef } from '../metadata/class';
 import { ModuleOption, ModuleRef } from '../module.ref';
-import { Runtime } from '../runtime';
 import { isModuleProviders, ModuleWithProviders, Provider } from '../providers';
 import { Type } from '../types';
 import { DefaultInjector } from './injector';
@@ -41,19 +40,19 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
         if (option.providers?.length) {
             const providers = option.providers;
-            ps = mergePromise(ps, () => processInject(runtime, this, providers))
+            ps = mergePromise(ps, () => processInject(this, providers))
         }
 
-        return mergePromise(ps, () => this.ininModule(runtime, dedupStack, option))
+        return mergePromise(ps, () => this.ininModule(dedupStack, option))
     }
 
     protected override initProviders(providers: Provider[]): void {
 
     }
 
-    private ininModule(platfrom: Runtime, dedupStack: Type[], option: ModuleOption, ps: Promise<void> | void | undefined) {
+    private ininModule(dedupStack: Type[], option: ModuleOption, ps: Promise<void> | void | undefined) {
 
-        ps = mergePromise(ps, () => processInjectModule(platfrom, this, this._type, dedupStack, this.moduleReflect));
+        ps = mergePromise(ps, () => processInjectModule(this, this._type, dedupStack, this.moduleReflect));
 
         return mergePromise(ps, () => {
             this._instance = this.get(this._type);
@@ -82,7 +81,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
             const modeuleRef = createModuleRef(typeOrDef, this);
             return modeuleRef.ready;
         } else {
-            return processInjectType(this.getRuntime(), this, typeOrDef, [])
+            return processInjectType(this, typeOrDef, [])
         }
     }
 

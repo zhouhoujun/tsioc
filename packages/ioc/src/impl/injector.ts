@@ -115,7 +115,7 @@ export class DefaultInjector extends Injector {
     }
 
     protected initProviders(providers: Provider[]) {
-        const result = processInject(this._runtime!, this, providers);
+        const result = processInject(this, providers);
         if (result) {
             result.then(() => this._readyDefer.resolve())
         } else {
@@ -139,9 +139,8 @@ export class DefaultInjector extends Injector {
     register(...types: (AbstractType | RegisterOption)[]): this;
     register(...args: any[]): this {
         this.assertNotDestroyed();
-        const runtime = this.getRuntime();
         deepForEach(args, t => {
-            processProvider(runtime, this, t)
+            processProvider(this, t)
         });
         return this
     }
@@ -163,7 +162,7 @@ export class DefaultInjector extends Injector {
     inject(...providers: Provider[]): this;
     inject(...args: any[]): this {
         this.assertNotDestroyed();
-        processInject(this._runtime!, this, args);
+        processInject(this, args);
         return this
     }
 
@@ -186,15 +185,14 @@ export class DefaultInjector extends Injector {
 
     protected processUse(args: ModuleType[], types?: AbstractType[]) {
         this.assertNotDestroyed();
-        const runtime = this.getRuntime();
         const stk: AbstractType[] = [];
         return deepForEach(args, (ty: any) => {
             if (isAbstractType(ty)) {
                 types?.push(ty);
-                return processInjectType(runtime, this,  ty, stk)
+                return processInjectType(this,  ty, stk)
             } else if (isFunction(ty.module) && isArray(ty.providers)) {
                 types?.push(ty.module);
-                return processInjectType(runtime, this, ty, stk)
+                return processInjectType(this, ty, stk)
             }
         }, v => isPlainObject(v) && !(isFunction(v.module) && isArray(v.providers)));
     }
