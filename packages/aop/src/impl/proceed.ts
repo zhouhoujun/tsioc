@@ -174,7 +174,7 @@ export class ProceedingScope implements Proceeding {
         if (!options.params) {
             options.params = targetRef?.getParameters(propertyKey);
         }
-        const joinPoint = JoinPoint.create(options.parent?.injector ?? runtime.getInjector('root') ?? runtime.getInjector('platform'), {
+        const joinPoint = JoinPoint.create(options.parent ?? runtime.getInjector('root') ?? runtime.getInjector('platform'), {
             ...options,
             receiver,
             targetRef,

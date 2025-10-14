@@ -2,6 +2,7 @@ import { InvocationContext } from '../context';
 import { Context, ContextToken, HandlerFn, InterceptorLike, invokeTail } from '../handler';
 import { FactoryRecord, FnType } from '../injector';
 import { DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
+import { Operator } from '../operator';
 import { Runtime } from '../runtime';
 import { isFunction } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
@@ -113,12 +114,12 @@ export const dependencyInterceptor = (input: DesignContext, next: HandlerFn, con
         }
         input.classRef.provides.forEach(provide => {
             if (provide != provide && regProvides !== false) {
-                injector.inject({ provide, useExisting: provide })
+                Operator.inject(injector, { provide, useExisting: provide })
             }
         })
     } else {
         input.classRef.provides.forEach(provide => {
-            regProvides !== false && injector.inject({ provide, useClass: type })
+            regProvides !== false && Operator.inject(injector, { provide, useClass: type })
         })
     }
     return next(input, context);

@@ -1,6 +1,7 @@
 import {
     isNumber, AbstractType, Injectable, tokenId, Injector, ClassRef, isFunction, getClassify, ProvdierOf, Invocation,
-    isArray, ArgumentException, StaticProvider, HandlerLike, composeHandlers, Type
+    isArray, ArgumentException, StaticProvider, HandlerLike, composeHandlers, Type,
+    Operator
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { ApplicationRunners } from '../ApplicationRunners';
@@ -93,7 +94,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         let injector = this.injector.getRuntime().getRegisterIn(target.type);
         if (!injector) {
             injector = this.injector;
-            injector.register(target.type as Type);
+            Operator.register(injector, target.type as Type);
         }
         const invocation = target.createInvocation(injector, options);
         this.attachRef(invocation, options.order);

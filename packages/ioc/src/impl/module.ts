@@ -7,6 +7,7 @@ import { isModuleProviders, ModuleWithProviders, Provider } from '../providers';
 import { Type } from '../types';
 import { DefaultInjector } from './injector';
 import { mergePromise, processInject, processInjectModule, processInjectType, processUse } from './resolve';
+import { Operator } from '../operator';
 
 
 /**
@@ -23,7 +24,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         this._typeRefl = moduleType;
         this._type = moduleType.type as Type<T>;
 
-        this.setValue(ModuleRef, this);
+        Operator.setValue(this, ModuleRef, this);
         this.initWithOptions(option);
     }
 

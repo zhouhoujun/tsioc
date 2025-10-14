@@ -50,10 +50,6 @@ export abstract class AbstractInvocation<T = any,
         return this._classRef;
     }
 
-    get injector(): Injector {
-        return this.context.injector;
-    }
-
     get instance(): T {
         if (!this._instance) {
             this._instance = this.createInstance()
@@ -195,24 +191,25 @@ export abstract class AbstractInvocation<T = any,
                 ext && context.removeRef(ctx);
             }
         } else if (option) {
-            if (option.parent && option.parent !== ctx) {
-                if (hasContextOptions(option)) {
-                    context = this.createContext(option.parent!, option);
-                    context.addRef(ctx);
-                    destroy = () => {
-                        if (context.used) return;
-                        context.removeRef(ctx);
-                        context.destroy()
-                    }
-                } else {
-                    context = option.parent! as TC;
-                    context.addRef(ctx);
-                    destroy = () => {
-                        if (context.used) return;
-                        context.removeRef(ctx);
-                    }
-                }
-            } else if (hasContextOptions(option)) {
+            // if (option.parent && option.parent !== ctx) {
+            //     if (hasContextOptions(option)) {
+            //         context = this.createContext(option.parent!, option);
+            //         context.addRef(ctx);
+            //         destroy = () => {
+            //             if (context.used) return;
+            //             context.removeRef(ctx);
+            //             context.destroy()
+            //         }
+            //     } else {
+            //         context = option.parent! as TC;
+            //         context.addRef(ctx);
+            //         destroy = () => {
+            //             if (context.used) return;
+            //             context.removeRef(ctx);
+            //         }
+            //     }
+            // } else 
+            if (hasContextOptions(option)) {
                 context = this.createContext(ctx, option);
                 destroy = () => {
                     if (context.used) return;

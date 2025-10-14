@@ -8,6 +8,7 @@ import { AbstractType } from '../types';
 import { initReflectInterceptor } from './commom';
 import { InitializeContext } from './ctx';
 import { HandlerScope } from './lifescope';
+import { Operator } from '../operator';
 
 
 export const cleanContextInterceptor: InterceptorFn<InitializeContext, void> = (input: InitializeContext, next: HandlerFn, context: Context) => {
@@ -28,7 +29,7 @@ export const runtimeAutorunInterceptor: InterceptorFn<InitializeContext, void> =
         const autos = input.classRef.runnables.filter(c => c.auto && c.decorType === Decors.method)
         if (autos.length) {
             const { injector, classRef: def, instance, context } = input;
-            const invocation = def.createInvocation(injector, { instance, parent: context });
+            const invocation = def.createInvocation(context??injector, { instance });
             autos.forEach(aut => {
                 invocation.invoke(aut.propertyKey);
             })
@@ -79,7 +80,7 @@ export const cacheInterceptor: InterceptorFn<InitializeContext, void> = (input: 
         const ann = input.classRef.getAnnotation();
         if (!ann.expires || ann.expires! <= 0) return;
 
-        input.injector.cache(input.type, input.instance, ann.expires!);
+        Operator.cache(input.injector, input.type, input.instance, ann.expires!);
     });
 }
 
@@ -165,7 +166,6 @@ export const ctorArgsInterceptor: InterceptorFn<InitializeContext, void> = (inpu
     if (!uctx || (uctx.targetType && uctx.targetType !== input.type)) {
         newCtx = createContext(input.injector, {
             targetType: input.type,
-            parent: uctx,
             providers,
             resolvers: input.classRef.resolvers,
             propertyKey: ctorName
@@ -173,7 +173,7 @@ export const ctorArgsInterceptor: InterceptorFn<InitializeContext, void> = (inpu
         input.context = newCtx;
         input.isNewContext = true;
     } else if (uctx && providers.length) {
-        uctx.injector.inject(providers)
+        Operator.inject(uctx, providers)
     }
 
     if (!input.args) {

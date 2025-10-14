@@ -23,7 +23,7 @@ export interface InvocationRequest {
  * 执行操作调用的接口上下文
  */
 @Abstract()
-export abstract class InvocationContext implements Destroyable, OnDestroy {
+export abstract class InvocationContext<TParent extends Injector = Injector> extends Injector implements Destroyable, OnDestroy {
     /**
      * is resolve context or not.
      */
@@ -35,11 +35,7 @@ export abstract class InvocationContext implements Destroyable, OnDestroy {
     /**
      * get parent context.
      */
-    abstract getParent(): InvocationContext|null;
-    /**
-     * invocation static injector. 
-     */
-    abstract get injector(): Injector;
+    abstract getParent(): TParent;
     /**
      * invocation target.
      */
@@ -82,15 +78,6 @@ export abstract class InvocationContext implements Destroyable, OnDestroy {
      */
     abstract has(token: Token, flags?: InjectFlags): boolean;
     /**
-     * get token value.
-     * 
-     * 获取上下文中标记指令的实例值
-     * @param token the token to get value.
-     * @param flags inject flags, type of {@link InjectFlags}.
-     * @returns the instance of token.
-     */
-    abstract get<T>(token: Token<T>, flags?: InjectFlags): T;
-    /**
      * get token factory resolve instace in current.
      *
      * 获取标记令牌的实例。
@@ -100,7 +87,7 @@ export abstract class InvocationContext implements Destroyable, OnDestroy {
      * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
      * @returns {T} token value.
      */
-    abstract get<T>(token: Token<T>, notFoundValue: T, flags: InjectFlags): T;
+    abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, context?: InvocationContext): T;
 
     /**
      * set value.
@@ -207,15 +194,15 @@ export interface InvokeProviders {
 }
 
 
-export interface InvokeParentContext {
-    /**
-     * parent InvocationContext,
-     * 
-     * 上级上下文
-     */
-    parent?: InvocationContext;
+// export interface InvokeParentContext {
+//     /**
+//      * parent InvocationContext,
+//      * 
+//      * 上级上下文
+//      */
+//     parent?: InvocationContext;
 
-}
+// }
 
 /**
  * invoke options.
@@ -235,7 +222,7 @@ export interface InvokeOptions extends InvokeProviders {
  * 
  * 调用接口配置项及负载
  */
-export interface InvokeArguments extends InvokeOptions, InvokeParentContext {
+export interface InvokeArguments extends InvokeOptions {
     /**
      * invocation request.
      * 
@@ -264,7 +251,7 @@ export interface TargetInvokeArguments extends InvokeArguments {
 /**
  * InvocationOptions
  */
-export interface InvocationOptions<T = any> extends InvokeParentContext, InvokeArguments {
+export interface InvocationOptions<T = any> extends InvokeArguments {
     /**
      * injector
      */

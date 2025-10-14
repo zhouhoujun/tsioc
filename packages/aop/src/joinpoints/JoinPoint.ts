@@ -48,7 +48,7 @@ export interface ReturnDefer {
  * JoinPoint of aop.
  */
 @Abstract()
-export class JoinPoint extends DefaultInvocationContext implements IocContext {
+export class JoinPoint extends DefaultInvocationContext {
     /**
      * custom proxy invoke origin method.
      */
@@ -115,7 +115,7 @@ export class JoinPoint extends DefaultInvocationContext implements IocContext {
 export class ProceedingJoinPoint extends JoinPoint {
 
     constructor(private joinPoint: JoinPoint, private next: HandlerFn, private context?: Context) {
-        super(joinPoint.injector, {
+        super(joinPoint, {
             args: joinPoint.args,
             target: joinPoint.target,
             receiver: joinPoint.receiver,

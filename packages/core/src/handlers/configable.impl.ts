@@ -1,6 +1,7 @@
 import {
     InjectFlags, Injector, ProvdierOf, StaticProvider, Type, promiseOf, Exception, toProvider, AbstractType, getType, Token, isType,
-    InvocationContext, createContext, ArgumentException, isToken, isArray, isFunction, composeInterceptors, chainFactory, some
+    InvocationContext, createContext, ArgumentException, isToken, isArray, isFunction, composeInterceptors, chainFactory, some,
+    Operator
 } from '@tsdi/ioc';
 import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
@@ -29,18 +30,14 @@ export class ConfigableHandler<
 
     protected options: TOptions;
 
-    get injector() {
-        return this.context.injector;
-    }
-
     get ready() {
-        return this.context.injector.ready;
+        return this.context.ready;
     }
 
     private _filterResolver?: FilterResolver;
     get filterResolver() {
         if (!this._filterResolver) {
-            this._filterResolver = this.injector.get(FilterResolver);
+            this._filterResolver = this.context.get(FilterResolver);
         }
         return this._filterResolver;
     }
@@ -48,7 +45,7 @@ export class ConfigableHandler<
     private _interceptorResolver?: InterceptorResolver;
     get interceptorResolver() {
         if (!this._interceptorResolver) {
-            this._interceptorResolver = this.injector.get(InterceptorResolver);
+            this._interceptorResolver = this.context.get(InterceptorResolver);
         }
         return this._interceptorResolver;
     }
@@ -59,12 +56,12 @@ export class ConfigableHandler<
 
 
     constructor(
-        protected context: InvocationContext,
+        readonly context: InvocationContext,
         options: TOptions) {
 
         this.options = this.initOptions(options);
-        if (this.options.backend && isType(this.options.backend) && !this.injector.has(this.options.backend, InjectFlags.Self)) {
-            this.injector.inject(this.options.backend);
+        if (this.options.backend && isType(this.options.backend) && !this.context.has(this.options.backend, InjectFlags.Self)) {
+            Operator.inject(this.context, this.options.backend);
         }
 
         setHandlerOptions(this, this.options);
@@ -119,7 +116,7 @@ export class ConfigableHandler<
      * @returns 
      */
     usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
-        this.injector.inject(pipes);
+        Operator.inject(this.context, pipes);
         return this;
     }
 
@@ -262,7 +259,7 @@ export class ConfigableHandler<
     protected getBackend(): BackendFn {
         if (!this.options.backend) throw new ArgumentException('backend is Empty.');
         if (!this.backendFn) {
-            const backend = isToken(this.options.backend) ? this.injector.get(this.options.backend, this.options.backend as any, InjectFlags.Default, this.context) : this.options.backend;
+            const backend = isToken(this.options.backend) ? this.context.get(this.options.backend, this.options.backend as any, InjectFlags.Default) : this.options.backend;
             this.backendFn = (isFunction(backend) ? backend : (req, ctx) => (backend as Backend).handle(req, ctx)) as BackendFn;
         }
         return this.backendFn;
@@ -272,7 +269,7 @@ export class ConfigableHandler<
      *  get filters. 
      */
     protected getFilters(): FilterLike<TInput, TOutput>[] {
-        return this.options.filtersToken ? this.injector.get(this.options.filtersToken, []) : [];
+        return this.options.filtersToken ? this.context.get(this.options.filtersToken, []) : [];
     }
 
     /**
@@ -280,7 +277,7 @@ export class ConfigableHandler<
      * @returns 
      */
     protected getInterceptors(): ApplicationInterceptorLike<TInput, TOutput>[] {
-        return this.injector.get(this.options.interceptorsToken!, []);
+        return this.context.get(this.options.interceptorsToken!, []);
     }
 
 
@@ -289,28 +286,28 @@ export class ConfigableHandler<
      * @returns 
      */
     protected getGuards(): GuardLike[] | null {
-        return this.options.guardsToken ? this.injector.get(this.options.guardsToken, null) : null;
+        return this.options.guardsToken ? this.context.get(this.options.guardsToken, null) : null;
     }
 
     protected regMulti<T>(token: Token, providers: ProvdierOf<T> | ProvdierOf<T>[], multiOrder?: number) {
         const multi = true;
         if (isArray(providers)) {
-            this.injector.inject(providers.map((r, i) => toProvider(token, r, { multi, multiOrder })))
+            Operator.inject(this.context, providers.map((r, i) => toProvider(token, r, { multi, multiOrder })))
         } else {
-            this.injector.inject(toProvider(token, providers, { multi, multiOrder }));
+            Operator.inject(this.context, toProvider(token, providers, { multi, multiOrder }));
         }
     }
 
     protected clear() {
-        if (this.options.interceptorsToken) this.injector?.unregister(this.options.interceptorsToken);
-        if (this.options.guardsToken) this.injector?.unregister(this.options.guardsToken);
-        if (this.options.filtersToken) this.injector?.unregister(this.options.filtersToken);
+        if (this.options.interceptorsToken) Operator.unregister(this.context, this.options.interceptorsToken);
+        if (this.options.guardsToken) Operator.unregister(this.context, this.options.guardsToken);
+        if (this.options.filtersToken) Operator.unregister(this.context, this.options.filtersToken);
         this.chain = undefined;
         this.backendFn = undefined;
         this.chains?.clear();
         this._filterResolver = undefined;
         this._interceptorResolver = undefined;
-        this.context = null!;
+        // this.context = null!;
         this.options = null!;
     }
 }

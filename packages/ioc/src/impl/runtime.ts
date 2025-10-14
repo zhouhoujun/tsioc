@@ -13,6 +13,7 @@ import { Context } from '../handler';
 import { INITIALIZE_INTERCEPTORS } from '../lifescope/initialize';
 import { DESIGN_INTERECPTORS, registerHandler } from '../lifescope/design';
 import { InvocationFactory } from '../invocation';
+import { Operator } from '../operator';
 
 /**
  * default runtime implements {@link Runtime}.
@@ -103,7 +104,7 @@ export class DefaultRuntime implements Runtime {
     }
 
     getRegisterIn(token: Token): Injector | undefined {
-        return this.injectors.find(r => !!r.getTokenProvider(token, InjectFlags.Self));
+        return this.injectors.find(r => !!Operator.getTokenProvider(r, token, InjectFlags.Self));
     }
 
     /**

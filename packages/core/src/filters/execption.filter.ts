@@ -96,7 +96,7 @@ export class ExceptionHandlerFilter<TInput, TOutput = any, TContext = any> exten
     catchError(input: TInput, err: any, caught: Observable<TOutput>, context?: TContext): Observable<any> {
         let injector: Injector;
         if (input instanceof HandleContext) {
-            injector = input.injector;
+            injector = input;
             input.execption = err;
         } else {
             injector = this.injector;

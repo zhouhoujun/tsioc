@@ -74,189 +74,189 @@ export abstract class Injector implements Destroyable, OnDestroy {
 
 
 
-    /**
-     * resolve token instance with token and param provider.
-     * 
-     * 解析标记令牌的实例。
-     *
-     * @template T
-     * @param {Token<T>} token the resolve token {@link Token}.
-     * @param {Provider[]} providers the providers to resolve with token. array of {@link Provider}.
-     * @returns {T}
-     */
-    abstract resolve<T>(token: Token<T>, providers?: Provider[]): T;
-    /**
-     * resolve token instance with token and param provider.
-     * 
-     * 解析标记令牌的实例。
-     *
-     * @template T
-     * @param {Token<T>} token the resolve token {@link Token}.
-     * @param {option} option the option of type {@link ResolverOption}, use to resolve with token.
-     * @returns {T}
-     */
-    abstract resolve<T>(token: Token<T>, option?: InvokeOptions): T;
-    /**
-     * resolve token instance with token and param provider.
-     * 
-     * 解析标记令牌的实例。
-     *
-     * @template T
-     * @param {Token<T>} token the token to resolve.
-     * @param {InvocationContext} context invocation context type of {@link InvocationContext}, use to resolve with token.
-     * @returns {T}
-     */
-    abstract resolve<T>(token: Token<T>, context?: InvocationContext): T;
-    /**
-     * resolve token instance with token and param provider.
-     * 
-     * 解析标记令牌的实例。
-     *
-     * @template T
-     * @param {Token<T>} token the resolve token {@link Token}.
-     * @param {...Provider[]} providers the providers {@link Provider} to resolve with token.
-     * @returns {T}
-     */
-    abstract resolve<T>(token: Token<T>, ...providers: Provider[]): T;
+    // /**
+    //  * resolve token instance with token and param provider.
+    //  * 
+    //  * 解析标记令牌的实例。
+    //  *
+    //  * @template T
+    //  * @param {Token<T>} token the resolve token {@link Token}.
+    //  * @param {Provider[]} providers the providers to resolve with token. array of {@link Provider}.
+    //  * @returns {T}
+    //  */
+    // abstract resolve<T>(token: Token<T>, providers?: Provider[]): T;
+    // /**
+    //  * resolve token instance with token and param provider.
+    //  * 
+    //  * 解析标记令牌的实例。
+    //  *
+    //  * @template T
+    //  * @param {Token<T>} token the resolve token {@link Token}.
+    //  * @param {option} option the option of type {@link ResolverOption}, use to resolve with token.
+    //  * @returns {T}
+    //  */
+    // abstract resolve<T>(token: Token<T>, option?: InvokeOptions): T;
+    // /**
+    //  * resolve token instance with token and param provider.
+    //  * 
+    //  * 解析标记令牌的实例。
+    //  *
+    //  * @template T
+    //  * @param {Token<T>} token the token to resolve.
+    //  * @param {InvocationContext} context invocation context type of {@link InvocationContext}, use to resolve with token.
+    //  * @returns {T}
+    //  */
+    // abstract resolve<T>(token: Token<T>, context?: InvocationContext): T;
+    // /**
+    //  * resolve token instance with token and param provider.
+    //  * 
+    //  * 解析标记令牌的实例。
+    //  *
+    //  * @template T
+    //  * @param {Token<T>} token the resolve token {@link Token}.
+    //  * @param {...Provider[]} providers the providers {@link Provider} to resolve with token.
+    //  * @returns {T}
+    //  */
+    // abstract resolve<T>(token: Token<T>, ...providers: Provider[]): T;
 
-    /**
-     * set value.
-     * 
-     * 设置标记令牌的实例，并设置为静态值。
-     * 
-     * @param token provide key
-     * @param value the vaule provider for the token.
-     * @param provider the value type.
-     */
-    abstract setValue<T>(token: Token<T>, value: T, provider?: AbstractType<T>): this;
-    /**
-     * get token implement class type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {InjectFlags} flags get token strategy.
-     * @returns {AbstractType<T>}
-     */
-    abstract getTokenProvider<T>(token: Token<T>, flags?: InjectFlags): AbstractType<T>;
-    /**
-     * cache instance.
-     * @param token 
-     * @param instance 
-     * @param expires 
-     */
-    abstract cache<T>(token: Token<T>, instance: T, expires: number): this;
-    /**
-     * inject providers
-     * 
-     * 注入提供标记指令
-     * @param providers
-     */
-    abstract inject(providers: Provider | Provider[]): this;
-    /**
-     * inject providers.
-     *
-     * 注入提供标记指令
-     * @param {...Provider[]} providers
-     * @returns {this}
-     */
-    abstract inject(...providers: Provider[]): this;
-    /**
-     * use modules.
-     *
-     * @param {...ModuleType[]} modules
-     * @returns {this}
-     */
-    abstract use(modules: ModuleType[]): Type<any>[];
-    /**
-     * use modules.
-     *
-     * @param {...Modules[]} modules
-     * @returns {this}
-     */
-    abstract use(...modules: ModuleType[]): Type<any>[];
-    /**
-     * async use modules.
-     * @param modules 
-     */
-    abstract useAsync(modules: ModuleType[]): Promise<Type[]>;
-    /**
-     * async use modules.
-     * @param modules 
-     */
-    abstract useAsync(...modules: ModuleType[]): Promise<Type[]>;
-    /**
-     * register types.
-     * 
-     * 注册类
-     * 
-     * @param {Type<any>[]} types class type array.
-     */
-    abstract register(types: (Type | RegisterOption)[]): this;
-    /**
-     * register types.
-     * 
-     * 注册类
-     * @param types class type params.
-     */
-    abstract register(...types: (Type | RegisterOption)[]): this;
-    /**
-     * unregister the token
-     *
-     * 注销标记指令
-     * @template T
-     * @param {Token<T>} token
-     * @returns {this} this self.
-     */
-    abstract unregister<T>(token: Token<T>): this;
-    /**
-     * invoke method.
-     * 
-     * 调用类方法
-     * @deprecated  use `ReflectiveRef` instead.
-     * @template T
-     * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance.
-     * @param {MethodType} propertyKey method name.
-     * @param {T} [instance] instance of target type.
-     * @param {...Provider[]} providers ...params of {@link Provider}.
-     * @returns {TR} the returnning of invoked method.
-     */
-    abstract invoke<T, TR = any>(target: T | AbstractType<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
-    /**
-     * invoke method.
-     *
-     * 调用类方法
-     * @deprecated  use `ReflectiveRef` instead.
-     * @template T
-     * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance.
-     * @param {MethodType} propertyKey method name.
-     * @param {Provider[]} providers array of {@link Provider}.
-     * @returns {TR} the returnning of invoked method.
-     */
-    abstract invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, providers: Provider[]): TR;
-    /**
-     * invoke method.
-     *
-     * 调用类方法
-     * @deprecated  use `ReflectiveRef` instead.
-     * @template T
-     * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance.
-     * @param {MethodType} propertyKey method name.
-     * @param {InvokeOptions} option ivacation arguments, type of {@link InvokeOptions}.
-     * @returns {TR} the returnning of invoked method.
-     */
-    abstract invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
-    /**
-     * invoke method.
-     * 
-     * 调用类方法
-     * @deprecated  use `ReflectiveRef` instead.
-     * @template T
-     * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance
-     * @param {MethodType} propertyKey method name.
-     * @param {InvocationContext} context ivacation context.
-     * @returns {TR} the returnning of invoked method.
-     */
-    abstract invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
+    // /**
+    //  * set value.
+    //  * 
+    //  * 设置标记令牌的实例，并设置为静态值。
+    //  * 
+    //  * @param token provide key
+    //  * @param value the vaule provider for the token.
+    //  * @param provider the value type.
+    //  */
+    // abstract setValue<T>(token: Token<T>, value: T, provider?: AbstractType<T>): this;
+    // /**
+    //  * get token implement class type.
+    //  *
+    //  * @template T
+    //  * @param {Token<T>} token
+    //  * @param {InjectFlags} flags get token strategy.
+    //  * @returns {AbstractType<T>}
+    //  */
+    // abstract getTokenProvider<T>(token: Token<T>, flags?: InjectFlags): AbstractType<T>;
+    // /**
+    //  * cache instance.
+    //  * @param token 
+    //  * @param instance 
+    //  * @param expires 
+    //  */
+    // abstract cache<T>(token: Token<T>, instance: T, expires: number): this;
+    // /**
+    //  * inject providers
+    //  * 
+    //  * 注入提供标记指令
+    //  * @param providers
+    //  */
+    // abstract inject(providers: Provider | Provider[]): this;
+    // /**
+    //  * inject providers.
+    //  *
+    //  * 注入提供标记指令
+    //  * @param {...Provider[]} providers
+    //  * @returns {this}
+    //  */
+    // abstract inject(...providers: Provider[]): this;
+    // /**
+    //  * use modules.
+    //  *
+    //  * @param {...ModuleType[]} modules
+    //  * @returns {this}
+    //  */
+    // abstract use(modules: ModuleType[]): Type<any>[];
+    // /**
+    //  * use modules.
+    //  *
+    //  * @param {...Modules[]} modules
+    //  * @returns {this}
+    //  */
+    // abstract use(...modules: ModuleType[]): Type<any>[];
+    // /**
+    //  * async use modules.
+    //  * @param modules 
+    //  */
+    // abstract useAsync(modules: ModuleType[]): Promise<Type[]>;
+    // /**
+    //  * async use modules.
+    //  * @param modules 
+    //  */
+    // abstract useAsync(...modules: ModuleType[]): Promise<Type[]>;
+    // /**
+    //  * register types.
+    //  * 
+    //  * 注册类
+    //  * 
+    //  * @param {Type<any>[]} types class type array.
+    //  */
+    // abstract register(types: (Type | RegisterOption)[]): this;
+    // /**
+    //  * register types.
+    //  * 
+    //  * 注册类
+    //  * @param types class type params.
+    //  */
+    // abstract register(...types: (Type | RegisterOption)[]): this;
+    // /**
+    //  * unregister the token
+    //  *
+    //  * 注销标记指令
+    //  * @template T
+    //  * @param {Token<T>} token
+    //  * @returns {this} this self.
+    //  */
+    // abstract unregister<T>(token: Token<T>): this;
+    // /**
+    //  * invoke method.
+    //  * 
+    //  * 调用类方法
+    //  * @deprecated  use `ReflectiveRef` instead.
+    //  * @template T
+    //  * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance.
+    //  * @param {MethodType} propertyKey method name.
+    //  * @param {T} [instance] instance of target type.
+    //  * @param {...Provider[]} providers ...params of {@link Provider}.
+    //  * @returns {TR} the returnning of invoked method.
+    //  */
+    // abstract invoke<T, TR = any>(target: T | AbstractType<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
+    // /**
+    //  * invoke method.
+    //  *
+    //  * 调用类方法
+    //  * @deprecated  use `ReflectiveRef` instead.
+    //  * @template T
+    //  * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance.
+    //  * @param {MethodType} propertyKey method name.
+    //  * @param {Provider[]} providers array of {@link Provider}.
+    //  * @returns {TR} the returnning of invoked method.
+    //  */
+    // abstract invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, providers: Provider[]): TR;
+    // /**
+    //  * invoke method.
+    //  *
+    //  * 调用类方法
+    //  * @deprecated  use `ReflectiveRef` instead.
+    //  * @template T
+    //  * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance.
+    //  * @param {MethodType} propertyKey method name.
+    //  * @param {InvokeOptions} option ivacation arguments, type of {@link InvokeOptions}.
+    //  * @returns {TR} the returnning of invoked method.
+    //  */
+    // abstract invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
+    // /**
+    //  * invoke method.
+    //  * 
+    //  * 调用类方法
+    //  * @deprecated  use `ReflectiveRef` instead.
+    //  * @template T
+    //  * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance
+    //  * @param {MethodType} propertyKey method name.
+    //  * @param {InvocationContext} context ivacation context.
+    //  * @returns {TR} the returnning of invoked method.
+    //  */
+    // abstract invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
 
     /**
      * injector has destoryed or not.
@@ -427,7 +427,6 @@ export interface InjectorOperator {
      * invoke method.
      * 
      * 调用类方法
-     * @deprecated  use `ReflectiveRef` instead.
      * @template T
      * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
@@ -440,7 +439,6 @@ export interface InjectorOperator {
      * invoke method.
      *
      * 调用类方法
-     * @deprecated  use `ReflectiveRef` instead.
      * @template T
      * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
@@ -452,7 +450,6 @@ export interface InjectorOperator {
      * invoke method.
      *
      * 调用类方法
-     * @deprecated  use `ReflectiveRef` instead.
      * @template T
      * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance.
      * @param {MethodType} propertyKey method name.
@@ -464,7 +461,6 @@ export interface InjectorOperator {
      * invoke method.
      * 
      * 调用类方法
-     * @deprecated  use `ReflectiveRef` instead.
      * @template T
      * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance
      * @param {MethodType} propertyKey method name.

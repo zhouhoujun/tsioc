@@ -14,12 +14,12 @@ export class UnitTestService {
 
     @Runner()
     async run(ctx: ApplicationContext): Promise<void> {
-        const injector = ctx.injector;
+
         const config = ctx.resolve(UNITTESTCONFIGURE);
         const src = config.src;
         let suites: any[] = [];
         const oldRunner = ctx.resolve(OldTestRunner);
-        const loader = injector.get(ModuleLoader);
+        const loader = ctx.get(ModuleLoader);
         oldRunner.registerGlobalScope();
         if (isString(src)) {
             suites = await loader.loadType({ files: [src], basePath: ctx.baseURL })

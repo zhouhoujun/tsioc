@@ -1,5 +1,5 @@
 /* eslint-disable no-useless-escape */
-import { isString, isRegExp, isArray, ctorName, Decors, Runtime, ClassRef, DecoratorType } from '@tsdi/ioc';
+import { isString, isRegExp, isArray, ctorName, Decors, Runtime, ClassRef, DecoratorType, Operator } from '@tsdi/ioc';
 import { AdviceMatcher } from '../AdviceMatcher';
 import { AdviceMetadata } from '../metadata/meta';
 import { AopDef } from '../metadata/ref';
@@ -139,7 +139,7 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         if (targetChkExp.test(strExp)) {
             const token = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
             const runtime = this.runtime;
-            return (name, fullName, targetRef, target, options) => (options?.way != 'host') && runtime.getInjector(targetRef.type).getTokenProvider(token) === targetRef.type
+            return (name, fullName, targetRef, target, options) => (options?.way != 'host') && Operator.getTokenProvider(runtime.getInjector(targetRef.type), token) === targetRef.type
         }
 
         if (getPropExp.test(strExp)) {

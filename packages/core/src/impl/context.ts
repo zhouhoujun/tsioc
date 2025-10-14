@@ -1,6 +1,7 @@
 import {
     AbstractType, Provider, DefaultInvocationContext,
     ClassRef, ModuleDef, ModuleRef, Invocation, noPointcut,
+    Operator,
 } from '@tsdi/ioc';
 import { Logger, LoggerManagers } from '@tsdi/logger';
 import { Observable } from 'rxjs';
@@ -34,11 +35,11 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
      */
     request!: ApplicationArguments;
 
-    constructor(injector: ModuleRef, options: EnvironmentOption = {}) {
-        super(injector, options);
-        this._multicaster = injector.get(ApplicationEventMulticaster);
-        injector.setValue(ApplicationContext, this);
-        this._runners = injector.get(ApplicationRunners);
+    constructor(parent: ModuleRef, options: EnvironmentOption = {}) {
+        super(parent, options);
+        this._multicaster = parent.get(ApplicationEventMulticaster);
+        Operator.setValue(this, ApplicationContext, this);
+        this._runners = parent.get(ApplicationRunners);
         this.onDestroy(this._runners);
         if (options.eventsOptions) {
             setHandlerOptions(this.eventMulticaster, options.eventsOptions);
@@ -52,17 +53,17 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
         this.request = options.request!
     }
 
-    protected override createInjector(injector: ModuleRef, providers?: Provider[]): ModuleRef {
-        if (providers) injector.inject(providers);
-        return injector
-    }
+    // protected override createInjector(injector: ModuleRef, providers?: Provider[]): ModuleRef {
+    //     if (providers) injector.inject(providers);
+    //     return injector
+    // }
 
     get baseURL(): string {
-        return this.injector.get(PROCESS_ROOT)
+        return this.get(PROCESS_ROOT)
     }
 
     get instance() {
-        return this.injector.instance
+        return this.getParent().instance
     }
 
     get runners() {
@@ -74,7 +75,7 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
     }
 
     async bootstrap<C>(type: AbstractType<C> | ClassRef<C>, option?: BootstrapOption): Promise<Invocation<C>> {
-        const typeRef = this.runners.attach(type, { parent: this, ...option });
+        const typeRef = this.runners.attach(type, { ...option });
         if (typeRef) {
             await this.runners.run(typeRef.type);
         }
@@ -82,7 +83,7 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
     }
 
     getLogger(name?: string, adapter?: string | AbstractType): Logger {
-        return this.injector.get(LoggerManagers, null)?.getLogger(name, adapter) ?? null!;
+        return this.getParent().get(LoggerManagers, null)?.getLogger(name, adapter) ?? null!;
     }
 
     publishEvent(event: ApplicationEvent): Observable<any>;
@@ -121,7 +122,7 @@ export class DefaultApplicationContextFactory extends ApplicationContextFactory 
     create<T>(root: ModuleRef<T>, option?: EnvironmentOption): ApplicationContext<T> {
         const ann = root.moduleReflect.getAnnotation<ModuleDef>();
         if (ann?.baseURL) {
-            root.setValue(PROCESS_ROOT, ann.baseURL)
+            Operator.setValue(root, PROCESS_ROOT, ann.baseURL)
         }
         if (!option) {
             option = {};

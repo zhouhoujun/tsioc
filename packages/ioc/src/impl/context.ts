@@ -1,12 +1,12 @@
 import { AbstractType } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
-import { remove, getTypeName, getTypeChain } from '../utils/lang';
+import { remove, getTypeName, getTypeChain, defer } from '../utils/lang';
 import { isArray, isDefined, isFunction, isString, isAbstractType, getType, isType } from '../utils/chk';
 import { ResolveInterceptorLike, Parameter } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeArguments, InvocationRequest } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token } from '../tokens';
-import { createInjector, Injector, isInjector } from '../injector';
+import { createInjector, FactoryRecord, Injector, isInjector } from '../injector';
 import { Exception } from '../exception';
 import { ClassRef } from '../metadata/class';
 import { getDef } from '../metadata/refl';
@@ -16,13 +16,16 @@ import { ContextToken, HandlerLike, InterceptorLike } from '../handler';
 import { HandlerScope } from '../lifescope/lifescope';
 import { Runtime } from '../runtime';
 import { nonEnumerable } from '../metadata/decor';
+import { assertNotDestroyed, Operator } from '../operator';
+import { processInject, THROW_FLAGE, tryResolveToken } from './resolve';
 
 
 
 /**
  * The context for the {@link Invocation invocation of an operation}.
  */
-export class DefaultInvocationContext<TInj extends Injector = Injector> extends InvocationContext implements Destroyable, OnDestroy {
+export class DefaultInvocationContext<TParent extends Injector = Injector> extends InvocationContext<TParent> implements Destroyable, OnDestroy {
+
 
     @nonEnumerable
     protected _refs: InvocationContext[] | null;
@@ -33,24 +36,21 @@ export class DefaultInvocationContext<TInj extends Injector = Injector> extends 
     private _destroyed = false;
 
     @nonEnumerable
-    private _injector: TInj | null;
-    /**
-     * invocation static injector. 
-     */
-    get injector(): TInj {
-        return this._injector!;
-    }
+    protected _runtime: Runtime | null = null;
 
     @nonEnumerable
-    private _parent: InvocationContext | null = null;
+    private _parent: TParent|null;
+    
+    protected _readyDefer = defer<void>();
     /**
-     * parent InvocationContext,
-     * 
-     * 上级上下文
+     * factories.
+     *
+     * @protected
+     * @type {Map<Token, Function>}
      */
-    getParent(): InvocationContext | null {
-        return this._parent;
-    }
+    @nonEnumerable
+    protected records: Map<Token, FactoryRecord>;
+
     /**
      * invocation target type.
      */
@@ -70,26 +70,30 @@ export class DefaultInvocationContext<TInj extends Injector = Injector> extends 
      */
 
     constructor(
-        injector: TInj,
+        parent: TParent,
         private options: TargetInvokeArguments = {},
         private injectorScope: AbstractType | 'static' = 'static'
     ) {
         super();
+        this.records = new Map();
         this._refs = [];
         this.isResolve = options.isResolve == true;
-        this._injector = this.createInjector(injector, options.providers);
-        if (options.parent && injector !== options.parent.injector) {
-            const parent = options.parent;
-            this._parent = parent;
-            this.addRef(parent);
-            parent.onDestroy(() => {
-                !this.destroyed && this.removeRef(parent);
-            });
-        }
+        this._runtime = parent.getRuntime();
+        // this._injector = injector;
+        // if (options.parent) {
+        // const parent = options.parent;
+        this._parent = parent;
+        // this.addRef(parent);
+        // parent.onDestroy(() => {
+        //     !this.destroyed && this.removeRef(parent);
+        // });
+        parent.onDestroy(this);
+        // }
+        this.initProviders(options.providers || []);
 
         if (options.values) {
             options.values.forEach(par => {
-                this.injector.setValue(par[0], par[1]);
+                Operator.setValue(this, par[0], par[1]);
             })
         }
 
@@ -101,8 +105,37 @@ export class DefaultInvocationContext<TInj extends Injector = Injector> extends 
 
         this.targetType = options.targetType;
         this.propertyKey = options.propertyKey;
-        injector.onDestroy(this);
+        // injector.onDestroy(this);
         this.afterInit();
+    }
+
+    get ready(): Promise<void> {
+        return this._readyDefer.promise;
+    }
+    get size(): number {
+        return this.records.size;
+    }
+
+    /**
+     * parent InvocationContext,
+     * 
+     * 上级上下文
+     */
+    getRuntime(): Runtime {
+        return this._runtime!
+    }
+
+    getParent(): TParent {
+        return this._parent!;
+    }
+
+    protected initProviders(providers: Provider[]) {
+        const result = processInject(this, providers);
+        if (result) {
+            result.then(() => this._readyDefer.resolve())
+        } else {
+            this._readyDefer.resolve();
+        }
     }
 
     protected afterInit(): void {
@@ -110,7 +143,7 @@ export class DefaultInvocationContext<TInj extends Injector = Injector> extends 
     }
 
     protected initRequest(options: TargetInvokeArguments) {
-        this.request = options.request || options.parent?.request;
+        this.request = options.request // || options.parent?.request;
     }
 
     attach(option: InvocationContext | InvokeArguments): void {
@@ -121,11 +154,11 @@ export class DefaultInvocationContext<TInj extends Injector = Injector> extends 
         } else {
             if (option.values) {
                 option.values.forEach(par => {
-                    this.injector.setValue(par[0], par[1]);
+                    Operator.setValue(this, par[0], par[1]);
                 })
             }
             if (option.providers) {
-                this.injector.inject(option.providers);
+                Operator.inject(this, option.providers);
             }
             if (option.resolvers) {
                 if (option.resolvers?.length) {
@@ -155,11 +188,11 @@ export class DefaultInvocationContext<TInj extends Injector = Injector> extends 
             if (args?.length) {
                 resolvers.push(...args);
             }
-            const resls = this.options.resolvers?.map(r => isType(r) ? this.injector.get(r) : r);
+            const resls = this.options.resolvers?.map(r => isType(r) ? this.get(r) : r);
             if (resls?.length) {
                 resolvers.push(...resls);
             }
-            const runtime = this.injector.getRuntime();
+            const runtime = this.getRuntime();
             if (resolvers.length) {
                 this._resolvers = new HandlerScope(runtime, getParameterResolver(runtime), resolvers);
             } else {
@@ -169,11 +202,9 @@ export class DefaultInvocationContext<TInj extends Injector = Injector> extends 
         return this._resolvers;
     }
 
-
-
-    protected createInjector(injector: TInj, providers?: Provider[]): TInj {
-        return createInjector(providers, injector, this.injectorScope) as TInj;
-    }
+    // protected createInjector(injector: TInj, providers?: Provider[]): TInj {
+    //     return createInjector(providers, injector, this.injectorScope) as TInj;
+    // }
 
     /**
      * add reference contexts.
@@ -214,30 +245,47 @@ export class DefaultInvocationContext<TInj extends Injector = Injector> extends 
      * @param flags inject flags, type of {@link InjectFlags}.
      * @returns boolean.
      */
-    has(token: Token, flags?: InjectFlags): boolean {
+    has(token: Token, flags = InjectFlags.Default): boolean {
         this.assertNotDestroyed();
-        return (flags != InjectFlags.HostOnly && this.injector.has(token, flags))
-            || this._refs!.some(i => i.has(token, flags))
+        if (this.getRuntime().hasSingleton(token)) return true;
+        if (!(flags & InjectFlags.SkipSelf) && (this.records.has(token))) return true;
+        if (!(flags & InjectFlags.Self)) {
+            return this._parent?.has(token, flags) === true
+        }
+        return this._refs!.some(i => i.has(token, flags))
     }
 
     /**
-     * get token value.
-     * 
-     * 获取上下文中标记指令的实例值
-     * @param token the token to get value.
-     * @param flags inject flags, type of {@link InjectFlags}.
-     * @returns the instance of token.
+     * get token factory resolve instace in current.
+     *
+     * 获取标记令牌的实例。
+     * @template T
+     * @param {Token<T>} token token id {@link Token}.
+     * @param {T} notFoundValue not found token, return this value.
+     * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
+     * @param {InvocationContext} context invocation context. type of {@link InvocationContext}, use to resolve with token.
+     * @returns {T} token value.
      */
-    get<T>(token: Token<T>, flags?: InjectFlags): T {
+    get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, context?: InvocationContext): T {
         this.assertNotDestroyed();
-        return (flags != InjectFlags.HostOnly ? this.injector.get(token, null, flags, this) : null)
-            ?? this.getFormRef(token, flags) ?? null as T
+        const record = this.records.get(token);
+        const runtime = this.getRuntime();
+        if (runtime.hasSingleton(token)) return runtime.getSingleton(token);
+
+        return tryResolveToken(token, record, this.records, runtime, this._parent, context?? this,
+            notFoundValue === undefined ? THROW_FLAGE : notFoundValue,
+            flags ?? InjectFlags.Default, record?.stic ?? true)
+            ?? this.getFormRef(token, flags)
+            // ?? (flags != InjectFlags.HostOnly ? this.injector.get(token, null, flags, this) : null) as T;
+
+        // return (flags != InjectFlags.HostOnly ? this.injector.get(token, null, flags, this) : null)
+        //     ?? this.getFormRef(token, flags) ?? null as T
     }
 
     protected getFormRef<T>(token: Token<T>, flags?: InjectFlags): T | undefined {
         let val: T | undefined;
         this._refs!.some(r => {
-            val = r.get(token, flags);
+            val = r.get(token, undefined, flags);
             return isDefined(val)
         });
 
@@ -253,7 +301,7 @@ export class DefaultInvocationContext<TInj extends Injector = Injector> extends 
      */
     setValue<T>(token: Token<T>, value: T) {
         this.assertNotDestroyed();
-        this.injector.setValue(token, value);
+        Operator.setValue(this, token, value);
         return this
     }
 
@@ -282,7 +330,7 @@ export class DefaultInvocationContext<TInj extends Injector = Injector> extends 
         const metaRvr = meta.resolver;
         let resolver: HandlerScope | null;
         if (metaRvr?.length) {
-            const runtime = this.injector.getRuntime();
+            const runtime = this.getRuntime();
             resolver = createResolveScope(runtime, metaRvr.map(r => isType(r) ? this.resolve(r) : r), this.getResolver());
         } else {
             resolver = this.getResolver()
@@ -323,9 +371,7 @@ export class DefaultInvocationContext<TInj extends Injector = Injector> extends 
     }
 
     protected assertNotDestroyed(): void {
-        if (this.destroyed) {
-            throw new Exception('Context has already been destroyed.')
-        }
+        assertNotDestroyed(this);
     }
 
     destroy(): void {
@@ -347,10 +393,10 @@ export class DefaultInvocationContext<TInj extends Injector = Injector> extends 
 
             this._dsryCbs.clear();
             this.clear();
-            const injector = this.injector;
+            // const injector = this.injector;
             this._parent = null;
-            this._injector = null;
-            return injector.destroy();
+            // this._injector = null;
+            // return injector.destroy();
         }
     }
 
@@ -410,11 +456,11 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
 
 
 INVOCATION_CONTEXT_IMPL.create = (parent: Injector | InvocationContext, options?: TargetInvokeArguments, scope?: AbstractType | 'static') => {
-    if (isInjector(parent)) {
-        return new DefaultInvocationContext(parent, options, scope)
-    } else {
-        return new DefaultInvocationContext(parent.injector, { parent, ...options }, scope)
-    }
+    // if (isInjector(parent)) {
+    return new DefaultInvocationContext(parent, options, scope)
+    // } else {
+    //     return new DefaultInvocationContext(parent, { parent, ...options }, scope)
+    // }
 }
 
 const UNRESOLVED = {};
@@ -447,8 +493,8 @@ export function getTokenResolver(runtime: Runtime): HandlerScope<[Token, InjectF
                         return next(input, context);
                     }
                     if (!context.has(type, flags)) {
-                        const injector = context.injector.getParent() ?? context.injector;
-                        injector.register(type);
+                        // const injector = context.getParent() ?? context.injector;
+                        Operator.register(context, type);
                     }
                     return context.get(type, flags)
                 },

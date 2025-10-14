@@ -20,11 +20,7 @@ import { ApplicationEvent } from './ApplicationEvent';
  */
 @Abstract()
 export abstract class ApplicationContext<T = object>
-    extends InvocationContext implements ApplicationEventPublisher, Destroyable {
-    /**
-     * application root module injector.
-     */
-    abstract get injector(): ModuleRef<T>;
+    extends InvocationContext<ModuleRef<T>> implements ApplicationEventPublisher, Destroyable {
     /**
      * module instance.
      */

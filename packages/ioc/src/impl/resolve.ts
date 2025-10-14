@@ -11,6 +11,7 @@ import { ModuleDef, ClassRef } from '../metadata/class';
 import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
 import { InvocationContext } from '../context';
 import { DesignContext } from '../lifescope/ctx';
+import { getRecords, Operator } from '../operator';
 
 
 
@@ -181,17 +182,14 @@ export function processProvider(injector: Injector, p: TypeOption | StaticProvid
             const pdrs = (p as DynamicProvider).provider(injector);
             if (isPromise(pdrs)) {
                 return pdrs.then(ps => {
-                    if (ps) injector.inject(ps);
+                    if (ps) Operator.inject(injector, ps);
                 });
             }
-            if (pdrs) injector.inject(pdrs);
+            if (pdrs) Operator.inject(injector, pdrs);
         }
     }
 }
 
-export function getRecords(injector: Injector): Map<Token, FactoryRecord> {
-    return (injector as Injector & { records: Map<Token, FactoryRecord> }).records;
-}
 
 /**
  * register provider.
@@ -203,7 +201,6 @@ function registerProvider(injector: Injector, provider: StaticProviders) {
         return
     }
     const records = getRecords(injector);
-    const runtime = injector.getRuntime();
     if (provider.multi) {
         let multiPdr = records.get(provider.provide);
         if (!multiPdr) {
@@ -310,7 +307,7 @@ export function generateRecord<T>(injector: Injector, provider: StaticProviders)
             deps = [{ token: provider.useClass, options: OptionFlags.Default }]
         }
         if (!injector.has(type, InjectFlags.Default)) {
-            injector.register({ singleton: provider.singleton, type, deps, regProvides: false })
+            Operator.register(injector, { singleton: provider.singleton, type, deps, regProvides: false })
         }
     } else if (isFunction(provider.provide)) {
         if (deps) {
@@ -321,7 +318,7 @@ export function generateRecord<T>(injector: Injector, provider: StaticProviders)
             deps = [{ token: provider.provide, options: OptionFlags.Default }];
             type = provider.provide;
             if (!injector.has(type, InjectFlags.Default)) {
-                injector.register({ singleton: provider.singleton, type, deps, regProvides: false })
+                Operator.register(injector, { singleton: provider.singleton, type, deps, regProvides: false })
             }
         }
     }

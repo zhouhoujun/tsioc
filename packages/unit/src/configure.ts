@@ -1,4 +1,4 @@
-import { Injectable, lang, Provider, tokenId } from '@tsdi/ioc';
+import { Injectable, lang, Operator, Provider, tokenId } from '@tsdi/ioc';
 import { Application, ApplicationContext, Start, Startup } from '@tsdi/core';
 import * as assert from 'assert';
 import * as expect from 'expect';
@@ -22,19 +22,19 @@ export class UnitTestConfigureService {
     @Startup()
     async configureService(ctx: ApplicationContext): Promise<void> {
         const config = ctx.get(UNITTESTCONFIGURE);
-        const inj = ctx.injector;
-        if (!inj.has(Assert)) {
-            inj.setValue(Assert, assert)
+        
+        if (!ctx.has(Assert)) {
+            ctx.setValue(Assert, assert)
         }
-        if (!inj.has(ExpectToken)) {
-            inj.setValue(ExpectToken, expect)
+        if (!ctx.has(ExpectToken)) {
+            ctx.setValue(ExpectToken, expect)
         }
-        const reps = inj.get(Application).loadTypes.filter(l => lang.isBaseOf(l, AbstractReporter));
+        const reps = ctx.get(Application).loadTypes.filter(l => lang.isBaseOf(l, AbstractReporter));
         if (reps.length) {
-            inj.inject(reps.map(r => ({ provide: UNIT_REPORTES, useExisting: r, multi: true } as Provider)))
+            Operator.inject(ctx, reps.map(r => ({ provide: UNIT_REPORTES, useExisting: r, multi: true } as Provider)))
         }
         if (config.reporters && config.reporters.length) {
-            inj.inject(config.reporters.map(r => ({ provide: UNIT_REPORTES, useClass: r, multi: true } as Provider)))
+            Operator.inject(ctx, config.reporters.map(r => ({ provide: UNIT_REPORTES, useClass: r, multi: true } as Provider)))
         }
     }
 }

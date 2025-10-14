@@ -1,4 +1,4 @@
-import { Abstract, AbstractType, Invocation, ProvidedInMetadata, ProvdierOf, StaticProvider, InvocationOptions, InvocationFactory, Injector } from '@tsdi/ioc';
+import { Abstract, AbstractType, Invocation, ProvidedInMetadata, ProvdierOf, StaticProvider, InvocationOptions, InvocationFactory, Injector, InvocationContext } from '@tsdi/ioc';
 import { ConfigableHandlerOptions, HandlerService } from './handlers/configable';
 import { Observable } from 'rxjs';
 import { PipeTransform } from './pipes/pipe';
@@ -24,7 +24,7 @@ export abstract class InvocationHandler<
      */
     abstract get invocation(): Invocation<T>;
 
-    abstract get injector(): Injector;
+    abstract get context(): InvocationContext;
 
     /**
      * get config options.

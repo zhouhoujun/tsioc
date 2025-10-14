@@ -55,7 +55,7 @@ export class HandleContext extends DefaultInvocationContext {
             res.push(...defRels);
         }
         if (this.request) {
-            const args = this.injector.get(getResolverToken(this.request), null);
+            const args = this.get(getResolverToken(this.request), null);
             if (args?.length) {
                 res.unshift(...args);
             }

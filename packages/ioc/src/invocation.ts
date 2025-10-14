@@ -35,10 +35,6 @@ export abstract class Invocation<T = any, TRes = any, TC extends InvocationConte
      * 调用的实例对象
      */
     abstract get instance(): T;
-    /**
-     * invocation injector.
-     */
-    abstract get injector(): Injector;
 
     /**
      * `InvocationContext` of invocation invoker.

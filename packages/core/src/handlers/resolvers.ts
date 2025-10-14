@@ -80,7 +80,7 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
 
 
             if (parameter.multi) {
-                const value = getIterableResolver(ctx.injector.getRuntime()).handle([isString(payload) ? payload.split(',') : payload, pipe, parameter], ctx);
+                const value = getIterableResolver(ctx.getRuntime()).handle([isString(payload) ? payload.split(',') : payload, pipe, parameter], ctx);
                 if (isResolved(value)) return value;
             } else {
                 return pipe.transform(payload, ...parameter.args || [])

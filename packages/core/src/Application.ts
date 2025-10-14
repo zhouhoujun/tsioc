@@ -1,4 +1,4 @@
-import { isFunction, AbstractType, Type, Provider, Injector, Modules, ModuleDef, ModuleMetadata, ClassRef, lang, ModuleRef, getModuleType, createModuleRef, ModuleType,createInjector, getClassRef } from '@tsdi/ioc';
+import { isFunction, AbstractType, Type, Provider, Injector, Modules, ModuleDef, ModuleMetadata, ClassRef, lang, ModuleRef, getModuleType, createModuleRef, ModuleType,createInjector, getClassRef, Operator } from '@tsdi/ioc';
 import { ApplicationContext, ApplicationContextFactory, ApplicationOption, EnvironmentOption, PROCESS_ROOT } from './ApplicationContext';
 import { DEFAULTA_PROVIDERS, ROOT_DEPENDENCE_PROVIDERS, } from './providers';
 import { ModuleLoader } from './ModuleLoader';
@@ -149,14 +149,14 @@ export class Application<T = any> {
     protected createInjector<T>(providers: Provider[], option: ApplicationOption<T>) {
         const container = option.injector ?? createInjector(providers);
         if (option.baseURL) {
-            container.setValue(PROCESS_ROOT, option.baseURL)
+             Operator.setValue(container, PROCESS_ROOT, option.baseURL);
         }
         if (this.loader) {
-            container.setValue(ModuleLoader, this.loader)
+            Operator.setValue(container, ModuleLoader, this.loader);
         } else {
             this.loader = new DefaultModuleLoader();
         }
-        option.platformDeps && container.use(option.platformDeps);
+        option.platformDeps &&  Operator.use(container, option.platformDeps);
         // option.depProviders = [this.getRootDependenceProviders() ?? Empty, option.depProviders ?? Empty];
         option.deps = [this.getRootDependencies(), option.deps ?? []];
         option.providers = [this.getRootDependenceProviders(), this.getRootDefaultProviders(), option.providers ?? []];
@@ -198,7 +198,7 @@ export class Application<T = any> {
     }
 
     protected initRoot() {
-        this.root.setValue(Application, this);
+         Operator.setValue(this.root, Application, this);
         if (!this.loader) {
             this.loader = this.root.get(ModuleLoader);
         }
@@ -212,13 +212,13 @@ export class Application<T = any> {
             this.initRoot();
             if (isFunction(target)) {
                 // const modueRef = root.get(ReflectiveFactory).create(target);
-                this.context = root.resolve(ApplicationContextFactory).create(root);
+                this.context =  Operator.resolve(root, ApplicationContextFactory).create(root);
             } else {
                 // const modueRef = root.get(ReflectiveFactory).create(root.moduleType);
                 if (target.loads) {
                     this._loads = await this.loader.register(this.root, target.loads);
                 }
-                this.context = root.resolve(ApplicationContextFactory).create(root, { ...target, providers: [] });
+                this.context =  Operator.resolve(root, ApplicationContextFactory).create(root, { ...target, providers: [] });
             }
         }
         return this.context

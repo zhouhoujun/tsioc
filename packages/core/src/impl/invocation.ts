@@ -31,11 +31,6 @@ export class DefaultInvocationHandler<
         return this.options;
     }
 
-    get injector(): Injector {
-        return this.context.injector
-    }
-
-
     protected getBackend(): BackendFn<TInput, TOutput> {
         return (input: any, context?: TContext) => toObservable(this.respond(input, context));
     }
@@ -61,7 +56,7 @@ export class DefaultInvocationHandler<
                 input = context;
             } else {
                 newCtx = true;
-                const ctx = createContext(this.context, { request: input as InvocationRequest, resolvers: this.context.injector.get(getResolverToken(input), []) });
+                const ctx = createContext(this.context, { request: input as InvocationRequest, resolvers: this.context.get(getResolverToken(input), []) });
                 ctx.setValue(getType(input), input);
                 if (context) this.attchContext(ctx, context, input)
                 input = ctx;
@@ -123,7 +118,7 @@ export class DefaultInvocationHandler<
 
     equals(other: InvocationHandler): boolean {
         return this.invocation.type === other.invocation.type
-            && this.injector === other.injector
+            && this.context === other.context
             && this.options.response === (other as DefaultInvocationHandler).options.response
             && this.propertyKey === (other as DefaultInvocationHandler).propertyKey;
     }

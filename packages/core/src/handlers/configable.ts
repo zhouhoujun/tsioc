@@ -1,4 +1,4 @@
-import { Injector, ProvdierOf, StaticProvider, Type, Abstract, Token, AbstractType, InvokeProviders } from '@tsdi/ioc';
+import { Injector, ProvdierOf, StaticProvider, Type, Abstract, Token, AbstractType, InvokeProviders, InvocationContext } from '@tsdi/ioc';
 import { GuardLike, GuardsService } from '../guard';
 import { ApplicationInterceptorLike, InterceptorService } from '../ApplicationInterceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
@@ -25,7 +25,8 @@ export abstract class AbstractConfigableHandler<
     TOutput = any,
     TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>,
     TContext = any> implements ApplicationHandler<TInput, TOutput, TContext>, HandlerService {
-    abstract get injector(): Injector;
+
+    abstract get context(): InvocationContext;
     abstract get ready(): Promise<void>;
 
     /**
@@ -96,7 +97,7 @@ export interface ConfigableHandlerOptions<TInput = any> extends InvokeProviders 
      * execption handlers
      */
     execptionHandlers?: Type<any> | Type[] | null;
-    
+
     /**
      * An array of dependency-injection tokens used to look up `GuardLike()`
      * handlers, in order to determine if the current user is allowed to
@@ -115,7 +116,7 @@ export interface ConfigableHandlerOptions<TInput = any> extends InvokeProviders 
      * filters of bootstrap.
      */
     filters?: ProvdierOf<FilterLike<TInput>>[];
-    
+
     /**
      * interceptors token.
      */
@@ -129,7 +130,7 @@ export interface ConfigableHandlerOptions<TInput = any> extends InvokeProviders 
      */
     filtersToken?: Token<FilterLike<TInput>[]>;
 
-    
+
     backend?: Token<Backend<TInput>> | Token<BackendFn<TInput>> | Backend<TInput> | BackendFn<TInput>;
 }
 

@@ -1,6 +1,7 @@
 import {
     ArgumentException, getToken, Inject, Injectable,
-    Injector, isString, noPointcut, Nullable, Token, AbstractType
+    Injector, isString, noPointcut, Nullable, Token, AbstractType,
+    Operator
 } from '@tsdi/ioc';
 import { HeaderFormater, Logger } from './logger';
 import { LOG_CONFIGURES, LogConfigure } from './LogConfigure';
@@ -64,7 +65,7 @@ export class LoggerManagers implements LoggerManager {
     protected init() {
         if (this.inited) return;
         if (!this.injector.has(LOG_CONFIGURES)) {
-            this.injector.inject({ provide: LOG_CONFIGURES, useValue: { adapter: 'console' }, multi: true });
+            Operator.inject(this.injector, { provide: LOG_CONFIGURES, useValue: { adapter: 'console' }, multi: true });
         }
         this.inited = true;
         const configs = this.injector.get(LOG_CONFIGURES);
