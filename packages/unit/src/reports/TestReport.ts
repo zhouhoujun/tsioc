@@ -1,7 +1,7 @@
 import { Singleton, Token, Injector } from '@tsdi/ioc';
 import { TestReport, SuiteDescribe, ICaseDescribe } from './interface';
 import { Reporter, RealtimeReporter, UNIT_REPORTES } from './Reporter';
-import { HrtimeFormatter } from '@tsdi/core';
+import { ApplicationContext, HrtimeFormatter } from '@tsdi/core';
 
 
 /**
@@ -19,12 +19,12 @@ export class DefaultTestReport implements TestReport {
     reports!: Reporter[];
     getReports() {
         if (!this.reports) {
-            this.reports = this.injector.get(UNIT_REPORTES)
+            this.reports = this.ctx.get(UNIT_REPORTES)
         }
         return this.reports || []
     }
 
-    constructor(private injector: Injector, protected hrtime: HrtimeFormatter) {
+    constructor(private ctx: ApplicationContext, protected hrtime: HrtimeFormatter) {
         this.suites = new Map()
     }
 

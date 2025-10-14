@@ -1,4 +1,4 @@
-import { Inject, Autowired, Injectable, isFunction, Container, Providers, getClassRef, InvocationFactory, createInjector } from '../src';
+import { Inject, Autowired, Injectable, isFunction, Container, Providers, getClassRef, InvocationFactory, createInjector, Operator } from '../src';
 import expect = require('expect');
 // import { AnnotationAspect } from './aop/AnnotationAspect';
 // import { CheckRightAspect } from './aop/CheckRightAspect';
@@ -96,7 +96,7 @@ describe('method exec test', () => {
 
     it('show exec with type and instance', () => {
         // container.register(Person);
-        container.register(MethodTest);
+        Operator.register(container, MethodTest);
         const mtt = container.get(MethodTest);
         expect(isFunction(mtt.sayHello)).toBeTruthy();
         // expect(container.invoke(MethodTest, 'sayHello')).toEqual('I love you.');
@@ -107,7 +107,7 @@ describe('method exec test', () => {
 
     it('show exec with specail param', () => {
         // container.register(Person);
-        container.register(MethodTest2);
+        Operator.register(container, MethodTest2);
         // expect(container.invoke(MethodTest2, t => t.sayHello)).toEqual('Mama');
         const typeRef = container.get(InvocationFactory).create(MethodTest2);
         expect(typeRef.invoke(t => t.sayHello)).toEqual('Mama');
@@ -116,7 +116,7 @@ describe('method exec test', () => {
 
     it('show exec with many params', () => {
         // container.register(Person);
-        container.register(MethodTest3);
+        Operator.register(container, MethodTest3);
         // expect(container.invoke(MethodTest3, 'sayHello')).toEqual('Mama, I love you.');
         const typeRef = container.get(InvocationFactory).create(MethodTest3);
         expect(typeRef.invoke('sayHello')).toEqual('Mama, I love you.');
@@ -125,9 +125,9 @@ describe('method exec test', () => {
 
     it('show exec with many params and invoke with string', () => {
         // container.register(Person);
-        container.register(MethodTest3);
+        Operator.register(container, MethodTest3);
         // expect(container.invoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
-        const typeRef = container.get(InvocationFactory).create(container.getTokenProvider('Test3'));
+        const typeRef = container.get(InvocationFactory).create(Operator.getTokenProvider(container, 'Test3'));
         expect(typeRef.invoke('sayHello')).toEqual('Mama, I love you.');
 
     });

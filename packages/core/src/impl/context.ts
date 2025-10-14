@@ -38,7 +38,7 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
     constructor(parent: ModuleRef, options: EnvironmentOption = {}) {
         super(parent, options);
         this._multicaster = parent.get(ApplicationEventMulticaster);
-        this.setValue(ApplicationContext, this);
+        Operator.setValue(this.getParent(), ApplicationContext, this);
         this._runners = parent.get(ApplicationRunners);
         this.onDestroy(this._runners);
         if (options.eventsOptions) {

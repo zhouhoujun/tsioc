@@ -100,7 +100,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         this.initRequest(options);
 
         getTypeChain(getType(this)).forEach(c => {
-            this.setValue(c, this);
+            if(c !== Injector) this.setValue(c, this);
         });
 
         this.targetType = options.targetType;
