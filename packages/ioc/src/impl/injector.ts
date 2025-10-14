@@ -3,20 +3,20 @@ import { AbstractType, Type, noPointcut } from '../types';
 import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { isPlainObject, isTypeObject } from '../utils/obj';
-import { cleanObj, deepForEach, defer, immediate } from '../utils/lang';
+import { cleanObj, deepForEach, defer, getTypeName, immediate } from '../utils/lang';
 import { isArray, isDefined, isFunction, getType, isAbstractType } from '../utils/chk';
-import { MethodType, InjectorScope, RegisterOption, FactoryRecord, Injector, INJECT_IMPL } from '../injector';
+import { MethodType, InjectorScope, RegisterOption, FactoryRecord, Injector, INJECT_IMPL, InjectorOperator } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { getClassRef } from '../metadata/refl';
 import { ClassRef } from '../metadata/class';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
-import { ModuleWithProviders, Provider, ModuleType } from '../providers';
+import { Provider, ModuleType } from '../providers';
 import { createContext, InvocationContext, InvokeOptions, hasContextOptions } from '../context';
 import { DefaultRuntime } from './runtime';
 import { DefaultInvocationFactory } from './invocation';
 import { InvocationFactory } from '../invocation';
-import { Empty, processInject, processInjectType, processProvider, registerClass, THROW_FLAGE, tryResolveToken } from './resolve';
+import { Empty, getRecords, processInject, processProvider, processUse, THROW_FLAGE, tryResolveToken } from './resolve';
 import { nonEnumerable } from '../metadata/decor';
 
 
@@ -170,7 +170,7 @@ export class DefaultInjector extends Injector {
     use(...modules: ModuleType[]): Type[];
     use(...args: any[]): Type[] {
         const types: Type[] = [];
-        this.processUse(args, types);
+        processUse(this, args, types);
         return types
     }
 
@@ -179,32 +179,10 @@ export class DefaultInjector extends Injector {
     useAsync(...modules: ModuleType[]): Promise<Type[]>;
     async useAsync(...args: any[]): Promise<Type[]> {
         const types: Type[] = [];
-        await this.processUse(args, types);
+        await processUse(this, args, types);
         return types;
     }
 
-    protected processUse(args: ModuleType[], types?: AbstractType[]) {
-        this.assertNotDestroyed();
-        const stk: AbstractType[] = [];
-        return deepForEach(args, (ty: any) => {
-            if (isAbstractType(ty)) {
-                types?.push(ty);
-                return processInjectType(this,  ty, stk)
-            } else if (isFunction(ty.module) && isArray(ty.providers)) {
-                types?.push(ty.module);
-                return processInjectType(this, ty, stk)
-            }
-        }, v => isPlainObject(v) && !(isFunction(v.module) && isArray(v.providers)));
-    }
-
-
-    // protected processInjectorType(runtime: Runtime, typeOrDef: AbstractType | ModuleWithProviders, dedupStack: AbstractType[], moduleRefl?: ClassRef) {
-    //     return processInjectType(typeOrDef, dedupStack,
-    //         (pdr) => processProvider(runtime, this, pdr),
-    //         (tyref, type, options) => {
-    //             registerClass(runtime, this, tyref, options)
-    //         }, moduleRefl)
-    // }
 
     has<T>(token: Token<T>, flags = InjectFlags.Default): boolean {
         this.assertNotDestroyed();
@@ -229,15 +207,6 @@ export class DefaultInjector extends Injector {
         return this
     }
 
-    // setSingleton<T>(token: Token<T>, value: T): this {
-    //     this.assertNotDestroyed();
-    //     const runtime = this.getRuntime();
-    //     if (!runtime.hasSingleton(token)) {
-    //         runtime.setSingleton(token, value, this)
-    //     }
-    //     return this
-    // }
-
     protected isself(token: Token): boolean {
         return this.isAlias ? this.isAlias(token) : false
     }
@@ -248,14 +217,10 @@ export class DefaultInjector extends Injector {
         const runtime = this.getRuntime();
         if (runtime.hasSingleton(token)) return runtime.getSingleton(token);
 
-        return this.tryResolve(token, this.records.get(token), runtime, this._parent, context,
+        const record = this.records.get(token);
+        return tryResolveToken(token, record, this.records, runtime, this._parent, context,
             notFoundValue === undefined ? THROW_FLAGE : notFoundValue,
-            flags ?? InjectFlags.Default)
-    }
-
-    protected tryResolve(token: Token, record: FactoryRecord | undefined, runtime: Runtime, parent: Injector | null,
-        context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags) {
-        return tryResolveToken(token, record, this.records, runtime, parent, context, notFoundValue, flags, record?.stic ?? this.isStatic)
+            flags ?? InjectFlags.Default, record?.stic ?? this.isStatic)
     }
 
 
@@ -295,6 +260,18 @@ export class DefaultInjector extends Injector {
         return result;
     }
 
+    unregister<T>(token: Token<T>): this {
+        this.assertNotDestroyed();
+        const isp = this.records?.get(token);
+        if (isp) {
+            this.records.delete(token);
+            if (isp.type) this.getRuntime().clearTypeProvider(isp.type);
+            cleanObj(isp)
+        }
+
+        return this
+    }
+
     getTokenProvider<T>(token: Token<T>, flags = InjectFlags.Default): AbstractType<T> {
         this.assertNotDestroyed();
         let type: AbstractType | undefined;
@@ -306,18 +283,6 @@ export class DefaultInjector extends Injector {
             type = this._parent?.getTokenProvider(token, flags)
         }
         return type ?? null!
-    }
-
-    unregister<T>(token: Token<T>): this {
-        this.assertNotDestroyed();
-        const isp = this.records?.get(token);
-        if (isp) {
-            this.records.delete(token);
-            if (isp.type) this.getRuntime().clearTypeProvider(isp.type);
-            cleanObj(isp)
-        }
-
-        return this
     }
 
     invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
@@ -374,9 +339,7 @@ export class DefaultInjector extends Injector {
     }
 
     protected assertNotDestroyed(): void {
-        if (this.destroyed) {
-            throw new Exception('Injector has already been destroyed.')
-        }
+        assertNotDestroyed(this);
     }
 
     /**
@@ -445,6 +408,218 @@ export class DefaultInjector extends Injector {
         this._parent = null;
     }
 }
+
+
+function assertNotDestroyed(injector: Injector): void {
+    if (injector.destroyed) {
+        throw new Exception(`${getTypeName(injector)} has already been destroyed.`)
+    }
+}
+
+
+
+export class DefaultInjectorOperator implements InjectorOperator {
+
+    @nonEnumerable
+    private injector: Injector;
+
+    getInjector(){
+        return this.injector;
+    }
+
+    constructor(injector: Injector) {
+        this.injector = injector;
+    }
+
+    protected assertNotDestroyed(): void {
+        assertNotDestroyed(this.injector);
+    }
+
+    setSingleton<T>(token: Token<T>, value: T): this {
+        this.injector.getRuntime().setSingleton(token, value, this.injector);
+        return this;
+    }
+
+    resolve<T, TArg>(token: Token<T>, option?: InvokeOptions): T;
+    resolve<T>(token: Token<T>, context?: InvocationContext): T;
+    resolve<T>(token: Token<T>, providers?: Provider[]): T;
+    resolve<T>(token: Token<T>, ...providers: Provider[]): T;
+    resolve<T>(token: Token<T>, ...args: any[]) {
+        if (!args.length) {
+            return this.injector.get(token);
+        }
+        this.assertNotDestroyed();
+        let context: InvocationContext | undefined;
+        const isResolve = true;
+        let isCtx = false;
+        if (args.length === 1) {
+            const arg1 = args[0];
+            if (arg1 instanceof InvocationContext) {
+                context = arg1;
+                isCtx = true;
+            } else if (isArray(arg1)) {
+                context = arg1.length ? createContext(this.injector, { isResolve, providers: arg1 }) : undefined;
+            } else if (arg1.provide) {
+                context = createContext(this.injector, { isResolve, providers: [arg1] });
+            } else if (hasContextOptions(arg1)) {
+                context = createContext(this.injector, { isResolve, ...arg1 });
+            }
+        } else {
+            context = createContext(this.injector, { isResolve, providers: args });
+        }
+
+        const result = (context && !isCtx) ? context.resolve(token, InjectFlags.Resolve) : this.injector.get(token, null, InjectFlags.Resolve, context);
+
+        if (context && !isCtx && !context.used) {
+            immediate(() => context!.destroy());
+        }
+        return result;
+    }
+
+    setValue<T>(token: Token<T>, value: T, type?: AbstractType<T> | undefined): this {
+        this.assertNotDestroyed();
+        const records = getRecords(this.injector);
+        const isp = records.get(token);
+        if (isp) {
+            isp.value = value;
+            if (type) isp.type = type
+        } else if (isDefined(value)) {
+            records.set(token, type ? { value, type } : { value })
+        }
+        return this
+    }
+
+    getTokenProvider<T>(token: Token<T>, flags = InjectFlags.Default): AbstractType<T> {
+        this.assertNotDestroyed();
+        let type: AbstractType | undefined;
+        const records = getRecords(this.injector);
+        if (!(flags & InjectFlags.SkipSelf)) {
+            const rd = records.get(token);
+            type = rd?.type;
+        }
+        if (!type && !(flags & InjectFlags.Self)) {
+            type = this.injector.getParent()?.getTokenProvider(token, flags)
+        }
+        return type ?? null!
+    }
+
+    cache<T>(token: Token<T>, cache: T, expires: number): this {
+        this.assertNotDestroyed();
+        const records = getRecords(this.injector);
+        const pd = records.get(token);
+        const ltop = Date.now();
+        if (pd) {
+            pd.cache = cache;
+            pd.expires = ltop + expires
+        } else {
+            records.set(token, { cache, expires })
+        }
+        return this
+    }
+
+    inject(providers: Provider | Provider[]): this;
+    inject(...providers: Provider[]): this;
+    inject(...args: any[]): this {
+        this.assertNotDestroyed();
+        processInject(this.injector, args);
+        return this
+    }
+
+    use(modules: ModuleType[]): Type[];
+    use(...modules: ModuleType[]): Type[];
+    use(...args: any[]): Type[] {
+        const types: Type[] = [];
+        processUse(this.injector, args, types);
+        return types
+    }
+
+
+    useAsync(modules: ModuleType[]): Promise<Type[]>;
+    useAsync(...modules: ModuleType[]): Promise<Type[]>;
+    async useAsync(...args: any[]): Promise<Type[]> {
+        const types: Type[] = [];
+        await processUse(this.injector, args, types);
+        return types;
+    }
+
+
+    register(types: (AbstractType | RegisterOption)[]): this;
+    register(...types: (AbstractType | RegisterOption)[]): this;
+    register(...args: any[]): this {
+        this.assertNotDestroyed();
+        deepForEach(args, t => {
+            processProvider(this.injector, t)
+        });
+        return this
+    }
+
+    unregister<T>(token: Token<T>): this {
+        this.assertNotDestroyed();
+        const records = getRecords(this.injector);
+        const isp = records?.get(token);
+        if (isp) {
+            records.delete(token);
+            if (isp.type) this.injector.getRuntime().clearTypeProvider(isp.type);
+            cleanObj(isp)
+        }
+
+        return this
+    }
+    
+    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
+    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
+    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
+    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, providers: Provider[]): TR;
+    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
+        this.assertNotDestroyed();
+        let providers: Provider[] | undefined;
+        let context: InvocationContext | undefined;
+        let option: any;
+        if (args.length === 1) {
+            const arg0 = args[0];
+            if (arg0 instanceof InvocationContext) {
+                context = arg0;
+                providers = Empty;
+            } else if (isArray(arg0)) {
+                providers = arg0
+            } else if (isPlainObject(arg0) && !arg0.provide) {
+                option = arg0
+            } else {
+                providers = args
+            }
+        } else {
+            providers = args
+        }
+
+        let targetClass: AbstractType, instance: any;
+        let tgRefl: ClassRef | undefined;
+
+        if (!context) {
+            option = { ...option, providers };
+            context = createContext(this.injector, option);
+        }
+        if (isTypeObject(target)) {
+            targetClass = getType(target);
+            instance = target as T
+        } else {
+            if (target instanceof ClassRef) {
+                tgRefl = target;
+                targetClass = target.type
+            } else {
+                instance = this.injector.get(target as Token, context);
+                targetClass = getType(instance);
+                if (!targetClass) {
+                    throw new Exception((target as Token).toString() + ' is not implements by any class.')
+                }
+            }
+        }
+        tgRefl = tgRefl ?? getClassRef(targetClass);
+
+        return tgRefl.invoke(tgRefl.getMethodName(propertyKey), context, instance)
+
+    }
+}
+
 
 /**
  * static injector.

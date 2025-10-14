@@ -137,9 +137,9 @@ export class DefaultAdviceMatcher implements AdviceMatcher {
         }
 
         if (targetChkExp.test(strExp)) {
-            const torken = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
+            const token = strExp.substring(strExp.indexOf('(') + 1, strExp.length - 1).trim();
             const runtime = this.runtime;
-            return (name, fullName, targetRef, target, options) => (options?.way != 'host') && runtime.getInjector(targetRef.type).getTokenProvider(torken) === targetRef.type
+            return (name, fullName, targetRef, target, options) => (options?.way != 'host') && runtime.getInjector(targetRef.type).getTokenProvider(token) === targetRef.type
         }
 
         if (getPropExp.test(strExp)) {

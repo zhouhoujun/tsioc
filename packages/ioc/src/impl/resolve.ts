@@ -2,13 +2,13 @@ import { AbstractType, Type } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { isPlainObject } from '../utils/obj';
 import { cleanObj, deepForEach } from '../utils/lang';
-import { isArray, isDefined, isFunction, isNumber, isString, isNil, isPromise } from '../utils/chk';
+import { isArray, isDefined, isFunction, isNumber, isString, isNil, isPromise, isAbstractType } from '../utils/chk';
 import { FnType, FactoryRecord, Injector, DependencyRecord, OptionFlags, RegOption, TypeOption } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { getClassRef } from '../metadata/refl';
 import { ModuleDef, ClassRef } from '../metadata/class';
-import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders } from '../providers';
+import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
 import { InvocationContext } from '../context';
 import { DesignContext } from '../lifescope/ctx';
 
@@ -27,6 +27,19 @@ export function mergePromise(ps1: Promise<any> | undefined | void, ps2: () => an
         return ps1.then(ps2);
     }
     return ps2();
+}
+
+export function processUse(injector: Injector, args: ModuleType[], types?: AbstractType[]) {
+    const stk: AbstractType[] = [];
+    return deepForEach(args, (ty: any) => {
+        if (isAbstractType(ty)) {
+            types?.push(ty);
+            return processInjectType(injector, ty, stk)
+        } else if (isFunction(ty.module) && isArray(ty.providers)) {
+            types?.push(ty.module);
+            return processInjectType(injector, ty, stk)
+        }
+    }, v => isPlainObject(v) && !(isFunction(v.module) && isArray(v.providers)));
 }
 
 export function processInject(injector: Injector, providers: Provider[], injecting: (injector: Injector, provider: StaticProvider | DynamicProvider) => void = processProvider) {
@@ -176,7 +189,7 @@ export function processProvider(injector: Injector, p: TypeOption | StaticProvid
     }
 }
 
-function getRecords(injector: Injector): Map<Token, FactoryRecord> {
+export function getRecords(injector: Injector): Map<Token, FactoryRecord> {
     return (injector as Injector & { records: Map<Token, FactoryRecord> }).records;
 }
 

@@ -6,7 +6,7 @@ import { ModuleOption, ModuleRef } from '../module.ref';
 import { isModuleProviders, ModuleWithProviders, Provider } from '../providers';
 import { Type } from '../types';
 import { DefaultInjector } from './injector';
-import { mergePromise, processInject, processInjectModule, processInjectType } from './resolve';
+import { mergePromise, processInject, processInjectModule, processInjectType, processUse } from './resolve';
 
 
 /**
@@ -35,7 +35,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         
         if (option.deps?.length) {
             const deps = option.deps;
-            ps = mergePromise(ps, () => this.processUse(deps))
+            ps = mergePromise(ps, () => processUse(this, deps))
         }
 
         if (option.providers?.length) {
