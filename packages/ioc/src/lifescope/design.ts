@@ -161,7 +161,7 @@ export const registerHandler: HandlerFn = (ctx: DesignContext, context: Context)
             } as InitializeContext;
 
             let instance: any;
-            runtime.initialize.handle(ctx, null, {
+            runtime.initHandler.handle(ctx, null, {
                 finally: () => {
                     instance = ctx.instance;
                     if (singleton || isStatic) {

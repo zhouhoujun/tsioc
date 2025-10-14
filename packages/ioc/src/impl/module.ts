@@ -7,7 +7,7 @@ import { Runtime } from '../runtime';
 import { isModuleProviders, ModuleWithProviders, Provider } from '../providers';
 import { Type } from '../types';
 import { DefaultInjector } from './injector';
-import { mergePromise, processInject } from './resolve';
+import { mergePromise, processInject, processInjectModule, processInjectType } from './resolve';
 
 
 /**
@@ -53,7 +53,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
     private ininModule(platfrom: Runtime, dedupStack: Type[], option: ModuleOption, ps: Promise<void> | void | undefined) {
 
-        ps = mergePromise(ps, () => this.processInjectorType(platfrom, this._type, dedupStack, this.moduleReflect));
+        ps = mergePromise(ps, () => processInjectModule(platfrom, this, this._type, dedupStack, this.moduleReflect));
 
         return mergePromise(ps, () => {
             this._instance = this.get(this._type);
@@ -82,7 +82,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
             const modeuleRef = createModuleRef(typeOrDef, this);
             return modeuleRef.ready;
         } else {
-            return this.processInjectorType(this.getRuntime(), typeOrDef, [])
+            return processInjectType(this.getRuntime(), this, typeOrDef, [])
         }
     }
 

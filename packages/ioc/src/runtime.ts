@@ -23,8 +23,8 @@ export abstract class Runtime implements OnDestroy {
      */
     abstract get injector(): Injector;
 
-    abstract get initialize(): HandlerScope;
-    abstract get design(): HandlerScope;
+    abstract get initHandler(): HandlerScope;
+    abstract get designHandler(): HandlerScope;
 
     abstract get context(): Context;
 
@@ -39,7 +39,7 @@ export abstract class Runtime implements OnDestroy {
      * @param token 
      * @param value 
      */
-    abstract setSingleton<T>(injector: Injector, token: Token<T>, value: T): this;
+    abstract setSingleton<T>(token: Token<T>, value: T, injector?: Injector): this;
     /**
      * get singleton instance.
      * @param token 

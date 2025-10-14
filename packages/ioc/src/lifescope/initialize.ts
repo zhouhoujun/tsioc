@@ -65,7 +65,7 @@ export const singletonInterceptor: InterceptorFn<InitializeContext, void> = (inp
 
     return invokeTail(() => next(input, context), () => {
         if (input.type && input.instance && input.singleton) {
-            input.runtime.setSingleton(input.injector, input.provide || input.type, input.instance)
+            input.runtime.setSingleton(input.provide || input.type, input.instance, input.injector)
         }
     })
 }

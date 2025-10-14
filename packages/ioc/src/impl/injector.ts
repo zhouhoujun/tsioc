@@ -4,11 +4,8 @@ import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { cleanObj, deepForEach, defer, immediate } from '../utils/lang';
-import { isArray, isDefined, isFunction, isNumber, getType, isAbstractType, isPromise } from '../utils/chk';
-import {
-    MethodType, FnType, InjectorScope, RegisterOption, FactoryRecord,
-    Injector, INJECT_IMPL, OptionFlags, RegOption, TypeOption
-} from '../injector';
+import { isArray, isDefined, isFunction, getType, isAbstractType } from '../utils/chk';
+import { MethodType, InjectorScope, RegisterOption, FactoryRecord, Injector, INJECT_IMPL } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { getClassRef } from '../metadata/refl';
@@ -19,7 +16,7 @@ import { createContext, InvocationContext, InvokeOptions, hasContextOptions } fr
 import { DefaultRuntime } from './runtime';
 import { DefaultInvocationFactory } from './invocation';
 import { InvocationFactory } from '../invocation';
-import { Empty, processInject, processInjectorType, processProvider, registerReflect, THROW_FLAGE, tryResolveToken } from './resolve';
+import { Empty, processInject, processInjectType, processProvider, registerClass, THROW_FLAGE, tryResolveToken } from './resolve';
 import { nonEnumerable } from '../metadata/decor';
 
 
@@ -54,6 +51,7 @@ export class DefaultInjector extends Injector {
      * @protected
      * @type {Map<Token, Function>}
      */
+    @nonEnumerable
     protected records: Map<Token, FactoryRecord>;
     private isAlias?: null | ((token: Token) => boolean);
 
@@ -133,10 +131,6 @@ export class DefaultInjector extends Injector {
         return this.records.size
     }
 
-    // tokens() {
-    //     return Array.from(this.records.keys())
-    // }
-
     getRuntime(): Runtime {
         return this._runtime!
     }
@@ -197,22 +191,22 @@ export class DefaultInjector extends Injector {
         return deepForEach(args, (ty: any) => {
             if (isAbstractType(ty)) {
                 types?.push(ty);
-                return this.processInjectorType(runtime, ty, stk)
+                return processInjectType(runtime, this,  ty, stk)
             } else if (isFunction(ty.module) && isArray(ty.providers)) {
                 types?.push(ty.module);
-                return this.processInjectorType(runtime, ty, stk)
+                return processInjectType(runtime, this, ty, stk)
             }
         }, v => isPlainObject(v) && !(isFunction(v.module) && isArray(v.providers)));
     }
 
 
-    protected processInjectorType(runtime: Runtime, typeOrDef: AbstractType | ModuleWithProviders, dedupStack: AbstractType[], moduleRefl?: ClassRef) {
-        return processInjectorType(typeOrDef, dedupStack,
-            (pdr) => processProvider(runtime, this, pdr),
-            (tyref, type, options) => {
-                registerReflect(runtime, this, tyref, options)
-            }, moduleRefl)
-    }
+    // protected processInjectorType(runtime: Runtime, typeOrDef: AbstractType | ModuleWithProviders, dedupStack: AbstractType[], moduleRefl?: ClassRef) {
+    //     return processInjectType(typeOrDef, dedupStack,
+    //         (pdr) => processProvider(runtime, this, pdr),
+    //         (tyref, type, options) => {
+    //             registerClass(runtime, this, tyref, options)
+    //         }, moduleRefl)
+    // }
 
     has<T>(token: Token<T>, flags = InjectFlags.Default): boolean {
         this.assertNotDestroyed();
@@ -237,14 +231,14 @@ export class DefaultInjector extends Injector {
         return this
     }
 
-    setSingleton<T>(token: Token<T>, value: T): this {
-        this.assertNotDestroyed();
-        const runtime = this.getRuntime();
-        if (!runtime.hasSingleton(token)) {
-            runtime.setSingleton(this, token, value)
-        }
-        return this
-    }
+    // setSingleton<T>(token: Token<T>, value: T): this {
+    //     this.assertNotDestroyed();
+    //     const runtime = this.getRuntime();
+    //     if (!runtime.hasSingleton(token)) {
+    //         runtime.setSingleton(token, value, this)
+    //     }
+    //     return this
+    // }
 
     protected isself(token: Token): boolean {
         return this.isAlias ? this.isAlias(token) : false
@@ -275,6 +269,7 @@ export class DefaultInjector extends Injector {
         if (!args.length) {
             return this.get(token);
         }
+        this.assertNotDestroyed();
         let context: InvocationContext | undefined;
         const isResolve = true;
         let isCtx = false;
@@ -316,6 +311,7 @@ export class DefaultInjector extends Injector {
     }
 
     unregister<T>(token: Token<T>): this {
+        this.assertNotDestroyed();
         const isp = this.records?.get(token);
         if (isp) {
             this.records.delete(token);
@@ -487,5 +483,5 @@ INJECT_IMPL.isInjector = (target) => target instanceof DefaultInjector;
  * @param {IContainer} container
  */
 function registerCores(container: Injector, platform: Runtime) {
-    platform.setSingleton(container, InvocationFactory, new DefaultInvocationFactory(platform));
+    platform.setSingleton(InvocationFactory, new DefaultInvocationFactory(platform), container);
 }

@@ -42,7 +42,7 @@ export class DefaultRuntime implements Runtime {
     }
 
 
-    get initialize(): HandlerScope {
+    get initHandler(): HandlerScope {
         if (!this._initialize) {
             this._initialize = new HandlerScope(this, (ctx) => {
                 ctx.instance = new ctx.type(...ctx.args || []);
@@ -52,7 +52,7 @@ export class DefaultRuntime implements Runtime {
         return this._initialize;
     }
 
-    get design(): HandlerScope {
+    get designHandler(): HandlerScope {
         if (!this._design) {
             this._design = new HandlerScope(this, registerHandler, DESIGN_INTERECPTORS);
         }
@@ -71,12 +71,12 @@ export class DefaultRuntime implements Runtime {
      * @param token 
      * @param value 
      */
-    setSingleton<T>(injector: Injector, token: Token<T>, value: T): this {
+    setSingleton<T>(token: Token<T>, value: T, injector?: Injector): this {
         if (this._singls.has(token)) {
             throw new Exception('has singleton instance with token:' + token.toString())
         }
         this._singls.set(token, value);
-        injector.onDestroy(() => this._singls.delete(token));
+        if(injector) injector.onDestroy(() => this._singls.delete(token));
         return this
     }
     /**

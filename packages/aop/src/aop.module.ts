@@ -31,8 +31,8 @@ export class AopProvider {
             .set(Proceeding, proceeding)
             .set(ProceedingScope, proceeding);
 
-        runtime.initialize.use(matchInterceptor, runtime.initialize.getIndexOf(methodInterceptor));
-        runtime.initialize.use(pointcutInterceptor, runtime.initialize.getIndexOf(ctorArgsInterceptor) + 1);
+        runtime.initHandler.use(matchInterceptor, runtime.initHandler.getIndexOf(methodInterceptor));
+        runtime.initHandler.use(pointcutInterceptor, runtime.initHandler.getIndexOf(ctorArgsInterceptor) + 1);
 
     }
 }
