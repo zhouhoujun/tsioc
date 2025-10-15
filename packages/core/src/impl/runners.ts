@@ -19,6 +19,7 @@ import { NotHandleException } from '../execptions';
 import { toObservable } from '../handlers';
 import { InvocationHandlerOptions } from '../invocation';
 import { createInvocationHandler } from './invocation';
+import { ApplicationContext } from '../ApplicationContext';
 
 
 /**
@@ -44,14 +45,14 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
     private _refs: Map<AbstractType, Invocation[]>;
     private _handler: ConfigableHandler;
     constructor(
-        private injector: Injector,
+        private context: ApplicationContext,
         protected readonly multicaster: ApplicationEventMulticaster
     ) {
         super()
         this._types = [];
         this._maps = new Map();
         this._refs = new Map();
-        this._handler = createHandler(injector, this, APP_RUNNERS_INTERCEPTORS, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS, null, true);
+        this._handler = createHandler(context, this, APP_RUNNERS_INTERCEPTORS, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS, null, true);
         this._handler.useFilters(ExceptionHandlerFilter);
     }
 
@@ -91,9 +92,9 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
             ends = [];
             this._maps.set(target.type, ends);
         }
-        let injector = this.injector.getRuntime().getRegisterIn(target.type);
+        let injector = this.context.getRuntime().getRegisterIn(target.type);
         if (!injector) {
-            injector = this.injector;
+            injector = this.context;
             Operator.register(injector, target.type as Type);
         }
         const invocation = target.createInvocation(injector, options);
@@ -145,13 +146,13 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
 
     run(type?: AbstractType | AbstractType[]): Promise<void> {
         if (type) {
-            return lastValueFrom(this._handler.handle(new HandleContext(this.injector, { request:  type  })));
+            return lastValueFrom(this._handler.handle(new HandleContext(this.context, { request:  type  })));
         }
         return lastValueFrom(
             this.startup()
                 .pipe(
                     mergeMap(v => this.beforeRun()),
-                    mergeMap(v => this._types?.length ? this._handler.handle(new HandleContext(this.injector, { bootstrap: true, request:  this._types })) : of(v)),
+                    mergeMap(v => this._types?.length ? this._handler.handle(new HandleContext(this.context, { bootstrap: true, request:  this._types })) : of(v)),
                     mergeMap(v => this.afterRun())
                 )
         );

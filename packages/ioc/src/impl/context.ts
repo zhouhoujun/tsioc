@@ -285,7 +285,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         const runtime = this.getRuntime();
         if (runtime.hasSingleton(token)) return runtime.getSingleton(token);
 
-        return tryResolveToken(token, record, this.records, runtime, this._parent, this,
+        return tryResolveToken(token, record, this.records, runtime, this._parent, context ?? this,
             notFoundValue ?? null,
             flags ?? InjectFlags.Default, record?.stic ?? true)
             ?? this.getFormRef(token, flags)

@@ -164,7 +164,7 @@ export const ctorArgsInterceptor: InterceptorFn<InitializeContext, void> = (inpu
     const providers = input.classRef.providers;
     let newCtx: InvocationContext | undefined;
     if (!uctx || (uctx.targetType && uctx.targetType !== input.type)) {
-        newCtx = createContext(input.injector, {
+        newCtx = createContext(uctx ?? input.injector, {
             targetType: input.type,
             providers,
             resolvers: input.classRef.resolvers,
