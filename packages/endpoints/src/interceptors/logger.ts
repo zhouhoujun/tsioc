@@ -65,7 +65,7 @@ export class LoggerInterceptor implements ApplicationInterceptor, Filter {
     }
 
     intercept(ctx: RequestContext, next: ApplicationHandler, context?: any): Observable<any> {
-        const logger = ctx.get(Logger, InjectFlags.Self) ?? this.logger;
+        const logger = ctx.get(Logger, this.logger, InjectFlags.Self);
 
         const level = this.options.level;
         if (!matchLevel(logger.level, level)) {

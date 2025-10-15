@@ -104,24 +104,24 @@ export class TcpServer extends Server<RequestContext, TcpServConfig> implements 
 
         this.serv.on(ev.CLOSE, () => this.logger.info(options.microservice ? 'Tcp microservice closed!' : 'Tcp server closed!'));
         this.serv.on(ev.ERROR, (err) => this.logger.error(err));
-        const injector = this.handler.injector;
-        const factory = injector.get(ServerTransportFactory);
+        const context = this.handler.context;
+        const factory = context.get(ServerTransportFactory);
 
         if (this.serv instanceof tls.Server) {
             this.serv.on(ev.SECURE_CONNECTION, (socket) => {
-                const transport = factory.create(injector, socket, options);
+                const transport = factory.create(context, socket, options);
                 transport.handle(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
             })
         } else {
             this.serv.on(ev.CONNECTION, (socket) => {
-                const transport = factory.create(injector, socket, options);
+                const transport = factory.create(context, socket, options);
                 transport.handle(this.handler, merge(this.destroy$, fromEvent(socket, ev.CLOSE), fromEvent(socket, ev.DISCONNECT)).pipe(first()));
             })
         }
 
         if (!options.microservice && !bindServer) {
             // notify hybrid service to bind http server.
-            await lastValueFrom(injector.get(ApplicationEventMulticaster).emit(new BindServerEvent(this.serv, 'tcp', this)));
+            await lastValueFrom(context.get(ApplicationEventMulticaster).emit(new BindServerEvent(this.serv, 'tcp', this)));
         }
 
         if (!bindServer) {

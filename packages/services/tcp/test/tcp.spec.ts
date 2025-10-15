@@ -166,8 +166,7 @@ describe('TCP Server & TCP Client', () => {
 
     before(async () => {
         ctx = await Application.run(TcpTestModule);
-        injector = ctx.injector;
-        client = injector.get(TcpClient);
+        client = ctx.get(TcpClient);
     });
 
 

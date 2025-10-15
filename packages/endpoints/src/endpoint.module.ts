@@ -158,7 +158,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
                 if (moduleOpts.imports) {
                     serverOpts.providers.push({
                         provider: async (injector) => {
-                            await injector.useAsync(moduleOpts.imports!)
+                            await injector.getInject().useAsync(moduleOpts.imports!)
                         }
                     })
                 }

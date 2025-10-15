@@ -94,7 +94,6 @@ export class MicroTcpTestModule {
 
 describe('TCP Micro Service', () => {
     let ctx: ApplicationContext;
-    let injector: Injector;
 
     let client: TcpClient;
 
@@ -106,8 +105,7 @@ describe('TCP Micro Service', () => {
                 { provide: SENSORS, useValue: 'sensor02', multi: true },
             ]
         });
-        injector = ctx.injector;
-        client = injector.get(TcpClient);
+        client = ctx.get(TcpClient);
     });
 
 

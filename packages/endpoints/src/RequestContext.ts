@@ -32,7 +32,7 @@ export abstract class RequestContext<
 
     protected override playloadDefaultResolvers(): ResolveInterceptorLike[] {
         const res = [...primitiveResolvers];
-        const modelResolvers = this.injector.get(MODEL_RESOLVERS, null);
+        const modelResolvers = this.get(MODEL_RESOLVERS, null);
         if (modelResolvers?.length) {
             res.unshift(...modelResolvers);
         }

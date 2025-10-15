@@ -153,15 +153,13 @@ if (os.platform() != 'win32' && !/-WSL\d+/.test(os.release())) {
 
     describe('IPC Server & IPC Client', () => {
         let ctx: ApplicationContext;
-        let injector: Injector;
 
         let client: TcpClient;
 
         before(async () => {
             rm(ipcpath);
             ctx = await Application.run(IPCTestModule);
-            injector = ctx.injector;
-            client = injector.get(TcpClient);
+            client = ctx.get(TcpClient);
         });
 
 

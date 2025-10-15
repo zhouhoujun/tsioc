@@ -138,7 +138,7 @@ class DeviceStartupHandle implements Handler {
 
         if (ctx.request.body.type === 'startup') {
             // todo sth.
-            const ret = ctx.injector.get(MyService).dosth();
+            const ret = ctx.get(MyService).dosth();
             ctx.setValue('deviceB_state', ret);
         }
     }
@@ -226,24 +226,22 @@ class MainApp {
 
 describe('HttpClient', () => {
     let ctx: ApplicationContext;
-    let injector: Injector;
 
     before(async () => {
         ctx = await Application.run(MainApp);
-        injector = ctx.injector;
     });
 
     it('make sure singleton', async () => {
         // ctx.send('msg://decice/init', { body: {mac: 'xxx-xx-xx-xxxx'}, query: {name:'xxx'} })
         // console.log(ctx.getMessager());
-        const a = injector.get(DeviceQueue);
-        const b = injector.get(DeviceQueue);
+        const a = ctx.get(DeviceQueue);
+        const b = ctx.get(DeviceQueue);
         expect(a).toBeInstanceOf(DeviceQueue);
         expect(a).toEqual(b);
     });
 
     it('has registered', async () => {
-        const a = injector.get(DEVICE_MIDDLEWARES);
+        const a = ctx.get(DEVICE_MIDDLEWARES);
         expect(a[0]).toBeInstanceOf(DeviceStartupHandle);
         expect(a[1]).toBeInstanceOf(DeviceAStartupHandle);
     });

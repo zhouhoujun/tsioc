@@ -48,10 +48,10 @@ export class Http extends AbstractClient<UrlRequestOptions, HttpRequest<any>, Ht
 
     protected connect(): Observable<any> {
         if (this.transport) return of(this.transport);
-        const injector = this.handler.injector;
+        const context = this.handler.context;
         const options = this.getOptions();
         if (!options.authority) {
-            this.transport = injector.get(ClientTransportFactory).create(injector, null, options);
+            this.transport = context.get(ClientTransportFactory).create(context, null, options);
             return of(this.transport);
         } else {
 
@@ -66,7 +66,7 @@ export class Http extends AbstractClient<UrlRequestOptions, HttpRequest<any>, Ht
                 }
                 const onConnect = () => {
 
-                    this.transport = injector.get(ClientTransportFactory).create(injector, conn, options);
+                    this.transport = context.get(ClientTransportFactory).create(context, conn, options);
                     observer.next(this.transport);
                     observer.complete();
                 };

@@ -111,7 +111,7 @@ export class TcpClient extends AbstractClient<UrlRequestOptions, TcpRequest<any>
         if (opts.keepalive) {
             socket.setKeepAlive(true, opts.keepalive);
         }
-        this._transport = this.handler.injector.get(ClientTransportFactory).create(this.handler.injector, socket, opts);
+        this._transport = this.handler.context.get(ClientTransportFactory).create(this.handler.context, socket, opts);
         return socket
     }
 

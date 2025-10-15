@@ -86,18 +86,18 @@ export class HttpServer extends Server<HttpContext, HttpServConfig> implements L
         const opts = this.getOptions();
         this.validOptions(opts);
 
-        const injector = this.handler.injector;
+        const context = this.handler.context;
 
-        injector.setValue(HttpServer, this);
-        const loader = injector.get(ModuleLoader);
-        if (injector.has(CONTENT_DISPOSITION_TOKEN)) {
+        context.setValue(HttpServer, this);
+        const loader = context.get(ModuleLoader);
+        if (context.has(CONTENT_DISPOSITION_TOKEN)) {
             const func = await loader.require('content-disposition');
             assert(isFunction(func), 'Can not found any Content Disposition provider. Require content-disposition module');
-            injector.setValue(CONTENT_DISPOSITION_TOKEN, func)
+            context.setValue(CONTENT_DISPOSITION_TOKEN, func)
         }
 
         if (opts.controllers) {
-            await loader.register(injector, opts.controllers);
+            await loader.register(context, opts.controllers);
         }
 
         const option = opts.serverOpts;
@@ -124,13 +124,13 @@ export class HttpServer extends Server<HttpContext, HttpServConfig> implements L
         if (!this._server) throw new InternalServerException();
         const opts = this.getOptions();
 
-        const injector = this.handler.injector;
-        const factory = injector.get(ServerTransportFactory);
-        const session = factory.create(injector, this._server, opts);
+        const context = this.handler.context;
+        const factory = context.get(ServerTransportFactory);
+        const session = factory.create(context, this._server, opts);
         session.handle(this.handler, this.destroy$);
 
         // notify hybrid service to bind http server.
-        await lastValueFrom(injector.get(ApplicationEventMulticaster).publishEvent(new BindServerEvent(this._server, 'http', this)));
+        await lastValueFrom(context.get(ApplicationEventMulticaster).publishEvent(new BindServerEvent(this._server, 'http', this)));
 
         if (opts.listenOpts) {
             this.listen(opts.listenOpts);

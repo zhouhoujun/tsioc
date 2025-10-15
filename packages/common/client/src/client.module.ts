@@ -150,7 +150,7 @@ function clientProviders(options: ClientOptions, idx?: number) {
                 if (opts.imports) {
                     clientOpts.providers.push({
                         provider: async (injector) => {
-                            await injector.useAsync(opts.imports!)
+                            await injector.getInject().useAsync(opts.imports!)
                         }
                     })
                 }
@@ -179,7 +179,7 @@ function clientProviders(options: ClientOptions, idx?: number) {
                     {
                         provide: opts.client,
                         useFactory: (injector: Injector) => {
-                            return injector.resolve(opts.clientType, providers);
+                            return injector.getInject().resolve(opts.clientType, providers);
                         },
                         deps: [Injector]
 

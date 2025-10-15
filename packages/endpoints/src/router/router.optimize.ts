@@ -101,9 +101,9 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
                 if (route.paths && route.handler instanceof RouteHandler) {
                     params = {};
                     const paths = route.paths;
-                    const injector = route.handler.injector;
+                    const context = route.handler.context;
                     Object.keys(paths).forEach(n => {
-                        params![n] = injector.get(paths[n]);
+                        params![n] = context.get(paths[n]);
                     })
                 }
                 route.pattern = this.formatter.parseRegExp(route.path, params);
@@ -146,9 +146,9 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             if (isRegExp(r.pattern)) return;
 
             if (r.paths && r.pathParams && r.handler instanceof RouteHandler) {
-                const injector = r.handler.injector;
+                const context = r.handler.context;
                 Object.entries(r.paths).forEach(([key, val]) => {
-                    const pathValues: any[] = injector.get(val, []);
+                    const pathValues: any[] = context.get(val, []);
                     pathValues.forEach(p => {
                         paths.push(r.path.replace(`:${key}`, p));
                     })
@@ -210,7 +210,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         } else if (route.loadController) {
             const res = route.loadController();
             const controller = await (isObservable(res) ? lastValueFrom(res) : res);
-            this.injector.register(controller as Type);
+            this.injector.getInject().register(controller as Type);
 
             const ctrRef = getClassRef(controller);
             const invocation = ctrRef.createInvocation(this.injector);
@@ -274,7 +274,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             let handler: Handler;
             if (isFunction(route.handler)) {
                 if (isType(route.handler) && !this.injector.has(route.handler)) {
-                    this.injector.register(route.handler);
+                    this.injector.getInject().register(route.handler);
                 }
                 handler = this.injector.get(route.handler)
             } else {

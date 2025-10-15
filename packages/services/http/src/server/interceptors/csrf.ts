@@ -83,7 +83,7 @@ export class Csrf implements Middleware<RestfulRequestContext>, ApplicationInter
     }
 
     intercept(ctx: RestfulRequestContext, next: ApplicationHandler<RestfulRequestContext, any>): Observable<any> {
-        ctx.injector.inject({
+        ctx.getInject().inject({
             provide: CSRF,
             useFactory: () => {
                 const se = ctx.get(Session);
@@ -127,7 +127,7 @@ export class Csrf implements Middleware<RestfulRequestContext>, ApplicationInter
 
     async invoke(ctx: RestfulRequestContext, next: () => Promise<void>): Promise<void> {
 
-        ctx.injector.inject({
+        ctx.getInject().inject({
             provide: CSRF,
             useFactory: () => {
                 const se = ctx.get(Session);

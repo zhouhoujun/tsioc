@@ -30,7 +30,7 @@ export class SetupServices {
     protected async setup(context: ApplicationContext): Promise<any> {
         this.context = context;
 
-        const services = context.injector.get(REGISTER_SERVICES);
+        const services = context.get(REGISTER_SERVICES);
 
         services.forEach(s => {
 

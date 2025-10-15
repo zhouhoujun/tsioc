@@ -50,7 +50,7 @@ export class ContentInterceptor implements ApplicationInterceptor<RequestContext
         let file = '';
         if (ctx.statusAdapter && (isDefined(ctx.status) && !ctx.statusAdapter.isNotFound(ctx.status))) return file;
 
-        const sender = ctx.injector.get(ContentSendAdapter);
+        const sender = ctx.get(ContentSendAdapter);
 
         file = await sender.send(ctx, ctx.originalUrl, options);
 

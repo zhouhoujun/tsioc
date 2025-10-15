@@ -36,7 +36,7 @@ export function pathInterceptor(invocation: Invocation, route: RouteOptions) {
     return (input: RequestContext, next: ApplicationHandlerFn<RequestContext>, ctx?: any) => {
         if (route.paths && input.request.path) {
             if (Object.entries(route.paths).some(([key, value]) => {
-                const filters: any[] = invocation.injector.get(value, []);
+                const filters: any[] = invocation.context.get(value, []);
                 return !filters.length || !filters.includes(input.request.path[key])
 
             })) {
