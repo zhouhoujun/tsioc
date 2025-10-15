@@ -65,7 +65,7 @@ export class WsServer extends Server<RequestContext, WsServConfig> {
         this.serv.on(ev.ERROR, (err) => {
             this.logger.error(err);
         });
-        const injector = this.handler.injector;
+        const injector = this.handler.context;
         const factory = injector.get(ServerTransportFactory);
         const { server, noServer, port, host } = options.serverOpts ?? {};
         const isSecure = server instanceof tls.Server;

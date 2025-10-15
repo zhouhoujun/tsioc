@@ -31,8 +31,8 @@ export class WsClient extends AbstractClient<UrlRequestOptions, WsRequest<any>, 
             const onOpen = () => {
                 if (!this.session) {
                     const socket = options.enableStream ? createWebSocketStream(this.socket!) : this.socket;
-                    const factory = this.handler.injector.get(ClientTransportFactory);
-                    this.session = factory.create(this.handler.injector, socket, options);
+                    const factory = this.handler.context.get(ClientTransportFactory);
+                    this.session = factory.create(this.handler.context, socket, options);
                 }
                 observer.next(this.session);
                 observer.complete();

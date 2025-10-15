@@ -200,7 +200,7 @@ export class DeviceStartupHandle implements Handler {
         console.log('DeviceStartupHandle.', 'resp:', ctx.response.type, 'req:', ctx.request.body.type)
         if (ctx.request.body.type === 'startup') {
             // todo sth.
-            const ret = ctx.injector.get(MyService).dosth();
+            const ret = ctx.get(MyService).dosth();
             ctx.setValue('deviceB_state', ret);
         }
 

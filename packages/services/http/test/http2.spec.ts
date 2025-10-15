@@ -94,21 +94,20 @@ describe('http2 server, Http', () => {
     before(async () => {
 
         ctx = await Application.run(MainApp);
-        injector = ctx.injector;
-        client = injector.get(Http);
+        client = ctx.get(Http);
     });
 
     it('make sure singleton', async () => {
         // ctx.send('msg://decice/init', { body: {mac: 'xxx-xx-xx-xxxx'}, query: {name:'xxx'} })
         // console.log(ctx.getMessager());
-        const a = injector.get(DeviceQueue);
-        const b = injector.get(DeviceQueue);
+        const a = ctx.get(DeviceQueue);
+        const b = ctx.get(DeviceQueue);
         expect(a).toBeInstanceOf(DeviceQueue);
         expect(a).toEqual(b);
     });
 
     it('has registered', async () => {
-        const a = injector.get(DEVICE_HANDLERS);
+        const a = ctx.get(DEVICE_HANDLERS);
         expect(a[0]).toBeInstanceOf(DeviceStartupHandle);
         expect(a[1]).toBeInstanceOf(DeviceAStartupHandle);
     });

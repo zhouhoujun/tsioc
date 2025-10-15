@@ -128,13 +128,13 @@ describe('middleware', () => {
         //or
         await ctx.get(SetupServices).run();
 
-        client = ctx.injector.get(WsClient);
+        client = ctx.get(WsClient);
 
     })
 
     it('use in http server.', async () => {
 
-        const http = ctx.injector.get(Http);
+        const http = ctx.get(Http);
 
         // has no parent.
         const rep = await lastValueFrom(http.get('test', { observe: 'response', responseType: 'text', params: { hi: 'hello' } })
