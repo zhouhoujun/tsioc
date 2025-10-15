@@ -6,7 +6,7 @@ import { ResolveInterceptorLike, Parameter } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeArguments, InvocationRequest } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token } from '../tokens';
-import { createInjector, FactoryRecord, Injector, isInjector } from '../injector';
+import { createInjector, FactoryRecord, Injector, InjectOperator, isInjector } from '../injector';
 import { Exception } from '../exception';
 import { ClassRef } from '../metadata/class';
 import { getDef } from '../metadata/refl';
@@ -16,8 +16,9 @@ import { ContextToken, HandlerLike, InterceptorLike } from '../handler';
 import { HandlerScope } from '../lifescope/lifescope';
 import { Runtime } from '../runtime';
 import { nonEnumerable } from '../metadata/decor';
-import { assertNotDestroyed, Operator } from '../operator';
+import { assertNotDestroyed, Operator } from './operator';
 import { processInject, THROW_FLAGE, tryResolveToken } from './resolve';
+import { DefaultInjectOperator } from './injector';
 
 
 
@@ -39,8 +40,11 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
     protected _runtime: Runtime | null = null;
 
     @nonEnumerable
-    private _parent: TParent|null;
-    
+    private _parent: TParent | null;
+
+    @nonEnumerable
+    protected _operator: InjectOperator | null = null;
+
     protected _readyDefer = defer<void>();
     /**
      * factories.
@@ -116,6 +120,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         return this.records.size;
     }
 
+
     /**
      * parent InvocationContext,
      * 
@@ -127,6 +132,14 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
 
     getParent(): TParent {
         return this._parent!;
+    }
+
+    getInject(): InjectOperator {
+        if(!this._operator) {
+            this.assertNotDestroyed();
+            this._operator = new DefaultInjectOperator(this);
+        }
+        return this._operator
     }
 
     protected initProviders(providers: Provider[]) {
@@ -276,7 +289,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
             notFoundValue ?? null,
             flags ?? InjectFlags.Default, record?.stic ?? true)
             ?? this.getFormRef(token, flags)
-            // ?? (flags != InjectFlags.HostOnly ? this.injector.get(token, null, flags, this) : null) as T;
+        // ?? (flags != InjectFlags.HostOnly ? this.injector.get(token, null, flags, this) : null) as T;
 
         // return (flags != InjectFlags.HostOnly ? this.injector.get(token, null, flags, this) : null)
         //     ?? this.getFormRef(token, flags) ?? null as T
@@ -455,7 +468,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
 }
 
 
-INVOCATION_CONTEXT_IMPL.create = (parent: Injector | InvocationContext, options?: TargetInvokeArguments, scope?: AbstractType | 'static') => {
+INVOCATION_CONTEXT_IMPL.create = (parent: Injector, options?: TargetInvokeArguments, scope?: AbstractType | 'static') => {
     // if (isInjector(parent)) {
     return new DefaultInvocationContext(parent, options, scope)
     // } else {

@@ -2,7 +2,7 @@ import { InvocationContext } from '../context';
 import { Context, ContextToken, HandlerFn, InterceptorLike, invokeTail } from '../handler';
 import { FactoryRecord, FnType } from '../injector';
 import { DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
-import { Operator } from '../operator';
+import { Operator } from '../impl/operator';
 import { Runtime } from '../runtime';
 import { isFunction } from '../utils/chk';
 import { cleanObj } from '../utils/lang';

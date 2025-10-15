@@ -1,4 +1,4 @@
-import { createInjector, Operator } from '../src';
+import { createInjector } from '../src';
 import { Person } from './debug';
 import expect = require('expect');
 
@@ -8,7 +8,7 @@ describe('Singleton test', () => {
 
     it('should has one instance', () => {
         const container = createInjector();
-        Operator.register(container, Person);
+        container.getInject().register(Person);
         const instance = container.get(Person);
         expect(instance).toBeDefined();
         expect(instance.name).toEqual('testor');

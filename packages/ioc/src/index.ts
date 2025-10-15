@@ -30,7 +30,6 @@ export * from './metadata/tk';
 
 // providers
 export * from './providers';
-export * from './operator';
 
 
 

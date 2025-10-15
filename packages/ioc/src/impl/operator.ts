@@ -1,15 +1,15 @@
-import { createContext, hasContextOptions, InvocationContext, InvokeOptions } from './context';
-import { Exception } from './exception';
-import { Empty, processInject, processProvider, processUse } from './impl/resolve';
-import { FactoryRecord, Injector, MethodType, RegisterOption } from './injector';
-import { ClassRef } from './metadata/class';
-import { getClassRef } from './metadata/refl';
-import { ModuleType, Provider } from './providers';
-import { InjectFlags, Token } from './tokens';
-import { AbstractType, Type } from './types';
-import { getType, isArray, isDefined } from './utils/chk';
-import { cleanObj, deepForEach, getTypeName, immediate } from './utils/lang';
-import { isPlainObject, isTypeObject } from './utils/obj';
+import { createContext, hasContextOptions, InvocationContext, InvokeOptions } from '../context';
+import { Exception } from '../exception';
+import { Empty, processInject, processProvider, processUse } from './resolve';
+import { FactoryRecord, Injector, MethodType, RegisterOption } from '../injector';
+import { ClassRef } from '../metadata/class';
+import { getClassRef } from '../metadata/refl';
+import { ModuleType, Provider } from '../providers';
+import { InjectFlags, Token } from '../tokens';
+import { AbstractType, Type } from '../types';
+import { getType, isArray, isDefined } from '../utils/chk';
+import { cleanObj, deepForEach, getTypeName, immediate } from '../utils/lang';
+import { isPlainObject, isTypeObject } from '../utils/obj';
 
 
 export function assertNotDestroyed(injector: Injector): void {

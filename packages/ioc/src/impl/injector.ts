@@ -4,7 +4,7 @@ import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { defer, getTypeName } from '../utils/lang';
 import { isFunction } from '../utils/chk';
-import { MethodType, InjectorScope, RegisterOption, FactoryRecord, Injector, INJECT_IMPL, InjectorOperator } from '../injector';
+import { MethodType, InjectorScope, RegisterOption, FactoryRecord, Injector, INJECT_IMPL, InjectOperator } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef } from '../metadata/class';
@@ -16,7 +16,7 @@ import { DefaultInvocationFactory } from './invocation';
 import { InvocationFactory } from '../invocation';
 import { processInject,THROW_FLAGE, tryResolveToken } from './resolve';
 import { nonEnumerable } from '../metadata/decor';
-import { Operator } from '../operator';
+import { Operator } from './operator';
 
 
 export const SCOPE_PRODIDERS: Provider[] = [];
@@ -41,6 +41,9 @@ export class DefaultInjector extends Injector {
     @nonEnumerable
     protected _runtime: Runtime | null = null;
 
+    @nonEnumerable
+    protected _operator: InjectOperator | null = null;
+
     protected isStatic?: boolean;
 
     protected _readyDefer = defer<void>();
@@ -54,16 +57,10 @@ export class DefaultInjector extends Injector {
     protected records: Map<Token, FactoryRecord>;
     private isAlias?: null | ((token: Token) => boolean);
 
-    get ready() {
-        return this._readyDefer.promise
-    }
-
     @nonEnumerable
     private _parent: Injector | null;
 
-    getParent(): Injector | null {
-        return this._parent;
-    }
+    
 
     constructor(providers: Provider[] = [], parent?: Injector, readonly scope?: InjectorScope) {
         super()
@@ -126,12 +123,29 @@ export class DefaultInjector extends Injector {
         parent.onDestroy(this)
     }
 
+    get ready() {
+        return this._readyDefer.promise
+    }
+
+
     get size(): number {
         return this.records.size
     }
 
     getRuntime(): Runtime {
         return this._runtime!
+    }
+
+    getParent(): Injector | null {
+        return this._parent;
+    }
+
+    getInject(): InjectOperator {
+        if(!this._operator) {
+            this.assertNotDestroyed();
+            this._operator = new DefaultInjectOperator(this);
+        }
+        return this._operator
     }
 
 
@@ -228,6 +242,7 @@ export class DefaultInjector extends Injector {
             !this._parent.destroyed && (this._parent as DefaultInjector).offDestroy?.(this)
         }
         this._runtime = null;
+        this._operator = null;
         this.isAlias = null;
         this._parent = null;
     }
@@ -241,14 +256,10 @@ function assertNotDestroyed(injector: Injector): void {
 }
 
 
-export class DefaultInjectorOperator implements InjectorOperator {
+export class DefaultInjectOperator implements InjectOperator {
 
     @nonEnumerable
     private injector: Injector;
-
-    getInjector(){
-        return this.injector;
-    }
 
     constructor(injector: Injector) {
         this.injector = injector;

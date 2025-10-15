@@ -13,7 +13,7 @@ import { Context } from '../handler';
 import { INITIALIZE_INTERCEPTORS } from '../lifescope/initialize';
 import { DESIGN_INTERECPTORS, registerHandler } from '../lifescope/design';
 import { InvocationFactory } from '../invocation';
-import { Operator } from '../operator';
+import { Operator } from './operator';
 
 /**
  * default runtime implements {@link Runtime}.

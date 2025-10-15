@@ -10,7 +10,7 @@ export class MyStartupService {
     async configureService(ctx: ApplicationContext): Promise<void> {
         const defer = lang.defer<void>();
         setTimeout(() => {
-            ctx.injector.setValue('MyStartup', 'start');
+            ctx.setValue('MyStartup', 'start');
             defer.resolve();
         })
 
@@ -23,7 +23,7 @@ export class MyStartupService1 {
 
     @Start({ order: 0 })
     async configureService(ctx: ApplicationContext): Promise<void> {
-        ctx.injector.setValue('MyStartup1', 'start');
+        ctx.setValue('MyStartup1', 'start');
     }
 }
 
@@ -49,7 +49,7 @@ export class DeviceInitService {
 
     @Start({ order: 2 })
     async configureService(ctx: ApplicationContext): Promise<void> {
-        const connention = ctx.injector.get(DeviceConnectionService).connention;
+        const connention = ctx.get(DeviceConnectionService).connention;
         this.connid = connention.name + this.id++;
     }
 
@@ -62,7 +62,7 @@ export class DeviceAService {
 
     @Start({ order: 3 })
     async configureService(ctx: ApplicationContext): Promise<void> {
-        const connid = ctx.injector.get(DeviceInitService).connid;
+        const connid = ctx.get(DeviceInitService).connid;
         this.data = { connid };
     }
 
@@ -107,28 +107,26 @@ class MainApp {
 
 describe('app message queue', () => {
     let ctx: ApplicationContext;
-    let injector: Injector;
 
     before(async () => {
         ctx = await Application.run(MainApp);
-        injector = ctx.injector;
     });
 
     it('make sure singleton', async () => {
-        const a = injector.get(DeviceInitService);
-        const b = injector.get(DeviceInitService);
+        const a = ctx.get(DeviceInitService);
+        const b = ctx.get(DeviceInitService);
         expect(a).toEqual(b);
     });
 
     it('has startup', async () => {
         // const startups = ctx.runners.services.getAll().map(r => r.type);
         // expect(startups).toEqual([MyStartupService1, DeviceConnectionService, DeviceInitService, DeviceAService, MyStartupService]);
-        expect(ctx.injector.get('MyStartup')).toEqual('start');
+        expect(ctx.get('MyStartup')).toEqual('start');
     });
 
 
     it('has configed', async () => {
-        const a = injector.get(DeviceAService);
+        const a = ctx.get(DeviceAService);
         expect(a.data.connid).toEqual('device_connect0')
     });
 

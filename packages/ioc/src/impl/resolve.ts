@@ -11,7 +11,7 @@ import { ModuleDef, ClassRef } from '../metadata/class';
 import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
 import { InvocationContext } from '../context';
 import { DesignContext } from '../lifescope/ctx';
-import { getRecords, Operator } from '../operator';
+import { getRecords, Operator } from './operator';
 
 
 

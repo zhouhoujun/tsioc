@@ -1,4 +1,4 @@
-import { Injectable, Inject, Autowired, Container, Injector } from '@tsdi/ioc';
+import { Injectable, Inject, Autowired, Container, Injector, createInjector } from '@tsdi/ioc';
 import { AopModule } from '@tsdi/aop';
 import { LoggerModule, InjectLog, Logger } from '../src';
 import { DebugLog1Aspect } from './debugLog';
@@ -82,20 +82,23 @@ describe('logging test', () => {
 
     let container: Container;
     beforeEach(async () => {
-        container = Injector.create();
-        container.use(AopModule, LoggerModule);
-        container.setValue(Date, new Date());
+        container = createInjector();
+        container.getInject()
+        .setValue(Date, new Date())
+        .use(AopModule, LoggerModule)
     });
 
     it('Aop log test', () => {
-        container.register(AnntotationLogAspect);
-        container.register(DebugLog1Aspect);
-        container.register(MethodTest3);
-        expect(container.invoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
+        container.getInject()
+            .register(AnntotationLogAspect)
+            .register(DebugLog1Aspect)
+            .register(MethodTest3);
+        expect(container.getInject().invoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
     });
 
     it('property injected logger', () => {
-        container.register(MethodTest3);
+        container.getInject()
+            .register(MethodTest3);
         const mt3 = container.get(MethodTest3);
         expect(mt3).toBeDefined();
         expect(mt3.logger).toBeDefined();
@@ -104,7 +107,8 @@ describe('logging test', () => {
     })
 
     it('parameter injected logger', () => {
-        container.register(MethodTest2);
+        container.getInject()
+            .register(MethodTest2);
         const mt2 = container.get(MethodTest2);
         expect(mt2).toBeDefined();
         expect(mt2.logger).toBeDefined();
@@ -113,7 +117,7 @@ describe('logging test', () => {
     })
 
     it('default class name logger injected', () => {
-        container.register(MethodTest);
+        container.getInject().register(MethodTest);
         const mt2 = container.get(MethodTest);
         expect(mt2).toBeDefined();
         expect(mt2.logger1).toBeDefined();
@@ -125,9 +129,10 @@ describe('logging test', () => {
     })
 
     it('Aop anntotation log test', () => {
-        container.register(AnntotationLogAspect);
-        container.register(MethodTest2);
-        expect(container.invoke(MethodTest2, 'sayHello')).toEqual('Mama');
+        container.getInject()
+            .register(AnntotationLogAspect)
+            .register(MethodTest2);
+        expect(container.getInject().invoke(MethodTest2, 'sayHello')).toEqual('Mama');
 
     });
 

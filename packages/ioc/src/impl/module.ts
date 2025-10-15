@@ -7,7 +7,7 @@ import { isModuleProviders, ModuleWithProviders, Provider } from '../providers';
 import { Type } from '../types';
 import { DefaultInjector } from './injector';
 import { mergePromise, processInject, processInjectModule, processInjectType, processUse } from './resolve';
-import { Operator } from '../operator';
+import { Operator } from './operator';
 
 
 /**

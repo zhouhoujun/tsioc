@@ -64,17 +64,17 @@ describe('aop test', () => {
 
     @Injectable()
     class PersonComponet {
-        @Inject('personFullName', { defaultValue: ''})
+        @Inject('personFullName', { defaultValue: '' })
         public personFullName = '';
 
         fulChange: any;
 
-        @Inject('props',{defaultValue: {name: 'xx'}})
-        public props: {name: string} = {
+        @Inject('props', { defaultValue: { name: 'xx' } })
+        public props: { name: string } = {
             name: 'xx'
         }
-        changed?:any;
-    
+        changed?: any;
+
         constructor() {
 
         }
@@ -99,7 +99,7 @@ describe('aop test', () => {
     let container: Container;
     beforeEach(async () => {
         container = createInjector();
-        container.use(AopModule, IocLog);
+        container.getInject().use(AopModule, IocLog);
     });
 
     it('BoolExpression test', () => {
@@ -140,12 +140,13 @@ describe('aop test', () => {
 
     it('Aop anntotation test', () => {
 
-        container.register(AnnotationAspect);
-        container.register(CheckRightAspect);
-        container.register(MethodTest3);
+        container.getInject()
+            .register(AnnotationAspect)
+            .register(CheckRightAspect)
+            .register(MethodTest3);
         const mt3 = container.get('Test3') as any;
         expect(mt3['around_constructor_After']).toBeTruthy();
-        expect(container.invoke(mt3, 'sayHello')).toEqual('Mama, I love you.');
+        expect(container.getInject().invoke(mt3, 'sayHello')).toEqual('Mama, I love you.');
         expect(mt3['around_sayHello_Before']).toBeTruthy();
         expect(mt3['around_sayHello_After']).toBeTruthy();
         expect(mt3['authdata']).toEqual('authdata');
@@ -153,22 +154,24 @@ describe('aop test', () => {
     });
 
     it('Aop ann with data', () => {
-        container.register(AnnotationAspect);
-        container.register(CheckRightAspect);
-        container.register(MethodTest2);
-        expect(container.invoke(MethodTest2, 'sayHello')).toEqual('Mama')
+        container.getInject()
+            .register(AnnotationAspect)
+            .register(CheckRightAspect)
+            .register(MethodTest2);
+        expect(container.getInject().invoke(MethodTest2, 'sayHello')).toEqual('Mama')
 
     });
 
     it('Aop property change', () => {
-        container.register(ChangedAspect);
-        container.register(PersonComponet);
+        container.getInject()
+            .register(ChangedAspect)
+            .register(PersonComponet);
         const comp = container.get(PersonComponet);
         comp.personFullName = 'name1';
-        expect(comp.fulChange).toEqual({oldValue:'', newValue:'name1'});
+        expect(comp.fulChange).toEqual({ oldValue: '', newValue: 'name1' });
 
         comp.props.name = 'mm';
-        expect(comp.changed).toEqual({oldValue:'xx', newValue:'mm'});
+        expect(comp.changed).toEqual({ oldValue: 'xx', newValue: 'mm' });
         // expect(container.invoke(MethodTest2,'sayHello')).toEqual('Mama')
     });
 

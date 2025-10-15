@@ -2,7 +2,7 @@ import { AbstractType, Type, TypeOf } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
-import { Injector, InjectorScope } from './injector';
+import { Injector, InjectOperator, InjectorScope } from './injector';
 import { ResolveInterceptorLike, Parameter } from './resolver';
 import { Provider } from './providers';
 import { Exception } from './exception';
@@ -32,12 +32,6 @@ export abstract class InvocationContext<TParent extends Injector = Injector> imp
      */
     readonly scope?: InjectorScope;
     /**
-     * get runtime.
-     * 
-     * 容器运行环境
-     */
-    abstract getRuntime(): Runtime;
-    /**
      * init inject ready.
      */
     abstract get ready(): Promise<void>;
@@ -57,9 +51,21 @@ export abstract class InvocationContext<TParent extends Injector = Injector> imp
      */
     abstract get used(): boolean;
     /**
+     * get runtime.
+     * 
+     * 容器运行环境
+     */
+    abstract getRuntime(): Runtime;
+    /**
      * get parent context.
      */
     abstract getParent(): TParent;
+    /**
+     * get inject operator.
+     * 
+     * 获取注入器操作器。
+     */
+    abstract getInject(): InjectOperator;
     /**
      * invocation target.
      */
