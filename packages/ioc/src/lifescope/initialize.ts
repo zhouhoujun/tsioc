@@ -1,4 +1,3 @@
-import { createContext, InvocationContext } from '../context';
 import { ArgumentException, Exception } from '../exception';
 import { Context, ContextToken, HandlerFn, InterceptorFn, InterceptorLike, invokeTail } from '../handler';
 import { PropertyMetadata } from '../metadata/meta';
@@ -9,6 +8,7 @@ import { initReflectInterceptor } from './commom';
 import { InitializeContext } from './ctx';
 import { HandlerScope } from './lifescope';
 import { Operator } from '../impl/operator';
+import { createInjector, Injector } from '../injector';
 
 
 export const cleanContextInterceptor: InterceptorFn<InitializeContext, void> = (input: InitializeContext, next: HandlerFn, context: Context) => {
@@ -16,8 +16,8 @@ export const cleanContextInterceptor: InterceptorFn<InitializeContext, void> = (
     return invokeTail(() => next(input, context), {
         finally: () => {
             // after create.
-            if (input.isNewContext && input.context && !input.context.used) {
-                input.context.destroy()
+            if (input.isNewContext && input.raise && !input.raise.used) {
+                input.raise.destroy()
             }
         }
     });
@@ -28,7 +28,7 @@ export const runtimeAutorunInterceptor: InterceptorFn<InitializeContext, void> =
     return invokeTail(() => next(input, context), (res) => {
         const autos = input.classRef.runnables.filter(c => c.auto && c.decorType === Decors.method)
         if (autos.length) {
-            const { injector, classRef: def, instance, context } = input;
+            const { injector, classRef: def, instance, raise: context } = input;
             const invocation = def.createInvocation(context??injector, { instance });
             autos.forEach(aut => {
                 invocation.invoke(aut.propertyKey);
@@ -110,7 +110,7 @@ export function getRuntimeMethodScope(runtime: Runtime): HandlerScope<Initialize
 export const propertyInterceptor: InterceptorFn<InitializeContext, void> = (input: InitializeContext, next: HandlerFn, context: Context) => {
 
     return invokeTail(() => next(input, context), () => {
-        const ictx = input.context;
+        const ictx = input.raise;
         if (!ictx || !input.instance) throw new Exception('autowride property need InvocationContext');
         let meta: PropertyMetadata, key: string, val;
 
@@ -160,24 +160,23 @@ export const ctorArgsInterceptor: InterceptorFn<InitializeContext, void> = (inpu
         input.params = input.classRef.getParameters(ctorName)
     }
 
-    const uctx = input.context;
+    const uctx = input.raise;
     const providers = input.classRef.providers;
-    let newCtx: InvocationContext | undefined;
-    if (!uctx || (uctx.targetType && uctx.targetType !== input.type)) {
-        newCtx = createContext(uctx ?? input.injector, {
-            targetType: input.type,
+    let newCtx: Injector | undefined;
+    if (!uctx || (uctx.scope && uctx.scope !== input.type)) {
+        newCtx = createInjector({
+            scope: input.type,
             providers,
             resolvers: input.classRef.resolvers,
-            propertyKey: ctorName
-        });
-        input.context = newCtx;
+        }, uctx ?? input.injector);
+        input.raise = newCtx;
         input.isNewContext = true;
     } else if (uctx && providers.length) {
         Operator.inject(uctx, providers)
     }
 
     if (!input.args) {
-        input.args = input.classRef.resolveArguments(ctorName, input.context!)
+        input.args = input.classRef.resolveArguments(ctorName, input.raise!)
     }
 
     return next(input, context);

@@ -1,13 +1,13 @@
-import { createContext, hasContextOptions, InvocationContext, InvokeOptions } from '../context';
+// import { createContext, hasContextOptions, InvocationContext, InvokeOptions } from '../context';
 import { Exception } from '../exception';
 import { Empty, processInject, processProvider, processUse } from './resolve';
-import { FactoryRecord, Injector, MethodType, RegisterOption } from '../injector';
+import { createInjector, FactoryRecord, Injector, InjectorOptions, MethodType, RegisterOption } from '../injector';
 import { ClassRef } from '../metadata/class';
 import { getClassRef } from '../metadata/refl';
 import { ModuleType, Provider } from '../providers';
 import { InjectFlags, Token } from '../tokens';
 import { AbstractType, Type } from '../types';
-import { getType, isArray, isDefined } from '../utils/chk';
+import { getType, hasProps, isArray, isDefined } from '../utils/chk';
 import { cleanObj, deepForEach, getTypeName, immediate } from '../utils/lang';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 
@@ -57,7 +57,7 @@ export namespace Operator {
      * @param {option} option the option of type {@link ResolverOption}, use to resolve with token.
      * @returns {T}
      */
-    export function resolve<T>(injector: Injector,token: Token<T>, option?: InvokeOptions): T;
+    export function resolve<T>(injector: Injector,token: Token<T>, option?: InjectorOptions): T;
     /**
      * resolve token instance with token and param provider.
      * 
@@ -68,7 +68,7 @@ export namespace Operator {
      * @param {InvocationContext} context invocation context type of {@link InvocationContext}, use to resolve with token.
      * @returns {T}
      */
-    export function resolve<T>(injector: Injector,token: Token<T>, context?: InvocationContext): T;
+    export function resolve<T>(injector: Injector, token: Token<T>, raise?: Injector): T;
     /**
      * resolve token instance with token and param provider.
      * 
@@ -82,26 +82,26 @@ export namespace Operator {
     export function resolve<T>(injector: Injector,token: Token<T>, ...providers: Provider[]): T;
     export function resolve<T>(injector: Injector,token: Token<T>, ...args: any[]) {
         if (!args.length) {
-            return injector.get(token);
+            return injector.resolve(token);
         }
         assertNotDestroyed(injector);
-        let context: InvocationContext | undefined;
+        let context: Injector | undefined;
         const isResolve = true;
         let isCtx = false;
         if (args.length === 1) {
             const arg1 = args[0];
-            if (arg1 instanceof InvocationContext) {
+            if (arg1 instanceof Injector) {
                 context = arg1;
                 isCtx = true;
             } else if (isArray(arg1)) {
-                context = arg1.length ? createContext(injector, { isResolve, providers: arg1 }) : undefined;
+                context = arg1.length ? createInjector({ isResolve, providers: arg1 }, injector) : undefined;
             } else if (arg1.provide) {
-                context = createContext(injector, { isResolve, providers: [arg1] });
-            } else if (hasContextOptions(arg1)) {
-                context = createContext(injector, { isResolve, ...arg1 });
+                context = createInjector({ isResolve, providers: [arg1] }, injector);
+            } else if (hasProps(arg1)) {
+                context = createInjector({ isResolve, ...arg1 }, injector);
             }
         } else {
-            context = createContext(injector, { isResolve, providers: args });
+            context = createInjector({ isResolve, providers: args }, injector);
         }
 
         const result = (context && !isCtx) ? context.resolve(token, InjectFlags.Resolve) : injector.get(token, null, InjectFlags.Resolve, context);
@@ -314,7 +314,7 @@ export namespace Operator {
      * @param {InvokeOptions} option ivacation arguments, type of {@link InvokeOptions}.
      * @returns {TR} the returnning of invoked method.
      */
-    export function invoke<T, TR = any>(injector: Injector, target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
+    export function invoke<T, TR = any>(injector: Injector, target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, option?: InjectorOptions): TR;
     /**
      * invoke method.
      * 
@@ -325,15 +325,15 @@ export namespace Operator {
      * @param {InvocationContext} context ivacation context.
      * @returns {TR} the returnning of invoked method.
      */
-    export function invoke<T, TR = any>(injector: Injector, target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
+    export function invoke<T, TR = any>(injector: Injector, target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: Injector): TR;
     export function invoke<T, TR = any>(injector: Injector, target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
         assertNotDestroyed(injector);
         let providers: Provider[] | undefined;
-        let context: InvocationContext | undefined;
+        let context: Injector | undefined;
         let option: any;
         if (args.length === 1) {
             const arg0 = args[0];
-            if (arg0 instanceof InvocationContext) {
+            if (arg0 instanceof Injector) {
                 context = arg0;
                 providers = Empty;
             } else if (isArray(arg0)) {
@@ -352,7 +352,7 @@ export namespace Operator {
 
         if (!context) {
             option = { ...option, providers };
-            context = createContext(injector, option);
+            context = createInjector(option, injector);
         }
         if (isTypeObject(target)) {
             targetClass = getType(target);

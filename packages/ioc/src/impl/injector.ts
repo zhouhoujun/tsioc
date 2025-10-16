@@ -3,20 +3,23 @@ import { AbstractType, Type, noPointcut } from '../types';
 import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { defer, getTypeName } from '../utils/lang';
-import { isFunction } from '../utils/chk';
-import { MethodType, InjectorScope, RegisterOption, FactoryRecord, Injector, INJECT_IMPL, InjectOperator } from '../injector';
+import { isAbstractType, isArray, isDefined, isFunction, isString, isType } from '../utils/chk';
+import { MethodType, InjectorScope, RegisterOption, FactoryRecord, Injector, INJECT_IMPL, InjectOperator, Parameter, ResolveInterceptorLike, InjectorOptions } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef } from '../metadata/class';
 import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
 import { Provider, ModuleType } from '../providers';
-import { InvocationContext, InvokeOptions } from '../context';
 import { DefaultRuntime } from './runtime';
 import { DefaultInvocationFactory } from './invocation';
 import { InvocationFactory } from '../invocation';
-import { processInject,THROW_FLAGE, tryResolveToken } from './resolve';
+import { processInject, THROW_FLAGE, tryResolveToken } from './resolve';
 import { nonEnumerable } from '../metadata/decor';
 import { Operator } from './operator';
+import { ContextToken, HandlerLike, InterceptorLike } from '../handler';
+import { HandlerScope } from '../lifescope/lifescope';
+import { isPlainObject, isTypeObject } from '../utils/obj';
+import { getDef } from '../metadata/refl';
 
 
 export const SCOPE_PRODIDERS: Provider[] = [];
@@ -60,20 +63,24 @@ export class DefaultInjector extends Injector {
     @nonEnumerable
     private _parent: Injector | null;
 
-    
+    readonly scope?: InjectorScope;
 
-    constructor(providers: Provider[] = [], parent?: Injector, readonly scope?: InjectorScope) {
+    constructor(private options?: InjectorOptions, parent?: Injector) {
         super()
         this.records = new Map();
+        if(!parent){
+            parent = options?.parent;
+        }
         if (parent) {
             this._parent = parent;
-            this.initParent(parent)
+            this.scope = this.options?.scope;
+            this.initParent(parent);
         } else {
             this._parent = null;
-            scope = this.scope = 'platform'
+            this.scope = 'platform';
         }
-        this.initScope(scope);
-        this.initProviders(providers);
+        this.initScope(this.scope);
+        options && this.initOptions(options);
     }
 
 
@@ -110,12 +117,14 @@ export class DefaultInjector extends Injector {
         }
     }
 
-    protected initProviders(providers: Provider[]) {
-        const result = processInject(this, providers);
-        if (result) {
-            result.then(() => this._readyDefer.resolve())
-        } else {
-            this._readyDefer.resolve();
+    protected initOptions(options: InjectorOptions) {
+        if (options.providers) {
+            const result = processInject(this, options.providers);
+            if (result) {
+                result.then(() => this._readyDefer.resolve())
+            } else {
+                this._readyDefer.resolve();
+            }
         }
     }
 
@@ -141,7 +150,7 @@ export class DefaultInjector extends Injector {
     }
 
     getInject(): InjectOperator {
-        if(!this._operator) {
+        if (!this._operator) {
             this.assertNotDestroyed();
             this._operator = new DefaultInjectOperator(this);
         }
@@ -163,14 +172,14 @@ export class DefaultInjector extends Injector {
         return this.isAlias ? this.isAlias(token) : false
     }
 
-    get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, context?: InvocationContext): T {
+    get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, environment?: Injector): T {
         this.assertNotDestroyed();
         if (this.isself(token)) return this as any;
         const runtime = this.getRuntime();
         if (runtime.hasSingleton(token)) return runtime.getSingleton(token);
 
         const record = this.records.get(token);
-        return tryResolveToken(token, record, this.records, runtime, this._parent, context,
+        return tryResolveToken(token, record, this.records, runtime, this._parent, environment ?? this,
             notFoundValue === undefined ? THROW_FLAGE : notFoundValue,
             flags ?? InjectFlags.Default, record?.stic ?? this.isStatic)
     }
@@ -178,6 +187,102 @@ export class DefaultInjector extends Injector {
 
     protected assertNotDestroyed(): void {
         assertNotDestroyed(this);
+    }
+
+
+
+    /**
+     * resolve token.
+     * 
+     * 解析上下文中标记指令的实例值
+     * @param token 
+     * @returns 
+     */
+    resolve<T>(token: Token<T>, flags?: InjectFlags): T {
+        return this.resolveArgument({ provider: token, flags } as Parameter<T>) as T;
+    }
+
+
+
+    /**
+     * resolve the parameter value.
+     * 
+     * 解析调用参数
+     * @param meta property or parameter metadata type of {@link Parameter}.
+     * @returns the parameter value in this context.
+     */
+    resolveArgument<T>(meta: Partial<Parameter<T>>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null {
+        this.assertNotDestroyed();
+        const metaRvr = meta.resolver;
+        let resolver: HandlerScope | null;
+        if (metaRvr?.length) {
+            const runtime = this.getRuntime();
+            resolver = createResolveScope(runtime, metaRvr.map(r => isType(r) ? this.resolve(r) : r), this.getResolver());
+        } else {
+            resolver = this.getResolver()
+        }
+
+        return resolver?.handle(meta, this, {
+            next: (res, context) => {
+                if (res === UNRESOLVED) {
+                    if (failed) {
+                        failed(target!, meta.propertyKey!)
+                    } else {
+                        this.missingException([meta], target!, meta.propertyKey!);
+                    }
+                    return null;
+                }
+                return res;
+            },
+            error: (error) => {
+                if (error instanceof Error) {
+                    throw error;
+                }
+                if (failed) {
+                    failed(target!, meta.propertyKey!)
+                } else {
+                    this.missingException([meta], target!, meta.propertyKey!);
+                }
+            },
+        })
+
+    }
+
+    protected missingException(missings: Partial<Parameter>[], type: AbstractType<any>, method: string): Exception {
+        throw new MissingParameterException(missings, type, method)
+    }
+
+    /**
+     * get context arguments resolvers.
+     * @returns 
+     */
+    protected getArgumentResolver(): ResolveInterceptorLike[] {
+        return [];
+    }
+
+    private _resolvers?: HandlerScope<Parameter, Injector> | null;
+    /**
+     * the invocation arguments resolver.
+     */
+    protected getResolver(): HandlerScope<Parameter, Injector> | null {
+        if (this._resolvers === undefined) {
+            const resolvers: ResolveInterceptorLike[] = [];
+            const args = this.getArgumentResolver();
+            if (args?.length) {
+                resolvers.push(...args);
+            }
+            const resls = this.options?.resolvers?.map(r => isType(r) ? this.get(r) : r);
+            if (resls?.length) {
+                resolvers.push(...resls);
+            }
+            const runtime = this.getRuntime();
+            if (resolvers.length) {
+                this._resolvers = new HandlerScope(runtime, getParameterResolver(runtime), resolvers);
+            } else {
+                this._resolvers = getParameterResolver(runtime);
+            }
+        }
+        return this._resolvers;
     }
 
     /**
@@ -271,8 +376,8 @@ export class DefaultInjectOperator implements InjectOperator {
         return this;
     }
 
-    resolve<T, TArg>(token: Token<T>, option?: InvokeOptions): T;
-    resolve<T>(token: Token<T>, context?: InvocationContext): T;
+    resolve<T, TArg>(token: Token<T>, option?: InjectorOptions): T;
+    resolve<T>(token: Token<T>, context?: Injector): T;
     resolve<T>(token: Token<T>, providers?: Provider[]): T;
     resolve<T>(token: Token<T>, ...providers: Provider[]): T;
     resolve<T>(token: Token<T>, ...args: any[]) {
@@ -296,7 +401,7 @@ export class DefaultInjectOperator implements InjectOperator {
     inject(providers: Provider | Provider[]): this;
     inject(...providers: Provider[]): this;
     inject(...args: any[]): this {
-       Operator.inject(this.injector, ...args);
+        Operator.inject(this.injector, ...args);
         return this
     }
 
@@ -319,7 +424,7 @@ export class DefaultInjectOperator implements InjectOperator {
     register(types: (AbstractType | RegisterOption)[]): this;
     register(...types: (AbstractType | RegisterOption)[]): this;
     register(...args: any[]): this {
-       Operator.register(this.injector, ...args);
+        Operator.register(this.injector, ...args);
         return this
     }
 
@@ -327,10 +432,10 @@ export class DefaultInjectOperator implements InjectOperator {
         Operator.unregister(this.injector, token);
         return this
     }
-    
+
     invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
-    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
-    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
+    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, option?: InjectorOptions): TR;
+    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: Injector): TR;
     invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, providers: Provider[]): TR;
     invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
         return Operator.invoke(this.injector, target, propertyKey, ...args);
@@ -355,11 +460,11 @@ const isRootAlias = (token: any) => token === Injector || token === INJECTOR || 
 const isInjectAlias = (token: any) => token === Injector || token === INJECTOR;
 const isStaticAlias = (token: any) => token === StaticInjector;
 
-INJECT_IMPL.create = (providers: Provider[], parent?: Injector, scope?: InjectorScope) => {
-    if (scope === 'static' || isFunction(scope)) {
-        return new StaticInjector(providers, parent, scope)
+INJECT_IMPL.create = (options?: InjectorOptions, parent?: Injector) => {
+    if (options?.scope === 'static' || isFunction(options?.scope)) {
+        return new StaticInjector(options, parent)
     }
-    return new DefaultInjector(providers, parent!, scope)
+    return new DefaultInjector(options, parent)
 };
 
 INJECT_IMPL.isInjector = (target) => target instanceof DefaultInjector;
@@ -375,3 +480,137 @@ INJECT_IMPL.isInjector = (target) => target instanceof DefaultInjector;
 function registerCores(container: Injector, platform: Runtime) {
     platform.setSingleton(InvocationFactory, new DefaultInvocationFactory(platform), container);
 }
+
+
+
+/**
+ * Missing argument execption.
+ */
+export class MissingParameterException extends Exception {
+    constructor(parameters: Partial<Parameter>[], type: AbstractType, method: string) {
+        super(`ailed to invoke operation because the following required parameters were missing: [ ${parameters.map(p => object2string(p)).join(',\n')} ], method ${method} of class ${object2string(type)}`)
+    }
+}
+
+
+const deft = {
+    typeInst: true,
+    fun: true
+}
+
+/**
+ * format object to string for log.
+ * @param obj 
+ * @returns 
+ */
+export function object2string(obj: any, options?: { typeInst?: boolean; fun?: boolean; }): string {
+    options = { ...deft, ...options };
+    if (isArray(obj)) {
+        return `[${obj.map(v => object2string(v, options)).join(', ')}]`
+    } else if (isString(obj)) {
+        return `"${obj}"`
+    } else if (isAbstractType(obj)) {
+        return 'Type<' + getTypeName(obj) + '>'
+    } else if (obj instanceof ClassRef) {
+        return `[${obj.className} TypeReflect]`
+    } else if (isPlainObject(obj)) {
+        const str: string[] = [];
+        for (const n in obj) {
+            const value = obj[n];
+            str.push(`${n}: ${object2string(value, options)}`)
+        }
+        return `{ ${str.join(', ')} }`
+    } else if (options.typeInst && isTypeObject(obj)) {
+        const fileds = Object.keys(obj).filter(k => k).map(k => `${k}: ${object2string(obj[k], { typeInst: false, fun: false })}`);
+        return `[${getTypeName(obj)} {${fileds.join(', ')}} ]`
+    }
+    if (!options.fun && isFunction(obj)) {
+        return 'Function'
+    }
+    return `${obj?.toString()}`
+}
+
+
+
+const UNRESOLVED = {};
+const unResolve = <TInput, TOutput = any, TContext = any>(input: TInput, context: TContext) => UNRESOLVED as TOutput;
+
+export function isResolved(value: any) {
+    return value !== UNRESOLVED;
+}
+
+export function createResolveScope<TInput, TContext = any, TOutput = any>(runtime: Runtime, interceptors: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): HandlerScope<TInput, TContext, TOutput> {
+    return new HandlerScope<TInput, TContext, TOutput>(runtime, backend ?? unResolve, interceptors)
+}
+
+const TOKER_RESOLVER = new ContextToken<HandlerScope<[Token, InjectFlags | undefined], Injector>>(() => null!);
+export function getTokenResolver(runtime: Runtime): HandlerScope<[Token, InjectFlags | undefined], Injector> {
+    let scope = runtime.context.get(TOKER_RESOLVER);
+    if (!scope) {
+        scope = createResolveScope(
+            runtime,
+            [
+                (input, next, context) => {
+                    if (context.has(input[0], input[1])) {
+                        return context.get(input[0], null, input[1])
+                    }
+                    return next(input, context);
+                },
+                (input, next, context) => {
+                    const [type, flags] = input
+                    if (!isType(type) || getDef(type).abstract) {
+                        return next(input, context);
+                    }
+                    if (!context.has(type, flags)) {
+                        // const injector = context.getParent() ?? context.injector;
+                        Operator.register(context, type);
+                    }
+                    return context.get(type, null, flags)
+                },
+
+
+            ]
+        );
+        runtime.context.set(TOKER_RESOLVER, scope);
+    }
+    return scope;
+}
+
+const PARAMETER_RESOLVER = new ContextToken<HandlerScope>(() => null!);
+export function getParameterResolver(platform: Runtime): HandlerScope<Parameter, Injector> {
+    let scope = platform.context.get(PARAMETER_RESOLVER);
+    if (!scope) {
+        scope = createResolveScope(
+            platform,
+            [
+                (input, next, context) => {
+                    if (input.provider && !input.multi) {
+                        const value = getTokenResolver(platform).handle([input.provider, input.flags], context);
+                        if (isResolved(value)) return value;
+                    } else if (!input.multi && input.name && context.has(input.name, input.flags)) {
+                        return context.get(input.name, input.flags)
+                    } else if (input.type) {
+                        const value = getTokenResolver(platform).handle([input.type, input.flags], context);
+                        if (isResolved(value)) return value;
+                    }
+                    return next(input, context);
+                },
+                (input, next, context) => {
+
+                    if (isDefined(input.defaultValue)) {
+                        return input.defaultValue;
+                    }
+                    if (input.nullable === true || (input.flags && !!(input.flags & InjectFlags.Optional))) {
+                        return null;
+                    }
+
+                    return next(input, context);
+                }
+            ]
+        );
+        platform.context.set(PARAMETER_RESOLVER, scope);
+    }
+    return scope;
+}
+
+

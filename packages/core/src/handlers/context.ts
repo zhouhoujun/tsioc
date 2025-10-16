@@ -1,4 +1,4 @@
-import { DefaultInvocationContext, Injector, InvocationRequest, InvokeArguments,  ResolveInterceptorLike,  getType } from '@tsdi/ioc';
+import { Injector, InvokeArguments,  ResolveInterceptorLike,  getType } from '@tsdi/ioc';
 import { getResolverToken, ParameterScope } from './resolver';
 
 /**
@@ -10,7 +10,7 @@ export interface HandleContextOpts extends InvokeArguments {
 
 let a: Record<string, any>;
 
-export interface HandleRequest extends InvocationRequest, Partial<Record<ParameterScope, any>> {
+export interface HandleRequest extends Partial<Record<ParameterScope, any>> {
 }
 
 /**

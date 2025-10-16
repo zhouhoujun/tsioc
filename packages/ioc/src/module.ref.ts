@@ -1,6 +1,6 @@
 import { Destroyable, DestroyCallback, OnDestroy } from './destroy';
 import { ModuleType, ModuleWithProviders, Provider } from './providers';
-import { Injector } from './injector';
+import { Injector, InjectorOptions } from './injector';
 import { Abstract } from './metadata/fac';
 import { ClassRef } from './metadata/class';
 import { AbstractType, Type } from './types';
@@ -60,7 +60,7 @@ export abstract class ModuleRef<T = any> extends Injector implements Destroyable
 /**
  * module option.
  */
-export interface ModuleOption {
+export interface ModuleOption extends InjectorOptions {
     /**
      *  providers.
      */
@@ -69,10 +69,10 @@ export interface ModuleOption {
      * dependence modules. register before module injector init.
      */
     deps?: ModuleType<Type>[];
-    /**
-     * moduel scope.
-     */
-    scope?: 'root' | string;
+    // /**
+    //  * moduel scope.
+    //  */
+    // scope?: 'root' | string;
 
     /**
      * is static or not.

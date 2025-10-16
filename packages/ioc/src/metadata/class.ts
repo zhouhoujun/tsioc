@@ -1,17 +1,15 @@
 import { AbstractType, Type, Annotation, TypeOf } from '../types';
 import { ModuleWithProviders, Provider } from '../providers';
 import { PropertyMetadata, ParameterMetadata, AnnotationMetadata } from './meta';
-import { InvocationContext, InvocationOptions, InvokeArguments } from '../context';
 import { Token } from '../tokens';
-import { ResolveInterceptorLike } from '../resolver';
 import { forIn, hasItem, assign } from '../utils/lang';
 import { isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { Exception } from '../exception';
-import { Injector, MethodType, Resolve } from '../injector';
+import { Injector, MethodType, Resolve, ResolveInterceptorLike } from '../injector';
 import { Context, HandlerFn } from '../handler';
 import { DesignContext, InitializeContext } from '../lifescope/ctx';
-import { Invocation, InvocationFactory } from '../invocation';
+import { Invocation, InvocationFactory, InvocationOptions, InvokeArguments } from '../invocation';
 
 
 /**
@@ -107,7 +105,7 @@ export class ClassRef<T = any> {
 
     createInvocation(injector: Injector, options?: InvocationOptions): Invocation<T> {
         const factory = this.getInvocationFactory(injector);
-        return factory.create(this, { ...options, injector, targetType: this.type });
+        return factory.create(this, { ...options, injector, scope: this.type });
     }
 
     protected initAnnotation(annotation: Partial<TypeDef<T>>): TypeDef<T> {
@@ -165,14 +163,14 @@ export class ClassRef<T = any> {
      * @param instance the method of instance 
      * @param args invoke with args
      */
-    invoke(method: string | symbol, context: InvocationContext, instance?: T, args?: any[]) {
+    invoke(method: string | symbol, injector: Injector, instance?: T, args?: any[]) {
         const type = this.type;
-        const inst: any = instance ?? context.resolve(type);
+        const inst: any = instance ?? injector.resolve(type);
         if (!inst || !isFunction(inst[method])) {
             throw new Exception(`type: ${type} has no method ${method.toString()}.`)
         }
         if (!args) {
-            args = this.resolveArguments(method, context);
+            args = this.resolveArguments(method, injector);
         }
         const hasPointcut = inst[proxyTag];
         if (hasPointcut) {
@@ -241,9 +239,9 @@ export class ClassRef<T = any> {
      * @param method invoke the method named with.
      * @param context invocation context.
      */
-    resolveArguments(method: string | symbol, context: InvocationContext): any[] {
+    resolveArguments(method: string | symbol, injector: Injector): any[] {
         const parameters = this.getParameters(method) ?? [];
-        const args = parameters.map(p => context.resolveArgument(p, this.type));
+        const args = parameters.map(p => injector.resolveArgument(p, this.type));
         return args;
     }
 

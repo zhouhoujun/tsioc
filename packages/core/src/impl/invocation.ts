@@ -22,7 +22,7 @@ export class DefaultInvocationHandler<
         readonly invocation: Invocation<T>,
         options: TOptions,
         readonly propertyKey?: string | symbol) {
-        super(createContext(invocation.context, options), options)
+        super(createContext(invocation.injector, options), options)
         this.limit = options.limit;
 
     }

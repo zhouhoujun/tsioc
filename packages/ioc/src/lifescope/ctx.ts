@@ -3,7 +3,6 @@ import { AbstractType, Type } from '../types';
 import { ParameterMetadata, ProvidedInMetadata } from '../metadata/meta';
 import { ClassRef, DecoratorFn } from '../metadata/class';
 import { FactoryRecord, Injector } from '../injector';
-import { InvocationContext } from '../context';
 import { Runtime } from '../runtime';
 
 
@@ -78,9 +77,9 @@ export interface InitializeContext extends RegContext {
      */
     runtime: Runtime;
     /**
-     * invocation context.
+     * rasie injector.
      */
-    context?: InvocationContext;
+    raise?: Injector;
     isNewContext?: boolean;
     hasPointcut?: boolean;
     /**

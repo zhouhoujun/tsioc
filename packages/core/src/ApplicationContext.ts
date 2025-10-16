@@ -1,6 +1,6 @@
 import {
     Provider, Injector, Abstract, AbstractType, Destroyable, Modules, ModuleOption, ModuleRef,
-    InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, ClassRef, Invocation, InvokeArguments, Type
+    ModuleMetadata, ModuleDef, Token, tokenId, ClassRef, Invocation, InvokeArguments, Type, Context
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
@@ -19,8 +19,7 @@ import { ApplicationEvent } from './ApplicationEvent';
  * 应用上下文环境
  */
 @Abstract()
-export abstract class ApplicationContext<T = object>
-    extends InvocationContext<ModuleRef<T>> implements ApplicationEventPublisher, Destroyable {
+export abstract class ApplicationContext<T = object> extends Context implements ApplicationEventPublisher, Destroyable {
     /**
      * module instance.
      */

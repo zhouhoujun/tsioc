@@ -1,7 +1,8 @@
 import {
-    tokenId, Injector, IocContext, DefaultInvocationContext, ParameterMetadata, lang, AbstractType,
-    DecorDefine, Defer, TargetInvokeArguments, ClassRef, HandlerFn, Context, noPointcut,
-    Abstract, 
+    tokenId, Injector, IocContext, ParameterMetadata, lang, AbstractType,
+    DecorDefine, Defer, InvokeArguments, ClassRef, HandlerFn, Context, noPointcut,
+    Abstract,
+    DefaultInjector, 
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advisor } from '../Advisor';
@@ -9,7 +10,7 @@ import { Advisor } from '../Advisor';
 /**
  * joinpoint option.
  */
-export interface JoinpointOption extends TargetInvokeArguments {
+export interface JoinpointOption extends InvokeArguments {
     targetRef: ClassRef;
     propertyKey: string | symbol;
     targetType?: AbstractType;
@@ -48,7 +49,7 @@ export interface ReturnDefer {
  * JoinPoint of aop.
  */
 @Abstract()
-export class JoinPoint extends DefaultInvocationContext {
+export class JoinPoint extends DefaultInjector {
     /**
      * custom proxy invoke origin method.
      */
@@ -79,8 +80,8 @@ export class JoinPoint extends DefaultInvocationContext {
 
     public state: JoinpointState;
 
-    constructor(injector: Injector, options: JoinpointOption) {
-        super(injector, options);
+    constructor(options: JoinpointOption, injector: Injector) {
+        super(options, injector);
         this.target = options.target;
         this.propertyKey = options.propertyKey;
         this.args = options.args ?? [];
@@ -106,8 +107,8 @@ export class JoinPoint extends DefaultInvocationContext {
      * @param options 
      * @returns 
      */
-    static create(injector: Injector, options: JoinpointOption) {
-        return new JoinPoint(injector, options)
+    static create(options: JoinpointOption, injector: Injector) {
+        return new JoinPoint(options, injector)
     }
 }
 
@@ -115,7 +116,7 @@ export class JoinPoint extends DefaultInvocationContext {
 export class ProceedingJoinPoint extends JoinPoint {
 
     constructor(private joinPoint: JoinPoint, private next: HandlerFn, private context?: Context) {
-        super(joinPoint, {
+        super({
             args: joinPoint.args,
             target: joinPoint.target,
             receiver: joinPoint.receiver,
@@ -130,7 +131,7 @@ export class ProceedingJoinPoint extends JoinPoint {
             annotations: joinPoint.annotations,
             state: joinPoint.state,
             advisor: joinPoint.advisor
-        })
+        }, joinPoint)
     }
 
     proceed(...args: any[]) {

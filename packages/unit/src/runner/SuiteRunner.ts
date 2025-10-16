@@ -1,4 +1,4 @@
-import { lang, Injectable, Invocation, AbstractType, AbstractInvocation, InvocationContext, InvokeArguments, AbstractInvocationFactory, InvocationOptions, ClassRef } from '@tsdi/ioc';
+import { lang, Injectable, Invocation, AbstractType, AbstractInvocation, InvokeArguments, AbstractInvocationFactory, InvocationOptions, ClassRef, Injector } from '@tsdi/ioc';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
 import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
@@ -56,7 +56,7 @@ export class SuiteRunner<T = object> implements UnitRunner<T> {
     runTimeout(key: string, describe: string, timeout?: number): Promise<any> {
         const instance = this.invocation.instance;
         const defer = lang.defer();
-        const context = this.invocation.context;
+        const context = this.invocation.injector;
         let timer = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
@@ -179,13 +179,13 @@ export class SuiteRunner<T = object> implements UnitRunner<T> {
 
 
 export class SuiteInvocation<T = any> extends AbstractInvocation<T> {
-    protected process(option?: InvocationContext | InvokeArguments) {
-        return this.context.resolve(SuiteRunner).run();
+    protected process(option?: Injector | InvokeArguments) {
+        return this.injector.resolve(SuiteRunner).run();
     }
 }
 
 export class SuiteInvocationFactory extends AbstractInvocationFactory {
-    protected createInstance<T>(typeRef: ClassRef<T>, context: InvocationContext, options?: InvocationOptions<T>): Invocation<T> {
+    protected createInstance<T>(typeRef: ClassRef<T>, context: Injector, options?: InvocationOptions<T>): Invocation<T> {
         return new SuiteInvocation<T>(typeRef, context, options);
     }
 

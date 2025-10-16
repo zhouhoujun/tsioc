@@ -9,7 +9,6 @@ import { Runtime } from '../runtime';
 import { getClassRef } from '../metadata/refl';
 import { ModuleDef, ClassRef } from '../metadata/class';
 import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
-import { InvocationContext } from '../context';
 import { DesignContext } from '../lifescope/ctx';
 import { getRecords, Operator } from './operator';
 
@@ -386,9 +385,9 @@ export class NullInjectorException extends Exception {
  * @returns 
  */
 export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Runtime, parent: Injector | null,
-    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
+    raise: Injector | undefined, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     try {
-        const value = resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags, isStatic);
+        const value = resolveToken(token, rd, records, platform, parent, raise, notFoundValue, flags, isStatic);
         const isDef = isDefined(value) && value !== notFoundValue;
         if (isDef && isStatic) { // && rd?.fn !== MUTIL) {
             if (rd) {
@@ -417,7 +416,7 @@ export const THROW_FLAGE = {};
  * @returns 
  */
 export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Runtime, parent: Injector | null,
-    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
+    raise: Injector | undefined, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     if (rd && !(flags & InjectFlags.SkipSelf)) {
         let value = rd.value;
         if (value === CIRCULAR) {
@@ -427,7 +426,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
         const deps = [];
         if (rd.fn === MUTIL) {
             if (parent && !(flags & InjectFlags.Self)) {
-                const values = parent.get(token, null, InjectFlags.Default, context);
+                const values = parent.get(token, null, InjectFlags.Default, raise);
                 if (values) {
                     deps.push(...values)
                 }
@@ -439,8 +438,8 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                 const chlrd = isPlainObject(dep.token) ? dep.token : (dep.options & OptionFlags.CheckSelf ? records.get(dep.token) : undefined);
 
                 let val: any;
-                if (context && !(dep.token as FactoryRecord)?.fn) {
-                    val = context.resolveArgument(isString(dep.token) ? { name: dep.token } : { provider: dep.token })
+                if (raise && !(dep.token as FactoryRecord)?.fn) {
+                    val = raise.resolveArgument(isString(dep.token) ? { name: dep.token } : { provider: dep.token })
                 }
                 deps.push(val ?? tryResolveToken(
                     dep.token,
@@ -448,14 +447,14 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                     records,
                     platform,
                     !chlrd && !(dep.options & OptionFlags.CheckParent) ? null : parent,
-                    context,
+                    raise,
                     dep.options & OptionFlags.Optional ? null : THROW_FLAGE,
                     flags,
                     isStatic))
             }
         }
-        if (context && rd.fn !== IDENT && rd.fn !== MUTIL) {
-            deps.push(context)
+        if (raise && rd.fn !== IDENT && rd.fn !== MUTIL) {
+            deps.push(raise)
         }
         switch (rd.fy) {
             case FnType.Cotr:
@@ -477,7 +476,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                 return rd.fn?.(...deps)
         }
     } else if (parent && !(flags & InjectFlags.Self)) {
-        return parent.get(token, notFoundValue, (flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default, context)
+        return parent.get(token, notFoundValue, (flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default, raise)
     } else if (!(flags & InjectFlags.Optional)) {
         if (notFoundValue === THROW_FLAGE) {
             throw new NullInjectorException(token)

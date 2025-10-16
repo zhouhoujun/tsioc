@@ -190,7 +190,7 @@ export const Configuration: ConfigurationDecorator = createDecorator<Confgiurati
                 Operator.inject(injector, {
                     provider: async (injector) => {
                         const invocation = typeRef.createInvocation(injector)
-                        await Operator.useAsync(invocation.context, meta.imports!);
+                        await Operator.useAsync(invocation.injector, meta.imports!);
                         injectBean(injector, typeRef, meta, invocation)
                     },
                 })
@@ -212,7 +212,7 @@ function injectBean(injector: Injector, typeRef: ClassRef<any>, meta: Confgiurat
     }
 
 
-    if (meta.providers) Operator.inject(invocation.context, meta.providers);
+    if (meta.providers) Operator.inject(invocation.injector, meta.providers);
 
     typeRef.getDefines(Bean)
         .forEach(d => {
@@ -288,7 +288,7 @@ function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name:
             method: (ctx) => {
                 const typeRef = ctx.classRef;
                 if (!runtime && (
-                    !ctx.context?.isResolve
+                    !ctx.raise?.isResolve
                     || typeRef.getAnnotation().static === true
                     || typeRef.getAnnotation().singleton
                 )) return;

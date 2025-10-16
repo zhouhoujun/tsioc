@@ -1,8 +1,9 @@
 import {
-    isFunction, lang, Runtime, ctorName, InvocationContext, HandlerScope, HandlerFn,
+    isFunction, lang, Runtime, ctorName, HandlerScope, HandlerFn,
     Context, ContextToken, invokeTail, InitializeContext, InterceptorLike, isDefined,
     ParameterMetadata, ClassRef, proxyTag, isObject, isNil, object2string, getClassify,
-    composeHandlers, composeInterceptors
+    composeHandlers, composeInterceptors,
+    Injector
 } from '@tsdi/ioc';
 import { JoinPoint } from '../joinpoints/JoinPoint';
 import { JoinpointState } from '../joinpoints/state';
@@ -38,7 +39,7 @@ export class ProceedingScope implements Proceeding {
 
         ctx.isNewContext = false;
         return this.handle(ctx.classRef, `${ctx.classRef.className}.${ctorName}`, ctorName, null, advisor, ctx.runtime, {
-            parent: ctx.context,
+            parent: ctx.raise,
             args: ctx.args,
             params: ctx.params,
             originProxy: (joinPoint) => {
@@ -55,12 +56,12 @@ export class ProceedingScope implements Proceeding {
         return invokeTail(() => next(ctx, context), () => {
             const advisor = context.get(Advisor);
             if (isDefined(ctx.instance) && (ctx.hasPointcut || advisor.hasPointcut(ctx.instance, ctx.classRef, true))) {
-                ctx.instance = this.createProxy(ctx.classRef.className, ctx.classRef, ctx.instance, ctx.classRef, ctx.instance, advisor, ctx.context)
+                ctx.instance = this.createProxy(ctx.classRef.className, ctx.classRef, ctx.instance, ctx.classRef, ctx.instance, advisor, ctx.raise)
             }
         });
     }
 
-    protected createProxy(prefix: string, rootRef: ClassRef, root: any, typeRef: ClassRef | null, instance: any, advisor: Advisor, parent?: InvocationContext) {
+    protected createProxy(prefix: string, rootRef: ClassRef, root: any, typeRef: ClassRef | null, instance: any, advisor: Advisor, parent?: Injector) {
         const descriptors = typeRef?.getPropertyDescriptors();
 
         const weekMap = new WeakMap();
@@ -140,14 +141,14 @@ export class ProceedingScope implements Proceeding {
         return proxy;
     }
 
-    protected proxy<T>(originMethod: Function, propertyKey: string | symbol, fullName: string, advisor: Advisor, receiver: T, target: any, targetRef: ClassRef, parent?: InvocationContext) {
+    protected proxy<T>(originMethod: Function, propertyKey: string | symbol, fullName: string, advisor: Advisor, receiver: T, target: any, targetRef: ClassRef, parent?: Injector) {
         const runtime = this.runtime;
         return (...args: any[]) => {
             if (!runtime || !runtime.injector || runtime.injector.destroyed) {
                 return originMethod.call(target, ...args)
             }
             const larg = lang.last(args);
-            if (target[proxyTag] && larg instanceof InvocationContext) {
+            if (target[proxyTag] && larg instanceof Injector) {
                 args = args.slice(0, args.length - 1);
                 parent = larg
             }
@@ -167,14 +168,14 @@ export class ProceedingScope implements Proceeding {
         accessor?: 'get' | 'set';
         params?: ParameterMetadata[];
         valueChange?: { newValue: any, oldValue: any },
-        parent?: InvocationContext,
+        parent?: Injector,
         originProxy?: (joinPoint: JoinPoint) => any,
         next?: (res: JoinPoint) => any
     } = {}): any {
         if (!options.params) {
             options.params = targetRef?.getParameters(propertyKey);
         }
-        const joinPoint = JoinPoint.create(options.parent ?? runtime.getInjector('root') ?? runtime.getInjector('platform'), {
+        const joinPoint = JoinPoint.create({
             ...options,
             receiver,
             targetRef,
@@ -183,7 +184,7 @@ export class ProceedingScope implements Proceeding {
             fullName,
             advisor,
             annotations: targetRef?.getMethodDefines(propertyKey) //?? targetRef?.getPropDefines(propertyKey) //.defines.filter(d => d.propertyKey === propertyKey),
-        });
+        }, options.parent ?? runtime.getInjector('root') ?? runtime.getInjector('platform'));
         if (options.parent) {
             joinPoint.onDestroy(options.parent)
         }
@@ -327,7 +328,7 @@ function invokeAdvice(joinPoint: JoinPoint, advicer: Advicer) {
         joinPoint.setValue(metadata.throwing, joinPoint.throwing)
     }
 
-    const context = advicer.aspect.context;
+    const context = advicer.aspect.injector;
     if (context) {
         joinPoint.addRef(context)
     }

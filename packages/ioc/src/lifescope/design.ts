@@ -1,6 +1,5 @@
-import { InvocationContext } from '../context';
 import { Context, ContextToken, HandlerFn, InterceptorLike, invokeTail } from '../handler';
-import { FactoryRecord, FnType } from '../injector';
+import { FactoryRecord, FnType, Injector } from '../injector';
 import { DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
 import { Operator } from '../impl/operator';
 import { Runtime } from '../runtime';
@@ -139,11 +138,11 @@ export const registerHandler: HandlerFn = (ctx: DesignContext, context: Context)
                 return runtime.getSingleton(type)
             }
             let args: any[] | undefined;
-            let context: InvocationContext | undefined;
+            let raise: Injector | undefined;
             if (fnArgs.length) {
                 const last = fnArgs[fnArgs.length - 1];
-                if (last instanceof InvocationContext) {
-                    context = last;
+                if (last instanceof Injector) {
+                    raise = last;
                     if (fnArgs.length > 1) {
                         args = fnArgs.slice(0, fnArgs.length - 1);
                     }
@@ -158,7 +157,7 @@ export const registerHandler: HandlerFn = (ctx: DesignContext, context: Context)
                 args,
                 singleton,
                 runtime,
-                context
+                raise
             } as InitializeContext;
 
             let instance: any;
