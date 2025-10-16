@@ -1,6 +1,7 @@
 import {
     Provider, Injector, Abstract, AbstractType, Destroyable, Modules, ModuleOption, ModuleRef,
-    ModuleMetadata, ModuleDef, Token, tokenId, ClassRef, Invocation, InvokeArguments, Type, Context
+    ModuleMetadata, ModuleDef, Token, tokenId, ClassRef, Invocation, InvokeArguments, Type, Context,
+    DestroyCallback
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
@@ -19,7 +20,7 @@ import { ApplicationEvent } from './ApplicationEvent';
  * 应用上下文环境
  */
 @Abstract()
-export abstract class ApplicationContext<T = object> extends Context implements ApplicationEventPublisher, Destroyable {
+export abstract class ApplicationContext<T = object> implements ApplicationEventPublisher, Destroyable {
     /**
      * module instance.
      */
@@ -81,6 +82,15 @@ export abstract class ApplicationContext<T = object> extends Context implements 
      * destroy application
      */
     abstract destroy(): Promise<void>;
+    /**
+     * destroyed or not.
+     */
+    abstract get  destroyed(): boolean;
+    /**
+     * register callback on destroy.
+     * @param callback destroy callback
+     */
+    abstract onDestroy(callback: DestroyCallback): void;
 
 }
 

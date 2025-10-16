@@ -1,8 +1,8 @@
 import { AbstractType, Type, Modules } from '../types';
 import { Token } from '../tokens';
 import { ModuleType, Provider } from '../providers';
-import { Parameter } from '../resolver';
-import { InvokeArguments } from '../context';
+import { Parameter } from '../injector';
+import { InvokeArguments } from '../invocation';
 
 /**
  * type metadata

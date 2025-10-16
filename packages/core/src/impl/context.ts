@@ -1,7 +1,6 @@
 import {
-    AbstractType, Provider, DefaultInvocationContext,
-    ClassRef, ModuleDef, ModuleRef, Invocation, noPointcut,
-    Operator,
+    AbstractType, ClassRef, ModuleDef, ModuleRef, Invocation, noPointcut,
+    Operator, DefaultInjector,
 } from '@tsdi/ioc';
 import { Logger, LoggerManagers } from '@tsdi/logger';
 import { Observable } from 'rxjs';
@@ -23,7 +22,7 @@ import { setHandlerOptions } from '../handlers/configable.impl';
  * @class BootContext
  * @extends {HandleContext}
  */
-export class DefaultApplicationContext<T = any> extends DefaultInvocationContext<ModuleRef> implements ApplicationContext<T> {
+export class DefaultApplicationContext<T = any> extends DefaultInjector implements ApplicationContext<T> {
 
     private _multicaster: ApplicationEventMulticaster;
     exit = true;
@@ -35,11 +34,11 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
      */
     request!: ApplicationArguments;
 
-    constructor(parent: ModuleRef, options: EnvironmentOption = {}) {
-        super(parent, options);
-        this._multicaster = parent.get(ApplicationEventMulticaster);
-        Operator.setValue(this.getParent(), ApplicationContext, this);
-        this._runners = parent.get(ApplicationRunners);
+    constructor(readonly root: ModuleRef, options: EnvironmentOption = {}) {
+        super(options, root);
+        this._multicaster = root.get(ApplicationEventMulticaster);
+        Operator.setValue(root, ApplicationContext, this);
+        this._runners = root.get(ApplicationRunners);
         this.onDestroy(this._runners);
         if (options.eventsOptions) {
             setHandlerOptions(this.eventMulticaster, options.eventsOptions);
@@ -47,9 +46,10 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
         if (options.runnersOptions) {
             setHandlerOptions(this.runners, options.runnersOptions);
         }
+        this.initRequest(options);
     }
 
-    protected override initRequest(options: EnvironmentOption): void {
+    protected initRequest(options: EnvironmentOption): void {
         this.request = options.request!
     }
 
@@ -63,7 +63,7 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
     }
 
     get instance() {
-        return this.getParent().instance
+        return this.root.instance
     }
 
     get runners() {

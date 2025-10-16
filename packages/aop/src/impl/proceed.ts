@@ -2,8 +2,7 @@ import {
     isFunction, lang, Runtime, ctorName, HandlerScope, HandlerFn,
     Context, ContextToken, invokeTail, InitializeContext, InterceptorLike, isDefined,
     ParameterMetadata, ClassRef, proxyTag, isObject, isNil, object2string, getClassify,
-    composeHandlers, composeInterceptors,
-    Injector
+    composeHandlers, composeInterceptors, Injector, Operator
 } from '@tsdi/ioc';
 import { JoinPoint } from '../joinpoints/JoinPoint';
 import { JoinpointState } from '../joinpoints/state';
@@ -276,11 +275,11 @@ export const originMethodHandler = (ctx: JoinPoint, context: Context) => {
 
 export const adviceHanlder = (ctx: JoinPoint, context: Context) => {
     const proceedings = ctx.advisor.getProceeding(ctx.propertyKey, ctx.fullName, ctx.targetRef, ctx.target);
-    if(proceedings?.length) {
-        const chain = composeInterceptors(proceedings.map(r=> r.interceptor));
+    if (proceedings?.length) {
+        const chain = composeInterceptors(proceedings.map(r => r.interceptor));
         return chain(ctx, originMethodHandler, context);
     }
-    return originMethodHandler(ctx,context);
+    return originMethodHandler(ctx, context);
 }
 
 const ADVICES_INTERCEPTORS: InterceptorLike<JoinPoint>[] = [
@@ -307,25 +306,25 @@ function invokeAdvice(joinPoint: JoinPoint, advicer: Advicer) {
 
     const metadata = advicer.advice as AroundMetadata;
     if (!isNil(joinPoint.args) && metadata.args) {
-        joinPoint.setValue(metadata.args, joinPoint.args)
+        Operator.setValue(joinPoint, metadata.args, joinPoint.args)
     }
 
     if (metadata.annotationArgName) {
         if (metadata.annotationName) {
             let d: string = metadata.annotationName;
             d = d ? (aExp.test(d) ? d : `@${d}`) : '';
-            joinPoint.setValue(metadata.annotationArgName, joinPoint.annotations ? joinPoint.annotations.filter(v => v && v.decor.toString() == d).map(d => d.metadata) : [])
+            Operator.setValue(joinPoint, metadata.annotationArgName, joinPoint.annotations ? joinPoint.annotations.filter(v => v && v.decor.toString() == d).map(d => d.metadata) : [])
         } else {
-            joinPoint.setValue(metadata.annotationArgName, joinPoint.annotations?.map(d => d.metadata) ?? [])
+            Operator.setValue(joinPoint, metadata.annotationArgName, joinPoint.annotations?.map(d => d.metadata) ?? [])
         }
     }
 
     if (!isNil(joinPoint.returning) && metadata.returning) {
-        joinPoint.setValue(metadata.returning, joinPoint.returning)
+        Operator.setValue(joinPoint, metadata.returning, joinPoint.returning)
     }
 
     if (joinPoint.throwing && metadata.throwing) {
-        joinPoint.setValue(metadata.throwing, joinPoint.throwing)
+        Operator.setValue(joinPoint, metadata.throwing, joinPoint.throwing)
     }
 
     const context = advicer.aspect.injector;

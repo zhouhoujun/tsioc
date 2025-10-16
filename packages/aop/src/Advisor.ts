@@ -1,4 +1,4 @@
-import { AbstractType, lang, Invocation, OnDestroy, ClassRef, getTypeName, ctorName, Context, HandlerFn } from '@tsdi/ioc';
+import { AbstractType, lang, Invocation, OnDestroy, ClassRef, getTypeName, ctorName, Context, HandlerFn, Operator } from '@tsdi/ioc';
 import { Advicer, AroundProceeding, MatchOptions } from './Advicer';
 import { AdviceMatcher } from './AdviceMatcher';
 import { AopDef } from './metadata/ref';
@@ -52,10 +52,10 @@ export class Advisor implements OnDestroy {
                     advice,
                     match,
                     aspect,
-                    interceptor: (ctx: JoinPoint, next: HandlerFn, context: Context) => {
-                        const proceeding = new ProceedingJoinPoint(ctx, next, context);
-                        ctx.setValue(ProceedingJoinPoint, proceeding);
-                        return aspect.invoke(advice.propertyKey!, ctx);
+                    interceptor: (joinPoint: JoinPoint, next: HandlerFn, context: Context) => {
+                        const proceeding = new ProceedingJoinPoint(joinPoint, next, context);
+                        Operator.setValue(joinPoint, ProceedingJoinPoint, proceeding);
+                        return aspect.invoke(advice.propertyKey!, joinPoint);
                     }
                 });
                 return;
