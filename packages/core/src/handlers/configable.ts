@@ -1,4 +1,4 @@
-import { Injector, ProvdierOf, StaticProvider, Type, Abstract, Token, AbstractType, InjectorOptions } from '@tsdi/ioc';
+import { Injector, ProvdierOf, StaticProvider, Type, Abstract, Token, AbstractType, InjectorOptions, InvocationOptions } from '@tsdi/ioc';
 import { GuardLike, GuardsService } from '../guard';
 import { ApplicationInterceptorLike, InterceptorService } from '../ApplicationInterceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
@@ -84,7 +84,7 @@ export abstract class AbstractConfigableHandler<
 /**
  * Configable handler options.
  */
-export interface ConfigableHandlerOptions<TInput = any> extends InjectorOptions {
+export interface ConfigableHandlerOptions<TInput = any> extends InvocationOptions {
     /**
      * handler type.
      */

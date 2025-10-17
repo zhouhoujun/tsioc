@@ -1,4 +1,4 @@
-import { Invocation, getType, isFunction, isString, Type, Context, invokeTail } from '@tsdi/ioc';
+import { Invocation, getType, isFunction, isString, Type, Context, invokeTail, Injector, createInjector } from '@tsdi/ioc';
 import { BackendFn } from '../ApplicationHandler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
@@ -40,23 +40,23 @@ export class DefaultInvocationHandler<
      * before `Invocation` invoke 
      * @param ctx 
      */
-    protected beforeInvoke(ctx: TInput | InvocationContext): any { }
+    protected beforeInvoke(ctx: TInput | Injector): any { }
     /**
      * respond.
      * @param input 
      * @returns 
      */
-    protected respond(input: TInput | InvocationContext, context?: TContext) {
+    protected respond(input: TInput | Injector, context?: TContext) {
         let newCtx = false;
-        if (input instanceof InvocationContext) {
+        if (input instanceof Injector) {
             if (context) this.attchContext(input, context);
         } else {
-            if (context && context instanceof InvocationContext) {
+            if (context && context instanceof Injector) {
                 context.setValue(getType(input), input);
                 input = context;
             } else {
                 newCtx = true;
-                const ctx = createContext(this.injector, { request: input as InvocationRequest, resolvers: this.injector.get(getResolverToken(input), []) });
+                const ctx = createInjector({ request: input as Injector, resolvers: this.injector.get(getResolverToken(input), []) }, this.injector);
                 ctx.setValue(getType(input), input);
                 if (context) this.attchContext(ctx, context, input)
                 input = ctx;
@@ -73,13 +73,13 @@ export class DefaultInvocationHandler<
                         return this.respondAs(input, res);
                     },
                     finally: () => {
-                        if (newCtx) (input as InvocationContext).destroy();
+                        if (newCtx) (input as Injector).destroy();
                     }
                 }));
 
     }
 
-    protected attchContext(input: InvocationContext, context: TContext, nextData?: any) {
+    protected attchContext(input: Injector, context: TContext, nextData?: any) {
         if (context instanceof Context) {
             input.setValue(Context, context);
         }
@@ -92,7 +92,7 @@ export class DefaultInvocationHandler<
      * @param res 
      * @returns 
      */
-    protected respondAs(ctx: InvocationContext, res: any): TOutput {
+    protected respondAs(ctx: Injector, res: any): TOutput {
         if (isString(this.options.response)) {
             const trespond = ctx.get(TypedRespond);
             if (trespond) {
@@ -114,11 +114,11 @@ export class DefaultInvocationHandler<
         return res;
     }
 
-    protected defaultRespond(ctx: InvocationContext, res: any): void { }
+    protected defaultRespond(ctx: Injector, res: any): void { }
 
     equals(other: InvocationHandler): boolean {
         return this.invocation.type === other.invocation.type
-            && this.injector === other.context
+            && this.injector === other.injector
             && this.options.response === (other as DefaultInvocationHandler).options.response
             && this.propertyKey === (other as DefaultInvocationHandler).propertyKey;
     }
