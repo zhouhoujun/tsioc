@@ -2,9 +2,9 @@
 import { AbstractType, Type, noPointcut } from '../types';
 import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
-import { defer, getTypeName } from '../utils/lang';
-import { isAbstractType, isArray, isDefined, isFunction, isString, isType } from '../utils/chk';
-import { MethodType, InjectorScope, RegisterOption, FactoryRecord, Injector, INJECT_IMPL, InjectOperator, Parameter, ResolveInterceptorLike, InjectorOptions } from '../injector';
+import { defer, getTypeName, immediate } from '../utils/lang';
+import { hasProps, isAbstractType, isArray, isDefined, isFunction, isNumber, isString, isType } from '../utils/chk';
+import { MethodType, InjectorScope, RegisterOption, FactoryRecord, Injector, INJECT_IMPL, InjectOperator, Parameter, ResolveInterceptorLike, InjectorOptions, createInjector } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef } from '../metadata/class';
@@ -68,12 +68,10 @@ export class DefaultInjector extends Injector {
     constructor(private options?: InjectorOptions, parent?: Injector) {
         super()
         this.records = new Map();
-        if(!parent){
-            parent = options?.parent;
-        }
         if (parent) {
+            this.isResolve = options?.isResolve == true
             this._parent = parent;
-            this.scope = this.options?.scope;
+            this.scope = options?.scope;
             this.initParent(parent);
         } else {
             this._parent = null;
@@ -192,14 +190,87 @@ export class DefaultInjector extends Injector {
 
 
     /**
-     * resolve token.
+     * resolve token in context.
      * 
      * 解析上下文中标记指令的实例值
-     * @param token 
-     * @returns 
+     * @param token token id {@link Token}.
+     * @param flags InjectFalgs 
      */
-    resolve<T>(token: Token<T>, flags?: InjectFlags): T {
-        return this.resolveArgument({ provider: token, flags } as Parameter<T>) as T;
+    resolve<T>(token: Token<T>, falgs?: InjectFlags): T;
+    /**
+     * resolve token instance with token and param provider.
+     * 
+     * 解析标记令牌的实例。
+     *
+     * @template T
+     * @param {Token<T>} token the token to resolve.
+     * @param {Injector} environment the environment injector to raise resove.
+     * @returns {T}
+     */
+    resolve<T>(token: Token<T>, environment?: Injector): T;
+    /**
+    * resolve token instance with token and param provider.
+    * 
+    * 解析标记令牌的实例。
+    *
+    * @template T
+    * @param {Token<T>} token the resolve token {@link Token}.
+    * @param {option} option the option of type {@link ResolverOption}, use to resolve with token.
+    * @returns {T}
+    */
+    resolve<T>(token: Token<T>, option?: InjectorOptions): T;
+    /**
+     * resolve token instance with token and param provider.
+     * 
+     * 解析标记令牌的实例。
+     *
+     * @template T
+     * @param {Token<T>} token the resolve token {@link Token}.
+     * @param {Provider[]} providers the providers to resolve with token. array of {@link Provider}.
+     * @returns {T}
+     */
+    resolve<T>(token: Token<T>, providers?: Provider[]): T;
+    /**
+     * resolve token instance with token and param provider.
+     * 
+     * 解析标记令牌的实例。
+     *
+     * @template T
+     * @param {Token<T>} token the resolve token {@link Token}.
+     * @param {...Provider[]} providers the providers {@link Provider} to resolve with token.
+     * @returns {T}
+     */
+    resolve<T>(token: Token<T>, ...providers: Provider[]): T;
+    resolve<T>(token: Token<T>, ...args: any[]): T {
+        if (args.length === 0 || isNumber(args[0])) {
+            return this.resolveArgument({ provider: token, flags:args[0]  } as Parameter<T>) as T;
+        }
+
+        let context: Injector | undefined;
+        const isResolve = true;
+        let isCtx = false;
+        if (args.length === 1) {
+            const arg1 = args[0];
+            if (arg1 instanceof Injector) {
+                context = arg1;
+                isCtx = true;
+            } else if (isArray(arg1)) {
+                context = arg1.length ? createInjector({ isResolve, providers: arg1 }, this) : undefined;
+            } else if (arg1.provide) {
+                context = createInjector({ isResolve, providers: [arg1] }, this);
+            } else if (hasProps(arg1)) {
+                context = createInjector({ isResolve, ...arg1 }, this);
+            }
+        } else {
+            context = createInjector({ isResolve, providers: args }, this);
+        }
+
+        const result = (context && !isCtx) ? context.resolve(token, InjectFlags.Resolve) : this.get(token, null, InjectFlags.Resolve, context) as T;
+
+        if (context && !isCtx && !context.used) {
+            immediate(() => context!.destroy());
+        }
+        return result;
     }
 
 
@@ -374,14 +445,6 @@ export class DefaultInjectOperator implements InjectOperator {
     setSingleton<T>(token: Token<T>, value: T): this {
         Operator.setSingleton(this.injector, token, value);
         return this;
-    }
-
-    resolve<T, TArg>(token: Token<T>, option?: InjectorOptions): T;
-    resolve<T>(token: Token<T>, context?: Injector): T;
-    resolve<T>(token: Token<T>, providers?: Provider[]): T;
-    resolve<T>(token: Token<T>, ...providers: Provider[]): T;
-    resolve<T>(token: Token<T>, ...args: any[]) {
-        return Operator.resolve(this.injector, token, ...args);
     }
 
     setValue<T>(token: Token<T>, value: T, type?: AbstractType<T> | undefined): this {

@@ -4,8 +4,8 @@ export * from './tokens';
 export * from './destroy';
 export * from './injector';
 export { Injector as Container } from './injector';
-export * from './context';
-export * from './resolver';
+// export * from './context';
+// export * from './resolver';
 export * from './invocation';
 
 export * from './runtime';

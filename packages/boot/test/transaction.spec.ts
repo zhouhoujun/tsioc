@@ -22,12 +22,12 @@ export class TransactionTest {
         });
 
 
-        const urep = this.ctx.injector.get(UserRepository);
+        const urep = this.ctx.get(UserRepository);
         const u1 = await urep.findByAccount('test_111');
         if (u1) await urep.remove(u1);
         const u2 = await urep.findByAccount('post_test');
         if (u2) await urep.remove(u2);
-        const rrep = await this.ctx.injector.get(TypeOrmHelper).getRepository(Role);
+        const rrep = await this.ctx.get(TypeOrmHelper).getRepository(Role);
         const role1 = await rrep.find({ where: { name: 'opter_1' } });
         if (role1) await rrep.remove(role1);
         const role2 = await rrep.find({ where: { name: 'opter_2' } });

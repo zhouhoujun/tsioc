@@ -41,7 +41,7 @@ export interface ServiceConfig<TSerOpts = any> extends RequestHandlerOptions<any
     /**
      * server request handler type
      */
-    handlerType?: AbstractType<RequestHandler>;
+    scope?: AbstractType<RequestHandler>;
 
     /**
      * service transport factory.

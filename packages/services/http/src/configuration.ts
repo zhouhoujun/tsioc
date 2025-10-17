@@ -70,7 +70,7 @@ export class HttpConfiguration {
                 MimeModule,
             ],
             defaultConfig: {
-                handlerType: HttpHandler,
+                scope: HttpHandler,
                 interceptorsToken: HTTP_CLIENT_INTERCEPTORS,
                 filtersToken: HTTP_CLIENT_FILTERS,
                 transportFactory: {
@@ -212,7 +212,7 @@ export class HttpConfiguration {
                 MimeModule
             ],
             defaultConfig: {
-                handlerType: HttpRequestHandler,
+                scope: HttpRequestHandler,
                 listenOpts: { port: 3000, host: LOCALHOST },
                 execptionHandlers: HttpExceptionHandlers,
                 transportFactory: {

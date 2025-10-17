@@ -1,4 +1,4 @@
-import { AnnotationType, AbstractType, typeFac, Annotation } from '../types';
+import { AnnotationType, AbstractType, typeFac } from '../types';
 import { cleanObj, getParentType } from '../utils/lang';
 import { getType, isBoolean, isFunction, isPrimitive } from '../utils/chk';
 import {
@@ -10,9 +10,9 @@ import {
     ClassRef, TypeDef, ActionType,
     DecorContext, DecoratorOption
 } from './class';
-import { InvokeOptions } from '../context';
 import { Context, HandlerFn } from '../handler';
 import { HandlerScope } from '../lifescope/lifescope';
+import { InjectorOptions } from '../injector';
 
 
 
@@ -192,7 +192,7 @@ const decorMethodDesignParams = (ctx: DecorContext, next: HandlerFn, context: Co
 
 const decorMethodProviders = (ctx: DecorContext, next: HandlerFn, context: Context) => {
     if (ctx.define.actionType && ctx.define.actionType & ActionType.providers) {
-        const mpdrs = (ctx.define.metadata as MethodMetadata) as InvokeOptions;
+        const mpdrs = (ctx.define.metadata as MethodMetadata) as InjectorOptions;
         if (mpdrs) {
             ctx.classRef.setMethodOptions(ctx.define.propertyKey, mpdrs)
         }

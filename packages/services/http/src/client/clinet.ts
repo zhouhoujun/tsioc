@@ -48,7 +48,7 @@ export class Http extends AbstractClient<UrlRequestOptions, HttpRequest<any>, Ht
 
     protected connect(): Observable<any> {
         if (this.transport) return of(this.transport);
-        const context = this.handler.context;
+        const context = this.handler.injector;
         const options = this.getOptions();
         if (!options.authority) {
             this.transport = context.get(ClientTransportFactory).create(context, null, options);

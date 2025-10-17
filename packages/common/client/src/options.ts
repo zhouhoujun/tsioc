@@ -38,7 +38,7 @@ export interface ClientConfig<TConnOpts = any> extends ConfigableHandlerOptions<
     /**
      * client handler type.
      */
-    handlerType?: AbstractType<ClientHandler>;
+    scope?: AbstractType<ClientHandler>;
     /**
      * service transport factory.
      */

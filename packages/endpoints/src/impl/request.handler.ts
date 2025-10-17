@@ -37,6 +37,6 @@ export class DefaultRequestHandler<TInput extends RequestContext = RequestContex
 export function createRequestHandler<TInput extends RequestContext>(context: Injector | InvocationContext, options: RequestHandlerOptions<TInput>): RequestHandler<TInput> {
     options = normalizeConfigableHandlerOptions(options);
     const Type = options.classType ?? DefaultRequestHandler;
-    return new Type(createContext(context, options, options.handlerType), options);
+    return new Type(createContext(context, options, options.scope), options);
 }
 

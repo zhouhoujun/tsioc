@@ -144,7 +144,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
                     serverOpts.providers = [];
                 }
 
-                if (!serverOpts.handlerType) throw new ConfigMissingException(`Config Missing handlerType`);
+                if (!serverOpts.scope) throw new ConfigMissingException(`Config Missing handlerType`);
                 if (!serverOpts.transportFactory || serverOpts.transportFactory === ServerTransportFactory) throw new ConfigMissingException(`Config Missing transportFactory`);
 
                 if (microservice) {
@@ -177,7 +177,7 @@ function createServiceProviders(options: ServiceOptions, idx: number) {
                 }
 
                 providers.push({
-                    provide: serverOpts.handlerType,
+                    provide: serverOpts.scope,
                     useFactory: (injector: Injector) => {
                         const opts = lang.deepClone(serverOpts) as ServiceConfig;
                         return createRequestHandler(injector, opts)

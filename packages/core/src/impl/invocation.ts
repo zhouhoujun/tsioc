@@ -1,4 +1,4 @@
-import { InvocationContext, Invocation, createContext, getType, isFunction, isString, Injector, Type, Context, invokeTail, InvocationRequest } from '@tsdi/ioc';
+import { Invocation, getType, isFunction, isString, Type, Context, invokeTail } from '@tsdi/ioc';
 import { BackendFn } from '../ApplicationHandler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
@@ -22,7 +22,7 @@ export class DefaultInvocationHandler<
         readonly invocation: Invocation<T>,
         options: TOptions,
         readonly propertyKey?: string | symbol) {
-        super(createContext(invocation.injector, options), options)
+        super(invocation.injector, options)
         this.limit = options.limit;
 
     }
@@ -56,7 +56,7 @@ export class DefaultInvocationHandler<
                 input = context;
             } else {
                 newCtx = true;
-                const ctx = createContext(this.context, { request: input as InvocationRequest, resolvers: this.context.get(getResolverToken(input), []) });
+                const ctx = createContext(this.injector, { request: input as InvocationRequest, resolvers: this.injector.get(getResolverToken(input), []) });
                 ctx.setValue(getType(input), input);
                 if (context) this.attchContext(ctx, context, input)
                 input = ctx;
@@ -118,7 +118,7 @@ export class DefaultInvocationHandler<
 
     equals(other: InvocationHandler): boolean {
         return this.invocation.type === other.invocation.type
-            && this.context === other.context
+            && this.injector === other.context
             && this.options.response === (other as DefaultInvocationHandler).options.response
             && this.propertyKey === (other as DefaultInvocationHandler).propertyKey;
     }

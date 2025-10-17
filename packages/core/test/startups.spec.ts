@@ -1,4 +1,4 @@
-import { createContext, Injectable, Injector, lang, Module, Singleton, Static } from '@tsdi/ioc';
+import { createInjector, Injectable, Injector, lang, Module, Singleton, Static } from '@tsdi/ioc';
 import expect = require('expect');
 import { Application, ApplicationContext, Start } from '../src';
 import { ConfiguraionManger, Settings } from './demo';
@@ -10,7 +10,7 @@ export class MyStartupService {
     async configureService(ctx: ApplicationContext): Promise<void> {
         const defer = lang.defer<void>();
         setTimeout(() => {
-            ctx.setValue('MyStartup', 'start');
+            ctx.getInject().setValue('MyStartup', 'start');
             defer.resolve();
         })
 
@@ -23,7 +23,7 @@ export class MyStartupService1 {
 
     @Start({ order: 0 })
     async configureService(ctx: ApplicationContext): Promise<void> {
-        ctx.setValue('MyStartup1', 'start');
+        ctx.getInject().setValue('MyStartup1', 'start');
     }
 }
 
@@ -143,7 +143,7 @@ describe('app message queue', () => {
     })
 
     it('bean provide cache in context', () => {
-        const context = createContext(ctx);
+        const context = createInjector([], ctx);
         const settings = context.get(Settings) as Record<string, any>;
         expect(settings).toBeDefined();
         expect(settings.id).toEqual(3);

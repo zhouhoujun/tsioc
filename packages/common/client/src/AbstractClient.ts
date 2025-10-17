@@ -27,7 +27,7 @@ export abstract class AbstractClient<
     get formatter(): PatternFormatter {
         if (!this._formatter) {
             const formatter = this.getOptions().formatter;
-            this._formatter = formatter ? this.handler.context.get(formatter, defaultFormatter) : defaultFormatter;
+            this._formatter = formatter ? this.handler.injector.get(formatter, defaultFormatter) : defaultFormatter;
         }
         return this._formatter;
     }

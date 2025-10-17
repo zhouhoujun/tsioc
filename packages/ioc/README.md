@@ -664,7 +664,7 @@ container.register(Geet);
 
 container.invoke(Geet, gt=> gt.print, ... //inject providers.)
 
-let instance = container.resolve(Geet, )
+let instance = container.resolve(Geet)
 
 container.invoke(instance, gt=> gt.print, ...//inject providers.);
 container.invoke(instance, 'print', ...);

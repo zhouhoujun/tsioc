@@ -9,7 +9,6 @@ import { isArray } from './utils/chk';
 import { Exception } from './exception';
 import { Runtime } from './runtime';
 import { InterceptorLike } from './handler';
-import { isResolved } from './impl';
 
 /**
  * injector.
@@ -19,6 +18,8 @@ import { isResolved } from './impl';
  */
 @Abstract()
 export abstract class Injector implements Destroyable, OnDestroy {
+
+    isResolve?: boolean;
     used?: boolean;
 
     /**
@@ -81,10 +82,54 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * resolve token in context.
      * 
      * 解析上下文中标记指令的实例值
-     * @param token
+     * @param token token id {@link Token}.
      * @param flags InjectFalgs 
      */
     abstract resolve<T>(token: Token<T>, falgs?: InjectFlags): T;
+    /**
+     * resolve token instance with token and param provider.
+     * 
+     * 解析标记令牌的实例。
+     *
+     * @template T
+     * @param {Token<T>} token the token to resolve.
+     * @param {Injector} environment the environment injector to raise resove.
+     * @returns {T}
+     */
+    abstract resolve<T>(token: Token<T>, environment?: Injector): T;
+    /**
+     * resolve token instance with token and param provider.
+     * 
+     * 解析标记令牌的实例。
+     *
+     * @template T
+     * @param {Token<T>} token the resolve token {@link Token}.
+     * @param {Provider[]} providers the providers to resolve with token. array of {@link Provider}.
+     * @returns {T}
+     */
+    abstract resolve<T>(token: Token<T>, providers?: Provider[]): T;
+     /**
+     * resolve token instance with token and param provider.
+     * 
+     * 解析标记令牌的实例。
+     *
+     * @template T
+     * @param {Token<T>} token the resolve token {@link Token}.
+     * @param {option} option the option of type {@link ResolverOption}, use to resolve with token.
+     * @returns {T}
+     */
+    abstract resolve<T>(token: Token<T>, option?: InjectorOptions): T;
+    /**
+     * resolve token instance with token and param provider.
+     * 
+     * 解析标记令牌的实例。
+     *
+     * @template T
+     * @param {Token<T>} token the resolve token {@link Token}.
+     * @param {...Provider[]} providers the providers {@link Provider} to resolve with token.
+     * @returns {T}
+     */
+    abstract resolve<T>(token: Token<T>, ...providers: Provider[]): T;
     /**
      * resolve the parameter value.
      * 
@@ -128,51 +173,6 @@ export interface InjectOperator {
      * @param value singleton vaule
      */
     setSingleton<T>(token: Token<T>, value: T): this;
-
-    /**
-     * resolve token instance with token and param provider.
-     * 
-     * 解析标记令牌的实例。
-     *
-     * @template T
-     * @param {Token<T>} token the resolve token {@link Token}.
-     * @param {Provider[]} providers the providers to resolve with token. array of {@link Provider}.
-     * @returns {T}
-     */
-    resolve<T>(token: Token<T>, providers?: Provider[]): T;
-    /**
-     * resolve token instance with token and param provider.
-     * 
-     * 解析标记令牌的实例。
-     *
-     * @template T
-     * @param {Token<T>} token the resolve token {@link Token}.
-     * @param {option} option the option of type {@link ResolverOption}, use to resolve with token.
-     * @returns {T}
-     */
-    resolve<T>(token: Token<T>, option?: InjectorOptions): T;
-    // /**
-    //  * resolve token instance with token and param provider.
-    //  * 
-    //  * 解析标记令牌的实例。
-    //  *
-    //  * @template T
-    //  * @param {Token<T>} token the token to resolve.
-    //  * @param {InvocationContext} context invocation context type of {@link InvocationContext}, use to resolve with token.
-    //  * @returns {T}
-    //  */
-    // resolve<T>(token: Token<T>, context?: InvocationContext): T;
-    /**
-     * resolve token instance with token and param provider.
-     * 
-     * 解析标记令牌的实例。
-     *
-     * @template T
-     * @param {Token<T>} token the resolve token {@link Token}.
-     * @param {...Provider[]} providers the providers {@link Provider} to resolve with token.
-     * @returns {T}
-     */
-    resolve<T>(token: Token<T>, ...providers: Provider[]): T;
 
     /**
      * set value.
@@ -297,17 +297,17 @@ export interface InjectOperator {
      * @returns {TR} the returnning of invoked method.
      */
     invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, option?: InjectorOptions): TR;
-    // /**
-    //  * invoke method.
-    //  * 
-    //  * 调用类方法
-    //  * @template T
-    //  * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance
-    //  * @param {MethodType} propertyKey method name.
-    //  * @param {InvocationContext} context ivacation context.
-    //  * @returns {TR} the returnning of invoked method.
-    //  */
-    // invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
+    /**
+     * invoke method.
+     * 
+     * 调用类方法
+     * @template T
+     * @param {(T | AbstractType<T> | ClassRef<T>)} target type of class or instance
+     * @param {MethodType} propertyKey method name.
+     * @param {Injector} environment ivacation context.
+     * @returns {TR} the returnning of invoked method.
+     */
+    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, environment?: Injector): TR;
 }
 
 /**
@@ -332,10 +332,10 @@ export type TokenValue<T = any> = [Token<T>, T];
  * invoke providers.
  */
 export interface InjectorOptions {
-
+    /**
+     * is resovle or not.
+     */
     isResolve?: boolean;
-
-    parent?: Injector;
     /**
      * token values.
      * 

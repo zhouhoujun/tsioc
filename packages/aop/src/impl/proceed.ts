@@ -327,14 +327,14 @@ function invokeAdvice(joinPoint: JoinPoint, advicer: Advicer) {
         Operator.setValue(joinPoint, metadata.throwing, joinPoint.throwing)
     }
 
-    const context = advicer.aspect.injector;
-    if (context) {
-        joinPoint.addRef(context)
-    }
+    // const context = advicer.aspect.injector;
+    // if (context) {
+    //     joinPoint.addRef(context)
+    // }
 
     return invokeTail(() => advicer.aspect.invoke(advicer.advice.propertyKey!, joinPoint), {
-        finally: () => {
-            context && joinPoint.removeRef(context);
-        }
+        // finally: () => {
+        //     context && joinPoint.removeRef(context);
+        // }
     });
 }

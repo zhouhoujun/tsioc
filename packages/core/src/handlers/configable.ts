@@ -1,4 +1,4 @@
-import { Injector, ProvdierOf, StaticProvider, Type, Abstract, Token, AbstractType, InvokeProviders, InvocationContext } from '@tsdi/ioc';
+import { Injector, ProvdierOf, StaticProvider, Type, Abstract, Token, AbstractType, InjectorOptions } from '@tsdi/ioc';
 import { GuardLike, GuardsService } from '../guard';
 import { ApplicationInterceptorLike, InterceptorService } from '../ApplicationInterceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
@@ -26,7 +26,7 @@ export abstract class AbstractConfigableHandler<
     TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>,
     TContext = any> implements ApplicationHandler<TInput, TOutput, TContext>, HandlerService {
 
-    abstract get context(): InvocationContext;
+    abstract get injector(): Injector;
     abstract get ready(): Promise<void>;
 
     /**
@@ -84,11 +84,11 @@ export abstract class AbstractConfigableHandler<
 /**
  * Configable handler options.
  */
-export interface ConfigableHandlerOptions<TInput = any> extends InvokeProviders {
+export interface ConfigableHandlerOptions<TInput = any> extends InjectorOptions {
     /**
      * handler type.
      */
-    handlerType?: AbstractType<ApplicationHandler>;
+    scope?: AbstractType<ApplicationHandler>;
     /**
      * enable input type filters and interceptors chain for handler.
      */

@@ -86,7 +86,7 @@ export class HttpServer extends Server<HttpContext, HttpServConfig> implements L
         const opts = this.getOptions();
         this.validOptions(opts);
 
-        const context = this.handler.context;
+        const context = this.handler.injector;
 
         context.setValue(HttpServer, this);
         const loader = context.get(ModuleLoader);
@@ -124,7 +124,7 @@ export class HttpServer extends Server<HttpContext, HttpServConfig> implements L
         if (!this._server) throw new InternalServerException();
         const opts = this.getOptions();
 
-        const context = this.handler.context;
+        const context = this.handler.injector;
         const factory = context.get(ServerTransportFactory);
         const session = factory.create(context, this._server, opts);
         session.handle(this.handler, this.destroy$);

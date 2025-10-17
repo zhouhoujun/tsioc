@@ -7,11 +7,11 @@ import {
 } from './meta';
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { Provider, StaticProvider } from '../providers';
-import { ResolveInterceptorLike } from '../resolver';
-import { InvokeArguments, InvokeOptions } from '../context';
 import { getModuleType } from '../module.ref';
 import { getTypes } from '../utils/lang';
 import { ActionType, DecoratorOption, ModuleDef } from './class';
+import { InjectorOptions, ResolveInterceptorLike } from '../injector';
+import { InvokeArguments } from '../invocation';
 
 
 
@@ -191,7 +191,7 @@ export interface Autowired {
      * `Autowired` decorator with providers for method.
      * @param {InvokeOptions} [options] the invoke options for the method.
      */
-    (options?: InvokeOptions): MethodDecorator;
+    (options?: InjectorOptions): MethodDecorator;
 }
 
 
@@ -305,9 +305,9 @@ export interface Inject {
      * `Inject` decorator with providers for method.
      * 
      * 类方法的注入修饰器， 用于声明的类方法的扩展调用配置。 
-     * @param {InvokeOptions} [options] the invoke options for the method.
+     * @param {InjectorOptions} [options] the invoke options for the method.
      */
-    (options?: InvokeOptions): MethodDecorator;
+    (options?: InjectorOptions): MethodDecorator;
 }
 
 /**

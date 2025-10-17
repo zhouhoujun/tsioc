@@ -144,7 +144,7 @@ function clientProviders(options: ClientOptions, idx?: number) {
                     clientOpts.providers.push({ provide: ClientBackend, useClass: ClientTransportBackend });
                 }
 
-                if (!clientOpts.handlerType) throw new ConfigMissingException(`Config Missing handlerType`);
+                if (!clientOpts.scope) throw new ConfigMissingException(`Config Missing handlerType`);
                 if (!clientOpts.transportFactory || clientOpts.transportFactory == ClientTransportFactory) throw new ConfigMissingException(`Config Missing transportFactory`);
 
                 if (opts.imports) {
@@ -168,7 +168,7 @@ function clientProviders(options: ClientOptions, idx?: number) {
                     providers.push(toProvider(opts.clientType, opts.clientProvider));
                 }
                 providers.push({
-                    provide: clientOpts.handlerType,
+                    provide: clientOpts.scope,
                     useFactory: (injector: Injector) => {
                         return createHandler(injector, lang.deepClone(clientOpts));
                     },
@@ -179,7 +179,7 @@ function clientProviders(options: ClientOptions, idx?: number) {
                     {
                         provide: opts.client,
                         useFactory: (injector: Injector) => {
-                            return injector.getInject().resolve(opts.clientType, providers);
+                            return injector.resolve(opts.clientType, providers);
                         },
                         deps: [Injector]
 

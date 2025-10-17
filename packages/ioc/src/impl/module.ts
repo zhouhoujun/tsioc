@@ -94,18 +94,17 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 /**
  * create module ref.
  */
-export function createModuleRef<T>(module: Type<T> | ClassRef<T> | ModuleWithProviders<T>, parent: Injector, option?: ModuleOption): ModuleRef<T> {
+export function createModuleRef<T>(module: Type<T> | ClassRef<T> | ModuleWithProviders<T>, parent: Injector, options?: ModuleOption): ModuleRef<T> {
     if (isModuleProviders(module)) {
         return new DefaultModuleRef(getClassRef(module.module), {
-            ...option,
-            parent,
-            providers: option?.providers?.length ? [module.providers ?? [], option?.providers] : module.providers
+            ...options,
+            providers: options?.providers?.length ? [module.providers ?? [], options?.providers] : module.providers
         })
     }
     const moduleDef =  getClassify(module);
     if (!moduleDef.getAnnotation<ModuleDef>().module) {
         throw new Exception(`module def must be module type.`)
     }
-    return new DefaultModuleRef(moduleDef, option, parent)
+    return new DefaultModuleRef(moduleDef, options, parent)
 }
 

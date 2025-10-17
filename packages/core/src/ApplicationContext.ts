@@ -20,7 +20,7 @@ import { ApplicationEvent } from './ApplicationEvent';
  * 应用上下文环境
  */
 @Abstract()
-export abstract class ApplicationContext<T = object> implements ApplicationEventPublisher, Destroyable {
+export abstract class ApplicationContext<T = object> extends Injector implements ApplicationEventPublisher, Destroyable {
     /**
      * module instance.
      */
@@ -78,19 +78,6 @@ export abstract class ApplicationContext<T = object> implements ApplicationEvent
      * close application.
      */
     abstract close(): Promise<void>;
-    /**
-     * destroy application
-     */
-    abstract destroy(): Promise<void>;
-    /**
-     * destroyed or not.
-     */
-    abstract get  destroyed(): boolean;
-    /**
-     * register callback on destroy.
-     * @param callback destroy callback
-     */
-    abstract onDestroy(callback: DestroyCallback): void;
 
 }
 
