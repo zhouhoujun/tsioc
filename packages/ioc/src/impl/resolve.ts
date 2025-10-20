@@ -11,7 +11,7 @@ import { ModuleDef, ClassRef } from '../metadata/class';
 import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
 import { InvocationContext } from '../context';
 import { DesignContext } from '../lifescope/ctx';
-import { getRecords, Operator } from './operator';
+import { assertNotDestroyed, getRecords, Operator } from './operator';
 
 
 
@@ -386,7 +386,7 @@ export class NullInjectorException extends Exception {
  * @returns 
  */
 export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Runtime, parent: Injector | null,
-    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, isStatic?: boolean, setRecord?: (token: Token, val: any) => void): any {
+    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     try {
         const value = resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags, isStatic);
         const isDef = isDefined(value) && value !== notFoundValue;
@@ -394,13 +394,13 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
         //     rd.value = value;
         //     setRecord?.(token, value);
         // }
-         if (isDef && isStatic) { // && rd?.fn !== MUTIL) {
+        if (isDef && isStatic) { // && rd?.fn !== MUTIL) {
             if (rd) {
                 if (isNil(rd.value) && (rd.stic || !(flags & InjectFlags.Resolve))) {
                     rd.value = value
                 }
             } else {
-                if(!records.has(token)) records.set(token, { value })
+                if (!records.has(token)) records.set(token, { value })
             }
         }
         return value
@@ -420,8 +420,8 @@ export const THROW_FLAGE = {};
  * @param provider 
  * @returns 
  */
-export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Runtime, parent: Injector | null,
-    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
+export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Runtime,
+    parent: Injector | null, context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     if (rd && !(flags & InjectFlags.SkipSelf)) {
         let value = rd.value;
         if (value === CIRCULAR) {
@@ -483,7 +483,20 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                 return rd.fn?.(...deps)
         }
     } else if (parent && !(flags & InjectFlags.Self)) {
-        return parent.get(token, notFoundValue, (flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default, context)
+        assertNotDestroyed(parent);
+        const records = getRecords(parent);
+        const record = records.get(token);
+        return tryResolveToken(
+            token,
+            record,
+            records,
+            platform,
+            parent.getParent(),
+            context,
+            notFoundValue,
+            flags & InjectFlags.Resolve ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default,
+            record?.stic || (parent as { isStatic?: boolean }).isStatic);
+        // return parent.get(token, notFoundValue, (flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default, context)
     } else if (!(flags & InjectFlags.Optional)) {
         if (notFoundValue === THROW_FLAGE) {
             throw new NullInjectorException(token)
