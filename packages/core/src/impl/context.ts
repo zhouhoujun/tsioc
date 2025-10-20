@@ -27,7 +27,7 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
 
     private _multicaster: ApplicationEventMulticaster;
     exit = true;
-
+    // protected isStatic = false;
     private _runners: ApplicationRunners;
 
     /**
@@ -52,11 +52,6 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
     protected override initRequest(options: EnvironmentOption): void {
         this.request = options.request!
     }
-
-    // protected override createInjector(injector: ModuleRef, providers?: Provider[]): ModuleRef {
-    //     if (providers) injector.inject(providers);
-    //     return injector
-    // }
 
     get baseURL(): string {
         return this.get(PROCESS_ROOT)

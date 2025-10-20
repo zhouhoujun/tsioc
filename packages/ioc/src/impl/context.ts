@@ -28,6 +28,7 @@ import { DefaultInjectOperator } from './injector';
 export class DefaultInvocationContext<TParent extends Injector = Injector> extends InvocationContext<TParent> implements Destroyable, OnDestroy {
 
 
+    protected isStatic = true;
     @nonEnumerable
     protected _refs: InvocationContext[] | null;
     private _injected = false;
@@ -135,7 +136,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
     }
 
     getInject(): InjectOperator {
-        if(!this._operator) {
+        if (!this._operator) {
             this.assertNotDestroyed();
             this._operator = new DefaultInjectOperator(this);
         }
@@ -285,14 +286,11 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         const runtime = this.getRuntime();
         if (runtime.hasSingleton(token)) return runtime.getSingleton(token);
 
+        const isStatic = record?.stic ?? this.isStatic;
         return tryResolveToken(token, record, this.records, runtime, this._parent, context ?? this,
             notFoundValue ?? null,
-            flags ?? InjectFlags.Default, record?.stic ?? true)
+            flags ?? InjectFlags.Default, isStatic)
             ?? this.getFormRef(token, flags)
-        // ?? (flags != InjectFlags.HostOnly ? this.injector.get(token, null, flags, this) : null) as T;
-
-        // return (flags != InjectFlags.HostOnly ? this.injector.get(token, null, flags, this) : null)
-        //     ?? this.getFormRef(token, flags) ?? null as T
     }
 
     protected getFormRef<T>(token: Token<T>, flags?: InjectFlags): T | undefined {

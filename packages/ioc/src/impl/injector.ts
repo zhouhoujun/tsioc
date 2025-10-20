@@ -170,9 +170,10 @@ export class DefaultInjector extends Injector {
         if (runtime.hasSingleton(token)) return runtime.getSingleton(token);
 
         const record = this.records.get(token);
+        const isStatic = record?.stic ?? this.isStatic;
         return tryResolveToken(token, record, this.records, runtime, this._parent, context,
             notFoundValue === undefined ? THROW_FLAGE : notFoundValue,
-            flags ?? InjectFlags.Default, record?.stic ?? this.isStatic)
+            flags ?? InjectFlags.Default, isStatic)
     }
 
 

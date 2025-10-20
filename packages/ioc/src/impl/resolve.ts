@@ -386,17 +386,21 @@ export class NullInjectorException extends Exception {
  * @returns 
  */
 export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Runtime, parent: Injector | null,
-    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
+    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, isStatic?: boolean, setRecord?: (token: Token, val: any) => void): any {
     try {
         const value = resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags, isStatic);
         const isDef = isDefined(value) && value !== notFoundValue;
-        if (isDef && isStatic) { // && rd?.fn !== MUTIL) {
+        // if (isDef && isStatic && rd && (isNil(rd.value) && (rd.stic || !(flags & InjectFlags.Resolve)))) {
+        //     rd.value = value;
+        //     setRecord?.(token, value);
+        // }
+         if (isDef && isStatic) { // && rd?.fn !== MUTIL) {
             if (rd) {
                 if (isNil(rd.value) && (rd.stic || !(flags & InjectFlags.Resolve))) {
                     rd.value = value
                 }
             } else {
-                records.set(token, { value })
+                if(!records.has(token)) records.set(token, { value })
             }
         }
         return value
@@ -441,17 +445,19 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                 let val: any;
                 if (context && !(dep.token as FactoryRecord)?.fn) {
                     val = context.resolveArgument(isString(dep.token) ? { name: dep.token } : { provider: dep.token })
+                } else {
+                    val = tryResolveToken(
+                        dep.token,
+                        chlrd,
+                        records,
+                        platform,
+                        !chlrd && !(dep.options & OptionFlags.CheckParent) ? null : parent,
+                        context,
+                        dep.options & OptionFlags.Optional ? null : THROW_FLAGE,
+                        flags,
+                        chlrd?.stic || isStatic)
                 }
-                deps.push(val ?? tryResolveToken(
-                    dep.token,
-                    chlrd,
-                    records,
-                    platform,
-                    !chlrd && !(dep.options & OptionFlags.CheckParent) ? null : parent,
-                    context,
-                    dep.options & OptionFlags.Optional ? null : THROW_FLAGE,
-                    flags,
-                    isStatic))
+                deps.push(val);
             }
         }
         if (context && rd.fn !== IDENT && rd.fn !== MUTIL) {

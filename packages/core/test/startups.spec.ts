@@ -133,11 +133,11 @@ describe('app message queue', () => {
 
 
     it('has bean setting', () => {
-        const settings = ctx.get(Settings) as Record<string, any>;
+        const settings = ctx.getParent().get(Settings) as Record<string, any>;
         expect(settings).toBeDefined();
         expect(settings.id).toEqual(1);
         expect(settings.v).toEqual(1);
-        const settings2 = ctx.get(Settings) as Record<string, any>;
+        const settings2 = ctx.getParent().get(Settings) as Record<string, any>;
         expect(settings2.id).toEqual(2);
         expect(settings2.v).toEqual(1);
     })
@@ -151,6 +151,11 @@ describe('app message queue', () => {
         const settings2 = context.get(Settings) as Record<string, any>;
         expect(settings2.id).toEqual(3);
         expect(settings2.v).toEqual(1);
+
+        
+        const settings3 = ctx.get(Settings) as Record<string, any>;
+        expect(settings3.id).toEqual(3);
+        expect(settings3.v).toEqual(1);
     })
 
 
