@@ -134,14 +134,19 @@ export enum InjectFlags {
     HostOnly = 0b10000,
 
     /**
+     * None Singleton
+     */
+    NonSingleton = 0b100000,
+
+    /**
      * Resolve value with new Context.
      */
-    Resolve = 0b100000,
+    Resolve = 0b1000000,
 
     /**
      * Param provide with Request Context.
      */
-    Request = 0b1000000
+    Request = 0b10000000
 }
 
 

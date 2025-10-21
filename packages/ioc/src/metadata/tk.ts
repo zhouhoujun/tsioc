@@ -2,7 +2,7 @@ import { Token, tokenId } from '../tokens';
 import { Injector } from '../injector';
 
 /**
- * injector instance token of self.
+ * ROOT injector instance token of self.
  */
 export const INJECTOR: Token<Injector> = tokenId<Injector>('DI_INJECTOR');
 
@@ -11,8 +11,4 @@ export const INJECTOR: Token<Injector> = tokenId<Injector>('DI_INJECTOR');
  */
 export const CONTAINER: Token<Injector> = tokenId<Injector>('CONTAINER');
 
-/**
- * appliction root injector token.
- */
-export const ROOT_INJECTOR: Token<Injector> = tokenId<Injector>('ROOT_INJECTOR');
 

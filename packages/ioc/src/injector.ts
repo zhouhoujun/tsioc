@@ -30,12 +30,6 @@ export abstract class Injector implements Destroyable, OnDestroy {
      */
     abstract get ready(): Promise<void>;
     /**
-     * token size.
-     * 
-     * 已注册标记令牌长度。
-     */
-    abstract get size(): number;
-    /**
      * parent injector.
      * 
      * 上级容器。
@@ -72,10 +66,10 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @param {Token<T>} token token id {@link Token}.
      * @param {T} notFoundValue not found token, return this value.
      * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
-     * @param {InvocationContext} context invocation context. type of {@link InvocationContext}, use to resolve with token.
+     * @param {Injector} context invocation context. type of {@link Injector}, use to resolve with token.
      * @returns {T} token value.
      */
-    abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, context?: InvocationContext): T;
+    abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, raise?: Injector): T;
     
     /**
      * injector has destoryed or not.

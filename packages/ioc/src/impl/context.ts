@@ -104,8 +104,9 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
 
         this.initRequest(options);
 
+        const val = { value: this };
         getTypeChain(getType(this)).forEach(c => {
-            this.setValue(c, this);
+            this.records.set(c, val);
         });
 
         this.targetType = options.targetType;
@@ -216,10 +217,6 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         return this._resolvers;
     }
 
-    // protected createInjector(injector: TInj, providers?: Provider[]): TInj {
-    //     return createInjector(providers, injector, this.injectorScope) as TInj;
-    // }
-
     /**
      * add reference contexts.
      * @param contexts the list instance of {@link Injector} or {@link InvocationContext}.
@@ -277,17 +274,17 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
      * @param {Token<T>} token token id {@link Token}.
      * @param {T} notFoundValue not found token, return this value.
      * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
-     * @param {InvocationContext} context invocation context. type of {@link InvocationContext}, use to resolve with token.
+     * @param {Injector} raise invocation context. type of {@link Injector}, use to resolve with token.
      * @returns {T} token value.
      */
-    get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, context?: InvocationContext): T {
+    get<T>(token: Token<T>, notFoundValue?: T, flags: InjectFlags = InjectFlags.Default, raise?: Injector): T {
         this.assertNotDestroyed();
         const record = this.records.get(token);
         const runtime = this.getRuntime();
-        if (runtime.hasSingleton(token)) return runtime.getSingleton(token);
+        if (!(flags & InjectFlags.NonSingleton) && runtime.hasSingleton(token)) return runtime.getSingleton(token);
 
         const isStatic = record?.stic ?? this.isStatic;
-        return tryResolveToken(token, record, this.records, runtime, this._parent, context ?? this,
+        return tryResolveToken(token, record, this.records, runtime, this._parent, raise ?? this,
             notFoundValue ?? null,
             flags ?? InjectFlags.Default, isStatic)
             ?? this.getFormRef(token, flags)
@@ -467,11 +464,7 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
 
 
 INVOCATION_CONTEXT_IMPL.create = (parent: Injector, options?: TargetInvokeArguments, scope?: AbstractType | 'static') => {
-    // if (isInjector(parent)) {
     return new DefaultInvocationContext(parent, options, scope)
-    // } else {
-    //     return new DefaultInvocationContext(parent, { parent, ...options }, scope)
-    // }
 }
 
 const UNRESOLVED = {};

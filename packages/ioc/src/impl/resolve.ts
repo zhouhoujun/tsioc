@@ -11,7 +11,7 @@ import { ModuleDef, ClassRef } from '../metadata/class';
 import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
 import { InvocationContext } from '../context';
 import { DesignContext } from '../lifescope/ctx';
-import { assertNotDestroyed, getRecords, Operator } from './operator';
+import { getRecords, Operator } from './operator';
 
 
 
@@ -386,21 +386,17 @@ export class NullInjectorException extends Exception {
  * @returns 
  */
 export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Runtime, parent: Injector | null,
-    context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
+    raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     try {
-        const value = resolveToken(token, rd, records, platform, parent, context, notFoundValue, flags, isStatic);
+        const value = resolveToken(token, rd, records, platform, parent, raise, notFoundValue, flags, isStatic);
         const isDef = isDefined(value) && value !== notFoundValue;
-        // if (isDef && isStatic && rd && (isNil(rd.value) && (rd.stic || !(flags & InjectFlags.Resolve)))) {
-        //     rd.value = value;
-        //     setRecord?.(token, value);
-        // }
         if (isDef && isStatic) { // && rd?.fn !== MUTIL) {
             if (rd) {
                 if (isNil(rd.value) && (rd.stic || !(flags & InjectFlags.Resolve))) {
                     rd.value = value
                 }
             } else {
-                if (!records.has(token)) records.set(token, { value })
+                records.set(token, { value })
             }
         }
         return value
@@ -421,7 +417,7 @@ export const THROW_FLAGE = {};
  * @returns 
  */
 export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Runtime,
-    parent: Injector | null, context: InvocationContext | undefined, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
+    parent: Injector | null, raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     if (rd && !(flags & InjectFlags.SkipSelf)) {
         let value = rd.value;
         if (value === CIRCULAR) {
@@ -431,31 +427,35 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
         const deps = [];
         if (rd.fn === MUTIL) {
             if (parent && !(flags & InjectFlags.Self)) {
-                const values = parent.get(token, null, InjectFlags.Default, context);
+                const values = parent.get(token, null, InjectFlags.Default, raise);
                 if (values) {
                     deps.push(...values)
                 }
             }
         }
+        const context = raise instanceof InvocationContext ? raise : undefined;
         if (rd.deps?.length) {
             for (let i = 0; i < rd.deps.length; i++) {
                 const dep = rd.deps[i];
+                // let depFlags = InjectFlags.Default;
+
                 const chlrd = isPlainObject(dep.token) ? dep.token : (dep.options & OptionFlags.CheckSelf ? records.get(dep.token) : undefined);
 
                 let val: any;
                 if (context && !(dep.token as FactoryRecord)?.fn) {
                     val = context.resolveArgument(isString(dep.token) ? { name: dep.token } : { provider: dep.token })
                 } else {
-                    val = tryResolveToken(
+                    // val = raise.get(dep.token) // dep.options)
+                    val = chlrd?  tryResolveToken(
                         dep.token,
                         chlrd,
                         records,
                         platform,
                         !chlrd && !(dep.options & OptionFlags.CheckParent) ? null : parent,
-                        context,
+                        raise,
                         dep.options & OptionFlags.Optional ? null : THROW_FLAGE,
                         flags,
-                        chlrd?.stic || isStatic)
+                        chlrd?.stic || isStatic) : raise.get(dep.token) 
                 }
                 deps.push(val);
             }
@@ -483,20 +483,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                 return rd.fn?.(...deps)
         }
     } else if (parent && !(flags & InjectFlags.Self)) {
-        assertNotDestroyed(parent);
-        const records = getRecords(parent);
-        const record = records.get(token);
-        return tryResolveToken(
-            token,
-            record,
-            records,
-            platform,
-            parent.getParent(),
-            context,
-            notFoundValue,
-            flags & InjectFlags.Resolve ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default,
-            record?.stic || (parent as { isStatic?: boolean }).isStatic);
-        // return parent.get(token, notFoundValue, (flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default, context)
+        return parent.get(token, notFoundValue, ((flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default) & InjectFlags.NonSingleton, raise)
     } else if (!(flags & InjectFlags.Optional)) {
         if (notFoundValue === THROW_FLAGE) {
             throw new NullInjectorException(token)

@@ -8,13 +8,13 @@ import { MethodType, InjectorScope, RegisterOption, FactoryRecord, Injector, INJ
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef } from '../metadata/class';
-import { CONTAINER, INJECTOR, ROOT_INJECTOR } from '../metadata/tk';
+import { CONTAINER, INJECTOR } from '../metadata/tk';
 import { Provider, ModuleType } from '../providers';
 import { InvocationContext, InvokeOptions } from '../context';
 import { DefaultRuntime } from './runtime';
 import { DefaultInvocationFactory } from './invocation';
 import { InvocationFactory } from '../invocation';
-import { processInject,THROW_FLAGE, tryResolveToken } from './resolve';
+import { processInject, THROW_FLAGE, tryResolveToken } from './resolve';
 import { nonEnumerable } from '../metadata/decor';
 import { Operator } from './operator';
 
@@ -55,12 +55,9 @@ export class DefaultInjector extends Injector {
      */
     @nonEnumerable
     protected records: Map<Token, FactoryRecord>;
-    private isAlias?: null | ((token: Token) => boolean);
 
     @nonEnumerable
     private _parent: Injector | null;
-
-    
 
     constructor(providers: Provider[] = [], parent?: Injector, readonly scope?: InjectorScope) {
         super()
@@ -82,7 +79,6 @@ export class DefaultInjector extends Injector {
         switch (scope) {
             case 'platform':
                 platformAlias.forEach(tk => this.records.set(tk, val));
-                this.isAlias = isPlatformAlias;
                 this._runtime = new DefaultRuntime(this);
                 registerCores(this, this._runtime);
                 break;
@@ -91,7 +87,6 @@ export class DefaultInjector extends Injector {
                 this._runtime.register(this);
                 this._runtime.setInjector(scope, this);
                 rootAlias.forEach(tk => this.records.set(tk, val));
-                this.isAlias = isRootAlias;
                 break;
             case 'static':
                 this._runtime = this._parent!.getRuntime();
@@ -104,8 +99,7 @@ export class DefaultInjector extends Injector {
                     this._runtime.setInjector(scope, this);
                     SCOPE_PRODIDERS.length && Operator.inject(this, SCOPE_PRODIDERS);
                 }
-                injectAlias.forEach(tk => this.records.set(tk, val));
-                this.isAlias = this.isStatic ? isStaticAlias : isInjectAlias;
+                (this.isStatic ? staticInjectAlias : injectAlias).forEach(tk => this.records.set(tk, val));
                 break;
         }
     }
@@ -127,11 +121,6 @@ export class DefaultInjector extends Injector {
         return this._readyDefer.promise
     }
 
-
-    get size(): number {
-        return this.records.size
-    }
-
     getRuntime(): Runtime {
         return this._runtime!
     }
@@ -141,7 +130,7 @@ export class DefaultInjector extends Injector {
     }
 
     getInject(): InjectOperator {
-        if(!this._operator) {
+        if (!this._operator) {
             this.assertNotDestroyed();
             this._operator = new DefaultInjectOperator(this);
         }
@@ -151,7 +140,7 @@ export class DefaultInjector extends Injector {
 
     has<T>(token: Token<T>, flags = InjectFlags.Default): boolean {
         this.assertNotDestroyed();
-        if (this.getRuntime().hasSingleton(token)) return true;
+        if (!(flags & InjectFlags.NonSingleton) && this.getRuntime().hasSingleton(token)) return true;
         if (!(flags & InjectFlags.SkipSelf) && (this.records.has(token))) return true;
         if (!(flags & InjectFlags.Self)) {
             return this._parent?.has(token, flags) === true
@@ -159,21 +148,17 @@ export class DefaultInjector extends Injector {
         return false
     }
 
-    protected isself(token: Token): boolean {
-        return this.isAlias ? this.isAlias(token) : false
-    }
 
-    get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, context?: InvocationContext): T {
+
+    get<T>(token: Token<T>, notFoundValue?: T, flags: InjectFlags= InjectFlags.Default, raise?: Injector): T {
         this.assertNotDestroyed();
-        if (this.isself(token)) return this as any;
         const runtime = this.getRuntime();
-        if (runtime.hasSingleton(token)) return runtime.getSingleton(token);
-
+        if (!(flags & InjectFlags.NonSingleton) && runtime.hasSingleton(token)) return runtime.getSingleton(token);
         const record = this.records.get(token);
         const isStatic = record?.stic ?? this.isStatic;
-        return tryResolveToken(token, record, this.records, runtime, this._parent, context,
+        return tryResolveToken(token, record, this.records, runtime, this._parent,  raise ?? this,
             notFoundValue === undefined ? THROW_FLAGE : notFoundValue,
-            flags ?? InjectFlags.Default, isStatic)
+            flags, isStatic)
     }
 
 
@@ -244,7 +229,6 @@ export class DefaultInjector extends Injector {
         }
         this._runtime = null;
         this._operator = null;
-        this.isAlias = null;
         this._parent = null;
     }
 }
@@ -297,7 +281,7 @@ export class DefaultInjectOperator implements InjectOperator {
     inject(providers: Provider | Provider[]): this;
     inject(...providers: Provider[]): this;
     inject(...args: any[]): this {
-       Operator.inject(this.injector, ...args);
+        Operator.inject(this.injector, ...args);
         return this
     }
 
@@ -320,7 +304,7 @@ export class DefaultInjectOperator implements InjectOperator {
     register(types: (AbstractType | RegisterOption)[]): this;
     register(...types: (AbstractType | RegisterOption)[]): this;
     register(...args: any[]): this {
-       Operator.register(this.injector, ...args);
+        Operator.register(this.injector, ...args);
         return this
     }
 
@@ -328,7 +312,7 @@ export class DefaultInjectOperator implements InjectOperator {
         Operator.unregister(this.injector, token);
         return this
     }
-    
+
     invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
     invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
     invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
@@ -347,14 +331,11 @@ export class StaticInjector extends DefaultInjector {
 }
 
 
-const platformAlias = [Injector, INJECTOR, CONTAINER];
-const rootAlias = [Injector, INJECTOR, ROOT_INJECTOR];
-const injectAlias = [Injector, INJECTOR];
+const platformAlias = [Injector, CONTAINER];
+const rootAlias = [Injector, INJECTOR];
+const injectAlias = [Injector];
+const staticInjectAlias = [Injector, StaticInjector];
 
-const isPlatformAlias = (token: any) => token === Injector || token === INJECTOR || token === CONTAINER;
-const isRootAlias = (token: any) => token === Injector || token === INJECTOR || token == ROOT_INJECTOR;
-const isInjectAlias = (token: any) => token === Injector || token === INJECTOR;
-const isStaticAlias = (token: any) => token === StaticInjector;
 
 INJECT_IMPL.create = (providers: Provider[], parent?: Injector, scope?: InjectorScope) => {
     if (scope === 'static' || isFunction(scope)) {

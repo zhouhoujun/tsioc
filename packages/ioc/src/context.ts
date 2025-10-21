@@ -36,13 +36,6 @@ export abstract class InvocationContext<TParent extends Injector = Injector> imp
      */
     abstract get ready(): Promise<void>;
     /**
-     * token size.
-     * 
-     * 已注册标记令牌长度。
-     */
-    abstract get size(): number;
-
-    /**
      * is resolve context or not.
      */
     abstract get isResolve(): boolean;
