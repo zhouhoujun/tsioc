@@ -441,12 +441,12 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
 
                 const chlrd = isPlainObject(dep.token) ? dep.token : (dep.options & OptionFlags.CheckSelf ? records.get(dep.token) : undefined);
 
-                let val: any;
-                if (context && !(dep.token as FactoryRecord)?.fn) {
-                    val = context.resolveArgument(isString(dep.token) ? { name: dep.token } : { provider: dep.token })
-                } else {
+                // let val: any;
+                // if (context && !(dep.token as FactoryRecord)?.fn) {
+                //     val = context.resolveArgument(isString(dep.token) ? { name: dep.token } : { provider: dep.token })
+                // } else {
                     // val = raise.get(dep.token) // dep.options)
-                    val = chlrd?  tryResolveToken(
+                const val = chlrd?  tryResolveToken(
                         dep.token,
                         chlrd,
                         records,
@@ -455,8 +455,8 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                         raise,
                         dep.options & OptionFlags.Optional ? null : THROW_FLAGE,
                         flags,
-                        chlrd?.stic || isStatic) : raise.get(dep.token) 
-                }
+                        chlrd?.stic || isStatic) : raise.get(dep.token, dep.options & OptionFlags.Optional ? null : THROW_FLAGE, flags) 
+                // }
                 deps.push(val);
             }
         }
