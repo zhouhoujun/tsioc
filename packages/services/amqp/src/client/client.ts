@@ -59,7 +59,7 @@ export class AmqpClient extends AbstractClient<TopicRequestOptions, AmqpRequest<
         this._channel = await conn.createChannel();
         const options = this.getOptions();
 
-        const injector = this.handler.injector;
+        const context = this.handler.context;
 
         if (!options.noAssert) {
             // await chl.assertQueue(transportOpts.queue, transportOpts.queueOpts);
@@ -75,7 +75,7 @@ export class AmqpClient extends AbstractClient<TopicRequestOptions, AmqpRequest<
             ...options.consumeOpts
         });
 
-        this._transport = injector.get(ClientTransportFactory).create(injector, this._channel, options);
+        this._transport = context.get(ClientTransportFactory).create(context, this._channel, options);
     }
 
     protected async createConnection(retrys: number, retryDelay: number): Promise<amqp.Connection> {

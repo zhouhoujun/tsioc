@@ -45,14 +45,14 @@ export class UdpServer extends Server<RequestContext, UdpServConfig> {
         this.serv.on(ev.ERROR, (err) => {
             this.logger.error(err);
         });
-        const injector = this.handler.injector;
-        const factory = injector.get(ServerTransportFactory);
+        const context = this.handler.context;
+        const factory = context.get(ServerTransportFactory);
 
         const isSecure = false;
         if (!options.protocol) {
             options.protocol = isSecure ? 'udps' : 'udp';
         }
-        const transport = factory.create(injector, this.serv, options);
+        const transport = factory.create(context, this.serv, options);
 
         transport.handle(this.handler, merge(this.destroy$, fromEvent(this.serv, ev.CLOSE).pipe(first())));
 

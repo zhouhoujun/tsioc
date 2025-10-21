@@ -72,10 +72,10 @@ export class AmqpServer extends Server<RequestContext, AmqpServConfig> {
             ...options.consumeOpts
         });
 
-        const injector = this.handler.injector;
-        const router = getRouter(injector, options.protocol ?? 'amqp', true);
+        const context = this.handler.context;
+        const router = getRouter(context, options.protocol ?? 'amqp', true);
 
-        const transport = this._transport = injector.get(ServerTransportFactory).create(injector, channel, options);
+        const transport = this._transport = context.get(ServerTransportFactory).create(context, channel, options);
         transport.handle(this.handler, this.destroy$);
 
         this.logger.info(

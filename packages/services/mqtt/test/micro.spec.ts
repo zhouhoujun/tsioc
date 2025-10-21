@@ -87,7 +87,6 @@ export class MicroTestModule {
 
 describe('Mqtt Micro Service', () => {
     let ctx: ApplicationContext;
-    let injector: Injector;
 
     let client: MqttClient;
 
@@ -99,8 +98,8 @@ describe('Mqtt Micro Service', () => {
                 { provide: SENSORS, useValue: 'sensor02', multi: true }
             ]
         });
-        injector = ctx.injector;
-        client = injector.get(MqttClient);
+        
+        client = ctx.get(MqttClient);
     });
 
 

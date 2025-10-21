@@ -119,8 +119,8 @@ export class KafkaClient extends AbstractClient<TopicRequestOptions, KafkaReques
             options.runConfig = {};
         }
         this.socket = new KafkaSocket(consumer, producer, options.runConfig);
-        const injector = this.handler.injector;
-        this._transport = injector.get(ClientTransportFactory).create(injector, this.socket, options);
+        const context = this.handler.context;
+        this._transport = context.get(ClientTransportFactory).create(context, this.socket, options);
 
         if (!options.producerOnlyMode) {
             let topics: (string | RegExp)[];
@@ -130,7 +130,7 @@ export class KafkaClient extends AbstractClient<TopicRequestOptions, KafkaReques
                     return this.getReplyTopic(this.formatter.format(t));
                 });
             } else {
-                const { regExps, routes } = getRouter(injector, options.protocol ?? 'kafka', true).getPatterns();
+                const { regExps, routes } = getRouter(context, options.protocol ?? 'kafka', true).getPatterns();
                 topics = [...routes.map(t => this.getReplyTopic(t)), ...regExps.map(e => this.getReplyRegExpTopic(e))];
             }
             console.log(topics);

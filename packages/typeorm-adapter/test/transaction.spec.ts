@@ -21,7 +21,7 @@ export class TransactionTest {
             baseURL: __dirname
         });
 
-        const mgr = this.ctx.injector.get(TypeormAdapter).getConnection().manager;
+        const mgr = this.ctx.get(TypeormAdapter).getConnection().manager;
        
         await mgr.createQueryBuilder()
             .delete()

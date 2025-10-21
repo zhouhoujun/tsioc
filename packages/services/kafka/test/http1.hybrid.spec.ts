@@ -60,16 +60,15 @@ export class KafkaHttpTestModule {
 
 describe('Kafka hybrid Http Server & Kafka Client & Http', () => {
     let ctx: ApplicationContext;
-    let injector: Injector;
 
     let client: Http;
     let kafkaClient: KafkaClient
 
     before(async () => {
         ctx = await Application.run(KafkaHttpTestModule);
-        injector = ctx.injector;
-        kafkaClient = injector.get(KafkaClient);
-        client = injector.get(Http);
+
+        kafkaClient = ctx.get(KafkaClient);
+        client = ctx.get(Http);
     });
 
 

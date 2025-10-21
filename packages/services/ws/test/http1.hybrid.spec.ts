@@ -54,16 +54,14 @@ export class WsTestModule {
 
 describe('Ws hybrid Http Server & Ws Client & Http', () => {
     let ctx: ApplicationContext;
-    let injector: Injector;
 
     let client: Http;
     let wsClient: WsClient
 
     before(async () => {
         ctx = await Application.run(WsTestModule);
-        injector = ctx.injector;
-        wsClient = injector.get(WsClient);
-        client = injector.get(Http);
+        wsClient = ctx.get(WsClient);
+        client = ctx.get(Http);
     });
 
 

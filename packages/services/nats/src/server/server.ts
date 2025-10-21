@@ -36,8 +36,8 @@ export class NatsServer extends Server<RequestContext, NatsServConfig> {
 
         const options = this.getOptions();
 
-        const injector = this.handler.injector;
-        const router = getRouter(injector, options.protocol ?? 'nats', true);
+        const context = this.handler.context;
+        const router = getRouter(context, options.protocol ?? 'nats', true);
 
         const { routes } = router.getPatterns();
 
@@ -49,7 +49,7 @@ export class NatsServer extends Server<RequestContext, NatsServConfig> {
 
         const socket = this.socket;
 
-        const transport = this._transport = injector.get(ServerTransportFactory).create(injector, socket, options);
+        const transport = this._transport = context.get(ServerTransportFactory).create(context, socket, options);
 
         routes.map(sub => {
             socket.subscribe(sub, options.subscriptionOpts)

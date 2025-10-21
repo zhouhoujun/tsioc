@@ -78,16 +78,14 @@ export class WsTestModule {
 
 describe('Ws hybrid Tcp Server & Ws Client & TcpClient', () => {
     let ctx: ApplicationContext;
-    let injector: Injector;
 
     let client: TcpClient;
     let wsClient: WsClient
 
     before(async () => {
         ctx = await Application.run(WsTestModule);
-        injector = ctx.injector;
-        wsClient = injector.get(WsClient);
-        client = injector.get(TcpClient);
+        wsClient = ctx.get(WsClient);
+        client = ctx.get(TcpClient);
     });
 
 

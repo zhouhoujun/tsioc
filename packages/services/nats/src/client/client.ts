@@ -29,7 +29,7 @@ export class NatsClient extends AbstractClient<TopicRequestOptions, NatsRequest<
         const conn = await connect(options.connectOpts);
         this.socket = new NatsSocket(conn);
 
-        this._transport = this.handler.injector.get(ClientTransportFactory).create(this.handler.injector, this.socket, options);
+        this._transport = this.handler.context.get(ClientTransportFactory).create(this.handler.context, this.socket, options);
     }
 
     protected initContext(context: Context): void {

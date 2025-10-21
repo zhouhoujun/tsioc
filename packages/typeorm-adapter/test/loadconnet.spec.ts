@@ -26,19 +26,19 @@ export class LoadReposTest {
 
     @Test()
     async hasUserRepository() {
-        expect(this.ctx.injector.get(TypeormAdapter).getRepository(User)).toBeDefined();
-        // expect(this.ctx.injector.has(UserRepository)).toBeTruthy();
+        expect(this.ctx.get(TypeormAdapter).getRepository(User)).toBeDefined();
+        // expect(this.ctx.has(UserRepository)).toBeTruthy();
     }
 
     @Test()
     async canGetUserRepository() {
-        const rep = this.ctx.injector.get(TypeormAdapter).getRepository(User);
+        const rep = this.ctx.get(TypeormAdapter).getRepository(User);
         expect(rep).toBeInstanceOf(Repository);
     }
 
     @Test()
     async save() {
-        const rep = this.ctx.injector.get(TypeormAdapter).getRepository(User);
+        const rep = this.ctx.get(TypeormAdapter).getRepository(User);
         const newUr = new User();
         newUr.name = 'admin----test';
         newUr.account = 'admin----test';
@@ -52,7 +52,7 @@ export class LoadReposTest {
 
     @Test()
     async getUser0() {
-        const usrRep = this.ctx.injector.get(TypeormAdapter).getRepository(User);
+        const usrRep = this.ctx.get(TypeormAdapter).getRepository(User);
         expect(usrRep).toBeInstanceOf(Repository);
         const rep = await lastValueFrom(this.ctx.resolve(HttpClient).get<User>('/users/admin----test', { observe: 'response' }));
         expect(rep.status).toEqual(200);
@@ -62,7 +62,7 @@ export class LoadReposTest {
 
     @Test()
     async deleteUser() {
-        const rep = this.ctx.injector.get(TypeormAdapter).getRepository(User);
+        const rep = this.ctx.get(TypeormAdapter).getRepository(User);
         const svu = await rep.findOne({ where: { account: 'admin----test' } });
         const rmd = await rep.remove(svu!);
         expect(rmd).toBeDefined();

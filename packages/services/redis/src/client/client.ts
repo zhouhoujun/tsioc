@@ -62,7 +62,7 @@ export class RedisClient extends AbstractClient<TopicRequestOptions, RedisReques
         await this.subscriber.connect();
         await this.publisher.connect();
 
-        this._transport = this.handler.injector.get(ClientTransportFactory).create(this.handler.injector, {
+        this._transport = this.handler.context.get(ClientTransportFactory).create(this.handler.context, {
             subscriber: this.subscriber,
             publisher: this.publisher
         }, opts)

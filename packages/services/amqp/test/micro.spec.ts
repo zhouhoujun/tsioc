@@ -81,7 +81,6 @@ export class MicroTestModule {
 
 describe('Amqp Micro Service', () => {
     let ctx: ApplicationContext;
-    let injector: Injector;
 
     let client: AmqpClient;
 
@@ -93,8 +92,8 @@ describe('Amqp Micro Service', () => {
                 { provide: SENSORS, useValue: 'sensor02', multi: true },
             ]
         });
-        injector = ctx.injector;
-        client = injector.get(AmqpClient);
+        
+        client = ctx.get(AmqpClient);
     });
 
 

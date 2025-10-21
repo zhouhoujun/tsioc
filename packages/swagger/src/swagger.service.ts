@@ -25,7 +25,7 @@ export class SwaggerService {
 
     @Started()
     setup(ctx: ApplicationContext) {
-        const moduleRef = ctx.injector;
+        const moduleRef = ctx.getParent();
         const opts = moduleRef.get(SWAGGER_SETUP_OPTIONS, {} as SwaggerSetupOptions);
 
         const router = getRouter(moduleRef);

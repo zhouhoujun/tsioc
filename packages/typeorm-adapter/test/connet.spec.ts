@@ -23,19 +23,19 @@ export class ReposTest {
 
     @Test()
     async hasUserRepository() {
-        expect(this.ctx.injector.get(TypeOrmHelper).getRepository(User)).toBeDefined();
+        expect(this.ctx.get(TypeOrmHelper).getRepository(User)).toBeDefined();
         // expect(this.ctx.injector.has(UserRepository)).toBeTruthy();
     }
 
     @Test()
     async canGetUserRepository() {
-        const rep = this.ctx.injector.get(TypeormAdapter).getRepository(User);
+        const rep = this.ctx.get(TypeormAdapter).getRepository(User);
         expect(rep).toBeInstanceOf(Repository);
     }
 
     @Test()
     async save() {
-        const rep = this.ctx.injector.get(TypeormAdapter).getRepository(User);
+        const rep = this.ctx.get(TypeormAdapter).getRepository(User);
         const newUr = new User();
         newUr.name = 'admin----test';
         newUr.account = 'admin----test';
@@ -49,7 +49,7 @@ export class ReposTest {
 
     @Test()
     async deleteUser() {
-        const rep = this.ctx.injector.get(TypeormAdapter).getRepository(User);
+        const rep = this.ctx.get(TypeormAdapter).getRepository(User);
         const svu = await rep.findOne({ where: { account: 'admin----test' } });
         await rep.remove(svu!);
     }

@@ -62,8 +62,8 @@ export class MqttServer extends Server<RequestContext, MqttServConfig> {
         if (!this.mqtt) throw new Exception('Mqtt connection cannot be null');
 
         const options = this.getOptions();
-        const injector = this.handler.injector;
-        const router = getRouter(injector, options.protocol ?? 'mqtt', true);
+        const context = this.handler.context;
+        const router = getRouter(context, options.protocol ?? 'mqtt', true);
 
         const { routes } = router.getPatterns();
         if (options.content?.prefix) {
@@ -83,8 +83,8 @@ export class MqttServer extends Server<RequestContext, MqttServConfig> {
             });
 
 
-        const factory = injector.get(ServerTransportFactory);
-        const session = this._transport = factory.create(injector, this.mqtt, options);
+        const factory = context.get(ServerTransportFactory);
+        const session = this._transport = factory.create(context, this.mqtt, options);
         session.handle(this.handler, this.destroy$);
 
         this.logger.info(

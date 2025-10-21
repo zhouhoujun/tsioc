@@ -115,7 +115,6 @@ export class MicroTestModule {
 
 describe('Ws Micro Service', () => {
     let ctx: ApplicationContext;
-    let injector: Injector;
 
     let client: WsClient;
     let client2: WsClient;
@@ -128,10 +127,9 @@ describe('Ws Micro Service', () => {
                 { provide: SENSORS, useValue: 'sensor02', multi: true },
             ]
         });
-        injector = ctx.injector;
-        // client = injector.get(WsClient);
-        client = injector.get('ws1');
-        client2 = injector.get('ws2');
+        // client = ctx.get(WsClient);
+        client = ctx.get('ws1');
+        client2 = ctx.get('ws2');
     });
 
 

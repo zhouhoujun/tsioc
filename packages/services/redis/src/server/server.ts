@@ -61,15 +61,15 @@ export class RedisServer extends Server<RequestContext, RedisServConfig> {
         const subscriber = this.subscriber;
         const publisher = this.publisher;
 
-        const injector = this.handler.injector;
+        const context = this.handler.context;
 
-        const factory = injector.get(ServerTransportFactory);
-        const transport = this._transport = factory.create(injector, {
+        const factory = context.get(ServerTransportFactory);
+        const transport = this._transport = factory.create(context, {
             subscriber,
             publisher
         }, options);
 
-        const router = getRouter(injector, options.protocol ?? 'redis', true);
+        const router = getRouter(context, options.protocol ?? 'redis', true);
         
         const {paths, patterns} = router.getPatterns();
 

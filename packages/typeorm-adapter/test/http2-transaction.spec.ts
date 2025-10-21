@@ -22,9 +22,9 @@ export class Http2TransactionTest {
             baseURL: __dirname
         });
 
-        this.client = this.ctx.injector.resolve(Http);
+        this.client = this.ctx.resolve(Http);
 
-        const mgr = this.ctx.injector.get(TypeormAdapter).getConnection().manager;
+        const mgr = this.ctx.get(TypeormAdapter).getConnection().manager;
        
         await mgr.createQueryBuilder()
             .delete()

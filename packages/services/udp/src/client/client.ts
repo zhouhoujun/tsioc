@@ -32,8 +32,8 @@ export class UdpClient extends AbstractClient<UdpRequestOptions, UdpRequest<any>
             } as SocketOptions;
             this.socket = createSocket(connectOpts);
 
-            const injector = this.handler.injector;
-            this.session = injector.get(ClientTransportFactory).create(injector, this.socket, options);
+            const context = this.handler.context;
+            this.session = context.get(ClientTransportFactory).create(context, this.socket, options);
         }
     }
 

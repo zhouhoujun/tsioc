@@ -65,16 +65,15 @@ export class NatsTestModule {
 
 describe('Nats hybrid Tcp Server & Nats Client & TcpClient', () => {
     let ctx: ApplicationContext;
-    let injector: Injector;
 
     let client: TcpClient;
     let natsClient: NatsClient
 
     before(async () => {
         ctx = await Application.run(NatsTestModule);
-        injector = ctx.injector;
-        natsClient = injector.get(NatsClient);
-        client = injector.get(TcpClient);
+        
+        natsClient = ctx.get(NatsClient);
+        client = ctx.get(TcpClient);
     });
 
 

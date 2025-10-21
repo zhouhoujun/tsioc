@@ -96,10 +96,10 @@ export class KafkaServer extends Server<RequestContext, KafkaServConfig> {
     protected async onStart(): Promise<any> {
         await this.connnect();
         if (!this.socket) throw new ServiceUnavailableException();
-        const injector = this.handler.injector;
+        const context = this.handler.context;
         const options = this.getOptions();
 
-        const router = getRouter(injector, options.protocol ?? 'kafka', true);    
+        const router = getRouter(context, options.protocol ?? 'kafka', true);    
         if (options.content?.prefix) {
             const content = router.formatter.parseRegExp?.(`${options.content.prefix}.**`);
             if(content) {
@@ -115,7 +115,7 @@ export class KafkaServer extends Server<RequestContext, KafkaServConfig> {
 
     
 
-        const transport = this._transport = injector.get(ServerTransportFactory).create(injector, this.socket, options);
+        const transport = this._transport = context.get(ServerTransportFactory).create(context, this.socket, options);
 
         
         await this.socket.subscribe(topics, { fromBeginning: options.fromBeginning ?? true });

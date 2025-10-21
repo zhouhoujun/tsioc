@@ -67,16 +67,14 @@ export class RedisTestModule {
 
 describe('Redis hybrid Tcp Server & Redis Client & TcpClient', () => {
     let ctx: ApplicationContext;
-    let injector: Injector;
-
     let client: TcpClient;
     let redisClient: RedisClient
 
     before(async () => {
         ctx = await Application.run(RedisTestModule);
-        injector = ctx.injector;
-        redisClient = injector.get(RedisClient);
-        client = injector.get(TcpClient);
+
+        redisClient = ctx.get(RedisClient);
+        client = ctx.get(TcpClient);
     });
 
 

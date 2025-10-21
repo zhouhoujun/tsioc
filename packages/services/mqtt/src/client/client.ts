@@ -85,8 +85,8 @@ export class MqttClient extends AbstractClient<MqttReqOptions, MqttRequest<any>,
         const opts = options.connectOpts ?? {};
         const conn = (opts.url ? mqtt.connect(opts.url, opts) : mqtt.connect(opts));
 
-        const injector = this.handler.injector;
-        this._transport = injector.get(ClientTransportFactory).create(injector, conn, options);
+        const context = this.handler.context;
+        this._transport = context.get(ClientTransportFactory).create(context, conn, options);
         return conn;
     }
 

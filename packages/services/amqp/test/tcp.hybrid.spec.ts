@@ -66,16 +66,15 @@ export class AmqpTestModule {
 
 describe('Amqp hybrid Tcp Server & Amqp Client & TcpClient', () => {
     let ctx: ApplicationContext;
-    let injector: Injector;
 
     let client: TcpClient;
     let amqpClient: AmqpClient
 
     before(async () => {
         ctx = await Application.run(AmqpTestModule);
-        injector = ctx.injector;
-        amqpClient = injector.get(AmqpClient);
-        client = injector.get(TcpClient);
+        
+        amqpClient = ctx.get(AmqpClient);
+        client = ctx.get(TcpClient);
     });
 
 

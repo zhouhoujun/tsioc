@@ -88,7 +88,6 @@ export class MicroTestModule {
 
 describe('Redis Micro Service', () => {
     let ctx: ApplicationContext;
-    let injector: Injector;
 
     let client: RedisClient;
 
@@ -100,8 +99,7 @@ describe('Redis Micro Service', () => {
                 { provide: SENSORS, useValue: 'sensor02', multi: true },
             ]
         });
-        injector = ctx.injector;
-        client = injector.get(RedisClient);
+        client = ctx.get(RedisClient);
     });
 
 

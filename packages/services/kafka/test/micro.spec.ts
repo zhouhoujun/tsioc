@@ -95,7 +95,6 @@ export class MicroTestModule {
 
 describe('Kafka Micro Service', () => {
     let ctx: ApplicationContext;
-    let injector: Injector;
 
     let client: KafkaClient;
 
@@ -107,8 +106,8 @@ describe('Kafka Micro Service', () => {
                 { provide: SENSORS, useValue: 'sensor02', multi: true },
             ]
         });
-        injector = ctx.injector;
-        client = injector.get(KafkaClient);
+        
+        client = ctx.get(KafkaClient);
     });
 
     it('fetch json', async () => {

@@ -52,16 +52,14 @@ export class MqttTestModule {
 
 describe('Mqtt hybrid Http Server & Mqtt Client & Http', () => {
     let ctx: ApplicationContext;
-    let injector: Injector;
 
     let client: Http;
     let mqttClient: MqttClient
 
     before(async () => {
-        ctx = await Application.run(MqttTestModule);
-        injector = ctx.injector;
-        mqttClient = injector.get(MqttClient);
-        client = injector.get(Http);
+        ctx = await Application.run(MqttTestModule); 
+        mqttClient = ctx.get(MqttClient);
+        client = ctx.get(Http);
     });
 
 

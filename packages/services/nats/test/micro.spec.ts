@@ -87,7 +87,6 @@ export class MicroTestModule {
 
 describe('Nats Micro Service', () => {
     let ctx: ApplicationContext;
-    let injector: Injector;
 
     let client: NatsClient;
 
@@ -99,8 +98,8 @@ describe('Nats Micro Service', () => {
                 { provide: SENSORS, useValue: 'sensor02', multi: true },
             ]
         });
-        injector = ctx.injector;
-        client = injector.get(NatsClient);
+        
+        client = ctx.get(NatsClient);
     });
 
 

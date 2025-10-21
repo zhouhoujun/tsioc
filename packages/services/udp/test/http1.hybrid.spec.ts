@@ -55,16 +55,15 @@ export class UdpTestModule {
 
 describe('Udp hybrid Http Server & Udp Client & Http', () => {
     let ctx: ApplicationContext;
-    let injector: Injector;
 
     let client: Http;
     let udpClient: UdpClient
 
     before(async () => {
         ctx = await Application.run(UdpTestModule);
-        injector = ctx.injector;
-        udpClient = injector.get(UdpClient);
-        client = injector.get(Http);
+        
+        udpClient = ctx.get(UdpClient);
+        client = ctx.get(Http);
     });
 
 

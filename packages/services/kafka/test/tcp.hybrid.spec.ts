@@ -67,16 +67,15 @@ export class KafkaTcpTestModule {
 
 describe('Kafka hybrid Tcp Server & Kafka Client & TcpClient', () => {
     let ctx: ApplicationContext;
-    let injector: Injector;
 
     let client: TcpClient;
     let kafkaClient: KafkaClient
 
     before(async () => {
         ctx = await Application.run(KafkaTcpTestModule);
-        injector = ctx.injector;
-        kafkaClient = injector.get(KafkaClient);
-        client = injector.get(TcpClient);
+        
+        kafkaClient = ctx.get(KafkaClient);
+        client = ctx.get(TcpClient);
     });
 
 
