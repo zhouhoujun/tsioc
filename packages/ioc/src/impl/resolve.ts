@@ -385,10 +385,10 @@ export class NullInjectorException extends Exception {
  * @param provider 
  * @returns 
  */
-export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Runtime, parent: Injector | null,
+export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, runtime: Runtime, parent: Injector | null,
     raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     try {
-        const value = resolveToken(token, rd, records, platform, parent, raise, notFoundValue, flags, isStatic);
+        const value = resolveToken(token, rd, records, runtime, parent, raise, notFoundValue, flags, isStatic);
         const isDef = isDefined(value) && value !== notFoundValue;
         if (isDef && isStatic) { // && rd?.fn !== MUTIL) {
             if (rd) {
@@ -416,7 +416,7 @@ export const THROW_FLAGE = {};
  * @param provider 
  * @returns 
  */
-export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, platform: Runtime,
+export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, runtime: Runtime,
     parent: Injector | null, raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     if (rd && !(flags & InjectFlags.SkipSelf)) {
         let value = rd.value;
@@ -450,7 +450,7 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                         dep.token,
                         chlrd,
                         records,
-                        platform,
+                        runtime,
                         !chlrd && !(dep.options & OptionFlags.CheckParent) ? null : parent,
                         raise,
                         dep.options & OptionFlags.Optional ? null : THROW_FLAGE,
