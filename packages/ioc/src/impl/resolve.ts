@@ -2,8 +2,8 @@ import { AbstractType, Type } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { isPlainObject } from '../utils/obj';
 import { cleanObj, deepForEach } from '../utils/lang';
-import { isArray, isDefined, isFunction, isNumber, isString, isNil, isPromise, isAbstractType } from '../utils/chk';
-import { FnType, FactoryRecord, Injector, DependencyRecord, OptionFlags, RegOption, TypeOption } from '../injector';
+import { isArray, isDefined, isFunction, isNumber, isNil, isPromise, isAbstractType } from '../utils/chk';
+import { FnType, FactoryRecord, Injector, RegOption, TypeOption } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { getClassRef } from '../metadata/refl';
@@ -212,7 +212,7 @@ function registerProvider(injector: Injector, provider: StaticProviders) {
             })
         }
         if (multiPdr.deps) {
-            const mtltk = { token: generateRecord(injector, provider), options: OptionFlags.Default };
+            const mtltk = generateRecord(injector, provider);
             if (isNumber(provider.multiOrder)) {
                 multiPdr.deps.splice(provider.multiOrder, 0, mtltk)
             } else {
@@ -292,19 +292,24 @@ export function generateRecord<T>(injector: Injector, provider: StaticProviders)
     let fnType = FnType.Fac;
     let type = provider.useClass;
     const isStatic = provider.static;
-    let deps = computeDeps(provider);
+    let deps = provider.deps; //computeDeps(provider);
     if (isDefined(provider.useValue)) {
         value = provider.useValue
     } else if (provider.useFactory) {
         fn = provider.useFactory
     } else if (provider.useExisting) {
         // use ident.
+        if (deps) {
+            deps.unshift(provider.useExisting)
+        } else {
+            deps = [provider.useExisting]
+        }
 
     } else if (provider.useClass) {
         if (deps) {
-            deps.unshift({ token: provider.useClass, options: OptionFlags.Default })
+            deps.unshift(provider.useClass)
         } else {
-            deps = [{ token: provider.useClass, options: OptionFlags.Default }]
+            deps = [provider.useClass]
         }
         if (!injector.has(type, InjectFlags.Default)) {
             Operator.register(injector, { singleton: provider.singleton, type, deps, regProvides: false })
@@ -315,7 +320,7 @@ export function generateRecord<T>(injector: Injector, provider: StaticProviders)
             fn = provider.provide;
             type = provider.provide
         } else {
-            deps = [{ token: provider.provide, options: OptionFlags.Default }];
+            deps = [provider.provide];
             type = provider.provide;
             if (!injector.has(type, InjectFlags.Default)) {
                 Operator.register(injector, { singleton: provider.singleton, type, deps, regProvides: false })
@@ -323,41 +328,6 @@ export function generateRecord<T>(injector: Injector, provider: StaticProviders)
         }
     }
     return { value, fn, fy: fnType, deps, type, stic: isStatic }
-}
-
-function computeDeps(provider: StaticProviders): DependencyRecord[] {
-    let deps: any[] = null!;
-    const pdrdeps = provider.deps;
-    if (pdrdeps && pdrdeps.length) {
-        deps = pdrdeps.map(dep => {
-            let options = OptionFlags.Default;
-            let token = dep;
-            if (isArray(dep)) {
-                for (let i = 0; i < dep.length; i++) {
-                    const d = dep[i];
-                    if (isNumber(d)) {
-                        switch (d) {
-                            case InjectFlags.Optional:
-                                options = options | OptionFlags.Optional;
-                                break
-                            case InjectFlags.SkipSelf:
-                                options = options & ~OptionFlags.CheckSelf;
-                                break
-                            case InjectFlags.Self:
-                                options = options & ~OptionFlags.CheckParent;
-                                break
-                        }
-                    } else {
-                        token = d
-                    }
-                }
-            }
-            return { token, options }
-        });
-    } else if (provider.useExisting) {
-        deps = [{ token: provider.useExisting, options: OptionFlags.Default }]
-    }
-    return deps
 }
 
 const cirMsg = 'Circular dependency';
@@ -410,6 +380,58 @@ export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, rec
 
 export const THROW_FLAGE = {};
 
+function invokeArgs(runtime: Runtime, raise: Injector, records: Map<any, FactoryRecord>, deps: any[], parent: Injector | null, isStatic?: boolean) {
+    const args: any[] = [];
+    for (let i = 0; i < deps.length; i++) {
+        const dep = deps[i];
+        let depFlags = InjectFlags.Default;
+        let chlrd: FactoryRecord | undefined;
+        let depToken: Token;
+
+        if (isPlainObject(dep)) {
+            chlrd = dep;
+            depToken = dep.type;
+        } else if (isArray(dep)) {
+            depToken = dep[0];
+            dep.forEach(d => {
+                if (isNumber(d)) {
+                    depFlags |= d;
+                } else {
+                    depToken = d;
+                }
+            });
+            if (!(depFlags & InjectFlags.SkipSelf)) {
+                chlrd = records.get(depToken);
+            }
+        } else {
+            depToken = dep;
+            chlrd = records.get(depToken);
+        }
+
+        // const chlrd = isPlainObject(dep.token) ? dep.token : (dep.options & OptionFlags.CheckSelf ? records.get(dep.token) : undefined);
+
+        // let val: any;
+        // if (context && !(dep.token as FactoryRecord)?.fn) {
+        //     val = context.resolveArgument(isString(dep.token) ? { name: dep.token } : { provider: dep.token })
+        // } else {
+        // val = raise.get(dep.token) // dep.options)
+        const val = chlrd ? tryResolveToken(
+            depToken,
+            chlrd,
+            records,
+            runtime,
+            !(depFlags & InjectFlags.Self) ? parent : null,
+            raise,
+            depFlags & InjectFlags.Optional ? null : THROW_FLAGE,
+            depFlags,
+            chlrd?.stic || isStatic) : raise.get(depToken, (depFlags & InjectFlags.Optional) ? null : THROW_FLAGE, depFlags)
+        // }
+        args.push(val);
+    }
+
+    return args;
+}
+
 /**
  * resolve token.
  * @param rd 
@@ -433,35 +455,12 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
                 }
             }
         }
-        const context = raise instanceof InvocationContext ? raise : undefined;
+        // const context = raise instanceof InvocationContext ? raise : undefined;
         if (rd.deps?.length) {
-            for (let i = 0; i < rd.deps.length; i++) {
-                const dep = rd.deps[i];
-                // let depFlags = InjectFlags.Default;
-
-                const chlrd = isPlainObject(dep.token) ? dep.token : (dep.options & OptionFlags.CheckSelf ? records.get(dep.token) : undefined);
-
-                // let val: any;
-                // if (context && !(dep.token as FactoryRecord)?.fn) {
-                //     val = context.resolveArgument(isString(dep.token) ? { name: dep.token } : { provider: dep.token })
-                // } else {
-                    // val = raise.get(dep.token) // dep.options)
-                const val = chlrd?  tryResolveToken(
-                        dep.token,
-                        chlrd,
-                        records,
-                        runtime,
-                        !chlrd && !(dep.options & OptionFlags.CheckParent) ? null : parent,
-                        raise,
-                        dep.options & OptionFlags.Optional ? null : THROW_FLAGE,
-                        flags,
-                        chlrd?.stic || isStatic) : raise.get(dep.token, dep.options & OptionFlags.Optional ? null : THROW_FLAGE, flags) 
-                // }
-                deps.push(val);
-            }
+            deps.push(...invokeArgs(runtime, raise, records, rd.deps, parent, isStatic))
         }
-        if (context && rd.fn !== IDENT && rd.fn !== MUTIL) {
-            deps.push(context)
+        if (rd.fn !== IDENT && rd.fn !== MUTIL && raise instanceof InvocationContext) {
+            deps.push(raise)
         }
         switch (rd.fy) {
             case FnType.Cotr:
@@ -490,9 +489,6 @@ export function resolveToken(token: Token, rd: FactoryRecord | undefined, record
         }
         return notFoundValue ?? null
     } else {
-        if (notFoundValue === THROW_FLAGE) {
-            throw new NullInjectorException(token)
-        }
         return notFoundValue ?? null
     }
 }

@@ -1,6 +1,6 @@
 import { Type, Modules, AbstractType } from './types';
 import { InjectFlags, Token } from './tokens';
-import { Injector, OptionFlags } from './injector';
+import { Injector } from './injector';
 import { isPlainObject } from './utils/obj';
 import { isArray, isBoolean, isDefined, isFunction, isAbstractType } from './utils/chk';
 import { ArgumentException } from './exception';
@@ -69,7 +69,7 @@ export interface UseClass<T> extends ProviderExts, UseAsStatic {
      * 
      * [[token1, InjectFlags.SkipSelf], token2]
      */
-    deps?: (Token | [Token, ...InjectFlags[]] | { token: Token, options: OptionFlags })[];
+    deps?: Array<Token | [Token, ...InjectFlags[]]>;
     /**
      * singleton or not.
      */
@@ -136,7 +136,7 @@ export interface UseFactory<T> extends ProviderExts, UseAsStatic {
      * A list of `token`s which need to be resolved by the injector. The list of values is then
      * used as arguments to the `useFactory` function.
      */
-    deps?: (Token | [Token, ...InjectFlags[]] | { token: Token, options: OptionFlags })[];
+    deps?: Array<Token | [Token, ...InjectFlags[]]>;
 }
 
 /**
@@ -165,7 +165,7 @@ export interface ConstructorProvider<T = any> {
      * A list of `token`s which need to be resolved by the injector. The list of values is then
      * used as arguments to the `useFactory` function.
      */
-    deps?: (Token | [Token, ...InjectFlags[]] | { token: Token, options: OptionFlags })[];
+    deps?: Array<Token | [Token, ...InjectFlags[]]>;
 }
 
 
