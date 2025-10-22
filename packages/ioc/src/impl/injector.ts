@@ -3,7 +3,7 @@ import { AbstractType, Type, noPointcut } from '../types';
 import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { defer, getTypeName } from '../utils/lang';
-import { isFunction } from '../utils/chk';
+import { isNil, isFunction } from '../utils/chk';
 import { MethodType, InjectorScope, RegisterOption, FactoryRecord, Injector, INJECT_IMPL, InjectOperator } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
@@ -14,7 +14,7 @@ import { InvocationContext, InvokeOptions } from '../context';
 import { DefaultRuntime } from './runtime';
 import { DefaultInvocationFactory } from './invocation';
 import { InvocationFactory } from '../invocation';
-import { processInject, THROW_FLAGE, tryResolveToken } from './resolve';
+import { NullInjectorException, processInject, THROW_FLAGE, tryResolveToken } from './resolve';
 import { nonEnumerable } from '../metadata/decor';
 import { Operator } from './operator';
 
@@ -150,17 +150,47 @@ export class DefaultInjector extends Injector {
 
 
 
-    get<T>(token: Token<T>, notFoundValue?: T, flags: InjectFlags= InjectFlags.Default, raise?: Injector): T {
+    get<T>(token: Token<T>, notFoundValue?: any, flags: InjectFlags = InjectFlags.Default, raise?: Injector): T {
         this.assertNotDestroyed();
         const runtime = this.getRuntime();
-        if (!(flags & InjectFlags.NonSingleton) && runtime.hasSingleton(token)) return runtime.getSingleton(token);
-        const record = this.records.get(token);
-        const isStatic = record?.stic ?? this.isStatic;
-        return tryResolveToken(token, record, this.records, runtime, this._parent,  raise ?? this,
-            notFoundValue === undefined ? THROW_FLAGE : notFoundValue,
-            flags, isStatic)
-    }
 
+        // 检查单例缓存
+        if (!(flags & InjectFlags.NonSingleton) && runtime.hasSingleton(token)) return runtime.getSingleton(token);
+        if(notFoundValue === undefined){
+            notFoundValue = THROW_FLAGE!;
+        }
+        // 检查当前注入器记录
+        const record = this.records.get(token);
+        if (record && !(flags & InjectFlags.SkipSelf)) {
+            return tryResolveToken(token, record, this.records, runtime, this._parent, raise ?? this,
+                notFoundValue,
+                flags, record.stic ?? this.isStatic);
+        }
+
+        // 父注入器查找
+        if (this._parent && !(flags & InjectFlags.Self)) {
+            // const value = this._parent.get(token, notFoundValue, ((flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default) & InjectFlags.NonSingleton,  raise);
+            const value = this._parent.get(token, notFoundValue, ((flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default) & InjectFlags.NonSingleton, raise)
+            if(!isNil(value)) {
+                if(this.isStatic)  this.records.set(token, { value })
+                return value;
+            }
+        }
+
+        // 处理未找到的情况
+        let value: T;
+        if (!(flags & InjectFlags.Optional)) {
+            if (notFoundValue === THROW_FLAGE) {
+                throw new NullInjectorException(token);
+            }
+            value = notFoundValue ?? null!;
+        } else {
+            value = notFoundValue ?? null!;
+        }
+        
+        // if(this.isStatic)  this.records.set(token, { value })
+        return value;
+    }
 
     protected assertNotDestroyed(): void {
         assertNotDestroyed(this);

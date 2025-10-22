@@ -1,7 +1,7 @@
 import { AbstractType } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getTypeName, getTypeChain, defer } from '../utils/lang';
-import { isArray, isDefined, isFunction, isString, isAbstractType, getType, isType } from '../utils/chk';
+import { isArray, isFunction, isString, isAbstractType, getType, isType, isNil, isUndefined } from '../utils/chk';
 import { ResolveInterceptorLike, Parameter } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeArguments, InvocationRequest } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
@@ -17,7 +17,7 @@ import { HandlerScope } from '../lifescope/lifescope';
 import { Runtime } from '../runtime';
 import { nonEnumerable } from '../metadata/decor';
 import { assertNotDestroyed, Operator } from './operator';
-import { processInject, THROW_FLAGE, tryResolveToken } from './resolve';
+import { NullInjectorException, processInject, THROW_FLAGE, tryResolveToken } from './resolve';
 import { DefaultInjectOperator } from './injector';
 
 
@@ -279,22 +279,59 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
      */
     get<T>(token: Token<T>, notFoundValue?: T, flags: InjectFlags = InjectFlags.Default, raise?: Injector): T {
         this.assertNotDestroyed();
-        const record = this.records.get(token);
         const runtime = this.getRuntime();
         if (!(flags & InjectFlags.NonSingleton) && runtime.hasSingleton(token)) return runtime.getSingleton(token);
 
-        const isStatic = record?.stic ?? this.isStatic;
-        return tryResolveToken(token, record, this.records, runtime, this._parent, raise ?? this,
-            notFoundValue ?? null,
-            flags ?? InjectFlags.Default, isStatic)
-            ?? this.getFormRef(token, flags)
+        if (isUndefined(notFoundValue) && !(flags & InjectFlags.Optional)) notFoundValue = null!;
+        // 检查当前注入器记录
+        const record = this.records.get(token);
+        if (record && !(flags & InjectFlags.SkipSelf)) {
+            return tryResolveToken(token, record, this.records, runtime, this._parent, raise ?? this,
+                notFoundValue,
+                flags, record.stic ?? this.isStatic);
+        }
+
+        // 父注入器查找
+        if (this._parent && !(flags & InjectFlags.Self)) {
+            const value = this._parent.get(token, notFoundValue,
+                ((flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default) & InjectFlags.NonSingleton,
+                raise);
+
+            if (!isNil(value)) {
+                if (this.isStatic) this.records.set(token, { value })
+                return value;
+            }
+        }
+
+        if (this._refs?.length) {
+            const value = this.getFormRef(token, flags);
+            if (!isNil(value)) {
+                if (this.isStatic) this.records.set(token, { value })
+                return value;
+            }
+        }
+
+
+        // 处理未找到的情况
+        let value: T;
+        if (!(flags & InjectFlags.Optional)) {
+            if (notFoundValue === THROW_FLAGE) {
+                throw new NullInjectorException(token);
+            }
+            value = notFoundValue!;
+        } else {
+            value = notFoundValue!;
+        }
+
+        // if (this.isStatic)  this.records.set(token, { value })
+        return value;
     }
 
     protected getFormRef<T>(token: Token<T>, flags?: InjectFlags): T | undefined {
         let val: T | undefined;
         this._refs!.some(r => {
             val = r.get(token, undefined, flags);
-            return isDefined(val)
+            return !isNil(val);
         });
 
         return val
@@ -532,7 +569,7 @@ export function getParameterResolver(platform: Runtime): HandlerScope<Parameter,
                 },
                 (input, next, context) => {
 
-                    if (isDefined(input.defaultValue)) {
+                    if (!isNil(input.defaultValue)) {
                         return input.defaultValue;
                     }
                     if (input.nullable === true || (input.flags && !!(input.flags & InjectFlags.Optional))) {

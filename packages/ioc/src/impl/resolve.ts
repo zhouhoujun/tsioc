@@ -355,19 +355,25 @@ export class NullInjectorException extends Exception {
  * @param provider 
  * @returns 
  */
-export function tryResolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, runtime: Runtime, parent: Injector | null,
+export function tryResolveToken(token: Token, rd: FactoryRecord, records: Map<any, FactoryRecord>, runtime: Runtime, parent: Injector | null,
     raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     try {
         const value = resolveToken(token, rd, records, runtime, parent, raise, notFoundValue, flags, isStatic);
         const isDef = isDefined(value) && value !== notFoundValue;
         if (isDef && isStatic) { // && rd?.fn !== MUTIL) {
-            if (rd) {
-                if (isNil(rd.value) && (rd.stic || !(flags & InjectFlags.Resolve))) {
-                    rd.value = value
-                }
-            } else {
-                records.set(token, { value })
+            if (isNil(rd.value) && (rd.stic || !(flags & InjectFlags.Resolve))) {
+                rd.value = value
             }
+            if(!raise.has(token)){
+                Operator.setValue(raise, token, value);
+            }
+            // if (rd) {
+            // if (isNil(rd.value) && (rd.stic || !(flags & InjectFlags.Resolve))) {
+            //     rd.value = value
+            // }
+            // } else {
+            //     records.set(token, { value })
+            // }
         }
         return value
     } catch (e) {
@@ -438,58 +444,58 @@ function invokeArgs(runtime: Runtime, raise: Injector, records: Map<any, Factory
  * @param provider 
  * @returns 
  */
-export function resolveToken(token: Token, rd: FactoryRecord | undefined, records: Map<any, FactoryRecord>, runtime: Runtime,
+export function resolveToken(token: Token, rd: FactoryRecord, records: Map<any, FactoryRecord>, runtime: Runtime,
     parent: Injector | null, raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
-    if (rd && !(flags & InjectFlags.SkipSelf)) {
-        let value = rd.value;
-        if (value === CIRCULAR) {
-            throw new CircularDependencyException()
-        }
-        if (isDefined(rd.value) && value !== Empty && (rd.stic || !(flags & InjectFlags.Resolve))) return rd.value;
-        const deps = [];
-        if (rd.fn === MUTIL) {
-            if (parent && !(flags & InjectFlags.Self)) {
-                const values = parent.get(token, null, InjectFlags.Default, raise);
-                if (values) {
-                    deps.push(...values)
-                }
+    // if (rd && !(flags & InjectFlags.SkipSelf)) {
+    let value = rd.value;
+    if (value === CIRCULAR) {
+        throw new CircularDependencyException()
+    }
+    if (isDefined(rd.value) && value !== Empty && (rd.stic || !(flags & InjectFlags.Resolve))) return rd.value;
+    const deps = [];
+    if (rd.fn === MUTIL) {
+        if (parent && !(flags & InjectFlags.Self)) {
+            const values = parent.get(token, null, InjectFlags.Default, raise);
+            if (values) {
+                deps.push(...values)
             }
         }
-        // const context = raise instanceof InvocationContext ? raise : undefined;
-        if (rd.deps?.length) {
-            deps.push(...invokeArgs(runtime, raise, records, rd.deps, parent, isStatic))
-        }
-        if (rd.fn !== IDENT && rd.fn !== MUTIL && raise instanceof InvocationContext) {
-            deps.push(raise)
-        }
-        switch (rd.fy) {
-            case FnType.Cotr:
-                return new (rd.fn as Type)(...deps)
-            case FnType.Fac:
-                if (value === Empty) {
-                    return rd.value = value = rd.fn?.(...deps)
-                }
-                return rd.fn?.(...deps)
-            case FnType.Inj:
-            default:
-                if (rd.expires) {
-                    if (rd.expires < Date.now()) {
-                        return rd.cache!
-                    }
-                    rd.expires = null!;
-                    rd.cache = null!;
-                }
-                return rd.fn?.(...deps)
-        }
-    } else if (parent && !(flags & InjectFlags.Self)) {
-        return parent.get(token, notFoundValue, ((flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default) & InjectFlags.NonSingleton, raise)
-    } else if (!(flags & InjectFlags.Optional)) {
-        if (notFoundValue === THROW_FLAGE) {
-            throw new NullInjectorException(token)
-        }
-        return notFoundValue ?? null
-    } else {
-        return notFoundValue ?? null
     }
+    // const context = raise instanceof InvocationContext ? raise : undefined;
+    if (rd.deps?.length) {
+        deps.push(...invokeArgs(runtime, raise, records, rd.deps, parent, isStatic))
+    }
+    if (rd.fn !== IDENT && rd.fn !== MUTIL && raise instanceof InvocationContext) {
+        deps.push(raise)
+    }
+    switch (rd.fy) {
+        case FnType.Cotr:
+            return new (rd.fn as Type)(...deps)
+        case FnType.Fac:
+            if (value === Empty) {
+                return rd.value = value = rd.fn?.(...deps)
+            }
+            return rd.fn?.(...deps)
+        case FnType.Inj:
+        default:
+            if (rd.expires) {
+                if (rd.expires < Date.now()) {
+                    return rd.cache!
+                }
+                rd.expires = null!;
+                rd.cache = null!;
+            }
+            return rd.fn?.(...deps)
+    }
+    // } else if (parent && !(flags & InjectFlags.Self)) {
+    //     return parent.get(token, notFoundValue, ((flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default) & InjectFlags.NonSingleton, raise)
+    // } else if (!(flags & InjectFlags.Optional)) {
+    //     if (notFoundValue === THROW_FLAGE) {
+    //         throw new NullInjectorException(token)
+    //     }
+    //     return notFoundValue ?? null
+    // } else {
+    //     return notFoundValue ?? null
+    // }
 }
 
