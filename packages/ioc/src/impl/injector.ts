@@ -156,25 +156,29 @@ export class DefaultInjector extends Injector {
 
         // 检查单例缓存
         if (!(flags & InjectFlags.NonSingleton) && runtime.hasSingleton(token)) return runtime.getSingleton(token);
-        if(notFoundValue === undefined){
+        if (notFoundValue === undefined) {
             notFoundValue = THROW_FLAGE!;
         }
         // 检查当前注入器记录
         const record = this.records.get(token);
         if (record && !(flags & InjectFlags.SkipSelf)) {
-            return tryResolveToken(token, record, this.records, runtime, this._parent, raise ?? this,
+            return tryResolveToken(token, record, runtime, this, raise ?? this,
                 notFoundValue,
-                flags, record.stic ?? this.isStatic);
+                flags, this.isStatic);
         }
 
         // 父注入器查找
         if (this._parent && !(flags & InjectFlags.Self)) {
-            // const value = this._parent.get(token, notFoundValue, ((flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default) & InjectFlags.NonSingleton,  raise);
-            const value = this._parent.get(token, notFoundValue, ((flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default) & InjectFlags.NonSingleton, raise)
-            if(!isNil(value)) {
-                if(this.isStatic)  this.records.set(token, { value })
-                return value;
+            const value = this._parent.get(
+                token,
+                notFoundValue,
+                flags & InjectFlags.NonSingleton,
+                raise ?? this);
+
+            if (this.isStatic && !isNil(value)) {
+                this.records.set(token, { value })
             }
+            return value;
         }
 
         // 处理未找到的情况
@@ -187,8 +191,8 @@ export class DefaultInjector extends Injector {
         } else {
             value = notFoundValue ?? null!;
         }
-        
-        // if(this.isStatic)  this.records.set(token, { value })
+
+        // if (this.isStatic) this.records.set(token, { value })
         return value;
     }
 

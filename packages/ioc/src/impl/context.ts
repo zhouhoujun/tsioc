@@ -258,7 +258,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
      */
     has(token: Token, flags = InjectFlags.Default): boolean {
         this.assertNotDestroyed();
-        if (this.getRuntime().hasSingleton(token)) return true;
+        if (!(flags & InjectFlags.NonSingleton) && this.getRuntime().hasSingleton(token)) return true;
         if (!(flags & InjectFlags.SkipSelf) && (this.records.has(token))) return true;
         if (!(flags & InjectFlags.Self)) {
             return this._parent?.has(token, flags) === true
@@ -282,20 +282,22 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         const runtime = this.getRuntime();
         if (!(flags & InjectFlags.NonSingleton) && runtime.hasSingleton(token)) return runtime.getSingleton(token);
 
-        if (isUndefined(notFoundValue) && !(flags & InjectFlags.Optional)) notFoundValue = null!;
         // 检查当前注入器记录
         const record = this.records.get(token);
         if (record && !(flags & InjectFlags.SkipSelf)) {
-            return tryResolveToken(token, record, this.records, runtime, this._parent, raise ?? this,
-                notFoundValue,
-                flags, record.stic ?? this.isStatic);
+            const value = tryResolveToken(token, record, runtime, this, raise ?? this,
+                null,
+                flags, this.isStatic);
+            if (!isNil(value)) return value;
         }
 
         // 父注入器查找
         if (this._parent && !(flags & InjectFlags.Self)) {
-            const value = this._parent.get(token, notFoundValue,
-                ((flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default) & InjectFlags.NonSingleton,
-                raise);
+            const value = this._parent.get(
+                token,
+                null,
+                flags & InjectFlags.NonSingleton,
+                raise ?? this);
 
             if (!isNil(value)) {
                 if (this.isStatic) this.records.set(token, { value })
@@ -318,12 +320,12 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
             if (notFoundValue === THROW_FLAGE) {
                 throw new NullInjectorException(token);
             }
-            value = notFoundValue!;
+            value = notFoundValue ?? null!;
         } else {
-            value = notFoundValue!;
+            value = notFoundValue ?? null!;
         }
 
-        // if (this.isStatic)  this.records.set(token, { value })
+        // if (this.isStatic) this.records.set(token, { value })
         return value;
     }
 

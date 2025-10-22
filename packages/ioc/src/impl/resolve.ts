@@ -355,18 +355,16 @@ export class NullInjectorException extends Exception {
  * @param provider 
  * @returns 
  */
-export function tryResolveToken(token: Token, rd: FactoryRecord, records: Map<any, FactoryRecord>, runtime: Runtime, parent: Injector | null,
+export function tryResolveToken(token: Token, rd: FactoryRecord, runtime: Runtime, injector: Injector,
     raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     try {
-        const value = resolveToken(token, rd, records, runtime, parent, raise, notFoundValue, flags, isStatic);
+        const value = resolveToken(token, rd, runtime, injector, raise, notFoundValue, flags, isStatic);
         const isDef = isDefined(value) && value !== notFoundValue;
         if (isDef && isStatic) { // && rd?.fn !== MUTIL) {
-            if (isNil(rd.value) && (rd.stic || !(flags & InjectFlags.Resolve))) {
+            if (isNil(rd.value) && rd.stic !== false && !(flags & InjectFlags.Resolve)) {
                 rd.value = value
             }
-            if(!raise.has(token)){
-                Operator.setValue(raise, token, value);
-            }
+            
             // if (rd) {
             // if (isNil(rd.value) && (rd.stic || !(flags & InjectFlags.Resolve))) {
             //     rd.value = value
@@ -386,7 +384,7 @@ export function tryResolveToken(token: Token, rd: FactoryRecord, records: Map<an
 
 export const THROW_FLAGE = {};
 
-function invokeArgs(runtime: Runtime, raise: Injector, records: Map<any, FactoryRecord>, deps: any[], parent: Injector | null, isStatic?: boolean) {
+function invokeArgs(runtime: Runtime, injector: Injector, raise: Injector, deps: any[], isStatic?: boolean) {
     const args: any[] = [];
     for (let i = 0; i < deps.length; i++) {
         const dep = deps[i];
@@ -406,12 +404,12 @@ function invokeArgs(runtime: Runtime, raise: Injector, records: Map<any, Factory
                     depToken = d;
                 }
             });
-            if (!(depFlags & InjectFlags.SkipSelf)) {
-                chlrd = records.get(depToken);
-            }
+            // if (!(depFlags & InjectFlags.SkipSelf)) {
+            //     chlrd = getRecords(injector).get(depToken);
+            // }
         } else {
             depToken = dep;
-            chlrd = records.get(depToken);
+            // chlrd = getRecords(injector).get(depToken);
         }
 
         // const chlrd = isPlainObject(dep.token) ? dep.token : (dep.options & OptionFlags.CheckSelf ? records.get(dep.token) : undefined);
@@ -424,13 +422,12 @@ function invokeArgs(runtime: Runtime, raise: Injector, records: Map<any, Factory
         const val = chlrd ? tryResolveToken(
             depToken,
             chlrd,
-            records,
             runtime,
-            !(depFlags & InjectFlags.Self) ? parent : null,
+            injector,
             raise,
             depFlags & InjectFlags.Optional ? null : THROW_FLAGE,
             depFlags,
-            chlrd?.stic || isStatic) : raise.get(depToken, (depFlags & InjectFlags.Optional) ? null : THROW_FLAGE, depFlags)
+            chlrd?.stic || isStatic) : raise.get(depToken, undefined, depFlags)
         // }
         args.push(val);
     }
@@ -444,8 +441,8 @@ function invokeArgs(runtime: Runtime, raise: Injector, records: Map<any, Factory
  * @param provider 
  * @returns 
  */
-export function resolveToken(token: Token, rd: FactoryRecord, records: Map<any, FactoryRecord>, runtime: Runtime,
-    parent: Injector | null, raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
+export function resolveToken(token: Token, rd: FactoryRecord, runtime: Runtime,
+    injector: Injector, raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     // if (rd && !(flags & InjectFlags.SkipSelf)) {
     let value = rd.value;
     if (value === CIRCULAR) {
@@ -454,8 +451,9 @@ export function resolveToken(token: Token, rd: FactoryRecord, records: Map<any, 
     if (isDefined(rd.value) && value !== Empty && (rd.stic || !(flags & InjectFlags.Resolve))) return rd.value;
     const deps = [];
     if (rd.fn === MUTIL) {
+        const parent = injector?.getParent();
         if (parent && !(flags & InjectFlags.Self)) {
-            const values = parent.get(token, null, InjectFlags.Default, raise);
+            const values = parent.get(token, null, flags, raise);
             if (values) {
                 deps.push(...values)
             }
@@ -463,7 +461,7 @@ export function resolveToken(token: Token, rd: FactoryRecord, records: Map<any, 
     }
     // const context = raise instanceof InvocationContext ? raise : undefined;
     if (rd.deps?.length) {
-        deps.push(...invokeArgs(runtime, raise, records, rd.deps, parent, isStatic))
+        deps.push(...invokeArgs(runtime, injector, raise, rd.deps, isStatic))
     }
     if (rd.fn !== IDENT && rd.fn !== MUTIL && raise instanceof InvocationContext) {
         deps.push(raise)
