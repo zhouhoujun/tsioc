@@ -77,23 +77,15 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
     constructor(
         parent: TParent,
         private options: TargetInvokeArguments = {},
-        private injectorScope: AbstractType | 'static' = 'static'
+        readonly scope: AbstractType | 'static' = 'static'
     ) {
         super();
         this.records = new Map();
         this._refs = [];
         this.isResolve = options.isResolve == true;
         this._runtime = parent.getRuntime();
-        // this._injector = injector;
-        // if (options.parent) {
-        // const parent = options.parent;
         this._parent = parent;
-        // this.addRef(parent);
-        // parent.onDestroy(() => {
-        //     !this.destroyed && this.removeRef(parent);
-        // });
         parent.onDestroy(this);
-        // }
         this.initProviders(options.providers || []);
 
         if (options.values) {
@@ -325,7 +317,6 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
             value = notFoundValue ?? null!;
         }
 
-        // if (this.isStatic) this.records.set(token, { value })
         return value;
     }
 

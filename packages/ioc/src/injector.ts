@@ -405,17 +405,6 @@ export const enum FnType {
 export type InjectorScope = AbstractType | 'platform' | 'root' | 'static';
 
 
-// export const enum OptionFlags {
-//     Optional = 1 << 4,
-//     CheckSelf = 1 << 5,
-//     CheckParent = 1 << 6,
-//     Default = CheckSelf | CheckParent
-// }
-
-// export interface DependencyRecord {
-//     token: any;
-//     options: OptionFlags;
-// }
 /**
  * factory record.
  */

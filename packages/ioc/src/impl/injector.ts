@@ -192,7 +192,6 @@ export class DefaultInjector extends Injector {
             value = notFoundValue ?? null!;
         }
 
-        // if (this.isStatic) this.records.set(token, { value })
         return value;
     }
 

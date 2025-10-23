@@ -359,19 +359,13 @@ export function tryResolveToken(token: Token, rd: FactoryRecord, runtime: Runtim
     raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     try {
         const value = resolveToken(token, rd, runtime, injector, raise, notFoundValue, flags, isStatic);
-        const isDef = isDefined(value) && value !== notFoundValue;
-        if (isDef && isStatic) { // && rd?.fn !== MUTIL) {
-            if (isNil(rd.value) && rd.stic !== false && !(flags & InjectFlags.Resolve)) {
-                rd.value = value
-            }
-            
-            // if (rd) {
-            // if (isNil(rd.value) && (rd.stic || !(flags & InjectFlags.Resolve))) {
-            //     rd.value = value
-            // }
-            // } else {
-            //     records.set(token, { value })
-            // }
+        if (isStatic && rd.stic !== false
+            && !(flags & InjectFlags.Resolve)
+            && isNil(rd.value)
+            && isDefined(value)
+            && value !== notFoundValue) {
+
+            rd.value = value
         }
         return value
     } catch (e) {
