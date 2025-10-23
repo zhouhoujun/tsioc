@@ -35,4 +35,9 @@ export interface Destroyable {
      * @param callback destroy callback
      */
     onDestroy(callback: DestroyCallback): void;
+    /**
+     * unregister callback on destroy.
+     * @param callback destroy callback
+     */
+    offDestroy?(callback: DestroyCallback): void;
 }

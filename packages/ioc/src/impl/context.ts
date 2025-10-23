@@ -1,12 +1,12 @@
 import { AbstractType } from '../types';
 import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
 import { remove, getTypeName, getTypeChain, defer } from '../utils/lang';
-import { isArray, isFunction, isString, isAbstractType, getType, isType, isNil, isUndefined } from '../utils/chk';
+import { isArray, isFunction, isString, isAbstractType, getType, isType, isNil } from '../utils/chk';
 import { ResolveInterceptorLike, Parameter } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeArguments, InvocationRequest } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token } from '../tokens';
-import { createInjector, FactoryRecord, Injector, InjectOperator, isInjector, InjectorRecord } from '../injector';
+import { Injector, InjectOperator, InjectorRecord } from '../injector';
 import { Exception } from '../exception';
 import { ClassRef } from '../metadata/class';
 import { getDef } from '../metadata/refl';
@@ -103,7 +103,6 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
 
         this.targetType = options.targetType;
         this.propertyKey = options.propertyKey;
-        // injector.onDestroy(this);
         this.afterInit();
     }
 
@@ -423,6 +422,10 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         this._dsryCbs.add(callback)
     }
 
+    offDestroy(callback: DestroyCallback) {
+        this._dsryCbs.delete(callback)
+    }
+
     private _destroying() {
         if (!this._destroyed) {
             this._destroyed = true;
@@ -431,10 +434,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
 
             this._dsryCbs.clear();
             this.clear();
-            // const injector = this.injector;
             this._parent = null;
-            // this._injector = null;
-            // return injector.destroy();
         }
     }
 
@@ -443,6 +443,9 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         this.records.forEach(r => {
             if (r?.type) this.getRuntime().clearTypeProvider(r.type);
         });
+        if (this._parent) {
+            !this._parent.destroyed && (this._parent as Destroyable).offDestroy?.(this)
+        }
         this.records.clear();
         this._resolvers = null;
         this._refs = null;

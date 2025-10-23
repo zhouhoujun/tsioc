@@ -1,10 +1,10 @@
 /* eslint-disable no-case-declarations */
 import { AbstractType, Type, noPointcut } from '../types';
-import { DestroyCallback } from '../destroy';
+import { Destroyable, DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { defer, getTypeName } from '../utils/lang';
 import { isNil, isFunction } from '../utils/chk';
-import { MethodType, InjectorScope, RegisterOption, FactoryRecord, Injector, INJECT_IMPL, InjectOperator, InjectorRecord } from '../injector';
+import { MethodType, InjectorScope, RegisterOption, Injector, INJECT_IMPL, InjectOperator, InjectorRecord } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef } from '../metadata/class';
@@ -257,7 +257,7 @@ export class DefaultInjector extends Injector {
         });
         this.records.clear();
         if (this._parent) {
-            !this._parent.destroyed && (this._parent as DefaultInjector).offDestroy?.(this)
+            !this._parent.destroyed && (this._parent as Destroyable).offDestroy?.(this)
         }
         this._runtime = null;
         this._operator = null;
