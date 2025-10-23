@@ -1,7 +1,7 @@
 import { createContext, hasContextOptions, InvocationContext, InvokeOptions } from '../context';
 import { Exception } from '../exception';
 import { Empty, processInject, processProvider, processUse } from './resolve';
-import { FactoryRecord, Injector, MethodType, RegisterOption } from '../injector';
+import { FactoryRecord, Injector, InjectorRecord, MethodType, RegisterOption } from '../injector';
 import { ClassRef } from '../metadata/class';
 import { getClassRef } from '../metadata/refl';
 import { ModuleType, Provider } from '../providers';
@@ -18,8 +18,8 @@ export function assertNotDestroyed(injector: Injector): void {
     }
 }
 
-export function getRecords(injector: Injector): Map<Token, FactoryRecord> {
-    return (injector as Injector & { records: Map<Token, FactoryRecord> }).records;
+export function getRecords(injector: Injector): Map<Token, InjectorRecord> {
+    return (injector as Injector & { records: Map<Token, InjectorRecord> }).records;
 }
 
 
@@ -164,16 +164,16 @@ export namespace Operator {
      * @param {number} expires cache expires time.
      * @returns {this}
      */
-    export function cache<T>(injector: Injector, token: Token<T>, cache: T, expires: number): void {
+    export function cache<T>(injector: Injector, token: Token<T>, value: T, expires: number): void {
         assertNotDestroyed(injector);
         const records = getRecords(injector);
         const pd = records.get(token);
         const ltop = Date.now();
         if (pd) {
-            pd.cache = cache;
+            pd.value = value;
             pd.expires = ltop + expires
         } else {
-            records.set(token, { cache, expires })
+            records.set(token, { value, expires })
         }
     }
 

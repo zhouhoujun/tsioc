@@ -3,7 +3,7 @@ import { InjectFlags, Token } from '../tokens';
 import { isPlainObject } from '../utils/obj';
 import { cleanObj, deepForEach } from '../utils/lang';
 import { isArray, isDefined, isFunction, isNumber, isNil, isPromise, isAbstractType } from '../utils/chk';
-import { FnType, FactoryRecord, Injector, RegOption, TypeOption } from '../injector';
+import { FnType, FactoryRecord, Injector, RegOption, TypeOption, InjectorRecord } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { getClassRef } from '../metadata/refl';
@@ -201,22 +201,22 @@ function registerProvider(injector: Injector, provider: StaticProviders) {
         return
     }
     const records = getRecords(injector);
-    if (provider.multi) {
+    if (!isFunction(provider) && provider.multi) {
         let multiPdr = records.get(provider.provide);
         if (!multiPdr) {
-            records.set(provider.provide, multiPdr = {
-                fy: FnType.Fac,
-                fn: MUTIL,
+            multiPdr = {
                 value: Empty,
-                deps: []
-            })
+                multi: []
+            };
+            multiPdr.factory = ()=> invokeArgsForFactory(injector, multiPdr!.multi);
+            records.set(provider.provide, multiPdr);
         }
-        if (multiPdr.deps) {
+        if (multiPdr.multi) {
             const mtltk = generateRecord(injector, provider);
             if (isNumber(provider.multiOrder)) {
-                multiPdr.deps.splice(provider.multiOrder, 0, mtltk)
+                multiPdr.multi.splice(provider.multiOrder, 0, mtltk)
             } else {
-                multiPdr.deps.push(mtltk)
+                multiPdr.multi.push(mtltk)
             }
         }
     } else {
@@ -272,13 +272,15 @@ export function processRegister(injector: Injector, classRef: ClassRef, option?:
 }
 
 
-export const IDENT = function <T>(value: T): T {
-    return value
-};
-export const MUTIL = function <T>(...args: any): T[] {
-    return args
-};
-export const CIRCULAR = IDENT;
+// export const IDENT = function <T>(value: T): T {
+//     return value
+// };
+// export const MUTIL = function <T>(...args: any): T[] {
+//     return args
+// };
+// export const CIRCULAR = IDENT;
+
+export const CIRCULAR = {};
 
 /**
  * generate record.
@@ -286,48 +288,84 @@ export const CIRCULAR = IDENT;
  * @param provider 
  * @returns 
  */
-export function generateRecord<T>(injector: Injector, provider: StaticProviders): FactoryRecord<T> {
-    let fn: Function = IDENT;
-    let value: T | undefined;
-    let fnType = FnType.Fac;
-    let type = provider.useClass;
+/**
+ * 生成提供者记录
+ * @param injector 注入器实例
+ * @param provider 提供者配置
+ * @returns 优化后的提供者记录
+ */
+export function generateRecord<T>(injector: Injector, provider: StaticProviders): InjectorRecord<T> {
+    let factory: (() => T) | undefined;
+    let value: T | {} = {};
+    let multi: any[] | undefined;
+    let deps: any[] | undefined;
     const isStatic = provider.static;
-    let deps = provider.deps; //computeDeps(provider);
+
     if (isDefined(provider.useValue)) {
-        value = provider.useValue
+        value = provider.useValue;
     } else if (provider.useFactory) {
-        fn = provider.useFactory
+        factory = () => provider.useFactory!(...invokeArgsForFactory(injector, deps));
     } else if (provider.useExisting) {
-        // use ident.
-        if (deps) {
-            deps.unshift(provider.useExisting)
+        factory = () => injector.get(provider.useExisting);
+    } else if (provider.useClass) {
+        const classType = provider.useClass;
+        factory = () => {
+            // 确保类已注册
+            if (!injector.has(classType, InjectFlags.Default)) {
+                Operator.register(injector, { singleton: provider.singleton, type: classType, deps, regProvides: false });
+            }
+            // 创建实例
+            const instanceDeps = invokeArgsForFactory(injector, deps);
+            return new classType(...instanceDeps);
+        };
+    } else if (isFunction(provider.provide)) {
+        const classType = provider.provide;
+        factory = () => {
+            // 确保类已注册
+            if (!injector.has(classType, InjectFlags.Default)) {
+                Operator.register(injector, { singleton: provider.singleton, type: classType, deps: [], regProvides: false });
+            }
+            // 创建实例
+            return injector.get(classType);
+        };
+    }
+
+    // 处理多提供者
+    if (provider.multi) {
+        multi = [];
+    }
+
+    return { factory, value, multi, isStatic };
+}
+
+/**
+ * 辅助函数：为工厂函数调用解析参数
+ */
+function invokeArgsForFactory(injector: Injector, deps?: any[]): any[] {
+    if (!deps || !deps.length) return [];
+
+    const args: any[] = [];
+
+    for (let i = 0; i < deps.length; i++) {
+        const dep = deps[i];
+        let depToken: Token;
+        let depFlags = InjectFlags.Default;
+
+        if (isArray(dep)) {
+            depToken = dep[0];
+            dep.forEach(d => {
+                if (isNumber(d)) {
+                    depFlags |= d;
+                }
+            });
         } else {
-            deps = [provider.useExisting]
+            depToken = dep;
         }
 
-    } else if (provider.useClass) {
-        if (deps) {
-            deps.unshift(provider.useClass)
-        } else {
-            deps = [provider.useClass]
-        }
-        if (!injector.has(type, InjectFlags.Default)) {
-            Operator.register(injector, { singleton: provider.singleton, type, deps, regProvides: false })
-        }
-    } else if (isFunction(provider.provide)) {
-        if (deps) {
-            fnType = FnType.Cotr;
-            fn = provider.provide;
-            type = provider.provide
-        } else {
-            deps = [provider.provide];
-            type = provider.provide;
-            if (!injector.has(type, InjectFlags.Default)) {
-                Operator.register(injector, { singleton: provider.singleton, type, deps, regProvides: false })
-            }
-        }
+        args.push(injector.get(depToken, undefined, depFlags));
     }
-    return { value, fn, fy: fnType, deps, type, stic: isStatic }
+
+    return args;
 }
 
 const cirMsg = 'Circular dependency';
@@ -349,145 +387,217 @@ export class NullInjectorException extends Exception {
     }
 }
 
+
+export const THROW_FLAGE = {};
 /**
- * resolve token.
- * @param rd 
- * @param provider 
- * @returns 
+ * 尝试解析令牌
  */
-export function tryResolveToken(token: Token, rd: FactoryRecord, runtime: Runtime, injector: Injector,
+export function tryResolveToken(token: Token, rd: InjectorRecord, runtime: Runtime, injector: Injector,
     raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     try {
         const value = resolveToken(token, rd, runtime, injector, raise, notFoundValue, flags, isStatic);
-        if (isStatic && rd.stic !== false
-            && !(flags & InjectFlags.Resolve)
-            && isNil(rd.value)
-            && isDefined(value)
-            && value !== notFoundValue) {
-
-            rd.value = value
+        if (isStatic && rd.isStatic !== false && isDefined(value) && value !== notFoundValue) {
+            rd.value = value;
         }
-        return value
+        return value;
     } catch (e) {
         if (rd && rd.value === CIRCULAR) {
             rd.value = Empty;
         }
-        throw e
+        throw e;
     }
-}
-
-export const THROW_FLAGE = {};
-
-function invokeArgs(runtime: Runtime, injector: Injector, raise: Injector, deps: any[], isStatic?: boolean) {
-    const args: any[] = [];
-    for (let i = 0; i < deps.length; i++) {
-        const dep = deps[i];
-        let depFlags = InjectFlags.Default;
-        let chlrd: FactoryRecord | undefined;
-        let depToken: Token;
-
-        if (isPlainObject(dep)) {
-            chlrd = dep;
-            depToken = dep.type;
-        } else if (isArray(dep)) {
-            depToken = dep[0];
-            dep.forEach(d => {
-                if (isNumber(d)) {
-                    depFlags |= d;
-                } else {
-                    depToken = d;
-                }
-            });
-            // if (!(depFlags & InjectFlags.SkipSelf)) {
-            //     chlrd = getRecords(injector).get(depToken);
-            // }
-        } else {
-            depToken = dep;
-            // chlrd = getRecords(injector).get(depToken);
-        }
-
-        // const chlrd = isPlainObject(dep.token) ? dep.token : (dep.options & OptionFlags.CheckSelf ? records.get(dep.token) : undefined);
-
-        // let val: any;
-        // if (context && !(dep.token as FactoryRecord)?.fn) {
-        //     val = context.resolveArgument(isString(dep.token) ? { name: dep.token } : { provider: dep.token })
-        // } else {
-        // val = raise.get(dep.token) // dep.options)
-        const val = chlrd ? tryResolveToken(
-            depToken,
-            chlrd,
-            runtime,
-            injector,
-            raise,
-            depFlags & InjectFlags.Optional ? null : THROW_FLAGE,
-            depFlags,
-            chlrd?.stic || isStatic) : raise.get(depToken, undefined, depFlags)
-        // }
-        args.push(val);
-    }
-
-    return args;
 }
 
 /**
- * resolve token.
- * @param rd 
- * @param provider 
- * @returns 
+ * 解析令牌
  */
-export function resolveToken(token: Token, rd: FactoryRecord, runtime: Runtime,
+export function resolveToken(token: Token, rd: InjectorRecord, runtime: Runtime,
     injector: Injector, raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
-    // if (rd && !(flags & InjectFlags.SkipSelf)) {
-    let value = rd.value;
-    if (value === CIRCULAR) {
+    if (rd.value === CIRCULAR) {
         throw new CircularDependencyException()
     }
-    if (isDefined(rd.value) && value !== Empty && (rd.stic || !(flags & InjectFlags.Resolve))) return rd.value;
-    const deps = [];
-    if (rd.fn === MUTIL) {
+    // 如果已有值且不是多提供者，直接返回
+    if (!rd.multi) {
+        return rd.value;
+    }
+
+    // 处理多提供者
+    if (rd.multi) {
+        // 获取父注入器中的值
         const parent = injector?.getParent();
         if (parent && !(flags & InjectFlags.Self)) {
             const values = parent.get(token, null, flags, raise);
             if (values) {
-                deps.push(...values)
+                rd.multi.push(...values);
             }
         }
+
+        // 如果有工厂函数，执行并添加结果
+        if (rd.factory) {
+            const result = rd.factory();
+            rd.multi.push(result);
+        }
+
+        return rd.multi;
     }
-    // const context = raise instanceof InvocationContext ? raise : undefined;
-    if (rd.deps?.length) {
-        deps.push(...invokeArgs(runtime, injector, raise, rd.deps, isStatic))
+
+    // 执行工厂函数获取值
+    if (rd.factory) {
+        const result = rd.factory();
+        // 如果是静态提供者，缓存结果
+        if (rd.isStatic) {
+            rd.value = result;
+        }
+        return result;
     }
-    if (rd.fn !== IDENT && rd.fn !== MUTIL && raise instanceof InvocationContext) {
-        deps.push(raise)
+
+    // 返回默认值
+    if (notFoundValue !== undefined) {
+        return notFoundValue;
     }
-    switch (rd.fy) {
-        case FnType.Cotr:
-            return new (rd.fn as Type)(...deps)
-        case FnType.Fac:
-            if (value === Empty) {
-                return rd.value = value = rd.fn?.(...deps)
-            }
-            return rd.fn?.(...deps)
-        case FnType.Inj:
-        default:
-            if (rd.expires) {
-                if (rd.expires < Date.now()) {
-                    return rd.cache!
-                }
-                rd.expires = null!;
-                rd.cache = null!;
-            }
-            return rd.fn?.(...deps)
-    }
-    // } else if (parent && !(flags & InjectFlags.Self)) {
-    //     return parent.get(token, notFoundValue, ((flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default) & InjectFlags.NonSingleton, raise)
-    // } else if (!(flags & InjectFlags.Optional)) {
-    //     if (notFoundValue === THROW_FLAGE) {
-    //         throw new NullInjectorException(token)
-    //     }
-    //     return notFoundValue ?? null
-    // } else {
-    //     return notFoundValue ?? null
-    // }
+
+    throw new NullInjectorException(token);
 }
 
+
+
+// function invokeArgs(runtime: Runtime, injector: Injector, raise: Injector, deps: any[], isStatic?: boolean) {
+//     const args: any[] = [];
+//     for (let i = 0; i < deps.length; i++) {
+//         const dep = deps[i];
+//         let depFlags = InjectFlags.Default;
+//         let chlrd: FactoryRecord | undefined;
+//         let depToken: Token;
+
+//         if (isPlainObject(dep)) {
+//             chlrd = dep;
+//             depToken = dep.type;
+//         } else if (isArray(dep)) {
+//             depToken = dep[0];
+//             dep.forEach(d => {
+//                 if (isNumber(d)) {
+//                     depFlags |= d;
+//                 } else {
+//                     depToken = d;
+//                 }
+//             });
+//             // if (!(depFlags & InjectFlags.SkipSelf)) {
+//             //     chlrd = getRecords(injector).get(depToken);
+//             // }
+//         } else {
+//             depToken = dep;
+//             // chlrd = getRecords(injector).get(depToken);
+//         }
+
+//         // const chlrd = isPlainObject(dep.token) ? dep.token : (dep.options & OptionFlags.CheckSelf ? records.get(dep.token) : undefined);
+
+//         // let val: any;
+//         // if (context && !(dep.token as FactoryRecord)?.fn) {
+//         //     val = context.resolveArgument(isString(dep.token) ? { name: dep.token } : { provider: dep.token })
+//         // } else {
+//         // val = raise.get(dep.token) // dep.options)
+//         const val = chlrd ? tryResolveToken(
+//             depToken,
+//             chlrd,
+//             runtime,
+//             injector,
+//             raise,
+//             depFlags & InjectFlags.Optional ? null : THROW_FLAGE,
+//             depFlags,
+//             chlrd?.stic || isStatic) : raise.get(depToken, undefined, depFlags)
+//         // }
+//         args.push(val);
+//     }
+
+//     return args;
+// }
+
+
+// /**
+//  * resolve token.
+//  * @param rd 
+//  * @param provider 
+//  * @returns 
+//  */
+// export function tryResolveToken(token: Token, rd: FactoryRecord, runtime: Runtime, injector: Injector,
+//     raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
+//     try {
+//         const value = resolveToken(token, rd, runtime, injector, raise, notFoundValue, flags, isStatic);
+//         if (isStatic && rd.stic !== false
+//             && !(flags & InjectFlags.Resolve)
+//             && isNil(rd.value)
+//             && isDefined(value)
+//             && value !== notFoundValue) {
+
+//             rd.value = value
+//         }
+//         return value
+//     } catch (e) {
+//         if (rd && rd.value === CIRCULAR) {
+//             rd.value = Empty;
+//         }
+//         throw e
+//     }
+// }
+
+// /**
+//  * resolve token.
+//  * @param rd 
+//  * @param provider 
+//  * @returns 
+//  */
+// export function resolveToken(token: Token, rd: FactoryRecord, runtime: Runtime,
+//     injector: Injector, raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
+//     // if (rd && !(flags & InjectFlags.SkipSelf)) {
+//     let value = rd.value;
+//     if (value === CIRCULAR) {
+//         throw new CircularDependencyException()
+//     }
+//     if (isDefined(rd.value) && value !== Empty && (rd.stic || !(flags & InjectFlags.Resolve))) return rd.value;
+//     const deps = [];
+//     if (rd.fn === MUTIL) {
+//         const parent = injector?.getParent();
+//         if (parent && !(flags & InjectFlags.Self)) {
+//             const values = parent.get(token, null, flags, raise);
+//             if (values) {
+//                 deps.push(...values)
+//             }
+//         }
+//     }
+//     // const context = raise instanceof InvocationContext ? raise : undefined;
+//     if (rd.deps?.length) {
+//         deps.push(...invokeArgs(runtime, injector, raise, rd.deps, isStatic))
+//     }
+//     if (rd.fn !== IDENT && rd.fn !== MUTIL && raise instanceof InvocationContext) {
+//         deps.push(raise)
+//     }
+//     switch (rd.fy) {
+//         case FnType.Cotr:
+//             return new (rd.fn as Type)(...deps)
+//         case FnType.Fac:
+//             if (value === Empty) {
+//                 return rd.value = value = rd.fn?.(...deps)
+//             }
+//             return rd.fn?.(...deps)
+//         case FnType.Inj:
+//         default:
+//             if (rd.expires) {
+//                 if (rd.expires < Date.now()) {
+//                     return rd.cache!
+//                 }
+//                 rd.expires = null!;
+//                 rd.cache = null!;
+//             }
+//             return rd.fn?.(...deps)
+//     }
+//     // } else if (parent && !(flags & InjectFlags.Self)) {
+//     //     return parent.get(token, notFoundValue, ((flags & InjectFlags.Resolve) ? InjectFlags.Default | InjectFlags.Resolve : InjectFlags.Default) & InjectFlags.NonSingleton, raise)
+//     // } else if (!(flags & InjectFlags.Optional)) {
+//     //     if (notFoundValue === THROW_FLAGE) {
+//     //         throw new NullInjectorException(token)
+//     //     }
+//     //     return notFoundValue ?? null
+//     // } else {
+//     //     return notFoundValue ?? null
+//     // }
+// }

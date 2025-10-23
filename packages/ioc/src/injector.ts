@@ -451,3 +451,35 @@ export interface MethodFunc extends Function, TypedPropertyDescriptor<any> {
  * method type.
  */
 export type MethodType<T> = string | symbol | ((tag: T) => MethodFunc);
+
+/**
+ * Injecor Record
+ */
+export interface InjectorRecord<T = any> {
+    /**
+     * 提供者的类型
+     */
+    type?: AbstractType<T>;
+    /**
+     * 工厂函数，用于创建实例
+     */
+    factory?: (() => T);
+    
+    /**
+     * 预创建的值或占位符
+     */
+    value: T | null | {};
+    
+    /**
+     * 多提供者的依赖数组
+     */
+    multi?: any[];
+    /**
+     * 是否为静态提供者
+     */
+    isStatic?: boolean;
+    /**
+     * cache expires.
+     */
+    expires?: number;
+}

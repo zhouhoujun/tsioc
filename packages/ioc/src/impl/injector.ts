@@ -4,7 +4,7 @@ import { DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { defer, getTypeName } from '../utils/lang';
 import { isNil, isFunction } from '../utils/chk';
-import { MethodType, InjectorScope, RegisterOption, FactoryRecord, Injector, INJECT_IMPL, InjectOperator } from '../injector';
+import { MethodType, InjectorScope, RegisterOption, FactoryRecord, Injector, INJECT_IMPL, InjectOperator, InjectorRecord } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef } from '../metadata/class';
@@ -54,7 +54,7 @@ export class DefaultInjector extends Injector {
      * @type {Map<Token, Function>}
      */
     @nonEnumerable
-    protected records: Map<Token, FactoryRecord>;
+    protected records: Map<Token, InjectorRecord>;
 
     @nonEnumerable
     private _parent: Injector | null;
@@ -256,7 +256,6 @@ export class DefaultInjector extends Injector {
             if (r?.type) this.getRuntime().clearTypeProvider(r.type);
         });
         this.records.clear();
-        this.records = null!;
         if (this._parent) {
             !this._parent.destroyed && (this._parent as DefaultInjector).offDestroy?.(this)
         }

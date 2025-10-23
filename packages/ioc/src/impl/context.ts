@@ -6,7 +6,7 @@ import { ResolveInterceptorLike, Parameter } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeArguments, InvocationRequest } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token } from '../tokens';
-import { createInjector, FactoryRecord, Injector, InjectOperator, isInjector } from '../injector';
+import { createInjector, FactoryRecord, Injector, InjectOperator, isInjector, InjectorRecord } from '../injector';
 import { Exception } from '../exception';
 import { ClassRef } from '../metadata/class';
 import { getDef } from '../metadata/refl';
@@ -54,7 +54,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
      * @type {Map<Token, Function>}
      */
     @nonEnumerable
-    protected records: Map<Token, FactoryRecord>;
+    protected records: Map<Token, InjectorRecord>;
 
     /**
      * invocation target type.
@@ -439,8 +439,16 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
     }
 
     protected clear() {
+        this.scope && this.getRuntime()?.removeInjector(this.scope);
+        this.records.forEach(r => {
+            if (r?.type) this.getRuntime().clearTypeProvider(r.type);
+        });
+        this.records.clear();
         this._resolvers = null;
         this._refs = null;
+        this._runtime = null;
+        this._operator = null;
+        this._parent = null;
     }
 
 }
