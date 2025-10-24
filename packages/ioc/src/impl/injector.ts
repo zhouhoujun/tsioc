@@ -22,6 +22,8 @@ import { Operator } from './operator';
 export const SCOPE_PRODIDERS: Provider[] = [];
 
 
+
+
 /**
  * Default Injector
  */
@@ -129,13 +131,7 @@ export class DefaultInjector extends Injector {
         return this._parent;
     }
 
-    getInject(): InjectOperator {
-        if (!this._operator) {
-            this.assertNotDestroyed();
-            this._operator = new DefaultInjectOperator(this);
-        }
-        return this._operator
-    }
+
 
 
     has<T>(token: Token<T>, flags = InjectFlags.Default): boolean {
@@ -195,9 +191,6 @@ export class DefaultInjector extends Injector {
         return value;
     }
 
-    protected assertNotDestroyed(): void {
-        assertNotDestroyed(this);
-    }
 
     /**
      * has destoryed or not.
@@ -266,93 +259,7 @@ export class DefaultInjector extends Injector {
 }
 
 
-function assertNotDestroyed(injector: Injector): void {
-    if (injector.destroyed) {
-        throw new Exception(`${getTypeName(injector)} has already been destroyed.`)
-    }
-}
 
-
-export class DefaultInjectOperator implements InjectOperator {
-
-    @nonEnumerable
-    private injector: Injector;
-
-    constructor(injector: Injector) {
-        this.injector = injector;
-    }
-
-
-    setSingleton<T>(token: Token<T>, value: T): this {
-        Operator.setSingleton(this.injector, token, value);
-        return this;
-    }
-
-    resolve<T, TArg>(token: Token<T>, option?: InvokeOptions): T;
-    resolve<T>(token: Token<T>, context?: InvocationContext): T;
-    resolve<T>(token: Token<T>, providers?: Provider[]): T;
-    resolve<T>(token: Token<T>, ...providers: Provider[]): T;
-    resolve<T>(token: Token<T>, ...args: any[]) {
-        return Operator.resolve(this.injector, token, ...args);
-    }
-
-    setValue<T>(token: Token<T>, value: T, type?: AbstractType<T> | undefined): this {
-        Operator.setValue(this.injector, token, value, type);
-        return this
-    }
-
-    getTokenProvider<T>(token: Token<T>, flags = InjectFlags.Default): AbstractType<T> {
-        return Operator.getTokenProvider(this.injector, token, flags);
-    }
-
-    cache<T>(token: Token<T>, cache: T, expires: number): this {
-        Operator.cache(this.injector, token, cache, expires);
-        return this
-    }
-
-    inject(providers: Provider | Provider[]): this;
-    inject(...providers: Provider[]): this;
-    inject(...args: any[]): this {
-        Operator.inject(this.injector, ...args);
-        return this
-    }
-
-    use(modules: ModuleType[]): Type[];
-    use(...modules: ModuleType[]): Type[];
-    use(...args: any[]): Type[] {
-        const types: Type[] = [];
-        Operator.use(this.injector, args, types);
-        return types
-    }
-
-
-    useAsync(modules: ModuleType[]): Promise<Type[]>;
-    useAsync(...modules: ModuleType[]): Promise<Type[]>;
-    useAsync(...args: any[]): Promise<Type[]> {
-        return Operator.useAsync(this.injector, args);
-    }
-
-
-    register(types: (AbstractType | RegisterOption)[]): this;
-    register(...types: (AbstractType | RegisterOption)[]): this;
-    register(...args: any[]): this {
-        Operator.register(this.injector, ...args);
-        return this
-    }
-
-    unregister<T>(token: Token<T>): this {
-        Operator.unregister(this.injector, token);
-        return this
-    }
-
-    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...providers: Provider[]): TR;
-    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, option?: InvokeOptions): TR;
-    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, context?: InvocationContext): TR;
-    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, providers: Provider[]): TR;
-    invoke<T, TR = any>(target: T | AbstractType<T> | ClassRef<T>, propertyKey: MethodType<T>, ...args: any[]): TR {
-        return Operator.invoke(this.injector, target, propertyKey, ...args);
-    }
-}
 
 
 /**

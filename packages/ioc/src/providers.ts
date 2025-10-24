@@ -156,7 +156,7 @@ export interface FactoryProvider<T = any> extends Provide<T>, UseFactory<T> { }
 /**
  * constructor provider.
  */
-export interface ConstructorProvider<T = any> {
+export interface ConstructorProvider<T = any> extends MutilProvider {
     /**
      * An injection token. Typically an instance of `Type` or `InjectionToken`, but can be `any`.
      */
@@ -204,7 +204,7 @@ export type TypeProvider<T = any> = Type<T>;
  * dynamic provider.
  */
 export interface DynamicProvider {
-    provider(injector: Injector): void | StaticProvider | StaticProvider[] | Promise<void | StaticProvider | StaticProvider[]>;
+    provider(injector: Injector): void | StaticProvider[] | Promise<void | StaticProvider[]>;
 }
 
 /**
