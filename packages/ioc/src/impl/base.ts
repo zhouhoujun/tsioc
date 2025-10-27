@@ -2,13 +2,13 @@ import { AbstractType, Type, noPointcut } from '../types';
 import { Destroyable, DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { deepForEach, defer, getTypeName } from '../utils/lang';
-import { isNil, isFunction, isPromise, isArray, isNumber, isDefined, isUndefined, isBoolean } from '../utils/chk';
+import { isNil, isFunction, isPromise, isArray, isNumber, isDefined, isUndefined, isBoolean, isType } from '../utils/chk';
 import { MethodType, InjectorScope, RegisterOption, Injector, INJECT_IMPL, InjectOperator, InjectorRecord, TypeOption } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef } from '../metadata/class';
 import { CONTAINER, INJECTOR } from '../metadata/tk';
-import { Provider, ModuleType, StaticProvider, DynamicProvider, StaticProviders, MutilProvider } from '../providers';
+import { Provider, ModuleType, StaticProvider, DynamicProvider, MutilProvider, Provide, ProviderExts, isValueProvider, isFactoryProvider, isExistingProvider, isClassProvider, isTypeProvider, UseAsStatic, ClassProvider } from '../providers';
 import { InvocationContext, InvokeOptions } from '../context';
 import { DefaultRuntime } from './runtime';
 import { DefaultInvocationFactory } from './invocation';
@@ -18,7 +18,6 @@ import { nonEnumerable } from '../metadata/decor';
 import { Operator } from './operator';
 import { isPlainObject } from '../utils/obj';
 import { getClassRef } from '../metadata/refl';
-import { escape } from 'node:querystring';
 
 
 
@@ -65,10 +64,6 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
         this._parent = parent ?? null;
         parent?.onDestroy(this);
     }
-
-
-
-
 
 
     get ready() {
@@ -167,52 +162,29 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
     }
 
     protected processProvider(provider: StaticProvider | DynamicProvider): void | Promise<void> {
-        // if (isFunction(provider)) {
-        //     registerClass(injector, getClassRef(provider))
-        // } else if (isPlainObject(provider)) {
-        //     if ((provider as StaticProviders).provide) {
-        //         registerProvider(injector, provider as StaticProviders)
-        //     } else if ((provider as TypeOption).type) {
 
-        //         registerClass(injector, getClassRef((provider as TypeOption).type), provider as TypeOption)
-
-        //     } else if ((provider as DynamicProvider).provider) {
-        //         const pdrs = (provider as DynamicProvider).provider(injector);
-        //         if (isPromise(pdrs)) {
-        //             return pdrs.then(ps => {
-        //                 if (ps) Operator.inject(injector, ps);
-        //             });
-        //         }
-        //         if (pdrs) this.processProviders(pdrs);
-        //     }
-        // }
-
-
-        // if (isFunction(provider)) {
-        //     // this.registerClass(getClassRef(provider))
-        //     // this.registerClass(getClassRef(provider))
-        // } else 
-        const token = isFunction(provider) ? provider : (provider as StaticProviders).provide;
+        const token = isFunction(provider) ? provider : (provider as Provide).provide;
         if (token) {
-            const mtltk = generateRecord(this, provider as StaticProviders);
+            const record = generateRecord(this, provider as StaticProvider);
             if (!isFunction(provider) && (provider as MutilProvider).multi) {
                 let multiPdr = this.records.get(token);
                 if (!multiPdr) {
                     multiPdr = createRecord(undefined, LAZY, true);
-                    multiPdr.factory = () => invokeArgsForFactory(this, multiPdr!.multi);
+                    multiPdr.factory = (raise) => resolveArgs(raise ?? this, multiPdr!.multi);
                     this.records.set(token, multiPdr);
                 }
                 if (multiPdr.multi) {
-                    const mtltk = generateRecord(this, provider);
-                    if (isNumber(provider.multiOrder)) {
-                        multiPdr.multi.splice(provider.multiOrder, 0, mtltk)
+                    const multiOrder = (provider as MutilProvider).multiOrder;
+                    if (isNumber(multiOrder)) {
+                        multiPdr.multi.splice(multiOrder, 0, record)
                     } else {
-                        multiPdr.multi.push(mtltk)
+                        multiPdr.multi.push(record)
                     }
                 }
             } else {
-                this.records.set(token, generateRecord(this, provider))
+                this.records.set(token, record);
             }
+            (provider as ProviderExts).onRegistered?.(this);
         } else if ((provider as DynamicProvider).provider) {
             const pdrs = (provider as DynamicProvider).provider(this);
             if (isPromise(pdrs)) {
@@ -223,7 +195,6 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
                 this.processProviders(pdrs);
             }
         }
-        // provider.onRegistered?.(injector);
     }
 
 
@@ -297,7 +268,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
 
 
 export function eachProvider(providers: Provider[], cb: (provider: StaticProvider | DynamicProvider) => void) {
-    return deepForEach(providers, cb, v => isPlainObject(v) && !((v as StaticProviders).provide || (v as DynamicProvider).provider));
+    return deepForEach(providers, cb, v => isPlainObject(v) && !((v as Provide).provide || (v as DynamicProvider).provider));
 }
 
 
@@ -386,6 +357,7 @@ export class DefaultInjectOperator implements InjectOperator {
 
 const LAZY = {};
 
+
 /**
  * generate record.
  * @param injector 
@@ -398,41 +370,55 @@ const LAZY = {};
  * @param provider 提供者配置
  * @returns 优化后的提供者记录
  */
-export function generateRecord<T>(injector: Injector, provider: StaticProviders, isStatic?: boolean): InjectorRecord<T> {
-    let factory: (() => T) | undefined;
-    if (!isUndefined(provider.useValue)) {
-        return createValueRecord(provider.useValue);
-    } else if (provider.useFactory) {
-        factory = () => provider.useFactory!(...invokeArgsForFactory(injector, provider.deps));
-    } else if (provider.useExisting) {
-        factory = () => injector.get(provider.useExisting);
-    } else if (provider.useClass) {
-        const classType = provider.useClass;
-        // 确保类已注册
-        // if (!injector.has(classType, InjectFlags.Default)) {
-        //     Operator.register(injector, { singleton: provider.singleton, type: classType, provider.deps, regProvides: false });
-        // }
-        factory = () => {
-            // 创建实例
-            const instanceDeps = invokeArgsForFactory(injector, provider.deps);
-            return new classType(...instanceDeps);
-        };
-    } else if (isFunction(provider.provide)) {
-        // // 确保类已注册
-        // if (!injector.has(classType, InjectFlags.Default)) {
-        //     Operator.register(injector, { singleton: provider.singleton, type: classType, deps: [], regProvides: false });
-        // }
-        const classType = provider.provide;
-        factory = () => {
-            // 创建实例
-            return injector.get(classType);
-        };
-    }
-    if (isBoolean(provider.static)) {
-        isStatic = provider.static;
+export function generateRecord<T>(injector: Injector, provider: StaticProvider, isStatic?: boolean): InjectorRecord<T> {
+
+    if (isTypeProvider(provider)) {
+        return registerType(injector, provider, isStatic);
+    } else {
+        let factory: ((raise?: Injector) => T) | undefined;
+        if (isValueProvider(provider)) {
+            return createValueRecord(provider.useValue);
+        } else if (isFactoryProvider(provider)) {
+            factory = (raise?: Injector) => provider.useFactory(...resolveArgs(raise ?? injector, provider.deps));
+        } else if (isExistingProvider(provider)) {
+            factory = (raise?: Injector) => (raise ?? injector).get(provider.useExisting);
+        } else if (provider.provide) {
+            const classType = (provider as ClassProvider).useClass ?? provider.provide;
+            if (!provider.deps) {
+                return registerType(injector, classType, isStatic);
+            }
+            factory = (raise?: Injector) => {
+                // 创建实例
+                const instanceDeps = resolveArgs(raise ?? injector, provider.deps);
+                return new classType(...instanceDeps);
+            };
+        }
+
+        if (isBoolean((provider as UseAsStatic).static)) {
+            isStatic = (provider as UseAsStatic).static;
+        }
+        return createRecord(factory, isStatic ? LAZY : null);
     }
 
+}
+
+function registerType(injector: Injector, type: Type, isStatic?: boolean): InjectorRecord {
+    const typRef = getClassRef(type);
+    isStatic = typRef.getAnnotation()?.static ?? isStatic;
+    const providedIn = typRef.getAnnotation()?.providedIn;
+    const orgigin =  injector;
+    if (providedIn) {
+        isStatic = true;
+    }
+    const factory = (raise?: Injector) => {
+        // 创建实例
+        const instanceDeps = resolveArgs(raise ?? injector, typRef.getParameters('constructor'));
+        return new type(...instanceDeps);
+    };
+    
+
     return createRecord(factory, isStatic ? LAZY : null);
+
 }
 
 function createValueRecord<T>(value: T): InjectorRecord<T> {
@@ -446,7 +432,7 @@ function createRecord<T>(factory: (() => T) | undefined, value: T | null | {}, m
 /**
  * 辅助函数：为工厂函数调用解析参数
  */
-function invokeArgsForFactory(injector: Injector, deps?: any[]): any[] {
+function resolveArgs(injector: Injector, deps?: any[]): any[] {
     if (!deps || !deps.length) return [];
 
     const args: any[] = [];

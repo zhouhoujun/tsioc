@@ -8,7 +8,7 @@ import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { getClassRef } from '../metadata/refl';
 import { ModuleDef, ClassRef } from '../metadata/class';
-import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, StaticProviders, ModuleType } from '../providers';
+import { ModuleWithProviders, Provider, DynamicProvider, StaticProvider, ModuleType, Provide } from '../providers';
 import { InvocationContext } from '../context';
 import { DesignContext } from '../lifescope/ctx';
 import { getRecords, Operator } from './operator';
@@ -18,7 +18,7 @@ import { getRecords, Operator } from './operator';
 export const Empty: any[] = [];
 
 export function eachProvider(providers: Provider[], cb: (provider: StaticProvider | DynamicProvider) => void) {
-    return deepForEach(providers, cb, v => isPlainObject(v) && !((v as StaticProviders).provide || (v as DynamicProvider).provider));
+    return deepForEach(providers, cb, v => isPlainObject(v) && !((v as Provide).provide || (v as DynamicProvider).provider));
 }
 
 

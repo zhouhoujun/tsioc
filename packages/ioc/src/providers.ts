@@ -5,6 +5,7 @@ import { isPlainObject } from './utils/obj';
 import { isArray, isBoolean, isDefined, isFunction, isAbstractType } from './utils/chk';
 import { ArgumentException } from './exception';
 import { getTypeName } from './utils/lang';
+import { Parameter } from './resolver';
 
 /**
  * provide for {@link Injector }.
@@ -165,7 +166,7 @@ export interface ConstructorProvider<T = any> extends MutilProvider {
      * A list of `token`s which need to be resolved by the injector. The list of values is then
      * used as arguments to the `useFactory` function.
      */
-    deps?: Array<Token | [Token, ...InjectFlags[]]>;
+    deps?: Array<Token | [Token, ...InjectFlags[]] | Parameter>;
 }
 
 
@@ -214,11 +215,6 @@ export type ProvdierOf<T> = UseClass<T> | UseValue<T> | UseFactory<T> | UseExist
 
 
 /**
- * static providers.
- */
-export type StaticProviders = ClassProvider & ValueProvider & ConstructorProvider & ExistingProvider & FactoryProvider;
-
-/**
  * static provider type.
  * 
  * include type {@link TypeProvider}, {@link ClassProvider}, {@link ValueProvider}, {@link ConstructorProvider}, {@link ExistingProvider}, {@link FactoryProvider}, {@link KeyValueProvider}.
@@ -257,6 +253,25 @@ export function isModuleProviders(target: any): target is ModuleWithProviders {
     return target && isFunction(target.module) && isArray(target.providers)
 }
 
+export function isValueProvider(target: StaticProvider): target is ValueProvider {
+    return isPlainObject(target) && ('useValue' in target);
+}
+
+export function isTypeProvider(target: StaticProvider): target is TypeProvider {
+    return isFunction(target);
+}
+
+export function isClassProvider(target: StaticProvider): target is ClassProvider {
+    return target && isFunction((target as ClassProvider).useClass);
+}
+
+export function isExistingProvider(target: StaticProvider): target is ExistingProvider {
+    return target && isFunction((target as ExistingProvider).useExisting);
+}
+
+export function isFactoryProvider(target: StaticProvider): target is FactoryProvider {
+    return target && isFunction((target as FactoryProvider).useFactory);
+}
 /**
  * parse to provider
  * @param provide 

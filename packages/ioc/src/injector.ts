@@ -463,7 +463,7 @@ export interface InjectorRecord<T = any> {
     /**
      * 工厂函数，用于创建实例
      */
-    factory?: (() => T);
+    factory?: ((raise?: Injector) => T);
     
     /**
      * 预创建的值或占位符
