@@ -8,7 +8,7 @@ import { AbstractType } from '../types';
 import { initReflectInterceptor } from './commom';
 import { InitializeContext } from './ctx';
 import { HandlerScope } from './lifescope';
-import { Operator } from '../impl/operator';
+import { Operator } from '../impl/base';
 
 
 export const cleanContextInterceptor: InterceptorFn<InitializeContext, void> = (input: InitializeContext, next: HandlerFn, context: Context) => {

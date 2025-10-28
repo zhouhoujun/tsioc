@@ -1,8 +1,8 @@
 import { InvocationContext } from '../context';
 import { Context, ContextToken, HandlerFn, InterceptorLike, invokeTail } from '../handler';
-import { FactoryRecord, FnType } from '../injector';
+import { InjectorRecord } from '../injector';
 import { DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
-import { Operator } from '../impl/operator';
+import { Operator } from '../impl/base';
 import { Runtime } from '../runtime';
 import { isFunction } from '../utils/chk';
 import { cleanObj } from '../utils/lang';
@@ -177,7 +177,7 @@ export const registerHandler: HandlerFn = (ctx: DesignContext, context: Context)
         },
         stic: isStatic,
         fy: FnType.Inj
-    } as FactoryRecord;
+    } as InjectorRecord;
     ctx.getRecords().set(provide ?? type, recd)
 }
 

@@ -389,14 +389,7 @@ export type ProviderOption<T = any> = ClassProvider | ValueProvider | ExistingPr
  */
 export type RegisterOption<T = any> = TypeOption<T> | ProviderOption<T>;
 
-/**
- * fn type
- */
-export const enum FnType {
-    Cotr,
-    Inj,
-    Fac
-}
+
 
 /**
  * injector scope.
@@ -443,6 +436,15 @@ export interface InjectorRecord<T = any> {
      */
     expires?: number;
 }
+
+// /**
+//  * fn type
+//  */
+// export const enum FnType {
+//     Cotr,
+//     Inj,
+//     Fac
+// }
 
 // /**
 //  * factory record.

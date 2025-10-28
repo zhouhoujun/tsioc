@@ -2,7 +2,7 @@ import { Token } from '../tokens';
 import { AbstractType, Type } from '../types';
 import { ParameterMetadata, ProvidedInMetadata } from '../metadata/meta';
 import { ClassRef, DecoratorFn } from '../metadata/class';
-import { FactoryRecord, Injector } from '../injector';
+import { InjectorRecord, Injector } from '../injector';
 import { InvocationContext } from '../context';
 import { Runtime } from '../runtime';
 
@@ -63,7 +63,7 @@ export interface DesignContext extends RegContext, ProvidedInMetadata {
     runtime: Runtime;
     injectorType?: (type: AbstractType, typeReflect: ClassRef) => void | Promise<void>;
     regProvides?: boolean;
-    getRecords: () => Map<Token, FactoryRecord>;
+    getRecords: () => Map<Token, InjectorRecord>;
 }
 
 

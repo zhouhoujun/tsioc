@@ -2,7 +2,7 @@ import { Observable } from 'rxjs';
 import { InvocationContext, InvocationOptions, InvokeArguments } from './context';
 import { ClassRef } from './metadata/class';
 import { AbstractType } from './types';
-import { Injector, MethodType } from './injector';
+import { MethodType } from './injector';
 import { DestroyCallback } from './destroy';
 
 
