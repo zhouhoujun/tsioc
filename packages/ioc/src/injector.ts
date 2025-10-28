@@ -1,6 +1,6 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
 import { AbstractType, Type } from './types';
-import { ClassProvider, ExistingProvider, FactoryProvider, ModuleType, Provider, ValueProvider } from './providers';
+import { ClassProvider, ExistingProvider, FactoryProvider, ModuleType, ModuleWithProviders, Provider, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
 import { ClassRef } from './metadata/class';
@@ -70,7 +70,6 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @returns {T} token value.
      */
     abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, raise?: Injector): T;
-    
     /**
      * injector has destoryed or not.
      */
@@ -405,45 +404,6 @@ export const enum FnType {
 export type InjectorScope = AbstractType | 'platform' | 'root' | 'static';
 
 
-/**
- * factory record.
- */
-export interface FactoryRecord<T = any> {
-    /**
-     * use value for provide.
-     *
-     * @type {*}
-     */
-    value?: any;
-    /**
-     * factory.
-     */
-    fn?: Function;
-    /**
-     * fn type.
-     */
-    fy?: FnType;
-    /**
-     * deps.
-     */
-    deps?: any[];
-    /**
-     * token provider type.
-     */
-    type?: AbstractType<T>;
-    /**
-     * is static for fn create once.
-     */
-    stic?: boolean;
-    /**
-     * cache value.
-     */
-    cache?: T;
-    /**
-     * cache expires.
-     */
-    expires?: number;
-}
 
 export interface MethodFunc extends Function, TypedPropertyDescriptor<any> {
 }
@@ -483,3 +443,43 @@ export interface InjectorRecord<T = any> {
      */
     expires?: number;
 }
+
+// /**
+//  * factory record.
+//  */
+// export interface FactoryRecord<T = any> {
+//     /**
+//      * use value for provide.
+//      *
+//      * @type {*}
+//      */
+//     value?: any;
+//     /**
+//      * factory.
+//      */
+//     fn?: Function;
+//     /**
+//      * fn type.
+//      */
+//     fy?: FnType;
+//     /**
+//      * deps.
+//      */
+//     deps?: any[];
+//     /**
+//      * token provider type.
+//      */
+//     type?: AbstractType<T>;
+//     /**
+//      * is static for fn create once.
+//      */
+//     stic?: boolean;
+//     /**
+//      * cache value.
+//      */
+//     cache?: T;
+//     /**
+//      * cache expires.
+//      */
+//     expires?: number;
+// }

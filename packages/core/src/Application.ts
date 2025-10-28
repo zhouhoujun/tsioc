@@ -149,7 +149,7 @@ export class Application<T = any> {
     protected createInjector<T>(providers: Provider[], option: ApplicationOption<T>) {
         const container = option.injector ?? createInjector(providers);
         if (option.baseURL) {
-             Operator.setValue(container, PROCESS_ROOT, option.baseURL);
+            Operator.setValue(container, PROCESS_ROOT, option.baseURL);
         }
         if (this.loader) {
             Operator.setValue(container, ModuleLoader, this.loader);

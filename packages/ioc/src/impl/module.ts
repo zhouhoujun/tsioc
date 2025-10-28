@@ -3,28 +3,27 @@ import { Injector, InjectorScope } from '../injector';
 import { getClassRef, getClassify } from '../metadata/refl';
 import { ClassRef, ModuleDef } from '../metadata/class';
 import { ModuleOption, ModuleRef } from '../module.ref';
-import { isModuleProviders, ModuleWithProviders, Provider } from '../providers';
+import { isModuleProviders, ModuleWithProviders } from '../providers';
 import { Type } from '../types';
-import { DefaultInjector } from './injector';
-import { mergePromise, processInject, processInjectModule, processInjectType, processUse } from './resolve';
-import { Operator } from './operator';
+import { createValueRecord, mergePromise } from './common';
+import { AbstractInjector, processInjectType, processProviders, processUse } from './base';
 
 
 /**
  * default modeuleRef implements {@link ModuleRef}
  */
-export class DefaultModuleRef<T = any> extends DefaultInjector implements ModuleRef<T> {
+export class DefaultModuleRef<T = any> extends AbstractInjector implements ModuleRef<T> {
     private _instance!: T;
     private _type: Type<T>;
     private _typeRefl: ClassRef<T>;
 
+
     constructor(moduleType: ClassRef<T>, parent: Injector, option: ModuleOption = {}) {
-        super(undefined, parent, option?.scope as InjectorScope ?? moduleType.type);
-        this.isStatic = (moduleType.getAnnotation().static || option.isStatic) !== false;
+        super(parent, option?.scope as InjectorScope ?? moduleType.type, (moduleType.getAnnotation().static || option.isStatic) !== false);
         this._typeRefl = moduleType;
         this._type = moduleType.type as Type<T>;
 
-        Operator.setValue(this, ModuleRef, this);
+        this.records.set(ModuleRef, createValueRecord(this));
         this.initWithOptions(option);
     }
 
@@ -33,7 +32,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
         const runtime = this.getRuntime();
         runtime.modules.set(this._type, this);
         let ps: Promise<void> | void | undefined;
-        
+
         if (option.deps?.length) {
             const deps = option.deps;
             ps = mergePromise(ps, () => processUse(this, deps))
@@ -41,19 +40,16 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
         if (option.providers?.length) {
             const providers = option.providers;
-            ps = mergePromise(ps, () => processInject(this, providers))
+            ps = mergePromise(ps, () => processProviders(this, providers))
         }
 
         return mergePromise(ps, () => this.ininModule(dedupStack, option))
     }
 
-    protected override initProviders(providers: Provider[]): void {
-
-    }
 
     private ininModule(dedupStack: Type[], option: ModuleOption, ps: Promise<void> | void | undefined) {
 
-        ps = mergePromise(ps, () => processInjectModule(this, this._type, dedupStack, this.moduleReflect));
+        ps = mergePromise(ps, () => processInjectType(this, this._type, dedupStack, false, undefined, this.moduleReflect));
 
         return mergePromise(ps, () => {
             this._instance = this.get(this._type);
@@ -106,7 +102,7 @@ export function createModuleRef<T>(module: Type<T> | ClassRef<T> | ModuleWithPro
             providers: option?.providers?.length ? [module.providers ?? [], option?.providers] : module.providers
         })
     }
-    const moduleDef =  getClassify(module);
+    const moduleDef = getClassify(module);
     if (!moduleDef.getAnnotation<ModuleDef>().module) {
         throw new Exception(`module def must be module type.`)
     }

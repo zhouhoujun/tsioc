@@ -1,60 +1,34 @@
 import { AbstractType } from '../types';
-import { Destroyable, DestroyCallback, OnDestroy } from '../destroy';
-import { remove, getTypeName, getTypeChain, defer } from '../utils/lang';
+import { remove, getTypeName, getTypeChain } from '../utils/lang';
 import { isArray, isFunction, isString, isAbstractType, getType, isType, isNil } from '../utils/chk';
 import { ResolveInterceptorLike, Parameter } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeArguments, InvocationRequest } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token } from '../tokens';
-import { Injector, InjectOperator, InjectorRecord } from '../injector';
+import { Injector } from '../injector';
 import { Exception } from '../exception';
 import { ClassRef } from '../metadata/class';
 import { getDef } from '../metadata/refl';
-import { Provider } from '../providers';
 import { Invocation } from '../invocation';
 import { ContextToken, HandlerLike, InterceptorLike } from '../handler';
 import { HandlerScope } from '../lifescope/lifescope';
 import { Runtime } from '../runtime';
 import { nonEnumerable } from '../metadata/decor';
-import { assertNotDestroyed, Operator } from './operator';
-import { NullInjectorException, processInject, THROW_FLAGE, tryResolveToken } from './resolve';
-import { DefaultInjectOperator } from './injector';
+import { createValueRecord, NullInjectorException, THROW_FLAGE, tryResolveToken } from './common';
+import { AbstractInjector, deferProcessProviders, Operator  } from './base';
+
 
 
 
 /**
  * The context for the {@link Invocation invocation of an operation}.
  */
-export class DefaultInvocationContext<TParent extends Injector = Injector> extends InvocationContext<TParent> implements Destroyable, OnDestroy {
+export class DefaultInvocationContext<TParent extends Injector = Injector> extends AbstractInjector<TParent> implements InvocationContext<TParent> {
 
-
-    protected isStatic = true;
+    readonly isStatic = true;
     @nonEnumerable
     protected _refs: InvocationContext[] | null;
     private _injected = false;
-
-    @nonEnumerable
-    private _dsryCbs = new Set<DestroyCallback>();
-    private _destroyed = false;
-
-    @nonEnumerable
-    protected _runtime: Runtime | null = null;
-
-    @nonEnumerable
-    private _parent: TParent | null;
-
-    @nonEnumerable
-    protected _operator: InjectOperator | null = null;
-
-    protected _readyDefer = defer<void>();
-    /**
-     * factories.
-     *
-     * @protected
-     * @type {Map<Token, Function>}
-     */
-    @nonEnumerable
-    protected records: Map<Token, InjectorRecord>;
 
     /**
      * invocation target type.
@@ -86,7 +60,6 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         this._runtime = parent.getRuntime();
         this._parent = parent;
         parent.onDestroy(this);
-        this.initProviders(options.providers || []);
 
         if (options.values) {
             options.values.forEach(par => {
@@ -94,54 +67,23 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
             })
         }
 
-        this.initRequest(options);
-
-        const val = { value: this };
+        const val = createValueRecord(this);
         getTypeChain(getType(this)).forEach(c => {
             this.records.set(c, val);
         });
+
+        deferProcessProviders(this, options.providers, this._readyDefer);
+
+        this.initRequest(options);
+
 
         this.targetType = options.targetType;
         this.propertyKey = options.propertyKey;
         this.afterInit();
     }
 
-    get ready(): Promise<void> {
-        return this._readyDefer.promise;
-    }
-    get size(): number {
-        return this.records.size;
-    }
-
-
-    /**
-     * parent InvocationContext,
-     * 
-     * 上级上下文
-     */
-    getRuntime(): Runtime {
-        return this._runtime!
-    }
-
-    getParent(): TParent {
+    override getParent(): TParent {
         return this._parent!;
-    }
-
-    getInject(): InjectOperator {
-        if (!this._operator) {
-            this.assertNotDestroyed();
-            this._operator = new DefaultInjectOperator(this);
-        }
-        return this._operator
-    }
-
-    protected initProviders(providers: Provider[]) {
-        const result = processInject(this, providers);
-        if (result) {
-            result.then(() => this._readyDefer.resolve())
-        } else {
-            this._readyDefer.resolve();
-        }
     }
 
     protected afterInit(): void {
@@ -338,7 +280,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
      */
     setValue<T>(token: Token<T>, value: T) {
         this.assertNotDestroyed();
-        Operator.setValue(this, token, value);
+        this.records.set(token, createValueRecord(value));
         return this
     }
 
@@ -403,55 +345,12 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         throw new MissingParameterException(missings, type, method)
     }
 
-    get destroyed() {
-        return this._destroyed
-    }
 
-    protected assertNotDestroyed(): void {
-        assertNotDestroyed(this);
-    }
-
-    destroy(): void {
-        return this._destroying()
-    }
-
-    onDestroy(callback?: DestroyCallback): void {
-        if (!callback) {
-            return this._destroying()
-        }
-        this._dsryCbs.add(callback)
-    }
-
-    offDestroy(callback: DestroyCallback) {
-        this._dsryCbs.delete(callback)
-    }
-
-    private _destroying() {
-        if (!this._destroyed) {
-            this._destroyed = true;
-
-            this._dsryCbs.forEach(c => isFunction(c) ? c() : c?.onDestroy())
-
-            this._dsryCbs.clear();
-            this.clear();
-            this._parent = null;
-        }
-    }
 
     protected clear() {
-        this.scope && this.getRuntime()?.removeInjector(this.scope);
-        this.records.forEach(r => {
-            if (r?.type) this.getRuntime().clearTypeProvider(r.type);
-        });
-        if (this._parent) {
-            !this._parent.destroyed && (this._parent as Destroyable).offDestroy?.(this)
-        }
-        this.records.clear();
+        super.clear();
         this._resolvers = null;
         this._refs = null;
-        this._runtime = null;
-        this._operator = null;
-        this._parent = null;
     }
 
 }
@@ -539,7 +438,8 @@ export function getTokenResolver(runtime: Runtime): HandlerScope<[Token, InjectF
                     }
                     if (!context.has(type, flags)) {
                         // const injector = context.getParent() ?? context.injector;
-                        Operator.register(context, type);
+                        // Operator.register(context, type);
+                        
                     }
                     return context.get(type, null, flags)
                 },
