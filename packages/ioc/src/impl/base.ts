@@ -772,11 +772,19 @@ export function registerHandler(typeRef: ClassRef, context: Context) {
     const type = typeRef.type as Type;
     const injector = context.get(REGISTER_INJECTOR) as AbstractInjector;
     const providerIn = context.get(PROVIDERIN_INJECTOR) as AbstractInjector;
-
+    const singleton = typeRef.getAnnotation().singleton;
+    const runtime = context.get(Runtime);
     const factory = (raise?: Injector) => {
+        if (singleton && runtime.hasSingleton(type)) {
+            return runtime.getSingleton(type);
+        }
         // 创建实例
         const instanceDeps = resolveArgs(raise ?? providerIn ?? injector, typeRef.getParameters('constructor'));
-        return new type(...instanceDeps);
+        const instance = new type(...instanceDeps);
+        if (singleton) {
+            runtime.setSingleton(type, instance, providerIn ?? injector);
+        }
+        return instance;
     };
 
     if (providerIn) {

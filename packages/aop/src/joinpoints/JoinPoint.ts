@@ -1,5 +1,5 @@
 import {
-    tokenId, Injector, IocContext, DefaultInvocationContext, ParameterMetadata, lang, AbstractType,
+    tokenId, Injector, DefaultInvocationContext, ParameterMetadata, lang, AbstractType,
     DecorDefine, Defer, TargetInvokeArguments, ClassRef, HandlerFn, Context, noPointcut,
     Abstract, 
 } from '@tsdi/ioc';

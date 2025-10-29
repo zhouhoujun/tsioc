@@ -5,6 +5,8 @@ import { Operator  } from './base';
 import { Runtime } from '../runtime';
 import { HandlerScope } from '../lifescope/lifescope';
 import { CURR_DECOR,  PROVIDERIN_INJECTOR, REGISTER_INJECTOR } from '../lifescope/tokens';
+import { isFunction } from '../utils/chk';
+import { Provider } from '../providers';
 
 export const autorunInterceptor = (input: ClassRef, next: HandlerFn, context: Context) => {
     return invokeTail(() => next(input, context), (res) => {
@@ -103,26 +105,27 @@ export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context:
     const providedIn = context.get(PROVIDERIN_INJECTOR);
     const regInjector = context.get(REGISTER_INJECTOR);
     const injector = providedIn ?? regInjector;
-    const provide = context.get('provide');
+    const provide = input.provides[0];
     if (provide && provide !== type) {
+        const pType = input.getAnnotation().providedIn;
+        if(isFunction(pType)) {
         // if (input.providedIn && isFunction(input.providedIn)) {
             const runtime = injector.getRuntime();
         //     if (!runtime.getInjector(type)) {
-                const pType = input.providedIn;
-                const prd = { provide, useExisting: type };
+                const prd = { provide, useExisting: type } as Provider;
                 runtime.setTypeProvider(pType, prd);
                 injector.onDestroy(() => {
                     runtime.removeTypeProvider(pType, prd);
                 });
         //     }
-        // }
-        input.classRef.provides.forEach(provide => {
+        }
+        input.provides.forEach(provide => {
             if (provide != provide && regProvides !== false) {
                 Operator.inject(injector, { provide, useExisting: provide })
             }
         })
     } else {
-        input.classRef.provides.forEach(provide => {
+        input.provides.forEach(provide => {
             regProvides !== false && Operator.inject(injector, { provide, useClass: type })
         })
     }
