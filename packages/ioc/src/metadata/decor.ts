@@ -12,6 +12,8 @@ import { InvokeArguments, InvokeOptions } from '../context';
 import { getModuleType } from '../module.ref';
 import { getTypes } from '../utils/lang';
 import { ActionType, DecoratorOption, ModuleDef } from './class';
+import { Runtime } from '../runtime';
+import { CURR_DECOR, PROVIDERIN_INJECTOR, REGISTER_INJECTOR } from '../lifescope/tokens';
 
 
 
@@ -71,14 +73,14 @@ export function createModuleDecorator<T extends ModuleMetadata>(name: string, op
                 ...isArray(hd) ? hd : [hd]
             ]
         },
-        design: {
-            beforeAnnoation: (context) => {
-                // use as dependence inject module.
-                if (context.injectorType) {
-                    context.injectorType(context.type, context.classRef);
-                }
-            }
-        },
+        // design: {
+        //     beforeAnnoation: (classRef, context) => {
+        //         // use as dependence inject module.
+        //         if (context.injectorType) {
+        //             context.injectorType(context.type, context.classRef);
+        //         }
+        //     }
+        // },
         appendProps: (meta) => {
             if (append) {
                 append(meta as T)
@@ -733,13 +735,14 @@ export interface ProvidedIn {
 export const ProvidedIn: ProvidedIn = createDecorator<ProvidedInTargetMetadata>('ProvidedIn', {
     props: (target: AbstractType, provide?: Token, alias?: string) => ({ target, provide: getToken(provide!, alias) }),
     design: {
-        afterAnnoation: (ctx) => {
-            const meta = ctx.classRef.getMetadata<ProvidedInTargetMetadata>(ctx.currDecor);
-            const type = ctx.type;
-            const prds = meta?.provide ? { provide: meta.provide, useClass: type } : type;
-            const platform = ctx.injector.getRuntime();
+        afterAnnoation: (classRef, context) => {
+            const meta = classRef.getMetadata<ProvidedInTargetMetadata>(context.get(CURR_DECOR));
+            const type = classRef.type;
+            const prds = (meta?.provide ? { provide: meta.provide, useClass: type } : type) as Provider;
+            const platform = context.get(Runtime);
+            const injector = context.get(PROVIDERIN_INJECTOR) ?? context.get(REGISTER_INJECTOR);
             platform.setTypeProvider(meta.target, prds);
-            ctx.injector.onDestroy(() => {
+            injector.onDestroy(() => {
                 platform.removeTypeProvider(type, prds);
             });
         }

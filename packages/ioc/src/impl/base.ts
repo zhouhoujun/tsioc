@@ -13,6 +13,8 @@ import { nonEnumerable } from '../metadata/decor';
 import { getClassRef } from '../metadata/refl';
 import { NullInjectorException, THROW_FLAGE, tryResolveToken, RegisterExtedOption, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, Empty } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
+import { Context, ContextToken } from '../handler';
+import { PROVIDERIN_INJECTOR, REGISTER_INJECTOR } from '../lifescope/tokens';
 
 
 
@@ -336,7 +338,7 @@ export namespace Operator {
      * @param {InjectFlags} flags get token strategy.
      * @returns {AbstractType<T>}
      */
-    export function getTokenProvider<T>(injector: Injector, token: Token<T>, flags = InjectFlags.Default): AbstractType<T> {        
+    export function getTokenProvider<T>(injector: Injector, token: Token<T>, flags = InjectFlags.Default): AbstractType<T> {
         if (!(injector instanceof AbstractInjector)) throw new ArgumentException('not extends from AbstractInjector');
         injector.assertNotDestroyed();
         let type: AbstractType | undefined;
@@ -409,7 +411,7 @@ export namespace Operator {
      * @returns {this}
      */
     export function use(injector: Injector, ...modules: ModuleType[]): Type<any>[];
-    export function use(injector: Injector, ...args: any[]): Type<any>[] {        
+    export function use(injector: Injector, ...args: any[]): Type<any>[] {
         if (!(injector instanceof AbstractInjector)) throw new ArgumentException('not extends from AbstractInjector');
         const types: Type<any>[] = [];
         processUse(injector, args, types);
@@ -764,27 +766,62 @@ export function generateRecord<T>(injector: AbstractInjector, provider: StaticPr
 
 }
 
+
+
+export function registerHandler(typeRef: ClassRef, context: Context) {
+    const type = typeRef.type as Type;
+    const injector = context.get(REGISTER_INJECTOR) as AbstractInjector;
+    const providerIn = context.get(PROVIDERIN_INJECTOR) as AbstractInjector;
+
+    const factory = (raise?: Injector) => {
+        // 创建实例
+        const instanceDeps = resolveArgs(raise ?? providerIn ?? injector, typeRef.getParameters('constructor'));
+        return new type(...instanceDeps);
+    };
+
+    if (providerIn) {
+        providerIn.getRecords().set(type, createRecord(factory, (typeRef.getAnnotation().static ?? providerIn.isStatic) ? LAZY : null));
+        return createRecord((raise?: Injector) => providerIn.get(type, undefined, InjectFlags.Default, raise), (typeRef.getAnnotation().static ?? injector.isStatic) ? LAZY : null);
+    }
+
+    return createRecord(factory, (typeRef.getAnnotation().static ?? injector.isStatic) ? LAZY : null);
+}
+
 export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef, isStatic?: boolean): InjectorRecord {
     isStatic = typeRef.getAnnotation()?.static ?? isStatic;
     const providedIn = typeRef.getAnnotation()?.providedIn;
     const origin = injector;
+    const runtime = injector.getRuntime();
     if (providedIn) {
-        injector = injector.getRuntime().getInjector(providedIn, injector);
+        injector = runtime.getInjector(providedIn, injector);
     }
-    const type = typeRef.type as Type;
-    if (origin !== injector) {
-        register(injector, typeRef);
+    if (injector.has(typeRef.type)) {
         return createRecord(() => injector.get(type), isStatic ? LAZY : null);
     }
+    const context = new Context();
+    context.set(REGISTER_INJECTOR, injector);
+    context.set(Runtime, injector.getRuntime());
 
-    const factory = (raise?: Injector) => {
-        // 创建实例
-        const instanceDeps = resolveArgs(raise ?? injector, typeRef.getParameters('constructor'));
-        return new type(...instanceDeps);
-    };
+    const type = typeRef.type as Type;
+    if (origin !== injector) {
+        context.set(PROVIDERIN_INJECTOR, injector);
+        // register(injector, typeRef);
+        // return createRecord(() => injector.get(type), isStatic ? LAZY : null);
+    }
+
+    return runtime.designHandler.handle(typeRef, context, {
+        finally: () => {
+            context.onDestroy()
+        }
+    });
+    // const factory = (raise?: Injector) => {
+    //     // 创建实例
+    //     const instanceDeps = resolveArgs(raise ?? injector, typeRef.getParameters('constructor'));
+    //     return new type(...instanceDeps);
+    // };
 
 
-    return createRecord(factory, isStatic ? LAZY : null);
+    // return createRecord(factory, isStatic ? LAZY : null);
 
 }
 

@@ -37,8 +37,8 @@ export * from './handler';
 export * from './lifescope/ctx';
 export * from './lifescope/commom';
 export * from './lifescope/lifescope';
-export * from './lifescope/initialize';
-export * from './lifescope/design';
+export * from './impl/initialize';
+export * from './impl/design';
 
 // module
 export * from './module.ref';

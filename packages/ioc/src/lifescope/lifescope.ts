@@ -18,7 +18,7 @@ export class HandlerScope<TInput = any, TContext = any, TOutput = any> implement
         this.interceptors = interceptors.slice();
     }
 
-    handle(input: TInput, context?: TContext, next?: NextOpter<TOutput, TContext> | ((input: TInput) => any)): TOutput {
+    handle(input: TInput, context: TContext, next?: NextOpter<TOutput, TContext> | ((input: TInput) => any)): TOutput {
         const chain = this.getChain();
         return invokeTail<any>(() => chain(input, isFunction(this.backend) ? this.backend : toHandlerFn(this.backend), context ?? this.runtime?.context), next);
     }

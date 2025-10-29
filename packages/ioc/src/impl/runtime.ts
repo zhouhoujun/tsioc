@@ -4,16 +4,16 @@ import { isFunction } from '../utils/chk';
 import { getClassify } from '../metadata/refl';
 import { ClassRef } from '../metadata/class';
 import { Provider, StaticProvider } from '../providers';
-import { Injector, InjectorScope } from '../injector';
+import { Injector, InjectorRecord, InjectorScope } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ModuleRef } from '../module.ref';
 import { HandlerScope } from '../lifescope/lifescope';
 import { Context } from '../handler';
-import { INITIALIZE_INTERCEPTORS } from '../lifescope/initialize';
-import { DESIGN_INTERECPTORS, registerHandler } from '../lifescope/design';
+import { INITIALIZE_INTERCEPTORS } from './initialize';
+import { DESIGN_INTERECPTORS } from './design';
 import { InvocationFactory } from '../invocation';
-import { Operator } from './operator';
+import { Operator, registerHandler } from './base';
 
 /**
  * default runtime implements {@link Runtime}.
@@ -53,7 +53,7 @@ export class DefaultRuntime implements Runtime {
         return this._initialize;
     }
 
-    get designHandler(): HandlerScope {
+    get designHandler(): HandlerScope<ClassRef, Context, InjectorRecord> {
         if (!this._design) {
             this._design = new HandlerScope(this, registerHandler, DESIGN_INTERECPTORS);
         }
