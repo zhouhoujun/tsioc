@@ -1,10 +1,10 @@
 import { Context, ContextToken, HandlerFn, InterceptorLike, invokeTail } from '../handler';
 import { InjectorRecord } from '../injector';
 import { ClassRef, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
-import { Operator  } from './base';
+import { Operator } from './base';
 import { Runtime } from '../runtime';
 import { HandlerScope } from '../lifescope/lifescope';
-import { CURR_DECOR,  PROVIDERIN_INJECTOR, REGISTER_INJECTOR } from '../lifescope/tokens';
+import { CURR_DECOR, PROVIDERIN_INJECTOR, REGISTER_INJECTOR } from '../lifescope/tokens';
 import { isFunction } from '../utils/chk';
 import { Provider } from '../providers';
 
@@ -36,7 +36,7 @@ const BEFORE_ANNOATION_SCOPE = new ContextToken<HandlerScope<ClassRef>>(() => nu
 export function getDesignBeforeAnnoationScope(runtime: Runtime): HandlerScope<ClassRef> {
     let scope = runtime.context.get(BEFORE_ANNOATION_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<ClassRef>(runtime, (input, context) => {
+        scope = new HandlerScope<ClassRef, Context>(runtime, (input, context) => {
             invokeHandler(input.classDecors, input, Decors.beforeAnnoation, context)
         });
         runtime.context.set(BEFORE_ANNOATION_SCOPE, scope);
@@ -49,7 +49,7 @@ const AFTER_ANNOATION_SCOPE = new ContextToken<HandlerScope>(() => null!);
 export function getDesignAfterAnnoationScope(runtime: Runtime): HandlerScope<ClassRef> {
     let scope = runtime.context.get(AFTER_ANNOATION_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<ClassRef>(runtime, (input, context) => {
+        scope = new HandlerScope<ClassRef, Context>(runtime, (input, context) => {
             invokeHandler(input.classDecors, input, Decors.afterAnnoation, context)
         });
         runtime.context.set(AFTER_ANNOATION_SCOPE, scope);
@@ -75,7 +75,7 @@ const DESIGN_METHOD_SCOPE = new ContextToken<HandlerScope<ClassRef>>(() => null!
 export function getDesignMethodScope(runtime: Runtime): HandlerScope<ClassRef> {
     let scope = runtime.context.get(DESIGN_METHOD_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<ClassRef>(runtime, (input, context) => {
+        scope = new HandlerScope<ClassRef, Context>(runtime, (input, context) => {
             invokeHandler(input.methodDecors, input, Decors.method, context);
         });
         runtime.context.set(DESIGN_METHOD_SCOPE, scope);
@@ -85,13 +85,22 @@ export function getDesignMethodScope(runtime: Runtime): HandlerScope<ClassRef> {
 
 
 export const afterPropertyAnnoationInterceptor = (input: ClassRef, next: HandlerFn, context: Context) => {
-    return invokeTail(() => next(input, context), () => getDesignPropertyScope(context.get(Runtime)).handle(input, context));
+    return invokeTail(() => next(input, context), (res) => {
+        getDesignPropertyScope(context.get(Runtime)).handle(input, context);
+        return res;
+    });
 }
 export const afterMethodAnnoationInterceptor = (input: ClassRef, next: HandlerFn, context: Context) => {
-    return invokeTail(() => next(input, context), () => getDesignMethodScope(context.get(Runtime)).handle(input, context));
+    return invokeTail(() => next(input, context), (res) => {
+        getDesignMethodScope(context.get(Runtime)).handle(input, context);
+        return res;
+    });
 }
 export const afterAnnoationInterceptor = (input: ClassRef, next: HandlerFn, context: Context) => {
-    return invokeTail(() => next(input, context), () => getDesignAfterAnnoationScope(context.get(Runtime)).handle(input, context));
+    return invokeTail(() => next(input, context), (res) => {
+        getDesignAfterAnnoationScope(context.get(Runtime)).handle(input, context);
+        return res;
+    });
 }
 
 export const beforeAnnoactionInterceptor = (input: ClassRef, next: HandlerFn, context: Context) => {
@@ -108,20 +117,20 @@ export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context:
     const provide = input.provides[0];
     if (provide && provide !== type) {
         const pType = input.getAnnotation().providedIn;
-        if(isFunction(pType)) {
-        // if (input.providedIn && isFunction(input.providedIn)) {
+        if (isFunction(pType)) {
+            // if (input.providedIn && isFunction(input.providedIn)) {
             const runtime = injector.getRuntime();
-        //     if (!runtime.getInjector(type)) {
-                const prd = { provide, useExisting: type } as Provider;
-                runtime.setTypeProvider(pType, prd);
-                injector.onDestroy(() => {
-                    runtime.removeTypeProvider(pType, prd);
-                });
-        //     }
+            //     if (!runtime.getInjector(type)) {
+            const prd = { provide, useExisting: type } as Provider;
+            runtime.setTypeProvider(pType, prd);
+            injector.onDestroy(() => {
+                runtime.removeTypeProvider(pType, prd);
+            });
+            //     }
         }
-        input.provides.forEach(provide => {
-            if (provide != provide && regProvides !== false) {
-                Operator.inject(injector, { provide, useExisting: provide })
+        input.provides.forEach(pdr => {
+            if (provide != pdr && regProvides !== false) {
+                Operator.inject(injector, { provide: pdr, useExisting: provide })
             }
         })
     } else {

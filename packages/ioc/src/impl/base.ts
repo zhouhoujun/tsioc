@@ -14,7 +14,8 @@ import { getClassRef } from '../metadata/refl';
 import { NullInjectorException, THROW_FLAGE, tryResolveToken, RegisterExtedOption, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, Empty } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { Context, ContextToken } from '../handler';
-import { PROVIDERIN_INJECTOR, REGISTER_INJECTOR } from '../lifescope/tokens';
+import { CTOR_ARGS, CTOR_PARAMS, PROVIDERIN_INJECTOR, REGISTER_INJECTOR } from '../lifescope/tokens';
+import { Parameter } from '../resolver';
 
 
 
@@ -734,10 +735,10 @@ const LAZY = {};
  * @param provider 提供者配置
  * @returns 优化后的提供者记录
  */
-export function generateRecord<T>(injector: AbstractInjector, provider: StaticProvider, isStatic?: boolean): InjectorRecord<T> {
+export function generateRecord<T>(injector: AbstractInjector, provider: StaticProvider): InjectorRecord<T> {
 
     if (isTypeProvider(provider)) {
-        return generateTypeRecord(injector, getClassRef(provider), isStatic);
+        return generateTypeRecord(injector, getClassRef(provider));
     } else {
         let factory: ((raise?: Injector) => T) | undefined;
         if (isValueProvider(provider)) {
@@ -748,20 +749,21 @@ export function generateRecord<T>(injector: AbstractInjector, provider: StaticPr
             factory = (raise?: Injector) => (raise ?? injector).get(provider.useExisting);
         } else if (provider.provide) {
             const classType = (provider as ClassProvider).useClass ?? provider.provide;
-            if (!provider.deps) {
-                return generateTypeRecord(injector, getClassRef(classType), isStatic);
-            }
-            factory = (raise?: Injector) => {
-                // 创建实例
-                const instanceDeps = resolveArgs(raise ?? injector, provider.deps);
-                return new classType(...instanceDeps);
-            };
+            // if (!provider.deps) {
+            //     return generateTypeRecord(injector, getClassRef(classType));
+            // }
+            // factory = (raise?: Injector) => {
+            //     // 创建实例
+            //     const instanceDeps = resolveArgs(raise ?? injector, provider.deps);
+            //     const initContext = new Context();
+            //     initContext.set(CTOR_ARGS, instanceDeps);
+            //     const typeRef = getClassRef(classType);
+            //     return typeRef ? injector.getRuntime().initHandler.handle(typeRef, initContext, { finally: () => initContext.onDestroy() }) : new classType(...instanceDeps);
+            // };
+            return generateTypeRecord(injector, getClassRef(classType), provider.deps);
         }
 
-        if (isBoolean((provider as UseAsStatic).static)) {
-            isStatic = (provider as UseAsStatic).static;
-        }
-        return createRecord(factory, isStatic ? LAZY : null);
+        return createRecord(factory, ((provider as UseAsStatic).static ?? injector.isStatic) ? LAZY : null);
     }
 
 }
@@ -772,6 +774,7 @@ export function registerHandler(typeRef: ClassRef, context: Context) {
     const type = typeRef.type as Type;
     const injector = context.get(REGISTER_INJECTOR) as AbstractInjector;
     const providerIn = context.get(PROVIDERIN_INJECTOR) as AbstractInjector;
+    const params = context.get(CTOR_PARAMS);
     const singleton = typeRef.getAnnotation().singleton;
     const runtime = context.get(Runtime);
     const factory = (raise?: Injector) => {
@@ -779,8 +782,11 @@ export function registerHandler(typeRef: ClassRef, context: Context) {
             return runtime.getSingleton(type);
         }
         // 创建实例
-        const instanceDeps = resolveArgs(raise ?? providerIn ?? injector, typeRef.getParameters('constructor'));
-        const instance = new type(...instanceDeps);
+        const instanceDeps = resolveArgs(raise ?? providerIn ?? injector, params ?? typeRef.getParameters('constructor'));
+        const initContext = new Context();
+        initContext.set(CTOR_ARGS, instanceDeps);
+        const instance = runtime.initHandler.handle(typeRef, initContext, { finally: () => initContext.onDestroy() });
+        // const instance = new type(...instanceDeps);
         if (singleton) {
             runtime.setSingleton(type, instance, providerIn ?? injector);
         }
@@ -795,14 +801,15 @@ export function registerHandler(typeRef: ClassRef, context: Context) {
     return createRecord(factory, (typeRef.getAnnotation().static ?? injector.isStatic) ? LAZY : null);
 }
 
-export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef, isStatic?: boolean): InjectorRecord {
-    isStatic = typeRef.getAnnotation()?.static ?? isStatic;
+export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef, params?: Array<Token | [Token, ...InjectFlags[]] | Parameter>): InjectorRecord {
+
     const providedIn = typeRef.getAnnotation()?.providedIn;
     const origin = injector;
     const runtime = injector.getRuntime();
     if (providedIn) {
         injector = runtime.getInjector(providedIn, injector);
     }
+    const isStatic = typeRef.getAnnotation()?.static ?? injector.isStatic;
     if (injector.has(typeRef.type)) {
         return createRecord(() => injector.get(type), isStatic ? LAZY : null);
     }
@@ -815,6 +822,10 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
         context.set(PROVIDERIN_INJECTOR, injector);
         // register(injector, typeRef);
         // return createRecord(() => injector.get(type), isStatic ? LAZY : null);
+    }
+
+    if (params) {
+        context.set(CTOR_PARAMS, params);
     }
 
     return runtime.designHandler.handle(typeRef, context, {
@@ -834,7 +845,7 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
 }
 
 export function register(injector: AbstractInjector, typeRef: ClassRef) {
-    const record = generateTypeRecord(injector, typeRef, injector.isStatic);
+    const record = generateTypeRecord(injector, typeRef);
     injector.getRecords().set(typeRef.type, record);
 
 }
