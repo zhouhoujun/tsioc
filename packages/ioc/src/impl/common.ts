@@ -13,10 +13,10 @@ import { isPlainObject } from '../utils/obj';
 
 
 export function createValueRecord<T = any>(value: T, type?: AbstractType<T>): InjectorRecord<T> {
-    return type ? { type, value } : { value };
+    return { type, value };
 }
 
-export function createRecord<T>(factory: (() => T) | undefined, value: T | null | {}, multi?: boolean): InjectorRecord<T> {
+export function createRecord<T>(factory: (() => T) | undefined, value?: T | null | {}, multi?: boolean): InjectorRecord<T> {
     return { factory, value, multi: multi ? [] : undefined };
 }
 

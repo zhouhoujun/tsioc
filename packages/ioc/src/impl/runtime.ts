@@ -45,7 +45,7 @@ export class DefaultRuntime implements Runtime {
 
     get initHandler(): HandlerScope {
         if (!this._initialize) {
-            this._initialize = new HandlerScope(this, (ctx) => {
+            this._initialize = new HandlerScope(this, (classRef, ) => {
                 ctx.instance = new ctx.type(...ctx.args || []);
                 return ctx.instance;
             }, INITIALIZE_INTERCEPTORS);

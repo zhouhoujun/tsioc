@@ -421,7 +421,7 @@ export interface InjectorRecord<T = any> {
     /**
      * 预创建的值或占位符
      */
-    value: T | null | {};
+    value: T | undefined | null | {};
     
     /**
      * 多提供者的依赖数组
@@ -435,6 +435,8 @@ export interface InjectorRecord<T = any> {
      * cache expires.
      */
     expires?: number;
+
+    onRegister?: ()=> void;
 }
 
 // /**

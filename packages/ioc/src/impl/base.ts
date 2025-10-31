@@ -14,7 +14,7 @@ import { getClassRef } from '../metadata/refl';
 import { NullInjectorException, THROW_FLAGE, tryResolveToken, RegisterExtedOption, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, Empty } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { Context, ContextToken } from '../handler';
-import { CTOR_ARGS, CTOR_PARAMS, PROVIDERIN_INJECTOR, REGISTER_INJECTOR } from '../lifescope/tokens';
+import { CTOR_ARGS, CTOR_PARAMS, PROVIDE, PROVIDERIN_INJECTOR, REGISTER_INJECTOR } from '../lifescope/tokens';
 import { Parameter } from '../resolver';
 
 
@@ -704,6 +704,10 @@ export function processProvider(injector: AbstractInjector, provider: StaticProv
         } else {
             injector.getRecords().set(token, record);
         }
+        if (record.onRegister) {
+            record.onRegister();
+            record.onRegister = undefined;
+        }
         (provider as ProviderExts).onRegistered?.(injector);
     } else if ((provider as DynamicProvider).provider) {
         const pdrs = (provider as DynamicProvider).provider(injector);
@@ -720,7 +724,7 @@ export function processProvider(injector: AbstractInjector, provider: StaticProv
 
 
 
-const LAZY = {};
+export const LAZY = {};
 
 
 /**
@@ -749,18 +753,7 @@ export function generateRecord<T>(injector: AbstractInjector, provider: StaticPr
             factory = (raise?: Injector) => (raise ?? injector).get(provider.useExisting);
         } else if (provider.provide) {
             const classType = (provider as ClassProvider).useClass ?? provider.provide;
-            // if (!provider.deps) {
-            //     return generateTypeRecord(injector, getClassRef(classType));
-            // }
-            // factory = (raise?: Injector) => {
-            //     // 创建实例
-            //     const instanceDeps = resolveArgs(raise ?? injector, provider.deps);
-            //     const initContext = new Context();
-            //     initContext.set(CTOR_ARGS, instanceDeps);
-            //     const typeRef = getClassRef(classType);
-            //     return typeRef ? injector.getRuntime().initHandler.handle(typeRef, initContext, { finally: () => initContext.onDestroy() }) : new classType(...instanceDeps);
-            // };
-            return generateTypeRecord(injector, getClassRef(classType), provider.deps);
+            return generateTypeRecord(injector, getClassRef(classType), provider.deps, provider.provide);
         }
 
         return createRecord(factory, ((provider as UseAsStatic).static ?? injector.isStatic) ? LAZY : null);
@@ -801,46 +794,60 @@ export function registerHandler(typeRef: ClassRef, context: Context) {
     return createRecord(factory, (typeRef.getAnnotation().static ?? injector.isStatic) ? LAZY : null);
 }
 
-export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef, params?: Array<Token | [Token, ...InjectFlags[]] | Parameter>): InjectorRecord {
+export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef, params?: Array<Token | [Token, ...InjectFlags[]] | Parameter>, provide?: Token): InjectorRecord {
 
-    const providedIn = typeRef.getAnnotation()?.providedIn;
+    const { static: decStatic, providedIn, singleton } = typeRef.getAnnotation();
     const origin = injector;
     const runtime = injector.getRuntime();
     if (providedIn) {
         injector = runtime.getInjector(providedIn, injector);
     }
-    const isStatic = typeRef.getAnnotation()?.static ?? injector.isStatic;
-    if (injector.has(typeRef.type)) {
+    const isStatic = decStatic ?? injector.isStatic;
+    const type = typeRef.type as Type;
+    const pdrId = origin !== injector;
+    if (pdrId && injector.has(typeRef.type)) {
         return createRecord(() => injector.get(type), isStatic ? LAZY : null);
     }
-    const context = new Context();
-    context.set(REGISTER_INJECTOR, injector);
-    context.set(Runtime, injector.getRuntime());
 
-    const type = typeRef.type as Type;
-    if (origin !== injector) {
-        context.set(PROVIDERIN_INJECTOR, injector);
-        // register(injector, typeRef);
-        // return createRecord(() => injector.get(type), isStatic ? LAZY : null);
-    }
 
-    if (params) {
-        context.set(CTOR_PARAMS, params);
-    }
 
-    return runtime.designHandler.handle(typeRef, context, {
-        finally: () => {
-            context.onDestroy()
+
+    const factory = (raise?: Injector) => {
+        if (singleton && runtime.hasSingleton(type)) {
+            return runtime.getSingleton(type);
         }
-    });
-    // const factory = (raise?: Injector) => {
-    //     // 创建实例
-    //     const instanceDeps = resolveArgs(raise ?? injector, typeRef.getParameters('constructor'));
-    //     return new type(...instanceDeps);
-    // };
+        // 创建实例
+        const instanceDeps = resolveArgs(raise ?? injector, params ?? typeRef.getParameters('constructor'));
+        const context = new Context();
+        context.set(CTOR_ARGS, instanceDeps);
+        context.set(REGISTER_INJECTOR, injector);
+        const instance = runtime.initHandler.handle(typeRef, context, { finally: () => context.onDestroy() });
+        if (singleton) {
+            runtime.setSingleton(type, instance, injector);
+        }
+        return instance;
+    };
 
+    let record: InjectorRecord;
+    if (pdrId) {
+        // context.set(PROVIDERIN_INJECTOR, injector);
+        // register(injector, typeRef);
+        injector.getRecords().set(provide ?? type, createRecord(factory, isStatic ? LAZY : null))
+        record = createRecord(() => injector.get(type), isStatic ? LAZY : null);
+    } else {
 
-    // return createRecord(factory, isStatic ? LAZY : null);
+        record = createRecord(factory, isStatic ? LAZY : null);
+    }
+    record.onRegister = () => {
+        const context = new Context();
+        context.set(REGISTER_INJECTOR, injector);
+        context.set(Runtime, injector.getRuntime());
+        if (provide) {
+            context.set(PROVIDE, provide);
+        }
+        runtime.designHandler.handle(typeRef, context, { finally: () => context.onDestroy() })
+    }
+    return record;
 
 }
 

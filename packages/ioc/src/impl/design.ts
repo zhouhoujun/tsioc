@@ -1,12 +1,13 @@
 import { Context, ContextToken, HandlerFn, InterceptorLike, invokeTail } from '../handler';
 import { InjectorRecord } from '../injector';
 import { ClassRef, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
-import { Operator } from './base';
+import { AbstractInjector, LAZY, Operator } from './base';
 import { Runtime } from '../runtime';
 import { HandlerScope } from '../lifescope/lifescope';
-import { CURR_DECOR, PROVIDERIN_INJECTOR, REGISTER_INJECTOR } from '../lifescope/tokens';
+import { CURR_DECOR, PROVIDE, PROVIDERIN_INJECTOR, REGISTER_INJECTOR } from '../lifescope/tokens';
 import { isFunction } from '../utils/chk';
 import { Provider } from '../providers';
+import { createRecord } from './common';
 
 export const autorunInterceptor = (input: ClassRef, next: HandlerFn, context: Context) => {
     return invokeTail(() => next(input, context), (res) => {
@@ -113,8 +114,8 @@ export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context:
     const type = input.type;
     const providedIn = context.get(PROVIDERIN_INJECTOR);
     const regInjector = context.get(REGISTER_INJECTOR);
-    const injector = providedIn ?? regInjector;
-    const provide = input.provides[0];
+    const injector = (providedIn ?? regInjector) as AbstractInjector;
+    const provide = context.get(PROVIDE);
     if (provide && provide !== type) {
         const pType = input.getAnnotation().providedIn;
         if (isFunction(pType)) {
@@ -128,14 +129,18 @@ export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context:
             });
             //     }
         }
+        const factory = ()=> injector.get(provide);
         input.provides.forEach(pdr => {
-            if (provide != pdr && regProvides !== false) {
-                Operator.inject(injector, { provide: pdr, useExisting: provide })
+            if (provide != pdr) {
+                injector.getRecords().set(pdr, createRecord(factory, injector.isStatic? LAZY: undefined))
+                // Operator.inject(injector, { provide: pdr, useExisting: provide })
             }
         })
     } else {
+        const factory = ()=> injector.get(type);
         input.provides.forEach(provide => {
-            regProvides !== false && Operator.inject(injector, { provide, useClass: type })
+            injector.getRecords().set(provide, createRecord(factory, injector.isStatic? LAZY: undefined))
+            // regProvides !== false && Operator.inject(injector, { provide, useClass: type })
         })
     }
     return next(input, context);
