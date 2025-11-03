@@ -13,8 +13,8 @@ import { nonEnumerable } from '../metadata/decor';
 import { getClassRef } from '../metadata/refl';
 import { NullInjectorException, THROW_FLAGE, tryResolveToken, RegisterExtedOption, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, Empty } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
-import { Context, ContextToken } from '../handler';
-import { CTOR_ARGS, CTOR_PARAMS, PROVIDE, PROVIDERIN_INJECTOR, REGISTER_INJECTOR } from '../lifescope/tokens';
+import { Context } from '../handler';
+import { CTOR_PARAMS, PROVIDE, RAISE_INJECTOR, REGISTER_INJECTOR } from '../lifescope/tokens';
 import { Parameter } from '../resolver';
 
 
@@ -763,36 +763,36 @@ export function generateRecord<T>(injector: AbstractInjector, provider: StaticPr
 
 
 
-export function registerHandler(typeRef: ClassRef, context: Context) {
-    const type = typeRef.type as Type;
-    const injector = context.get(REGISTER_INJECTOR) as AbstractInjector;
-    const providerIn = context.get(PROVIDERIN_INJECTOR) as AbstractInjector;
-    const params = context.get(CTOR_PARAMS);
-    const singleton = typeRef.getAnnotation().singleton;
-    const runtime = context.get(Runtime);
-    const factory = (raise?: Injector) => {
-        if (singleton && runtime.hasSingleton(type)) {
-            return runtime.getSingleton(type);
-        }
-        // 创建实例
-        const instanceDeps = resolveArgs(raise ?? providerIn ?? injector, params ?? typeRef.getParameters('constructor'));
-        const initContext = new Context();
-        initContext.set(CTOR_ARGS, instanceDeps);
-        const instance = runtime.initHandler.handle(typeRef, initContext, { finally: () => initContext.onDestroy() });
-        // const instance = new type(...instanceDeps);
-        if (singleton) {
-            runtime.setSingleton(type, instance, providerIn ?? injector);
-        }
-        return instance;
-    };
+// export function registerHandler(typeRef: ClassRef, context: Context) {
+//     const type = typeRef.type as Type;
+//     const injector = context.get(REGISTER_INJECTOR) as AbstractInjector;
+//     const providerIn = context.get(PROVIDERIN_INJECTOR) as AbstractInjector;
+//     const params = context.get(CTOR_PARAMS);
+//     const singleton = typeRef.getAnnotation().singleton;
+//     const runtime = context.get(Runtime);
+//     const factory = (raise?: Injector) => {
+//         if (singleton && runtime.hasSingleton(type)) {
+//             return runtime.getSingleton(type);
+//         }
+//         // 创建实例
+//         const instanceDeps = resolveArgs(raise ?? providerIn ?? injector, params ?? typeRef.getParameters('constructor'));
+//         const initContext = new Context();
+//         initContext.set(CTOR_ARGS, instanceDeps);
+//         const instance = runtime.initHandler.handle(typeRef, initContext, { finally: () => initContext.onDestroy() });
+//         // const instance = new type(...instanceDeps);
+//         if (singleton) {
+//             runtime.setSingleton(type, instance, providerIn ?? injector);
+//         }
+//         return instance;
+//     };
 
-    if (providerIn) {
-        providerIn.getRecords().set(type, createRecord(factory, (typeRef.getAnnotation().static ?? providerIn.isStatic) ? LAZY : null));
-        return createRecord((raise?: Injector) => providerIn.get(type, undefined, InjectFlags.Default, raise), (typeRef.getAnnotation().static ?? injector.isStatic) ? LAZY : null);
-    }
+//     if (providerIn) {
+//         providerIn.getRecords().set(type, createRecord(factory, (typeRef.getAnnotation().static ?? providerIn.isStatic) ? LAZY : null));
+//         return createRecord((raise?: Injector) => providerIn.get(type, undefined, InjectFlags.Default, raise), (typeRef.getAnnotation().static ?? injector.isStatic) ? LAZY : null);
+//     }
 
-    return createRecord(factory, (typeRef.getAnnotation().static ?? injector.isStatic) ? LAZY : null);
-}
+//     return createRecord(factory, (typeRef.getAnnotation().static ?? injector.isStatic) ? LAZY : null);
+// }
 
 export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef, params?: Array<Token | [Token, ...InjectFlags[]] | Parameter>, provide?: Token): InjectorRecord {
 
@@ -810,16 +810,19 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
     }
 
 
-
-
     const factory = (raise?: Injector) => {
         if (singleton && runtime.hasSingleton(type)) {
             return runtime.getSingleton(type);
         }
-        // 创建实例
-        const instanceDeps = resolveArgs(raise ?? injector, params ?? typeRef.getParameters('constructor'));
+        
         const context = new Context();
-        context.set(CTOR_ARGS, instanceDeps);
+        if(params) {
+            context.set(CTOR_PARAMS, params);
+        }
+        // // 创建实例
+        // const instanceDeps = resolveArgs(raise ?? injector, params ?? typeRef.getParameters('constructor'));
+        // context.set(CTOR_ARGS, instanceDeps);
+        raise && context.set(RAISE_INJECTOR, raise);
         context.set(REGISTER_INJECTOR, injector);
         const instance = runtime.initHandler.handle(typeRef, context, { finally: () => context.onDestroy() });
         if (singleton) {
@@ -830,8 +833,6 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
 
     let record: InjectorRecord;
     if (pdrId) {
-        // context.set(PROVIDERIN_INJECTOR, injector);
-        // register(injector, typeRef);
         injector.getRecords().set(provide ?? type, createRecord(factory, isStatic ? LAZY : null))
         record = createRecord(() => injector.get(type), isStatic ? LAZY : null);
     } else {

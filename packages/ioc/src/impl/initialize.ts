@@ -4,24 +4,25 @@ import { Context, ContextToken, HandlerFn, InterceptorFn, InterceptorLike, invok
 import { PropertyMetadata } from '../metadata/meta';
 import { ClassRef, ctorName, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
 import { Runtime } from '../runtime';
-import { AbstractType } from '../types';
+import { AbstractType, Type } from '../types';
 import { HandlerScope } from '../lifescope/lifescope';
 import { Operator } from './base';
-import { CURR_DECOR, RAISE_INJECTOR } from '../lifescope/tokens';
+import { CTOR_ARGS, CTOR_PARAMS, CURR_DECOR, RAISE_INJECTOR } from '../lifescope/tokens';
 import { isDefined } from '../utils/chk';
+import { resolveArg, resolveArgs } from './common';
 
 
-export const cleanContextInterceptor: InterceptorFn<ClassRef, any, Context> = (input: ClassRef, next: HandlerFn, context: Context) => {
+// export const cleanContextInterceptor: InterceptorFn<ClassRef, any, Context> = (input: ClassRef, next: HandlerFn, context: Context) => {
 
-    return invokeTail(() => next(input, context), {
-        finally: () => {
-            // after create.
-            if (input.isNewContext && input.context && !input.context.used) {
-                input.context.destroy()
-            }
-        }
-    });
-}
+//     return invokeTail(() => next(input, context), {
+//         finally: () => {
+//             // after create.
+//             if (input.isNewContext && input.context && !input.context.used) {
+//                 input.context.destroy()
+//             }
+//         }
+//     });
+// }
 
 export const runtimeAutorunInterceptor: InterceptorFn<ClassRef, any, Context> = (input: ClassRef, next: HandlerFn, context: Context) => {
 
@@ -129,7 +130,7 @@ export const propertyInterceptor: InterceptorFn<ClassRef, any, Context> = (input
             key = `${propertyKey.toString()}_INJECTED`;
 
             if (!context.has(key)) {
-                val = injector.resolveArgument(meta, input.type, onError);
+                val = resolveArg(injector, meta);
                 if (isDefined(val)) {
                     instance[propertyKey] = val;
                     context.set(key, val);
@@ -168,34 +169,45 @@ export const ctorArgsInterceptor: InterceptorFn<ClassRef, any, Context> = (input
     //     input.params = input.getParameters(ctorName)
     // }
 
-    const uctx = context.get(RAISE_INJECTOR);
-    const providers = input.providers;
-    let newCtx: InvocationContext | undefined;
-    if (!uctx || (uctx.targetType && uctx.targetType !== input.type)) {
-        newCtx = createContext(uctx ?? input.injector, {
-            targetType: input.type,
-            providers,
-            resolvers: input.classRef.resolvers,
-            propertyKey: ctorName
-        });
-        input.context = newCtx;
-        input.isNewContext = true;
-    } else if (uctx && providers.length) {
-        Operator.inject(uctx, providers)
-    }
+    // const uctx = context.get(RAISE_INJECTOR);
+    // const providers = input.providers;
+    // let newCtx: InvocationContext | undefined;
+    // if (!uctx || (uctx.targetType && uctx.targetType !== input.type)) {
+    //     newCtx = createContext(uctx ?? input.injector, {
+    //         targetType: input.type,
+    //         providers,
+    //         resolvers: input.classRef.resolvers,
+    //         propertyKey: ctorName
+    //     });
+    //     input.context = newCtx;
+    //     input.isNewContext = true;
+    // } else if (uctx && providers.length) {
+    //     Operator.inject(uctx, providers)
+    // }
 
-    if (!input.args) {
-        input.args = input.resolveArguments(ctorName, input.context!)
+    // if (!input.args) {
+    //     input.args = input.resolveArguments(ctorName, input.context!)
+    // }
+
+    if (!context.has(CTOR_ARGS)) {
+        const params = context.get(CTOR_PARAMS) ?? input.getParameters(ctorName);
+        const args = resolveArgs(context.get(RAISE_INJECTOR), params);
+        context.set(CTOR_ARGS, args);
     }
 
     return next(input, context);
 }
 
 
+export const instanceHandler = (typeRef: ClassRef, context: Context) => {
+    const args = context.get(CTOR_ARGS) ?? [];
+    return new (typeRef.type as Type)(...args);
+
+}
 
 
 export const INITIALIZE_INTERCEPTORS = [
-    cleanContextInterceptor,
+    // cleanContextInterceptor,
     runtimeAutorunInterceptor,
     runtimeAnnoInterceptor,
     cacheInterceptor,

@@ -23,8 +23,8 @@ export abstract class Runtime implements OnDestroy {
      */
     abstract get injector(): Injector;
 
-    abstract get initHandler(): HandlerScope;
-    abstract get designHandler(): HandlerScope<ClassRef, Context, InjectorRecord>;
+    abstract get initHandler(): HandlerScope<ClassRef, Context>;
+    abstract get designHandler(): HandlerScope<ClassRef, Context>;
 
     abstract get context(): Context;
 

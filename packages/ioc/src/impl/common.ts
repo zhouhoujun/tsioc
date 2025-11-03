@@ -20,6 +20,23 @@ export function createRecord<T>(factory: (() => T) | undefined, value?: T | null
     return { factory, value, multi: multi ? [] : undefined };
 }
 
+export function resolveArg(injector: Injector, arg: any): any {
+    let depToken: Token;
+    let depFlags = InjectFlags.Default;
+    if (isArray(arg)) {
+        depToken = arg[0];
+        arg.forEach(d => {
+            if (isNumber(d)) {
+                depFlags |= d;
+            }
+        });
+    } else {
+        depToken = arg;
+    }
+
+    return injector.get(depToken, undefined, depFlags);
+}
+
 /**
  * 辅助函数：为工厂函数调用解析参数
  */
@@ -29,22 +46,7 @@ export function resolveArgs(injector: Injector, deps?: any[]): any[] {
     const args: any[] = [];
 
     for (let i = 0; i < deps.length; i++) {
-        const dep = deps[i];
-        let depToken: Token;
-        let depFlags = InjectFlags.Default;
-
-        if (isArray(dep)) {
-            depToken = dep[0];
-            dep.forEach(d => {
-                if (isNumber(d)) {
-                    depFlags |= d;
-                }
-            });
-        } else {
-            depToken = dep;
-        }
-
-        args.push(injector.get(depToken, undefined, depFlags));
+        args.push(resolveArg(injector, deps[i]));
     }
 
     return args;

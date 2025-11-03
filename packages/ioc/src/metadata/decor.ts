@@ -13,7 +13,7 @@ import { getModuleType } from '../module.ref';
 import { getTypes } from '../utils/lang';
 import { ActionType, DecoratorOption, ModuleDef } from './class';
 import { Runtime } from '../runtime';
-import { CURR_DECOR, PROVIDERIN_INJECTOR, REGISTER_INJECTOR } from '../lifescope/tokens';
+import { CURR_DECOR, REGISTER_INJECTOR } from '../lifescope/tokens';
 
 
 
@@ -740,7 +740,7 @@ export const ProvidedIn: ProvidedIn = createDecorator<ProvidedInTargetMetadata>(
             const type = classRef.type;
             const prds = (meta?.provide ? { provide: meta.provide, useClass: type } : type) as Provider;
             const platform = context.get(Runtime);
-            const injector = context.get(PROVIDERIN_INJECTOR) ?? context.get(REGISTER_INJECTOR);
+            const injector = context.get(REGISTER_INJECTOR);
             platform.setTypeProvider(meta.target, prds);
             injector.onDestroy(() => {
                 platform.removeTypeProvider(type, prds);

@@ -10,10 +10,10 @@ import { Runtime } from '../runtime';
 import { ModuleRef } from '../module.ref';
 import { HandlerScope } from '../lifescope/lifescope';
 import { Context } from '../handler';
-import { INITIALIZE_INTERCEPTORS } from './initialize';
+import { INITIALIZE_INTERCEPTORS, instanceHandler } from './initialize';
 import { DESIGN_INTERECPTORS } from './design';
 import { InvocationFactory } from '../invocation';
-import { Operator, registerHandler } from './base';
+import { Operator } from './base';
 
 /**
  * default runtime implements {@link Runtime}.
@@ -45,17 +45,14 @@ export class DefaultRuntime implements Runtime {
 
     get initHandler(): HandlerScope {
         if (!this._initialize) {
-            this._initialize = new HandlerScope(this, (classRef, ) => {
-                ctx.instance = new ctx.type(...ctx.args || []);
-                return ctx.instance;
-            }, INITIALIZE_INTERCEPTORS);
+            this._initialize = new HandlerScope(this, instanceHandler, INITIALIZE_INTERCEPTORS);
         }
         return this._initialize;
     }
 
-    get designHandler(): HandlerScope<ClassRef, Context, InjectorRecord> {
+    get designHandler(): HandlerScope<ClassRef, Context> {
         if (!this._design) {
-            this._design = new HandlerScope(this, registerHandler, DESIGN_INTERECPTORS);
+            this._design = new HandlerScope<ClassRef, Context>(this, (typeRef) => typeRef, DESIGN_INTERECPTORS);
         }
         return this._design;
     }
@@ -77,7 +74,7 @@ export class DefaultRuntime implements Runtime {
             throw new Exception('has singleton instance with token:' + token.toString())
         }
         this._singls.set(token, value);
-        if(injector) injector.onDestroy(() => this._singls.delete(token));
+        if (injector) injector.onDestroy(() => this._singls.delete(token));
         return this
     }
     /**

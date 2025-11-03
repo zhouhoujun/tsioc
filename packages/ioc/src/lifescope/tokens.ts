@@ -5,7 +5,6 @@ import { Parameter } from '../resolver';
 import { InjectFlags, Token } from '../tokens';
 
 export const CURR_DECOR = new ContextToken<DecoratorFn>(()=> null!);
-export const PROVIDERIN_INJECTOR = new ContextToken<Injector | null>(() => null);
 export const REGISTER_INJECTOR = new ContextToken<Injector>(() => null!);
 export const RAISE_INJECTOR = new ContextToken<Injector>(() => null!);
 export const PROVIDE = new ContextToken<Token|null>(() => null);

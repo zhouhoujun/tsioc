@@ -4,7 +4,7 @@ import { ClassRef, DecoratorFn, DecoratorScope, Decors } from '../metadata/class
 import { AbstractInjector, LAZY, Operator } from './base';
 import { Runtime } from '../runtime';
 import { HandlerScope } from '../lifescope/lifescope';
-import { CURR_DECOR, PROVIDE, PROVIDERIN_INJECTOR, REGISTER_INJECTOR } from '../lifescope/tokens';
+import { CURR_DECOR, PROVIDE, REGISTER_INJECTOR } from '../lifescope/tokens';
 import { isFunction } from '../utils/chk';
 import { Provider } from '../providers';
 import { createRecord } from './common';
@@ -112,9 +112,7 @@ export const beforeAnnoactionInterceptor = (input: ClassRef, next: HandlerFn, co
 export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context: Context) => {
     // const { injector, type, provide, regProvides } = input;
     const type = input.type;
-    const providedIn = context.get(PROVIDERIN_INJECTOR);
-    const regInjector = context.get(REGISTER_INJECTOR);
-    const injector = (providedIn ?? regInjector) as AbstractInjector;
+    const injector = context.get(REGISTER_INJECTOR) as AbstractInjector;
     const provide = context.get(PROVIDE);
     if (provide && provide !== type) {
         const pType = input.getAnnotation().providedIn;

@@ -8,7 +8,7 @@ import { Injector, MethodType } from '../injector';
 import { ArgumentException, Exception } from '../exception';
 import { InjectFlags, Token } from '../tokens';
 import { immediate } from '../utils/lang';
-import { composeHandlers } from '../handler';
+import { composeHandlers, Context } from '../handler';
 import { getClassify } from '../metadata/refl';
 import { Runtime } from '../runtime';
 import { Provider } from '../providers';
@@ -310,7 +310,7 @@ export class DefaultInvocation<T = any,
             const handler = composeHandlers(runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
                 return (option) => this.invokeMethod(runnable.propertyKey, option)
             }));
-            return handler(this.context);
+            return handler(this.context, new Context());
         } else {
             throw new ArgumentException(this.classRef.className + ' is invaild runnable, can not invocation without method param.');
         }
