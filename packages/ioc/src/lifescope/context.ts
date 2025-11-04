@@ -6,7 +6,7 @@ import { Runtime } from '../runtime';
 import { InjectFlags, Token } from '../tokens';
 
 const CURR_DECOR = new ContextToken<DecoratorFn>(() => null!);
-const REGISTER_INJECTOR = new ContextToken<Injector>(() => null!);
+const INJECTOR = new ContextToken<Injector>(() => null!);
 const RAISE_INJECTOR = new ContextToken<Injector>(() => null!);
 const PROVIDE = new ContextToken<Token | null>(() => null);
 const CTOR_ARGS = new ContextToken<any[] | null>(() => null);
@@ -70,12 +70,12 @@ export class IocContext extends Context {
         this.set(PROVIDE, value);
     }
 
-    get registerInjector(): Injector {
-        return this.get(REGISTER_INJECTOR);
+    get injector(): Injector {
+        return this.get(INJECTOR);
     }
 
-    set registerInjector(value: Injector) {
-        this.set(REGISTER_INJECTOR, value);
+    set injector(value: Injector) {
+        this.set(INJECTOR, value);
     }
 
     get raiseInjector(): Injector {

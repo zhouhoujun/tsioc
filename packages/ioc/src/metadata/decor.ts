@@ -737,7 +737,7 @@ export const ProvidedIn: ProvidedIn = createDecorator<ProvidedInTargetMetadata>(
             const type = classRef.type;
             const prds = (meta?.provide ? { provide: meta.provide, useClass: type } : type) as Provider;
             const platform = context.runtime;
-            const injector = context.registerInjector;
+            const injector = context.injector;
             platform.setTypeProvider(meta.target, prds);
             injector.onDestroy(() => {
                 platform.removeTypeProvider(type, prds);

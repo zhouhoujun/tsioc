@@ -16,8 +16,8 @@ export function createValueRecord<T = any>(value: T, type?: AbstractType<T>): In
     return { type, value };
 }
 
-export function createRecord<T>(factory: (() => T) | undefined, value?: T | null | {}, multi?: boolean): InjectorRecord<T> {
-    return { factory, value, multi: multi ? [] : undefined };
+export function createRecord<T>(factory: (() => T) | undefined, isStatic?: boolean, multi?: boolean): InjectorRecord<T> {
+    return { factory, value: isStatic ? LAZY : undefined, multi: multi ? [] : undefined, isStatic };
 }
 
 export function resolveArg(injector: Injector, arg: any): any {
@@ -88,7 +88,7 @@ export function resolveToken(token: Token, rd: InjectorRecord, runtime: Runtime,
         throw new CircularDependencyException()
     }
     // 如果已有值且不是多提供者，直接返回
-    if (!rd.multi &&  rd.value !== LAZY && (rd.isStatic || !(flags & InjectFlags.Resolve))) {
+    if (!rd.multi && rd.value !== undefined && rd.value !== LAZY && (rd.isStatic || !(flags & InjectFlags.Resolve))) {
         return rd.value;
     }
 
@@ -105,7 +105,7 @@ export function resolveToken(token: Token, rd: InjectorRecord, runtime: Runtime,
 
         // 如果有工厂函数，执行并添加结果
         if (rd.factory) {
-            const result = rd.factory();
+            const result = rd.factory(raise);
             rd.multi.push(result);
         }
 
@@ -114,7 +114,7 @@ export function resolveToken(token: Token, rd: InjectorRecord, runtime: Runtime,
 
     // 执行工厂函数获取值
     if (rd.factory) {
-        const result = rd.factory();
+        const result = rd.factory(raise);
         // 如果是静态提供者，缓存结果
         if (rd.isStatic) {
             rd.value = result;

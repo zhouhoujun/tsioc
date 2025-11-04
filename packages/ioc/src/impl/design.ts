@@ -113,7 +113,7 @@ export const beforeAnnoactionInterceptor = (input: ClassRef, next: HandlerFn, co
 export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     // const { injector, type, provide, regProvides } = input;
     const type = input.type;
-    const injector = context.registerInjector as AbstractInjector;
+    const injector = context.injector as AbstractInjector;
     const provide = context.provide;
     if (provide && provide !== type) {
         const pType = input.getAnnotation().providedIn;
@@ -131,14 +131,14 @@ export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context:
         const factory = ()=> injector.get(provide);
         input.provides.forEach(pdr => {
             if (provide != pdr) {
-                injector.getRecords().set(pdr, createRecord(factory, injector.isStatic? LAZY: undefined))
+                injector.getRecords().set(pdr, createRecord(factory, injector.isStatic))
                 // Operator.inject(injector, { provide: pdr, useExisting: provide })
             }
         })
     } else {
         const factory = ()=> injector.get(type);
         input.provides.forEach(provide => {
-            injector.getRecords().set(provide, createRecord(factory, injector.isStatic? LAZY: undefined))
+            injector.getRecords().set(provide, createRecord(factory, injector.isStatic))
             // regProvides !== false && Operator.inject(injector, { provide, useClass: type })
         })
     }
