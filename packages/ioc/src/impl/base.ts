@@ -11,7 +11,7 @@ import { Provider, ModuleType, StaticProvider, DynamicProvider, MutilProvider, P
 import { createContext, hasContextOptions, InvocationContext, InvokeOptions } from '../context';
 import { nonEnumerable } from '../metadata/decor';
 import { getClassRef } from '../metadata/refl';
-import { NullInjectorException, THROW_FLAGE, tryResolveToken, RegisterExtedOption, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, Empty } from './common';
+import { NullInjectorException, THROW_FLAGE, tryResolveToken, RegisterExtedOption, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, LAZY } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { IocContext } from '../lifescope/context';
 import { Parameters } from '../resolver';
@@ -606,7 +606,7 @@ export namespace Operator {
             const arg0 = args[0];
             if (arg0 instanceof InvocationContext) {
                 context = arg0;
-                providers = Empty;
+                providers = [];
             } else if (isArray(arg0)) {
                 providers = arg0
             } else if (isPlainObject(arg0) && !arg0.provide) {
@@ -791,7 +791,7 @@ export function processProvider(injector: AbstractInjector, provider: StaticProv
 
 
 
-export const LAZY = {};
+
 
 
 /**
@@ -850,7 +850,7 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
             return runtime.getSingleton(type);
         }
 
-        const context = new IocContext();
+        const context = new IocContext(runtime);
         if (params) {
             context.params = params;
         }
@@ -873,9 +873,8 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
         record = createRecord(factory, isStatic ? LAZY : null);
     }
     record.onRegister = () => {
-        const context = new IocContext();
+        const context = new IocContext(runtime);
         context.registerInjector = injector;
-        context.runtime = injector.getRuntime();
         if (provide) {
             context.provide = provide;
         }

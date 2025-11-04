@@ -55,9 +55,9 @@ export function resolveArgs(injector: Injector, deps?: any[]): any[] {
 export type RegisterExtedOption = (typeRef: ClassRef, option?: RegOption) => RegOption | undefined;
 
 
-
+export const LAZY = {};
 export const THROW_FLAGE = {};
-export const Empty: any[] = [];
+// export const Empty: any[] = [];
 export const CIRCULAR = {};
 /**
  * 尝试解析令牌
@@ -72,7 +72,7 @@ export function tryResolveToken(token: Token, rd: InjectorRecord, runtime: Runti
         return value;
     } catch (e) {
         if (rd && rd.value === CIRCULAR) {
-            rd.value = Empty;
+            rd.value = LAZY;
         }
         throw e;
     }
@@ -88,7 +88,7 @@ export function resolveToken(token: Token, rd: InjectorRecord, runtime: Runtime,
         throw new CircularDependencyException()
     }
     // 如果已有值且不是多提供者，直接返回
-    if (!rd.multi) {
+    if (!rd.multi &&  rd.value !== LAZY && (rd.isStatic || !(flags & InjectFlags.Resolve))) {
         return rd.value;
     }
 

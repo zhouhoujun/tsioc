@@ -1,4 +1,3 @@
-import { createContext, InvocationContext } from '../context';
 import { ArgumentException, Exception } from '../exception';
 import { ContextToken, HandlerFn, InterceptorFn, InterceptorLike, invokeTail } from '../handler';
 import { PropertyMetadata } from '../metadata/meta';
@@ -46,7 +45,7 @@ const RUNTIME_CLASS_SCOPE = new ContextToken<HandlerScope>(() => null!);
 export const runtimeAnnoInterceptor: InterceptorFn<ClassRef, any, IocContext> = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     return invokeTail(() => next(input, context),
         (instance) => {
-            getRuntimeClassScope(context.get(Runtime)).handle(input, context);
+            getRuntimeClassScope(context.runtime).handle(input, context);
             return instance;
         })
 }
@@ -96,7 +95,7 @@ export const cacheInterceptor: InterceptorFn<ClassRef, any, IocContext> = (input
 
 export const methodInterceptor: InterceptorFn<ClassRef, any, IocContext> = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     return invokeTail(() => next(input, context), (instance) => {
-        getRuntimeMethodScope(context.get(Runtime)).handle(input, context);
+        getRuntimeMethodScope(context.runtime).handle(input, context);
         return instance;
     })
 }
@@ -137,7 +136,7 @@ export const propertyInterceptor: InterceptorFn<ClassRef, any, IocContext> = (in
             }
         });
 
-        return getRuntimePropertyScope(context.get(Runtime)).handle(input, context, () => instance);
+        return getRuntimePropertyScope(context.runtime).handle(input, context, () => instance);
 
     })
 

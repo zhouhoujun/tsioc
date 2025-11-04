@@ -1,13 +1,13 @@
 import { Context, ContextToken, HandlerFn, InterceptorLike, invokeTail } from '../handler';
 import { InjectorRecord } from '../injector';
 import { ClassRef, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
-import { AbstractInjector, LAZY, Operator } from './base';
+import { AbstractInjector, Operator } from './base';
 import { Runtime } from '../runtime';
 import { HandlerScope } from '../lifescope/lifescope';
 import { IocContext } from '../lifescope/context';
 import { isFunction } from '../utils/chk';
 import { Provider } from '../providers';
-import { createRecord } from './common';
+import { createRecord, LAZY } from './common';
 
 export const autorunInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     return invokeTail(() => next(input, context), (res) => {
@@ -88,25 +88,25 @@ export function getDesignMethodScope(runtime: Runtime): HandlerScope<ClassRef, I
 
 export const afterPropertyAnnoationInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     return invokeTail(() => next(input, context), (res) => {
-        getDesignPropertyScope(context.get(Runtime)).handle(input, context);
+        getDesignPropertyScope(context.runtime).handle(input, context);
         return res;
     });
 }
 export const afterMethodAnnoationInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     return invokeTail(() => next(input, context), (res) => {
-        getDesignMethodScope(context.get(Runtime)).handle(input, context);
+        getDesignMethodScope(context.runtime).handle(input, context);
         return res;
     });
 }
 export const afterAnnoationInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     return invokeTail(() => next(input, context), (res) => {
-        getDesignAfterAnnoationScope(context.get(Runtime)).handle(input, context);
+        getDesignAfterAnnoationScope(context.runtime).handle(input, context);
         return res;
     });
 }
 
 export const beforeAnnoactionInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
-    return invokeTail(() => getDesignBeforeAnnoationScope(context.get(Runtime)).handle(input, context), () => next(input, context));
+    return invokeTail(() => getDesignBeforeAnnoationScope(context.runtime).handle(input, context), () => next(input, context));
 }
 
 

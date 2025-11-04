@@ -19,6 +19,11 @@ const INSTANCE = new ContextToken<any>(() => null!);
 
 export class IocContext extends Context {
 
+    constructor(runtime: Runtime, entries?: readonly (readonly [Token | ContextToken, any])[] | null) {
+        super(entries)
+        this.set(Runtime, runtime);
+    }
+
     get runtime(): Runtime {
         return this.get(Runtime);
     }
