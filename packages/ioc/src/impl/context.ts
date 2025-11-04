@@ -51,9 +51,9 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
     constructor(
         parent: TParent,
         private options: TargetInvokeArguments = {},
-        readonly scope: AbstractType | 'static' = 'static'
+        scope: AbstractType | 'static' = 'static'
     ) {
-        super();
+        super(parent, scope);
         this.records = new Map();
         this._refs = [];
         this.isResolve = options.isResolve == true;

@@ -1,7 +1,8 @@
 import {
     isNumber, AbstractType, Injectable, tokenId, Injector, ClassRef, isFunction, getClassify, ProvdierOf, Invocation,
     isArray, ArgumentException, StaticProvider, HandlerLike, composeHandlers, Type,
-    Operator
+    Operator,
+    Context
 } from '@tsdi/ioc';
 import { finalize, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { ApplicationRunners } from '../ApplicationRunners';
@@ -193,7 +194,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
             return throwError(() => new ArgumentException('input type unknow'))
         }
         if (handlers && handlers.length) {
-            return toObservable(composeHandlers(handlers)(context));
+            return toObservable(composeHandlers(handlers)(context, new Context()));
         }
         return throwError(() => new NotHandleException(context, context.targetType!));
     }

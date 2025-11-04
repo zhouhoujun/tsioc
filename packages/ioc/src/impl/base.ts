@@ -14,10 +14,14 @@ import { getClassRef } from '../metadata/refl';
 import { NullInjectorException, THROW_FLAGE, tryResolveToken, RegisterExtedOption, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, Empty } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { IocContext } from '../lifescope/context';
-import { Parameters, Parameter } from '../resolver';
+import { Parameters } from '../resolver';
+import { CONTAINER, INJECTOR } from '../metadata/tk';
+import { InvocationFactory } from '../invocation';
+import { DefaultInvocationFactory } from './invocation';
+import { DefaultRuntime } from './runtime';
 
 
-
+export const SCOPE_PRODIDERS: Provider[] = [];
 /**
  * Default Injector
  */
@@ -57,7 +61,39 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
         super()
         this.records = new Map();
         this._parent = parent ?? null;
+        this.initScope(scope);
         parent?.onDestroy(this);
+    }
+
+
+    initScope(scope?: InjectorScope) {
+        const val = createValueRecord(this);
+        switch (scope) {
+            case 'platform':
+                platformAlias.forEach(tk => this.records.set(tk, val));
+                this._runtime = new DefaultRuntime(this);
+                registerCores(this, this._runtime);
+                break;
+            case 'root':
+                this._runtime = this._parent!.getRuntime();
+                this._runtime.register(this);
+                this._runtime.setInjector(scope, this);
+                rootAlias.forEach(tk => this.records.set(tk, val));
+                break;
+            case 'static':
+                this._runtime = this._parent!.getRuntime();
+                this._runtime.register(this);
+                break;
+            default:
+                this._runtime = this._parent!.getRuntime();
+                this._runtime.register(this);
+                if (scope) {
+                    this._runtime.setInjector(scope, this);
+                    SCOPE_PRODIDERS.length && processProviders(this, SCOPE_PRODIDERS);
+                }
+                (this.isStatic ? staticInjectAlias : injectAlias).forEach(tk => this.records.set(tk, val));
+                break;
+        }
     }
 
     get ready() {
@@ -214,6 +250,37 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
 
 
 
+}
+
+
+
+
+/**
+ * static injector.
+ */
+export class StaticInjector extends AbstractInjector {
+
+    constructor(providers?: Provider[], parent?: Injector, scope?: InjectorScope) {
+        super(parent, scope ?? 'static', true);
+        deferProcessProviders(this, providers, this._readyDefer)
+    }
+}
+
+
+const platformAlias = [Injector, CONTAINER];
+const rootAlias = [Injector, INJECTOR];
+const injectAlias = [Injector];
+const staticInjectAlias = [Injector, StaticInjector];
+
+
+/**
+ * register core for root.
+ *
+ * @export
+ * @param {IContainer} container
+ */
+function registerCores(container: Injector, platform: Runtime) {
+    platform.setSingleton(InvocationFactory, new DefaultInvocationFactory(platform), container);
 }
 
 
@@ -782,13 +849,13 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
         if (singleton && runtime.hasSingleton(type)) {
             return runtime.getSingleton(type);
         }
-        
+
         const context = new IocContext();
-        if(params) {
+        if (params) {
             context.params = params;
         }
 
-        if(raise) context.raiseInjector = raise;
+        if (raise) context.raiseInjector = raise;
         context.registerInjector = injector;
         const instance = runtime.initHandler.handle(typeRef, context, { finally: () => context.onDestroy() });
         if (singleton) {

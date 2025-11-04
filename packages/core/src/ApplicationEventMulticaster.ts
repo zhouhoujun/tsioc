@@ -1,4 +1,4 @@
-import { Abstract, StaticProvider, AbstractType, ProvdierOf, HandlerLike, noPointcut } from '@tsdi/ioc';
+import { Abstract, StaticProvider, AbstractType, ProvdierOf, HandlerLike, noPointcut, Context } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
@@ -77,12 +77,12 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * event downward
      * @param event 
      */
-    abstract downward(event: ApplicationEvent, withSelf?: boolean): Observable<void | false>;
+    abstract downward(event: ApplicationEvent, context: Context): Observable<void | false>;
     /**
      * event bubble up
      * @param event 
      */
-    abstract bubbleup(event: ApplicationEvent, withSelf?: boolean): Observable<void | false>;
+    abstract bubbleup(event: ApplicationEvent, context: Context): Observable<void | false>;
     /**
      * Notify all <strong>matching</strong> listeners registered with this
      * application of an application event. Events may be framework events

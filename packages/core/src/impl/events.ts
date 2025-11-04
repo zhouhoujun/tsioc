@@ -1,4 +1,4 @@
-import { ArgumentException, composeHandlers, getType, InjectFlags, Handler as IHandler, HandlerLike, Injector, ProvdierOf, StaticProvider, tokenId, AbstractType } from '@tsdi/ioc';
+import { ArgumentException, composeHandlers, getType, InjectFlags, Handler as IHandler, HandlerLike, Injector, ProvdierOf, StaticProvider, tokenId, AbstractType, Context, ContextToken } from '@tsdi/ioc';
 import { forkJoin, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanHandle } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
@@ -11,6 +11,7 @@ import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { PayloadApplicationEvent } from '../events';
 import { toObservable } from '../handlers';
+
 
 
 /**
@@ -27,6 +28,8 @@ export const EVENT_MULTICASTER_FILTERS = tokenId<Filter[]>('EVENT_MULTICASTER_FI
  *  event multicaster guards multi token.
  */
 export const EVENT_MULTICASTER_GUARDS = tokenId<CanHandle[]>('EVENT_MULTICASTER_GUARDS');
+
+export const WITH_SELF = new ContextToken(() => false);
 
 
 export class DefaultEventMulticaster extends ApplicationEventMulticaster implements ApplicationHandler<ApplicationEvent> {
@@ -132,23 +135,25 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
             event = new PayloadApplicationEvent(this, obj)
         }
 
+        const context = new Context();
+        context.set(WITH_SELF, true);
 
-        return this.downward(event, true)
+        return this.downward(event, context)
             .pipe(
                 mergeMap(res => {
                     if (res === false || !event.propagation) return of(false);
-                    return this.bubbleup(event)
+                    return this.bubbleup(event, context)
                 })
             ) as Observable<void | false>;
     }
 
-    downward(event: ApplicationEvent, withSelf?: boolean): Observable<void | false> {
-        return (withSelf ? this.handler.handle(event) : of(undefined))
+    downward(event: ApplicationEvent, context: Context): Observable<void | false> {
+        return (context.get(WITH_SELF) ? this.handler.handle(event, context) : of(undefined))
             .pipe(
                 mergeMap(res => {
                     if (res === false || !event.propagation) return of(false);
                     if (this._children.length) {
-                        return forkJoin(this._children.map(r => r.downward(event, true)))
+                        return forkJoin(this._children.map(r => r.downward(event, context)))
                             .pipe(
                                 map(r => {
                                     if (!event.propagation) return false;
@@ -159,29 +164,29 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
                 })) as Observable<void | false>;
     }
 
-    bubbleup(event: ApplicationEvent, withSelf?: boolean): Observable<void | false> {
-        return (withSelf ? this.handler.handle(event) : of(undefined))
+    bubbleup(event: ApplicationEvent, context: Context): Observable<void | false> {
+        return (context.get(WITH_SELF) ? this.handler.handle(event, context) : of(undefined))
             .pipe(
                 mergeMap(res => {
                     if (res === false || !event.propagation) return of(false);
                     if (this.parent) {
                         // Publish event via parent multicaster as well...
-                        return this.parent.bubbleup(event, true)
+                        return this.parent.bubbleup(event, context)
                     }
                     return of(undefined);
                 })) as Observable<void | false>;
     }
 
-    handle(event: ApplicationEvent): Observable<void | false> {
+    handle(event: ApplicationEvent, context: Context): Observable<void | false> {
         const handlers = this.maps.get(getType(event));
         if (!handlers || !handlers.length) return of(undefined);
 
-       return toObservable(composeHandlers(handlers, (r, next)=> {
+        return toObservable(composeHandlers(handlers, (r, next, context) => {
             if (r !== false || !event.propagation) {
-                return next(event)
+                return next(event, context)
             }
             return of(r);
-        })(event));
+        })(event, context));
     }
 
     clear(): void {
