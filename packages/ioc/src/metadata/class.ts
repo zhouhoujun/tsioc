@@ -9,8 +9,9 @@ import { isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { Exception } from '../exception';
 import { Injector, MethodType, Resolve } from '../injector';
-import { Context, HandlerFn } from '../handler';
+import { HandlerFn } from '../handler';
 import { Invocation, InvocationFactory } from '../invocation';
+import { IocContext } from '../lifescope/context';
 
 
 /**
@@ -591,19 +592,19 @@ export interface DecorDefHandles<T = any> {
     /**
      * class decorator def handle.
      */
-    class?: HandlerFn<DecorContext<T>, void, Context> | HandlerFn<DecorContext<T>, void, Context>[];
+    class?: HandlerFn<DecorContext<T>, void, IocContext> | HandlerFn<DecorContext<T>, void, IocContext>[];
     /**
      * method decorator def handle.
      */
-    method?: HandlerFn<DecorContext<T>, void, Context> | HandlerFn<DecorContext<T>, void, Context>[];
+    method?: HandlerFn<DecorContext<T>, void, IocContext> | HandlerFn<DecorContext<T>, void, IocContext>[];
     /**
      * property decorator def handle.
      */
-    property?: HandlerFn<DecorContext<T>, void, Context> | HandlerFn<DecorContext<T>, void, Context>[];
+    property?: HandlerFn<DecorContext<T>, void, IocContext> | HandlerFn<DecorContext<T>, void, IocContext>[];
     /**
      * parameter decorator def handle.
      */
-    parameter?: HandlerFn<DecorContext<T>, void, Context> | HandlerFn<DecorContext<T>, void, Context>[];
+    parameter?: HandlerFn<DecorContext<T>, void, IocContext> | HandlerFn<DecorContext<T>, void, IocContext>[];
 }
 
 /**
@@ -615,25 +616,25 @@ export interface DesignScopeHandles<T> {
      * decorator BeforeAnnoation action handles.
      * raise handles order by beforeAnnoation -> property -> method -> afterAnnoation
      */
-    beforeAnnoation?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
+    beforeAnnoation?: HandlerFn<T, void, IocContext> | HandlerFn<T, void, IocContext>[];
 
     /**
      * decorator Property action handles.
      * raise handles order by beforeAnnoation -> property -> method -> afterAnnoation
      */
-    property?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
+    property?: HandlerFn<T, void, IocContext> | HandlerFn<T, void, IocContext>[];
 
     /**
      * decorator Method action handles.
      * raise handles order by beforeAnnoation -> class -> property -> method -> afterAnnoation
      */
-    method?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
+    method?: HandlerFn<T, void, IocContext> | HandlerFn<T, void, IocContext>[];
 
     /**
      * decorator AfterAnnoation action handles.
      * raise handles order by beforeAnnoation -> property -> method -> afterAnnoation
      */
-    afterAnnoation?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
+    afterAnnoation?: HandlerFn<T, void, IocContext> | HandlerFn<T, void, IocContext>[];
 }
 
 /**
@@ -645,19 +646,19 @@ export interface RuntimeScopeHandles<T> {
      * decorator Property action handles.
      * raise handles order by property -> method -> class
      */
-    property?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
+    property?: HandlerFn<T, void, IocContext> | HandlerFn<T, void, IocContext>[];
 
     /**
      * decorator Method action handles.
      * raise handles order by property -> method -> class
      */
-    method?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
+    method?: HandlerFn<T, void, IocContext> | HandlerFn<T, void, IocContext>[];
 
     /**
      * decorator Class action handles.
      * raise handles order by  property -> method -> class
      */
-    class?: HandlerFn<T, void, Context> | HandlerFn<T, void, Context>[];
+    class?: HandlerFn<T, void, IocContext> | HandlerFn<T, void, IocContext>[];
 
 }
 
@@ -767,7 +768,7 @@ export interface DecoratorFn extends Function {
      * get decorator handlers.
      * @param type decorator type.
      */
-    getHandler?(type: DecoratorType): HandlerFn<ClassRef> | undefined;
+    getHandler?(type: DecoratorType): HandlerFn<DecorContext> | undefined;
     /**
      * get decorator runtime handlers.
      * @param type decorator type.

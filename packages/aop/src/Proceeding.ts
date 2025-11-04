@@ -1,4 +1,4 @@
-import { Abstract, Context, HandlerFn, InitializeContext } from '@tsdi/ioc';
+import { Abstract, ClassRef, Context, HandlerFn, IocContext } from '@tsdi/ioc';
 
 
 @Abstract()
@@ -10,13 +10,13 @@ export abstract class Proceeding {
      * @param next 
      * @param context 
      */
-    abstract pointcutCtor(ctx: InitializeContext, next: HandlerFn, context: Context): any;
+    abstract pointcutCtor(typeRef: ClassRef, next: HandlerFn, context: IocContext): any;
     /**
      * pointcut property target type in runtime.
      * @param ctx 
      * @param next 
      * @param context 
      */
-    abstract pointcutProperty(ctx: InitializeContext, next: HandlerFn, context: Context): any;
+    abstract pointcutProperty(typeRef: ClassRef, next: HandlerFn, context: IocContext): any;
 
 }

@@ -1,4 +1,4 @@
-import { AbstractType, InitializeContext, AnnotationType, HandlerFn, Context, noPointcut } from '@tsdi/ioc';
+import { AbstractType, IocContext, AnnotationType, HandlerFn, Context, noPointcut, ClassRef } from '@tsdi/ioc';
 import { Proceeding } from '../Proceeding';
 
 
@@ -8,11 +8,11 @@ import { Proceeding } from '../Proceeding';
  *
  * @export
  */
-export const pointcutInterceptor = (ctx: InitializeContext, next: HandlerFn, context: Context) => {
-    if (!isValAspect(ctx.type) || !context.has(Proceeding)) return next(ctx, context);
+export const pointcutInterceptor = (typeRef: ClassRef, next: HandlerFn, context: IocContext) => {
+    if (!isValAspect(typeRef.type) || !context.has(Proceeding)) return next(typeRef, context);
 
     // aspect class do nothing.
-    return context.get(Proceeding).pointcutCtor(ctx, next, context);
+    return context.get(Proceeding).pointcutCtor(typeRef, next, context);
 
 }
 
@@ -22,11 +22,11 @@ export const pointcutInterceptor = (ctx: InitializeContext, next: HandlerFn, con
  *
  * @export
  */
-export const matchInterceptor = (ctx: InitializeContext, next: HandlerFn, context: Context) => {
+export const matchInterceptor = (typeRef: ClassRef, next: HandlerFn, context: IocContext) => {
     // aspect class do nothing.
-    if (!isValAspect(ctx.type) || !context.has(Proceeding)) return next(ctx, context);
+    if (!isValAspect(typeRef.type) || !context.has(Proceeding)) return next(typeRef, context);
 
-    return context.get(Proceeding).pointcutProperty(ctx, next, context);
+    return context.get(Proceeding).pointcutProperty(typeRef, next, context);
 }
 
 /**

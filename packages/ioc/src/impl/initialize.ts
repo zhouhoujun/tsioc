@@ -1,18 +1,18 @@
 import { createContext, InvocationContext } from '../context';
 import { ArgumentException, Exception } from '../exception';
-import { Context, ContextToken, HandlerFn, InterceptorFn, InterceptorLike, invokeTail } from '../handler';
+import { ContextToken, HandlerFn, InterceptorFn, InterceptorLike, invokeTail } from '../handler';
 import { PropertyMetadata } from '../metadata/meta';
 import { ClassRef, ctorName, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
 import { Runtime } from '../runtime';
 import { AbstractType, Type } from '../types';
 import { HandlerScope } from '../lifescope/lifescope';
 import { Operator } from './base';
-import { CTOR_ARGS, CTOR_PARAMS, CURR_DECOR, RAISE_INJECTOR } from '../lifescope/tokens';
+import { IocContext } from '../lifescope/context';
 import { isDefined } from '../utils/chk';
 import { resolveArg, resolveArgs } from './common';
 
 
-// export const cleanContextInterceptor: InterceptorFn<ClassRef, any, Context> = (input: ClassRef, next: HandlerFn, context: Context) => {
+// export const cleanContextInterceptor: InterceptorFn<ClassRef, any, IocContext> = (input: ClassRef, next: HandlerFn, context: IocContext) => {
 
 //     return invokeTail(() => next(input, context), {
 //         finally: () => {
@@ -24,13 +24,13 @@ import { resolveArg, resolveArgs } from './common';
 //     });
 // }
 
-export const runtimeAutorunInterceptor: InterceptorFn<ClassRef, any, Context> = (input: ClassRef, next: HandlerFn, context: Context) => {
+export const runtimeAutorunInterceptor: InterceptorFn<ClassRef, any, IocContext> = (input: ClassRef, next: HandlerFn, context: IocContext) => {
 
     return invokeTail(() => next(input, context), (instance) => {
         const autos = input.runnables.filter(c => c.auto && c.decorType === Decors.method)
         if (autos.length) {
             // const { injector, classRef: def, instance, context } = input;
-            const injector = context.get(RAISE_INJECTOR);
+            const injector = context.raiseInjector;
             const invocation = input.createInvocation(injector, { instance });
             autos.forEach(aut => {
                 invocation.invoke(aut.propertyKey);
@@ -43,7 +43,7 @@ export const runtimeAutorunInterceptor: InterceptorFn<ClassRef, any, Context> = 
 
 
 const RUNTIME_CLASS_SCOPE = new ContextToken<HandlerScope>(() => null!);
-export const runtimeAnnoInterceptor: InterceptorFn<ClassRef, any, Context> = (input: ClassRef, next: HandlerFn, context: Context) => {
+export const runtimeAnnoInterceptor: InterceptorFn<ClassRef, any, IocContext> = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     return invokeTail(() => next(input, context),
         (instance) => {
             getRuntimeClassScope(context.get(Runtime)).handle(input, context);
@@ -51,10 +51,9 @@ export const runtimeAnnoInterceptor: InterceptorFn<ClassRef, any, Context> = (in
         })
 }
 
-function invokeRuntimeHandler(decors: DecoratorFn[], ctx: ClassRef, scope: DecoratorScope, context: Context) {
+function invokeRuntimeHandler(decors: DecoratorFn[], ctx: ClassRef, scope: DecoratorScope, context: IocContext) {
     decors?.forEach(d => {
-        // ctx.currDecor = d;
-        context.set(CURR_DECOR, d);
+        context.currDecor = d;
         d.getRuntimeHandler?.(scope)?.(ctx, context);
     });
 }
@@ -70,7 +69,7 @@ export function getRuntimeClassScope(runtime: Runtime): HandlerScope<ClassRef> {
     return scope;
 }
 
-// export const singletonInterceptor: InterceptorFn<ClassRef, any, Context>  = (input: ClassRef, next: HandlerFn, context: Context) => {
+// export const singletonInterceptor: InterceptorFn<ClassRef, any, IocContext>  = (input: ClassRef, next: HandlerFn, context: IocContext) => {
 
 //     return invokeTail(() => next(input, context), (instance) => {
 //         if (input.type && instance && input.getAnnotation().singleton) {
@@ -80,12 +79,12 @@ export function getRuntimeClassScope(runtime: Runtime): HandlerScope<ClassRef> {
 // }
 
 
-export const cacheInterceptor: InterceptorFn<ClassRef, any, Context> = (input: ClassRef, next: HandlerFn, context: Context) => {
+export const cacheInterceptor: InterceptorFn<ClassRef, any, IocContext> = (input: ClassRef, next: HandlerFn, context: IocContext) => {
 
     return invokeTail(() => next(input, context), (instance) => {
         const ann = input.getAnnotation();
         if (!ann.singleton && (ann.expires && ann.expires > 0)) {
-            const injector = context.get(RAISE_INJECTOR);
+            const injector = context.raiseInjector;
             Operator.cache(injector, input.type, instance, ann.expires!);
         }
         return instance;
@@ -95,7 +94,7 @@ export const cacheInterceptor: InterceptorFn<ClassRef, any, Context> = (input: C
 
 
 
-export const methodInterceptor: InterceptorFn<ClassRef, any, Context> = (input: ClassRef, next: HandlerFn, context: Context) => {
+export const methodInterceptor: InterceptorFn<ClassRef, any, IocContext> = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     return invokeTail(() => next(input, context), (instance) => {
         getRuntimeMethodScope(context.get(Runtime)).handle(input, context);
         return instance;
@@ -116,10 +115,10 @@ export function getRuntimeMethodScope(runtime: Runtime): HandlerScope<ClassRef> 
 }
 
 
-export const propertyInterceptor: InterceptorFn<ClassRef, any, Context> = (input: ClassRef, next: HandlerFn, context: Context) => {
+export const propertyInterceptor: InterceptorFn<ClassRef, any, IocContext> = (input: ClassRef, next: HandlerFn, context: IocContext) => {
 
     return invokeTail(() => next(input, context), (instance) => {
-        const injector = context.get(RAISE_INJECTOR);
+        const injector = context.raiseInjector;
         // if (!ictx || !input.instance) throw new Exception('autowride property need InvocationContext');
         let meta: PropertyMetadata, key: string, val;
 
@@ -164,7 +163,7 @@ const onError = (target: AbstractType, propertyKey: string) => {
 /**
  * resolve constructor args action.
  */
-export const ctorArgsInterceptor: InterceptorFn<ClassRef, any, Context> = (input: ClassRef, next: HandlerFn, context: Context) => {
+export const ctorArgsInterceptor: InterceptorFn<ClassRef, any, IocContext> = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     // if (!input.params) {
     //     input.params = input.getParameters(ctorName)
     // }
@@ -189,19 +188,22 @@ export const ctorArgsInterceptor: InterceptorFn<ClassRef, any, Context> = (input
     //     input.args = input.resolveArguments(ctorName, input.context!)
     // }
 
-    if (!context.has(CTOR_ARGS)) {
-        const params = context.get(CTOR_PARAMS) ?? input.getParameters(ctorName);
-        const args = resolveArgs(context.get(RAISE_INJECTOR), params);
-        context.set(CTOR_ARGS, args);
+    if (!context.args) {
+        const params = context.params ?? input.getParameters(ctorName);
+        const args = resolveArgs(context.raiseInjector, params);
+        context.args = args;
     }
 
     return next(input, context);
 }
 
 
-export const instanceHandler = (typeRef: ClassRef, context: Context) => {
-    const args = context.get(CTOR_ARGS) ?? [];
-    return new (typeRef.type as Type)(...args);
+export const instanceHandler = (typeRef: ClassRef, context: IocContext) => {
+    const args = context.args ?? [];
+
+    const instance = new (typeRef.type as Type)(...args);
+    context.instance = instance;
+    return instance;
 
 }
 

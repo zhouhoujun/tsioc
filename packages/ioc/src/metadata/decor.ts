@@ -12,9 +12,6 @@ import { InvokeArguments, InvokeOptions } from '../context';
 import { getModuleType } from '../module.ref';
 import { getTypes } from '../utils/lang';
 import { ActionType, DecoratorOption, ModuleDef } from './class';
-import { Runtime } from '../runtime';
-import { CURR_DECOR, REGISTER_INJECTOR } from '../lifescope/tokens';
-
 
 
 /**
@@ -736,11 +733,11 @@ export const ProvidedIn: ProvidedIn = createDecorator<ProvidedInTargetMetadata>(
     props: (target: AbstractType, provide?: Token, alias?: string) => ({ target, provide: getToken(provide!, alias) }),
     design: {
         afterAnnoation: (classRef, context) => {
-            const meta = classRef.getMetadata<ProvidedInTargetMetadata>(context.get(CURR_DECOR));
+            const meta = classRef.getMetadata<ProvidedInTargetMetadata>(context.currDecor!);
             const type = classRef.type;
             const prds = (meta?.provide ? { provide: meta.provide, useClass: type } : type) as Provider;
-            const platform = context.get(Runtime);
-            const injector = context.get(REGISTER_INJECTOR);
+            const platform = context.runtime;
+            const injector = context.registerInjector;
             platform.setTypeProvider(meta.target, prds);
             injector.onDestroy(() => {
                 platform.removeTypeProvider(type, prds);

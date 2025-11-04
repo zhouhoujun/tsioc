@@ -382,7 +382,7 @@ export interface TypeOption<T = any> extends RegOption<T> {
 /**
  * provider option.
  */
-export type ProviderOption<T = any> = ClassProvider | ValueProvider | ExistingProvider | FactoryProvider;
+export type ProviderOption<T = any> = ClassProvider<T> | ValueProvider<T> | ExistingProvider<T> | FactoryProvider<T>;
 
 /**
  * register option.
@@ -438,52 +438,3 @@ export interface InjectorRecord<T = any> {
 
     onRegister?: ()=> void;
 }
-
-// /**
-//  * fn type
-//  */
-// export const enum FnType {
-//     Cotr,
-//     Inj,
-//     Fac
-// }
-
-// /**
-//  * factory record.
-//  */
-// export interface FactoryRecord<T = any> {
-//     /**
-//      * use value for provide.
-//      *
-//      * @type {*}
-//      */
-//     value?: any;
-//     /**
-//      * factory.
-//      */
-//     fn?: Function;
-//     /**
-//      * fn type.
-//      */
-//     fy?: FnType;
-//     /**
-//      * deps.
-//      */
-//     deps?: any[];
-//     /**
-//      * token provider type.
-//      */
-//     type?: AbstractType<T>;
-//     /**
-//      * is static for fn create once.
-//      */
-//     stic?: boolean;
-//     /**
-//      * cache value.
-//      */
-//     cache?: T;
-//     /**
-//      * cache expires.
-//      */
-//     expires?: number;
-// }

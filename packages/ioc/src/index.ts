@@ -34,8 +34,7 @@ export * from './providers';
 
 
 export * from './handler';
-export * from './lifescope/ctx';
-export * from './lifescope/commom';
+export * from './lifescope/context';
 export * from './lifescope/lifescope';
 export * from './impl/initialize';
 export * from './impl/design';

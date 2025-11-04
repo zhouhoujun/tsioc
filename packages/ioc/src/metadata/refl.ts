@@ -200,7 +200,7 @@ const decorMethodProviders = (ctx: DecorContext, next: HandlerFn, context: Conte
     return next(ctx, context)
 }
 
-const decorExtendHandler = (ctx: DecorContext, context: Context | undefined) => {
+const decorExtendHandler = (ctx: DecorContext, context: Context) => {
     if (ctx.define.decor.getHandler) {
         ctx.define.decor.getHandler(ctx.define.decorType)?.(ctx, context);
     }

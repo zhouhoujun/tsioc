@@ -60,4 +60,8 @@ export interface Parameter<T = any> {
 }
 
 
-export type ResolveInterceptorLike<TInput extends Parameter = Parameter, TContext extends InvocationContext = InvocationContext> = InterceptorLike<TInput, any, TContext>;
+export type ParameterLike = Token | [Token, ...InjectFlags[]] | Parameter;
+
+export type Parameters = ParameterLike[] | null;
+
+export type ResolveInterceptorLike<TInput extends ParameterLike = ParameterLike, TContext extends InvocationContext = InvocationContext> = InterceptorLike<TInput, any, TContext>;

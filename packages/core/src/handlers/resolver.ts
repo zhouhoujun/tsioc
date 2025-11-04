@@ -25,10 +25,10 @@ export interface TransportParameter<T = object> extends Parameter<T> {
      */
     scope?: ParameterScope;
     
-    /**
-     * custom resolver to resolve the value for the property or parameter.
-     */
-    resolver?: TypeOf<ResolveInterceptorLike<TransportParameter>>[];
+    // /**
+    //  * custom resolver to resolve the value for the property or parameter.
+    //  */
+    // resolver?: TypeOf<ResolveInterceptorLike<TransportParameter>>[];
 }
 
 

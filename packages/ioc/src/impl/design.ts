@@ -4,19 +4,19 @@ import { ClassRef, DecoratorFn, DecoratorScope, Decors } from '../metadata/class
 import { AbstractInjector, LAZY, Operator } from './base';
 import { Runtime } from '../runtime';
 import { HandlerScope } from '../lifescope/lifescope';
-import { CURR_DECOR, PROVIDE, REGISTER_INJECTOR } from '../lifescope/tokens';
+import { IocContext } from '../lifescope/context';
 import { isFunction } from '../utils/chk';
 import { Provider } from '../providers';
 import { createRecord } from './common';
 
-export const autorunInterceptor = (input: ClassRef, next: HandlerFn, context: Context) => {
+export const autorunInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     return invokeTail(() => next(input, context), (res) => {
         const runs = input.runnables.filter(c => c.auto && c.decorType === Decors.CLASS);
         if (runs.length < 1) {
             return
         }
 
-        const invocation = input.createInvocation(context.get(REGISTER_INJECTOR));
+        const invocation = input.createInvocation(context.raiseInjector);
         runs.forEach(meta => {
             invocation.invoke(meta.propertyKey);
         });
@@ -25,19 +25,18 @@ export const autorunInterceptor = (input: ClassRef, next: HandlerFn, context: Co
 
 
 
-function invokeHandler(decors: DecoratorFn[], input: ClassRef, scope: DecoratorScope, context: Context) {
+function invokeHandler(decors: DecoratorFn[], input: ClassRef, scope: DecoratorScope, context: IocContext) {
     decors?.forEach(d => {
-        // ctx.currDecor = d;
-        context.set(CURR_DECOR, d);
+        context.currDecor = d;
         d.getDesignHandler?.(scope)?.(input, context);
     });
 }
 
-const BEFORE_ANNOATION_SCOPE = new ContextToken<HandlerScope<ClassRef>>(() => null!);
-export function getDesignBeforeAnnoationScope(runtime: Runtime): HandlerScope<ClassRef> {
+const BEFORE_ANNOATION_SCOPE = new ContextToken<HandlerScope<ClassRef, IocContext>>(() => null!);
+export function getDesignBeforeAnnoationScope(runtime: Runtime): HandlerScope<ClassRef, IocContext> {
     let scope = runtime.context.get(BEFORE_ANNOATION_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<ClassRef, Context>(runtime, (input, context) => {
+        scope = new HandlerScope<ClassRef, IocContext>(runtime, (input, context) => {
             invokeHandler(input.classDecors, input, Decors.beforeAnnoation, context)
         });
         runtime.context.set(BEFORE_ANNOATION_SCOPE, scope);
@@ -46,11 +45,11 @@ export function getDesignBeforeAnnoationScope(runtime: Runtime): HandlerScope<Cl
 }
 
 
-const AFTER_ANNOATION_SCOPE = new ContextToken<HandlerScope>(() => null!);
-export function getDesignAfterAnnoationScope(runtime: Runtime): HandlerScope<ClassRef> {
+const AFTER_ANNOATION_SCOPE = new ContextToken<HandlerScope<ClassRef, IocContext>>(() => null!);
+export function getDesignAfterAnnoationScope(runtime: Runtime): HandlerScope<ClassRef, IocContext> {
     let scope = runtime.context.get(AFTER_ANNOATION_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<ClassRef, Context>(runtime, (input, context) => {
+        scope = new HandlerScope<ClassRef, IocContext>(runtime, (input, context) => {
             invokeHandler(input.classDecors, input, Decors.afterAnnoation, context)
         });
         runtime.context.set(AFTER_ANNOATION_SCOPE, scope);
@@ -58,9 +57,11 @@ export function getDesignAfterAnnoationScope(runtime: Runtime): HandlerScope<Cla
     return scope;
 }
 
-
-const DESIGN_PROPERTY_SCOPE = new ContextToken<HandlerScope<ClassRef>>(() => null!);
-export function getDesignPropertyScope(runtime: Runtime): HandlerScope<ClassRef> {
+/**
+ * property decorator scope.
+ */
+const DESIGN_PROPERTY_SCOPE = new ContextToken<HandlerScope<ClassRef, IocContext>>(() => null!);
+export function getDesignPropertyScope(runtime: Runtime): HandlerScope<ClassRef, IocContext> {
     let scope = runtime.context.get(DESIGN_PROPERTY_SCOPE);
     if (!scope) {
         scope = new HandlerScope<ClassRef>(runtime, (input, context) => {
@@ -71,12 +72,12 @@ export function getDesignPropertyScope(runtime: Runtime): HandlerScope<ClassRef>
     return scope;
 }
 
-const DESIGN_METHOD_SCOPE = new ContextToken<HandlerScope<ClassRef>>(() => null!);
+const DESIGN_METHOD_SCOPE = new ContextToken<HandlerScope<ClassRef, IocContext>>(() => null!);
 
-export function getDesignMethodScope(runtime: Runtime): HandlerScope<ClassRef> {
+export function getDesignMethodScope(runtime: Runtime): HandlerScope<ClassRef, IocContext> {
     let scope = runtime.context.get(DESIGN_METHOD_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<ClassRef, Context>(runtime, (input, context) => {
+        scope = new HandlerScope<ClassRef, IocContext>(runtime, (input, context) => {
             invokeHandler(input.methodDecors, input, Decors.method, context);
         });
         runtime.context.set(DESIGN_METHOD_SCOPE, scope);
@@ -85,35 +86,35 @@ export function getDesignMethodScope(runtime: Runtime): HandlerScope<ClassRef> {
 }
 
 
-export const afterPropertyAnnoationInterceptor = (input: ClassRef, next: HandlerFn, context: Context) => {
+export const afterPropertyAnnoationInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     return invokeTail(() => next(input, context), (res) => {
         getDesignPropertyScope(context.get(Runtime)).handle(input, context);
         return res;
     });
 }
-export const afterMethodAnnoationInterceptor = (input: ClassRef, next: HandlerFn, context: Context) => {
+export const afterMethodAnnoationInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     return invokeTail(() => next(input, context), (res) => {
         getDesignMethodScope(context.get(Runtime)).handle(input, context);
         return res;
     });
 }
-export const afterAnnoationInterceptor = (input: ClassRef, next: HandlerFn, context: Context) => {
+export const afterAnnoationInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     return invokeTail(() => next(input, context), (res) => {
         getDesignAfterAnnoationScope(context.get(Runtime)).handle(input, context);
         return res;
     });
 }
 
-export const beforeAnnoactionInterceptor = (input: ClassRef, next: HandlerFn, context: Context) => {
+export const beforeAnnoactionInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     return invokeTail(() => getDesignBeforeAnnoationScope(context.get(Runtime)).handle(input, context), () => next(input, context));
 }
 
 
-export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context: Context) => {
+export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     // const { injector, type, provide, regProvides } = input;
     const type = input.type;
-    const injector = context.get(REGISTER_INJECTOR) as AbstractInjector;
-    const provide = context.get(PROVIDE);
+    const injector = context.registerInjector as AbstractInjector;
+    const provide = context.provide;
     if (provide && provide !== type) {
         const pType = input.getAnnotation().providedIn;
         if (isFunction(pType)) {

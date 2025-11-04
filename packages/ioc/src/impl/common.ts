@@ -37,6 +37,7 @@ export function resolveArg(injector: Injector, arg: any): any {
     return injector.get(depToken, undefined, depFlags);
 }
 
+
 /**
  * 辅助函数：为工厂函数调用解析参数
  */

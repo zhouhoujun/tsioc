@@ -1,7 +1,7 @@
 import {
-    tokenId, Injector, DefaultInvocationContext, ParameterMetadata, lang, AbstractType,
-    DecorDefine, Defer, TargetInvokeArguments, ClassRef, HandlerFn, Context, noPointcut,
-    Abstract, 
+    tokenId, Injector, DefaultInvocationContext, lang, AbstractType,
+    DecorDefine, Defer, TargetInvokeArguments, ClassRef, HandlerFn, Context, Parameters,
+    Abstract,
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advisor } from '../Advisor';
@@ -15,7 +15,7 @@ export interface JoinpointOption extends TargetInvokeArguments {
     targetType?: AbstractType;
     fullName?: string;
     provJoinpoint?: JoinPoint;
-    params?: ParameterMetadata[];
+    params?: Parameters;
     /**
      * custom proxy invoke origin method.
      */
@@ -73,7 +73,7 @@ export class JoinPoint extends DefaultInvocationContext {
     readonly targetType: AbstractType | undefined;
     readonly advisor: Advisor;
     readonly originMethod?: Function;
-    readonly params?: ParameterMetadata[];
+    readonly params?: Parameters;
     readonly annotations?: DecorDefine[];
     readonly valueChange?: { newValue: any, oldValue: any };
 

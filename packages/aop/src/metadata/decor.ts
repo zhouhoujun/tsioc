@@ -46,17 +46,18 @@ export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
         }
     },
     design: {
-        afterAnnoation: (ctx) => {
+        afterAnnoation: (typeRef, ctx) => {
             const advisor = ctx.runtime.context.get(Advisor);
             if (advisor) {
-                const invocation = ctx.classRef.createInvocation(ctx.injector);
-                ctx.injector.onDestroy(() => {
+                const injector = ctx.raiseInjector;
+                const invocation = typeRef.createInvocation(injector);
+                injector.onDestroy(() => {
                     advisor.remove(invocation);
                     invocation.destroy();
                 });
                 advisor.add(invocation)
             } else {
-                console.error('aop module not registered. make sure register before', ctx.type)
+                console.error('aop module not registered. make sure register before', typeRef.type)
             }
         }
     },

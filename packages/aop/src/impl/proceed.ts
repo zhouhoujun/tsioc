@@ -1,8 +1,9 @@
 import {
-    isFunction, lang, Runtime, ctorName, InvocationContext, HandlerScope, HandlerFn,
-    Context, ContextToken, invokeTail, InitializeContext, InterceptorLike, isDefined,
-    ParameterMetadata, ClassRef, proxyTag, isObject, isNil, object2string, getClassify,
-    composeHandlers, composeInterceptors
+    isFunction, lang, Runtime, ctorName, HandlerScope, HandlerFn,
+    Context, ContextToken, invokeTail, IocContext, InterceptorLike, isDefined,
+    Parameters, ClassRef, proxyTag, isObject, isNil, object2string, getClassify,
+    composeHandlers, composeInterceptors, Injector,
+    AbstractInjector
 } from '@tsdi/ioc';
 import { JoinPoint } from '../joinpoints/JoinPoint';
 import { JoinpointState } from '../joinpoints/state';
@@ -11,6 +12,8 @@ import { Proceeding } from '../Proceeding';
 import { Advicer } from '../Advicer';
 import { AroundMetadata } from '../metadata/meta';
 
+
+const POINTCUT = new ContextToken(()=> false);
 
 /**
  * Proxy method.
@@ -25,25 +28,25 @@ export class ProceedingScope implements Proceeding {
     ) { }
 
 
-    pointcutCtor(ctx: InitializeContext, next: HandlerFn, context: Context) {
+    pointcutCtor(typeRef: ClassRef, next: HandlerFn, context: IocContext) {
         const advisor = context.get(Advisor);
-        if (!advisor.hasCtor(ctx.classRef)) {
-            return invokeTail(() => next(ctx, context), () => {
-                if (advisor.hasPointcut(ctx.instance, ctx.classRef, true)) {
-                    ctx.hasPointcut = true;
-                    ctx.isNewContext = false;
+        if (!advisor.hasCtor(typeRef)) {
+            return invokeTail(() => next(typeRef, context), () => {
+                if (advisor.hasPointcut(context.instance, typeRef, true)) {
+                    context.set(POINTCUT, true);
+                    // ctx.isNewContext = false;
                 }
             });
         }
 
-        ctx.isNewContext = false;
-        return this.handle(ctx.classRef, `${ctx.classRef.className}.${ctorName}`, ctorName, null, advisor, ctx.runtime, {
-            parent: ctx.context,
-            args: ctx.args,
-            params: ctx.params,
+        // ctx.isNewContext = false;
+        return this.handle(typeRef, `${typeRef.className}.${ctorName}`, ctorName, null, advisor, context.runtime, {
+            parent: context.raiseInjector,
+            args: context.args ?? [],
+            params: context.params ?? [],
             originProxy: (joinPoint) => {
-                invokeTail(() => next(ctx, context), () => {
-                    const instance = joinPoint.returning = joinPoint.target = ctx.instance;
+                invokeTail(() => next(typeRef, context), () => {
+                    const instance = joinPoint.returning = joinPoint.target = context.instance;
                     return instance;
                 })
             },
@@ -51,16 +54,17 @@ export class ProceedingScope implements Proceeding {
 
     }
 
-    pointcutProperty(ctx: InitializeContext, next: HandlerFn, context: Context) {
-        return invokeTail(() => next(ctx, context), () => {
+    pointcutProperty(typeRef: ClassRef, next: HandlerFn, context: IocContext) {
+        return invokeTail(() => next(typeRef, context), () => {
             const advisor = context.get(Advisor);
-            if (isDefined(ctx.instance) && (ctx.hasPointcut || advisor.hasPointcut(ctx.instance, ctx.classRef, true))) {
-                ctx.instance = this.createProxy(ctx.classRef.className, ctx.classRef, ctx.instance, ctx.classRef, ctx.instance, advisor, ctx.context)
+            const instance = context.instance;
+            if (isDefined(instance) && (context.has(POINTCUT) || advisor.hasPointcut(instance, typeRef, true))) {
+                context.instance = this.createProxy(typeRef.className, typeRef, instance, typeRef, instance, advisor, context.raiseInjector)
             }
         });
     }
 
-    protected createProxy(prefix: string, rootRef: ClassRef, root: any, typeRef: ClassRef | null, instance: any, advisor: Advisor, parent?: InvocationContext) {
+    protected createProxy(prefix: string, rootRef: ClassRef, root: any, typeRef: ClassRef | null, instance: any, advisor: Advisor, parent?: Injector) {
         const descriptors = typeRef?.getPropertyDescriptors();
 
         const weekMap = new WeakMap();
@@ -140,14 +144,14 @@ export class ProceedingScope implements Proceeding {
         return proxy;
     }
 
-    protected proxy<T>(originMethod: Function, propertyKey: string | symbol, fullName: string, advisor: Advisor, receiver: T, target: any, targetRef: ClassRef, parent?: InvocationContext) {
+    protected proxy<T>(originMethod: Function, propertyKey: string | symbol, fullName: string, advisor: Advisor, receiver: T, target: any, targetRef: ClassRef, parent?: Injector) {
         const runtime = this.runtime;
         return (...args: any[]) => {
             if (!runtime || !runtime.injector || runtime.injector.destroyed) {
                 return originMethod.call(target, ...args)
             }
             const larg = lang.last(args);
-            if (target[proxyTag] && larg instanceof InvocationContext) {
+            if (target[proxyTag] && larg instanceof AbstractInjector) {
                 args = args.slice(0, args.length - 1);
                 parent = larg
             }
@@ -165,9 +169,9 @@ export class ProceedingScope implements Proceeding {
         originMethod?: Function,
         args?: any[];
         accessor?: 'get' | 'set';
-        params?: ParameterMetadata[];
+        params?: Parameters;
         valueChange?: { newValue: any, oldValue: any },
-        parent?: InvocationContext,
+        parent?: Injector,
         originProxy?: (joinPoint: JoinPoint) => any,
         next?: (res: JoinPoint) => any
     } = {}): any {
