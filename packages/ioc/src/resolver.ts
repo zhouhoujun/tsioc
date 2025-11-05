@@ -2,6 +2,7 @@ import { InvocationContext } from './context';
 import { InterceptorLike } from './handler';
 import { InjectFlags, Token } from './tokens';
 import { AbstractType, TypeOf } from './types';
+import { isObject } from './utils/chk';
 
 
 
@@ -63,5 +64,9 @@ export interface Parameter<T = any> {
 export type ParameterLike = Token | [Token, ...InjectFlags[]] | Parameter;
 
 export type Parameters = ParameterLike[] | null;
+
+export function isParameter(target: any): target is Parameter {
+    return isObject(target) && (target.provider || target.type || (target.name && target.propertyKey))
+}
 
 export type ResolveInterceptorLike<TInput extends ParameterLike = ParameterLike, TContext extends InvocationContext = InvocationContext> = InterceptorLike<TInput, any, TContext>;

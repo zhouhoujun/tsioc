@@ -12,7 +12,7 @@ export class DefaultInterceptorResolver implements InterceptorResolver {
     resolve<T>(target: AbstractType<T> | T | string): ApplicationInterceptorLike[] {
         const interceptors = this.maps.get(isString(target) ? target : (isFunction(target) ? target : getType(target))) ?? [];
         const resolver = this.injector.get(InterceptorResolver, null, InjectFlags.SkipSelf);
-
+        if(resolver === this) return interceptors;
         resolver?.resolve(target)?.forEach(r => {
             if (!(interceptors.indexOf(r) >= 0 || (r as ApplicationInterceptor).equals ? interceptors.some(i => (r as ApplicationInterceptor).equals!(i)) : false)) {
                 interceptors.push(r);
@@ -53,7 +53,7 @@ export class DefaultFilterResolver implements FilterResolver {
     resolve<T>(target: AbstractType<T> | T | string): FilterLike[] {
         const filters = this.maps.get(isString(target) ? target : (isFunction(target) ? target : getType(target))) ?? [];
         const resolver = this.injector.get(FilterResolver, null, InjectFlags.SkipSelf);
-
+        if(resolver == this) return filters;
         resolver?.resolve(target)?.forEach(r => {
             if (!(filters.indexOf(r) >= 0 || (r as Filter).equals ? filters.some(i => (r as Filter).equals!(i)) : false)) {
                 filters.push(r);

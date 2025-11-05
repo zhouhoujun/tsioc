@@ -1,13 +1,14 @@
 import { AbstractType } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { deepForEach } from '../utils/lang';
-import { isNil, isArray, isNumber } from '../utils/chk';
+import { isArray, isNumber } from '../utils/chk';
 import { Injector, InjectorRecord, RegOption } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef } from '../metadata/class';
 import { Provider, StaticProvider, DynamicProvider, Provide } from '../providers';
 import { isPlainObject } from '../utils/obj';
+import { isParameter, ParameterLike } from '../resolver';
 
 
 
@@ -17,10 +18,17 @@ export function createValueRecord<T = any>(value: T, type?: AbstractType<T>): In
 }
 
 export function createRecord<T>(factory: (() => T) | undefined, isStatic?: boolean, multi?: boolean): InjectorRecord<T> {
-    return { factory, value: isStatic ? LAZY : undefined, multi: multi ? [] : undefined, isStatic };
+    return { factory, value: isStatic ? LAZY : undefined, multi: multi ? [] : undefined };
 }
 
-export function resolveArg(injector: Injector, arg: any): any {
+
+function isRecord(target: any): target is InjectorRecord {
+    return isPlainObject(target) && (
+        target.factory || 'value' in target
+    )
+}
+
+export function resolveArg(injector: Injector, arg: ParameterLike | InjectorRecord): any {
     let depToken: Token;
     let depFlags = InjectFlags.Default;
     if (isArray(arg)) {
@@ -30,6 +38,15 @@ export function resolveArg(injector: Injector, arg: any): any {
                 depFlags |= d;
             }
         });
+    } else if (isRecord(arg)) {
+        if (arg.value !== undefined && arg.value !== LAZY) {
+            return arg.value;
+        }
+        const value = arg.factory?.(injector) ?? null;
+        if(arg.value === LAZY) arg.value = value;
+        return value;
+    } else if (isParameter(arg)) {
+        return injector.get(arg.provider ?? arg.type ?? arg.name!, arg.defaultValue, arg.flags);
     } else {
         depToken = arg;
     }
@@ -41,7 +58,7 @@ export function resolveArg(injector: Injector, arg: any): any {
 /**
  * 辅助函数：为工厂函数调用解析参数
  */
-export function resolveArgs(injector: Injector, deps?: any[]): any[] {
+export function resolveArgs(injector: Injector, deps?: (ParameterLike | InjectorRecord)[]): any[] {
     if (!deps || !deps.length) return [];
 
     const args: any[] = [];
@@ -66,7 +83,7 @@ export function tryResolveToken(token: Token, rd: InjectorRecord, runtime: Runti
     raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     try {
         const value = resolveToken(token, rd, runtime, injector, raise, notFoundValue, flags, isStatic);
-        if (isStatic && rd.isStatic !== false && !isNil(value) && value !== notFoundValue) {
+        if (isStatic && rd.isStatic !== false && value != undefined && value != LAZY && value !== notFoundValue) {
             rd.value = value;
         }
         return value;
@@ -95,21 +112,22 @@ export function resolveToken(token: Token, rd: InjectorRecord, runtime: Runtime,
     // 处理多提供者
     if (rd.multi) {
         // 获取父注入器中的值
+        const multi: any[] = []
         const parent = injector?.getParent();
         if (parent && !(flags & InjectFlags.Self)) {
             const values = parent.get(token, null, flags, raise);
             if (values) {
-                rd.multi.push(...values);
+                multi.push(...values);
             }
         }
 
         // 如果有工厂函数，执行并添加结果
         if (rd.factory) {
             const result = rd.factory(raise);
-            rd.multi.push(result);
+            multi.push(...result);
         }
 
-        return rd.multi;
+        return multi;
     }
 
     // 执行工厂函数获取值

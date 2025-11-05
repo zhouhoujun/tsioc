@@ -869,9 +869,9 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
         injector.getRecords().set(provide ?? type, createRecord(factory, isStatic))
         record = createRecord(() => injector.get(type), isStatic);
     } else {
-
         record = createRecord(factory, isStatic);
     }
+    
     record.onRegister = () => {
         const context = new IocContext(runtime);
         context.injector = injector;
