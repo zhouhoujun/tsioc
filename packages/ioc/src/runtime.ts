@@ -4,7 +4,7 @@ import { OnDestroy } from './destroy';
 import { Token } from './tokens';
 import { AbstractType } from './types';
 import { Provider } from './providers';
-import { Injector, InjectorRecord, InjectorScope } from './injector';
+import { Injector, InjectorScope } from './injector';
 import { ModuleRef } from './module.ref';
 import { HandlerScope } from './lifescope/lifescope';
 import { Context } from './handler';

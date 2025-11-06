@@ -5,7 +5,7 @@ import { ClassRef, ctorName, DecoratorFn, DecoratorScope, Decors } from '../meta
 import { Runtime } from '../runtime';
 import { AbstractType, Type } from '../types';
 import { HandlerScope } from '../lifescope/lifescope';
-import { Operator } from './base';
+import { Operator } from './injector';
 import { RuntimeContext } from '../lifescope/context';
 import { isDefined } from '../utils/chk';
 import { resolveArg, resolveArgs } from './common';

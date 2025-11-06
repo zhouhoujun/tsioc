@@ -6,7 +6,7 @@ import { ModuleOption, ModuleRef } from '../module.ref';
 import { isModuleProviders, ModuleWithProviders } from '../providers';
 import { Type } from '../types';
 import { createValueRecord, mergePromise } from './common';
-import { AbstractInjector, processInjectType, processProviders, processUse } from './base';
+import { AbstractInjector, processInjectType, processProviders, processUse } from './injector';
 
 
 /**

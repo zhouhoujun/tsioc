@@ -15,7 +15,7 @@ import { HandlerScope } from '../lifescope/lifescope';
 import { Runtime } from '../runtime';
 import { nonEnumerable } from '../metadata/decor';
 import { createValueRecord, NullInjectorException, THROW_FLAGE, tryResolveToken } from './common';
-import { AbstractInjector, deferProcessProviders, Operator  } from './base';
+import { AbstractInjector, deferProcessProviders, Operator  } from './injector';
 
 
 

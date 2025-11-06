@@ -1,7 +1,7 @@
 import { Context, ContextToken, HandlerFn, InterceptorLike, invokeTail } from '../handler';
 import { InjectorRecord } from '../injector';
 import { ClassRef, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
-import { AbstractInjector, Operator } from './base';
+import { AbstractInjector, Operator } from './injector';
 import { Runtime } from '../runtime';
 import { HandlerScope } from '../lifescope/lifescope';
 import { IocContext } from '../lifescope/context';
