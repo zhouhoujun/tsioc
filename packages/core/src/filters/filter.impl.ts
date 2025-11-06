@@ -96,7 +96,7 @@ export class DefaultFiterHandlerMethodResolver implements FilterHandlerResolver 
     resolve<T>(target: AbstractType<T> | T | string): HandlerLike[] {
         const handlers = this.maps.get(isString(target) ? target : (isFunction(target) ? target : getType(target))) ?? [];
         const resolver = this.injector.get(FilterHandlerResolver, null, InjectFlags.SkipSelf);
-
+        if(resolver === this) return handlers;
         resolver?.resolve(target)?.forEach(r => {
             if (!(handlers.indexOf(r) >= 0 || (r as ApplicationHandler).equals ? handlers.some(i => (r as ApplicationHandler).equals!(i)) : false)) {
                 handlers.push(r);

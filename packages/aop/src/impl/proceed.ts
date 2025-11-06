@@ -1,9 +1,8 @@
 import {
     isFunction, lang, Runtime, ctorName, HandlerScope, HandlerFn,
-    Context, ContextToken, invokeTail, IocContext, InterceptorLike, isDefined,
+    Context, ContextToken, invokeTail, InterceptorLike, isDefined,
     Parameters, ClassRef, proxyTag, isObject, isNil, object2string, getClassify,
-    composeHandlers, composeInterceptors, Injector,
-    AbstractInjector
+    composeHandlers, composeInterceptors, Injector, AbstractInjector, RuntimeContext
 } from '@tsdi/ioc';
 import { JoinPoint } from '../joinpoints/JoinPoint';
 import { JoinpointState } from '../joinpoints/state';
@@ -28,8 +27,8 @@ export class ProceedingScope implements Proceeding {
     ) { }
 
 
-    pointcutCtor(typeRef: ClassRef, next: HandlerFn, context: IocContext) {
-        const advisor = context.get(Advisor);
+    pointcutCtor(typeRef: ClassRef, next: HandlerFn, context: RuntimeContext) {
+        const advisor = context.runtime.context.get(Advisor);
         if (!advisor.hasCtor(typeRef)) {
             return invokeTail(() => next(typeRef, context), () => {
                 if (advisor.hasPointcut(context.instance, typeRef, true)) {
@@ -54,13 +53,14 @@ export class ProceedingScope implements Proceeding {
 
     }
 
-    pointcutProperty(typeRef: ClassRef, next: HandlerFn, context: IocContext) {
+    pointcutProperty(typeRef: ClassRef, next: HandlerFn, context: RuntimeContext) {
         return invokeTail(() => next(typeRef, context), () => {
-            const advisor = context.get(Advisor);
+            const advisor = context.runtime.context.get(Advisor);
             const instance = context.instance;
             if (isDefined(instance) && (context.has(POINTCUT) || advisor.hasPointcut(instance, typeRef, true))) {
                 context.instance = this.createProxy(typeRef.className, typeRef, instance, typeRef, instance, advisor, context.raiseInjector)
             }
+            return context.instance;
         });
     }
 

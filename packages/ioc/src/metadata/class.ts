@@ -11,7 +11,7 @@ import { ArgumentException, Exception } from '../exception';
 import { Injector, MethodType, Resolve } from '../injector';
 import { HandlerFn } from '../handler';
 import { Invocation, InvocationFactory } from '../invocation';
-import { IocContext } from '../lifescope/context';
+import { IocContext, RuntimeContext } from '../lifescope/context';
 
 
 /**
@@ -649,19 +649,19 @@ export interface RuntimeScopeHandles<T> {
      * decorator Property action handles.
      * raise handles order by property -> method -> class
      */
-    property?: HandlerFn<T, void, IocContext> | HandlerFn<T, void, IocContext>[];
+    property?: HandlerFn<T, void, RuntimeContext> | HandlerFn<T, void, RuntimeContext>[];
 
     /**
      * decorator Method action handles.
      * raise handles order by property -> method -> class
      */
-    method?: HandlerFn<T, void, IocContext> | HandlerFn<T, void, IocContext>[];
+    method?: HandlerFn<T, void, RuntimeContext> | HandlerFn<T, void, RuntimeContext>[];
 
     /**
      * decorator Class action handles.
      * raise handles order by  property -> method -> class
      */
-    class?: HandlerFn<T, void, IocContext> | HandlerFn<T, void, IocContext>[];
+    class?: HandlerFn<T, void, RuntimeContext> | HandlerFn<T, void, RuntimeContext>[];
 
 }
 

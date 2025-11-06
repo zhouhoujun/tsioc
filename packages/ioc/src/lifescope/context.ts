@@ -78,14 +78,6 @@ export class IocContext extends Context {
         this.set(INJECTOR, value);
     }
 
-    get raiseInjector(): Injector {
-        return this.get(RAISE_INJECTOR);
-    }
-
-    set raiseInjector(value: Injector) {
-        this.set(RAISE_INJECTOR, value);
-    }
-
     /**
      * constructor arguments.
      */
@@ -108,4 +100,15 @@ export class IocContext extends Context {
         this.set(CTOR_PARAMS, value);
     }
 
+}
+
+export class RuntimeContext extends IocContext {
+
+    get raiseInjector(): Injector {
+        return this.get(RAISE_INJECTOR);
+    }
+
+    set raiseInjector(value: Injector) {
+        this.set(RAISE_INJECTOR, value);
+    }
 }

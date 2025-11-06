@@ -13,7 +13,7 @@ import { nonEnumerable } from '../metadata/decor';
 import { getClassRef } from '../metadata/refl';
 import { NullInjectorException, THROW_FLAGE, tryResolveToken, RegisterExtedOption, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, LAZY } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
-import { IocContext } from '../lifescope/context';
+import { IocContext, RuntimeContext } from '../lifescope/context';
 import { Parameters } from '../resolver';
 import { CONTAINER, INJECTOR } from '../metadata/tk';
 import { InvocationFactory } from '../invocation';
@@ -850,7 +850,7 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
             return runtime.getSingleton(type);
         }
 
-        const context = new IocContext(runtime);
+        const context = new RuntimeContext(runtime);
         if (params) {
             context.params = params;
         }
