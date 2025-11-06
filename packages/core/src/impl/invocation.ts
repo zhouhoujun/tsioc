@@ -1,4 +1,4 @@
-import { InvocationContext, Invocation, createContext, getType, isFunction, isString, Injector, Type, Context, invokeTail, InvocationRequest } from '@tsdi/ioc';
+import { InvocationContext, Invocation, createContext, getType, isFunction, isString, Injector, Type, Context, invokeTail, InvocationRequest, isInvocationContext } from '@tsdi/ioc';
 import { BackendFn } from '../ApplicationHandler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
@@ -48,10 +48,10 @@ export class DefaultInvocationHandler<
      */
     protected respond(input: TInput | InvocationContext, context?: TContext) {
         let newCtx = false;
-        if (input instanceof InvocationContext) {
+        if (isInvocationContext(input)) {
             if (context) this.attchContext(input, context);
         } else {
-            if (context && context instanceof InvocationContext) {
+            if (isInvocationContext(context)) {
                 context.setValue(getType(input), input);
                 input = context;
             } else {

@@ -1,5 +1,5 @@
 import { AbstractType, TypeOf } from '../types';
-import { createContext, hasContextOptions, InvocationContext, InvocationOptions, InvokeArguments } from '../context';
+import { createContext, hasContextOptions, INVOCATION_CONTEXT_IMPL, InvocationContext, InvocationOptions, InvokeArguments } from '../context';
 import { Invocation, InvocationFactory } from '../invocation';
 import { getType, isArray, isFunction, isPromise, isString, isSymbol } from '../utils/chk';
 import { DestroyCallback, OnDestroy } from '../destroy';
@@ -182,7 +182,7 @@ export abstract class AbstractInvocation<T = any,
         const ctx = this.getMethodContext(propertyKey);
         let context: TC;
         let destroy: Function | undefined;
-        if (option instanceof InvocationContext) {
+        if (INVOCATION_CONTEXT_IMPL.isContext(option)) {
             context = option;
             const ext = ctx !== context;
             ext && context.addRef(ctx);

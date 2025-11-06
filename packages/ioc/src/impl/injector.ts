@@ -8,7 +8,7 @@ import { ArgumentException, Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef, ModuleDef } from '../metadata/class';
 import { Provider, ModuleType, StaticProvider, DynamicProvider, MutilProvider, Provide, ProviderExts, isValueProvider, isFactoryProvider, isExistingProvider, isClassProvider, isTypeProvider, UseAsStatic, ClassProvider, ModuleWithProviders } from '../providers';
-import { createContext, hasContextOptions, InvocationContext, InvokeOptions } from '../context';
+import { createContext, hasContextOptions, INVOCATION_CONTEXT_IMPL, InvocationContext, InvokeOptions } from '../context';
 import { nonEnumerable } from '../metadata/decor';
 import { getClassRef } from '../metadata/refl';
 import { NullInjectorException, THROW_FLAGE, tryResolveToken, RegisterExtedOption, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, LAZY } from './common';
@@ -390,7 +390,7 @@ export namespace Operator {
         let isCtx = false;
         if (args.length === 1) {
             const arg1 = args[0];
-            if (arg1 instanceof InvocationContext) {
+            if (INVOCATION_CONTEXT_IMPL.isContext(arg1)) {
                 context = arg1;
                 isCtx = true;
             } else if (isArray(arg1)) {
@@ -641,7 +641,7 @@ export namespace Operator {
         let option: any;
         if (args.length === 1) {
             const arg0 = args[0];
-            if (arg0 instanceof InvocationContext) {
+            if (INVOCATION_CONTEXT_IMPL.isContext(arg0)) {
                 context = arg0;
                 providers = [];
             } else if (isArray(arg0)) {

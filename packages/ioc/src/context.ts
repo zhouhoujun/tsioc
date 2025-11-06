@@ -182,6 +182,9 @@ export const INVOCATION_CONTEXT_IMPL = {
      */
     create(parent: Injector | InvocationContext, options?: TargetInvokeArguments, scope?: AbstractType | 'static'): InvocationContext {
         throw new Exception('not implemented.')
+    },
+    isContext(ctx: any): ctx is InvocationContext {
+        throw new Exception('not implemented.')
     }
 };
 

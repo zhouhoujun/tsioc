@@ -96,7 +96,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
 
     attach(option: InvocationContext | InvokeArguments): void {
 
-        if (option instanceof InvocationContext) {
+        if (isInvocationContext(option)) {
             this.addRef(option);
             this.onDestroy(() => this.removeRef(option));
         } else {
@@ -355,6 +355,10 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
 
 }
 
+export function isInvocationContext(ctx: any): ctx is InvocationContext {
+    return ctx instanceof DefaultInvocationContext;
+}
+
 /**
  * Missing argument execption.
  */
@@ -406,6 +410,12 @@ export function object2string(obj: any, options?: { typeInst?: boolean; fun?: bo
 INVOCATION_CONTEXT_IMPL.create = (parent: Injector, options?: TargetInvokeArguments, scope?: AbstractType | 'static') => {
     return new DefaultInvocationContext(parent, options, scope)
 }
+
+INVOCATION_CONTEXT_IMPL.isContext = (ctx: any): ctx is InvocationContext => {
+    return isInvocationContext(ctx);
+}
+
+
 
 const UNRESOLVED = {};
 const unResolve = <TInput, TOutput = any, TContext = any>(input: TInput, context: TContext) => UNRESOLVED as TOutput;
