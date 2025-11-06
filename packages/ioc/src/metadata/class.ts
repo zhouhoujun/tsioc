@@ -7,7 +7,7 @@ import { ResolveInterceptorLike } from '../resolver';
 import { forIn, hasItem, assign } from '../utils/lang';
 import { isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
-import { Exception } from '../exception';
+import { ArgumentException, Exception } from '../exception';
 import { Injector, MethodType, Resolve } from '../injector';
 import { HandlerFn } from '../handler';
 import { Invocation, InvocationFactory } from '../invocation';
@@ -102,6 +102,9 @@ export class ClassRef<T = any> {
     }
 
     getInvocationFactory(injector: Injector): InvocationFactory {
+        if(!injector) {
+            throw new ArgumentException()
+        }
         return this.invocationFactory?.(injector) ?? injector.get(InvocationFactory);
     }
 

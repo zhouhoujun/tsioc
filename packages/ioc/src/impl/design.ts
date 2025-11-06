@@ -16,7 +16,7 @@ export const autorunInterceptor = (input: ClassRef, next: HandlerFn, context: Io
             return
         }
 
-        const invocation = input.createInvocation(context.raiseInjector);
+        const invocation = input.createInvocation(context.injector);
         runs.forEach(meta => {
             invocation.invoke(meta.propertyKey);
         });

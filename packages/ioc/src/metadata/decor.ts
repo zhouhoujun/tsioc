@@ -732,9 +732,9 @@ export interface ProvidedIn {
 export const ProvidedIn: ProvidedIn = createDecorator<ProvidedInTargetMetadata>('ProvidedIn', {
     props: (target: AbstractType, provide?: Token, alias?: string) => ({ target, provide: getToken(provide!, alias) }),
     design: {
-        afterAnnoation: (classRef, context) => {
-            const meta = classRef.getMetadata<ProvidedInTargetMetadata>(context.currDecor!);
-            const type = classRef.type;
+        afterAnnoation: (typeRef, context) => {
+            const meta = typeRef.getMetadata<ProvidedInTargetMetadata>(context.currDecor!);
+            const type = typeRef.type;
             const prds = (meta?.provide ? { provide: meta.provide, useClass: type } : type) as Provider;
             const platform = context.runtime;
             const injector = context.injector;

@@ -919,7 +919,7 @@ export function processInjectType(
     const annotation = typeRef.getAnnotation<ModuleDef>();
     if (annotation.module) {
         annotation.imports?.forEach(imp => {
-            ps = mergePromise(ps, () => processInjectType(injector, imp, dedupStack, true, extedOption, moduleRefl));
+            ps = mergePromise(ps, () => processInjectType(injector, imp, dedupStack, true, extedOption));
         });
 
         if (annotation.providers) {
