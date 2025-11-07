@@ -47,7 +47,7 @@ export const Aspect: Aspect = createDecorator<AspectMetadata>('Aspect', {
     },
     design: {
         afterAnnoation: (typeRef, ctx) => {
-            const advisor = ctx.runtime.context.get(Advisor);
+            const advisor = ctx.runtime.get(Advisor);
             if (advisor) {
                 const injector = ctx.injector;
                 const invocation = typeRef.createInvocation(injector);

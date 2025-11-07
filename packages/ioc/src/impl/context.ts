@@ -191,7 +191,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
      */
     has(token: Token, flags = InjectFlags.Default): boolean {
         this.assertNotDestroyed();
-        if (!(flags & InjectFlags.NonSingleton) && this.getRuntime().hasSingleton(token)) return true;
+        if (!(flags & InjectFlags.NonSingleton) && this.getRuntime().has(token)) return true;
         if (!(flags & InjectFlags.SkipSelf) && (this.records.has(token))) return true;
         if (!(flags & InjectFlags.Self)) {
             return this._parent?.has(token, flags) === true
@@ -213,7 +213,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
     get<T>(token: Token<T>, notFoundValue?: T, flags: InjectFlags = InjectFlags.Default, raise?: Injector): T {
         this.assertNotDestroyed();
         const runtime = this.getRuntime();
-        if (!(flags & InjectFlags.NonSingleton) && runtime.hasSingleton(token)) return runtime.getSingleton(token);
+        if (!(flags & InjectFlags.NonSingleton) && runtime.has(token)) return runtime.get(token);
 
         // 检查当前注入器记录
         const record = this.records.get(token);
@@ -430,7 +430,7 @@ export function createResolveScope<TInput, TContext = any, TOutput = any>(runtim
 
 const TOKER_RESOLVER = new ContextToken<HandlerScope<[Token, InjectFlags | undefined], InvocationContext>>(() => null!);
 export function getTokenResolver(runtime: Runtime): HandlerScope<[Token, InjectFlags | undefined], InvocationContext> {
-    let scope = runtime.context.get(TOKER_RESOLVER);
+    let scope = runtime.get(TOKER_RESOLVER);
     if (!scope) {
         scope = createResolveScope(
             runtime,
@@ -457,14 +457,14 @@ export function getTokenResolver(runtime: Runtime): HandlerScope<[Token, InjectF
 
             ]
         );
-        runtime.context.set(TOKER_RESOLVER, scope);
+        runtime.set(TOKER_RESOLVER, scope);
     }
     return scope;
 }
 
 const PARAMETER_RESOLVER = new ContextToken<HandlerScope>(() => null!);
 export function getParameterResolver(platform: Runtime): HandlerScope<Parameter, InvocationContext> {
-    let scope = platform.context.get(PARAMETER_RESOLVER);
+    let scope = platform.get(PARAMETER_RESOLVER);
     if (!scope) {
         scope = createResolveScope(
             platform,
@@ -494,7 +494,7 @@ export function getParameterResolver(platform: Runtime): HandlerScope<Parameter,
                 }
             ]
         );
-        platform.context.set(PARAMETER_RESOLVER, scope);
+        platform.set(PARAMETER_RESOLVER, scope);
     }
     return scope;
 }

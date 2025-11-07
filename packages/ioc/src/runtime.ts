@@ -7,7 +7,7 @@ import { Provider } from './providers';
 import { Injector, InjectorScope } from './injector';
 import { ModuleRef } from './module.ref';
 import { HandlerScope } from './lifescope/lifescope';
-import { Context } from './handler';
+import { Context, ContextToken } from './handler';
 
 /**
  * Runtime of {@link Injector}.
@@ -18,15 +18,9 @@ export abstract class Runtime implements OnDestroy {
      * registered modules.
      */
     abstract get modules(): Map<AbstractType, ModuleRef>;
-    /*
-     * platform injector.
-     */
-    abstract get injector(): Injector;
 
     abstract get initHandler(): HandlerScope<ClassRef, Context>;
     abstract get designHandler(): HandlerScope<ClassRef, Context>;
-
-    abstract get context(): Context;
 
     /**
      * register injector.
@@ -39,17 +33,17 @@ export abstract class Runtime implements OnDestroy {
      * @param token 
      * @param value 
      */
-    abstract setSingleton<T>(token: Token<T>, value: T, injector?: Injector): this;
+    abstract set<T>(token: Token<T> | ContextToken<T>, value: T, injector?: Injector): this;
     /**
      * get singleton instance.
      * @param token 
      */
-    abstract getSingleton<T>(token: Token<T>): T;
+    abstract get<T>(token: Token<T> | ContextToken<T>): T;
     /**
      * has singleton or not.
      * @param token 
      */
-    abstract hasSingleton(token: Token): boolean;
+    abstract has(token: Token | ContextToken): boolean;
     /**
      * get token prodider type and the injector the type register in.
      * @param token

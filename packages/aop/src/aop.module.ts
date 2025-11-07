@@ -20,13 +20,12 @@ export class AopProvider {
     setup(@Inject() injector: Injector) {
 
         const runtime = injector.getRuntime();
-        const context = runtime.context;
-        if (context.has(Advisor)) return;
+        if (runtime.has(Advisor)) return;
 
         const proceeding = new ProceedingScope(runtime);
         const matcher = new DefaultAdviceMatcher(runtime);
 
-        context.set(Advisor, new Advisor(matcher))
+        runtime.set(Advisor, new Advisor(matcher))
             .set(AdviceMatcher, matcher)
             .set(Proceeding, proceeding)
             .set(ProceedingScope, proceeding);

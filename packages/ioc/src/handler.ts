@@ -297,7 +297,7 @@ export class ContextToken<T = any> {
  */
 export class Context {
 
-    private map: Map<Token | ContextToken, any>;
+    protected map: Map<Token | ContextToken, any>;
 
     constructor(entries?: readonly (readonly [Token | ContextToken, any])[] | null) {
         this.map = new Map(entries);

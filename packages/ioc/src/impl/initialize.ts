@@ -58,12 +58,12 @@ function invokeRuntimeHandler(decors: DecoratorFn[], ctx: ClassRef, scope: Decor
 }
 
 export function getRuntimeClassScope(runtime: Runtime): HandlerScope<ClassRef> {
-    let scope = runtime.context.get(RUNTIME_CLASS_SCOPE);
+    let scope = runtime.get(RUNTIME_CLASS_SCOPE);
     if (!scope) {
         scope = new HandlerScope<ClassRef>(runtime, (input, context) => {
             invokeRuntimeHandler(input.classDecors, input, Decors.CLASS, context);
         });
-        runtime.context.set(RUNTIME_CLASS_SCOPE, scope);
+        runtime.set(RUNTIME_CLASS_SCOPE, scope);
     }
     return scope;
 }
@@ -102,13 +102,13 @@ export const methodInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> = (
 
 const RUNTIME_METHOD_SCOPE = new ContextToken<HandlerScope>(() => null!);
 export function getRuntimeMethodScope(runtime: Runtime): HandlerScope<ClassRef> {
-    let scope = runtime.context.get(RUNTIME_METHOD_SCOPE);
+    let scope = runtime.get(RUNTIME_METHOD_SCOPE);
     if (!scope) {
         scope = new HandlerScope<ClassRef>(runtime, (input, context) => {
             invokeRuntimeHandler(input.methodDecors, input, Decors.method, context)
 
         });
-        runtime.context.set(RUNTIME_METHOD_SCOPE, scope);
+        runtime.set(RUNTIME_METHOD_SCOPE, scope);
     }
     return scope;
 }
@@ -144,12 +144,12 @@ export const propertyInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> =
 
 const RUNTIME_PROPERTY_SCOPE = new ContextToken<HandlerScope>(() => null!);
 export function getRuntimePropertyScope(runtime: Runtime): HandlerScope<ClassRef> {
-    let scope = runtime.context.get(RUNTIME_PROPERTY_SCOPE);
+    let scope = runtime.get(RUNTIME_PROPERTY_SCOPE);
     if (!scope) {
         scope = new HandlerScope<ClassRef>(runtime, (input, context) => {
             invokeRuntimeHandler(input.propDecors, input, Decors.property, context)
         });
-        runtime.context.set(RUNTIME_PROPERTY_SCOPE, scope);
+        runtime.set(RUNTIME_PROPERTY_SCOPE, scope);
     }
     return scope;
 }

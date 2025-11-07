@@ -2,7 +2,8 @@ import {
     isFunction, lang, Runtime, ctorName, HandlerScope, HandlerFn,
     Context, ContextToken, invokeTail, InterceptorLike, isDefined,
     Parameters, ClassRef, proxyTag, isObject, isNil, object2string, getClassify,
-    composeHandlers, composeInterceptors, Injector, AbstractInjector, RuntimeContext
+    composeHandlers, composeInterceptors, Injector, AbstractInjector, RuntimeContext,
+    EnvironmentInjector
 } from '@tsdi/ioc';
 import { JoinPoint } from '../joinpoints/JoinPoint';
 import { JoinpointState } from '../joinpoints/state';
@@ -12,7 +13,7 @@ import { Advicer } from '../Advicer';
 import { AroundMetadata } from '../metadata/meta';
 
 
-const POINTCUT = new ContextToken(()=> false);
+const POINTCUT = new ContextToken(() => false);
 
 /**
  * Proxy method.
@@ -28,7 +29,7 @@ export class ProceedingScope implements Proceeding {
 
 
     pointcutCtor(typeRef: ClassRef, next: HandlerFn, context: RuntimeContext) {
-        const advisor = context.runtime.context.get(Advisor);
+        const advisor = context.runtime.get(Advisor);
         if (!advisor.hasCtor(typeRef)) {
             return invokeTail(() => next(typeRef, context), () => {
                 if (advisor.hasPointcut(context.instance, typeRef, true)) {
@@ -55,7 +56,7 @@ export class ProceedingScope implements Proceeding {
 
     pointcutProperty(typeRef: ClassRef, next: HandlerFn, context: RuntimeContext) {
         return invokeTail(() => next(typeRef, context), () => {
-            const advisor = context.runtime.context.get(Advisor);
+            const advisor = context.runtime.get(Advisor);
             const instance = context.instance;
             if (isDefined(instance) && (context.has(POINTCUT) || advisor.hasPointcut(instance, typeRef, true))) {
                 context.instance = this.createProxy(typeRef.className, typeRef, instance, typeRef, instance, advisor, context.raiseInjector)
@@ -147,7 +148,7 @@ export class ProceedingScope implements Proceeding {
     protected proxy<T>(originMethod: Function, propertyKey: string | symbol, fullName: string, advisor: Advisor, receiver: T, target: any, targetRef: ClassRef, parent?: Injector) {
         const runtime = this.runtime;
         return (...args: any[]) => {
-            if (!runtime || !runtime.injector || runtime.injector.destroyed) {
+            if (!runtime || !runtime.has(EnvironmentInjector) || runtime.get(EnvironmentInjector).destroyed) {
                 return originMethod.call(target, ...args)
             }
             const larg = lang.last(args);
@@ -192,7 +193,7 @@ export class ProceedingScope implements Proceeding {
             joinPoint.onDestroy(options.parent)
         }
 
-        return getAdvicesLifeScope(runtime).handle(joinPoint, runtime.context, options.next ?? (() => joinPoint.returning));
+        return getAdvicesLifeScope(runtime).handle(joinPoint, runtime, options.next ?? (() => joinPoint.returning));
     }
 
 }
@@ -201,89 +202,89 @@ export class ProceedingScope implements Proceeding {
 
 const ADVICES_SCOPE = new ContextToken<HandlerScope>(() => null!);
 export function getAdvicesLifeScope(runtime: Runtime): HandlerScope<JoinPoint> {
-    let scope = runtime.context.get(ADVICES_SCOPE);
+    let scope = runtime.get(ADVICES_SCOPE);
     if (!scope) {
         scope = new HandlerScope<JoinPoint>(runtime, adviceHanlder, ADVICES_INTERCEPTORS);
-        runtime.context.set(ADVICES_SCOPE, scope);
+        runtime.set(ADVICES_SCOPE, scope);
     }
     return scope;
 }
 
 
 
-export const afterReturningIterceptor = (ctx: JoinPoint, next: HandlerFn, context: Context) => {
-    return invokeTail(() => next(ctx, context), (res) => {
-        ctx.state = JoinpointState.AfterReturning;
-        if (isDefined(res) && res !== ctx) ctx.returning = res;
-        const advicers = ctx.advisor.getAfterReturning(ctx.propertyKey, ctx.fullName, ctx.targetRef, ctx.target, { accessor: ctx.accessor });
+export const afterReturningIterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
+    return invokeTail(() => next(jp, context), (res) => {
+        jp.state = JoinpointState.AfterReturning;
+        if (isDefined(res) && res !== jp) jp.returning = res;
+        const advicers = jp.advisor.getAfterReturning(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
         if (advicers?.length) {
-            return toHanlder(advicers)(ctx, context);
+            return toHanlder(advicers)(jp, context);
         }
     })
 }
 
-export const afterThrowingInterceptor = (ctx: JoinPoint, next: HandlerFn, context: Context) => {
-    return invokeTail(() => next(ctx, context), {
+export const afterThrowingInterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
+    return invokeTail(() => next(jp, context), {
         error: (error) => {
-            ctx.throwing = error;
-            ctx.state = JoinpointState.AfterThrowing;
-            const advicers = ctx.advisor.getAfterThrowing(ctx.propertyKey, ctx.fullName, ctx.targetRef, ctx.target, { accessor: ctx.accessor });
+            jp.throwing = error;
+            jp.state = JoinpointState.AfterThrowing;
+            const advicers = jp.advisor.getAfterThrowing(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
             if (advicers?.length) {
-                return toHanlder(advicers)(ctx, context);
+                return toHanlder(advicers)(jp, context);
             }
         },
     });
 }
 
-export const beforeIterceptor = (ctx: JoinPoint, next: HandlerFn, context: Context) => {
+export const beforeIterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
     return invokeTail(() => {
-        ctx.state = JoinpointState.Before;
-        const advicers = ctx.advisor.getBefore(ctx.propertyKey, ctx.fullName, ctx.targetRef, ctx.target, { accessor: ctx.accessor });
+        jp.state = JoinpointState.Before;
+        const advicers = jp.advisor.getBefore(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
         if (advicers?.length) {
-            return toHanlder(advicers)(ctx, context);
+            return toHanlder(advicers)(jp, context);
         }
-    }, () => next(ctx, context));
+    }, () => next(jp, context));
 }
 
-export const pointcutIterceptor = (ctx: JoinPoint, next: HandlerFn, context: Context) => {
+export const pointcutIterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
     return invokeTail(() => {
-        ctx.state = JoinpointState.Pointcut;
-        const advicers = ctx.advisor.getPointcut(ctx.propertyKey, ctx.fullName, ctx.targetRef, ctx.target, { accessor: ctx.accessor });
+        jp.state = JoinpointState.Pointcut;
+        const advicers = jp.advisor.getPointcut(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
         if (advicers?.length) {
-            return toHanlder(advicers)(ctx, context);
+            return toHanlder(advicers)(jp, context);
         }
-    }, () => next(ctx, context));
+    }, () => next(jp, context));
 }
 
-export const afterIterceptor = (ctx: JoinPoint, next: HandlerFn, context: Context) => {
-    return invokeTail(() => next(ctx, context), (res) => {
-        ctx.state = JoinpointState.After;
-        if (isDefined(res) && res !== ctx) ctx.returning = res;
-        const advicers = ctx.advisor.getAfter(ctx.propertyKey, ctx.fullName, ctx.targetRef, ctx.target, { accessor: ctx.accessor });
+export const afterIterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
+    return invokeTail(() => next(jp, context), (res) => {
+        jp.state = JoinpointState.After;
+        if (isDefined(res) && res !== jp) jp.returning = res;
+        const advicers = jp.advisor.getAfter(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
         if (advicers?.length) {
-            return toHanlder(advicers)(ctx, context);
+            return toHanlder(advicers)(jp, context);
         }
     });
 }
 
 
 
-export const originMethodHandler = (ctx: JoinPoint, context: Context) => {
-    if (ctx.originProxy) {
-        ctx.returning = ctx.originProxy(ctx)
+export const originMethodHandler = (jp: JoinPoint, context: RuntimeContext) => {
+    if (jp.originProxy) {
+        jp.returning = jp.originProxy(jp)
     } else {
-        ctx.returning = ctx.originMethod?.apply(ctx.receiver ?? ctx.target, ctx.args)
+        jp.returning = jp.originMethod?.apply(jp.receiver ?? jp.target, jp.args)
     }
-    return ctx.returning;
+    return jp.returning;
 }
 
-export const adviceHanlder = (ctx: JoinPoint, context: Context) => {
-    const proceedings = ctx.advisor.getProceeding(ctx.propertyKey, ctx.fullName, ctx.targetRef, ctx.target);
-    if(proceedings?.length) {
-        const chain = composeInterceptors(proceedings.map(r=> r.interceptor));
-        return chain(ctx, originMethodHandler, context);
+export const adviceHanlder = (jp: JoinPoint, context: RuntimeContext) => {
+    const proceedings = jp.advisor.getProceeding(jp.propertyKey, jp.fullName, jp.targetRef, jp.target);
+    if (proceedings?.length) {
+        const chain = composeInterceptors(proceedings.map(r => r.interceptor));
+        return chain(jp, originMethodHandler, context);
     }
-    return originMethodHandler(ctx,context);
+    return originMethodHandler(jp, context);
 }
 
 const ADVICES_INTERCEPTORS: InterceptorLike<JoinPoint>[] = [
@@ -296,14 +297,14 @@ const ADVICES_INTERCEPTORS: InterceptorLike<JoinPoint>[] = [
 
 
 
-function toHanlder(advices: Advicer[]): HandlerFn<JoinPoint> {
-    return composeHandlers(advices.map(a => (input: JoinPoint, context?: any) => invokeAdvice(input, a)));
+function toHanlder(advices: Advicer[]): HandlerFn<JoinPoint, RuntimeContext> {
+    return composeHandlers(advices.map(a => (input: JoinPoint, context: RuntimeContext) => invokeAdvice(input, a, context)));
 }
 
 
 const aExp = /^@/;
 
-function invokeAdvice(joinPoint: JoinPoint, advicer: Advicer) {
+function invokeAdvice(joinPoint: JoinPoint, advicer: Advicer, runtime: RuntimeContext) {
     if (joinPoint.destroyed) {
         throw new Error(`joinPoint is destroyed, when invoked advicer ${object2string(advicer)}.\n\njoinPoint object ${object2string(joinPoint, { fun: false, typeInst: true })}`)
     }

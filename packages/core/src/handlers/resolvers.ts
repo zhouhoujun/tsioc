@@ -11,7 +11,7 @@ export function missingPipeException<T>(parameter: Parameter<T>, type?: Abstract
 
 const ITERABLE_RESOLVER = new ContextToken<HandlerScope>(() => null!);
 export function getIterableResolver(runtime: Runtime): HandlerScope<[any, PipeTransform, TransportParameter], HandleContext> {
-    let scope = runtime.context.get(ITERABLE_RESOLVER);
+    let scope = runtime.get(ITERABLE_RESOLVER);
     if (!scope) {
         scope = createResolveScope<[any, PipeTransform, TransportParameter], any, HandleContext>(
             runtime,
@@ -43,7 +43,7 @@ export function getIterableResolver(runtime: Runtime): HandlerScope<[any, PipeTr
 
             ]
         );
-        runtime.context.set(ITERABLE_RESOLVER, scope);
+        runtime.set(ITERABLE_RESOLVER, scope);
     }
     return scope;
 }

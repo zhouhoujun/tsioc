@@ -90,6 +90,11 @@ export abstract class Injector implements Destroyable, OnDestroy {
 
 }
 
+@Abstract()
+export abstract class EnvironmentInjector extends Injector {
+
+}
+
 /**
  * inject operator.
  */

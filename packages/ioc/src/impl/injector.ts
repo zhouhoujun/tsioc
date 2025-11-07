@@ -3,7 +3,7 @@ import { Destroyable, DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { cleanObj, deepForEach, Defer, defer, getTypeName, immediate } from '../utils/lang';
 import { isNil, isFunction, isPromise, isArray, isNumber, isAbstractType, getType } from '../utils/chk';
-import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, InjectorRecord, RegOption, INJECT_IMPL } from '../injector';
+import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, InjectorRecord, RegOption, INJECT_IMPL, EnvironmentInjector } from '../injector';
 import { ArgumentException, Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef, ModuleDef } from '../metadata/class';
@@ -123,7 +123,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
 
     has<T>(token: Token<T>, flags = InjectFlags.Default): boolean {
         this.assertNotDestroyed();
-        if (!(flags & InjectFlags.NonSingleton) && this.getRuntime().hasSingleton(token)) return true;
+        if (!(flags & InjectFlags.NonSingleton) && this.getRuntime().has(token)) return true;
         if (!(flags & InjectFlags.SkipSelf) && (this.records.has(token))) return true;
         if (!(flags & InjectFlags.Self)) {
             return this._parent?.has(token, flags) === true
@@ -136,7 +136,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
         const runtime = this.getRuntime();
 
         // 检查单例缓存
-        if (!(flags & InjectFlags.NonSingleton) && runtime.hasSingleton(token)) return runtime.getSingleton(token);
+        if (!(flags & InjectFlags.NonSingleton) && runtime.has(token)) return runtime.get(token);
         if (notFoundValue === undefined) {
             notFoundValue = THROW_FLAGE!;
         }
@@ -256,7 +256,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
 /**
  * Environment Injector
  */
-export class EnvironmentInjector extends AbstractInjector {
+export class DefaultEnvironmentInjector extends AbstractInjector  implements EnvironmentInjector {
     constructor(providers?: Provider[]) {
         super(undefined, 'platform');
         deferProcessProviders(this, providers, this._readyDefer)
@@ -305,7 +305,7 @@ INJECT_IMPL.create = (providers?: Provider[], parent?: Injector, scope?: Injecto
     if (scope === 'static' || isFunction(scope)) {
         return new StaticInjector(providers, parent, scope)
     }
-    return parent ? new DefaultInjector(providers, parent!, scope) : new EnvironmentInjector(providers);
+    return parent ? new DefaultInjector(providers, parent!, scope) : new DefaultEnvironmentInjector(providers);
 };
 
 INJECT_IMPL.isInjector = (target) => target instanceof DefaultInjector;
@@ -317,7 +317,7 @@ INJECT_IMPL.isInjector = (target) => target instanceof DefaultInjector;
  * @param {IContainer} container
  */
 function registerCores(container: Injector, platform: Runtime) {
-    platform.setSingleton(InvocationFactory, new DefaultInvocationFactory(platform), container);
+    platform.set(InvocationFactory, new DefaultInvocationFactory(platform), container);
 }
 
 
@@ -332,7 +332,7 @@ export namespace Operator {
      * @param value singleton vaule
      */
     export function setSingleton<T>(injector: Injector, token: Token<T>, value: T): void {
-        injector.getRuntime().setSingleton(token, value, injector);
+        injector.getRuntime().set(token, value, injector);
     }
 
     /**
@@ -883,8 +883,8 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
 
 
     const factory = (raise?: Injector) => {
-        if (singleton && runtime.hasSingleton(type)) {
-            return runtime.getSingleton(type);
+        if (singleton && runtime.has(type)) {
+            return runtime.get(type);
         }
 
         const context = new RuntimeContext(runtime);
@@ -896,7 +896,7 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
         context.injector = injector;
         const instance = runtime.initHandler.handle(typeRef, context, { finally: () => context.onDestroy() });
         if (singleton) {
-            runtime.setSingleton(type, instance, injector);
+            runtime.set(type, instance, injector);
         }
         return instance;
     };

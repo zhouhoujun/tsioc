@@ -1,15 +1,15 @@
 import { InjectFlags, Token } from '../tokens';
 import { AbstractType } from '../types';
-import { isFunction } from '../utils/chk';
+import { isFunction, isNil } from '../utils/chk';
 import { getClassify } from '../metadata/refl';
 import { ClassRef } from '../metadata/class';
 import { Provider, StaticProvider } from '../providers';
-import { Injector, InjectorScope } from '../injector';
+import { EnvironmentInjector, Injector, InjectorScope } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ModuleRef } from '../module.ref';
 import { HandlerScope } from '../lifescope/lifescope';
-import { Context } from '../handler';
+import { Context, ContextToken } from '../handler';
 import { INITIALIZE_INTERCEPTORS, instanceHandler } from './initialize';
 import { DESIGN_INTERECPTORS } from './design';
 import { InvocationFactory } from '../invocation';
@@ -18,7 +18,7 @@ import { Operator } from './injector';
 /**
  * default runtime implements {@link Runtime}.
  */
-export class DefaultRuntime implements Runtime {
+export class DefaultRuntime extends Context implements Runtime {
 
     private _singls: Map<Token, any>;
     private _pdrs: Map<AbstractType, Provider[]>;
@@ -32,7 +32,9 @@ export class DefaultRuntime implements Runtime {
 
     readonly context: Context;
 
-    constructor(readonly injector: Injector) {
+    constructor(injector: Injector) {
+        super()
+        this.set(EnvironmentInjector, injector);
         this.context = new Context();
         this._scopes = new Map();
         this._pdrs = new Map();
@@ -65,32 +67,35 @@ export class DefaultRuntime implements Runtime {
     }
 
     /**
-     * register singleton value
+     * set value
      * @param token 
      * @param value 
      */
-    setSingleton<T>(token: Token<T>, value: T, injector?: Injector): this {
-        if (this._singls.has(token)) {
-            throw new Exception('has singleton instance with token:' + token.toString())
+    override set<T>(token: Token<T> | ContextToken<T>, value: T, injector?: Injector): this {
+        if (this.map.has(token)) {
+            throw new Exception('has value with token:' + token.toString())
         }
-        this._singls.set(token, value);
-        if (injector) injector.onDestroy(() => this._singls.delete(token));
+        this.map.set(token, value);
+        if (injector) injector.onDestroy(() => this.delete(token));
         return this
     }
+
     /**
-     * get singleton instance.
-     * @param token 
+     * Retrieve the value associated with the given token.
+     *
+     * @param token The reference to an instance of `Token`.
+     *
+     * @returns The stored value or default if one is defined.
      */
-    getSingleton<T>(token: Token<T>): T {
-        return this._singls.get(token)
+    override get<T>(token: Token<T> | ContextToken<T>): T {
+        if (token instanceof ContextToken && !this.map.has(token)) {
+            const value = token.defaultValue();
+            if(!isNil(value))  this.map.set(token, value);
+            return value;
+        }
+        return this.map.get(token) ?? null;
     }
-    /**
-     * has singleton or not.
-     * @param token 
-     */
-    hasSingleton(token: Token): boolean {
-        return this._singls.has(token)
-    }
+
 
     setInjector(scope: AbstractType | string, injector: Injector) {
         this._scopes.set(scope, injector)
@@ -111,7 +116,7 @@ export class DefaultRuntime implements Runtime {
     getInjector<T extends Injector = Injector>(scope?: InjectorScope, defaultInjector?: Injector): T {
         if (!scope) return defaultInjector as T;
         if (scope === 'platform') {
-            return this.injector as T
+            return this.get<any>(EnvironmentInjector) as T
         }
         return (this._scopes.get(scope) ?? defaultInjector) as T
     }

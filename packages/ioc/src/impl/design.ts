@@ -34,12 +34,12 @@ function invokeHandler(decors: DecoratorFn[], input: ClassRef, scope: DecoratorS
 
 const BEFORE_ANNOATION_SCOPE = new ContextToken<HandlerScope<ClassRef, IocContext>>(() => null!);
 export function getDesignBeforeAnnoationScope(runtime: Runtime): HandlerScope<ClassRef, IocContext> {
-    let scope = runtime.context.get(BEFORE_ANNOATION_SCOPE);
+    let scope = runtime.get(BEFORE_ANNOATION_SCOPE);
     if (!scope) {
         scope = new HandlerScope<ClassRef, IocContext>(runtime, (input, context) => {
             invokeHandler(input.classDecors, input, Decors.beforeAnnoation, context)
         });
-        runtime.context.set(BEFORE_ANNOATION_SCOPE, scope);
+        runtime.set(BEFORE_ANNOATION_SCOPE, scope);
     }
     return scope;
 }
@@ -47,12 +47,12 @@ export function getDesignBeforeAnnoationScope(runtime: Runtime): HandlerScope<Cl
 
 const AFTER_ANNOATION_SCOPE = new ContextToken<HandlerScope<ClassRef, IocContext>>(() => null!);
 export function getDesignAfterAnnoationScope(runtime: Runtime): HandlerScope<ClassRef, IocContext> {
-    let scope = runtime.context.get(AFTER_ANNOATION_SCOPE);
+    let scope = runtime.get(AFTER_ANNOATION_SCOPE);
     if (!scope) {
         scope = new HandlerScope<ClassRef, IocContext>(runtime, (input, context) => {
             invokeHandler(input.classDecors, input, Decors.afterAnnoation, context)
         });
-        runtime.context.set(AFTER_ANNOATION_SCOPE, scope);
+        runtime.set(AFTER_ANNOATION_SCOPE, scope);
     }
     return scope;
 }
@@ -62,12 +62,12 @@ export function getDesignAfterAnnoationScope(runtime: Runtime): HandlerScope<Cla
  */
 const DESIGN_PROPERTY_SCOPE = new ContextToken<HandlerScope<ClassRef, IocContext>>(() => null!);
 export function getDesignPropertyScope(runtime: Runtime): HandlerScope<ClassRef, IocContext> {
-    let scope = runtime.context.get(DESIGN_PROPERTY_SCOPE);
+    let scope = runtime.get(DESIGN_PROPERTY_SCOPE);
     if (!scope) {
         scope = new HandlerScope<ClassRef>(runtime, (input, context) => {
             invokeHandler(input.propDecors, input, Decors.property, context)
         });
-        runtime.context.set(DESIGN_PROPERTY_SCOPE, scope);
+        runtime.set(DESIGN_PROPERTY_SCOPE, scope);
     }
     return scope;
 }
@@ -75,12 +75,12 @@ export function getDesignPropertyScope(runtime: Runtime): HandlerScope<ClassRef,
 const DESIGN_METHOD_SCOPE = new ContextToken<HandlerScope<ClassRef, IocContext>>(() => null!);
 
 export function getDesignMethodScope(runtime: Runtime): HandlerScope<ClassRef, IocContext> {
-    let scope = runtime.context.get(DESIGN_METHOD_SCOPE);
+    let scope = runtime.get(DESIGN_METHOD_SCOPE);
     if (!scope) {
         scope = new HandlerScope<ClassRef, IocContext>(runtime, (input, context) => {
             invokeHandler(input.methodDecors, input, Decors.method, context);
         });
-        runtime.context.set(DESIGN_METHOD_SCOPE, scope);
+        runtime.set(DESIGN_METHOD_SCOPE, scope);
     }
     return scope;
 }

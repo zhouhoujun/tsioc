@@ -29,29 +29,29 @@ function isRecord(target: any): target is InjectorRecord {
 }
 
 export function resolveArg(injector: Injector, arg: ParameterLike | InjectorRecord): any {
-    let depToken: Token;
-    let depFlags = InjectFlags.Default;
+
     if (isArray(arg)) {
-        depToken = arg[0];
+        let depFlags = InjectFlags.Default;
+        const depToken = arg[0];
         arg.forEach(d => {
             if (isNumber(d)) {
                 depFlags |= d;
             }
         });
+        return injector.get(depToken, undefined, depFlags);
     } else if (isRecord(arg)) {
         if (arg.value !== undefined && arg.value !== LAZY) {
             return arg.value;
         }
         const value = arg.factory?.(injector) ?? null;
-        if(arg.value === LAZY) arg.value = value;
+        if (arg.value === LAZY) arg.value = value;
         return value;
     } else if (isParameter(arg)) {
         return injector.get(arg.provider ?? arg.type ?? arg.name!, arg.defaultValue, arg.flags);
     } else {
-        depToken = arg;
+        return injector.get(arg);
     }
 
-    return injector.get(depToken, undefined, depFlags);
 }
 
 
