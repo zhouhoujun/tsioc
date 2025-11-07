@@ -15,32 +15,27 @@ import { DESIGN_INTERECPTORS } from './design';
 import { InvocationFactory } from '../invocation';
 import { Operator } from './injector';
 
+const INJECTORS = new ContextToken<Injector[]>(() => []);
+
 /**
  * default runtime implements {@link Runtime}.
  */
 export class DefaultRuntime extends Context implements Runtime {
 
-    private _singls: Map<Token, any>;
     private _pdrs: Map<AbstractType, Provider[]>;
     private _scopes: Map<string | AbstractType, Injector>;
 
     readonly modules = new Map<AbstractType, ModuleRef>();
     readonly factories = new Map<AbstractType, InvocationFactory>();
-    private injectors: Injector[];
     private _initialize?: HandlerScope;
     private _design?: HandlerScope;
-
-    readonly context: Context;
 
     constructor(injector: Injector) {
         super()
         this.set(EnvironmentInjector, injector);
-        this.context = new Context();
         this._scopes = new Map();
         this._pdrs = new Map();
-        this._singls = new Map();
-        this.injectors = [injector];
-        this._singls.set(Runtime, this);
+        this.set(INJECTORS, [injector]);
         injector.onDestroy(this);
     }
 
@@ -60,9 +55,10 @@ export class DefaultRuntime extends Context implements Runtime {
     }
 
     register(injector: Injector): void {
-        if (this.injectors.indexOf(injector) < 0) {
-            this.injectors.push(injector);
-            injector.onDestroy(() => this.injectors.splice(this.injectors.indexOf(injector), 1));
+        const injectors = this.get(INJECTORS);
+        if (injectors.indexOf(injector) < 0) {
+            injectors.push(injector);
+            injector.onDestroy(() => injectors.splice(injectors.indexOf(injector), 1));
         }
     }
 
@@ -90,7 +86,7 @@ export class DefaultRuntime extends Context implements Runtime {
     override get<T>(token: Token<T> | ContextToken<T>): T {
         if (token instanceof ContextToken && !this.map.has(token)) {
             const value = token.defaultValue();
-            if(!isNil(value))  this.map.set(token, value);
+            if (!isNil(value)) this.map.set(token, value);
             return value;
         }
         return this.map.get(token) ?? null;
@@ -106,7 +102,7 @@ export class DefaultRuntime extends Context implements Runtime {
     }
 
     getRegisterIn(token: Token): Injector | undefined {
-        return this.injectors.find(r => !!Operator.getTokenProvider(r, token, InjectFlags.Self));
+        return this.get(INJECTORS).find(r => !!Operator.getTokenProvider(r, token, InjectFlags.Self));
     }
 
     /**
@@ -175,9 +171,6 @@ export class DefaultRuntime extends Context implements Runtime {
         this._scopes.clear();
         this.modules.clear();
         this._pdrs.clear();
-        this._singls.clear()
-        this.context.onDestroy();
-        this.injectors = [];
     }
 
 }

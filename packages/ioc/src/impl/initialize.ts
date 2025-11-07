@@ -118,7 +118,7 @@ export const propertyInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> =
 
     return invokeTail(() => next(input, context), (instance) => {
         const injector = context.raiseInjector;
-        // if (!ictx || !input.instance) throw new Exception('autowride property need InvocationContext');
+        if (!instance) throw new Exception('autowride property need InvocationContext');
         let meta: PropertyMetadata, key: string, val;
 
         input.eachPropertyProviders((metas, propertyKey) => {

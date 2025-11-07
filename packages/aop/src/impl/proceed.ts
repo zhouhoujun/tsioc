@@ -31,11 +31,12 @@ export class ProceedingScope implements Proceeding {
     pointcutCtor(typeRef: ClassRef, next: HandlerFn, context: RuntimeContext) {
         const advisor = context.runtime.get(Advisor);
         if (!advisor.hasCtor(typeRef)) {
-            return invokeTail(() => next(typeRef, context), () => {
+            return invokeTail(() => next(typeRef, context), (instance) => {
                 if (advisor.hasPointcut(context.instance, typeRef, true)) {
                     context.set(POINTCUT, true);
                     // ctx.isNewContext = false;
                 }
+                return instance;
             });
         }
 
@@ -45,8 +46,8 @@ export class ProceedingScope implements Proceeding {
             args: context.args ?? [],
             params: context.params ?? [],
             originProxy: (joinPoint) => {
-                invokeTail(() => next(typeRef, context), () => {
-                    const instance = joinPoint.returning = joinPoint.target = context.instance;
+                invokeTail(() => next(typeRef, context), (instance) => {
+                    instance = joinPoint.returning = joinPoint.target = context.instance;
                     return instance;
                 })
             },
@@ -55,13 +56,12 @@ export class ProceedingScope implements Proceeding {
     }
 
     pointcutProperty(typeRef: ClassRef, next: HandlerFn, context: RuntimeContext) {
-        return invokeTail(() => next(typeRef, context), () => {
+        return invokeTail(() => next(typeRef, context), (instance) => {
             const advisor = context.runtime.get(Advisor);
-            const instance = context.instance;
             if (isDefined(instance) && (context.has(POINTCUT) || advisor.hasPointcut(instance, typeRef, true))) {
-                context.instance = this.createProxy(typeRef.className, typeRef, instance, typeRef, instance, advisor, context.raiseInjector)
+               instance = context.instance = this.createProxy(typeRef.className, typeRef, instance, typeRef, instance, advisor, context.raiseInjector)
             }
-            return context.instance;
+            return instance;
         });
     }
 
