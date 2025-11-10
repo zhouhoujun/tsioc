@@ -1,6 +1,6 @@
 import {
     TypeMetadata, createDecorator, ResolveInterceptorLike, AbstractType, isString,
-    lang, PropParamDecorator, ArgumentException, Decors, ActionType, isNil
+    PropParamDecorator, ArgumentException, Decors, ActionType, isNil, getTypeName
 } from '@tsdi/ioc';
 import { Level } from './Level';
 import { LoggerManagers } from './manager';
@@ -142,32 +142,35 @@ const loggerResolvers = [
         if (isNil(pr.logname || pr.target)) {
             return next(pr, ctx);
         }
-        const managers = ctx.get(LoggerManagers);
+        const injector = ctx.getRaiseInjector() ?? ctx.getInjector();
+        const targetType = ctx.getTarget();
+        const targetName = targetType ? getTypeName(targetType) : '';
+        const managers = injector.get(LoggerManagers);
         if (!managers) {
             let local: string;
             if (pr.propertyKey && pr.paramName) {
-                local = ` method ${ctx.propertyKey?.toString()} param ${pr.paramName} of class `
+                local = ` method ${pr.propertyKey?.toString()} param ${pr.paramName} of class `
             } else if (pr.propertyKey) {
                 local = ` field ${pr.propertyKey} of class `
             } else {
                 local = ' '
             }
-            throw new ArgumentException(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on LoggerModule in package '@tsdi/logger',  please register LoggerModule first. `)
+            throw new ArgumentException(`Autowired logger in${local}${targetName} failed. It denpendence on LoggerModule in package '@tsdi/logger',  please register LoggerModule first. `)
         }
         const adapter = pr.adapter;
         if (!managers.getLoggerManager(adapter)) {
             let local: string;
             if (pr.propertyKey && pr.paramName) {
-                local = ` method ${ctx.propertyKey?.toString()} param ${pr.paramName} of class `
+                local = ` method ${pr.propertyKey?.toString()} param ${pr.paramName} of class `
             } else if (pr.propertyKey) {
                 local = ` field ${pr.propertyKey} of class `
             } else {
                 local = ' '
             }
-            throw new ArgumentException(`Autowired logger in${local}${ctx.targetType} failed. It denpendence on '${adapter}' adapter,  please register LogConfigure first. `)
+            throw new ArgumentException(`Autowired logger in${local}${targetName} failed. It denpendence on '${adapter}' adapter,  please register LogConfigure first. `)
         }
         const level = pr.level;
-        const logger = managers.getLogger(pr.logname ?? lang.getTypeName(pr.target ?? ctx.targetType), pr.adapter);
+        const logger = managers.getLogger(pr.logname ?? getTypeName(pr.target ?? targetType), pr.adapter);
         if (level) logger.level = level;
         return logger
     },
@@ -230,7 +233,7 @@ export const InjectLog: Log<LogMetadata> = createDecorator<LogMetadata>('InjectL
     },
     props: (...args: any[]) => {
         if (args.length === 1) {
-            const logname = isString(args[0]) ? args[0] : lang.getTypeName(args[0]);
+            const logname = isString(args[0]) ? args[0] : getTypeName(args[0]);
             return {
                 logname,
                 resolver: loggerResolvers

@@ -6,8 +6,15 @@ import { Observable } from 'rxjs';
  * 
  * 处理器基本构建块。
  */
-export interface ApplicationHandler<TInput = any, TOutput = any, TContext = any> extends Handler<TInput, Observable<TOutput>, TContext> {
-
+export interface ApplicationHandler<TInput = any, TOutput = any, TContext = any> extends Handler<TInput, Observable<TOutput>, TContext|undefined> {
+    /**
+     * handle.
+     * 
+     * 处理句柄
+     * @param input handle input.
+     * @param context handle with context.
+     */
+    handle(input: TInput, context?: TContext): Observable<TOutput>;
 }
 
 /**

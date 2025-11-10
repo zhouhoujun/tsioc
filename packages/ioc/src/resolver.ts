@@ -1,5 +1,10 @@
 import { InvocationContext } from './context';
-import { InterceptorLike } from './handler';
+import { ArgumentException } from './exception';
+import { Context, ContextToken, Handler, InterceptorLike } from './handler';
+import { Injector } from './injector';
+import { RuntimeHandler } from './lifescope/handler';
+import { Abstract } from './metadata/fac';
+import { Runtime } from './runtime';
 import { InjectFlags, Token } from './tokens';
 import { AbstractType, TypeOf } from './types';
 import { isObject } from './utils/chk';
@@ -69,4 +74,63 @@ export function isParameter(target: any): target is Parameter {
     return isObject(target) && (target.provider || target.type || (target.name && target.propertyKey))
 }
 
-export type ResolveInterceptorLike<TInput extends ParameterLike = ParameterLike, TContext extends InvocationContext = InvocationContext> = InterceptorLike<TInput, any, TContext>;
+export type ResolveInterceptorLike<TInput extends Parameter = Parameter> = InterceptorLike<TInput, any, ResolveContext>;
+
+@Abstract()
+export abstract class Resolver {
+
+    abstract get handler(): RuntimeHandler<Parameter>;
+
+    abstract resolve<T>(parameter: Parameter<T>, context: ResolveContext): T;
+}
+
+
+
+const RAISE_INJECTOR = new ContextToken<Injector>(() => null!);
+const TARGET = new ContextToken<AbstractType | null>(() => null);
+
+export class ResolveContext extends Context {
+
+    constructor(
+        injector: Injector,
+        readonly target?: AbstractType, 
+        readonly failed?: (target: AbstractType, propertyKey: string) => void) {
+        super();
+        this.setInjector(injector);
+        this.set(Runtime, injector.getRuntime());
+        if(target) this.set(TARGET, target);
+        
+    }
+
+    getTarget() {
+        return this.get(TARGET);
+    }
+
+    getRuntime(): Runtime {
+        return this.get(Runtime);
+    }
+
+    getRaiseInjector(): Injector {
+        return this.get(RAISE_INJECTOR);
+    }
+
+    setRaiseInjector(value: Injector) {
+        this.set(RAISE_INJECTOR, value);
+    }
+
+    getInjector(): Injector {
+        return this.get(Injector);
+    }
+
+    setInjector(value: Injector) {
+        this.set(Injector, value);
+    }
+}
+
+export function createResolveContext(injector: Injector, target?: AbstractType, failed = onError) {
+    return new ResolveContext(injector, target, onError);
+}
+
+const onError = (target: AbstractType, propertyKey: string) => {
+    throw new ArgumentException(`can not autowride property ${propertyKey} of class ${target}`)
+}

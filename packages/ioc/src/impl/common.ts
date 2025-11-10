@@ -1,14 +1,14 @@
 import { AbstractType } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { deepForEach } from '../utils/lang';
-import { isArray, isNumber } from '../utils/chk';
+import { isArray, isFunction, isNumber } from '../utils/chk';
 import { Injector, InjectorRecord, RegOption } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef } from '../metadata/class';
 import { Provider, StaticProvider, DynamicProvider, Provide } from '../providers';
 import { isPlainObject } from '../utils/obj';
-import { isParameter, ParameterLike } from '../resolver';
+import { createResolveContext, isParameter, ParameterLike, ResolveContext, Resolver } from '../resolver';
 
 
 
@@ -28,7 +28,7 @@ function isRecord(target: any): target is InjectorRecord {
     )
 }
 
-export function resolveArg(injector: Injector, arg: ParameterLike | InjectorRecord): any {
+export function resolveArg(injector: Injector, arg: ParameterLike | InjectorRecord, context?: ResolveContext): any {
 
     if (isArray(arg)) {
         let depFlags = InjectFlags.Default;
@@ -47,7 +47,8 @@ export function resolveArg(injector: Injector, arg: ParameterLike | InjectorReco
         if (arg.value === LAZY) arg.value = value;
         return value;
     } else if (isParameter(arg)) {
-        return injector.get(arg.provider ?? arg.type ?? arg.name!, arg.defaultValue, arg.flags);
+        return injector.get(Resolver).resolve(arg, context ?? createResolveContext(injector))
+        // return injector.get(arg.provider ?? arg.type ?? arg.name!, arg.defaultValue, arg.flags);
     } else {
         return injector.get(arg);
     }
@@ -55,16 +56,19 @@ export function resolveArg(injector: Injector, arg: ParameterLike | InjectorReco
 }
 
 
+
 /**
  * 辅助函数：为工厂函数调用解析参数
  */
-export function resolveArgs(injector: Injector, deps?: (ParameterLike | InjectorRecord)[]): any[] {
+export function resolveArgs(injector: Injector, deps?: (ParameterLike | InjectorRecord)[], targetOrContext?: AbstractType | ResolveContext): any[] {
     if (!deps || !deps.length) return [];
 
     const args: any[] = [];
 
+    const context = isFunction(targetOrContext) ? createResolveContext(injector, targetOrContext) : targetOrContext;
+
     for (let i = 0; i < deps.length; i++) {
-        args.push(resolveArg(injector, deps[i]));
+        args.push(resolveArg(injector, deps[i], context));
     }
 
     return args;

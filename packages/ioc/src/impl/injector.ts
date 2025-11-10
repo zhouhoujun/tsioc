@@ -14,11 +14,12 @@ import { getClassRef } from '../metadata/refl';
 import { NullInjectorException, THROW_FLAGE, tryResolveToken, RegisterExtedOption, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, LAZY } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { IocContext, RuntimeContext } from '../lifescope/context';
-import { Parameters } from '../resolver';
+import { Parameters, Resolver } from '../resolver';
 import { CONTAINER, INJECTOR } from '../metadata/tk';
 import { InvocationFactory } from '../invocation';
 import { DefaultInvocationFactory } from './invocation';
 import { DefaultRuntime } from './runtime';
+import { DefaultResolver } from './resolver';
 
 
 export const SCOPE_PRODIDERS: Provider[] = [];
@@ -73,6 +74,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
             case 'platform':
                 platformAlias.forEach(tk => this.records.set(tk, val));
                 this._runtime = new DefaultRuntime(this);
+                this.records.set(Resolver, createValueRecord(new DefaultResolver(this._runtime)))
                 registerCores(this, this._runtime);
                 break;
             case 'root':

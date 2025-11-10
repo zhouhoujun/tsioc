@@ -1,7 +1,7 @@
 import { AbstractType } from '../types';
 import { remove, getTypeName, getTypeChain } from '../utils/lang';
 import { isArray, isFunction, isString, isAbstractType, getType, isType, isNil } from '../utils/chk';
-import { ResolveInterceptorLike, Parameter } from '../resolver';
+import { ResolveInterceptorLike, Parameter, Resolver } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeArguments, InvocationRequest } from '../context';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { InjectFlags, Token } from '../tokens';
@@ -14,8 +14,9 @@ import { ContextToken, HandlerLike, InterceptorLike } from '../handler';
 import { RuntimeHandler } from '../lifescope/handler';
 import { Runtime } from '../runtime';
 import { nonEnumerable } from '../metadata/decor';
-import { createValueRecord, NullInjectorException, THROW_FLAGE, tryResolveToken } from './common';
-import { AbstractInjector, deferProcessProviders, Operator  } from './injector';
+import { createRecord, createValueRecord, NullInjectorException, THROW_FLAGE, tryResolveToken } from './common';
+import { AbstractInjector, deferProcessProviders, Operator } from './injector';
+import { DefaultResolver } from './resolver';
 
 
 
@@ -67,7 +68,10 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
             this.records.set(c, val);
         });
 
+        this.records.set(Resolver, createRecord(() => new DefaultResolver(this.getRuntime(), this.getResolver())))
+
         deferProcessProviders(this, options.providers, this._readyDefer);
+
 
         this.initRequest(options);
 
@@ -120,11 +124,11 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         return [];
     }
 
-    private _resolvers?: RuntimeHandler<Parameter, InvocationContext> | null;
+    private _resolvers?: RuntimeHandler<Parameter> | null;
     /**
      * the invocation arguments resolver.
      */
-    protected getResolver(): RuntimeHandler<Parameter, InvocationContext> | null {
+    protected getResolver(): RuntimeHandler<Parameter> | null {
         if (this._resolvers === undefined) {
             const resolvers: ResolveInterceptorLike[] = [];
             const args = this.getArgumentResolver();
@@ -137,7 +141,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
             }
             const runtime = this.getRuntime();
             if (resolvers.length) {
-                this._resolvers = new RuntimeHandler(runtime, getParameterResolver(runtime), resolvers);
+                this._resolvers = new RuntimeHandler(runtime, getParameterResolver(runtime), resolvers as any[]);
             } else {
                 this._resolvers = getParameterResolver(runtime);
             }
@@ -444,7 +448,7 @@ export function getTokenResolver(runtime: Runtime): RuntimeHandler<[Token, Injec
                     if (!context.has(type, flags)) {
                         // const injector = context.getParent() ?? context.injector;
                         // Operator.register(context, type);
-                        
+
                     }
                     return context.get(type, null, flags)
                 },

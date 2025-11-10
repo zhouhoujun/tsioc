@@ -9,6 +9,7 @@ import { Operator } from './injector';
 import { RuntimeContext } from '../lifescope/context';
 import { isDefined } from '../utils/chk';
 import { resolveArg, resolveArgs } from './common';
+import { createResolveContext } from '../resolver';
 
 
 // export const cleanContextInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> = (input: ClassRef, next: HandlerFn, context: RuntimeContext) => {
@@ -121,6 +122,7 @@ export const propertyInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> =
         if (!instance) throw new Exception('autowride property need InvocationContext');
         let meta: PropertyMetadata, key: string, val;
 
+        const rctx = createResolveContext(injector, input.type);
         input.eachPropertyProviders((metas, propertyKey) => {
             // if (!(define.metadata.type || define.metadata.provider)) return;
             meta = metas.find(m => m.type || m.provider)!;
@@ -128,7 +130,7 @@ export const propertyInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> =
             key = `${propertyKey.toString()}_INJECTED`;
 
             if (!context.has(key)) {
-                val = resolveArg(injector, meta);
+                val = resolveArg(injector, meta, rctx);
                 if (isDefined(val)) {
                     instance[propertyKey] = val;
                     context.set(key, val);
@@ -155,9 +157,9 @@ export function getRuntimePropertyScope(runtime: Runtime): RuntimeHandler<ClassR
 }
 
 
-const onError = (target: AbstractType, propertyKey: string) => {
-    throw new ArgumentException(`can not autowride property ${propertyKey} of class ${target}`)
-}
+// const onError = (target: AbstractType, propertyKey: string) => {
+//     throw new ArgumentException(`can not autowride property ${propertyKey} of class ${target}`)
+// }
 
 /**
  * resolve constructor args action.
