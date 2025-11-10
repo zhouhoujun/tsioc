@@ -433,10 +433,6 @@ export interface InjectorRecord<T = any> {
      */
     multi?: any[];
     /**
-     * 是否为静态提供者
-     */
-    isStatic?: boolean;
-    /**
      * cache expires.
      */
     expires?: number;

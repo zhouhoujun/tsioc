@@ -3,9 +3,9 @@ import { Runtime } from '../runtime';
 import { isFunction, isNumber } from '../utils/chk';
 
 /**
- * handler scope.
+ * runtime handler.
  */
-export class HandlerScope<TInput = any, TContext = any, TOutput = any> implements Handler<TInput, TOutput, TContext> {
+export class RuntimeHandler<TInput = any, TContext = any, TOutput = any> implements Handler<TInput, TOutput, TContext> {
 
     private _chain?: InterceptorFn<TInput> | null;
     private interceptors: InterceptorLike<TInput>[]

@@ -1,4 +1,4 @@
-import { ArgumentException, AbstractType, isArray, isString, Parameter, ResolveInterceptorLike, ContextToken, HandlerScope, Runtime, isToken, isPrimitive, isFunction, getTypeName, createResolveScope, isResolved, isNil, isObject, isDefined } from '@tsdi/ioc';
+import { ArgumentException, AbstractType, isArray, isString, Parameter, ResolveInterceptorLike, ContextToken, RuntimeHandler, Runtime, isToken, isPrimitive, isFunction, getTypeName, createResolveScope, isResolved, isNil, isObject, isDefined } from '@tsdi/ioc';
 import { ParameterScope, TransportParameter } from './resolver';
 import { HandleContext } from './context';
 import { PipeTransform } from '../pipes/pipe';
@@ -9,8 +9,8 @@ export function missingPipeException<T>(parameter: Parameter<T>, type?: Abstract
 }
 
 
-const ITERABLE_RESOLVER = new ContextToken<HandlerScope>(() => null!);
-export function getIterableResolver(runtime: Runtime): HandlerScope<[any, PipeTransform, TransportParameter], HandleContext> {
+const ITERABLE_RESOLVER = new ContextToken<RuntimeHandler>(() => null!);
+export function getIterableResolver(runtime: Runtime): RuntimeHandler<[any, PipeTransform, TransportParameter], HandleContext> {
     let scope = runtime.get(ITERABLE_RESOLVER);
     if (!scope) {
         scope = createResolveScope<[any, PipeTransform, TransportParameter], any, HandleContext>(

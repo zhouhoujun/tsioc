@@ -83,7 +83,7 @@ export function tryResolveToken(token: Token, rd: InjectorRecord, runtime: Runti
     raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     try {
         const value = resolveToken(token, rd, runtime, injector, raise, notFoundValue, flags, isStatic);
-        if (isStatic && rd.isStatic !== false && value != undefined && value != LAZY && value !== notFoundValue) {
+        if (isStatic && rd.value !== LAZY && value != undefined && value != LAZY && value !== notFoundValue) {
             rd.value = value;
         }
         return value;
@@ -105,7 +105,7 @@ export function resolveToken(token: Token, rd: InjectorRecord, runtime: Runtime,
         throw new CircularDependencyException()
     }
     // 如果已有值且不是多提供者，直接返回
-    if (!rd.multi && rd.value !== undefined && rd.value !== LAZY && (rd.isStatic || !(flags & InjectFlags.Resolve))) {
+    if (!rd.multi && rd.value !== undefined && rd.value !== LAZY) {
         return rd.value;
     }
 
@@ -134,7 +134,7 @@ export function resolveToken(token: Token, rd: InjectorRecord, runtime: Runtime,
     if (rd.factory) {
         const result = rd.factory(raise);
         // 如果是静态提供者，缓存结果
-        if (rd.isStatic) {
+        if (rd.value === LAZY) {
             rd.value = result;
         }
         return result;

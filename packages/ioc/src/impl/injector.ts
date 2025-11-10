@@ -22,6 +22,7 @@ import { DefaultRuntime } from './runtime';
 
 
 export const SCOPE_PRODIDERS: Provider[] = [];
+
 /**
  * Default Injector
  */
@@ -894,7 +895,7 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
 
         context.raiseInjector = raise ?? injector;
         context.injector = injector;
-        const instance = runtime.initHandler.handle(typeRef, context, { finally: () => context.onDestroy() });
+        const instance = runtime.getInstanceHandler().handle(typeRef, context, { finally: () => context.onDestroy() });
         if (singleton) {
             runtime.set(type, instance, injector);
         }
@@ -915,7 +916,7 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
         if (provide) {
             context.provide = provide;
         }
-        runtime.designHandler.handle(typeRef, context, { finally: () => context.onDestroy() })
+        runtime.getRegisterHandler().handle(typeRef, context, { finally: () => context.onDestroy() })
     }
     return record;
 

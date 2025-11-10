@@ -12,7 +12,7 @@ import {
 } from './class';
 import { InvokeOptions } from '../context';
 import { Context, HandlerFn } from '../handler';
-import { HandlerScope } from '../lifescope/lifescope';
+import { RuntimeHandler } from '../lifescope/handler';
 
 
 
@@ -206,28 +206,28 @@ const decorExtendHandler = (ctx: DecorContext, context: Context) => {
     }
 }
 
-export const typeDecorLifeScope: HandlerScope<DecorContext, Context> = new HandlerScope(null, decorExtendHandler, [
+export const typeDecorLifeScope: RuntimeHandler<DecorContext, Context> = new RuntimeHandler(null, decorExtendHandler, [
     decorCtorDesignParams,
     decorAnnoAction,
     decorProviders,
     declarationFactory,
     decorRunnable
 ]);
-export const methodDecorLifeScope: HandlerScope<DecorContext, Context> = new HandlerScope(null, decorExtendHandler, [
+export const methodDecorLifeScope: RuntimeHandler<DecorContext, Context> = new RuntimeHandler(null, decorExtendHandler, [
     decorMethodDesignParams,
     decorMethodProviders,
     decorRunnable
 ]);
-export const propDecorLifeScope: HandlerScope<DecorContext, Context> = new HandlerScope(null, decorExtendHandler, [
+export const propDecorLifeScope: RuntimeHandler<DecorContext, Context> = new RuntimeHandler(null, decorExtendHandler, [
     decorInitProp,
     decorPropInject
 ]);
-export const paramDecorLifeScope: HandlerScope<DecorContext, Context> = new HandlerScope(null, decorExtendHandler, [
+export const paramDecorLifeScope: RuntimeHandler<DecorContext, Context> = new RuntimeHandler(null, decorExtendHandler, [
     decorParamInject
 ]);
 
 
-function dispatch(lifescope: HandlerScope<DecorContext>, target: any, type: AbstractType, define: DecorDefine, options: DecoratorOption<any>) {
+function dispatch(lifescope: RuntimeHandler<DecorContext>, target: any, type: AbstractType, define: DecorDefine, options: DecoratorOption<any>) {
 
     const classRef = getClassRef(type);
     classRef.storage(define);

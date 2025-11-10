@@ -1,5 +1,5 @@
 import {
-    isFunction, lang, Runtime, ctorName, HandlerScope, HandlerFn,
+    isFunction, lang, Runtime, ctorName, RuntimeHandler, HandlerFn,
     Context, ContextToken, invokeTail, InterceptorLike, isDefined,
     Parameters, ClassRef, proxyTag, isObject, isNil, object2string, getClassify,
     composeHandlers, composeInterceptors, Injector, AbstractInjector, RuntimeContext,
@@ -200,11 +200,11 @@ export class ProceedingScope implements Proceeding {
 
 
 
-const ADVICES_SCOPE = new ContextToken<HandlerScope>(() => null!);
-export function getAdvicesLifeScope(runtime: Runtime): HandlerScope<JoinPoint> {
+const ADVICES_SCOPE = new ContextToken<RuntimeHandler>(() => null!);
+export function getAdvicesLifeScope(runtime: Runtime): RuntimeHandler<JoinPoint> {
     let scope = runtime.get(ADVICES_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<JoinPoint>(runtime, adviceHanlder, ADVICES_INTERCEPTORS);
+        scope = new RuntimeHandler<JoinPoint>(runtime, adviceHanlder, ADVICES_INTERCEPTORS);
         runtime.set(ADVICES_SCOPE, scope);
     }
     return scope;

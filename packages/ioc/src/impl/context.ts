@@ -11,7 +11,7 @@ import { ClassRef } from '../metadata/class';
 import { getDef } from '../metadata/refl';
 import { Invocation } from '../invocation';
 import { ContextToken, HandlerLike, InterceptorLike } from '../handler';
-import { HandlerScope } from '../lifescope/lifescope';
+import { RuntimeHandler } from '../lifescope/handler';
 import { Runtime } from '../runtime';
 import { nonEnumerable } from '../metadata/decor';
 import { createValueRecord, NullInjectorException, THROW_FLAGE, tryResolveToken } from './common';
@@ -125,11 +125,11 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         return [];
     }
 
-    private _resolvers?: HandlerScope<Parameter, InvocationContext> | null;
+    private _resolvers?: RuntimeHandler<Parameter, InvocationContext> | null;
     /**
      * the invocation arguments resolver.
      */
-    protected getResolver(): HandlerScope<Parameter, InvocationContext> | null {
+    protected getResolver(): RuntimeHandler<Parameter, InvocationContext> | null {
         if (this._resolvers === undefined) {
             const resolvers: ResolveInterceptorLike[] = [];
             const args = this.getArgumentResolver();
@@ -142,7 +142,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
             }
             const runtime = this.getRuntime();
             if (resolvers.length) {
-                this._resolvers = new HandlerScope(runtime, getParameterResolver(runtime), resolvers);
+                this._resolvers = new RuntimeHandler(runtime, getParameterResolver(runtime), resolvers);
             } else {
                 this._resolvers = getParameterResolver(runtime);
             }
@@ -307,7 +307,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
     resolveArgument<T>(meta: Partial<Parameter<T>>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null {
         this.assertNotDestroyed();
         const metaRvr = meta.resolver;
-        let resolver: HandlerScope | null;
+        let resolver: RuntimeHandler | null;
         if (metaRvr?.length) {
             const runtime = this.getRuntime();
             resolver = createResolveScope(runtime, metaRvr.map(r => isType(r) ? this.resolve(r) : r), this.getResolver());
@@ -424,12 +424,12 @@ export function isResolved(value: any) {
     return value !== UNRESOLVED;
 }
 
-export function createResolveScope<TInput, TContext = any, TOutput = any>(runtime: Runtime, interceptors: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): HandlerScope<TInput, TContext, TOutput> {
-    return new HandlerScope<TInput, TContext, TOutput>(runtime, backend ?? unResolve, interceptors)
+export function createResolveScope<TInput, TContext = any, TOutput = any>(runtime: Runtime, interceptors: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): RuntimeHandler<TInput, TContext, TOutput> {
+    return new RuntimeHandler<TInput, TContext, TOutput>(runtime, backend ?? unResolve, interceptors)
 }
 
-const TOKER_RESOLVER = new ContextToken<HandlerScope<[Token, InjectFlags | undefined], InvocationContext>>(() => null!);
-export function getTokenResolver(runtime: Runtime): HandlerScope<[Token, InjectFlags | undefined], InvocationContext> {
+const TOKER_RESOLVER = new ContextToken<RuntimeHandler<[Token, InjectFlags | undefined], InvocationContext>>(() => null!);
+export function getTokenResolver(runtime: Runtime): RuntimeHandler<[Token, InjectFlags | undefined], InvocationContext> {
     let scope = runtime.get(TOKER_RESOLVER);
     if (!scope) {
         scope = createResolveScope(
@@ -462,8 +462,8 @@ export function getTokenResolver(runtime: Runtime): HandlerScope<[Token, InjectF
     return scope;
 }
 
-const PARAMETER_RESOLVER = new ContextToken<HandlerScope>(() => null!);
-export function getParameterResolver(platform: Runtime): HandlerScope<Parameter, InvocationContext> {
+const PARAMETER_RESOLVER = new ContextToken<RuntimeHandler>(() => null!);
+export function getParameterResolver(platform: Runtime): RuntimeHandler<Parameter, InvocationContext> {
     let scope = platform.get(PARAMETER_RESOLVER);
     if (!scope) {
         scope = createResolveScope(

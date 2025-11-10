@@ -3,7 +3,7 @@ import { InjectorRecord } from '../injector';
 import { ClassRef, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
 import { AbstractInjector, Operator } from './injector';
 import { Runtime } from '../runtime';
-import { HandlerScope } from '../lifescope/lifescope';
+import { RuntimeHandler } from '../lifescope/handler';
 import { IocContext } from '../lifescope/context';
 import { isFunction } from '../utils/chk';
 import { Provider } from '../providers';
@@ -32,11 +32,11 @@ function invokeHandler(decors: DecoratorFn[], input: ClassRef, scope: DecoratorS
     });
 }
 
-const BEFORE_ANNOATION_SCOPE = new ContextToken<HandlerScope<ClassRef, IocContext>>(() => null!);
-export function getDesignBeforeAnnoationScope(runtime: Runtime): HandlerScope<ClassRef, IocContext> {
+const BEFORE_ANNOATION_SCOPE = new ContextToken<RuntimeHandler<ClassRef, IocContext>>(() => null!);
+export function getDesignBeforeAnnoationScope(runtime: Runtime): RuntimeHandler<ClassRef, IocContext> {
     let scope = runtime.get(BEFORE_ANNOATION_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<ClassRef, IocContext>(runtime, (input, context) => {
+        scope = new RuntimeHandler<ClassRef, IocContext>(runtime, (input, context) => {
             invokeHandler(input.classDecors, input, Decors.beforeAnnoation, context)
         });
         runtime.set(BEFORE_ANNOATION_SCOPE, scope);
@@ -45,11 +45,11 @@ export function getDesignBeforeAnnoationScope(runtime: Runtime): HandlerScope<Cl
 }
 
 
-const AFTER_ANNOATION_SCOPE = new ContextToken<HandlerScope<ClassRef, IocContext>>(() => null!);
-export function getDesignAfterAnnoationScope(runtime: Runtime): HandlerScope<ClassRef, IocContext> {
+const AFTER_ANNOATION_SCOPE = new ContextToken<RuntimeHandler<ClassRef, IocContext>>(() => null!);
+export function getDesignAfterAnnoationScope(runtime: Runtime): RuntimeHandler<ClassRef, IocContext> {
     let scope = runtime.get(AFTER_ANNOATION_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<ClassRef, IocContext>(runtime, (input, context) => {
+        scope = new RuntimeHandler<ClassRef, IocContext>(runtime, (input, context) => {
             invokeHandler(input.classDecors, input, Decors.afterAnnoation, context)
         });
         runtime.set(AFTER_ANNOATION_SCOPE, scope);
@@ -60,11 +60,11 @@ export function getDesignAfterAnnoationScope(runtime: Runtime): HandlerScope<Cla
 /**
  * property decorator scope.
  */
-const DESIGN_PROPERTY_SCOPE = new ContextToken<HandlerScope<ClassRef, IocContext>>(() => null!);
-export function getDesignPropertyScope(runtime: Runtime): HandlerScope<ClassRef, IocContext> {
+const DESIGN_PROPERTY_SCOPE = new ContextToken<RuntimeHandler<ClassRef, IocContext>>(() => null!);
+export function getDesignPropertyScope(runtime: Runtime): RuntimeHandler<ClassRef, IocContext> {
     let scope = runtime.get(DESIGN_PROPERTY_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<ClassRef>(runtime, (input, context) => {
+        scope = new RuntimeHandler<ClassRef>(runtime, (input, context) => {
             invokeHandler(input.propDecors, input, Decors.property, context)
         });
         runtime.set(DESIGN_PROPERTY_SCOPE, scope);
@@ -72,12 +72,12 @@ export function getDesignPropertyScope(runtime: Runtime): HandlerScope<ClassRef,
     return scope;
 }
 
-const DESIGN_METHOD_SCOPE = new ContextToken<HandlerScope<ClassRef, IocContext>>(() => null!);
+const DESIGN_METHOD_SCOPE = new ContextToken<RuntimeHandler<ClassRef, IocContext>>(() => null!);
 
-export function getDesignMethodScope(runtime: Runtime): HandlerScope<ClassRef, IocContext> {
+export function getDesignMethodScope(runtime: Runtime): RuntimeHandler<ClassRef, IocContext> {
     let scope = runtime.get(DESIGN_METHOD_SCOPE);
     if (!scope) {
-        scope = new HandlerScope<ClassRef, IocContext>(runtime, (input, context) => {
+        scope = new RuntimeHandler<ClassRef, IocContext>(runtime, (input, context) => {
             invokeHandler(input.methodDecors, input, Decors.method, context);
         });
         runtime.set(DESIGN_METHOD_SCOPE, scope);

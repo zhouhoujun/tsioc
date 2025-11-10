@@ -8,48 +8,56 @@ import { EnvironmentInjector, Injector, InjectorScope } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ModuleRef } from '../module.ref';
-import { HandlerScope } from '../lifescope/lifescope';
+import { RuntimeHandler } from '../lifescope/handler';
 import { Context, ContextToken } from '../handler';
 import { INITIALIZE_INTERCEPTORS, instanceHandler } from './initialize';
 import { DESIGN_INTERECPTORS } from './design';
 import { InvocationFactory } from '../invocation';
 import { Operator } from './injector';
 
-const INJECTORS = new ContextToken<Injector[]>(() => []);
 
 /**
  * default runtime implements {@link Runtime}.
  */
 export class DefaultRuntime extends Context implements Runtime {
 
-    private _pdrs: Map<AbstractType, Provider[]>;
-    private _scopes: Map<string | AbstractType, Injector>;
-
-    readonly modules = new Map<AbstractType, ModuleRef>();
-    readonly factories = new Map<AbstractType, InvocationFactory>();
-    private _initialize?: HandlerScope;
-    private _design?: HandlerScope;
+    private _initialize?: RuntimeHandler;
+    private _design?: RuntimeHandler;
 
     constructor(injector: Injector) {
         super()
         this.set(EnvironmentInjector, injector);
-        this._scopes = new Map();
-        this._pdrs = new Map();
         this.set(INJECTORS, [injector]);
         injector.onDestroy(this);
     }
 
+    getModules(): Map<AbstractType, ModuleRef> {
+        return this.get(MODULES);
+    }
 
-    get initHandler(): HandlerScope {
+    getFactories(): Map<AbstractType, InvocationFactory> {
+        return this.get(FACTORIES);
+    }
+
+    getScopes(): Map<InjectorScope, Injector> {
+        return this.get(SCOPES);
+    }
+
+    getProviders(): Map<AbstractType, Provider[]> {
+        return this.get(PROVIDERS);
+    }
+
+
+    getInstanceHandler(): RuntimeHandler {
         if (!this._initialize) {
-            this._initialize = new HandlerScope(this, instanceHandler, INITIALIZE_INTERCEPTORS);
+            this._initialize = new RuntimeHandler(this, instanceHandler, INITIALIZE_INTERCEPTORS);
         }
         return this._initialize;
     }
 
-    get designHandler(): HandlerScope<ClassRef, Context> {
+    getRegisterHandler(): RuntimeHandler<ClassRef, Context> {
         if (!this._design) {
-            this._design = new HandlerScope<ClassRef, Context>(this, (typeRef) => typeRef, DESIGN_INTERECPTORS);
+            this._design = new RuntimeHandler<ClassRef, Context>(this, (typeRef) => typeRef, DESIGN_INTERECPTORS);
         }
         return this._design;
     }
@@ -93,12 +101,12 @@ export class DefaultRuntime extends Context implements Runtime {
     }
 
 
-    setInjector(scope: AbstractType | string, injector: Injector) {
-        this._scopes.set(scope, injector)
+    setInjector(scope: InjectorScope, injector: Injector) {
+        this.get(SCOPES).set(scope, injector)
     }
 
     removeInjector(scope: InjectorScope): void {
-        this._scopes.delete(scope)
+        this.get(SCOPES).delete(scope)
     }
 
     getRegisterIn(token: Token): Injector | undefined {
@@ -114,7 +122,7 @@ export class DefaultRuntime extends Context implements Runtime {
         if (scope === 'platform') {
             return this.get<any>(EnvironmentInjector) as T
         }
-        return (this._scopes.get(scope) ?? defaultInjector) as T
+        return (this.get(SCOPES).get(scope) ?? defaultInjector) as T
     }
 
     /**
@@ -124,8 +132,9 @@ export class DefaultRuntime extends Context implements Runtime {
     getTypeProvider(type: AbstractType | ClassRef) {
         const tyRef = getClassify(type);
         const pdrs = tyRef.providers.slice(0);
+        const pdMap = this.getProviders();
         tyRef.extendTypes.forEach(t => {
-            const tpd = this._pdrs.get(t);
+            const tpd = pdMap.get(t);
             if (tpd) {
                 pdrs.unshift(tpd)
             }
@@ -140,11 +149,12 @@ export class DefaultRuntime extends Context implements Runtime {
      */
     setTypeProvider(type: AbstractType | ClassRef, ...providers: StaticProvider[]) {
         const ty = isFunction(type) ? type : type.type;
-        const prds = this._pdrs.get(ty);
+        const pdMap = this.getProviders();
+        const prds = pdMap.get(ty);
         if (prds) {
             prds.push(providers)
         } else {
-            this._pdrs.set(ty, providers)
+            pdMap.set(ty, providers)
         }
     }
 
@@ -154,7 +164,7 @@ export class DefaultRuntime extends Context implements Runtime {
             this.clearTypeProvider(ty);
             return;
         }
-        const prds = this._pdrs.get(ty);
+        const prds = this.getProviders().get(ty);
         if (prds) {
             providers.forEach(p => {
                 prds.splice(prds.indexOf(p), 1);
@@ -164,13 +174,23 @@ export class DefaultRuntime extends Context implements Runtime {
     }
 
     clearTypeProvider(type: AbstractType) {
-        this._pdrs.delete(type)
+        this.getProviders().delete(type)
     }
 
     onDestroy(): void {
-        this._scopes.clear();
-        this.modules.clear();
-        this._pdrs.clear();
+        this.getScopes().clear();
+        this.getModules().clear();
+        this.getFactories().clear();
+        this.getProviders().clear();
+        super.onDestroy();
     }
 
 }
+
+
+
+const INJECTORS = new ContextToken<Injector[]>(() => []);
+const SCOPES = new ContextToken<Map<InjectorScope, Injector>>(() => new Map());
+const MODULES = new ContextToken<Map<AbstractType, ModuleRef>>(() => new Map());
+const FACTORIES = new ContextToken<Map<AbstractType, InvocationFactory>>(() => new Map());
+const PROVIDERS = new ContextToken<Map<AbstractType, Provider[]>>(() => new Map());

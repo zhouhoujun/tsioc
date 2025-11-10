@@ -30,7 +30,7 @@ export class DefaultModuleRef<T = any> extends AbstractInjector implements Modul
     protected initWithOptions(option: ModuleOption) {
         const dedupStack: Type[] = [];
         const runtime = this.getRuntime();
-        runtime.modules.set(this._type, this);
+        runtime.getModules().set(this._type, this);
         let ps: Promise<void> | void | undefined;
 
         if (option.deps?.length) {
@@ -83,7 +83,7 @@ export class DefaultModuleRef<T = any> extends AbstractInjector implements Modul
     }
 
     protected override clear() {
-        this.getRuntime()?.modules.delete(this._type);
+        this.getRuntime().getModules().delete(this._type);
         super.clear();
         this._type = null!;
         this._typeRefl = null!;

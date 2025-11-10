@@ -6,7 +6,7 @@ import { AbstractType } from './types';
 import { Provider } from './providers';
 import { Injector, InjectorScope } from './injector';
 import { ModuleRef } from './module.ref';
-import { HandlerScope } from './lifescope/lifescope';
+import { RuntimeHandler } from './lifescope/handler';
 import { Context, ContextToken } from './handler';
 
 /**
@@ -17,10 +17,26 @@ export abstract class Runtime implements OnDestroy {
     /**
      * registered modules.
      */
-    abstract get modules(): Map<AbstractType, ModuleRef>;
+    abstract getModules(): Map<AbstractType, ModuleRef>;
 
-    abstract get initHandler(): HandlerScope<ClassRef, Context>;
-    abstract get designHandler(): HandlerScope<ClassRef, Context>;
+    /**
+     * registered injectors.
+     */
+    abstract getScopes(): Map<InjectorScope, Injector>;
+
+    /**
+     * registered providers.
+     */
+    abstract getProviders(): Map<AbstractType, Provider[]>;
+
+    /**
+     * create instance handler.
+     */
+    abstract getInstanceHandler(): RuntimeHandler<ClassRef, Context>;
+    /**
+     * register handler.
+     */
+    abstract getRegisterHandler(): RuntimeHandler<ClassRef, Context>;
 
     /**
      * register injector.
