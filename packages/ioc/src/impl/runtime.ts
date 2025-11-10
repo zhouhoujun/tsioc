@@ -13,7 +13,8 @@ import { Context, ContextToken } from '../handler';
 import { INITIALIZE_INTERCEPTORS, instanceHandler } from './initialize';
 import { DESIGN_INTERECPTORS } from './design';
 import { InvocationFactory } from '../invocation';
-import { Operator } from './injector';
+import { nonEnumerable } from '../metadata/decor';
+// import { Operator } from './injector';
 
 
 /**
@@ -21,7 +22,10 @@ import { Operator } from './injector';
  */
 export class DefaultRuntime extends Context implements Runtime {
 
+    @nonEnumerable
     private _initialize?: RuntimeHandler;
+    
+    @nonEnumerable
     private _design?: RuntimeHandler;
 
     constructor(injector: Injector) {
@@ -110,7 +114,7 @@ export class DefaultRuntime extends Context implements Runtime {
     }
 
     getRegisterIn(token: Token): Injector | undefined {
-        return this.get(INJECTORS).find(r => !!Operator.getTokenProvider(r, token, InjectFlags.Self));
+        return this.get(INJECTORS).find(r => r.has(token, InjectFlags.Self)) //!!Operator.getTokenProvider(r, token, InjectFlags.Self));
     }
 
     /**

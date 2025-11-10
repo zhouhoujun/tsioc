@@ -1,4 +1,4 @@
-import { Inject, Autowired, Injectable, isFunction, Container, Providers, getClassRef, InvocationFactory, createInjector } from '../src';
+import { Inject, Autowired, Injectable, isFunction, Container, Providers, getClassRef, InvocationFactory, createInjector, getType } from '../src';
 import expect = require('expect');
 // import { AnnotationAspect } from './aop/AnnotationAspect';
 // import { CheckRightAspect } from './aop/CheckRightAspect';
@@ -50,7 +50,7 @@ describe('method exec test', () => {
         constructor() {
 
         }
-        
+
         @Autowired()
         sayHello(person: Person) {
             return person.say();
@@ -127,7 +127,9 @@ describe('method exec test', () => {
         // container.register(Person);
         container.getInject().register(MethodTest3);
         // expect(container.invoke('Test3', 'sayHello')).toEqual('Mama, I love you.');
-        const typeRef = container.get(InvocationFactory).create(container.getInject().getTokenProvider('Test3'));
+        // const typeRef = container.get(InvocationFactory).create(container.getInject().getTokenProvider('Test3'));
+        const instace = container.get('Test3');
+        const typeRef = container.get(InvocationFactory).create(getType(instace), { instace });
         expect(typeRef.invoke('sayHello')).toEqual('Mama, I love you.');
 
     });

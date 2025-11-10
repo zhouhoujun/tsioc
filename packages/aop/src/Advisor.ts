@@ -125,9 +125,16 @@ export class Advisor implements OnDestroy {
             }
         }
 
-        return Array.from(this.advices.values()).some(r => {
-            return names.some(name => r.some(a => a.match(name, `${typeRef?.className ?? getTypeName(instance)}.${name}`, typeRef, instance, { way: 'root' })))
-        })
+        for (const r of this.advices.values()) {
+            if(names.some(name =>r.some(a => a.match(name, `${typeRef?.className ?? getTypeName(instance)}.${name}`, typeRef, instance, { way: 'root' })))) {
+                return true;
+            }
+        }
+        return false;
+
+        // return Array.from(this.advices.values()).some(r => {
+        //     return names.some(name => r.some(a => a.match(name, `${typeRef?.className ?? getTypeName(instance)}.${name}`, typeRef, instance, { way: 'root' })))
+        // })
     }
 
     protected getAdvicers(...types: AdviceTypes[]): Advicer[] {

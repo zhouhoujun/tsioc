@@ -257,7 +257,7 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
 /**
  * Environment Injector
  */
-export class DefaultEnvironmentInjector extends AbstractInjector  implements EnvironmentInjector {
+export class DefaultEnvironmentInjector extends AbstractInjector implements EnvironmentInjector {
     constructor(providers?: Provider[]) {
         super(undefined, 'platform');
         deferProcessProviders(this, providers, this._readyDefer)
@@ -435,29 +435,29 @@ export namespace Operator {
         }
     }
 
-    /**
-     * get token implement class type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {InjectFlags} flags get token strategy.
-     * @returns {AbstractType<T>}
-     */
-    export function getTokenProvider<T>(injector: Injector, token: Token<T>, flags = InjectFlags.Default): AbstractType<T> {
-        if (!(injector instanceof AbstractInjector)) throw new ArgumentException('not extends from AbstractInjector');
-        injector.assertNotDestroyed();
-        let type: AbstractType | undefined;
-        const records = injector.getRecords();
-        if (!(flags & InjectFlags.SkipSelf)) {
-            const rd = records.get(token);
-            type = rd?.type;
-        }
-        if (!type && !(flags & InjectFlags.Self)) {
-            const parent = injector.getParent();
-            type = parent ? getTokenProvider(parent as AbstractInjector, token, flags) : null!;
-        }
-        return type ?? null!
-    }
+    // /**
+    //  * get token implement class type.
+    //  *
+    //  * @template T
+    //  * @param {Token<T>} token
+    //  * @param {InjectFlags} flags get token strategy.
+    //  * @returns {AbstractType<T>}
+    //  */
+    // export function getTokenProvider<T>(injector: Injector, token: Token<T>, flags = InjectFlags.Default): AbstractType<T> {
+    //     if (!(injector instanceof AbstractInjector)) throw new ArgumentException('not extends from AbstractInjector');
+    //     injector.assertNotDestroyed();
+    //     let type: AbstractType | undefined;
+    //     const records = injector.getRecords();
+    //     if (!(flags & InjectFlags.SkipSelf)) {
+    //         const rd = records.get(token);
+    //         type = rd?.type;
+    //     }
+    //     if (!type && !(flags & InjectFlags.Self)) {
+    //         const parent = injector.getParent();
+    //         type = parent ? getTokenProvider(parent as AbstractInjector, token, flags) : null!;
+    //     }
+    //     return type ?? null!
+    // }
     /**
      * cache token instance.
      *
@@ -748,9 +748,9 @@ export class DefaultInjectOperator implements InjectOperator {
 
 
 
-    getTokenProvider<T>(token: Token<T>, flags = InjectFlags.Default): AbstractType<T> {
-        return Operator.getTokenProvider(this.injector, token, flags);
-    }
+    // getTokenProvider<T>(token: Token<T>, flags = InjectFlags.Default): AbstractType<T> {
+    //     return Operator.getTokenProvider(this.injector, token, flags);
+    // }
 
 
 
@@ -857,8 +857,13 @@ export function generateRecord<T>(injector: AbstractInjector, provider: StaticPr
         } else if (isExistingProvider(provider)) {
             factory = (raise?: Injector) => (raise ?? injector).get(provider.useExisting);
         } else if (provider.provide) {
-            const classType = (provider as ClassProvider).useClass ?? provider.provide;
-            return generateTypeRecord(injector, getClassRef(classType), provider.deps, provider.provide);
+            if ((provider as ClassProvider).useClass && !(provider as ClassProvider).deps && injector.has((provider as ClassProvider).useClass)) {
+                const type = (provider as ClassProvider).useClass;
+                factory = (raise?: Injector) => raise?.get(type, null) ?? injector.get(type);
+            } else {
+                const classType = (provider as ClassProvider).useClass ?? provider.provide;
+                return generateTypeRecord(injector, getClassRef(classType), provider.deps, provider.provide);
+            }
         }
 
         return createRecord(factory, (provider as UseAsStatic).static ?? injector.isStatic);

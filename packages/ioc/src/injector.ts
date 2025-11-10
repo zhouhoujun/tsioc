@@ -164,15 +164,15 @@ export interface InjectOperator {
      * @param provider the value type.
      */
     setValue<T>(token: Token<T>, value: T, provider?: AbstractType<T>): this;
-    /**
-     * get token implement class type.
-     *
-     * @template T
-     * @param {Token<T>} token
-     * @param {InjectFlags} flags get token strategy.
-     * @returns {AbstractType<T>}
-     */
-    getTokenProvider<T>(token: Token<T>, flags?: InjectFlags): AbstractType<T>;
+    // /**
+    //  * get token implement class type.
+    //  *
+    //  * @template T
+    //  * @param {Token<T>} token
+    //  * @param {InjectFlags} flags get token strategy.
+    //  * @returns {AbstractType<T>}
+    //  */
+    // getTokenProvider<T>(token: Token<T>, flags?: InjectFlags): AbstractType<T>;
     /**
      * cache instance.
      * @param token 

@@ -211,14 +211,12 @@ export class Application<T = any> {
             await root.ready;
             this.initRoot();
             if (isFunction(target)) {
-                // const modueRef = root.get(ReflectiveFactory).create(target);
-                this.context =  Operator.resolve(root, ApplicationContextFactory).create(root);
+                this.context =  root.get(ApplicationContextFactory).create(root);
             } else {
-                // const modueRef = root.get(ReflectiveFactory).create(root.moduleType);
                 if (target.loads) {
                     this._loads = await this.loader.register(this.root, target.loads);
                 }
-                this.context =  Operator.resolve(root, ApplicationContextFactory).create(root, { ...target, providers: [] });
+                this.context =  root.get(ApplicationContextFactory).create(root, { ...target, providers: [] });
             }
         }
         return this.context

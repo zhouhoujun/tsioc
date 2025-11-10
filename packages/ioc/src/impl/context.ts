@@ -54,13 +54,8 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         scope: AbstractType | 'static' = 'static'
     ) {
         super(parent, scope);
-        this.records = new Map();
         this._refs = [];
         this.isResolve = options.isResolve == true;
-        this._runtime = parent.getRuntime();
-        this._parent = parent;
-        parent.onDestroy(this);
-
         if (options.values) {
             options.values.forEach(par => {
                 this.setValue(par[0], par[1]);

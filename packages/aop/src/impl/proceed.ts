@@ -32,7 +32,7 @@ export class ProceedingScope implements Proceeding {
         const advisor = context.runtime.get(Advisor);
         if (!advisor.hasCtor(typeRef)) {
             return invokeTail(() => next(typeRef, context), (instance) => {
-                if (advisor.hasPointcut(context.instance, typeRef, true)) {
+                if (advisor.hasPointcut(instance, typeRef, true)) {
                     context.set(POINTCUT, true);
                     // ctx.isNewContext = false;
                 }

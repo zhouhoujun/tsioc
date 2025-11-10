@@ -142,6 +142,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
             .pipe(
                 mergeMap(res => {
                     if (res === false || !event.propagation) return of(false);
+                    context.set(WITH_SELF, false);
                     return this.bubbleup(event, context)
                 })
             ) as Observable<void | false>;
