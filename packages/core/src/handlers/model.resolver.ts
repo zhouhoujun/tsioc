@@ -1,17 +1,10 @@
-import { Parameter, tokenId, Invocation, AbstractType, PropertyMetadata, Interceptor, Handler } from '@tsdi/ioc';
-import { HandleContext } from './context';
+import { Parameter, tokenId, Invocation, AbstractType, PropertyMetadata, ResolveInterceptor } from '@tsdi/ioc';
 
 
 /**
  * model parameter argument of an {@link Invocation}.
  */
-export interface ModelArgumentResolver<TOutput = any> extends Interceptor<Parameter, TOutput, HandleContext> {
-    /**
-     * Resolves an argument of the given {@code parameter}.
-     * @param parameter argument type
-     * @param ctx InvocationContext
-     */
-    intercept(parameter: Parameter, next: Handler<Parameter, TOutput, HandleContext>, ctx: HandleContext): TOutput;
+export interface ModelArgumentResolver<TOutput = any> extends ResolveInterceptor<Parameter, TOutput> {
 
     /**
      * has the model type or not.

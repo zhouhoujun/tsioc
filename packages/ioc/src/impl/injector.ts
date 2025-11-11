@@ -74,7 +74,6 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
             case 'platform':
                 platformAlias.forEach(tk => this.records.set(tk, val));
                 this._runtime = new DefaultRuntime(this);
-                this.records.set(Resolver, createValueRecord(new DefaultResolver(this._runtime)))
                 registerCores(this, this._runtime);
                 break;
             case 'root':

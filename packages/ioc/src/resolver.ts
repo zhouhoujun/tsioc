@@ -1,5 +1,5 @@
 import { ArgumentException } from './exception';
-import { Context, ContextToken, InterceptorLike } from './handler';
+import { Context, ContextToken, Interceptor, InterceptorLike } from './handler';
 import { Injector } from './injector';
 import { Abstract } from './metadata/fac';
 import { Runtime } from './runtime';
@@ -72,11 +72,11 @@ export function isParameter(target: any): target is Parameter {
     return isObject(target) && (target.provider || target.type || (target.name && target.propertyKey))
 }
 
+export type ResolveInterceptor<TInput extends Parameter = Parameter, TOuptut = any> = Interceptor<TInput, TOuptut, ResolveContext>;
 export type ResolveInterceptorLike<TInput extends Parameter = Parameter, TOuptut = any> = InterceptorLike<TInput, TOuptut, ResolveContext>;
 
 @Abstract()
 export abstract class Resolver {
-
     abstract resolve<T>(parameter: Parameter<T>, context: ResolveContext): T;
 }
 

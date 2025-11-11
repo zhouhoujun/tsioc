@@ -47,8 +47,11 @@ export function resolveArg(injector: Injector, arg: ParameterLike | InjectorReco
         if (arg.value === LAZY) arg.value = value;
         return value;
     } else if (isParameter(arg)) {
-        return injector.get(Resolver).resolve(arg, context ?? createResolveContext(injector))
-        // return injector.get(arg.provider ?? arg.type ?? arg.name!, arg.defaultValue, arg.flags);
+        const resolver = injector.get(Resolver, null, InjectFlags.Self) ?? (arg.resolver ? injector.getRuntime().getDefaultResolver() : null);
+        if (resolver) {
+            return resolver.resolve(arg, context ?? createResolveContext(injector))
+        }
+        return injector.get(arg.provider ?? arg.type ?? arg.name!, arg.defaultValue, arg.flags);
     } else {
         return injector.get(arg);
     }
