@@ -25,19 +25,19 @@ export interface TransportParameter<T = object> extends Parameter<T> {
      */
     scope?: ParameterScope;
     
-    // /**
-    //  * custom resolver to resolve the value for the property or parameter.
-    //  */
-    // resolver?: TypeOf<ResolveInterceptorLike<TransportParameter>>[];
+    /**
+     * custom resolver to resolve the value for the property or parameter.
+     */
+    resolver?: TypeOf<ResolveInterceptorLike<TransportParameter>>[];
 }
 
 
 
 /**
- * get transport argument resolvers token.
+ * get transport argument resolve handler token.
  * @param type 
  * @returns 
  */
-export function getResolverToken(type: TypeOf<any>, propertyKey?: string): Token<ResolveInterceptorLike[]> {
-    return getTokenOf(type, 'RESOLVERS', propertyKey);
+export function getResolveHandlerToken(type: TypeOf<any>, propertyKey?: string): Token<ResolveInterceptorLike[]> {
+    return getTokenOf(type, 'RESOLVE_HANDLERS', propertyKey);
 }

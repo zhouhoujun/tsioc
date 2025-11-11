@@ -1,5 +1,5 @@
 import { Abstract, isArray, isDefined, isNil, isString, lang, ResolveInterceptorLike } from '@tsdi/ioc';
-import { HandleContext, HandleRequest, MODEL_RESOLVERS, ParameterScope, TransportParameter, createPayloadResolver } from '@tsdi/core';
+import { HandleContext, HandleRequest, MODEL_RESOLVERS, ParameterScope, TransportParameter, createPayloadResolveInterceptors } from '@tsdi/core';
 import { HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess } from '@tsdi/common';
 import {
     FileAdapter, Incoming, InternalServerException, MessageException, MimeAdapter, Outgoing,
@@ -798,7 +798,7 @@ export function getScopeValue(req: HandleRequest|null|undefined, scope: Paramete
     }
 }
 
-const primitiveResolvers = createPayloadResolver(
+const primitiveResolvers = createPayloadResolveInterceptors(
     (ctx, scope, field) => {
         if (field && !scope) {
             scope = 'query'

@@ -1,8 +1,6 @@
-import { InvocationContext } from './context';
 import { ArgumentException } from './exception';
-import { Context, ContextToken, Handler, InterceptorLike } from './handler';
+import { Context, ContextToken, InterceptorLike } from './handler';
 import { Injector } from './injector';
-import { RuntimeHandler } from './lifescope/handler';
 import { Abstract } from './metadata/fac';
 import { Runtime } from './runtime';
 import { InjectFlags, Token } from './tokens';
@@ -74,12 +72,10 @@ export function isParameter(target: any): target is Parameter {
     return isObject(target) && (target.provider || target.type || (target.name && target.propertyKey))
 }
 
-export type ResolveInterceptorLike<TInput extends Parameter = Parameter> = InterceptorLike<TInput, any, ResolveContext>;
+export type ResolveInterceptorLike<TInput extends Parameter = Parameter, TOuptut = any> = InterceptorLike<TInput, TOuptut, ResolveContext>;
 
 @Abstract()
 export abstract class Resolver {
-
-    abstract get handler(): RuntimeHandler<Parameter>;
 
     abstract resolve<T>(parameter: Parameter<T>, context: ResolveContext): T;
 }
@@ -93,13 +89,13 @@ export class ResolveContext extends Context {
 
     constructor(
         injector: Injector,
-        readonly target?: AbstractType, 
+        readonly target?: AbstractType,
         readonly failed?: (target: AbstractType, propertyKey: string) => void) {
         super();
         this.setInjector(injector);
         this.set(Runtime, injector.getRuntime());
-        if(target) this.set(TARGET, target);
-        
+        if (target) this.set(TARGET, target);
+
     }
 
     getTarget() {
@@ -131,6 +127,6 @@ export function createResolveContext(injector: Injector, target?: AbstractType, 
     return new ResolveContext(injector, target, onError);
 }
 
-const onError = (target: AbstractType, propertyKey: string) => {
+const onError = (target: AbstractType, propertyKey: string): void => {
     throw new ArgumentException(`can not autowride property ${propertyKey} of class ${target}`)
 }

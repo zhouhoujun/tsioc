@@ -1,5 +1,5 @@
 import { DefaultInvocationContext, Injector, InvocationRequest, InvokeArguments,  ResolveInterceptorLike,  getType } from '@tsdi/ioc';
-import { getResolverToken, ParameterScope } from './resolver';
+import { getResolveHandlerToken, ParameterScope } from './resolver';
 
 /**
  * handle context options.
@@ -55,7 +55,7 @@ export class HandleContext extends DefaultInvocationContext {
             res.push(...defRels);
         }
         if (this.request) {
-            const args = this.get(getResolverToken(this.request), null);
+            const args = this.get(getResolveHandlerToken(this.request), null);
             if (args?.length) {
                 res.unshift(...args);
             }

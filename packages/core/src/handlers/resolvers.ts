@@ -1,6 +1,5 @@
-import { ArgumentException, AbstractType, isArray, isString, Parameter, ResolveInterceptorLike, ContextToken, RuntimeHandler, Runtime, isToken, isPrimitive, isFunction, getTypeName, createResolveScope, isResolved, isNil, isObject, isDefined } from '@tsdi/ioc';
+import { ArgumentException, AbstractType, isArray, isString, Parameter, ResolveInterceptorLike, ContextToken, RuntimeHandler, Runtime, isToken, isPrimitive, isFunction, getTypeName, createResolveHandler, isResolved, isNil, isObject, isDefined } from '@tsdi/ioc';
 import { ParameterScope, TransportParameter } from './resolver';
-import { HandleContext } from './context';
 import { PipeTransform } from '../pipes/pipe';
 
 
@@ -9,11 +8,11 @@ export function missingPipeException<T>(parameter: Parameter<T>, type?: Abstract
 }
 
 
-const ITERABLE_RESOLVER = new ContextToken<RuntimeHandler>(() => null!);
-export function getIterableResolver(runtime: Runtime): RuntimeHandler<[any, PipeTransform, TransportParameter], HandleContext> {
-    let scope = runtime.get(ITERABLE_RESOLVER);
+const MUTIL_RESOLVE_HANDLER = new ContextToken<RuntimeHandler>(() => null!);
+export function getMutilResolveHanlder(runtime: Runtime): RuntimeHandler<[any, PipeTransform, TransportParameter]> {
+    let scope = runtime.get(MUTIL_RESOLVE_HANDLER);
     if (!scope) {
-        scope = createResolveScope<[any, PipeTransform, TransportParameter], any, HandleContext>(
+        scope = createResolveHandler<[any, PipeTransform, TransportParameter], any>(
             runtime,
             [
                 (input, next, context): any => {
@@ -43,13 +42,13 @@ export function getIterableResolver(runtime: Runtime): RuntimeHandler<[any, Pipe
 
             ]
         );
-        runtime.set(ITERABLE_RESOLVER, scope);
+        runtime.set(MUTIL_RESOLVE_HANDLER, scope);
     }
     return scope;
 }
 
 
-export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx: T, scope?: ParameterScope, filed?: string) => any): ResolveInterceptorLike<TransportParameter, T>[] {
+export function createPayloadResolveInterceptors(getPayload: (ctx: any, scope?: ParameterScope, filed?: string) => any): ResolveInterceptorLike<TransportParameter>[] {
     return [
         (parameter, next, ctx) => {
 
@@ -64,7 +63,7 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
                 return next(parameter, ctx);
             }
 
-            if (!pipe) throw missingPipeException(parameter, ctx.targetType, ctx.propertyKey);
+            if (!pipe) throw missingPipeException(parameter, ctx.target!, parameter.propertyKey);
 
             let payload = getPayload(ctx, parameter.scope, parameter.field ?? parameter.name);
             if (isNil(payload)) {
@@ -80,7 +79,7 @@ export function createPayloadResolver<T extends HandleContext>(getPayload: (ctx:
 
 
             if (parameter.multi) {
-                const value = getIterableResolver(ctx.getRuntime()).handle([isString(payload) ? payload.split(',') : payload, pipe, parameter], ctx);
+                const value = getMutilResolveHanlder(ctx.getRuntime()).handle([isString(payload) ? payload.split(',') : payload, pipe, parameter], ctx);
                 if (isResolved(value)) return value;
             } else {
                 return pipe.transform(payload, ...parameter.args || [])

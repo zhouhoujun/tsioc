@@ -3,4 +3,4 @@ export * from './context';
 export * from './invocation';
 export * from './injector';
 export * from './module';
-export { DefaultResolver } from './resolver';
+export * from './resolver';

@@ -1,4 +1,4 @@
-import { InvocationContext, isFunction, isNil, PropertyMetadata, AbstractType, object2string, ArgumentException, Type, ContextToken, RuntimeHandler, Runtime, createResolveScope, Interceptor, InterceptorLike, getType } from '@tsdi/ioc';
+import { InvocationContext, isFunction, isNil, PropertyMetadata, AbstractType, object2string, ArgumentException, Type, ContextToken, RuntimeHandler, Runtime, createResolveHandler, Interceptor, InterceptorLike, getType } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 
 /**
@@ -367,7 +367,7 @@ const MODEL_FIELD_RESOLVER = new ContextToken<RuntimeHandler<[DBPropertyMetadata
 export function getModelFieldResolver(runtime: Runtime): RuntimeHandler<[DBPropertyMetadata, any, Type], InvocationContext> {
     let scope = runtime.context.get(MODEL_FIELD_RESOLVER);
     if (!scope) {
-        scope = createResolveScope(
+        scope = createResolveHandler(
             runtime,
             [
                 (input, next, context) => {

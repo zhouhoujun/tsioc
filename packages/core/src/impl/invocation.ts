@@ -3,7 +3,7 @@ import { BackendFn } from '../ApplicationHandler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
 import { ResultValue } from '../handlers/ResultValue';
-import { getResolverToken } from '../handlers/resolver';
+import { getResolveHandlerToken } from '../handlers/resolver';
 import { HandleContext, toObservable } from '../handlers';
 
 
@@ -56,7 +56,7 @@ export class DefaultInvocationHandler<
                 input = context;
             } else {
                 newCtx = true;
-                const ctx = createContext(this.context, { request: input as InvocationRequest, resolvers: this.context.get(getResolverToken(input), []) });
+                const ctx = createContext(this.context, { request: input as InvocationRequest, resolvers: this.context.get(getResolveHandlerToken(input), []) });
                 ctx.setValue(getType(input), input);
                 if (context) this.attchContext(ctx, context, input)
                 input = ctx;

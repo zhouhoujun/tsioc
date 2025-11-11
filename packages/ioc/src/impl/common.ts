@@ -2,7 +2,7 @@ import { AbstractType } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { deepForEach } from '../utils/lang';
 import { isArray, isFunction, isNumber } from '../utils/chk';
-import { Injector, InjectorRecord, RegOption } from '../injector';
+import { Injector, InjectorRecord, RecordFactory, RegOption } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef } from '../metadata/class';
@@ -17,7 +17,7 @@ export function createValueRecord<T = any>(value: T, type?: AbstractType<T>): In
     return { type, value };
 }
 
-export function createRecord<T>(factory: (() => T) | undefined, isStatic?: boolean, multi?: boolean): InjectorRecord<T> {
+export function createRecord<T>(factory: RecordFactory<T> | undefined, isStatic?: boolean, multi?: boolean): InjectorRecord<T> {
     return { factory, value: isStatic ? LAZY : undefined, multi: multi ? [] : undefined };
 }
 
@@ -127,7 +127,7 @@ export function resolveToken(token: Token, rd: InjectorRecord, runtime: Runtime,
 
         // 如果有工厂函数，执行并添加结果
         if (rd.factory) {
-            const result = rd.factory(raise);
+            const result = rd.factory(raise, flags);
             multi.push(...result);
         }
 
@@ -136,7 +136,7 @@ export function resolveToken(token: Token, rd: InjectorRecord, runtime: Runtime,
 
     // 执行工厂函数获取值
     if (rd.factory) {
-        const result = rd.factory(raise);
+        const result = rd.factory(raise, flags);
         // 如果是静态提供者，缓存结果
         if (rd.value === LAZY) {
             rd.value = result;

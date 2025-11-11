@@ -1,4 +1,4 @@
-import { Abstract, isArray, isDefined, AbstractType, Type, Parameter, Invocation, Interceptor, Handler, Runtime, createResolveScope, isFunction, isResolved } from '@tsdi/ioc';
+import { Abstract, isArray, isDefined, AbstractType, Type, Parameter, Invocation, Interceptor, Handler, Runtime, createResolveHandler, isFunction, isResolved } from '@tsdi/ioc';
 import { ModelArgumentResolver, HandleContext } from '@tsdi/core';
 import { DBPropertyMetadata, FieldResolveInterceptor, getModelFieldResolver, MissingModelFieldException, missingPropException, ModelFieldResolver } from './field.resolver';
 
@@ -94,7 +94,7 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
     private _resolver!: ModelFieldResolver;
     protected get fieldResolver(): ModelFieldResolver {
         if (!this._resolver) {
-            this._resolver = createResolveScope(this.runtime,
+            this._resolver = createResolveHandler(this.runtime,
                 [
                     (input, next, context) => {
                         const [prop, fields, target] = input;

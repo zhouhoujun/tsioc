@@ -410,6 +410,8 @@ export interface MethodFunc extends Function, TypedPropertyDescriptor<any> {
  */
 export type MethodType<T> = string | symbol | ((tag: T) => MethodFunc);
 
+export type RecordFactory<T = any> = (raise?: Injector, flags?: InjectFlags) => T;
+
 /**
  * Injecor Record
  */
@@ -421,13 +423,13 @@ export interface InjectorRecord<T = any> {
     /**
      * 工厂函数，用于创建实例
      */
-    factory?: ((raise?: Injector) => T);
-    
+    factory?: RecordFactory<T>;
+
     /**
      * 预创建的值或占位符
      */
     value: T | undefined | null | {};
-    
+
     /**
      * 多提供者的依赖数组
      */
@@ -437,5 +439,5 @@ export interface InjectorRecord<T = any> {
      */
     expires?: number;
 
-    onRegister?: ()=> void;
+    onRegister?: () => void;
 }

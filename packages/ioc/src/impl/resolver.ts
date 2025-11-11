@@ -21,15 +21,16 @@ export class DefaultResolver implements Resolver {
         runtime: Runtime,
         handler?: RuntimeHandler<Parameter> | null
     ) {
-        this.handler = handler ?? getParameterResolver(runtime);
+        this.handler = handler ?? getParameterResolveHanlder(runtime);
     }
 
     resolve<T>(parameter: Parameter<T>, context: ResolveContext): T {
         const metaRvr = parameter.resolver;
         let handler = this.handler;
         if (metaRvr?.length) {
-            handler = createResolveScope(context.getRuntime(), metaRvr.map(r => isType(r) ? context.getInjector().get(r) : r), this.handler);
+            handler = createResolveHandler(context.getRuntime(), metaRvr.map(r => isType(r) ? context.getInjector().get(r) : r), this.handler);
         }
+
         return handler.handle(parameter, context,
             {
                 next: (res) => {
@@ -52,7 +53,7 @@ export class DefaultResolver implements Resolver {
                     } else {
                         this.missingException([parameter], context.getTarget()!, parameter.propertyKey!);
                     }
-                },
+                }
             }
         ) as T;
     }
@@ -118,15 +119,15 @@ export function isResolved(value: any) {
     return value !== UNRESOLVED;
 }
 
-export function createResolveScope<TInput, TContext = any, TOutput = any>(runtime: Runtime, interceptors: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): RuntimeHandler<TInput, TContext, TOutput> {
+export function createResolveHandler<TInput, TContext = any, TOutput = any>(runtime: Runtime, interceptors: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): RuntimeHandler<TInput, TContext, TOutput> {
     return new RuntimeHandler<TInput, TContext, TOutput>(runtime, backend ?? unResolve, interceptors)
 }
 
-const TOKER_RESOLVER = new ContextToken<RuntimeHandler<[Token, InjectFlags | undefined], ResolveContext>>(() => null!);
-export function getTokenResolver(runtime: Runtime): RuntimeHandler<[Token, InjectFlags | undefined], ResolveContext> {
-    let scope = runtime.get(TOKER_RESOLVER);
+const TOKER_RESOLVE_HANDLER = new ContextToken<RuntimeHandler<[Token, InjectFlags | undefined], ResolveContext>>(() => null!);
+export function getTokenResolveHandler(runtime: Runtime): RuntimeHandler<[Token, InjectFlags | undefined], ResolveContext> {
+    let scope = runtime.get(TOKER_RESOLVE_HANDLER);
     if (!scope) {
-        scope = createResolveScope(
+        scope = createResolveHandler(
             runtime,
             [
                 (input, next, context) => {
@@ -152,26 +153,26 @@ export function getTokenResolver(runtime: Runtime): RuntimeHandler<[Token, Injec
 
             ]
         );
-        runtime.set(TOKER_RESOLVER, scope);
+        runtime.set(TOKER_RESOLVE_HANDLER, scope);
     }
     return scope;
 }
 
-const PARAMETER_RESOLVER = new ContextToken<RuntimeHandler>(() => null!);
-export function getParameterResolver(runtime: Runtime): RuntimeHandler<Parameter, ResolveContext> {
-    let scope = runtime.get(PARAMETER_RESOLVER);
+const PARAMETER_RESOLVE_HANDLER = new ContextToken<RuntimeHandler>(() => null!);
+export function getParameterResolveHanlder(runtime: Runtime): RuntimeHandler<Parameter, ResolveContext> {
+    let scope = runtime.get(PARAMETER_RESOLVE_HANDLER);
     if (!scope) {
-        scope = createResolveScope(
+        scope = createResolveHandler(
             runtime,
             [
                 (input, next, context) => {
                     if (input.provider && !input.multi) {
-                        const value = getTokenResolver(runtime).handle([input.provider, input.flags], context);
+                        const value = getTokenResolveHandler(runtime).handle([input.provider, input.flags], context);
                         if (isResolved(value)) return value;
                     } else if (!input.multi && input.name && context.has(input.name, input.flags)) {
                         return context.get(input.name, input.flags)
                     } else if (input.type) {
-                        const value = getTokenResolver(runtime).handle([input.type, input.flags], context);
+                        const value = getTokenResolveHandler(runtime).handle([input.type, input.flags], context);
                         if (isResolved(value)) return value;
                     }
                     return next(input, context);
@@ -189,7 +190,7 @@ export function getParameterResolver(runtime: Runtime): RuntimeHandler<Parameter
                 }
             ]
         );
-        runtime.set(PARAMETER_RESOLVER, scope);
+        runtime.set(PARAMETER_RESOLVE_HANDLER, scope);
     }
     return scope;
 }

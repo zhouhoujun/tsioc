@@ -191,7 +191,7 @@ export const ctorArgsInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> =
 
     if (!context.args) {
         const params = context.params ?? input.getParameters(ctorName);
-        const args = resolveArgs(context.raiseInjector, params);
+        const args = resolveArgs(context.raiseInjector, params, input.type);
         context.args = args;
     }
 

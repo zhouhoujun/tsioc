@@ -3,7 +3,7 @@ import { Destroyable, DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { cleanObj, deepForEach, Defer, defer, getTypeName, immediate } from '../utils/lang';
 import { isNil, isFunction, isPromise, isArray, isNumber, isAbstractType, getType } from '../utils/chk';
-import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, InjectorRecord, RegOption, INJECT_IMPL, EnvironmentInjector } from '../injector';
+import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, InjectorRecord, RegOption, INJECT_IMPL, EnvironmentInjector, RecordFactory } from '../injector';
 import { ArgumentException, Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef, ModuleDef } from '../metadata/class';
@@ -851,17 +851,17 @@ export function generateRecord<T>(injector: AbstractInjector, provider: StaticPr
     if (isTypeProvider(provider)) {
         return generateTypeRecord(injector, getClassRef(provider));
     } else {
-        let factory: ((raise?: Injector) => T) | undefined;
+        let factory: RecordFactory<T> | undefined;
         if (isValueProvider(provider)) {
             return createValueRecord(provider.useValue);
         } else if (isFactoryProvider(provider)) {
-            factory = (raise?: Injector) => provider.useFactory(...resolveArgs(raise ?? injector, provider.deps));
+            factory = (raise) => provider.useFactory(...resolveArgs(raise ?? injector, provider.deps));
         } else if (isExistingProvider(provider)) {
-            factory = (raise?: Injector) => (raise ?? injector).get(provider.useExisting);
+            factory = (raise, flags) => (raise ?? injector).get(provider.useExisting, undefined, flags);
         } else if (provider.provide) {
             if ((provider as ClassProvider).useClass && !(provider as ClassProvider).deps && injector.has((provider as ClassProvider).useClass)) {
                 const type = (provider as ClassProvider).useClass;
-                factory = (raise?: Injector) => raise?.get(type, null) ?? injector.get(type);
+                factory = (raise, flags) => raise?.get(type, null, flags) ?? injector.get(type, flags);
             } else {
                 const classType = (provider as ClassProvider).useClass ?? provider.provide;
                 return generateTypeRecord(injector, getClassRef(classType), provider.deps, provider.provide);
@@ -886,7 +886,7 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
     const type = typeRef.type as Type;
     const pdrId = origin !== injector;
     if (pdrId && injector.has(typeRef.type)) {
-        return createRecord(() => injector.get(type), isStatic);
+        return createRecord((raise, flags) => origin.get(type, undefined, flags), isStatic);
     }
 
 

@@ -10,9 +10,9 @@ import { InterceptorResolver } from './ApplicationInterceptor';
 import { FilterHandlerResolver, FilterResolver } from './filters/filter';
 import { DefaultFilterResolver, DefaultFiterHandlerMethodResolver, DefaultInterceptorResolver } from './filters/filter.impl';
 import { ExceptionHandlerFilter } from './filters/execption.filter';
-import { getResolverToken } from './handlers/resolver';
+import { getResolveHandlerToken } from './handlers/resolver';
 import { PayloadApplicationEvent } from './events';
-import { createPayloadResolver } from './handlers/resolvers';
+import { createPayloadResolveInterceptors } from './handlers/resolvers';
 
 
 
@@ -41,8 +41,8 @@ SCOPE_PRODIDERS.push(RESOLVER_PROVIDERS);
 export const ROOT_DEPENDENCE_PROVIDERS: Provider[] = [
     RESOLVER_PROVIDERS,
     {
-        provide: getResolverToken(PayloadApplicationEvent),
-        useValue: createPayloadResolver(
+        provide: getResolveHandlerToken(PayloadApplicationEvent),
+        useValue: createPayloadResolveInterceptors(
             (ctx, scope, field) => {
                 if (!ctx.request) return null;
                 if (scope) {
