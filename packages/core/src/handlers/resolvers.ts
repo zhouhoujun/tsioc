@@ -4,7 +4,14 @@ import { PipeTransform } from '../pipes/pipe';
 
 
 export function missingPipeException<T>(parameter: Parameter<T>, type?: AbstractType, method?: string | symbol) {
-    return new ArgumentException(`missing pipe to transform argument ${parameter.name} type, method ${method?.toString()} of class ${type}`)
+    let message = `missing pipe to transform parameter ${ parameter.name ?? parameter.propertyKey ?? parameter.provider?.toString() ?? parameter.type?.toString() } type`;
+    if(method) {
+        message += `, method ${method.toString()}}`
+    }
+    if(type) {
+        message += ` of class ${getTypeName(type)}`
+    }
+    return new ArgumentException(message)
 }
 
 
