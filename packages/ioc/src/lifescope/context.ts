@@ -16,12 +16,24 @@ const IS_RESOLVE = new ContextToken<boolean>(() => false);
 
 const INSTANCE = new ContextToken<any>(() => null!);
 
+const MUTIL = new ContextToken<boolean>(() => false);
 
 export class IocContext extends Context {
 
     constructor(runtime: Runtime, entries?: readonly (readonly [Token | ContextToken, any])[] | null) {
         super(entries)
         this.set(Runtime, runtime);
+    }
+
+    /**
+     * whether the context is mutil.
+     */
+    get isMutil(): boolean {
+        return this.get(MUTIL);
+    }
+
+    set isMutil(value: boolean) {
+        this.set(MUTIL, value);
     }
 
     get runtime(): Runtime {

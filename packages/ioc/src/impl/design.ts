@@ -1,14 +1,13 @@
 import { Context, ContextToken, HandlerFn, InterceptorLike, invokeTail } from '../handler';
 import { InjectorRecord } from '../injector';
 import { ClassRef, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
-import { AbstractInjector, Operator } from './injector';
+import { AbstractInjector } from './injector';
 import { Runtime } from '../runtime';
 import { RuntimeHandler } from '../lifescope/handler';
 import { IocContext } from '../lifescope/context';
 import { isFunction } from '../utils/chk';
 import { Provider } from '../providers';
-import { createRecord, LAZY } from './common';
-import { InjectFlags } from '../tokens';
+import { createRecord } from './common';
 
 export const autorunInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     return invokeTail(() => next(input, context), (res) => {
@@ -117,7 +116,7 @@ export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context:
     const provide = context.provide;
     if (provide && provide !== type) {
         const pType = input.getAnnotation().providedIn;
-        if (isFunction(pType)) {
+        if (!context.isMutil && isFunction(pType)) {
             const runtime = injector.getRuntime();
             const prd = { provide, useExisting: type } as Provider;
             runtime.setTypeProvider(pType, prd);
@@ -125,17 +124,29 @@ export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context:
                 runtime.removeTypeProvider(pType, prd);
             });
         }
-        const factory = ()=> injector.get(provide);
+
+        // if (input.provides.length) {
+        //     const factory = () => injector.get(provide);
+        //     const records = injector.getRecords();
+        //     input.provides.forEach(pdr => {
+        //         if (provide != pdr) {
+        //             injector.getRecords().set(pdr, createRecord(factory, injector.isStatic))
+        //         }
+        //     })
+        // }
+    }
+    // else {
+    //     const factory = () => injector.get(type);
+    //     input.provides.forEach(provide => {
+    //         injector.getRecords().set(provide, createRecord(factory, injector.isStatic))
+    //     })
+    // }
+    if (input.provides.length) {
+        const factory = () => injector.get(type);
+        const records = injector.getRecords();
         input.provides.forEach(pdr => {
-            if (provide != pdr && !injector.has(pdr, InjectFlags.Self)) {
-                injector.getRecords().set(pdr, createRecord(factory, injector.isStatic))
-            }
-        })
-    } else {
-        const factory = ()=> injector.get(type);
-        input.provides.forEach(provide => {
-            if (!injector.has(provide, InjectFlags.Self)) {
-                injector.getRecords().set(provide, createRecord(factory, injector.isStatic))
+            if (provide != pdr && (context.isMutil ? !records.has(pdr) : true)) {
+                records.set(pdr, createRecord(factory, injector.isStatic))
             }
         })
     }

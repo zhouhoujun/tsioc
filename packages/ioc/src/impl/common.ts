@@ -1,7 +1,7 @@
-import { AbstractType } from '../types';
+import { AbstractType, Type } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { deepForEach, getTypeName } from '../utils/lang';
-import { isArray, isFunction, isNumber } from '../utils/chk';
+import { isArray, isFunction, isNumber, isType } from '../utils/chk';
 import { Injector, InjectorRecord, RecordFactory, RegOption } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
@@ -47,17 +47,15 @@ export function resolveArg(injector: Injector, arg: ParameterLike | InjectorReco
         if (arg.value === LAZY) arg.value = value;
         return value;
     } else if (isParameter(arg)) {
-        const resolver = injector.get(Resolver, null, InjectFlags.Self) ?? (arg.resolver ? injector.getRuntime().getDefaultResolver() : null);
-        if (resolver) {
-            return resolver.resolve(arg, context ?? createResolveContext(injector))
-        }
-        return injector.get(arg.provider ?? arg.type ?? arg.name!, arg.defaultValue, arg.flags);
+        const resolver = injector.get(Resolver, null, InjectFlags.Self) ?? injector.getRuntime().getDefaultResolver()
+        // if (resolver) {
+        return resolver.resolve(arg, context ?? createResolveContext(injector))
+
+        // return injector.get(arg.provider ?? arg.type ?? arg.name!, arg.defaultValue, arg.flags);
     } else {
         return injector.get(arg);
     }
-
 }
-
 
 
 /**

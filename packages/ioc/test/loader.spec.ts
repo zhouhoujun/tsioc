@@ -10,7 +10,7 @@ describe('injector use ', () => {
     let injector: Injector;
     before(async () => {
         injector = createInjector();
-        await injector.getInject().use(debuModules);
+        await injector.getInject().useAsync(debuModules);
         injector.getInject().setValue(Date, new Date());
     });
 

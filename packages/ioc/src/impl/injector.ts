@@ -2,7 +2,7 @@ import { AbstractType, Type, noPointcut } from '../types';
 import { Destroyable, DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { cleanObj, deepForEach, Defer, defer, getTypeName, immediate } from '../utils/lang';
-import { isNil, isFunction, isPromise, isArray, isNumber, isAbstractType, getType } from '../utils/chk';
+import { isNil, isFunction, isPromise, isArray, isNumber, isAbstractType, getType, isType } from '../utils/chk';
 import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, InjectorRecord, RegOption, INJECT_IMPL, EnvironmentInjector, RecordFactory } from '../injector';
 import { ArgumentException, Exception } from '../exception';
 import { Runtime } from '../runtime';
@@ -10,7 +10,7 @@ import { ClassRef, ModuleDef } from '../metadata/class';
 import { Provider, ModuleType, StaticProvider, DynamicProvider, MutilProvider, Provide, ProviderExts, isValueProvider, isFactoryProvider, isExistingProvider, isClassProvider, isTypeProvider, UseAsStatic, ClassProvider, ModuleWithProviders } from '../providers';
 import { createContext, hasContextOptions, INVOCATION_CONTEXT_IMPL, InvocationContext, InvokeOptions } from '../context';
 import { nonEnumerable } from '../metadata/decor';
-import { getClassRef } from '../metadata/refl';
+import { getClassRef, getDef } from '../metadata/refl';
 import { NullInjectorException, THROW_FLAGE, tryResolveToken, RegisterExtedOption, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, LAZY } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { IocContext, RuntimeContext } from '../lifescope/context';
@@ -309,7 +309,7 @@ INJECT_IMPL.create = (providers?: Provider[], parent?: Injector, scope?: Injecto
     return parent ? new DefaultInjector(providers, parent!, scope) : new DefaultEnvironmentInjector(providers);
 };
 
-INJECT_IMPL.isInjector = (target) => target instanceof DefaultInjector;
+INJECT_IMPL.isInjector = (target) => target instanceof AbstractInjector;
 
 /**
  * register core for root.
@@ -893,7 +893,8 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
             return runtime.get(type);
         }
 
-        const context = new RuntimeContext(runtime);
+        const context = new RuntimeContext(runtime);        
+        if(multi) context.isMutil = true;
         if (params) {
             context.params = params;
         }
@@ -919,6 +920,7 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
 
     record.onRegister = () => {
         const context = new IocContext(runtime);
+        if(multi) context.isMutil = true;
         context.injector = injector;
         if (!multi && provide) {
             context.provide = provide;
@@ -932,6 +934,7 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
 export function register(injector: AbstractInjector, typeRef: ClassRef) {
     const record = generateTypeRecord(injector, typeRef);
     injector.getRecords().set(typeRef.type, record);
+    if(record.onRegister) record.onRegister();
 
 }
 
@@ -1021,7 +1024,7 @@ export function processInjectDeclarations(
 export function processUse(injector: AbstractInjector, args: ModuleType[], types?: AbstractType[]) {
     const stk: AbstractType[] = [];
     return deepForEach(args, (ty: any) => {
-        if (isAbstractType(ty)) {
+        if (isType(ty) && getDef(ty)?.abstract !== true) {
             types?.push(ty);
             return processInjectType(injector, ty, stk)
         } else if (isFunction(ty.module) && isArray(ty.providers)) {
