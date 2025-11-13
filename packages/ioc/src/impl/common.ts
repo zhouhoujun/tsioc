@@ -1,6 +1,6 @@
 import { AbstractType } from '../types';
 import { InjectFlags, Token } from '../tokens';
-import { deepForEach } from '../utils/lang';
+import { deepForEach, getTypeName } from '../utils/lang';
 import { isArray, isFunction, isNumber } from '../utils/chk';
 import { Injector, InjectorRecord, RecordFactory, RegOption } from '../injector';
 import { Exception } from '../exception';
@@ -171,7 +171,7 @@ export class CircularDependencyException extends Exception {
  */
 export class NullInjectorException extends Exception {
     constructor(token: Token) {
-        super(`NullInjectorException: No provider for ${token?.toString()}!`)
+        super(`NullInjectorException: No provider for ${isFunction(token) ? getTypeName(token) : token?.toString()}!`)
     }
 }
 

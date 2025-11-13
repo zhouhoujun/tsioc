@@ -8,6 +8,7 @@ import { IocContext } from '../lifescope/context';
 import { isFunction } from '../utils/chk';
 import { Provider } from '../providers';
 import { createRecord, LAZY } from './common';
+import { InjectFlags } from '../tokens';
 
 export const autorunInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
     return invokeTail(() => next(input, context), (res) => {
@@ -111,95 +112,35 @@ export const beforeAnnoactionInterceptor = (input: ClassRef, next: HandlerFn, co
 
 
 export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
-    // const { injector, type, provide, regProvides } = input;
     const type = input.type;
     const injector = context.injector as AbstractInjector;
     const provide = context.provide;
     if (provide && provide !== type) {
         const pType = input.getAnnotation().providedIn;
         if (isFunction(pType)) {
-            // if (input.providedIn && isFunction(input.providedIn)) {
             const runtime = injector.getRuntime();
-            //     if (!runtime.getInjector(type)) {
             const prd = { provide, useExisting: type } as Provider;
             runtime.setTypeProvider(pType, prd);
             injector.onDestroy(() => {
                 runtime.removeTypeProvider(pType, prd);
             });
-            //     }
         }
         const factory = ()=> injector.get(provide);
         input.provides.forEach(pdr => {
-            if (provide != pdr) {
+            if (provide != pdr && !injector.has(pdr, InjectFlags.Self)) {
                 injector.getRecords().set(pdr, createRecord(factory, injector.isStatic))
-                // Operator.inject(injector, { provide: pdr, useExisting: provide })
             }
         })
     } else {
         const factory = ()=> injector.get(type);
         input.provides.forEach(provide => {
-            injector.getRecords().set(provide, createRecord(factory, injector.isStatic))
-            // regProvides !== false && Operator.inject(injector, { provide, useClass: type })
+            if (!injector.has(provide, InjectFlags.Self)) {
+                injector.getRecords().set(provide, createRecord(factory, injector.isStatic))
+            }
         })
     }
     return next(input, context);
 }
-
-
-// export const registerHandler: HandlerFn = (ctx: ClassRef, context: Context) => {
-//     const { type, injector, runtime: runtime, provide } = ctx;
-//     const singleton = ctx.singleton ?? ctx.classRef.getAnnotation().singleton === true;
-//     const isStatic = ctx.static ?? ctx.classRef.getAnnotation().static;
-
-//     const recd = {
-//         type,
-//         fn: (...fnArgs: any[]) => {
-//             // make sure has value.
-//             if (singleton && runtime.hasSingleton(type)) {
-//                 return runtime.getSingleton(type)
-//             }
-//             let args: any[] | undefined;
-//             let context: InvocationContext | undefined;
-//             if (fnArgs.length) {
-//                 const last = fnArgs[fnArgs.length - 1];
-//                 if (last instanceof InvocationContext) {
-//                     context = last;
-//                     if (fnArgs.length > 1) {
-//                         args = fnArgs.slice(0, fnArgs.length - 1);
-//                     }
-//                 } else {
-//                     args = fnArgs;
-//                 }
-//             }
-//             const ctx = {
-//                 injector,
-//                 provide,
-//                 type,
-//                 args,
-//                 singleton,
-//                 runtime,
-//                 context
-//             } as InitializeContext;
-
-//             let instance: any;
-//             runtime.initHandler.handle(ctx, null, {
-//                 finally: () => {
-//                     instance = ctx.instance;
-//                     if (singleton || isStatic) {
-//                         recd.value = instance
-//                     }
-//                     // clean context
-//                     cleanObj(ctx);
-//                 }
-//             });
-
-//             return instance ?? ctx.instance;
-//         },
-//         stic: isStatic,
-//         fy: FnType.Inj
-//     } as InjectorRecord;
-//     ctx.getRecords().set(provide ?? type, recd)
-// }
 
 export const DESIGN_INTERECPTORS = [
     autorunInterceptor,

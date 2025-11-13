@@ -14,12 +14,11 @@ import { getClassRef } from '../metadata/refl';
 import { NullInjectorException, THROW_FLAGE, tryResolveToken, RegisterExtedOption, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, LAZY } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { IocContext, RuntimeContext } from '../lifescope/context';
-import { Parameters, Resolver } from '../resolver';
+import { Parameters } from '../resolver';
 import { CONTAINER, INJECTOR } from '../metadata/tk';
 import { InvocationFactory } from '../invocation';
 import { DefaultInvocationFactory } from './invocation';
 import { DefaultRuntime } from './runtime';
-import { DefaultResolver } from './resolver';
 
 
 export const SCOPE_PRODIDERS: Provider[] = [];
@@ -863,7 +862,7 @@ export function generateRecord<T>(injector: AbstractInjector, provider: StaticPr
                 factory = (raise, flags) => raise?.get(type, null, flags) ?? injector.get(type, flags);
             } else {
                 const classType = (provider as ClassProvider).useClass ?? provider.provide;
-                return generateTypeRecord(injector, getClassRef(classType), provider.deps, provider.provide);
+                return generateTypeRecord(injector, getClassRef(classType), provider.deps, provider.provide, provider.multi);
             }
         }
 
@@ -873,7 +872,7 @@ export function generateRecord<T>(injector: AbstractInjector, provider: StaticPr
 }
 
 
-export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef, params?: Parameters, provide?: Token): InjectorRecord {
+export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef, params?: Parameters, provide?: Token, multi?: boolean): InjectorRecord {
 
     const { static: decStatic, providedIn, singleton } = typeRef.getAnnotation();
     const origin = injector;
@@ -910,16 +909,18 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
 
     let record: InjectorRecord;
     if (pdrId) {
-        injector.getRecords().set(provide ?? type, createRecord(factory, isStatic))
-        record = createRecord(() => injector.get(type), isStatic);
+        const pdRecord = createRecord(factory, isStatic);
+        if(provide) injector.getRecords().set(type, pdRecord);
+        record =  createRecord(() => injector.get(type), isStatic);
     } else {
         record = createRecord(factory, isStatic);
+        if(provide) injector.getRecords().set(type, record);
     }
 
     record.onRegister = () => {
         const context = new IocContext(runtime);
         context.injector = injector;
-        if (provide) {
+        if (!multi && provide) {
             context.provide = provide;
         }
         runtime.getRegisterHandler().handle(typeRef, context, { finally: () => context.onDestroy() })
