@@ -1,6 +1,6 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
 import { AbstractType, Type } from './types';
-import { ClassProvider, ExistingProvider, FactoryProvider, ModuleType, ModuleWithProviders, Provider, ValueProvider } from './providers';
+import { ClassProvider, ExistingProvider, FactoryProvider, ModuleType, Provider, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
 import { ClassRef } from './metadata/class';

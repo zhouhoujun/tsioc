@@ -100,7 +100,7 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
                         const [prop, fields, target] = input;
                         if (prop.nullable === true
                             || (fields && isDefined(fields[prop.propertyKey] ?? prop.default))
-                            || (context.request as { method: string })?.method?.toUpperCase() !== 'PUT' && prop.primary === true
+                            || (context as { method: string })?.method?.toUpperCase() !== 'PUT' && prop.primary === true
                         ) {
                             return next(input, context);
                         }

@@ -56,8 +56,8 @@ export function getMutilResolveHanlder(runtime: Runtime): RuntimeHandler<[any, P
 
 export function createPayloadResolveInterceptors(getPayload: (input: any, scope?: ParameterScope, filed?: string) => any): ResolveInterceptorLike<TransportParameter>[] {
     return [
-        (parameter, next, ctx) => {
-            const injector = ctx.getInjector();
+        (parameter, next, context) => {
+            const injector = context.getInjector();
             let pipe: PipeTransform | undefined;
             if (parameter.pipe) {
                 pipe = isToken(parameter.pipe) ? injector.get<PipeTransform>(parameter.pipe) : parameter.pipe;
@@ -66,26 +66,26 @@ export function createPayloadResolveInterceptors(getPayload: (input: any, scope?
             } else if (parameter.type && isPrimitive(parameter.type)) {
                 pipe = injector.get<PipeTransform>(parameter.type.name.toLowerCase());
             } else {
-                return next(parameter, ctx);
+                return next(parameter, context);
             }
 
-            if (!pipe) throw missingPipeException(parameter, ctx.target!, parameter.propertyKey);
+            if (!pipe) throw missingPipeException(parameter, context.target!, parameter.propertyKey);
 
-            let payload = getPayload(ctx, parameter.scope, parameter.field ?? parameter.name);
+            let payload = getPayload(context, parameter.scope, parameter.field ?? parameter.name);
             if (isNil(payload)) {
-                const data = getPayload(ctx, parameter.scope);
+                const data = getPayload(context, parameter.scope);
                 if (isDefined(data) && !isObject(data)) {
                     payload = data;
                 } else if (parameter.nullable) {
                     return parameter.defaultValue ?? null;
                 } else {
-                    return next(parameter, ctx);
+                    return next(parameter, context);
                 }
             }
 
 
             if (parameter.multi) {
-                const value = getMutilResolveHanlder(ctx.getRuntime()).handle([isString(payload) ? payload.split(',') : payload, pipe, parameter], ctx);
+                const value = getMutilResolveHanlder(context.getRuntime()).handle([isString(payload) ? payload.split(',') : payload, pipe, parameter], context);
                 if (isResolved(value)) return value;
             } else {
                 return pipe.transform(payload, ...parameter.args || [])

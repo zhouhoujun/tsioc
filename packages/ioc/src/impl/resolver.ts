@@ -1,16 +1,17 @@
 import { Exception } from '../exception';
 import { ContextToken, HandlerLike, InterceptorLike } from '../handler';
-import { Injector } from '../injector';
+import { Injector, InjectorRecord } from '../injector';
 import { RuntimeHandler } from '../lifescope/handler';
 import { ClassRef } from '../metadata/class';
 import { getDef } from '../metadata/refl';
-import { Parameter, ResolveContext, Resolver } from '../resolver';
+import { Parameter, ParameterLike, ResolveContext, Resolver } from '../resolver';
 import { Runtime } from '../runtime';
 import { InjectFlags, Token } from '../tokens';
 import { AbstractType } from '../types';
 import { isAbstractType, isArray, isFunction, isNil, isString, isType } from '../utils/chk';
 import { getTypeName } from '../utils/lang';
 import { isPlainObject, isTypeObject } from '../utils/obj';
+import { resolveArgs, resolveParameters } from './common';
 import { Operator } from './injector';
 
 
@@ -57,6 +58,14 @@ export class DefaultResolver implements Resolver {
                 }
             }
         ) as T;
+    }
+
+    resolveArgs(injector: Injector, args?: (ParameterLike | InjectorRecord)[], targetOrContext?: AbstractType|ResolveContext): any[] {
+        return resolveArgs(injector, args, this, targetOrContext)
+    }
+
+    resolveParams(injector: Injector, params: Parameter[], targetOrContext?: AbstractType|ResolveContext): any[] {
+        return resolveParameters(injector, params, this, targetOrContext)
     }
 
     protected missingException(missings: Partial<Parameter>[], type: AbstractType<any>, method: string): Exception {

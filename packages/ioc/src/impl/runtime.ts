@@ -15,7 +15,7 @@ import { DESIGN_INTERECPTORS } from './design';
 import { InvocationFactory } from '../invocation';
 import { nonEnumerable } from '../metadata/decor';
 import { DefaultResolver } from './resolver';
-import { Resolver } from '../resolver';
+import { DEFAULTA_RESOLVER, Resolver } from '../resolver';
 
 
 /**
@@ -33,12 +33,8 @@ export class DefaultRuntime extends Context implements Runtime {
         super()
         this.set(EnvironmentInjector, injector);
         this.set(INJECTORS, [injector]);
-        this.set(DefaultResolver, new DefaultResolver(this));
+        this.set(DEFAULTA_RESOLVER, new DefaultResolver(this));
         injector.onDestroy(this);
-    }
-
-    getDefaultResolver(): Resolver {
-        return this.get(DefaultResolver);
     }
 
     getModules(): Map<AbstractType, ModuleRef> {

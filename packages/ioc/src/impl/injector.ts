@@ -7,11 +7,11 @@ import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, In
 import { ArgumentException, Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef, ModuleDef } from '../metadata/class';
-import { Provider, ModuleType, StaticProvider, DynamicProvider, MutilProvider, Provide, ProviderExts, isValueProvider, isFactoryProvider, isExistingProvider, isClassProvider, isTypeProvider, UseAsStatic, ClassProvider, ModuleWithProviders } from '../providers';
+import { Provider, ModuleType, StaticProvider, DynamicProvider, MutilProvider, Provide, ProviderExts, isValueProvider, isFactoryProvider, isExistingProvider, isTypeProvider, UseAsStatic, ClassProvider, ModuleWithProviders } from '../providers';
 import { createContext, hasContextOptions, INVOCATION_CONTEXT_IMPL, InvocationContext, InvokeOptions } from '../context';
 import { nonEnumerable } from '../metadata/decor';
 import { getClassRef, getDef } from '../metadata/refl';
-import { NullInjectorException, THROW_FLAGE, tryResolveToken, RegisterExtedOption, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, LAZY } from './common';
+import { NullInjectorException, THROW_FLAGE, tryResolveToken, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, LAZY } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { IocContext, RuntimeContext } from '../lifescope/context';
 import { Parameters } from '../resolver';
@@ -944,7 +944,7 @@ export function processInjectType(
     typeOrDef: AbstractType | ModuleWithProviders,
     dedupStack: AbstractType[],
     imported?: boolean,
-    extedOption?: RegisterExtedOption,
+    extedOption?: (typeRef: ClassRef, option?: RegOption) => RegOption | undefined,
     moduleRefl?: ClassRef,
 ): void | Promise<void> {
     // 提前检查重复处理

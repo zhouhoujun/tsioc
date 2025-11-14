@@ -1,4 +1,3 @@
-import { Abstract } from './metadata/fac';
 import { ClassRef } from './metadata/class';
 import { OnDestroy } from './destroy';
 import { Token } from './tokens';
@@ -8,12 +7,10 @@ import { Injector, InjectorScope } from './injector';
 import { ModuleRef } from './module.ref';
 import { RuntimeHandler } from './lifescope/handler';
 import { Context, ContextToken } from './handler';
-import { Resolver } from './resolver';
 
 /**
  * Runtime of {@link Injector}.
  */
-@Abstract()
 export abstract class Runtime implements OnDestroy {
     /**
      * registered modules.
@@ -38,11 +35,6 @@ export abstract class Runtime implements OnDestroy {
      * register handler.
      */
     abstract getRegisterHandler(): RuntimeHandler<ClassRef, Context>;
-
-    /**
-     * get default resolver
-     */
-    abstract getDefaultResolver(): Resolver;
 
     /**
      * register injector.

@@ -3,7 +3,7 @@ import { ModuleWithProviders, Provider } from '../providers';
 import { PropertyMetadata, ParameterMetadata, AnnotationMetadata } from './meta';
 import { InvocationContext, InvocationOptions, InvokeArguments } from '../context';
 import { Token } from '../tokens';
-import { ResolveInterceptorLike } from '../resolver';
+import { getResolver, ResolveInterceptorLike } from '../resolver';
 import { forIn, hasItem, assign } from '../utils/lang';
 import { isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
@@ -102,7 +102,7 @@ export class ClassRef<T = any> {
     }
 
     getInvocationFactory(injector: Injector): InvocationFactory {
-        if(!injector) {
+        if (!injector) {
             throw new ArgumentException()
         }
         return this.invocationFactory?.(injector) ?? injector.get(InvocationFactory);
@@ -242,11 +242,11 @@ export class ClassRef<T = any> {
      * resolve args.
      * 
      * @param method invoke the method named with.
-     * @param context invocation context.
+     * @param injector invocation injector.
      */
-    resolveArguments(method: string | symbol, context: InvocationContext): any[] {
+    resolveArguments(method: string | symbol, injector: Injector): any[] {
         const parameters = this.getParameters(method) ?? [];
-        const args = parameters.map(p => context.resolveArgument(p, this.type));
+        const args = getResolver(injector).resolveParams(injector, parameters, this.type);
         return args;
     }
 

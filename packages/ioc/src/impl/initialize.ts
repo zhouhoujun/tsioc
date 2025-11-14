@@ -1,28 +1,16 @@
-import { ArgumentException, Exception } from '../exception';
+import { Exception } from '../exception';
 import { ContextToken, HandlerFn, InterceptorFn, InterceptorLike, invokeTail } from '../handler';
 import { PropertyMetadata } from '../metadata/meta';
 import { ClassRef, ctorName, DecoratorFn, DecoratorScope, Decors } from '../metadata/class';
 import { Runtime } from '../runtime';
-import { AbstractType, Type } from '../types';
+import { Type } from '../types';
 import { RuntimeHandler } from '../lifescope/handler';
 import { Operator } from './injector';
 import { RuntimeContext } from '../lifescope/context';
 import { isDefined } from '../utils/chk';
-import { resolveArg, resolveArgs } from './common';
-import { createResolveContext } from '../resolver';
+import { resolveArgs, resolveParameters } from './common';
+import { createResolveContext, getResolver } from '../resolver';
 
-
-// export const cleanContextInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> = (input: ClassRef, next: HandlerFn, context: RuntimeContext) => {
-
-//     return invokeTail(() => next(input, context), {
-//         finally: () => {
-//             // after create.
-//             if (input.isNewContext && input.context && !input.context.used) {
-//                 input.context.destroy()
-//             }
-//         }
-//     });
-// }
 
 export const runtimeAutorunInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> = (input: ClassRef, next: HandlerFn, context: RuntimeContext) => {
 
@@ -69,15 +57,6 @@ export function getRuntimeClassScope(runtime: Runtime): RuntimeHandler<ClassRef>
     return scope;
 }
 
-// export const singletonInterceptor: InterceptorFn<ClassRef, any, RuntimeContext>  = (input: ClassRef, next: HandlerFn, context: RuntimeContext) => {
-
-//     return invokeTail(() => next(input, context), (instance) => {
-//         if (input.type && instance && input.getAnnotation().singleton) {
-//             context.get(Runtime).setSingleton(input.provide || input.type, instance, context.get(RAISE_INJECTOR));
-//         }
-//     })
-// }
-
 
 export const cacheInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> = (input: ClassRef, next: HandlerFn, context: RuntimeContext) => {
 
@@ -122,14 +101,14 @@ export const propertyInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> =
         let meta: PropertyMetadata, key: string, val;
 
         const rctx = createResolveContext(injector, input.type);
+        const resolver = getResolver(injector);
         input.eachPropertyProviders((metas, propertyKey) => {
-            // if (!(define.metadata.type || define.metadata.provider)) return;
             meta = metas.find(m => m.type || m.provider)!;
             if (!meta) return;
             key = `${propertyKey.toString()}_INJECTED`;
 
             if (!context.has(key)) {
-                val = resolveArg(injector, meta, rctx);
+                val = resolver.resolve(meta, rctx);
                 if (isDefined(val)) {
                     instance[propertyKey] = val;
                     context.set(key, val);
@@ -160,33 +139,11 @@ export function getRuntimePropertyScope(runtime: Runtime): RuntimeHandler<ClassR
  * resolve constructor args action.
  */
 export const ctorArgsInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> = (input: ClassRef, next: HandlerFn, context: RuntimeContext) => {
-    // if (!input.params) {
-    //     input.params = input.getParameters(ctorName)
-    // }
-
-    // const uctx = context.get(RAISE_INJECTOR);
-    // const providers = input.providers;
-    // let newCtx: InvocationContext | undefined;
-    // if (!uctx || (uctx.targetType && uctx.targetType !== input.type)) {
-    //     newCtx = createContext(uctx ?? input.injector, {
-    //         targetType: input.type,
-    //         providers,
-    //         resolvers: input.classRef.resolvers,
-    //         propertyKey: ctorName
-    //     });
-    //     input.context = newCtx;
-    //     input.isNewContext = true;
-    // } else if (uctx && providers.length) {
-    //     Operator.inject(uctx, providers)
-    // }
-
-    // if (!input.args) {
-    //     input.args = input.resolveArguments(ctorName, input.context!)
-    // }
 
     if (!context.args) {
-        const params = context.params ?? input.getParameters(ctorName);
-        const args = resolveArgs(context.raiseInjector, params, input.type);
+        const resolver = getResolver(context.raiseInjector);
+        const args = context.params ? resolveArgs(context.raiseInjector, context.params, resolver, input.type)
+            : resolveParameters(context.raiseInjector, input.getParameters(ctorName), resolver, input.type);
         context.args = args;
     }
 

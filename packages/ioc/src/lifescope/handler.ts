@@ -1,5 +1,4 @@
 import { composeInterceptors, Handler, HandlerFn, InterceptorFn, InterceptorLike, invokeTail, NextOpter, toHandlerFn } from '../handler';
-import { Runtime } from '../runtime';
 import { isFunction, isNumber } from '../utils/chk';
 
 /**

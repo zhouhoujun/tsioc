@@ -2,13 +2,12 @@ import { AbstractType } from '../types';
 import { InjectFlags, Token } from '../tokens';
 import { deepForEach, getTypeName } from '../utils/lang';
 import { isArray, isFunction, isNumber } from '../utils/chk';
-import { Injector, InjectorRecord, RecordFactory, RegOption } from '../injector';
+import { Injector, InjectorRecord, RecordFactory } from '../injector';
 import { Exception } from '../exception';
 import { Runtime } from '../runtime';
-import { ClassRef } from '../metadata/class';
 import { Provider, StaticProvider, DynamicProvider, Provide } from '../providers';
 import { isPlainObject } from '../utils/obj';
-import { createResolveContext, isParameter, ParameterLike, ResolveContext, Resolver } from '../resolver';
+import { createResolveContext, getResolver, isParameter, Parameter, ParameterLike, ResolveContext, Resolver } from '../resolver';
 
 
 
@@ -28,7 +27,53 @@ function isRecord(target: any): target is InjectorRecord {
     )
 }
 
-export function resolveArg(injector: Injector, arg: ParameterLike | InjectorRecord, context?: ResolveContext): any {
+
+export function resolveParameters(injector: Injector, params?: Parameter[], resolver?: Resolver, targetOrContext?: AbstractType | ResolveContext) {
+    if (!params || !params.length) return [];
+
+    const context = isFunction(targetOrContext) ? createResolveContext(injector, targetOrContext) : targetOrContext ?? createResolveContext(injector);
+    if (!resolver) {
+        resolver = getResolver(injector);
+    }
+
+    const args: any[] = [];
+    for (let i = 0; i < params.length; i++) {
+        args.push(resolver.resolve(params[i], context));
+    }
+
+    return args;
+}
+
+
+/**
+ * 辅助函数：为工厂函数调用解析参数
+ */
+export function resolveArgs(injector: Injector, deps?: (ParameterLike | InjectorRecord)[], resolver?: Resolver, targetOrContext?: AbstractType | ResolveContext): any[] {
+    if (!deps || !deps.length) return [];
+
+    const args: any[] = [];
+
+    let context = isFunction(targetOrContext) ? null : targetOrContext;
+
+    for (let i = 0; i < deps.length; i++) {
+        const arg = deps[0];
+        if (isParameter(arg)) {
+            if (!context) {
+                context = createResolveContext(injector, targetOrContext as AbstractType);
+            }
+            if (!resolver) {
+                resolver = getResolver(injector);
+            }
+            args.push(resolver.resolve(arg, context));
+        } else {
+            args.push(resolveArg(injector, deps[i]));
+        }
+    }
+
+    return args;
+}
+
+function resolveArg(injector: Injector, arg: ParameterLike | InjectorRecord): any {
 
     if (isArray(arg)) {
         let depFlags = InjectFlags.Default;
@@ -46,32 +91,11 @@ export function resolveArg(injector: Injector, arg: ParameterLike | InjectorReco
         const value = arg.factory?.(injector) ?? null;
         if (arg.value === LAZY) arg.value = value;
         return value;
-    } else if (isParameter(arg)) {
-        const resolver = injector.get(Resolver, null, InjectFlags.Self) ?? injector.getRuntime().getDefaultResolver()
-        return resolver.resolve(arg, context ?? createResolveContext(injector))
     } else {
-        return injector.get(arg);
+        return injector.get(arg as Token);
     }
 }
 
-
-/**
- * 辅助函数：为工厂函数调用解析参数
- */
-export function resolveArgs(injector: Injector, deps?: (ParameterLike | InjectorRecord)[], targetOrContext?: AbstractType | ResolveContext): any[] {
-    if (!deps || !deps.length) return [];
-
-    const args: any[] = [];
-
-    const context = isFunction(targetOrContext) ? createResolveContext(injector, targetOrContext) : targetOrContext;
-
-    for (let i = 0; i < deps.length; i++) {
-        args.push(resolveArg(injector, deps[i], context));
-    }
-
-    return args;
-}
-export type RegisterExtedOption = (typeRef: ClassRef, option?: RegOption) => RegOption | undefined;
 
 
 export const LAZY = {};
