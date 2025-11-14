@@ -1,4 +1,4 @@
-import { Abstract, AbstractType, Invocation, ProvidedInMetadata, ProvdierOf, StaticProvider, InvocationOptions, InvocationFactory, Injector, InvocationContext } from '@tsdi/ioc';
+import { Abstract, AbstractType, Invocation, ProvidedInMetadata, ProvdierOf, StaticProvider, InvocationOptions, InvocationFactory, InvocationContext } from '@tsdi/ioc';
 import { ConfigableHandlerOptions, HandlerService } from './handlers/configable';
 import { Observable } from 'rxjs';
 import { PipeTransform } from './pipes/pipe';

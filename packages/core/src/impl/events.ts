@@ -8,7 +8,7 @@ import { Filter } from '../filters/filter';
 import { ExceptionHandlerFilter } from '../filters/execption.filter';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
 import { ApplicationEvent } from '../ApplicationEvent';
-import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
+import { ApplicationEventMulticaster, EventInterceptorLike } from '../ApplicationEventMulticaster';
 import { PayloadApplicationEvent } from '../events';
 import { toObservable } from '../handlers';
 
@@ -83,7 +83,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    useInterceptors(interceptors: ProvdierOf<ApplicationInterceptor<ApplicationEvent, any>> | ProvdierOf<ApplicationInterceptor<ApplicationEvent, any>>[], order?: number): this {
+    useInterceptors(interceptors: ProvdierOf<EventInterceptorLike> | ProvdierOf<EventInterceptorLike>[], order?: number): this {
         this._handler.useInterceptors(interceptors, order);
         return this;
     }

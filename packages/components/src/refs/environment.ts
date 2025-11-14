@@ -36,7 +36,7 @@ export class EnvironmentContext extends DefaultInvocationContext {
 
 
     protected override afterInit(): void {
-        this.injector.setValue(EnvironmentState, this.state);
+        this.setValue(EnvironmentState, this.state);
     }
 
     // /**

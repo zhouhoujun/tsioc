@@ -4,10 +4,14 @@ import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { Filter } from './filters/filter';
 import { CanHandle } from './guard';
-import { ApplicationInterceptor } from './ApplicationInterceptor';
+import { ApplicationInterceptor, ApplicationInterceptorFn, ApplicationInterceptorLike } from './ApplicationInterceptor';
 import { PipeTransform } from './pipes/pipe';
 import { HandlerService } from './handlers/configable';
 
+
+export type EventInterceptor<TInput extends ApplicationEvent = ApplicationEvent> = ApplicationInterceptor<TInput, any, Context>;
+export type EventInterceptorFn<TInput extends ApplicationEvent = ApplicationEvent> = ApplicationInterceptorFn<TInput, any, Context>;
+export type EventInterceptorLike<TInput extends ApplicationEvent = ApplicationEvent> = ApplicationInterceptorLike<TInput, any, Context>;
 
 /**
  * providing the basic listener registration facility.
@@ -49,7 +53,7 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * @param interceptor 
      * @param order 
      */
-    abstract useInterceptors(interceptor: ProvdierOf<ApplicationInterceptor<ApplicationEvent, any>> | ProvdierOf<ApplicationInterceptor<ApplicationEvent, any>>[], order?: number): this;
+    abstract useInterceptors(interceptor: ProvdierOf<EventInterceptorLike> | ProvdierOf<EventInterceptorLike>[], order?: number): this;
     /**
      * use filter
      * @param filter 

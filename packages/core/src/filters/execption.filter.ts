@@ -123,26 +123,6 @@ export class ExceptionHandlerFilter<TInput, TOutput = any, TContext = any> exten
                 expcption.destroy();
             })
         );
-
-        // return handlers.reduce(($obs, h) => {
-        //     return $obs.pipe(
-        //         mergeMap(r => {
-        //             if (isUndefined(r)) {
-        //                 return h.handle(expcption, context)
-        //             }
-        //             return of(r);
-        //         })
-        //     )
-        // }, of(undefined)).pipe(
-        //     catchError((err1, caugh) => {
-        //         err1.originException = err;
-        //         err1.message = `${err1.message}\r\n${err.toString()}`;
-        //         return throwError(() => err1)
-        //     }),
-        //     finalize(() => {
-        //         expcption.destroy();
-        //     })
-        // );
     }
 
 }

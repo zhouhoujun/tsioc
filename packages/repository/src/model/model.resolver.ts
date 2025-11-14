@@ -1,8 +1,12 @@
-import { Abstract, isArray, isDefined, AbstractType, Type, Parameter, Invocation, Interceptor, Handler, Runtime, createResolveHandler, isFunction, isResolved, ResolveInterceptor, ResolveContext } from '@tsdi/ioc';
-import { ModelArgumentResolver, HandleContext } from '@tsdi/core';
+import { Abstract, isArray, isDefined, AbstractType, Type, Parameter, Invocation, Interceptor, Handler, Runtime, createResolveHandler, isFunction, isResolved, ResolveInterceptor, ResolveContext, ContextToken } from '@tsdi/ioc';
+import { ModelArgumentResolver } from '@tsdi/core';
 import { DBPropertyMetadata, FieldResolveInterceptor, getModelFieldResolver, MissingModelFieldException, missingPropException, ModelFieldResolver } from './field.resolver';
 
 
+
+
+
+export const MSG = new ContextToken<any>(()=> null);
 
 
 /**
@@ -32,14 +36,6 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
         return this.resolveModel(classType, ctx, fields)
     }
 
-    // canResolveModel(modelType: AbstractType, ctx: ResolveContext, args: Record<string, any>, nullable?: boolean): boolean {
-    //     return nullable || !this.getPropertyMeta(modelType).some(p => {
-    //         if (this.hasModel(p.provider ?? p.type)) {
-    //             return !this.canResolveModel(p.provider ?? p.type, ctx, args[p.name], p.nullable)
-    //         }
-    //         return !this.fieldResolver.canResolve(p, ctx, args, modelType)
-    //     })
-    // }
 
     resolveModel(modelType: Type, ctx: ResolveContext, fields: Record<string, any>, nullable?: boolean): any {
         if (nullable && (!fields || Object.keys(fields).length < 1)) {
@@ -50,12 +46,6 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
         }
 
         const props = this.getPropertyMeta(modelType);
-        // const missings = props.filter(p => !(this.hasModel(p.provider ?? p.type) ?
-        //     this.canResolveModel(p.provider ?? p.type, ctx, fields[p.name], p.nullable)
-        //     : this.fieldResolver.canResolve(p, ctx, fields, modelType)));
-        // if (missings.length) {
-        //     throw new MissingModelFieldException(missings, modelType)
-        // }
 
         const missings: DBPropertyMetadata[] = [];
         const model = this.createInstance(modelType as Type);
@@ -100,7 +90,7 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
                         const [prop, fields, target] = input;
                         if (prop.nullable === true
                             || (fields && isDefined(fields[prop.propertyKey] ?? prop.default))
-                            || (context as { method: string })?.method?.toUpperCase() !== 'PUT' && prop.primary === true
+                            || (context.get(MSG) as { method: string })?.method?.toUpperCase() !== 'PUT' && prop.primary === true
                         ) {
                             return next(input, context);
                         }
