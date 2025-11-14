@@ -36,7 +36,7 @@ const BEFORE_ANNOATION_SCOPE = new ContextToken<RuntimeHandler<ClassRef, IocCont
 export function getDesignBeforeAnnoationScope(runtime: Runtime): RuntimeHandler<ClassRef, IocContext> {
     let scope = runtime.get(BEFORE_ANNOATION_SCOPE);
     if (!scope) {
-        scope = new RuntimeHandler<ClassRef, IocContext>(runtime, (input, context) => {
+        scope = new RuntimeHandler<ClassRef, IocContext>((input, context) => {
             invokeHandler(input.classDecors, input, Decors.beforeAnnoation, context)
         });
         runtime.set(BEFORE_ANNOATION_SCOPE, scope);
@@ -49,7 +49,7 @@ const AFTER_ANNOATION_SCOPE = new ContextToken<RuntimeHandler<ClassRef, IocConte
 export function getDesignAfterAnnoationScope(runtime: Runtime): RuntimeHandler<ClassRef, IocContext> {
     let scope = runtime.get(AFTER_ANNOATION_SCOPE);
     if (!scope) {
-        scope = new RuntimeHandler<ClassRef, IocContext>(runtime, (input, context) => {
+        scope = new RuntimeHandler<ClassRef, IocContext>((input, context) => {
             invokeHandler(input.classDecors, input, Decors.afterAnnoation, context)
         });
         runtime.set(AFTER_ANNOATION_SCOPE, scope);
@@ -64,7 +64,7 @@ const DESIGN_PROPERTY_SCOPE = new ContextToken<RuntimeHandler<ClassRef, IocConte
 export function getDesignPropertyScope(runtime: Runtime): RuntimeHandler<ClassRef, IocContext> {
     let scope = runtime.get(DESIGN_PROPERTY_SCOPE);
     if (!scope) {
-        scope = new RuntimeHandler<ClassRef>(runtime, (input, context) => {
+        scope = new RuntimeHandler<ClassRef>((input, context) => {
             invokeHandler(input.propDecors, input, Decors.property, context)
         });
         runtime.set(DESIGN_PROPERTY_SCOPE, scope);
@@ -77,7 +77,7 @@ const DESIGN_METHOD_SCOPE = new ContextToken<RuntimeHandler<ClassRef, IocContext
 export function getDesignMethodScope(runtime: Runtime): RuntimeHandler<ClassRef, IocContext> {
     let scope = runtime.get(DESIGN_METHOD_SCOPE);
     if (!scope) {
-        scope = new RuntimeHandler<ClassRef, IocContext>(runtime, (input, context) => {
+        scope = new RuntimeHandler<ClassRef, IocContext>((input, context) => {
             invokeHandler(input.methodDecors, input, Decors.method, context);
         });
         runtime.set(DESIGN_METHOD_SCOPE, scope);

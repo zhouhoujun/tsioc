@@ -1,4 +1,4 @@
-import { Abstract, isArray, isDefined, AbstractType, Type, Parameter, Invocation, Interceptor, Handler, Runtime, createResolveHandler, isFunction, isResolved } from '@tsdi/ioc';
+import { Abstract, isArray, isDefined, AbstractType, Type, Parameter, Invocation, Interceptor, Handler, Runtime, createResolveHandler, isFunction, isResolved, ResolveInterceptor, ResolveContext } from '@tsdi/ioc';
 import { ModelArgumentResolver, HandleContext } from '@tsdi/core';
 import { DBPropertyMetadata, FieldResolveInterceptor, getModelFieldResolver, MissingModelFieldException, missingPropException, ModelFieldResolver } from './field.resolver';
 
@@ -9,16 +9,16 @@ import { DBPropertyMetadata, FieldResolveInterceptor, getModelFieldResolver, Mis
  * abstract model argument resolver. base implements {@link ModelArgumentResolver}.
  */
 @Abstract()
-export abstract class AbstractModelArgumentResolver<TOutput = any> implements Interceptor<Parameter, TOutput, HandleContext> {
+export abstract class AbstractModelArgumentResolver<TOutput = any> implements Interceptor<Parameter, TOutput, ResolveContext> {
 
     abstract get runtime(): Runtime;
     abstract get fieldResolves(): FieldResolveInterceptor[] | null;
 
-    private canResolve(parameter: Parameter, ctx: HandleContext): boolean {
+    private canResolve(parameter: Parameter, ctx: ResolveContext): boolean {
         return this.hasModel(isFunction(parameter.provider) ? parameter.provider ?? parameter.type : parameter.type) && this.hasFields(parameter, ctx)
     }
 
-    intercept(parameter: Parameter, next: Handler<Parameter, TOutput, HandleContext>, ctx: HandleContext): TOutput {
+    intercept(parameter: Parameter, next: Handler<Parameter, TOutput, ResolveContext>, ctx: ResolveContext): TOutput {
         if (!this.canResolve(parameter, ctx)) return next.handle(parameter, ctx);
 
         const classType = (parameter.provider ?? parameter.type) as Type;
@@ -32,7 +32,7 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
         return this.resolveModel(classType, ctx, fields)
     }
 
-    // canResolveModel(modelType: AbstractType, ctx: HandleContext, args: Record<string, any>, nullable?: boolean): boolean {
+    // canResolveModel(modelType: AbstractType, ctx: ResolveContext, args: Record<string, any>, nullable?: boolean): boolean {
     //     return nullable || !this.getPropertyMeta(modelType).some(p => {
     //         if (this.hasModel(p.provider ?? p.type)) {
     //             return !this.canResolveModel(p.provider ?? p.type, ctx, args[p.name], p.nullable)
@@ -41,7 +41,7 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
     //     })
     // }
 
-    resolveModel(modelType: Type, ctx: HandleContext, fields: Record<string, any>, nullable?: boolean): any {
+    resolveModel(modelType: Type, ctx: ResolveContext, fields: Record<string, any>, nullable?: boolean): any {
         if (nullable && (!fields || Object.keys(fields).length < 1)) {
             return null
         }
@@ -94,7 +94,7 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
     private _resolver!: ModelFieldResolver;
     protected get fieldResolver(): ModelFieldResolver {
         if (!this._resolver) {
-            this._resolver = createResolveHandler(this.runtime,
+            this._resolver = createResolveHandler(
                 [
                     (input, next, context) => {
                         const [prop, fields, target] = input;
@@ -126,11 +126,11 @@ export abstract class AbstractModelArgumentResolver<TOutput = any> implements In
     /**
      * has model fields in context or not.
      */
-    protected abstract hasFields<T>(parameter: Parameter<T>, ctx: HandleContext): boolean;
+    protected abstract hasFields<T>(parameter: Parameter<T>, ctx: ResolveContext): boolean;
     /**
      * get model fields in context.
      */
-    protected abstract getFields<T>(parameter: Parameter<T>, ctx: HandleContext): Record<string, any>;
+    protected abstract getFields<T>(parameter: Parameter<T>, ctx: ResolveContext): Record<string, any>;
 }
 
 
@@ -158,11 +158,11 @@ class ModelResolver<TOutput = any> extends AbstractModelArgumentResolver<TOutput
         return this.option.getPropertyMeta(type)
     }
 
-    protected hasFields(parameter: Parameter<any>, ctx: HandleContext): boolean {
+    protected hasFields(parameter: Parameter<any>, ctx: ResolveContext): boolean {
         return this.option.hasField ? this.option.hasField(parameter, ctx) : !!this.getFields(parameter, ctx)
     }
 
-    protected getFields(parameter: Parameter<any>, ctx: HandleContext): Record<string, any> {
+    protected getFields(parameter: Parameter<any>, ctx: ResolveContext): Record<string, any> {
         return this.option.getFields(parameter, ctx)
     }
 }
@@ -188,11 +188,11 @@ export interface ModelResolveOption {
     /**
      * has model fields in context or not.
      */
-    hasField?: (parameter: Parameter<any>, ctx: HandleContext) => boolean;
+    hasField?: (parameter: Parameter<any>, ctx: ResolveContext) => boolean;
     /**
      * get model fields in context.
      */
-    getFields: (parameter: Parameter<any>, ctx: HandleContext) => Record<string, any>;
+    getFields: (parameter: Parameter<any>, ctx: ResolveContext) => Record<string, any>;
     /**
      * custom field resolvers.
      */

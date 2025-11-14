@@ -142,7 +142,7 @@ const loggerResolvers = [
         if (isNil(pr.logname || pr.target)) {
             return next(pr, ctx);
         }
-        const injector = ctx.getRaiseInjector() ?? ctx.getInjector();
+        const injector = ctx.getInjector();
         const targetType = ctx.getTarget();
         const targetName = targetType ? getTypeName(targetType) : '';
         const managers = injector.get(LoggerManagers);

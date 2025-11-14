@@ -6,6 +6,7 @@ import { Runtime } from './runtime';
 import { InjectFlags, Token } from './tokens';
 import { AbstractType, TypeOf } from './types';
 import { isObject } from './utils/chk';
+import { getTypeName } from './utils/lang';
 
 
 
@@ -82,7 +83,7 @@ export abstract class Resolver {
 
 
 
-const RAISE_INJECTOR = new ContextToken<Injector>(() => null!);
+// const RAISE_INJECTOR = new ContextToken<Injector>(() => null!);
 const TARGET = new ContextToken<AbstractType | null>(() => null);
 
 export class ResolveContext extends Context {
@@ -106,13 +107,13 @@ export class ResolveContext extends Context {
         return this.get(Runtime);
     }
 
-    getRaiseInjector(): Injector {
-        return this.get(RAISE_INJECTOR);
-    }
+    // getRaiseInjector(): Injector {
+    //     return this.get(RAISE_INJECTOR);
+    // }
 
-    setRaiseInjector(value: Injector) {
-        this.set(RAISE_INJECTOR, value);
-    }
+    // setRaiseInjector(value: Injector) {
+    //     this.set(RAISE_INJECTOR, value);
+    // }
 
     getInjector(): Injector {
         return this.get(Injector);
@@ -124,9 +125,9 @@ export class ResolveContext extends Context {
 }
 
 export function createResolveContext(injector: Injector, target?: AbstractType, failed = onError) {
-    return new ResolveContext(injector, target, onError);
+    return new ResolveContext(injector, target, failed);
 }
 
 const onError = (target: AbstractType, propertyKey: string): void => {
-    throw new ArgumentException(`can not autowride property ${propertyKey} of class ${target}`)
+    throw new ArgumentException(`can not autowride property ${propertyKey} of class ${ getTypeName(target)}`)
 }

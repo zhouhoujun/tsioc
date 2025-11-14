@@ -6,7 +6,7 @@ import { PipeTransform } from '../pipes/pipe';
 export function missingPipeException<T>(parameter: Parameter<T>, type?: AbstractType, method?: string | symbol) {
     let message = `missing pipe to transform argument ${ parameter.name ?? parameter.propertyKey ?? parameter.provider?.toString() ?? parameter.type?.toString() } type`;
     if(method) {
-        message += `, method ${method.toString()}}`
+        message += `, method ${method.toString()}`
     }
     if(type) {
         message += ` of class ${getTypeName(type)}`
@@ -20,7 +20,6 @@ export function getMutilResolveHanlder(runtime: Runtime): RuntimeHandler<[any, P
     let scope = runtime.get(MUTIL_RESOLVE_HANDLER);
     if (!scope) {
         scope = createResolveHandler<[any, PipeTransform, TransportParameter], any>(
-            runtime,
             [
                 (input, next, context): any => {
                     const [payload, pipe, parameter] = input;
@@ -55,17 +54,17 @@ export function getMutilResolveHanlder(runtime: Runtime): RuntimeHandler<[any, P
 }
 
 
-export function createPayloadResolveInterceptors(getPayload: (ctx: any, scope?: ParameterScope, filed?: string) => any): ResolveInterceptorLike<TransportParameter>[] {
+export function createPayloadResolveInterceptors(getPayload: (input: any, scope?: ParameterScope, filed?: string) => any): ResolveInterceptorLike<TransportParameter>[] {
     return [
         (parameter, next, ctx) => {
-
+            const injector = ctx.getInjector();
             let pipe: PipeTransform | undefined;
             if (parameter.pipe) {
-                pipe = isToken(parameter.pipe) ? ctx.get<PipeTransform>(parameter.pipe) : parameter.pipe;
+                pipe = isToken(parameter.pipe) ? injector.get<PipeTransform>(parameter.pipe) : parameter.pipe;
             } else if (parameter.multi && isFunction(parameter.provider)) {
-                pipe = ctx.get<PipeTransform>(isPrimitive(parameter.provider) ? parameter.provider.name.toLowerCase() : getTypeName(parameter.provider));
+                pipe = injector.get<PipeTransform>(isPrimitive(parameter.provider) ? parameter.provider.name.toLowerCase() : getTypeName(parameter.provider));
             } else if (parameter.type && isPrimitive(parameter.type)) {
-                pipe = ctx.get<PipeTransform>(parameter.type.name.toLowerCase());
+                pipe = injector.get<PipeTransform>(parameter.type.name.toLowerCase());
             } else {
                 return next(parameter, ctx);
             }

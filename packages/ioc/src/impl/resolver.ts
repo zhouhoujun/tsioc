@@ -29,7 +29,7 @@ export class DefaultResolver implements Resolver {
         const metaRvr = parameter.resolver;
         let handler = this.handler;
         if (metaRvr?.length) {
-            handler = createResolveHandler(context.getRuntime(), metaRvr.map(r => isType(r) ? context.getInjector().get(r) : r), this.handler);
+            handler = createResolveHandler(metaRvr.map(r => isType(r) ? context.getInjector().get(r) : r), this.handler);
         }
 
         return handler.handle(parameter, context,
@@ -120,44 +120,10 @@ export function isResolved(value: any) {
     return value !== UNRESOLVED;
 }
 
-export function createResolveHandler<TInput, TContext = any, TOutput = any>(runtime: Runtime, interceptors: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): RuntimeHandler<TInput, TContext, TOutput> {
-    return new RuntimeHandler<TInput, TContext, TOutput>(runtime, backend ?? unResolve, interceptors)
+export function createResolveHandler<TInput, TContext = any, TOutput = any>(interceptors?: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): RuntimeHandler<TInput, TContext, TOutput> {
+    return new RuntimeHandler<TInput, TContext, TOutput>(backend ?? unResolve, interceptors)
 }
 
-// const TOKER_RESOLVE_HANDLER = new ContextToken<RuntimeHandler<[Token, InjectFlags | undefined], ResolveContext>>(() => null!);
-// export function getTokenResolveHandler(runtime: Runtime): RuntimeHandler<[Token, InjectFlags | undefined], ResolveContext> {
-//     let scope = runtime.get(TOKER_RESOLVE_HANDLER);
-//     if (!scope) {
-//         scope = createResolveHandler(
-//             runtime,
-//             [
-//                 (input, next, context) => {
-//                     const injector = context.getRaiseInjector() ?? context.getInjector();
-//                     if (injector.has(input[0], input[1])) {
-//                         return injector.get(input[0], null, input[1])
-//                     }
-//                     return next(input, context);
-//                 },
-//                 (input, next, context) => {
-//                     const [type, flags] = input
-//                     if (!isType(type) || getDef(type).abstract) {
-//                         return next(input, context);
-//                     }
-//                     const injector = context.getRaiseInjector() ?? context.getInjector();
-//                     if (!injector.has(type)) {
-//                         Operator.register(injector, type);
-
-//                     }
-//                     return injector.get(type, null, flags)
-//                 },
-
-
-//             ]
-//         );
-//         runtime.set(TOKER_RESOLVE_HANDLER, scope);
-//     }
-//     return scope;
-// }
 
 function tryResolve(injector: Injector, token: Token, flags?: InjectFlags) {
     if (injector.has(token, flags)) {
@@ -177,48 +143,16 @@ const PARAMETER_RESOLVE_HANDLER = new ContextToken<RuntimeHandler>(() => null!);
 export function getParameterResolveHanlder(runtime: Runtime): RuntimeHandler<Parameter, ResolveContext> {
     let scope = runtime.get(PARAMETER_RESOLVE_HANDLER);
     if (!scope) {
-        scope = createResolveHandler(
-            runtime,
-            [
-                // (input, next, context) => {
-                //     const injector = context.getRaiseInjector() ?? context.getInjector()
-                //     if (input.provider && !input.multi) {
-                //         // const value = getTokenResolveHandler(runtime).handle([input.provider, input.flags], context);
-                //         const value = tryResolve(injector, input.provider, input.flags);
-                //         if (isResolved(value)) return value;
-                //     } else if (!input.multi && input.name && injector.has(input.name, input.flags)) {
-                //         const value = injector.get(input.name, UNRESOLVED, input.flags);
-                //         if (isResolved(value)) return value;
-                //     } else if (input.type) {
-                //         // const value = getTokenResolveHandler(runtime).handle([input.type, input.flags], context);
-                //         const value = tryResolve(injector, input.type, input.flags);
-                //         if (isResolved(value)) return value;
-                //     }
-                //     return next(input, context);
-                // },
-                // (input, next, context) => {
-
-                //     if (!isNil(input.defaultValue)) {
-                //         return input.defaultValue;
-                //     }
-                //     if (input.nullable === true || (input.flags && !!(input.flags & InjectFlags.Optional))) {
-                //         return null;
-                //     }
-
-                //     return next(input, context);
-                // }
-            ],
+        scope = new RuntimeHandler<Parameter, ResolveContext>(
             (input, context) => {
-                const injector = context.getRaiseInjector() ?? context.getInjector()
+                const injector = context.getInjector();
                 if (input.provider && !input.multi) {
-                    // const value = getTokenResolveHandler(runtime).handle([input.provider, input.flags], context);
                     const value = tryResolve(injector, input.provider, input.flags);
                     if (isResolved(value)) return value;
                 } else if (!input.multi && input.name && injector.has(input.name, input.flags)) {
                     const value = injector.get(input.name, UNRESOLVED, input.flags);
                     if (isResolved(value)) return value;
                 } else if (input.type) {
-                    // const value = getTokenResolveHandler(runtime).handle([input.type, input.flags], context);
                     const value = tryResolve(injector, input.type, input.flags);
                     if (isResolved(value)) return value;
                 }

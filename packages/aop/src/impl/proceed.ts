@@ -46,8 +46,8 @@ export class ProceedingScope implements Proceeding {
             args: context.args ?? [],
             params: context.params ?? [],
             originProxy: (joinPoint) => {
-                invokeTail(() => next(typeRef, context), (instance) => {
-                    instance = joinPoint.returning = joinPoint.target = context.instance;
+                return invokeTail(() => next(typeRef, context), (instance) => {
+                    instance = joinPoint.returning = joinPoint.target = context.instance ?? instance;
                     return instance;
                 })
             },
@@ -204,7 +204,7 @@ const ADVICES_SCOPE = new ContextToken<RuntimeHandler>(() => null!);
 export function getAdvicesLifeScope(runtime: Runtime): RuntimeHandler<JoinPoint> {
     let scope = runtime.get(ADVICES_SCOPE);
     if (!scope) {
-        scope = new RuntimeHandler<JoinPoint>(runtime, adviceHanlder, ADVICES_INTERCEPTORS);
+        scope = new RuntimeHandler<JoinPoint>(adviceHanlder, ADVICES_INTERCEPTORS);
         runtime.set(ADVICES_SCOPE, scope);
     }
     return scope;

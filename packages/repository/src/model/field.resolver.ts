@@ -1,4 +1,4 @@
-import { InvocationContext, isFunction, isNil, PropertyMetadata, AbstractType, object2string, ArgumentException, Type, ContextToken, RuntimeHandler, Runtime, createResolveHandler, Interceptor, InterceptorLike, getType } from '@tsdi/ioc';
+import { isFunction, isNil, PropertyMetadata, AbstractType, object2string, ArgumentException, Type, ContextToken, RuntimeHandler, Runtime, createResolveHandler, Interceptor, InterceptorLike, getType, ResolveContext } from '@tsdi/ioc';
 import { PipeTransform } from '@tsdi/core';
 
 /**
@@ -89,7 +89,7 @@ export function missingPropPipe(prop: DBPropertyMetadata, type?: Type) {
     return new ArgumentException(`missing pipe to transform property ${prop.propertyKey} of class ${type}`)
 }
 
-export function parseDbtype(value: any, prop: DBPropertyMetadata, ctx: InvocationContext, target: Type) {
+export function parseDbtype(value: any, prop: DBPropertyMetadata, ctx: ResolveContext, target: Type) {
     let pipe: PipeTransform | undefined;
 
     const args = [];
@@ -363,12 +363,11 @@ export function parseDbtype(value: any, prop: DBPropertyMetadata, ctx: Invocatio
     return pipe.transform(value, ...args);
 }
 
-const MODEL_FIELD_RESOLVER = new ContextToken<RuntimeHandler<[DBPropertyMetadata, any, Type], InvocationContext>>(() => null!);
-export function getModelFieldResolver(runtime: Runtime): RuntimeHandler<[DBPropertyMetadata, any, Type], InvocationContext> {
-    let scope = runtime.context.get(MODEL_FIELD_RESOLVER);
+const MODEL_FIELD_RESOLVER = new ContextToken<RuntimeHandler<[DBPropertyMetadata, any, Type], ResolveContext>>(() => null!);
+export function getModelFieldResolver(runtime: Runtime): RuntimeHandler<[DBPropertyMetadata, any, Type], ResolveContext> {
+    let scope = runtime.get(MODEL_FIELD_RESOLVER);
     if (!scope) {
         scope = createResolveHandler(
-            runtime,
             [
                 (input, next, context) => {
                     if (input[0].dbtype) {
@@ -396,13 +395,13 @@ export function getModelFieldResolver(runtime: Runtime): RuntimeHandler<[DBPrope
 
             ]
         );
-        runtime.context.set(MODEL_FIELD_RESOLVER, scope);
+        runtime.set(MODEL_FIELD_RESOLVER, scope);
     }
     return scope;
 }
 
-export type ModelFieldResolver = RuntimeHandler<[DBPropertyMetadata, any, Type], InvocationContext>;
-export type FieldResolveInterceptor = InterceptorLike<[DBPropertyMetadata, any, Type], any, InvocationContext>;
+export type ModelFieldResolver = RuntimeHandler<[DBPropertyMetadata, any, Type], ResolveContext>;
+export type FieldResolveInterceptor = InterceptorLike<[DBPropertyMetadata, any, Type], any, ResolveContext>;
 
 /**
  * missing property execption. 

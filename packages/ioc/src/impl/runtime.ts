@@ -60,14 +60,14 @@ export class DefaultRuntime extends Context implements Runtime {
 
     getInstanceHandler(): RuntimeHandler {
         if (!this._initialize) {
-            this._initialize = new RuntimeHandler(this, instanceHandler, INITIALIZE_INTERCEPTORS);
+            this._initialize = new RuntimeHandler(instanceHandler, INITIALIZE_INTERCEPTORS);
         }
         return this._initialize;
     }
 
     getRegisterHandler(): RuntimeHandler<ClassRef, Context> {
         if (!this._design) {
-            this._design = new RuntimeHandler<ClassRef, Context>(this, (typeRef) => typeRef, DESIGN_INTERECPTORS);
+            this._design = new RuntimeHandler<ClassRef, Context>((typeRef) => typeRef, DESIGN_INTERECPTORS);
         }
         return this._design;
     }

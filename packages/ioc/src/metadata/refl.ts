@@ -206,23 +206,23 @@ const decorExtendHandler = (ctx: DecorContext, context: Context) => {
     }
 }
 
-export const typeDecorLifeScope: RuntimeHandler<DecorContext, Context> = new RuntimeHandler(null, decorExtendHandler, [
+export const typeDecorLifeScope: RuntimeHandler<DecorContext, Context> = new RuntimeHandler(decorExtendHandler, [
     decorCtorDesignParams,
     decorAnnoAction,
     decorProviders,
     declarationFactory,
     decorRunnable
 ]);
-export const methodDecorLifeScope: RuntimeHandler<DecorContext, Context> = new RuntimeHandler(null, decorExtendHandler, [
+export const methodDecorLifeScope: RuntimeHandler<DecorContext, Context> = new RuntimeHandler(decorExtendHandler, [
     decorMethodDesignParams,
     decorMethodProviders,
     decorRunnable
 ]);
-export const propDecorLifeScope: RuntimeHandler<DecorContext, Context> = new RuntimeHandler(null, decorExtendHandler, [
+export const propDecorLifeScope: RuntimeHandler<DecorContext, Context> = new RuntimeHandler(decorExtendHandler, [
     decorInitProp,
     decorPropInject
 ]);
-export const paramDecorLifeScope: RuntimeHandler<DecorContext, Context> = new RuntimeHandler(null, decorExtendHandler, [
+export const paramDecorLifeScope: RuntimeHandler<DecorContext, Context> = new RuntimeHandler(decorExtendHandler, [
     decorParamInject
 ]);
 

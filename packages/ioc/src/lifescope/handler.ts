@@ -11,11 +11,10 @@ export class RuntimeHandler<TInput = any, TContext = any, TOutput = any> impleme
     private interceptors: InterceptorLike<TInput>[]
 
     constructor(
-        readonly runtime: Runtime | null,
         private backend: HandlerFn<TInput, TOutput, TContext> | Handler<TInput, TOutput, TContext>,
-        interceptors: InterceptorLike<TInput, TOutput, TContext>[] = []
+        interceptors?: InterceptorLike<TInput, TOutput, TContext>[]
     ) {
-        this.interceptors = interceptors.slice();
+        this.interceptors = interceptors?.slice() ?? [];
     }
 
     handle(input: TInput, context: TContext, next?: NextOpter<TOutput, TContext> | ((input: TInput) => any)): TOutput {

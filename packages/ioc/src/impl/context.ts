@@ -135,7 +135,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
             }
             const runtime = this.getRuntime();
             if (resolvers.length) {
-                this._resolvers = new RuntimeHandler(runtime, getParameterResolveHanlder(runtime), resolvers as any[]);
+                this._resolvers = new RuntimeHandler(getParameterResolveHanlder(runtime), resolvers as any[]);
             } else {
                 this._resolvers = getParameterResolveHanlder(runtime);
             }

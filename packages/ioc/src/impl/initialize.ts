@@ -61,7 +61,7 @@ function invokeRuntimeHandler(decors: DecoratorFn[], ctx: ClassRef, scope: Decor
 export function getRuntimeClassScope(runtime: Runtime): RuntimeHandler<ClassRef> {
     let scope = runtime.get(RUNTIME_CLASS_SCOPE);
     if (!scope) {
-        scope = new RuntimeHandler<ClassRef>(runtime, (input, context) => {
+        scope = new RuntimeHandler<ClassRef>((input, context) => {
             invokeRuntimeHandler(input.classDecors, input, Decors.CLASS, context);
         });
         runtime.set(RUNTIME_CLASS_SCOPE, scope);
@@ -96,8 +96,7 @@ export const cacheInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> = (i
 
 export const methodInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> = (input: ClassRef, next: HandlerFn, context: RuntimeContext) => {
     return invokeTail(() => next(input, context), (instance) => {
-        getRuntimeMethodScope(context.runtime).handle(input, context);
-        return instance;
+        return getRuntimeMethodScope(context.runtime).handle(input, context, () => instance);
     })
 }
 
@@ -105,7 +104,7 @@ const RUNTIME_METHOD_SCOPE = new ContextToken<RuntimeHandler>(() => null!);
 export function getRuntimeMethodScope(runtime: Runtime): RuntimeHandler<ClassRef> {
     let scope = runtime.get(RUNTIME_METHOD_SCOPE);
     if (!scope) {
-        scope = new RuntimeHandler<ClassRef>(runtime, (input, context) => {
+        scope = new RuntimeHandler<ClassRef>((input, context) => {
             invokeRuntimeHandler(input.methodDecors, input, Decors.method, context)
 
         });
@@ -119,7 +118,7 @@ export const propertyInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> =
 
     return invokeTail(() => next(input, context), (instance) => {
         const injector = context.raiseInjector;
-        if (!instance) throw new Exception('autowride property need InvocationContext');
+        if (!instance) throw new Exception('autowride property need instance');
         let meta: PropertyMetadata, key: string, val;
 
         const rctx = createResolveContext(injector, input.type);
@@ -148,7 +147,7 @@ const RUNTIME_PROPERTY_SCOPE = new ContextToken<RuntimeHandler>(() => null!);
 export function getRuntimePropertyScope(runtime: Runtime): RuntimeHandler<ClassRef> {
     let scope = runtime.get(RUNTIME_PROPERTY_SCOPE);
     if (!scope) {
-        scope = new RuntimeHandler<ClassRef>(runtime, (input, context) => {
+        scope = new RuntimeHandler<ClassRef>((input, context) => {
             invokeRuntimeHandler(input.propDecors, input, Decors.property, context)
         });
         runtime.set(RUNTIME_PROPERTY_SCOPE, scope);
@@ -156,10 +155,6 @@ export function getRuntimePropertyScope(runtime: Runtime): RuntimeHandler<ClassR
     return scope;
 }
 
-
-// const onError = (target: AbstractType, propertyKey: string) => {
-//     throw new ArgumentException(`can not autowride property ${propertyKey} of class ${target}`)
-// }
 
 /**
  * resolve constructor args action.

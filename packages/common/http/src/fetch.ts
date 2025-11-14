@@ -194,7 +194,7 @@ export class FetchBackend implements HttpBackend {
       case 'text':
         return new TextDecoder().decode(binContent);
       case 'blob':
-        return new Blob([binContent], { type: contentType });
+        return new Blob([binContent as BlobPart], { type: contentType });
       case 'arraybuffer':
         return binContent.buffer;
     }

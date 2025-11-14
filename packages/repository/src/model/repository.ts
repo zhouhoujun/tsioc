@@ -1,4 +1,4 @@
-import { Abstract, InvocationContext, Interceptor, Parameter, Handler } from '@tsdi/ioc';
+import { Abstract, ResolveContext, Parameter, Handler, ResolveInterceptor } from '@tsdi/ioc';
 
 
 
@@ -6,11 +6,11 @@ import { Abstract, InvocationContext, Interceptor, Parameter, Handler } from '@t
  * Repository Argument Resolver.
  */
 @Abstract()
-export abstract class RepositoryArgumentResolver<TOutput = any> implements Interceptor<Parameter, TOutput, InvocationContext> {
+export abstract class RepositoryArgumentResolver<TOutput = any> implements ResolveInterceptor<Parameter, TOutput> {
     /**
      * Resolves an argument of the given {@code parameter}.
      * @param parameter argument type
      * @param args gave arguments
      */
-    abstract intercept(parameter: Parameter, next: Handler<Parameter, TOutput, InvocationContext>, ctx: InvocationContext): TOutput;
+    abstract intercept(parameter: Parameter, next: Handler<Parameter, TOutput, ResolveContext>, ctx: ResolveContext): TOutput;
 }
