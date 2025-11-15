@@ -296,8 +296,9 @@ export class BoolExpression {
     constructor(express: string, isToken: (exp: string) => boolean = isAdviceToken) {
         const parts = express.split(boolOper);
         const keys: string[] = [];
-        parts.forEach(exp => {
-            exp = exp.trim();
+        for (let i = 0; i < parts.length; i++) {
+            let exp = parts[i].trim();
+
             while (exp && exp.startsWith('(')) {
                 keys.push('(');
                 exp = exp.substring(1);
@@ -318,12 +319,13 @@ export class BoolExpression {
                         }
                     }
                     if (exp) {
-                        exp.split(allOperators).forEach(e => {
+                        const exps = exp.split(allOperators);
+                        for (let e of exps) {
                             e = e.trim();
                             if (e) {
                                 keys.push(e);
                             }
-                        });
+                        }
                     }
                     if (endOpt.length) {
                         keys.push(...endOpt);
@@ -333,7 +335,7 @@ export class BoolExpression {
                     keys.push(exp)
                 }
             }
-        })
+        }
         this._parsed = keys.filter(Boolean).reduce(rewrite, [])
     }
 

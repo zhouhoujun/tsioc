@@ -51,12 +51,12 @@ export function resolveParameters(injector: Injector, params?: Parameter[], reso
 export function resolveArgs(injector: Injector, deps?: (ParameterLike | InjectorRecord)[], resolver?: Resolver, targetOrContext?: AbstractType | ResolveContext): any[] {
     if (!deps || !deps.length) return [];
 
-    const args: any[] = [];
 
     let context = isFunction(targetOrContext) ? null : targetOrContext;
 
+    const args: any[] = [];
     for (let i = 0; i < deps.length; i++) {
-        const arg = deps[0];
+        const arg = deps[i];
         if (isParameter(arg)) {
             if (!context) {
                 context = createResolveContext(injector, targetOrContext as AbstractType);
@@ -66,23 +66,24 @@ export function resolveArgs(injector: Injector, deps?: (ParameterLike | Injector
             }
             args.push(resolver.resolve(arg, context));
         } else {
-            args.push(resolveArg(injector, deps[i]));
+            args.push(resolveArg(injector, arg));
         }
     }
 
     return args;
 }
 
-function resolveArg(injector: Injector, arg: ParameterLike | InjectorRecord): any {
+function resolveArg(injector: Injector, arg: Token | [Token, ...InjectFlags[]] | InjectorRecord): any {
 
     if (isArray(arg)) {
         let depFlags = InjectFlags.Default;
         const depToken = arg[0];
-        arg.forEach(d => {
+        for (let j = 1; j < arg.length; j++) {
+            const d = arg[j];
             if (isNumber(d)) {
                 depFlags |= d;
             }
-        });
+        }
         return injector.get(depToken, undefined, depFlags);
     } else if (isRecord(arg)) {
         if (arg.value !== undefined && arg.value !== LAZY) {

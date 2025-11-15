@@ -893,8 +893,8 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
             return runtime.get(type);
         }
 
-        const context = new RuntimeContext(runtime);        
-        if(multi) context.isMutil = true;
+        const context = new RuntimeContext(runtime);
+        if (multi) context.isMutil = true;
         if (params) {
             context.params = params;
         }
@@ -911,16 +911,16 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
     let record: InjectorRecord;
     if (pdrId) {
         const pdRecord = createRecord(factory, isStatic);
-        if(provide) injector.getRecords().set(type, pdRecord);
-        record =  createRecord(() => injector.get(type), isStatic);
+        if (provide) injector.getRecords().set(type, pdRecord);
+        record = createRecord(() => injector.get(type), isStatic);
     } else {
         record = createRecord(factory, isStatic);
-        if(provide) injector.getRecords().set(type, record);
+        if (provide) injector.getRecords().set(type, record);
     }
 
     record.onRegister = () => {
         const context = new IocContext(runtime);
-        if(multi) context.isMutil = true;
+        if (multi) context.isMutil = true;
         context.injector = injector;
         if (!multi && provide) {
             context.provide = provide;
@@ -934,7 +934,7 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
 export function register(injector: AbstractInjector, typeRef: ClassRef) {
     const record = generateTypeRecord(injector, typeRef);
     injector.getRecords().set(typeRef.type, record);
-    if(record.onRegister) record.onRegister();
+    if (record.onRegister) record.onRegister();
 
 }
 
@@ -966,9 +966,12 @@ export function processInjectType(
     const typeRef = moduleRefl ?? getClassRef<ModuleDef>(type);
     const annotation = typeRef.getAnnotation<ModuleDef>();
     if (annotation.module) {
-        annotation.imports?.forEach(imp => {
-            ps = mergePromise(ps, () => processInjectType(injector, imp, dedupStack, true, extedOption));
-        });
+        if (annotation.imports?.length) {
+            for (let i = 0; i < annotation.imports.length; i++) {
+                const imp = annotation.imports[i];
+                ps = mergePromise(ps, () => processInjectType(injector, imp, dedupStack, true, extedOption));
+            }
+        }
 
         if (annotation.providers) {
             const providers = annotation.providers;

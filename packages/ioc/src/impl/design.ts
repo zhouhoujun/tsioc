@@ -17,19 +17,24 @@ export const autorunInterceptor = (input: ClassRef, next: HandlerFn, context: Io
         }
 
         const invocation = input.createInvocation(context.injector);
-        runs.forEach(meta => {
+        for (let i = 0, len = runs.length; i < len; i++) {
+            const meta = runs[i];
             invocation.invoke(meta.propertyKey);
-        });
+        }
     })
 }
 
 
 
 function invokeHandler(decors: DecoratorFn[], input: ClassRef, scope: DecoratorScope, context: IocContext) {
-    decors?.forEach(d => {
+    if (!decors || decors.length < 1) {
+        return
+    }
+    for (let i = 0, len = decors.length; i < len; i++) {
+        const d = decors[i];
         context.currDecor = d;
         d.getDesignHandler?.(scope)?.(input, context);
-    });
+    }
 }
 
 const BEFORE_ANNOATION_SCOPE = new ContextToken<RuntimeHandler<ClassRef, IocContext>>(() => null!);
@@ -144,11 +149,12 @@ export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context:
     if (input.provides.length) {
         const factory = () => injector.get(type);
         const records = injector.getRecords();
-        input.provides.forEach(pdr => {
+        for (let i = 0; i < input.provides.length; i++) {
+            const pdr = input.provides[i];
             if (provide != pdr && (context.isMutil ? !records.has(pdr) : true)) {
                 records.set(pdr, createRecord(factory, injector.isStatic))
             }
-        })
+        }
     }
     return next(input, context);
 }

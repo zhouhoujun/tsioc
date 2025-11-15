@@ -20,9 +20,10 @@ export const runtimeAutorunInterceptor: InterceptorFn<ClassRef, any, RuntimeCont
             // const { injector, classRef: def, instance, context } = input;
             const injector = context.raiseInjector;
             const invocation = input.createInvocation(injector, { instance });
-            autos.forEach(aut => {
+            for (let i = 0, len = autos.length; i < len; i++) {
+                const aut = autos[i];
                 invocation.invoke(aut.propertyKey);
-            })
+            }
         }
         return instance;
     });
@@ -40,10 +41,14 @@ export const runtimeAnnoInterceptor: InterceptorFn<ClassRef, any, RuntimeContext
 }
 
 function invokeRuntimeHandler(decors: DecoratorFn[], ctx: ClassRef, scope: DecoratorScope, context: RuntimeContext) {
-    decors?.forEach(d => {
+    if (!decors || decors.length < 1) {
+        return
+    }
+    for (let i = 0, len = decors.length; i < len; i++) {
+        const d = decors[i];
         context.currDecor = d;
         d.getRuntimeHandler?.(scope)?.(ctx, context);
-    });
+    }
 }
 
 export function getRuntimeClassScope(runtime: Runtime): RuntimeHandler<ClassRef> {

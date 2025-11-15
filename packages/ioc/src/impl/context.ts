@@ -1,5 +1,5 @@
 import { AbstractType } from '../types';
-import { remove, getTypeChain } from '../utils/lang';
+import { remove, deepTypeChain } from '../utils/lang';
 import { getType, isType, isNil } from '../utils/chk';
 import { ResolveInterceptorLike, Parameter, Resolver, createResolveContext } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeArguments, InvocationRequest } from '../context';
@@ -51,14 +51,15 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         super(parent, scope);
         this._refs = [];
         this.isResolve = options.isResolve == true;
-        if (options.values) {
-            options.values.forEach(par => {
+        if (options.values?.length) {
+            for (let i = 0, len = options.values.length; i < len; i++) {
+                const par = options.values[i];
                 this.setValue(par[0], par[1]);
-            })
+            }
         }
 
         const val = createValueRecord(this);
-        getTypeChain(getType(this)).forEach(c => {
+        deepTypeChain(getType(this), c => {
             this.records.set(c, val);
         });
 
@@ -93,13 +94,14 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
             this.addRef(option);
             this.onDestroy(() => this.removeRef(option));
         } else {
-            if (option.values) {
-                option.values.forEach(par => {
+            if (option.values?.length) {
+                for (let i = 0, len = option.values.length; i < len; i++) {
+                    const par = option.values[i];
                     Operator.setValue(this, par[0], par[1]);
-                })
+                }
             }
-            if (option.providers) {
-                Operator.inject(this, option.providers);
+            if (option.providers?.length) {
+                deferProcessProviders(this, option.providers, this._readyDefer);
             }
             if (option.resolvers) {
                 if (option.resolvers?.length) {
@@ -149,11 +151,12 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
      */
     addRef(...contexts: InvocationContext[]): void {
         this.assertNotDestroyed();
-        contexts.forEach(j => {
+        for (let i = 0, len = contexts.length; i < len; i++) {
+            const j = contexts[i];
             if (!this.hasRef(j)) {
                 this._refs!.unshift(j)
             }
-        })
+        }
     }
 
     /**
@@ -162,7 +165,10 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
      */
     removeRef(...contexts: InvocationContext[]): void {
         this.assertNotDestroyed();
-        contexts.forEach(context => remove(this._refs, context));
+        for (let i = 0, len = contexts.length; i < len; i++) {
+            const j = contexts[i];
+            remove(this._refs, j);
+        }
     }
 
     hasRef(ctx: InvocationContext): boolean {

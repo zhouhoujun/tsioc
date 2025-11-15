@@ -130,11 +130,12 @@ export class ConfigureMergerImpl extends ConfigureMerger {
     protected mergeArray(target: ApplicationConfiguration, name: string, source?: any[]) {
         if (!source || !source.length) return;
         if (target[name]) {
-            source.forEach(d => {
-                if ((target[name].indexOf(d) || 0) < 0) {
-                    target[name]?.push(d)
+            for (let i = 0; i < target[name].length; i++) {
+                const d = target[name][i];
+                if (source.indexOf(d) < 0) {
+                    target[name].splice(i, 1)
                 }
-            })
+            }
         } else {
             target[name] = [...source]
         }

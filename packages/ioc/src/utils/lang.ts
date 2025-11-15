@@ -102,7 +102,8 @@ export function deepForEach<T>(
     isRecord?: (value: any) => boolean,
     getRecord?: (value: any) => T[]): void | Promise<void> {
     const ps: Promise<void>[] = [];
-    for (const value of input) {
+    for (let i = 0, len = input.length; i < len; i++) {
+        const value = input[i];
         if (isArray(value)) {
             const reslut = deepForEach(value, fn, isRecord, getRecord);
             if (reslut) {
@@ -226,9 +227,10 @@ export function getParentType(target: AbstractType): AbstractType {
  */
 export function getTypeChain(target: AbstractType): AbstractType[] {
     const types: AbstractType[] = [];
-    forInTypeChain(target, type => {
-        types.push(type)
-    });
+    while (target) {
+        types.push(target);
+        target = getParentType(target)
+    }
     return types
 }
 
@@ -239,7 +241,7 @@ export function getTypeChain(target: AbstractType): AbstractType[] {
  * @param {AbstractType} target
  * @param {(token: AbstractType) => any} express
  */
-function forInTypeChain(target: AbstractType, express: (token: AbstractType) => any): void {
+export function deepTypeChain(target: AbstractType, express: (token: AbstractType) => any): void {
     while (target) {
         if (express(target) === false) {
             break
@@ -278,7 +280,7 @@ export function isExtends<T extends AbstractType>(target: AbstractType, baseType
     let isExtnds = false;
     if (isFunction(target) && baseType) {
         const isCls = isType(baseType);
-        forInTypeChain(target, t => {
+        deepTypeChain(target, t => {
             if (isCls) {
                 isExtnds = t === baseType
             } else {
@@ -315,7 +317,8 @@ const cleanKeys = ['injector', 'platform', 'context'];
 export function cleanObj(obj: any, keys: string[] = cleanKeys) {
     if (!obj) return;
 
-    for (const k of keys) {
+    for (let i = 0, len = keys.length; i < len; i++) {
+        const k = keys[i];
         if (obj[k]) obj[k] = null
     }
 }
