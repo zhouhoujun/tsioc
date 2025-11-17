@@ -8,7 +8,7 @@ import {
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { Provider, StaticProvider } from '../providers';
 import { ResolveInterceptorLike } from '../resolver';
-import { InvokeOptions, InvokeOptions } from '../context';
+import { InvokeOptions } from '../context';
 import { getModuleType } from '../module.ref';
 import { getTypes } from '../utils/lang';
 import { ActionType, DecoratorOption, ModuleDef } from './class';

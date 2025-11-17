@@ -12,7 +12,7 @@ import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent, ApplicationStartupEvent } from '../events';
 import { PipeTransform } from '../pipes/pipe';
 import { CanHandle } from '../guard';
-import { ApplicationHandler, craeteRunableContext, RunableContext } from '../ApplicationHandler';
+import { ApplicationHandler, createRunableContext, RunableContext } from '../ApplicationHandler';
 import { ApplicationInterceptor } from '../ApplicationInterceptor';
 import { Filter } from '../filters/filter';
 import { ExceptionHandlerFilter } from '../filters/execption.filter';
@@ -148,13 +148,13 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
 
     run(type?: AbstractType | AbstractType[]): Promise<void> {
         if (type) {
-            return lastValueFrom(this._handler.handle(type, craeteRunableContext(this.getRef(type as AbstractType)?.context ?? this.context, type as AbstractType, true)));
+            return lastValueFrom(this._handler.handle(type, createRunableContext(this.getRef(type as AbstractType)?.context ?? this.context, type as AbstractType, true)));
         }
         return lastValueFrom(
             this.startup()
                 .pipe(
                     mergeMap(v => this.beforeRun()),
-                    mergeMap(v => this._types?.length ? forkJoin(this._types.map((ty) => this._handler.handle(this._types, craeteRunableContext(this.getRef(ty)?.context ?? this.context, ty, true)))) : of(v)),
+                    mergeMap(v => this._types?.length ? forkJoin(this._types.map((ty) => this._handler.handle(this._types, createRunableContext(this.getRef(ty)?.context ?? this.context, ty, true)))) : of(v)),
                     mergeMap(v => this.afterRun())
                 )
         );

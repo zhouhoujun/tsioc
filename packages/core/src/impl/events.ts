@@ -3,7 +3,7 @@ import { forkJoin, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanHandle } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
 import { ApplicationInterceptor } from '../ApplicationInterceptor';
-import { ApplicationHandler, craeteRunableContext, RunableContext } from '../ApplicationHandler';
+import { ApplicationHandler, createRunableContext, RunableContext } from '../ApplicationHandler';
 import { Filter } from '../filters/filter';
 import { ExceptionHandlerFilter } from '../filters/execption.filter';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
@@ -135,7 +135,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
             event = new PayloadApplicationEvent(this, obj)
         }
 
-        const context = craeteRunableContext(this.handler.context ?? this.injector);
+        const context = createRunableContext(this.handler.context ?? this.injector);
         context.set(WITH_SELF, true);
 
         return this.downward(event, context)

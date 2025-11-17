@@ -5,7 +5,7 @@ import { PipeTransform } from './pipes/pipe';
 import { ApplicationInterceptorLike } from './ApplicationInterceptor';
 import { GuardLike } from './guard';
 import { FilterLike } from './filters/filter';
-import { ApplicationHandler } from './ApplicationHandler';
+import { ApplicationHandler, RunableContext } from './ApplicationHandler';
 
 
 /**
@@ -16,7 +16,7 @@ export abstract class InvocationHandler<
     TInput = any,
     TOutput = any,
     TOptions extends InvocationHandlerOptions = InvocationHandlerOptions,
-    TContext = any,
+    TContext extends RunableContext = RunableContext,
     T = any> implements ApplicationHandler<TInput, TOutput, TContext>, HandlerService {
 
     /**

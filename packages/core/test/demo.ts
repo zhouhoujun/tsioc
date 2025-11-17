@@ -1,6 +1,7 @@
 import {
     Configuration, Bean, Runner, Start, Dispose,
-    Filterable, Interceptable, ApplicationHandlerFn, HandleContext
+    Filterable, Interceptable, ApplicationHandlerFn,
+    ApplicationEvent
 } from '../src';
 import { Injectable, Inject, lang, Abstract, Module, Static } from '@tsdi/ioc';
 import { Aspect, Around, JoinPoint } from '@tsdi/aop';
@@ -56,12 +57,12 @@ export class ClassSevice {
 
     times = 0;
 
-    @Filterable(HandleContext)
+    @Filterable(ApplicationEvent)
     filter(intput: any, next: ApplicationHandlerFn, context?: any): Observable<any> {
         return next(intput, context);
     }
 
-    @Interceptable(HandleContext)
+    @Interceptable(ApplicationEvent)
     intercept(intput: any, next: ApplicationHandlerFn, context?: any): Observable<any> {
         return next(intput, context);
     }

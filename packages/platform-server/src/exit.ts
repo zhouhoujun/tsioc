@@ -8,7 +8,7 @@ export class ApplicationExit {
 
     @Start()
     register(context: ApplicationContext): void {
-        const usedsignls = context.request.signls
+        const usedsignls = context.getArguments().signls
         if (!usedsignls?.length) return;
 
         const logger = context.getLogger();

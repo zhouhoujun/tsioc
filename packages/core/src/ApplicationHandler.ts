@@ -20,7 +20,7 @@ export class RunableContext extends ResolveContext {
 }
 
 
-export function craeteRunableContext(injector: Injector,
+export function createRunableContext(injector: Injector,
     target?: AbstractType,
     bootstrap?: boolean,
     failed?: (target: AbstractType, propertyKey: string) => void) {
