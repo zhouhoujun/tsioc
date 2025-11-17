@@ -2,7 +2,7 @@ import { AbstractType } from '../types';
 import { remove, deepTypeChain } from '../utils/lang';
 import { getType, isType, isNil } from '../utils/chk';
 import { ResolveInterceptorLike, Parameter, Resolver } from '../resolver';
-import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeArguments, InvocationRequest } from '../context';
+import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeOptions } from '../context';
 import { InjectFlags, Token } from '../tokens';
 import { Injector } from '../injector';
 import { Invocation } from '../invocation';
@@ -37,8 +37,6 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
 
     readonly isResolve: boolean;
 
-    request: InvocationRequest | null | undefined;
-
     /**
      * get the invocation arguments resolver.
      */
@@ -67,10 +65,6 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
 
         deferProcessProviders(this, options.providers, this._readyDefer);
 
-
-        this.initRequest(options);
-
-
         this.targetType = options.targetType;
         this.propertyKey = options.propertyKey;
         this.afterInit();
@@ -84,11 +78,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
 
     }
 
-    protected initRequest(options: TargetInvokeArguments) {
-        this.request = options.request;
-    }
-
-    attach(option: InvocationContext | InvokeArguments): void {
+    attach(option: InvocationContext | InvokeOptions): void {
 
         if (isInvocationContext(option)) {
             this.addRef(option);

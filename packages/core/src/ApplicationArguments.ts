@@ -1,4 +1,4 @@
-import { Abstract, InvocationRequest } from '@tsdi/ioc';
+import { Abstract } from '@tsdi/ioc';
 
 
 /** 
@@ -7,7 +7,7 @@ import { Abstract, InvocationRequest } from '@tsdi/ioc';
  * 应用程序启动参数
  */
 @Abstract()
-export abstract class ApplicationArguments implements Record<string, any>, InvocationRequest {
+export abstract class ApplicationArguments implements Record<string, any> {
     /** 
      * process args source
      * 

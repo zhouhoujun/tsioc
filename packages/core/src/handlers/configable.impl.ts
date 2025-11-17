@@ -8,7 +8,7 @@ import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
 import { INTERCEPTORS_TOKEN, ApplicationInterceptor, ApplicationInterceptorFn, ApplicationInterceptorLike, InterceptorResolver } from '../ApplicationInterceptor';
 import { PipeTransform } from '../pipes/pipe';
 import { FILTERS_TOKEN, Filter, FilterLike, FilterResolver, composeFilters } from '../filters/filter';
-import { Backend, BackendFn } from '../ApplicationHandler';
+import { ApplicationHandler, ApplicationHandlerFn, RunableContext } from '../ApplicationHandler';
 import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerService } from './configable';
 
 
@@ -20,7 +20,7 @@ export class ConfigableHandler<
     TInput = any,
     TOutput = any,
     TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>,
-    TContext = any> implements AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
+    TContext extends RunableContext = RunableContext> implements AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
 
     private destroy$ = new Subject<void>();
     private chain?: ApplicationInterceptorFn<TInput, TOutput, TContext> | null;
@@ -81,7 +81,7 @@ export class ConfigableHandler<
         }
     }
 
-    handle(input: TInput, context?: TContext): Observable<TOutput> {
+    handle(input: TInput, context: TContext): Observable<TOutput> {
         return defer(async () => {
 
             if (this.onReady) await this.onReady();
@@ -166,7 +166,7 @@ export class ConfigableHandler<
         this.clear();
     }
 
-    protected run(input: TInput, context?: TContext) {
+    protected run(input: TInput, context: TContext) {
         if (!this.chain) {
             this.chain = this.compose();
         }
@@ -178,7 +178,7 @@ export class ConfigableHandler<
      * @param input 
      * @returns 
      */
-    protected getChain(input: TInput): ApplicationInterceptorFn<TInput, TOutput> {
+    protected getChain(input: TInput): ApplicationInterceptorFn<TInput, TOutput, TContext> {
         return this.options.enableTypeChain ? this.getChainOf(getType(input)) : this.chain!;
     }
 
@@ -187,7 +187,7 @@ export class ConfigableHandler<
      * @param type 
      * @returns 
      */
-    protected getChainOf(type: AbstractType | string): ApplicationInterceptorFn<TInput, TOutput> {
+    protected getChainOf(type: AbstractType | string): ApplicationInterceptorFn<TInput, TOutput, TContext> {
         let chain = this.chains.get(type);
         if (chain === undefined) {
             chain = this.composeTypeChain(type);
@@ -202,7 +202,7 @@ export class ConfigableHandler<
      * @param type 
      * @returns 
      */
-    protected composeTypeChain(type: AbstractType | string): ApplicationInterceptorFn<TInput, TOutput> | null {
+    protected composeTypeChain(type: AbstractType | string): ApplicationInterceptorFn<TInput, TOutput, TContext> | null {
         const filters = this.filterResolver.resolve(type);
         const inteceptors = this.interceptorResolver.resolve(type);
         if (!(filters.length || inteceptors.length)) return null;
@@ -231,7 +231,7 @@ export class ConfigableHandler<
      * compose iterceptors and filters in chain.
      * @returns 
      */
-    protected compose(): ApplicationInterceptorFn<TInput, TOutput> {
+    protected compose(): ApplicationInterceptorFn<TInput, TOutput, TContext> {
         const type = this.getHandlerType();
         const hdlFilters = this.filterResolver.resolve(type) ?? [];
         const hdlInteceptors = this.interceptorResolver.resolve(type) ?? [];
@@ -251,16 +251,16 @@ export class ConfigableHandler<
     }
 
 
-    private backendFn?: BackendFn;
+    private backendFn?: ApplicationHandlerFn<TInput, TOutput, TContext>;
     /**
      * get registered backend of the handler.
      * @returns 
      */
-    protected getBackend(): BackendFn {
+    protected getBackend(): ApplicationHandlerFn<TInput, TOutput, TContext> {
         if (!this.options.backend) throw new ArgumentException('backend is Empty.');
         if (!this.backendFn) {
             const backend = isToken(this.options.backend) ? this.context.get(this.options.backend, this.options.backend as any, InjectFlags.Default) : this.options.backend;
-            this.backendFn = (isFunction(backend) ? backend : (req, ctx) => (backend as Backend).handle(req, ctx)) as BackendFn;
+            this.backendFn = (isFunction(backend) ? backend : (req, ctx) => (backend as ApplicationHandler).handle(req, ctx)) as ApplicationHandlerFn;
         }
         return this.backendFn;
     }
@@ -333,7 +333,7 @@ export function createHandler<TClass extends ConfigableHandler, TInput>(context:
  * @param filtersToken 
  */
 export function createHandler<TInput, TOutput, TClass extends ConfigableHandler>(context: Injector | InvocationContext,
-    backend: Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>,
+    backend: Token<ApplicationHandler<TInput, TOutput>> | ApplicationHandler<TInput, TOutput>,
     interceptorsToken: Token<ApplicationInterceptor<TInput, TOutput>[]>,
     guardsToken?: Token<CanHandle[]>,
     filtersToken?: Token<Filter<TInput, TOutput>[]>,
@@ -343,7 +343,7 @@ export function createHandler<TInput, TOutput, TClass extends ConfigableHandler>
     execptionHandlers?: Type<any> | Type[] | null,
     enableTypeChain?: boolean
 ): ConfigableHandler<TInput, TOutput>;
-export function createHandler<TInput, TOutput>(context: Injector | InvocationContext, arg: ConfigableHandlerOptions<TInput> | Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>,
+export function createHandler<TInput, TOutput>(context: Injector | InvocationContext, arg: ConfigableHandlerOptions<TInput> | Token<ApplicationHandler<TInput, TOutput>> | ApplicationHandler<TInput, TOutput>,
     interceptorsToken?: Token<ApplicationInterceptor<TInput, TOutput>[]> | Type<ConfigableHandler>,
     guardsToken?: Token<CanHandle[]>,
     filtersToken?: Token<Filter<TInput, TOutput>[]>,
@@ -355,7 +355,7 @@ export function createHandler<TInput, TOutput>(context: Injector | InvocationCon
     let Type = type ?? ConfigableHandler;
     if (interceptorsToken && !isFunction(interceptorsToken)) {
         options = {
-            backend: arg as (Token<Backend<TInput, TOutput>> | Backend<TInput, TOutput>),
+            backend: arg as (Token<ApplicationHandler<TInput, TOutput>> | ApplicationHandler<TInput, TOutput>),
             interceptorsToken,
             guardsToken,
             filtersToken,

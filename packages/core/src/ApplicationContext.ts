@@ -1,6 +1,6 @@
 import {
     Provider, Injector, Abstract, AbstractType, Destroyable, Modules, ModuleOption, ModuleRef,
-    InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, ClassRef, Invocation, InvokeArguments, Type
+    InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, ClassRef, Invocation, InvokeOptions, Type
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
@@ -36,7 +36,7 @@ export abstract class ApplicationContext<T = object>
      *
      * @type {ApplicationArguments}
      */
-    abstract get request(): ApplicationArguments;
+    abstract getArguments(): ApplicationArguments;
     /**
      * application runners.
      *
@@ -100,7 +100,7 @@ export const PROCESS_ROOT: Token<string> = tokenId<string>('PROCESS_ROOT');
 /**
  * Environment option.
  */
-export interface EnvironmentOption extends ModuleOption, InvokeArguments {
+export interface EnvironmentOption extends ModuleOption, InvokeOptions {
     /**
      * boot base url.
      *

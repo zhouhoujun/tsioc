@@ -8,7 +8,7 @@ import {
 import { ClassMethodDecorator, createDecorator, createParamDecorator, PropParamDecorator } from './fac';
 import { Provider, StaticProvider } from '../providers';
 import { ResolveInterceptorLike } from '../resolver';
-import { InvokeArguments, InvokeOptions } from '../context';
+import { InvokeOptions, InvokeOptions } from '../context';
 import { getModuleType } from '../module.ref';
 import { getTypes } from '../utils/lang';
 import { ActionType, DecoratorOption, ModuleDef } from './class';
@@ -845,9 +845,9 @@ export interface Autorun {
      * @Autorun
      *
      * @param {string} [autorun] the special method name when define to class.
-     * @param {InvokeArguments} [args] invoke arguments {@link InvokeArguments}.
+     * @param {InvokeOptions} [args] invoke arguments {@link InvokeOptions}.
      */
-    (autorun: string, args?: InvokeArguments): ClassDecorator;
+    (autorun: string, args?: InvokeOptions): ClassDecorator;
     /**
      * Autorun decorator, for class or method. use to define the class auto run (via a method or not) after registered.
      * for class, to auto create singleton instance and call this method.
@@ -863,9 +863,9 @@ export interface Autorun {
      * @Autorun
      *
      * @param {string} [autorun] the special method name when define to class.
-     * @param {InvokeArguments} [args] invoke arguments {@link InvokeArguments}.
+     * @param {InvokeOptions} [args] invoke arguments {@link InvokeOptions}.
      */
-    (order?: number, args?: InvokeArguments): MethodDecorator;
+    (order?: number, args?: InvokeOptions): MethodDecorator;
 }
 
 /**
@@ -875,7 +875,7 @@ export interface Autorun {
  */
 export const Autorun: Autorun = createDecorator<RunnableMetadata>('Autorun', {
     actionType: ActionType.runnable,
-    props: (arg: string | number, args?: InvokeArguments) => {
+    props: (arg: string | number, args?: InvokeOptions) => {
         if (isString(arg)) {
             return { propertyKey: arg, args }
         }

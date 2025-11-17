@@ -1,6 +1,6 @@
 import {
     isUndefined, AbstractType, createDecorator, Provider, InjectableMetadata, PropertyMetadata, InjectFlags,
-    MethodPropDecorator, Token, ArgumentException, object2string, InvokeArguments, ActionType,
+    MethodPropDecorator, Token, ArgumentException, object2string, InvokeOptions, ActionType,
     isString, Parameter, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
     ModuleType, Type, MutilProvider, ClassRef, Injector, ProvidedInMetadata, AnnotationMetadata, Invocation,
     Operator
@@ -51,7 +51,7 @@ export interface Runner {
      * Runner decorator, use to define the method of class as application Runner.
      * 
      * 运行接口修饰器， 用于声明该方法为应用程序的运行接口。
-     * @param {InvokeArguments} [args] the method invoke arguments {@link InvokeArguments}.
+     * @param {InvokeOptions} [args] the method invoke arguments {@link InvokeOptions}.
      */
     <TArg>(args?: InvocationHandlerOptions<TArg>): MethodDecorator;
 }

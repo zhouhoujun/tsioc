@@ -1,4 +1,4 @@
-import { InvokeArguments, ModuleDef, ModuleRef, ProvdierOf } from '@tsdi/ioc';
+import { InvokeOptions, ModuleDef, ModuleRef, ProvdierOf } from '@tsdi/ioc';
 import { ApplicationArguments, ApplicationContextFactory, DefaultApplicationContext, PROCESS_ROOT } from '@tsdi/core';
 import { ApplicationConfiguration, ConfigureManager } from '../configure/config';
 import { BootApplicationContext, BootEnvironmentOption } from '../context';
@@ -60,7 +60,7 @@ export class BootApplicationFactory extends ApplicationContextFactory {
     }
 
 
-    protected createInstance(inj: ModuleRef, option?: InvokeArguments) {
+    protected createInstance(inj: ModuleRef, option?: InvokeOptions) {
         return new BootApplicationContextImpl(inj, option)
     }
 }

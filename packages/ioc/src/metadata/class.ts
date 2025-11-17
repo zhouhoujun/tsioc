@@ -1,7 +1,7 @@
 import { AbstractType, Type, Annotation, TypeOf } from '../types';
 import { ModuleWithProviders, Provider } from '../providers';
 import { PropertyMetadata, ParameterMetadata, AnnotationMetadata } from './meta';
-import { InvocationOptions, InvokeArguments } from '../context';
+import { InvocationOptions, InvokeOptions } from '../context';
 import { Token } from '../tokens';
 import { getResolver, ResolveInterceptorLike } from '../resolver';
 import { forIn, hasItem, assign } from '../utils/lang';
@@ -262,19 +262,19 @@ export class ClassRef<T = any> {
         return this.annotation.methodMetadatas?.get(method)?.returnType ?? this.parent?.getReturnning(method)
     }
 
-    getMethodOptions<T>(method: string | symbol): InvokeArguments | undefined {
+    getMethodOptions<T>(method: string | symbol): InvokeOptions | undefined {
         return this.annotation.methodMetadatas.get(method)?.invokeEnv ?? this.parent?.getMethodOptions(method)
     }
 
-    setMethodOptions<T>(method: string | symbol, options: InvokeArguments) {
+    setMethodOptions<T>(method: string | symbol, options: InvokeOptions) {
 
         let meta = this.annotation.methodMetadatas.get(method);
         if (!meta) {
-            meta = { invokeEnv: {} as InvokeArguments };
+            meta = { invokeEnv: {} as InvokeOptions };
             this.annotation.methodMetadatas.set(method, meta);
         }
         if (!meta.invokeEnv) {
-            meta.invokeEnv = {} as InvokeArguments;
+            meta.invokeEnv = {} as InvokeOptions;
         }
         const env = meta.invokeEnv;
         if (hasItem(options.providers)) {
@@ -288,9 +288,6 @@ export class ClassRef<T = any> {
         if (hasItem(options.values)) {
             if (!env.values) env.values = [];
             env.values.push(...options.values!);
-        }
-        if (options.request) {
-            env.request = env.request ? { ...env.request, ...options.request } : options.request
         }
     }
 
@@ -901,7 +898,7 @@ export interface TypeDef<T = any> extends Annotation<T>, AnnotationMetadata {
 
     propMetadatas: Map<string | symbol, PropertyMetadata[]>;
     methodMetadatas: Map<string | symbol, {
-        invokeEnv?: InvokeArguments;
+        invokeEnv?: InvokeOptions;
         params?: ParameterMetadata[];
         returnType?: AbstractType;
     }>;

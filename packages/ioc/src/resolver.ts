@@ -127,7 +127,7 @@ export class ResolveContext extends Context {
 
     constructor(
         injector: Injector,
-        readonly target?: AbstractType,
+        target?: AbstractType,
         readonly failed?: (target: AbstractType, propertyKey: string) => void) {
         super();
         this.setInjector(injector);

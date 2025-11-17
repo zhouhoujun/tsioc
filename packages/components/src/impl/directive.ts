@@ -1,6 +1,6 @@
 import {
     AbstractInvocationFactory, ClassRef, createInjector, Injectable,
-    Injector, Runtime, AbstractType, InvokeArguments,
+    Injector, Runtime, AbstractType, InvokeOptions,
     Provider
 } from '@tsdi/ioc';
 import { ReactiveEffect } from '../ReactiveEffect';
@@ -41,7 +41,7 @@ export class DirectiveRefImpl<T> extends DirectiveRef<T> {
         super.clean();
     }
 
-    protected process(option?: EnvironmentContext | InvokeArguments, args?: any[]) {
+    protected process(option?: EnvironmentContext | InvokeOptions, args?: any[]) {
 
     }
 

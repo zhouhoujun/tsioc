@@ -1,4 +1,4 @@
-import { Abstract, StaticProvider, AbstractType, ProvdierOf, HandlerLike, noPointcut, Context } from '@tsdi/ioc';
+import { Abstract, StaticProvider, AbstractType, ProvdierOf, HandlerLike, noPointcut } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
@@ -7,11 +7,12 @@ import { CanHandle } from './guard';
 import { ApplicationInterceptor, ApplicationInterceptorFn, ApplicationInterceptorLike } from './ApplicationInterceptor';
 import { PipeTransform } from './pipes/pipe';
 import { HandlerService } from './handlers/configable';
+import { RunableContext } from './ApplicationHandler';
 
 
-export type EventInterceptor<TInput extends ApplicationEvent = ApplicationEvent> = ApplicationInterceptor<TInput, any, Context>;
-export type EventInterceptorFn<TInput extends ApplicationEvent = ApplicationEvent> = ApplicationInterceptorFn<TInput, any, Context>;
-export type EventInterceptorLike<TInput extends ApplicationEvent = ApplicationEvent> = ApplicationInterceptorLike<TInput, any, Context>;
+export type EventInterceptor<TInput extends ApplicationEvent = ApplicationEvent> = ApplicationInterceptor<TInput, any, RunableContext>;
+export type EventInterceptorFn<TInput extends ApplicationEvent = ApplicationEvent> = ApplicationInterceptorFn<TInput, any, RunableContext>;
+export type EventInterceptorLike<TInput extends ApplicationEvent = ApplicationEvent> = ApplicationInterceptorLike<TInput, any, RunableContext>;
 
 /**
  * providing the basic listener registration facility.
@@ -81,12 +82,12 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * event downward
      * @param event 
      */
-    abstract downward(event: ApplicationEvent, context: Context): Observable<void | false>;
+    abstract downward(event: ApplicationEvent, context: RunableContext): Observable<void | false>;
     /**
      * event bubble up
      * @param event 
      */
-    abstract bubbleup(event: ApplicationEvent, context: Context): Observable<void | false>;
+    abstract bubbleup(event: ApplicationEvent, context: RunableContext): Observable<void | false>;
     /**
      * Notify all <strong>matching</strong> listeners registered with this
      * application of an application event. Events may be framework events

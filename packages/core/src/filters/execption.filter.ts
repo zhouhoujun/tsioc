@@ -1,8 +1,7 @@
-import { Abstract, DefaultInvocationContext, Exception, getType, lang, Injectable, Injector, InvokeArguments, isPromise, isUndefined, composeHandlers } from '@tsdi/ioc';
+import { Abstract, DefaultInvocationContext, Exception, getType, lang, Injectable, Injector, InvokeOptions, isPromise, isUndefined, composeHandlers } from '@tsdi/ioc';
 import { catchError, finalize, isObservable, mergeMap, Observable, of, throwError } from 'rxjs';
-import { ApplicationHandler } from '../ApplicationHandler';
+import { ApplicationHandler, RunableContext } from '../ApplicationHandler';
 import { Filter, FilterHandlerResolver } from './filter';
-import { HandleContext } from '../handlers/context';
 import { toObservable } from '../handlers';
 
 
@@ -13,7 +12,7 @@ import { toObservable } from '../handlers';
  */
 export class ExceptionContext<T = any> extends DefaultInvocationContext {
 
-    constructor(public execption: Error, readonly host: T, injector: Injector, options?: InvokeArguments) {
+    constructor(public execption: Error, readonly host: T, injector: Injector, options?: InvokeOptions) {
         super(injector, { ...options })
 
         this.setValue(getType(execption), execption);
@@ -34,14 +33,14 @@ export class ExceptionContext<T = any> extends DefaultInvocationContext {
  * 异常处理过滤器
  */
 @Abstract()
-export abstract class ExceptionFilter<TInput = any, TOutput = any, TContext = any> extends Filter<TInput, TOutput, TContext> {
+export abstract class ExceptionFilter<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> extends Filter<TInput, TOutput, TContext> {
     /**
      * execption filter.
      * @param context execption context.
      * @param next The next interceptor in the chain, or the backend
      * @returns any
      */
-    doFilter(input: TInput, next: ApplicationHandler<TInput, TOutput>, context?: TContext): Observable<any> {
+    doFilter(input: TInput, next: ApplicationHandler<TInput, TOutput>, context: TContext): Observable<any> {
         return next.handle(input, context)
             .pipe(
                 catchError((err, caught) => {
@@ -88,40 +87,32 @@ export abstract class ExceptionFilter<TInput = any, TOutput = any, TContext = an
  * execption handler filter.
  */
 @Injectable({ static: true })
-export class ExceptionHandlerFilter<TInput, TOutput = any, TContext = any> extends ExceptionFilter<TInput, TOutput, TContext> {
-    constructor(private injector: Injector) {
-        super()
-    }
+export class ExceptionHandlerFilter<TInput, TOutput = any, TContext extends RunableContext = RunableContext> extends ExceptionFilter<TInput, TOutput, TContext> {
 
-    catchError(input: TInput, err: any, caught: Observable<TOutput>, context?: TContext): Observable<any> {
-        let injector: Injector;
-        if (input instanceof HandleContext) {
-            injector = input;
-            input.execption = err;
-        } else {
-            injector = this.injector;
-        }
+
+    catchError(input: TInput, err: any, caught: Observable<TOutput>, context: TContext): Observable<any> {
+        const injector = context.getInjector();
         const handlers = injector.get(FilterHandlerResolver)?.resolve(err);
         if (!handlers || !handlers.length) {
             return throwError(() => err);
         }
 
-        const expcption = new ExceptionContext(err, input, injector);
+        // const expcption = new ExceptionContext(err, input, injector);
 
         return toObservable(composeHandlers(handlers, (res, next, input, context) => {
             if (isUndefined(res)) {
-                return next(expcption, context)
+                return next(err, context)
             }
             return of(res);
-        })(expcption, context)).pipe(
+        })(err, context)).pipe(
             catchError((err1, caugh) => {
                 err1.originException = err;
                 err1.message = `${err1.message}\r\n${err.toString()}`;
                 return throwError(() => err1)
             }),
-            finalize(() => {
-                expcption.destroy();
-            })
+            // finalize(() => {
+            //     expcption.destroy();
+            // })
         );
     }
 

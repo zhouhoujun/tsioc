@@ -1,5 +1,5 @@
 import { AbstractType, TypeOf } from '../types';
-import { createContext, hasContextOptions, INVOCATION_CONTEXT_IMPL, InvocationContext, InvocationOptions, InvokeArguments } from '../context';
+import { createContext, hasContextOptions, INVOCATION_CONTEXT_IMPL, InvocationContext, InvocationOptions, InvokeOptions } from '../context';
 import { Invocation, InvocationFactory } from '../invocation';
 import { getType, isArray, isFunction, isPromise, isString, isSymbol } from '../utils/chk';
 import { DestroyCallback, OnDestroy } from '../destroy';
@@ -76,7 +76,7 @@ export abstract class AbstractInvocation<T = any,
      * Invoke the underlying operation using the given {@code context}.
      * @param options invoke arguments.
      */
-    invoke(options: InvokeArguments): TRes;
+    invoke(options: InvokeOptions): TRes;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param method method name.
@@ -93,18 +93,18 @@ export abstract class AbstractInvocation<T = any,
      * @param method method name.
      * @param options invoke arguments.
      */
-    invoke(method: MethodType<T>, options?: InvokeArguments): TRes;
+    invoke(method: MethodType<T>, options?: InvokeOptions): TRes;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param method method name.
      * @param args the arguments to use to invoke the operation
      */
     invoke(method: MethodType<T>, args?: any[]): TRes;
-    invoke(arg?: TC | InvokeArguments | MethodType<T> | any[], optionOrArgs?: TC | InvokeArguments | any[]): TRes {
+    invoke(arg?: TC | InvokeOptions | MethodType<T> | any[], optionOrArgs?: TC | InvokeOptions | any[]): TRes {
         this.assertNotDestroyed();
         let name: string | symbol | undefined;
         let args: any[] | undefined;
-        let option: InvokeArguments | TC | undefined;
+        let option: InvokeOptions | TC | undefined;
         if (isArray(arg)) {
             args = arg;
         } else if (isString(arg) || isSymbol(arg)) {
@@ -133,9 +133,9 @@ export abstract class AbstractInvocation<T = any,
         return this.invokeMethod(name, option, args);
     }
 
-    protected abstract process(option?: TC | InvokeArguments, args?: any[]): any;
+    protected abstract process(option?: TC | InvokeOptions, args?: any[]): any;
 
-    protected invokeMethod(name: string | symbol, option?: TC | InvokeArguments, args?: any[]): any {
+    protected invokeMethod(name: string | symbol, option?: TC | InvokeOptions, args?: any[]): any {
 
         const [context, destroy] = args ? [this.context] : this.createInvokeContext(name, option);
         if (!args) {
@@ -158,7 +158,7 @@ export abstract class AbstractInvocation<T = any,
         return result;
     }
 
-    protected createContext(parent: InvocationContext, options?: InvokeArguments): TC {
+    protected createContext(parent: InvocationContext, options?: InvokeOptions): TC {
         return createContext(parent, options) as TC;
     }
 
@@ -178,7 +178,7 @@ export abstract class AbstractInvocation<T = any,
     }
 
 
-    protected createInvokeContext(propertyKey: string | symbol, option?: InvokeArguments | TC): [TC, Function | undefined] {
+    protected createInvokeContext(propertyKey: string | symbol, option?: InvokeOptions | TC): [TC, Function | undefined] {
         const ctx = this.getMethodContext(propertyKey);
         let context: TC;
         let destroy: Function | undefined;
@@ -304,7 +304,7 @@ export class DefaultInvocation<T = any,
         super(_classRef, context, options);
     }
 
-    protected process(option?: TC | InvokeArguments) {
+    protected process(option?: TC | InvokeOptions) {
         const runnables = this.classRef.runnables.filter(r => !r.auto);
         if (runnables && runnables.length) {
             const handler = composeHandlers(runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {

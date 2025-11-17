@@ -3,14 +3,14 @@ import {
     Interceptor, InterceptorFn, InterceptorLike
 } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { ApplicationHandler } from './ApplicationHandler';
+import { ApplicationHandler, RunableContext } from './ApplicationHandler';
 
 /**
  * Application interceptor is a chainable behavior modifier for `hanlders`.
  * 
  * 拦截器，用于链接多个处理器，组合成处理器串。
  */
-export interface ApplicationInterceptor<TInput = any, TOutput = any, TContext = any> extends Interceptor<TInput, Observable<TOutput>, TContext> {
+export interface ApplicationInterceptor<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> extends Interceptor<TInput, Observable<TOutput>> {
 
     /**
      * the method to implemet interceptor.
@@ -29,12 +29,12 @@ export interface ApplicationInterceptor<TInput = any, TOutput = any, TContext = 
  * Application interceptor function is a chainable behavior modifier for `hanlders`.
  * 拦截方法，用于链接多个处理器，组合成处理器串。
  */
-export type ApplicationInterceptorFn<TInput = any, TOutput = any, TContext = any> = InterceptorFn<TInput, Observable<TOutput>, TContext|undefined>;
+export type ApplicationInterceptorFn<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = InterceptorFn<TInput, Observable<TOutput>, TContext>;
 
 /**
  * Application interceptor like.
  */
-export type ApplicationInterceptorLike<TInput = any, TOutput = any, TContext = any> = InterceptorLike<TInput, Observable<TOutput>, TContext>
+export type ApplicationInterceptorLike<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = InterceptorLike<TInput, Observable<TOutput>, TContext>
 
 /**
  * Application interceptor service.

@@ -38,6 +38,7 @@ export type HandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TIn
  */
 export type HandlerLike<TInput = any, TOutput = any, TContext = any> = HandlerFn<TInput, TOutput, TContext> | Handler<TInput, TOutput, TContext>;
 
+
 /**
  * Interceptor is a chainable behavior modifier for `hanlders`.
  * 
@@ -161,7 +162,7 @@ export function toInterceptorFn(interceptor: Interceptor & { [interceptorFn]?: I
 
 
 
-export interface NextOpter<TOutput, TContext =any> {
+export interface NextOpter<TOutput, TContext = any> {
     next?: (res: TOutput, context?: TContext) => any;
     error?: (error: any) => any;
     finally?: () => any;

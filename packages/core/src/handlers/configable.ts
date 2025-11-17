@@ -3,7 +3,7 @@ import { GuardLike, GuardsService } from '../guard';
 import { ApplicationInterceptorLike, InterceptorService } from '../ApplicationInterceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
 import { FilterLike, FilterService } from '../filters/filter';
-import { Backend, BackendFn, ApplicationHandler } from '../ApplicationHandler';
+import { ApplicationHandler, ApplicationHandlerLike, RunableContext } from '../ApplicationHandler';
 import { Observable } from 'rxjs';
 
 
@@ -24,7 +24,7 @@ export abstract class AbstractConfigableHandler<
     TInput = any,
     TOutput = any,
     TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>,
-    TContext = any> implements ApplicationHandler<TInput, TOutput, TContext>, HandlerService {
+    TContext extends RunableContext = RunableContext> implements ApplicationHandler<TInput, TOutput, TContext>, HandlerService {
 
     abstract get context(): InvocationContext;
     abstract get ready(): Promise<void>;
@@ -131,6 +131,6 @@ export interface ConfigableHandlerOptions<TInput = any> extends InvokeProviders 
     filtersToken?: Token<FilterLike<TInput>[]>;
 
 
-    backend?: Token<Backend<TInput>> | Token<BackendFn<TInput>> | Backend<TInput> | BackendFn<TInput>;
+    backend?: Token<ApplicationHandlerLike<TInput>> | ApplicationHandlerLike<TInput>;
 }
 

@@ -1,12 +1,38 @@
-import { Handler, HandlerFn, HandlerLike } from '@tsdi/ioc';
+import { AbstractType, ContextToken, Handler, HandlerFn, HandlerLike, Injector, isBoolean, ResolveContext } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
+
+
+const BOOTSTRAP = new ContextToken<boolean>(() => false);
+
+export class RunableContext extends ResolveContext {
+
+    constructor(injector: Injector,
+        readonly target?: AbstractType,
+        bootstrap?: boolean,
+        failed?: (target: AbstractType, propertyKey: string) => void) {
+        super(injector, target, failed)
+        if (isBoolean(bootstrap)) this.set(BOOTSTRAP, bootstrap);
+    }
+
+    getBootstrap() {
+        return this.get(BOOTSTRAP);
+    }
+}
+
+
+export function craeteRunableContext(injector: Injector,
+    target?: AbstractType,
+    bootstrap?: boolean,
+    failed?: (target: AbstractType, propertyKey: string) => void) {
+    return new RunableContext(injector, target, bootstrap, failed)
+}
 
 /**
  * `ApplicationHandler` is the fundamental building block of handle.
  * 
  * 处理器基本构建块。
  */
-export interface ApplicationHandler<TInput = any, TOutput = any, TContext = any> extends Handler<TInput, Observable<TOutput>, TContext|undefined> {
+export interface ApplicationHandler<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> extends Handler<TInput, Observable<TOutput>, TContext> {
     /**
      * handle.
      * 
@@ -14,34 +40,15 @@ export interface ApplicationHandler<TInput = any, TOutput = any, TContext = any>
      * @param input handle input.
      * @param context handle with context.
      */
-    handle(input: TInput, context?: TContext): Observable<TOutput>;
+    handle(input: TInput, context: TContext): Observable<TOutput>;
 }
 
 /**
  * Application handler fn.
  */
-export type ApplicationHandlerFn<TInput = any, TOutput = any, TContext = any> = HandlerFn<TInput, Observable<TOutput>, TContext>;
+export type ApplicationHandlerFn<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = HandlerFn<TInput, Observable<TOutput>, TContext>;
 
 /**
  * Application handler like.
  */
-export type ApplicationHandlerLike<TInput = any, TOutput = any, TContext = any> = HandlerLike<TInput, Observable<TOutput>, TContext>;
-
-/**
- * `Backend` is backend handler of services.
- * 
- * 后段处理器，是服务的最终处理器
- */
-export interface Backend<TInput = any, TOutput = any, TContext = any> extends ApplicationHandler<TInput, TOutput, TContext> {
-    /**
-     * backend handle.
-     * @param input handle input.
-     * @param context handle context
-     */
-    handle(input: TInput, context?: TContext): Observable<TOutput>;
-}
-
-/**
- * backend fn.
- */
-export type BackendFn<TInput = any, TOutput = any, TContext = any> = ApplicationHandlerFn<TInput, TOutput, TContext>;
+export type ApplicationHandlerLike<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = HandlerLike<TInput, Observable<TOutput>, TContext>;

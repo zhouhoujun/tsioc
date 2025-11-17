@@ -3,7 +3,7 @@ import { forkJoin, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanHandle } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
 import { ApplicationInterceptor } from '../ApplicationInterceptor';
-import { ApplicationHandler } from '../ApplicationHandler';
+import { ApplicationHandler, craeteRunableContext, RunableContext } from '../ApplicationHandler';
 import { Filter } from '../filters/filter';
 import { ExceptionHandlerFilter } from '../filters/execption.filter';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
@@ -57,7 +57,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         }
     }
 
-    get handler(): ApplicationHandler<ApplicationEvent> {
+    get handler(): ConfigableHandler<ApplicationEvent> {
         return this._handler
     }
 
@@ -135,7 +135,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
             event = new PayloadApplicationEvent(this, obj)
         }
 
-        const context = new Context();
+        const context = craeteRunableContext(this.handler.context ?? this.injector);
         context.set(WITH_SELF, true);
 
         return this.downward(event, context)
@@ -148,7 +148,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
             ) as Observable<void | false>;
     }
 
-    downward(event: ApplicationEvent, context: Context): Observable<void | false> {
+    downward(event: ApplicationEvent, context: RunableContext): Observable<void | false> {
         return (context.get(WITH_SELF) ? this.handler.handle(event, context) : of(undefined))
             .pipe(
                 mergeMap(res => {
@@ -165,7 +165,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
                 })) as Observable<void | false>;
     }
 
-    bubbleup(event: ApplicationEvent, context: Context): Observable<void | false> {
+    bubbleup(event: ApplicationEvent, context: RunableContext): Observable<void | false> {
         return (context.get(WITH_SELF) ? this.handler.handle(event, context) : of(undefined))
             .pipe(
                 mergeMap(res => {

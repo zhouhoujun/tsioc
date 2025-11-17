@@ -1,75 +1,83 @@
-import { DefaultInvocationContext, Injector, InvocationRequest, InvokeArguments,  ResolveInterceptorLike,  getType } from '@tsdi/ioc';
+import { AbstractType, ContextToken, DefaultInvocationContext, Injector, InvokeOptions, ResolveContext, ResolveInterceptorLike, getType, isBoolean } from '@tsdi/ioc';
 import { getResolveHandlerToken, ParameterScope } from './resolver';
 
 /**
  * handle context options.
  */
-export interface HandleContextOpts extends InvokeArguments {
+export interface HandleContextOpts extends InvokeOptions {
     bootstrap?: boolean;
 }
 
-let a: Record<string, any>;
 
-export interface HandleRequest extends InvocationRequest, Partial<Record<ParameterScope, any>> {
-}
+// const BOOTSTRAP = new ContextToken<boolean>(() => false);
 
-/**
- * invoke handle context.
- */
-export class HandleContext extends DefaultInvocationContext {
-    readonly bootstrap: boolean;
+// export class RunableContext extends ResolveContext {
 
-    request: HandleRequest | null | undefined;
+//     constructor(injector: Injector,
+//         readonly target?: AbstractType,
+//         bootstrap?: boolean,
+//         failed?: (target: AbstractType, propertyKey: string) => void) {
+//         super(injector, target, failed)
+//         if(isBoolean(bootstrap)) this.set(BOOTSTRAP, bootstrap);
+//     }
 
-    constructor(
-        injector: Injector,
-        options: HandleContextOpts = {}) {
-        super(injector, options);
-        this.bootstrap = options.bootstrap === true;
-        this.setValue(getType(this), this);
-    }
+//     getBootstrap() {
+//         return this.get(BOOTSTRAP);
+//     }
+// }
 
-    protected override initRequest(options: HandleContextOpts): void {
-        this.request = options.request ?? {};
-    }
 
-    private _execption: any;
-    /**
-     * execption.
-     */
-    get execption(): any {
-        return this._execption;
-    }
+// /**
+//  * invoke handle context.
+//  */
+// export class HandleContext extends DefaultInvocationContext {
+//     readonly bootstrap: boolean;
 
-    set execption(err: any) {
-        this._execption = err;
-        this.onException(err);
-    }
+//     constructor(
+//         injector: Injector,
+//         options: HandleContextOpts = {}) {
+//         super(injector, options);
+//         this.bootstrap = options.bootstrap === true;
+//         this.setValue(getType(this), this);
+//     }
 
-    protected onException(err: any) { }
+//     private _execption: any;
+//     /**
+//      * execption.
+//      */
+//     get execption(): any {
+//         return this._execption;
+//     }
 
-    protected override getArgumentResolver(): ResolveInterceptorLike[] {
-        const res: ResolveInterceptorLike[] = [];
-        const defRels = this.playloadDefaultResolvers();
-        if (defRels?.length) {
-            res.push(...defRels);
-        }
-        if (this.request) {
-            const args = this.get(getResolveHandlerToken(this.request), null);
-            if (args?.length) {
-                res.unshift(...args);
-            }
-        }
-        return res;
-    }
+//     set execption(err: any) {
+//         this._execption = err;
+//         this.onException(err);
+//     }
 
-    protected playloadDefaultResolvers(): ResolveInterceptorLike[] | null {
-        return null
-    }
+//     protected onException(err: any) { }
 
-    protected override clear(): void {
-        super.clear();
-        this.execption = null
-    }
+//     protected override getArgumentResolver(): ResolveInterceptorLike[] {
+//         const res: ResolveInterceptorLike[] = [];
+//         const defRels = this.playloadDefaultResolvers();
+//         if (defRels?.length) {
+//             res.push(...defRels);
+//         }
+//         if (this.request) {
+//             const args = this.get(getResolveHandlerToken(this.request), null);
+//             if (args?.length) {
+//                 res.unshift(...args);
+//             }
+//         }
+//         return res;
+//     }
 
-}
+//     protected playloadDefaultResolvers(): ResolveInterceptorLike[] | null {
+//         return null
+//     }
+
+//     protected override clear(): void {
+//         super.clear();
+//         this.execption = null
+//     }
+
+// }

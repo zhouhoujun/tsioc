@@ -2,7 +2,7 @@ import { AbstractType, Type, Modules } from '../types';
 import { Token } from '../tokens';
 import { ModuleType, Provider } from '../providers';
 import { Parameter } from '../resolver';
-import { InvokeArguments } from '../context';
+import { InvokeOptions } from '../context';
 
 /**
  * type metadata
@@ -289,7 +289,7 @@ export interface RunnableMetadata extends Omit<AnnotationMetadata, 'abstract' | 
     /**
      * runnable invoke args.
      */
-    args?: InvokeArguments;
+    args?: InvokeOptions;
     /**
      * is auto run when created instance.
      */

@@ -1,10 +1,10 @@
-import { InvocationContext, Invocation, createContext, getType, isFunction, isString, Injector, Type, Context, invokeTail, InvocationRequest, isInvocationContext } from '@tsdi/ioc';
-import { BackendFn } from '../ApplicationHandler';
+import { InvocationContext, Invocation, createContext, getType, isFunction, isString, Injector, Type, Context, invokeTail, isInvocationContext } from '@tsdi/ioc';
+import { ApplicationHandlerFn, RunableContext } from '../ApplicationHandler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
 import { ResultValue } from '../handlers/ResultValue';
 import { getResolveHandlerToken } from '../handlers/resolver';
-import { HandleContext, toObservable } from '../handlers';
+import { toObservable } from '../handlers';
 
 
 
@@ -13,7 +13,7 @@ export class DefaultInvocationHandler<
     TInput = any,
     TOutput = any,
     TOptions extends InvocationHandlerOptions<TInput> = InvocationHandlerOptions<TInput>,
-    TContext = any,
+    TContext extends RunableContext = RunableContext,
     T = any
 > extends ConfigableHandler<TInput, TOutput, TOptions, TContext> implements InvocationHandler<TInput, TOutput, TOptions, TContext, T> {
 
@@ -31,8 +31,8 @@ export class DefaultInvocationHandler<
         return this.options;
     }
 
-    protected getBackend(): BackendFn<TInput, TOutput> {
-        return (input: any, context?: TContext) => toObservable(this.respond(input, context));
+    protected getBackend(): ApplicationHandlerFn<TInput, TOutput, TContext> {
+        return (input: any, context: TContext) => toObservable(this.respond(input, context));
     }
 
 
@@ -46,7 +46,7 @@ export class DefaultInvocationHandler<
      * @param input 
      * @returns 
      */
-    protected respond(input: TInput | InvocationContext, context?: TContext) {
+    protected respond(input: TInput | InvocationContext, context: TContext) {
         let newCtx = false;
         if (isInvocationContext(input)) {
             if (context) this.attchContext(input, context);
@@ -56,7 +56,7 @@ export class DefaultInvocationHandler<
                 input = context;
             } else {
                 newCtx = true;
-                const ctx = createContext(this.context, { request: input as InvocationRequest, resolvers: this.context.get(getResolveHandlerToken(input), []) });
+                const ctx = createContext(this.context, { resolvers: this.context.get(getResolveHandlerToken(input), []) });
                 ctx.setValue(getType(input), input);
                 if (context) this.attchContext(ctx, context, input)
                 input = ctx;
@@ -68,7 +68,7 @@ export class DefaultInvocationHandler<
                 {
                     next: (res) => {
                         if (res instanceof ResultValue) {
-                            return res.sendValue(input as HandleContext);
+                            return res.sendValue(context);
                         }
                         return this.respondAs(input, res);
                     },

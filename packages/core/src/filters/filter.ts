@@ -1,6 +1,6 @@
 import { Abstract, chainEndFn, chainFactory, getTokenOf, HandlerFn, isFunction, ProvdierOf, Token, tokenId, AbstractType, TypeOf, HandlerLike } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
-import { ApplicationHandler } from '../ApplicationHandler';
+import { ApplicationHandler, RunableContext } from '../ApplicationHandler';
 import { ApplicationInterceptorFn } from '../ApplicationInterceptor';
 
 
@@ -10,7 +10,7 @@ import { ApplicationInterceptorFn } from '../ApplicationInterceptor';
  * 处理器过滤器。
  */
 @Abstract()
-export abstract class Filter<TInput = any, TOutput = any, TContext = any> {
+export abstract class Filter<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> {
     /**
      * the method to implement interceptor filter.
      * @param input request input data.
@@ -34,12 +34,12 @@ export abstract class Filter<TInput = any, TOutput = any, TContext = any> {
  * 
  * 处理器过滤方法。
  */
-export type FilterFn<TInput = any, TOutput = any, TContext = any> = ApplicationInterceptorFn<TInput, TOutput, TContext>;
+export type FilterFn<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = ApplicationInterceptorFn<TInput, TOutput, TContext>;
 
 /**
  * filter like
  */
-export type FilterLike<TInput = any, TOutput = any, TContext = any> = FilterFn<TInput, TOutput, TContext> | Filter<TInput, TOutput, TContext>;
+export type FilterLike<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = FilterFn<TInput, TOutput, TContext> | Filter<TInput, TOutput, TContext>;
 
 /**
  * filter service.

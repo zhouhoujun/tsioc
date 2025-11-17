@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { InvocationContext, InvocationOptions, InvokeArguments } from './context';
+import { InvocationContext, InvocationOptions, InvokeOptions } from './context';
 import { ClassRef } from './metadata/class';
 import { AbstractType } from './types';
 import { MethodType } from './injector';
@@ -62,7 +62,7 @@ export abstract class Invocation<T = any, TRes = any, TC extends InvocationConte
      * Invoke the underlying operation using the given {@code context}.
      * @param option invoke arguments.
      */
-    abstract invoke(options: InvokeArguments): TRes;
+    abstract invoke(options: InvokeOptions): TRes;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param method method name.
@@ -79,7 +79,7 @@ export abstract class Invocation<T = any, TRes = any, TC extends InvocationConte
      * @param method method name.
      * @param options invoke arguments.
      */
-    abstract invoke(method: MethodType<T>, options?: InvokeArguments): TRes;
+    abstract invoke(method: MethodType<T>, options?: InvokeOptions): TRes;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param method method name.

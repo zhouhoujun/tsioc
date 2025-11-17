@@ -11,12 +11,6 @@ import { hasItem } from './utils/lang';
 import { isDefined } from './utils/chk';
 import { Runtime } from './runtime';
 
-/**
- * request
- */
-export interface InvocationRequest {
-
-}
 
 /**
  * The context for the {@link Invocation invocation of an operation}.
@@ -86,11 +80,7 @@ export abstract class InvocationContext<TParent extends Injector = Injector> imp
      * attach extend with options.
      * @param options 
      */
-    abstract attach(options: InvocationContext | InvokeArguments): void;
-    /**
-     * the invocation request.
-     */
-    abstract get request(): InvocationRequest | null | undefined;
+    abstract attach(options: InvocationContext | InvokeOptions): void;
     /**
      * has token in the context or not.
      * 
@@ -245,27 +235,12 @@ export interface InvokeOptions extends InvokeProviders {
     isResolve?: boolean;
 }
 
-
 /**
  * invoke arguments.
  * 
  * 调用接口配置项及负载
  */
-export interface InvokeArguments extends InvokeOptions {
-    /**
-     * invocation request.
-     * 
-     * 调用接口负载对象
-     */
-    request?: InvocationRequest | null;
-}
-
-/**
- * invoke arguments.
- * 
- * 调用接口配置项及负载
- */
-export interface TargetInvokeArguments extends InvokeArguments {
+export interface TargetInvokeArguments extends InvokeOptions {
     /**
      * invocation invoke target type.
      */
@@ -280,7 +255,7 @@ export interface TargetInvokeArguments extends InvokeArguments {
 /**
  * InvocationOptions
  */
-export interface InvocationOptions<T = any> extends InvokeArguments {
+export interface InvocationOptions<T = any> extends InvokeOptions {
     /**
      * injector
      */
@@ -301,8 +276,8 @@ export interface InvocationOptions<T = any> extends InvokeArguments {
 
 
 
-export function hasContextOptions(option?: InvokeArguments): boolean {
+export function hasContextOptions(option?: InvokeOptions): boolean {
     if (!option) return false;
-    return hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values) || isDefined(option.request)
+    return hasItem(option.providers) || hasItem(option.resolvers) || hasItem(option.values);
 }
 

@@ -2,20 +2,21 @@ import {
     isNumber, AbstractType, Injectable, tokenId, Injector, ClassRef, isFunction, getClassify, ProvdierOf, Invocation,
     isArray, ArgumentException, StaticProvider, HandlerLike, composeHandlers, Type,
     Operator,
-    Context
+    Context,
+    getClassRef,
+    getTypeName
 } from '@tsdi/ioc';
-import { finalize, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
+import { finalize, forkJoin, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { ApplicationRunners } from '../ApplicationRunners';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent, ApplicationStartupEvent } from '../events';
 import { PipeTransform } from '../pipes/pipe';
 import { CanHandle } from '../guard';
-import { ApplicationHandler } from '../ApplicationHandler';
+import { ApplicationHandler, craeteRunableContext, RunableContext } from '../ApplicationHandler';
 import { ApplicationInterceptor } from '../ApplicationInterceptor';
 import { Filter } from '../filters/filter';
 import { ExceptionHandlerFilter } from '../filters/execption.filter';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
-import { HandleContext } from '../handlers/context';
 import { NotHandleException } from '../execptions';
 import { toObservable } from '../handlers';
 import { InvocationHandlerOptions } from '../invocation';
@@ -26,7 +27,7 @@ import { ApplicationContext } from '../ApplicationContext';
 /**
  *  Application runner interceptors multi token
  */
-export const APP_RUNNERS_INTERCEPTORS = tokenId<ApplicationInterceptor<HandleContext>[]>('APP_RUNNERS_INTERCEPTORS');
+export const APP_RUNNERS_INTERCEPTORS = tokenId<ApplicationInterceptor[]>('APP_RUNNERS_INTERCEPTORS');
 
 /**
  *  Application runner filters multi token
@@ -147,13 +148,13 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
 
     run(type?: AbstractType | AbstractType[]): Promise<void> {
         if (type) {
-            return lastValueFrom(this._handler.handle(new HandleContext(this.context, { request:  type  })));
+            return lastValueFrom(this._handler.handle(type, craeteRunableContext(this.getRef(type as AbstractType)?.context ?? this.context, type as AbstractType, true)));
         }
         return lastValueFrom(
             this.startup()
                 .pipe(
                     mergeMap(v => this.beforeRun()),
-                    mergeMap(v => this._types?.length ? this._handler.handle(new HandleContext(this.context, { bootstrap: true, request:  this._types })) : of(v)),
+                    mergeMap(v => this._types?.length ? forkJoin(this._types.map((ty) => this._handler.handle(this._types, craeteRunableContext(this.getRef(ty)?.context ?? this.context, ty, true)))) : of(v)),
                     mergeMap(v => this.afterRun())
                 )
         );
@@ -181,22 +182,22 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         this._types = null!;
     }
 
-    handle(context: HandleContext): Observable<any> {
+    handle(input: AbstractType | AbstractType[], context: RunableContext): Observable<any> {
         let handlers: HandlerLike[] | undefined;
-        if (isFunction(context.request)) {
-            handlers = this._maps.get(context.request)
-        } else if (isArray(context.request)) {
+        if (isFunction(input)) {
+            handlers = this._maps.get(input)
+        } else if (isArray(input)) {
             handlers = [];
-            context.request.forEach(type => {
+            input.forEach(type => {
                 handlers = handlers!.concat(this._maps.get(type) ?? []);
             });
         } else {
             return throwError(() => new ArgumentException('input type unknow'))
         }
         if (handlers && handlers.length) {
-            return toObservable(composeHandlers(handlers)(context, new Context()));
+            return toObservable(composeHandlers(handlers)(context, context));
         }
-        return throwError(() => new NotHandleException(context, context.targetType!));
+        return throwError(() => new NotHandleException(context, isArray(input) ? input.map(t => getTypeName(t)).join(',') : input));
     }
 
     protected startup(): Observable<any> {
