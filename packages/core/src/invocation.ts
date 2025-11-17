@@ -98,7 +98,7 @@ export abstract class Respond<TInput = any> {
      * @param input endpoint input data.
      * @param value handled returnning value
      */
-    abstract respond<T>(input: TInput, value: T): void;
+    abstract respond<T>(input: TInput, value: T, context: RunableContext): void;
 }
 
 /**
@@ -112,7 +112,7 @@ export abstract class TypedRespond<TInput = any> {
      * @param value handled returnning value
      * @param responseType response type
      */
-    abstract respond<T>(input: TInput, value: T, responseType: 'body' | 'header' | 'response'): void;
+    abstract respond<T>(input: TInput, value: T, responseType: 'body' | 'header' | 'response', context: RunableContext): void;
 }
 
 
@@ -138,6 +138,6 @@ export interface InvocationHandlerOptions<T = any> extends Omit<ConfigableHandle
     /**
      * endpoint handler response as.
      */
-    response?: 'body' | 'header' | 'response' | AbstractType<Respond<T>> | ((input: T, returnning: any) => void);
+    response?: 'body' | 'header' | 'response' | AbstractType<Respond<T>> | ((input: T, returnning: any, context: RunableContext) => void);
 
 }

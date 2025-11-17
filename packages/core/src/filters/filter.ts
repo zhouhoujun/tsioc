@@ -21,7 +21,7 @@ export abstract class Filter<TInput = any, TOutput = any, TContext extends Runab
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    abstract doFilter(input: TInput, next: ApplicationHandler<TInput, TOutput>, context?: TContext): Observable<TOutput>;
+    abstract doFilter(input: TInput, next: ApplicationHandler<TInput, TOutput>, context: TContext): Observable<TOutput>;
 
     /**
      * is this equals to target or not
@@ -143,10 +143,10 @@ function chainedFilterFn(
     chainTailLike: FilterLike, filterLike: FilterLike,
 ): FilterFn {
 
-    const chainTailFn = isFunction(chainTailLike) ? chainTailLike : (req: any, handle: HandlerFn, context?: any) => chainTailLike.doFilter(req, {
+    const chainTailFn = isFunction(chainTailLike) ? chainTailLike : (req: any, handle: HandlerFn, context: any) => chainTailLike.doFilter(req, {
         handle,
     }, context);
-    const filterFn = isFunction(filterLike) ? filterLike : (req: any, handle: HandlerFn, context?: any) => filterLike.doFilter(req, {
+    const filterFn = isFunction(filterLike) ? filterLike : (req: any, handle: HandlerFn, context: any) => filterLike.doFilter(req, {
         handle,
     }, context);
 

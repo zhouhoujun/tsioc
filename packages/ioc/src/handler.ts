@@ -96,7 +96,7 @@ export function composeInterceptors(interceptors: InterceptorLike[]): Intercepto
 }
 
 
-export function chainEndFn(req: any, finalHandlerFn: HandlerFn, context?: any) {
+export function chainEndFn(req: any, finalHandlerFn: HandlerFn, context: any) {
     return finalHandlerFn(req, context);
 }
 
@@ -114,10 +114,10 @@ function chainedInterceptorFn(
 }
 
 export function chainFactory(chainTailFn: InterceptorFn, interceptorFn: InterceptorFn): InterceptorFn {
-    return (initialRequest, finalHandlerFn, context?: any) =>
+    return (initialRequest, finalHandlerFn, context: any) =>
         interceptorFn(
             initialRequest,
-            (downstreamRequest, ctx?: any) => chainTailFn(downstreamRequest, finalHandlerFn, ctx ?? context),
+            (downstreamRequest, ctx: any) => chainTailFn(downstreamRequest, finalHandlerFn, ctx ?? context),
             context
         )
 }
@@ -299,6 +299,7 @@ export class ContextToken<T = any> {
 export class Context {
 
     protected map: Map<Token | ContextToken, any>;
+    
 
     constructor(entries?: readonly (readonly [Token | ContextToken, any])[] | null) {
         this.map = new Map(entries);
@@ -371,6 +372,10 @@ export class Context {
      */
     keys(): Iterator<Token | ContextToken> {
         return this.map.keys();
+    }
+
+    getEntries() {
+        return this.map.entries();
     }
 
     onDestroy(): void {

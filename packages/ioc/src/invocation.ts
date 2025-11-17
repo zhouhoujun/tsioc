@@ -4,6 +4,7 @@ import { ClassRef } from './metadata/class';
 import { AbstractType } from './types';
 import { MethodType } from './injector';
 import { DestroyCallback } from './destroy';
+import { Context } from './handler';
 
 
 /**
@@ -44,20 +45,25 @@ export abstract class Invocation<T = any, TRes = any, TC extends InvocationConte
     abstract get context(): TC;
 
     /**
-     * Invoke the underlying operation using the given {@code context}.
+     * Invoke the underlying operation using the class given {@link InvocationContext}.
      * @param context the context to use to invoke the operation
      */
     abstract invoke(): TRes;
     /**
-     * Invoke the underlying operation using the given {@code context}.
+     * Invoke the underlying operation using the class given {@link InvocationContext}.
      * @param args the arguments to use to invoke the operation
      */
     abstract invoke(args: any[]): TRes;
     /**
-     * Invoke the underlying operation using the given {@code context}.
+     * Invoke the underlying operation using the given {@link InvocationContext}.
      * @param context the context to use to invoke the operation
      */
     abstract invoke(context: TC): TRes;
+    /**
+     * Invoke the underlying operation using the given {@link Context}.
+     * @param context the context to use to invoke the operation
+     */
+    abstract invoke(context: Context): TRes;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param option invoke arguments.
@@ -74,6 +80,12 @@ export abstract class Invocation<T = any, TRes = any, TC extends InvocationConte
      * @param context the context to use to invoke the operation
      */
     abstract invoke(method: MethodType<T>, context?: TC): TRes;
+    /**
+     * Invoke the underlying operation using the given {@code context}.
+     * @param method method name.
+     * @param context the context to use to invoke the operation
+     */
+    abstract invoke(method: MethodType<T>, context?: Context): TRes;
     /**
      * Invoke the underlying operation using the given {@code context}.
      * @param method method name.

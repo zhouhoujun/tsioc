@@ -154,7 +154,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
             this.startup()
                 .pipe(
                     mergeMap(v => this.beforeRun()),
-                    mergeMap(v => this._types?.length ? forkJoin(this._types.map((ty) => this._handler.handle(this._types, createRunableContext(this.getRef(ty)?.context ?? this.context, ty, true)))) : of(v)),
+                    mergeMap(v => this._types?.length ? forkJoin(this._types.map((ty) => this._handler.handle(ty, createRunableContext(this.getRef(ty)?.context ?? this.context, ty, true)))) : of(v)),
                     mergeMap(v => this.afterRun())
                 )
         );
@@ -182,22 +182,17 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         this._types = null!;
     }
 
-    handle(input: AbstractType | AbstractType[], context: RunableContext): Observable<any> {
+    handle(input: AbstractType, context: RunableContext): Observable<any> {
         let handlers: HandlerLike[] | undefined;
         if (isFunction(input)) {
             handlers = this._maps.get(input)
-        } else if (isArray(input)) {
-            handlers = [];
-            input.forEach(type => {
-                handlers = handlers!.concat(this._maps.get(type) ?? []);
-            });
         } else {
             return throwError(() => new ArgumentException('input type unknow'))
         }
         if (handlers && handlers.length) {
-            return toObservable(composeHandlers(handlers)(context, context));
+            return toObservable(composeHandlers(handlers)(input, context));
         }
-        return throwError(() => new NotHandleException(context, isArray(input) ? input.map(t => getTypeName(t)).join(',') : input));
+        return throwError(() => new NotHandleException(context, input));
     }
 
     protected startup(): Observable<any> {
