@@ -71,9 +71,9 @@ export function createPayloadResolveInterceptors(getPayload: (input: any, scope?
 
             if (!pipe) throw missingPipeException(parameter, context.target!, parameter.propertyKey);
 
-            let payload = getPayload(context, parameter.scope, parameter.field ?? parameter.name);
+            let payload = getPayload(context.getPayload(), parameter.scope, parameter.field ?? parameter.name);
             if (isNil(payload)) {
-                const data = getPayload(context, parameter.scope);
+                const data = getPayload(context.getPayload(), parameter.scope);
                 if (isDefined(data) && !isObject(data)) {
                     payload = data;
                 } else if (parameter.nullable) {

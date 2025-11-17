@@ -799,18 +799,18 @@ export function getScopeValue(req: HandleRequest|null|undefined, scope: Paramete
 }
 
 const primitiveResolvers = createPayloadResolveInterceptors(
-    (ctx, scope, field) => {
+    (input, scope, field) => {
         if (field && !scope) {
             scope = 'query'
         }
         if (scope) {
-            const data = getScopeValue(ctx.request, scope);
+            const data = getScopeValue(input, scope);
             if (field) {
                 return isDefined(data) ? data[field] : null;
             }
             return data;
         }
-        return ctx.request;
+        return input;
     },
     // (param, req) => req && isDefined(getScopeValue(req, param.scope ?? 'query'))
     );

@@ -43,10 +43,9 @@ export const ROOT_DEPENDENCE_PROVIDERS: Provider[] = [
     {
         provide: getResolveHandlerToken(PayloadApplicationEvent),
         useValue: createPayloadResolveInterceptors(
-            (ctx, scope, field) => {
-                if (!ctx.request) return null;
+            (input, scope, field) => {
                 if (scope) {
-                    const scopeVal = ctx.request[scope];
+                    const scopeVal = input[scope];
                     if (field) {
                         return isDefined(scopeVal) ? scopeVal[field] : null;
                     }
@@ -54,7 +53,7 @@ export const ROOT_DEPENDENCE_PROVIDERS: Provider[] = [
                 } else if (field) {
                     return null;
                 }
-                return ctx.request;
+                return input;
             },
             // (param, payload) => payload && param.scope && isDefined(payload[param.scope])
         )
