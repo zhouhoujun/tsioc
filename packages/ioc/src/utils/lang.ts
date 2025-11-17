@@ -102,8 +102,7 @@ export function deepForEach<T>(
     isRecord?: (value: any) => boolean,
     getRecord?: (value: any) => T[]): void | Promise<void> {
     const ps: Promise<void>[] = [];
-    for (let i = 0, len = input.length; i < len; i++) {
-        const value = input[i];
+    for (const value of input) {
         if (isArray(value)) {
             const reslut = deepForEach(value, fn, isRecord, getRecord);
             if (reslut) {

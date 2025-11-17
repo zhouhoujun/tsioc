@@ -102,9 +102,14 @@ export class Advisor implements OnDestroy {
 
 
     match(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): boolean {
-        return Array.from(this.advices.values()).some(r => {
-            return r.some(a => a.match(name, fullName, targetRef, target, options))
-        })
+        for (const r of this.advices.values()) {
+            for (const a of r) {
+                if (a.match(name, fullName, targetRef, target, options)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     hasCtor(tagref: ClassRef): boolean {
@@ -126,15 +131,15 @@ export class Advisor implements OnDestroy {
         }
 
         for (const r of this.advices.values()) {
-            if(names.some(name =>r.some(a => a.match(name, `${typeRef?.className ?? getTypeName(instance)}.${name}`, typeRef, instance, { way: 'root' })))) {
-                return true;
+            for (const name of names) {
+                for (const a of r) {
+                    if (a.match(name, `${typeRef?.className ?? getTypeName(instance)}.${name}`, typeRef, instance, { way: 'root' })) {
+                        return true;
+                    }
+                }
             }
         }
         return false;
-
-        // return Array.from(this.advices.values()).some(r => {
-        //     return names.some(name => r.some(a => a.match(name, `${typeRef?.className ?? getTypeName(instance)}.${name}`, typeRef, instance, { way: 'root' })))
-        // })
     }
 
     protected getAdvicers(...types: AdviceTypes[]): Advicer[] {

@@ -73,7 +73,10 @@ export function isMetadataObject(target: any, ...args: (string | string[])[]): b
     if (args.length) {
         const props = isArray(args[0]) ? args[0] : args as string[];
         const keys = Object.keys(target);
-        return props.some(p => keys.includes(p))
+        for (const p of props) {
+            if (keys.includes(p)) return true;
+        }
+        return false
     }
 
     return true
