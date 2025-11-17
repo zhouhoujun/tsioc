@@ -162,9 +162,9 @@ export class ClassRef<T = any> {
     }
 
     /**
-     * Invoke the underlying operation using the given {@code context}.
+     * Invoke the underlying operation using the given {@code injector}.
      * @param method invoke the method named with.
-     * @param context the context to use to invoke the operation
+     * @param injector the injector to use to invoke the method
      * @param instance the method of instance 
      * @param args invoke with args
      */
@@ -179,7 +179,7 @@ export class ClassRef<T = any> {
         }
         const hasPointcut = inst[proxyTag];
         if (hasPointcut) {
-            args.push(context)
+            args.push(injector)
         }
         return inst[method](...args);
     }
