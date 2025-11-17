@@ -1,7 +1,7 @@
 import { ArgumentException, Injectable, MissingParameterException, Module } from '@tsdi/ioc';
 import expect = require('expect');
 import { catchError, lastValueFrom, of } from 'rxjs';
-import { Application, ApplicationContext, ExceptionContext } from '../src';
+import { Application, ApplicationContext, RunableContext } from '../src';
 import { Dispose, EventHandler, ExceptionHandler, Payload, Runner, Shutdown, Start } from '../src/metadata';
 
 
@@ -11,7 +11,7 @@ import { Dispose, EventHandler, ExceptionHandler, Payload, Runner, Shutdown, Sta
 export class ExceptionHandlers {
 
     @ExceptionHandler(MissingParameterException)
-    catchMessing(exception: MissingParameterException, context: ExceptionContext, ctx: ApplicationContext) {
+    catchMessing(exception: MissingParameterException, context: RunableContext, ctx: ApplicationContext) {
         ctx.runners.getRef(TestService).instance.missingParameterrException = exception;
         return exception;
     }
@@ -19,7 +19,7 @@ export class ExceptionHandlers {
     @ExceptionHandler(ArgumentException, {
         response: 'body'
     })
-    catchArgumentError(exception: ArgumentException, context: ExceptionContext, ctx: ApplicationContext) {
+    catchArgumentError(exception: ArgumentException, context: RunableContext, ctx: ApplicationContext) {
         ctx.runners.getRef(TestService).instance.argumentException = exception;
         return exception;
     }

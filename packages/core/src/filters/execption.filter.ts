@@ -1,31 +1,31 @@
-import { Abstract, DefaultInvocationContext, Exception, getType, lang, Injectable, Injector, InvokeOptions, isPromise, isUndefined, composeHandlers } from '@tsdi/ioc';
-import { catchError, finalize, isObservable, mergeMap, Observable, of, throwError } from 'rxjs';
+import { Abstract, Exception, Injectable, isPromise, isUndefined, composeHandlers } from '@tsdi/ioc';
+import { catchError, isObservable, mergeMap, Observable, of, throwError } from 'rxjs';
 import { ApplicationHandler, RunableContext } from '../ApplicationHandler';
 import { Filter, FilterHandlerResolver } from './filter';
 import { toObservable } from '../handlers';
 
 
-/**
- * execption context
- * 
- * 异常处理上下文
- */
-export class ExceptionContext<T = any> extends DefaultInvocationContext {
+// /**
+//  * execption context
+//  * 
+//  * 异常处理上下文
+//  */
+// export class ExceptionContext<T = any> extends DefaultInvocationContext {
 
-    constructor(public execption: Error, readonly host: T, injector: Injector, options?: InvokeOptions) {
-        super(injector, { ...options })
+//     constructor(public execption: Error, readonly host: T, injector: Injector, options?: InvokeOptions) {
+//         super(injector, { ...options })
 
-        this.setValue(getType(execption), execption);
-        const tokens = lang.getTypeChain(getType(host));
-        tokens.forEach(token => this.setValue(token, host));
-    }
+//         this.setValue(getType(execption), execption);
+//         const tokens = lang.getTypeChain(getType(host));
+//         tokens.forEach(token => this.setValue(token, host));
+//     }
 
-    protected override clear(): void {
-        (this as any).host = null!;
-        super.clear();
-    }
+//     protected override clear(): void {
+//         (this as any).host = null!;
+//         super.clear();
+//     }
 
-}
+// }
 
 /**
  * execption filter
@@ -96,8 +96,6 @@ export class ExceptionHandlerFilter<TInput, TOutput = any, TContext extends Runa
         if (!handlers || !handlers.length) {
             return throwError(() => err);
         }
-
-        // const expcption = new ExceptionContext(err, input, injector);
 
         return toObservable(composeHandlers(handlers, (res, next, input, context) => {
             if (isUndefined(res)) {

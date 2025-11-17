@@ -1,12 +1,12 @@
-import { AbstractType, ContextToken, DefaultInvocationContext, Injector, InvokeOptions, ResolveContext, ResolveInterceptorLike, getType, isBoolean } from '@tsdi/ioc';
-import { getResolveHandlerToken, ParameterScope } from './resolver';
+// import { AbstractType, ContextToken, DefaultInvocationContext, Injector, InvokeOptions, ResolveContext, ResolveInterceptorLike, getType, isBoolean } from '@tsdi/ioc';
+// import { getResolveHandlerToken, ParameterScope } from './resolver';
 
-/**
- * handle context options.
- */
-export interface HandleContextOpts extends InvokeOptions {
-    bootstrap?: boolean;
-}
+// /**
+//  * handle context options.
+//  */
+// export interface HandleContextOpts extends InvokeOptions {
+//     bootstrap?: boolean;
+// }
 
 
 // const BOOTSTRAP = new ContextToken<boolean>(() => false);
