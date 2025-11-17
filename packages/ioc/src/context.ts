@@ -1,9 +1,9 @@
-import { AbstractType, Type, TypeOf } from './types';
+import { AbstractType, TypeOf } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Abstract } from './metadata/fac';
 import { DestroyCallback, Destroyable, OnDestroy } from './destroy';
 import { Injector, InjectOperator, InjectorScope } from './injector';
-import { ResolveInterceptorLike, Parameter } from './resolver';
+import { Parameter, ResolveInterceptorLike } from './resolver';
 import { Provider } from './providers';
 import { Exception } from './exception';
 import { Invocation } from './invocation';
@@ -121,6 +121,18 @@ export abstract class InvocationContext<TParent extends Injector = Injector> imp
      */
     abstract setValue<T>(token: Token<T>, value: T): this;
     /**
+     * resolve parameter of targetType.
+     * 
+     * 解析标记令牌的实例。
+     *
+     * @template T
+     * @param {Parameter<T>} parameter the resolve parameter {@link Parameter}.
+     * @param {AbstractType} targetType the parameter of type.
+     * 
+     * @returns {T}
+     */
+    abstract resolve<T>(parameter: Parameter<T>, targetType?: AbstractType): T;
+    /**
      * resolve token in context.
      * 
      * 解析上下文中标记指令的实例值
@@ -128,15 +140,6 @@ export abstract class InvocationContext<TParent extends Injector = Injector> imp
      * @param flags InjectFalgs 
      */
     abstract resolve<T>(token: Token<T>, falgs?: InjectFlags): T;
-    /**
-     * resolve the parameter value.
-     * 
-     * 解析调用参数
-     * @param meta property or parameter metadata type of {@link Parameter}.
-     * @param target resolve parameter for target type. 
-     * @returns the parameter value in this context.
-     */
-    abstract resolveArgument<T>(meta: Partial<Parameter<T>>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null;
     /**
      * context destroyed or not.
      * 

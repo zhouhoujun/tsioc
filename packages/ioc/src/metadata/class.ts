@@ -1,7 +1,7 @@
 import { AbstractType, Type, Annotation, TypeOf } from '../types';
 import { ModuleWithProviders, Provider } from '../providers';
 import { PropertyMetadata, ParameterMetadata, AnnotationMetadata } from './meta';
-import { InvocationContext, InvocationOptions, InvokeArguments } from '../context';
+import { InvocationOptions, InvokeArguments } from '../context';
 import { Token } from '../tokens';
 import { getResolver, ResolveInterceptorLike } from '../resolver';
 import { forIn, hasItem, assign } from '../utils/lang';
@@ -168,14 +168,14 @@ export class ClassRef<T = any> {
      * @param instance the method of instance 
      * @param args invoke with args
      */
-    invoke(method: string | symbol, context: InvocationContext, instance?: T, args?: any[]) {
+    invoke(method: string | symbol, injector: Injector, instance?: T, args?: any[]) {
         const type = this.type;
-        const inst: any = instance ?? context.resolve(type);
+        const inst: any = instance ?? injector.resolve(type);
         if (!inst || !isFunction(inst[method])) {
             throw new Exception(`type: ${type} has no method ${method.toString()}.`)
         }
         if (!args) {
-            args = this.resolveArguments(method, context);
+            args = this.resolveArguments(method, injector);
         }
         const hasPointcut = inst[proxyTag];
         if (hasPointcut) {

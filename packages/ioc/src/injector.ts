@@ -9,6 +9,7 @@ import { isArray } from './utils/chk';
 import { InvocationContext, InvokeOptions } from './context';
 import { Exception } from './exception';
 import { Runtime } from './runtime';
+import { Parameter } from './resolver';
 
 /**
  * injector.
@@ -70,6 +71,27 @@ export abstract class Injector implements Destroyable, OnDestroy {
      * @returns {T} token value.
      */
     abstract get<T>(token: Token<T>, notFoundValue?: T, flags?: InjectFlags, raise?: Injector): T;
+
+    /**
+     * resolve parameter of targetType.
+     * 
+     * 解析标记令牌的实例。
+     *
+     * @template T
+     * @param {Parameter<T>} parameter the resolve parameter {@link Parameter}.
+     * @param {AbstractType} targetType the parameter of type.
+     * 
+     * @returns {T}
+     */
+    abstract resolve<T>(parameter: Parameter<T>, targetType?: AbstractType): T;
+    /**
+     * resolve token in context.
+     * 
+     * 解析上下文中标记指令的实例值
+     * @param token
+     * @param flags InjectFalgs 
+     */
+    abstract resolve<T>(token: Token<T>, falgs?: InjectFlags): T;
     /**
      * injector has destoryed or not.
      */

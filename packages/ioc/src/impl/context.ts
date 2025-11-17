@@ -1,7 +1,7 @@
 import { AbstractType } from '../types';
 import { remove, deepTypeChain } from '../utils/lang';
 import { getType, isType, isNil } from '../utils/chk';
-import { ResolveInterceptorLike, Parameter, Resolver, createResolveContext } from '../resolver';
+import { ResolveInterceptorLike, Parameter, Resolver } from '../resolver';
 import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeArguments, InvocationRequest } from '../context';
 import { InjectFlags, Token } from '../tokens';
 import { Injector } from '../injector';
@@ -85,7 +85,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
     }
 
     protected initRequest(options: TargetInvokeArguments) {
-        this.request = options.request // || options.parent?.request;
+        this.request = options.request;
     }
 
     attach(option: InvocationContext | InvokeArguments): void {
@@ -283,32 +283,6 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         return this
     }
 
-    /**
-     * resolve token.
-     * 
-     * 解析上下文中标记指令的实例值
-     * @param token 
-     * @returns 
-     */
-    resolve<T>(token: Token<T>, flags?: InjectFlags): T {
-        return this.resolveArgument({ provider: token, flags } as Parameter<T>) as T;
-    }
-
-
-
-    /**
-     * resolve the parameter value.
-     * 
-     * 解析调用参数
-     * @param meta property or parameter metadata type of {@link Parameter}.
-     * @returns the parameter value in this context.
-     */
-    resolveArgument<T>(meta: Parameter<T>, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void): T | null {
-        this.assertNotDestroyed();
-        return this.get(Resolver).resolve(meta, createResolveContext(this, target, failed));
-
-    }
-
 
     protected clear() {
         super.clear();
@@ -329,138 +303,3 @@ INVOCATION_CONTEXT_IMPL.isContext = (ctx: any): ctx is InvocationContext => {
 export function isInvocationContext(ctx: any): ctx is InvocationContext {
     return ctx instanceof DefaultInvocationContext;
 }
-
-// /**
-//  * Missing argument execption.
-//  */
-// export class MissingParameterException extends Exception {
-//     constructor(parameters: Partial<Parameter>[], type: AbstractType, method: string) {
-//         super(`ailed to invoke operation because the following required parameters were missing: [ ${parameters.map(p => object2string(p)).join(',\n')} ], method ${method} of class ${object2string(type)}`)
-//     }
-// }
-
-
-// const deft = {
-//     typeInst: true,
-//     fun: true
-// }
-
-// /**
-//  * format object to string for log.
-//  * @param obj 
-//  * @returns 
-//  */
-// export function object2string(obj: any, options?: { typeInst?: boolean; fun?: boolean; }): string {
-//     options = { ...deft, ...options };
-//     if (isArray(obj)) {
-//         return `[${obj.map(v => object2string(v, options)).join(', ')}]`
-//     } else if (isString(obj)) {
-//         return `"${obj}"`
-//     } else if (isAbstractType(obj)) {
-//         return 'Type<' + getTypeName(obj) + '>'
-//     } else if (obj instanceof ClassRef) {
-//         return `[${obj.className} TypeReflect]`
-//     } else if (isPlainObject(obj)) {
-//         const str: string[] = [];
-//         for (const n in obj) {
-//             const value = obj[n];
-//             str.push(`${n}: ${object2string(value, options)}`)
-//         }
-//         return `{ ${str.join(', ')} }`
-//     } else if (options.typeInst && isTypeObject(obj)) {
-//         const fileds = Object.keys(obj).filter(k => k).map(k => `${k}: ${object2string(obj[k], { typeInst: false, fun: false })}`);
-//         return `[${getTypeName(obj)} {${fileds.join(', ')}} ]`
-//     }
-//     if (!options.fun && isFunction(obj)) {
-//         return 'Function'
-//     }
-//     return `${obj?.toString()}`
-// }
-
-
-
-
-
-// const UNRESOLVED = {};
-// const unResolve = <TInput, TOutput = any, TContext = any>(input: TInput, context: TContext) => UNRESOLVED as TOutput;
-
-// export function isResolved(value: any) {
-//     return value !== UNRESOLVED;
-// }
-
-// export function createResolveScope<TInput, TContext = any, TOutput = any>(runtime: Runtime, interceptors: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): RuntimeHandler<TInput, TContext, TOutput> {
-//     return new RuntimeHandler<TInput, TContext, TOutput>(runtime, backend ?? unResolve, interceptors)
-// }
-
-// const TOKER_RESOLVER = new ContextToken<RuntimeHandler<[Token, InjectFlags | undefined], InvocationContext>>(() => null!);
-// export function getTokenResolver(runtime: Runtime): RuntimeHandler<[Token, InjectFlags | undefined], InvocationContext> {
-//     let scope = runtime.get(TOKER_RESOLVER);
-//     if (!scope) {
-//         scope = createResolveScope(
-//             runtime,
-//             [
-//                 (input, next, context) => {
-//                     if (context.has(input[0], input[1])) {
-//                         return context.get(input[0], null, input[1])
-//                     }
-//                     return next(input, context);
-//                 },
-//                 (input, next, context) => {
-//                     const [type, flags] = input
-//                     if (!isType(type) || getDef(type).abstract) {
-//                         return next(input, context);
-//                     }
-//                     if (!context.has(type, flags)) {
-//                         // const injector = context.getParent() ?? context.injector;
-//                         // Operator.register(context, type);
-
-//                     }
-//                     return context.get(type, null, flags)
-//                 },
-
-
-//             ]
-//         );
-//         runtime.set(TOKER_RESOLVER, scope);
-//     }
-//     return scope;
-// }
-
-// const PARAMETER_RESOLVER = new ContextToken<RuntimeHandler>(() => null!);
-// export function getParameterResolver(platform: Runtime): RuntimeHandler<Parameter, InvocationContext> {
-//     let scope = platform.get(PARAMETER_RESOLVER);
-//     if (!scope) {
-//         scope = createResolveScope(
-//             platform,
-//             [
-//                 (input, next, context) => {
-//                     if (input.provider && !input.multi) {
-//                         const value = getTokenResolver(platform).handle([input.provider, input.flags], context);
-//                         if (isResolved(value)) return value;
-//                     } else if (!input.multi && input.name && context.has(input.name, input.flags)) {
-//                         return context.get(input.name, input.flags)
-//                     } else if (input.type) {
-//                         const value = getTokenResolver(platform).handle([input.type, input.flags], context);
-//                         if (isResolved(value)) return value;
-//                     }
-//                     return next(input, context);
-//                 },
-//                 (input, next, context) => {
-
-//                     if (!isNil(input.defaultValue)) {
-//                         return input.defaultValue;
-//                     }
-//                     if (input.nullable === true || (input.flags && !!(input.flags & InjectFlags.Optional))) {
-//                         return null;
-//                     }
-
-//                     return next(input, context);
-//                 }
-//             ]
-//         );
-//         platform.set(PARAMETER_RESOLVER, scope);
-//     }
-//     return scope;
-// }
-
-

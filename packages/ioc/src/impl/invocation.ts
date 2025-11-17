@@ -12,7 +12,7 @@ import { composeHandlers, Context } from '../handler';
 import { getClassify } from '../metadata/refl';
 import { Runtime } from '../runtime';
 import { Provider } from '../providers';
-import { ResolveInterceptorLike } from '../resolver';
+import { Parameter, ResolveInterceptorLike } from '../resolver';
 
 /**
  * abstract invocation 
@@ -235,7 +235,7 @@ export abstract class AbstractInvocation<T = any,
 
     protected resolve<R>(token: Token<R>, flags?: InjectFlags): R {
         this.assertNotDestroyed();
-        return this.context.resolveArgument({ provider: token, flags, nullable: true })!
+        return this.context.resolve({ provider: token, flags, nullable: true } as Parameter)!
     }
 
     equals(target: Invocation): boolean {

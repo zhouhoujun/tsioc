@@ -2,7 +2,7 @@ import { AbstractType, Type, noPointcut } from '../types';
 import { Destroyable, DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { cleanObj, deepForEach, Defer, defer, getTypeName, immediate } from '../utils/lang';
-import { isNil, isFunction, isPromise, isArray, isNumber, getType, isType } from '../utils/chk';
+import { isNil, isFunction, isPromise, isArray, isNumber, getType, isType, isUndefined } from '../utils/chk';
 import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, InjectorRecord, RegOption, INJECT_IMPL, EnvironmentInjector, RecordFactory } from '../injector';
 import { ArgumentException, Exception } from '../exception';
 import { Runtime } from '../runtime';
@@ -14,7 +14,7 @@ import { getClassRef, getDef } from '../metadata/refl';
 import { NullInjectorException, THROW_FLAGE, tryResolveToken, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, LAZY } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
 import { IocContext, RuntimeContext } from '../lifescope/context';
-import { Parameters } from '../resolver';
+import { createResolveContext, getResolver, isParameter, Parameter, Parameters } from '../resolver';
 import { CONTAINER, INJECTOR } from '../metadata/tk';
 import { InvocationFactory } from '../invocation';
 import { DefaultInvocationFactory } from './invocation';
@@ -178,6 +178,30 @@ export class AbstractInjector<TParent extends Injector = Injector> extends Injec
     }
 
     /**
+     * resolve parameter of targetType.
+     * 
+     * 解析标记令牌的实例。
+     *
+     * @template T
+     * @param {Parameter<T>} parameter the resolve parameter {@link Parameter}.
+     * @param {AbstractType} targetType the parameter of type.
+     * 
+     * @returns {T}
+     */
+    resolve<T>(parameter: Parameter<T>, targetType?: AbstractType): T;
+    /**
+     * resolve token in context.
+     * 
+     * 解析上下文中标记指令的实例值
+     * @param token
+     * @param flags InjectFalgs 
+     */
+    resolve<T>(token: Token<T>, falgs?: InjectFlags): T;
+    resolve<T>(token: any, arg?: any): T {
+        return Operator.resolve(this, token, arg);
+    }
+
+    /**
      * has destoryed or not.
      */
     get destroyed() {
@@ -337,6 +361,29 @@ export namespace Operator {
     }
 
     /**
+     * resolve parameter of targetType.
+     * 
+     * 解析标记令牌的实例。
+     *
+     * @template T
+     * @param {Parameter<T>} parameter the resolve parameter {@link Parameter}.
+     * @param {AbstractType} targetType the parameter of type.
+     * 
+     * @returns {T}
+     */
+    export function resolve<T>(injector: Injector, parameter: Parameter<T>, targetType?: AbstractType): T;
+    /**
+     * resolve token instance with token and param provider.
+     * 
+     * 解析标记令牌的实例。
+     *
+     * @template T
+     * @param {Token<T>} token the resolve token {@link Token}.
+     * @param {InjectFlags} flags check strategy by inject flags {@link InjectFlags}.
+     * @returns {T}
+     */
+    export function resolve<T>(injector: Injector, token: Token<T>, flags?: InjectFlags): T;
+    /**
      * resolve token instance with token and param provider.
      * 
      * 解析标记令牌的实例。
@@ -380,12 +427,16 @@ export namespace Operator {
      * @returns {T}
      */
     export function resolve<T>(injector: Injector, token: Token<T>, ...providers: Provider[]): T;
-    export function resolve<T>(injector: Injector, token: Token<T>, ...args: any[]) {
-        if (!(injector instanceof AbstractInjector)) throw new ArgumentException('not extends from AbstractInjector');
-        if (!args.length) {
-            return injector.get(token);
+    export function resolve<T>(injector: Injector, tokenOrParam: Token<T> | Parameter, ...args: any[]) {
+        if (!args.length || isUndefined(args[0]) || isNumber(args[0]) || isFunction(args[0])) {
+            if (isParameter(tokenOrParam)) {
+                return getResolver(injector).resolve(tokenOrParam, createResolveContext(injector, args[0]));
+            } else {
+                return getResolver(injector).resolve({ provider: tokenOrParam, flags: args[0] } as Parameter, createResolveContext(injector, isFunction(tokenOrParam) ? tokenOrParam : undefined));
+            }
         }
-        injector.assertNotDestroyed();
+        (injector as AbstractInjector).assertNotDestroyed?.();
+        const token = tokenOrParam as Token;
         let context: InvocationContext | undefined;
         const isResolve = true;
         let isCtx = false;
@@ -435,29 +486,6 @@ export namespace Operator {
         }
     }
 
-    // /**
-    //  * get token implement class type.
-    //  *
-    //  * @template T
-    //  * @param {Token<T>} token
-    //  * @param {InjectFlags} flags get token strategy.
-    //  * @returns {AbstractType<T>}
-    //  */
-    // export function getTokenProvider<T>(injector: Injector, token: Token<T>, flags = InjectFlags.Default): AbstractType<T> {
-    //     if (!(injector instanceof AbstractInjector)) throw new ArgumentException('not extends from AbstractInjector');
-    //     injector.assertNotDestroyed();
-    //     let type: AbstractType | undefined;
-    //     const records = injector.getRecords();
-    //     if (!(flags & InjectFlags.SkipSelf)) {
-    //         const rd = records.get(token);
-    //         type = rd?.type;
-    //     }
-    //     if (!type && !(flags & InjectFlags.Self)) {
-    //         const parent = injector.getParent();
-    //         type = parent ? getTokenProvider(parent as AbstractInjector, token, flags) : null!;
-    //     }
-    //     return type ?? null!
-    // }
     /**
      * cache token instance.
      *
@@ -745,13 +773,6 @@ export class DefaultInjectOperator implements InjectOperator {
         Operator.unregister(this.injector, token);
         return this
     }
-
-
-
-    // getTokenProvider<T>(token: Token<T>, flags = InjectFlags.Default): AbstractType<T> {
-    //     return Operator.getTokenProvider(this.injector, token, flags);
-    // }
-
 
 
     resolve<T, TArg>(token: Token<T>, option?: InvokeOptions): T;
