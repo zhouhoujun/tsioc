@@ -17,8 +17,7 @@ export const autorunInterceptor = (input: ClassRef, next: HandlerFn, context: Io
         }
 
         const invocation = input.createInvocation(context.injector);
-        for (let i = 0, len = runs.length; i < len; i++) {
-            const meta = runs[i];
+        for (const meta of runs) {
             invocation.invoke(meta.propertyKey);
         }
     })
@@ -129,28 +128,12 @@ export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context:
                 runtime.removeTypeProvider(pType, prd);
             });
         }
-
-        // if (input.provides.length) {
-        //     const factory = () => injector.get(provide);
-        //     const records = injector.getRecords();
-        //     input.provides.forEach(pdr => {
-        //         if (provide != pdr) {
-        //             injector.getRecords().set(pdr, createRecord(factory, injector.isStatic))
-        //         }
-        //     })
-        // }
     }
-    // else {
-    //     const factory = () => injector.get(type);
-    //     input.provides.forEach(provide => {
-    //         injector.getRecords().set(provide, createRecord(factory, injector.isStatic))
-    //     })
-    // }
+
     if (input.provides.length) {
         const factory = () => injector.get(type);
         const records = injector.getRecords();
-        for (let i = 0; i < input.provides.length; i++) {
-            const pdr = input.provides[i];
+        for (const pdr of input.provides) {
             if (provide != pdr && (context.isMutil ? !records.has(pdr) : true)) {
                 records.set(pdr, createRecord(factory, injector.isStatic))
             }

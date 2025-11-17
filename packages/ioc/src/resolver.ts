@@ -120,7 +120,6 @@ export function getResolver(injector: Injector) {
 }
 
 export const DEFAULTA_RESOLVER = tokenId<Resolver>('DEFAULTA_RESOLVER');
-// const RAISE_INJECTOR = new ContextToken<Injector>(() => null!);
 const TARGET = new ContextToken<AbstractType | null>(() => null);
 
 export class ResolveContext extends Context {
@@ -144,13 +143,6 @@ export class ResolveContext extends Context {
         return this.get(Runtime);
     }
 
-    // getRaiseInjector(): Injector {
-    //     return this.get(RAISE_INJECTOR);
-    // }
-
-    // setRaiseInjector(value: Injector) {
-    //     this.set(RAISE_INJECTOR, value);
-    // }
 
     getInjector(): Injector {
         return this.get(Injector);

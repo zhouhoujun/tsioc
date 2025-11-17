@@ -55,8 +55,7 @@ export function resolveArgs(injector: Injector, deps?: (ParameterLike | Injector
     let context = isFunction(targetOrContext) ? null : targetOrContext;
 
     const args: any[] = [];
-    for (let i = 0; i < deps.length; i++) {
-        const arg = deps[i];
+    for (const arg of deps) {
         if (isParameter(arg)) {
             if (!context) {
                 context = createResolveContext(injector, targetOrContext as AbstractType);

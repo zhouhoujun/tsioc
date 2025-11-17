@@ -2,7 +2,7 @@ import { AbstractType, Type, noPointcut } from '../types';
 import { Destroyable, DestroyCallback } from '../destroy';
 import { InjectFlags, Token } from '../tokens';
 import { cleanObj, deepForEach, Defer, defer, getTypeName, immediate } from '../utils/lang';
-import { isNil, isFunction, isPromise, isArray, isNumber, isAbstractType, getType, isType } from '../utils/chk';
+import { isNil, isFunction, isPromise, isArray, isNumber, getType, isType } from '../utils/chk';
 import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, InjectorRecord, RegOption, INJECT_IMPL, EnvironmentInjector, RecordFactory } from '../injector';
 import { ArgumentException, Exception } from '../exception';
 import { Runtime } from '../runtime';
@@ -967,8 +967,7 @@ export function processInjectType(
     const annotation = typeRef.getAnnotation<ModuleDef>();
     if (annotation.module) {
         if (annotation.imports?.length) {
-            for (let i = 0; i < annotation.imports.length; i++) {
-                const imp = annotation.imports[i];
+            for (const imp of annotation.imports) {
                 ps = mergePromise(ps, () => processInjectType(injector, imp, dedupStack, true, extedOption));
             }
         }
@@ -1005,21 +1004,21 @@ export function processInjectDeclarations(
 
     if (declarations && annotation.declarations?.length) {
         const extedOption = (typeRef: ClassRef, option?: RegOption) => ({ static: false, ...option, declaration: true });
-        annotation.declarations?.forEach(d => {
+        for (const d of annotation.declarations) {
             const res = processInjectType(injector, d, dedupStack, true, extedOption);
             if (res) {
                 dps.push(res);
             }
-        });
+        }
     }
     if (annotation.exports?.length) {
         const extedOption = (typeRef: ClassRef, option?: RegOption) => typeRef.getAnnotation<ModuleDef>().module ? option : ({ static: false, ...option, declaration: true });
-        annotation.exports?.forEach(d => {
+        for (const d of annotation.exports) {
             const res = processInjectType(injector, d, dedupStack, true, extedOption);
             if (res) {
                 dps.push(res);
             }
-        })
+        }
     }
     if (dps.length) return Promise.all(dps) as Promise<any>;
 }

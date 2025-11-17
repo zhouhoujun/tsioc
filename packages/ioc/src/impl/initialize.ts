@@ -20,8 +20,7 @@ export const runtimeAutorunInterceptor: InterceptorFn<ClassRef, any, RuntimeCont
             // const { injector, classRef: def, instance, context } = input;
             const injector = context.raiseInjector;
             const invocation = input.createInvocation(injector, { instance });
-            for (let i = 0, len = autos.length; i < len; i++) {
-                const aut = autos[i];
+            for (const aut of autos) {
                 invocation.invoke(aut.propertyKey);
             }
         }
@@ -44,8 +43,7 @@ function invokeRuntimeHandler(decors: DecoratorFn[], ctx: ClassRef, scope: Decor
     if (!decors || decors.length < 1) {
         return
     }
-    for (let i = 0, len = decors.length; i < len; i++) {
-        const d = decors[i];
+    for (const d of decors) {
         context.currDecor = d;
         d.getRuntimeHandler?.(scope)?.(ctx, context);
     }
