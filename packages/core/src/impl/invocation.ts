@@ -1,4 +1,4 @@
-import { InvocationContext, Invocation, createContext, getType, isFunction, isString, Injector, Type, Context, invokeTail, isInvocationContext } from '@tsdi/ioc';
+import { InvocationContext, Invocation, createContext, getType, isFunction, isString, Injector, Type, Context, invokeTail, isInvocationContext, ArgumentException } from '@tsdi/ioc';
 import { ApplicationHandlerFn, RunableContext } from '../ApplicationHandler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
@@ -46,12 +46,7 @@ export class DefaultInvocationHandler<
      * @returns 
      */
     protected respond(input: TInput, context: TContext) {
-        if (context instanceof Context) {
-            context.setPayload(input);
-            context.set(getType(input), input);
-        } else {
-            console.log(context);
-        }
+        context.setPayload(input);
 
         // let newCtx = false;
         // if (isInvocationContext(input)) {
@@ -104,9 +99,6 @@ export class DefaultInvocationHandler<
             if (trespond) {
                 trespond.respond(input, res, this.options.response, context);
             }
-            // else {
-            //     ctx.request[this.options.response] = res;
-            // }
         } else if (this.options.response) {
             const respond = this.context.get(this.options.response) ?? this.options.response;
             if (isFunction(respond)) {

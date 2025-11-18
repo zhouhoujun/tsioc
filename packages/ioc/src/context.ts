@@ -193,6 +193,12 @@ export type TokenValue<T = any> = [Token<T>, T];
  */
 export interface InvokeProviders {
     /**
+     * payload.
+     * 
+     * 调用接口的负载
+     */
+    payload?: any;
+    /**
      * token values.
      * 
      * 调用接口的标记值键值对
@@ -212,16 +218,6 @@ export interface InvokeProviders {
     providers?: Provider[];
 }
 
-
-// export interface InvokeParentContext {
-//     /**
-//      * parent InvocationContext,
-//      * 
-//      * 上级上下文
-//      */
-//     parent?: InvocationContext;
-
-// }
 
 /**
  * invoke options.

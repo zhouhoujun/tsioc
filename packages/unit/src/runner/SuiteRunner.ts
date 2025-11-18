@@ -1,7 +1,7 @@
-import { lang, Injectable, Invocation, AbstractType, AbstractInvocation, InvocationContext, InvokeOptions, AbstractInvocationFactory, InvocationOptions, ClassRef, Context } from '@tsdi/ioc';
+import { lang, Injectable, Invocation, AbstractType, AbstractInvocation, InvocationContext, InvokeOptions, AbstractInvocationFactory, InvocationOptions, ClassRef, Context, ResolveContext } from '@tsdi/ioc';
 import { Before, BeforeEach, Test, After, AfterEach } from '../metadata';
 import { BeforeTestMetadata, BeforeEachTestMetadata, TestCaseMetadata, SuiteMetadata } from '../metadata';
-import { RunCaseToken, RunSuiteToken, Assert } from '../assert/assert';
+import { Assert } from '../assert/assert';
 import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
 import { UnitRunner } from './Runner';
 
@@ -70,10 +70,7 @@ export class SuiteRunner<T = object> implements UnitRunner<T> {
             }
         }, timeout || this.timeout);
 
-        Promise.resolve(this.invocation.invoke(key, new Context([
-            [RunCaseToken, instance[key]],
-            [RunSuiteToken, instance]
-        ])))
+        Promise.resolve(this.invocation.invoke(key))
             .then(r => {
                 clearTimeout(timer);
                 timer = null!;
@@ -177,7 +174,7 @@ export class SuiteRunner<T = object> implements UnitRunner<T> {
 
 
 export class SuiteInvocation<T = any> extends AbstractInvocation<T> {
-    protected process(context?: InvocationContext | Context, args?: any[]) {
+    protected process(context?: InvocationContext | InvokeOptions, args?: any[], resolveCtx?: ResolveContext) {
         return this.context.resolve(SuiteRunner).run();
     }
 }

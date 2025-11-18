@@ -178,11 +178,11 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
                 })) as Observable<void | false>;
     }
 
-    handle(event: ApplicationEvent, context: Context): Observable<void | false> {
+    handle(event: ApplicationEvent, context: RunableContext): Observable<void | false> {
         const handlers = this.maps.get(getType(event));
         if (!handlers || !handlers.length) return of(undefined);
 
-        return toObservable(composeHandlers(handlers, (r, next, ctx) => {
+        return toObservable(composeHandlers(handlers, (r, next, input, ctx) => {
             if (r !== false || !event.propagation) {
                 return next(event, ctx ?? context);
             }

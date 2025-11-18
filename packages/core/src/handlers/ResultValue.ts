@@ -11,9 +11,9 @@ import { RunableContext } from '../ApplicationHandler';
  * @class ResultValue
  */
 @Abstract()
-export abstract class ResultValue<T = any> {
+export abstract class ResultValue<T> {
 
-    constructor(public contentType: string) { }
+    constructor(public contentType: string, readonly value: T) { }
 
     /**
      * send value.

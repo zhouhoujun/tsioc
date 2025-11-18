@@ -1,4 +1,4 @@
-import { Abstract, Type, tokenId, Token } from '@tsdi/ioc';
+import { Abstract, Type } from '@tsdi/ioc';
 
 /**
  * assertion error options.
@@ -31,9 +31,6 @@ export interface IAssertionError extends Error {
     generatedMessage: boolean;
 }
 
-
-export const RunSuiteToken: Token = tokenId('runSuite');
-export const RunCaseToken = tokenId<Function>('runCase');
 
 /**
  * abstract Assert class.

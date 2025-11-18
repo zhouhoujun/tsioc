@@ -3,9 +3,9 @@ import { ModuleWithProviders, Provider } from '../providers';
 import { PropertyMetadata, ParameterMetadata, AnnotationMetadata } from './meta';
 import { InvocationOptions, InvokeOptions } from '../context';
 import { Token } from '../tokens';
-import { getResolver, ResolveInterceptorLike } from '../resolver';
+import { createResolveContext, getResolver, ResolveContext, ResolveInterceptorLike } from '../resolver';
 import { forIn, hasItem, assign } from '../utils/lang';
-import { isFunction, isString } from '../utils/chk';
+import { isArray, isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { ArgumentException, Exception } from '../exception';
 import { Injector, MethodType, Resolve } from '../injector';
@@ -168,14 +168,31 @@ export class ClassRef<T = any> {
      * @param instance the method of instance 
      * @param args invoke with args
      */
-    invoke(method: string | symbol, injector: Injector, instance?: T, args?: any[]) {
+    invoke(method: string | symbol, injector: Injector, instance?: T, args?: any[]): any;
+    /**
+     * Invoke the underlying operation using the given {@code injector}.
+     * @param method invoke the method named with.
+     * @param injector the injector to use to invoke the method
+     * @param instance the method of instance 
+     * @param context arguments resolve context.
+     */
+    invoke(method: string | symbol, injector: Injector, instance?: T, context?: ResolveContext): any;
+    invoke(method: string | symbol, injector: Injector, instance?: T, argsOrContext?: any[] | ResolveContext): any {
         const type = this.type;
         const inst: any = instance ?? injector.resolve(type);
+        let args: any[]|undefined;
+        let context: ResolveContext|undefined;
+        if(isArray(argsOrContext)) {
+            args = argsOrContext;
+        } else if(context instanceof ResolveContext) {
+            context = argsOrContext;
+        }
+
         if (!inst || !isFunction(inst[method])) {
             throw new Exception(`type: ${type} has no method ${method.toString()}.`)
         }
         if (!args) {
-            args = this.resolveArguments(method, injector);
+            args = this.resolveArguments(method, injector, context);
         }
         const hasPointcut = inst[proxyTag];
         if (hasPointcut) {
@@ -244,9 +261,10 @@ export class ClassRef<T = any> {
      * @param method invoke the method named with.
      * @param injector invocation injector.
      */
-    resolveArguments(method: string | symbol, injector: Injector): any[] {
+    resolveArguments(method: string | symbol, injector: Injector, context?: ResolveContext): any[] {
+        if (context && context.getTarget() !== this.type) throw new ArgumentException('invaild context')
         const parameters = this.getParameters(method) ?? [];
-        const args = getResolver(injector).resolveParams(injector, parameters, this.type);
+        const args = getResolver(injector).resolveParams(injector, parameters, context ?? createResolveContext(injector, this.type));
         return args;
     }
 
