@@ -1,4 +1,4 @@
-import { InvocationContext, Invocation, createContext, getType, isFunction, isString, Injector, Type, Context, invokeTail, isInvocationContext, ArgumentException } from '@tsdi/ioc';
+import { InvocationContext, Invocation, createContext, getType, isFunction, isString, Injector, Type, Context, invokeTail, isInvocationContext, ArgumentException, createResolveContext } from '@tsdi/ioc';
 import { ApplicationHandlerFn, RunableContext } from '../ApplicationHandler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
@@ -46,7 +46,6 @@ export class DefaultInvocationHandler<
      * @returns 
      */
     protected respond(input: TInput, context: TContext) {
-        context.setPayload(input);
 
         // let newCtx = false;
         // if (isInvocationContext(input)) {
@@ -64,8 +63,11 @@ export class DefaultInvocationHandler<
         //     }
         // }
 
+        const rctx = createResolveContext(this.invocation.context, this.invocation.type);
+        rctx.setPayload(input);
+
         return invokeTail(() => this.beforeInvoke(input),
-            () => invokeTail(() => this.propertyKey ? this.invocation.invoke(this.propertyKey, context) : this.invocation.invoke(context),
+            () => invokeTail(() => this.propertyKey ? this.invocation.invoke(this.propertyKey, rctx) : this.invocation.invoke(rctx),
                 {
                     next: (res) => {
                         if (res instanceof ResultValue) {
@@ -73,9 +75,10 @@ export class DefaultInvocationHandler<
                         }
                         return this.respondAs(input, res, context);
                     },
-                    // finally: () => {
-                    //     if (newCtx) (input as InvocationContext).destroy();
-                    // }
+                    finally: () => {
+                        rctx.onDestroy();
+                        // if (newCtx) (input as InvocationContext).destroy();
+                    }
                 }));
 
     }

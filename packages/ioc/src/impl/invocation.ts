@@ -140,10 +140,10 @@ export abstract class AbstractInvocation<T = any,
         }
 
         if (!name) {
-            return this.process(context, args)
+            return this.process(context, args, rctx)
         }
 
-        return this.invokeMethod(name, context, args);
+        return this.invokeMethod(name, context, args, rctx);
     }
 
     protected abstract process(context?: TC | InvokeOptions, args?: any[], resolveCtx?: ResolveContext): any;

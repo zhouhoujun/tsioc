@@ -122,9 +122,9 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     }
 
 
-    publishEvent(event: ApplicationEvent): Observable<void | false>;
-    publishEvent(event: Object): Observable<void | false>;
-    publishEvent(obj: ApplicationEvent | Object): Observable<void | false> {
+    publishEvent(event: ApplicationEvent, context?: RunableContext): Observable<void | false>;
+    publishEvent(event: Object, context?: RunableContext): Observable<void | false>;
+    publishEvent(obj: ApplicationEvent | Object, context?: RunableContext): Observable<void | false> {
         if (!obj) throwError(() => new ArgumentException('Event must not be null'));
 
         // Decorate event as an ApplicationEvent if necessary
@@ -135,7 +135,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
             event = new PayloadApplicationEvent(this, obj)
         }
 
-        const context = createRunableContext(this.handler.context ?? this.injector);
+        context ??= createRunableContext(this.handler.context ?? this.injector);
         context.set(WITH_SELF, true);
 
         return this.downward(event, context)

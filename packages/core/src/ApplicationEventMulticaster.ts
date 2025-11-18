@@ -99,7 +99,7 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * execution for longer-running and potentially blocking operations.
      * @param event the event to publish
      */
-    abstract publishEvent(event: ApplicationEvent | Object): Observable<void | false>;
+    abstract publishEvent(event: ApplicationEvent | Object, context?: RunableContext): Observable<void | false>;
 
 
     abstract clear(): void;
