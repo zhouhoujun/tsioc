@@ -430,9 +430,9 @@ export namespace Operator {
     export function resolve<T>(injector: Injector, tokenOrParam: Token<T> | Parameter, ...args: any[]) {
         if (!args.length || isUndefined(args[0]) || isNumber(args[0]) || isFunction(args[0])) {
             if (isParameter(tokenOrParam)) {
-                return getResolver(injector).resolve(tokenOrParam, createResolveContext(injector, args[0]));
+                return getResolver(injector).resolve(tokenOrParam, createResolveContext(injector));
             } else {
-                return getResolver(injector).resolve({ provider: tokenOrParam, flags: args[0] } as Parameter, createResolveContext(injector, isFunction(tokenOrParam) ? tokenOrParam : undefined));
+                return getResolver(injector).resolve({ provider: tokenOrParam, flags: args[0] } as Parameter, createResolveContext(injector));
             }
         }
         (injector as AbstractInjector).assertNotDestroyed?.();

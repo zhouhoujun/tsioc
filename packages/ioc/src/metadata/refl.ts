@@ -36,7 +36,7 @@ const decorParamInject = (ctx: DecorContext, next: HandlerFn, context: Context) 
                 paramTypes = Reflect.getMetadata('design:paramtypes', ctx.target, propertyKey)
             }
             if (paramTypes) {
-                params = paramTypes.map((type, index) => ({ type, name: names[index], propertyKey }));
+                params = paramTypes.map((type, index) => ({ type, name: names[index], propertyKey, target: typeRef.type }));
                 meta.params = params;
             }
         }

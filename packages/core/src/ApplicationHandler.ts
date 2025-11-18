@@ -7,10 +7,9 @@ const BOOTSTRAP = new ContextToken<boolean>(() => false);
 export class RunableContext extends ResolveContext {
 
     constructor(injector: Injector,
-        readonly target?: AbstractType,
         bootstrap?: boolean,
         failed?: (target: AbstractType, propertyKey: string) => void) {
-        super(injector, target, failed)
+        super(injector, failed)
         if (isBoolean(bootstrap)) this.set(BOOTSTRAP, bootstrap);
     }
 
@@ -21,10 +20,9 @@ export class RunableContext extends ResolveContext {
 
 
 export function createRunableContext(injector: Injector,
-    target?: AbstractType,
     bootstrap?: boolean,
     failed?: (target: AbstractType, propertyKey: string) => void) {
-    return new RunableContext(injector, target, bootstrap, failed)
+    return new RunableContext(injector, bootstrap, failed)
 }
 
 /**

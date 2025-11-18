@@ -180,11 +180,11 @@ export class ClassRef<T = any> {
     invoke(method: string | symbol, injector: Injector, instance?: T, argsOrContext?: any[] | ResolveContext): any {
         const type = this.type;
         const inst: any = instance ?? injector.resolve(type);
-        let args: any[]|undefined;
-        let context: ResolveContext|undefined;
-        if(isArray(argsOrContext)) {
+        let args: any[] | undefined;
+        let context: ResolveContext | undefined;
+        if (isArray(argsOrContext)) {
             args = argsOrContext;
-        } else if(context instanceof ResolveContext) {
+        } else if (context instanceof ResolveContext) {
             context = argsOrContext;
         }
 
@@ -262,9 +262,8 @@ export class ClassRef<T = any> {
      * @param injector invocation injector.
      */
     resolveArguments(method: string | symbol, injector: Injector, context?: ResolveContext): any[] {
-        if (context && context.getTarget() !== this.type) throw new ArgumentException('invaild context')
         const parameters = this.getParameters(method) ?? [];
-        const args = getResolver(injector).resolveParams(injector, parameters, context ?? createResolveContext(injector, this.type));
+        const args = getResolver(injector).resolveParams(injector, parameters, context);
         return args;
     }
 
@@ -273,7 +272,19 @@ export class ClassRef<T = any> {
     }
 
     getParameters(method: string | symbol): ParameterMetadata[] | undefined {
-        return this.annotation.methodMetadatas?.get(method)?.params ?? this.parent?.getParameters(method)
+        let methAnno = this.annotation.methodMetadatas?.get(method);
+        if (methAnno?.params) {
+            return methAnno.params;
+        }
+        let params = this.parent?.getParameters(method);
+        if(params) {
+            params = params.map(p=> ({...p, target: this.type}));
+            if(!methAnno) {
+                methAnno = { params: params };
+                this.annotation.methodMetadatas.set(method, methAnno);
+            }
+        }
+        return params;
     }
 
     getReturnning(method: string | symbol): AbstractType | undefined {

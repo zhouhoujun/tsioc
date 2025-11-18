@@ -28,10 +28,10 @@ function isRecord(target: any): target is InjectorRecord {
 }
 
 
-export function resolveParameters(injector: Injector, params?: Parameter[], resolver?: Resolver, targetOrContext?: AbstractType | ResolveContext) {
+export function resolveParameters(injector: Injector, params?: Parameter[], resolver?: Resolver, context?: ResolveContext) {
     if (!params || !params.length) return [];
 
-    const context = isFunction(targetOrContext) ? createResolveContext(injector, targetOrContext) : targetOrContext ?? createResolveContext(injector);
+    context ??= createResolveContext(injector);
     if (!resolver) {
         resolver = getResolver(injector);
     }
@@ -48,17 +48,16 @@ export function resolveParameters(injector: Injector, params?: Parameter[], reso
 /**
  * 辅助函数：为工厂函数调用解析参数
  */
-export function resolveArgs(injector: Injector, deps?: (ParameterLike | InjectorRecord)[], resolver?: Resolver, targetOrContext?: AbstractType | ResolveContext): any[] {
+export function resolveArgs(injector: Injector, deps?: (ParameterLike | InjectorRecord)[], resolver?: Resolver, context?: ResolveContext): any[] {
     if (!deps || !deps.length) return [];
 
 
-    let context = isFunction(targetOrContext) ? null : targetOrContext;
 
     const args: any[] = [];
     for (const arg of deps) {
         if (isParameter(arg)) {
             if (!context) {
-                context = createResolveContext(injector, targetOrContext as AbstractType);
+                context = createResolveContext(injector);
             }
             if (!resolver) {
                 resolver = getResolver(injector);

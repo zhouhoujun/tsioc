@@ -103,7 +103,7 @@ export const propertyInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> =
         if (!instance) throw new Exception('autowride property need instance');
         let meta: PropertyMetadata, key: string, val;
 
-        const rctx = createResolveContext(injector, input.type);
+        const rctx = createResolveContext(injector);
         const resolver = getResolver(injector);
         input.eachPropertyProviders((metas, propertyKey) => {
             meta = metas.find(m => m.type || m.provider)!;
@@ -145,8 +145,8 @@ export const ctorArgsInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> =
 
     if (!context.args) {
         const resolver = getResolver(context.raiseInjector);
-        const args = context.params ? resolveArgs(context.raiseInjector, context.params, resolver, input.type)
-            : resolveParameters(context.raiseInjector, input.getParameters(ctorName), resolver, input.type);
+        const args = context.params ? resolveArgs(context.raiseInjector, context.params, resolver)
+            : resolveParameters(context.raiseInjector, input.getParameters(ctorName), resolver);
         context.args = args;
     }
 

@@ -63,7 +63,7 @@ export class DefaultInvocationHandler<
         //     }
         // }
 
-        const rctx = createResolveContext(this.invocation.context, this.invocation.type);
+        const rctx = createResolveContext(this.invocation.context);
         rctx.setPayload(input);
 
         return invokeTail(() => this.beforeInvoke(input),

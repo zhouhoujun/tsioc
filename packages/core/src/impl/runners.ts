@@ -148,13 +148,13 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
 
     run(type?: AbstractType | AbstractType[]): Promise<void> {
         if (type) {
-            return lastValueFrom(this._handler.handle(type, createRunableContext(this.getRef(type as AbstractType)?.context ?? this.context, type as AbstractType, true)));
+            return lastValueFrom(this._handler.handle(type, createRunableContext(this.getRef(type as AbstractType)?.context ?? this.context, true)));
         }
         return lastValueFrom(
             this.startup()
                 .pipe(
                     mergeMap(v => this.beforeRun()),
-                    mergeMap(v => this._types?.length ? forkJoin(this._types.map((ty) => this._handler.handle(ty, createRunableContext(this.getRef(ty)?.context ?? this.context, ty, true)))) : of(v)),
+                    mergeMap(v => this._types?.length ? forkJoin(this._types.map((ty) => this._handler.handle(ty, createRunableContext(this.getRef(ty)?.context ?? this.context, true)))) : of(v)),
                     mergeMap(v => this.afterRun())
                 )
         );

@@ -143,7 +143,7 @@ const loggerResolvers = [
             return next(pr, ctx);
         }
         const injector = ctx.getInjector();
-        const targetType = ctx.getTarget();
+        const targetType = pr.target;
         const targetName = targetType ? getTypeName(targetType) : '';
         const managers = injector.get(LoggerManagers);
         if (!managers) {

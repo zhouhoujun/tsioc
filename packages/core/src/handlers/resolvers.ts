@@ -69,7 +69,7 @@ export function createPayloadResolveInterceptors(getPayload: (input: any, scope?
                 return next(parameter, context);
             }
 
-            if (!pipe) throw missingPipeException(parameter, context.getTarget()!, parameter.propertyKey);
+            if (!pipe) throw missingPipeException(parameter, parameter.target, parameter.propertyKey);
 
             let payload = getPayload(context.getPayload(), parameter.scope, parameter.field ?? parameter.name);
             if (isNil(payload)) {

@@ -38,9 +38,9 @@ export class DefaultResolver implements Resolver {
                 next: (res) => {
                     if (res === UNRESOLVED) {
                         if (context.failed) {
-                            context.failed(context.getTarget()!, parameter.propertyKey!)
+                            context.failed(parameter.target, parameter.propertyKey!)
                         } else {
-                            this.missingException([parameter], context.getTarget()!, parameter.propertyKey!);
+                            this.missingException([parameter], parameter.target, parameter.propertyKey!);
                         }
                         return null;
                     }
@@ -51,21 +51,21 @@ export class DefaultResolver implements Resolver {
                         throw error;
                     }
                     if (context.failed) {
-                        context.failed(context.getTarget()!, parameter.propertyKey!)
+                        context.failed(parameter.target, parameter.propertyKey!)
                     } else {
-                        this.missingException([parameter], context.getTarget()!, parameter.propertyKey!);
+                        this.missingException([parameter], parameter.target, parameter.propertyKey!);
                     }
                 }
             }
         ) as T;
     }
 
-    resolveArgs(injector: Injector, args?: (ParameterLike | InjectorRecord)[], targetOrContext?: AbstractType|ResolveContext): any[] {
-        return resolveArgs(injector, args, this, targetOrContext)
+    resolveArgs(injector: Injector, args?: (ParameterLike | InjectorRecord)[], context?: ResolveContext): any[] {
+        return resolveArgs(injector, args, this, context)
     }
 
-    resolveParams(injector: Injector, params: Parameter[], targetOrContext?: AbstractType|ResolveContext): any[] {
-        return resolveParameters(injector, params, this, targetOrContext)
+    resolveParams(injector: Injector, params: Parameter[], context?: ResolveContext): any[] {
+        return resolveParameters(injector, params, this, context)
     }
 
     protected missingException(missings: Partial<Parameter>[], type: AbstractType<any>, method: string): Exception {

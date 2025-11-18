@@ -1,11 +1,9 @@
-import { ArgumentException } from './exception';
 import { Context, ContextToken, Interceptor, InterceptorLike } from './handler';
 import { Injector, InjectorRecord } from './injector';
 import { Runtime } from './runtime';
 import { InjectFlags, Token, tokenId } from './tokens';
 import { AbstractType, TypeOf } from './types';
 import { isObject } from './utils/chk';
-import { getTypeName } from './utils/lang';
 
 
 
@@ -23,6 +21,11 @@ export interface Parameter<T = any> {
      * param design type.
      */
     type?: AbstractType<T>;
+
+    /**
+     * the parameter of target type.
+     */
+    target: AbstractType<T>;
     /**
      * method property key
      *
@@ -84,27 +87,12 @@ export abstract class Resolver {
      */
     abstract resolve<T>(parameter: Parameter<T>, context: ResolveContext): T;
     /**
-     * resolve parameters
-     * @param injector 
-     * @param params 
-     * @param target 
-     */
-    abstract resolveParams(injector: Injector, params?: Parameter[], target?: AbstractType): any[];
-    /**
      * resolve parameter
      * @param injector 
      * @param params 
      * @param context 
      */
     abstract resolveParams(injector: Injector, params?: Parameter[], context?: ResolveContext): any[];
-
-    /**
-     * resolver arguments
-     * @param injector 
-     * @param args 
-     * @param target 
-     */
-    abstract resolveArgs(injector: Injector, args?: (ParameterLike | InjectorRecord)[], target?: AbstractType): any[];
     /**
      * resolver arguments
      * @param injector 
@@ -127,17 +115,11 @@ export class ResolveContext extends Context {
 
     constructor(
         injector: Injector,
-        target?: AbstractType,
         readonly failed?: (target: AbstractType, propertyKey: string) => void) {
         super();
         this.setInjector(injector);
         this.set(Runtime, injector.getRuntime());
-        if (target) this.set(TARGET, target);
 
-    }
-
-    getTarget() {
-        return this.get(TARGET);
     }
 
 
@@ -165,8 +147,8 @@ export class ResolveContext extends Context {
     }
 }
 
-export function createResolveContext(injector: Injector, target?: AbstractType, failed?: (target: AbstractType, propertyKey: string) => void) {
-    return new ResolveContext(injector, target, failed);
+export function createResolveContext(injector: Injector, failed?: (target: AbstractType, propertyKey: string) => void) {
+    return new ResolveContext(injector, failed);
 }
 
 // const onError = (target: AbstractType, propertyKey: string): void => {
