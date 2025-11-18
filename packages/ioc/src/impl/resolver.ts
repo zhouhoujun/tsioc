@@ -17,14 +17,9 @@ import { Operator } from './injector';
 
 export class DefaultResolver implements Resolver {
 
-    readonly handler: RuntimeHandler<Parameter>;
-
     constructor(
-        runtime: Runtime,
-        handler?: RuntimeHandler<Parameter> | null
-    ) {
-        this.handler = handler ?? getParameterResolveHanlder(runtime);
-    }
+       readonly handler: RuntimeHandler<Parameter>
+    ) { }
 
     resolve<T>(parameter: Parameter<T>, context: ResolveContext): T {
         const metaRvr = parameter.resolver;

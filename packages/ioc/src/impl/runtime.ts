@@ -14,8 +14,8 @@ import { INITIALIZE_INTERCEPTORS, instanceHandler } from './initialize';
 import { DESIGN_INTERECPTORS } from './design';
 import { InvocationFactory } from '../invocation';
 import { nonEnumerable } from '../metadata/decor';
-import { DefaultResolver } from './resolver';
-import { DEFAULTA_RESOLVER, Resolver } from '../resolver';
+import { DefaultResolver, getParameterResolveHanlder } from './resolver';
+import { DEFAULTA_RESOLVER } from '../resolver';
 
 
 /**
@@ -25,7 +25,7 @@ export class DefaultRuntime extends Context implements Runtime {
 
     @nonEnumerable
     private _initialize?: RuntimeHandler;
-    
+
     @nonEnumerable
     private _design?: RuntimeHandler;
 
@@ -33,7 +33,7 @@ export class DefaultRuntime extends Context implements Runtime {
         super()
         this.set(EnvironmentInjector, injector);
         this.set(INJECTORS, [injector]);
-        this.set(DEFAULTA_RESOLVER, new DefaultResolver(this));
+        this.set(DEFAULTA_RESOLVER, new DefaultResolver(getParameterResolveHanlder(this)));
         injector.onDestroy(this);
     }
 

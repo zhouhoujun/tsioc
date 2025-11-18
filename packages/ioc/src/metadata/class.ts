@@ -3,7 +3,7 @@ import { ModuleWithProviders, Provider } from '../providers';
 import { PropertyMetadata, ParameterMetadata, AnnotationMetadata } from './meta';
 import { InvocationOptions, InvokeOptions } from '../context';
 import { Token } from '../tokens';
-import { createResolveContext, getResolver, ResolveContext, ResolveInterceptorLike } from '../resolver';
+import { getResolver, ResolveContext, ResolveInterceptorLike } from '../resolver';
 import { forIn, hasItem, assign } from '../utils/lang';
 import { isArray, isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';

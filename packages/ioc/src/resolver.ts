@@ -108,15 +108,17 @@ export function getResolver(injector: Injector) {
 }
 
 export const DEFAULTA_RESOLVER = tokenId<Resolver>('DEFAULTA_RESOLVER');
-const TARGET = new ContextToken<AbstractType | null>(() => null);
+// const TARGET = new ContextToken<AbstractType | null>(() => null);
 const PAYLOAD = new ContextToken<any>(() => null);
 
 export class ResolveContext extends Context {
 
     constructor(
         injector: Injector,
+        payload?: any,
         readonly failed?: (target: AbstractType, propertyKey: string) => void) {
         super();
+        this.setPayload(payload);
         this.setInjector(injector);
         this.set(Runtime, injector.getRuntime());
 
@@ -147,8 +149,8 @@ export class ResolveContext extends Context {
     }
 }
 
-export function createResolveContext(injector: Injector, failed?: (target: AbstractType, propertyKey: string) => void) {
-    return new ResolveContext(injector, failed);
+export function createResolveContext(injector: Injector, payload?: any, failed?: (target: AbstractType, propertyKey: string) => void) {
+    return new ResolveContext(injector, payload, failed);
 }
 
 // const onError = (target: AbstractType, propertyKey: string): void => {

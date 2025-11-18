@@ -76,11 +76,11 @@ export abstract class InvocationContext<TParent extends Injector = Injector> imp
      * @param context 
      */
     abstract hasRef(context: InvocationContext): boolean;
-    /**
-     * attach extend with options.
-     * @param options 
-     */
-    abstract attach(options: InvocationContext | InvokeOptions): void;
+    // /**
+    //  * attach extend with options.
+    //  * @param options 
+    //  */
+    // abstract attach(options: InvocationContext | InvokeOptions): void;
     /**
      * has token in the context or not.
      * 

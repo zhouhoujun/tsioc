@@ -63,11 +63,11 @@ export class DefaultInvocationHandler<
         //     }
         // }
 
-        const rctx = createResolveContext(this.invocation.context);
-        rctx.setPayload(input);
+        // const rctx = createResolveContext(this.invocation.context);
+        // rctx.setPayload(input);
 
         return invokeTail(() => this.beforeInvoke(input),
-            () => invokeTail(() => this.propertyKey ? this.invocation.invoke(this.propertyKey, rctx) : this.invocation.invoke(rctx),
+            () => invokeTail(() => this.propertyKey ? this.invocation.invoke(this.propertyKey, {payload: input}) : this.invocation.invoke({payload: input}),
                 {
                     next: (res) => {
                         if (res instanceof ResultValue) {
@@ -75,10 +75,10 @@ export class DefaultInvocationHandler<
                         }
                         return this.respondAs(input, res, context);
                     },
-                    finally: () => {
-                        rctx.onDestroy();
-                        // if (newCtx) (input as InvocationContext).destroy();
-                    }
+                    // finally: () => {
+                    //     rctx.onDestroy();
+                    //     // if (newCtx) (input as InvocationContext).destroy();
+                    // }
                 }));
 
     }

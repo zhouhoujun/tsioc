@@ -8,11 +8,11 @@ import { Injector, MethodType } from '../injector';
 import { ArgumentException, Exception } from '../exception';
 import { InjectFlags, Token } from '../tokens';
 import { immediate } from '../utils/lang';
-import { composeHandlers, Context } from '../handler';
+import { composeHandlers } from '../handler';
 import { getClassify } from '../metadata/refl';
 import { Runtime } from '../runtime';
 import { Provider } from '../providers';
-import { Parameter, ResolveContext, ResolveInterceptorLike } from '../resolver';
+import { createResolveContext, Parameter, ResolveContext, ResolveInterceptorLike } from '../resolver';
 
 /**
  * abstract invocation 
@@ -140,25 +140,33 @@ export abstract class AbstractInvocation<T = any,
         }
 
         if (!name) {
-            return this.process(context, args, rctx)
+            return this.process(context, rctx)
         }
 
         return this.invokeMethod(name, context, args, rctx);
     }
 
-    protected abstract process(context?: TC | InvokeOptions, args?: any[], resolveCtx?: ResolveContext): any;
+    protected abstract process(context?: TC | InvokeOptions, resolveCtx?: ResolveContext): any;
 
     protected invokeMethod(name: string | symbol, ctx?: TC | InvokeOptions, args?: any[], resolveCtx?: ResolveContext): any {
 
-        const [context, destroy] = args ? [this.context] : this.createInvokeContext(name, ctx);
+        const [context, destroy, payload] = args ? [this.context] : this.createInvokeContext(name, ctx);
+        const isNetRCtx = !resolveCtx;
+        if (isNetRCtx) {
+            resolveCtx = createResolveContext(context, payload);
+        }
         if (!args) {
             args = this.classRef.resolveArguments(name, context, resolveCtx);
         }
 
         const result = this.classRef.invoke(name, context, this.instance, args);
 
-        if (destroy) {
-            const act = destroy as (() => void);
+        if (destroy || isNetRCtx) {
+            const act = isNetRCtx ? () => {
+                destroy?.();
+                resolveCtx?.onDestroy();
+            } : destroy as (() => void);
+
             if (isPromise(result)) {
                 return result.then(val => {
                     immediate(act);
@@ -191,10 +199,11 @@ export abstract class AbstractInvocation<T = any,
     }
 
 
-    protected createInvokeContext(propertyKey: string | symbol, option?: TC | InvokeOptions): [TC, Function | undefined] {
+    protected createInvokeContext(propertyKey: string | symbol, option?: TC | InvokeOptions): [TC, Function | undefined, any] {
         const ctx = this.getMethodContext(propertyKey);
         let context: TC;
         let destroy: Function | undefined;
+        let payload: any | undefined;
         if (INVOCATION_CONTEXT_IMPL.isContext(option)) {
             context = option;
             const ext = ctx !== context;
@@ -205,6 +214,7 @@ export abstract class AbstractInvocation<T = any,
             }
         } else if (hasContextOptions(option)) {
             context = this.createContext(ctx, option);
+            payload = option?.payload;
             destroy = () => {
                 if (context.used) return;
                 context.destroy()
@@ -214,7 +224,7 @@ export abstract class AbstractInvocation<T = any,
             context = ctx;
         }
 
-        return [context, destroy]
+        return [context, destroy, payload]
     }
 
     protected createInstance(): T {
@@ -296,11 +306,11 @@ export class DefaultInvocation<T = any,
         super(_classRef, context, options);
     }
 
-    protected process(option?: TC | InvokeOptions, args?: any[], resolveCtx?: ResolveContext) {
+    protected process(option?: TC | InvokeOptions,  resolveCtx?: ResolveContext) {
         const runnables = this.classRef.runnables.filter(r => !r.auto);
         if (runnables && runnables.length) {
             const handler = composeHandlers(runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {
-                return (option) => this.invokeMethod(runnable.propertyKey, option, args, resolveCtx)
+                return (option) => this.invokeMethod(runnable.propertyKey, option, undefined, resolveCtx)
             }));
             return handler(this.context, resolveCtx);
         } else {

@@ -174,7 +174,7 @@ export class SuiteRunner<T = object> implements UnitRunner<T> {
 
 
 export class SuiteInvocation<T = any> extends AbstractInvocation<T> {
-    protected process(context?: InvocationContext | InvokeOptions, args?: any[], resolveCtx?: ResolveContext) {
+    protected process(context?: InvocationContext | InvokeOptions, resolveCtx?: ResolveContext) {
         return this.context.resolve(SuiteRunner).run();
     }
 }
