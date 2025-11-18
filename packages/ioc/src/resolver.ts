@@ -1,4 +1,4 @@
-import { Context, ContextToken, Interceptor, InterceptorLike } from './handler';
+import { Context, ContextToken, TailHandler, TailHandlerFn, TailHandlerLike, Interceptor, InterceptorFn, InterceptorLike } from './handler';
 import { Injector, InjectorRecord } from './injector';
 import { Runtime } from './runtime';
 import { InjectFlags, Token, tokenId } from './tokens';
@@ -75,7 +75,12 @@ export function isParameter(target: any): target is Parameter {
     return isObject(target) && (target.provider || target.type || (target.name && target.propertyKey))
 }
 
+export type ResolveHandler<TInput extends Parameter = Parameter, TOuptut = any> = TailHandler<TInput, TOuptut, ResolveContext>;
+export type ResolveHandlerFn<TInput extends Parameter = Parameter, TOuptut = any> = TailHandlerFn<TInput, TOuptut, ResolveContext>;
+export type ResolveHandlerLike<TInput extends Parameter = Parameter, TOuptut = any> = TailHandlerLike<TInput, TOuptut, ResolveContext>;
+
 export type ResolveInterceptor<TInput extends Parameter = Parameter, TOuptut = any> = Interceptor<TInput, TOuptut, ResolveContext>;
+export type ResolveInterceptorFn<TInput extends Parameter = Parameter, TOuptut = any> = InterceptorFn<TInput, TOuptut, ResolveContext>;
 export type ResolveInterceptorLike<TInput extends Parameter = Parameter, TOuptut = any> = InterceptorLike<TInput, TOuptut, ResolveContext>;
 
 export abstract class Resolver {
@@ -124,8 +129,11 @@ export class ResolveContext extends Context {
 
     }
 
+    hasPayload(): boolean {
+        return this.has(PAYLOAD)
+    }
 
-    getPayload<T>(): T {
+    getPayload<T = any>(): T {
         return this.get(PAYLOAD) as T;
     }
 

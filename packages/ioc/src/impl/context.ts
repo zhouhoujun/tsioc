@@ -2,14 +2,14 @@ import { AbstractType } from '../types';
 import { remove, deepTypeChain } from '../utils/lang';
 import { getType, isType, isNil } from '../utils/chk';
 import { ResolveInterceptorLike, Parameter, Resolver } from '../resolver';
-import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL } from '../context';
+import { InvocationContext, TargetInvokeArguments, INVOCATION_CONTEXT_IMPL, InvokeOptions } from '../context';
 import { InjectFlags, Token } from '../tokens';
 import { Injector } from '../injector';
 import { Invocation } from '../invocation';
 import { RuntimeHandler } from '../lifescope/handler';
 import { nonEnumerable } from '../metadata/decor';
-import { createRecord, createValueRecord, NullInjectorException, THROW_FLAGE, tryResolveToken } from './common';
-import { AbstractInjector, deferProcessProviders } from './injector';
+import { createRecord, createValueRecord, LAZY, NullInjectorException, THROW_FLAGE, tryResolveToken } from './common';
+import { AbstractInjector, deferProcessProviders, Operator } from './injector';
 import { DefaultResolver, getParameterResolveHanlder } from './resolver';
 
 
@@ -78,33 +78,32 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
 
     }
 
-    // attach(option: InvocationContext | InvokeOptions): void {
-
-    //     if (isInvocationContext(option)) {
-    //         this.addRef(option);
-    //         this.onDestroy(() => this.removeRef(option));
-    //     } else {
-    //         if (option.values?.length) {
-    //             for (let i = 0, len = option.values.length; i < len; i++) {
-    //                 const par = option.values[i];
-    //                 Operator.setValue(this, par[0], par[1]);
-    //             }
-    //         }
-    //         if (option.providers?.length) {
-    //             deferProcessProviders(this, option.providers, this._readyDefer);
-    //         }
-    //         if (option.resolvers) {
-    //             if (option.resolvers?.length) {
-    //                 this._resolvers = null;
-    //                 const rrd = this.records.get(Resolver);
-    //                 if (rrd && rrd.value && rrd.value !== LAZY) {
-    //                     rrd.value = LAZY;
-    //                 }
-    //                 this.options.resolvers = option.resolvers.concat(this.options.resolvers ?? [])
-    //             }
-    //         }
-    //     }
-    // }
+    attach(option: InvocationContext | InvokeOptions): void {
+        if (isInvocationContext(option)) {
+            this.addRef(option);
+            this.onDestroy(() => this.removeRef(option));
+        } else {
+            if (option.values?.length) {
+                for (let i = 0, len = option.values.length; i < len; i++) {
+                    const par = option.values[i];
+                    this.setValue(par[0], par[1])
+                }
+            }
+            if (option.providers?.length) {
+                deferProcessProviders(this, option.providers, this._readyDefer);
+            }
+            if (option.resolvers) {
+                if (option.resolvers?.length) {
+                    this._resolvers = null;
+                    const rrd = this.records.get(Resolver);
+                    if (rrd && rrd.value && rrd.value !== LAZY) {
+                        rrd.value = LAZY;
+                    }
+                    this.options.resolvers = option.resolvers.concat(this.options.resolvers ?? [])
+                }
+            }
+        }
+    }
 
 
 

@@ -40,6 +40,32 @@ export type HandlerLike<TInput = any, TOutput = any, TContext = any> = HandlerFn
 
 
 /**
+ * Tail handler
+ */
+export interface TailHandler<TInput = any, TOutput = any, TContext = any> extends Handler<TInput, TOutput, TContext> {
+    /**
+     * handle.
+     * 
+     * 处理句柄
+     * @param input handle input.
+     * @param context handle with context.
+     */
+    handle(input: TInput, context: TContext, next?: NextOpter<TOutput, TContext>): TOutput;
+}
+
+/**
+ * tail handler fn.
+ * 处理器基本构建块。
+ */
+export type TailHandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, context: TContext, next?: NextOpter<TOutput, TContext>) => TOutput;
+
+/**
+ * tail handler like
+ */
+export type TailHandlerLike<TInput = any, TOutput = any, TContext = any> = TailHandlerFn<TInput, TOutput, TContext> | TailHandler<TInput, TOutput, TContext>;
+
+
+/**
  * Interceptor is a chainable behavior modifier for `hanlders`.
  * 
  * 拦截器，用于链接多个处理器，组合成处理器串。

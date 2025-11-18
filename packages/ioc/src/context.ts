@@ -8,7 +8,6 @@ import { Provider } from './providers';
 import { Exception } from './exception';
 import { Invocation } from './invocation';
 import { hasItem } from './utils/lang';
-import { isDefined } from './utils/chk';
 import { Runtime } from './runtime';
 
 
@@ -76,11 +75,11 @@ export abstract class InvocationContext<TParent extends Injector = Injector> imp
      * @param context 
      */
     abstract hasRef(context: InvocationContext): boolean;
-    // /**
-    //  * attach extend with options.
-    //  * @param options 
-    //  */
-    // abstract attach(options: InvocationContext | InvokeOptions): void;
+    /**
+     * attach extend with options.
+     * @param options 
+     */
+    abstract attach(options: InvocationContext | InvokeOptions): void;
     /**
      * has token in the context or not.
      * 

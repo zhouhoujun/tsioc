@@ -1,4 +1,4 @@
-import { InvocationContext, Invocation, createContext, getType, isFunction, isString, Injector, Type, Context, invokeTail, isInvocationContext, ArgumentException, createResolveContext } from '@tsdi/ioc';
+import { InvocationContext, Invocation, createContext, getType, isFunction, isString, Type, Context, invokeTail } from '@tsdi/ioc';
 import { ApplicationHandlerFn, RunableContext } from '../ApplicationHandler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
@@ -63,32 +63,25 @@ export class DefaultInvocationHandler<
         //     }
         // }
 
-        // const rctx = createResolveContext(this.invocation.context);
-        // rctx.setPayload(input);
-
         return invokeTail(() => this.beforeInvoke(input),
-            () => invokeTail(() => this.propertyKey ? this.invocation.invoke(this.propertyKey, {payload: input}) : this.invocation.invoke({payload: input}),
+            () => invokeTail(() => this.propertyKey ? this.invocation.invoke(this.propertyKey, { payload: input }) : this.invocation.invoke({ payload: input }),
                 {
                     next: (res) => {
                         if (res instanceof ResultValue) {
                             return res.sendValue(context);
                         }
                         return this.respondAs(input, res, context);
-                    },
-                    // finally: () => {
-                    //     rctx.onDestroy();
-                    //     // if (newCtx) (input as InvocationContext).destroy();
-                    // }
+                    }
                 }));
 
     }
 
-    protected attchContext(input: InvocationContext, context: TContext, nextData?: any) {
-        if (context instanceof Context) {
-            input.setValue(Context, context);
-        }
-        input.setValue(getType(context), context);
-    }
+    // protected attchContext(input: InvocationContext, context: TContext, nextData?: any) {
+    //     if (context instanceof Context) {
+    //         input.setValue(Context, context);
+    //     }
+    //     input.setValue(getType(context), context);
+    // }
 
     /**
      * respond as

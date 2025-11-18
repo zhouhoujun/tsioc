@@ -18,7 +18,8 @@ export class RuntimeHandler<TInput = any, TContext = any, TOutput = any> impleme
 
     handle(input: TInput, context: TContext, next?: NextOpter<TOutput, TContext> | ((input: TInput) => any)): TOutput {
         const chain = this.getChain();
-        return invokeTail<any>(() => chain(input, isFunction(this.backend) ? this.backend : toHandlerFn(this.backend), context), next);
+        return next ? invokeTail<any>(() => chain(input, isFunction(this.backend) ? this.backend : toHandlerFn(this.backend), context), next)
+            : chain(input, isFunction(this.backend) ? this.backend : toHandlerFn(this.backend), context);
     }
 
     /**

@@ -4,7 +4,7 @@ import { Injector, InjectorRecord } from '../injector';
 import { RuntimeHandler } from '../lifescope/handler';
 import { ClassRef } from '../metadata/class';
 import { getDef } from '../metadata/refl';
-import { Parameter, ParameterLike, ResolveContext, Resolver } from '../resolver';
+import { Parameter, ParameterLike, ResolveContext, ResolveHandler, ResolveHandlerLike, ResolveInterceptorLike, Resolver } from '../resolver';
 import { Runtime } from '../runtime';
 import { InjectFlags, Token } from '../tokens';
 import { AbstractType } from '../types';
@@ -18,7 +18,7 @@ import { Operator } from './injector';
 export class DefaultResolver implements Resolver {
 
     constructor(
-       readonly handler: RuntimeHandler<Parameter>
+       readonly handler: ResolveHandler
     ) { }
 
     resolve<T>(parameter: Parameter<T>, context: ResolveContext): T {
@@ -124,9 +124,13 @@ export function isResolved(value: any) {
     return value !== UNRESOLVED;
 }
 
+// export function createResolveHandler(interceptors?: ResolveInterceptorLike[], backend?: ResolveHandlerLike | null): ResolveHandler {
+//     return new RuntimeHandler(backend ?? unResolve, interceptors) 
+// }
 export function createResolveHandler<TInput, TContext = any, TOutput = any>(interceptors?: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): RuntimeHandler<TInput, TContext, TOutput> {
     return new RuntimeHandler<TInput, TContext, TOutput>(backend ?? unResolve, interceptors)
 }
+
 
 
 function tryResolve(injector: Injector, token: Token, flags?: InjectFlags) {

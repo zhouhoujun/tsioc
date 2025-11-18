@@ -271,6 +271,9 @@ function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name:
                 const defines = typeRef.getDefines(ctx.currDecor!);
                 const injector = ctx.injector;
                 const invocation = typeRef.createInvocation(injector);
+                invocation.context.attach({
+                    resolvers:[]
+                })
                 const multicaster = injector.get(ApplicationEventMulticaster);
                 defines.forEach(decor => {
                     const { filter, order, providedIn, ...options } = decor.metadata as InvocationHandlerOptions & { filter: AbstractType<ApplicationEvent> & { getStrategy?: () => string } };
@@ -300,7 +303,6 @@ function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name:
                     const handler = createInvocationHandler(invocation, options, decor.propertyKey);
                     const event = filter ?? defaultFilter;
                     const isFILO = isFunction(event.getStrategy) && event.getStrategy() == 'FILO';
-                    // const multicaster = providedIn ? injector.getRuntime().getInjector(providedIn).get(ApplicationEventMulticaster) : currMulticaster;
                     multicaster.addListener(event, handler, isFILO ? order ?? 0 : order);
                     invocation.onDestroy(() => multicaster.removeListener(event, handler))
                 });

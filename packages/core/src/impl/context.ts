@@ -30,11 +30,6 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
     // protected isStatic = false;
     private _runners: ApplicationRunners;
 
-    // /**
-    //  * application arguments.
-    //  */
-    // request!: ApplicationArguments;
-
     constructor(parent: ModuleRef, options: EnvironmentOption = {}) {
         super(parent, options);
         this._multicaster = parent.get(ApplicationEventMulticaster);
@@ -52,9 +47,7 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
     getArguments() {
         return this.get(ApplicationArguments);
     }
-    // protected override initRequest(options: EnvironmentOption): void {
-    //     this.request = options.request!
-    // }
+
 
     get baseURL(): string {
         return this.get(PROCESS_ROOT)

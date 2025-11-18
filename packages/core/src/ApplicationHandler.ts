@@ -1,4 +1,4 @@
-import { AbstractType, ContextToken, Handler, HandlerFn, HandlerLike, Injector, isBoolean, ResolveContext } from '@tsdi/ioc';
+import { AbstractType, ContextToken, Handler, HandlerFn, HandlerLike, Injector, isBoolean, NextOpter, ResolveContext } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 
 
@@ -38,7 +38,7 @@ export interface ApplicationHandler<TInput = any, TOutput = any, TContext extend
      * @param input handle input.
      * @param context handle with context.
      */
-    handle(input: TInput, context: TContext): Observable<TOutput>;
+    handle(input: TInput, context: TContext, next?: NextOpter<Observable<TOutput>, TContext>): Observable<TOutput>;
 }
 
 /**

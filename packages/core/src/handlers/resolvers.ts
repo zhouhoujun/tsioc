@@ -1,6 +1,7 @@
-import { ArgumentException, AbstractType, isArray, isString, Parameter, ResolveInterceptorLike, ContextToken, RuntimeHandler, Runtime, isToken, isPrimitive, isFunction, getTypeName, createResolveHandler, isResolved, isNil, isObject, isDefined } from '@tsdi/ioc';
-import { ParameterScope, TransportParameter } from './resolver';
+import { ArgumentException, AbstractType, isArray, isString, Parameter, ResolveInterceptorLike, ContextToken, RuntimeHandler, Runtime, isToken, isPrimitive, isFunction, getTypeName, createResolveHandler, isResolved, isNil, isObject, isDefined, ResolveInterceptorFn, getType } from '@tsdi/ioc';
+import { getResolveHandlerToken, ParameterScope, TransportParameter } from './resolver';
 import { PipeTransform } from '../pipes/pipe';
+import { PayloadApplicationEvent } from '../events';
 
 
 export function missingPipeException<T>(parameter: Parameter<T>, type?: AbstractType, method?: string | symbol) {
@@ -19,7 +20,7 @@ const MUTIL_RESOLVE_HANDLER = new ContextToken<RuntimeHandler>(() => null!);
 export function getMutilResolveHanlder(runtime: Runtime): RuntimeHandler<[any, PipeTransform, TransportParameter]> {
     let scope = runtime.get(MUTIL_RESOLVE_HANDLER);
     if (!scope) {
-        scope = createResolveHandler<[any, PipeTransform, TransportParameter], any>(
+        scope = createResolveHandler(
             [
                 (input, next, context): any => {
                     const [payload, pipe, parameter] = input;
@@ -94,6 +95,16 @@ export function createPayloadResolveInterceptors(getPayload: (input: any, scope?
     ];
 }
 
+
+export const typeResolveInterceptor: ResolveInterceptorFn = (input, next, context)=> {
+    if(context.hasPayload()) {        
+        const payload = context.getPayload();
+        const token = getResolveHandlerToken(getType(payload));
+        context.getInjector().get(token);
+        
+    }
+    return next(input, context);
+}
 
 /**
  * is list or not.
