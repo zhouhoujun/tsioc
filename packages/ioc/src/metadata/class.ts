@@ -272,19 +272,7 @@ export class ClassRef<T = any> {
     }
 
     getParameters(method: string | symbol): ParameterMetadata[] | undefined {
-        let methAnno = this.annotation.methodMetadatas?.get(method);
-        if (methAnno?.params) {
-            return methAnno.params;
-        }
-        let params = this.parent?.getParameters(method);
-        if(params) {
-            params = params.map(p=> ({...p, target: this.type}));
-            if(!methAnno) {
-                methAnno = { params: params };
-                this.annotation.methodMetadatas.set(method, methAnno);
-            }
-        }
-        return params;
+        return this.annotation.methodMetadatas?.get(method)?.params ?? this.parent?.getParameters(method)
     }
 
     getReturnning(method: string | symbol): AbstractType | undefined {
