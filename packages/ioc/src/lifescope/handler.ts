@@ -1,4 +1,4 @@
-import { composeInterceptors, Handler, HandlerFn, InterceptorFn, InterceptorLike, invokeTail, NextOpter, toHandlerFn } from '../handler';
+import { composeInterceptors, Handler, HandlerFn, InterceptorFn, InterceptorLike, invokeTail, TailNext, toHandlerFn } from '../handler';
 import { isFunction, isNumber } from '../utils/chk';
 
 /**
@@ -16,7 +16,7 @@ export class RuntimeHandler<TInput = any, TContext = any, TOutput = any> impleme
         this.interceptors = interceptors?.slice() ?? [];
     }
 
-    handle(input: TInput, context: TContext, next?: NextOpter<TOutput, TContext> | ((input: TInput) => any)): TOutput {
+    handle(input: TInput, context: TContext, next?: TailNext<TOutput, TContext>): TOutput {
         const chain = this.getChain();
         return next ? invokeTail<any>(() => chain(input, isFunction(this.backend) ? this.backend : toHandlerFn(this.backend), context), next)
             : chain(input, isFunction(this.backend) ? this.backend : toHandlerFn(this.backend), context);

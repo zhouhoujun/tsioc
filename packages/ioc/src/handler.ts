@@ -15,7 +15,7 @@ export interface Handler<TInput = any, TOutput = any, TContext = any> {
      * @param input handle input.
      * @param context handle with context.
      */
-    handle(input: TInput, context: TContext): TOutput;
+    handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): TOutput;
 
     /**
      * is this equals to target or not
@@ -30,7 +30,7 @@ export interface Handler<TInput = any, TOutput = any, TContext = any> {
  * handler fn.
  * 处理器基本构建块。
  */
-export type HandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, context: TContext) => TOutput;
+export type HandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>) => TOutput;
 
 
 /**
@@ -38,31 +38,6 @@ export type HandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TIn
  */
 export type HandlerLike<TInput = any, TOutput = any, TContext = any> = HandlerFn<TInput, TOutput, TContext> | Handler<TInput, TOutput, TContext>;
 
-
-/**
- * Tail handler
- */
-export interface TailHandler<TInput = any, TOutput = any, TContext = any> extends Handler<TInput, TOutput, TContext> {
-    /**
-     * handle.
-     * 
-     * 处理句柄
-     * @param input handle input.
-     * @param context handle with context.
-     */
-    handle(input: TInput, context: TContext, next?: NextOpter<TOutput, TContext>): TOutput;
-}
-
-/**
- * tail handler fn.
- * 处理器基本构建块。
- */
-export type TailHandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, context: TContext, next?: NextOpter<TOutput, TContext>) => TOutput;
-
-/**
- * tail handler like
- */
-export type TailHandlerLike<TInput = any, TOutput = any, TContext = any> = TailHandlerFn<TInput, TOutput, TContext> | TailHandler<TInput, TOutput, TContext>;
 
 
 /**
@@ -143,7 +118,7 @@ export function chainFactory(chainTailFn: InterceptorFn, interceptorFn: Intercep
     return (initialRequest, finalHandlerFn, context: any) =>
         interceptorFn(
             initialRequest,
-            (downstreamRequest, ctx: any) => chainTailFn(downstreamRequest, finalHandlerFn, ctx ?? context),
+            (downstreamRequest, ctx, tail) => tail ? invokeTail(() => chainTailFn(downstreamRequest, finalHandlerFn, ctx ?? context), tail) : chainTailFn(downstreamRequest, finalHandlerFn, ctx ?? context),
             context
         )
 }
@@ -158,7 +133,7 @@ export function toHandlerFn(handler: Handler & { [handleFn]?: HandlerFn }): Hand
     }
 
     // 创建标准化函数
-    const fn = (input: any, context?: any) => handler.handle(input, context);
+    const fn = (input: any, context?: any, next?: TailNext<any, any>) => handler.handle(input, context, next);
     fn[owner] = handler;
     handler[handleFn] = fn;
 
@@ -186,19 +161,19 @@ export function toInterceptorFn(interceptor: Interceptor & { [interceptorFn]?: I
     return fn;
 }
 
-
-
 export interface NextOpter<TOutput, TContext = any> {
     next?: (res: TOutput, context?: TContext) => any;
     error?: (error: any) => any;
     finally?: () => any;
 }
 
-export function invokeTail<T>(invoker: () => Observable<T> | Promise<T> | T, nextOpter?: NextOpter<T> | ((res: T, context?: any) => any)): Observable<T> | Promise<T> | T {
+export type TailNext<TOutput, TContext = any> = NextOpter<TOutput, TContext> | ((res: TOutput, context?: TContext) => any);
+
+export function invokeTail<T>(invoke: () => Observable<T> | Promise<T> | T, nextOpter?: TailNext<T>): Observable<T> | Promise<T> | T {
     const opter = nextOpter ? (isFunction(nextOpter) ? { next: nextOpter } : nextOpter) : null;
 
     try {
-        const res$ = invoker();
+        const res$ = invoke();
         if (!opter) return res$;
 
         if (isObservable(res$)) {
@@ -325,7 +300,7 @@ export class ContextToken<T = any> {
 export class Context {
 
     protected map: Map<Token | ContextToken, any>;
-    
+
 
     constructor(entries?: readonly (readonly [Token | ContextToken, any])[] | null) {
         this.map = new Map(entries);

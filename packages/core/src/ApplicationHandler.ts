@@ -1,4 +1,4 @@
-import { AbstractType, ContextToken, Handler, HandlerFn, HandlerLike, Injector, isBoolean, NextOpter, ResolveContext } from '@tsdi/ioc';
+import { AbstractType, ContextToken, Handler, HandlerLike, Injector, isBoolean, ResolveContext } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 
 
@@ -30,7 +30,7 @@ export function createRunableContext(injector: Injector,
  * 
  * 处理器基本构建块。
  */
-export interface ApplicationHandler<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> extends Handler<TInput, Observable<TOutput>, TContext> {
+export interface ApplicationHandler<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> {
     /**
      * handle.
      * 
@@ -38,13 +38,21 @@ export interface ApplicationHandler<TInput = any, TOutput = any, TContext extend
      * @param input handle input.
      * @param context handle with context.
      */
-    handle(input: TInput, context: TContext, next?: NextOpter<Observable<TOutput>, TContext>): Observable<TOutput>;
+    handle(input: TInput, context: TContext): Observable<TOutput>;
+
+    /**
+     * is this equals to target or not
+     * 
+     * 该实例等于目标与否？
+     * @param target 
+     */
+    equals?(target: any): boolean;
 }
 
 /**
  * Application handler fn.
  */
-export type ApplicationHandlerFn<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = HandlerFn<TInput, Observable<TOutput>, TContext>;
+export type ApplicationHandlerFn<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = (input: TInput, context: TContext) => Observable<TOutput>;
 
 /**
  * Application handler like.

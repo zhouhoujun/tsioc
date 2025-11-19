@@ -4,7 +4,7 @@ import { Injector, InjectorRecord } from '../injector';
 import { RuntimeHandler } from '../lifescope/handler';
 import { ClassRef } from '../metadata/class';
 import { getDef } from '../metadata/refl';
-import { Parameter, ParameterLike, ResolveContext, ResolveHandler, ResolveHandlerLike, ResolveInterceptorLike, Resolver } from '../resolver';
+import { Parameter, ParameterLike, ResolveContext, ResolveHandler, Resolver } from '../resolver';
 import { Runtime } from '../runtime';
 import { InjectFlags, Token } from '../tokens';
 import { AbstractType } from '../types';

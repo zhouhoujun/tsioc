@@ -1,6 +1,6 @@
 import {
     isFunction, lang, Runtime, ctorName, RuntimeHandler, HandlerFn,
-    Context, ContextToken, invokeTail, InterceptorLike, isDefined,
+    ContextToken, invokeTail, InterceptorLike, isDefined,
     Parameters, ClassRef, proxyTag, isObject, isNil, object2string, getClassify,
     composeHandlers, composeInterceptors, Injector, AbstractInjector, RuntimeContext,
     EnvironmentInjector
@@ -31,7 +31,7 @@ export class ProceedingScope implements Proceeding {
     pointcutCtor(typeRef: ClassRef, next: HandlerFn, context: RuntimeContext) {
         const advisor = context.runtime.get(Advisor);
         if (!advisor.hasCtor(typeRef)) {
-            return invokeTail(() => next(typeRef, context), (instance) => {
+            return next(typeRef, context, (instance) => {
                 if (advisor.hasPointcut(instance, typeRef, true)) {
                     context.set(POINTCUT, true);
                     // ctx.isNewContext = false;
@@ -46,7 +46,7 @@ export class ProceedingScope implements Proceeding {
             args: context.args ?? [],
             params: context.params ?? [],
             originProxy: (joinPoint) => {
-                return invokeTail(() => next(typeRef, context), (instance) => {
+                return next(typeRef, context, (instance) => {
                     instance = joinPoint.returning = joinPoint.target = context.instance ?? instance;
                     return instance;
                 })
@@ -56,10 +56,10 @@ export class ProceedingScope implements Proceeding {
     }
 
     pointcutProperty(typeRef: ClassRef, next: HandlerFn, context: RuntimeContext) {
-        return invokeTail(() => next(typeRef, context), (instance) => {
+        return next(typeRef, context, (instance) => {
             const advisor = context.runtime.get(Advisor);
             if (isDefined(instance) && (context.has(POINTCUT) || advisor.hasPointcut(instance, typeRef, true))) {
-               instance = context.instance = this.createProxy(typeRef.className, typeRef, instance, typeRef, instance, advisor, context.raiseInjector)
+                instance = context.instance = this.createProxy(typeRef.className, typeRef, instance, typeRef, instance, advisor, context.raiseInjector)
             }
             return instance;
         });
@@ -213,7 +213,7 @@ export function getAdvicesLifeScope(runtime: Runtime): RuntimeHandler<JoinPoint>
 
 
 export const afterReturningIterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
-    return invokeTail(() => next(jp, context), (res) => {
+    return next(jp, context, (res) => {
         jp.state = JoinpointState.AfterReturning;
         if (isDefined(res) && res !== jp) jp.returning = res;
         const advicers = jp.advisor.getAfterReturning(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
@@ -224,7 +224,7 @@ export const afterReturningIterceptor = (jp: JoinPoint, next: HandlerFn, context
 }
 
 export const afterThrowingInterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
-    return invokeTail(() => next(jp, context), {
+    return next(jp, context, {
         error: (error) => {
             jp.throwing = error;
             jp.state = JoinpointState.AfterThrowing;
@@ -257,7 +257,7 @@ export const pointcutIterceptor = (jp: JoinPoint, next: HandlerFn, context: Runt
 }
 
 export const afterIterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
-    return invokeTail(() => next(jp, context), (res) => {
+    return next(jp, context, (res) => {
         jp.state = JoinpointState.After;
         if (isDefined(res) && res !== jp) jp.returning = res;
         const advicers = jp.advisor.getAfter(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });

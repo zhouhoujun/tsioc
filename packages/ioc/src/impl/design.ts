@@ -10,7 +10,7 @@ import { Provider } from '../providers';
 import { createRecord } from './common';
 
 export const autorunInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
-    return invokeTail(() => next(input, context), (res) => {
+    return next(input, context, (res) => {
         const runs = input.runnables.filter(c => c.auto && c.decorType === Decors.CLASS);
         if (runs.length < 1) {
             return
@@ -91,19 +91,19 @@ export function getDesignMethodScope(runtime: Runtime): RuntimeHandler<ClassRef,
 
 
 export const afterPropertyAnnoationInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
-    return invokeTail(() => next(input, context), (res) => {
+    return next(input, context, (res) => {
         getDesignPropertyScope(context.runtime).handle(input, context);
         return res;
     });
 }
 export const afterMethodAnnoationInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
-    return invokeTail(() => next(input, context), (res) => {
+    return next(input, context, (res) => {
         getDesignMethodScope(context.runtime).handle(input, context);
         return res;
     });
 }
 export const afterAnnoationInterceptor = (input: ClassRef, next: HandlerFn, context: IocContext) => {
-    return invokeTail(() => next(input, context), (res) => {
+    return next(input, context, (res) => {
         getDesignAfterAnnoationScope(context.runtime).handle(input, context);
         return res;
     });
