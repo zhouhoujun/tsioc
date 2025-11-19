@@ -1,4 +1,7 @@
-import { ArgumentException, composeHandlers, getType, InjectFlags, Handler as IHandler, HandlerLike, Injector, ProvdierOf, StaticProvider, tokenId, AbstractType, Context, ContextToken } from '@tsdi/ioc';
+import {
+    ArgumentException, composeHandlers, getType, InjectFlags, Handler, HandlerLike,
+    Injector, ProvdierOf, StaticProvider, tokenId, AbstractType, ContextToken
+} from '@tsdi/ioc';
 import { forkJoin, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanHandle } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
@@ -96,7 +99,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     addListener(event: AbstractType<ApplicationEvent>, handler: HandlerLike, order = -1): this {
         const handlers = this.maps.get(event);
         if (handlers) {
-            if (handlers.some(i => (i as IHandler).equals ? (i as IHandler).equals?.(handler) : i === handler)) return this;
+            if (handlers.some(i => (i as Handler).equals ? (i as Handler).equals?.(handler) : i === handler)) return this;
             order >= 0 ? handlers.splice(order, 0, handler) : handlers.push(handler);
         } else {
             this.maps.set(event, [handler]);
@@ -107,7 +110,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
     removeListener(event: AbstractType<ApplicationEvent>, handler: ApplicationHandler): this {
         const handlers = this.maps.get(event);
         if (handlers) {
-            const idx = handlers.findIndex(i => (i as IHandler).equals ? (i as IHandler).equals?.(handler) : i === handler);
+            const idx = handlers.findIndex(i => (i as Handler).equals ? (i as Handler).equals?.(handler) : i === handler);
             if (idx >= 0) {
                 handlers.splice(idx, 1);
             }

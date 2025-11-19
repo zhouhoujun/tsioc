@@ -5,28 +5,6 @@ import { Filter, FilterHandlerResolver } from './filter';
 import { toObservable } from '../handlers';
 
 
-// /**
-//  * execption context
-//  * 
-//  * 异常处理上下文
-//  */
-// export class ExceptionContext<T = any> extends DefaultInvocationContext {
-
-//     constructor(public execption: Error, readonly host: T, injector: Injector, options?: InvokeOptions) {
-//         super(injector, { ...options })
-
-//         this.setValue(getType(execption), execption);
-//         const tokens = lang.getTypeChain(getType(host));
-//         tokens.forEach(token => this.setValue(token, host));
-//     }
-
-//     protected override clear(): void {
-//         (this as any).host = null!;
-//         super.clear();
-//     }
-
-// }
-
 /**
  * execption filter
  * 

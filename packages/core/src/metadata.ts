@@ -679,12 +679,12 @@ export interface TransportParameterDecorator {
      * @param {string} field field of request query params or body.
      * @param options route metedata options.
      */
-    (field?: string, option?: Omit<TransportParameter, 'propertyKey' | 'field'>): ParameterDecorator;
+    (field?: string, option?: Omit<TransportParameter, 'target' | 'propertyKey' | 'field'>): ParameterDecorator;
     /**
      * Transport Parameter decorator
      * @param meta.
      */
-    (meta: Omit<TransportParameter, 'propertyKey'>): ParameterDecorator;
+    (meta: Omit<TransportParameter, 'target' | 'propertyKey'>): ParameterDecorator;
 }
 
 /**

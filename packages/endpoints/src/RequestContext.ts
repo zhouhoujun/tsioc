@@ -1,5 +1,5 @@
 import { Abstract, isArray, isDefined, isNil, isString, lang, ResolveInterceptorLike } from '@tsdi/ioc';
-import { HandleContext, HandleRequest, MODEL_RESOLVERS, ParameterScope, TransportParameter, createPayloadResolveInterceptors } from '@tsdi/core';
+import { MODEL_RESOLVERS, ParameterScope, TransportParameter, createPayloadResolveInterceptors } from '@tsdi/core';
 import { HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess } from '@tsdi/common';
 import {
     FileAdapter, Incoming, InternalServerException, MessageException, MimeAdapter, Outgoing,
@@ -26,9 +26,6 @@ export abstract class RequestContext<
     
     request!: TRequest;
 
-    protected override initRequest(options: TOptions): void {
-
-    }
 
     protected override playloadDefaultResolvers(): ResolveInterceptorLike[] {
         const res = [...primitiveResolvers];

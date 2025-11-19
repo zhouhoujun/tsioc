@@ -1,8 +1,4 @@
-import {
-    AbstractType, Provider, DefaultInvocationContext,
-    ClassRef, ModuleDef, ModuleRef, Invocation, noPointcut,
-    Operator,
-} from '@tsdi/ioc';
+import { AbstractType, DefaultInvocationContext, ClassRef, ModuleDef, ModuleRef, Invocation, noPointcut, Operator } from '@tsdi/ioc';
 import { Logger, LoggerManagers } from '@tsdi/logger';
 import { Observable } from 'rxjs';
 import { ApplicationArguments } from '../ApplicationArguments';

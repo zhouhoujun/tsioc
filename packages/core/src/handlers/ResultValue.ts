@@ -1,6 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
 import { RunableContext } from '../ApplicationHandler';
-// import { HandleContext } from './context';
 
 
 /**

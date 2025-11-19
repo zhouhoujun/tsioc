@@ -1,6 +1,6 @@
 import {
-    Provider, Injector, Abstract, AbstractType, Destroyable, Modules, ModuleOption, ModuleRef,
-    InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, ClassRef, Invocation, InvokeOptions, Type
+    Provider, Injector, Abstract, AbstractType, Type, Destroyable, Modules, ModuleOption, ModuleRef,
+    InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, ClassRef, Invocation, InvokeOptions
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
 import { Observable } from 'rxjs';
