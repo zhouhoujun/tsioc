@@ -1,4 +1,4 @@
-import { ResolveInterceptorLike, Parameter, TypeOf, Token, getTokenOf } from '@tsdi/ioc';
+import { ResolveInterceptorLike, Parameter, TypeOf, Token, getTokenOf, ResolveHandler, ResolveInterceptorFn, getType, isResolved } from '@tsdi/ioc';
 import { PipeTransform } from '../pipes/pipe';
 
 
@@ -38,6 +38,24 @@ export interface TransportParameter<T = object> extends Parameter<T> {
  * @param type 
  * @returns 
  */
-export function getResolveHandlerToken(type: TypeOf<any>, propertyKey?: string): Token<ResolveInterceptorLike[]> {
-    return getTokenOf(type, 'RESOLVE_HANDLERS', propertyKey);
+export function getResolveHandlerToken(type: TypeOf<any>, propertyKey?: string): Token<ResolveHandler> {
+    return getTokenOf(type, 'RESOLVE_HANDLER', propertyKey);
+}
+
+
+export const typeResolveInterceptor: ResolveInterceptorFn = (input, next, context) => {
+    const payload = context.getPayload();
+    if (payload) {
+        const token = getResolveHandlerToken(getType(payload));
+        const hanlder = context.getInjector().get(token, null);
+        if (hanlder) {
+            return hanlder.handle(input, context, (res) => {
+                if (isResolved(res)) return res;
+                return next(input, context)
+            })
+        }
+
+
+    }
+    return next(input, context);
 }

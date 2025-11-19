@@ -1,4 +1,4 @@
-import { Injector, isDefined, Provider, SCOPE_PRODIDERS } from '@tsdi/ioc';
+import { createResolveHandler, Injector, isDefined, Provider, SCOPE_PRODIDERS } from '@tsdi/ioc';
 import { ApplicationContextFactory } from './ApplicationContext';
 import { ApplicationRunners } from './ApplicationRunners';
 import { RandomUuidGenerator, UuidGenerator } from './uuid';
@@ -11,8 +11,8 @@ import { FilterHandlerResolver, FilterResolver } from './filters/filter';
 import { DefaultFilterResolver, DefaultFiterHandlerMethodResolver, DefaultInterceptorResolver } from './filters/filter.impl';
 import { ExceptionHandlerFilter } from './filters/execption.filter';
 import { getResolveHandlerToken } from './handlers/resolver';
-// import { PayloadApplicationEvent } from './events';
-// import { createPayloadResolveInterceptors } from './handlers/resolvers';
+import { PayloadApplicationEvent } from './events';
+import { createPayloadResolveInterceptors } from './handlers/resolvers';
 
 
 
@@ -40,24 +40,24 @@ SCOPE_PRODIDERS.push(RESOLVER_PROVIDERS);
  */
 export const ROOT_DEPENDENCE_PROVIDERS: Provider[] = [
     RESOLVER_PROVIDERS,
-    // {
-    //     provide: getResolveHandlerToken(PayloadApplicationEvent),
-    //     useValue: createPayloadResolveInterceptors(
-    //         (input, scope, field) => {
-    //             if (scope) {
-    //                 const scopeVal = input[scope];
-    //                 if (field) {
-    //                     return isDefined(scopeVal) ? scopeVal[field] : null;
-    //                 }
-    //                 return scopeVal;
-    //             } else if (field) {
-    //                 return null;
-    //             }
-    //             return input;
-    //         },
-    //         // (param, payload) => payload && param.scope && isDefined(payload[param.scope])
-    //     )
-    // },
+    {
+        provide: getResolveHandlerToken(PayloadApplicationEvent),
+        useValue: createResolveHandler(createPayloadResolveInterceptors(
+            (input, scope, field) => {
+                if (scope) {
+                    const scopeVal = input[scope];
+                    if (field) {
+                        return isDefined(scopeVal) ? scopeVal[field] : null;
+                    }
+                    return scopeVal;
+                } else if (field) {
+                    return null;
+                }
+                return input;
+            },
+            // (param, payload) => payload && param.scope && isDefined(payload[param.scope])
+        ))
+    },
     { provide: ApplicationRunners, useClass: DefaultApplicationRunners, static: true },
 ]
 

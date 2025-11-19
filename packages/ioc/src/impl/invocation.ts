@@ -183,17 +183,13 @@ export abstract class AbstractInvocation<T = any,
         return createContext(parent, options) as TC;
     }
 
-    protected getMethodContext(propertyKey: string | symbol): TC {
+    getMethodContext(propertyKey: string | symbol): TC {
         let ctx = this._mthCtx.get(propertyKey);
         if (ctx === undefined) {
             const opts = this.classRef.getMethodOptions(propertyKey);
-            if (opts) {
-                ctx = this.createContext(this.context, opts);
-                this.context.onDestroy(ctx);
-                this._mthCtx.set(propertyKey, ctx);
-            } else {
-                this._mthCtx.set(propertyKey, null);
-            }
+            ctx = this.createContext(this.context, opts);
+            this.context.onDestroy(ctx);
+            this._mthCtx.set(propertyKey, ctx);
         }
         return ctx ?? this.context;
     }
@@ -219,8 +215,8 @@ export abstract class AbstractInvocation<T = any,
                 if (context.used) return;
                 context.destroy()
             }
-
         } else {
+            payload = option?.payload;
             context = ctx;
         }
 
@@ -306,7 +302,7 @@ export class DefaultInvocation<T = any,
         super(_classRef, context, options);
     }
 
-    protected process(option?: TC | InvokeOptions,  resolveCtx?: ResolveContext) {
+    protected process(option?: TC | InvokeOptions, resolveCtx?: ResolveContext) {
         const runnables = this.classRef.runnables.filter(r => !r.auto);
         if (runnables && runnables.length) {
             const handler = composeHandlers(runnables.sort((a, b) => (a.order || 0) - (b.order || 0)).map(runnable => {

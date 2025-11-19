@@ -500,7 +500,7 @@ export class ClassRef<T = any> {
         return this.getParams().get(prop) || []
     }
 
-    getParams(): Map<string | symbol, any[]> {
+    protected getParams(): Map<string | symbol, any[]> {
         if (!this.params) {
             this.params = this.parent ? new Map(this.parent.getParams()) : new Map();
             this.setParam(this.params)

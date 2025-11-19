@@ -3,7 +3,7 @@ import { Injector, InjectorRecord } from './injector';
 import { Runtime } from './runtime';
 import { InjectFlags, Token, tokenId } from './tokens';
 import { AbstractType, TypeOf } from './types';
-import { isObject } from './utils/chk';
+import { isDefined, isObject } from './utils/chk';
 
 
 
@@ -123,15 +123,12 @@ export class ResolveContext extends Context {
         payload?: any,
         readonly failed?: (target: AbstractType, propertyKey: string) => void) {
         super();
-        this.setPayload(payload);
+        if(isDefined(payload)) this.setPayload(payload);
         this.setInjector(injector);
         this.set(Runtime, injector.getRuntime());
 
     }
 
-    hasPayload(): boolean {
-        return this.has(PAYLOAD)
-    }
 
     getPayload<T = any>(): T {
         return this.get(PAYLOAD) as T;

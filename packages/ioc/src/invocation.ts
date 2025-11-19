@@ -44,6 +44,8 @@ export abstract class Invocation<T = any, TRes = any, TC extends InvocationConte
      */
     abstract get context(): TC;
 
+    abstract getMethodContext(propertyKey: string | symbol): TC;
+
     /**
      * Invoke the underlying operation using the class given {@link InvocationContext}.
      * @param context the context to use to invoke the operation

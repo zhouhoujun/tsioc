@@ -15,7 +15,7 @@ import { InvocationHandlerOptions } from './invocation';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
-import { TransportParameter } from './handlers/resolver';
+import { TransportParameter, typeResolveInterceptor } from './handlers/resolver';
 import { ApplicationInterceptorFn, InterceptorResolver } from './ApplicationInterceptor';
 import { createInvocationHandler } from './impl/invocation';
 
@@ -263,7 +263,14 @@ export interface EventHandler {
 
 function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name: string, runtime?: boolean) {
     return createDecorator(name, {
-        props: (filter?: AbstractType | string, options?: { order?: number }) => ({ filter, ...options }),
+        actionType: ActionType.providers,
+        props: (filter?: AbstractType | string, options?: InvocationHandlerOptions) => ({ filter, ...options }),
+        appendProps:(meta)=> {
+            if(!meta.resolvers) {
+                meta.resolvers = [];
+            }
+            meta.resolvers.push(typeResolveInterceptor);
+        },
         design: {
             method: runtime === true ? undefined : (typeRef, ctx) => {
                 if (typeRef.getAnnotation().static === false && !typeRef.getAnnotation().singleton) return;
@@ -271,9 +278,6 @@ function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name:
                 const defines = typeRef.getDefines(ctx.currDecor!);
                 const injector = ctx.injector;
                 const invocation = typeRef.createInvocation(injector);
-                invocation.context.attach({
-                    resolvers:[]
-                })
                 const multicaster = injector.get(ApplicationEventMulticaster);
                 defines.forEach(decor => {
                     const { filter, order, providedIn, ...options } = decor.metadata as InvocationHandlerOptions & { filter: AbstractType<ApplicationEvent> & { getStrategy?: () => string } };

@@ -1,4 +1,4 @@
-import { Invocation, createContext, isFunction, isString, Type, invokeTails } from '@tsdi/ioc';
+import { Invocation, isFunction, isString, Type, invokeTails } from '@tsdi/ioc';
 import { ApplicationHandlerFn, RunableContext } from '../ApplicationHandler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
@@ -21,7 +21,7 @@ export class DefaultInvocationHandler<
         readonly invocation: Invocation<T>,
         options: TOptions,
         readonly propertyKey?: string | symbol) {
-        super(createContext(invocation.context, options), options)
+        super(propertyKey? invocation.getMethodContext(propertyKey) : invocation.context, options)
         this.limit = options.limit;
 
     }
