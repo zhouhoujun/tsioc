@@ -65,7 +65,7 @@ export class LoggerManagers implements LoggerManager {
     protected init() {
         if (this.inited) return;
         if (!this.injector.has(LOG_CONFIGURES)) {
-            Operator.inject(this.injector, { provide: LOG_CONFIGURES, useValue: { adapter: 'console' }, multi: true });
+            Operator.provider(this.injector, { provide: LOG_CONFIGURES, useValue: { adapter: 'console' }, multi: true });
         }
         this.inited = true;
         const configs = this.injector.get(LOG_CONFIGURES);

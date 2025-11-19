@@ -130,7 +130,7 @@ export class TypeormAdapter {
         const resovler = createModelResolver(injector.getRuntime(), {
             isModel: (type) => entities?.includes(type as Type),
             getPropertyMeta: (type) => this.getModelPropertyMetadata(type),
-            hasField: (parameter, ctx) => ctx.request?.body,
+            hasField: (parameter, ctx) => ctx.getPayload()?.body,
             getFields: (parameter: TransportParameter, ctx: HandleContext) => parameter.field ? ctx.request!.body[parameter.field] : ctx.request!.body,
             fieldResolvers: [
                 (input, next, context) => {
@@ -146,12 +146,12 @@ export class TypeormAdapter {
                 },
             ]
         });
-        Operator.inject(injector, { provide: MODEL_RESOLVERS, useValue: resovler, multi: true });
+        Operator.provider(injector, { provide: MODEL_RESOLVERS, useValue: resovler, multi: true });
 
         if (getMetadataArgsStorage().entityRepositories?.length) {
             getMetadataArgsStorage().entityRepositories?.forEach(meta => {
                 if (options.entities?.some(e => e === meta.entity)) {
-                    Operator.inject(injector, { provide: meta.target, useFactory: () => this.getConnection(options.name!)?.getCustomRepository(meta.target) })
+                    Operator.provider(injector, { provide: meta.target, useFactory: () => this.getConnection(options.name!)?.getCustomRepository(meta.target) })
                 }
             });
         }

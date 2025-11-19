@@ -108,7 +108,7 @@ export function tryResolveToken(token: Token, rd: InjectorRecord, runtime: Runti
     raise: Injector, notFoundValue: any, flags: InjectFlags, isStatic?: boolean): any {
     try {
         const value = resolveToken(token, rd, runtime, injector, raise, notFoundValue, flags, isStatic);
-        if (isStatic && rd.value !== LAZY && value != undefined && value != LAZY && value !== notFoundValue) {
+        if (isStatic && rd.value === LAZY && value != undefined && value != LAZY && value !== notFoundValue) {
             rd.value = value;
         }
         return value;

@@ -61,7 +61,7 @@ export class ConfigableHandler<
 
         this.options = this.initOptions(options);
         if (this.options.backend && isType(this.options.backend) && !this.context.has(this.options.backend, InjectFlags.Self)) {
-            Operator.inject(this.context, this.options.backend);
+            Operator.provider(this.context, this.options.backend);
         }
 
         setHandlerOptions(this, this.options);
@@ -294,7 +294,7 @@ export class ConfigableHandler<
         if (isArray(providers)) {
             Operator.inject(this.context, providers.map((r, i) => toProvider(token, r, { multi, multiOrder })))
         } else {
-            Operator.inject(this.context, toProvider(token, providers, { multi, multiOrder }));
+            Operator.provider(this.context, toProvider(token, providers, { multi, multiOrder }));
         }
     }
 

@@ -47,22 +47,6 @@ export class DefaultInvocationHandler<
      */
     protected respond(input: TInput, context: TContext) {
 
-        // let newCtx = false;
-        // if (isInvocationContext(input)) {
-        //     if (context) this.attchContext(input, context);
-        // } else {
-        //     if (isInvocationContext(context)) {
-        //         context.setValue(getType(input), input);
-        //         input = context;
-        //     } else {
-        //         newCtx = true;
-        //         const ctx = createContext(this.context, { resolvers: this.context.get(getResolveHandlerToken(input), []) });
-        //         ctx.setValue(getType(input), input);
-        //         if (context) this.attchContext(ctx, context, input)
-        //         input = ctx;
-        //     }
-        // }
-
         return invokeTails(
             () => this.beforeInvoke(input),
             () => this.propertyKey ? this.invocation.invoke(this.propertyKey, { payload: input }) : this.invocation.invoke({ payload: input }),
@@ -76,13 +60,6 @@ export class DefaultInvocationHandler<
             })
 
     }
-
-    // protected attchContext(input: InvocationContext, context: TContext, nextData?: any) {
-    //     if (context instanceof Context) {
-    //         input.setValue(Context, context);
-    //     }
-    //     input.setValue(getType(context), context);
-    // }
 
     /**
      * respond as

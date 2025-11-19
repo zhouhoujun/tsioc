@@ -42,7 +42,7 @@ export class DefaultResolver implements Resolver {
                     return res;
                 },
                 error: (error) => {
-                    if (error instanceof Error) {
+                    if (error instanceof Exception) {
                         throw error;
                     }
                     if (context.failed) {

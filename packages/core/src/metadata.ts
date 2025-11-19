@@ -1,9 +1,9 @@
 import {
-    isUndefined, AbstractType, createDecorator, Provider, InjectableMetadata, PropertyMetadata, InjectFlags,
+    isUndefined, AbstractType, createDecorator, InjectableMetadata, PropertyMetadata, InjectFlags,
     MethodPropDecorator, Token, ArgumentException, object2string, InvokeOptions, ActionType,
     isString, Parameter, createParamDecorator, TypeOf, isNil, UseAsStatic, isFunction,
     ModuleType, Type, MutilProvider, ClassRef, Injector, ProvidedInMetadata, AnnotationMetadata, Invocation,
-    Operator
+    Operator, StaticProvider
 } from '@tsdi/ioc';
 import { PipeTransform } from './pipes/pipe';
 import {
@@ -187,7 +187,7 @@ export const Configuration: ConfigurationDecorator = createDecorator<Confgiurati
             const injector = ctx.injector
             const meta = typeRef.getMetadata<ConfgiurationMetadata>(ctx.currDecor!);
             if (meta.imports) {
-                Operator.inject(injector, {
+                Operator.provider(injector, {
                     provider: async (injector) => {
                         const invocation = typeRef.createInvocation(injector)
                         await Operator.useAsync(invocation.context, meta.imports!);
@@ -217,8 +217,8 @@ function injectBean(injector: Injector, typeRef: ClassRef<any>, meta: Confgiurat
     typeRef.getDefines(Bean)
         .forEach(d => {
             const key = d.propertyKey;
-            const { provide, static: stac, multi, multiOrder, providedIn } = d.metadata as BeanMetadata;
-            let provider: Provider
+            const { provide, static: stac, multi, multiOrder } = d.metadata as BeanMetadata;
+            let provider: StaticProvider;
             if (d.decorType === 'method') {
                 provider = {
                     provide,
@@ -226,7 +226,7 @@ function injectBean(injector: Injector, typeRef: ClassRef<any>, meta: Confgiurat
                     static: stac,
                     multi,
                     multiOrder
-                } as Provider
+                }
             } else {
                 provider = {
                     provide,
@@ -234,9 +234,9 @@ function injectBean(injector: Injector, typeRef: ClassRef<any>, meta: Confgiurat
                     static: stac,
                     multi,
                     multiOrder
-                } as Provider
+                }
             }
-            Operator.inject( providedIn ? injector.getRuntime().getInjector(providedIn): injector, provider);
+            Operator.provider(injector, provider);
         });
 }
 
@@ -498,7 +498,7 @@ export const Interceptable: Interceptable = createDecorator('Interceptable', {
                 const interceptor = (...args: any[]) => invocation.invoke(decor.propertyKey, args);
                 if (token) {
                     const provider = { provide: interceptor, useValue: interceptor, multi: true, multiOrder: order };
-                    Operator.inject( providedIn ? injector.getRuntime().getInjector(providedIn): injector, provider);
+                    Operator.provider( providedIn ? injector.getRuntime().getInjector(providedIn): injector, provider);
                 } else {
                     const resolver = providedIn ? injector.getRuntime().getInjector(providedIn).get(InterceptorResolver) : currResolver;
                     resolver.addInterceptor(target as AbstractType | string, interceptor, order);
@@ -546,7 +546,7 @@ export const Filterable: Filterable = createDecorator('Filterable', {
                 const filter = (...args: any[]) => invocation.invoke(decor.propertyKey, args);
                 if (token) {
                     const provider = { provide: target, useValue: filter, multi: true, multiOrder: order };
-                    Operator.inject( providedIn ? injector.getRuntime().getInjector(providedIn): injector, provider);
+                    Operator.provider( providedIn ? injector.getRuntime().getInjector(providedIn): injector, provider);
                 } else {
                     const resolver = providedIn ? injector.getRuntime().getInjector(providedIn).get(FilterResolver) : currResolver;
                     resolver.addFilter(target as AbstractType | string, filter, order);

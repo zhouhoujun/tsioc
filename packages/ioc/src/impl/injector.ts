@@ -474,9 +474,8 @@ export namespace Operator {
      * @param provider the value type.
      */
     export function setValue<T>(injector: Injector, token: Token<T>, value: T, type?: AbstractType<T> | undefined): void {
-        if (!(injector instanceof AbstractInjector)) throw new ArgumentException('not extends from AbstractInjector');
-        injector.assertNotDestroyed();
-        const records = injector.getRecords();
+        (injector as AbstractInjector).assertNotDestroyed();
+        const records = (injector as AbstractInjector).getRecords();
         const isp = records.get(token);
         if (isp) {
             isp.value = value;
@@ -496,9 +495,8 @@ export namespace Operator {
      * @returns {this}
      */
     export function cache<T>(injector: Injector, token: Token<T>, value: T, expires: number): void {
-        if (!(injector instanceof AbstractInjector)) throw new ArgumentException('not extends from AbstractInjector');
-        injector.assertNotDestroyed();
-        const records = injector.getRecords();
+        (injector as AbstractInjector).assertNotDestroyed();
+        const records = (injector as AbstractInjector).getRecords();
         const pd = records.get(token);
         const ltop = Date.now();
         if (pd) {
@@ -507,6 +505,10 @@ export namespace Operator {
         } else {
             records.set(token, { value, expires })
         }
+    }
+
+    export function provider(injector: Injector, provider: StaticProvider | DynamicProvider): void {
+        processProvider(injector as AbstractInjector, provider);
     }
 
     /**
@@ -525,9 +527,8 @@ export namespace Operator {
      */
     export function inject(injector: Injector, ...providers: Provider[]): void;
     export function inject(injector: Injector, ...args: any[]): void {
-        if (!(injector instanceof AbstractInjector)) throw new ArgumentException('not extends from AbstractInjector');
-        injector.assertNotDestroyed();
-        processProviders(injector, args);
+        (injector as AbstractInjector).assertNotDestroyed();
+        processProviders(injector as AbstractInjector, args);
     }
 
     /**
@@ -545,9 +546,8 @@ export namespace Operator {
      */
     export function use(injector: Injector, ...modules: ModuleType[]): Type<any>[];
     export function use(injector: Injector, ...args: any[]): Type<any>[] {
-        if (!(injector instanceof AbstractInjector)) throw new ArgumentException('not extends from AbstractInjector');
         const types: Type<any>[] = [];
-        processUse(injector, args, types);
+        processUse(injector as AbstractInjector, args, types);
         return types
     }
 
@@ -567,9 +567,8 @@ export namespace Operator {
      * @param modules 
      */
     export async function useAsync(injector: Injector, ...args: any[]): Promise<Type[]> {
-        if (!(injector instanceof AbstractInjector)) throw new ArgumentException('not extends from AbstractInjector');
         const types: Type<any>[] = [];
-        await processUse(injector, args, types);
+        await processUse(injector as AbstractInjector, args, types);
         return types;
     }
 
@@ -590,10 +589,9 @@ export namespace Operator {
      */
     export function register(injector: Injector, ...types: (Type | RegisterOption)[]): void;
     export function register(injector: Injector, ...args: any[]): void {
-        if (!(injector instanceof AbstractInjector)) throw new ArgumentException('not extends from AbstractInjector');
-        injector.assertNotDestroyed();
+        (injector as AbstractInjector).assertNotDestroyed();
         deepForEach(args, t => {
-            processProvider(injector, t)
+            processProvider(injector as AbstractInjector, t)
         });
     }
 
@@ -606,9 +604,8 @@ export namespace Operator {
      * @returns {this} this self.
      */
     export function unregister<T>(injector: Injector, token: Token<T>): void {
-        if (!(injector instanceof AbstractInjector)) throw new ArgumentException('not extends from AbstractInjector');
-        injector.assertNotDestroyed();
-        const records = injector.getRecords();
+        (injector as AbstractInjector).assertNotDestroyed();
+        const records = (injector as AbstractInjector).getRecords();
         const isp = records?.get(token);
         if (isp) {
             records.delete(token);
@@ -739,6 +736,11 @@ export class DefaultInjectOperator implements InjectOperator {
         return this
     }
 
+    provider(provider: StaticProvider | DynamicProvider) {
+        Operator.provider(this.injector, provider);
+        return this;
+    }
+
     inject(providers: Provider | Provider[]): this;
     inject(...providers: Provider[]): this;
     inject(...args: any[]): this {
@@ -807,7 +809,7 @@ export function processProviders(injector: AbstractInjector, providers: Provider
     return eachProvider(providers, p => processProvider(injector, p));
 }
 
-export function processProvider(injector: AbstractInjector, provider: StaticProvider | DynamicProvider): void | Promise<void> {
+function processProvider(injector: AbstractInjector, provider: StaticProvider | DynamicProvider): void | Promise<void> {
 
     const token = isFunction(provider) ? provider : (provider as Provide).provide;
     if (token) {

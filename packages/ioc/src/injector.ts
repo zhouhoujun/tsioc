@@ -1,6 +1,6 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
 import { AbstractType, Type } from './types';
-import { ClassProvider, ExistingProvider, FactoryProvider, ModuleType, Provider, ValueProvider } from './providers';
+import { ClassProvider, DynamicProvider, ExistingProvider, FactoryProvider, ModuleType, Provider, StaticProvider, ValueProvider } from './providers';
 import { Token, InjectFlags } from './tokens';
 import { Abstract } from './metadata/fac';
 import { ClassRef } from './metadata/class';
@@ -202,6 +202,11 @@ export interface InjectOperator {
      * @param expires 
      */
     cache<T>(token: Token<T>, instance: T, expires: number): this;
+    /**
+     * inject provider
+     * @param provider 
+     */
+    provider(provider: StaticProvider | DynamicProvider): this;
     /**
      * inject providers
      * 
