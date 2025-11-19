@@ -77,7 +77,7 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * emit event. ailas name of publishEvent
      * @param event the event to publish
      */
-    abstract emit(event: ApplicationEvent | Object): HandleResult<void | false>;
+    abstract emit(event: ApplicationEvent | Object): Promise<void | false>;
     /**
      * event downward
      * @param event 
@@ -99,7 +99,7 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * execution for longer-running and potentially blocking operations.
      * @param event the event to publish
      */
-    abstract publishEvent(event: ApplicationEvent | Object, context?: RunableContext): HandleResult<void | false>;
+    abstract publishEvent(event: ApplicationEvent | Object, context?: RunableContext): Promise<void | false>;
 
 
     abstract clear(): void;

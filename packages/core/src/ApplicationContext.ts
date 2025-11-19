@@ -69,7 +69,7 @@ export abstract class ApplicationContext<T = object>
      * execution for longer-running and potentially blocking operations.
      * @param event the event to publish
      */
-    abstract publishEvent(event: ApplicationEvent | Object): void;
+    abstract publishEvent(event: ApplicationEvent | Object): Promise<void>;
     /**
      * refresh context.
      */

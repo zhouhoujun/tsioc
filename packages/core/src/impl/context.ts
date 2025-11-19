@@ -1,6 +1,6 @@
 import { AbstractType, DefaultInvocationContext, ClassRef, ModuleDef, ModuleRef, Invocation, noPointcut, Operator } from '@tsdi/ioc';
 import { Logger, LoggerManagers } from '@tsdi/logger';
-import { Observable } from 'rxjs';
+// import { Observable } from 'rxjs';
 import { ApplicationArguments } from '../ApplicationArguments';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
@@ -73,10 +73,10 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
         return this.get(LoggerManagers, null)?.getLogger(name, adapter) ?? null!;
     }
 
-    publishEvent(event: ApplicationEvent): void;
-    publishEvent(event: Object): void;
-    publishEvent(obj: ApplicationEvent | Object): void {
-       this.eventMulticaster.publishEvent(obj);
+    publishEvent(event: ApplicationEvent): Promise<void>;
+    publishEvent(event: Object): Promise<void>;
+    async publishEvent(obj: ApplicationEvent | Object): Promise<void> {
+       await this.eventMulticaster.publishEvent(obj);
     }
 
     /**

@@ -108,7 +108,7 @@ describe('Application Event Exception', () => {
 
     it('payload filed transport parameter arguments', async () => {
 
-        await lastValueFrom(ctx.publishEvent({ name: 'name', age: 20 }));
+        await ctx.publishEvent({ name: 'name', age: 20 }).catch(err => err);
         const testServiceRef = ctx.runners.getRef(TestService);
         expect(testServiceRef).not.toBeNull();
 
@@ -119,7 +119,7 @@ describe('Application Event Exception', () => {
 
     it('payload filed transport parameter arguments message execption', async () => {
 
-        const result = await lastValueFrom(ctx.publishEvent({ name: 'zhansan' }).pipe(catchError(err=> of(err))));
+        const result = await ctx.publishEvent({ name: 'zhansan' }).catch(err => err);
         expect(result).toBeInstanceOf(MissingParameterException);
 
         expect((result as MissingParameterException).message.indexOf('name: "age"')).toBeGreaterThan(1);

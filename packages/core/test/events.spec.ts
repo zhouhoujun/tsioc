@@ -143,7 +143,7 @@ describe('Application Event', () => {
 
     it('publish payload event', async () => {
 
-        ctx.publishEvent('payload message');
+        await ctx.publishEvent('payload message');
         const testServiceRef = ctx.runners.getRef(TestService)!;
         expect(testServiceRef).not.toBeNull();
         expect(testServiceRef.instance.payload).toBeInstanceOf(PayloadApplicationEvent);
@@ -156,7 +156,7 @@ describe('Application Event', () => {
 
     it('payload filed transport parameter arguments', async () => {
 
-        ctx.publishEvent({name: 'name', age: 20});
+        await ctx.publishEvent({name: 'name', age: 20});
         const testServiceRef = ctx.runners.getRef(TestService);
         expect(testServiceRef).not.toBeNull();
         
@@ -166,7 +166,7 @@ describe('Application Event', () => {
 
     it('payload filed transport parameter missing arguments execption', async () => {
 
-        const result = ctx.publishEvent({ name: 'zhansan' }) as any;
+        const result = await ctx.publishEvent({ name: 'zhansan' }).catch(err => err);
         expect(result).toBeInstanceOf(MissingParameterException);
 
         expect((result as MissingParameterException).message.indexOf('name: "age"')).toBeGreaterThan(1);
@@ -179,7 +179,7 @@ describe('Application Event', () => {
 
     it('payload filed transport parameter arguments execption', async () => {
 
-        const result = ctx.publishEvent({ name: 'zhansan1', age: 'zzz' }) as any;
+        const result = await ctx.publishEvent({ name: 'zhansan1', age: 'zzz' }).catch(err => err);
         expect(result).toBeInstanceOf(ArgumentException);
 
         expect(result.message).toEqual(`InvalidPipeArgument: 'zzz' for pipe 'number'`);

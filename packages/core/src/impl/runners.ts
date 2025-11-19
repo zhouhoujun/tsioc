@@ -178,7 +178,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
                 finally: () => this.onDestroy()
             }
         );
-        return defer.promise;
+        return defer.promise
     }
 
     private _destroyed = false;

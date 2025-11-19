@@ -2,7 +2,8 @@ import {
     ArgumentException, composeHandlers, getType, InjectFlags, Handler, HandlerLike,
     Injector, ProvdierOf, StaticProvider, tokenId, AbstractType, ContextToken,
     invokeTails,
-    HandleResult
+    HandleResult,
+    lang
 } from '@tsdi/ioc';
 // import { forkJoin, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanHandle } from '../guard';
@@ -119,16 +120,16 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    emit(event: ApplicationEvent): HandleResult<void | false>;
-    emit(event: Object): HandleResult<void | false>;
-    emit(obj: ApplicationEvent | Object): HandleResult<void | false> {
+    emit(event: ApplicationEvent): Promise<void | false>;
+    emit(event: Object): Promise<void | false>;
+    emit(obj: ApplicationEvent | Object): Promise<void | false> {
         return this.publishEvent(obj)
     }
 
 
-    publishEvent(event: ApplicationEvent, context?: RunableContext): HandleResult<void | false>;
-    publishEvent(event: Object, context?: RunableContext): HandleResult<void | false>;
-    publishEvent(obj: ApplicationEvent | Object, context?: RunableContext): HandleResult<void | false> {
+    publishEvent(event: ApplicationEvent, context?: RunableContext): Promise<void | false>;
+    publishEvent(event: Object, context?: RunableContext): Promise<void | false>;
+    publishEvent(obj: ApplicationEvent | Object, context?: RunableContext): Promise<void | false> {
         if (!obj) throw new ArgumentException('Event must not be null');
 
         // Decorate event as an ApplicationEvent if necessary
@@ -141,14 +142,23 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
 
         context ??= createRunableContext(this.handler.context ?? this.injector);
         context.set(WITH_SELF, true);
-
-        return invokeTails(
+        const defer = lang.defer<void | false>();
+        invokeTails(
             () => this.downward(event, context),
             (res) => {
                 if (res === false || !event.propagation) return false;
                 context.set(WITH_SELF, false);
                 return this.bubbleup(event, context)
-            }) as void | false;
+            }, {
+                next: (res) => {
+                    defer.resolve(res === false ? false : undefined);
+                },
+                error: (err) => {
+                    defer.reject(err);
+                }
+            });
+
+        return defer.promise;
     }
 
     downward(event: ApplicationEvent, context: RunableContext): HandleResult<void | false> {
@@ -184,7 +194,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         if (!handlers || !handlers.length) return;
 
         return composeHandlers(handlers, (r, next, input, ctx) => {
-            if (r !== false || !event.propagation) {
+            if (r !== false && event.propagation) {
                 return next(event, ctx ?? context);
             }
             return r;
