@@ -1,4 +1,4 @@
-import { InvocationContext, Invocation, createContext, getType, isFunction, isString, Type, Context, invokeTail } from '@tsdi/ioc';
+import { Invocation, createContext, isFunction, isString, Type, invokeTails } from '@tsdi/ioc';
 import { ApplicationHandlerFn, RunableContext } from '../ApplicationHandler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
@@ -63,16 +63,17 @@ export class DefaultInvocationHandler<
         //     }
         // }
 
-        return invokeTail(() => this.beforeInvoke(input),
-            () => invokeTail(() => this.propertyKey ? this.invocation.invoke(this.propertyKey, { payload: input }) : this.invocation.invoke({ payload: input }),
-                {
-                    next: (res) => {
-                        if (res instanceof ResultValue) {
-                            return res.sendValue(context);
-                        }
-                        return this.respondAs(input, res, context);
+        return invokeTails(
+            () => this.beforeInvoke(input),
+            () => this.propertyKey ? this.invocation.invoke(this.propertyKey, { payload: input }) : this.invocation.invoke({ payload: input }),
+            {
+                next: (res) => {
+                    if (res instanceof ResultValue) {
+                        return res.sendValue(context);
                     }
-                }));
+                    return this.respondAs(input, res, context);
+                }
+            })
 
     }
 

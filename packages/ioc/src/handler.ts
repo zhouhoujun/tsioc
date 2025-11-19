@@ -187,6 +187,15 @@ export function invokeTail<T>(invoke: () => Observable<T> | Promise<T> | T, next
     }
 }
 
+/**
+ * 处理多个连续的invoke调用
+ */
+export function invokeTails<T>(invoke: (res?: T) => Observable<T> | Promise<T> | T, next: TailNext<T>, ...nexts: TailNext<T>[]): Observable<T> | Promise<T> | T;
+export function invokeTails<T>(invoke: (res?: T) => Observable<T> | Promise<T> | T, ...nexts: TailNext<T>[]): Observable<T> | Promise<T> | T {
+    const fn = nexts.reduceRight<(res?: T) => Observable<T> | Promise<T> | T>((invoke, next) => (res) => invokeTail(() => invoke(res), next), invoke);
+    return fn();
+}
+
 
 function processObservable<T>(obs$: Observable<T>, opter: NextOpter<T>): Observable<T> {
     if (opter.next) {
