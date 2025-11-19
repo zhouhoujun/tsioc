@@ -46,11 +46,16 @@ export function getResolveHandlerToken(type: TypeOf<any>, propertyKey?: string):
 export const typeResolveInterceptor: ResolveInterceptorFn = (input, next, context) => {
     const payload = context.getPayload();
     if (payload) {
-        const token = getResolveHandlerToken(getType(payload));
+        const payloadType = getType(payload);
+        if(!input.multi && (input.provider === payloadType || (!input.provider && input.type === payloadType))) {
+            return payload;
+        }
+        const token = getResolveHandlerToken(payloadType);
         const hanlder = context.getInjector().get(token, null);
         if (hanlder) {
             return hanlder.handle(input, context, (res) => {
                 if (isResolved(res)) return res;
+
                 return next(input, context)
             })
         }
