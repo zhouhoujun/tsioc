@@ -1,4 +1,4 @@
-import { Abstract, StaticProvider, AbstractType, ProvdierOf, HandlerLike, noPointcut } from '@tsdi/ioc';
+import { Abstract, StaticProvider, AbstractType, ProvdierOf, HandlerLike, noPointcut, HandleResult } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
@@ -77,17 +77,17 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * emit event. ailas name of publishEvent
      * @param event the event to publish
      */
-    abstract emit(event: ApplicationEvent | Object): Observable<void | false>;
+    abstract emit(event: ApplicationEvent | Object): HandleResult<void | false>;
     /**
      * event downward
      * @param event 
      */
-    abstract downward(event: ApplicationEvent, context: RunableContext): Observable<void | false>;
+    abstract downward(event: ApplicationEvent, context: RunableContext): HandleResult<void | false>;
     /**
      * event bubble up
      * @param event 
      */
-    abstract bubbleup(event: ApplicationEvent, context: RunableContext): Observable<void | false>;
+    abstract bubbleup(event: ApplicationEvent, context: RunableContext): HandleResult<void | false>;
     /**
      * Notify all <strong>matching</strong> listeners registered with this
      * application of an application event. Events may be framework events
@@ -99,7 +99,7 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * execution for longer-running and potentially blocking operations.
      * @param event the event to publish
      */
-    abstract publishEvent(event: ApplicationEvent | Object, context?: RunableContext): Observable<void | false>;
+    abstract publishEvent(event: ApplicationEvent | Object, context?: RunableContext): HandleResult<void | false>;
 
 
     abstract clear(): void;

@@ -1,14 +1,20 @@
 import {
     InjectFlags, Injector, ProvdierOf, StaticProvider, Type, promiseOf, Exception, toProvider, AbstractType, getType, Token, isType,
-    InvocationContext, createContext, ArgumentException, isToken, isArray, isFunction, composeInterceptors, chainFactory, some, Operator
+    InvocationContext, createContext, ArgumentException, isToken, isArray, isFunction, composeInterceptors, chainFactory, some, Operator,
+    invokeTail, invokeTails,
+    TailNext,
+    toHandlerFn,
+    HandleResult
 } from '@tsdi/ioc';
-import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
+// import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
 import { INTERCEPTORS_TOKEN, ApplicationInterceptor, ApplicationInterceptorFn, ApplicationInterceptorLike, InterceptorResolver } from '../ApplicationInterceptor';
 import { PipeTransform } from '../pipes/pipe';
 import { FILTERS_TOKEN, Filter, FilterLike, FilterResolver, composeFilters } from '../filters/filter';
-import { ApplicationHandler, ApplicationHandlerFn, RunableContext } from '../ApplicationHandler';
+import { ApplicationHandler, ApplicationHandlerFn, ApplicationHandlerLike, RunableContext } from '../ApplicationHandler';
 import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerService } from './configable';
+import { Observable } from 'rxjs';
+import { any } from 'expect';
 
 
 
@@ -21,7 +27,7 @@ export class ConfigableHandler<
     TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>,
     TContext extends RunableContext = RunableContext> implements AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
 
-    private destroy$ = new Subject<void>();
+    // private destroy$ = new Subject<void>();
     private chain?: ApplicationInterceptorFn<TInput, TOutput, TContext> | null;
     private chains: Map<AbstractType | string, ApplicationInterceptorFn<TInput, TOutput, TContext> | null>;
 
@@ -80,32 +86,32 @@ export class ConfigableHandler<
         }
     }
 
-    handle(input: TInput, context: TContext): Observable<TOutput> {
-        return defer(async () => {
+    handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): HandleResult<TOutput> {
+        return invokeTails(
+            async () => {
+                if (this.onReady) await this.onReady();
 
-            if (this.onReady) await this.onReady();
+                if (this._guards === undefined) {
+                    this._guards = this.getGuards() ?? null;
+                }
 
-            if (this._guards === undefined) {
-                this._guards = this.getGuards() ?? null;
-            }
+                if (!this._guards || !this._guards.length) return true;
 
-            if (!this._guards || !this._guards.length) return true;
-
-            if (!(await some(
-                this._guards!.map(gd => () => promiseOf(isFunction(gd) ? gd(input, context) : gd.canHandle(input, context))),
-                vaild => vaild === false))) {
-                return false;
-            }
-            return true;
-        }).pipe(
-            mergeMap(r => {
+                if (!(await some(
+                    this._guards!.map(gd => () => promiseOf(isFunction(gd) ? gd(input, context) : gd.canHandle(input, context))),
+                    vaild => vaild === false))) {
+                    return false;
+                }
+                return true;
+            },
+            (r) => {
                 if (r === true) {
                     return this.run(input, context);
                 }
-                return throwError(() => this.forbiddenError())
-            }),
-            takeUntil(this.destroy$)
-        )
+                throw this.forbiddenError()
+            },
+            tail
+        );
     }
 
 
@@ -160,8 +166,8 @@ export class ConfigableHandler<
     onDestroy(): void {
         if (this._destroyed) return;
         this._destroyed = true;
-        this.destroy$.next();
-        this.destroy$.complete();
+        // this.destroy$.next();
+        // this.destroy$.complete();
         this.clear();
     }
 
@@ -258,8 +264,8 @@ export class ConfigableHandler<
     protected getBackend(): ApplicationHandlerFn<TInput, TOutput, TContext> {
         if (!this.options.backend) throw new ArgumentException('backend is Empty.');
         if (!this.backendFn) {
-            const backend = isToken(this.options.backend) ? this.context.get(this.options.backend, this.options.backend as any, InjectFlags.Default) : this.options.backend;
-            this.backendFn = (isFunction(backend) ? backend : (req, ctx) => (backend as ApplicationHandler).handle(req, ctx)) as ApplicationHandlerFn;
+            const backend = isToken(this.options.backend) ? this.context.get(this.options.backend, this.options.backend as ApplicationHandlerLike, InjectFlags.Default) : this.options.backend;
+            this.backendFn = (isFunction(backend) ? backend : toHandlerFn(backend)) as ApplicationHandlerFn<TInput, TOutput, TContext>;
         }
         return this.backendFn;
     }

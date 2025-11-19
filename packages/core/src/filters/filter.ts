@@ -21,7 +21,7 @@ export abstract class Filter<TInput = any, TOutput = any, TContext extends Runab
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    abstract doFilter(input: TInput, next: ApplicationHandler<TInput, TOutput>, context: TContext): Observable<TOutput>;
+    abstract doFilter(input: TInput, next: ApplicationHandler<TInput, TOutput>, context: TContext): TOutput|Promise<TOutput>|Observable<TOutput>;
 
     /**
      * is this equals to target or not

@@ -1,4 +1,4 @@
-import { ProvdierOf, StaticProvider, Type, Abstract, Token, AbstractType, InvokeProviders, InvocationContext } from '@tsdi/ioc';
+import { ProvdierOf, StaticProvider, Type, Abstract, Token, AbstractType, InvokeProviders, InvocationContext, TailNext } from '@tsdi/ioc';
 import { GuardLike, GuardsService } from '../guard';
 import { ApplicationInterceptorLike, InterceptorService } from '../ApplicationInterceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
@@ -70,8 +70,9 @@ export abstract class AbstractConfigableHandler<
      * 处理句柄
      * @param input handle input.
      * @param context handle with context.
+     * @param tail next tail.
      */
-    abstract handle(input: TInput, context?: TContext): Observable<TOutput>;
+    abstract handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): TOutput | Promise<TOutput> | Observable<TOutput>;
 
     /**
      * destroy hooks.

@@ -1,5 +1,4 @@
-import { AbstractType, ContextToken, Handler, HandlerLike, Injector, isBoolean, ResolveContext } from '@tsdi/ioc';
-import { Observable } from 'rxjs';
+import { AbstractType, ContextToken, Handler, HandleResult, HandlerFn, Injector, isBoolean, ResolveContext, TailNext } from '@tsdi/ioc';
 
 
 const BOOTSTRAP = new ContextToken<boolean>(() => false);
@@ -30,31 +29,26 @@ export function createRunableContext(injector: Injector,
  * 
  * 处理器基本构建块。
  */
-export interface ApplicationHandler<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> {
+export interface ApplicationHandler<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> extends Handler<TInput, TOutput, TContext> {
     /**
      * handle.
      * 
      * 处理句柄
      * @param input handle input.
      * @param context handle with context.
+     * @param tail the next handler in the chain, or the backend
+     * if no interceptors remain in the chain.
      */
-    handle(input: TInput, context: TContext): Observable<TOutput>;
+    handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): HandleResult<TOutput>;
 
-    /**
-     * is this equals to target or not
-     * 
-     * 该实例等于目标与否？
-     * @param target 
-     */
-    equals?(target: any): boolean;
 }
 
 /**
  * Application handler fn.
  */
-export type ApplicationHandlerFn<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = (input: TInput, context: TContext) => Observable<TOutput>;
+export type ApplicationHandlerFn<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = HandlerFn<TInput, TOutput, TContext>;
 
 /**
  * Application handler like.
  */
-export type ApplicationHandlerLike<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = HandlerLike<TInput, Observable<TOutput>, TContext>;
+export type ApplicationHandlerLike<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = ApplicationHandlerFn<TInput, TOutput, TContext> | ApplicationHandler<TInput, TOutput, TContext>;

@@ -1,6 +1,5 @@
-import { Abstract, AbstractType, Invocation, ProvidedInMetadata, ProvdierOf, StaticProvider, InvocationOptions, InvocationFactory, InvocationContext } from '@tsdi/ioc';
+import { Abstract, AbstractType, Invocation, ProvidedInMetadata, ProvdierOf, StaticProvider, InvocationOptions, InvocationFactory, InvocationContext, HandleResult } from '@tsdi/ioc';
 import { ConfigableHandlerOptions, HandlerService } from './handlers/configable';
-import { Observable } from 'rxjs';
 import { PipeTransform } from './pipes/pipe';
 import { ApplicationInterceptorLike } from './ApplicationInterceptor';
 import { GuardLike } from './guard';
@@ -68,7 +67,7 @@ export abstract class InvocationHandler<
      * @param input handle input.
      * @param context handle with context.
      */
-    abstract handle(input: TInput, context?: TContext): Observable<TOutput>;
+    abstract handle(input: TInput, context?: TContext): HandleResult<TOutput>;
 
     /**
      * destroy hooks.

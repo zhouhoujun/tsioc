@@ -1,16 +1,17 @@
 import {
     getTokenOf, Token, ProvdierOf, TypeOf, tokenId, Abstract, AbstractType,
-    Interceptor, InterceptorFn, InterceptorLike
+    Interceptor, InterceptorFn,
+    HandleResult
 } from '@tsdi/ioc';
-import { Observable } from 'rxjs';
 import { ApplicationHandler, RunableContext } from './ApplicationHandler';
+import { Observable } from 'rxjs';
 
 /**
  * Application interceptor is a chainable behavior modifier for `hanlders`.
  * 
  * 拦截器，用于链接多个处理器，组合成处理器串。
  */
-export interface ApplicationInterceptor<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> extends Interceptor<TInput, Observable<TOutput>> {
+export interface ApplicationInterceptor<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> extends Interceptor<TInput, TOutput, TContext> {
 
     /**
      * the method to implemet interceptor.
@@ -22,19 +23,19 @@ export interface ApplicationInterceptor<TInput = any, TOutput = any, TContext ex
      * @param context interceptor with context.
      * @returns An observable of the event stream.
      */
-    intercept(input: TInput, next: ApplicationHandler<TInput, TOutput, TContext>, context?: TContext): Observable<TOutput>;
+    intercept(input: TInput, next: ApplicationHandler<TInput, TOutput, TContext>, context: TContext): HandleResult<TOutput>;
 }
 
 /**
  * Application interceptor function is a chainable behavior modifier for `hanlders`.
  * 拦截方法，用于链接多个处理器，组合成处理器串。
  */
-export type ApplicationInterceptorFn<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = InterceptorFn<TInput, Observable<TOutput>, TContext>;
+export type ApplicationInterceptorFn<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = InterceptorFn<TInput, TOutput, TContext>;
 
 /**
  * Application interceptor like.
  */
-export type ApplicationInterceptorLike<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = InterceptorLike<TInput, Observable<TOutput>, TContext>
+export type ApplicationInterceptorLike<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = ApplicationInterceptorFn<TInput, TOutput, TContext> | ApplicationInterceptor<TInput, TOutput, TContext>;
 
 /**
  * Application interceptor service.

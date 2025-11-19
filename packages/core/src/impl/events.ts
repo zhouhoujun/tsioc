@@ -1,8 +1,10 @@
 import {
     ArgumentException, composeHandlers, getType, InjectFlags, Handler, HandlerLike,
-    Injector, ProvdierOf, StaticProvider, tokenId, AbstractType, ContextToken
+    Injector, ProvdierOf, StaticProvider, tokenId, AbstractType, ContextToken,
+    invokeTails,
+    HandleResult
 } from '@tsdi/ioc';
-import { forkJoin, map, mergeMap, Observable, of, throwError } from 'rxjs';
+// import { forkJoin, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanHandle } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
 import { ApplicationInterceptor } from '../ApplicationInterceptor';
@@ -13,7 +15,6 @@ import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventMulticaster, EventInterceptorLike } from '../ApplicationEventMulticaster';
 import { PayloadApplicationEvent } from '../events';
-import { toObservable } from '../handlers';
 
 
 
@@ -118,17 +119,17 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    emit(event: ApplicationEvent): Observable<void | false>;
-    emit(event: Object): Observable<void | false>;
-    emit(obj: ApplicationEvent | Object): Observable<void | false> {
+    emit(event: ApplicationEvent): HandleResult<void | false>;
+    emit(event: Object): HandleResult<void | false>;
+    emit(obj: ApplicationEvent | Object): HandleResult<void | false> {
         return this.publishEvent(obj)
     }
 
 
-    publishEvent(event: ApplicationEvent, context?: RunableContext): Observable<void | false>;
-    publishEvent(event: Object, context?: RunableContext): Observable<void | false>;
-    publishEvent(obj: ApplicationEvent | Object, context?: RunableContext): Observable<void | false> {
-        if (!obj) throwError(() => new ArgumentException('Event must not be null'));
+    publishEvent(event: ApplicationEvent, context?: RunableContext): HandleResult<void | false>;
+    publishEvent(event: Object, context?: RunableContext): HandleResult<void | false>;
+    publishEvent(obj: ApplicationEvent | Object, context?: RunableContext): HandleResult<void | false> {
+        if (!obj) throw new ArgumentException('Event must not be null');
 
         // Decorate event as an ApplicationEvent if necessary
         let event: ApplicationEvent;
@@ -141,56 +142,53 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         context ??= createRunableContext(this.handler.context ?? this.injector);
         context.set(WITH_SELF, true);
 
-        return this.downward(event, context)
-            .pipe(
-                mergeMap(res => {
-                    if (res === false || !event.propagation) return of(false);
-                    context.set(WITH_SELF, false);
-                    return this.bubbleup(event, context)
-                })
-            ) as Observable<void | false>;
+        return invokeTails(
+            () => this.downward(event, context),
+            (res) => {
+                if (res === false || !event.propagation) return false;
+                context.set(WITH_SELF, false);
+                return this.bubbleup(event, context)
+            }) as void | false;
     }
 
-    downward(event: ApplicationEvent, context: RunableContext): Observable<void | false> {
-        return (context.get(WITH_SELF) ? this.handler.handle(event, context) : of(undefined))
-            .pipe(
-                mergeMap(res => {
-                    if (res === false || !event.propagation) return of(false);
-                    if (this._children.length) {
-                        return forkJoin(this._children.map(r => r.downward(event, context)))
-                            .pipe(
-                                map(r => {
-                                    if (!event.propagation) return false;
-                                })
-                            );
-                    }
-                    return of(undefined)
-                })) as Observable<void | false>;
+    downward(event: ApplicationEvent, context: RunableContext): HandleResult<void | false> {
+        return invokeTails(
+            () => context.get(WITH_SELF) ? this.handler.handle(event, context) : undefined,
+            res => {
+                if (res === false || !event.propagation) return false;
+                if (this._children.length) {
+                    return composeHandlers(this._children.map(r => (event, context) => r.downward(event, context)), (r, next, input, ctx) => {
+                        if (!event.propagation) return false;
+                        return next(event, ctx ?? context);
+                    })(event, context);
+                }
+            }
+        )
     }
 
-    bubbleup(event: ApplicationEvent, context: RunableContext): Observable<void | false> {
-        return (context.get(WITH_SELF) ? this.handler.handle(event, context) : of(undefined))
-            .pipe(
-                mergeMap(res => {
-                    if (res === false || !event.propagation) return of(false);
-                    if (this.parent) {
-                        // Publish event via parent multicaster as well...
-                        return this.parent.bubbleup(event, context)
-                    }
-                    return of(undefined);
-                })) as Observable<void | false>;
+    bubbleup(event: ApplicationEvent, context: RunableContext): HandleResult<void | false> {
+        return invokeTails(
+            () => context.get(WITH_SELF) ? this.handler.handle(event, context) : undefined,
+            res => {
+                if (res === false || !event.propagation) return false;
+                if (this.parent) {
+                    // Publish event via parent multicaster as well...
+                    return this.parent.bubbleup(event, context)
+                }
+            })
+
     }
 
-    handle(event: ApplicationEvent, context: RunableContext): Observable<void | false> {
+    handle(event: ApplicationEvent, context: RunableContext): HandleResult<void | false> {
         const handlers = this.maps.get(getType(event));
-        if (!handlers || !handlers.length) return of(undefined);
+        if (!handlers || !handlers.length) return;
 
-        return toObservable(composeHandlers(handlers, (r, next, input, ctx) => {
+        return composeHandlers(handlers, (r, next, input, ctx) => {
             if (r !== false || !event.propagation) {
                 return next(event, ctx ?? context);
             }
-            return of(r);
-        })(event, context));
+            return r;
+        })(event, context);
     }
 
     clear(): void {

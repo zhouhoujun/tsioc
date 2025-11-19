@@ -73,10 +73,10 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
         return this.get(LoggerManagers, null)?.getLogger(name, adapter) ?? null!;
     }
 
-    publishEvent(event: ApplicationEvent): Observable<any>;
-    publishEvent(event: Object): Observable<any>;
-    publishEvent(obj: ApplicationEvent | Object): Observable<any> {
-        return this.eventMulticaster.publishEvent(obj);
+    publishEvent(event: ApplicationEvent): void;
+    publishEvent(event: Object): void;
+    publishEvent(obj: ApplicationEvent | Object): void {
+       this.eventMulticaster.publishEvent(obj);
     }
 
     /**

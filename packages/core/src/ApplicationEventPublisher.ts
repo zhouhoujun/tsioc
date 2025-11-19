@@ -2,6 +2,7 @@ import { Observable } from 'rxjs';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationContext } from './ApplicationContext';
 import { RunableContext } from './ApplicationHandler';
+import { HandleResult } from '@tsdi/ioc';
 
 
 /**
@@ -22,6 +23,6 @@ export interface ApplicationEventPublisher {
      * execution for longer-running and potentially blocking operations.
      * @param event the event to publish
      */
-    publishEvent(event: ApplicationEvent | Object, context?: RunableContext): Observable<void | false>;
+    publishEvent(event: ApplicationEvent | Object, context?: RunableContext): HandleResult<void | false>;
 
 }

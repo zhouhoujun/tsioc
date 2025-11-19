@@ -1,9 +1,10 @@
-import { Invocation, isFunction, isString, Type, invokeTails } from '@tsdi/ioc';
+import { Invocation, isFunction, isString, Type, invokeTails, HandleResult } from '@tsdi/ioc';
 import { ApplicationHandlerFn, RunableContext } from '../ApplicationHandler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
 import { ResultValue } from '../handlers/ResultValue';
-import { toObservable } from '../handlers';
+import { Observable } from 'rxjs';
+// import { toObservable } from '../handlers';
 
 
 
@@ -31,7 +32,7 @@ export class DefaultInvocationHandler<
     }
 
     protected getBackend(): ApplicationHandlerFn<TInput, TOutput, TContext> {
-        return (input: TInput, context: TContext) => toObservable(this.respond(input, context));
+        return (input: TInput, context: TContext) => this.respond(input, context);
     }
 
 
@@ -45,7 +46,7 @@ export class DefaultInvocationHandler<
      * @param input 
      * @returns 
      */
-    protected respond(input: TInput, context: TContext) {
+    protected respond(input: TInput, context: TContext): HandleResult<TOutput> {
 
         return invokeTails(
             () => this.beforeInvoke(input),
@@ -67,7 +68,7 @@ export class DefaultInvocationHandler<
      * @param res 
      * @returns 
      */
-    protected respondAs(input: TInput, res: any, context: TContext): TOutput {
+    protected respondAs(input: TInput, res: any, context: TContext): HandleResult<TOutput> {
         if (isString(this.options.response)) {
             const trespond = this.context.get(TypedRespond);
             if (trespond) {

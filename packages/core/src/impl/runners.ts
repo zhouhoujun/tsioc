@@ -1,6 +1,9 @@
 import {
     isNumber, AbstractType, Injectable, tokenId, ClassRef, isFunction, getClassify, ProvdierOf, Invocation,
-    ArgumentException, StaticProvider, HandlerLike, composeHandlers, Type, Operator
+    ArgumentException, StaticProvider, HandlerLike, composeHandlers, Type, Operator,
+    HandleResult,
+    invokeTails,
+    lang
 } from '@tsdi/ioc';
 import { finalize, forkJoin, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { ApplicationRunners } from '../ApplicationRunners';
@@ -14,7 +17,7 @@ import { Filter } from '../filters/filter';
 import { ExceptionHandlerFilter } from '../filters/execption.filter';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
 import { NotHandleException } from '../execptions';
-import { toObservable } from '../handlers';
+// import { toObservable } from '../handlers';
 import { InvocationHandlerOptions } from '../invocation';
 import { createInvocationHandler } from './invocation';
 import { ApplicationContext } from '../ApplicationContext';
@@ -143,27 +146,39 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
     }
 
     run(type?: AbstractType | AbstractType[]): Promise<void> {
+        const defer = lang.defer<void>();
         if (type) {
-            return lastValueFrom(this._handler.handle(type, createRunableContext(this.getRef(type as AbstractType)?.context ?? this.context, true)));
+            this._handler.handle(type, createRunableContext(this.getRef(type as AbstractType)?.context ?? this.context, true), {
+                error: (err) => defer.reject(err),
+                next: (v) => defer.resolve()
+            });
+        } else {
+            invokeTails(
+                () => this.startup(),
+                v => this.beforeRun(),
+                v => this._types?.length ? (this._types.map((ty) => this._handler.handle(ty, createRunableContext(this.getRef(ty)?.context ?? this.context, true)))) : v,
+                v => this.afterRun(),
+                {
+                    error: (err) => defer.reject(err),
+                    next: (v) => defer.resolve()
+                }
+            )
         }
-        return lastValueFrom(
-            this.startup()
-                .pipe(
-                    mergeMap(v => this.beforeRun()),
-                    mergeMap(v => this._types?.length ? forkJoin(this._types.map((ty) => this._handler.handle(ty, createRunableContext(this.getRef(ty)?.context ?? this.context, true)))) : of(v)),
-                    mergeMap(v => this.afterRun())
-                )
-        );
+        return defer.promise;
     }
 
     stop(signls?: string): Promise<void> {
-        return lastValueFrom(
-            this.onShuwdown(signls)
-                .pipe(
-                    mergeMap(v => this.onDispose()),
-                    finalize(() => this.onDestroy())
-                )
+        const defer = lang.defer<void>();
+        invokeTails(
+            () => this.onShuwdown(signls),
+            v => this.onDispose(),
+            {
+                error: (err) => defer.reject(err),
+                next: (v) => defer.resolve(),
+                finally: () => this.onDestroy()
+            }
         );
+        return defer.promise;
     }
 
     private _destroyed = false;
@@ -178,7 +193,7 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         this._types = null!;
     }
 
-    handle(input: AbstractType, context: RunableContext): Observable<any> {
+    handle(input: AbstractType, context: RunableContext): HandleResult<any> {
         let handlers: HandlerLike[] | undefined;
         if (isFunction(input)) {
             handlers = this._maps.get(input)
@@ -186,28 +201,28 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
             return throwError(() => new ArgumentException('input type unknow'))
         }
         if (handlers && handlers.length) {
-            return toObservable(composeHandlers(handlers)(input, context));
+            return composeHandlers(handlers)(input, context);
         }
         return throwError(() => new NotHandleException(context, input));
     }
 
-    protected startup(): Observable<any> {
+    protected startup(): HandleResult<any> {
         return this.multicaster.emit(new ApplicationStartupEvent(this));
     }
 
-    protected beforeRun(): Observable<any> {
+    protected beforeRun(): HandleResult<any> {
         return this.multicaster.emit(new ApplicationStartEvent(this));
     }
 
-    protected afterRun(): Observable<any> {
+    protected afterRun(): HandleResult<any> {
         return this.multicaster.emit(new ApplicationStartedEvent(this));
     }
 
-    protected onShuwdown(signls?: string): Observable<any> {
+    protected onShuwdown(signls?: string): HandleResult<any> {
         return this.multicaster.emit(new ApplicationShutdownEvent(this, signls));
     }
 
-    protected onDispose(): Observable<any> {
+    protected onDispose(): HandleResult<any> {
         return this.multicaster.emit(new ApplicationDisposeEvent(this));
     }
 

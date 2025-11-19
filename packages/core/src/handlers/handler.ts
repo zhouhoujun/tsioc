@@ -1,5 +1,5 @@
-import { composeInterceptors, isFunction, isPromise } from '@tsdi/ioc';
-import { Observable, isObservable, of, from } from 'rxjs';
+import { composeInterceptors, HandleResult, invokeTail, isFunction, isPromise, TailNext } from '@tsdi/ioc';
+// import { Observable, isObservable, of, from } from 'rxjs';
 import { ApplicationHandler, ApplicationHandlerFn, ApplicationHandlerLike, RunableContext } from '../ApplicationHandler';
 import { ApplicationInterceptorFn, ApplicationInterceptorLike } from '../ApplicationInterceptor';
 
@@ -23,11 +23,11 @@ export class InterceptingHandler<TInput = any, TOutput = any, TContext extends R
         }
     }
 
-    handle(input: TInput, context: TContext): Observable<TOutput> {
+    handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): HandleResult<TOutput> {
         if (!this.chain) {
             this.chain = this.compose();
         }
-        return this.chain(input, this.backend, context);
+        return tail? invokeTail(()=> this.chain!(input, this.backend, context), tail) : this.chain(input, this.backend, context);
     }
 
     protected reset() {
@@ -39,12 +39,12 @@ export class InterceptingHandler<TInput = any, TOutput = any, TContext extends R
     }
 }
 
-/**
- * parse response to `Observable`
- */
-export function toObservable<T>(res: T): Observable<T> {
-    if (isObservable(res)) {
-        return res as Observable<T>;
-    }
-    return isPromise(res) ? from(res) : of(res);
-}
+// /**
+//  * parse response to `Observable`
+//  */
+// export function toObservable<T>(res: T): Observable<T> {
+//     if (isObservable(res)) {
+//         return res as Observable<T>;
+//     }
+//     return isPromise(res) ? from(res) : of(res);
+// }

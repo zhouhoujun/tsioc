@@ -14,8 +14,9 @@ export interface Handler<TInput = any, TOutput = any, TContext = any> {
      * 处理句柄
      * @param input handle input.
      * @param context handle with context.
+     * @param tail next tail.
      */
-    handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): TOutput;
+    handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): HandleResult<TOutput>;
 
     /**
      * is this equals to target or not
@@ -30,7 +31,7 @@ export interface Handler<TInput = any, TOutput = any, TContext = any> {
  * handler fn.
  * 处理器基本构建块。
  */
-export type HandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>) => TOutput;
+export type HandlerFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>) => HandleResult<TOutput>;
 
 
 /**
@@ -56,7 +57,7 @@ export interface Interceptor<TInput = any, TOutput = any, TContext = any> {
      * @param context interceptor with context.
      * @returns An observable of the event stream.
      */
-    intercept(input: TInput, next: Handler<any, TOutput, TContext>, context: TContext): TOutput;
+    intercept(input: TInput, next: Handler<any, TOutput, TContext>, context: TContext): HandleResult<TOutput>;
 
     /**
      * is this equals to target or not
@@ -71,7 +72,7 @@ export interface Interceptor<TInput = any, TOutput = any, TContext = any> {
  * interceptor fn.
  * 拦截方法，用于链接多个处理器，组合成处理器串。
  */
-export type InterceptorFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, next: HandlerFn<any, TOutput, TContext>, context: TContext) => TOutput;
+export type InterceptorFn<TInput = any, TOutput = any, TContext = any> = (input: TInput, next: HandlerFn<any, TOutput, TContext>, context: TContext) => HandleResult<TOutput>;
 
 
 /**
@@ -167,9 +168,11 @@ export interface NextOpter<TOutput, TContext = any> {
     finally?: () => any;
 }
 
-export type TailNext<TOutput, TContext = any> = NextOpter<TOutput, TContext> | ((res: TOutput, context?: TContext) => any);
+export type HandleResult<TOutput> = TOutput | Promise<TOutput> | Observable<TOutput>;
 
-export function invokeTail<T>(invoke: () => Observable<T> | Promise<T> | T, nextOpter?: TailNext<T>): Observable<T> | Promise<T> | T {
+export type TailNext<TOutput, TContext = any> = NextOpter<TOutput, TContext> | ((res: TOutput, context?: TContext) => HandleResult<TOutput>);
+
+export function invokeTail<T, TContext = any>(invoke: () => Observable<T> | Promise<T> | T, nextOpter?: TailNext<T, TContext>): HandleResult<T> {
     const opter = nextOpter ? (isFunction(nextOpter) ? { next: nextOpter } : nextOpter) : null;
 
     try {
@@ -190,8 +193,8 @@ export function invokeTail<T>(invoke: () => Observable<T> | Promise<T> | T, next
 /**
  * 处理多个连续的invoke调用
  */
-export function invokeTails<T>(invoke: (res?: T) => Observable<T> | Promise<T> | T, next: TailNext<T>, ...nexts: TailNext<T>[]): Observable<T> | Promise<T> | T;
-export function invokeTails<T>(invoke: (res?: T) => Observable<T> | Promise<T> | T, ...nexts: TailNext<T>[]): Observable<T> | Promise<T> | T {
+export function invokeTails<T, TContext = any>(invoke: (res?: any) => Observable<any> | Promise<any> | any, next: TailNext<T, TContext>, ...nexts: (TailNext<T, TContext> | undefined)[]): Observable<T> | Promise<T> | T;
+export function invokeTails<T, TContext = any>(invoke: (res?: any) => Observable<any> | Promise<any> | any, ...nexts: (TailNext<T, TContext> | undefined)[]): Observable<T> | Promise<T> | T {
     const fn = nexts.reduceRight<(res?: T) => Observable<T> | Promise<T> | T>((invoke, next) => (res) => invokeTail(() => invoke(res), next), invoke);
     return fn();
 }
