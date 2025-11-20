@@ -3,7 +3,6 @@ import {
     InvocationContext, ModuleMetadata, ModuleDef, Token, tokenId, ClassRef, Invocation, InvokeOptions
 } from '@tsdi/ioc';
 import { Logger } from '@tsdi/logger';
-import { Observable } from 'rxjs';
 import { ApplicationRunners } from './ApplicationRunners';
 import { ApplicationArguments } from './ApplicationArguments';
 import { LoadType, ModuleLoader } from './ModuleLoader';

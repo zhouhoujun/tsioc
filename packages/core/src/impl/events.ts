@@ -3,7 +3,6 @@ import {
     Injector, ProvdierOf, StaticProvider, tokenId, AbstractType, ContextToken,
     HandleResult,  promiseOf
 } from '@tsdi/ioc';
-// import { forkJoin, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanHandle } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
 import { ApplicationInterceptor } from '../ApplicationInterceptor';

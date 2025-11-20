@@ -2,7 +2,6 @@ import {
     Abstract, chainEndFn, chainFactory, getTokenOf, HandlerFn, isFunction, ProvdierOf,
     Token, tokenId, AbstractType, TypeOf, HandlerLike, HandleResult
 } from '@tsdi/ioc';
-// import { Observable } from 'rxjs';
 import { ApplicationHandler, RunableContext } from '../ApplicationHandler';
 import { ApplicationInterceptorFn } from '../ApplicationInterceptor';
 

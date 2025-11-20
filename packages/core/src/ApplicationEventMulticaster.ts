@@ -1,5 +1,4 @@
-import { Abstract, StaticProvider, AbstractType, ProvdierOf, HandlerLike, noPointcut, HandleResult } from '@tsdi/ioc';
-import { Observable } from 'rxjs';
+import { Abstract, StaticProvider, AbstractType, ProvdierOf, HandlerLike, noPointcut } from '@tsdi/ioc';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { Filter } from './filters/filter';

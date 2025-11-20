@@ -1,10 +1,9 @@
 import {
     getTokenOf, Token, ProvdierOf, TypeOf, tokenId, Abstract, AbstractType,
-    Interceptor, InterceptorFn,
-    HandleResult
+    Interceptor, InterceptorFn, HandleResult
 } from '@tsdi/ioc';
 import { ApplicationHandler, RunableContext } from './ApplicationHandler';
-import { Observable } from 'rxjs';
+
 
 /**
  * Application interceptor is a chainable behavior modifier for `hanlders`.

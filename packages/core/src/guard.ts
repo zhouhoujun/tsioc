@@ -1,5 +1,4 @@
-import { ProvdierOf, Token, TypeOf, getTokenOf, tokenId } from '@tsdi/ioc';
-import { Observable } from 'rxjs';
+import { HandleResult, ProvdierOf, Token, TypeOf, getTokenOf, tokenId } from '@tsdi/ioc';
 
 
 /**
@@ -16,13 +15,13 @@ export interface CanHandle<T = any, TContext = any> {
      * @param context guard with context.
      * @returns can activate or not. type of boolean, Promise<boolean> or Observable<boolean>.
      */
-    canHandle(input: T, context?: TContext): boolean | Promise<boolean> | Observable<boolean>;
+    canHandle(input: T, context?: TContext): HandleResult<boolean>;
 }
 
 /**
  * hander guard fn.
  */
-export type CanHandleFn<T = any, TContext = any> = (input: T, context?: TContext) => boolean | Promise<boolean> | Observable<boolean>;
+export type CanHandleFn<T = any, TContext = any> = (input: T, context?: TContext) => HandleResult<boolean>;
 
 /**
  * Handler Guard.

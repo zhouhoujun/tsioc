@@ -1,6 +1,5 @@
 import { AbstractType, DefaultInvocationContext, ClassRef, ModuleDef, ModuleRef, Invocation, noPointcut, Operator } from '@tsdi/ioc';
 import { Logger, LoggerManagers } from '@tsdi/logger';
-// import { Observable } from 'rxjs';
 import { ApplicationArguments } from '../ApplicationArguments';
 import { ApplicationEvent } from '../ApplicationEvent';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
