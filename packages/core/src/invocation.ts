@@ -1,10 +1,10 @@
 import { Abstract, AbstractType, Invocation, ProvidedInMetadata, ProvdierOf, StaticProvider, InvocationOptions, InvocationFactory, InvocationContext, HandleResult } from '@tsdi/ioc';
 import { ConfigableHandlerOptions, HandlerService } from './handlers/configable';
 import { PipeTransform } from './pipes/pipe';
-import { ApplicationInterceptorLike } from './ApplicationInterceptor';
+import { InterceptorLike } from './ApplicationInterceptor';
 import { GuardLike } from './guard';
 import { FilterLike } from './filters/filter';
-import { ApplicationHandler, RunableContext } from './ApplicationHandler';
+import { Handler, RunableContext } from './ApplicationHandler';
 
 
 /**
@@ -16,7 +16,7 @@ export abstract class InvocationHandler<
     TOutput = any,
     TOptions extends InvocationHandlerOptions = InvocationHandlerOptions,
     TContext extends RunableContext = RunableContext,
-    T = any> implements ApplicationHandler<TInput, TOutput, TContext>, HandlerService {
+    T = any> implements Handler<TInput, TOutput, TContext>, HandlerService {
 
     /**
      * invocation.
@@ -43,7 +43,7 @@ export abstract class InvocationHandler<
      * @param order 
      * @returns 
      */
-    abstract useInterceptors(interceptor: ProvdierOf<ApplicationInterceptorLike> | ProvdierOf<ApplicationInterceptorLike>[], order?: number): this;
+    abstract useInterceptors(interceptor: ProvdierOf<InterceptorLike> | ProvdierOf<InterceptorLike>[], order?: number): this;
 
     /**
      * use guards for the handler.

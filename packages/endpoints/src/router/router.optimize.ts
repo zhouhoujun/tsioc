@@ -2,7 +2,7 @@ import {
     Type, composeHandlers, DecorDefine, Exception, getClassRef, Handler, HandlerFn, hasProps, Injector, Invocation,
     isArray, isType, isFunction, isRegExp, isString, ModuleRef, OnDestroy, TypeOf
 } from '@tsdi/ioc';
-import { ApplicationHandler } from '@tsdi/core';
+import { Handler } from '@tsdi/core';
 import { Pattern, PatternFormatter, Protocols } from '@tsdi/common';
 import { BadRequestException, NotFoundException } from '@tsdi/common/transport';
 import { defer, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
@@ -192,7 +192,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         )
     }
 
-    intercept(ctx: RequestContext, next: ApplicationHandler<RequestContext>): Observable<any> {
+    intercept(ctx: RequestContext, next: Handler<RequestContext>): Observable<any> {
         return this.handle(ctx, () => next.handle(ctx))
     }
 

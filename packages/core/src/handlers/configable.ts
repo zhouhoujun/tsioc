@@ -1,9 +1,9 @@
 import { ProvdierOf, StaticProvider, Type, Abstract, Token, AbstractType, InvokeProviders, InvocationContext, TailNext, HandleResult } from '@tsdi/ioc';
 import { GuardLike, GuardsService } from '../guard';
-import { ApplicationInterceptorLike, InterceptorService } from '../ApplicationInterceptor';
+import { InterceptorLike, InterceptorService } from '../ApplicationInterceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
 import { FilterLike, FilterService } from '../filters/filter';
-import { ApplicationHandler, ApplicationHandlerLike, RunableContext } from '../ApplicationHandler';
+import { Handler, HandlerLike, RunableContext } from '../ApplicationHandler';
 
 
 
@@ -23,7 +23,7 @@ export abstract class AbstractConfigableHandler<
     TInput = any,
     TOutput = any,
     TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>,
-    TContext extends RunableContext = RunableContext> implements ApplicationHandler<TInput, TOutput, TContext>, HandlerService {
+    TContext extends RunableContext = RunableContext> implements Handler<TInput, TOutput, TContext>, HandlerService {
 
     abstract get context(): InvocationContext;
     abstract get ready(): Promise<void>;
@@ -46,7 +46,7 @@ export abstract class AbstractConfigableHandler<
      * @param order 
      * @returns 
      */
-    abstract useInterceptors(interceptor: ProvdierOf<ApplicationInterceptorLike<TInput>> | ProvdierOf<ApplicationInterceptorLike<TInput>>[], order?: number): this;
+    abstract useInterceptors(interceptor: ProvdierOf<InterceptorLike<TInput>> | ProvdierOf<InterceptorLike<TInput>>[], order?: number): this;
 
     /**
      * use guards for the handler.
@@ -88,7 +88,7 @@ export interface ConfigableHandlerOptions<TInput = any> extends InvokeProviders 
     /**
      * handler type.
      */
-    handlerType?: AbstractType<ApplicationHandler>;
+    handlerType?: AbstractType<Handler>;
     /**
      * enable input type filters and interceptors chain for handler.
      */
@@ -107,7 +107,7 @@ export interface ConfigableHandlerOptions<TInput = any> extends InvokeProviders 
     /**
      * interceptors of bootstrap.
      */
-    interceptors?: ProvdierOf<ApplicationInterceptorLike<TInput>>[];
+    interceptors?: ProvdierOf<InterceptorLike<TInput>>[];
     /**
      * pipes for the bootstrap.
      */
@@ -120,7 +120,7 @@ export interface ConfigableHandlerOptions<TInput = any> extends InvokeProviders 
     /**
      * interceptors token.
      */
-    interceptorsToken?: Token<ApplicationInterceptorLike<TInput>[]>;
+    interceptorsToken?: Token<InterceptorLike<TInput>[]>;
     /**
      * guards tokens.
      */
@@ -131,6 +131,6 @@ export interface ConfigableHandlerOptions<TInput = any> extends InvokeProviders 
     filtersToken?: Token<FilterLike<TInput>[]>;
 
 
-    backend?: Token<ApplicationHandlerLike<TInput>> | ApplicationHandlerLike<TInput>;
+    backend?: Token<HandlerLike<TInput>> | HandlerLike<TInput>;
 }
 

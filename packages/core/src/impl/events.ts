@@ -1,12 +1,12 @@
 import {
-    ArgumentException, composeHandlers, getType, InjectFlags, Handler, HandlerLike,
+    ArgumentException, composeHandlers, getType, InjectFlags, HandlerLike,
     Injector, ProvdierOf, StaticProvider, tokenId, AbstractType, ContextToken,
     HandleResult,  promiseOf
 } from '@tsdi/ioc';
 import { CanHandle } from '../guard';
 import { PipeTransform } from '../pipes/pipe';
-import { ApplicationInterceptor } from '../ApplicationInterceptor';
-import { ApplicationHandler, createRunableContext, RunableContext } from '../ApplicationHandler';
+import { Interceptor } from '../ApplicationInterceptor';
+import { Handler, createRunableContext, RunableContext } from '../ApplicationHandler';
 import { Filter } from '../filters/filter';
 import { ExceptionHandlerFilter } from '../filters/execption.filter';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
@@ -19,7 +19,7 @@ import { PayloadApplicationEvent } from '../events';
 /**
  *  event multicaster interceptors multi token.
  */
-export const EVENT_MULTICASTER_INTERCEPTORS = tokenId<ApplicationInterceptor<ApplicationEvent, any>[]>('EVENT_MULTICASTER_INTERCEPTORS');
+export const EVENT_MULTICASTER_INTERCEPTORS = tokenId<Interceptor<ApplicationEvent, any>[]>('EVENT_MULTICASTER_INTERCEPTORS');
 
 /**
  *  event multicaster filters multi token.
@@ -34,7 +34,7 @@ export const EVENT_MULTICASTER_GUARDS = tokenId<CanHandle[]>('EVENT_MULTICASTER_
 export const WITH_SELF = new ContextToken(() => false);
 
 
-export class DefaultEventMulticaster extends ApplicationEventMulticaster implements ApplicationHandler<ApplicationEvent> {
+export class DefaultEventMulticaster extends ApplicationEventMulticaster implements Handler<ApplicationEvent> {
 
     private _handler: ConfigableHandler<ApplicationEvent>;
     private maps: Map<AbstractType, HandlerLike[]>;
@@ -106,7 +106,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    removeListener(event: AbstractType<ApplicationEvent>, handler: ApplicationHandler): this {
+    removeListener(event: AbstractType<ApplicationEvent>, handler: Handler): this {
         const handlers = this.maps.get(event);
         if (handlers) {
             const idx = handlers.findIndex(i => (i as Handler).equals ? (i as Handler).equals?.(handler) : i === handler);

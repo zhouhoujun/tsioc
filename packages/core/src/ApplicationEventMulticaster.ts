@@ -3,15 +3,15 @@ import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { Filter } from './filters/filter';
 import { CanHandle } from './guard';
-import { ApplicationInterceptor, ApplicationInterceptorFn, ApplicationInterceptorLike } from './ApplicationInterceptor';
+import { Interceptor, InterceptorFn, InterceptorLike } from './ApplicationInterceptor';
 import { PipeTransform } from './pipes/pipe';
 import { HandlerService } from './handlers/configable';
 import { RunableContext } from './ApplicationHandler';
 
 
-export type EventInterceptor<TInput extends ApplicationEvent = ApplicationEvent> = ApplicationInterceptor<TInput, any, RunableContext>;
-export type EventInterceptorFn<TInput extends ApplicationEvent = ApplicationEvent> = ApplicationInterceptorFn<TInput, any, RunableContext>;
-export type EventInterceptorLike<TInput extends ApplicationEvent = ApplicationEvent> = ApplicationInterceptorLike<TInput, any, RunableContext>;
+export type EventInterceptor<TInput extends ApplicationEvent = ApplicationEvent> = Interceptor<TInput, any, RunableContext>;
+export type EventInterceptorFn<TInput extends ApplicationEvent = ApplicationEvent> = InterceptorFn<TInput, any, RunableContext>;
+export type EventInterceptorLike<TInput extends ApplicationEvent = ApplicationEvent> = InterceptorLike<TInput, any, RunableContext>;
 
 /**
  * providing the basic listener registration facility.

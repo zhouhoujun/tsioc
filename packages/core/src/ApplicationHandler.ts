@@ -1,4 +1,7 @@
-import { AbstractType, ContextToken, Handler, HandleResult, HandlerFn, Injector, isBoolean, ResolveContext, TailNext } from '@tsdi/ioc';
+import { AbstractType, ContextToken, Handler, Injector, isBoolean, ResolveContext, TailNext } from '@tsdi/ioc';
+import { Observable } from 'rxjs';
+
+export { Handler, HandlerLike, HandlerFn } from '@tsdi/ioc';
 
 
 const BOOTSTRAP = new ContextToken<boolean>(() => false);
@@ -24,31 +27,24 @@ export function createRunableContext(injector: Injector,
     return new RunableContext(injector, bootstrap, failed)
 }
 
-/**
- * `ApplicationHandler` is the fundamental building block of handle.
- * 
- * 处理器基本构建块。
- */
-export interface ApplicationHandler<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> extends Handler<TInput, TOutput, TContext> {
+
+export interface RequestHandler<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> extends Handler<TInput, TOutput, TContext> {
     /**
      * handle.
      * 
      * 处理句柄
      * @param input handle input.
      * @param context handle with context.
-     * @param tail the next handler in the chain, or the backend
-     * if no interceptors remain in the chain.
+     * @param tail next tail.
      */
-    handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): HandleResult<TOutput>;
-
+    handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): Observable<TOutput>;
 }
 
-/**
- * Application handler fn.
- */
-export type ApplicationHandlerFn<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = HandlerFn<TInput, TOutput, TContext>;
+export type RequestHandlerFn<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = (input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>) => Observable<TOutput>;
+
 
 /**
- * Application handler like.
+ * Request handler like.
  */
-export type ApplicationHandlerLike<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = ApplicationHandlerFn<TInput, TOutput, TContext> | ApplicationHandler<TInput, TOutput, TContext>;
+export type RequestHandlerLike<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = RequestHandlerFn<TInput, TOutput, TContext> | RequestHandler<TInput, TOutput, TContext>;
+

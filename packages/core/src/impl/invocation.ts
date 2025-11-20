@@ -1,5 +1,5 @@
 import { Invocation, isFunction, isString, Type, invokeTails, HandleResult } from '@tsdi/ioc';
-import { ApplicationHandlerFn, RunableContext } from '../ApplicationHandler';
+import { HandlerFn, RunableContext } from '../ApplicationHandler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
 import { ResultValue } from '../handlers/ResultValue';
@@ -27,7 +27,7 @@ export class DefaultInvocationHandler<
         return this.options;
     }
 
-    protected getBackend(): ApplicationHandlerFn<TInput, TOutput, TContext> {
+    protected getBackend(): HandlerFn<TInput, TOutput, TContext> {
         return (input: TInput, context: TContext) => this.respond(input, context);
     }
 

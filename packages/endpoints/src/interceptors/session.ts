@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
+import { Handler, Interceptor } from '@tsdi/core';
 import { Observable, finalize, from, mergeMap, catchError, throwError } from 'rxjs';
 import { RequestContext } from '../RequestContext';
 
@@ -9,9 +9,9 @@ import { RequestContext } from '../RequestContext';
  * session.
  */
 @Injectable()
-export class SessionInterceptor implements ApplicationInterceptor<RequestContext> {
+export class SessionInterceptor implements Interceptor<RequestContext> {
 
-    intercept(input: RequestContext, next: ApplicationHandler<RequestContext, any>): Observable<any> {
+    intercept(input: RequestContext, next: Handler<RequestContext, any>): Observable<any> {
         const session = input.session;
         if (!session) {
             return next.handle(input);

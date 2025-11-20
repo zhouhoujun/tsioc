@@ -16,7 +16,7 @@ import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
 import { TransportParameter, typeResolveInterceptor } from './handlers/resolver';
-import { ApplicationInterceptorFn, InterceptorResolver } from './ApplicationInterceptor';
+import { InterceptorFn, InterceptorResolver } from './ApplicationInterceptor';
 import { createInvocationHandler } from './impl/invocation';
 
 
@@ -461,7 +461,7 @@ export interface InterceptMetadata extends ProvidedInMetadata {
     order?: number;
 }
 
-export type InterceptDecorator = <T extends ApplicationInterceptorFn>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void
+export type InterceptDecorator = <T extends InterceptorFn>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void
 
 /**
  * Interceptable

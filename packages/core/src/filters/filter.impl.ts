@@ -1,27 +1,27 @@
 import { getType, isFunction, isString, AbstractType, ArgumentException, Injector, InjectFlags, HandlerLike } from '@tsdi/ioc';
-import { ApplicationHandler } from '../ApplicationHandler';
+import { Handler } from '../ApplicationHandler';
 import { Filter, FilterHandlerResolver, FilterLike, FilterResolver } from './filter';
-import { ApplicationInterceptor, ApplicationInterceptorLike, InterceptorResolver } from '../ApplicationInterceptor';
+import { Interceptor, InterceptorLike, InterceptorResolver } from '../ApplicationInterceptor';
 
 
 export class DefaultInterceptorResolver implements InterceptorResolver {
-    private maps = new Map<AbstractType | string, ApplicationInterceptorLike[]>();
+    private maps = new Map<AbstractType | string, InterceptorLike[]>();
 
     constructor(private injector: Injector) { }
 
-    resolve<T>(target: AbstractType<T> | T | string): ApplicationInterceptorLike[] {
+    resolve<T>(target: AbstractType<T> | T | string): InterceptorLike[] {
         const interceptors = this.maps.get(isString(target) ? target : (isFunction(target) ? target : getType(target))) ?? [];
         const resolver = this.injector.get(InterceptorResolver, null, InjectFlags.SkipSelf);
         if(resolver === this) return interceptors;
         resolver?.resolve(target)?.forEach(r => {
-            if (!(interceptors.indexOf(r) >= 0 || (r as ApplicationInterceptor).equals ? interceptors.some(i => (r as ApplicationInterceptor).equals!(i)) : false)) {
+            if (!(interceptors.indexOf(r) >= 0 || (r as Interceptor).equals ? interceptors.some(i => (r as Interceptor).equals!(i)) : false)) {
                 interceptors.push(r);
             }
         });
 
         return interceptors;
     }
-    addInterceptor(target: AbstractType | string, interceptor: ApplicationInterceptorLike, order?: number): this {
+    addInterceptor(target: AbstractType | string, interceptor: InterceptorLike, order?: number): this {
         if (!interceptor) {
             throw new ArgumentException('filter missing');
         }
@@ -29,15 +29,15 @@ export class DefaultInterceptorResolver implements InterceptorResolver {
         if (!hds) {
             hds = [interceptor];
             this.maps.set(target, hds)
-        } else if (!hds.some(h => h === interceptor || ((h as ApplicationInterceptor).equals ? (h as ApplicationInterceptor).equals!(interceptor) : false))) {
+        } else if (!hds.some(h => h === interceptor || ((h as Interceptor).equals ? (h as Interceptor).equals!(interceptor) : false))) {
             hds.push(interceptor)
         }
         return this
     }
-    removeInterceptor(target: AbstractType | string, interceptor: ApplicationInterceptorLike): this {
+    removeInterceptor(target: AbstractType | string, interceptor: InterceptorLike): this {
         const hds = this.maps.get(target);
         if (!hds) return this;
-        const idx = hds.findIndex(h => h === interceptor || ((h as ApplicationInterceptor).equals ? (h as ApplicationInterceptor).equals!(interceptor) : false));
+        const idx = hds.findIndex(h => h === interceptor || ((h as Interceptor).equals ? (h as Interceptor).equals!(interceptor) : false));
         if (idx > 0) hds.splice(idx, 1);
         return this
     }
@@ -98,7 +98,7 @@ export class DefaultFiterHandlerMethodResolver implements FilterHandlerResolver 
         const resolver = this.injector.get(FilterHandlerResolver, null, InjectFlags.SkipSelf);
         if(resolver === this) return handlers;
         resolver?.resolve(target)?.forEach(r => {
-            if (!(handlers.indexOf(r) >= 0 || (r as ApplicationHandler).equals ? handlers.some(i => (r as ApplicationHandler).equals!(i)) : false)) {
+            if (!(handlers.indexOf(r) >= 0 || (r as Handler).equals ? handlers.some(i => (r as Handler).equals!(i)) : false)) {
                 handlers.push(r);
             }
         });
@@ -114,16 +114,16 @@ export class DefaultFiterHandlerMethodResolver implements FilterHandlerResolver 
         if (!hds) {
             hds = [handler];
             this.maps.set(filter, hds)
-        } else if (!hds.some(h => (h as ApplicationHandler).equals ? (h as ApplicationHandler).equals?.(handler) : h === handler)) {
+        } else if (!hds.some(h => (h as Handler).equals ? (h as Handler).equals?.(handler) : h === handler)) {
             hds.push(handler)
         }
         return this
     }
 
-    removeHandle(filter: AbstractType | string, handler: ApplicationHandler): this {
+    removeHandle(filter: AbstractType | string, handler: Handler): this {
         const hds = this.maps.get(filter);
         if (!hds) return this;
-        const idx = hds.findIndex(h => (h as ApplicationHandler).equals ? (h as ApplicationHandler).equals?.(handler) : h === handler);
+        const idx = hds.findIndex(h => (h as Handler).equals ? (h as Handler).equals?.(handler) : h === handler);
         if (idx > 0) hds.splice(idx, 1);
         return this
     }

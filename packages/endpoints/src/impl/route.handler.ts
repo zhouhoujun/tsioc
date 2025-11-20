@@ -1,5 +1,5 @@
 import { Type, Exception, getToken, Invocation } from '@tsdi/ioc';
-import { ApplicationHandlerFn, ApplicationInterceptorLike, normalizeConfigableHandlerOptions } from '@tsdi/core';
+import { HandlerFn, InterceptorLike, normalizeConfigableHandlerOptions } from '@tsdi/core';
 import { ForbiddenException, NotFoundException } from '@tsdi/common/transport';
 import { throwError } from 'rxjs';
 import { RequestContext } from '../RequestContext';
@@ -33,7 +33,7 @@ export class RouteHandlerImpl<TInput extends RequestContext = RequestContext, TO
 
 export function pathInterceptor(invocation: Invocation, route: RouteOptions) {
 
-    return (input: RequestContext, next: ApplicationHandlerFn<RequestContext>, ctx?: any) => {
+    return (input: RequestContext, next: HandlerFn<RequestContext>, ctx?: any) => {
         if (route.paths && input.request.path) {
             if (Object.entries(route.paths).some(([key, value]) => {
                 const filters: any[] = invocation.context.get(value, []);
@@ -50,7 +50,7 @@ export function pathInterceptor(invocation: Invocation, route: RouteOptions) {
 function normalizeRouteOptions(invocation: Invocation, options: RouteOptions, propertyKey?: string | symbol) {
     if (options.interceptors || options.paths) {
         if (!options.interceptorsToken) {
-            options.interceptorsToken = getToken<ApplicationInterceptorLike[]>(invocation.type, (propertyKey?.toString() || ''))
+            options.interceptorsToken = getToken<InterceptorLike[]>(invocation.type, (propertyKey?.toString() || ''))
         }
         if (options.paths) {
             options.interceptors = options.interceptors || [];

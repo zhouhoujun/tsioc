@@ -1,5 +1,5 @@
 import { Abstract, Injectable, isDefined } from '@tsdi/ioc';
-import { ApplicationInterceptor, ApplicationHandler } from '@tsdi/core';
+import { Interceptor, Handler } from '@tsdi/core';
 import { GET, HEAD } from '@tsdi/common';
 import { NotFoundException } from '@tsdi/common/transport';
 import { Observable, from, mergeMap, of, throwError } from 'rxjs';
@@ -11,14 +11,14 @@ import { RequestContext } from '../RequestContext';
  * static content resources.
  */
 @Injectable()
-export class ContentInterceptor implements ApplicationInterceptor<RequestContext> {
+export class ContentInterceptor implements Interceptor<RequestContext> {
 
     options?: ContentOptions;
 
     constructor() { }
 
 
-    intercept(input: RequestContext, next: ApplicationHandler<RequestContext, any>): Observable<any> {
+    intercept(input: RequestContext, next: Handler<RequestContext, any>): Observable<any> {
         if (!(!input.method || input.method === HEAD || input.method === GET || input.method === '*')
             || !input.originalUrl) {
             return next.handle(input);

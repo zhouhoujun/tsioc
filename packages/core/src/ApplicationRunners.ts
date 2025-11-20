@@ -1,6 +1,6 @@
 import { Abstract, ClassRef, noPointcut, OnDestroy, ProvdierOf, Invocation, StaticProvider, AbstractType, HandleResult } from '@tsdi/ioc';
 import { CanHandle } from './guard';
-import { ApplicationInterceptor } from './ApplicationInterceptor';
+import { Interceptor } from './ApplicationInterceptor';
 import { PipeTransform } from './pipes/pipe';
 import { HandlerService } from './handlers/configable';
 import { Filter } from './filters/filter';
@@ -76,7 +76,7 @@ export abstract class ApplicationRunners implements HandlerService, OnDestroy {
     * @param interceptor 
     * @param order 
     */
-  abstract useInterceptors(interceptor: ProvdierOf<ApplicationInterceptor> | ProvdierOf<ApplicationInterceptor>[], order?: number): this;
+  abstract useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
   /**
    * use filter
    * @param filter 

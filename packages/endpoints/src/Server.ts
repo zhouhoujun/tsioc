@@ -1,5 +1,5 @@
 import { Abstract, ProvdierOf, StaticProvider } from '@tsdi/ioc';
-import { ApplicationEvent, CanHandle, Filter, HandlerService, PipeTransform, Runner, Shutdown, ApplicationInterceptorLike } from '@tsdi/core';
+import { ApplicationEvent, CanHandle, Filter, HandlerService, PipeTransform, Runner, Shutdown, InterceptorLike } from '@tsdi/core';
 import { CommonProtocols } from '@tsdi/common';
 import { RequestContext } from './RequestContext';
 import { AbstractRequestHandler } from './AbstractRequestHandler';
@@ -70,7 +70,7 @@ export abstract class Server<TRequest extends RequestContext = RequestContext, T
         return this;
     }
 
-    useInterceptors(interceptor: ProvdierOf<ApplicationInterceptorLike<TRequest>> | ProvdierOf<ApplicationInterceptorLike<TRequest>>[], order?: number | undefined): this {
+    useInterceptors(interceptor: ProvdierOf<InterceptorLike<TRequest>> | ProvdierOf<InterceptorLike<TRequest>>[], order?: number | undefined): this {
         this.handler.useInterceptors(interceptor, order);
         return this;
     }

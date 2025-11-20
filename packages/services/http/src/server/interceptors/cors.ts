@@ -1,5 +1,5 @@
 import { Abstract, Injectable, isArray, isFunction, isPromise, Nullable } from '@tsdi/ioc';
-import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
+import { Handler, Interceptor } from '@tsdi/core';
 import { HttpStatusCode, RequestMethod, getHeader } from '@tsdi/common';
 import { InternalServerException, Outgoing, append } from '@tsdi/common/transport';
 import { CorsOpts, Middleware, RestfulRequestContext } from '@tsdi/endpoints';
@@ -66,7 +66,7 @@ export abstract class CorsOptions implements CorsOpts {
 const ORIGIN = 'Origin';
 
 @Injectable()
-export class Cors implements Middleware<RestfulRequestContext>, ApplicationInterceptor<RestfulRequestContext> {
+export class Cors implements Middleware<RestfulRequestContext>, Interceptor<RestfulRequestContext> {
 
     private options: Options;
 
@@ -100,7 +100,7 @@ export class Cors implements Middleware<RestfulRequestContext>, ApplicationInter
         return options as Options
     }
 
-    intercept(ctx: RestfulRequestContext, next: ApplicationHandler<RestfulRequestContext, any>): Observable<any> {
+    intercept(ctx: RestfulRequestContext, next: Handler<RestfulRequestContext, any>): Observable<any> {
         const requestOrigin = ctx.getHeader(ORIGIN);
         !ctx.headersSent && vary(ctx.response, ORIGIN);
         if (!requestOrigin) {

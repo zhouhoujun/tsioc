@@ -1,5 +1,5 @@
 import { Abstract, Exception, Injectable, isUndefined, composeHandlers, invokeTail, HandleResult } from '@tsdi/ioc';
-import { ApplicationHandler, RunableContext } from '../ApplicationHandler';
+import { Handler, RunableContext } from '../ApplicationHandler';
 import { Filter, FilterHandlerResolver } from './filter';
 
 
@@ -16,7 +16,7 @@ export abstract class ExceptionFilter<TInput = any, TOutput = any, TContext exte
      * @param next The next interceptor in the chain, or the backend
      * @returns any
      */
-    doFilter(input: TInput, next: ApplicationHandler<TInput, TOutput>, context: TContext): HandleResult<TOutput> {
+    doFilter(input: TInput, next: Handler<TInput, TOutput>, context: TContext): HandleResult<TOutput> {
         return next.handle(input, context, {
             error: (err) => {
                 return invokeTail(() => this.catchError(input, err, context), {

@@ -1,5 +1,5 @@
 import { Abstract, Inject, Injectable, Nullable, tokenId } from '@tsdi/ioc';
-import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
+import { Handler, Interceptor } from '@tsdi/core';
 import { GET, HEAD, OPTIONS } from '@tsdi/common';
 import { ForbiddenException } from '@tsdi/common/transport';
 import { RestfulRequestContext, Middleware, Session, CsrfOps } from '@tsdi/endpoints';
@@ -73,7 +73,7 @@ export class CsrfTokensFactory {
 }
 
 @Injectable()
-export class Csrf implements Middleware<RestfulRequestContext>, ApplicationInterceptor<RestfulRequestContext> {
+export class Csrf implements Middleware<RestfulRequestContext>, Interceptor<RestfulRequestContext> {
 
     private options: CsrfOptions;
     private tokens: Tokens;
@@ -82,7 +82,7 @@ export class Csrf implements Middleware<RestfulRequestContext>, ApplicationInter
         this.tokens = factory.create(this.options);
     }
 
-    intercept(ctx: RestfulRequestContext, next: ApplicationHandler<RestfulRequestContext, any>): Observable<any> {
+    intercept(ctx: RestfulRequestContext, next: Handler<RestfulRequestContext, any>): Observable<any> {
         ctx.getInject().inject({
             provide: CSRF,
             useFactory: () => {

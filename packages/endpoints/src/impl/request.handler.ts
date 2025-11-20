@@ -1,5 +1,5 @@
 import { Exception, Injector, InvocationContext, createContext, getType } from '@tsdi/ioc';
-import { ConfigableHandler, ApplicationInterceptorFn, normalizeConfigableHandlerOptions } from '@tsdi/core';
+import { ConfigableHandler, InterceptorFn, normalizeConfigableHandlerOptions } from '@tsdi/core';
 import { ForbiddenException } from '@tsdi/common/transport';
 import { RequestContext } from '../RequestContext';
 import { AbstractRequestHandler, RequestHandlerOptions } from '../AbstractRequestHandler';
@@ -15,7 +15,7 @@ export class DefaultRequestHandler<TInput extends RequestContext = RequestContex
     extends ConfigableHandler<TInput, any, TOptions> implements AbstractRequestHandler<TInput, TOptions> {
 
 
-    protected override getChain(input: TInput): ApplicationInterceptorFn<TInput, any> {
+    protected override getChain(input: TInput): InterceptorFn<TInput, any> {
         return this.getChainOf(getType(input.request)) ?? super.getChain(input);
     }
 

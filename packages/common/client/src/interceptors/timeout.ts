@@ -1,4 +1,4 @@
-import { ApplicationHandlerFn, ApplicationInterceptorFn } from '@tsdi/core';
+import { HandlerFn, InterceptorFn } from '@tsdi/core';
 import { AbstractRequest } from '@tsdi/common';
 import { catchError, throwError, timeout } from 'rxjs';
 import { ClientTransport } from '../transport';
@@ -8,7 +8,7 @@ import { ClientTransport } from '../transport';
 /**
  * request body content interceptor.
  */
-export const requestTimeoutInterceptor: ApplicationInterceptorFn = (input: AbstractRequest<any>, next: ApplicationHandlerFn, context?: any) => {
+export const requestTimeoutInterceptor: InterceptorFn = (input: AbstractRequest<any>, next: HandlerFn, context?: any) => {
     if (input.timeout) {
         return next(input, context)
             .pipe(

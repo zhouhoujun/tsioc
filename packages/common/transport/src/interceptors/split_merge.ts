@@ -1,5 +1,5 @@
 import { ArgumentException, Injectable, isNumber, isString } from '@tsdi/ioc';
-import { ApplicationHandler, ApplicationInterceptor } from '@tsdi/core';
+import { Handler, ApplicationInterceptor } from '@tsdi/core';
 import { HeaderAdapter } from '@tsdi/common';
 import { Observable, Subscriber, filter, map, mergeMap, of, range, throwError } from 'rxjs';
 
@@ -22,7 +22,7 @@ interface CachePacket {
 export class MergePacketInterceptor implements ApplicationInterceptor<Packet, IncomingMessage<any>, TransportContext> {
 
     packs: Map<string | number, CachePacket> = new Map();
-    intercept(input: Packet, next: ApplicationHandler<Packet, IncomingMessage, TransportContext>, context: TransportContext): Observable<IncomingMessage> {
+    intercept(input: Packet, next: Handler<Packet, IncomingMessage, TransportContext>, context: TransportContext): Observable<IncomingMessage> {
         const transport = context.transport as AbstractTransport;
         const opts = transport.options;
         const idLen = opts.idLen ?? 2;
@@ -119,7 +119,7 @@ export class MergePacketInterceptor implements ApplicationInterceptor<Packet, In
 @Injectable()
 export class SplitPacketInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
 
-    intercept(input: OutgoingMessage, next: ApplicationHandler<OutgoingMessage, Packet, TransportContext>, context: TransportContext): Observable<Packet> {
+    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet, TransportContext>, context: TransportContext): Observable<Packet> {
         return next.handle(input, context)
             .pipe(
                 mergeMap(msg => {

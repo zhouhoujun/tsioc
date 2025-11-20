@@ -1,5 +1,5 @@
 import { Injectable, isNumber, isString } from '@tsdi/ioc';
-import { ApplicationHandler, ApplicationHandlerFn, ApplicationInterceptor, ApplicationInterceptorFn, PipeTransform } from '@tsdi/core';
+import { Handler, HandlerFn, Interceptor, InterceptorFn, PipeTransform } from '@tsdi/core';
 import { AbstractRequest } from '@tsdi/common';
 import { Observable, Subscriber, defer, filter, map, mergeMap, throwError } from 'rxjs';
 import { PacketLengthException } from '../exceptions';
@@ -14,7 +14,7 @@ import { Packet } from '../socket';
 
 
 @Injectable()
-export class PacketDeserializeInterceptor implements ApplicationInterceptor<string | Buffer | IReadable, IncomingMessage, TransportContext> {
+export class PacketDeserializeInterceptor implements Interceptor<string | Buffer | IReadable, IncomingMessage, TransportContext> {
 
     protected channels: Map<string, Packet<IDuplex>>;
 
@@ -22,7 +22,7 @@ export class PacketDeserializeInterceptor implements ApplicationInterceptor<stri
         this.channels = new Map();
     }
 
-    intercept(input: string | Buffer | IReadable, next: ApplicationHandler<any, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
+    intercept(input: string | Buffer | IReadable, next: Handler<any, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
         if (!input || context.transport.streamAdapter.isReadable(input)) return next.handle(input, context);
 
         return new Observable((subscriber: Subscriber<Packet<IDuplex>>) => {
@@ -138,7 +138,7 @@ export class PacketDeserializeInterceptor implements ApplicationInterceptor<stri
 }
 
 @Injectable()
-export class PayloadDeserializeInterceptor implements ApplicationInterceptor<Packet, IncomingMessage, TransportContext> {
+export class PayloadDeserializeInterceptor implements Interceptor<Packet, IncomingMessage, TransportContext> {
 
     protected msgs: Map<string | number, IncomingMessage<IDuplex> & { contentLength: number }>;
 
@@ -146,7 +146,7 @@ export class PayloadDeserializeInterceptor implements ApplicationInterceptor<Pac
         this.msgs = new Map();
     }
 
-    intercept(input: Packet<IDuplex>, next: ApplicationHandler<any, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
+    intercept(input: Packet<IDuplex>, next: Handler<any, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
         if (!input.payload) return next.handle(input, context);
 
         const transport = context.transport as AbstractTransport;
@@ -202,7 +202,7 @@ export class PayloadDeserializeInterceptor implements ApplicationInterceptor<Pac
 /**
  * for client only.
  */
-export const deatchPacketIdInterceptor: ApplicationInterceptorFn<any, IncomingMessage> = (input: any, next: ApplicationHandlerFn<any, IncomingMessage>, context: TransportContext) => {
+export const deatchPacketIdInterceptor: InterceptorFn<any, IncomingMessage> = (input: any, next: HandlerFn<any, IncomingMessage>, context: TransportContext) => {
     if (!context.transport.client) return next(input, context);
 
     return next(input, context)
@@ -224,7 +224,7 @@ export const deatchPacketIdInterceptor: ApplicationInterceptorFn<any, IncomingMe
  * @param context 
  * @returns 
  */
-export const messageVaildateInterceptor: ApplicationInterceptorFn<OutgoingMessage, Packet> = (input: OutgoingMessage, next: ApplicationHandlerFn, context: TransportContext) => {
+export const messageVaildateInterceptor: InterceptorFn<OutgoingMessage, Packet> = (input: OutgoingMessage, next: HandlerFn, context: TransportContext) => {
     const transport = context.transport as AbstractTransport;
     const length = transport.headerAdapter.getContentLength(input);
     const sizeLimit = transport.options.maxSize ?? transport.options.limit;
@@ -245,7 +245,7 @@ export const messageVaildateInterceptor: ApplicationInterceptorFn<OutgoingMessag
  * @param context 
  * @returns 
  */
-export const messageSerializeInterceptor: ApplicationInterceptorFn<OutgoingMessage, Packet> = (input: OutgoingMessage, next: ApplicationHandlerFn, context: TransportContext) => {
+export const messageSerializeInterceptor: InterceptorFn<OutgoingMessage, Packet> = (input: OutgoingMessage, next: HandlerFn, context: TransportContext) => {
 
     return next(input, context)
         .pipe(map(msg => {

@@ -1,5 +1,5 @@
 import { ContextToken, Injectable, isNil, isString, lang } from '@tsdi/ioc';
-import { ApplicationHandler, ApplicationInterceptorFn, ApplicationHandlerFn } from '@tsdi/core';
+import { Handler, InterceptorFn, HandlerFn } from '@tsdi/core';
 import { HEAD, ResponseEvent, ResponseJsonParseError, AbstractRequest, UrlRequest } from '@tsdi/common';
 import { MimeAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer, ClientIncoming, TransportContext, TransferOpts, AbstractTransferFactory, TEXT_DECODER } from '@tsdi/common/transport';
 import { defer, mergeMap, of, throwError } from 'rxjs';
@@ -9,7 +9,7 @@ import { ClientTransfer, ClientTransferFactory } from './transfer';
 
 
 
-export const errorResponseInterceptor: ApplicationInterceptorFn<ClientIncoming<any>, ResponseEvent<any>> = (input: ClientIncoming<any>, next: ApplicationHandlerFn, context: TransportContext) => {
+export const errorResponseInterceptor: InterceptorFn<ClientIncoming<any>, ResponseEvent<any>> = (input: ClientIncoming<any>, next: HandlerFn, context: TransportContext) => {
     if (!(input.ok || (context.transport.statusAdapter ? context.transport.statusAdapter.isOk(input.status ?? input.statusCode) : true)) || input.error) {
         const transport = context.transport as ClientTransport;
         input.ok = false;
@@ -32,7 +32,7 @@ export const errorResponseInterceptor: ApplicationInterceptorFn<ClientIncoming<a
 }
 
 
-export const emptyResponseInterceptor: ApplicationInterceptorFn<ClientIncoming<any>, ResponseEvent<any>> = (input: ClientIncoming<any>, next: ApplicationHandlerFn, context: TransportContext) => {
+export const emptyResponseInterceptor: InterceptorFn<ClientIncoming<any>, ResponseEvent<any>> = (input: ClientIncoming<any>, next: HandlerFn, context: TransportContext) => {
     const len = context.transport.headerAdapter.getContentLength(input);
     const transport = context.transport as ClientTransport;
     if (input.ok !== false && !input.error && (!len || transport.statusAdapter?.isEmpty(input.status ?? input.statusCode))) {
@@ -43,7 +43,7 @@ export const emptyResponseInterceptor: ApplicationInterceptorFn<ClientIncoming<a
 }
 
 
-export const redirectInterceptor: ApplicationInterceptorFn<ClientIncoming<any>, ResponseEvent<any>> = (input: ClientIncoming<any>, next: ApplicationHandlerFn, context: TransportContext) => {
+export const redirectInterceptor: InterceptorFn<ClientIncoming<any>, ResponseEvent<any>> = (input: ClientIncoming<any>, next: HandlerFn, context: TransportContext) => {
     const transport = context.transport as ClientTransport;
     // HTTP fetch step 5
     if (transport.redirector) {
@@ -56,7 +56,7 @@ export const redirectInterceptor: ApplicationInterceptorFn<ClientIncoming<any>, 
 }
 
 
-export const compressResponseInterceptor: ApplicationInterceptorFn<ClientIncoming<any>, ResponseEvent<any>> = (input: ClientIncoming<any>, next: ApplicationHandlerFn, context: TransportContext) => {
+export const compressResponseInterceptor: InterceptorFn<ClientIncoming<any>, ResponseEvent<any>> = (input: ClientIncoming<any>, next: HandlerFn, context: TransportContext) => {
     return defer(async () => {
         const response = input;
         const transport = context.transport as ClientTransport;
@@ -292,7 +292,7 @@ export class DefaultClientTransferFactory extends AbstractTransferFactory<Client
         }
     }
 
-    protected override createInstace(handler: ApplicationHandler): ClientTransfer {
+    protected override createInstace(handler: Handler): ClientTransfer {
         return new ClientTransfer(handler);
     }
 }

@@ -1,16 +1,14 @@
 import {
     getTokenOf, Token, ProvdierOf, TypeOf, tokenId, Abstract, AbstractType,
-    Interceptor, InterceptorFn, HandleResult
+    Interceptor, InterceptorLike
 } from '@tsdi/ioc';
-import { ApplicationHandler, RunableContext } from './ApplicationHandler';
+import { RequestHandler, RequestHandlerFn, RunableContext } from './ApplicationHandler';
+import { Observable } from 'rxjs';
+
+export { Interceptor, InterceptorFn, InterceptorLike } from '@tsdi/ioc';
 
 
-/**
- * Application interceptor is a chainable behavior modifier for `hanlders`.
- * 
- * 拦截器，用于链接多个处理器，组合成处理器串。
- */
-export interface ApplicationInterceptor<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> extends Interceptor<TInput, TOutput, TContext> {
+export interface RequestInterceptor<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> extends Interceptor<TInput, TOutput, TContext> {
 
     /**
      * the method to implemet interceptor.
@@ -22,19 +20,21 @@ export interface ApplicationInterceptor<TInput = any, TOutput = any, TContext ex
      * @param context interceptor with context.
      * @returns An observable of the event stream.
      */
-    intercept(input: TInput, next: ApplicationHandler<TInput, TOutput, TContext>, context: TContext): HandleResult<TOutput>;
+    intercept(input: TInput, next: RequestHandler<TInput, TOutput, TContext>, context: TContext): Observable<TOutput>;
 }
 
 /**
- * Application interceptor function is a chainable behavior modifier for `hanlders`.
+ * Request interceptor function is a chainable behavior modifier for `hanlders`.
  * 拦截方法，用于链接多个处理器，组合成处理器串。
  */
-export type ApplicationInterceptorFn<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = InterceptorFn<TInput, TOutput, TContext>;
+export type RequestInterceptorFn<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = (input: TInput, next: RequestHandlerFn<TInput, TOutput, TContext>, context: TContext) => Observable<TOutput>;
+
 
 /**
- * Application interceptor like.
+ * Request interceptor like.
  */
-export type ApplicationInterceptorLike<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = ApplicationInterceptorFn<TInput, TOutput, TContext> | ApplicationInterceptor<TInput, TOutput, TContext>;
+export type RequestInterceptorLike<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = RequestInterceptorFn<TInput, TOutput, TContext> | RequestInterceptor<TInput, TOutput, TContext>;
+
 
 /**
  * Application interceptor service.
@@ -47,7 +47,7 @@ export interface InterceptorService {
      * @param interceptors 
      * @param order 
      */
-    useInterceptors(interceptors: ProvdierOf<ApplicationInterceptorLike> | ProvdierOf<ApplicationInterceptorLike>[], order?: number): this;
+    useInterceptors(interceptors: ProvdierOf<InterceptorLike> | ProvdierOf<InterceptorLike>[], order?: number): this;
 }
 
 /**
@@ -55,7 +55,7 @@ export interface InterceptorService {
  * 
  * 拦截器组的标识令牌
  */
-export const INTERCEPTORS_TOKEN = tokenId<ApplicationInterceptor[]>('INTERCEPTORS_TOKEN');
+export const INTERCEPTORS_TOKEN = tokenId<Interceptor[]>('INTERCEPTORS_TOKEN');
 
 
 /**
@@ -63,8 +63,8 @@ export const INTERCEPTORS_TOKEN = tokenId<ApplicationInterceptor[]>('INTERCEPTOR
  * @param request 
  * @returns 
  */
-export function getInterceptorsToken(type: TypeOf<any> | string, propertyKey?: string): Token<ApplicationInterceptor[]> {
-    return getTokenOf<ApplicationInterceptor[]>(type, 'INTERCEPTORS', propertyKey);
+export function getInterceptorsToken(type: TypeOf<any> | string, propertyKey?: string): Token<Interceptor[]> {
+    return getTokenOf<Interceptor[]>(type, 'INTERCEPTORS', propertyKey);
 }
 
 /**
@@ -76,18 +76,18 @@ export abstract class InterceptorResolver {
      * resolve hanlde interceptor.
      * @param target 
      */
-    abstract resolve<T>(target: AbstractType<T> | T | string): ApplicationInterceptorLike[];
+    abstract resolve<T>(target: AbstractType<T> | T | string): InterceptorLike[];
     /**
      * add handle interceptor.
      * @param target interceptor for the target type
      * @param interceptor handler interceptor.
      * @param order order.
      */
-    abstract addInterceptor(target: AbstractType | string, interceptor: ApplicationInterceptorLike, order?: number): this;
+    abstract addInterceptor(target: AbstractType | string, interceptor: InterceptorLike, order?: number): this;
     /**
      * remove handle interceptor.
      * @param target interceptor for the target type
      * @param interceptor handler interceptor.
      */
-    abstract removeInterceptor(target: AbstractType | string, interceptor: ApplicationInterceptorLike): this;
+    abstract removeInterceptor(target: AbstractType | string, interceptor: InterceptorLike): this;
 }
