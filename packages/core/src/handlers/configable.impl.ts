@@ -1,9 +1,8 @@
 import {
     InjectFlags, Injector, ProvdierOf, StaticProvider, Type, promiseOf, Exception, toProvider, AbstractType, getType, Token, isType,
     InvocationContext, createContext, ArgumentException, isToken, isArray, isFunction, composeInterceptors, chainFactory, some, Operator,
-    invokeTail, invokeTails, TailNext, toHandlerFn, HandleResult
+    invokeTails, TailNext, toHandlerFn, HandleResult
 } from '@tsdi/ioc';
-// import { defer, mergeMap, Observable, Subject, takeUntil, throwError } from 'rxjs';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
 import { INTERCEPTORS_TOKEN, ApplicationInterceptor, ApplicationInterceptorFn, ApplicationInterceptorLike, InterceptorResolver } from '../ApplicationInterceptor';
 import { PipeTransform } from '../pipes/pipe';
@@ -23,7 +22,6 @@ export class ConfigableHandler<
     TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>,
     TContext extends RunableContext = RunableContext> implements AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
 
-    // private destroy$ = new Subject<void>();
     private chain?: ApplicationInterceptorFn<TInput, TOutput, TContext> | null;
     private chains: Map<AbstractType | string, ApplicationInterceptorFn<TInput, TOutput, TContext> | null>;
 
@@ -162,8 +160,6 @@ export class ConfigableHandler<
     onDestroy(): void {
         if (this._destroyed) return;
         this._destroyed = true;
-        // this.destroy$.next();
-        // this.destroy$.complete();
         this.clear();
     }
 
