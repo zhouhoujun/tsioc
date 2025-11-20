@@ -54,19 +54,20 @@ export class ExceptionHandlerFilter<TInput, TOutput = any, TContext extends Runa
             return err;
         }
 
-        return invokeTail(() => composeHandlers(handlers, (res, next, input, context) => {
-            if (isUndefined(res)) {
-                return next(err, context)
-            }
-            return res;
-        })(err, context),
+        return invokeTail(
+            composeHandlers(handlers, (res, next, input, context) => {
+                if (isUndefined(res)) {
+                    return next(err, context)
+                }
+                return res;
+            }),
             {
                 error: (err1) => {
                     err1.originException = err;
                     err1.message = `${err1.message}\r\n${err.toString()}`;
                     throw err1;
                 }
-            });
+            }, err, context);
     }
 
 }

@@ -1,26 +1,19 @@
-import { composeInterceptors, Handler, HandlerFn, InterceptorFn, InterceptorLike, invokeTail, TailNext, toHandlerFn } from '../handler';
-import { isFunction, isNumber } from '../utils/chk';
+import { composeInterceptors, Handler, HandlerFn, InterceptingHandler, InterceptorFn, InterceptorLike } from '../handler';
+import { isNumber } from '../utils/chk';
 
 /**
  * runtime handler.
  */
-export class RuntimeHandler<TInput = any, TContext = any, TOutput = any> implements Handler<TInput, TOutput, TContext> {
+export class RuntimeHandler<TInput = any, TOutput = any, TContext = any> extends InterceptingHandler<TInput, TOutput, TContext> implements Handler<TInput, TOutput, TContext> {
 
-    private _chain?: InterceptorFn<TInput> | null;
-    private interceptors: InterceptorLike<TInput>[]
 
     constructor(
-        private backend: HandlerFn<TInput, TOutput, TContext> | Handler<TInput, TOutput, TContext>,
+        backend: HandlerFn<TInput, TOutput, TContext> | Handler<TInput, TOutput, TContext>,
         interceptors?: InterceptorLike<TInput, TOutput, TContext>[]
     ) {
-        this.interceptors = interceptors?.slice() ?? [];
+        super(backend, interceptors?.slice() ?? []);
     }
 
-    handle(input: TInput, context: TContext, next?: TailNext<TOutput, TContext>): TOutput {
-        const chain = this.getChain();
-        return next ? invokeTail<any>(() => chain(input, isFunction(this.backend) ? this.backend : toHandlerFn(this.backend), context), next)
-            : chain(input, isFunction(this.backend) ? this.backend : toHandlerFn(this.backend), context);
-    }
 
     /**
      * use interceptor for the handler.
@@ -43,16 +36,6 @@ export class RuntimeHandler<TInput = any, TContext = any, TOutput = any> impleme
         return this.interceptors.indexOf(interceptor)
     }
 
-    protected getChain(): InterceptorFn<TInput> {
-        if (!this._chain) {
-            this._chain = this.compose();
-        }
-        return this._chain;
-    }
-
-    protected reset(): void {
-        this._chain = null;
-    }
 
     /**
      * compose iterceptors and filters in chain.

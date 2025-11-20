@@ -193,18 +193,18 @@ export class ProceedingScope implements Proceeding {
             joinPoint.onDestroy(options.parent)
         }
 
-        return getAdvicesLifeScope(runtime).handle(joinPoint, runtime, options.next ?? (() => joinPoint.returning));
+        return getAdvicesLifeScope(runtime).handle(joinPoint, runtime as any, options.next ?? (() => joinPoint.returning));
     }
 
 }
 
 
 
-const ADVICES_SCOPE = new ContextToken<RuntimeHandler>(() => null!);
-export function getAdvicesLifeScope(runtime: Runtime): RuntimeHandler<JoinPoint> {
+const ADVICES_SCOPE = new ContextToken<RuntimeHandler<JoinPoint, any, RuntimeContext>>(() => null!);
+export function getAdvicesLifeScope(runtime: Runtime): RuntimeHandler<JoinPoint, any, RuntimeContext> {
     let scope = runtime.get(ADVICES_SCOPE);
     if (!scope) {
-        scope = new RuntimeHandler<JoinPoint>(adviceHanlder, ADVICES_INTERCEPTORS);
+        scope = new RuntimeHandler<JoinPoint, any, RuntimeContext>(adviceHanlder, ADVICES_INTERCEPTORS);
         runtime.set(ADVICES_SCOPE, scope);
     }
     return scope;

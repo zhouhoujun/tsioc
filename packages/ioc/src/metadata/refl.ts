@@ -232,17 +232,18 @@ function dispatch(lifescope: RuntimeHandler<DecorContext>, target: any, type: Ab
     const classRef = getClassRef(type);
     classRef.storage(define);
 
-    const ctx = {
+    const input = {
         define,
         target,
         options,
         classRef
     } as DecorContext;
-    options.init && options.init(ctx);
-
-    lifescope.handle(ctx, null, () => {
-        options.afterInit && options.afterInit(ctx);
-        cleanObj(ctx)
+    options.init && options.init(input);
+    const ctx = new Context();
+    lifescope.handle(input, ctx, () => {
+        options.afterInit && options.afterInit(input);
+        ctx.onDestroy();
+        cleanObj(input)
     });
 }
 

@@ -30,7 +30,7 @@ export const runtimeAutorunInterceptor: InterceptorFn<ClassRef, any, RuntimeCont
 }
 
 
-const RUNTIME_CLASS_SCOPE = new ContextToken<RuntimeHandler>(() => null!);
+const RUNTIME_CLASS_SCOPE = new ContextToken<RuntimeHandler<ClassRef, any, RuntimeContext>>(() => null!);
 export const runtimeAnnoInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> = (input: ClassRef, next: HandlerFn, context: RuntimeContext) => {
     return next(input, context,
         (instance) => {
@@ -49,10 +49,10 @@ function invokeRuntimeHandler(decors: DecoratorFn[], ctx: ClassRef, scope: Decor
     }
 }
 
-export function getRuntimeClassScope(runtime: Runtime): RuntimeHandler<ClassRef> {
+export function getRuntimeClassScope(runtime: Runtime): RuntimeHandler<ClassRef, any, RuntimeContext>  {
     let scope = runtime.get(RUNTIME_CLASS_SCOPE);
     if (!scope) {
-        scope = new RuntimeHandler<ClassRef>((input, context) => {
+        scope = new RuntimeHandler<ClassRef, any, RuntimeContext>((input, context) => {
             invokeRuntimeHandler(input.classDecors, input, Decors.CLASS, context);
         });
         runtime.set(RUNTIME_CLASS_SCOPE, scope);
@@ -82,11 +82,11 @@ export const methodInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> = (
     })
 }
 
-const RUNTIME_METHOD_SCOPE = new ContextToken<RuntimeHandler>(() => null!);
-export function getRuntimeMethodScope(runtime: Runtime): RuntimeHandler<ClassRef> {
+const RUNTIME_METHOD_SCOPE = new ContextToken<RuntimeHandler<ClassRef, any, RuntimeContext>>(() => null!);
+export function getRuntimeMethodScope(runtime: Runtime): RuntimeHandler<ClassRef, any, RuntimeContext> {
     let scope = runtime.get(RUNTIME_METHOD_SCOPE);
     if (!scope) {
-        scope = new RuntimeHandler<ClassRef>((input, context) => {
+        scope = new RuntimeHandler<ClassRef, any, RuntimeContext>((input, context) => {
             invokeRuntimeHandler(input.methodDecors, input, Decors.method, context)
 
         });
@@ -125,11 +125,11 @@ export const propertyInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> =
 
 }
 
-const RUNTIME_PROPERTY_SCOPE = new ContextToken<RuntimeHandler>(() => null!);
-export function getRuntimePropertyScope(runtime: Runtime): RuntimeHandler<ClassRef> {
+const RUNTIME_PROPERTY_SCOPE = new ContextToken<RuntimeHandler<ClassRef, any, RuntimeContext>>(() => null!);
+export function getRuntimePropertyScope(runtime: Runtime): RuntimeHandler<ClassRef, any, RuntimeContext> {
     let scope = runtime.get(RUNTIME_PROPERTY_SCOPE);
     if (!scope) {
-        scope = new RuntimeHandler<ClassRef>((input, context) => {
+        scope = new RuntimeHandler<ClassRef, any, RuntimeContext>((input, context) => {
             invokeRuntimeHandler(input.propDecors, input, Decors.property, context)
         });
         runtime.set(RUNTIME_PROPERTY_SCOPE, scope);

@@ -1,5 +1,5 @@
 import { Exception } from '../exception';
-import { ContextToken, HandlerLike, InterceptorLike } from '../handler';
+import { Context, ContextToken, HandlerLike, InterceptorLike } from '../handler';
 import { Injector, InjectorRecord } from '../injector';
 import { RuntimeHandler } from '../lifescope/handler';
 import { ClassRef } from '../metadata/class';
@@ -127,8 +127,8 @@ export function isResolved(value: any) {
 // export function createResolveHandler(interceptors?: ResolveInterceptorLike[], backend?: ResolveHandlerLike | null): ResolveHandler {
 //     return new RuntimeHandler(backend ?? unResolve, interceptors) 
 // }
-export function createResolveHandler<TInput, TContext = any, TOutput = any>(interceptors?: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): RuntimeHandler<TInput, TContext, TOutput> {
-    return new RuntimeHandler<TInput, TContext, TOutput>(backend ?? unResolve, interceptors)
+export function createResolveHandler<TInput, TContext extends Context = Context, TOutput = any>(interceptors?: InterceptorLike<TInput, TOutput, TContext>[], backend?: HandlerLike<TInput, TOutput, TContext> | null): RuntimeHandler<TInput, TOutput, TContext> {
+    return new RuntimeHandler<TInput, TOutput, TContext>(backend ?? unResolve, interceptors)
 }
 
 
@@ -147,11 +147,11 @@ function tryResolve(injector: Injector, token: Token, flags?: InjectFlags) {
 }
 
 
-const PARAMETER_RESOLVE_HANDLER = new ContextToken<RuntimeHandler>(() => null!);
-export function getParameterResolveHanlder(runtime: Runtime): RuntimeHandler<Parameter, ResolveContext> {
+const PARAMETER_RESOLVE_HANDLER = new ContextToken<RuntimeHandler<Parameter, any, ResolveContext>>(() => null!);
+export function getParameterResolveHanlder(runtime: Runtime): RuntimeHandler<Parameter, any, ResolveContext> {
     let scope = runtime.get(PARAMETER_RESOLVE_HANDLER);
     if (!scope) {
-        scope = new RuntimeHandler<Parameter, ResolveContext>(
+        scope = new RuntimeHandler<Parameter, any, ResolveContext>(
             (input, context) => {
                 const injector = context.getInjector();
                 if (input.provider && !input.multi) {

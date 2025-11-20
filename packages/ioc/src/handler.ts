@@ -286,7 +286,7 @@ export function composeHandlers(hanlders: HandlerLike[], interceptor?: (res: any
     return hanlders.reduceRight((next, handler) => {
         const invok = parseToHandlerFn(handler);
         const nextFn = isFunction(next) ? next : (input: any, context?: any) => next.handle(input, context);
-        return (input: any, context?: any) => invokeTail(() => invok(input, context), (res) => interceptor ? interceptor(res, nextFn, input, context) : nextFn(res ?? input, context));
+        return (input: any, context?: any) => invokeTail(invok, (res) => interceptor ? interceptor(res, nextFn, input, context) : nextFn(res ?? input, context), input, context);
     }, endHandler) as HandlerFn;
 }
 
@@ -299,6 +299,45 @@ function parseToHandlerFn(handler: HandlerLike): HandlerFn {
         throw new Error('Invalid handler');
     }
 }
+
+
+
+
+/**
+ * intercepting hnalder.
+ */
+export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> implements Handler<TInput, TOutput, TContext> {
+
+    private chain?: InterceptorFn<TInput, TOutput, TContext> | null;
+    private backend: HandlerFn<TInput, TOutput, TContext>;
+
+    constructor(
+        backend: HandlerLike<TInput, TOutput, TContext>,
+        protected interceptors: InterceptorLike[]
+    ) {
+        if (isFunction(backend)) {
+            this.backend = backend
+        } else {
+            this.backend = (req, ctx) => (backend as Handler).handle(req, ctx);
+        }
+    }
+
+    handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): HandleResult<TOutput> {
+        if (!this.chain) {
+            this.chain = this.compose();
+        }
+        return tail? invokeTail(()=> this.chain!(input, this.backend, context), tail) : this.chain(input, this.backend, context);
+    }
+
+    protected reset() {
+        this.chain = null;
+    }
+
+    protected compose(): InterceptorFn<TInput, TOutput, TContext> {
+        return composeInterceptors(this.interceptors)
+    }
+}
+
 
 /**
  * context token.
