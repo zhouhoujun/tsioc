@@ -1,8 +1,8 @@
 import {
     Abstract, chainEndFn, chainFactory, getTokenOf, HandlerFn, isFunction, ProvdierOf,
-    Token, tokenId, AbstractType, TypeOf, HandlerLike
+    Token, tokenId, AbstractType, TypeOf, HandlerLike, HandleResult
 } from '@tsdi/ioc';
-import { Observable } from 'rxjs';
+// import { Observable } from 'rxjs';
 import { ApplicationHandler, RunableContext } from '../ApplicationHandler';
 import { ApplicationInterceptorFn } from '../ApplicationInterceptor';
 
@@ -21,7 +21,7 @@ export abstract class Filter<TInput = any, TOutput = any, TContext extends Runab
      * if no interceptors remain in the chain.
      * @returns An observable of the event stream.
      */
-    abstract doFilter(input: TInput, next: ApplicationHandler<TInput, TOutput>, context: TContext): TOutput|Promise<TOutput>|Observable<TOutput>;
+    abstract doFilter(input: TInput, next: ApplicationHandler<TInput, TOutput>, context: TContext): HandleResult<TOutput>;
 
     /**
      * is this equals to target or not

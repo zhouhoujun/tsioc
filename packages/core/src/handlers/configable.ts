@@ -1,10 +1,9 @@
-import { ProvdierOf, StaticProvider, Type, Abstract, Token, AbstractType, InvokeProviders, InvocationContext, TailNext } from '@tsdi/ioc';
+import { ProvdierOf, StaticProvider, Type, Abstract, Token, AbstractType, InvokeProviders, InvocationContext, TailNext, HandleResult } from '@tsdi/ioc';
 import { GuardLike, GuardsService } from '../guard';
 import { ApplicationInterceptorLike, InterceptorService } from '../ApplicationInterceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
 import { FilterLike, FilterService } from '../filters/filter';
 import { ApplicationHandler, ApplicationHandlerLike, RunableContext } from '../ApplicationHandler';
-import { Observable } from 'rxjs';
 
 
 
@@ -72,7 +71,7 @@ export abstract class AbstractConfigableHandler<
      * @param context handle with context.
      * @param tail next tail.
      */
-    abstract handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): TOutput | Promise<TOutput> | Observable<TOutput>;
+    abstract handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): HandleResult<TOutput>;
 
     /**
      * destroy hooks.

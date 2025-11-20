@@ -1,4 +1,4 @@
-import { composeInterceptors, HandleResult, invokeTail, isFunction, isPromise, TailNext } from '@tsdi/ioc';
+import { composeInterceptors, HandleResult, invokeTail, isFunction, TailNext } from '@tsdi/ioc';
 // import { Observable, isObservable, of, from } from 'rxjs';
 import { ApplicationHandler, ApplicationHandlerFn, ApplicationHandlerLike, RunableContext } from '../ApplicationHandler';
 import { ApplicationInterceptorFn, ApplicationInterceptorLike } from '../ApplicationInterceptor';

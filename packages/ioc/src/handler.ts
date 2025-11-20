@@ -172,11 +172,11 @@ export type HandleResult<TOutput> = TOutput | Promise<TOutput> | Observable<TOut
 
 export type TailNext<TOutput, TContext = any> = NextOpter<TOutput, TContext> | ((res: TOutput, context?: TContext) => HandleResult<TOutput>);
 
-export function invokeTail<T, TContext = any>(invoke: () => Observable<T> | Promise<T> | T, nextOpter?: TailNext<T, TContext>): HandleResult<T> {
+export function invokeTail<T, TContext = any>(invoke: (res?: any, context?: TContext) => HandleResult<T>, nextOpter?: TailNext<T, TContext>, initial?: any, context?: TContext): HandleResult<T> {
     const opter = nextOpter ? (isFunction(nextOpter) ? { next: nextOpter } : nextOpter) : null;
 
     try {
-        const res$ = invoke();
+        const res$ = invoke(initial, context);
         if (!opter) return res$;
 
         if (isObservable(res$)) {
@@ -193,9 +193,11 @@ export function invokeTail<T, TContext = any>(invoke: () => Observable<T> | Prom
 /**
  * 处理多个连续的invoke调用
  */
-export function invokeTails<T, TContext = any>(invoke: (res?: any) => Observable<any> | Promise<any> | any, next: TailNext<T, TContext>, ...nexts: (TailNext<T, TContext> | undefined)[]): Observable<T> | Promise<T> | T;
-export function invokeTails<T, TContext = any>(invoke: (res?: any) => Observable<any> | Promise<any> | any, ...nexts: (TailNext<T, TContext> | undefined)[]): Observable<T> | Promise<T> | T {
-    const fn = nexts.reduceRight<(res?: T) => Observable<T> | Promise<T> | T>((invoke, next) => (res) => invokeTail(() => invoke(res), next), invoke);
+export function invokeTails<T, TContext = any>(invoke: (res?: any, context?: TContext) => HandleResult<any>, next: TailNext<T, TContext>, ...nexts: (TailNext<T, TContext> | undefined)[]): HandleResult<T>;
+export function invokeTails<T, TContext = any>(invoke: (res?: any, context?: TContext) => HandleResult<any>, ...nexts: (TailNext<T, TContext> | undefined)[]): HandleResult<T>;
+export function invokeTails<T, TContext = any>(...invokes: ((res?: any, context?: TContext) => HandleResult<any>)[]): HandleResult<T>
+export function invokeTails<T, TContext = any>(invoke: (res?: any, context?: TContext) => HandleResult<any>, ...nexts: (TailNext<T, TContext> | undefined)[]): HandleResult<T>  {
+    const fn = nexts.filter(isDefined).reduceRight<(res?: T, context?: TContext) => Observable<T> | Promise<T> | T>((invoke, next) => (res, context) => invokeTail(invoke, next, res, context), invoke);
     return fn();
 }
 

@@ -1,5 +1,5 @@
-import { Abstract, Exception, Injectable, isPromise, isUndefined, composeHandlers, invokeTail } from '@tsdi/ioc';
-import { catchError, isObservable, mergeMap, Observable, of, throwError } from 'rxjs';
+import { Abstract, Exception, Injectable, isUndefined, composeHandlers, invokeTail, HandleResult } from '@tsdi/ioc';
+// import { catchError, isObservable, mergeMap, Observable, of, throwError } from 'rxjs';
 import { ApplicationHandler, RunableContext } from '../ApplicationHandler';
 import { Filter, FilterHandlerResolver } from './filter';
 // import { toObservable } from '../handlers';
@@ -18,7 +18,7 @@ export abstract class ExceptionFilter<TInput = any, TOutput = any, TContext exte
      * @param next The next interceptor in the chain, or the backend
      * @returns any
      */
-    doFilter(input: TInput, next: ApplicationHandler<TInput, TOutput>, context: TContext): TOutput|Promise<TOutput>|Observable<TOutput> {
+    doFilter(input: TInput, next: ApplicationHandler<TInput, TOutput>, context: TContext): HandleResult<TOutput> {
         return next.handle(input, context, {
             error: (err) => {
                 return invokeTail(() => this.catchError(input, err, context), {
@@ -39,7 +39,7 @@ export abstract class ExceptionFilter<TInput = any, TOutput = any, TContext exte
      * @param err 
      * @param caught 
      */
-    abstract catchError(input: TInput, err: any, context?: TContext): TOutput|Promise<TOutput>|Observable<TOutput>;
+    abstract catchError(input: TInput, err: any, context?: TContext): HandleResult<TOutput>;
 }
 
 /**
@@ -49,7 +49,7 @@ export abstract class ExceptionFilter<TInput = any, TOutput = any, TContext exte
 export class ExceptionHandlerFilter<TInput, TOutput = any, TContext extends RunableContext = RunableContext> extends ExceptionFilter<TInput, TOutput, TContext> {
 
 
-    catchError(input: TInput, err: any, context: TContext): TOutput {
+    catchError(input: TInput, err: any, context: TContext): HandleResult<TOutput> {
         const injector = context.getInjector();
         const handlers = injector.get(FilterHandlerResolver)?.resolve(err);
         if (!handlers || !handlers.length) {
@@ -63,10 +63,10 @@ export class ExceptionHandlerFilter<TInput, TOutput = any, TContext extends Runa
             return res;
         })(err, context),
             {
-                error: err1 => {
+                error: (err1) => {
                     err1.originException = err;
                     err1.message = `${err1.message}\r\n${err.toString()}`;
-                    return throwError(() => err1)
+                    throw err1;
                 }
             });
     }

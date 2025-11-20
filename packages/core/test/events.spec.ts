@@ -1,11 +1,11 @@
-import { ArgumentException, Injectable, isPlainObject, isString, MissingParameterException, Module, Invocation } from '@tsdi/ioc';
+import { ArgumentException, Injectable, isPlainObject, isString, MissingParameterException, Module, Invocation, HandleResult } from '@tsdi/ioc';
 import expect = require('expect');
 import { catchError, lastValueFrom, Observable, of } from 'rxjs';
 import { Application, ApplicationArguments, ApplicationContext, Dispose, ApplicationHandler, EventHandler, Filter, ApplicationInterceptor, Payload, PayloadApplicationEvent, Runner, Shutdown, Start, RunableContext } from '../src';
 
 @Injectable()
 export class StringFilter implements Filter  {
-    doFilter(event: PayloadApplicationEvent, next: ApplicationHandler<any, any>, context: RunableContext): Observable<any> {
+    doFilter(event: PayloadApplicationEvent, next: ApplicationHandler<any, any>, context: RunableContext): HandleResult<any> {
         if(isString(event.payload)){
             return next.handle(event, context);
         }
@@ -16,7 +16,7 @@ export class StringFilter implements Filter  {
 @Injectable()
 export class JsonFilter implements Filter  {
 
-    doFilter(event: PayloadApplicationEvent, next: ApplicationHandler<any, any>, context: RunableContext): Observable<any> {
+    doFilter(event: PayloadApplicationEvent, next: ApplicationHandler<any, any>, context: RunableContext): HandleResult<any> {
         if(isPlainObject(event.payload)){
             return next.handle(event, context);
         }
@@ -29,7 +29,7 @@ export class JsonFilter implements Filter  {
 
 @Injectable()
 export class PayloadInterceptor implements ApplicationInterceptor {
-    intercept(event: PayloadApplicationEvent, next: ApplicationHandler<any, any>, context: RunableContext): Observable<any> {
+    intercept(event: PayloadApplicationEvent, next: ApplicationHandler<any, any>, context: RunableContext): HandleResult<any> {
         if (isString(event.payload)) {
             event.payload = 'hi ' + event.payload;
         }
@@ -143,7 +143,7 @@ describe('Application Event', () => {
 
     it('publish payload event', async () => {
 
-        await ctx.publishEvent('payload message');
+        const res = await ctx.publishEvent('payload message').catch(err => err);
         const testServiceRef = ctx.runners.getRef(TestService)!;
         expect(testServiceRef).not.toBeNull();
         expect(testServiceRef.instance.payload).toBeInstanceOf(PayloadApplicationEvent);

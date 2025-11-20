@@ -3,7 +3,7 @@ import { ApplicationHandlerFn, RunableContext } from '../ApplicationHandler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
 import { ResultValue } from '../handlers/ResultValue';
-import { Observable } from 'rxjs';
+// import { Observable } from 'rxjs';
 // import { toObservable } from '../handlers';
 
 

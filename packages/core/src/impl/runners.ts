@@ -3,9 +3,10 @@ import {
     ArgumentException, StaticProvider, HandlerLike, composeHandlers, Type, Operator,
     HandleResult,
     invokeTails,
-    lang
+    lang,
+    promiseOf
 } from '@tsdi/ioc';
-import { finalize, forkJoin, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
+// import { finalize, forkJoin, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { ApplicationRunners } from '../ApplicationRunners';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent, ApplicationStartupEvent } from '../events';
@@ -145,40 +146,26 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         return this._refs.get(type) ?? [];
     }
 
-    run(type?: AbstractType | AbstractType[]): Promise<void> {
-        const defer = lang.defer<void>();
+    async run(type?: AbstractType | AbstractType[]): Promise<void> {
         if (type) {
-            this._handler.handle(type, createRunableContext(this.getRef(type as AbstractType)?.context ?? this.context, true), {
-                error: (err) => defer.reject(err),
-                next: (v) => defer.resolve()
-            });
+            await promiseOf(this._handler.handle(type, createRunableContext(this.getRef(type as AbstractType)?.context ?? this.context, true)));
         } else {
-            invokeTails(
-                () => this.startup(),
-                v => this.beforeRun(),
-                v => this._types?.length ? (this._types.map((ty) => this._handler.handle(ty, createRunableContext(this.getRef(ty)?.context ?? this.context, true)))) : v,
-                v => this.afterRun(),
-                {
-                    error: (err) => defer.reject(err),
-                    next: (v) => defer.resolve()
-                }
-            )
+            await this.startup();
+            await this.beforeRun();
+            if (this._types?.length) {
+                await Promise.all(this._types.map((ty) => promiseOf(this._handler.handle(ty, createRunableContext(this.getRef(ty)?.context ?? this.context, true)))));
+            }
+            await this.afterRun()
         }
-        return defer.promise;
     }
 
-    stop(signls?: string): Promise<void> {
-        const defer = lang.defer<void>();
-        invokeTails(
-            () => this.onShuwdown(signls),
-            v => this.onDispose(),
-            {
-                error: (err) => defer.reject(err),
-                next: (v) => defer.resolve(),
-                finally: () => this.onDestroy()
-            }
-        );
-        return defer.promise
+    async stop(signls?: string): Promise<void> {
+        try {
+            await this.onShuwdown(signls);
+            await this.onDispose();
+        } finally {
+            this.onDestroy()
+        }
     }
 
     private _destroyed = false;
@@ -198,31 +185,31 @@ export class DefaultApplicationRunners extends ApplicationRunners implements App
         if (isFunction(input)) {
             handlers = this._maps.get(input)
         } else {
-            return throwError(() => new ArgumentException('input type unknow'))
+            throw new ArgumentException('input type unknow')
         }
         if (handlers && handlers.length) {
             return composeHandlers(handlers)(input, context);
         }
-        return throwError(() => new NotHandleException(context, input));
+        throw new NotHandleException(context, input);
     }
 
-    protected startup(): HandleResult<any> {
+    protected startup() {
         return this.multicaster.emit(new ApplicationStartupEvent(this));
     }
 
-    protected beforeRun(): HandleResult<any> {
+    protected beforeRun() {
         return this.multicaster.emit(new ApplicationStartEvent(this));
     }
 
-    protected afterRun(): HandleResult<any> {
+    protected afterRun() {
         return this.multicaster.emit(new ApplicationStartedEvent(this));
     }
 
-    protected onShuwdown(signls?: string): HandleResult<any> {
+    protected onShuwdown(signls?: string) {
         return this.multicaster.emit(new ApplicationShutdownEvent(this, signls));
     }
 
-    protected onDispose(): HandleResult<any> {
+    protected onDispose() {
         return this.multicaster.emit(new ApplicationDisposeEvent(this));
     }
 

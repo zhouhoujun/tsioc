@@ -1,9 +1,7 @@
 import {
     ArgumentException, composeHandlers, getType, InjectFlags, Handler, HandlerLike,
     Injector, ProvdierOf, StaticProvider, tokenId, AbstractType, ContextToken,
-    invokeTails,
-    HandleResult,
-    lang
+    HandleResult,  promiseOf
 } from '@tsdi/ioc';
 // import { forkJoin, map, mergeMap, Observable, of, throwError } from 'rxjs';
 import { CanHandle } from '../guard';
@@ -129,7 +127,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
 
     publishEvent(event: ApplicationEvent, context?: RunableContext): Promise<void | false>;
     publishEvent(event: Object, context?: RunableContext): Promise<void | false>;
-    publishEvent(obj: ApplicationEvent | Object, context?: RunableContext): Promise<void | false> {
+    async publishEvent(obj: ApplicationEvent | Object, context?: RunableContext): Promise<void | false> {
         if (!obj) throw new ArgumentException('Event must not be null');
 
         // Decorate event as an ApplicationEvent if necessary
@@ -142,51 +140,38 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
 
         context ??= createRunableContext(this.handler.context ?? this.injector);
         context.set(WITH_SELF, true);
-        const defer = lang.defer<void | false>();
-        invokeTails(
-            () => this.downward(event, context),
-            (res) => {
-                if (res === false || !event.propagation) return false;
-                context.set(WITH_SELF, false);
-                return this.bubbleup(event, context)
-            }, {
-                next: (res) => {
-                    defer.resolve(res === false ? false : undefined);
-                },
-                error: (err) => {
-                    defer.reject(err);
-                }
-            });
+        let res = await this.downward(event, context);
+        if (res === false || !event.propagation) return false;
 
-        return defer.promise;
+        context.set(WITH_SELF, false);
+        res = await this.bubbleup(event, context);
+        return res;
     }
 
-    downward(event: ApplicationEvent, context: RunableContext): HandleResult<void | false> {
-        return invokeTails(
-            () => context.get(WITH_SELF) ? this.handler.handle(event, context) : undefined,
-            res => {
-                if (res === false || !event.propagation) return false;
-                if (this._children.length) {
-                    return composeHandlers(this._children.map(r => (event, context) => r.downward(event, context)), (r, next, input, ctx) => {
-                        if (!event.propagation) return false;
-                        return next(event, ctx ?? context);
-                    })(event, context);
-                }
-            }
-        )
+    async downward(event: ApplicationEvent, context: RunableContext): Promise<void | false> {
+        let res: undefined | false;
+        if (context.get(WITH_SELF)) {
+            res = await promiseOf(this.handler.handle(event, context))
+        }
+        if (res === false || !event.propagation) return false;
+        if (this._children.length) {
+            return promiseOf(composeHandlers(this._children.map(r => (event, context) => r.downward(event, context)), (r, next, input, ctx) => {
+                if (!event.propagation) return false;
+                return next(event, ctx ?? context);
+            })(event, context));
+        }
     }
 
-    bubbleup(event: ApplicationEvent, context: RunableContext): HandleResult<void | false> {
-        return invokeTails(
-            () => context.get(WITH_SELF) ? this.handler.handle(event, context) : undefined,
-            res => {
-                if (res === false || !event.propagation) return false;
-                if (this.parent) {
-                    // Publish event via parent multicaster as well...
-                    return this.parent.bubbleup(event, context)
-                }
-            })
-
+    async bubbleup(event: ApplicationEvent, context: RunableContext): Promise<void | false> {
+        let res: undefined | false;
+        if (context.get(WITH_SELF)) {
+            res = await promiseOf(this.handler.handle(event, context))
+        }
+        if (res === false || !event.propagation) return false;
+        if (this.parent) {
+            // Publish event via parent multicaster as well...
+            return await this.parent.bubbleup(event, context)
+        }
     }
 
     handle(event: ApplicationEvent, context: RunableContext): HandleResult<void | false> {
@@ -194,7 +179,7 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         if (!handlers || !handlers.length) return;
 
         return composeHandlers(handlers, (r, next, input, ctx) => {
-            if (r !== false && event.propagation) {
+            if (r !== false || event.propagation) {
                 return next(event, ctx ?? context);
             }
             return r;

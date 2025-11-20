@@ -82,12 +82,12 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      * event downward
      * @param event 
      */
-    abstract downward(event: ApplicationEvent, context: RunableContext): HandleResult<void | false>;
+    abstract downward(event: ApplicationEvent, context: RunableContext): Promise<void | false>;
     /**
      * event bubble up
      * @param event 
      */
-    abstract bubbleup(event: ApplicationEvent, context: RunableContext): HandleResult<void | false>;
+    abstract bubbleup(event: ApplicationEvent, context: RunableContext): Promise<void | false>;
     /**
      * Notify all <strong>matching</strong> listeners registered with this
      * application of an application event. Events may be framework events
