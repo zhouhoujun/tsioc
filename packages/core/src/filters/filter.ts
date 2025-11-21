@@ -43,19 +43,6 @@ export type FilterFn<TInput = any, TOutput = any, TContext extends RunableContex
  */
 export type FilterLike<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = FilterFn<TInput, TOutput, TContext> | Filter<TInput, TOutput, TContext>;
 
-/**
- * filter service.
- * 
- * 过滤器服务。
- */
-export interface FilterService {
-    /**
-     * use filters
-     * @param filters 
-     * @param order 
-     */
-    useFilters(filters: ProvdierOf<FilterLike> | ProvdierOf<FilterLike>[], order?: number): this;
-}
 
 /**
  * multi filters token

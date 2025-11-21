@@ -1,14 +1,13 @@
 import {
-    InjectFlags, Injector, ProvdierOf, StaticProvider, Type, promiseOf, Exception, toProvider, AbstractType, getType, Token, isType,
-    InvocationContext, createContext, ArgumentException, isToken, isArray, isFunction, composeInterceptors, chainFactory, some, Operator,
-    invokeTails, TailNext, toHandlerFn, HandleResult
+    InjectFlags, Injector, ProvdierOf, Type, promiseOf, Exception, toProvider, AbstractType, getType, Token, isType,
+    InvocationContext, createContext, ArgumentException, isToken, isArray, isFunction, composeInterceptors, chainFactory,
+    some, Operator, invokeTails, TailNext, toHandlerFn, HandleResult, hasProps
 } from '@tsdi/ioc';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
 import { INTERCEPTORS_TOKEN, Interceptor, InterceptorFn, InterceptorLike, InterceptorResolver } from '../interceptor';
-import { PipeTransform } from '../pipes/pipe';
 import { FILTERS_TOKEN, Filter, FilterLike, FilterResolver, composeFilters } from '../filters/filter';
 import { Handler, HandlerFn, HandlerLike } from '../handler';
-import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerService } from './configable';
+import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerOptions } from './configable';
 
 
 
@@ -20,7 +19,7 @@ export class ConfigableHandler<
     TInput = any,
     TOutput = any,
     TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>,
-    TContext= any> implements AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
+    TContext = any> implements AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
 
     private chain?: InterceptorFn<TInput, TOutput, TContext> | null;
     private chains: Map<AbstractType | string, InterceptorFn<TInput, TOutput, TContext> | null>;
@@ -63,7 +62,7 @@ export class ConfigableHandler<
             Operator.provider(this.context, this.options.backend);
         }
 
-        setHandlerOptions(this, this.options);
+        this.append(this.options);
         this.chains = new Map();
     }
 
@@ -109,53 +108,27 @@ export class ConfigableHandler<
     }
 
 
-    /**
-     * use pipes
-     * @param pipes 
-     * @returns 
-     */
-    usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
-        Operator.inject(this.context, pipes);
-        return this;
-    }
-
-    /**
-     * use interceptor for the handler.
-     * @param interceptor 
-     * @param order 
-     * @returns 
-     */
-    useInterceptors(interceptor: ProvdierOf<InterceptorLike<TInput, TOutput>> | ProvdierOf<InterceptorLike<TInput, TOutput>>[], order?: number): this {
-        if (!this.options.interceptorsToken) return this;
-        this.regMulti(this.options.interceptorsToken, interceptor, order);
+    append(options: HandlerOptions<TInput>): this {
+        if (!options || !hasProps(options)) return this;
+        if (options.pipes) {
+            Operator.inject(this.context, options.pipes);
+        }
+        if (options.guards) {
+            if (!this.options.guardsToken) throw new ArgumentException('no guards token');
+            this.regMulti(this.options.guardsToken, options.guards);
+        }
+        if (options.filters) {
+            if (!this.options.filtersToken) throw new ArgumentException('no filters token');
+            this.regMulti(this.options.filtersToken, options.filters);
+        }
+        if (options.interceptors) {
+            if (!this.options.interceptorsToken) throw new ArgumentException('no interceptors token');
+            this.regMulti(this.options.interceptorsToken, options.interceptors);
+        }
         this.reset();
         return this;
     }
 
-
-    /**
-     * use guards for the handler.
-     * @param guards 
-     */
-    useGuards(guards: ProvdierOf<GuardLike> | ProvdierOf<GuardLike>[], order?: number): this {
-        if (!this.options.guardsToken) throw new ArgumentException('no guards token');
-        this.regMulti(this.options.guardsToken, guards, order);
-        this.reset();
-        return this;
-    }
-
-    /**
-     * use filters for the handler.
-     * @param filter 
-     * @param order 
-     * @returns 
-     */
-    useFilters(filter: ProvdierOf<FilterLike> | ProvdierOf<FilterLike>[], order?: number): this {
-        if (!this.options.filtersToken) throw new ArgumentException('no filters token');
-        this.regMulti(this.options.filtersToken, filter, order);
-        this.reset();
-        return this;
-    }
     private _destroyed = false;
     onDestroy(): void {
         if (this._destroyed) return;
@@ -328,35 +301,45 @@ export function createHandler<TClass extends ConfigableHandler, TInput>(context:
  * @param guardsToken 
  * @param filtersToken 
  */
-export function createHandler<TInput, TOutput, TClass extends ConfigableHandler>(context: Injector | InvocationContext,
+export function createHandler<TInput, TOutput, TClass extends ConfigableHandler>(
+    context: Injector | InvocationContext,
     backend: Token<Handler<TInput, TOutput>> | Handler<TInput, TOutput>,
     interceptorsToken: Token<Interceptor<TInput, TOutput>[]>,
     guardsToken?: Token<CanHandle[]>,
     filtersToken?: Token<Filter<TInput, TOutput>[]>,
-    /**
-     * execption handlers
-     */
-    execptionHandlers?: Type<any> | Type[] | null,
-    enableTypeChain?: boolean
+    options?: {
+        /**
+         * execption handlers
+         */
+        execptionHandlers?: Type<any> | Type[] | null,
+        enableTypeChain?: boolean
+    } & HandlerOptions<TInput>,
+    type?: Type
 ): ConfigableHandler<TInput, TOutput>;
-export function createHandler<TInput, TOutput>(context: Injector | InvocationContext, arg: ConfigableHandlerOptions<TInput> | Token<Handler<TInput, TOutput>> | Handler<TInput, TOutput>,
+export function createHandler<TInput, TOutput>(
+    context: Injector | InvocationContext, 
+    arg: ConfigableHandlerOptions<TInput> | Token<Handler<TInput, TOutput>> | Handler<TInput, TOutput>,
     interceptorsToken?: Token<Interceptor<TInput, TOutput>[]> | Type<ConfigableHandler>,
     guardsToken?: Token<CanHandle[]>,
     filtersToken?: Token<Filter<TInput, TOutput>[]>,
-    execptionHandlers?: Type<any> | Type[] | null,
-    enableTypeChain?: boolean,
-    type?: Type<ConfigableHandler>
+    appendOptions?: {
+        /**
+         * execption handlers
+         */
+        execptionHandlers?: Type<any> | Type[] | null,
+        enableTypeChain?: boolean
+    } & HandlerOptions<TInput>,
+    type?: Type
 ): ConfigableHandler<TInput, TOutput> {
     let options: ConfigableHandlerOptions<TInput> & { classType?: Type<ConfigableHandler> };
     let Type = type ?? ConfigableHandler;
     if (interceptorsToken && !isFunction(interceptorsToken)) {
         options = {
+            ...appendOptions,
             backend: arg as (Token<Handler<TInput, TOutput>> | Handler<TInput, TOutput>),
             interceptorsToken,
             guardsToken,
-            filtersToken,
-            execptionHandlers,
-            enableTypeChain
+            filtersToken
         }
     } else {
         options = arg as ConfigableHandlerOptions<TInput>;
@@ -378,16 +361,4 @@ export function normalizeConfigableHandlerOptions<T extends ConfigableHandlerOpt
         }
     }
     return options;
-}
-
-/**
- * set handler service with options.
- * @param service 
- * @param options 
- */
-export function setHandlerOptions(service: HandlerService, options: ConfigableHandlerOptions) {
-    options.pipes?.length && service.usePipes(options.pipes);
-    options.filters?.length && service.useFilters(options.filters);
-    options.guards?.length && service.useGuards(options.guards);
-    options.interceptors?.length && service.useInterceptors(options.interceptors);
 }

@@ -15,13 +15,13 @@ export abstract class AbstractClient<
     TReqOptions extends RequestOptions = RequestOptions,
     TRequest extends AbstractRequest<any> = AbstractRequest<any>,
     TResponse extends ResponseEvent<any> = ResponseEvent<any>,
-    TOptions extends ClientConfig = ClientConfig,
+    TOptions extends ClientConfig = ClientConfig
 > {
 
     /**
      * client handler
      */
-    abstract get handler(): ClientHandler<TRequest, TResponse, TOptions>;
+    abstract get handler(): ClientHandler<TRequest, TResponse>;
 
     private _formatter?: PatternFormatter;
     get formatter(): PatternFormatter {
@@ -32,9 +32,7 @@ export abstract class AbstractClient<
         return this._formatter;
     }
 
-    getOptions(): TOptions {
-        return this.handler.getOptions()
-    }
+    abstract getOptions(): TOptions;
 
     /**
      * Sends an `Request` and returns a stream of `ResponseEvent`s.

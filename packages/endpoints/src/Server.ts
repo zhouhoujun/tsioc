@@ -1,10 +1,11 @@
-import { Abstract, ProvdierOf, StaticProvider } from '@tsdi/ioc';
-import { ApplicationEvent, CanHandle, Filter, HandlerService, PipeTransform, Runner, Shutdown, InterceptorLike } from '@tsdi/core';
+import { Abstract, isArray, ProvdierOf, StaticProvider, toMutilProvdierOf } from '@tsdi/ioc';
+import { ApplicationEvent, CanHandle, Filter, HandlerAppendService, PipeTransform, Runner, Shutdown, InterceptorLike, RequestInterceptorLike, HandlerOptions, isHandlerOptions } from '@tsdi/core';
 import { CommonProtocols } from '@tsdi/common';
 import { RequestContext } from './RequestContext';
 import { AbstractRequestHandler } from './AbstractRequestHandler';
 import { RequestHandler } from './RequestHandler';
 import { ServiceConfig } from './server.options';
+import { TOutgoing } from '@tsdi/common/transport';
 
 
 /**
@@ -43,7 +44,7 @@ export abstract class MicroService<TRequest extends RequestContext = RequestCont
  * 微服务
  */
 @Abstract()
-export abstract class Server<TRequest extends RequestContext = RequestContext, TOptions extends ServiceConfig = ServiceConfig> extends MicroService implements HandlerService {
+export abstract class Server<TRequest extends RequestContext = RequestContext, TOptions extends ServiceConfig = ServiceConfig> extends MicroService implements HandlerAppendService<TRequest> {
 
     /**
      * service request handler.
@@ -54,26 +55,15 @@ export abstract class Server<TRequest extends RequestContext = RequestContext, T
         return this.handler.getOptions()
     }
 
-    useGuards(guards: ProvdierOf<CanHandle> | ProvdierOf<CanHandle>[], order?: number | undefined): this {
-        this.handler.useGuards(guards, order);
-        return this;
-    }
 
 
-    useFilters(filter: ProvdierOf<Filter<TRequest>> | ProvdierOf<Filter<TRequest>>[], order?: number | undefined): this {
-        this.handler.useFilters(filter, order);
-        return this;
-    }
-
-    usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
-        this.handler.usePipes(pipes);
-        return this;
-    }
-
-    useInterceptors(interceptor: ProvdierOf<InterceptorLike<TRequest>> | ProvdierOf<InterceptorLike<TRequest>>[], order?: number | undefined): this {
-        this.handler.useInterceptors(interceptor, order);
-        return this;
-    }
+    use(options: ProvdierOf<RequestInterceptorLike<TRequest>> | ProvdierOf<RequestInterceptorLike>[] | HandlerOptions<TRequest>, order?: number): this {
+            this.handler.append(
+                isArray(options) ? { interceptors: options }
+                    : ((isHandlerOptions(options) ? options : { interceptors: [toMutilProvdierOf(options as ProvdierOf<RequestInterceptorLike>, order)] }))
+            )
+            return this;
+        }
 
 }
 

@@ -31,7 +31,7 @@ export function createRunableContext(injector: Injector,
 /**
  * Requset handler
  */
-export interface RequestHandler<TInput = any, TOutput = any, TContext extends Context = Context> extends Handler<TInput, TOutput, TContext|undefined> {
+export interface RequestHandler<TInput = any, TOutput = any, TContext extends Context = Context> extends Handler<TInput, TOutput, TContext> {
     /**
      * handle.
      * 
@@ -40,13 +40,13 @@ export interface RequestHandler<TInput = any, TOutput = any, TContext extends Co
      * @param context handle with context.
      * @param tail next tail.
      */
-    handle(input: TInput, context?: TContext, tail?: TailNext<TOutput, TContext>): Observable<TOutput>;
+    handle(input: TInput, context: TContext): Observable<TOutput>;
 }
 
 /**
  * Request handler function.
  */
-export type RequestHandlerFn<TInput = any, TOutput = any, TContext extends Context = Context> = (input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>) => Observable<TOutput>;
+export type RequestHandlerFn<TInput = any, TOutput = any, TContext extends Context = Context> = (input: TInput, context: TContext) => Observable<TOutput>;
 
 
 /**

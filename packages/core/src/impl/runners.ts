@@ -1,7 +1,10 @@
 import {
     isNumber, AbstractType, Injectable, tokenId, ClassRef, isFunction, getClassify, ProvdierOf, Invocation,
     ArgumentException, StaticProvider, HandlerLike, composeHandlers, Type, Operator,
-    HandleResult, promiseOf
+    HandleResult, promiseOf,
+    isArray,
+    InterceptorLike,
+    toMutilProvdierOf
 } from '@tsdi/ioc';
 import { ApplicationRunners } from '../ApplicationRunners';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
@@ -17,6 +20,7 @@ import { NotHandleException } from '../execptions';
 import { InvocationHandlerOptions } from '../invocation';
 import { createInvocationHandler } from './invocation';
 import { ApplicationContext } from '../ApplicationContext';
+import { HandlerOptions, isHandlerOptions } from '../handlers/configable';
 
 
 /**
@@ -49,8 +53,10 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         this._types = [];
         this._maps = new Map();
         this._refs = new Map();
-        this._handler = createHandler(context, this, APP_RUNNERS_INTERCEPTORS, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS, null, true);
-        this._handler.useFilters(ExceptionHandlerFilter);
+        this._handler = createHandler(context, this, APP_RUNNERS_INTERCEPTORS, APP_RUNNERS_GUARDS, APP_RUNNERS_FILTERS, {
+            enableTypeChain: true,
+            filters: [ExceptionHandlerFilter]
+        });
     }
 
     get size(): number {
@@ -61,23 +67,11 @@ export class DefaultApplicationRunners extends ApplicationRunners implements Han
         return this._handler
     }
 
-    usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
-        this._handler.usePipes(pipes);
-        return this;
-    }
-
-    useGuards(guards: ProvdierOf<CanHandle> | ProvdierOf<CanHandle>[], order?: number): this {
-        this._handler.useGuards(guards, order);
-        return this;
-    }
-
-    useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this {
-        this._handler.useInterceptors(interceptor, order);
-        return this;
-    }
-
-    useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
-        this._handler.useFilters(filter, order);
+    use(options: ProvdierOf<InterceptorLike> | ProvdierOf<InterceptorLike>[] | HandlerOptions<any>, order?: number): this {
+        this._handler.append(
+            isArray(options) ? { interceptors: options }
+                : ((isHandlerOptions(options) ? options : { interceptors: [toMutilProvdierOf(options as ProvdierOf<InterceptorLike>, order)] }))
+        )
         return this;
     }
 

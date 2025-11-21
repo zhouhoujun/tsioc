@@ -1,18 +1,21 @@
 import {
     ArgumentException, composeHandlers, getType, InjectFlags, HandlerLike,
     Injector, ProvdierOf, StaticProvider, tokenId, AbstractType, ContextToken,
-    HandleResult,  promiseOf
+    HandleResult, promiseOf, isArray, Type,
+    isFunction,
+    toProvider,
+    toMutilProvdierOf
 } from '@tsdi/ioc';
 import { CanHandle } from '../guard';
-import { PipeTransform } from '../pipes/pipe';
 import { Interceptor } from '../interceptor';
 import { Handler, createRunableContext, RunableContext } from '../handler';
 import { Filter } from '../filters/filter';
 import { ExceptionHandlerFilter } from '../filters/execption.filter';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
 import { ApplicationEvent } from '../ApplicationEvent';
-import { ApplicationEventMulticaster, EventInterceptorLike } from '../ApplicationEventMulticaster';
+import { ApplicationEventMulticaster, EventInterceptor, EventInterceptorLike } from '../ApplicationEventMulticaster';
 import { PayloadApplicationEvent } from '../events';
+import { HandlerOptions, isHandlerOptions } from '../handlers';
 
 
 
@@ -35,7 +38,6 @@ export const WITH_SELF = new ContextToken(() => false);
 
 
 export class DefaultEventMulticaster extends ApplicationEventMulticaster implements Handler<ApplicationEvent> {
-
     private _handler: ConfigableHandler<ApplicationEvent>;
     private maps: Map<AbstractType, HandlerLike[]>;
     protected _children: ApplicationEventMulticaster[];
@@ -46,8 +48,10 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         super();
         this.maps = new Map();
         this._children = [];
-        this._handler = createHandler(injector, this, EVENT_MULTICASTER_INTERCEPTORS, EVENT_MULTICASTER_GUARDS, EVENT_MULTICASTER_FILTERS, null, true);
-        this._handler.useFilters(ExceptionHandlerFilter);
+        this._handler = createHandler(injector, this, EVENT_MULTICASTER_INTERCEPTORS, EVENT_MULTICASTER_GUARDS, EVENT_MULTICASTER_FILTERS, {
+            enableTypeChain: true,
+            filters: [ExceptionHandlerFilter]
+        });
         this.parent = this.injector.get(ApplicationEventMulticaster, null, InjectFlags.SkipSelf);
         if (this.parent) {
             const parent = this.parent;
@@ -75,25 +79,15 @@ export class DefaultEventMulticaster extends ApplicationEventMulticaster impleme
         return this;
     }
 
-    usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this {
-        this._handler.usePipes(pipes);
+    use(options: ProvdierOf<EventInterceptorLike> | ProvdierOf<EventInterceptorLike>[] | HandlerOptions<ApplicationEvent>, order?: number): this {
+        this._handler.append(
+            isArray(options) ? { interceptors: options }
+                : ((isHandlerOptions(options) ? options : { interceptors: [toMutilProvdierOf(options as ProvdierOf<EventInterceptorLike>, order)] }))
+        )
         return this;
     }
 
-    useGuards(guards: ProvdierOf<CanHandle> | ProvdierOf<CanHandle>[]): this {
-        this._handler.useGuards(guards);
-        return this;
-    }
 
-    useInterceptors(interceptors: ProvdierOf<EventInterceptorLike> | ProvdierOf<EventInterceptorLike>[], order?: number): this {
-        this._handler.useInterceptors(interceptors, order);
-        return this;
-    }
-
-    useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number | undefined): this {
-        this._handler.useFilters(filter, order);
-        return this;
-    }
 
     addListener(event: AbstractType<ApplicationEvent>, handler: HandlerLike, order = -1): this {
         const handlers = this.maps.get(event);

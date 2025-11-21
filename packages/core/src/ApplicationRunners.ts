@@ -1,9 +1,5 @@
-import { Abstract, ClassRef, noPointcut, OnDestroy, ProvdierOf, Invocation, StaticProvider, AbstractType, HandleResult } from '@tsdi/ioc';
-import { CanHandle } from './guard';
-import { Interceptor } from './interceptor';
-import { PipeTransform } from './pipes/pipe';
-import { HandlerService } from './handlers/configable';
-import { Filter } from './filters/filter';
+import { Abstract, ClassRef, noPointcut, OnDestroy, ProvdierOf, Invocation, AbstractType, InterceptorLike } from '@tsdi/ioc';
+import { HandlerAppendService, HandlerOptions } from './handlers/configable';
 import { InvocationHandlerOptions } from './invocation';
 
 
@@ -13,7 +9,7 @@ import { InvocationHandlerOptions } from './invocation';
  * 应用程序运行集合
  */
 @Abstract()
-export abstract class ApplicationRunners implements HandlerService, OnDestroy {
+export abstract class ApplicationRunners implements HandlerAppendService<AbstractType>, OnDestroy {
   static [noPointcut] = true;
 
   /**
@@ -53,36 +49,30 @@ export abstract class ApplicationRunners implements HandlerService, OnDestroy {
   /**
    * run all runners.
    */
-  abstract run(type?: AbstractType|AbstractType[]): Promise<void>;
+  abstract run(type?: AbstractType | AbstractType[]): Promise<void>;
 
   /**
    * stop all runners.
    */
   abstract stop(): Promise<void>;
+  /**
+   * use interceptor for this handler.
+   * @param inteceptor
+   * @param order mutil order
+   */
+  abstract use(inteceptor: ProvdierOf<InterceptorLike>, order?: number): this;
 
   /**
-   * use pipes.
-   * @param guards 
+   * use interceptor for this handler.
+   * @param inteceptors 
    */
-  abstract usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this;
+  abstract use(inteceptors: ProvdierOf<InterceptorLike>[]): this;
+  /**
+   * use and append hanlder options.
+   * @param options 
+   */
+  abstract use(options: HandlerOptions<AbstractType>): this;
 
-  /**
-   * use guards.
-   * @param guards 
-   */
-  abstract useGuards(guards: ProvdierOf<CanHandle> | ProvdierOf<CanHandle>[]): this;
-  /**
-    * use interceptor
-    * @param interceptor 
-    * @param order 
-    */
-  abstract useInterceptors(interceptor: ProvdierOf<Interceptor> | ProvdierOf<Interceptor>[], order?: number): this;
-  /**
-   * use filter
-   * @param filter 
-   * @param order 
-   */
-  abstract useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
 
   /**
    * destroy.

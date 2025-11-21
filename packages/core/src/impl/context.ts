@@ -6,7 +6,7 @@ import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationRunners } from '../ApplicationRunners';
 import { ApplicationContext, ApplicationContextFactory, BootstrapOption, EnvironmentOption, PROCESS_ROOT } from '../ApplicationContext';
 import { ApplicationContextRefreshEvent } from '../events';
-import { setHandlerOptions } from '../handlers/configable.impl';
+
 
 
 
@@ -32,10 +32,10 @@ export class DefaultApplicationContext<T = any> extends DefaultInvocationContext
         this._runners = parent.get(ApplicationRunners);
         this.onDestroy(this._runners);
         if (options.eventsOptions) {
-            setHandlerOptions(this.eventMulticaster, options.eventsOptions);
+            this.eventMulticaster.use(options.eventsOptions);
         }
         if (options.runnersOptions) {
-            setHandlerOptions(this.runners, options.runnersOptions);
+            this.runners.use(options.runnersOptions);
         }
     }
 

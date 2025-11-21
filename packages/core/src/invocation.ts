@@ -1,9 +1,5 @@
-import { Abstract, AbstractType, Invocation, ProvidedInMetadata, ProvdierOf, StaticProvider, InvocationOptions, InvocationFactory, InvocationContext, HandleResult } from '@tsdi/ioc';
-import { ConfigableHandlerOptions, HandlerService } from './handlers/configable';
-import { PipeTransform } from './pipes/pipe';
-import { InterceptorLike } from './interceptor';
-import { GuardLike } from './guard';
-import { FilterLike } from './filters/filter';
+import { Abstract, AbstractType, Invocation, ProvidedInMetadata, ProvdierOf, InvocationOptions, InvocationFactory, InvocationContext, HandleResult } from '@tsdi/ioc';
+import { ConfigableHandlerOptions, HandlerOptions } from './handlers/configable';
 import { Handler, RunableContext } from './handler';
 
 
@@ -16,7 +12,7 @@ export abstract class InvocationHandler<
     TOutput = any,
     TOptions extends InvocationHandlerOptions = InvocationHandlerOptions,
     TContext extends RunableContext = RunableContext,
-    T = any> implements Handler<TInput, TOutput, TContext>, HandlerService {
+    T = any> implements Handler<TInput, TOutput, TContext> {
 
     /**
      * invocation.
@@ -30,34 +26,12 @@ export abstract class InvocationHandler<
      */
     abstract getOptions(): TOptions;
 
-    /**
-     * use pipes
-     * @param pipes 
-     * @returns 
-     */
-    abstract usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this;
 
     /**
-     * use interceptor for the handler.
-     * @param interceptor 
-     * @param order 
-     * @returns 
+     * append handler options.
+     * @param options 
      */
-    abstract useInterceptors(interceptor: ProvdierOf<InterceptorLike> | ProvdierOf<InterceptorLike>[], order?: number): this;
-
-    /**
-     * use guards for the handler.
-     * @param guards 
-     */
-    abstract useGuards(guards: ProvdierOf<GuardLike> | ProvdierOf<GuardLike>[], order?: number): this;
-
-    /**
-     * use filters for the handler.
-     * @param filter 
-     * @param order 
-     * @returns 
-     */
-    abstract useFilters(filter: ProvdierOf<FilterLike> | ProvdierOf<FilterLike>[], order?: number): this;
+    abstract append(options: HandlerOptions<TInput>): this;
 
 
     /**

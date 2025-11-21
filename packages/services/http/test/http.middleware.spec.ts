@@ -100,7 +100,7 @@ describe('middleware', () => {
         const runable = ctx.runners.getRef(HttpServer);
 
         // // use interceptor
-        // runable.instance.useInterceptors((ctx, next) => {
+        // runable.instance.use((ctx, next) => {
         //     console.log('ctx.url:', ctx.url);
         //     if (ctx.url.startsWith('/test')) {
         //         console.log('message queue test: ' + ctx.query);
@@ -112,7 +112,7 @@ describe('middleware', () => {
         // }, 0);
 
         // use middleware
-        runable.instance.useInterceptors(convertToInterceptor((ctx, next) => {
+        runable.instance.use(convertToInterceptor((ctx, next) => {
             console.log('ctx.url:', ctx.url);
             if (ctx.url.startsWith('/test')) {
                 console.log('message queue test: ' + ctx.query);

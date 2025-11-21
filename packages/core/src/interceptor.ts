@@ -35,21 +35,6 @@ export type RequestInterceptorFn<TInput = any, TOutput = any, TContext extends C
  */
 export type RequestInterceptorLike<TInput = any, TOutput = any, TContext extends Context = Context> = RequestInterceptorFn<TInput, TOutput, TContext> | RequestInterceptor<TInput, TOutput, TContext>;
 
-
-/**
- * Application interceptor service.
- */
-export interface InterceptorService {
-    /**
-     * use interceptors
-     * 
-     * 使用拦截器
-     * @param interceptors 
-     * @param order 
-     */
-    useInterceptors(interceptors: ProvdierOf<InterceptorLike> | ProvdierOf<InterceptorLike>[], order?: number): this;
-}
-
 /**
  * Interceptors multi token
  * 

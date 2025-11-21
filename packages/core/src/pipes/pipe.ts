@@ -1,4 +1,4 @@
-import { ArgumentException, StaticProvider, TypeDef, getDef, getType } from '@tsdi/ioc';
+import { ArgumentException, TypeDef, getDef, getType } from '@tsdi/ioc';
 
 /**
  * pipe transform insterface.
@@ -31,15 +31,4 @@ export interface PipeDef<T = any> extends TypeDef<T> {
  */
 export function invalidPipeArgument(type: any, value: any, message?: string) {
     return new ArgumentException(`InvalidPipeArgument: '${value}' for pipe '${getDef<PipeDef>(getType(type)).selector}'${message || ''}`)
-}
-
-/**
- * pipe service.
- */
-export interface PipeService {
-    /**
-     * use pipes.
-     * @param guards 
-     */
-    usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this;
 }

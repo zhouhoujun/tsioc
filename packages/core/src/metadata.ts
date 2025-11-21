@@ -284,7 +284,6 @@ function createEventHandler(defaultFilter: AbstractType<ApplicationEvent>, name:
                     const handler = createInvocationHandler(invocation, options, decor.propertyKey);
                     const event = filter ?? defaultFilter;
                     const isFILO = isFunction(event.getStrategy) && event.getStrategy() == 'FILO';
-                    // const multicaster = providedIn ? injector.getRuntime().getInjector(providedIn).get(ApplicationEventMulticaster) : currMulticaster;
                     multicaster.addListener(event, handler, isFILO ? order ?? 0 : order);
                     invocation.onDestroy(() => multicaster.removeListener(event, handler))
                 });

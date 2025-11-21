@@ -2,7 +2,7 @@ import { Type, Modules, AbstractType } from './types';
 import { InjectFlags, Token } from './tokens';
 import { Injector } from './injector';
 import { isPlainObject } from './utils/obj';
-import { isArray, isBoolean, isDefined, isFunction, isAbstractType } from './utils/chk';
+import { isArray, isBoolean, isDefined, isFunction, isAbstractType, isNil } from './utils/chk';
 import { ArgumentException } from './exception';
 import { getTypeName } from './utils/lang';
 import { Parameter } from './resolver';
@@ -310,6 +310,19 @@ export function toProvider<T>(provide: Token, useOf: ProvdierOf<T>, multi?: bool
     }
 
     return { ...options, provide, useValue: useOf as T }
+}
+
+export function toMutilProvdierOf<T>(useOf: ProvdierOf<T>, multiOrder?: number): ProvdierOf<T> {
+    if (isNil(multiOrder)) return useOf;
+    if (isAbstractType(useOf)) {
+        return { useClass: useOf as Type, multi: true, multiOrder };
+    } else if (isPlainObject(useOf) && (isDefined((useOf as UseClass<T>).useClass)
+        || isDefined((useOf as UseValue<T>).useValue)
+        || isDefined((useOf as UseFactory<T>).useFactory)
+        || isDefined((useOf as UseExisting<T>).useExisting))) {
+        return { ...useOf, multi: true, multiOrder }
+    }
+    return { useValue: useOf as T, multi: true, multiOrder }
 }
 
 /**

@@ -47,18 +47,3 @@ const GUARDS = 'GUARDS';
 export function getGuardsToken(type: TypeOf<any> | string, propertyKey?: string): Token<CanHandle[]> {
     return getTokenOf(type, GUARDS, propertyKey)
 }
-
-
-/**
- * guards service.
- * 
- * 守卫服务
- */
-export interface GuardsService {
-    /**
-     * use guards.
-     * @param guards
-     * @param order 
-     */
-    useGuards(guards: ProvdierOf<GuardLike> | ProvdierOf<GuardLike>[], order?: number): this;
-}

@@ -1,11 +1,8 @@
-import { Abstract, StaticProvider, AbstractType, ProvdierOf, HandlerLike, noPointcut } from '@tsdi/ioc';
+import { Abstract, AbstractType, ProvdierOf, HandlerLike, noPointcut } from '@tsdi/ioc';
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
-import { Filter } from './filters/filter';
-import { CanHandle } from './guard';
 import { Interceptor, InterceptorFn, InterceptorLike } from './interceptor';
-import { PipeTransform } from './pipes/pipe';
-import { HandlerService } from './handlers/configable';
+import { HandlerAppendService, HandlerOptions } from './handlers/configable';
 import { RunableContext } from './handler';
 
 
@@ -19,7 +16,7 @@ export type EventInterceptorLike<TInput extends ApplicationEvent = ApplicationEv
  * 提供基本的事件侦听器注册工具。
  */
 @Abstract()
-export abstract class ApplicationEventMulticaster implements HandlerService, ApplicationEventPublisher {
+export abstract class ApplicationEventMulticaster implements HandlerAppendService<ApplicationEvent, any, RunableContext>, ApplicationEventPublisher {
 
     static [noPointcut] = true;
 
@@ -39,27 +36,22 @@ export abstract class ApplicationEventMulticaster implements HandlerService, App
      */
     abstract detach(eventMulticaster: ApplicationEventMulticaster): this;
     /**
-     * use pipes.
-     * @param guards 
+     * use interceptor for this handler.
+     * @param inteceptor
+     * @param order mutil order
      */
-    abstract usePipes(pipes: StaticProvider<PipeTransform> | StaticProvider<PipeTransform>[]): this;
+    abstract use(inteceptor: ProvdierOf<EventInterceptorLike>, order?: number): this;
     /**
-     * use guards.
-     * @param guards 
+     * use interceptor for this handler.
+     * @param inteceptors 
      */
-    abstract useGuards(guards: ProvdierOf<CanHandle> | ProvdierOf<CanHandle>[]): this;
+    abstract use(inteceptors: ProvdierOf<EventInterceptorLike>[]): this;
     /**
-     * use interceptor
-     * @param interceptor 
-     * @param order 
+     * use and append hanlder options.
+     * @param options 
      */
-    abstract useInterceptors(interceptor: ProvdierOf<EventInterceptorLike> | ProvdierOf<EventInterceptorLike>[], order?: number): this;
-    /**
-     * use filter
-     * @param filter 
-     * @param order 
-     */
-    abstract useFilters(filter: ProvdierOf<Filter> | ProvdierOf<Filter>[], order?: number): this;
+    abstract use(options: HandlerOptions<ApplicationEvent, any, RunableContext>): this;
+
     /**
      * add event handler.
      * @param event 
