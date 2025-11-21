@@ -1,6 +1,6 @@
 import { ArgumentException, Injectable, MissingParameterException, Module } from '@tsdi/ioc';
 import expect = require('expect');
-import { catchError, lastValueFrom, of } from 'rxjs';
+// import { catchError, lastValueFrom, of } from 'rxjs';
 import { Application, ApplicationContext, RunableContext } from '../src';
 import { Dispose, EventHandler, ExceptionHandler, Payload, Runner, Shutdown, Start } from '../src/metadata';
 

@@ -1,6 +1,6 @@
 import { Abstract, ClassRef, noPointcut, OnDestroy, ProvdierOf, Invocation, StaticProvider, AbstractType, HandleResult } from '@tsdi/ioc';
 import { CanHandle } from './guard';
-import { Interceptor } from './ApplicationInterceptor';
+import { Interceptor } from './interceptor';
 import { PipeTransform } from './pipes/pipe';
 import { HandlerService } from './handlers/configable';
 import { Filter } from './filters/filter';

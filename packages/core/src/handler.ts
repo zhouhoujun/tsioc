@@ -1,4 +1,4 @@
-import { AbstractType, ContextToken, Handler, Injector, isBoolean, ResolveContext, TailNext } from '@tsdi/ioc';
+import { AbstractType, Context, ContextToken, Handler, Injector, isBoolean, ResolveContext, TailNext } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
 
 export { Handler, HandlerLike, HandlerFn } from '@tsdi/ioc';
@@ -28,7 +28,7 @@ export function createRunableContext(injector: Injector,
 }
 
 
-export interface RequestHandler<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> extends Handler<TInput, TOutput, TContext> {
+export interface RequestHandler<TInput = any, TOutput = any, TContext extends Context = Context> extends Handler<TInput, TOutput, TContext> {
     /**
      * handle.
      * 
@@ -40,11 +40,11 @@ export interface RequestHandler<TInput = any, TOutput = any, TContext extends Ru
     handle(input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>): Observable<TOutput>;
 }
 
-export type RequestHandlerFn<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = (input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>) => Observable<TOutput>;
+export type RequestHandlerFn<TInput = any, TOutput = any, TContext extends Context = Context> = (input: TInput, context: TContext, tail?: TailNext<TOutput, TContext>) => Observable<TOutput>;
 
 
 /**
  * Request handler like.
  */
-export type RequestHandlerLike<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = RequestHandlerFn<TInput, TOutput, TContext> | RequestHandler<TInput, TOutput, TContext>;
+export type RequestHandlerLike<TInput = any, TOutput = any, TContext extends Context = Context> = RequestHandlerFn<TInput, TOutput, TContext> | RequestHandler<TInput, TOutput, TContext>;
 

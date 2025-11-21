@@ -1,6 +1,6 @@
 import { ArgumentException, Injectable, isPlainObject, isString, MissingParameterException, Module, Invocation, HandleResult } from '@tsdi/ioc';
 import expect = require('expect');
-import { catchError, lastValueFrom, Observable, of } from 'rxjs';
+// import { catchError, lastValueFrom, Observable, of } from 'rxjs';
 import { Application, ApplicationArguments, ApplicationContext, Dispose, Handler, EventHandler, Filter, Interceptor, Payload, PayloadApplicationEvent, Runner, Shutdown, Start, RunableContext } from '../src';
 
 @Injectable()
@@ -9,7 +9,7 @@ export class StringFilter implements Filter  {
         if(isString(event.payload)){
             return next.handle(event, context);
         }
-        return of(event);
+        return event;
     }
 }
 
@@ -20,7 +20,7 @@ export class JsonFilter implements Filter  {
         if(isPlainObject(event.payload)){
             return next.handle(event, context);
         }
-        return of(event);
+        return event;
     }
 
 }

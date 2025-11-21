@@ -1,7 +1,7 @@
 import { getType, isFunction, isString, AbstractType, ArgumentException, Injector, InjectFlags, HandlerLike } from '@tsdi/ioc';
-import { Handler } from '../ApplicationHandler';
+import { Handler } from '../handler';
 import { Filter, FilterHandlerResolver, FilterLike, FilterResolver } from './filter';
-import { Interceptor, InterceptorLike, InterceptorResolver } from '../ApplicationInterceptor';
+import { Interceptor, InterceptorLike, InterceptorResolver } from '../interceptor';
 
 
 export class DefaultInterceptorResolver implements InterceptorResolver {

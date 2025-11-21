@@ -2,8 +2,8 @@ import {
     Abstract, chainEndFn, chainFactory, getTokenOf, HandlerFn, isFunction, ProvdierOf,
     Token, tokenId, AbstractType, TypeOf, HandlerLike, HandleResult
 } from '@tsdi/ioc';
-import { Handler, RunableContext } from '../ApplicationHandler';
-import { InterceptorFn } from '../ApplicationInterceptor';
+import { Handler, RunableContext } from '../handler';
+import { InterceptorFn } from '../interceptor';
 
 
 /**

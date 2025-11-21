@@ -6,7 +6,7 @@ import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
 import { DefaultApplicationRunners } from './impl/runners';
 import { DefaultApplicationContextFactory } from './impl/context';
 import { DefaultEventMulticaster } from './impl/events';
-import { InterceptorResolver } from './ApplicationInterceptor';
+import { InterceptorResolver } from './interceptor';
 import { FilterHandlerResolver, FilterResolver } from './filters/filter';
 import { DefaultFilterResolver, DefaultFiterHandlerMethodResolver, DefaultInterceptorResolver } from './filters/filter.impl';
 import { ExceptionHandlerFilter } from './filters/execption.filter';

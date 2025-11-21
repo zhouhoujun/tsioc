@@ -3,10 +3,10 @@ import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { Filter } from './filters/filter';
 import { CanHandle } from './guard';
-import { Interceptor, InterceptorFn, InterceptorLike } from './ApplicationInterceptor';
+import { Interceptor, InterceptorFn, InterceptorLike } from './interceptor';
 import { PipeTransform } from './pipes/pipe';
 import { HandlerService } from './handlers/configable';
-import { RunableContext } from './ApplicationHandler';
+import { RunableContext } from './handler';
 
 
 export type EventInterceptor<TInput extends ApplicationEvent = ApplicationEvent> = Interceptor<TInput, any, RunableContext>;

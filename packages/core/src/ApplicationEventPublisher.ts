@@ -1,6 +1,6 @@
 import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationContext } from './ApplicationContext';
-import { RunableContext } from './ApplicationHandler';
+import { RunableContext } from './handler';
 
 
 /**

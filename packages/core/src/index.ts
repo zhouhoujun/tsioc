@@ -21,8 +21,8 @@ export { DEFAULTA_PROVIDERS, RESOLVER_PROVIDERS } from './providers';
 export * from './Application';
 
 export * from './hrtime';
-export * from './ApplicationHandler';
-export * from './ApplicationInterceptor';
+export * from './handler';
+export * from './interceptor';
 export * from './guard';
 export * from './execptions';
 

@@ -16,7 +16,7 @@ import { ApplicationEvent } from './ApplicationEvent';
 import { ApplicationEventPublisher } from './ApplicationEventPublisher';
 import { ApplicationEventMulticaster } from './ApplicationEventMulticaster';
 import { TransportParameter, typeResolveInterceptor } from './handlers/resolver';
-import { InterceptorFn, InterceptorResolver } from './ApplicationInterceptor';
+import { InterceptorFn, InterceptorResolver } from './interceptor';
 import { createInvocationHandler } from './impl/invocation';
 
 
