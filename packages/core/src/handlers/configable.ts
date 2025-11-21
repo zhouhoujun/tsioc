@@ -3,7 +3,7 @@ import { GuardLike, GuardsService } from '../guard';
 import { InterceptorLike, InterceptorService } from '../interceptor';
 import { PipeService, PipeTransform } from '../pipes/pipe';
 import { FilterLike, FilterService } from '../filters/filter';
-import { Handler, HandlerLike, RunableContext } from '../handler';
+import { Handler, HandlerLike } from '../handler';
 
 
 
@@ -23,7 +23,7 @@ export abstract class AbstractConfigableHandler<
     TInput = any,
     TOutput = any,
     TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>,
-    TContext extends RunableContext = RunableContext> implements Handler<TInput, TOutput, TContext>, HandlerService {
+    TContext = any> implements Handler<TInput, TOutput, TContext>, HandlerService {
 
     abstract get context(): InvocationContext;
     abstract get ready(): Promise<void>;

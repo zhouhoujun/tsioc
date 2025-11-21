@@ -1,12 +1,12 @@
 import { hasProps, isNil, isString, isUndefined } from '@tsdi/ioc';
-import { BackendFn, HandlerFn, InterceptorFn } from '@tsdi/core';
+import { RequestHandler, RequestHandlerFn, RequestInterceptorFn } from '@tsdi/core';
 import { AbstractRequest, PatternFormatter, PatternRequest, TopicRequest, UrlRequest } from '@tsdi/common';
 import { ClientOutgoing, isBuffer, TEXT_DECODER, TopicClientOutgoing, TransportContext, UrlClientOutgoing } from '@tsdi/common/transport';
 import { map, of } from 'rxjs';
 import { ClientTransport } from '../transport';
 
 
-export const requestPacketIfySerializeInterceptor: InterceptorFn<AbstractRequest<any>> = (input: AbstractRequest<any>, next: HandlerFn<AbstractRequest<any>>, context: TransportContext) => {
+export const requestPacketIfySerializeInterceptor: RequestInterceptorFn<AbstractRequest<any>> = (input: AbstractRequest<any>, next: RequestHandlerFn<AbstractRequest<any>>, context: TransportContext) => {
     return next(input, context)
         .pipe(
             map(pkg => {
@@ -29,7 +29,7 @@ export const requestPacketIfySerializeInterceptor: InterceptorFn<AbstractRequest
         )
 }
 
-export const readabeRequestBodyerializeInterceptor: InterceptorFn<AbstractRequest<any>> = (input: AbstractRequest<any>, next: HandlerFn<AbstractRequest<any>>, context: TransportContext) => {
+export const readabeRequestBodyerializeInterceptor: RequestInterceptorFn<AbstractRequest<any>> = (input: AbstractRequest<any>, next: RequestHandlerFn<AbstractRequest<any>>, context: TransportContext) => {
     const transport = context.transport as ClientTransport;
     if (transport.streamAdapter.isReadable(input.body)) {
         const pkg = parseToOutgoing(input, context);
@@ -64,7 +64,7 @@ export const readabeRequestBodyerializeInterceptor: InterceptorFn<AbstractReques
 
 
 
-export const requestSerializeBackend: BackendFn<AbstractRequest<any>> = (input: AbstractRequest<any>, context: TransportContext) => {
+export const requestSerializeBackend: RequestHandlerFn<AbstractRequest<any>> = (input: AbstractRequest<any>, context: TransportContext) => {
     const pkg = parseToOutgoing(input, context);
     let body = input.body;
     if (isBuffer(body)) {
@@ -104,7 +104,7 @@ function parseToOutgoing(input: AbstractRequest<any>, context: TransportContext)
     return pkg;
 }
 
-export const requestBodySerializeBackend: BackendFn<AbstractRequest<any>> = (input: AbstractRequest<any>, context: TransportContext) => {
+export const requestBodySerializeBackend: RequestHandlerFn<AbstractRequest<any>> = (input: AbstractRequest<any>, context: TransportContext) => {
     if (context.transport.streamAdapter.isJson(input.body)) {
         return of(JSON.stringify(input.body, null, 2));
     }

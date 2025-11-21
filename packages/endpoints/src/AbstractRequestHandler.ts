@@ -12,6 +12,7 @@ import { RequestHandler } from './RequestHandler';
 @Abstract()
 export abstract class AbstractRequestHandler<TInput extends RequestContext = RequestContext, TOptions extends RequestHandlerOptions<TInput> = RequestHandlerOptions<TInput>>
     extends AbstractConfigableHandler<TInput, any, TOptions> implements RequestHandler<TInput> {
+
     /**
      * is this equals to target or not
      * @param target 

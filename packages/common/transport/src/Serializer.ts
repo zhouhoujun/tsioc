@@ -1,5 +1,5 @@
 import { Abstract, Injectable, Injector, InvocationContext, tokenId } from '@tsdi/ioc';
-import { ConfigableHandlerOptions, createHandler, ExceptionHandlerFilter, FilterLike, Handler, InterceptorLike } from '@tsdi/core';
+import { ConfigableHandlerOptions, createHandler, ExceptionHandlerFilter, FilterLike, InterceptorLike, RequestHandler } from '@tsdi/core';
 import { Observable, of } from 'rxjs';
 import { TransportContext } from './context';
 
@@ -23,7 +23,7 @@ export abstract class SerializerFactory {
 
 export class DefaultSerializer<TIn=any, TOut= any> implements Serializer<TIn, TOut> {
     constructor(
-        private handler: Handler<TIn, TOut>
+        private handler: RequestHandler<TIn, TOut>
     ) { }
 
     serialize(input: TIn, context: TransportContext): Observable<TOut> {

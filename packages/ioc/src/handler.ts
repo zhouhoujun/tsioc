@@ -1,4 +1,4 @@
-import { catchError, finalize, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
+import { catchError, finalize, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { isDefined, isFunction, isPromise } from './utils/chk';
 import { Token } from './tokens';
 
@@ -170,6 +170,18 @@ export interface NextOpter<TOutput, TContext = any> {
 
 export type HandleResult<TOutput> = TOutput | Promise<TOutput> | Observable<TOutput>;
 
+
+/**
+ * parse handle result to `Observable`
+ */
+export function toObservable<T>(res: HandleResult<T>): Observable<T> {
+    if (isObservable(res)) {
+        return res as Observable<T>;
+    }
+    return isPromise(res) ? from(res) : of(res);
+}
+
+
 export type TailNext<TOutput, TContext = any> = NextOpter<TOutput, TContext> | ((res: TOutput, context?: TContext) => HandleResult<TOutput>);
 
 export function invokeTail<T, TContext = any>(invoke: (res?: any, context?: TContext) => HandleResult<T>, nextOpter?: TailNext<T, TContext>, initial?: any, context?: TContext): HandleResult<T> {
@@ -326,7 +338,7 @@ export class InterceptingHandler<TInput = any, TOutput = any, TContext = any> im
         if (!this.chain) {
             this.chain = this.compose();
         }
-        return tail? invokeTail(()=> this.chain!(input, this.backend, context), tail) : this.chain(input, this.backend, context);
+        return tail ? invokeTail(() => this.chain!(input, this.backend, context), tail) : this.chain(input, this.backend, context);
     }
 
     protected reset() {

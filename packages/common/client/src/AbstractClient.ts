@@ -286,7 +286,7 @@ export abstract class AbstractClient<
         // subscription (this also makes retries re-run the handler, including interceptors).
         const events$: Observable<ResponseEvent<any>> =
             of(req).pipe(
-                concatMap((req: TRequest) => this.handler.handle(req)),
+                concatMap((req: TRequest) => this.handler.handle(req, req.context)),
                 finalize(() => req.context.onDestroy())
             );
 

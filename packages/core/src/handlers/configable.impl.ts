@@ -7,7 +7,7 @@ import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
 import { INTERCEPTORS_TOKEN, Interceptor, InterceptorFn, InterceptorLike, InterceptorResolver } from '../interceptor';
 import { PipeTransform } from '../pipes/pipe';
 import { FILTERS_TOKEN, Filter, FilterLike, FilterResolver, composeFilters } from '../filters/filter';
-import { Handler, HandlerFn, HandlerLike, RunableContext } from '../handler';
+import { Handler, HandlerFn, HandlerLike } from '../handler';
 import { AbstractConfigableHandler, ConfigableHandlerOptions, HandlerService } from './configable';
 
 
@@ -20,7 +20,7 @@ export class ConfigableHandler<
     TInput = any,
     TOutput = any,
     TOptions extends ConfigableHandlerOptions<TInput> = ConfigableHandlerOptions<TInput>,
-    TContext extends RunableContext = RunableContext> implements AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
+    TContext= any> implements AbstractConfigableHandler<TInput, TOutput, TOptions, TContext> {
 
     private chain?: InterceptorFn<TInput, TOutput, TContext> | null;
     private chains: Map<AbstractType | string, InterceptorFn<TInput, TOutput, TContext> | null>;
@@ -308,7 +308,6 @@ export class ConfigableHandler<
         this.options = null!;
     }
 }
-
 
 
 
