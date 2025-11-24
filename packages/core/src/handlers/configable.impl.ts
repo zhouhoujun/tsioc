@@ -1,6 +1,6 @@
 import {
     InjectFlags, Injector, ProvdierOf, Type, promiseOf, Exception, toProvider, AbstractType, getType, Token, isType,
-    InvocationContext, createContext, ArgumentException, isToken, isArray, isFunction, composeInterceptors, chainFactory,
+    InvocationContext, createInvocationContext, ArgumentException, isToken, isArray, isFunction, composeInterceptors, chainFactory,
     some, Operator, invokeTails, TailNext, toHandlerFn, HandleResult, hasProps
 } from '@tsdi/ioc';
 import { CanHandle, GuardLike, GUARDS_TOKEN } from '../guard';
@@ -348,7 +348,7 @@ export function createHandler<TInput, TOutput>(
         }
     }
     options = normalizeConfigableHandlerOptions(options);
-    return new Type(createContext(context, options, options.handlerType), options)
+    return new Type(createInvocationContext(context, options, options.handlerType), options)
 }
 
 export function normalizeConfigableHandlerOptions<T extends ConfigableHandlerOptions>(options: T): T {

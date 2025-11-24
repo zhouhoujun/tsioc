@@ -8,7 +8,7 @@ import { ArgumentException, Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef, ModuleDef } from '../metadata/class';
 import { Provider, ModuleType, StaticProvider, DynamicProvider, MutilProvider, Provide, ProviderExts, isValueProvider, isFactoryProvider, isExistingProvider, isTypeProvider, UseAsStatic, ClassProvider, ModuleWithProviders } from '../providers';
-import { createContext, hasContextOptions, INVOCATION_CONTEXT_IMPL, InvocationContext, InvokeOptions } from '../context';
+import { createInvocationContext, hasContextOptions, INVOCATION_CONTEXT_IMPL, InvocationContext, InvokeOptions } from '../context';
 import { nonEnumerable } from '../metadata/decor';
 import { getClassRef, getDef } from '../metadata/refl';
 import { NullInjectorException, THROW_FLAGE, tryResolveToken, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, LAZY } from './common';
@@ -446,14 +446,14 @@ export namespace Operator {
                 context = arg1;
                 isCtx = true;
             } else if (isArray(arg1)) {
-                context = arg1.length ? createContext(injector, { isResolve, providers: arg1 }) : undefined;
+                context = arg1.length ? createInvocationContext(injector, { isResolve, providers: arg1 }) : undefined;
             } else if (arg1.provide) {
-                context = createContext(injector, { isResolve, providers: [arg1] });
+                context = createInvocationContext(injector, { isResolve, providers: [arg1] });
             } else if (hasContextOptions(arg1)) {
-                context = createContext(injector, { isResolve, ...arg1 });
+                context = createInvocationContext(injector, { isResolve, ...arg1 });
             }
         } else {
-            context = createContext(injector, { isResolve, providers: args });
+            context = createInvocationContext(injector, { isResolve, providers: args });
         }
 
         const result = (context && !isCtx) ? context.resolve(token, InjectFlags.Resolve) : injector.get(token, null, InjectFlags.Resolve, context);
@@ -686,7 +686,7 @@ export namespace Operator {
 
         if (!context) {
             option = { ...option, providers };
-            context = createContext(injector, option);
+            context = createInvocationContext(injector, option);
         }
         if (isTypeObject(target)) {
             targetClass = getType(target);

@@ -1,5 +1,5 @@
 import { AbstractType, TypeOf } from '../types';
-import { createContext, hasContextOptions, INVOCATION_CONTEXT_IMPL, InvocationContext, InvocationOptions, InvokeOptions, TokenValue } from '../context';
+import { createInvocationContext, hasContextOptions, INVOCATION_CONTEXT_IMPL, InvocationContext, InvocationOptions, InvokeOptions } from '../context';
 import { Invocation, InvocationFactory } from '../invocation';
 import { getType, isArray, isFunction, isPromise, isString, isSymbol } from '../utils/chk';
 import { DestroyCallback, OnDestroy } from '../destroy';
@@ -183,7 +183,7 @@ export abstract class AbstractInvocation<T = any,
     }
 
     protected createContext(parent: InvocationContext, options?: InvokeOptions): TC {
-        return createContext(parent, options) as TC;
+        return createInvocationContext(parent, options) as TC;
     }
 
     getMethodContext(propertyKey: string | symbol): TC {
@@ -345,7 +345,7 @@ export abstract class AbstractInvocationFactory<TOpts extends InvocationOptions 
     protected abstract createInstance<T>(typeRef: ClassRef<T>, context: InvocationContext, options?: TOpts): Invocation<T>;
 
     protected createContext<T>(typeRef: ClassRef<T>, injector: Injector, options: TOpts): InvocationContext {
-        return createContext(injector, options, typeRef.type);
+        return createInvocationContext(injector, options, typeRef.type);
     }
     protected mergeProviders<T>(typeRef: ClassRef<T>, options?: TOpts): Provider[] {
         const providers: Provider[] = [];

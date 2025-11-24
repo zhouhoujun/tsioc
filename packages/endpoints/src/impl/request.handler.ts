@@ -1,4 +1,4 @@
-import { Exception, Injector, InvocationContext, createContext, getType } from '@tsdi/ioc';
+import { Exception, Injector, InvocationContext, createInvocationContext, getType } from '@tsdi/ioc';
 import { ConfigableHandler, InterceptorFn, normalizeConfigableHandlerOptions } from '@tsdi/core';
 import { ForbiddenException } from '@tsdi/common/transport';
 import { RequestContext } from '../RequestContext';
@@ -37,6 +37,6 @@ export class DefaultRequestHandler<TInput extends RequestContext = RequestContex
 export function createRequestHandler<TInput extends RequestContext>(context: Injector | InvocationContext, options: RequestHandlerOptions<TInput>): RequestHandler<TInput> {
     options = normalizeConfigableHandlerOptions(options);
     const Type = options.classType ?? DefaultRequestHandler;
-    return new Type(createContext(context, options, options.handlerType), options);
+    return new Type(createInvocationContext(context, options, options.handlerType), options);
 }
 

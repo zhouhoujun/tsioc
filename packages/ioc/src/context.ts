@@ -159,7 +159,7 @@ export abstract class InvocationContext<TParent extends Injector = Injector> imp
  * @param options 
  * @returns 
  */
-export function createContext(parent: Injector | InvocationContext, options?: TargetInvokeArguments, scope?: AbstractType | 'static'): InvocationContext {
+export function createInvocationContext(parent: Injector | InvocationContext, options?: TargetInvokeArguments, scope?: AbstractType | 'static'): InvocationContext {
     return INVOCATION_CONTEXT_IMPL.create(parent, options, scope)
 }
 
