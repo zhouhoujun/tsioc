@@ -11,12 +11,12 @@ import {
     DecorContext, DecoratorOption
 } from './class';
 import { InvokeOptions } from '../context';
-import { Context, HandlerFn } from '../handler';
+import { Context, HandleResult, HandlerFn } from '../handler';
 import { RuntimeHandler } from '../lifescope/handler';
 
+export type DecorHandlerFn = (input: DecorContext, context?: any) => HandleResult<any>;
 
-
-const decorParamInject = (ctx: DecorContext, next: HandlerFn, context: Context) => {
+const decorParamInject = (ctx: DecorContext, next: DecorHandlerFn) => {
     if (ctx.define.actionType && ctx.define.actionType & ActionType.inject) {
         const typeRef = ctx.classRef;
         const propertyKey = ctx.define.propertyKey;
@@ -47,11 +47,11 @@ const decorParamInject = (ctx: DecorContext, next: HandlerFn, context: Context) 
             params.splice(idx, 1, dmeta)
         }
     }
-    return next(ctx, context)
+    return next(ctx)
 }
 
 
-const decorInitProp = (ctx: DecorContext, next: HandlerFn, context: Context) => {
+const decorInitProp = (ctx: DecorContext, next: DecorHandlerFn) => {
     if (!(ctx.define.metadata as PropertyMetadata).type) {
         let type = Reflect.getOwnMetadata('design:type', ctx.target, ctx.define.propertyKey);
         if (!type) {
@@ -60,28 +60,28 @@ const decorInitProp = (ctx: DecorContext, next: HandlerFn, context: Context) => 
         }
         (ctx.define.metadata as PropertyMetadata).type = type;
     }
-    return next(ctx, context)
+    return next(ctx)
 }
 
 
 
-const decorPropInject = (ctx: DecorContext, next: HandlerFn, context: Context) => {
+const decorPropInject = (ctx: DecorContext, next: DecorHandlerFn) => {
     const define = ctx.define as DecorDefine<PropertyMetadata>;
     if (define.actionType && define.actionType & ActionType.inject) {
         const ann = ctx.classRef.getAnnotation();
         let metas = ann.propMetadatas.get(define.propertyKey);
-        if(!metas) {
+        if (!metas) {
             metas = [define.metadata];
             ann.propMetadatas.set(define.propertyKey, metas);
         } else {
             metas.unshift(define.metadata);
         }
     }
-    return next(ctx, context)
+    return next(ctx)
 }
 
 
-const decorCtorDesignParams = (ctx: DecorContext, next: HandlerFn, context: Context) => {
+const decorCtorDesignParams = (ctx: DecorContext, next: DecorHandlerFn) => {
     if (!ctx.classRef.hasOwnParameters(ctorName)) {
         const paramTypes: any[] = Reflect.getMetadata('design:paramtypes', ctx.classRef.type);
         if (paramTypes) {
@@ -98,11 +98,11 @@ const decorCtorDesignParams = (ctx: DecorContext, next: HandlerFn, context: Cont
             meta.params = params;
         }
     }
-    return next(ctx, context)
+    return next(ctx)
 }
 
 
-const decorAnnoAction = (ctx: DecorContext, next: HandlerFn, context: Context) => {
+const decorAnnoAction = (ctx: DecorContext, next: DecorHandlerFn) => {
     if (ctx.define.actionType && ctx.define.actionType & ActionType.annoation) {
         const def = ctx.classRef;
         const meta = ctx.define.metadata as AnnotationMetadata;
@@ -128,11 +128,11 @@ const decorAnnoAction = (ctx: DecorContext, next: HandlerFn, context: Context) =
             ann.providedIn = meta.providedIn
         }
     }
-    return next(ctx, context)
+    return next(ctx)
 };
 
 
-const decorRunnable = (ctx: DecorContext, next: HandlerFn, context: Context) => {
+const decorRunnable = (ctx: DecorContext, next: DecorHandlerFn) => {
     if (ctx.define.actionType && ctx.define.actionType & ActionType.runnable) {
         const metadata = ctx.define.metadata as RunnableMetadata;
         (metadata as any).decorType = ctx.define.decorType;
@@ -141,31 +141,31 @@ const decorRunnable = (ctx: DecorContext, next: HandlerFn, context: Context) => 
         ctx.classRef.runnables.push(ctx.define.metadata);
         ctx.classRef.runnables.sort((au1, au2) => au1.order! - au2.order!)
     }
-    return next(ctx, context)
+    return next(ctx)
 }
 
 
-const declarationFactory = (ctx: DecorContext, next: HandlerFn, context: Context) => {
+const declarationFactory = (ctx: DecorContext, next: DecorHandlerFn) => {
     if (ctx.define.actionType && ctx.define.actionType & ActionType.declaration) {
         const factory = (ctx.classRef.type as AnnotationType)[typeFac] ?? ctx.options.factory;
         if (factory) {
             ctx.classRef.setInvocationFactory(factory);
         }
     }
-    return next(ctx, context)
+    return next(ctx)
 }
 
 
-const decorProviders = (ctx: DecorContext, next: HandlerFn, context: Context) => {
+const decorProviders = (ctx: DecorContext, next: DecorHandlerFn) => {
     if (ctx.define.actionType && ctx.define.actionType & ActionType.providers) {
         if ((ctx.define.metadata as ProvidersMetadata).providers?.length) {
             ctx.classRef.providers.push((ctx.define.metadata as ProvidersMetadata).providers!)
         }
     }
-    return next(ctx, context);
+    return next(ctx);
 }
 
-const decorMethodDesignParams = (ctx: DecorContext, next: HandlerFn, context: Context) => {
+const decorMethodDesignParams = (ctx: DecorContext, next: DecorHandlerFn) => {
     const typeRef = ctx.classRef;
     const propertyKey = ctx.define.propertyKey;
     let meta = typeRef.getAnnotation().methodMetadatas.get(propertyKey);
@@ -186,43 +186,43 @@ const decorMethodDesignParams = (ctx: DecorContext, next: HandlerFn, context: Co
         ctx.define.metadata.type = meta.returnType;
     }
 
-    return next(ctx, context)
+    return next(ctx)
 }
 
 
-const decorMethodProviders = (ctx: DecorContext, next: HandlerFn, context: Context) => {
+const decorMethodProviders = (ctx: DecorContext, next: DecorHandlerFn) => {
     if (ctx.define.actionType && ctx.define.actionType & ActionType.providers) {
         const mpdrs = (ctx.define.metadata as MethodMetadata) as InvokeOptions;
         if (mpdrs) {
             ctx.classRef.setMethodOptions(ctx.define.propertyKey, mpdrs)
         }
     }
-    return next(ctx, context)
+    return next(ctx)
 }
 
-const decorExtendHandler = (ctx: DecorContext, context: Context) => {
+const decorExtendHandler = (ctx: DecorContext) => {
     if (ctx.define.decor.getHandler) {
-        ctx.define.decor.getHandler(ctx.define.decorType)?.(ctx, context);
+        ctx.define.decor.getHandler(ctx.define.decorType)?.(ctx, null);
     }
 }
 
-export const typeDecorLifeScope: RuntimeHandler<DecorContext, Context> = new RuntimeHandler(decorExtendHandler, [
+export const typeDecorLifeScope: RuntimeHandler<DecorContext> = new RuntimeHandler(decorExtendHandler, [
     decorCtorDesignParams,
     decorAnnoAction,
     decorProviders,
     declarationFactory,
     decorRunnable
 ]);
-export const methodDecorLifeScope: RuntimeHandler<DecorContext, Context> = new RuntimeHandler(decorExtendHandler, [
+export const methodDecorLifeScope: RuntimeHandler<DecorContext> = new RuntimeHandler(decorExtendHandler, [
     decorMethodDesignParams,
     decorMethodProviders,
     decorRunnable
 ]);
-export const propDecorLifeScope: RuntimeHandler<DecorContext, Context> = new RuntimeHandler(decorExtendHandler, [
+export const propDecorLifeScope: RuntimeHandler<DecorContext> = new RuntimeHandler(decorExtendHandler, [
     decorInitProp,
     decorPropInject
 ]);
-export const paramDecorLifeScope: RuntimeHandler<DecorContext, Context> = new RuntimeHandler(decorExtendHandler, [
+export const paramDecorLifeScope: RuntimeHandler<DecorContext> = new RuntimeHandler(decorExtendHandler, [
     decorParamInject
 ]);
 
@@ -239,10 +239,8 @@ function dispatch(lifescope: RuntimeHandler<DecorContext>, target: any, type: Ab
         classRef
     } as DecorContext;
     options.init && options.init(input);
-    const ctx = new Context();
-    lifescope.handle(input, ctx, () => {
+    lifescope.handle(input, null, () => {
         options.afterInit && options.afterInit(input);
-        ctx.onDestroy();
         cleanObj(input)
     });
 }
@@ -301,7 +299,7 @@ const CLASS_REF = Symbol('CLASS_REF');
 export function getClassRef<T = any>(type: AbstractType<T>): ClassRef<T> {
     if (!type || isPrimitive(type)) return null!;
     let tyRef = Reflect.getMetadata(CLASS_REF, type) as ClassRef;
-  
+
     if (tyRef?.type !== type) {
         let prRef = tyRef as ClassRef;
         if (!prRef) {
