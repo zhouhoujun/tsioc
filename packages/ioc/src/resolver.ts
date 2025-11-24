@@ -124,7 +124,7 @@ export class ResolveContext extends Context {
         readonly failed?: (target: AbstractType, propertyKey: string) => void) {
         super();
         if(isDefined(payload)) this.setPayload(payload);
-        this.setInjector(injector);
+        this.set(Injector, injector);
         this.set(Runtime, injector.getRuntime());
 
     }
@@ -148,10 +148,7 @@ export class ResolveContext extends Context {
         return this.get(Injector);
     }
 
-    setInjector(value: Injector) {
-        this.set(Injector, value);
-        return this;
-    }
+
 }
 
 export function createResolveContext(injector: Injector, payload?: any, failed?: (target: AbstractType, propertyKey: string) => void) {

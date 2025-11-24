@@ -267,6 +267,11 @@ export interface InvocationOptions<T = any> extends InvokeOptions {
     * the propertyKey method to invoke of this invocation.
     */
     propertyKey?: string | symbol;
+
+    /**
+     * run when bootstrap or not.
+     */
+    bootstrap?: boolean;
 }
 
 

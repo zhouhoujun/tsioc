@@ -21,6 +21,10 @@ export type AsyncLike<T> = T | Promise<T> | Observable<T>;
  */
 export abstract class Invocation<T = any, TRes = any, TC extends InvocationContext = InvocationContext> {
     /**
+     * run when bootstrap or not
+     */
+    abstract get bootstrap(): boolean;
+    /**
      * the invoke type.
      */
     abstract get type(): AbstractType<T>;

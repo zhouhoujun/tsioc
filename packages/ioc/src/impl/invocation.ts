@@ -41,6 +41,9 @@ export abstract class AbstractInvocation<T = any,
         context.onDestroy(this);
     }
 
+    get bootstrap() {
+        return this.options?.bootstrap != false;
+    }
 
     get type(): AbstractType<T> {
         return this._classRef?.type;

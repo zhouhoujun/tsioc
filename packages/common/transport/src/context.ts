@@ -1,22 +1,23 @@
-import { Context, ContextToken, OnDestroy, Token } from '@tsdi/ioc';
+import { ContextToken, OnDestroy, Token } from '@tsdi/ioc';
+import { RunableContext } from '@tsdi/core';
 import { Transport } from './Transport';
 
 
 /**
  * transprot context.
  */
-export class TransportContext extends Context implements OnDestroy {
+export class TransportContext extends RunableContext implements OnDestroy {
 
     public incoming: any;
     constructor(
         readonly transport: Transport,
-        entries?: readonly (readonly [Token, any])[] | null
+        entries?: readonly [Token, any][]
     ) {
-        super(entries)
+        super(transport.injector, entries)
     }
 
 
-    static create(transport: Transport, entries?: readonly (readonly [Token, any])[] | null) {
+    static create(transport: Transport, entries?: readonly [Token, any][]) {
         return new TransportContext(transport, entries);
     }
 }

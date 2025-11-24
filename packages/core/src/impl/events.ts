@@ -1,10 +1,7 @@
 import {
     ArgumentException, composeHandlers, getType, InjectFlags, HandlerLike,
-    Injector, ProvdierOf, StaticProvider, tokenId, AbstractType, ContextToken,
-    HandleResult, promiseOf, isArray, Type,
-    isFunction,
-    toProvider,
-    toMutilProvdierOf
+    Injector, ProvdierOf, tokenId, AbstractType, ContextToken,
+    HandleResult, promiseOf, isArray, toMutilProvdierOf
 } from '@tsdi/ioc';
 import { CanHandle } from '../guard';
 import { Interceptor } from '../interceptor';
@@ -13,7 +10,7 @@ import { Filter } from '../filters/filter';
 import { ExceptionHandlerFilter } from '../filters/execption.filter';
 import { ConfigableHandler, createHandler } from '../handlers/configable.impl';
 import { ApplicationEvent } from '../ApplicationEvent';
-import { ApplicationEventMulticaster, EventInterceptor, EventInterceptorLike } from '../ApplicationEventMulticaster';
+import { ApplicationEventMulticaster, EventInterceptorLike } from '../ApplicationEventMulticaster';
 import { PayloadApplicationEvent } from '../events';
 import { HandlerOptions, isHandlerOptions } from '../handlers';
 

@@ -10,11 +10,13 @@ import { OutgoingMessage } from '../Outgoing';
 import { TransportContext } from '../context';
 import { AbstractTransport } from '../transports';
 import { Packet } from '../socket';
+import { TransportInterceptor } from '../interceptor';
+import { TransportHandler } from '../handler';
 
 
 
 @Injectable()
-export class PacketDeserializeInterceptor implements Interceptor<string | Buffer | IReadable, IncomingMessage, TransportContext> {
+export class PacketDeserializeInterceptor implements TransportInterceptor<string | Buffer | IReadable, IncomingMessage> {
 
     protected channels: Map<string, Packet<IDuplex>>;
 
@@ -22,7 +24,7 @@ export class PacketDeserializeInterceptor implements Interceptor<string | Buffer
         this.channels = new Map();
     }
 
-    intercept(input: string | Buffer | IReadable, next: Handler<any, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
+    intercept(input: string | Buffer | IReadable, next: TransportHandler<string | Buffer | IReadable, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
         if (!input || context.transport.streamAdapter.isReadable(input)) return next.handle(input, context);
 
         return new Observable((subscriber: Subscriber<Packet<IDuplex>>) => {
@@ -47,7 +49,7 @@ export class PacketDeserializeInterceptor implements Interceptor<string | Buffer
         );
     }
 
-    protected handleData(channel: string, cache: Packet<IDuplex>, data: Buffer, subscriber: Subscriber<Packet<IDuplex>>, context: TransportContext) {
+    protected handleData(channel: string, cache: Packet<IDuplex>, data: Buffer, subscriber: Subscriber<Packet<IDuplex>>, context: TransportContext): Observable<IncomingMessage> {
 
         const transport = context.transport as AbstractTransport;
         const options = transport.options;
