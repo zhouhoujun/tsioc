@@ -9,7 +9,6 @@ import {
 import { ApplicationRunners } from '../ApplicationRunners';
 import { ApplicationEventMulticaster } from '../ApplicationEventMulticaster';
 import { ApplicationDisposeEvent, ApplicationShutdownEvent, ApplicationStartedEvent, ApplicationStartEvent, ApplicationStartupEvent } from '../events';
-import { PipeTransform } from '../pipes/pipe';
 import { CanHandle } from '../guard';
 import { Handler, createRunableContext, RunableContext } from '../handler';
 import { Interceptor } from '../interceptor';

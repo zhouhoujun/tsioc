@@ -1,5 +1,5 @@
 import { Abstract, Context } from '@tsdi/ioc';
-import { RequestHandler } from '@tsdi/core';
+import { RequestHandler } from '@tsdi/common';
 import { Observable } from 'rxjs';
 import { HttpRequest } from './request';
 import { HttpEvent } from './response';

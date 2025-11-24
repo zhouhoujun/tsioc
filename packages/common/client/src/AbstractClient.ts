@@ -1,4 +1,4 @@
-import { Abstract, ArgumentException, Exception, Context, isNil, isString } from '@tsdi/ioc';
+import { Abstract, ArgumentException, Exception, Context, isNil, isString, InvocationContext } from '@tsdi/ioc';
 import { Shutdown } from '@tsdi/core';
 import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, PatternFormatter, defaultFormatter } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
@@ -18,6 +18,7 @@ export abstract class AbstractClient<
     TOptions extends ClientConfig = ClientConfig
 > {
 
+    abstract get context(): InvocationContext;
     /**
      * client handler
      */
@@ -27,7 +28,7 @@ export abstract class AbstractClient<
     get formatter(): PatternFormatter {
         if (!this._formatter) {
             const formatter = this.getOptions().formatter;
-            this._formatter = formatter ? this.handler.context.get(formatter, defaultFormatter) : defaultFormatter;
+            this._formatter = formatter ? this.context.get(formatter, defaultFormatter) : defaultFormatter;
         }
         return this._formatter;
     }
@@ -263,7 +264,7 @@ export abstract class AbstractClient<
         if (isNil(req)) {
             return throwError(() => new ArgumentException('Invalid message'))
         }
-        return defer(() => this.handler.ready)
+        return defer(() => this.context.ready)
             .pipe(
                 mergeMap(() => this.connect()),
                 catchError((err, caught) => {
@@ -403,7 +404,7 @@ export abstract class AbstractClient<
 
     @Shutdown()
     close(): Promise<void> {
-        this.handler.onDestroy();
+        this.context.onDestroy();
         return this.onShutdown();
     }
 

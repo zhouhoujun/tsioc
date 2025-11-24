@@ -1,4 +1,4 @@
-import { Abstract, isArray, isDefined, isNil, isString, lang, ResolveInterceptorLike } from '@tsdi/ioc';
+import { Abstract, DefaultInvocationContext, InvocationContext, isArray, isDefined, isNil, isString, lang, ResolveContext, ResolveInterceptorLike, TargetInvokeArguments } from '@tsdi/ioc';
 import { MODEL_RESOLVERS, ParameterScope, TransportParameter, createPayloadResolveInterceptors } from '@tsdi/core';
 import { HeadersLike, IHeaders, HeaderMappings, HeaderAdapter, HeaderAccess } from '@tsdi/common';
 import {
@@ -22,19 +22,28 @@ export abstract class RequestContext<
     TResponse extends Outgoing<any> = Outgoing<any>,
     TSocket = any,
     TOptions extends ServiceConfig = ServiceConfig,
-    TStatus = any> extends HandleContext {
-    
+    TStatus = any> extends DefaultInvocationContext {
+
     request!: TRequest;
 
-
-    protected override playloadDefaultResolvers(): ResolveInterceptorLike[] {
-        const res = [...primitiveResolvers];
+    protected override initOptions(options: TargetInvokeArguments): void {
+        const res = [...options.resolvers ?? [], ...primitiveResolvers];
         const modelResolvers = this.get(MODEL_RESOLVERS, null);
         if (modelResolvers?.length) {
             res.unshift(...modelResolvers);
         }
-        return res as ResolveInterceptorLike[];
+        options.resolvers = res;
+
     }
+
+    // protected override playloadDefaultResolvers(): ResolveInterceptorLike[] {
+    //     const res = [...primitiveResolvers];
+    //     const modelResolvers = this.get(MODEL_RESOLVERS, null);
+    //     if (modelResolvers?.length) {
+    //         res.unshift(...modelResolvers);
+    //     }
+    //     return res as ResolveInterceptorLike[];
+    // }
 
     abstract get serverOptions(): TOptions;
 
@@ -781,19 +790,19 @@ export abstract class RequestContext<
 }
 
 
-export function getScopeValue(req: HandleRequest|null|undefined, scope: ParameterScope) {
-    if(!req) {
-        return null;
-    }
-    switch (scope) {
-        case 'body':
-            return req['body'] ?? req['payload'];
-        case 'payload':
-            return req['payload'] ?? req['body'];
-        default:
-            return req[scope]
-    }
-}
+// export function getScopeValue(req: RequestContext | null | undefined, scope: ParameterScope) {
+//     if (!req) {
+//         return null;
+//     }
+//     switch (scope) {
+//         case 'body':
+//             return req['body'] ?? req['payload'];
+//         case 'payload':
+//             return req['payload'] ?? req['body'];
+//         default:
+//             return req[scope]
+//     }
+// }
 
 const primitiveResolvers = createPayloadResolveInterceptors(
     (input, scope, field) => {
@@ -810,7 +819,7 @@ const primitiveResolvers = createPayloadResolveInterceptors(
         return input;
     },
     // (param, req) => req && isDefined(getScopeValue(req, param.scope ?? 'query'))
-    );
+);
 
 
 /**

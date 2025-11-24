@@ -48,6 +48,7 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
     ) {
         super(parent, scope);
         this._refs = [];
+        this.initOptions(this.options);
         this.isResolve = options.isResolve == true;
         if (options.values?.length) {
             for (let i = 0, len = options.values.length; i < len; i++) {
@@ -68,6 +69,10 @@ export class DefaultInvocationContext<TParent extends Injector = Injector> exten
         this.targetType = options.targetType;
         this.propertyKey = options.propertyKey;
         this.afterInit();
+    }
+
+    protected initOptions(options: TargetInvokeArguments) {
+        
     }
 
     override getParent(): TParent {

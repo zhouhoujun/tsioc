@@ -1,5 +1,6 @@
 import { Abstract, Injectable, Injector, InvocationContext, isString, tokenId } from '@tsdi/ioc';
-import { ConfigableHandlerOptions, createHandler, ExceptionHandlerFilter, FilterLike, Handler, InterceptorLike, InvalidJsonException, RequestHandler } from '@tsdi/core';
+import { ConfigableHandlerOptions, createHandler, ExceptionHandlerFilter, FilterLike, InterceptorLike, InvalidJsonException } from '@tsdi/core';
+import { RequestHandler } from '@tsdi/common';
 import { defer, Observable, of } from 'rxjs';
 import { TEXT_DECODER, TransportContext } from './context';
 import { isBuffer, toBuffer } from './StreamAdapter';
@@ -47,10 +48,12 @@ export class DefaultDeserializerFactory implements DeserializerFactory {
             backend: jsonDeserializeBackend,
             filtersToken: DESERIALIZER_FILTERS,
             interceptorsToken: DESERIALIZER_INTERCEPTORS,
+            filters:[
+                ExceptionHandlerFilter
+            ],
             enableTypeChain: true,
             ...options
         });
-        handler.useFilters(ExceptionHandlerFilter, 0);
         return new DefaultDeserializer(handler);
     }
 }

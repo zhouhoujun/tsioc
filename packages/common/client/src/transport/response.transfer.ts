@@ -1,6 +1,5 @@
 import { ContextToken, Injectable, isNil, isString, lang } from '@tsdi/ioc';
-import { RequestHandler, RequestInterceptorFn, HandlerFn, RequestHandlerFn } from '@tsdi/core';
-import { HEAD, ResponseEvent, ResponseJsonParseError, AbstractRequest, UrlRequest } from '@tsdi/common';
+import { HEAD, ResponseEvent, ResponseJsonParseError, AbstractRequest, UrlRequest,  RequestHandler, RequestInterceptorFn, RequestHandlerFn } from '@tsdi/common';
 import { MimeAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer, ClientIncoming, TransportContext, TransferOpts, AbstractTransferFactory, TEXT_DECODER } from '@tsdi/common/transport';
 import { defer, mergeMap, of, throwError } from 'rxjs';
 import { ClientTransport } from './transport';
@@ -9,7 +8,7 @@ import { ClientTransfer, ClientTransferFactory } from './transfer';
 
 
 
-export const errorResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>> = (input: ClientIncoming<any>, next: HandlerFn, context: TransportContext) => {
+export const errorResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, TransportContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext) => {
     if (!(input.ok || (context.transport.statusAdapter ? context.transport.statusAdapter.isOk(input.status ?? input.statusCode) : true)) || input.error) {
         const transport = context.transport as ClientTransport;
         input.ok = false;
@@ -32,7 +31,7 @@ export const errorResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>,
 }
 
 
-export const emptyResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>> = (input: ClientIncoming<any>, next: HandlerFn, context: TransportContext) => {
+export const emptyResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, TransportContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext) => {
     const len = context.transport.headerAdapter.getContentLength(input);
     const transport = context.transport as ClientTransport;
     if (input.ok !== false && !input.error && (!len || transport.statusAdapter?.isEmpty(input.status ?? input.statusCode))) {
@@ -43,7 +42,7 @@ export const emptyResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>,
 }
 
 
-export const redirectInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>> = (input: ClientIncoming<any>, next: HandlerFn, context: TransportContext) => {
+export const redirectInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, TransportContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext) => {
     const transport = context.transport as ClientTransport;
     // HTTP fetch step 5
     if (transport.redirector) {
@@ -55,8 +54,7 @@ export const redirectInterceptor: RequestInterceptorFn<ClientIncoming<any>, Resp
     return next(input, context);
 }
 
-
-export const compressResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, TransportContext> = (input: ClientIncoming<any>, next: RequestHandlerFn, context: TransportContext) => {
+export const compressResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, TransportContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext) => {
     return defer(async () => {
         const response = input;
         const transport = context.transport as ClientTransport;
