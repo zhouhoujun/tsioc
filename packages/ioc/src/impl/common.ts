@@ -31,12 +31,8 @@ function isRecord(target: any): target is InjectorRecord {
 export function resolveParameters(injector: Injector, params?: Parameter[], resolver?: Resolver, context?: ResolveContext) {
     if (!params || !params.length) return [];
 
-    if (context) {
-        context = context.setInjector(injector)
-    } else {
-        context = createResolveContext(injector);
-    }
-    
+    context ??= createResolveContext(injector);
+
     if (!resolver) {
         resolver = getResolver(injector);
     }
@@ -55,10 +51,6 @@ export function resolveParameters(injector: Injector, params?: Parameter[], reso
  */
 export function resolveArgs(injector: Injector, deps?: (ParameterLike | InjectorRecord)[], resolver?: Resolver, context?: ResolveContext): any[] {
     if (!deps || !deps.length) return [];
-
-    if (context) {
-        context = context.setInjector(injector)
-    }
 
     const args: any[] = [];
     for (const arg of deps) {

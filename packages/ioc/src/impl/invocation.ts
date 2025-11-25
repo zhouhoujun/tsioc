@@ -157,7 +157,10 @@ export abstract class AbstractInvocation<T = any,
         const isNetRCtx = !resolveCtx;
         if (isNetRCtx) {
             resolveCtx = createResolveContext(context, payload);
+        } else {
+            resolveCtx!.setInjector(context);
         }
+
         if (!args) {
             args = this.classRef.resolveArguments(name, context, resolveCtx);
         }

@@ -532,7 +532,7 @@ export class ContextAdapter extends Context {
     constructor(context?: Context) {
         super();
         this.context = context ?? new DefaultContext();
-        // this.set(getType(this), this);
+        this.set(getType(this), this);
     }
 
     set<T>(token: Token<T> | ContextToken<T>, value: T): this {
@@ -558,7 +558,6 @@ export class ContextAdapter extends Context {
     }
 
     as<TContext extends ContextAdapter>(type: Type<TContext>): TContext {
-        if(getType(this) === type) return this as any;
         return this.context.as(type);
     }
 
