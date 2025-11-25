@@ -567,7 +567,7 @@ export class DefaultContext extends Context {
      */
     onDestroy(): void {
         this.clear();
-        this.map = null!;
+        // this.map = null!;
         // this._tokens = null!;
     }
 
