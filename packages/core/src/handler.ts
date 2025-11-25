@@ -1,9 +1,9 @@
-import { Context, ContextAdapter, Injector } from '@tsdi/ioc';
+import { Context, DefaultContext, Injector } from '@tsdi/ioc';
 
 export { Handler, HandlerLike, HandlerFn } from '@tsdi/ioc';
 
 
-export class RunableContext extends ContextAdapter {
+export class RunableContext extends DefaultContext {
     getInjector() {
         return this.get(Injector)
     }

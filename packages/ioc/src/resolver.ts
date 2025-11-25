@@ -1,4 +1,4 @@
-import { Context, ContextAdapter, ContextToken, Handler, HandlerFn, HandlerLike, Interceptor, InterceptorFn, InterceptorLike } from './handler';
+import { Context, DefaultContext, ContextToken, Handler, HandlerFn, HandlerLike, Interceptor, InterceptorFn, InterceptorLike } from './handler';
 import { Injector, InjectorRecord } from './injector';
 import { Runtime } from './runtime';
 import { InjectFlags, Token, tokenId } from './tokens';
@@ -121,7 +121,7 @@ const RESOLVER_FAILED = new ContextToken<(target: AbstractType, propertyKey: str
 const RESOLVER_INJECTOR = new ContextToken<Injector>(() => null!);
 
 
-export class ResolveContext extends ContextAdapter {
+export class ResolveContext extends DefaultContext {
 
     getPayload<T = any>(): T {
         return this.get(PAYLOAD) as T;

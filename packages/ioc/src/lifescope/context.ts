@@ -1,4 +1,4 @@
-import { Context, ContextAdapter, ContextToken } from '../handler';
+import { Context, DefaultContext, ContextToken } from '../handler';
 import { Injector } from '../injector';
 import { DecoratorFn } from '../metadata/class';
 import { Parameters, Parameter } from '../resolver';
@@ -22,7 +22,7 @@ const MUTIL = new ContextToken<boolean>(() => false);
 
 
 
-export class IocContext extends ContextAdapter {
+export class IocContext extends DefaultContext {
 
     get runtime(): Runtime {
         return this.get(Runtime);

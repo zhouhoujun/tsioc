@@ -1,5 +1,5 @@
 import { catchError, finalize, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
-import { getType, isDefined, isFunction, isPromise } from './utils/chk';
+import { getType, isArray, isDefined, isFunction, isPromise } from './utils/chk';
 import { Token } from './tokens';
 import { Type } from './types';
 
@@ -417,12 +417,17 @@ export abstract class Context {
     abstract has<T>(token: Token<T> | ContextToken<T>): boolean;
 
     /**
+     * clear all value
+     */
+    abstract clear(): void;
+
+    /**
      * Lifecycle hook called when the context is destroyed.
      */
     abstract onDestroy(): void;
 
 
-    abstract as<TContext extends ContextAdapter>(type: Type<TContext>): TContext;
+    abstract as<TContext extends DefaultContext>(type: Type<TContext>): TContext;
 }
 
 
@@ -431,12 +436,23 @@ export abstract class Context {
  */
 export class DefaultContext extends Context {
 
-    protected map: Map<Token | ContextToken, any>;
+    private _type: Type;
+    // private _tokens?: Set<Token | ContextToken>;
+    protected map: Map<Token | ContextToken, any> | Context;
+    private _canClear: boolean;
 
-
-    constructor(entries?: readonly (readonly [Token | ContextToken, any])[] | null) {
+    constructor(contextOrEntries?: Context | readonly [Token | ContextToken, any][]) {
         super();
-        this.map = new Map(entries);
+        if (!contextOrEntries || isArray(contextOrEntries)) {
+            this.map = new Map(contextOrEntries);
+            this._canClear = true;
+        } else {
+            this.map = contextOrEntries as Context;
+            this._canClear = false;
+            // this._tokens = new Set();
+        }
+        this._type = getType(this);
+        this.set(this._type, this);
     }
 
     /**
@@ -449,6 +465,7 @@ export class DefaultContext extends Context {
      */
     set<T>(token: Token<T> | ContextToken<T>, value: T) {
         this.map.set(token, value);
+        // this._tokens?.add(token);
         return this;
     }
     /**
@@ -507,7 +524,10 @@ export class DefaultContext extends Context {
      * @param type 
      * @returns 
      */
-    as<TContext extends ContextAdapter>(type: Type<TContext>): TContext {
+    as<TContext extends DefaultContext>(type: Type<TContext>): TContext {
+        if (type == this._type) {
+            return this as any;
+        }
         let context = this.get(type);
         if (!context) {
             context = new type(this);
@@ -516,64 +536,29 @@ export class DefaultContext extends Context {
         return context;
     }
 
+    clear(): void {
+        if (this._canClear) {
+            this.map.delete(this._type);
+        } else {
+            this.map.clear();
+        }
+        // if (this._tokens) {
+        //     for (const token of this._tokens) {
+        //         this.map.delete(token);
+        //     }
+        //     this._tokens.clear();
+        // } else {
+        //     this.map.clear();
+        // }
+    }
+
     /**
      * Lifecycle hook called when the context is destroyed.
      */
     onDestroy(): void {
-        this.map.clear();
+        this.clear();
+        this.map = null!;
+        // this._tokens = null!;
     }
-
-}
-
-
-export abstract class ContextAdapter extends Context {
-
-    private context: Context;
-    private canDestroy = false;
-    private _type: Type;
-    constructor(context?: Context) {
-        super();
-        if (!context) {
-            context = new DefaultContext();
-            this.canDestroy = true;
-        }
-        this._type = getType(this);
-        this.context = context;
-        this.context.set(this._type, this);
-    }
-
-    set<T>(token: Token<T> | ContextToken<T>, value: T): this {
-        this.context.set(token, value);
-        return this;
-    }
-    delete<T>(token: Token<T> | ContextToken<T>): this {
-        this.context.delete(token);
-        return this;
-    }
-
-    onDestroy(): void {
-        if (this.canDestroy) {
-            this.context.onDestroy();
-        } else {
-            this.delete(this._type);
-        }
-        this.context = null!;
-    }
-
-    get<T>(token: Token<T> | ContextToken<T>): T {
-        return this.context.get(token);
-    }
-
-    has<T>(token: Token<T> | ContextToken<T>): boolean {
-        return this.context.has(token);
-    }
-
-    as<TContext extends ContextAdapter>(type: Type<TContext>): TContext {
-        if(type == this._type) {
-            return this as any;
-        }
-        return this.context.as(type);
-    }
-
 
 }

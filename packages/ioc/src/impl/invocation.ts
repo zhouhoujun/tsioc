@@ -37,7 +37,7 @@ export abstract class AbstractInvocation<T = any,
         this._isResolve = hasContextOptions(options);
         this._mthCtx = new Map();
         context.setValue(Invocation, this);
-        // context.setValue(getType(this), this);
+        context.setValue(getType(this), this);
         context.onDestroy(this);
     }
 
