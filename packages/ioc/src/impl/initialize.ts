@@ -9,7 +9,7 @@ import { Operator } from './injector';
 import { RuntimeContext } from '../lifescope/context';
 import { isDefined } from '../utils/chk';
 import { resolveArgs, resolveParameters } from './common';
-import { createResolveContext, getResolver } from '../resolver';
+import { getResolver, ResolveContext } from '../resolver';
 
 
 export const runtimeAutorunInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> = (input: ClassRef, next: HandlerFn, context: RuntimeContext) => {
@@ -49,7 +49,7 @@ function invokeRuntimeHandler(decors: DecoratorFn[], ctx: ClassRef, scope: Decor
     }
 }
 
-export function getRuntimeClassScope(runtime: Runtime): RuntimeHandler<ClassRef, any, RuntimeContext>  {
+export function getRuntimeClassScope(runtime: Runtime): RuntimeHandler<ClassRef, any, RuntimeContext> {
     let scope = runtime.get(RUNTIME_CLASS_SCOPE);
     if (!scope) {
         scope = new RuntimeHandler<ClassRef, any, RuntimeContext>((input, context) => {
@@ -103,7 +103,9 @@ export const propertyInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> =
         if (!instance) throw new Exception('autowride property need instance');
         let meta: PropertyMetadata, key: string, val;
 
-        const rctx = createResolveContext(injector);
+        const rctx = context.as(ResolveContext)
+            .setInjector(injector);
+
         const resolver = getResolver(injector);
         input.eachPropertyProviders((metas, propertyKey) => {
             meta = metas.find(m => m.type || m.provider)!;
@@ -144,9 +146,10 @@ export function getRuntimePropertyScope(runtime: Runtime): RuntimeHandler<ClassR
 export const ctorArgsInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> = (input: ClassRef, next: HandlerFn, context: RuntimeContext) => {
 
     if (!context.args) {
-        const resolver = getResolver(context.raiseInjector);
-        const args = context.params ? resolveArgs(context.raiseInjector, context.params, resolver)
-            : resolveParameters(context.raiseInjector, input.getParameters(ctorName), resolver);
+        const injector = context.raiseInjector;
+        const resolver = getResolver(injector);
+        const args = context.params ? resolveArgs(injector, context.params, resolver)
+            : resolveParameters(injector, input.getParameters(ctorName), resolver);
         context.args = args;
     }
 

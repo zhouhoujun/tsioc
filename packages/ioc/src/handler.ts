@@ -1,6 +1,7 @@
 import { catchError, finalize, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
-import { isDefined, isFunction, isPromise } from './utils/chk';
+import { getType, isDefined, isFunction, isPromise } from './utils/chk';
 import { Token } from './tokens';
+import { Type } from './types';
 
 /**
  * `Handler` is the fundamental building block of handle.
@@ -358,16 +359,83 @@ export class ContextToken<T = any> {
     constructor(readonly defaultValue: () => T) { }
 }
 
+export abstract class Context {
+
+    /**
+     * Store a value in the context. If a value is already present it will be overwritten.
+     *
+     * @param token The reference to an instance of `Token`.
+     * @param value The value to store.
+     *
+     * @returns A reference to itself for easy chaining.
+     */
+    abstract set<T>(token: Token<T> | ContextToken<T>, value: T): Context;
+
+    /**
+     * Retrieve the value associated with the given token.
+     *
+     * @param token The reference to an instance of `Token`.
+     *
+     * @returns The stored value or default if one is defined.
+     */
+    abstract get<T>(token: ContextToken<T>): T;
+
+    /**
+     * Retrieve the value associated with the given token.
+     *
+     * @param token The reference to an instance of `Token`.
+     *
+     * @returns The stored value or default if one is defined.
+     */
+    abstract get<T>(token: Token<T>): T;
+
+    /**
+     * Retrieve the value associated with the given token.
+     *
+     * @param token The reference to an instance of `Token`.
+     *
+     * @returns The stored value or default if one is defined.
+     */
+    abstract get<T>(token: Token<T> | ContextToken<T>): T;
+
+    /**
+     * Delete the value associated with the given token.
+     *
+     * @param token The reference to an instance of `Token`.
+     *
+     * @returns A reference to itself for easy chaining.
+     */
+    abstract delete<T>(token: Token<T> | ContextToken<T>): Context;
+
+    /**
+     * Checks for existence of a given token.
+     *
+     * @param token The reference to an instance of `Token`.
+     *
+     * @returns True if the token exists, false otherwise.
+     */
+    abstract has<T>(token: Token<T> | ContextToken<T>): boolean;
+
+    /**
+     * Lifecycle hook called when the context is destroyed.
+     */
+    abstract onDestroy(): void;
+
+
+    abstract as<TContext extends ContextAdapter>(type: Type<TContext>): TContext;
+}
+
 
 /**
  * custom context.
  */
-export class Context {
+export class DefaultContext extends Context {
 
     protected map: Map<Token | ContextToken, any>;
 
 
     constructor(entries?: readonly (readonly [Token | ContextToken, any])[] | null) {
+        super();
         this.map = new Map(entries);
     }
 
@@ -433,19 +501,66 @@ export class Context {
     has<T>(token: Token<T> | ContextToken<T>): boolean {
         return this.map.has(token);
     }
+
     /**
-     * @returns a list of tokens currently stored in the context.
+     * Cast the context to the given type.
+     * @param type 
+     * @returns 
      */
-    keys(): Iterator<Token | ContextToken> {
-        return this.map.keys();
+    as<TContext extends ContextAdapter>(type: Type<TContext>): TContext {
+        let context = this.get(type);
+        if (!context) {
+            context = new type(this);
+            this.set(type, context);
+        }
+        return context;
     }
 
-    getEntries() {
-        return this.map.entries();
-    }
-
+    /**
+     * Lifecycle hook called when the context is destroyed.
+     */
     onDestroy(): void {
         this.map.clear();
     }
+
+}
+
+
+export class ContextAdapter extends Context {
+
+    private context: Context;
+    constructor(context?: Context) {
+        super();
+        this.context = context ?? new DefaultContext();
+        // this.set(getType(this), this);
+    }
+
+    set<T>(token: Token<T> | ContextToken<T>, value: T): this {
+        this.context.set(token, value);
+        return this;
+    }
+    delete<T>(token: Token<T> | ContextToken<T>): this {
+        this.context.delete(token);
+        return this;
+    }
+
+    onDestroy(): void {
+        this.context.onDestroy();
+        this.context = null!;
+    }
+
+    get<T>(token: Token<T> | ContextToken<T>): T {
+        return this.context.get(token);
+    }
+
+    has<T>(token: Token<T> | ContextToken<T>): boolean {
+        return this.context.has(token);
+    }
+
+    as<TContext extends ContextAdapter>(type: Type<TContext>): TContext {
+        if(getType(this) === type) return this as any;
+        return this.context.as(type);
+    }
+
 
 }

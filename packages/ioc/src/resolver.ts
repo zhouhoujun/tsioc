@@ -1,4 +1,4 @@
-import { Context, ContextToken, Handler, HandlerFn, HandlerLike, Interceptor, InterceptorFn, InterceptorLike } from './handler';
+import { Context, ContextAdapter, ContextToken, Handler, HandlerFn, HandlerLike, Interceptor, InterceptorFn, InterceptorLike } from './handler';
 import { Injector, InjectorRecord } from './injector';
 import { Runtime } from './runtime';
 import { InjectFlags, Token, tokenId } from './tokens';
@@ -83,6 +83,9 @@ export type ResolveInterceptor<TInput extends Parameter = Parameter, TOuptut = a
 export type ResolveInterceptorFn<TInput extends Parameter = Parameter, TOuptut = any> = InterceptorFn<TInput, TOuptut, ResolveContext>;
 export type ResolveInterceptorLike<TInput extends Parameter = Parameter, TOuptut = any> = InterceptorLike<TInput, TOuptut, ResolveContext>;
 
+/**
+ * Parameter resolver
+ */
 export abstract class Resolver {
 
     /**
@@ -113,22 +116,12 @@ export function getResolver(injector: Injector) {
 }
 
 export const DEFAULTA_RESOLVER = tokenId<Resolver>('DEFAULTA_RESOLVER');
-// const TARGET = new ContextToken<AbstractType | null>(() => null);
 const PAYLOAD = new ContextToken<any>(() => null);
+const RESOLVER_FAILED = new ContextToken<(target: AbstractType, propertyKey: string) => void>(() => null!);
+const RESOLVER_INJECTOR = new ContextToken<Injector>(() => null!);
 
-export class ResolveContext extends Context {
 
-    constructor(
-        injector: Injector,
-        payload?: any,
-        readonly failed?: (target: AbstractType, propertyKey: string) => void) {
-        super();
-        if(isDefined(payload)) this.setPayload(payload);
-        this.set(Injector, injector);
-        this.set(Runtime, injector.getRuntime());
-
-    }
-
+export class ResolveContext extends ContextAdapter {
 
     getPayload<T = any>(): T {
         return this.get(PAYLOAD) as T;
@@ -145,17 +138,27 @@ export class ResolveContext extends Context {
 
 
     getInjector(): Injector {
-        return this.get(Injector);
+        return this.get(RESOLVER_INJECTOR);
     }
 
+    setInjector(injector: Injector): this {
+        return this.set(RESOLVER_INJECTOR, injector)
+    }
 
+    getFailed(): (target: AbstractType, propertyKey: string) => void {
+        return this.get(RESOLVER_FAILED);
+    }
 }
 
-export function createResolveContext(injector: Injector, payload?: any, failed?: (target: AbstractType, propertyKey: string) => void) {
-    return new ResolveContext(injector, payload, failed);
+
+
+export function createResolveContext(injector: Injector, payload?: any, previous?: Context, failed?: (target: AbstractType, propertyKey: string) => void) {
+    const context = new ResolveContext(previous);
+    context.set(RESOLVER_INJECTOR, injector);
+    if (isDefined(payload)) context.setPayload(payload);
+    if (isDefined(failed)) context.set(RESOLVER_FAILED, failed);
+    return context;
 }
 
-// const onError = (target: AbstractType, propertyKey: string): void => {
-//     throw new ArgumentException(`can not autowride property ${propertyKey} of class ${getTypeName(target)}`)
-// }
+
 

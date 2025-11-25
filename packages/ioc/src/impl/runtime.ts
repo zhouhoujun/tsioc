@@ -9,7 +9,7 @@ import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ModuleRef } from '../module.ref';
 import { RuntimeHandler } from '../lifescope/handler';
-import { Context, ContextToken } from '../handler';
+import { Context, ContextToken, DefaultContext } from '../handler';
 import { INITIALIZE_INTERCEPTORS, instanceHandler } from './initialize';
 import { DESIGN_INTERECPTORS } from './design';
 import { InvocationFactory } from '../invocation';
@@ -21,7 +21,7 @@ import { DEFAULTA_RESOLVER } from '../resolver';
 /**
  * default runtime implements {@link Runtime}.
  */
-export class DefaultRuntime extends Context implements Runtime {
+export class DefaultRuntime extends DefaultContext implements Runtime {
 
     @nonEnumerable
     private _initialize?: RuntimeHandler;

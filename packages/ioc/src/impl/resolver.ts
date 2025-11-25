@@ -18,7 +18,7 @@ import { Operator } from './injector';
 export class DefaultResolver implements Resolver {
 
     constructor(
-       readonly handler: ResolveHandler
+        readonly handler: ResolveHandler
     ) { }
 
     resolve<T>(parameter: Parameter<T>, context: ResolveContext): T {
@@ -32,8 +32,9 @@ export class DefaultResolver implements Resolver {
             {
                 next: (res) => {
                     if (res === UNRESOLVED) {
-                        if (context.failed) {
-                            context.failed(parameter.target, parameter.propertyKey!)
+                        const failed = context.getFailed();
+                        if (failed) {
+                            failed(parameter.target, parameter.propertyKey!)
                         } else {
                             this.missingException([parameter], parameter.target, parameter.propertyKey!);
                         }
@@ -45,8 +46,9 @@ export class DefaultResolver implements Resolver {
                     if (error instanceof Exception) {
                         throw error;
                     }
-                    if (context.failed) {
-                        context.failed(parameter.target, parameter.propertyKey!)
+                    const failed = context.getFailed();
+                    if (failed) {
+                        failed(parameter.target, parameter.propertyKey!)
                     } else {
                         this.missingException([parameter], parameter.target, parameter.propertyKey!);
                     }

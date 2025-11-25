@@ -4,7 +4,7 @@ import { InjectFlags, Token } from '../tokens';
 import { cleanObj, deepForEach, Defer, defer, getTypeName, immediate } from '../utils/lang';
 import { isNil, isFunction, isPromise, isArray, isNumber, getType, isType, isUndefined } from '../utils/chk';
 import { MethodType, InjectorScope, RegisterOption, Injector, InjectOperator, InjectorRecord, RegOption, INJECT_IMPL, EnvironmentInjector, RecordFactory } from '../injector';
-import { ArgumentException, Exception } from '../exception';
+import { Exception } from '../exception';
 import { Runtime } from '../runtime';
 import { ClassRef, ModuleDef } from '../metadata/class';
 import { Provider, ModuleType, StaticProvider, DynamicProvider, MutilProvider, Provide, ProviderExts, isValueProvider, isFactoryProvider, isExistingProvider, isTypeProvider, UseAsStatic, ClassProvider, ModuleWithProviders } from '../providers';
@@ -13,7 +13,7 @@ import { nonEnumerable } from '../metadata/decor';
 import { getClassRef, getDef } from '../metadata/refl';
 import { NullInjectorException, THROW_FLAGE, tryResolveToken, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, LAZY } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
-import { IocContext, RuntimeContext } from '../lifescope/context';
+import { createContext, createRuntimeContext } from '../lifescope/context';
 import { createResolveContext, getResolver, isParameter, Parameter, Parameters } from '../resolver';
 import { CONTAINER, INJECTOR } from '../metadata/tk';
 import { InvocationFactory } from '../invocation';
@@ -916,14 +916,15 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
             return runtime.get(type);
         }
 
-        const context = new RuntimeContext(runtime);
-        if (multi) context.isMutil = true;
-        if (params) {
-            context.params = params;
-        }
+        // const context = new RuntimeContext(runtime);
+        // if (multi) context.isMutil = true;
+        // if (params) {
+        //     context.params = params;
+        // }
 
-        context.raiseInjector = raise ?? injector;
-        context.injector = injector;
+        // context.raiseInjector = raise ?? injector;
+        // context.injector = injector;
+        const context = createRuntimeContext(injector, undefined, runtime, raise, multi, params);
         const instance = runtime.getInstanceHandler().handle(typeRef, context, { finally: () => context.onDestroy() });
         if (singleton) {
             runtime.set(type, instance, injector);
@@ -942,12 +943,13 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
     }
 
     record.onRegister = () => {
-        const context = new IocContext(runtime);
-        if (multi) context.isMutil = true;
-        context.injector = injector;
-        if (!multi && provide) {
-            context.provide = provide;
-        }
+        // const context = new IocContext(runtime);
+        // if (multi) context.isMutil = true;
+        // context.injector = injector;
+        // if (!multi && provide) {
+        //     context.provide = provide;
+        // }
+        const context = createContext(injector, undefined, runtime, multi, provide);
         runtime.getRegisterHandler().handle(typeRef, context, { finally: () => context.onDestroy() })
     }
     return record;

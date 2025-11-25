@@ -31,14 +31,19 @@ function isRecord(target: any): target is InjectorRecord {
 export function resolveParameters(injector: Injector, params?: Parameter[], resolver?: Resolver, context?: ResolveContext) {
     if (!params || !params.length) return [];
 
-    context ??= createResolveContext(injector);
+    if (context) {
+        context = context.setInjector(injector)
+    } else {
+        context = createResolveContext(injector);
+    }
+    
     if (!resolver) {
         resolver = getResolver(injector);
     }
 
     const args: any[] = [];
     for (let i = 0; i < params.length; i++) {
-        args.push(resolver.resolve(params[i], context));
+        args.push(resolver.resolve(params[i], context as ResolveContext));
     }
 
     return args;
@@ -51,7 +56,9 @@ export function resolveParameters(injector: Injector, params?: Parameter[], reso
 export function resolveArgs(injector: Injector, deps?: (ParameterLike | InjectorRecord)[], resolver?: Resolver, context?: ResolveContext): any[] {
     if (!deps || !deps.length) return [];
 
-
+    if (context) {
+        context = context.setInjector(injector)
+    }
 
     const args: any[] = [];
     for (const arg of deps) {
@@ -62,7 +69,7 @@ export function resolveArgs(injector: Injector, deps?: (ParameterLike | Injector
             if (!resolver) {
                 resolver = getResolver(injector);
             }
-            args.push(resolver.resolve(arg, context));
+            args.push(resolver.resolve(arg, context as ResolveContext));
         } else {
             args.push(resolveArg(injector, arg));
         }

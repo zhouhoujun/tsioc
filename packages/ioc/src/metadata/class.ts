@@ -9,7 +9,7 @@ import { isArray, isFunction, isString } from '../utils/chk';
 import { ARGUMENT_NAMES, STRIP_COMMENTS } from '../utils/exps';
 import { ArgumentException, Exception } from '../exception';
 import { Injector, MethodType, Resolve } from '../injector';
-import { HandlerFn } from '../handler';
+import { Context, HandlerFn } from '../handler';
 import { Invocation, InvocationFactory } from '../invocation';
 import { IocContext, RuntimeContext } from '../lifescope/context';
 

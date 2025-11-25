@@ -1,15 +1,9 @@
-import { Context, Injector, Token } from '@tsdi/ioc';
+import { Context, ContextAdapter, Injector } from '@tsdi/ioc';
 
 export { Handler, HandlerLike, HandlerFn } from '@tsdi/ioc';
 
 
-export class RunableContext extends Context {
-
-    constructor(injector: Injector, entries?: readonly [Token, any][]) {
-        super(entries)
-        this.set(Injector, injector);
-    }
-
+export class RunableContext extends ContextAdapter {
     getInjector() {
         return this.get(Injector)
     }
@@ -17,7 +11,9 @@ export class RunableContext extends Context {
 }
 
 
-export function createRunableContext(injector: Injector, entries?: readonly [Token, any][]) {
-    return new RunableContext(injector, entries)
+export function createRunableContext(injector: Injector, previous?: Context) {
+    const context = new RunableContext(previous);
+    context.set(Injector, injector);
+    return context;
 }
 

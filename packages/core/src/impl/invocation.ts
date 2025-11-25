@@ -1,4 +1,4 @@
-import { Invocation, isFunction, isString, Type, invokeTails, HandleResult } from '@tsdi/ioc';
+import { Invocation, isFunction, isString, Type, invokeTails, HandleResult, ResolveContext } from '@tsdi/ioc';
 import { HandlerFn, RunableContext } from '../handler';
 import { InvocationHandlerOptions, Respond, TypedRespond, InvocationHandler, } from '../invocation';
 import { ConfigableHandler, normalizeConfigableHandlerOptions } from '../handlers/configable.impl';
@@ -46,7 +46,10 @@ export class DefaultInvocationHandler<
 
         return invokeTails(
             () => this.beforeInvoke(input),
-            () => this.propertyKey ? this.invocation.invoke(this.propertyKey, { payload: input }) : this.invocation.invoke({ payload: input }),
+            () => {
+                const ctx = context.as(ResolveContext).setPayload(input);
+                return this.propertyKey ? this.invocation.invoke(this.propertyKey, ctx) : this.invocation.invoke(ctx);
+            },
             {
                 next: (res) => {
                     if (res instanceof ResultValue) {

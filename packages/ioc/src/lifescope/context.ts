@@ -1,10 +1,9 @@
-import { Context, ContextToken } from '../handler';
+import { Context, ContextAdapter, ContextToken } from '../handler';
 import { Injector } from '../injector';
 import { DecoratorFn } from '../metadata/class';
 import { Parameters, Parameter } from '../resolver';
 import { Runtime } from '../runtime';
 import { InjectFlags, Token } from '../tokens';
-import { isUndefined } from '../utils/chk';
 
 const CURR_DECOR = new ContextToken<DecoratorFn>(() => null!);
 const INJECTOR = new ContextToken<Injector>(() => null!);
@@ -20,96 +19,10 @@ const INSTANCE = new ContextToken<any>(() => null!);
 const MUTIL = new ContextToken<boolean>(() => false);
 
 
-export namespace Design {
-
-    export function mutil(context: Context): boolean
-    export function mutil(context: Context, value: boolean): void
-    export function mutil(context: Context, value?: boolean): void | boolean {
-        if (isUndefined(value)) return context.get(MUTIL);
-        context.set(MUTIL, value);
-    }
-
-    export function runtime(context: Context): Runtime
-    export function runtime(context: Context, value: Runtime): void
-    export function runtime(context: Context, value?: Runtime): void | Runtime {
-        if (isUndefined(value)) return context.get(Runtime);
-        context.set(Runtime, value);
-    }
-
-
-    export function currDecor(context: Context): DecoratorFn
-    export function currDecor(context: Context, value: DecoratorFn): void
-    export function currDecor(context: Context, value?: DecoratorFn): void | DecoratorFn {
-        if (isUndefined(value)) return context.get(CURR_DECOR);
-        context.set(CURR_DECOR, value);
-    }
-
-    export function instance<T>(context: Context): T
-    export function instance<T>(context: Context, value: T): void
-    export function instance(context: Context, value?: any): void | any {
-        if (isUndefined(value)) return context.get(INSTANCE);
-        context.set(INSTANCE, value);
-    }
-
-
-    export function isResolve(context: Context): boolean
-    export function isResolve(context: Context, value: boolean): void
-    export function isResolve(context: Context, value?: boolean): void | boolean {
-        if (isUndefined(value)) return context.get(IS_RESOLVE);
-        context.set(IS_RESOLVE, value);
-    }
-
-
-    export function provide(context: Context): Token | null
-    export function provide(context: Context, value: Token | null): void
-    export function provide(context: Context, value?: Token | null): void | Token | null {
-        if (isUndefined(value)) return context.get(PROVIDE);
-        context.set(PROVIDE, value);
-    }
-
-
-    export function injector(context: Context): Injector
-    export function injector(context: Context, value: Injector): void
-    export function injector(context: Context, value?: Injector): void | Injector {
-        if (isUndefined(value)) return context.get(INJECTOR);
-        context.set(INJECTOR, value);
-    }
-
-
-    export function ctorArgs(context: Context): any[] | null;
-    export function ctorArgs(context: Context, value: any[] | null): void
-    export function ctorArgs(context: Context, value?: any[] | null): void | any[] | null {
-        if (isUndefined(value)) return context.get(CTOR_ARGS);
-        context.set(CTOR_ARGS, value);
-    }
-
-    export function ctorParams(context: Context): Parameters;
-    export function ctorParams(context: Context, value: Parameters): void
-    export function ctorParams(context: Context, value?: Parameters): void | Parameters {
-        if (isUndefined(value)) return context.get(CTOR_PARAMS);
-        context.set(CTOR_PARAMS, value);
-    }
-
-    export function raiseInjector(context: Context): Injector
-    export function raiseInjector(context: Context, value: Injector): void
-    export function raiseInjector(context: Context, value?: Injector): void | Injector {
-        if (isUndefined(value)) return context.get(RAISE_INJECTOR);
-        context.set(RAISE_INJECTOR, value);
-    }
-
-    export function getInjector(context: Context): Injector {
-        return context.get(RAISE_INJECTOR) ?? context.get(INJECTOR)
-    }
-}
 
 
 
-export class IocContext extends Context {
-
-    constructor(runtime: Runtime, entries?: readonly (readonly [Token | ContextToken, any])[] | null) {
-        super(entries)
-        this.set(Runtime, runtime);
-    }
+export class IocContext extends ContextAdapter {
 
     /**
      * whether the context is mutil.
@@ -200,7 +113,9 @@ export class IocContext extends Context {
 
 }
 
+
 export class RuntimeContext extends IocContext {
+
 
     get raiseInjector(): Injector {
         return this.get(RAISE_INJECTOR);
@@ -210,3 +125,28 @@ export class RuntimeContext extends IocContext {
         this.set(RAISE_INJECTOR, value);
     }
 }
+
+
+ export function createContext(injector: Injector, previous?: Context, runtime?: Runtime, multi?: boolean, provide?: Token | null) {
+        const context= new IocContext(previous);
+        context.set(INJECTOR, injector);
+        if(!context.has(Runtime)) context.set(Runtime, runtime ?? injector.getRuntime());
+        if (multi) context.set(MUTIL, true);
+        if (!multi && provide) {
+            context.set(PROVIDE, provide);
+        }
+        return context;
+    }
+
+    export function createRuntimeContext(injector: Injector, previous?: Context, runtime?: Runtime, raise?: Injector, multi?: boolean, params?: Parameters) {
+        const context= new RuntimeContext(previous);
+        context.set(INJECTOR, injector);
+        if(!context.has(Runtime)) context.set(Runtime, runtime ?? injector.getRuntime());
+        
+        context.set(RAISE_INJECTOR, raise || injector);
+        if (multi) context.set(MUTIL, true);
+        if (params) {
+            context.set(CTOR_PARAMS, params);
+        }
+        return context;
+    }
