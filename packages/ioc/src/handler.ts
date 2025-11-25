@@ -526,13 +526,20 @@ export class DefaultContext extends Context {
 }
 
 
-export class ContextAdapter extends Context {
+export abstract class ContextAdapter extends Context {
 
     private context: Context;
+    private canDestroy = false;
+    private _type: Type;
     constructor(context?: Context) {
         super();
-        this.context = context ?? new DefaultContext();
-        this.set(getType(this), this);
+        if (!context) {
+            context = new DefaultContext();
+            this.canDestroy = true;
+        }
+        this._type = getType(this);
+        this.context = context;
+        this.context.set(this._type, this);
     }
 
     set<T>(token: Token<T> | ContextToken<T>, value: T): this {
@@ -545,7 +552,11 @@ export class ContextAdapter extends Context {
     }
 
     onDestroy(): void {
-        this.context.onDestroy();
+        if (this.canDestroy) {
+            this.context.onDestroy();
+        } else {
+            this.delete(this._type);
+        }
         this.context = null!;
     }
 
@@ -558,6 +569,9 @@ export class ContextAdapter extends Context {
     }
 
     as<TContext extends ContextAdapter>(type: Type<TContext>): TContext {
+        if(type == this._type) {
+            return this as any;
+        }
         return this.context.as(type);
     }
 

@@ -75,7 +75,6 @@ export class IocContext extends ContextAdapter {
 
 
 export class RuntimeContext extends IocContext {
-
     /**
      * constructor parameters.
      */
