@@ -127,7 +127,7 @@ export class RuntimeContext extends IocContext {
 }
 
 
-export function createContext(injector: Injector, previous?: Context, runtime?: Runtime, multi?: boolean, provide?: Token | null) {
+export function createDesignContext(injector: Injector, previous?: Context, runtime?: Runtime, multi?: boolean, provide?: Token | null) {
     const context = new IocContext(previous);
     context.set(INJECTOR, injector);
     if (!context.has(Runtime)) context.set(Runtime, runtime ?? injector.getRuntime());

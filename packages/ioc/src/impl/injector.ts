@@ -13,7 +13,7 @@ import { nonEnumerable } from '../metadata/decor';
 import { getClassRef, getDef } from '../metadata/refl';
 import { NullInjectorException, THROW_FLAGE, tryResolveToken, eachProvider, mergePromise, createRecord, createValueRecord, resolveArgs, LAZY } from './common';
 import { isPlainObject, isTypeObject } from '../utils/obj';
-import { createContext, createRuntimeContext } from '../lifescope/context';
+import { createDesignContext, createRuntimeContext } from '../lifescope/context';
 import { createResolveContext, getResolver, isParameter, Parameter, Parameters } from '../resolver';
 import { CONTAINER, INJECTOR } from '../metadata/tk';
 import { InvocationFactory } from '../invocation';
@@ -949,7 +949,7 @@ export function generateTypeRecord(injector: AbstractInjector, typeRef: ClassRef
         // if (!multi && provide) {
         //     context.provide = provide;
         // }
-        const context = createContext(injector, undefined, runtime, multi, provide);
+        const context = createDesignContext(injector, undefined, runtime, multi, provide);
         runtime.getRegisterHandler().handle(typeRef, context, { finally: () => context.onDestroy() })
     }
     return record;

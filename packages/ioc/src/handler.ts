@@ -427,7 +427,7 @@ export abstract class Context {
     abstract onDestroy(): void;
 
 
-    abstract as<TContext extends DefaultContext>(type: Type<TContext>): TContext;
+    abstract as<TContext extends DefaultContext>(type: Type<TContext>, entries?: Iterable<readonly [Token | ContextToken, any]>): TContext;
 }
 
 
@@ -441,13 +441,14 @@ export class DefaultContext extends Context {
     protected map: Map<Token | ContextToken, any> | Context;
     private _canClear: boolean;
 
-    constructor(contextOrEntries?: Context | readonly [Token | ContextToken, any][]) {
+    constructor(contextOrEntries?: Context | Iterable<readonly [Token | ContextToken, any]>, entries?: Iterable<readonly [Token | ContextToken, any]>) {
         super();
         if (!contextOrEntries || isArray(contextOrEntries)) {
             this.map = new Map(contextOrEntries);
             this._canClear = true;
         } else {
             this.map = contextOrEntries as Context;
+            this.setEntries(entries);
             this._canClear = false;
             // this._tokens = new Set();
         }
@@ -524,16 +525,25 @@ export class DefaultContext extends Context {
      * @param type 
      * @returns 
      */
-    as<TContext extends DefaultContext>(type: Type<TContext>): TContext {
+    as<TContext extends DefaultContext>(type: Type<TContext>, entries?: Iterable<readonly [Token | ContextToken, any]>): TContext {
         if (type == this._type) {
+            this.setEntries(entries);
             return this as any;
         }
         let context = this.get(type);
         if (!context) {
             context = new type(this);
             this.set(type, context);
+            this.setEntries(entries);
         }
         return context;
+    }
+
+    private setEntries(entries?: Iterable<readonly [Token | ContextToken, any]>) {
+        if (!entries) return;
+        for (const [k, v] of entries) {
+            this.set(k, v);
+        }
     }
 
     clear(): void {

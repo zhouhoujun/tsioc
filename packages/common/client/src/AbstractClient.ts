@@ -1,5 +1,5 @@
-import { Abstract, ArgumentException, Exception, Context, isNil, isString, InvocationContext } from '@tsdi/ioc';
-import { Shutdown } from '@tsdi/core';
+import { Abstract, ArgumentException, Exception, Context, isNil, isString, InvocationContext, DefaultContext } from '@tsdi/ioc';
+import { createRunableContext, Shutdown } from '@tsdi/core';
 import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, PatternFormatter, defaultFormatter } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
 import { ClientHandler } from './handler';
@@ -383,9 +383,9 @@ export abstract class AbstractClient<
                 }
             }
 
-            const context = options.context || new Context();
-            context.set(AbstractClient, this);
-            context.set(PatternFormatter, this.formatter);
+            const context = options.context || createRunableContext(this.context,  options.context);
+            context.set(AbstractClient, this)
+                .set(PatternFormatter, this.formatter);
             this.initContext(context);
             // Construct the request.
             req = this.createRequest(first, {

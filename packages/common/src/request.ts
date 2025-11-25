@@ -1,4 +1,5 @@
-import { Context, isUndefined } from '@tsdi/ioc';
+import { isUndefined } from '@tsdi/ioc';
+import { RunableContext } from '@tsdi/core';
 import { HeadersLike, HeaderMappings } from './headers';
 import { ParameterCodec, RequestParams, RequestParamsLike } from './params';
 import { Pattern } from './pattern';
@@ -26,7 +27,7 @@ export interface RequestWithContext {
     /**
      * request context.
      */
-    context: Context;
+    context: RunableContext;
 }
 
 export interface PayloadOptions<T = any> {
@@ -62,7 +63,7 @@ export interface RequestOptions<T = any> extends PayloadOptions<T> {
     /**
      * request context.
      */
-    context?: Context;
+    context?: RunableContext;
     /**
      * for restful
      */
@@ -104,7 +105,7 @@ export abstract class AbstractRequest<T, TOptions extends RequestOptions = Reque
      */
     abstract get headers(): HeaderMappings;
     abstract get params(): RequestParams;
-    abstract get context(): Context;
+    abstract get context(): RunableContext;
 
     /**
      * force parse response type as Json or not.
@@ -234,7 +235,7 @@ export abstract class PatternRequest<T = any, TOptions extends TopicRequestOptio
 export abstract class BaseRequest<T, TOptions extends RequestOptions<T> = RequestOptions<T>> extends AbstractRequest<T, TOptions> {
     readonly headers: HeaderMappings;
     readonly params: RequestParams;
-    readonly context: Context;
+    readonly context: RunableContext;
     readonly responseType: 'arraybuffer' | 'blob' | 'json' | 'text' | 'stream';
     readonly observe: 'body' | 'events' | 'response' | 'emit' | 'observe';
     readonly withCredentials: boolean | undefined;

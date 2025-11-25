@@ -1,4 +1,4 @@
-import { Context, DefaultContext, Injector } from '@tsdi/ioc';
+import { Context, ContextToken, DefaultContext, Injector, Token } from '@tsdi/ioc';
 
 export { Handler, HandlerLike, HandlerFn } from '@tsdi/ioc';
 
@@ -11,8 +11,8 @@ export class RunableContext extends DefaultContext {
 }
 
 
-export function createRunableContext(injector: Injector, previous?: Context) {
-    const context = new RunableContext(previous);
+export function createRunableContext(injector: Injector, previous?: Context, entries?: Iterable<readonly [Token | ContextToken, any]>) {
+    const context = new RunableContext(previous ?? entries, entries);
     context.set(Injector, injector);
     return context;
 }
