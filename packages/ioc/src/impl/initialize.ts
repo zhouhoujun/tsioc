@@ -120,6 +120,7 @@ export const propertyInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> =
                 }
             }
         });
+        rctx.onDestroy();
 
         return getRuntimePropertyScope(context.runtime).handle(input, context, () => instance);
 
@@ -148,12 +149,17 @@ export const ctorArgsInterceptor: InterceptorFn<ClassRef, any, RuntimeContext> =
     if (!context.args) {
         const injector = context.raiseInjector;
         const resolver = getResolver(injector);
-        const args = context.params ? resolveArgs(injector, context.params, resolver)
-            : resolveParameters(injector, input.getParameters(ctorName), resolver);
+        const rctx = context.as(ResolveContext).setInjector(injector);
+        const args = context.params ? resolveArgs(injector, context.params, resolver, rctx)
+            : resolveParameters(injector, input.getParameters(ctorName), resolver, rctx);
         context.args = args;
+
+        rctx.onDestroy();
     }
 
     return next(input, context);
+
+
 }
 
 

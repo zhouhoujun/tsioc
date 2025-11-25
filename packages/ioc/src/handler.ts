@@ -538,9 +538,9 @@ export class DefaultContext extends Context {
 
     clear(): void {
         if (this._canClear) {
-            this.map.delete(this._type);
-        } else {
             this.map.clear();
+        } else {
+            this.map.delete(this._type);
         }
         // if (this._tokens) {
         //     for (const token of this._tokens) {
