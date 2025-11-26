@@ -2,7 +2,7 @@ import { Exception, getType, Handler, Injector, InterceptingHandler, Interceptor
 import { AbstractConfigableHandler, ConfigableHandler, ConfigableHandlerOptions, normalizeConfigableHandlerOptions } from '@tsdi/core';
 import { Observable } from 'rxjs';
 import { RequestContext } from './context';
-import { ForbiddenException } from '../transport';
+import { ForbiddenException } from './exceptions';
 
 
 /**
