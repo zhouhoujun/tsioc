@@ -1,6 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { RequestHandler } from '@tsdi/common';
-import { TransportContext } from './context';
+import { RequestContext, RequestHandler, RequestHandlerFn,  RequestHandlerLike } from '@tsdi/common';
 import { Observable } from 'rxjs';
 
 
@@ -8,13 +7,14 @@ import { Observable } from 'rxjs';
  * mesaage transport handler.
  */
 @Abstract()
-export abstract class TransportHandler<TInput = any, TOutput = any> implements RequestHandler<TInput, TOutput, TransportContext> {
+export abstract class TransportHandler<TInput = any, TOutput = any> implements RequestHandler<TInput, TOutput> {
     /**
      * mesaage transport handler.
      * @param intput the request message input.
      */
-    abstract handle(intput: TInput, context: TransportContext): Observable<TOutput>;
+    abstract handle(intput: TInput, context: RequestContext): Observable<TOutput>;
 }
+
 
 /**
  * mesaage transport backend handler.
@@ -26,5 +26,5 @@ export abstract class TransportBackend<TInput = any, TOutput = any> implements T
      * @param intput the message input.
      * @param context request with context for interceptor
      */
-    abstract handle(intput: TInput, context: TransportContext): Observable<TOutput>;
+    abstract handle(intput: TInput, context: RequestContext): Observable<TOutput>;
 }

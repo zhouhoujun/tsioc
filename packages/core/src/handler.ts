@@ -4,6 +4,11 @@ export { Handler, HandlerLike, HandlerFn } from '@tsdi/ioc';
 
 
 export class RunableContext extends DefaultContext {
+
+    setInjector(injector: Injector) {
+        this.set(Injector, injector);
+    }
+
     getInjector() {
         return this.get(Injector)
     }
@@ -13,7 +18,7 @@ export class RunableContext extends DefaultContext {
 
 export function createRunableContext(injector: Injector, previous?: Context, entries?: Iterable<readonly [Token | ContextToken, any]>) {
     const context = new RunableContext(previous ?? entries, entries);
-    context.set(Injector, injector);
+    context.setInjector(injector);
     return context;
 }
 

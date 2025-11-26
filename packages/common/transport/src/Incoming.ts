@@ -1,9 +1,8 @@
-import { Header, HeaderAccess, HeaderMappings, HeadersLike, ParameterCodec, StatusOptions } from '@tsdi/common';
+import { Header, HeaderAccess, HeaderMappings, HeadersLike, ParameterCodec, RequestContext, StatusOptions } from '@tsdi/common';
 import { IReadable } from './stream';
 import { Injectable } from '@tsdi/ioc';
 import { StreamAdapter } from './StreamAdapter';
 import { Outgoing } from './Outgoing';
-import { TransportContext } from './context';
 
 
 /**
@@ -40,7 +39,7 @@ export interface Incoming<T = any, TMsg = any> extends IncomingMessage<T, TMsg> 
 
     query?: Record<string, any>;
 
-    context?: TransportContext;
+    context?: RequestContext;
 
     rawBody?: any;
 

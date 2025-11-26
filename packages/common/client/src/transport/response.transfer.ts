@@ -1,6 +1,6 @@
 import { ContextToken, Injectable, isNil, isString, lang } from '@tsdi/ioc';
-import { HEAD, ResponseEvent, ResponseJsonParseError, AbstractRequest, UrlRequest,  RequestHandler, RequestInterceptorFn, RequestHandlerFn } from '@tsdi/common';
-import { MimeAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer, ClientIncoming, TransportContext, TransferOpts, AbstractTransferFactory, TEXT_DECODER } from '@tsdi/common/transport';
+import { HEAD, ResponseEvent, ResponseJsonParseError, AbstractRequest, UrlRequest,  RequestHandler, RequestInterceptorFn, RequestHandlerFn, RequestContext } from '@tsdi/common';
+import { MimeAdapter, XSSI_PREFIX, ev, isBuffer, toBuffer, ClientIncoming, TransferOpts, AbstractTransferFactory, TEXT_DECODER, Transport } from '@tsdi/common/transport';
 import { defer, mergeMap, of, throwError } from 'rxjs';
 import { ClientTransport } from './transport';
 import { ClientTransfer, ClientTransferFactory } from './transfer';
@@ -8,9 +8,10 @@ import { ClientTransfer, ClientTransferFactory } from './transfer';
 
 
 
-export const errorResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, TransportContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext) => {
-    if (!(input.ok || (context.transport.statusAdapter ? context.transport.statusAdapter.isOk(input.status ?? input.statusCode) : true)) || input.error) {
-        const transport = context.transport as ClientTransport;
+export const errorResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext>, context: RequestContext) => {
+    const transport = context.get(Transport) as ClientTransport;
+    if (!(input.ok || (transport.statusAdapter ? transport.statusAdapter.isOk(input.status ?? input.statusCode) : true)) || input.error) {
+        
         input.ok = false;
         return defer(async () => {
             let body = input.body;
@@ -31,9 +32,9 @@ export const errorResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>,
 }
 
 
-export const emptyResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, TransportContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext) => {
-    const len = context.transport.headerAdapter.getContentLength(input);
-    const transport = context.transport as ClientTransport;
+export const emptyResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext>, context: RequestContext) => {
+    const transport = context.get(Transport) as ClientTransport;
+    const len = transport.headerAdapter.getContentLength(input);
     if (input.ok !== false && !input.error && (!len || transport.statusAdapter?.isEmpty(input.status ?? input.statusCode))) {
         input.body = null;
         return of(transport.responseFactory.create(input));
@@ -42,22 +43,22 @@ export const emptyResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>,
 }
 
 
-export const redirectInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, TransportContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext) => {
-    const transport = context.transport as ClientTransport;
+export const redirectInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext>, context: RequestContext) => {
+    const transport = context.get(Transport) as ClientTransport;
     // HTTP fetch step 5
     if (transport.redirector) {
         if (transport.statusAdapter?.isRedirect(input.status ?? input.statusCode)) {
             // HTTP fetch step 5.2
-            return transport.redirector.redirect<ResponseEvent<any>>(context.get(AbstractRequest)!, input.status ?? input.statusCode, context.transport.headerAdapter.getHeaders(input) ?? input.headers!, context.transport.protocol);
+            return transport.redirector.redirect<ResponseEvent<any>>(context.get(AbstractRequest)!, input.status ?? input.statusCode, transport.headerAdapter.getHeaders(input) ?? input.headers!, transport.protocol);
         }
     }
     return next(input, context);
 }
 
-export const compressResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, TransportContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, TransportContext>, context: TransportContext) => {
+export const compressResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext>, context: RequestContext) => {
     return defer(async () => {
         const response = input;
-        const transport = context.transport as ClientTransport;
+        const transport = context.get(Transport) as ClientTransport;
         const codings = transport.headerAdapter.getContentEncoding(response);
         const req = context.get(AbstractRequest)!;
         const streamAdapter = transport.streamAdapter;
@@ -160,9 +161,10 @@ export class RequestStauts {
 const REQUEST_STAUTS = new ContextToken(() => new RequestStauts())
 
 
-const backenFn = (input: ClientIncoming<any>, context: TransportContext) => {
+const backenFn = (input: ClientIncoming<any>, context: RequestContext) => {
     return defer(async () => {
-        const { responseFactory, headerAdapter, streamAdapter, statusAdapter } = context.transport as ClientTransport;
+        const transport = context.get(Transport) as ClientTransport;
+        const { responseFactory, headerAdapter, streamAdapter, statusAdapter } = transport;
 
         const req = context.get(AbstractRequest)!;
         let responseType = req.responseType;

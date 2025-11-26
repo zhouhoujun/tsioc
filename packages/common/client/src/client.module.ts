@@ -5,8 +5,8 @@ import {
 import { ConfigMissingException, createHandler } from '@tsdi/core';
 import { DefaultResponseFactory } from '@tsdi/common';
 import { isMicroTransport, NotImplementedException, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
-import { ClientBackend } from './backend';
-import { ClientTransportBackend, ClientTransportFactory, DefaultClientTransferFactory, UrlRedirector } from './transport';
+import { RequestBackend } from './backend';
+import { RequestTransportBackend, ClientTransportFactory, DefaultClientTransferFactory, UrlRedirector } from './transport';
 import { ClientConfig } from './options';
 import { ClientOptions, ClientModuleOpts } from './client.options';
 
@@ -123,7 +123,7 @@ function clientProviders(options: ClientOptions, idx?: number) {
                     return value;
                 });
                 const clientOpts = {
-                    backend: opts.backend ?? ClientBackend,
+                    backend: opts.backend ?? RequestBackend,
                     enableTypeChain: true,
                     ...cloneOpts
                 } as ClientConfig & { providers: Provider[] };
@@ -141,7 +141,7 @@ function clientProviders(options: ClientOptions, idx?: number) {
 
 
                 if (!opts.backend) {
-                    clientOpts.providers.push({ provide: ClientBackend, useClass: ClientTransportBackend });
+                    clientOpts.providers.push({ provide: RequestBackend, useClass: RequestTransportBackend });
                 }
 
                 if (!clientOpts.handlerType) throw new ConfigMissingException(`Config Missing handlerType`);

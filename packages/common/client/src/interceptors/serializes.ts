@@ -1,11 +1,11 @@
 import { hasProps, isNil, isString, isUndefined } from '@tsdi/ioc';
-import { AbstractRequest, PatternFormatter, PatternRequest, TopicRequest, UrlRequest, RequestHandlerFn, RequestInterceptorFn } from '@tsdi/common';
-import { ClientOutgoing, isBuffer, TEXT_DECODER, TopicClientOutgoing, TransportContext, UrlClientOutgoing } from '@tsdi/common/transport';
+import { AbstractRequest, PatternFormatter, PatternRequest, RequestContext, RequestHandlerFn, RequestInterceptorFn, TopicRequest, UrlRequest } from '@tsdi/common';
+import { ClientOutgoing, isBuffer, TEXT_DECODER, TopicClientOutgoing, Transport, UrlClientOutgoing } from '@tsdi/common/transport';
 import { map, of } from 'rxjs';
 import { ClientTransport } from '../transport';
 
 
-export const requestPacketIfySerializeInterceptor: RequestInterceptorFn<AbstractRequest<any>> = (input: AbstractRequest<any>, next: RequestHandlerFn<AbstractRequest<any>>, context: TransportContext) => {
+export const requestPacketIfySerializeInterceptor: RequestInterceptorFn<AbstractRequest<any>> = (input: AbstractRequest<any>, next: RequestHandlerFn<AbstractRequest<any>>, context: RequestContext) => {
     return next(input, context)
         .pipe(
             map(pkg => {
@@ -28,8 +28,8 @@ export const requestPacketIfySerializeInterceptor: RequestInterceptorFn<Abstract
         )
 }
 
-export const readabeRequestBodyerializeInterceptor: RequestInterceptorFn<AbstractRequest<any>> = (input: AbstractRequest<any>, next: RequestHandlerFn<AbstractRequest<any>>, context: TransportContext) => {
-    const transport = context.transport as ClientTransport;
+export const readabeRequestBodyerializeInterceptor: RequestInterceptorFn<AbstractRequest<any>> = (input: AbstractRequest<any>, next: RequestHandlerFn<AbstractRequest<any>>, context: RequestContext) => {
+    const transport = context.get(Transport) as ClientTransport;
     if (transport.streamAdapter.isReadable(input.body)) {
         const pkg = parseToOutgoing(input, context);
         let contentLength = transport.headerAdapter.getContentLength(input) ?? 0;
@@ -63,7 +63,7 @@ export const readabeRequestBodyerializeInterceptor: RequestInterceptorFn<Abstrac
 
 
 
-export const requestSerializeBackend: RequestHandlerFn<AbstractRequest<any>> = (input: AbstractRequest<any>, context: TransportContext) => {
+export const requestSerializeBackend: RequestHandlerFn<AbstractRequest<any>> = (input: AbstractRequest<any>, context: RequestContext) => {
     const pkg = parseToOutgoing(input, context);
     let body = input.body;
     if (isBuffer(body)) {
@@ -73,7 +73,7 @@ export const requestSerializeBackend: RequestHandlerFn<AbstractRequest<any>> = (
     return of(JSON.stringify(pkg, null, 2));
 }
 
-function parseToOutgoing(input: AbstractRequest<any>, context: TransportContext): ClientOutgoing {
+function parseToOutgoing(input: AbstractRequest<any>, context: RequestContext): ClientOutgoing {
     const id = input.id;
     const headers = input.headers.getHeaders();
     const pkg = {
@@ -103,8 +103,9 @@ function parseToOutgoing(input: AbstractRequest<any>, context: TransportContext)
     return pkg;
 }
 
-export const requestBodySerializeBackend: RequestHandlerFn<AbstractRequest<any>> = (input: AbstractRequest<any>, context: TransportContext) => {
-    if (context.transport.streamAdapter.isJson(input.body)) {
+export const requestBodySerializeBackend: RequestHandlerFn<AbstractRequest<any>> = (input: AbstractRequest<any>, context: RequestContext) => {
+    const transport = context.get(Transport) as ClientTransport;
+    if (transport.streamAdapter.isJson(input.body)) {
         return of(JSON.stringify(input.body, null, 2));
     }
     return of(input.body);

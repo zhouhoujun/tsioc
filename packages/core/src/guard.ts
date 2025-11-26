@@ -1,4 +1,4 @@
-import { HandleResult, ProvdierOf, Token, TypeOf, getTokenOf, tokenId } from '@tsdi/ioc';
+import { HandleResult, Token, TypeOf, getTokenOf, tokenId } from '@tsdi/ioc';
 
 
 /**

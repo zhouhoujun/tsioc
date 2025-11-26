@@ -1,8 +1,8 @@
 import { Injector } from '@tsdi/ioc';
-import { AbstractRequest, HeaderAdapter, ResponseFactory } from '@tsdi/common';
+import { AbstractRequest, createRequestContext, HeaderAdapter, RequestContext, ResponseFactory } from '@tsdi/common';
 import {
     ClientIncomingFactory, Deserializer, ev, IDuplex, Packet, Redirector, Serializer,
-    StatusAdapter, StreamAdapter, TransportContext, writePacket
+    StatusAdapter, StreamAdapter, Transport, writePacket
 } from '@tsdi/common/transport';
 import { fromEvent, Observable } from 'rxjs';
 import { ClientTransfer, ClientTransport } from '../transport';
@@ -29,8 +29,8 @@ export class DefaultClientTransport<
         readonly responseFactory: ResponseFactory,
         readonly redirector: Redirector | null,
         readonly clientOptions: TOptions,
-        private _read: (socket: TSocket, factory: () => TransportContext, instance?: TransportContext) => Observable<TransportContext | any>,
-        private _write: (socket: TSocket, msg: TMsg, req: TRequest, context: TransportContext) => Promise<any>,
+        private _read: (socket: TSocket, factory: () => RequestContext, instance?: RequestContext) => Observable<RequestContext | any>,
+        private _write: (socket: TSocket, msg: TMsg, req: TRequest, context: RequestContext) => Promise<any>,
         private _close?: (socket: TSocket) => Promise<any>
 
     ) {
@@ -38,12 +38,12 @@ export class DefaultClientTransport<
     }
 
 
-    protected override read(context?: TransportContext): Observable<any> {
-        return this._read(this.socket, () => TransportContext.create(this), context);
+    protected override read(context?: RequestContext): Observable<any> {
+        return this._read(this.socket, () => createRequestContext(context, [[Transport, this]]));
 
     }
 
-    protected override write(msg: TMsg, req: TRequest, context: TransportContext): Promise<any> {
+    protected override write(msg: TMsg, req: TRequest, context: RequestContext): Promise<any> {
         return this._write(this.socket, msg, req, context)
     }
 
@@ -83,11 +83,11 @@ export class SocketClientTransport<
     }
 
 
-    protected override read(context?: TransportContext): Observable<any> {
+    protected override read(context?: RequestContext): Observable<any> {
         return fromEvent(this.socket, this.eventName)
     }
 
-    protected override write(msg: TMsg, req: TRequest, context: TransportContext): Promise<any> {
+    protected override write(msg: TMsg, req: TRequest, context: RequestContext): Promise<any> {
         return writePacket(this.socket, msg, this.streamAdapter)
     }
 

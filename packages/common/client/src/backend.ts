@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
  * client backend.
  */
 @Abstract()
-export abstract class ClientBackend implements RequestHandler<AbstractRequest<any>, ResponseEvent<any>>  {
+export abstract class RequestBackend implements RequestHandler<AbstractRequest<any>, ResponseEvent<any>>  {
 
     /**
      * handle client request

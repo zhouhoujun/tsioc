@@ -1,4 +1,4 @@
-import { ProvdierOf, StaticProvider, Type, Abstract, Token, AbstractType, InvokeProviders, InvocationContext, TailNext, HandleResult, Interceptor, isPlainObject } from '@tsdi/ioc';
+import { ProvdierOf, StaticProvider, Type, Abstract, Token, AbstractType, InvokeProviders, InvocationContext, TailNext, HandleResult, isPlainObject } from '@tsdi/ioc';
 import { GuardLike } from '../guard';
 import { InterceptorLike } from '../interceptor';
 import { PipeTransform } from '../pipes/pipe';

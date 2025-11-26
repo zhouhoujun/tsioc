@@ -1,5 +1,4 @@
 export * from './options';
-export * from './handler';
 export * from './backend';
 export * from './interceptors/body';
 export * from './interceptors/timeout';

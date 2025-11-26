@@ -1,26 +1,13 @@
 import { Injectable, tokenId, Inject } from '@tsdi/ioc';
 import { RequestInterceptingHandler, RequestInterceptor } from '@tsdi/common';
-import { Observable } from 'rxjs';
 import { TransportBackend, TransportHandler } from './handler';
-import { TransportContext } from './context';
 
-/**
- * http interceptor.
- */
-export interface TransportInterceptor<TInput = any, TOutput = any> extends RequestInterceptor<TInput, TOutput, TransportContext> {
-    /**
-     * the method to implemet interceptor.
-     * @param req request.
-     * @param next route handler.
-     */
-    intercept(input: TInput, next: TransportHandler): Observable<TOutput>;
-}
 
 
 /**
  * common transport interceptors for server side.
  */
-export const TRANSPORT_INTERCEPTORS = tokenId<TransportInterceptor[]>('TRANSPORT_INTERCEPTORS');
+export const TRANSPORT_INTERCEPTORS = tokenId<RequestInterceptor[]>('TRANSPORT_INTERCEPTORS');
 
 
 /**
@@ -34,7 +21,7 @@ export const TRANSPORT_INTERCEPTORS = tokenId<TransportInterceptor[]>('TRANSPORT
  */
 @Injectable()
 export class TransportInterceptingHandler<TInput = any, TOutput = any> extends RequestInterceptingHandler<TInput, TOutput> implements TransportHandler {
-    constructor(backend: TransportBackend, @Inject(TRANSPORT_INTERCEPTORS) interceptors: TransportInterceptor[]) {
+    constructor(backend: TransportBackend, @Inject(TRANSPORT_INTERCEPTORS) interceptors: RequestInterceptor[]) {
         super(backend, interceptors)
     }
 }
@@ -44,7 +31,7 @@ export class TransportInterceptingHandler<TInput = any, TOutput = any> extends R
 /**
  * common transport interceptors for client side.
  */
-export const CLIENT_TRANSPORT_INTERCEPTORS = tokenId<TransportInterceptor[]>('CLIENT_TRANSPORT_INTERCEPTORS');
+export const CLIENT_TRANSPORT_INTERCEPTORS = tokenId<RequestInterceptor[]>('CLIENT_TRANSPORT_INTERCEPTORS');
 
 
 /**
@@ -58,7 +45,7 @@ export const CLIENT_TRANSPORT_INTERCEPTORS = tokenId<TransportInterceptor[]>('CL
  */
 @Injectable()
 export class ClientTransportInterceptingHandler<TInput = any, TOutput = any> extends RequestInterceptingHandler<TInput, TOutput> implements TransportHandler {
-    constructor(backend: TransportBackend, @Inject(CLIENT_TRANSPORT_INTERCEPTORS) interceptors: TransportInterceptor[]) {
+    constructor(backend: TransportBackend, @Inject(CLIENT_TRANSPORT_INTERCEPTORS) interceptors: RequestInterceptor[]) {
         super(backend, interceptors)
     }
 }

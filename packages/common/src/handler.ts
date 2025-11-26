@@ -1,12 +1,12 @@
-import { RunableContext } from '@tsdi/core';
 import { Handler, InterceptingHandler, toObservable } from '@tsdi/ioc';
 import { Observable } from 'rxjs';
+import { RequestContext } from './context';
 
 
 /**
  * Requset handler
  */
-export interface RequestHandler<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> extends Handler<TInput, TOutput, TContext> {
+export interface RequestHandler<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> extends Handler<TInput, TOutput, TContext> {
     /**
      * handle.
      * 
@@ -21,18 +21,18 @@ export interface RequestHandler<TInput = any, TOutput = any, TContext extends Ru
 /**
  * Request handler function.
  */
-export type RequestHandlerFn<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = (input: TInput, context: TContext) => Observable<TOutput>;
+export type RequestHandlerFn<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> = (input: TInput, context: TContext) => Observable<TOutput>;
 
 
 /**
  * Request handler like.
  */
-export type RequestHandlerLike<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> = RequestHandlerFn<TInput, TOutput, TContext> | RequestHandler<TInput, TOutput, TContext>;
+export type RequestHandlerLike<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> = RequestHandlerFn<TInput, TOutput, TContext> | RequestHandler<TInput, TOutput, TContext>;
 
 /**
  * Request intercepting handler.
  */
-export class RequestInterceptingHandler<TInput = any, TOutput = any, TContext extends RunableContext = RunableContext> extends InterceptingHandler<TInput, TOutput, TContext> implements RequestHandler<TInput, TOutput, TContext> {
+export class RequestInterceptingHandler<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> extends InterceptingHandler<TInput, TOutput, TContext> implements RequestHandler<TInput, TOutput, TContext> {
     handle(req: TInput, context: TContext): Observable<TOutput> {
         return toObservable(super.handle(req, context));
     }

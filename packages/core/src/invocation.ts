@@ -1,4 +1,4 @@
-import { Abstract, AbstractType, Invocation, ProvidedInMetadata, ProvdierOf, InvocationOptions, InvocationFactory, InvocationContext, HandleResult } from '@tsdi/ioc';
+import { Abstract, AbstractType, Invocation, ProvidedInMetadata, InvocationOptions, InvocationFactory, InvocationContext, HandleResult } from '@tsdi/ioc';
 import { ConfigableHandlerOptions, HandlerOptions } from './handlers/configable';
 import { Handler, RunableContext } from './handler';
 

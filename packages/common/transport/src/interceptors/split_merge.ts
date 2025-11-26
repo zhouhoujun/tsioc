@@ -1,18 +1,14 @@
-import { ArgumentException, Injectable, isNumber, isString } from '@tsdi/ioc';
-import { Handler } from '@tsdi/core';
-import { HeaderAdapter } from '@tsdi/common';
+import { ArgumentException, Injectable, isNumber } from '@tsdi/ioc';
+import { HeaderAdapter, RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common';
 import { Observable, Subscriber, filter, map, mergeMap, of, range, throwError } from 'rxjs';
-
 import { StreamAdapter, isBuffer } from '../StreamAdapter';
 import { IDuplex, IReadable } from '../stream';
 import { PacketLengthException } from '../exceptions';
-import { AbstractIncoming, IncomingMessage } from '../Incoming';
+import { IncomingMessage } from '../Incoming';
 import { OutgoingMessage } from '../Outgoing';
-import { TransportContext } from '../context';
 import { Packet } from '../socket';
 import { AbstractTransport } from '../transports';
-import { TransportInterceptor } from '../interceptor';
-import { TransportHandler } from '../handler';
+import { Transport } from '../Transport';
 
 interface CachePacket {
     packet: Packet<IDuplex>;
@@ -21,11 +17,11 @@ interface CachePacket {
 }
 
 @Injectable()
-export class MergePacketInterceptor implements TransportInterceptor<Packet, IncomingMessage<any>> {
+export class MergePacketInterceptor implements RequestInterceptor<Packet, IncomingMessage<any>> {
 
     packs: Map<string | number, CachePacket> = new Map();
-    intercept(input: Packet, next: TransportHandler<Packet, IncomingMessage>, context: TransportContext): Observable<IncomingMessage> {
-        const transport = context.transport as AbstractTransport;
+    intercept(input: Packet, next: RequestHandler<Packet, IncomingMessage>, context: RequestContext): Observable<IncomingMessage> {
+        const transport = context.get(Transport) as AbstractTransport;
         const opts = transport.options;
         const idLen = opts.idLen ?? 2;
         let id: string | number;
@@ -35,8 +31,8 @@ export class MergePacketInterceptor implements TransportInterceptor<Packet, Inco
             const exist = this.packs.get(id);
             // if (exist) input.noHead = true;
             input.id = id;
-            if (input.packetLength) {
-                input.packetLength = input.packetLength - idLen;
+            if (input.length) {
+                input.length = input.length - idLen;
             }
         } else if (isBuffer(input.payload)) {
             id = idLen > 4 ? input.payload.subarray(0, idLen).toString() : input.payload.readUIntBE(0, idLen);
@@ -119,13 +115,13 @@ export class MergePacketInterceptor implements TransportInterceptor<Packet, Inco
 }
 
 @Injectable()
-export class SplitPacketInterceptor implements Interceptor<OutgoingMessage, Packet, TransportContext> {
+export class SplitPacketInterceptor implements RequestInterceptor<OutgoingMessage, Packet> {
 
-    intercept(input: OutgoingMessage, next: Handler<OutgoingMessage, Packet, TransportContext>, context: TransportContext): Observable<Packet> {
+    intercept(input: OutgoingMessage, next: RequestHandler<OutgoingMessage, Packet>, context: RequestContext): Observable<Packet> {
         return next.handle(input, context)
             .pipe(
                 mergeMap(msg => {
-                    const transport = context.transport as AbstractTransport;
+                    const transport = context.get(Transport) as AbstractTransport;
                     const opts = transport.options;
                     const idLen = opts.idLen ?? 2;
                     const data = msg.payload;

@@ -18,6 +18,8 @@ export * from './Outgoing';
 export * from './PacketId';
 
 export * from './context';
+export * from './handler';
+export * from './interceptor';
 export * from './Transport';
 export * from './Transfer';
 export * from './transports';

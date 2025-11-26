@@ -1,11 +1,11 @@
 import { Abstract, Injectable, Injector, InvocationContext, tokenId } from '@tsdi/ioc';
-import { ConfigableHandlerOptions, createHandler, ExceptionHandlerFilter, FilterLike, InterceptorLike, RequestHandler } from '@tsdi/core';
+import { RequestContext, RequestHandler } from '@tsdi/common';
+import { ConfigableHandlerOptions, createHandler, ExceptionHandlerFilter, FilterLike, InterceptorLike } from '@tsdi/core';
 import { Observable, of } from 'rxjs';
-import { TransportContext } from './context';
 
 @Abstract()
 export abstract class Serializer<TIn=any, TOut= any> {
-    abstract serialize(input: TIn, context: TransportContext): Observable<TOut>;
+    abstract serialize(input: TIn, context: RequestContext): Observable<TOut>;
 }
 
 /**
@@ -26,7 +26,7 @@ export class DefaultSerializer<TIn=any, TOut= any> implements Serializer<TIn, TO
         private handler: RequestHandler<TIn, TOut>
     ) { }
 
-    serialize(input: TIn, context: TransportContext): Observable<TOut> {
+    serialize(input: TIn, context: RequestContext): Observable<TOut> {
         return this.handler.handle(input, context);
     }
 
@@ -43,15 +43,15 @@ export class DefaultSerializerFactory implements SerializerFactory {
             filtersToken: SERIALIZER_FILTERS,
             interceptorsToken: SERIALIZER_INTERCEPTORS,
             enableTypeChain: true,
+            filters:[ExceptionHandlerFilter],
             ...options
-        });
-        handler.useFilters(ExceptionHandlerFilter, 0);
+        }) as RequestHandler;
         return new DefaultSerializer(handler);
     }
 
 }
 
 
-const jsonSerializeBackend = (input: any, context?: TransportContext) => {
+const jsonSerializeBackend = (input: any, context: RequestContext) => {
     return of(JSON.stringify(input, null, 2))
 };

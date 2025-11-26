@@ -1,6 +1,6 @@
 import { Abstract, getType, Injector } from '@tsdi/ioc';
-import { AbstractRequest, ResponseEvent, ResponseFactory } from '@tsdi/common';
-import { AbstractTransport, ClientIncoming, ClientIncomingFactory, Redirector, Transfer, TransportContext } from '@tsdi/common/transport';
+import { AbstractRequest, createRequestContext, RequestContext, ResponseEvent, ResponseFactory } from '@tsdi/common';
+import { AbstractTransport, ClientIncoming, ClientIncomingFactory, Redirector, Transfer, Transport } from '@tsdi/common/transport';
 import { Observable, first, merge, mergeMap, takeUntil } from 'rxjs';
 import { ClientConfig } from '../options';
 
@@ -48,14 +48,14 @@ export abstract class ClientTransport<
         return this.clientOptions.protocol ?? '';
     }
 
-    protected override initSendContext(context: TransportContext, request: TRequest): void {
+    protected override initSendContext(context: RequestContext, request: TRequest): void {
         context.set(AbstractRequest, request);
         context.set(getType(request), request);
     }
 
-    request(req: TRequest, destroy$?: Observable<any>, context?: TransportContext): Observable<ResponseEvent<any>> {
+    request(req: TRequest, destroy$?: Observable<any>, context?: RequestContext): Observable<ResponseEvent<any>> {
         if (!context) {
-            context = TransportContext.create(this);
+            context = createRequestContext([[Transport, this]]);
         }
         return this.send(req, context)
             .pipe(

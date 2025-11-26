@@ -1,7 +1,7 @@
 import { ModuleType, ProvdierOf, Provider, Token, AbstractType } from '@tsdi/ioc';
 import { Protocols } from '@tsdi/common';
 import { TransportConfigure } from '@tsdi/common/transport';
-import { ClientBackend } from './backend';
+import { RequestBackend } from './backend';
 import { ClientConfig } from './options';
 import { AbstractClient } from './AbstractClient';
 
@@ -177,6 +177,6 @@ export type ClientModuleOpts = ClientOpts & {
     /**
      * trnsport backend.
      */
-    backend?: ProvdierOf<ClientBackend>;
+    backend?: ProvdierOf<RequestBackend>;
 }
 

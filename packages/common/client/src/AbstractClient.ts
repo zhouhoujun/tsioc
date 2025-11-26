@@ -1,8 +1,7 @@
-import { Abstract, ArgumentException, Exception, Context, isNil, isString, InvocationContext, DefaultContext } from '@tsdi/ioc';
+import { Abstract, ArgumentException, Exception, Context, isNil, isString, InvocationContext } from '@tsdi/ioc';
 import { createRunableContext, Shutdown } from '@tsdi/core';
-import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, PatternFormatter, defaultFormatter } from '@tsdi/common';
+import { HeaderMappings, RequestParams, ResponseAs, Pattern, ResponseEvent, RequestInitOpts, RequestOptions, AbstractRequest, Response, PatternFormatter, defaultFormatter, RequestHandler } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, map } from 'rxjs';
-import { ClientHandler } from './handler';
 import { ClientConfig } from './options';
 
 
@@ -22,7 +21,7 @@ export abstract class AbstractClient<
     /**
      * client handler
      */
-    abstract get handler(): ClientHandler<TRequest, TResponse>;
+    abstract get handler(): RequestHandler<TRequest, TResponse>;
 
     private _formatter?: PatternFormatter;
     get formatter(): PatternFormatter {
