@@ -3,7 +3,7 @@ import { ConfigMissingException, createHandler } from '@tsdi/core';
 import { DefaultResponseFactory } from '@tsdi/common';
 import { isMicroTransport, NotImplementedException, toTransportModuleName, TransportPacketModule } from '@tsdi/common/transport';
 import { RequestBackend } from './backend';
-import { RequestTransportBackend, ClientTransportFactory, DefaultClientTransferFactory, UrlRedirector } from './transport';
+import { RequestTransportBackend, DefaultClientTransferFactory, UrlRedirector } from './transport';
 import { ClientConfig } from './options';
 import { ClientOptions, ClientModuleOpts } from './client.options';
 
@@ -142,7 +142,7 @@ function clientProviders(options: ClientOptions, idx?: number) {
                 }
 
                 if (!clientOpts.handlerType) throw new ConfigMissingException(`Config Missing handlerType`);
-                if (!clientOpts.transportFactory || clientOpts.transportFactory == ClientTransportFactory) throw new ConfigMissingException(`Config Missing transportFactory`);
+                // if (!clientOpts.transportFactory || clientOpts.transportFactory == ClientTransportFactory) throw new ConfigMissingException(`Config Missing transportFactory`);
 
                 if (opts.imports) {
                     clientOpts.providers.push({
@@ -152,7 +152,7 @@ function clientProviders(options: ClientOptions, idx?: number) {
                     })
                 }
 
-                clientOpts.providers.push(toProvider(ClientTransportFactory, clientOpts.transportFactory));
+                // clientOpts.providers.push(toProvider(ClientTransportFactory, clientOpts.transportFactory));
 
                 // if (!clientOpts.execptionHandlers) {
                 //     clientOpts.execptionHandlers = [DefaultExceptionHandlers]

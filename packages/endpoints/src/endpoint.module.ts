@@ -13,10 +13,11 @@ import { REGISTER_SERVICES, SetupServices } from './SetupServices';
 import { ExceptionFinalizeFilter } from './exception.filter';
 import { DefaultExceptionHandlers } from './exception.handlers';
 import { FinalizeFilter } from './finalize.filter';
-import { createRequestHandler } from './impl/request.handler';
+// import { createRequestHandler } from './impl/request.handler';
 import { DefaultServerTransferFactory } from './impl/transfer';
 import { ServiceModuleOpts, ServiceOptions } from './endpoint.options';
 import { HttpStatusAdapter } from './impl/status';
+import { createRequestHandler } from '@tsdi/common';
 
 
 /**

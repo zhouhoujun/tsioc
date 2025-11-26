@@ -1,8 +1,8 @@
 import { Abstract, Type, Token } from '@tsdi/ioc';
 import { AbstractConfigableHandler, InvocationHandlerOptions } from '@tsdi/core';
+import { RequestHandler } from '@tsdi/common';
 import { RequestContext } from './RequestContext';
 import { Router } from './router/router';
-import { RequestHandler } from './RequestHandler';
 
 
 

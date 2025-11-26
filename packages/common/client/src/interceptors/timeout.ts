@@ -1,7 +1,5 @@
-import { AbstractRequest, RequestContext, RequestHandlerFn, RequestInterceptorFn } from '@tsdi/common';
+import { AbstractRequest, RequestContext, RequestHandlerFn, RequestInterceptorFn, ResponseFactory } from '@tsdi/common';
 import { catchError, throwError, timeout } from 'rxjs';
-import { ClientTransport } from '../transport';
-
 
 
 /**
@@ -14,8 +12,7 @@ export const requestTimeoutInterceptor: RequestInterceptorFn = (input: AbstractR
                 timeout(input.timeout),
                 catchError(err => {
                     if (err.name == 'TimeoutError') {
-                        const transport = context.get(ClientTransport);
-                        const factory = transport?.responseFactory;
+                        const factory = context.get(ResponseFactory);
                         return throwError(() => factory ? factory.create({ headers: {}, error: err, ok: false }) : err);
                     }
                     return throwError(() => err);

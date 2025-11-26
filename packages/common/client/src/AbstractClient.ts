@@ -382,7 +382,7 @@ export abstract class AbstractClient<
                 }
             }
 
-            const context = options.context || createRunableContext(this.context,  options.context);
+            const context = options.context || createRunableContext(this.context, options.context);
             context.set(AbstractClient, this)
                 .set(PatternFormatter, this.formatter);
             this.initContext(context);

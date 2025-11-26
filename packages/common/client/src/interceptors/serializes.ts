@@ -1,6 +1,6 @@
 import { hasProps, isNil, isString, isUndefined } from '@tsdi/ioc';
 import { AbstractRequest, PatternFormatter, PatternRequest, RequestContext, RequestHandlerFn, RequestInterceptorFn, TopicRequest, UrlRequest } from '@tsdi/common';
-import { ClientOutgoing, isBuffer, TEXT_DECODER, TopicClientOutgoing, Transport, UrlClientOutgoing } from '@tsdi/common/transport';
+import { ClientOutgoing, isBuffer, TEXT_DECODER, TopicClientOutgoing, UrlClientOutgoing } from '@tsdi/common/transport';
 import { map, of } from 'rxjs';
 import { ClientTransport } from '../transport';
 

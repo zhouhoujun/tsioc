@@ -1,11 +1,11 @@
 import { ProvdierOf, AbstractType } from '@tsdi/ioc';
-import { RequestMethod } from '@tsdi/common';
+import { RequestHandler, RequestMethod } from '@tsdi/common';
 import { MimeSource, TransportConfigure } from '@tsdi/common/transport';
 import { RequestHandlerOptions } from './AbstractRequestHandler';
 import { ContentOptions } from './interceptors/content';
 import { RouteOpts } from './router/router.providers';
 import { ServerTransportFactory } from './transport';
-import { RequestHandler } from './RequestHandler';
+// import { RequestHandler } from './RequestHandler';
 import { RestfulRequestContext } from './RestfulRequestContext';
 import { ServerOptions as Http1ServerOptions } from 'http';
 import { ServerOptions as HttsServerOptions } from 'https';
