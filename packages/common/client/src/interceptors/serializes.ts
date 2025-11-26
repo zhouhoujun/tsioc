@@ -29,7 +29,7 @@ export const requestPacketIfySerializeInterceptor: RequestInterceptorFn<Abstract
 }
 
 export const readabeRequestBodyerializeInterceptor: RequestInterceptorFn<AbstractRequest<any>> = (input: AbstractRequest<any>, next: RequestHandlerFn<AbstractRequest<any>>, context: RequestContext) => {
-    const transport = context.get(Transport) as ClientTransport;
+    const transport = context.get(ClientTransport);
     if (transport.streamAdapter.isReadable(input.body)) {
         const pkg = parseToOutgoing(input, context);
         let contentLength = transport.headerAdapter.getContentLength(input) ?? 0;
@@ -104,7 +104,7 @@ function parseToOutgoing(input: AbstractRequest<any>, context: RequestContext): 
 }
 
 export const requestBodySerializeBackend: RequestHandlerFn<AbstractRequest<any>> = (input: AbstractRequest<any>, context: RequestContext) => {
-    const transport = context.get(Transport) as ClientTransport;
+    const transport = context.get(ClientTransport);
     if (transport.streamAdapter.isJson(input.body)) {
         return of(JSON.stringify(input.body, null, 2));
     }

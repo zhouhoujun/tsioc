@@ -1,12 +1,11 @@
 import { Abstract, promisify } from '@tsdi/ioc';
-import { Protocols } from '@tsdi/common';
+import { Protocols, RequestContext } from '@tsdi/common';
 import { Observable, Subject, map, mergeMap, share, takeUntil } from 'rxjs';
 import { Transport } from './Transport';
 import { IReadable, IWritable } from './stream';
 import { AbstractIncomingFactory, Incoming } from './Incoming';
 import { Deserializer } from './Deserializer';
 import { Serializer } from './Serializer';
-import { TransportContext } from './context';
 import { ConfigableHandlerOptions } from '@tsdi/core';
 import { Packet } from './socket';
 import { StreamAdapter } from './StreamAdapter';
@@ -99,10 +98,7 @@ export abstract class AbstractTransport<
      * send.
      * @param data 
      */
-    send(data: TOutgoing, context?: TransportContext): Observable<any> {
-        if (!context) {
-            context = TransportContext.create(this)
-        }
+    send(data: TOutgoing, context: RequestContext): Observable<any> {
         this.initSendContext(context, data);
         return this.serializer.serialize(data, context)
             .pipe(
@@ -120,22 +116,14 @@ export abstract class AbstractTransport<
      * @param incoming the channel.
      * @param origin the origin message.
      */
-    receive(context?: TransportContext): Observable<TIncoming> {
+    receive(context: RequestContext): Observable<TIncoming> {
         return this.read(context)
             .pipe(
                 takeUntil(this.destroy$),
-                mergeMap(data => {
-                    let incoming: any, ctx: TransportContext;
-                    if (data instanceof TransportContext) {
-                        incoming = data.incoming;
-                        ctx = data;
-                    } else {
-                        incoming = data;
-                        ctx = context ?? TransportContext.create(this);
-                    }
-                    return this.deserializer.deserialize(incoming, ctx).pipe(
+                mergeMap(incoming => {                    
+                    return this.deserializer.deserialize(incoming, context).pipe(
                         map(incoming => {
-                            incoming.context = ctx;
+                            incoming.context = context;
                             return incoming;
                         }))
                 }),
@@ -143,11 +131,11 @@ export abstract class AbstractTransport<
             ) as Observable<any>;
     }
 
-    protected abstract read(context?: TransportContext): Observable<any>;
+    protected abstract read(context: RequestContext): Observable<any>;
 
-    protected abstract write(msg: TMsg, origin: TOutgoing, context: TransportContext): Promise<any> | Observable<any>;
+    protected abstract write(msg: TMsg, origin: TOutgoing, context: RequestContext): Promise<any> | Observable<any>;
 
-    protected initSendContext(context: TransportContext, data: TOutgoing): void {
+    protected initSendContext(context: RequestContext, data: TOutgoing): void {
 
     }
 

@@ -1,5 +1,5 @@
 import { Abstract } from '@tsdi/ioc';
-import { RequestHandler, AbstractRequest, ResponseEvent } from '@tsdi/common';
+import { RequestHandler, AbstractRequest, ResponseEvent, RequestContext } from '@tsdi/common';
 import { Observable } from 'rxjs';
 
 
@@ -13,6 +13,6 @@ export abstract class RequestBackend implements RequestHandler<AbstractRequest<a
      * handle client request
      * @param req 
      */
-    abstract handle(req: AbstractRequest<any>): Observable<ResponseEvent<any>>;
+    abstract handle(req: AbstractRequest<any>, context: RequestContext): Observable<ResponseEvent<any>>;
 
 }

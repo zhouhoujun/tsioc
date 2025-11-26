@@ -53,13 +53,14 @@ export abstract class ClientTransport<
         context.set(getType(request), request);
     }
 
-    request(req: TRequest, destroy$?: Observable<any>, context?: RequestContext): Observable<ResponseEvent<any>> {
-        if (!context) {
-            context = createRequestContext([[Transport, this]]);
-        }
+    request(req: TRequest, context: RequestContext, destroy$?: Observable<any>): Observable<ResponseEvent<any>> {
+
+        context.set(Transport, this)
+            .set(ClientTransport, this);
+
         return this.send(req, context)
             .pipe(
-                mergeMap((chl) => this.receive(context!)),
+                mergeMap((chl) => this.receive(context)),
                 mergeMap(incoming => this.transfer.transform(incoming, context!)),
                 takeUntil(destroy$ ? merge(this.destroy$, destroy$).pipe(first()) : this.destroy$)
             )

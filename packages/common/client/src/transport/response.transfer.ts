@@ -9,7 +9,7 @@ import { ClientTransfer, ClientTransferFactory } from './transfer';
 
 
 export const errorResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext>, context: RequestContext) => {
-    const transport = context.get(Transport) as ClientTransport;
+    const transport = context.get(ClientTransport);
     if (!(input.ok || (transport.statusAdapter ? transport.statusAdapter.isOk(input.status ?? input.statusCode) : true)) || input.error) {
         
         input.ok = false;
@@ -33,7 +33,7 @@ export const errorResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>,
 
 
 export const emptyResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext>, context: RequestContext) => {
-    const transport = context.get(Transport) as ClientTransport;
+    const transport = context.get(ClientTransport);
     const len = transport.headerAdapter.getContentLength(input);
     if (input.ok !== false && !input.error && (!len || transport.statusAdapter?.isEmpty(input.status ?? input.statusCode))) {
         input.body = null;
@@ -44,7 +44,7 @@ export const emptyResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>,
 
 
 export const redirectInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext>, context: RequestContext) => {
-    const transport = context.get(Transport) as ClientTransport;
+    const transport = context.get(ClientTransport);
     // HTTP fetch step 5
     if (transport.redirector) {
         if (transport.statusAdapter?.isRedirect(input.status ?? input.statusCode)) {
@@ -58,7 +58,7 @@ export const redirectInterceptor: RequestInterceptorFn<ClientIncoming<any>, Resp
 export const compressResponseInterceptor: RequestInterceptorFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext> = (input: ClientIncoming<any>, next: RequestHandlerFn<ClientIncoming<any>, ResponseEvent<any>, RequestContext>, context: RequestContext) => {
     return defer(async () => {
         const response = input;
-        const transport = context.get(Transport) as ClientTransport;
+        const transport = context.get(ClientTransport);
         const codings = transport.headerAdapter.getContentEncoding(response);
         const req = context.get(AbstractRequest)!;
         const streamAdapter = transport.streamAdapter;
